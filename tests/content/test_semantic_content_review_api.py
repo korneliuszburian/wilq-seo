@@ -11,9 +11,9 @@ from tests.content.test_dynamic_planning_proposals_api import (
     _approve_and_generate,
     _approve_generated_plan,
     _initial_draft_request,
-    _PlanningClient,
     _snapshot,
 )
+from tests.content.dynamic_planning_test_support import PlanningClient
 from wilq.content.quality import semantic_review_store as semantic_review_store_module
 from wilq.storage.local_state import local_state_store
 
@@ -21,7 +21,7 @@ pytest_plugins = ("tests.content.test_dynamic_planning_proposals_api",)
 
 
 def test_semantic_review_is_exact_persisted_advisory_for_both_services(
-    planning_harness: tuple[TestClient, _PlanningClient],
+    planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
     expected_calls = 0
@@ -88,7 +88,7 @@ def test_semantic_review_is_exact_persisted_advisory_for_both_services(
 
 
 def test_semantic_review_runtime_failure_leaves_no_partial_review(
-    planning_harness: tuple[TestClient, _PlanningClient],
+    planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
     proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
@@ -115,7 +115,7 @@ def test_semantic_review_runtime_failure_leaves_no_partial_review(
 
 
 def test_semantic_review_rejects_external_attempt_without_partial_review(
-    planning_harness: tuple[TestClient, _PlanningClient],
+    planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
     proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
@@ -144,7 +144,7 @@ def test_semantic_review_rejects_external_attempt_without_partial_review(
 
 
 def test_semantic_review_real_store_requires_maintenance_before_model(
-    planning_harness: tuple[TestClient, _PlanningClient],
+    planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client, runtime = planning_harness
@@ -178,7 +178,7 @@ def test_semantic_review_real_store_requires_maintenance_before_model(
 
 
 def test_semantic_finding_section_id_drives_only_a_human_selected_child_revision(
-    planning_harness: tuple[TestClient, _PlanningClient],
+    planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
     proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
