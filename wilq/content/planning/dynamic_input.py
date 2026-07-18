@@ -34,7 +34,10 @@ from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
     load_content_internal_link_candidates,
 )
-from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.demand_evidence import (
+    ContentSearchDemandEvidence,
+    build_content_search_demand_evidence,
+)
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.planning import (
     ContentPlanningProposal,
@@ -195,16 +198,25 @@ def build_content_planning_input(
     planning = snapshot.planning_workspace
     brief = snapshot.sales_brief.sales_brief_result.brief
     draft = snapshot.draft_package.draft_package_result.draft_package
-    baseline = (
-        None
-        if planning is None or brief is None or draft is None
-        else build_content_planning_proposal(
+    baseline = None
+    if planning is not None and brief is not None and draft is not None:
+        # A generated proposal is an output, never an input to its own
+        # fixed-point digest. Rebuild demand from the exact metric facts so
+        # GET and the queued worker cannot diverge after a proposal exists.
+        demand = build_content_search_demand_evidence(
+            metric_facts=snapshot.preflight.item.metric_facts,
+            source_page=snapshot.preflight.item.source_public_url,
+            final_canonical_url=brief.final_canonical_url,
+            service_card_id=service_card_id,
+            draft=draft,
+            freshness=snapshot.freshness_assessment,
+        )
+        baseline = build_content_planning_proposal(
             brief=brief,
             draft=draft,
             service_profile=snapshot.service_profile_context,
-            search_demand=planning.proposal.search_demand,
+            search_demand=demand,
         )
-    )
     return build_content_planning_input_from_components(
         item=snapshot.preflight.item,
         service_profile=snapshot.service_profile_context,
