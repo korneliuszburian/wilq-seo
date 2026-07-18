@@ -6,6 +6,15 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
+from wilq.content.workflow.models import ContentWorkItem
+
+
+def _browser_item(item: ContentWorkItem) -> ContentWorkItem:
+    """Keep the workflow snapshot small; full HTML is served by inventory."""
+
+    return item.model_copy(
+        update={"wordpress_content_text": None, "metric_facts": []}
+    )
 
 
 def project_content_work_item_browser_snapshot(
@@ -85,13 +94,31 @@ def project_content_work_item_browser_snapshot(
         candidate=snapshot.candidate,
         service_profile_context=snapshot.service_profile_context,
         claim_ledger=snapshot.claim_ledger,
-        preflight=snapshot.preflight,
-        sales_brief=snapshot.sales_brief,
-        draft_package=snapshot.draft_package,
+        preflight=snapshot.preflight.model_copy(
+            update={"item": _browser_item(snapshot.preflight.item)}
+        ),
+        sales_brief=snapshot.sales_brief.model_copy(
+            update={"item": _browser_item(snapshot.sales_brief.item)}
+        ),
+        draft_package=snapshot.draft_package.model_copy(
+            update={"item": _browser_item(snapshot.draft_package.item)}
+        ),
         structured_generation_readiness=readiness,
-        human_review=snapshot.human_review,
-        wordpress_handoff=snapshot.wordpress_handoff,
-        measurement_window=snapshot.measurement_window,
+        human_review=snapshot.human_review.model_copy(
+            update={
+                "item": _browser_item(snapshot.human_review.item),
+                "reviewed_item": _browser_item(snapshot.human_review.reviewed_item),
+            }
+        ),
+        wordpress_handoff=snapshot.wordpress_handoff.model_copy(
+            update={"item": _browser_item(snapshot.wordpress_handoff.item)}
+        ),
+        measurement_window=snapshot.measurement_window.model_copy(
+            update={
+                "item": _browser_item(snapshot.measurement_window.item),
+                "updated_item": _browser_item(snapshot.measurement_window.updated_item),
+            }
+        ),
         revision_workspace=snapshot.revision_workspace,
         planning_workspace=snapshot.planning_workspace,
         current_step_id=snapshot.current_step_id,

@@ -6,6 +6,7 @@ from fastapi.routing import APIRoute
 
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers.content_workflow import router
+from apps.api.wilq_api.routers.content_workflow_http import _browser_item
 from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
 from wilq.content.drafts.codex_section_proposal import (
     ContentCodexSectionProposalResponse,
@@ -40,6 +41,7 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemLearningProposalResponse,
 )
+from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.planning import ContentPlanningReviewResponse
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 
@@ -231,6 +233,21 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
         "output_schema",
     ):
         assert forbidden_field not in serialized_contract
+
+
+def test_browser_item_does_not_duplicate_full_wordpress_material() -> None:
+    item = ContentWorkItem(
+        id="content_work_item_test",
+        topic="Test",
+        wordpress_content_text="pełny materiał strony",
+        wordpress_content_summary="krótkie podsumowanie",
+    )
+
+    projected = _browser_item(item)
+
+    assert projected.wordpress_content_text is None
+    assert projected.wordpress_content_summary == "krótkie podsumowanie"
+    assert projected.metric_facts == []
 
 
 def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
