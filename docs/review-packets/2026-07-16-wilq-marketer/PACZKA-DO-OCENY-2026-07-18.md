@@ -35,8 +35,9 @@ Testowany adres BDO:
 - źródła: WordPress ekologus.pl i Google Search Console;
 - świeżość: GSC settled/partial, GA4 settling/unverified;
 - bezpieczny krok: sprawdzić materiał, wybrać kartę usługi i wygenerować plan;
-- realny plan BDO został już zapisany w API (6 sekcji, 4 FAQ, 2 CTA), ale pełny
-  tekst i WordPress draft pozostają zablokowane do wymaganych review.
+- realne plany BDO i doradztwa/outsourcingu zostały zapisane w API (odpowiednio
+  6/5 sekcji, 4/3 FAQ i po 2 CTA), ale pełny tekst i WordPress draft pozostają
+  zablokowane do wymaganych review.
 
 ### Co oznaczają adresy bez materiału
 
