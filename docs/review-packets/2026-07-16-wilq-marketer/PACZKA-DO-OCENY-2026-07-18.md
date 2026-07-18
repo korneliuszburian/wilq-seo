@@ -35,7 +35,8 @@ Testowany adres BDO:
 - źródła: WordPress ekologus.pl i Google Search Console;
 - świeżość: GSC settled/partial, GA4 settling/unverified;
 - bezpieczny krok: sprawdzić materiał, wybrać kartę usługi i wygenerować plan;
-- generowanie i WordPress pozostają zablokowane do wymaganych review.
+- realny plan BDO został już zapisany w API (6 sekcji, 4 FAQ, 2 CTA), ale pełny
+  tekst i WordPress draft pozostają zablokowane do wymaganych review.
 
 ### Co oznaczają adresy bez materiału
 
@@ -52,6 +53,13 @@ draftu.
 
 WILQ API ma 12 konektorów, 9 skonfigurowanych i 2 bez credentials. Brak danych
 nie jest zastępowany domysłem.
+
+### Baza wiedzy i materiały Ekologusa
+
+WILQ widzi manifest 15 zatwierdzonych, oczyszczonych materiałów, ale ich
+kontrolowany import excerptów nie został jeszcze aktywowany (`import_pending
+15/15`). Nie oznacza to, że model może czytać surowe transkrypcje. Przed pełnym
+tekstem trzeba wykonać import z checksumem, lineage i jawną decyzją review.
 
 ## Formularz zwrotny
 
