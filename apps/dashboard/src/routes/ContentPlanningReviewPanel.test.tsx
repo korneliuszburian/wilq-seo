@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   inventoryDispositionLabel,
+  planningReviewCheckedItems,
   planningScopeSummary,
   planningSourceSummary
 } from "./ContentPlanningReviewPanel";
@@ -37,5 +38,17 @@ describe("planningSourceSummary", () => {
         source_connectors: ["gsc", "wordpress"]
       })
     ).toBe("Plan opiera się na 2 źródłach · 1 materiale Ekologusa · 2 kartach · 2 połączeniach");
+  });
+});
+
+describe("planningReviewCheckedItems", () => {
+  it("records explicit the_content provenance only after the marketer checks it", () => {
+    expect(planningReviewCheckedItems("section_map", true, true, false)).toEqual([
+      "kolejność, cel i źródła"
+    ]);
+    expect(planningReviewCheckedItems("section_map", true, true, true)).toEqual([
+      "kolejność, cel i źródła",
+      "existing_content_provenance"
+    ]);
   });
 });

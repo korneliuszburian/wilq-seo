@@ -27,16 +27,19 @@ export function ContentPlanningReviewPanel({
   actions,
   planning,
   serviceCandidates,
+  existingContentProvenanceRequired = false,
   stage
 }: {
   actions: ContentPlanningReviewPanelActions;
   planning: ContentPlanningWorkspace;
   serviceCandidates: ContentWorkItemServiceCandidate[];
+  existingContentProvenanceRequired?: boolean;
   stage: PlanningStage;
 }) {
   const [decision, setDecision] = useState<"approved" | "needs_changes">("approved");
   const [notes, setNotes] = useState("");
   const [checked, setChecked] = useState(false);
+  const [provenanceChecked, setProvenanceChecked] = useState(false);
   const proposal = planning.proposal;
   const [selectedServiceCardId, setSelectedServiceCardId] = useState(
     proposal.service_selection_confirmed ? proposal.service_card_id ?? "" : ""
@@ -48,6 +51,7 @@ export function ContentPlanningReviewPanel({
     setDecision("approved");
     setNotes("");
     setChecked(false);
+    setProvenanceChecked(false);
   }, [
     proposal.work_item_id,
     proposal.proposal_id,
@@ -64,6 +68,7 @@ export function ContentPlanningReviewPanel({
   const canSubmit =
     !actions.pending &&
     (decision === "approved" ? checked : notes.trim().length > 0) &&
+    (decision !== "approved" || !existingContentProvenanceRequired || provenanceChecked) &&
     (stage !== "scope" || Boolean(selectedServiceCardId));
 
   return (
@@ -239,17 +244,31 @@ export function ContentPlanningReviewPanel({
       </div>
 
       {decision === "approved" ? (
-        <label className="mt-3 flex items-start gap-2 text-sm leading-6 text-slate-700">
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={(event) => setChecked(event.target.checked)}
-            className="mt-1"
-          />
-          {stage === "scope"
-            ? "Sprawdziłem stronę, usługę, intencję, odbiorcę i CTA."
-            : "Sprawdziłem kolejność, cel i dowody każdej sekcji."}
-        </label>
+        <div className="mt-3 space-y-2">
+          <label className="flex items-start gap-2 text-sm leading-6 text-slate-700">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={(event) => setChecked(event.target.checked)}
+              className="mt-1"
+            />
+            {stage === "scope"
+              ? "Sprawdziłem stronę, usługę, intencję, odbiorcę i CTA."
+              : "Sprawdziłem kolejność, cel i źródła każdej sekcji."}
+          </label>
+          {stage === "section_map" && existingContentProvenanceRequired ? (
+            <label className="flex items-start gap-2 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
+              <input
+                type="checkbox"
+                checked={provenanceChecked}
+                onChange={(event) => setProvenanceChecked(event.target.checked)}
+                className="mt-1"
+              />
+              Potwierdzam, że zakres istniejącego materiału został sprawdzony na publicznej stronie
+              i może służyć jako podstawa mapy sekcji.
+            </label>
+          ) : null}
+        </div>
       ) : null}
 
       <button
@@ -260,7 +279,12 @@ export function ContentPlanningReviewPanel({
             stage,
             decision,
             notes,
-            checked ? [stage === "scope" ? "zakres i CTA" : "kolejność, cel i dowody"] : [],
+            planningReviewCheckedItems(
+              stage,
+              checked,
+              existingContentProvenanceRequired,
+              provenanceChecked
+            ),
             stage === "scope" ? selectedServiceCardId : undefined
           )
         }
@@ -289,6 +313,23 @@ export function ContentPlanningReviewPanel({
       ) : null}
     </section>
   );
+}
+
+export function planningReviewCheckedItems(
+  stage: PlanningStage,
+  checked: boolean,
+  existingContentProvenanceRequired: boolean,
+  provenanceChecked: boolean
+): string[] {
+  if (!checked) return [];
+  return [
+    stage === "scope" ? "zakres i CTA" : "kolejność, cel i źródła",
+    ...(stage === "section_map" &&
+    existingContentProvenanceRequired &&
+    provenanceChecked
+      ? ["existing_content_provenance"]
+      : [])
+  ];
 }
 
 export function inventoryDispositionLabel(

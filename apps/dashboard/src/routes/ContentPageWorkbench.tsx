@@ -264,6 +264,9 @@ export function ContentPageWorkbench({
                 }}
                 planning={data.planningWorkspace}
                 serviceCandidates={data.serviceProfileContext.service_candidates}
+                existingContentProvenanceRequired={
+                  data.preflight.item.wordpress_content_material_confidence === "review_required"
+                }
                 stage={activeStepId}
               />
             </>
