@@ -24,6 +24,7 @@ from wilq.actions.service import (
     validate_action,
 )
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
+from wilq.evidence.registry import list_evidence_by_ids
 from wilq.schemas import (
     ActionApplyRequest,
     ActionConfirmRequest,
@@ -196,6 +197,12 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
             raise HTTPException(
                 status_code=409,
                 detail="Najpierw zapisz acknowledgement ręcznego wykonania dla tego planu.",
+            )
+        resolved_evidence = list_evidence_by_ids(request.evidence_ids)
+        if {evidence.id for evidence in resolved_evidence} != set(request.evidence_ids):
+            raise HTTPException(
+                status_code=409,
+                detail="Obserwacja wskazuje nieznane identyfikatory dowodów.",
             )
         executed_at = acknowledgement.details.get("executed_at")
         if acknowledgement.details.get("execution_status") == "executed" and executed_at:

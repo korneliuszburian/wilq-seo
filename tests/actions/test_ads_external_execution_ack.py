@@ -59,7 +59,7 @@ def test_ads_external_execution_acknowledgement_persists_exact_measurement_bindi
             "acknowledgement_event_id": event["id"],
             "observation_status": "inconclusive",
             "observed_at": "2026-07-25T10:00:00Z",
-            "evidence_ids": ["ev_ads_observation"],
+            "evidence_ids": ["ev_refresh_refresh_google_ads_9cf9dfdb8f85"],
             "notes": "Okno obserwacji nie daje jeszcze jednoznacznego kierunku.",
         },
     )
