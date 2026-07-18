@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from fastapi.testclient import TestClient
 
@@ -28,11 +29,12 @@ def test_snapshot_reads_latest_ads_batch_and_joins_clicked_term_landing(
     diagnostics = ContentDiagnosticsResponse.model_validate(
         client.get("/api/content/diagnostics").json()
     )
-    decision = next(
-        item
-        for item in diagnostics.decision_queue
-        if item.id == "content_decision_https___www_ekologus_pl"
-    )
+    decision = next(item for item in diagnostics.decision_queue if item.source_public_url)
+    assert decision.source_public_url is not None
+    work_item_id = f"content_work_item_{decision.id}"
+    parsed_url = urlsplit(decision.source_public_url)
+    content_path = parsed_url.path.rstrip("/") or "/"
+    content_url = f"{parsed_url.scheme}://{parsed_url.netloc}{content_path}"
     gsc_evidence_id = next(
         fact.evidence_id
         for fact in decision.metric_facts
@@ -66,12 +68,12 @@ def test_snapshot_reads_latest_ads_batch_and_joins_clicked_term_landing(
     )
     assert "google_ads" not in refreshed.freshness_assessment.blocked_connector_ids
     assert "google_ads" not in refreshed.freshness_assessment.stale_connector_ids
-    store = _GscStore(gsc_evidence_id)
+    store = _GscStore(gsc_evidence_id, content_url, content_path)
     calls: list[dict[str, Any]] = []
 
     def exact_batch(_store: object, **kwargs: Any) -> list[MetricFact]:
         calls.append(kwargs)
-        return _ads_facts(ads_refresh.evidence_ids[0])
+        return _ads_facts(ads_refresh.evidence_ids[0], content_url)
 
     monkeypatch.setattr(content_snapshot, "build_content_diagnostics_cached", lambda: diagnostics)
     monkeypatch.setattr(content_snapshot, "list_connector_refresh_runs", lambda **_: [ads_refresh])
@@ -80,7 +82,7 @@ def test_snapshot_reads_latest_ads_batch_and_joins_clicked_term_landing(
 
     response = client.get(
         "/api/content/work-items/"
-        "content_work_item_content_decision_https___www_ekologus_pl/snapshot"
+        f"{work_item_id}/snapshot"
     )
 
     assert response.status_code == 200
@@ -100,8 +102,10 @@ def test_snapshot_reads_latest_ads_batch_and_joins_clicked_term_landing(
 
 
 class _GscStore:
-    def __init__(self, evidence_id: str) -> None:
+    def __init__(self, evidence_id: str, content_url: str, content_path: str) -> None:
         self.evidence_id = evidence_id
+        self.content_url = content_url
+        self.content_path = content_path
 
     def list_metric_facts_for_content_url(
         self,
@@ -112,8 +116,8 @@ class _GscStore:
     ) -> list[MetricFact]:
         assert (connector_ids, content_url, content_path) == (
             ["google_search_console"],
-            "https://www.ekologus.pl/",
-            "/",
+            self.content_url,
+            self.content_path,
         )
         return [
             _fact(
@@ -143,10 +147,8 @@ def _ads_refresh(
     )
 
 
-def _ads_facts(evidence_id: str) -> list[MetricFact]:
-    identity = build_redacted_landing_reference(
-        "https://www.ekologus.pl/"
-    ).identity_sha256
+def _ads_facts(evidence_id: str, content_url: str) -> list[MetricFact]:
+    identity = build_redacted_landing_reference(content_url).identity_sha256
     assert identity is not None
     scope = {"campaign_id": "101", "ad_group_id": "201"}
     clicked_landing = {
