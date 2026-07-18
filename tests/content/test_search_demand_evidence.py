@@ -121,6 +121,66 @@ def test_search_demand_joins_ads_metrics_to_clicked_search_term_landing() -> Non
     assert exact.ads_term_rows[0].alignment_basis == "same_window_search_term_landing"
 
 
+def test_search_demand_keeps_exact_ads_term_without_gsc_overlap_as_page_only() -> None:
+    page = "https://www.ekologus.pl/bdo/"
+    identity = build_redacted_landing_reference(page).identity_sha256
+    assert identity is not None
+    dimensions = {
+        "campaign_id": "104",
+        "ad_group_id": "204",
+        "search_term": "bdo konsultacja dla firmy",
+        "landing_mapping_status": "resolved",
+        "landing_identity_sha256": identity,
+        "actual_clicked_in_window": "true",
+    }
+    ads_facts = [
+        MetricFact(
+            name=name,
+            value=value,
+            period="last_30_days",
+            source_connector="google_ads",
+            evidence_id="ev_ads_page_only",
+            dimensions=dimensions,
+            collected_at=datetime(2026, 7, 15, 12, tzinfo=UTC),
+        )
+        for name, value in (
+            ("search_term_clicks", 3),
+            ("search_term_impressions", 30),
+            ("search_term_cost_micros", 900_000),
+            ("search_term_conversions", 0.0),
+            ("search_term_conversion_value", 0.0),
+        )
+    ]
+    ads_facts.append(
+        MetricFact(
+            name="search_term_payload_status",
+            value="ready",
+            period="last_30_days",
+            source_connector="google_ads",
+            evidence_id="ev_ads_page_only",
+            dimensions={},
+        )
+    )
+
+    evidence = _build_demand(
+        [
+            *_demand_facts(page, "service_bdo"),
+            *ads_facts,
+        ],
+        page,
+    )
+
+    row = next(
+        row
+        for row in evidence.ads_term_rows
+        if row.term == "bdo konsultacja dla firmy"
+    )
+    assert row.page == page
+    assert row.section_mapping_status == "page_only"
+    assert row.section_headings == []
+    assert row.alignment_basis == "same_window_search_term_landing"
+
+
 def test_search_demand_ignores_exact_term_for_a_different_clicked_landing() -> None:
     page, facts = _same_window_ads_case()
     other_page = "https://www.ekologus.pl/kpo/"

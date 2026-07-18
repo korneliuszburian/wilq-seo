@@ -313,8 +313,6 @@ def _build_exact_ads_rows(
     planner_rows: list[ContentSearchDemandRow] = []
     for (_, term), facts in ads_groups.items():
         gsc_row = gsc_by_term.get(term)
-        if gsc_row is None:
-            continue
         source_kind: Literal["ads_search_term", "keyword_planner"] = (
             "keyword_planner"
             if any(fact.dimensions.get("keyword_idea_text") == term for fact in facts)
@@ -447,7 +445,7 @@ def _ads_row(
     *,
     source_kind: Literal["ads_search_term", "keyword_planner"],
     term: str,
-    gsc_row: ContentSearchDemandRow,
+    gsc_row: ContentSearchDemandRow | None,
     facts: list[MetricFact],
     final_canonical_url: str,
     service_card_id: str | None,
@@ -456,11 +454,16 @@ def _ads_row(
     landing_match_tiers = _landing_match_tiers(facts, final_canonical_url)
     if not landing_match_tiers:
         return None
+    page = gsc_row.page if gsc_row is not None else final_canonical_url
+    section_headings = gsc_row.section_headings if gsc_row is not None else []
+    section_mapping_status = (
+        gsc_row.section_mapping_status if gsc_row is not None else "page_only"
+    )
     return ContentSearchDemandRow(
         source_kind=source_kind,
         source_connector="google_ads",
         term=term,
-        page=gsc_row.page,
+        page=page,
         landing_match_tiers=landing_match_tiers,
         service_card_id=service_card_id,
         alignment_basis=(
@@ -469,8 +472,8 @@ def _ads_row(
             else "direct_page_service_scope"
         ),
         review_required=False,
-        section_headings=gsc_row.section_headings,
-        section_mapping_status=gsc_row.section_mapping_status,
+        section_headings=section_headings,
+        section_mapping_status=section_mapping_status,
         period=facts[0].period,
         freshness=_connector_freshness_state(freshness, "google_ads"),
         collected_at=max(
