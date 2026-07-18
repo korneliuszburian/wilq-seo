@@ -165,6 +165,7 @@ def test_selected_inventory_queue_reads_material_without_full_diagnostics(monkey
     assert response.status_code == 200
     assert response.json()["candidates"][0]["work_item_id"] == inventory_id
     assert calls == [False]
+    assert response.json()["candidates"][0]["status_label"] == "materiał wymaga odczytu"
 
 
 def test_content_work_item_queue_blocks_dev_url_as_final_canonical() -> None:

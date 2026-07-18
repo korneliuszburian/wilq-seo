@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
 from wilq.content.inventory.records import resolve_content_inventory
+from wilq.content.measurement.aggregates import compare_exact_page_metric_periods
 from wilq.content.preflight.workflow import (
     ContentPreflightVerdict,
     ContentPreflightVerdictStatus,
@@ -16,6 +17,7 @@ from wilq.content.workflow.decision_mapping import (
     content_inventory_record_from_decision,
     content_work_item_from_decision,
 )
+from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
 from wilq.content.workflow.models import (
     ContentWorkflowBlocker,
     content_workflow_blockers,
@@ -64,6 +66,40 @@ class ContentWorkItemQueueMeasurementReadiness(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
 
 
+class ContentWorkItemQueueSearchMetrics(BaseModel):
+    """Small, page-scoped metric projection intended for the operator's first screen."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    impressions: int | None = None
+    clicks: int | None = None
+    ctr: float | None = None
+    best_average_position: float | None = None
+    query_count: int = 0
+    primary_query: str | None = None
+    comparison_status: Literal["available", "not_available", "ambiguous"] = "not_available"
+    comparison_reason: str = "Brakuje dwóch dokładnych okresów do uczciwego porównania."
+    comparison_periods: list[str] = Field(default_factory=list)
+    comparison_evidence_ids: list[str] = Field(default_factory=list)
+
+
+class ContentWorkItemQueuePageInventory(BaseModel):
+    """What WILQ has actually read about the existing page, without raw page text."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title_or_h1: str | None = None
+    section_count: int | None = None
+    section_inventory_status: Literal["available", "missing"] = "missing"
+    content_inventory_status: Literal["available", "missing"] = "missing"
+    content_summary: str | None = None
+    content_word_count: int | None = None
+    acf_section_inventory_status: Literal["available", "missing"] = "missing"
+    acf_section_inventory_note: str | None = None
+    acf_section_count: int | None = None
+    acf_section_headings: list[str] = Field(default_factory=list)
+
+
 class ContentWorkItemQueueCandidate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -89,6 +125,12 @@ class ContentWorkItemQueueCandidate(BaseModel):
     preflight_status_label: str
     duplicate_canonical_risk_summary: str
     measurement_readiness: ContentWorkItemQueueMeasurementReadiness
+    search_metrics: ContentWorkItemQueueSearchMetrics = Field(
+        default_factory=ContentWorkItemQueueSearchMetrics
+    )
+    page_inventory: ContentWorkItemQueuePageInventory = Field(
+        default_factory=ContentWorkItemQueuePageInventory
+    )
     safe_next_step: str
     freshness_assessment: ContentFreshnessAssessment
     blockers: list[ContentWorkItemQueueBlocker] = Field(default_factory=list)
@@ -113,11 +155,23 @@ def build_content_work_item_queue_response(
     diagnostics: ContentDiagnosticsResponse,
     *,
     minimum_actionable_candidates: int = _MINIMUM_ACTIONABLE_CANDIDATES,
+    selected_work_item_id: str | None = None,
 ) -> ContentWorkItemQueueResponse:
     candidates = [
         _candidate_from_decision(decision, diagnostics.freshness_assessment)
         for decision in sorted(diagnostics.decision_queue, key=lambda item: item.priority)
     ]
+    if selected_work_item_id and not any(
+        candidate.work_item_id == selected_work_item_id for candidate in candidates
+    ):
+        inventory_decision = inventory_decision_for_work_item(selected_work_item_id)
+        if inventory_decision is not None:
+            candidates.append(
+                build_content_work_item_queue_candidate(
+                    inventory_decision, diagnostics.freshness_assessment
+                )
+            )
+            candidates.sort(key=lambda candidate: (candidate.priority, candidate.work_item_id))
     actionable_count = sum(1 for candidate in candidates if candidate.recommended_mode != "block")
     blockers: list[ContentWorkItemQueueBlocker] = []
     freshness_blocker = _primary_freshness_blocker(diagnostics.freshness_assessment)
@@ -173,6 +227,38 @@ def build_content_work_item_queue_response(
     )
 
 
+def build_selected_content_work_item_queue_response(
+    decision: ContentDecisionItem,
+    freshness_assessment: ContentFreshnessAssessment,
+) -> ContentWorkItemQueueResponse:
+    """Build the first-screen queue response without full diagnostics/action reads."""
+    candidate = build_content_work_item_queue_candidate(decision, freshness_assessment)
+    blockers = list(candidate.blockers)
+    freshness_blocker = _primary_freshness_blocker(freshness_assessment)
+    if freshness_blocker is not None and not any(
+        blocker.code == freshness_blocker.code for blocker in blockers
+    ):
+        blockers.append(freshness_blocker)
+    return ContentWorkItemQueueResponse(
+        queue_status="blocked" if blockers else "ready",
+        candidate_count=1,
+        actionable_candidate_count=(
+            0 if candidate.recommended_mode == "block" else 1
+        ),
+        minimum_actionable_candidate_count=1,
+        operator_summary=(
+            "Wybrana strona jest gotowa do sprawdzenia decyzji."
+            if not blockers
+            else "Wybrana strona ma blocker przed przygotowaniem decyzji."
+        ),
+        freshness_assessment=freshness_assessment,
+        candidates=[candidate],
+        blockers=blockers,
+        evidence_ids=candidate.evidence_ids,
+        source_connectors=candidate.source_connectors,
+    )
+
+
 def build_content_work_item_queue_candidate(
     decision: ContentDecisionItem,
     freshness_assessment: ContentFreshnessAssessment,
@@ -194,6 +280,21 @@ def _candidate_from_decision(
     preflight = build_content_preflight_verdict(item, inventory_resolution)
     blockers = _candidate_blockers(decision, preflight, freshness_assessment)
     mode = _recommended_mode(decision, preflight, blockers)
+    comparisons = compare_exact_page_metric_periods(
+        decision.metric_facts,
+        content_url=decision.final_canonical_url or decision.page or "",
+    )
+    comparison = next(
+        (item for item in comparisons if item.source_connector == "google_search_console"),
+        None,
+    )
+    comparison_periods = (
+        [comparison.baseline_period, comparison.comparison_period]
+        if comparison is not None
+        and comparison.baseline_period is not None
+        and comparison.comparison_period is not None
+        else []
+    )
     return ContentWorkItemQueueCandidate(
         work_item_id=item.id,
         decision_id=decision.id,
@@ -202,7 +303,7 @@ def _candidate_from_decision(
         priority=decision.priority,
         recommended_mode=mode,
         recommended_mode_label=_mode_label(mode),
-        status_label=_candidate_status_label(mode, preflight),
+        status_label=_candidate_status_label(mode, preflight, decision),
         reason=_candidate_reason(decision, preflight, blockers),
         evidence_ids=decision.evidence_ids,
         source_connectors=decision.source_connectors,
@@ -217,6 +318,36 @@ def _candidate_from_decision(
         preflight_status_label=_preflight_status_label(preflight.status),
         duplicate_canonical_risk_summary=_duplicate_canonical_summary(decision, blockers),
         measurement_readiness=_measurement_readiness(decision),
+        search_metrics=ContentWorkItemQueueSearchMetrics(
+            impressions=decision.total_impressions,
+            clicks=decision.total_clicks,
+            ctr=decision.aggregate_ctr,
+            best_average_position=decision.best_average_position,
+            query_count=decision.query_count,
+            primary_query=decision.primary_query,
+            comparison_status=(
+                comparison.status if comparison is not None else "not_available"
+            ),
+            comparison_reason=(
+                comparison.reason
+                if comparison is not None
+                else "Brakuje dwóch dokładnych okresów do uczciwego porównania."
+            ),
+            comparison_periods=comparison_periods,
+            comparison_evidence_ids=(comparison.evidence_ids if comparison is not None else []),
+        ),
+        page_inventory=ContentWorkItemQueuePageInventory(
+            title_or_h1=decision.wordpress_title_or_h1,
+            section_count=decision.wordpress_section_count,
+            section_inventory_status=decision.wordpress_section_inventory_status,
+            content_inventory_status=decision.wordpress_content_inventory_status,
+            content_summary=decision.wordpress_content_summary,
+            content_word_count=decision.wordpress_content_word_count,
+            acf_section_inventory_status=decision.wordpress_acf_section_inventory_status,
+            acf_section_inventory_note=decision.wordpress_acf_section_inventory_note,
+            acf_section_count=decision.wordpress_acf_section_count,
+            acf_section_headings=decision.wordpress_acf_section_headings,
+        ),
         safe_next_step=_safe_next_step(decision, preflight, blockers),
         freshness_assessment=freshness_assessment,
         blockers=blockers,
@@ -298,7 +429,10 @@ def _mode_label(mode: ContentQueueRecommendedMode) -> str:
 def _candidate_status_label(
     mode: ContentQueueRecommendedMode,
     preflight: ContentPreflightVerdict,
+    decision: ContentDecisionItem,
 ) -> str:
+    if decision.wordpress_content_inventory_status != "available":
+        return "materiał wymaga odczytu"
     if mode == "block":
         return "wymaga sprawdzenia przed pisaniem"
     if preflight.status == "plan_allowed":
