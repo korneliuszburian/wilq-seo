@@ -156,6 +156,22 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(missing(candidate_subject, "kontekstu celu kampanii"))
     if not payload.get("evidence_ids"):
         errors.append(missing_evidence(subject))
+    measurement_plan = payload.get("measurement_plan")
+    if not isinstance(measurement_plan, dict):
+        errors.append(missing(subject, "planu pomiaru zmiany"))
+    else:
+        if measurement_plan.get("source_action_id") != CAMPAIGN_REVIEW_ACTION_ID:
+            errors.append(missing(subject, "powiązania planu pomiaru z akcją przeglądu"))
+        if measurement_plan.get("baseline_window") != "LAST_7_DAYS":
+            errors.append(missing(subject, "zamrożonego okna bazowego"))
+        if measurement_plan.get("observation_window") != "same_window_after_human_execution":
+            errors.append(missing(subject, "porównywalnego okna obserwacji"))
+        if measurement_plan.get("baseline_evidence_ids") != payload.get("evidence_ids"):
+            errors.append(missing_evidence(subject))
+        if measurement_plan.get("execution_acknowledgement_required") is not True:
+            errors.append(missing(subject, "potwierdzenia ręcznego wykonania"))
+        if measurement_plan.get("success_claim_allowed") is not False:
+            errors.append(no_write(subject))
     if payload.get("apply_allowed") is not False:
         errors.append(no_write(subject))
     if payload.get("destructive") is not False:
@@ -244,6 +260,11 @@ def campaign_review_payload_from_metric_facts(
         for candidate in candidates
         if isinstance(candidate.get("budget_payload_preview"), dict)
     ]
+    campaign_ids = _unique(
+        str(candidate["campaign_id"])
+        for candidate in candidates
+        if candidate.get("campaign_id") is not None
+    )
     return {
         "action_type": "campaign_change_review",
         "connector": "google_ads",
@@ -253,6 +274,21 @@ def campaign_review_payload_from_metric_facts(
         "budget_payload_preview": budget_payload_preview,
         "source_metric_names": source_metric_names,
         "evidence_ids": evidence_ids,
+        "measurement_plan": {
+            "id": "ads_measurement_plan_campaign_change_review_v1",
+            "source_action_id": CAMPAIGN_REVIEW_ACTION_ID,
+            "campaign_ids": campaign_ids,
+            "baseline_window": "LAST_7_DAYS",
+            "observation_window": "same_window_after_human_execution",
+            "baseline_evidence_ids": evidence_ids,
+            "execution_acknowledgement_required": True,
+            "observation_required": True,
+            "success_claim_allowed": False,
+            "limitations": [
+                "Ręczne wykonanie w Google Ads nie jest zapisem WILQ ani vendor write.",
+                "Bez potwierdzenia wykonania i porównywalnego okna nie wolno mówić o efekcie.",
+            ],
+        },
         "required_validation": CAMPAIGN_REVIEW_REQUIRED_VALIDATION,
         "missing_read_contracts": [
             "profit_margin_or_value_model",
