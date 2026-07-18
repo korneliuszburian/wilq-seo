@@ -205,6 +205,8 @@ export function ContentPageWorkbench({
         latestRevision?.revision_id ?? "missing"
       ),
     enabled: (activeStepId === "draft" || activeStepId === "review") && Boolean(latestRevision),
+    refetchInterval: (query) =>
+      query.state.data?.status === "generating" ? 2000 : false,
     retry: false
   });
   const semanticReviewResult =
@@ -235,6 +237,7 @@ export function ContentPageWorkbench({
       data.planningWorkspace?.scope_current &&
       data.planningWorkspace.section_map_current
   );
+  const semanticReviewGenerating = semanticReviewResult?.status === "generating";
   return (
     <section className="mb-5" data-active-workspace={activeStepId}>
       <ContentFreshnessBanner assessment={queue.freshness_assessment} />
@@ -563,10 +566,10 @@ export function ContentPageWorkbench({
                       <button
                         type="button"
                         onClick={actions.generateSemanticReview}
-                        disabled={actions.semanticReviewPending}
+                        disabled={actions.semanticReviewPending || semanticReviewGenerating}
                         className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {actions.semanticReviewPending
+                        {actions.semanticReviewPending || semanticReviewGenerating
                           ? "Analizuję wersję..."
                           : semanticReviewResult?.status === "ready"
                             ? "Sprawdź exact review"
