@@ -99,6 +99,24 @@ export const SocialReuseReviewResponseSchema = z.object({
   next_step: z.string().min(1)
 });
 
+export const SocialReuseReviewRequestSchema = z.object({
+  expected_proposal_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  reviewed_by: z.string().min(1),
+  decision: z.enum(["approved", "needs_changes", "rejected"]),
+  notes: z.string().default(""),
+  checked_items: z.array(z.string().min(1)).min(1),
+  evidence_ids: z.array(z.string().min(1)).min(1)
+});
+
+export const SocialReuseRevisionRequestSchema = z.object({
+  expected_proposal_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  audience: z.string().min(1),
+  angle: z.string().min(1),
+  body: z.string().min(1),
+  claim_ids: z.array(z.string()),
+  measurement_hypothesis: z.string().min(1)
+});
+
 export const SocialReuseProposalListResponseSchema = z.object({
   proposals: z.array(SocialReuseProposalResponseSchema),
   next_step: z.string().min(1)
@@ -107,3 +125,7 @@ export const SocialReuseProposalListResponseSchema = z.object({
 export type SocialReuseProposalListResponse = z.infer<
   typeof SocialReuseProposalListResponseSchema
 >;
+export type SocialReuseProposalResponse = z.infer<typeof SocialReuseProposalResponseSchema>;
+export type SocialReuseReviewRequest = z.infer<typeof SocialReuseReviewRequestSchema>;
+export type SocialReuseReviewResponse = z.infer<typeof SocialReuseReviewResponseSchema>;
+export type SocialReuseRevisionRequest = z.infer<typeof SocialReuseRevisionRequestSchema>;

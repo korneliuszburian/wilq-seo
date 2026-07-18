@@ -1,9 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { History, ShieldAlert } from "lucide-react";
 
 import {
   getSocialReuseProposals,
   getSocialPublisherContextPack,
+  reviewSocialReuseProposal,
   type SocialDraftContext,
   type SocialHistoryInventory,
   type SocialReuseProposalListResponse
@@ -89,6 +91,32 @@ function SocialReuseProposalsPanel({
   proposals: SocialReuseProposalListResponse | undefined;
   loading: boolean;
 }) {
+  const queryClient = useQueryClient();
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const reviewMutation = useMutation({
+    mutationFn: (input: {
+      proposalId: string;
+      digest: string;
+      decision: "approved" | "needs_changes" | "rejected";
+    }) =>
+      reviewSocialReuseProposal(input.proposalId, {
+        expected_proposal_digest: input.digest,
+        reviewed_by: "wilku",
+        decision: input.decision,
+        notes: notes[input.proposalId]?.trim() ?? "",
+        checked_items: [
+          "Treść zgodna z dokładną rewizją źródłową",
+          "Źródła i claimy sprawdzone",
+          "Publikacja pozostaje wyłączona"
+        ],
+        evidence_ids: proposals?.proposals
+          .find((item) => item.proposal?.proposal_id === input.proposalId)
+          ?.proposal?.source_evidence_ids ?? []
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["social-reuse-proposals"] });
+    }
+  });
   if (loading) return <LoadingBand />;
   const items = proposals?.proposals ?? [];
   return (
@@ -131,11 +159,66 @@ function SocialReuseProposalsPanel({
                 {item.review?.notes ? (
                   <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-slate-600">Uwagi: {item.review.notes}</p>
                 ) : null}
+                <label className="mt-3 block text-xs font-medium text-slate-600" htmlFor={`social-review-notes-${proposal.proposal_id}`}>
+                  Uwagi do review (wymagane przy poprawie lub odrzuceniu)
+                </label>
+                <textarea
+                  id={`social-review-notes-${proposal.proposal_id}`}
+                  className="mt-1 min-h-16 w-full rounded border border-line bg-white p-2 text-sm text-ink"
+                  value={notes[proposal.proposal_id] ?? ""}
+                  onChange={(event) =>
+                    setNotes((current) => ({ ...current, [proposal.proposal_id]: event.target.value }))
+                  }
+                  placeholder="Co dokładnie trzeba zmienić?"
+                  disabled={reviewMutation.isPending}
+                />
+                {proposal.status === "review_required" ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="rounded bg-action px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                      disabled={reviewMutation.isPending}
+                      onClick={() =>
+                        reviewMutation.mutate({
+                          proposalId: proposal.proposal_id,
+                          digest: proposal.proposal_digest,
+                          decision: "approved"
+                        })
+                      }
+                    >
+                      Zatwierdź propozycję
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded border border-wait/40 bg-wait/10 px-3 py-2 text-xs font-semibold text-ink disabled:opacity-50"
+                      disabled={reviewMutation.isPending || !(notes[proposal.proposal_id] ?? "").trim()}
+                      onClick={() =>
+                        reviewMutation.mutate({
+                          proposalId: proposal.proposal_id,
+                          digest: proposal.proposal_digest,
+                          decision: "needs_changes"
+                        })
+                      }
+                    >
+                      Wyślij do poprawy
+                    </button>
+                  </div>
+                ) : null}
               </article>
             );
           })}
         </div>
       )}
+      {reviewMutation.error instanceof Error ? (
+        <p className="mt-3 rounded border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
+          Nie zapisano review: {reviewMutation.error.message}
+        </p>
+      ) : null}
+      {reviewMutation.data ? (
+        <p className="mt-3 rounded border border-action/30 bg-action/5 p-3 text-sm text-slate-700">
+          Review zapisany. {reviewMutation.data.next_step}
+        </p>
+      ) : null}
     </section>
   );
 }

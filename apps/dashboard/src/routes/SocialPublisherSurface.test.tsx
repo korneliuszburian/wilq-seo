@@ -10,6 +10,9 @@ describe("SocialPublisherSurface", () => {
     expect(routeSource).toContain("getSocialPublisherContextPack");
     expect(routeSource).toContain("history_audit_endpoint");
     expect(routeSource).toContain("Wymagany tylko spis metadanych");
+    expect(routeSource).toContain("reviewSocialReuseProposal");
+    expect(routeSource).toContain("Zatwierdź propozycję");
+    expect(routeSource).toContain("Wyślij do poprawy");
     expect(routeSource).not.toContain("Social Publishing Focus");
     expect(routeSource).not.toContain("access token");
     expect(routeSource).not.toContain("ev_");
