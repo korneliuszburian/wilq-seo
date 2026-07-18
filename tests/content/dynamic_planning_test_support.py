@@ -22,7 +22,12 @@ from wilq.content.planning import dynamic_input
 from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
 )
-from wilq.content.workflow.catalog import inventory_work_item_id
+from wilq.content.workflow import catalog as inventory_catalog
+from wilq.content.workflow import inventory_binding
+from wilq.content.workflow.catalog import (
+    ContentInventoryMaterialResponse,
+    inventory_work_item_id,
+)
 from wilq.storage.metric_store import metric_store_path
 
 
@@ -425,6 +430,7 @@ def configure_planning_harness(
     monkeypatch.setenv("WILQ_METRIC_DB", str(isolated_metric_db))
     _patch_approved_service_cards(monkeypatch)
     _patch_fresh_diagnostics(monkeypatch)
+    _patch_synthetic_inventory_material(monkeypatch)
     _patch_internal_link_candidates(monkeypatch)
     runtime = PlanningClient()
     _patch_codex_clients(monkeypatch, runtime)
@@ -534,6 +540,43 @@ def _patch_internal_link_candidates(monkeypatch: pytest.MonkeyPatch) -> None:
         "load_content_internal_link_candidates",
         candidates,
     )
+
+
+def _patch_synthetic_inventory_material(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep planning tests off the live WordPress material endpoint."""
+
+    def material(
+        url: str,
+        *,
+        catalog: Any = None,
+    ) -> ContentInventoryMaterialResponse:
+        current_catalog = catalog or inventory_catalog.build_content_inventory_catalog_cached()
+        item = next(
+            (
+                candidate
+                for candidate in current_catalog.items
+                if candidate.url.rstrip("/") == url.rstrip("/")
+            ),
+            None,
+        )
+        headings = [] if item is None else (item.acf_section_headings or [])
+        return ContentInventoryMaterialResponse(
+            status="ready",
+            url=url,
+            source_kind="synthetic_reviewed_fixture",
+            title=None if item is None else item.title,
+            content_text="Syntetyczny materiał strony do testu planowania.",
+            content_summary="Syntetyczne podsumowanie publicznej treści.",
+            content_word_count=500,
+            section_headings=headings,
+            acf_section_headings=headings,
+            evidence_id=None if item is None else item.evidence_id,
+            extraction_region="synthetic_test_fixture",
+            material_confidence="source_bound",
+            source_field_lineage=["synthetic_test_fixture"],
+        )
+
+    monkeypatch.setattr(inventory_binding, "read_content_inventory_material", material)
 
 
 def _patch_codex_clients(
