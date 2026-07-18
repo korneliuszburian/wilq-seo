@@ -224,6 +224,69 @@ def test_search_demand_rejects_exact_ads_batch_without_landing_identity() -> Non
     assert all(row.term != "bdo bez identity" for row in evidence.ads_term_rows)
 
 
+def test_search_demand_does_not_join_same_term_from_a_different_gsc_page() -> None:
+    page = "https://www.ekologus.pl/bdo/"
+    other_page = "https://www.ekologus.pl/kpo/"
+    identity = build_redacted_landing_reference(page).identity_sha256
+    assert identity is not None
+    ads_dimensions = {
+        "campaign_id": "106",
+        "ad_group_id": "206",
+        "search_term": "wspólny termin",
+        "landing_mapping_status": "resolved",
+        "landing_identity_sha256": identity,
+        "actual_clicked_in_window": "true",
+    }
+    ads_facts = [
+        MetricFact(
+            name=name,
+            value=value,
+            period="last_30_days",
+            source_connector="google_ads",
+            evidence_id="ev_ads_same_term",
+            dimensions=ads_dimensions,
+        )
+        for name, value in (
+            ("search_term_clicks", 2),
+            ("search_term_impressions", 20),
+            ("search_term_cost_micros", 200_000),
+            ("search_term_conversions", 0.0),
+            ("search_term_conversion_value", 0.0),
+        )
+    ]
+    ads_facts.append(
+        MetricFact(
+            name="search_term_payload_status",
+            value="ready",
+            period="last_30_days",
+            source_connector="google_ads",
+            evidence_id="ev_ads_same_term",
+            dimensions={},
+        )
+    )
+    gsc_facts = [
+        _fact(
+            "google_search_console",
+            name,
+            value,
+            "ev_gsc_other_page",
+            other_page,
+            "wspólny termin",
+        )
+        for name, value in (("impressions", 10), ("clicks", 1))
+    ]
+
+    evidence = _build_demand(
+        [*_demand_facts(page, "service_bdo"), *gsc_facts, *ads_facts],
+        page,
+    )
+
+    row = next(row for row in evidence.ads_term_rows if row.term == "wspólny termin")
+    assert row.page == page.rstrip("/")
+    assert row.section_mapping_status == "page_only"
+    assert row.review_required is True
+
+
 def test_search_demand_ignores_exact_term_for_a_different_clicked_landing() -> None:
     page, facts = _same_window_ads_case()
     other_page = "https://www.ekologus.pl/kpo/"

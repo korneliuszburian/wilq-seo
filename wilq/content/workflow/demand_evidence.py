@@ -207,10 +207,10 @@ def _prepare_optional_ads_demand(
     list[str],
     ContentOptionalAdsStatus,
 ]:
-    gsc_by_term = {row.term: row for row in gsc_rows}
+    gsc_by_page_term = {(row.page, row.term): row for row in gsc_rows}
     blocker_evidence_ids, blocker_codes = _ads_mapping_blockers(
         metric_facts,
-        gsc_terms=set(gsc_by_term),
+        gsc_terms={row.term for row in gsc_rows},
     )
     ads_rows, planner_rows = _build_exact_ads_rows(
         ads_groups=_exact_ads_groups(
@@ -218,7 +218,7 @@ def _prepare_optional_ads_demand(
             allowed_pages=allowed_pages,
             service_card_id=service_card_id,
         ),
-        gsc_by_term=gsc_by_term,
+        gsc_by_page_term=gsc_by_page_term,
         final_canonical_url=final_canonical_url,
         service_card_id=service_card_id,
         freshness=freshness,
@@ -304,15 +304,15 @@ def _build_gsc_rows(
 def _build_exact_ads_rows(
     *,
     ads_groups: dict[tuple[str, str], list[MetricFact]],
-    gsc_by_term: dict[str, ContentSearchDemandRow],
+    gsc_by_page_term: dict[tuple[str, str], ContentSearchDemandRow],
     final_canonical_url: str,
     service_card_id: str | None,
     freshness: ContentFreshnessAssessment,
 ) -> tuple[list[ContentSearchDemandRow], list[ContentSearchDemandRow]]:
     ads_rows: list[ContentSearchDemandRow] = []
     planner_rows: list[ContentSearchDemandRow] = []
-    for (_, term), facts in ads_groups.items():
-        gsc_row = gsc_by_term.get(term)
+    for (ads_page, term), facts in ads_groups.items():
+        gsc_row = gsc_by_page_term.get((ads_page, term))
         source_kind: Literal["ads_search_term", "keyword_planner"] = (
             "keyword_planner"
             if any(fact.dimensions.get("keyword_idea_text") == term for fact in facts)
@@ -557,8 +557,11 @@ def _exact_ads_groups(
         return direct_groups
 
     ready_evidence_ids = _ready_ads_batch_evidence_ids(metric_facts)
+    ads_metric_facts = [
+        fact for fact in metric_facts if fact.source_connector == "google_ads"
+    ]
     for (_scope, term, landing_identity), term_facts in _group_ads_term_facts(
-        metric_facts
+        ads_metric_facts
     ).items():
         if not _clicked_landing_batch_is_complete(
             term_facts,
@@ -577,7 +580,7 @@ def _exact_ads_groups(
                     "dimensions": {
                         **fact.dimensions,
                         "mapped_allowed_page": landing_page,
-                        "final_url": fact.dimensions.get("final_url", landing_page),
+                        "final_url": landing_page,
                     }
                 }
             )
