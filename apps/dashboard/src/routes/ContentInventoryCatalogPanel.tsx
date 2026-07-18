@@ -17,6 +17,7 @@ export function ContentInventoryCatalogPanel({
   const [search, setSearch] = useState("");
   const [showAll, setShowAll] = useState(false);
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const bind = useMutation({
     mutationFn: postContentInventoryBinding,
     onSuccess: (result) => {
@@ -28,6 +29,9 @@ export function ContentInventoryCatalogPanel({
     queryFn: () => getContentInventoryMaterial(inspectedUrl ?? ""),
     enabled: Boolean(inspectedUrl)
   });
+  const pendingItem = pendingUrl
+    ? catalog.items.find((item) => normalizeUrl(item.url) === normalizeUrl(pendingUrl)) ?? null
+    : null;
   const candidateByUrl = useMemo(() => {
     const map = new Map<string, string>();
     for (const candidate of queue.candidates) {
@@ -87,6 +91,13 @@ export function ContentInventoryCatalogPanel({
           </div>
         </div>
       ) : null}
+      {pendingItem ? (
+        <InventoryWorkflowStartingPanel
+          item={pendingItem}
+          isPending={bind.isPending}
+          error={bind.error?.message ?? bind.data?.blocker ?? null}
+        />
+      ) : null}
       {inspectedUrl ? <InventoryMaterialPreview material={material.data} isLoading={material.isLoading} url={inspectedUrl} /> : null}
       <input
         id="content-inventory-search"
@@ -118,7 +129,7 @@ export function ContentInventoryCatalogPanel({
                   <td className="px-3 py-3 text-xs text-slate-600">{item.content_type}<div className="mt-1 font-medium text-slate-700">{materialLabel(item.material_status)}</div></td>
                   <td className="px-3 py-3 text-xs text-slate-600">{item.metrics_status === "available" ? <><div className="font-medium text-action">GSC/GA4 dostępne</div><div className="mt-1">{item.metrics_impressions.toLocaleString("pl-PL")} wyśw. · {item.metrics_clicks.toLocaleString("pl-PL")} klik.</div><div className="mt-1 text-slate-500">{item.metrics_query_count} zapytań · {item.metrics_evidence_ids.length} evidence</div></> : <span className="text-wait">Brak exact metryk</span>}</td>
                   <td className="px-3 py-3 text-xs text-slate-600">{item.acf_section_count ? item.acf_section_headings.join(" · ") : item.acf_field_names.length ? `${item.acf_field_names.length} pól ACF (bez rozpoznanych nagłówków)` : "Brak wystawionych sekcji ACF"}{item.content_word_count ? <div className="mt-1 text-slate-500">{item.content_word_count} słów treści</div> : null}</td>
-                  <td className="px-3 py-3"><div className="flex flex-wrap gap-2">{workItemId ? <button type="button" className="rounded bg-action px-2 py-1 text-xs font-semibold text-white" onClick={() => onSelectWorkItem(workItemId)}>Otwórz plan</button> : <button type="button" className="rounded bg-action px-2 py-1 text-xs font-semibold text-white disabled:opacity-50" disabled={bind.isPending} onClick={() => bind.mutate(item.url)}>{bind.isPending ? "Czytam materiał…" : item.material_status === "url_only" ? "Sprawdź i rozpocznij" : "Rozpocznij workflow"}</button>}<button type="button" className="rounded border border-line bg-white px-2 py-1 text-xs font-semibold text-slate-700" onClick={() => setInspectedUrl(item.url)}>{inspectedUrl === item.url ? "Materiał otwarty" : "Sprawdź materiał"}</button></div>{!workItemId ? <div className="mt-2 text-xs text-slate-500">Binding opiera się na dokładnym URL-u i aktualnym inventory evidence; adresy bez REST/ACF są sprawdzane przez publiczny HTML.</div> : null}{bind.error ? <div className="mt-2 text-xs text-wait">{bind.error.message}</div> : null}</td>
+              <td className="px-3 py-3"><div className="flex flex-wrap gap-2">{workItemId ? <button type="button" className="rounded bg-action px-2 py-1 text-xs font-semibold text-white" onClick={() => onSelectWorkItem(workItemId)}>Otwórz plan</button> : <button type="button" className="rounded bg-action px-2 py-1 text-xs font-semibold text-white disabled:opacity-50" disabled={bind.isPending && bind.variables === item.url} onClick={() => { setPendingUrl(item.url); setInspectedUrl(item.url); bind.mutate(item.url); }}>{bind.isPending && bind.variables === item.url ? "Czytam materiał…" : item.material_status === "url_only" ? "Sprawdź i rozpocznij" : "Rozpocznij workflow"}</button>}<button type="button" className="rounded border border-line bg-white px-2 py-1 text-xs font-semibold text-slate-700" onClick={() => setInspectedUrl(item.url)}>{inspectedUrl === item.url ? "Materiał otwarty" : "Sprawdź materiał"}</button></div>{!workItemId ? <div className="mt-2 text-xs text-slate-500">Binding opiera się na dokładnym URL-u i aktualnym inventory evidence; adresy bez REST/ACF są sprawdzane przez publiczny HTML.</div> : null}{bind.error ? <div className="mt-2 text-xs text-wait">{bind.error.message}</div> : null}</td>
                 </tr>
               );
             })}
@@ -126,6 +137,39 @@ export function ContentInventoryCatalogPanel({
         </table>
         {!items.length && <p className="p-4 text-sm text-slate-600">Brak adresów pasujących do wyszukiwania.</p>}
       </div>
+    </section>
+  );
+}
+
+export function InventoryWorkflowStartingPanel({
+  item,
+  isPending,
+  error
+}: {
+  item: ContentInventoryCatalogResponse["items"][number];
+  isPending: boolean;
+  error: string | null;
+}) {
+  return (
+    <section className="mb-4 rounded-md border border-action/30 bg-action/5 p-4" aria-live="polite" data-testid="content-inventory-workflow-starting">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-normal text-action">Wybrana strona</div>
+          <h3 className="mt-1 text-base font-semibold text-ink">{item.title || item.path}</h3>
+          <p className="mt-1 break-all text-xs text-slate-600">{item.url}</p>
+        </div>
+        <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-action">
+          {error ? "Wymaga sprawdzenia" : isPending ? "Przygotowuję workflow" : "Odczyt zakończony"}
+        </span>
+      </div>
+      <div className="mt-3 grid gap-2 text-xs text-slate-700 sm:grid-cols-3">
+        <div className="rounded border border-line bg-white px-3 py-2"><span className="font-semibold">Materiał:</span> {materialLabel(item.material_status)}</div>
+        <div className="rounded border border-line bg-white px-3 py-2"><span className="font-semibold">Metryki:</span> {item.metrics_status === "available" ? `${item.metrics_impressions.toLocaleString("pl-PL")} wyświetleń · ${item.metrics_clicks.toLocaleString("pl-PL")} kliknięć` : "sprawdzamy exact dane"}</div>
+        <div className="rounded border border-line bg-white px-3 py-2"><span className="font-semibold">Następny krok:</span> {error ? "Sprawdź blocker i wybierz inną stronę." : "Dopasujemy usługę, źródła i plan."}</div>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-700">
+        {error ?? "Strona jest już wybrana. WILQ ładuje materiał i dopasowane dane; katalog pozostaje dostępny."}
+      </p>
     </section>
   );
 }
