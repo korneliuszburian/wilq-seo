@@ -40,6 +40,18 @@ odczytu i działania workflow, nie UAT Wilka ani zgoda na publikację.
   `storage_activation_required`: immutable storage wymaga backupu i maintenance
   window. Nie udajemy review ani jakości 10/10.
 
+## Deterministyczna bramka jakości obu exact rewizji
+
+- BDO: rewizja `content_revision_f942b8008f99493693eb991050a074f5`, digest
+  `8ba6d11935ac8ab1f498c68fa291a2818045bd1372b594a9d4a28c697644db8e`;
+  wynik `blocked`, findings: `sales_brief_signal_review_required`,
+  `missing_measurement_window`.
+- Doradztwo i outsourcing: rewizja `content_revision_4d9558f60b1b462b9ae49d5caeb73da7`,
+  digest `b096a52901e8e4bb467f3fc8e9286b547643045eeb62872bb86c753ccf19396c`;
+  ten sam wynik i te same findings.
+- Oba review są związane z exact rewizją i nie zatwierdzają tekstu. Brak okna
+  pomiarowego nie jest dopowiadany ani zastępowany obietnicą wyniku.
+
 ## Jedna decyzja produktu
 
 Marketer nie wybiera dziesięciu wersji. WILQ prowadzi do jednego aktualnego
