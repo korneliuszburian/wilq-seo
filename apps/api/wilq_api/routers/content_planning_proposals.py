@@ -135,28 +135,13 @@ def register_content_planning_proposal_routes(
                 safe_next_step="Odśwież stan planu i użyj aktualnego digestu.",
             )
             return JSONResponse(status_code=409, content=stale.model_dump(mode="json"))
-        existing = store.for_input(
-            work_item_id,
-            request.service_card_id,
-            request.expected_planning_input_digest,
-        )
-        if existing is not None:
-            return ContentPlanningProposalResponse(
-                status="idempotent",
-                work_item_id=work_item_id,
-                service_card_id=request.service_card_id,
-                proposal=existing,
-                safe_next_step=(
-                    "Plan już istnieje dla tego exact wejścia; odczytano wersję "
-                    "bez ponownego uruchamiania Codexa."
-                ),
-            )
         # A changed digest is the normal re-plan path after fresh metrics,
         # inventory or knowledge arrive.  The background generator validates
         # the request against the rebuilt snapshot and returns typed stale_input
-        # when the operator supplied a digest that is not current.  Blocking
-        # here merely because an older proposal exists makes legitimate
-        # refreshes impossible and leaves the marketer stuck on stale copy.
+        # when the operator supplied a digest that is not current.  The
+        # generator owns the idempotency decision after it has checked the
+        # current mapping contract; a router-level store shortcut would make
+        # stale proposals impossible to regenerate.
         result = ContentPlanningProposalResponse(
             status="generating",
             work_item_id=work_item_id,
