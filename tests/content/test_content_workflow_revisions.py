@@ -355,7 +355,7 @@ def test_revision_review_requires_proof_for_approval_and_notes_otherwise() -> No
         )
 
 
-def test_revision_digest_is_computed_from_redacted_content(tmp_path: Path) -> None:
+def test_revision_round_trip_preserves_long_content_tokens_and_digest(tmp_path: Path) -> None:
     store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
     synthetic_token_like_text = "syntetyczny identyfikator " + ("X" * 40)
 
@@ -363,7 +363,7 @@ def test_revision_digest_is_computed_from_redacted_content(tmp_path: Path) -> No
         store.append_draft_revision(_append_command(body_markdown=synthetic_token_like_text))
     )
 
-    assert revision.sections[0].body_markdown == "syntetyczny identyfikator [REDACTED]"
+    assert revision.sections[0].body_markdown == synthetic_token_like_text
     assert revision.content_digest != "[REDACTED]"
     assert len(revision.content_digest) == 64
 

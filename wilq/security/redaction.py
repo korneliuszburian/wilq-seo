@@ -148,6 +148,18 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "inventory_digest",
     "revision_digest",
 }
+CONTENT_TEXT_KEYS = {
+    "body_markdown",
+    "wordpress_title",
+    "meta_title",
+    "meta_description",
+    "h1",
+    "lead",
+    "heading",
+    "question",
+    "answer_markdown",
+    "anchor_text",
+}
 SAFE_HEX_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 SAFE_NORMALIZED_PAGE_PATH_RE = re.compile(
     r"^/(?:[A-Za-z0-9._~-]+/?)*$"
@@ -212,6 +224,11 @@ def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:
             redacted[key] = value
         elif is_secret_key(key):
             redacted[key] = "[REDACTED]" if value else value
+        elif key in CONTENT_TEXT_KEYS and isinstance(value, str):
+            # Long alphanumeric runs are common in legitimate content (IDs,
+            # product names, and technical examples). Credential-bearing URLs
+            # still go through the URL-specific scrubber below.
+            redacted[key] = PUBLIC_URL_RE.sub(_redact_credential_url, value)
         else:
             redacted[key] = redact_value(value)
     return redacted
