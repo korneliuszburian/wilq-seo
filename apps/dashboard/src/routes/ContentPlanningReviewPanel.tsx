@@ -122,6 +122,16 @@ export function ContentPlanningReviewPanel({
                 </span>
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-ink">{section.heading}</h3>
+                  <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                    <span className="rounded-full border border-action/30 bg-action/5 px-2 py-1 font-semibold text-action">
+                      {inventoryDispositionLabel(section.inventory_disposition)}
+                    </span>
+                    {section.inventory_heading && section.inventory_heading !== section.heading ? (
+                      <span className="rounded-full border border-line bg-white px-2 py-1 text-slate-600">
+                        obecna sekcja: {section.inventory_heading}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="mt-1 text-sm leading-6 text-slate-700">{section.purpose}</p>
                   <p className="mt-1 text-xs text-slate-500">
                     {section.evidence_ids.length} {section.evidence_ids.length === 1 ? "dowód" : "dowodów"}
@@ -213,6 +223,18 @@ export function ContentPlanningReviewPanel({
       ) : null}
     </section>
   );
+}
+
+export function inventoryDispositionLabel(
+  disposition: ContentPlanningWorkspace["proposal"]["sections"][number]["inventory_disposition"]
+) {
+  return {
+    preserve: "zachowaj",
+    merge: "scal po review",
+    rewrite: "przepisz",
+    remove_review_required: "usuń po review",
+    create: "utwórz"
+  }[disposition];
 }
 
 function SearchDemandSummary({

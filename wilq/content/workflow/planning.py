@@ -226,8 +226,12 @@ def build_content_planning_proposal(
                 "heading": section.heading,
                 "purpose": section.purpose,
                 "reader_question": section.purpose,
-                "inventory_disposition": "create",
-                "inventory_heading": None,
+                "inventory_disposition": _baseline_inventory_disposition(brief),
+                "inventory_heading": (
+                    section.heading
+                    if _baseline_inventory_disposition(brief) != "create"
+                    else None
+                ),
                 "query_terms": [],
                 "evidence_ids": section.evidence_ids,
                 "claim_ids": [],
@@ -260,6 +264,22 @@ def build_content_planning_proposal(
             **payload,
         }
     )
+
+
+def _baseline_inventory_disposition(
+    brief: ContentSalesBrief,
+) -> ContentPlanningInventoryDisposition:
+    """Keep the baseline honest about an already-existing page.
+
+    The baseline is only a review starting point, but it must not present
+    existing headings as newly created sections. Generated proposals may later
+    choose a different disposition after human review.
+    """
+    return {
+        "preserve": "preserve",
+        "refresh": "rewrite",
+        "merge": "merge",
+    }.get(brief.operations_context.recommended_mode, "create")
 
 
 def _planning_digest(payload: Mapping[str, object]) -> str:
