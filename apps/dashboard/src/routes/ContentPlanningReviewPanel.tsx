@@ -62,6 +62,7 @@ export function ContentPlanningReviewPanel({
   const selectedService = serviceCandidates.find(
     (candidate) => candidate.service_card_id === selectedServiceCardId
   );
+  const sectionMapReady = planningSectionMapReady(proposal);
   const latestDecision = stage === "scope" ? planning.scope_decision : planning.section_map_decision;
   const inventoryMapping = planning.proposal.inventory_mapping ?? [];
   const documentScopeSummary = planningScopeSummary(proposal.sections);
@@ -69,6 +70,7 @@ export function ContentPlanningReviewPanel({
     !actions.pending &&
     (decision === "approved" ? checked : notes.trim().length > 0) &&
     (decision !== "approved" || !existingContentProvenanceRequired || provenanceChecked) &&
+    (stage !== "section_map" || sectionMapReady) &&
     (stage !== "scope" || Boolean(selectedServiceCardId));
 
   return (
@@ -143,11 +145,21 @@ export function ContentPlanningReviewPanel({
         </>
       ) : (
         <>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-          WILQ automatycznie przypisał istniejące sekcje ACF lub treści głównej do planu.
-          Sprawdź tylko decyzję redakcyjną i elementy oznaczone jako niejednoznaczne.
-        </p>
-        {!inventoryMapping.length && planning.proposal.generation_status === "codex_generated" ? (
+        {!sectionMapReady ? (
+          <p
+            className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700"
+            data-testid="planning-section-map-generation-gate"
+          >
+            Mapa sekcji pojawi się po wygenerowaniu jednego aktualnego planu. Ten
+            podgląd zakresu nie jest jeszcze tekstem do akceptacji.
+          </p>
+        ) : (
+          <>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+            WILQ automatycznie przypisał istniejące sekcje ACF lub treści głównej do planu.
+            Sprawdź tylko decyzję redakcyjną i elementy oznaczone jako niejednoznaczne.
+          </p>
+        {!inventoryMapping.length ? (
           <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700" data-testid="planning-legacy-mapping-notice">
             Ten plan powstał przed pełną mapą istniejącej strony. Wygeneruj świeżą wersję, aby WILQ pokazał decyzję dla każdej sekcji ACF lub treści głównej.
           </div>
@@ -212,13 +224,15 @@ export function ContentPlanningReviewPanel({
                   />
                 </div>
               </div>
-            </li>
-          ))}
+          </li>
+        ))}
         </ol>
+          </>
+        )}
         </>
       )}
 
-      <div className="mt-5 grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+      {stage === "scope" || sectionMapReady ? <div className="mt-5 grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
         <label className="text-sm font-semibold text-ink">
           Decyzja
           <select
@@ -241,9 +255,9 @@ export function ContentPlanningReviewPanel({
             className="mt-2 min-h-20 w-full rounded-md border border-line bg-white p-3 text-sm font-normal leading-6"
           />
         </label>
-      </div>
+      </div> : null}
 
-      {decision === "approved" ? (
+      {stage === "scope" || sectionMapReady ? decision === "approved" ? (
         <div className="mt-3 space-y-2">
           <label className="flex items-start gap-2 text-sm leading-6 text-slate-700">
             <input
@@ -269,9 +283,9 @@ export function ContentPlanningReviewPanel({
             </label>
           ) : null}
         </div>
-      ) : null}
+      ) : null : null}
 
-      <button
+      {stage === "scope" || sectionMapReady ? <button
         type="button"
         disabled={!canSubmit}
         onClick={() =>
@@ -295,7 +309,7 @@ export function ContentPlanningReviewPanel({
           : decision === "approved"
             ? "Zapisz decyzję i przejdź dalej"
             : "Zapisz uwagi do poprawy"}
-      </button>
+      </button> : null}
 
       {actions.conflict ? (
         <div role="alert" className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
@@ -330,6 +344,12 @@ export function planningReviewCheckedItems(
       ? ["existing_content_provenance"]
       : [])
   ];
+}
+
+export function planningSectionMapReady(
+  proposal: ContentPlanningWorkspace["proposal"]
+): boolean {
+  return proposal.generation_status === "codex_generated" && Boolean(proposal.proposal_id);
 }
 
 export function inventoryDispositionLabel(

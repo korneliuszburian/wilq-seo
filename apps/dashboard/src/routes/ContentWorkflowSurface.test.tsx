@@ -208,7 +208,10 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("3 z 10")).toBeInTheDocument();
     expect(screen.getByText("Powiązanie landing")).toBeInTheDocument();
     expect(screen.getByText("GSC: użyte")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Kogo dotyczy BDO" })).toBeInTheDocument();
+    expect(screen.getByTestId("planning-section-map-generation-gate")).toHaveTextContent(
+      "Mapa sekcji pojawi się po wygenerowaniu"
+    );
+    expect(screen.queryByRole("heading", { name: "Kogo dotyczy BDO" })).not.toBeInTheDocument();
     expect(screen.queryByText("Sygnały i braki")).not.toBeInTheDocument();
     expect(screen.queryByText("Tekst sekcji do szkicu")).not.toBeInTheDocument();
     expect(within(taskMap).getByRole("button", { name: /Szkic treści/ })).toHaveAttribute(
@@ -423,7 +426,7 @@ describe("ContentWorkflowSurface", () => {
     );
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
       workflowSnapshot({
-        planning: planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false }),
+        planning: planningWorkspace({ scopeCurrent: true, sectionMapCurrent: false }),
         workspace: { ...revisionWorkspace(), can_save: false },
         currentStepId: "scope",
         steps: operatorStepsAtScope()

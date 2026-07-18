@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   inventoryDispositionLabel,
   planningReviewCheckedItems,
+  planningSectionMapReady,
   planningScopeSummary,
   planningSourceSummary
 } from "./ContentPlanningReviewPanel";
@@ -50,5 +51,22 @@ describe("planningReviewCheckedItems", () => {
       "kolejność, cel i źródła",
       "existing_content_provenance"
     ]);
+  });
+});
+
+describe("planningSectionMapReady", () => {
+  it("treats only one generated proposal as a reviewable map", () => {
+    const base = {
+      generation_status: "baseline" as const,
+      proposal_id: null
+    };
+    expect(planningSectionMapReady(base as never)).toBe(false);
+    expect(
+      planningSectionMapReady({
+        ...base,
+        generation_status: "codex_generated",
+        proposal_id: "proposal_1"
+      } as never)
+    ).toBe(true);
   });
 });
