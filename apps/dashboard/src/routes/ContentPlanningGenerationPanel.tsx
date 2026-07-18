@@ -9,10 +9,12 @@ import type { ContentPlanningProposalResponse } from "../lib/api";
 
 export function ContentPlanningGenerationPanel({
   serviceCardId,
-  workItemId
+  workItemId,
+  scopeCurrent = false
 }: {
   serviceCardId: string | null | undefined;
   workItemId: string;
+  scopeCurrent?: boolean;
 }) {
   const queryClient = useQueryClient();
   const queryKey = ["content-workflow", "work-item", workItemId, "planning-proposal"];
@@ -94,6 +96,7 @@ export function ContentPlanningGenerationPanel({
   const serviceSelectionConfirmed = state.proposal?.service_selection_confirmed === true;
   const canGenerate = Boolean(
     serviceCardId &&
+      scopeCurrent &&
       serviceSelectionConfirmed &&
       state.planning_input_digest &&
       inputReady &&
@@ -210,7 +213,15 @@ export function ContentPlanningGenerationPanel({
         </button>
       ) : null}
 
-      {!serviceSelectionConfirmed && serviceCardId ? (
+      {serviceCardId && !scopeCurrent ? (
+        <p
+          className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700"
+          data-testid="content-planning-scope-confirmation-gate"
+        >
+          Najpierw zatwierdź zakres strony i usługi w kroku zakresu. Rekomendowane
+          dopasowanie nie uruchamia planowania automatycznie.
+        </p>
+      ) : !serviceSelectionConfirmed && serviceCardId ? (
         <p
           className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700"
           data-testid="content-planning-service-confirmation-gate"

@@ -884,3 +884,4 @@ function RevisionMutationFeedback({
     </div>
   );
 }
+                scopeCurrent={data.planningWorkspace.scope_current}
