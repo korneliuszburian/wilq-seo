@@ -91,8 +91,10 @@ export function ContentPlanningGenerationPanel({
         (source) => source.status === "stale" || source.status === "blocked"
       )
   );
+  const serviceSelectionConfirmed = state.proposal?.service_selection_confirmed === true;
   const canGenerate = Boolean(
     serviceCardId &&
+      serviceSelectionConfirmed &&
       state.planning_input_digest &&
       inputReady &&
       (["not_generated", "failed"].includes(state.status) ||
@@ -206,6 +208,16 @@ export function ContentPlanningGenerationPanel({
               ? "Wygeneruj aktualny plan"
               : "Wygeneruj plan"}
         </button>
+      ) : null}
+
+      {!serviceSelectionConfirmed && serviceCardId ? (
+        <p
+          className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700"
+          data-testid="content-planning-service-confirmation-gate"
+        >
+          Najpierw potwierdź usługę w kroku zakresu. Rekomendowane dopasowanie jest
+          wskazówką, nie zgodą na uruchomienie planu.
+        </p>
       ) : null}
 
       {state.status === "generating" ? (
