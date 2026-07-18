@@ -39,9 +39,7 @@ export function ContentPlanningReviewPanel({
   const [checked, setChecked] = useState(false);
   const proposal = planning.proposal;
   const [selectedServiceCardId, setSelectedServiceCardId] = useState(
-    proposal.service_card_id ??
-      serviceCandidates.find((candidate) => candidate.recommended)?.service_card_id ??
-      ""
+    proposal.service_selection_confirmed ? proposal.service_card_id ?? "" : ""
   );
   const selectedService = serviceCandidates.find(
     (candidate) => candidate.service_card_id === selectedServiceCardId
@@ -86,6 +84,7 @@ export function ContentPlanningReviewPanel({
               onChange={(event) => setSelectedServiceCardId(event.target.value)}
               className="mt-2 h-11 w-full rounded-md border border-line bg-white px-3 font-normal"
             >
+              <option value="">Wybierz usługę do tego adresu</option>
               {serviceCandidates.map((candidate) => (
                 <option key={candidate.service_card_id} value={candidate.service_card_id}>
                   {candidate.service_label} · {candidate.lifecycle_label}
@@ -101,7 +100,10 @@ export function ContentPlanningReviewPanel({
           ) : null}
           <dl className="mt-4 grid gap-3 sm:grid-cols-2">
             <PlanningFact label="Strona" value={proposal.final_canonical_url} />
-            <PlanningFact label="Usługa" value={proposal.service_label ?? "Brak dopasowanej usługi"} />
+            <PlanningFact
+              label={proposal.service_selection_confirmed ? "Usługa wybrana" : "Dopasowanie robocze"}
+              value={proposal.service_label ?? "Brak dopasowanej usługi"}
+            />
             <PlanningFact label="Intencja" value={proposal.search_intent} />
             <PlanningFact label="Odbiorca" value={proposal.target_reader} />
             <PlanningFact label="Problem" value={proposal.buyer_problem} />
