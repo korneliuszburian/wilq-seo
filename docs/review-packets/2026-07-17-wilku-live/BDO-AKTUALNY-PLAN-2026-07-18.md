@@ -37,8 +37,9 @@ niepasujących danych Ads/Ahrefs.
 - brak dokładnego sygnału GA4 dla tej strony — nie dopowiadamy konwersji;
 - brak exact mapowania Ahrefs/Ads — nie dopowiadamy luk ani efektu kampanii.
 
-Plan jest niezatwierdzony. Poprzednie decyzje scope i mapy sekcji dotyczą
-starszego digestu i zostały prawidłowo unieważnione.
+Plan jest niezatwierdzony. To nie jest pełny draft ani wersja do publikacji.
+Poprzednie decyzje scope i mapy sekcji dotyczą starszego digestu i zostały
+prawidłowo unieważnione; bez nowego review blokują dalsze generowanie draftu.
 
 ## Review marketera
 
