@@ -3,6 +3,9 @@ import { useState } from "react";
 import {
   KnowledgeCard,
   KnowledgeOperatingMapResponse,
+  KnowledgeSourceFactView,
+  KnowledgeSourceMaterialReadiness,
+  KnowledgeSourceMaterialView,
   MarketingPlaybook
 } from "../lib/api";
 import { BlockerNotice, LabelChipRow, MetricTile } from "../components/OperatorPrimitives";
@@ -115,6 +118,97 @@ export function KnowledgeCardList({ cards }: { cards: KnowledgeCard[] }) {
           {showAll ? "Pokaż mniej kart" : `Pokaż wszystkie karty (${cards.length})`}
         </button>
       ) : null}
+    </div>
+  );
+}
+
+export function KnowledgeSourceFactList({ facts }: { facts: KnowledgeSourceFactView[] }) {
+  const [showAll, setShowAll] = useState(false);
+  if (facts.length === 0) {
+    return <BlockerNotice message="Nie ma jeszcze zdeklarowanych faktów ze źródeł Ekologusa. Nie pokazujemy zastępczych tez." />;
+  }
+  const visible = showAll ? facts : facts.slice(0, 6);
+  return (
+    <div className="grid gap-3">
+      <div className="rounded-xl border border-action/20 bg-action/5 p-4 text-sm leading-6 text-slate-700">
+        To są fakty wyciągnięte z realnych materiałów Ekologusa: publicznych stron oraz zredagowanych materiałów wewnętrznych. Status „review required” oznacza, że fakt nie jest jeszcze wiedzą produkcyjną.
+      </div>
+      <div className="grid gap-3 xl:grid-cols-2">
+        {visible.map((fact) => (
+          <article key={fact.source_id} className="rounded-xl border border-line bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-action">{fact.scope} · {fact.source_type === "public_site" ? "publiczna strona" : "materiał wewnętrzny"}</p>
+                <h3 className="mt-1 text-sm font-semibold text-ink">{fact.target_card_title}</h3>
+              </div>
+              <div className="flex flex-wrap justify-end gap-2">
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${fact.review_status === "approved" ? "bg-emerald-50 text-emerald-700" : "bg-wait/10 text-wait"}`}>{fact.review_status === "approved" ? "zatwierdzony fakt" : "wymaga review"}</span>
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${fact.generation_status === "eligible" ? "bg-emerald-50 text-emerald-700" : "bg-risk/10 text-risk"}`}>{fact.generation_status === "eligible" ? "może zasilić draft" : "zablokowany dla draftu"}</span>
+              </div>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-700">{fact.extracted_fact}</p>
+            <div className="mt-3 grid gap-1 text-xs text-slate-500">
+              <span>Źródło: {fact.source_url_or_path}</span>
+              <span>Świeżość: {fact.freshness_date} · pewność {Math.round(fact.confidence * 100)}%</span>
+              <span>Evidence: {fact.evidence_ids.length ? fact.evidence_ids.join(", ") : "brak — nie używaj jako dowodu"}</span>
+            </div>
+            {fact.blocked_claims.length ? <p className="mt-3 rounded-md bg-risk/5 p-2 text-xs leading-5 text-risk">Nie używaj bez review: {fact.blocked_claims.join(" · ")}</p> : null}
+          </article>
+        ))}
+      </div>
+      {facts.length > 6 ? <button type="button" className="min-h-9 w-fit rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-action hover:text-action" onClick={() => setShowAll((value) => !value)}>{showAll ? "Pokaż mniej faktów" : `Pokaż wszystkie fakty (${facts.length})`}</button> : null}
+    </div>
+  );
+}
+
+export function KnowledgeSourceMaterialSummary({ materials }: { materials: KnowledgeSourceMaterialView[] }) {
+  const [showAll, setShowAll] = useState(false);
+  if (!materials.length) return null;
+  const visible = showAll ? materials : materials.slice(0, 5);
+  return (
+    <div className="mt-4 rounded-xl border border-line bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-action">Korpus źródłowy</p>
+          <h3 className="mt-1 text-sm font-semibold text-ink">{materials.length} materiałów w manifeście Ekologusa</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-600">Manifest i hashe są znane. Tekst pozostaje poza generowaniem do czasu redakcji i review.</p>
+        </div>
+        <span className="rounded-full bg-wait/10 px-2.5 py-1 text-[11px] font-semibold text-wait">
+          {materials.every((material) => material.import_status === "imported")
+            ? "zaimportowane"
+            : `${materials.filter((material) => material.import_status !== "imported").length} oczekuje`}
+        </span>
+      </div>
+      <div className="mt-3 grid gap-2 xl:grid-cols-2">
+        {visible.map((material) => (
+          <div key={material.source_id} className="rounded-md border border-line bg-slate-50/70 p-3 text-xs">
+            <div className="font-semibold text-ink">{material.title}</div>
+            <div className="mt-1 text-slate-600">{material.kind} · {material.word_count} słów · {material.file_name}</div>
+            <div className="mt-1 text-slate-500">SHA prefix: {material.digest_prefix} · {material.privacy_class}</div>
+          </div>
+        ))}
+      </div>
+      {materials.length > 5 ? <button type="button" className="mt-3 min-h-9 rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-action hover:text-action" onClick={() => setShowAll((value) => !value)}>{showAll ? "Pokaż mniej materiałów" : `Pokaż wszystkie materiały (${materials.length})`}</button> : null}
+    </div>
+  );
+}
+
+export function KnowledgeSourceMaterialReadinessBanner({
+  readiness
+}: {
+  readiness: KnowledgeSourceMaterialReadiness | undefined;
+}) {
+  if (!readiness) return null;
+  return (
+    <div className="mt-4 rounded-md border border-wait/30 bg-wait/5 p-3 text-sm" aria-live="polite">
+      <div className="font-semibold text-ink">
+        Korpus źródłowy: {readiness.ready_for_generation ? "gotowy" : "zablokowany"}
+      </div>
+      <div className="mt-1 text-xs text-slate-600">
+        {readiness.imported_count}/{readiness.total_count} materiałów zaimportowanych · {readiness.import_pending_count} oczekuje na import · {readiness.excerpt_review_required_count} wymaga review excerptów
+      </div>
+      {readiness.blocker ? <div className="mt-2 text-xs text-wait">{readiness.blocker}</div> : null}
+      <div className="mt-2 text-xs text-slate-600">Następny krok: {readiness.next_step}</div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   KnowledgeCardList,
   KnowledgeDecisionImpactPanel,
   KnowledgeOperatingMapPanel,
+  KnowledgeSourceMaterialSummary,
   PlaybookList
 } from "./KnowledgePanels";
 import routeSource from "./KnowledgePanels.tsx?raw";
@@ -101,6 +102,29 @@ describe("KnowledgePanels", () => {
       )
     ).toBeInTheDocument();
     expect(screen.queryByText(/playbook/i)).not.toBeInTheDocument();
+  });
+
+  it("does not label an imported source corpus as pending", () => {
+    render(
+      <KnowledgeSourceMaterialSummary
+        materials={[
+          {
+            source_id: "material_strategy",
+            file_name: "strategy.md",
+            title: "Strategia",
+            kind: "strategy",
+            word_count: 100,
+            digest_prefix: "abc123",
+            privacy_class: "redacted_only",
+            import_status: "imported",
+            source_path: "materials_clean/approved/strategy.md"
+          }
+        ]}
+      />
+    );
+
+    expect(screen.getByText("zaimportowane")).toBeInTheDocument();
+    expect(screen.queryByText("import pending")).not.toBeInTheDocument();
   });
 
   it("renders card confidence as a neutral label instead of a status value", () => {
