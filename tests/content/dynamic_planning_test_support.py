@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,7 @@ from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
 )
 from wilq.content.workflow.catalog import inventory_work_item_id
+from wilq.storage.metric_store import metric_store_path
 
 
 class PlanningClient:
@@ -412,6 +414,11 @@ def configure_planning_harness(
     tmp_path: Path,
 ) -> tuple[TestClient, PlanningClient]:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
+    source_metric_db = metric_store_path()
+    isolated_metric_db = tmp_path / "metrics.duckdb"
+    if source_metric_db.exists():
+        shutil.copy2(source_metric_db, isolated_metric_db)
+    monkeypatch.setenv("WILQ_METRIC_DB", str(isolated_metric_db))
     _patch_approved_service_cards(monkeypatch)
     _patch_fresh_diagnostics(monkeypatch)
     _patch_internal_link_candidates(monkeypatch)
