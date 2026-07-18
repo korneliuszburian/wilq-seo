@@ -1068,6 +1068,8 @@ class AdsSearchTermMetricRow(BaseModel):
     ad_group_name: str | None = None
     ad_group_label: str = ""
     search_term_status: str | None = None
+    landing_mapping_status: str | None = None
+    landing_identity_sha256: str | None = None
     clicks: int | None = None
     impressions: int | None = None
     cost_micros: int | None = None

@@ -2958,6 +2958,8 @@ def _search_term_metric_row(
         ad_group_id=ad_group_id,
         ad_group_name=first_dimensions.get("ad_group_name"),
         search_term_status=first_dimensions.get("search_term_status"),
+        landing_mapping_status=first_dimensions.get("landing_mapping_status"),
+        landing_identity_sha256=first_dimensions.get("landing_identity_sha256"),
         clicks=_int_metric_value(facts_by_name.get("search_term_clicks")),
         impressions=_int_metric_value(facts_by_name.get("search_term_impressions")),
         cost_micros=_int_metric_value(facts_by_name.get("search_term_cost_micros")),

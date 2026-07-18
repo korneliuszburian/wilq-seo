@@ -11,6 +11,8 @@ export const AdsSearchTermMetricRowSchema = z.object({
   ad_group_name: z.string().nullable().optional(),
   ad_group_label: z.string().optional().default(""),
   search_term_status: z.string().nullable().optional(),
+  landing_mapping_status: z.string().nullable().optional(),
+  landing_identity_sha256: z.string().nullable().optional(),
   clicks: z.number().nullable().optional(),
   impressions: z.number().nullable().optional(),
   cost_micros: z.number().nullable().optional(),
