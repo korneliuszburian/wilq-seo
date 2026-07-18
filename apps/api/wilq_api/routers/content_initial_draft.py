@@ -19,6 +19,8 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.store import content_workflow_store
+from wilq.schemas import CodexRun
+from wilq.schemas.core import utc_now
 from wilq.storage.local_state import local_state_store
 
 ContentInitialDraftSnapshotLoader = Callable[
@@ -51,6 +53,19 @@ def register_content_initial_draft_route(
         if _can_queue_initial_draft(snapshot, request) and isinstance(
             client, StdioCodexAppServerClient
         ):
+            existing = _latest_initial_draft_run(work_item_id)
+            if existing is not None and existing.status == "started":
+                proposal = snapshot.planning_workspace.proposal
+                return ContentInitialDraftResponse(
+                    status="generating",
+                    work_item_id=work_item_id,
+                    proposal_id=proposal.proposal_id,
+                    run_id=existing.id,
+                    blockers=[_generation_in_progress_blocker()],
+                    safe_next_step=(
+                        "Pełny tekst jest już przygotowywany; nie uruchamiaj drugiego."
+                    ),
+                )
             run_id = f"codex_content_initial_draft_{uuid4().hex}"
             _INITIAL_DRAFT_EXECUTOR.submit(
                 _run_queued_initial_draft,
@@ -184,6 +199,16 @@ def _generation_in_progress_blocker() -> ContentInitialDraftBlocker:
     )
 
 
+def _latest_initial_draft_run(work_item_id: str) -> CodexRun | None:
+    endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
+    runs = [
+        run
+        for run in local_state_store().list_codex_runs()
+        if run.hook == "content_initial_full_draft" and endpoint in run.used_endpoints
+    ]
+    return max(runs, key=lambda run: run.started_at, default=None)
+
+
 def _run_queued_initial_draft(
     work_item_id: str,
     request: ContentInitialDraftRequest,
@@ -200,10 +225,27 @@ def _run_queued_initial_draft(
             run_store=local_state_store(),
             run_id=run_id,
         )
-    except Exception:
+    except Exception as error:
         # The generator records typed terminal state whenever it reaches its
-        # own runtime boundary. A worker exception must not kill the API.
+        # own runtime boundary. A worker exception must not leave a permanent
+        # ``started`` run or make every retry appear to be still running.
+        _mark_initial_draft_run_failed(run_id, error)
+
+
+def _mark_initial_draft_run_failed(run_id: str, error: Exception) -> None:
+    store = local_state_store()
+    run = next((item for item in store.list_codex_runs() if item.id == run_id), None)
+    if run is None or run.status != "started":
         return
+    store.save_codex_run(
+        run.model_copy(
+            update={
+                "status": "failed",
+                "completed_at": utc_now(),
+                "error": f"worker_exception:{type(error).__name__}",
+            }
+        )
+    )
 
 
 __all__ = ["register_content_initial_draft_route"]
