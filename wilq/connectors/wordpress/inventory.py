@@ -23,7 +23,9 @@ WORDPRESS_READ_FIELDS = (
 )
 WORDPRESS_SITEMAP_PATHS = ("wp-sitemap.xml", "sitemap_index.xml", "sitemap.xml")
 WORDPRESS_SITEMAP_CHILD_LIMIT = 20
-WORDPRESS_SITEMAP_URL_LIMIT = 500
+# Keep the sitemap inventory broad enough to cover the whole Ekologus site
+# while remaining explicitly bounded for a single vendor read.
+WORDPRESS_SITEMAP_URL_LIMIT = 2000
 WORDPRESS_METADATA_FETCH_LIMIT = 50
 WORDPRESS_METADATA_MAX_BYTES = 200_000
 WORDPRESS_METADATA_TIMEOUT_SECONDS = 3.0
