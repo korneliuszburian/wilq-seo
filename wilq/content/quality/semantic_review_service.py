@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from typing import Literal, cast
 from uuid import uuid4
 
-from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
+from wilq.codex.app_server import (
+    CodexAppServerClientProtocol,
+    CodexAppServerTurnBlocker,
+    CodexAppServerTurnResult,
+)
 from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.planning.dynamic_input import ContentPlanningInput, build_content_planning_input
 from wilq.content.quality.semantic_review_contracts import (
@@ -329,7 +333,18 @@ def _execute(
             )
         )
     except Exception:
-        result = CodexAppServerTurnResult(status="failed")
+        # The app-server normally converts expected transport failures into a
+        # typed result. Keep an unexpected adapter failure typed as well so a
+        # terminal run cannot degrade into an uninformative ``runtime_failed``.
+        result = CodexAppServerTurnResult(
+            status="failed",
+            blockers=(
+                CodexAppServerTurnBlocker(
+                    code="codex_runtime_exception",
+                    message="Lokalny runtime Codexa zakończył się nieoczekiwanym błędem.",
+                ),
+            ),
+        )
     trace = _trace(result)
     if result.external_call_attempted:
         blocker = _blocker(
