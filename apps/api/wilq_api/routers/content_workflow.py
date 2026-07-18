@@ -504,8 +504,35 @@ def content_work_item_draft_revision_save(
         )
     _validate_revision_sections(request, snapshot)
 
-    result = content_workflow_store().append_draft_revision(
-        ContentDraftRevisionAppendCommand(
+    if (
+        latest_revision is not None
+        and latest_revision.schema_version == "wilq_content_draft_revision_v2"
+    ):
+        command = ContentDraftRevisionAppendCommand(
+            schema_version="wilq_content_draft_revision_v2",
+            work_item_id=work_item_id,
+            base_revision_id=latest_revision.revision_id,
+            draft_package_id=latest_revision.draft_package_id,
+            draft_package_digest=latest_revision.draft_package_digest,
+            planning_digest=latest_revision.planning_digest,
+            planning_input_digest=latest_revision.planning_input_digest,
+            service_card_id=latest_revision.service_card_id,
+            service_digest=latest_revision.service_digest,
+            inventory_digest=latest_revision.inventory_digest,
+            source_material_ids=latest_revision.source_material_ids,
+            knowledge_card_ids=latest_revision.knowledge_card_ids,
+            final_canonical_url=latest_revision.final_canonical_url,
+            title=request.title,
+            page_assets=latest_revision.page_assets,
+            sections=request.sections,
+            faq=latest_revision.faq,
+            cta_blocks=latest_revision.cta_blocks,
+            internal_links=latest_revision.internal_links,
+            proposal_metadata=latest_revision.proposal_metadata,
+            created_by=request.created_by,
+        )
+    else:
+        command = ContentDraftRevisionAppendCommand(
             work_item_id=work_item_id,
             base_revision_id=request.base_revision_id,
             draft_package_id=draft_package.id,
@@ -516,7 +543,7 @@ def content_work_item_draft_revision_save(
             sections=request.sections,
             created_by=request.created_by,
         )
-    )
+    result = content_workflow_store().append_draft_revision(command)
     if result.status == "conflict":
         if result.conflict is None:
             raise RuntimeError("Revision append conflict is missing conflict details.")
