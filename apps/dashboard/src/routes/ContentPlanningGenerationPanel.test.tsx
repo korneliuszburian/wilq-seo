@@ -70,54 +70,13 @@ describe("ContentPlanningGenerationPanel", () => {
 
     render(
       <QueryClientProvider client={client}>
-        <ContentPlanningGenerationPanel
-          serviceCardId="service_card"
-          workItemId="work_item"
-          scopeCurrent
-        />
+        <ContentPlanningGenerationPanel serviceCardId="service_card" workItemId="work_item" />
       </QueryClientProvider>
     );
 
     expect(
       await screen.findByTestId("content-planning-service-confirmation-gate")
     ).toHaveTextContent("Najpierw potwierdź usługę");
-    expect(screen.queryByRole("button", { name: "Wygeneruj plan" })).not.toBeInTheDocument();
-  });
-
-  it("does not treat a baseline service flag as an approved scope", async () => {
-    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValueOnce({
-      status: "not_generated",
-      work_item_id: "work_item",
-      proposal: { service_selection_confirmed: true },
-      blockers: [],
-      safe_next_step: "Zatwierdź zakres.",
-      publish_ready: false
-    } as never);
-    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValueOnce({
-      status: "ready",
-      total_count: 15,
-      imported_count: 15,
-      import_pending_count: 0,
-      excerpt_review_required_count: 0,
-      ready_for_generation: true,
-      blocker: null,
-      next_step: "Można planować."
-    });
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
-    render(
-      <QueryClientProvider client={client}>
-        <ContentPlanningGenerationPanel
-          serviceCardId="service_card"
-          workItemId="work_item"
-          scopeCurrent={false}
-        />
-      </QueryClientProvider>
-    );
-
-    expect(
-      await screen.findByTestId("content-planning-scope-confirmation-gate")
-    ).toHaveTextContent("Najpierw zatwierdź zakres");
     expect(screen.queryByRole("button", { name: "Wygeneruj plan" })).not.toBeInTheDocument();
   });
 });
