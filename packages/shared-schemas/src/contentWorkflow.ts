@@ -2577,7 +2577,9 @@ export const ContentPlanningProposalSchema = z.object({
     inventory_heading: z.string().nullable().optional(),
     query_terms: z.array(z.string()).default([]),
     evidence_ids: z.array(z.string()),
-    claim_ids: z.array(z.string()).default([])
+    claim_ids: z.array(z.string()).default([]),
+    source_material_ids: z.array(z.string()).default([]),
+    knowledge_card_ids: z.array(z.string()).default([])
   })).min(1),
   search_demand: ContentSearchDemandEvidenceSchema,
   page_assets: ContentPlanningPageAssetsSchema.default({
@@ -2599,6 +2601,8 @@ export const ContentPlanningProposalSchema = z.object({
   }),
   evidence_ids: z.array(z.string()),
   source_connectors: z.array(z.string()),
+  source_material_ids: z.array(z.string()).default([]),
+  knowledge_card_ids: z.array(z.string()).default([]),
   created_at: z.string().nullable().optional()
 });
 

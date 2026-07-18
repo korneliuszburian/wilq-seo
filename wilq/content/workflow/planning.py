@@ -97,6 +97,8 @@ class ContentPlanningSection(BaseModel):
     query_terms: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     claim_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
 
 
 class ContentPlanningProposal(BaseModel):
@@ -143,6 +145,8 @@ class ContentPlanningProposal(BaseModel):
     )
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
     created_at: datetime | None = None
 
 

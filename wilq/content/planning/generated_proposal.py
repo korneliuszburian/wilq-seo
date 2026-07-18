@@ -533,6 +533,16 @@ def _proposal_from_output(
         sections=[
             ContentPlanningSection(
                 section_id=f"{proposal_id}_section_{index:02d}",
+                source_material_ids=_lineage_ids_for_evidence(
+                    planning_input.source_facts,
+                    section.evidence_ids,
+                    field="source_material_ids",
+                ),
+                knowledge_card_ids=_lineage_ids_for_evidence(
+                    planning_input.source_facts,
+                    section.evidence_ids,
+                    field="knowledge_card_ids",
+                ),
                 **section.model_dump(),
             )
             for index, section in enumerate(output.sections, start=1)
@@ -546,6 +556,14 @@ def _proposal_from_output(
         measurement_plan=output.measurement_plan,
         evidence_ids=planning_input.evidence_ids,
         source_connectors=planning_input.source_connectors,
+        source_material_ids=sorted(
+            {
+                source_material_id
+                for fact in planning_input.source_facts
+                for source_material_id in fact.source_material_ids
+            }
+        ),
+        knowledge_card_ids=planning_input.knowledge_card_ids,
         created_at=run.completed_at,
     )
     digest_payload = proposal.model_dump(
@@ -561,6 +579,21 @@ def _proposal_from_output(
         ).encode("utf-8")
     ).hexdigest()
     return proposal.model_copy(update={"planning_digest": digest})
+
+
+def _lineage_ids_for_evidence(
+    source_facts: Iterable[object],
+    evidence_ids: Iterable[str],
+    *,
+    field: Literal["source_material_ids", "knowledge_card_ids"],
+) -> list[str]:
+    allowed_evidence = set(evidence_ids)
+    values: set[str] = set()
+    for fact in source_facts:
+        fact_evidence_ids = getattr(fact, "evidence_ids", [])
+        if allowed_evidence.intersection(fact_evidence_ids):
+            values.update(getattr(fact, field, []))
+    return sorted(values)
 
 
 def _lineage_errors(
