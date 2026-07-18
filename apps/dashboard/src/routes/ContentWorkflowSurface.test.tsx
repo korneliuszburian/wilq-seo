@@ -710,7 +710,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    expect(await screen.findByText(`Wersja ${revision.revision_number}: ${revision.title}`))
+    expect(await screen.findByText(`Aktualny draft: ${revision.title}`))
       .toBeInTheDocument();
     const immutableContent = screen.getByTestId("immutable-revision-content");
     expect(within(immutableContent).getByText(revision.sections[0]?.body_markdown ?? ""))
@@ -718,7 +718,7 @@ describe("ContentWorkflowSurface", () => {
     expect(within(immutableContent).getAllByText(/ev_gsc_bdo/).length).toBeGreaterThan(0);
     expect(
       screen.getByRole("button", {
-        name: `Zapisz decyzję dla wersji ${revision.revision_number}`
+        name: "Zapisz decyzję dla aktualnego draftu"
       })
     ).toBeDisabled();
     expect(screen.getByText(/Dodaj krótką notatkę/)).toBeInTheDocument();
@@ -726,7 +726,7 @@ describe("ContentWorkflowSurface", () => {
       target: { value: "approved" }
     });
     const approveButton = screen.getByRole("button", {
-      name: `Zapisz decyzję dla wersji ${revision.revision_number}`
+      name: "Zapisz decyzję dla aktualnego draftu"
     });
     expect(approveButton).toBeDisabled();
     fireEvent.click(screen.getByRole("checkbox", { name: "Przeczytano dokładną treść tej wersji." }));
@@ -839,7 +839,7 @@ describe("ContentWorkflowSurface", () => {
     fireEvent.change(screen.getByLabelText("Notatka do decyzji"), {
       target: { value: "Popraw bezpośredniość wskazanej sekcji." }
     });
-    fireEvent.click(screen.getByRole("button", { name: "Zapisz decyzję dla wersji 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz decyzję dla aktualnego draftu" }));
 
     await waitFor(() => expect(getContentWorkItemSnapshot).toHaveBeenCalledTimes(2));
     await waitFor(() =>
