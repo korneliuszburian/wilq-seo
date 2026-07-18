@@ -5,6 +5,7 @@ import sqlite3
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.content.dynamic_planning_test_support import PlanningClient
 from tests.content.test_dynamic_planning_proposals_api import (
     BDO_WORK_ITEM_ID,
     OUTSOURCING_WORK_ITEM_ID,
@@ -13,7 +14,6 @@ from tests.content.test_dynamic_planning_proposals_api import (
     _initial_draft_request,
     _snapshot,
 )
-from tests.content.dynamic_planning_test_support import PlanningClient
 from wilq.content.quality import semantic_review_store as semantic_review_store_module
 from wilq.storage.local_state import local_state_store
 
