@@ -115,6 +115,7 @@ from wilq.content.workflow.decision_mapping import (
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.planning import ContentPlanningDecision, ContentPlanningProposal
 from wilq.content.workflow.queue import (
+    ContentWorkItemQueueBlocker,
     ContentWorkItemQueueCandidate,
     build_content_work_item_queue_candidate,
     build_content_work_item_queue_response,
@@ -262,7 +263,7 @@ def build_content_work_item_wordpress_draft_execution_response(
         execution_result=execute_content_wordpress_draft_handoff(
             handoff=request.handoff,
             draft_package=request.draft_package,
-            mode=request.mode,
+            mode="dry_run",
             live_write_enabled=live_write_enabled,
             create_draft=None,
             action_apply_authorized=False,
@@ -590,6 +591,10 @@ def _build_content_work_item_snapshot_response(
             and scope_planning_decision.human_override_review_required
         ),
     )
+    candidate = _gate_candidate_on_service_binding(
+        candidate,
+        service_profile_context=service_profile_context,
+    )
     stage_callbacks = SnapshotStageCallbacks(
         preflight=build_content_work_item_preflight_response,
         sales_brief=build_content_work_item_sales_brief_response,
@@ -628,6 +633,50 @@ def _build_content_work_item_snapshot_response(
         generated_planning_proposal=generated_planning_proposal,
         demand_metric_facts=demand_metric_facts,
         demand_source_page=demand_source_page,
+    )
+
+
+def _gate_candidate_on_service_binding(
+    candidate: ContentWorkItemQueueCandidate,
+    *,
+    service_profile_context: ContentWorkItemServiceProfileContext,
+) -> ContentWorkItemQueueCandidate:
+    """Keep the first-screen planning state honest when service binding is absent.
+
+    Content preflight can still be useful for inventory diagnostics, but an
+    unbound item must never look ready to plan in the workflow snapshot.
+    """
+    if service_profile_context.binding_status != "unbound":
+        return candidate
+    blocker = ContentWorkItemQueueBlocker(
+        code="missing_service_binding",
+        label="Brakuje karty usługi",
+        reason=(
+            "Nie można przygotować planu bez typed powiązania strony z kartą usługi."
+        ),
+        next_step=service_profile_context.safe_next_step,
+        decision_id=candidate.decision_id,
+        evidence_ids=candidate.evidence_ids,
+        source_connectors=candidate.source_connectors,
+    )
+    return candidate.model_copy(
+        update={
+            "recommended_mode": "block",
+            "recommended_mode_label": "zablokuj pisanie",
+            "status_label": "brakuje karty usługi",
+            "reason": blocker.reason,
+            "preflight_status": "blocked",
+            "preflight_status_label": "zablokowane",
+            "safe_next_step": blocker.next_step,
+            "blockers": [
+                blocker,
+                *[
+                    existing
+                    for existing in candidate.blockers
+                    if existing.code != blocker.code
+                ],
+            ],
+        }
     )
 
 
