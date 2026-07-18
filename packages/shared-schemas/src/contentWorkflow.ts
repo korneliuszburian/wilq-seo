@@ -3,6 +3,13 @@ import { z } from "zod";
 import { ContentDraftRevisionBindingSchema } from "./actions";
 
 export const ContentInventoryStatusSchema = z.enum(["missing", "resolved", "blocked"]);
+export const ContentOperatorContextSchema = z.object({
+  display_label: z.literal("Wilku (lokalny pilot)"),
+  request_label: z.literal("operator_local_dashboard"),
+  principal_id: z.literal("local_operator"),
+  trust_level: z.literal("local_unverified"),
+  authentication_status: z.literal("not_configured")
+});
 export const ContentCanonicalStatusSchema = z.enum(["missing", "resolved", "blocked"]);
 export const ContentDuplicateStatusSchema = z.enum([
   "missing",
@@ -61,9 +68,12 @@ export const ContentWorkItemSchema = z.object({
     "missing"
   ),
   wordpress_content_summary: z.string().nullable().optional(),
+  wordpress_content_text: z.string().nullable().optional(),
   wordpress_content_word_count: z.number().int().nonnegative().nullable().optional(),
   wordpress_content_inventory_status: z.enum(["available", "missing"]).default("missing"),
   wordpress_content_inventory_note: z.string().nullable().optional(),
+  wordpress_acf_section_inventory_status: ContentWordPressSectionInventoryStatusSchema.optional(),
+  wordpress_acf_section_inventory_note: z.string().nullable().optional(),
   evidence_ids: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()).default([]),
   inventory_status: ContentInventoryStatusSchema,
@@ -102,6 +112,24 @@ export const ContentFreshnessAssessmentSchema = z.object({
   blocked_connector_ids: z.array(z.string()).default([]),
   stale_connector_ids: z.array(z.string()).default([]),
   connector_labels_requiring_refresh: z.array(z.string()).default([]),
+  connector_refresh_run_ids: z.record(z.string(), z.string()).optional(),
+  connector_covered_windows: z.record(
+    z.string(),
+    z.object({
+      date_start: z.string().nullable().optional(),
+      date_end: z.string().nullable().optional(),
+      completeness: z.string().nullable().optional(),
+      cap_or_truncation: z.string().nullable().optional(),
+      snapshot_date: z.string().nullable().optional(),
+      cadence: z.string().nullable().optional(),
+      coverage_scope: z.string().nullable().optional(),
+      coverage_count: z.number().nullable().optional(),
+      interpretation_caveats: z.array(z.string()).default([])
+    })
+  ).optional(),
+  connector_settlement_states: z.record(z.string(), z.enum(["not_applicable", "settling", "settled", "unknown"])).optional(),
+  connector_quality_states: z.record(z.string(), z.enum(["verified", "partial", "unverified", "unknown"])).optional(),
+  connector_quality_caveats: z.record(z.string(), z.array(z.string())).optional(),
   summary: z.string(),
   next_step: z.string()
 });
@@ -131,6 +159,32 @@ export const ContentWorkItemQueueMeasurementReadinessSchema = z.object({
   label: z.string(),
   reason: z.string(),
   source_connectors: ContentEvidenceTraceFields.source_connectors
+});
+
+export const ContentWorkItemQueueSearchMetricsSchema = z.object({
+  impressions: z.number().int().nullable().optional(),
+  clicks: z.number().int().nullable().optional(),
+  ctr: z.number().nullable().optional(),
+  best_average_position: z.number().nullable().optional(),
+  query_count: z.number().int().nonnegative().default(0),
+  primary_query: z.string().nullable().optional(),
+  comparison_status: z.enum(["available", "not_available", "ambiguous"]).optional(),
+  comparison_reason: z.string().optional(),
+  comparison_periods: z.array(z.string()).optional(),
+  comparison_evidence_ids: z.array(z.string()).optional()
+});
+
+export const ContentWorkItemQueuePageInventorySchema = z.object({
+  title_or_h1: z.string().nullable().optional(),
+  section_count: z.number().int().nonnegative().nullable().optional(),
+  section_inventory_status: ContentWordPressSectionInventoryStatusSchema.default("missing"),
+  content_inventory_status: z.enum(["available", "missing"]).default("missing"),
+  content_summary: z.string().nullable().optional(),
+  content_word_count: z.number().int().nonnegative().nullable().optional(),
+  acf_section_inventory_status: ContentWordPressSectionInventoryStatusSchema.default("missing"),
+  acf_section_inventory_note: z.string().nullable().optional(),
+  acf_section_count: z.number().int().nonnegative().nullable().optional(),
+  acf_section_headings: z.array(z.string().min(1)).default([])
 });
 
 export const ContentRecommendedModeSchema = z.enum([
@@ -163,6 +217,8 @@ export const ContentWorkItemQueueCandidateSchema = z.object({
   preflight_status_label: z.string(),
   duplicate_canonical_risk_summary: z.string(),
   measurement_readiness: ContentWorkItemQueueMeasurementReadinessSchema,
+  search_metrics: ContentWorkItemQueueSearchMetricsSchema.optional(),
+  page_inventory: ContentWorkItemQueuePageInventorySchema.optional(),
   safe_next_step: z.string(),
   freshness_assessment: ContentFreshnessAssessmentSchema,
   blockers: z.array(ContentWorkItemQueueBlockerSchema).default([])
@@ -188,6 +244,8 @@ export const ContentInventoryRecordSchema = z.object({
   preview_url: z.string().nullable().optional(),
   content_status: z.string(),
   source_connectors: z.array(z.string()).default([]),
+  source_fact_ids: z.array(z.string()).default([]),
+  source_material_ids: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()).default([]),
   title: z.string().nullable().optional(),
   h1: z.string().nullable().optional(),
@@ -292,7 +350,9 @@ export const ContentClaimLedgerSchema = z.object({
 export const ContentSalesBriefSourceFactSchema = z.object({
   evidence_id: z.string(),
   source_connector: z.string(),
-  summary: z.string()
+  summary: z.string(),
+  source_fact_ids: z.array(z.string()).default([]),
+  source_material_ids: z.array(z.string()).default([])
 });
 
 export const ContentSalesBriefSeedSchema = z.object({
@@ -402,6 +462,49 @@ export const ContentKnowledgeCardSchema = z.object({
   confidence: z.number(),
   freshness: z.string(),
   usage_notes: z.array(z.string()).default([])
+});
+
+export const KnowledgeSourceFactViewSchema = z.object({
+  source_id: z.string(),
+  source_type: z.string(),
+  privacy_class: z.string(),
+  source_url_or_path: z.string(),
+  extracted_fact: z.string(),
+  scope: z.string(),
+  freshness_date: z.string(),
+  confidence: z.number(),
+  review_status: z.string(),
+  generation_status: z.enum(["eligible", "blocked_review_required"]),
+  reviewer: z.string().nullable().optional(),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  target_card_id: z.string(),
+  target_card_title: z.string(),
+  blocked_claims: z.array(z.string()).default([]),
+  usage_notes: z.array(z.string()).default([])
+});
+
+export const KnowledgeSourceMaterialViewSchema = z.object({
+  source_id: z.string(),
+  file_name: z.string(),
+  title: z.string(),
+  kind: z.string(),
+  word_count: z.number().int().nonnegative(),
+  digest_prefix: z.string(),
+  privacy_class: z.string(),
+  import_status: z.string(),
+  source_path: z.string()
+});
+
+export const KnowledgeSourceMaterialReadinessSchema = z.object({
+  status: z.enum(["ready", "import_pending", "excerpt_review_required"]),
+  total_count: z.number().int().nonnegative(),
+  imported_count: z.number().int().nonnegative(),
+  import_pending_count: z.number().int().nonnegative(),
+  excerpt_review_required_count: z.number().int().nonnegative(),
+  ready_for_generation: z.boolean(),
+  blocker: z.string().nullable().optional(),
+  next_step: z.string()
 });
 
 export const ContentKnowledgeProductionDepthReadinessSchema = z.object({
@@ -1346,6 +1449,7 @@ export const ContentWordPressDraftExecutionResultSchema = z.object({
   mode: z.enum(["dry_run", "live"]),
   boundary: ContentWordPressDraftExecutionBoundarySchema,
   payload: ContentWordPressDraftExecutionPayloadSchema.nullable().optional(),
+  revision_binding: ContentDraftRevisionBindingSchema.nullable().optional(),
   wordpress_post_id: z.string().nullable().optional(),
   external_write_attempted: z.boolean(),
   blockers: z.array(ContentWordPressDraftExecutionBlockerSchema).default([])
@@ -1417,7 +1521,7 @@ export const ContentWordPressDraftActivationPacketResponseSchema = z.object({
 export const ContentWorkItemWordPressDraftExecutionRequestSchema = z.object({
   handoff: ContentWordPressDraftHandoffSchema.nullable().optional(),
   draft_package: ContentDraftPackageSchema.nullable().optional(),
-  mode: z.enum(["dry_run", "live"]).default("dry_run"),
+  mode: z.literal("dry_run").default("dry_run"),
   write_authorization: ContentWordPressDraftWriteAuthorizationSchema.nullable().optional(),
   section_overrides: z.array(ContentWordPressDraftSectionOverrideSchema).default([])
 });
@@ -1461,7 +1565,10 @@ export const ContentMeasurementObservedMetricSchema = z.object({
   refresh_run_ids: z.array(z.string()).default([]),
   work_item_id: z.string().nullable().optional(),
   measurement_window_id: z.string().nullable().optional(),
-  content_url: z.string().nullable().optional()
+  content_url: z.string().nullable().optional(),
+  quality_state: z.enum(["verified", "partial", "unverified", "unknown"]).optional(),
+  settlement_state: z.enum(["settled", "settling", "not_applicable", "unknown"]).optional(),
+  interpretation_caveats: z.array(z.string()).default([])
 });
 
 export const ContentMeasurementOutcomeInterpretationSchema = z.object({
@@ -1586,13 +1693,45 @@ export const ContentDraftRevisionCtaBlockSchema = z.object({
   claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
 });
 
+const containsInlineLink = (value: string): boolean => {
+  const folded = value.toLowerCase();
+  return (
+    folded.includes("http://") ||
+    folded.includes("https://") ||
+    folded.includes("mailto:") ||
+    folded.includes("javascript:") ||
+    folded.includes("href=") ||
+    folded.includes("href =") ||
+    /[\[\]<>]/.test(value) ||
+    value.includes("//")
+  );
+};
+
+const isSafePublicContentUrl = (value: string): boolean => {
+  if (value !== value.trim() || /[\x00-\x20\x7f<>"'`()\[\]{}|\\^]/.test(value)) return false;
+  try {
+    const parsed = new URL(value);
+    return (
+      parsed.protocol === "https:" &&
+      ["ekologus.pl", "www.ekologus.pl", "sklep.ekologus.pl"].includes(
+        parsed.hostname.toLowerCase()
+      ) &&
+      parsed.username === "" &&
+      parsed.password === "" &&
+      parsed.port === "" &&
+      parsed.search === "" &&
+      parsed.hash === "" &&
+      parsed.pathname.startsWith("/")
+    );
+  } catch {
+    return false;
+  }
+};
+
 export const ContentDraftRevisionInternalLinkSchema = z.object({
   link_id: z.string().min(1),
   placement: z.string().min(1),
-  target_url: z.string().url().refine((value) => {
-    const hostname = new URL(value).hostname.toLowerCase();
-    return hostname === "ekologus.pl" || hostname === "www.ekologus.pl";
-  }, "Internal links must target the public Ekologus site."),
+  target_url: z.string().min(1),
   anchor_text: z.string().min(1),
   evidence_ids: z.array(z.string().refine((value) => value.trim().length > 0)).min(1),
   claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
@@ -1684,6 +1823,61 @@ export const ContentDraftRevisionSchema = z.object({
       path: ["internal_links"],
       message: "CTA and link placements must target the document structure"
     });
+  }
+  revision.internal_links.forEach((link, index) => {
+    const anchor = link.anchor_text.trim();
+    if (
+      /[\[\]<>\\\r\n\t]/.test(anchor) ||
+      anchor.includes("://") ||
+      /^(mailto|javascript):/i.test(anchor)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["internal_links", index, "anchor_text"],
+        message: "internal-link anchor text must be plain text"
+      });
+    }
+    if (!isSafePublicContentUrl(link.target_url)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["internal_links", index, "target_url"],
+        message: "internal links must target a safe public Ekologus URL"
+      });
+    }
+  });
+  const generatedText: Array<[string, Array<string | number>]> = [
+    [revision.title, ["title"]],
+    ...Object.entries(revision.page_assets ?? {}).map(([field, value]) => [
+      value,
+      ["page_assets", field]
+    ] as [string, Array<string | number>]),
+    ...revision.sections.flatMap((section, index) => [
+      [section.heading, ["sections", index, "heading"]] as [string, Array<string | number>],
+      [section.body_markdown, ["sections", index, "body_markdown"]] as [
+        string,
+        Array<string | number>
+      ]
+    ]),
+    ...revision.faq.flatMap((item, index) => [
+      [item.question, ["faq", index, "question"]] as [string, Array<string | number>],
+      [item.answer_markdown, ["faq", index, "answer_markdown"]] as [
+        string,
+        Array<string | number>
+      ]
+    ]),
+    ...revision.cta_blocks.map((item, index) => [
+      item.body_markdown,
+      ["cta_blocks", index, "body_markdown"]
+    ] as [string, Array<string | number>])
+  ];
+  for (const [value, path] of generatedText) {
+    if (containsInlineLink(value)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path,
+        message: "generated document text cannot contain inline links"
+      });
+    }
   }
 });
 
@@ -2154,6 +2348,8 @@ export const ContentWorkItemServiceProfileContextSchema = z.object({
   missing_contracts: z.array(z.string()).default([]),
   safe_next_step: z.string(),
   source_connectors: z.array(z.string()).default([]),
+  source_fact_ids: z.array(z.string()).default([]),
+  source_material_ids: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
   review_action_id: z.string().nullable().optional(),
@@ -2182,6 +2378,8 @@ const ContentWorkItemServiceProfileContextDefault = {
   missing_contracts: [],
   safe_next_step: "Najpierw usuń blocker workflow, potem sprawdź profil usługi.",
   source_connectors: [],
+  source_fact_ids: [],
+  source_material_ids: [],
   evidence_ids: [],
   knowledge_card_ids: []
 };
@@ -2495,8 +2693,12 @@ export const ContentPlanningInputSummarySchema = z.object({
   final_canonical_url: z.string().min(1),
   service_label: z.string().min(1),
   inventory_status: z.enum(["available", "missing"]),
+  content_inventory_status: z.enum(["available", "missing"]).optional(),
+  acf_section_inventory_status: z.enum(["available", "missing"]).optional(),
   source_assessments: z.array(ContentPlanningSourceAssessmentSchema).min(10),
   source_fact_count: z.number().int().nonnegative(),
+  source_fact_ids: z.array(z.string()).default([]),
+  source_material_ids: z.array(z.string()).default([]),
   evidence_id_count: z.number().int().nonnegative(),
   knowledge_card_count: z.number().int().nonnegative(),
   measurement_metrics: z.array(z.string()).default([])
@@ -2518,6 +2720,7 @@ export const ContentPlanningInputSummarySchema = z.object({
 export const ContentPlanningProposalResponseSchema = z.object({
   status: z.enum([
     "not_generated",
+    "generating",
     "created",
     "idempotent",
     "ready",
@@ -2913,11 +3116,108 @@ export const ContentOpportunityEnrichmentResponseSchema = z.object({
   blockers: z.array(ContentOpportunityEnrichmentBlockerSchema).default([])
 });
 
+export const ContentInventoryCatalogItemSchema = z.object({
+  catalog_id: z.string(),
+  work_item_id: z.string(),
+  url: z.string(),
+  path: z.string(),
+  title: z.string().nullable(),
+  content_type: z.string(),
+  content_summary: z.string().nullable(),
+  content_word_count: z.number().int().nonnegative().nullable(),
+  section_count: z.number().int().nonnegative().nullable(),
+  acf_section_count: z.number().int().nonnegative().nullable(),
+  acf_field_names: z.array(z.string()).default([]),
+  acf_section_headings: z.array(z.string()).default([]),
+  material_status: z.enum([
+    "content_and_structure",
+    "content_summary",
+    "structure_only",
+    "url_only"
+  ]),
+  source_connector: z.string(),
+  evidence_id: z.string(),
+  collected_at: z.string(),
+  metrics_status: z.enum(["available", "missing"]).default("missing"),
+  metrics_evidence_ids: z.array(z.string()).default([]),
+  metrics_query_count: z.number().int().nonnegative().default(0),
+  metrics_clicks: z.number().int().nonnegative().default(0),
+  metrics_impressions: z.number().int().nonnegative().default(0)
+});
+
+export const ContentInventoryCatalogResponseSchema = z.object({
+  status: z.enum(["ready", "blocked"]),
+  total_count: z.number().int().nonnegative(),
+  ready_count: z.number().int().nonnegative().default(0),
+  partial_count: z.number().int().nonnegative().default(0),
+  blocked_count: z.number().int().nonnegative().default(0),
+  items: z.array(ContentInventoryCatalogItemSchema),
+  source_connectors: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  coverage: z.object({
+    status: z.string(),
+    source_count: z.number().int().nonnegative().nullable().optional(),
+    returned_count: z.number().int().nonnegative(),
+    limit: z.number().int().nonnegative().nullable().optional(),
+    truncated: z.boolean().nullable().optional(),
+    caveat: z.string()
+  }).default({
+    status: "unknown",
+    returned_count: 0,
+    caveat: "Brak coverage z aktualnego odczytu WordPress."
+  })
+});
+
+export const ContentInventoryMaterialResponseSchema = z.object({
+  status: z.enum(["ready", "blocked"]),
+  url: z.string(),
+  source_kind: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  content_text: z.string().nullable().optional(),
+  content_summary: z.string().nullable().optional(),
+  content_word_count: z.number().int().nonnegative().nullable().optional(),
+  section_headings: z.array(z.string()).default([]),
+  acf_field_names: z.array(z.string()).default([]),
+  acf_section_headings: z.array(z.string()).default([]),
+  modified_gmt: z.string().nullable().optional(),
+  evidence_id: z.string().nullable().optional(),
+  blocker_code: z.string().nullable().optional(),
+  blocker: z.string().nullable().optional(),
+  extraction_region: z.string().nullable().optional(),
+  material_confidence: z.string().nullable().optional(),
+  source_field_lineage: z.array(z.string()).default([])
+});
+
+export const ContentInventoryBindingRequestSchema = z.object({ url: z.string().min(1) });
+export const ContentInventoryBindingResponseSchema = z.object({
+  status: z.enum(["ready", "blocked"]),
+  url: z.string(),
+  work_item_id: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  evidence_id: z.string().nullable().optional(),
+  material_status: z.string().nullable().optional(),
+  material_source_kind: z.string().nullable().optional(),
+  material_confidence: z.string().nullable().optional(),
+  extraction_region: z.string().nullable().optional(),
+  source_field_lineage: z.array(z.string()).default([]),
+  blocker_code: z.string().nullable().optional(),
+  blocker: z.string().nullable().optional(),
+  metrics_status: z.string().default("not_evaluated"),
+  metrics_evidence_ids: z.array(z.string()).default([]),
+  knowledge_status: z.string().default("not_evaluated"),
+  generation_status: z.string().default("blocked_until_service_and_metrics")
+});
+
 export type ContentWorkItem = z.infer<typeof ContentWorkItemSchema>;
 export type ContentWorkItemQueueCandidate = z.infer<
   typeof ContentWorkItemQueueCandidateSchema
 >;
 export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueResponseSchema>;
+export type ContentInventoryCatalogItem = z.infer<typeof ContentInventoryCatalogItemSchema>;
+export type ContentInventoryCatalogResponse = z.infer<typeof ContentInventoryCatalogResponseSchema>;
+export type ContentInventoryMaterialResponse = z.infer<typeof ContentInventoryMaterialResponseSchema>;
+export type ContentInventoryBindingRequest = z.input<typeof ContentInventoryBindingRequestSchema>;
+export type ContentInventoryBindingResponse = z.infer<typeof ContentInventoryBindingResponseSchema>;
 export type ContentWorkItemPreflightResponse = z.infer<
   typeof ContentWorkItemPreflightResponseSchema
 >;
@@ -2932,6 +3232,11 @@ export type ContentWorkItemSalesBriefRequest = z.input<
   typeof ContentWorkItemSalesBriefRequestSchema
 >;
 export type ContentKnowledgeCard = z.infer<typeof ContentKnowledgeCardSchema>;
+export type KnowledgeSourceFactView = z.infer<typeof KnowledgeSourceFactViewSchema>;
+export type KnowledgeSourceMaterialView = z.infer<typeof KnowledgeSourceMaterialViewSchema>;
+export type KnowledgeSourceMaterialReadiness = z.infer<
+  typeof KnowledgeSourceMaterialReadinessSchema
+>;
 export type ContentKnowledgeProductionDepthReadiness = z.infer<
   typeof ContentKnowledgeProductionDepthReadinessSchema
 >;
@@ -3086,3 +3391,4 @@ export type ContentOpportunityEnrichment = z.infer<
 export type ContentOpportunityEnrichmentResponse = z.infer<
   typeof ContentOpportunityEnrichmentResponseSchema
 >;
+export type ContentOperatorContext = z.infer<typeof ContentOperatorContextSchema>;
