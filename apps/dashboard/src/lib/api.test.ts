@@ -19,7 +19,6 @@ import {
   postContentWorkItemMeasurementWindow,
   postContentWorkItemPreflight,
   postContentWorkItemQualityReview,
-  postContentWorkItemRevisionPlan,
   postContentWorkItemSalesBrief,
   postContentWorkItemWordPressDraftExecution,
   postContentWorkItemWordPressDraftHandoff,
@@ -59,14 +58,6 @@ const responseByPath: Record<string, unknown> = {
   "/api/content/work-items/content_work_item_bdo/quality-review": {
     item: workItem(),
     quality_review: qualityReview()
-  },
-  "/api/content/work-items/revision-plan": {
-    item: workItem(),
-    revision_plan: revisionPlan()
-  },
-  "/api/content/work-items/content_work_item_bdo/revision-plan": {
-    item: workItem(),
-    revision_plan: revisionPlan()
   },
   "/api/content/work-items/human-review": {
     item: workItem(),
@@ -813,17 +804,6 @@ describe("content workflow API helpers", () => {
     });
     await postContentWorkItemQualityReview(qualityReviewRequest());
     await postContentWorkItemQualityReview(qualityReviewRequest(), "content_work_item_bdo");
-    await postContentWorkItemRevisionPlan({
-      item: workItem(),
-      quality_review: qualityReview()
-    });
-    await postContentWorkItemRevisionPlan(
-      {
-        item: workItem(),
-        quality_review: qualityReview()
-      },
-      "content_work_item_bdo"
-    );
     await postContentWorkItemHumanReview({ item: workItem(), review: humanReview() });
     await saveContentWorkItemSnapshotHumanReview({ review: humanReview() });
     await saveContentWorkItemSnapshotHumanReview(
@@ -875,8 +855,6 @@ describe("content workflow API helpers", () => {
       "/api/content/work-items/draft-package",
       "/api/content/work-items/quality-review",
       "/api/content/work-items/content_work_item_bdo/quality-review",
-      "/api/content/work-items/revision-plan",
-      "/api/content/work-items/content_work_item_bdo/revision-plan",
       "/api/content/work-items/human-review",
       "/api/content/work-items/snapshot/human-review",
       "/api/content/work-items/content_work_item_bdo/human-review",
@@ -1384,21 +1362,6 @@ function qualityDimension(status: "pass" | "needs_changes" | "blocked") {
     status,
     label: status === "pass" ? "OK" : "Wymaga poprawki",
     reason: "Kontrola jakości ma jasny wynik."
-  };
-}
-
-function revisionPlan() {
-  return {
-    id: "content_revision_plan_bdo",
-    work_item_id: "content_work_item_bdo",
-    quality_review_id: "content_quality_review_bdo",
-    status: "ready",
-    draft_revision_allowed: true,
-    instructions: qualityReview().revision_instructions,
-    blockers: [],
-    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-    source_connectors: ["google_search_console", "wordpress_ekologus"],
-    safe_next_step: "Zastosuj tylko wskazane poprawki."
   };
 }
 

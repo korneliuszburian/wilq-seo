@@ -1217,16 +1217,6 @@ export const ContentRevisionPlanSchema = z.object({
   ...ContentSafeNextStepField
 });
 
-export const ContentWorkItemRevisionPlanRequestSchema = z.object({
-  item: ContentWorkItemSchema,
-  quality_review: ContentQualityReviewSchema.nullable().optional()
-});
-
-export const ContentWorkItemRevisionPlanResponseSchema = z.object({
-  item: ContentWorkItemSchema,
-  revision_plan: ContentRevisionPlanSchema
-});
-
 export const ContentHumanReviewSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
@@ -3264,12 +3254,6 @@ export type ContentWorkItemQualityReviewRequest = z.input<
 >;
 export type ContentWorkItemQualityReviewResponse = z.infer<
   typeof ContentWorkItemQualityReviewResponseSchema
->;
-export type ContentWorkItemRevisionPlanRequest = z.input<
-  typeof ContentWorkItemRevisionPlanRequestSchema
->;
-export type ContentWorkItemRevisionPlanResponse = z.infer<
-  typeof ContentWorkItemRevisionPlanResponseSchema
 >;
 export type ContentWorkItemHumanReviewResponse = z.infer<
   typeof ContentWorkItemHumanReviewResponseSchema
