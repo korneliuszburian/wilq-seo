@@ -370,7 +370,8 @@ def _document_scope_errors(
     output: ContentInitialDraftModelOutput,
 ) -> list[str]:
     errors: list[str] = []
-    expected_sections = [(item.section_id, item.heading) for item in proposal.sections]
+    draftable_sections = draftable_planning_sections(proposal.sections)
+    expected_sections = [(item.section_id, item.heading) for item in draftable_sections]
     actual_sections = [(item.section_id, item.heading) for item in output.sections]
     if actual_sections != expected_sections:
         errors.append("sections")
@@ -383,7 +384,7 @@ def _document_scope_errors(
     ]:
         errors.append("internal_links")
     lineage_groups = [
-        *(item.evidence_ids for item in proposal.sections),
+        *(item.evidence_ids for item in draftable_sections),
         *(item.evidence_ids for item in proposal.faq),
         *(item.evidence_ids for item in proposal.cta_blocks),
         *(item.evidence_ids for item in proposal.internal_links),

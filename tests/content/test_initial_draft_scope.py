@@ -1,6 +1,12 @@
+from wilq.content.drafts.initial_full_draft import _document_scope_errors
+from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftModelOutput,
+    ContentInitialDraftSectionOutput,
+)
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_output_schema
 from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
+from wilq.content.workflow.revisions import ContentDraftRevisionPageAssets
 
 
 def _proposal_with_review_required_inventory() -> ContentPlanningProposal:
@@ -60,3 +66,26 @@ def test_full_draft_schema_excludes_remove_review_required_sections() -> None:
     assert sections["maxItems"] == 1
     assert section_definition["properties"]["section_id"]["enum"] == ["section_keep"]
     assert section_definition["properties"]["heading"]["enum"] == ["Sekcja do tekstu"]
+
+
+def test_document_scope_accepts_the_same_excluded_section_projection() -> None:
+    proposal = _proposal_with_review_required_inventory()
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Tytuł",
+            meta_title="Meta",
+            meta_description="Opis",
+            h1="Nagłówek",
+            lead="Lead",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="section_keep",
+                heading="Sekcja do tekstu",
+                body_markdown="Odpowiedź.",
+            )
+        ],
+        publish_ready=False,
+    )
+
+    assert _document_scope_errors(proposal, output) == []
