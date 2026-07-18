@@ -60,7 +60,13 @@ def build_initial_draft_revision_command(
         service_card_id=planning_input.confirmed_service_card_id,
         service_digest=_service_digest(planning_input),
         inventory_digest=_digest(planning_input.inventory),
-        source_material_ids=planning_input.source_material_ids,
+        source_material_ids=sorted(
+            {
+                source_material_id
+                for fact in planning_input.source_facts
+                for source_material_id in fact.source_material_ids
+            }
+        ),
         knowledge_card_ids=planning_input.knowledge_card_ids,
         final_canonical_url=planning_input.final_canonical_url,
         title=output.page_assets.wordpress_title,
