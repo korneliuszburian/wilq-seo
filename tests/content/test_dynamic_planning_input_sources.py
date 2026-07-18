@@ -262,7 +262,7 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
     assert ads_assessment.evidence_ids == ["ev_ads_blocked"]
 
 
-def test_owner_reviewed_rendered_content_unblocks_material_gate_and_changes_digest(
+def test_owner_reviewed_rendered_content_unblocks_material_gate_without_replanning(
     source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
 ) -> None:
     item, resolution, _ = source_context
@@ -293,7 +293,7 @@ def test_owner_reviewed_rendered_content_unblocks_material_gate_and_changes_dige
     assert reviewed.planning_input is not None
     assert (
         blocked.planning_input.planning_input_digest
-        != reviewed.planning_input.planning_input_digest
+        == reviewed.planning_input.planning_input_digest
     )
 
 

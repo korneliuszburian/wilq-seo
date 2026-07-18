@@ -286,7 +286,6 @@ def build_content_planning_input_from_components(
             "schema_name": "wilq_content_planning_input_v6",
             "criteria_version": "wilq_people_first_planning_v4",
             "inventory_mapping_policy": "wilq_inventory_mapping_v4",
-            "existing_content_material_reviewed": existing_content_material_reviewed,
             **payload,
         }
     )
