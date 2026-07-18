@@ -136,7 +136,13 @@ export function ContentPlanningGenerationPanel({
       {currentProposal ? (
         <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)]">
           <div className="rounded-md border border-line bg-surface p-3">
-            <p className="text-xs font-semibold uppercase text-slate-500">Kąt i intencja</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase text-slate-500">Aktualny plan</p>
+              <span className="rounded-full border border-action/20 bg-action/5 px-2 py-1 text-[11px] font-semibold text-action">
+                gotowy do review
+              </span>
+            </div>
+            <p className="mt-2 text-xs font-semibold uppercase text-slate-500">Kąt i intencja</p>
             <p className="mt-1 text-sm font-semibold text-ink">{currentProposal.angle}</p>
             <p className="mt-1 text-sm text-slate-700">{currentProposal.search_intent}</p>
           </div>
@@ -211,7 +217,7 @@ export function ContentPlanningGenerationPanel({
       <details className="mt-3 text-xs text-slate-500">
         <summary className="cursor-pointer font-semibold text-action">Dlaczego ten stan?</summary>
         <p className="mt-2 break-all">
-          Input: {state.planning_input_digest ?? "brak"} · wersja: {currentProposal?.proposal_version ?? "brak"}
+          Input: {state.planning_input_digest ?? "brak"} · zapis techniczny: {currentProposal?.proposal_version ?? "brak"}
         </p>
         {inputSummary ? (
           <>
