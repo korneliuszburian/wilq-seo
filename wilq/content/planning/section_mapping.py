@@ -220,6 +220,7 @@ def _excluded_reason(heading: str) -> str:
         return "dated_or_event_inventory"
     if normalized.startswith(
         (
+            "ponizej przedstawiamy",
             "zaufali nam",
             "moze cie rowniez zainteresowac",
             "dowiedz sie wiecej",

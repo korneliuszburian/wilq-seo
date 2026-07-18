@@ -70,14 +70,12 @@ class PlanningClient:
 def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
     planning_input = json.loads(request.untrusted_context)["planning_input"]
     assert_planning_input_contract(planning_input)
-    inventory_heading = next(
-        (
-            section["heading"]
-            for section in planning_input["inventory"]["sections"]
-            if _is_useful_synthetic_heading(section["heading"])
-        ),
-        planning_input["inventory"]["sections"][0]["heading"],
-    )
+    inventory_headings = [
+        section["heading"]
+        for section in planning_input["inventory"]["sections"]
+        if _is_useful_synthetic_heading(section["heading"])
+    ] or [planning_input["inventory"]["sections"][0]["heading"]]
+    inventory_heading = inventory_headings[0]
     evidence_id = planning_input["evidence_ids"][0]
     query_rows = planning_input["query_portfolio"]["gsc_query_rows"]
     query_terms = [query_rows[0]["term"]] if query_rows else []
@@ -109,7 +107,13 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
         "angle": f"Plan dla {planning_input['service_label']}",
         "value_proposition": "Bezpieczna odpowiedź na pytanie czytelnika.",
         "page_assets": _planning_page_assets(planning_input, inventory_heading),
-        "sections": [_planning_section(inventory_heading, query_terms, lineage)],
+        # The real mapping gate covers every existing inventory heading. Keep
+        # the fake Codex output aligned with that contract instead of creating
+        # a partial one-section proposal that must correctly be marked stale.
+        "sections": [
+            _planning_section(heading, query_terms, lineage)
+            for heading in inventory_headings
+        ],
         "faq": [_planning_faq(query_terms, lineage)],
         "cta_blocks": [_planning_cta(client, lineage)],
         "internal_links": [_planning_link(client, item) for item in candidates],

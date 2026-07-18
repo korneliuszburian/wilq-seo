@@ -221,3 +221,34 @@ def test_model_remove_review_disposition_is_not_presented_as_article_mapping() -
     assert mappings[0].status == "excluded"
     assert mappings[0].disposition == "remove_review_required"
     assert mappings[0].reason == "navigation_or_promotional_inventory"
+
+
+def test_faq_lead_inventory_is_excluded_for_review_when_model_omits_it() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_faq_lead",
+                    heading="Poniżej przedstawiamy często zadawane pytania dotyczące BDO:",
+                    evidence_ids=["ev_wp"],
+                )
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Odpowiedź dla czytelnika",
+                purpose="Zbudować użyteczną sekcję.",
+                reader_question="Co trzeba wiedzieć?",
+                inventory_disposition="create",
+            )
+        ]
+    )
+
+    mappings = build_inventory_mapping(planning_input, output, ["plan_01"])
+
+    assert mappings[0].status == "excluded"
+    assert mappings[0].disposition == "remove_review_required"
+    assert mappings[0].reason == "navigation_or_promotional_inventory"
