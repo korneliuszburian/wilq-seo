@@ -48,7 +48,13 @@ export function ContentPlanningReviewPanel({
     setDecision("approved");
     setNotes("");
     setChecked(false);
-  }, [proposal.proposal_id, proposal.service_card_id, proposal.service_selection_confirmed, stage]);
+  }, [
+    proposal.work_item_id,
+    proposal.proposal_id,
+    proposal.service_card_id,
+    proposal.service_selection_confirmed,
+    stage
+  ]);
   const selectedService = serviceCandidates.find(
     (candidate) => candidate.service_card_id === selectedServiceCardId
   );
