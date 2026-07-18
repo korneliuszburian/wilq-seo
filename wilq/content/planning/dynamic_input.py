@@ -61,8 +61,8 @@ class ContentPlanningInputBlocker(BaseModel):
 class ContentPlanningInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_name: Literal["wilq_content_planning_input_v2"] = "wilq_content_planning_input_v2"
-    criteria_version: Literal["wilq_people_first_planning_v1"] = "wilq_people_first_planning_v1"
+    schema_name: Literal["wilq_content_planning_input_v6"] = "wilq_content_planning_input_v6"
+    criteria_version: Literal["wilq_people_first_planning_v4"] = "wilq_people_first_planning_v4"
     planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     work_item_id: str = Field(min_length=1)
     goal: Literal["refresh_existing"] = "refresh_existing"

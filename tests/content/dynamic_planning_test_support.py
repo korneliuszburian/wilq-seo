@@ -394,7 +394,7 @@ def _section_revision_output(request: Any) -> dict[str, Any]:
 
 
 def assert_planning_input_contract(planning_input: dict[str, Any]) -> None:
-    assert planning_input["schema_name"] == "wilq_content_planning_input_v5"
+    assert planning_input["schema_name"] == "wilq_content_planning_input_v6"
     excluded_connectors = {
         "google_search_console",
         "google_ads",

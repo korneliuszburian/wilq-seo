@@ -2559,7 +2559,7 @@ export const ContentPlanningProposalSchema = z.object({
   codex_run_id: z.string().nullable().optional(),
   generation_status: z.enum(["baseline", "codex_generated"]).default("baseline"),
   input_schema_version: z.string().default("wilq_content_planning_input_v1"),
-  criteria_version: z.string().default("wilq_people_first_planning_v1"),
+  criteria_version: z.string().default("wilq_people_first_planning_v4"),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   final_canonical_url: z.string().min(1),
   service_card_id: z.string().nullable(),

@@ -696,7 +696,7 @@ def _approve_and_generate(
     assert created.status_code == 200
     assert created.json()["status"] == "created"
     assert created.json()["proposal"]["input_schema_version"] == (
-        "wilq_content_planning_input_v2"
+        "wilq_content_planning_input_v6"
     )
     repeated = client.post(
         f"/api/content/work-items/{work_item_id}/planning-proposals",
