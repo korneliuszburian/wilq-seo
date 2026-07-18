@@ -45,16 +45,17 @@ def build_inventory_mapping(
     section_ids: list[str],
 ) -> list[ContentPlanningInventoryMapping]:
     """Map all current inventory rows to the generated plan without guessing."""
-    by_inventory_heading = {
-        section.inventory_heading: (index, section)
-        for index, section in enumerate(output.sections)
-        if section.inventory_heading
-    }
+    by_inventory_heading: dict[str, list[tuple[int, object]]] = {}
+    for index, section in enumerate(output.sections):
+        if section.inventory_heading:
+            by_inventory_heading.setdefault(section.inventory_heading, []).append((index, section))
+    used_plan_indices: set[int] = set()
     mappings: list[ContentPlanningInventoryMapping] = []
     for inventory_section in planning_input.inventory.sections:
-        explicit = by_inventory_heading.get(inventory_section.heading)
-        if explicit is not None:
-            index, section = explicit
+        explicit = by_inventory_heading.get(inventory_section.heading, [])
+        if len(explicit) == 1 and explicit[0][0] not in used_plan_indices:
+            index, section = explicit[0]
+            used_plan_indices.add(index)
             mappings.append(
                 ContentPlanningInventoryMapping(
                     inventory_section_id=inventory_section.section_id,
@@ -70,7 +71,7 @@ def build_inventory_mapping(
         candidates = [
             (score, index, section)
             for index, section in enumerate(output.sections)
-            if section.inventory_disposition != "create"
+            if section.inventory_disposition != "create" and index not in used_plan_indices
             for score in [_heading_similarity(inventory_section.heading, section.heading)]
             if score >= 0.72
         ]
@@ -84,6 +85,7 @@ def build_inventory_mapping(
                 chosen = None
             else:
                 status = "mapped"
+                used_plan_indices.add(chosen[1])
         mappings.append(
             ContentPlanningInventoryMapping(
                 inventory_section_id=inventory_section.section_id,

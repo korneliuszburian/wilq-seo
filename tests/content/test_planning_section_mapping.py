@@ -63,3 +63,35 @@ def test_existing_inventory_is_mapped_without_requiring_model_to_repeat_heading(
     assert mappings[0].disposition == "rewrite"
     assert mappings[1].status == "unmapped"
     assert mappings[1].mapped_section_id is None
+
+
+def test_fuzzy_mapping_is_one_to_one_and_never_reuses_a_plan_section() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_01", heading="Zakres usług", evidence_ids=["ev_wp"]
+                ),
+                ContentPlanningInventorySection(
+                    section_id="inventory_02", heading="Zakres wsparcia", evidence_ids=["ev_wp"]
+                ),
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Zakres usług",
+                purpose="Wyjaśnić zakres.",
+                reader_question="Jaki jest zakres?",
+                inventory_disposition="rewrite",
+                inventory_heading=None,
+            )
+        ]
+    )
+
+    mappings = build_inventory_mapping(planning_input, output, ["plan_01"])
+
+    assert sum(item.status == "mapped" for item in mappings) == 1
+    assert sum(item.status == "unmapped" for item in mappings) == 1
