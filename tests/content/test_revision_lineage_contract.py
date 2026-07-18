@@ -4,6 +4,7 @@ import json
 import sqlite3
 from pathlib import Path
 
+from wilq.content.workflow.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.revision_persistence import (
     build_stored_draft_revision,
     draft_revision_content_digest,
@@ -11,6 +12,7 @@ from wilq.content.workflow.revision_persistence import (
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionPageAssets,
+    ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionSection,
 )
 from wilq.content.workflow.store import ContentWorkflowStore
@@ -135,3 +137,34 @@ def test_store_reads_a_legacy_payload_without_new_lineage_fields(tmp_path: Path)
     assert state.latest_revision is not None
     assert state.latest_revision.source_material_ids == []
     assert state.latest_revision.sections[0].knowledge_card_ids == []
+
+
+def test_child_revision_preserves_full_document_lineage() -> None:
+    command = _command(
+        schema_version="wilq_content_draft_revision_v2",
+        source_material_ids=["ekologus_material_approved"],
+    )
+    revision = build_stored_draft_revision(
+        command,
+        revision_number=1,
+        content_digest=draft_revision_content_digest(command),
+    )
+    metadata = ContentDraftRevisionProposalMetadata(
+        codex_run_id="codex_lineage_child",
+        selected_section_headings=[revision.sections[0].heading],
+        section_lineage=[
+            {"heading": revision.sections[0].heading, "evidence_ids": ["ev_lineage"]}
+        ],
+        quality_verdict="reviewable",
+    )
+
+    child = build_child_draft_revision_command(
+        revision,
+        sections=revision.sections,
+        proposal_metadata=metadata,
+        created_by="codex",
+    )
+
+    assert child.source_material_ids == revision.source_material_ids
+    assert child.knowledge_card_ids == revision.knowledge_card_ids
+    assert child.sections[0].source_material_ids == revision.sections[0].source_material_ids

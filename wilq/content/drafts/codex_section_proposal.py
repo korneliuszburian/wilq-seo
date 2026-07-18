@@ -76,6 +76,7 @@ def propose_content_section_revision(
     client: CodexAppServerClientProtocol,
     workflow_store: ContentWorkflowStore,
     run_store: LocalStateStore,
+    run_id: str | None = None,
 ) -> ContentCodexSectionProposalResponse:
     selected_headings = _ordered_selected_headings(snapshot, request)
     blockers = _proposal_preflight_blockers(
@@ -99,6 +100,7 @@ def propose_content_section_revision(
         base_revision_id=base_revision_id,
         client=client,
         run_store=run_store,
+        run_id=run_id,
     )
     if isinstance(runtime_call, ContentCodexSectionProposalResponse):
         return runtime_call
@@ -158,9 +160,11 @@ def _start_run(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     base_revision: ContentDraftRevision,
     run_store: LocalStateStore,
+    *,
+    run_id: str | None = None,
 ) -> CodexRun:
     run = CodexRun(
-        id=f"codex_content_proposal_{uuid4().hex}",
+        id=run_id or f"codex_content_proposal_{uuid4().hex}",
         skill="wilq-content-operator",
         hook="content_revision_proposal",
         source="wilq_api",
@@ -181,8 +185,9 @@ def _execute_runtime(
     base_revision_id: str,
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
+    run_id: str | None = None,
 ) -> _RuntimeCall | ContentCodexSectionProposalResponse:
-    run = _start_run(snapshot, inputs.base_revision, run_store)
+    run = _start_run(snapshot, inputs.base_revision, run_store, run_id=run_id)
     try:
         result = client.run_structured_turn(
             codex_turn_request(
@@ -400,6 +405,7 @@ def _persist_proposal(
                 contract=inputs.contract,
                 quality_review=quality_review,
                 selected_headings=inputs.selected_headings,
+                base_revision=base_revision,
             ),
             created_by=request.requested_by,
         ),
@@ -631,6 +637,7 @@ def _proposal_metadata(
     contract: StructuredDraftGenerationContract,
     quality_review: ContentQualityReview,
     selected_headings: list[str],
+    base_revision: ContentDraftRevision,
 ) -> ContentDraftRevisionProposalMetadata:
     if quality_review.verdict == "blocked":
         raise RuntimeError("Blocked quality review cannot be persisted as a proposal.")
@@ -638,6 +645,7 @@ def _proposal_metadata(
         marker.claim_text: marker.claim_id for marker in contract.model_input.claim_markers
     }
     output_by_heading = {section.heading: section for section in output.sections}
+    base_by_heading = {section.heading: section for section in base_revision.sections}
     return ContentDraftRevisionProposalMetadata(
         codex_run_id=run.id,
         selected_section_headings=selected_headings,
@@ -648,6 +656,8 @@ def _proposal_metadata(
                 claim_ids=[
                     marker_by_text[claim] for claim in output_by_heading[heading].claims_used
                 ],
+                source_material_ids=base_by_heading[heading].source_material_ids,
+                knowledge_card_ids=base_by_heading[heading].knowledge_card_ids,
             )
             for heading in selected_headings
         ],
