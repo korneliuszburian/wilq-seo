@@ -73,6 +73,37 @@ class ConnectorRefreshJobState(StrEnum):
     unknown = "unknown"
 
 
+class ConnectorSettlementState(StrEnum):
+    not_applicable = "not_applicable"
+    settling = "settling"
+    settled = "settled"
+    unknown = "unknown"
+
+
+class ConnectorQualityState(StrEnum):
+    verified = "verified"
+    partial = "partial"
+    unverified = "unverified"
+    unknown = "unknown"
+
+
+class ConnectorCoveredWindow(BaseModel):
+    """Connector-owned reporting window; never infer a universal freshness SLA."""
+
+    date_start: str | None = None
+    date_end: str | None = None
+    completeness: str | None = None
+    cap_or_truncation: str | None = None
+    snapshot_date: str | None = None
+    cadence: str | None = None
+    coverage_scope: str | None = None
+    coverage_count: int | None = Field(default=None, ge=0)
+    requested_count: int | None = Field(default=None, ge=0)
+    covered_count: int | None = Field(default=None, ge=0)
+    proxy_source: str | None = None
+    interpretation_caveats: list[str] = Field(default_factory=list)
+
+
 class ConnectorRefreshTriggerReason(StrEnum):
     eligible_stale = "eligible_stale"
     not_stale = "not_stale"
@@ -267,6 +298,7 @@ class ConnectorRefreshRequest(BaseModel):
     mode: ConnectorRefreshMode = ConnectorRefreshMode.status_probe
     reason: str | None = None
     run_async: bool = False
+    target_urls: list[str] = Field(default_factory=list, max_length=20)
 
 
 class ConnectorRefreshRun(BaseModel):
@@ -286,6 +318,9 @@ class ConnectorRefreshRun(BaseModel):
     vendor_data_collected: bool = False
     metrics_persisted: bool = True
     metric_summary: dict[str, float | int | str] = Field(default_factory=dict)
+    covered_window: ConnectorCoveredWindow = Field(default_factory=ConnectorCoveredWindow)
+    settlement_state: ConnectorSettlementState = ConnectorSettlementState.unknown
+    quality_state: ConnectorQualityState = ConnectorQualityState.unknown
     summary: str
     errors: list[str] = Field(default_factory=list)
     redacted: bool = True

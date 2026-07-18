@@ -147,6 +147,24 @@ export const ConnectorRefreshRunSchema = z.object({
   vendor_data_collected: z.boolean(),
   metrics_persisted: z.boolean().default(true),
   metric_summary: z.record(z.string(), z.union([z.string(), z.number()])),
+  covered_window: z
+    .object({
+      date_start: z.string().nullable().optional(),
+      date_end: z.string().nullable().optional(),
+      completeness: z.string().nullable().optional(),
+      cap_or_truncation: z.string().nullable().optional(),
+      snapshot_date: z.string().nullable().optional(),
+      cadence: z.string().nullable().optional(),
+      coverage_scope: z.string().nullable().optional(),
+      coverage_count: z.number().nullable().optional(),
+      requested_count: z.number().nullable().optional(),
+      covered_count: z.number().nullable().optional(),
+      proxy_source: z.string().nullable().optional(),
+      interpretation_caveats: z.array(z.string()).default([])
+    })
+    .optional(),
+  settlement_state: z.enum(["not_applicable", "settling", "settled", "unknown"]).optional(),
+  quality_state: z.enum(["verified", "partial", "unverified", "unknown"]).optional(),
   summary: z.string(),
   errors: z.array(z.string()),
   redacted: z.boolean()

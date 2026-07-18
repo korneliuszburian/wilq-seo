@@ -16,15 +16,122 @@ from wilq.connectors.vendor import VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.evidence.registry import connector_evidence_id, refresh_run_evidence_id
 from wilq.schemas import (
+    ConnectorCoveredWindow,
+    ConnectorQualityState,
     ConnectorRefreshMode,
     ConnectorRefreshRequest,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
+    ConnectorSettlementState,
     ConnectorStatusValue,
     utc_now,
 )
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
+
+
+def _quality_contract(
+    connector_id: str,
+    summary: dict[str, float | int | str],
+) -> tuple[ConnectorCoveredWindow, ConnectorSettlementState, ConnectorQualityState]:
+    date_start = summary.get("date_start")
+    date_end = summary.get("date_end")
+    completeness = summary.get("detail_data_completeness") or summary.get(
+        "aggregate_data_completeness"
+    )
+    truncated = summary.get("query_page_rows_truncated")
+    cap = str(truncated) if truncated is not None else None
+    caveats: list[str] = []
+    if cap == "true":
+        caveats.append("Szczegóły źródła osiągnęły limit wierszy.")
+    if connector_id == "google_analytics_4":
+        settlement = ConnectorSettlementState.settling
+        caveats.append(
+            "GA4 może zmieniać się po zebraniu danych; "
+            "okno pozostaje w stanie rozliczania, a jakość wymaga ostrożnej interpretacji."
+        )
+    elif connector_id == "ahrefs":
+        settlement = ConnectorSettlementState.not_applicable
+        caveats.append(
+            "Ahrefs jest ręcznym snapshotem; czas zebrania WILQ nie jest datą snapshotu danych."
+        )
+    elif connector_id == "localo":
+        settlement = ConnectorSettlementState.not_applicable
+        caveats.append(
+            "Localo agreguje zakres miejsc i fraz; interpretuj wynik wyłącznie "
+            "z podanym oknem i coverage."
+        )
+        if summary.get("localo_place_detail_truncated") == "true":
+            cap = "place_detail_limit"
+            caveats.append(
+                "Szczegóły Localo obejmują tylko część aktywnych miejsc; "
+                "wnioski nie są account-wide."
+            )
+    elif connector_id == "google_search_console":
+        settlement = ConnectorSettlementState.settled
+    else:
+        settlement = ConnectorSettlementState.unknown
+    quality = (
+        ConnectorQualityState.partial
+        if cap in {"true", "place_detail_limit"} or completeness == "partial_possible"
+        else (
+            ConnectorQualityState.unverified
+            if connector_id in {"google_analytics_4", "ahrefs", "localo"}
+            else (
+                ConnectorQualityState.verified
+                if date_start and date_end
+                else ConnectorQualityState.unverified
+            )
+        )
+    )
+    return (
+        ConnectorCoveredWindow(
+            date_start=date_start if isinstance(date_start, str) else None,
+            date_end=date_end if isinstance(date_end, str) else None,
+            completeness=str(completeness) if completeness is not None else None,
+            cap_or_truncation=cap,
+            cadence=(
+                "manual_lag_1_snapshot"
+                if connector_id == "ahrefs"
+                else "trailing_30_days"
+                if connector_id == "localo"
+                else None
+            ),
+            coverage_scope=(
+                "domain_snapshot"
+                if connector_id == "ahrefs"
+                else "active_places"
+                if connector_id == "localo"
+                else None
+            ),
+            coverage_count=(
+                int(summary["localo_active_place_count"])
+                if connector_id == "localo"
+                and isinstance(summary.get("localo_active_place_count"), (int, float))
+                else None
+            ),
+            requested_count=(
+                int(summary["localo_requested_place_count"])
+                if connector_id == "localo"
+                and isinstance(summary.get("localo_requested_place_count"), (int, float))
+                else None
+            ),
+            covered_count=(
+                int(summary["localo_covered_place_count"])
+                if connector_id == "localo"
+                and isinstance(summary.get("localo_covered_place_count"), (int, float))
+                else None
+            ),
+            proxy_source=(
+                str(summary["localo_proxy_source"])
+                if connector_id == "localo" and summary.get("localo_proxy_source")
+                else None
+            ),
+            interpretation_caveats=caveats,
+        ),
+        settlement,
+        quality,
+    )
 
 
 def run_connector_refresh(
@@ -45,6 +152,9 @@ def run_connector_refresh(
         configured=connector.configured,
         missing_credentials=connector.missing_credentials,
     )
+    covered_window, settlement_state, quality_state = _quality_contract(
+        connector_id, result.metric_summary
+    )
     run = ConnectorRefreshRun(
         id=run_id,
         connector_id=connector_id,
@@ -62,6 +172,9 @@ def run_connector_refresh(
         vendor_data_collected=result.vendor_data_collected,
         metrics_persisted=False,
         metric_summary=result.metric_summary,
+        covered_window=covered_window,
+        settlement_state=settlement_state,
+        quality_state=quality_state,
         summary=result.summary,
         errors=result.errors,
     )
@@ -155,6 +268,9 @@ def _persist_refresh_result(
     run: ConnectorRefreshRun,
     result: VendorReadResult,
 ) -> ConnectorRefreshRun:
+    covered_window, settlement_state, quality_state = _quality_contract(
+        run.connector_id, result.metric_summary
+    )
     saved_run = local_state_store().save_connector_refresh_run(
         run.model_copy(
             update={
@@ -164,6 +280,9 @@ def _persist_refresh_result(
                 "vendor_data_collected": result.vendor_data_collected,
                 "metrics_persisted": False,
                 "metric_summary": result.metric_summary,
+                "covered_window": covered_window,
+                "settlement_state": settlement_state,
+                "quality_state": quality_state,
                 "summary": result.summary,
                 "errors": result.errors,
             }

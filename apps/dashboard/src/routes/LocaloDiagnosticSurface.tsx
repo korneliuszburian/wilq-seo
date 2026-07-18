@@ -63,6 +63,19 @@ function LocaloDiagnosticBody({ data }: { data: LocaloDiagnosticsResponse }) {
           />
         </div>
         <p className="mt-3 text-sm leading-6 text-slate-700">{data.access_probe.summary}</p>
+        {latestRefresh?.covered_window?.date_start ? (
+          <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-700">
+            <span className="font-semibold">Zakres odczytu:</span>{" "}
+            {latestRefresh.covered_window.date_start}–{latestRefresh.covered_window.date_end} ·{" "}
+            {latestRefresh.covered_window.covered_count ?? "?"}/{latestRefresh.covered_window.requested_count ?? "?"} miejsc szczegółowo ·{" "}
+            {latestRefresh.covered_window.proxy_source === "localo_google_metric_series_and_place_reads"
+              ? "agregat Localo (nie bezpośredni GBP)"
+              : "źródło proxy"}
+            {latestRefresh.covered_window.cap_or_truncation
+              ? ` · ograniczenie: ${latestRefresh.covered_window.cap_or_truncation}`
+              : ""}
+          </div>
+        ) : null}
         {latestRefresh?.errors.length ? (
           <div className="mt-3 rounded-md border border-risk/30 bg-risk/10 p-3 text-sm text-risk">
             {latestRefresh.errors[0]}

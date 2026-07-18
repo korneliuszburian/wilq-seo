@@ -297,10 +297,22 @@ def _fetch_localo_value_facts(
         favorite_competitor_count += competitor_summary["favorite_competitor_count"]
         competitor_change_count += competitor_summary["competitor_change_count"]
 
+    date_range = _google_metric_series_date_range()
+    requested_place_count = len(places)
+    covered_place_count = len(place_ids)
+    place_detail_truncated = covered_place_count < requested_place_count
     summary: dict[str, MetricSummaryValue] = {
+        "date_start": date_range["dateStart"],
+        "date_end": date_range["dateEnd"],
         "localo_read_contract_count": 5,
-        "localo_active_place_count": len(places),
-        "localo_place_detail_count": len(place_ids),
+        "localo_active_place_count": requested_place_count,
+        "localo_place_detail_count": covered_place_count,
+        "localo_requested_place_count": requested_place_count,
+        "localo_covered_place_count": covered_place_count,
+        "localo_place_detail_limit": LOCALO_PLACE_DETAIL_LIMIT,
+        "localo_place_detail_truncated": "true" if place_detail_truncated else "false",
+        "localo_proxy_source": "localo_google_metric_series_and_place_reads",
+        "localo_window_days": 30,
         "localo_tracked_keyword_count": tracked_keyword_count,
         "localo_visibility_score_count": len(visibility_current_values),
         "localo_latest_grid_position_count": len(latest_grid_positions),
@@ -558,6 +570,17 @@ def _localo_metric_facts(summary: dict[str, MetricSummaryValue]) -> list[VendorM
         "localo_competitor_change_count": "competitor_visibility",
     }
     facts: list[VendorMetricFact] = []
+    scope_dimensions = {
+        "scope": "active_places",
+        "requested_place_count": str(summary.get("localo_requested_place_count", "")),
+        "covered_place_count": str(summary.get("localo_covered_place_count", "")),
+        "place_detail_limit": str(summary.get("localo_place_detail_limit", "")),
+        "place_detail_truncated": str(summary.get("localo_place_detail_truncated", "")),
+        "window_days": str(summary.get("localo_window_days", "")),
+        "date_start": str(summary.get("date_start", "")),
+        "date_end": str(summary.get("date_end", "")),
+        "proxy_source": str(summary.get("localo_proxy_source", "")),
+    }
     for name, contract in contracts.items():
         value = summary.get(name)
         if value is None:
@@ -566,7 +589,7 @@ def _localo_metric_facts(summary: dict[str, MetricSummaryValue]) -> list[VendorM
             VendorMetricFact(
                 name=name,
                 value=value,
-                dimensions={"contract": contract, "scope": "active_places"},
+                dimensions={"contract": contract, **scope_dimensions},
                 period="localo_mcp_read",
             )
         )
