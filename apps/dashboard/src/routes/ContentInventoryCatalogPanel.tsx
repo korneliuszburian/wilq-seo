@@ -141,7 +141,7 @@ export function ContentInventoryCatalogPanel({
                   <td className="px-3 py-3"><div className="font-medium text-ink">{item.title || item.path}</div><div className="mt-1 text-xs text-slate-500">{item.path}</div>{item.content_summary ? <div className="mt-1 max-w-xl text-xs leading-5 text-slate-600">{item.content_summary}</div> : null}</td>
                   <td className="px-3 py-3 text-xs text-slate-600">{item.content_type}<div className="mt-1 font-medium text-slate-700">{materialLabel(item.material_status)}</div></td>
               <td className="px-3 py-3 text-xs text-slate-600">{item.metrics_status === "available" ? <><div className="font-medium text-action">GSC/GA4 dostępne</div><div className="mt-1">{item.metrics_impressions.toLocaleString("pl-PL")} wyśw. · {item.metrics_clicks.toLocaleString("pl-PL")} klik.</div><div className="mt-1 text-slate-500">{item.metrics_query_count} zapytań · {item.metrics_evidence_ids.length} źródeł</div></> : <span className="text-wait">Brak dokładnych metryk</span>}</td>
-                  <td className="px-3 py-3 text-xs text-slate-600">{item.acf_section_count ? item.acf_section_headings.join(" · ") : item.acf_field_names.length ? `${item.acf_field_names.length} pól ACF (bez rozpoznanych nagłówków)` : "Brak wystawionych sekcji ACF"}{item.content_word_count ? <div className="mt-1 text-slate-500">{item.content_word_count} słów treści</div> : null}</td>
+                  <td className="px-3 py-3 text-xs text-slate-600">{inventoryStructureLabel(item)}{item.content_word_count ? <div className="mt-1 text-slate-500">{item.content_word_count} słów treści</div> : null}</td>
               <td className="px-3 py-3"><div className="flex flex-wrap gap-2">{workItemId ? <button type="button" className="rounded bg-action px-2 py-1 text-xs font-semibold text-white" onClick={() => onSelectWorkItem(workItemId)}>Otwórz plan</button> : <button type="button" className="rounded bg-action px-2 py-1 text-xs font-semibold text-white disabled:opacity-50" disabled={bind.isPending && bind.variables === item.url} onClick={() => { setPendingUrl(item.url); setInspectedUrl(item.url); bind.mutate(item.url); }}>{bind.isPending && bind.variables === item.url ? "Czytam materiał…" : item.material_status === "url_only" ? "Sprawdź i rozpocznij" : "Rozpocznij workflow"}</button>}<button type="button" className="rounded border border-line bg-white px-2 py-1 text-xs font-semibold text-slate-700" onClick={() => setInspectedUrl(item.url)}>{inspectedUrl === item.url ? "Materiał otwarty" : "Sprawdź materiał"}</button></div>{!workItemId ? <div className="mt-2 text-xs text-slate-500">Powiązanie opiera się na dokładnym URL-u i aktualnym odczycie strony; adresy bez REST/ACF są sprawdzane przez publiczny HTML.</div> : null}{bind.error ? <div className="mt-2 text-xs text-wait">{bind.error.message}</div> : null}</td>
                 </tr>
               );
@@ -247,4 +247,19 @@ function materialLabel(status: ContentInventoryCatalogResponse["items"][number][
     structure_only: "Sama struktura",
     url_only: "Sam adres"
   }[status];
+}
+
+export function inventoryStructureLabel(item: ContentInventoryCatalogResponse["items"][number]) {
+  if (item.acf_section_count) {
+    return item.acf_section_headings.length
+      ? `ACF: ${item.acf_section_headings.join(" · ")}`
+      : `${item.acf_section_count} sekcji ACF`;
+  }
+  if (item.section_count) {
+    return `${item.section_count} nagłówków w treści strony`;
+  }
+  if (item.acf_field_names.length) {
+    return `${item.acf_field_names.length} pól ACF (bez rozpoznanych nagłówków)`;
+  }
+  return "Brak rozpoznanej struktury";
 }

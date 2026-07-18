@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ContentInventoryCatalogResponse } from "../lib/api";
 import {
   compareInventoryItems,
+  inventoryStructureLabel,
   InventoryWorkflowStartingPanel,
   matchesInventoryView
 } from "./ContentInventoryCatalogPanel";
@@ -69,5 +70,20 @@ describe("matchesInventoryView", () => {
     expect(matchesInventoryView(metricsOnly, "ready")).toBe(false);
     expect(matchesInventoryView(metricsOnly, "metrics")).toBe(true);
     expect(matchesInventoryView(metricsOnly, "all")).toBe(true);
+  });
+});
+
+describe("inventoryStructureLabel", () => {
+  it("distinguishes the_content headings from ACF layouts", () => {
+    expect(inventoryStructureLabel({ ...item, section_count: 4 })).toBe(
+      "4 nagłówków w treści strony"
+    );
+    expect(
+      inventoryStructureLabel({
+        ...item,
+        acf_section_count: 2,
+        acf_section_headings: ["Hero", "CTA"]
+      })
+    ).toBe("ACF: Hero · CTA");
   });
 });
