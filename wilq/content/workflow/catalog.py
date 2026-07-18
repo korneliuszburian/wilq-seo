@@ -287,8 +287,22 @@ def _inventory_coverage() -> ContentInventoryCoverage:
                 "jako pełnego."
             ),
         )
+    public_coverage_unknown = (
+        public_sitemap_source_count is not None
+        and public_sitemap_returned is not None
+        and public_sitemap_limit is not None
+        and public_sitemap_source_count >= public_sitemap_limit
+        and public_sitemap_returned >= public_sitemap_limit
+        and not isinstance(public_sitemap_truncated, bool)
+    )
     return ContentInventoryCoverage(
-        status="truncated" if truncated or public_sitemap_truncated is True else "complete",
+        status=(
+            "truncated"
+            if truncated or public_sitemap_truncated is True
+            else "unknown"
+            if public_coverage_unknown
+            else "complete"
+        ),
         source_count=source_count,
         returned_count=returned_count,
         public_sitemap_source_count=(
@@ -321,7 +335,10 @@ def _inventory_coverage() -> ContentInventoryCoverage:
             "Sitemap przekroczył limit; część adresów wymaga osobnego odczytu."
             if truncated or public_sitemap_truncated is True
             else (
-                "Liczba adresów mieści się w limicie tego odczytu; nie oznacza to "
+                "Publiczna sitemap osiągnęła limit, ale starszy odczyt nie zapisał "
+                "flagi ucięcia; kompletność wymaga ponownego odczytu."
+                if public_coverage_unknown
+                else "Liczba adresów mieści się w limicie tego odczytu; nie oznacza to "
                 "kompletności danych ACF."
             )
         ),

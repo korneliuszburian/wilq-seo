@@ -169,6 +169,37 @@ def test_inventory_catalog_uses_only_latest_search_refresh_metrics(monkeypatch):
     assert result.items[0].metrics_evidence_ids == ["ev_gsc_current"]
 
 
+def test_inventory_coverage_does_not_claim_complete_for_legacy_public_cap(monkeypatch):
+    latest_run = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        metric_summary={
+            "sitemap_url_source_count": 102,
+            "sitemap_url_returned_count": 102,
+            "sitemap_url_limit": 500,
+            "sitemap_url_truncated": False,
+            "public_sitemap_url_source_count": 500,
+            "public_sitemap_url_returned_count": 500,
+            "public_sitemap_url_limit": 500,
+            # Older refreshes did not persist this field.
+            "public_sitemap_url_count": 500,
+        },
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: [latest_run]
+        ),
+    )
+
+    coverage = catalog_module._inventory_coverage()
+
+    assert coverage.status == "unknown"
+    assert coverage.public_sitemap_truncated is None
+    assert "starszy odczyt" in coverage.caveat
+
+
 def test_inventory_metric_facts_do_not_mix_search_refresh_history(monkeypatch):
     page_url = "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
     old_fact = SimpleNamespace(
