@@ -14,6 +14,7 @@ na publikację.
   `the_content`, bez wykrytych sekcji flexible ACF.
 - Źródła planu: GSC, WordPress, karta usługi i powiązane fakty źródłowe.
 - Dokładny digest wejścia: `1c23f81e61b3fc89b8523f0efe9f370ce702bda1c1dd05682ae5be8bfe9df700`.
+- Exact proposal: `content_planning_proposal_48d2f833f54d4f6a8641d27ca39995e8`.
 
 ## Proponowana struktura
 
