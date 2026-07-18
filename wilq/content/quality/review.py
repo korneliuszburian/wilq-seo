@@ -134,6 +134,7 @@ def build_content_quality_review(
             item=item,
             claim_ledger=claim_ledger,
             structured_output=structured_output,
+            revision=revision,
         ),
         *_duplicate_findings(
             item=item,
@@ -439,6 +440,7 @@ def _claim_findings(
     item: ContentWorkItem,
     claim_ledger: ContentClaimLedger | None,
     structured_output: StructuredDraftOutput | None,
+    revision: ContentDraftRevision | None = None,
 ) -> list[ContentQualityFinding]:
     if claim_ledger is None:
         return [
@@ -454,6 +456,15 @@ def _claim_findings(
         ]
     findings: list[ContentQualityFinding] = []
     ledger_blockers = claim_ledger_blockers(claim_ledger)
+    if revision is not None and revision.schema_version == "wilq_content_draft_revision_v2":
+        used_claim_ids = {
+            claim_id
+            for section in revision.sections
+            for claim_id in section.claim_ids
+        }
+        ledger_blockers = [
+            blocker for blocker in ledger_blockers if blocker.claim_id in used_claim_ids
+        ]
     if ledger_blockers:
         findings.append(
             _finding(
