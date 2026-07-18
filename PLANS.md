@@ -322,3 +322,92 @@ Minimalny standard obserwowalnego zachowania:
 - każdy focused proof ma wskazywać konkretny caller, publiczny seam i wynik
   widoczny dla marketera; pełne `scripts/verify.sh` uruchamiamy dopiero po
   domknięciu wszystkich zależnych slice'ów.
+
+## 13. Protokół long-running task — obowiązuje od nowego goalu
+
+Ten protokół opisuje sposób realizacji długiego celu, nie nową warstwę produktu.
+Jest inspirowany oficjalnym wzorcem trwałego celu Codexa dla long-running work
+oraz wzorcami OpenAI Cookbook dotyczącymi resilient workflows, eval flywheel i
+pracy w tle. W repo pozostajemy przy istniejącym serwerowym Codex app-server;
+nie dodajemy drugiego klienta modelowego.
+
+### 13.1 Jeden aktywny goal i wykonywalny plan
+
+- Aktywny goal ma jeden opis rezultatu, granice, Definition of Done i jawne
+  blokery. Nie zakładamy nowego goalu dla każdej drobnej czynności.
+- `update_plan` pokazuje najwyżej kilka aktualnych kroków; każdy krok ma
+  `pending`, `in_progress` albo `completed`. Plan jest kompasem, a nie dowodem.
+- Beads jest grafem właścicieli, zależności i handoffów. `PLANS.md` nie jest
+  równoległą kolejką TODO i nie kopiuje statusów Beads.
+- Na początku każdego odcinka czytamy właściwy `docs/CONTEXT.md`, stan route'u,
+  aktywny Bead i tylko wymagane źródła. Nie odzyskujemy stanu z pamięci modelu.
+
+### 13.2 Checkpoint zamiast pozornej ciągłości
+
+Każda iteracja zostawia krótki checkpoint zawierający: fixed commit, zakres,
+zmienione seamy, obserwowany wynik, uruchomione proofy, niezakończone ryzyka,
+następny krok i właściciela blokera. Po przerwaniu można wznowić pracę z tego
+rekordu bez ponownego wymyślania planu.
+
+Procesy trwające długo działają przez managed stack albo jawny background job:
+
+- start zapisuje `run_id`, wejściowy digest, wersję kontraktu i czas;
+- GET odczytuje stan, nigdy nie uruchamia modelu ani vendora;
+- wynik pośredni nie jest publikowany jako gotowy artefakt;
+- retry tworzy nową próbę, a stary run pozostaje czytelny;
+- timeout, crash i brak wyniku kończą się typed blockerem bez częściowego zapisu;
+- pollujemy krótkimi odcinkami i komunikujemy postęp, zamiast blokować shell lub
+  UI nieskończonym spinnerem;
+- restart procesu nie może zgubić faktu, że próba się rozpoczęła albo zakończyła.
+
+Nie uruchamiamy tego samego kosztownego modelowego zadania równolegle tylko po
+to, żeby „przyspieszyć”. Najpierw sprawdzamy istniejący run, digest i idempotencję.
+
+### 13.3 Najmniejszy kompletny slice i dowód
+
+Kolejność każdego slice'u jest stała:
+
+`claim Beada → caller/public seam → najmniejsza zmiana produkcyjna → focused
+falsifier → state/Bead checkpoint → review fixed point → semantic commit → push`.
+
+Proof dobieramy do ryzyka, nie do rozmiaru diffu:
+
+- 0 nowych testów dla dokumentacji, copy i zmian mechanicznych już objętych
+  publicznym seamem;
+- 1 focused falsifier dla jednego zmienionego kontraktu lub reprodukcji błędu;
+- kilka falsyfikatorów tylko wtedy, gdy wymagania mają niezależne failure modes;
+- szerokie `scripts/verify.sh` raz przy końcowym cross-surface claimie, nie po
+  każdym zielonym teście;
+- nigdy nie przedstawiamy testu fixture, screenshotu ani synthetic browser proof
+  jako realnego UAT lub dowodu jakości treści.
+
+Każde twierdzenie w handoffie ma bezpośredni artefakt dowodowy: command output,
+live API response, test result, rendered browser result albo human decision.
+Brak dowodu jest stanem `unknown`/blockerem, nie zaproszeniem do zgadywania.
+
+### 13.4 Model, prompt i review
+
+Model dostaje jeden jasno określony kontrakt i niemutowalny input digest. Nie
+prosimy jednej sesji o research, implementację i zatwierdzenie naraz. Model może
+proponować; API, człowiek i ActionObject zachowują władzę nad stanem.
+
+Każdy istotny fixed point może mieć najwyżej jeden bounded second-opinion pass
+na rolę: `researcher`, `rewrite-maker` albo `checker`. Pass musi mieć własny
+katalog poza repo, fingerprint, zakres ścieżek, expected deliverable, lokalny
+proof i `disposition.md`. Wynik Claude jest hipotezą klasyfikowaną jako
+`accept_and_fix`, `evidence_gap`, `reject_with_evidence`, `follow_up` albo
+`human_decision`; nie jest approvalem. Nie retryujemy w tym samym katalogu po
+odrzuconym outputcie.
+
+### 13.5 Commit i publikacja
+
+Każdy nowy commit używa semantic headera egzekwowanego przez
+`.githooks/commit-msg`. Commit zawiera tylko task-owned paths, a push następuje
+po focused proofie i świadomym sprawdzeniu dirty worktree. Stare nagłówki są
+historycznym debt, którego nie przepisujemy bez osobnej zgody na rewrite historii.
+
+Commit nie oznacza ukończenia celu. Ukończenie wymaga spełnienia Definition of
+Done, świeżego audytu wymagań i dowodów oraz braku nierozwiązanych blockerów
+produktowych. Gdy nie można iść dalej przez trzy kolejne goal turns z tym samym
+zewnętrznym blockerem, oznaczamy blocker jawnie; nie udajemy postępu i nie
+zmieniamy kryteriów sukcesu na łatwiejsze.
