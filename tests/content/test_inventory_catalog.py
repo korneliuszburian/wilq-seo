@@ -4,7 +4,11 @@ from types import SimpleNamespace
 import httpx
 
 import wilq.content.workflow.catalog as catalog_module
-from wilq.content.workflow.catalog import bind_content_inventory_item, build_content_inventory_catalog
+from wilq.content.workflow.catalog import (
+    bind_content_inventory_item,
+    build_content_inventory_catalog,
+    inventory_metric_facts,
+)
 from wilq.content.workflow.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
@@ -163,6 +167,57 @@ def test_inventory_catalog_uses_only_latest_search_refresh_metrics(monkeypatch):
     assert result.items[0].metrics_clicks == 1
     assert result.items[0].metrics_query_count == 1
     assert result.items[0].metrics_evidence_ids == ["ev_gsc_current"]
+
+
+def test_inventory_metric_facts_do_not_mix_search_refresh_history(monkeypatch):
+    page_url = "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
+    old_fact = SimpleNamespace(
+        name="clicks",
+        dimensions={"page": page_url, "query": "stare"},
+        source_connector="google_search_console",
+        evidence_id="ev_gsc_old",
+        value="20",
+        model_dump_json=lambda: "old",
+    )
+    current_fact = SimpleNamespace(
+        name="clicks",
+        dimensions={"page": page_url, "query": "doradztwo środowiskowe"},
+        source_connector="google_search_console",
+        evidence_id="ev_gsc_current",
+        value="0",
+        model_dump_json=lambda: "current",
+    )
+    latest_run = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        evidence_ids=["ev_gsc_current"],
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "metric_store",
+        lambda: SimpleNamespace(
+            list_metric_facts_for_content_url=lambda connectors, *_args, **_kwargs: (
+                [old_fact, current_fact]
+                if connectors == ["google_search_console"]
+                else []
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: (
+                [latest_run]
+                if connector_id == "google_search_console"
+                else []
+            )
+        ),
+    )
+
+    facts = inventory_metric_facts(page_url, "/oferta/doradztwo-i-outsourcing-ekologiczny/")
+
+    assert [fact.evidence_id for fact in facts] == ["ev_gsc_current"]
 
 
 def test_dynamic_material_falls_back_to_rendered_the_content(monkeypatch):

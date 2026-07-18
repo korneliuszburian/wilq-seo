@@ -439,14 +439,31 @@ def inventory_work_item_id(url: str) -> str:
 def inventory_metric_facts(url: str, path: str):
     facts = []
     for lookup_url in landing_page_metric_lookup_urls(url):
-        facts.extend(
-            metric_store().list_metric_facts_for_content_url(
-                ["google_search_console", "google_analytics_4"],
+        for connector_id in ("google_search_console", "google_analytics_4"):
+            connector_facts = metric_store().list_metric_facts_for_content_url(
+                [connector_id],
                 lookup_url,
                 content_path=landing_page_metric_lookup_path(url) or path,
             )
-        )
+            facts.extend(_restrict_to_latest_refresh_batch(connector_id, connector_facts))
     return list({fact.model_dump_json(): fact for fact in facts}.values())
+
+
+def _restrict_to_latest_refresh_batch(connector_id: str, facts: list[Any]) -> list[Any]:
+    """Prevent demand rows from mixing evidence across connector refresh history."""
+    runs = local_state_store().list_connector_refresh_runs(connector_id=connector_id)
+    latest = next(
+        (
+            run
+            for run in runs
+            if run.mode.value == "vendor_read" and run.status.value == "completed"
+        ),
+        None,
+    )
+    if latest is None or not latest.evidence_ids:
+        return facts
+    allowed = set(latest.evidence_ids)
+    return [fact for fact in facts if fact.evidence_id in allowed]
 
 
 def _catalog_metric_facts_by_path() -> dict[str, list[Any]]:
