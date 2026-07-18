@@ -169,6 +169,11 @@ def test_semantic_review_real_store_requires_maintenance_before_model(
     assert blocked.json()["status"] == "blocked"
     assert blocked.json()["blockers"][0]["code"] == "storage_activation_required"
     assert runtime.calls == calls_before
+    read_blocked = client.get(
+        _semantic_review_path(BDO_WORK_ITEM_ID, revision["revision_id"])
+    )
+    assert read_blocked.json()["status"] == "blocked"
+    assert read_blocked.json()["blockers"][0]["code"] == "storage_activation_required"
     with sqlite3.connect(store_path) as connection:
         table = connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",

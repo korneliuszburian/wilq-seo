@@ -89,6 +89,22 @@ def read_content_semantic_review(
     )
     if exact is not None:
         return _review_response("ready", revision, exact)
+    # GET remains model-free, but it should still explain a deterministic
+    # preflight blocker after reload.  Without this check a blocked review
+    # briefly appears as ``not_generated`` and the marketer loses the next
+    # actionable step.  `_prepare_inputs` performs only digest/source/storage
+    # validation and starts no run.
+    preflight = _prepare_inputs(
+        snapshot,
+        revision_id,
+        ContentSemanticReviewRequest(
+            expected_revision_digest=revision.content_digest,
+            requested_by="WILQ read preflight",
+        ),
+        store,
+    )
+    if isinstance(preflight, ContentSemanticReviewResponse):
+        return preflight
     latest = store.latest(revision.work_item_id)
     if latest is None:
         return ContentSemanticReviewResponse(
