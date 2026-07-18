@@ -149,6 +149,17 @@ from wilq.schemas.core import utc_now
 router = APIRouter()
 
 
+def _require_generated_section_map(proposal: ContentPlanningProposal) -> None:
+    if proposal.generation_status != "codex_generated" or proposal.proposal_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Mapa sekcji może być zatwierdzona dopiero po wygenerowaniu aktualnego "
+                "planu; baseline nie jest planem do akceptacji."
+            ),
+        )
+
+
 @router.get("/api/content/operator-context", response_model=ContentOperatorContext)
 def content_operator_context_route() -> ContentOperatorContext:
     return content_operator_context()
@@ -364,6 +375,8 @@ def content_work_item_planning_review(
             status_code=409,
             detail="Najpierw zatwierdź aktualny zakres treści.",
         )
+    if request.stage == "section_map":
+        _require_generated_section_map(workspace.proposal)
     if (
         request.stage == "section_map"
         and request.service_card_id is not None
