@@ -308,7 +308,7 @@ def refresh_google_ads_campaign_summary(
                 credentials,
                 access_token,
             )
-            landing_inventory = _fetch_ad_final_url_inventory(
+            landing_inventory, landing_inventory_status = _fetch_ad_final_url_inventory(
                 client,
                 credentials,
                 access_token,
@@ -374,6 +374,7 @@ def refresh_google_ads_campaign_summary(
                 search_term_facts,
             )
             metric_summary.update(search_term_summary)
+            metric_summary["search_term_landing_inventory_status"] = landing_inventory_status
             metric_summary.update(search_term_safety_summary)
             metric_summary.update(shopping_product_summary)
             metric_summary.update(shopping_product_state_summary)
@@ -617,7 +618,7 @@ def _fetch_ad_final_url_inventory(
     client: httpx.Client,
     credentials: Mapping[str, str | None],
     access_token: str,
-) -> AdsLandingInventory:
+) -> tuple[AdsLandingInventory, str]:
     """Read ad final URLs separately because search-term GAQL may reject them."""
     customer_id = credentials["customer_id"]
     try:
@@ -634,7 +635,7 @@ def _fetch_ad_final_url_inventory(
         )
         response.raise_for_status()
     except httpx.HTTPError:
-        return {}
+        return {}, "blocked"
     rows = _search_stream_rows(response.json())
     inventory: AdsLandingInventory = {}
     for row in rows:
@@ -662,7 +663,7 @@ def _fetch_ad_final_url_inventory(
                     reference.has_functional_query,
                 )
             )
-    return inventory
+    return inventory, "ready"
 
 
 def _fetch_search_term_summary(

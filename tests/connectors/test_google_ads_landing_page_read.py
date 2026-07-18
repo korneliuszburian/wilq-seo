@@ -28,6 +28,7 @@ def test_google_ads_refresh_keeps_search_terms_live_when_landing_join_is_unavail
 
     assert result.status == ConnectorRefreshStatus.completed
     assert result.metric_summary[ADS_SEARCH_TERM_PAYLOAD_STATUS] == "ready"
+    assert result.metric_summary["search_term_landing_inventory_status"] == "ready"
     assert result.metric_summary["search_term_landing_mapped_row_count"] == 0
     assert result.metric_summary["search_term_landing_blocked_row_count"] == 1
     query = next(query for query in queries if "FROM search_term_view" in query)
@@ -90,6 +91,22 @@ def test_auxiliary_landing_join_keeps_missing_and_ambiguous_unresolved() -> None
     assert ambiguous == {ADS_LANDING_MAPPING_STATUS: "ambiguous"}
 
 
+def test_failed_auxiliary_landing_inventory_is_typed_without_dropping_search_terms(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: object,
+) -> None:
+    result, _ = _run_refresh(
+        monkeypatch,
+        tmp_path,
+        _search_term_row(),
+        final_url_error=True,
+    )
+
+    assert result.metric_summary["search_term_landing_inventory_status"] == "blocked"
+    assert result.metric_summary["search_term_row_count"] == 1
+    assert result.metric_summary["search_term_landing_blocked_row_count"] == 1
+
+
 @pytest.mark.parametrize("malformed_case", ["missing_metrics", "infinite_metric"])
 def test_google_ads_refresh_blocks_malformed_search_term_row_without_partial_facts(
     monkeypatch: pytest.MonkeyPatch,
@@ -128,6 +145,7 @@ def _run_refresh(
     tmp_path: object,
     search_term_row: dict[str, object],
     final_url_rows: list[dict[str, object]] | None = None,
+    final_url_error: bool = False,
 ) -> tuple[VendorReadResult, list[str]]:
     clear_google_ads_env(monkeypatch)
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path))
@@ -148,6 +166,8 @@ def _run_refresh(
         query = payload["query"]
         queries.append(query)
         if "ad_group_ad.ad.final_urls" in query:
+            if final_url_error:
+                return httpx.Response(403, json={"error": "blocked"})
             return httpx.Response(
                 200,
                 json=[{"results": final_url_rows or []}],
