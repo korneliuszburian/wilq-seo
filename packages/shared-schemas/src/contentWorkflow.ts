@@ -1269,7 +1269,9 @@ export const ContentDraftRevisionSectionSchema = z.object({
   body_markdown: z.string().refine((value) => value.trim().length > 0),
   query_terms: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
   evidence_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
-  claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
+  claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
+  source_material_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
+  knowledge_card_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
 });
 
 export const ContentWordPressDraftHandoffSchema = z.object({
@@ -1624,7 +1626,9 @@ const CONTENT_WORKFLOW_OPERATOR_STEP_ORDER = [
 export const ContentDraftRevisionProposalSectionLineageSchema = z.object({
   heading: z.string().refine((value) => value.trim().length > 0),
   evidence_ids: z.array(z.string()).default([]),
-  claim_ids: z.array(z.string()).default([])
+  claim_ids: z.array(z.string()).default([]),
+  source_material_ids: z.array(z.string()).default([]),
+  knowledge_card_ids: z.array(z.string()).default([])
 });
 
 export const ContentDraftRevisionProposalMetadataSchema = z
@@ -1744,6 +1748,8 @@ export const ContentDraftRevisionSchema = z.object({
   service_card_id: z.string().min(1).nullable().optional(),
   service_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   inventory_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  source_material_ids: z.array(z.string()).default([]),
+  knowledge_card_ids: z.array(z.string()).default([]),
   final_canonical_url: z.string(),
   title: z.string().refine((value) => value.trim().length > 0),
   page_assets: ContentDraftRevisionPageAssetsSchema.nullable().optional(),

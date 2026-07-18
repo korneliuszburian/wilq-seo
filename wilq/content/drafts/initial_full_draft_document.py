@@ -45,6 +45,8 @@ def build_initial_draft_revision_command(
             query_terms=plan.query_terms,
             evidence_ids=plan.evidence_ids,
             claim_ids=plan.claim_ids,
+            source_material_ids=plan.source_material_ids,
+            knowledge_card_ids=plan.knowledge_card_ids,
         )
         for plan, generated in zip(proposal.sections, output.sections, strict=True)
     ]
@@ -58,6 +60,8 @@ def build_initial_draft_revision_command(
         service_card_id=planning_input.confirmed_service_card_id,
         service_digest=_service_digest(planning_input),
         inventory_digest=_digest(planning_input.inventory),
+        source_material_ids=planning_input.source_material_ids,
+        knowledge_card_ids=planning_input.knowledge_card_ids,
         final_canonical_url=planning_input.final_canonical_url,
         title=output.page_assets.wordpress_title,
         page_assets=output.page_assets,
@@ -73,6 +77,8 @@ def build_initial_draft_revision_command(
                     heading=item.heading,
                     evidence_ids=item.evidence_ids,
                     claim_ids=item.claim_ids,
+                    source_material_ids=item.source_material_ids,
+                    knowledge_card_ids=item.knowledge_card_ids,
                 )
                 for item in sections
             ],

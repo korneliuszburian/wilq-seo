@@ -57,6 +57,8 @@ class ContentDraftRevisionProposalSectionLineage(BaseModel):
     heading: str = Field(min_length=1)
     evidence_ids: list[str] = Field(default_factory=list)
     claim_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
 
 
 class ContentDraftRevisionProposalMetadata(BaseModel):
@@ -171,6 +173,8 @@ class ContentDraftRevisionSection(BaseModel):
     query_terms: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     claim_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
 
     @field_validator("heading", "body_markdown")
     @classmethod
@@ -196,6 +200,8 @@ class ContentDraftRevision(BaseModel):
     service_card_id: str | None = Field(default=None, min_length=1)
     service_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     inventory_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    source_material_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
     final_canonical_url: str = Field(min_length=1)
     title: str
     page_assets: ContentDraftRevisionPageAssets | None = None
@@ -262,6 +268,8 @@ class ContentDraftRevisionAppendCommand(BaseModel):
     service_card_id: str | None = Field(default=None, min_length=1)
     service_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     inventory_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    source_material_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
     final_canonical_url: str = Field(min_length=1)
     title: str
     page_assets: ContentDraftRevisionPageAssets | None = None
