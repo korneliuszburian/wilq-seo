@@ -47,6 +47,7 @@ export function ContentPlanningReviewPanel({
     (candidate) => candidate.service_card_id === selectedServiceCardId
   );
   const latestDecision = stage === "scope" ? planning.scope_decision : planning.section_map_decision;
+  const inventoryMapping = planning.proposal.inventory_mapping ?? [];
   const canSubmit =
     !actions.pending &&
     (decision === "approved" ? checked : notes.trim().length > 0) &&
@@ -113,6 +114,31 @@ export function ContentPlanningReviewPanel({
           <SearchDemandSummary demand={proposal.search_demand} />
         </>
       ) : (
+        <>
+        {inventoryMapping.length ? (
+          <div className="mt-4 rounded-md border border-line bg-surface p-3" data-testid="planning-inventory-mapping">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-sm font-semibold text-ink">Pokrycie istniejącej strony</h3>
+              <span className="text-xs text-slate-500">
+                {inventoryMapping.filter((item) => item.status === "mapped").length}/
+                {inventoryMapping.length} sekcji przypisanych automatycznie
+              </span>
+            </div>
+            <ul className="mt-2 grid gap-2 md:grid-cols-2">
+              {inventoryMapping.map((item) => (
+                <li key={item.inventory_section_id} className="rounded border border-line bg-white px-3 py-2 text-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-medium text-ink">{item.inventory_heading}</span>
+                    <span className={item.status === "mapped" ? "font-semibold text-action" : "font-semibold text-wait"}>
+                {item.status === "mapped" ? "przypisana" : item.status === "ambiguous" ? "niejednoznaczna" : "do sprawdzenia"}
+                    </span>
+                  </div>
+                  {item.mapped_section_heading ? <div className="mt-1 text-slate-500">→ {item.mapped_section_heading} · {item.disposition ?? "bez decyzji"}</div> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <ol className="mt-4 space-y-3">
           {proposal.sections.map((section, index) => (
             <li key={`${index}-${section.heading}`} className="rounded-md border border-line bg-surface p-3">
@@ -145,6 +171,7 @@ export function ContentPlanningReviewPanel({
             </li>
           ))}
         </ol>
+        </>
       )}
 
       <div className="mt-5 grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">

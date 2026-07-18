@@ -25,6 +25,7 @@ ContentPlanningInventoryDisposition = Literal[
     "remove_review_required",
     "create",
 ]
+ContentPlanningInventoryMappingStatus = Literal["mapped", "unmapped", "ambiguous"]
 
 
 class ContentPlanningPageAssets(BaseModel):
@@ -101,6 +102,20 @@ class ContentPlanningSection(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
 
 
+class ContentPlanningInventoryMapping(BaseModel):
+    """Deterministic coverage row for one existing page section."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    inventory_section_id: str = Field(min_length=1)
+    inventory_heading: str = Field(min_length=1)
+    status: ContentPlanningInventoryMappingStatus
+    mapped_section_id: str | None = None
+    mapped_section_heading: str | None = None
+    disposition: ContentPlanningInventoryDisposition | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
 class ContentPlanningProposal(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -130,6 +145,7 @@ class ContentPlanningProposal(BaseModel):
     cta_direction: str = Field(min_length=1)
     internal_link_directions: list[str] = Field(default_factory=list)
     sections: list[ContentPlanningSection] = Field(min_length=1)
+    inventory_mapping: list[ContentPlanningInventoryMapping] = Field(default_factory=list)
     search_demand: ContentSearchDemandEvidence
     page_assets: ContentPlanningPageAssets = Field(
         default_factory=ContentPlanningPageAssets

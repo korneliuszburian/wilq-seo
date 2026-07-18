@@ -33,6 +33,10 @@ from wilq.content.planning.generated_proposal_contracts import (
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.generated_proposal_turn import content_planning_turn_request
+from wilq.content.planning.section_mapping import (
+    build_inventory_mapping,
+    canonicalize_model_inventory_headings,
+)
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
 from wilq.schemas import CodexRun
@@ -385,6 +389,7 @@ def _run_planning_turn(
             "Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
         )
         return None, trace, blocker, "blocked"
+    output = canonicalize_model_inventory_headings(planning_input, output)
     quality_errors = _planning_output_quality_errors(output)
     if quality_errors:
         blocker = _blocker(
@@ -502,6 +507,23 @@ def _proposal_from_output(
     run: CodexRun,
 ) -> ContentPlanningProposal:
     proposal_id = f"content_planning_proposal_{uuid4().hex}"
+    sections = [
+        ContentPlanningSection(
+            section_id=f"{proposal_id}_section_{index:02d}",
+            source_material_ids=_lineage_ids_for_evidence(
+                planning_input.source_facts,
+                section.evidence_ids,
+                field="source_material_ids",
+            ),
+            knowledge_card_ids=_lineage_ids_for_evidence(
+                planning_input.source_facts,
+                section.evidence_ids,
+                field="knowledge_card_ids",
+            ),
+            **section.model_dump(),
+        )
+        for index, section in enumerate(output.sections, start=1)
+    ]
     proposal = ContentPlanningProposal(
         work_item_id=planning_input.work_item_id,
         planning_digest="0" * 64,
@@ -530,23 +552,12 @@ def _proposal_from_output(
             f"{item.placement}: {item.target_url} ({item.anchor_direction})"
             for item in output.internal_links
         ],
-        sections=[
-            ContentPlanningSection(
-                section_id=f"{proposal_id}_section_{index:02d}",
-                source_material_ids=_lineage_ids_for_evidence(
-                    planning_input.source_facts,
-                    section.evidence_ids,
-                    field="source_material_ids",
-                ),
-                knowledge_card_ids=_lineage_ids_for_evidence(
-                    planning_input.source_facts,
-                    section.evidence_ids,
-                    field="knowledge_card_ids",
-                ),
-                **section.model_dump(),
-            )
-            for index, section in enumerate(output.sections, start=1)
-        ],
+        sections=sections,
+        inventory_mapping=build_inventory_mapping(
+            planning_input,
+            output,
+            [section.section_id for section in sections],
+        ),
         search_demand=planning_input.query_portfolio,
         page_assets=output.page_assets,
         faq=output.faq,

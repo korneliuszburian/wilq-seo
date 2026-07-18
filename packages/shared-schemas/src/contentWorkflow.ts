@@ -1328,7 +1328,7 @@ export const ContentWordPressDraftExecutionPayloadSchema = z.object({
     label: z.string(),
     reason: z.string(),
     next_step: z.string()
-  })).default([]),
+  })).optional(),
   final_canonical_url: z.string(),
   evidence_ids: z.array(z.string()).default([]),
   publish_allowed: z.boolean(),
@@ -2587,6 +2587,15 @@ export const ContentPlanningProposalSchema = z.object({
     source_material_ids: z.array(z.string()).default([]),
     knowledge_card_ids: z.array(z.string()).default([])
   })).min(1),
+  inventory_mapping: z.array(z.object({
+    inventory_section_id: z.string().min(1),
+    inventory_heading: z.string().min(1),
+    status: z.enum(["mapped", "unmapped", "ambiguous"]),
+    mapped_section_id: z.string().nullable().optional(),
+    mapped_section_heading: z.string().nullable().optional(),
+    disposition: ContentPlanningInventoryDispositionSchema.nullable().optional(),
+    evidence_ids: z.array(z.string()).default([])
+  })).optional(),
   search_demand: ContentSearchDemandEvidenceSchema,
   page_assets: ContentPlanningPageAssetsSchema.default({
     title: "",
