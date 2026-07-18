@@ -5,6 +5,7 @@ import json
 from fastapi.routing import APIRoute
 
 from apps.api.wilq_api.main import app
+from apps.api.wilq_api.routers import content_workflow as content_workflow_module
 from apps.api.wilq_api.routers.content_workflow import router
 from apps.api.wilq_api.routers.content_workflow_http import _browser_item
 from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
@@ -248,6 +249,26 @@ def test_browser_item_does_not_duplicate_full_wordpress_material() -> None:
     assert projected.wordpress_content_text is None
     assert projected.wordpress_content_summary == "krótkie podsumowanie"
     assert projected.metric_facts == []
+
+
+def test_selected_snapshot_handler_uses_browser_projection(monkeypatch) -> None:
+    sentinel = object()
+    monkeypatch.setattr(
+        content_workflow_module,
+        "_snapshot_for_work_item_or_blocked_or_404",
+        lambda _work_item_id: "internal-snapshot",
+    )
+    monkeypatch.setattr(
+        content_workflow_module,
+        "project_content_work_item_browser_snapshot",
+        lambda snapshot: (snapshot, sentinel),
+    )
+
+    result = content_workflow_module.content_work_item_snapshot_for_selected_item(
+        "content_work_item_test"
+    )
+
+    assert result == ("internal-snapshot", sentinel)
 
 
 def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
