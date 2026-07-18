@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from urllib.parse import urlparse
 
 from wilq.schemas import ContentDecisionItem
@@ -10,7 +9,6 @@ CONTENT_SOURCE_SITE_HOSTS = {
     "ekologus.pl",
     "sklep.ekologus.pl",
 }
-_UNSAFE_PUBLIC_URL_CHARACTERS = re.compile(r'''[\x00-\x20\x7f<>"'`()\[\]{}|\\^]''')
 
 
 def content_decision_final_canonical_url(decision: ContentDecisionItem) -> str | None:
@@ -59,29 +57,6 @@ def content_url_host(value: str | None) -> str | None:
     if not value:
         return None
     return urlparse(value).netloc.lower() or None
-
-
-def content_is_safe_public_url(value: str | None) -> bool:
-    if not value or value != value.strip() or _UNSAFE_PUBLIC_URL_CHARACTERS.search(value):
-        return False
-    parsed = urlparse(value)
-    try:
-        port = parsed.port
-    except ValueError:
-        return False
-    hostname = parsed.hostname.casefold() if parsed.hostname else None
-    return (
-        parsed.scheme.casefold() == "https"
-        and hostname in CONTENT_SOURCE_SITE_HOSTS
-        and parsed.username is None
-        and parsed.password is None
-        and port is None
-        and parsed.netloc.casefold() == hostname
-        and not parsed.params
-        and not parsed.query
-        and not parsed.fragment
-        and parsed.path.startswith("/")
-    )
 
 
 def content_normalized_path(value: str | None) -> str:

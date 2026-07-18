@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Literal
 
@@ -19,7 +18,6 @@ from wilq.content.knowledge.cards import (
     content_knowledge_card_blockers,
     required_content_knowledge_card_ids,
 )
-from wilq.content.knowledge.source_facts import ekologus_source_fact_registry
 from wilq.content.preflight.workflow import ContentPreflightVerdict
 from wilq.content.workflow.models import ContentWorkItem
 
@@ -67,8 +65,6 @@ class ContentSalesBriefSourceFact(BaseModel):
     evidence_id: str
     source_connector: str
     summary: str
-    source_fact_ids: list[str] = Field(default_factory=list)
-    source_material_ids: list[str] = Field(default_factory=list)
 
 
 class ContentSalesBriefKnowledgeConstraint(BaseModel):
@@ -442,7 +438,6 @@ def _brief_source_facts_from_enrichment(
     enrichment: ContentOpportunityEnrichment,
 ) -> list[ContentSalesBriefSourceFact]:
     facts: list[ContentSalesBriefSourceFact] = []
-    source_fact_ids_by_evidence = _source_fact_ids_by_evidence()
     for fact in enrichment.source_facts:
         source_connector = fact.source_connectors[0] if fact.source_connectors else None
         if not fact.evidence_ids or source_connector is None:
@@ -453,18 +448,9 @@ def _brief_source_facts_from_enrichment(
                     evidence_id=evidence_id,
                     source_connector=source_connector,
                     summary=f"{fact.label}: {fact.summary}",
-                    source_fact_ids=source_fact_ids_by_evidence.get(evidence_id, []),
                 )
             )
     return _deduplicate_source_facts(facts)
-
-
-def _source_fact_ids_by_evidence() -> dict[str, list[str]]:
-    mapping: dict[str, list[str]] = {}
-    for fact in ekologus_source_fact_registry().facts:
-        for evidence_id in fact.evidence_ids:
-            mapping.setdefault(evidence_id, []).append(fact.source_id)
-    return mapping
 
 
 def _deduplicate_source_facts(
@@ -752,15 +738,20 @@ def _search_text(values: Iterable[object]) -> str:
 
 
 def _looks_like_product_cta_or_topic(text: str) -> bool:
-    # Match product intent as a word, not as a substring of legal/content
-    # language such as "opłata produktowa".
-    return bool(
-        re.search(
-            r"(?<!\w)(?:sorbent(?:y|ów)?|produkt(?:y)?|sklep|kup|zamów|zamow|"
-            r"cena|cennik|dostępność|dostepnosc)(?!\w)",
-            text.casefold(),
-        )
-    )
+    product_terms = {
+        "sorbent",
+        "produkt",
+        "produkty",
+        "sklep",
+        "kup",
+        "zamów",
+        "zamow",
+        "cena",
+        "cennik",
+        "dostępność",
+        "dostepnosc",
+    }
+    return any(term in text for term in product_terms)
 
 
 def _blocker(

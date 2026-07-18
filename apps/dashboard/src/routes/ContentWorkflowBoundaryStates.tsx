@@ -1,5 +1,4 @@
 import type {
-  ContentInventoryCatalogResponse,
   ContentWorkItemQueueCandidate,
   ContentWorkItemQueueResponse
 } from "../lib/api";
@@ -10,25 +9,7 @@ export function ContentFreshnessBanner({
 }: {
   assessment: ContentWorkItemQueueResponse["freshness_assessment"];
 }) {
-  const qualityLabels: Record<string, string> = {
-    google_search_console: "GSC",
-    google_analytics_4: "GA4",
-    google_ads: "Ads",
-    ahrefs: "Ahrefs",
-    localo: "Localo",
-    wordpress_ekologus: "WordPress"
-  };
-  const qualityStates = assessment.connector_quality_states ?? {};
-  const settlementStates = assessment.connector_settlement_states ?? {};
-  const qualityWarnings = Object.entries(qualityStates)
-    .filter(([, state]) => state !== "verified" && state !== "unknown")
-    .map(([connector, state]) => `${qualityLabels[connector] ?? connector}: ${state === "partial" ? "częściowy odczyt" : "jakość do sprawdzenia"}`);
-  const settlementWarnings = Object.entries(settlementStates)
-    .filter(([, state]) => state === "settling")
-    .filter(([connector]) => !qualityWarnings.some((warning) => warning.startsWith(`${qualityLabels[connector] ?? connector}:`)))
-    .map(([connector]) => `${qualityLabels[connector] ?? connector}: dane się rozliczają`);
-  const sourceWarnings = [...qualityWarnings, ...settlementWarnings];
-  if (!assessment.requires_refresh && !sourceWarnings.length) return null;
+  if (!assessment.requires_refresh) return null;
   return (
     <section className="mb-4 rounded-md border border-wait/30 bg-wait/10 p-4" role="status">
       <h2 className="text-sm font-semibold text-wait">
@@ -38,11 +19,6 @@ export function ContentFreshnessBanner({
       <p className="mt-2 line-clamp-3 text-xs font-semibold leading-5 text-ink sm:text-sm sm:leading-6">
         Następny bezpieczny krok: {assessment.next_step}
       </p>
-      {sourceWarnings.length ? (
-        <p className="mt-2 text-xs leading-5 text-slate-600" data-testid="source-quality-warning">
-          Jakość źródeł: {sourceWarnings.join(" · ")}. To sygnał interpretacyjny, nie wynik kampanii.
-        </p>
-      ) : null}
     </section>
   );
 }
@@ -83,7 +59,7 @@ export function ContentWorkflowSelectedLoading({
         </div>
         <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           <div className="rounded-md border border-line bg-surface p-3">
-            <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">Źródła i podstawa decyzji</div>
+            <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">Dowody i źródła</div>
             <p className="mt-1 text-slate-700">
               {candidate.evidence_ids.length} dowodów · {candidate.source_connector_labels.join(", ") || "brak źródeł"}
             </p>
@@ -106,62 +82,4 @@ export function ContentWorkflowSelectedLoading({
       </section>
     </main>
   );
-}
-
-export function ContentWorkflowInventorySelectionLoading({
-  item
-}: {
-  item: ContentInventoryCatalogResponse["items"][number];
-}) {
-  return (
-    <main className="w-full px-4 py-5 lg:px-7 2xl:px-8">
-      <ContentWorkflowHeader topic={item.title ?? item.path} />
-      <section className="rounded-md border border-line bg-white p-4 shadow-sm" aria-live="polite">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Wybrana strona</p>
-            <h1 className="mt-1 text-2xl font-semibold text-ink">{item.title ?? item.path}</h1>
-            <p className="mt-2 break-all text-sm text-slate-600">{item.url}</p>
-          </div>
-          <span className="rounded-md border border-action/30 bg-action/10 px-3 py-2 text-xs font-semibold text-action">
-            {item.content_type}
-          </span>
-        </div>
-        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-          <div className="rounded-md border border-line bg-surface p-3">
-            <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">Materiał</div>
-            <p className="mt-1 text-slate-700">{inventoryMaterialLabel(item.material_status)}</p>
-          </div>
-          <div className="rounded-md border border-line bg-surface p-3">
-            <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">Metryki</div>
-            <p className="mt-1 text-slate-700">
-              {item.metrics_status === "available"
-                ? `${item.metrics_clicks.toLocaleString("pl-PL")} kliknięć · ${item.metrics_impressions.toLocaleString("pl-PL")} wyświetleń`
-                : "brak świeżych danych"}
-            </p>
-          </div>
-          <div className="rounded-md border border-line bg-surface p-3">
-            <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">Następny krok</div>
-            <p className="mt-1 text-slate-700">Ładujemy decyzję i dopasowane źródła.</p>
-          </div>
-        </div>
-        <p className="mt-4 rounded-md border border-line bg-white px-3 py-3 text-sm text-slate-600">
-          Strona jest już rozpoznana z aktualnego inventory WordPress. Szczegóły decyzji i etapów doładują się poniżej.
-        </p>
-      </section>
-    </main>
-  );
-}
-
-function inventoryMaterialLabel(status: ContentInventoryCatalogResponse["items"][number]["material_status"]) {
-  switch (status) {
-    case "content_and_structure":
-      return "treść i struktura";
-    case "content_summary":
-      return "podsumowanie treści";
-    case "structure_only":
-      return "sama struktura";
-    default:
-      return "tylko adres";
-  }
 }

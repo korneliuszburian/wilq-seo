@@ -395,15 +395,23 @@ def test_wordpress_execution_api_blocks_live_write(
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_live_blocked.sqlite3"))
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "false")
 
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
+    data = _post_wordpress_execution(
+        {
             "handoff": _wordpress_handoff(),
             "draft_package": _draft_package(),
             "mode": "live",
-        },
+        }
     )
-    assert response.status_code == 422
+
+    result = data["execution_result"]
+    assert result["status"] == "blocked"
+    assert result["payload"] is None
+    assert result["external_write_attempted"] is False
+    assert result["boundary"]["live_write_enabled"] is False
+    assert result["boundary"]["live_adapter_configured"] is False
+    assert result["boundary"]["publish_allowed"] is False
+    assert result["boundary"]["destructive_update_allowed"] is False
+    assert [blocker["code"] for blocker in result["blockers"]] == ["action_apply_required"]
 
 
 def test_wordpress_execution_api_live_write_requires_write_authorization(
@@ -411,15 +419,22 @@ def test_wordpress_execution_api_live_write_requires_write_authorization(
 ) -> None:
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
 
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
+    data = _post_wordpress_execution(
+        {
             "handoff": _wordpress_handoff(),
             "draft_package": _draft_package(),
             "mode": "live",
-        },
+        }
     )
-    assert response.status_code == 422
+
+    result = data["execution_result"]
+    assert result["status"] == "blocked"
+    assert result["external_write_attempted"] is False
+    assert result["boundary"]["live_write_enabled"] is True
+    assert result["boundary"]["live_adapter_configured"] is False
+    assert result["boundary"]["publish_allowed"] is False
+    assert result["boundary"]["destructive_update_allowed"] is False
+    assert [blocker["code"] for blocker in result["blockers"]] == ["action_apply_required"]
 
 
 def test_wordpress_execution_api_live_write_rejects_unpersisted_authorization(
@@ -427,16 +442,23 @@ def test_wordpress_execution_api_live_write_rejects_unpersisted_authorization(
 ) -> None:
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
 
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
+    data = _post_wordpress_execution(
+        {
             "handoff": _wordpress_handoff(),
             "draft_package": _draft_package(),
             "mode": "live",
             "write_authorization": _write_authorization(),
-        },
+        }
     )
-    assert response.status_code == 422
+
+    result = data["execution_result"]
+    assert result["status"] == "blocked"
+    assert result["external_write_attempted"] is False
+    assert result["boundary"]["live_write_enabled"] is True
+    assert result["boundary"]["live_adapter_configured"] is False
+    assert result["boundary"]["publish_allowed"] is False
+    assert result["boundary"]["destructive_update_allowed"] is False
+    assert [blocker["code"] for blocker in result["blockers"]] == ["action_apply_required"]
 
 
 def test_wordpress_execution_api_rejects_persisted_prepare_authorization(
@@ -458,17 +480,27 @@ def test_wordpress_execution_api_rejects_persisted_prepare_authorization(
     )
     _persist_write_authorization_events()
 
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
+    data = _post_wordpress_execution(
+        {
             "handoff": _wordpress_handoff(),
             "draft_package": _draft_package(),
             "mode": "live",
             "write_authorization": _write_authorization(),
-        },
+        }
     )
-    assert response.status_code == 422
-    assert execution_arguments == {}
+
+    result = data["execution_result"]
+    assert result["status"] == "blocked"
+    assert result["mode"] == "live"
+    assert result["wordpress_post_id"] is None
+    assert result["external_write_attempted"] is False
+    assert result["boundary"]["live_write_enabled"] is True
+    assert result["boundary"]["live_adapter_configured"] is False
+    assert result["boundary"]["publish_allowed"] is False
+    assert result["boundary"]["destructive_update_allowed"] is False
+    assert [blocker["code"] for blocker in result["blockers"]] == ["action_apply_required"]
+    assert execution_arguments["create_draft"] is None
+    assert execution_arguments["action_apply_authorized"] is False
 
 
 def test_wordpress_activation_packet_remembers_created_dev_draft(

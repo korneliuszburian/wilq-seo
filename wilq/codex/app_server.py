@@ -232,12 +232,6 @@ class StdioCodexAppServerClient:
     def __init__(self, *, timeout_seconds: float = _DEFAULT_TIMEOUT_SECONDS) -> None:
         self._timeout_seconds = timeout_seconds
 
-    @property
-    def timeout_seconds(self) -> float:
-        """Configured deadline used by the synchronous structured-turn seam."""
-
-        return self._timeout_seconds
-
     def run_structured_turn(
         self, request: CodexAppServerStructuredTurnRequest
     ) -> CodexAppServerTurnResult:
@@ -674,7 +668,10 @@ def _observe_inbound_method(
             "Codex próbował wykonać operację zewnętrzną; wynik został odrzucony.",
         )
     if method == "error":
-        raise _codex_error_blocker(message.get("params"))
+        raise _SafeTransportFailure(
+            "codex_turn_failed",
+            "Codex zgłosił błąd podczas generowania.",
+        )
     params_value = message.get("params", {})
     params = _as_object(params_value)
     if params is None:
@@ -688,46 +685,6 @@ def _observe_inbound_method(
             completed=method == "item/completed",
         )
     return params
-
-
-def _codex_error_blocker(params_value: object) -> _SafeTransportFailure:
-    """Expose a small safe error class, never Codex's error payload."""
-
-    params = _as_object(params_value)
-    error = None if params is None else _as_object(params.get("error"))
-    message = None if error is None else error.get("message")
-    if isinstance(message, str) and "invalid_json_schema" in message:
-        category = _schema_error_category(message)
-        return _SafeTransportFailure(
-            f"codex_output_schema_invalid_{category}",
-            "Schemat odpowiedzi WILQ został odrzucony przez lokalny runtime Codexa.",
-        )
-    return _SafeTransportFailure(
-        "codex_turn_failed",
-        "Codex zgłosił błąd podczas generowania.",
-    )
-
-
-def _schema_error_category(message: str) -> str:
-    detail = message
-    try:
-        payload = _as_object(json.loads(message))
-    except json.JSONDecodeError:
-        payload = None
-    if payload is not None:
-        error = _as_object(payload.get("error"))
-        nested_message = None if error is None else error.get("message")
-        if isinstance(nested_message, str):
-            detail = nested_message
-    if "additionalProperties" in detail:
-        return "additional_properties"
-    if "required" in detail:
-        return "required"
-    if "type" in detail:
-        return "type"
-    if "anyOf" in detail or "allOf" in detail:
-        return "composition"
-    return "other"
 
 
 async def _read_message(stdout: asyncio.StreamReader) -> dict[str, object]:

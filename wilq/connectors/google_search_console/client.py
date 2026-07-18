@@ -205,30 +205,10 @@ def _summarize_search_analytics_response(
         if dimensions:
             metric_facts.extend(
                 [
-                    VendorMetricFact(
-                        "clicks",
-                        row_clicks,
-                        dimensions,
-                        period=f"{date_start}/{date_end}",
-                    ),
-                    VendorMetricFact(
-                        "impressions",
-                        row_impressions,
-                        dimensions,
-                        period=f"{date_start}/{date_end}",
-                    ),
-                    VendorMetricFact(
-                        "ctr",
-                        row_ctr,
-                        dimensions,
-                        period=f"{date_start}/{date_end}",
-                    ),
-                    VendorMetricFact(
-                        "average_position",
-                        row_position,
-                        dimensions,
-                        period=f"{date_start}/{date_end}",
-                    ),
+                    VendorMetricFact("clicks", row_clicks, dimensions),
+                    VendorMetricFact("impressions", row_impressions, dimensions),
+                    VendorMetricFact("ctr", row_ctr, dimensions),
+                    VendorMetricFact("average_position", row_position, dimensions),
                 ]
             )
     aggregate_summary = aggregate_summary or {

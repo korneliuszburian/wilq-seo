@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.workflow.revisions import ContentDraftRevision
 
 
@@ -27,28 +26,8 @@ def _placed_blocks(document: ContentDraftRevision, placement: str) -> list[str]:
         item.body_markdown.strip() for item in document.cta_blocks if item.placement == placement
     ]
     blocks.extend(
-        _render_internal_link(item.anchor_text, item.target_url)
+        f"[{item.anchor_text}]({item.target_url})"
         for item in document.internal_links
         if item.placement == placement
     )
     return blocks
-
-
-def _markdown_link_label(value: str) -> str:
-    return (
-        value.replace("\\", "\\\\")
-        .replace("[", "\\[")
-        .replace("]", "\\]")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\r", " ")
-        .replace("\n", " ")
-        .replace("\t", " ")
-    )
-
-
-def _render_internal_link(anchor_text: str, target_url: str) -> str:
-    label = _markdown_link_label(anchor_text)
-    if not content_is_safe_public_url(target_url):
-        return label
-    return f"[{label}]({target_url})"

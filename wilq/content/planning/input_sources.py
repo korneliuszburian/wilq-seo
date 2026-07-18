@@ -17,12 +17,7 @@ from wilq.content.workflow.demand_evidence import (
 )
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.evidence.registry import list_evidence_by_ids
-from wilq.schemas import (
-    ConnectorCoveredWindow,
-    ConnectorQualityState,
-    ConnectorSettlementState,
-    ContentFreshnessAssessment,
-)
+from wilq.schemas import ContentFreshnessAssessment
 
 ContentPlanningSourceStatus = Literal[
     "used", "not_applicable", "missing", "stale", "blocked"
@@ -78,17 +73,8 @@ class ContentPlanningInventory(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     status: Literal["available", "missing"]
-    content_status: Literal["available", "missing"] = "missing"
-    acf_section_status: Literal["available", "missing"] = "missing"
     title_or_h1: str | None = None
     content_summary: str | None = None
-    # Read-only material projection used by the planner.  Keeping the exact
-    # extracted body and its provenance in the typed input prevents the model
-    # from planning against a title/heading-only shadow of the page.
-    content_text: str | None = None
-    extraction_region: str | None = None
-    material_confidence: Literal["source_bound", "review_required", "unknown"] = "unknown"
-    source_field_lineage: list[str] = Field(default_factory=list)
     word_count: int | None = Field(default=None, ge=0)
     sections: list[ContentPlanningInventorySection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -105,8 +91,6 @@ class ContentPlanningSourceFact(BaseModel):
     source_connector: str = Field(min_length=1)
     evidence_ids: list[str] = Field(min_length=1)
     knowledge_card_ids: list[str] = Field(default_factory=list)
-    source_fact_ids: list[str] = Field(default_factory=list)
-    source_material_ids: list[str] = Field(default_factory=list)
 
 
 class ContentPlanningSourceAssessment(BaseModel):
@@ -118,11 +102,6 @@ class ContentPlanningSourceAssessment(BaseModel):
     landing_match_tiers: list[ContentAcceptedLandingMatchTier] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
-    refresh_run_id: str | None = None
-    covered_window: ConnectorCoveredWindow = Field(default_factory=ConnectorCoveredWindow)
-    settlement_state: ConnectorSettlementState = ConnectorSettlementState.unknown
-    quality_state: ConnectorQualityState = ConnectorQualityState.unknown
-    interpretation_caveats: list[str] = Field(default_factory=list)
 
 
 def validate_source_assessment_membership(
@@ -163,21 +142,11 @@ def build_planning_inventory(
             status="missing",
             note="Dokładny rekord inventory nie ma rozwiązywalnego evidence WordPress.",
         )
-    headings = (
-        item.wordpress_acf_section_headings
-        if item.wordpress_acf_section_inventory_status == "available"
-        else item.wordpress_section_headings
-    )
+    headings = item.wordpress_section_headings
     return ContentPlanningInventory(
         status="available" if headings else "missing",
-        content_status=item.wordpress_content_inventory_status,
-        acf_section_status=item.wordpress_acf_section_inventory_status,
         title_or_h1=item.wordpress_title_or_h1,
         content_summary=item.wordpress_content_summary,
-        content_text=item.wordpress_content_text,
-        extraction_region=item.wordpress_content_extraction_region,
-        material_confidence=(item.wordpress_content_material_confidence or "unknown"),
-        source_field_lineage=item.wordpress_content_source_field_lineage,
         word_count=item.wordpress_content_word_count,
         sections=[
             ContentPlanningInventorySection(
@@ -190,11 +159,7 @@ def build_planning_inventory(
         evidence_ids=evidence_ids,
         source_connectors=connectors,
         landing_match_tiers=tiers,
-        note=(
-            item.wordpress_content_inventory_note
-            or item.wordpress_acf_section_inventory_note
-            or ""
-        ),
+        note=item.wordpress_content_inventory_note or "",
     )
 
 
@@ -228,7 +193,7 @@ def build_source_assessments(
         freshness=freshness,
         absent_status="blocked",
     )
-    assessments = [
+    return [
         _assessment(
             "wordpress",
             wordpress_status,
@@ -288,52 +253,6 @@ def build_source_assessments(
             fact_evidence=fact_evidence,
         ),
     ]
-    return [
-        assessment.model_copy(update=_source_quality_update(assessment.source, freshness))
-        for assessment in assessments
-    ]
-
-
-_SOURCE_QUALITY_CONNECTORS: dict[ContentPlanningSourceName, tuple[str, ...]] = {
-    "wordpress": ("wordpress_ekologus", "wordpress_sklep"),
-    "gsc": ("google_search_console",),
-    "ga4": ("google_analytics_4",),
-    "google_ads": ("google_ads",),
-    "ahrefs": ("ahrefs",),
-    "merchant": ("google_merchant_center",),
-    "localo": ("localo",),
-}
-
-
-def _source_quality_update(
-    source: ContentPlanningSourceName,
-    freshness: ContentFreshnessAssessment,
-) -> dict[str, object]:
-    connector_id = next(
-        (
-            candidate
-            for candidate in _SOURCE_QUALITY_CONNECTORS.get(source, ())
-            if candidate in freshness.connector_refresh_run_ids
-        ),
-        None,
-    )
-    if connector_id is None:
-        return {}
-    return {
-        "refresh_run_id": freshness.connector_refresh_run_ids[connector_id],
-        "covered_window": freshness.connector_covered_windows.get(
-            connector_id, ConnectorCoveredWindow()
-        ),
-        "settlement_state": freshness.connector_settlement_states.get(
-            connector_id, ConnectorSettlementState.unknown
-        ),
-        "quality_state": freshness.connector_quality_states.get(
-            connector_id, ConnectorQualityState.unknown
-        ),
-        "interpretation_caveats": freshness.connector_quality_caveats.get(
-            connector_id, []
-        ),
-    }
 
 
 def _ads_source_assessment(
@@ -411,18 +330,15 @@ def _conditional_assessments(
 def build_source_facts(
     brief: ContentSalesBrief,
     assessments: list[ContentPlanningSourceAssessment],
-    service_profile: ContentWorkItemServiceProfileContext | None = None,
 ) -> list[ContentPlanningSourceFact]:
     statuses = {assessment.source: assessment.status for assessment in assessments}
-    facts = [
+    return [
         ContentPlanningSourceFact(
             fact_id=f"planning_fact_{index:02d}",
             summary=fact.summary,
             source_connector=fact.source_connector,
             evidence_ids=[fact.evidence_id],
             knowledge_card_ids=brief.knowledge_card_ids,
-            source_fact_ids=fact.source_fact_ids,
-            source_material_ids=fact.source_material_ids,
         )
         for index, fact in enumerate(brief.source_facts, start=1)
         if fact.source_connector not in _QUERY_PORTFOLIO_CONNECTORS
@@ -431,22 +347,6 @@ def build_source_facts(
             or statuses.get(source) == "used"
         )
     ]
-    if service_profile is not None and service_profile.source_fact_ids:
-        facts.extend(
-            ContentPlanningSourceFact(
-                fact_id=f"planning_service_fact_{index:02d}",
-                summary=(
-                    f"Zatwierdzony fakt profilu usługi: {service_profile.service_label or 'usługa'}"
-                ),
-                source_connector=(service_profile.source_connectors or ["service_profile"])[0],
-                evidence_ids=service_profile.evidence_ids or ["service_profile_source_fact"],
-                knowledge_card_ids=service_profile.knowledge_card_ids,
-                source_fact_ids=list(service_profile.source_fact_ids),
-                source_material_ids=list(service_profile.source_material_ids),
-            )
-            for index in range(1, 2)
-        )
-    return facts
 
 
 def assessment_status(

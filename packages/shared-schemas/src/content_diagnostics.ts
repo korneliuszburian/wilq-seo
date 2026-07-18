@@ -113,7 +113,6 @@ export const ContentDecisionItemSchema = z.object({
   wordpress_section_count: z.number().nullable().optional(),
   wordpress_section_inventory_status: z.enum(["available", "missing"]).default("missing"),
   wordpress_content_summary: z.string().nullable().optional(),
-  wordpress_content_text: z.string().nullable().optional(),
   wordpress_content_word_count: z.number().nullable().optional(),
   wordpress_content_inventory_status: z.enum(["available", "missing"]).default("missing"),
   wordpress_content_inventory_note: z.string().nullable().optional(),

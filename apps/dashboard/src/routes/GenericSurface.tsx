@@ -6,9 +6,6 @@ import {
   getConnectors,
   getConnectorRefreshRun,
   getKnowledgeCards,
-  getKnowledgeSourceFacts,
-  getKnowledgeSourceMaterials,
-  getKnowledgeSourceMaterialReadiness,
   getKnowledgeOperatingMap,
   getKnowledgePlaybooks,
   refreshConnector,
@@ -17,9 +14,6 @@ import {
   type ConnectorRefreshRun,
   type ConnectorStatus,
   type KnowledgeCard,
-  type KnowledgeSourceFactView,
-  type KnowledgeSourceMaterialView,
-  type KnowledgeSourceMaterialReadiness,
   type KnowledgeOperatingMapResponse,
   type MarketingPlaybook,
   type Workflow,
@@ -33,9 +27,6 @@ import {
 } from "./CompactRoutePanel";
 import {
   KnowledgeCardList,
-  KnowledgeSourceFactList,
-  KnowledgeSourceMaterialReadinessBanner,
-  KnowledgeSourceMaterialSummary,
   KnowledgeOperatingMapPanel,
   PlaybookList
 } from "./KnowledgePanels";
@@ -73,21 +64,6 @@ export function GenericSurface({ routeName }: { routeName: string }) {
     queryFn: getKnowledgeCards,
     enabled: routeKind === "knowledge" && showKnowledgeCards
   });
-  const knowledgeSourceFacts = useQuery({
-    queryKey: ["knowledge-source-facts"],
-    queryFn: getKnowledgeSourceFacts,
-    enabled: routeKind === "knowledge"
-  });
-  const knowledgeSourceMaterials = useQuery({
-    queryKey: ["knowledge-source-materials"],
-    queryFn: getKnowledgeSourceMaterials,
-    enabled: routeKind === "knowledge"
-  });
-  const knowledgeSourceMaterialReadiness = useQuery({
-    queryKey: ["knowledge-source-material-readiness"],
-    queryFn: getKnowledgeSourceMaterialReadiness,
-    enabled: routeKind === "knowledge"
-  });
   const playbooks = useQuery({
     queryKey: ["knowledge-playbooks"],
     queryFn: getKnowledgePlaybooks,
@@ -112,9 +88,6 @@ export function GenericSurface({ routeName }: { routeName: string }) {
         workflowRuns={workflowRuns.data ?? []}
         knowledgeMap={knowledgeMap}
         knowledgeCards={knowledgeCards}
-        knowledgeSourceFacts={knowledgeSourceFacts}
-        knowledgeSourceMaterials={knowledgeSourceMaterials}
-        knowledgeSourceMaterialReadiness={knowledgeSourceMaterialReadiness}
         playbooks={playbooks}
         showKnowledgeMap={showKnowledgeMap}
         setShowKnowledgeMap={setShowKnowledgeMap}
@@ -171,9 +144,9 @@ function genericSurfaceHeader(
 ) {
   if (routeKind === "knowledge") {
     return {
-      title: "Źródła i wiedza",
+      title: "Wiedza",
       description:
-        "Najpierw realne materiały Ekologusa i fakty z ich śladem. Karty operacyjne są wtórne i nie zastępują źródła."
+        "Wiedza oparta na źródłach, twierdzenia usług, status review i stan zatwierdzenia."
     };
   }
   if (routeKind === "settings") {
@@ -204,9 +177,6 @@ function GenericSurfaceSections({
   workflowRuns,
   knowledgeMap,
   knowledgeCards,
-  knowledgeSourceFacts,
-  knowledgeSourceMaterials,
-  knowledgeSourceMaterialReadiness,
   playbooks,
   showKnowledgeMap,
   setShowKnowledgeMap,
@@ -222,9 +192,6 @@ function GenericSurfaceSections({
   workflowRuns: WorkflowRun[];
   knowledgeMap: UseQueryResult<KnowledgeOperatingMapResponse>;
   knowledgeCards: UseQueryResult<KnowledgeCard[]>;
-  knowledgeSourceFacts: UseQueryResult<KnowledgeSourceFactView[]>;
-  knowledgeSourceMaterials: UseQueryResult<KnowledgeSourceMaterialView[]>;
-  knowledgeSourceMaterialReadiness: UseQueryResult<KnowledgeSourceMaterialReadiness>;
   playbooks: UseQueryResult<MarketingPlaybook[]>;
   showKnowledgeMap: boolean;
   setShowKnowledgeMap: (value: boolean | ((current: boolean) => boolean)) => void;
@@ -242,9 +209,6 @@ function GenericSurfaceSections({
         <KnowledgeSurfaceSections
           knowledgeMap={knowledgeMap}
           knowledgeCards={knowledgeCards}
-          knowledgeSourceFacts={knowledgeSourceFacts}
-          knowledgeSourceMaterials={knowledgeSourceMaterials}
-          knowledgeSourceMaterialReadiness={knowledgeSourceMaterialReadiness}
           playbooks={playbooks}
           showKnowledgeMap={showKnowledgeMap}
           setShowKnowledgeMap={setShowKnowledgeMap}
@@ -574,9 +538,6 @@ function formatSystemRunDescription(run: WorkflowRun) {
 function KnowledgeSurfaceSections({
   knowledgeMap,
   knowledgeCards,
-  knowledgeSourceFacts,
-  knowledgeSourceMaterials,
-  knowledgeSourceMaterialReadiness,
   playbooks,
   showKnowledgeMap,
   setShowKnowledgeMap,
@@ -587,9 +548,6 @@ function KnowledgeSurfaceSections({
 }: {
   knowledgeMap: UseQueryResult<KnowledgeOperatingMapResponse>;
   knowledgeCards: UseQueryResult<KnowledgeCard[]>;
-  knowledgeSourceFacts: UseQueryResult<KnowledgeSourceFactView[]>;
-  knowledgeSourceMaterials: UseQueryResult<KnowledgeSourceMaterialView[]>;
-  knowledgeSourceMaterialReadiness: UseQueryResult<KnowledgeSourceMaterialReadiness>;
   playbooks: UseQueryResult<MarketingPlaybook[]>;
   showKnowledgeMap: boolean;
   setShowKnowledgeMap: (value: boolean | ((current: boolean) => boolean)) => void;
@@ -617,25 +575,9 @@ function KnowledgeSurfaceSections({
   const totalClaims = Math.max(allowedClaimCount + reviewClaimCount + blockedClaimCount, 1);
   const serviceCount = cards.filter((card) => /service|usług|usl|service_profile/i.test(card.card_type)).length;
   const approvedCurrentCount = 0;
-  const pendingMaterialCount = knowledgeSourceMaterials.data?.filter(
-    (material) => material.import_status !== "imported"
-  ).length ?? 0;
 
   return (
     <>
-      <section className="rounded-xl border border-line bg-slate-50/70 p-4 lg:p-5">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-action">Źródła Ekologusa</p>
-            <h2 className="mt-1 text-lg font-semibold text-ink">Realne materiały i fakty Ekologusa</h2>
-            <p className="mt-1 text-sm text-slate-600">To jest źródło dla treści. Karty i playbooki poniżej są tylko warstwą operacyjną — nie są transkrypcjami ani wypowiedziami firmy.</p>
-          </div>
-          <span className="rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-slate-600">{knowledgeSourceFacts.data?.length ?? 0} faktów w rejestrze</span>
-        </div>
-        {knowledgeSourceFacts.isLoading ? <LoadingBand /> : knowledgeSourceFacts.error ? <InlineErrorState message="Nie udało się pobrać faktów źródłowych." /> : <KnowledgeSourceFactList facts={knowledgeSourceFacts.data ?? []} />}
-        {knowledgeSourceMaterialReadiness.isLoading ? <LoadingBand /> : knowledgeSourceMaterialReadiness.error ? <InlineErrorState message="Nie udało się pobrać gotowości korpusu źródłowego." /> : <KnowledgeSourceMaterialReadinessBanner readiness={knowledgeSourceMaterialReadiness.data} />}
-        {knowledgeSourceMaterials.isLoading ? <LoadingBand /> : knowledgeSourceMaterials.error ? <InlineErrorState message="Nie udało się pobrać manifestu materiałów." /> : <KnowledgeSourceMaterialSummary materials={knowledgeSourceMaterials.data ?? []} />}
-      </section>
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KnowledgeStatTile value={cards.length} label="kart" cta="Zobacz wszystkie" />
         <KnowledgeStatTile value={serviceCount} label="usług" cta="Zobacz wszystkie" tone="success" />
@@ -645,21 +587,18 @@ function KnowledgeSurfaceSections({
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <article className="rounded-md border border-line bg-white">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
-            <h2 className="text-base font-semibold text-ink">Najbliższy krok źródłowy</h2>
+            <h2 className="text-base font-semibold text-ink">Najbliższa wiedza do sprawdzenia</h2>
             <span className="rounded bg-wait/10 px-2 py-1 text-xs font-semibold text-wait">
               Wymaga sprawdzenia
             </span>
           </div>
           <div className="p-4">
             <h3 className="text-base font-semibold text-ink">
-              {pendingMaterialCount > 0
-                ? `Doprowadź ${pendingMaterialCount} materiałów Ekologusa do redakcji i review`
-                : `Sprawdź kartę: ${nearestTitle}`}
+              Sprawdź kartę: {nearestTitle}
             </h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
-              {pendingMaterialCount > 0
-                ? "Manifest i hashe są zapisane, ale tekst nie zasila jeszcze generowania. Najpierw trzeba wprowadzić redagowane fragmenty z kontrolą dostępu i śladem źródła."
-                : "Karta ma źródła, ale wymaga decyzji człowieka zanim stanie się zatwierdzoną wiedzą produkcyjną."}
+              Karta ma źródła, ale wymaga decyzji człowieka zanim stanie się
+              zatwierdzoną wiedzą produkcyjną.
             </p>
             <div className="mt-4">
               <div className="text-sm font-semibold text-ink">Wymagane sprawdzenia</div>

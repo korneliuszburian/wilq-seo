@@ -6,7 +6,6 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNTIME_DIR="${WILQ_RUNTIME_DIR:-"$ROOT_DIR/.local-lab/runtime"}"
 API_HOST="${WILQ_API_HOST:-127.0.0.1}"
 API_PORT="${WILQ_API_PORT:-8000}"
-API_RELOAD="${WILQ_API_RELOAD:-1}"
 DASHBOARD_HOST="${WILQ_DASHBOARD_HOST:-127.0.0.1}"
 DASHBOARD_PORT="${WILQ_DASHBOARD_PORT:-5173}"
 
@@ -25,15 +24,6 @@ require_supported_loopback_host() {
 
 require_supported_loopback_host "WILQ_API_HOST" "$API_HOST"
 require_supported_loopback_host "WILQ_DASHBOARD_HOST" "$DASHBOARD_HOST"
-
-case "$API_RELOAD" in
-  0|1)
-    ;;
-  *)
-    echo "WILQ_API_RELOAD must be 0 or 1; got: ${API_RELOAD}" >&2
-    exit 2
-    ;;
-esac
 
 API_URL="http://${API_HOST}:${API_PORT}"
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
@@ -57,9 +47,6 @@ Manages the canonical local WILQ dev stack:
 
 Runtime files:
   ${RUNTIME_DIR}
-
-API reload:
-  WILQ_API_RELOAD=${API_RELOAD} (local development only)
 EOF
 }
 
@@ -209,14 +196,9 @@ start_api() {
     return 1
   fi
   : >"$log"
-  local reload_args=()
-  if [ "$API_RELOAD" = "1" ]; then
-    reload_args+=(--reload --reload-dir "$ROOT_DIR/apps/api" --reload-dir "$ROOT_DIR/wilq")
-  fi
   (
     cd "$ROOT_DIR"
     setsid uv run uvicorn apps.api.wilq_api.main:app --host "$API_HOST" --port "$API_PORT" \
-      "${reload_args[@]}" \
       >>"$log" 2>&1 </dev/null &
     echo "$!" >"$(pid_file api)"
   )
@@ -272,10 +254,7 @@ status_service() {
   printf "  managed_alive: %s\n" "$(if is_pid_alive "$pid"; then echo yes; else echo no; fi)"
   printf "  port_owner_pid: %s\n" "${owner:-none}"
   if [ -n "$owner" ]; then
-  printf "  port_owner_args: %s\n" "$(pid_args "$owner")"
-  fi
-  if [ "$service" = "api" ]; then
-    printf "  reload_mode: %s\n" "$(if [ "$API_RELOAD" = "1" ]; then echo enabled; else echo disabled; fi)"
+    printf "  port_owner_args: %s\n" "$(pid_args "$owner")"
   fi
   printf "  ready: %s\n" "$(if curl -fsS --max-time 2 "$url" >/dev/null 2>&1; then echo yes; else echo no; fi)"
 }

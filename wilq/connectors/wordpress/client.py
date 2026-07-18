@@ -15,9 +15,7 @@ from wilq.connectors.wordpress.inventory import (
     acf_inventory,
     content_inventory,
     fetch_content_inventory,
-    _HtmlMetadataParser,
 )
-from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.connectors.wordpress.text import (
     clean_metadata_text,
     html_text,
@@ -112,23 +110,6 @@ class WordPressAuthoringPageReadback:
 
 
 @dataclass(frozen=True)
-class WordPressContentMaterial:
-    url: str
-    source_kind: str
-    title: str
-    content_text: str
-    content_summary: str
-    content_word_count: int | None
-    section_headings: list[str]
-    acf_field_names: list[str]
-    acf_section_headings: list[str]
-    modified_gmt: str
-    extraction_region: str
-    material_confidence: str
-    source_field_lineage: list[str]
-
-
-@dataclass(frozen=True)
 class _AcfTextCandidate:
     path: tuple[str, ...]
     value: str
@@ -178,14 +159,6 @@ def refresh_wordpress_content_inventory(
             ],
         )
 
-    target_urls = [value.strip() for value in request.target_urls if value.strip()]
-    if any(not content_is_safe_public_url(value) for value in target_urls):
-        return VendorReadResult(
-            status=ConnectorRefreshStatus.blocked,
-            summary="WordPress vendor read blocked by an unsafe target URL.",
-            errors=["WordPress vendor read blocked by an unsafe target URL."],
-        )
-
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
     try:
@@ -198,7 +171,6 @@ def refresh_wordpress_content_inventory(
                 username=credentials.username or "",
                 application_auth=credentials.application_auth or "",
                 site_kind=credentials.site_kind,
-                priority_urls=target_urls,
             )
         except httpx.HTTPStatusError as exc:
             return _http_failure_result(connector_id, exc)
@@ -380,106 +352,6 @@ def read_wordpress_authoring_pages(
     return _authoring_pages_from_response(
         response.json(),
         preferred_flexible_field_name=preferred_flexible_field_name,
-    )
-
-
-def read_wordpress_content_material(
-    url: str,
-    connector_id: str = "wordpress_ekologus",
-    *,
-    http_client: httpx.Client | None = None,
-) -> WordPressContentMaterial:
-    """Read one public content object dynamically from REST or rendered HTML.
-
-    REST is preferred because it can expose authenticated ``the_content`` and
-    ACF. Public HTML is the deliberate fallback for posts whose public REST
-    surface is disabled; it still returns only normalized visible text and
-    headings, never raw vendor payloads.
-    """
-    if not content_is_safe_public_url(url):
-        raise WordPressDraftReadError("WILQ odrzucił adres spoza bezpiecznego inventory.")
-    credentials = _wordpress_credentials(connector_id)
-    if credentials is None or _missing_credentials(connector_id, credentials):
-        raise WordPressDraftReadError("Brakuje konfiguracji WordPress do odczytu materiału.")
-    owns_client = http_client is None
-    client = http_client or httpx.Client(timeout=20)
-    try:
-        requested_path = urlparse(url).path.rstrip("/") or "/"
-        slug = requested_path.rsplit("/", 1)[-1]
-        auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
-        for content_type in WORDPRESS_CONTENT_TYPES:
-            try:
-                response = client.get(
-                    urljoin(credentials.base_url or "", f"wp-json/wp/v2/{content_type}"),
-                    auth=auth,
-                    params={
-                        "slug": slug,
-                        "context": "edit",
-                        "_fields": WORDPRESS_READ_FIELDS,
-                    },
-                )
-                response.raise_for_status()
-            except httpx.HTTPError:
-                continue
-            for item in response.json() if isinstance(response.json(), list) else []:
-                if not isinstance(item, dict):
-                    continue
-                link = str(item.get("link") or "")
-                if urlparse(link).path.rstrip("/") != requested_path:
-                    continue
-                return _material_from_rest_item(item, requested_url=url)
-
-        response = client.get(url, timeout=20)
-        response.raise_for_status()
-        parser = _HtmlMetadataParser()
-        parser.feed(response.text[:200_000])
-        text = clean_metadata_text(" ".join(parser.main_text_chunks))
-        if not text:
-            raise WordPressDraftReadError("WordPress nie wystawił widocznego materiału treści.")
-        return WordPressContentMaterial(
-            url=url,
-            source_kind="rendered_html",
-            title=clean_metadata_text(parser.title or parser.h1),
-            content_text=text,
-            content_summary=summary_text_limited(text, 240),
-            content_word_count=len(text.split()),
-            section_headings=[clean_metadata_text(value) for value in parser.section_headings if clean_metadata_text(value)],
-            acf_field_names=[],
-            acf_section_headings=[],
-            modified_gmt="",
-            extraction_region="main_or_article_visible_text",
-            material_confidence="review_required",
-            source_field_lineage=["public_html.main_or_article"],
-        )
-    except httpx.HTTPError as exc:
-        raise WordPressDraftReadError("Odczyt materiału WordPress nie powiódł się.") from exc
-    finally:
-        if owns_client:
-            client.close()
-
-
-def _material_from_rest_item(item: dict[str, Any], *, requested_url: str) -> WordPressContentMaterial:
-    content = item.get("content")
-    raw = content.get("raw") if isinstance(content, dict) else None
-    rendered = content.get("rendered") if isinstance(content, dict) else None
-    source = raw if isinstance(raw, str) and raw.strip() else rendered if isinstance(rendered, str) else ""
-    text = clean_metadata_text(html_text(source))
-    content_dimensions = content_inventory(content)
-    acf_dimensions = acf_inventory(item.get("acf"))
-    return WordPressContentMaterial(
-        url=requested_url,
-        source_kind="wordpress_rest",
-        title=wordpress_title(item.get("title")),
-        content_text=text,
-        content_summary=content_dimensions.get("content_summary", ""),
-        content_word_count=_optional_int(content_dimensions.get("content_word_count")),
-        section_headings=[],
-        acf_field_names=_json_string_list(acf_dimensions.get("acf_field_names_json")),
-        acf_section_headings=_json_string_list(acf_dimensions.get("acf_section_headings_json")),
-        modified_gmt=str(item.get("modified_gmt") or ""),
-        extraction_region="wordpress_rest.content",
-        material_confidence="source_bound",
-        source_field_lineage=["wordpress_rest.content", "wordpress_rest.acf"],
     )
 
 

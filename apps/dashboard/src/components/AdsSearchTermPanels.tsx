@@ -13,36 +13,6 @@ type AdsSearchTermSafetyRow =
 type AdsKeywordMatchContextRow =
   AdsDiagnosticsResponse["keyword_match_context_read_contract"]["context_rows"][number];
 
-type AdsSearchTermCoverage =
-  AdsDiagnosticsResponse["search_terms_read_contract"]["coverage"][number];
-
-export function AdsSearchTermCoveragePanel({
-  coverage
-}: {
-  coverage: AdsSearchTermCoverage[];
-}) {
-  if (coverage.length === 0) return null;
-  const visibleCoverage = Array.from(
-    new Map(coverage.map((item) => [item.window, item])).values()
-  );
-  return (
-    <div
-      className="rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-slate-700"
-      data-testid="ads-search-term-coverage"
-    >
-      <div className="font-semibold text-ink">Zakres odczytu zapytań</div>
-      <div className="mt-1 grid gap-1 md:grid-cols-2">
-        {visibleCoverage.map((item) => (
-          <div key={`${item.window}-${item.window_label}`}>
-            {item.window_label}: {item.returned_row_count} z maks. {item.connector_cap ?? "brak limitu"} wierszy
-            {item.cap_applied ? " · osiągnięto limit" : " · próbka poniżej limitu"}. {item.privacy_omission_caveat}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function AdsSearchTermReviewSummaryPanel({
   contract,
   currencyCode

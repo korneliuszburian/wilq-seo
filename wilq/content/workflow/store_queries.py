@@ -98,33 +98,14 @@ def upsert_wordpress_draft_execution(
     redacted = ContentWordPressDraftExecutionResult.model_validate(
         redact_mapping(result.model_dump(mode="json"))
     )
-    if redacted.revision_binding is not None:
-        binding = redacted.revision_binding
-        connection.execute(
-            """
-            INSERT INTO content_wordpress_draft_execution_history
-              (work_item_id, handoff_id, revision_id, revision_digest, payload_json)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(work_item_id, handoff_id, revision_id, revision_digest)
-            DO UPDATE SET payload_json = excluded.payload_json
-            """,
-            (
-                work_item_id,
-                binding.handoff_id,
-                binding.revision_id,
-                binding.content_digest,
-                model_json(redacted),
-            ),
-        )
-    else:
-        connection.execute(
-            """
-            INSERT INTO content_wordpress_draft_executions (work_item_id, payload_json)
-            VALUES (?, ?)
-            ON CONFLICT(work_item_id) DO UPDATE SET payload_json = excluded.payload_json
-            """,
-            (work_item_id, model_json(redacted)),
-        )
+    connection.execute(
+        """
+        INSERT INTO content_wordpress_draft_executions (work_item_id, payload_json)
+        VALUES (?, ?)
+        ON CONFLICT(work_item_id) DO UPDATE SET payload_json = excluded.payload_json
+        """,
+        (work_item_id, model_json(redacted)),
+    )
 
 
 def execution_result_from_adapter_result(

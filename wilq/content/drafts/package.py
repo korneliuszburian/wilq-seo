@@ -195,9 +195,12 @@ def _sections_from_brief(sales_brief: ContentSalesBrief) -> list[ContentDraftSec
     return [
         ContentDraftSection(
             heading=heading,
-            purpose=f"Wyjaśnij czytelnikowi, co oznacza temat „{heading}”.",
+            purpose="Sekcja konspektu do napisania po sprawdzeniu planu.",
             evidence_ids=evidence_ids,
-            draft_notes=[],
+            draft_notes=[
+                f"Zachowaj kierunek H1: {sales_brief.h1_direction}",
+                f"CTA: {sales_brief.cta_direction}",
+            ],
         )
         for heading in headings
     ]

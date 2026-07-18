@@ -4,18 +4,13 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionPageAssets,
-    validate_no_inline_link,
-    validate_plain_internal_link_anchor,
 )
 
-ContentInitialDraftStatus = Literal[
-    "generating", "created", "blocked", "failed", "conflict"
-]
+ContentInitialDraftStatus = Literal["created", "blocked", "failed", "conflict"]
 ContentInitialDraftBlockerCode = Literal[
     "planning_not_approved",
     "planning_not_generated",
@@ -30,7 +25,6 @@ ContentInitialDraftBlockerCode = Literal[
     "generated_claim_blocked",
     "revision_conflict",
     "persistence_failed",
-    "generation_in_progress",
 ]
 
 
@@ -58,11 +52,6 @@ class ContentInitialDraftSectionOutput(BaseModel):
     heading: str = Field(min_length=1)
     body_markdown: str = Field(min_length=1)
 
-    @field_validator("heading", "body_markdown")
-    @classmethod
-    def reject_inline_links(cls, value: str) -> str:
-        return validate_no_inline_link(value)
-
 
 class ContentInitialDraftFaqOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -70,21 +59,11 @@ class ContentInitialDraftFaqOutput(BaseModel):
     question: str = Field(min_length=1)
     answer_markdown: str = Field(min_length=1)
 
-    @field_validator("question", "answer_markdown")
-    @classmethod
-    def reject_inline_links(cls, value: str) -> str:
-        return validate_no_inline_link(value)
-
 
 class ContentInitialDraftCtaOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     body_markdown: str = Field(min_length=1)
-
-    @field_validator("body_markdown")
-    @classmethod
-    def reject_inline_links(cls, value: str) -> str:
-        return validate_no_inline_link(value)
 
 
 class ContentInitialDraftInternalLinkOutput(BaseModel):
@@ -92,18 +71,6 @@ class ContentInitialDraftInternalLinkOutput(BaseModel):
 
     target_url: str = Field(min_length=1)
     anchor_text: str = Field(min_length=1)
-
-    @field_validator("target_url")
-    @classmethod
-    def require_safe_public_target(cls, value: str) -> str:
-        if not content_is_safe_public_url(value):
-            raise ValueError("Initial-draft internal link requires a safe public URL.")
-        return value
-
-    @field_validator("anchor_text")
-    @classmethod
-    def require_plain_anchor_text(cls, value: str) -> str:
-        return validate_plain_internal_link_anchor(value)
 
 
 class ContentInitialDraftModelOutput(BaseModel):
@@ -158,9 +125,6 @@ class ContentInitialDraftResponse(BaseModel):
         if self.status == "created":
             if self.revision is None or self.run_id is None or self.blockers:
                 raise ValueError("Created initial draft requires one revision and run.")
-        elif self.status == "generating":
-            if self.revision is not None or not self.blockers:
-                raise ValueError("Generating initial draft requires a blocker and no revision.")
         elif self.revision is not None or not self.blockers:
             raise ValueError("Non-created initial draft requires blockers and no revision.")
         return self

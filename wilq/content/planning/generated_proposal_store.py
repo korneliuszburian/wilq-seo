@@ -2,13 +2,9 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, cast
 
-from wilq.content.planning.generated_proposal_contracts import (
-    ContentPlanningProposalResponse,
-)
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.schemas import CodexRun
 from wilq.security.redaction import redact_mapping
@@ -19,8 +15,6 @@ from wilq.storage.schema_versions import (
     reject_newer_sqlite_schema,
 )
 
-_PLANNING_JOB_STALE_AFTER_SECONDS = 120
-
 
 def content_planning_proposal_store() -> ContentPlanningProposalStore:
     return ContentPlanningProposalStore(state_db_path())
@@ -30,42 +24,23 @@ class ContentPlanningProposalStore:
     def __init__(self, path: Path) -> None:
         self.path = path
 
-    def latest(
-        self,
-        work_item_id: str,
-        service_card_id: str | None = None,
-    ) -> ContentPlanningProposal | None:
+    def latest(self, work_item_id: str) -> ContentPlanningProposal | None:
         connection = self._read_connection()
         if connection is None:
             return None
-        try:
-            with connection:
-                if not _table_exists(connection, "content_planning_proposals"):
-                    return None
-                if service_card_id is None:
-                    row = connection.execute(
-                        """
-                        SELECT payload_json
-                        FROM content_planning_proposals
-                        WHERE work_item_id = ?
-                        ORDER BY proposal_version DESC
-                        LIMIT 1
-                        """,
-                        (work_item_id,),
-                    ).fetchone()
-                else:
-                    row = connection.execute(
-                        """
-                        SELECT payload_json
-                        FROM content_planning_proposals
-                        WHERE work_item_id = ? AND service_card_id = ?
-                        ORDER BY proposal_version DESC
-                        LIMIT 1
-                        """,
-                        (work_item_id, service_card_id),
-                    ).fetchone()
-        finally:
-            connection.close()
+        with connection:
+            if not _table_exists(connection, "content_planning_proposals"):
+                return None
+            row = connection.execute(
+                """
+                SELECT payload_json
+                FROM content_planning_proposals
+                WHERE work_item_id = ?
+                ORDER BY proposal_version DESC
+                LIMIT 1
+                """,
+                (work_item_id,),
+            ).fetchone()
         return _proposal_from_row(row)
 
     def for_input(
@@ -77,207 +52,16 @@ class ContentPlanningProposalStore:
         connection = self._read_connection()
         if connection is None:
             return None
-        try:
-            with connection:
-                if not _table_exists(connection, "content_planning_proposals"):
-                    return None
-                row = _proposal_row_for_input(
-                    connection,
-                    work_item_id,
-                    service_card_id,
-                    planning_input_digest,
-                )
-        finally:
-            connection.close()
+        with connection:
+            if not _table_exists(connection, "content_planning_proposals"):
+                return None
+            row = _proposal_row_for_input(
+                connection,
+                work_item_id,
+                service_card_id,
+                planning_input_digest,
+            )
         return _proposal_from_row(row)
-
-    def queued_response(
-        self,
-        work_item_id: str,
-        service_card_id: str,
-        planning_input_digest: str,
-    ) -> ContentPlanningProposalResponse | None:
-        """Return the durable in-flight/failed response for an exact input."""
-        connection = self._read_connection()
-        if connection is None or not _table_exists(connection, "content_planning_generation_jobs"):
-            return None
-        try:
-            with connection:
-                row = connection.execute(
-                    """
-                    SELECT payload_json, status, updated_at
-                    FROM content_planning_generation_jobs
-                    WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
-                    LIMIT 1
-                    """,
-                    (work_item_id, service_card_id, planning_input_digest),
-                ).fetchone()
-        finally:
-            connection.close()
-        if row is None or row["status"] not in {"queued", "failed"}:
-            return None
-        response = ContentPlanningProposalResponse.model_validate(json.loads(row["payload_json"]))
-        if row["status"] == "queued" and _job_is_stale(row["updated_at"]):
-            # Let the API rebuild the current planning input. The queued
-            # payload intentionally has no input summary, so projecting it as
-            # a terminal failure would hide the exact digest needed for retry.
-            return None
-        return response
-
-    def latest_generation_response(
-        self,
-        work_item_id: str,
-    ) -> ContentPlanningProposalResponse | None:
-        """Read the newest queued/failed job without rebuilding a snapshot."""
-        connection = self._read_connection()
-        if connection is None or not _table_exists(connection, "content_planning_generation_jobs"):
-            return None
-        try:
-            with connection:
-                row = connection.execute(
-                    """
-                    SELECT payload_json, status, updated_at
-                    FROM content_planning_generation_jobs
-                    WHERE work_item_id = ? AND status IN ('queued', 'failed')
-                    ORDER BY updated_at DESC
-                    LIMIT 1
-                    """,
-                    (work_item_id,),
-                ).fetchone()
-        finally:
-            connection.close()
-        if row is None:
-            return None
-        response = ContentPlanningProposalResponse.model_validate(json.loads(row["payload_json"]))
-        if row["status"] == "queued" and _job_is_stale(row["updated_at"]):
-            # A stale queue entry is not a terminal model failure. Returning
-            # None lets the read route rebuild the exact current input and
-            # expose a retryable `not_generated`/`stale` response.
-            return None
-        return response
-
-    def enqueue(
-        self,
-        response: ContentPlanningProposalResponse,
-    ) -> Literal["queued", "existing"]:
-        if response.planning_input_digest is None or response.service_card_id is None:
-            raise ValueError("Queued planning requires an exact service and input digest.")
-        payload = redact_mapping(response.model_dump(mode="json"))
-        with self._connect() as connection:
-            connection.execute("BEGIN IMMEDIATE")
-            row = connection.execute(
-                """
-                SELECT status, updated_at FROM content_planning_generation_jobs
-                WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
-                LIMIT 1
-                """,
-                (response.work_item_id, response.service_card_id, response.planning_input_digest),
-            ).fetchone()
-            if (
-                row is not None
-                and row["status"] == "queued"
-                and not _job_is_stale(row["updated_at"])
-            ):
-                return "existing"
-            connection.execute(
-                """
-                INSERT INTO content_planning_generation_jobs (
-                  work_item_id, service_card_id, planning_input_digest, status,
-                  payload_json, updated_at
-                ) VALUES (?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(work_item_id, service_card_id, planning_input_digest)
-                DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
-                              updated_at = excluded.updated_at
-                """,
-                (
-                    response.work_item_id,
-                    response.service_card_id,
-                    response.planning_input_digest,
-                    json.dumps(payload, ensure_ascii=False, sort_keys=True),
-                ),
-            )
-        return "queued"
-
-    def enqueue_pending(
-        self,
-        *,
-        work_item_id: str,
-        service_card_id: str,
-        planning_input_digest: str,
-        response: ContentPlanningProposalResponse,
-    ) -> Literal["queued", "existing"]:
-        """Persist a request before the expensive snapshot is built."""
-        payload = redact_mapping(response.model_dump(mode="json"))
-        with self._connect() as connection:
-            connection.execute("BEGIN IMMEDIATE")
-            row = connection.execute(
-                """
-                SELECT status, updated_at FROM content_planning_generation_jobs
-                WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
-                LIMIT 1
-                """,
-                (work_item_id, service_card_id, planning_input_digest),
-            ).fetchone()
-            if (
-                row is not None
-                and row["status"] == "queued"
-                and not _job_is_stale(row["updated_at"])
-            ):
-                return "existing"
-            connection.execute(
-                """
-                INSERT INTO content_planning_generation_jobs (
-                  work_item_id, service_card_id, planning_input_digest, status,
-                  payload_json, updated_at
-                ) VALUES (?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(work_item_id, service_card_id, planning_input_digest)
-                DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
-                              updated_at = excluded.updated_at
-                """,
-                (
-                    work_item_id,
-                    service_card_id,
-                    planning_input_digest,
-                    json.dumps(payload, ensure_ascii=False, sort_keys=True),
-                ),
-            )
-        return "queued"
-
-    def save_terminal_response(self, response: ContentPlanningProposalResponse) -> None:
-        if response.service_card_id is None:
-            return
-        payload = redact_mapping(response.model_dump(mode="json"))
-        status = "failed" if response.status in {"failed", "blocked", "stale"} else "finished"
-        with self._connect() as connection:
-            if response.planning_input_digest is None:
-                connection.execute(
-                    """
-                    UPDATE content_planning_generation_jobs
-                    SET status = ?, payload_json = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE work_item_id = ? AND service_card_id = ? AND status = 'queued'
-                    """,
-                    (
-                        status,
-                        json.dumps(payload, ensure_ascii=False, sort_keys=True),
-                        response.work_item_id,
-                        response.service_card_id,
-                    ),
-                )
-            else:
-                connection.execute(
-                    """
-                    UPDATE content_planning_generation_jobs
-                    SET status = ?, payload_json = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
-                    """,
-                    (
-                        status,
-                        json.dumps(payload, ensure_ascii=False, sort_keys=True),
-                        response.work_item_id,
-                        response.service_card_id,
-                        response.planning_input_digest,
-                    ),
-                )
 
     def save_generated(
         self,
@@ -383,19 +167,6 @@ class ContentPlanningProposalStore:
             )
             """
         )
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS content_planning_generation_jobs (
-              work_item_id TEXT NOT NULL,
-              service_card_id TEXT NOT NULL,
-              planning_input_digest TEXT NOT NULL,
-              status TEXT NOT NULL,
-              payload_json TEXT NOT NULL,
-              updated_at TEXT NOT NULL,
-              PRIMARY KEY (work_item_id, service_card_id, planning_input_digest)
-            )
-            """
-        )
         ensure_sqlite_schema_version(connection)
         return connection
 
@@ -434,19 +205,6 @@ def _table_exists(connection: sqlite3.Connection, name: str) -> bool:
         (name,),
     ).fetchone()
     return row is not None
-
-
-def _job_is_stale(updated_at: str) -> bool:
-    try:
-        timestamp = datetime.fromisoformat(updated_at).replace(tzinfo=UTC)
-    except ValueError:
-        return True
-    # The planner has a 60-second Codex deadline. Keep only a short grace
-    # window so an orphaned worker cannot leave the marketer in `generating`
-    # for the old 15-minute interval before a retry becomes possible.
-    return (
-        datetime.now(UTC) - timestamp
-    ).total_seconds() > _PLANNING_JOB_STALE_AFTER_SECONDS
 
 
 def _proposal_from_row(row: sqlite3.Row | None) -> ContentPlanningProposal | None:

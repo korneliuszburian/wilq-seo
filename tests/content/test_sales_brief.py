@@ -10,7 +10,6 @@ from wilq.content.briefs.sales import (
     ContentSalesBriefForbiddenClaim,
     ContentSalesBriefSeed,
     ContentSalesBriefSourceFact,
-    _looks_like_product_cta_or_topic,
     build_content_sales_brief,
 )
 from wilq.content.claims.ledger import ContentClaimLedger, content_claim_entry
@@ -261,35 +260,6 @@ def test_sales_brief_builds_structured_contract_from_valid_work_item() -> None:
     assert [claim.claim_id for claim in result.brief.forbidden_claims] == [
         "claim_more_leads"
     ]
-
-
-def test_sales_brief_does_not_promote_source_fact_without_evidence_into_model_facts() -> None:
-    result = _brief_result(
-        enrichment=_enrichment(
-            source_facts=[
-                ContentOpportunitySourceFact(
-                    id="private_review_required_fact",
-                    signal_kind="measurement",
-                    label="Prywatny materiał Ekologusa",
-                    summary="To nie ma jeszcze dowodu do użycia w generowaniu.",
-                    evidence_ids=[],
-                    source_connectors=["ekologus_ai_private_source_catalog"],
-                ),
-                ContentOpportunitySourceFact(
-                    id="source_fact_queries_bdo",
-                    signal_kind="gsc_query",
-                    label="Zapytania GSC",
-                    summary="bdo dla firm",
-                    evidence_ids=["ev_gsc_bdo"],
-                    source_connectors=["google_search_console"],
-                ),
-            ]
-        )
-    )
-
-    assert result.brief is not None
-    assert [fact.evidence_id for fact in result.brief.source_facts] == ["ev_gsc_bdo"]
-    assert all("Prywatny materiał" not in fact.summary for fact in result.brief.source_facts)
 
 
 def test_sales_brief_forbidden_claim_rejects_unknown_claim_enums() -> None:
@@ -547,13 +517,6 @@ def test_sales_brief_blocks_product_cta_without_merchant_or_shop_evidence() -> N
 
     assert result.brief is None
     assert "missing_product_evidence" in [blocker.code for blocker in result.blockers]
-
-
-def test_product_guard_does_not_misclassify_legal_productowa_language() -> None:
-    assert not _looks_like_product_cta_or_topic(
-        "Informacja o gospodarce opakowaniami i opłacie produktowej"
-    )
-    assert _looks_like_product_cta_or_topic("Kup sorbent w sklepie Ekologus")
 
 
 def test_sales_brief_allows_product_cta_with_merchant_evidence() -> None:

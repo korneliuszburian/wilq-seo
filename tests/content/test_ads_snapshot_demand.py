@@ -100,15 +100,6 @@ def test_snapshot_reads_latest_ads_batch_and_joins_clicked_term_landing(
         "optional_ads_status"
     ] == "stale"
 
-    # Dashboard polling must reuse the exact-demand read model instead of
-    # rescanning the same GSC/Ads batch on every GET.
-    second_response = client.get(
-        "/api/content/work-items/"
-        f"{work_item_id}/snapshot"
-    )
-    assert second_response.status_code == 200
-    assert len(calls) == 1
-
 
 class _GscStore:
     def __init__(self, evidence_id: str, content_url: str, content_path: str) -> None:

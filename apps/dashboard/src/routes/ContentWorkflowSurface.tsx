@@ -27,12 +27,11 @@ import {
 } from "../lib/api";
 import type { ContentWorkflowSnapshot, WorkflowStepId } from "./contentWorkflowRuntime";
 import { ContentCandidateQueuePanel } from "./ContentCandidateQueuePanel";
-import { ContentInventoryCatalogPanel } from "./ContentInventoryCatalogPanel";
 import { WorkflowStepsList } from "./WorkflowStepsList";
 import {
   ContentWorkflowError,
-  ContentWorkflowSelectedLoading,
-  ContentWorkflowInventorySelectionLoading
+  ContentWorkflowEmptyQueue,
+  ContentWorkflowSelectedLoading
 } from "./ContentWorkflowBoundaryStates";
 import { ContentOpportunityEnrichmentPanel } from "./ContentOpportunityEnrichmentPanel";
 import { ClaimLedgerGatePanel } from "./ClaimLedgerGatePanel";
@@ -54,10 +53,7 @@ import { WorkflowProofSummary } from "./WorkflowProofSummary";
 import {
   useContentWorkflowQueries,
   type ContentOpportunityEnrichmentQuery,
-  type ContentOperatorContextQuery,
   type ContentWorkItemQueueQuery,
-  type ContentInventoryCatalogQuery,
-  type ContentServiceProfileQuery,
   type ContentWorkflowSnapshotQuery,
   type WordPressAuthoringProfileQuery,
   type WordPressDraftActivationPacketQuery,
@@ -98,9 +94,6 @@ export function ContentWorkflowSurface() {
     draftActivationPacket,
     draftWriteReadiness,
     enrichment,
-    inventory,
-    operatorContext,
-    serviceProfile,
     queue,
     selectedCandidate,
     workflow
@@ -109,14 +102,10 @@ export function ContentWorkflowSurface() {
   return (
     <ContentWorkflowRouteState
       activeWorkItemId={activeWorkItemId}
-      selectedWorkItemId={selectedWorkItemId}
       authoringProfile={authoringProfile}
       draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
-      inventory={inventory}
-      operatorContext={operatorContext}
-      serviceProfile={serviceProfile}
       queue={queue}
       selectedCandidate={selectedCandidate}
       workflow={workflow}
@@ -132,39 +121,26 @@ function stringFromSearch(search: string, key: string) {
 
 function ContentWorkflowRouteState({
   activeWorkItemId,
-  selectedWorkItemId,
   authoringProfile,
   draftActivationPacket,
   draftWriteReadiness,
   enrichment,
-  inventory,
-  operatorContext,
-  serviceProfile,
   queue,
   selectedCandidate,
   workflow,
   onSelectWorkItem
 }: {
   activeWorkItemId: string | null;
-  selectedWorkItemId: string | null;
   authoringProfile: WordPressAuthoringProfileQuery;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
-  inventory: ContentInventoryCatalogQuery;
-  operatorContext: ContentOperatorContextQuery;
-  serviceProfile: ContentServiceProfileQuery;
   queue: ContentWorkItemQueueQuery;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
-  if (queue.isLoading) {
-    const selectedInventoryItem = selectedWorkItemId
-      ? inventory.data?.items.find((item) => item.work_item_id === selectedWorkItemId)
-      : undefined;
-    return selectedInventoryItem ? <ContentWorkflowInventorySelectionLoading item={selectedInventoryItem} /> : <LoadingBand />;
-  }
+  if (queue.isLoading) return <LoadingBand />;
   if (queue.error || !queue.data) return <ContentWorkflowError />;
   return (
     <ContentWorkflowQueueReady
@@ -173,9 +149,6 @@ function ContentWorkflowRouteState({
       draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
-      inventory={inventory}
-      operatorContext={operatorContext}
-      serviceProfile={serviceProfile}
       queue={queue.data}
       selectedCandidate={selectedCandidate}
       workflow={workflow}
@@ -190,9 +163,6 @@ function ContentWorkflowQueueReady({
   draftActivationPacket,
   draftWriteReadiness,
   enrichment,
-  inventory,
-  operatorContext,
-  serviceProfile,
   queue,
   selectedCandidate,
   workflow,
@@ -203,48 +173,12 @@ function ContentWorkflowQueueReady({
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
-  inventory: ContentInventoryCatalogQuery;
-  operatorContext: ContentOperatorContextQuery;
-  serviceProfile: ContentServiceProfileQuery;
   queue: ContentWorkItemQueueResponse;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
-  if (!activeWorkItemId) {
-    return (
-      <main className="min-h-screen w-full bg-[radial-gradient(circle_at_top_right,_#e7f5f1,_transparent_38%),linear-gradient(180deg,_#f8fbfa_0%,_#ffffff_48%)] px-4 py-5 lg:px-7 2xl:px-8">
-        <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_18px_50px_-30px_rgba(15,118,110,0.45)] backdrop-blur lg:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="max-w-2xl">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-action">Treści i SEO · centrum decyzji</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-ink lg:text-4xl">Tworzenie i odświeżanie treści</h1>
-              <p className="mt-3 text-sm leading-7 text-slate-600 lg:text-base">
-                Najpierw zobaczysz materiał źródłowy i jego metryki. Dopiero potem WILQ pokaże dopasowane usługi, plan i bezpieczny następny krok.
-              </p>
-            </div>
-            <div className="grid min-w-[15rem] grid-cols-2 gap-2 text-xs">
-              <OverviewMetric label="adresów" value={inventory.data?.total_count ?? 0} />
-              <OverviewMetric label="z materiałem" value={(inventory.data?.ready_count ?? 0) + (inventory.data?.partial_count ?? 0)} accent />
-              <OverviewMetric label="z metrykami" value={inventory.data ? inventory.data.items.filter((item) => item.metrics_status === "available").length : 0} />
-              <OverviewMetric label="do sprawdzenia" value={inventory.data?.blocked_count ?? 0} muted />
-            </div>
-          </div>
-          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Dane read-only</span>
-            <span>WordPress · GSC/GA4 · karty wiedzy</span>
-            <span className="ml-auto">Nie ma automatycznego wyboru ani publikacji</span>
-          </div>
-        </div>
-        <ContentCandidateQueuePanel
-          queue={queue}
-          selectedWorkItemId=""
-          onSelectWorkItem={onSelectWorkItem}
-        />
-        {inventory.isLoading ? <LoadingBand /> : inventory.data ? <ContentInventoryCatalogPanel catalog={inventory.data} queue={queue} serviceProfile={serviceProfile.data ?? null} onSelectWorkItem={onSelectWorkItem} /> : null}
-      </main>
-    );
-  }
+  if (!activeWorkItemId) return <ContentWorkflowEmptyQueue queue={queue} />;
   if (selectedCandidate?.recommended_mode === "block") {
     return (
       <ContentWorkflowBlockedCandidate
@@ -259,7 +193,6 @@ function ContentWorkflowQueueReady({
     <ContentWorkflowSelectedReady
       activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
-      operatorLabel={operatorContext.data?.request_label ?? "operator_local_dashboard"}
       draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
@@ -271,14 +204,9 @@ function ContentWorkflowQueueReady({
   );
 }
 
-function OverviewMetric({ label, value, accent = false, muted = false }: { label: string; value: number; accent?: boolean; muted?: boolean }) {
-  return <div className={`rounded-xl border px-3 py-3 ${accent ? "border-action/20 bg-action/5" : muted ? "border-slate-200 bg-slate-50" : "border-slate-100 bg-white"}`}><div className={`text-2xl font-semibold ${accent ? "text-action" : muted ? "text-slate-500" : "text-ink"}`}>{value.toLocaleString("pl-PL")}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</div></div>;
-}
-
 function ContentWorkflowSelectedReady({
   activeWorkItemId,
   authoringProfile,
-  operatorLabel,
   draftActivationPacket,
   draftWriteReadiness,
   enrichment,
@@ -289,7 +217,6 @@ function ContentWorkflowSelectedReady({
 }: {
   activeWorkItemId: string;
   authoringProfile: WordPressAuthoringProfileQuery;
-  operatorLabel: string;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
@@ -321,7 +248,6 @@ function ContentWorkflowSelectedReady({
       key={activeWorkItemId}
       data={workflow.data}
       authoringProfile={authoringProfile}
-      operatorLabel={operatorLabel}
       draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment.data?.enrichment ?? null}
@@ -335,7 +261,6 @@ function ContentWorkflowSelectedReady({
 function ContentWorkflowLoaded({
   data,
   authoringProfile,
-  operatorLabel,
   draftActivationPacket,
   draftWriteReadiness,
   enrichment,
@@ -345,7 +270,6 @@ function ContentWorkflowLoaded({
 }: {
   data: ContentWorkflowSnapshot;
   authoringProfile: WordPressAuthoringProfileQuery;
-  operatorLabel: string;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichment | null;
@@ -356,8 +280,7 @@ function ContentWorkflowLoaded({
   const actions = useContentWorkflowActions(
     data,
     selectedWorkItemId,
-    authoringProfile.data ?? null,
-    operatorLabel
+    authoringProfile.data ?? null
   );
   const [viewMode, setViewMode] = useState<"marketer" | "technical">("marketer");
   const steps = data.operatorSteps;
@@ -479,19 +402,13 @@ function ContentWorkflowMarketerJourney({
         selectedWorkItemId={selectedWorkItemId}
         onSelectWorkItem={onSelectWorkItem}
       />
-      <div className="flex flex-col">
-        <div className="order-2 lg:order-1">
-          <ContentWorkflowJourneyContext data={data} />
-        </div>
-        <div className="order-1 lg:order-2">
-          <ContentWorkflowTaskMap
-            currentStepId={data.currentStepId}
-            selectedStepId={selectedStepId}
-            steps={data.operatorSteps}
-            onSelectStep={selectStep}
-          />
-        </div>
-      </div>
+      <ContentWorkflowJourneyContext data={data} />
+      <ContentWorkflowTaskMap
+        currentStepId={data.currentStepId}
+        selectedStepId={selectedStepId}
+        steps={data.operatorSteps}
+        onSelectStep={selectStep}
+      />
       <ContentPageWorkbenchView
         actions={actions}
         authoringProfile={authoringProfile}
@@ -520,7 +437,6 @@ function ContentSessionPicker({
 }) {
   const navigate = useNavigate();
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
-  const explicitlyRequested = Boolean(stringFromSearch(routeSearch, "work_item_id"));
   const requestedSectionHeading = stringFromSearch(routeSearch, "section_heading");
   const requestedPlanningDigest = stringFromSearch(routeSearch, "planning_digest");
   const candidates = queue.candidates.filter(
@@ -543,22 +459,21 @@ function ContentSessionPicker({
       className="mb-3 rounded-md border border-line bg-white px-3 py-3 sm:mb-4 sm:px-4"
       data-testid="content-session-picker"
     >
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,22rem)] lg:items-end">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,22rem)_minmax(15rem,22rem)] lg:items-end">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Strona do pracy
+            Początek sesji
           </p>
           <h2 id="content-session-picker-title" className="mt-1 text-lg font-semibold text-ink">
-            {explicitlyRequested ? "Aktywna strona do pracy" : "WILQ wybrał stronę do pracy"}
+            Wybierz stronę do pracy
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            {explicitlyRequested
-              ? "Pracujesz teraz na tej stronie. Możesz przełączyć ją na inną dostępną stronę."
-              : "To rekomendowana pierwsza strona z kolejki — WILQ wybrał ją na podstawie dostępnych danych z wyszukiwarki i WordPressa. Możesz ją przełączyć w każdej chwili."}
+            WILQ pokazuje tylko strony z dowodami i sprawdzonym adresem. Wybór zmienia cały
+            pięciostopniowy przebieg poniżej.
           </p>
         </div>
         <label className="text-sm font-semibold text-ink" htmlFor="content-session-work-item">
-          Aktywna strona
+          Strona i temat
           <select
             id="content-session-work-item"
             className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
@@ -572,107 +487,41 @@ function ContentSessionPicker({
             ))}
           </select>
         </label>
+        {selectedSection ? (
+          <label className="text-sm font-semibold text-ink" htmlFor="content-session-section">
+            Sekcja do pracy
+            <select
+              id="content-session-section"
+              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
+              value={selectedSection.heading}
+              onChange={(event) => {
+                void navigate({
+                  to: "/content-workflow",
+                  search: (previous) => ({
+                    ...previous,
+                    work_item_id: selectedWorkItemId,
+                    section_heading: event.target.value,
+                    planning_digest: planningDigest ?? undefined
+                  }),
+                  replace: true
+                });
+              }}
+            >
+              {planningSections.map((section) => (
+                <option key={section.heading} value={section.heading}>
+                  {section.heading}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
       </div>
-      <div className="mt-4 hidden gap-2 lg:grid lg:grid-cols-2" aria-label="Strony dostępne do odświeżenia">
-        {candidates.map((candidate) => (
-          <button
-            key={candidate.work_item_id}
-            type="button"
-            onClick={() => onSelectWorkItem(candidate.work_item_id)}
-            className={`rounded-md border p-3 text-left transition-colors ${
-              candidate.work_item_id === selectedWorkItemId
-                ? "border-action bg-action/10"
-                : "border-line bg-surface hover:border-action/50"
-            }`}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-semibold text-ink">{contentCandidatePath(candidate.final_canonical_url)}</span>
-              <span className="text-xs font-semibold text-slate-500">{candidate.recommended_mode_label}</span>
-            </div>
-            <p className="mt-1 text-sm text-slate-700">{candidate.topic}</p>
-            <p className="mt-2 text-xs leading-5 text-slate-600">
-              {pageMetricsSummary(candidate)}
-            </p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              {pageInventorySummary(candidate)}
-            </p>
-            {candidate.page_inventory?.acf_section_headings.length ? (
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Układ ACF: {acfSectionPreview(candidate.page_inventory.acf_section_headings)}
-              </p>
-            ) : null}
-          </button>
-        ))}
-      </div>
-      {selectedSection ? (
-        <label className="mt-3 block text-sm font-semibold text-ink" htmlFor="content-session-section">
-          Poprawiana sekcja
-          <select
-            id="content-session-section"
-            className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
-            value={selectedSection.heading}
-            onChange={(event) => {
-              void navigate({
-                to: "/content-workflow",
-                search: (previous) => ({
-                  ...previous,
-                  work_item_id: selectedWorkItemId,
-                  section_heading: event.target.value,
-                  planning_digest: planningDigest ?? undefined
-                }),
-                replace: true
-              });
-            }}
-          >
-            {planningSections.map((section) => (
-              <option key={section.heading} value={section.heading}>
-                {section.heading}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
+      <p className="mt-2 text-xs text-slate-500">
+        {selected.recommended_mode_label} · {selected.evidence_ids.length} źródła dowodowe
+        {selectedSection ? ` · Fokus: ${selectedSection.heading}` : ""}
+      </p>
     </section>
   );
-}
-
-function pageMetricsSummary(candidate: ContentWorkItemQueueCandidate) {
-  const metrics = candidate.search_metrics;
-  if (!metrics || metrics.impressions === null || metrics.impressions === undefined) {
-    return "Brakuje danych z wyszukiwarki dla tej strony.";
-  }
-  const values = [`${metrics.impressions} wyświetleń`];
-  if (metrics.clicks !== null && metrics.clicks !== undefined) values.push(`${metrics.clicks} kliknięć`);
-  if (metrics.ctr !== null && metrics.ctr !== undefined) values.push(`CTR ${(metrics.ctr * 100).toFixed(2)}%`);
-  if (metrics.primary_query) values.push(`najczęściej: „${metrics.primary_query}”`);
-  if (metrics.comparison_status === "available" && metrics.comparison_periods?.length === 2) {
-    values.push(`porównanie: ${metrics.comparison_periods[0]} → ${metrics.comparison_periods[1]}`);
-  } else {
-    values.push("brak dwóch porównywalnych okresów");
-  }
-  return values.join(" · ");
-}
-
-function pageInventorySummary(candidate: ContentWorkItemQueueCandidate) {
-  const inventory = candidate.page_inventory;
-  if (!inventory) return "Stan aktualnej strony wymaga odczytu.";
-  const sections =
-    inventory.section_inventory_status === "available" && inventory.section_count !== null
-      ? `${inventory.section_count} rozpoznanych sekcji`
-      : "sekcje wymagają odczytu";
-  const layout =
-    inventory.acf_section_inventory_status === "available"
-      ? `${inventory.acf_section_count ?? ""} sekcji ACF`.trim()
-      : inventory.content_inventory_status === "available"
-        ? "treść w the_content · bez sekcji ACF"
-      : "układ strony wymaga odczytu";
-  return `${sections} · ${layout}`;
-}
-
-function acfSectionPreview(headings: string[]) {
-  const visible = headings.slice(0, 2).join(" · ");
-  const remaining = headings.length - 2;
-  return remaining > 0 ? `${visible} · +${remaining}` : visible;
 }
 
 function contentCandidatePath(url: string | null | undefined) {
@@ -687,14 +536,13 @@ function contentCandidatePath(url: string | null | undefined) {
 function useContentWorkflowActions(
   data: ContentWorkflowSnapshot,
   selectedWorkItemId: string,
-  authoringProfile: WordPressAuthoringProfile | null,
-  operatorLabel: string
+  authoringProfile: WordPressAuthoringProfile | null
 ) {
-  const mutations = useContentWorkflowMutations(selectedWorkItemId, operatorLabel);
-  return contentWorkflowActions(data, mutations, authoringProfile, operatorLabel);
+  const mutations = useContentWorkflowMutations(selectedWorkItemId);
+  return contentWorkflowActions(data, mutations, authoringProfile);
 }
 
-function useContentWorkflowMutations(selectedWorkItemId: string, operatorLabel: string) {
+function useContentWorkflowMutations(selectedWorkItemId: string) {
   const queryClient = useQueryClient();
   const refreshRevisionWorkspace = () =>
     queryClient.invalidateQueries({
@@ -749,7 +597,7 @@ function useContentWorkflowMutations(selectedWorkItemId: string, operatorLabel: 
           selected_section_headings:
             "sectionHeadings" in selection ? selection.sectionHeadings : [],
           selected_section_ids: "sectionIds" in selection ? selection.sectionIds : [],
-          requested_by: operatorLabel
+          requested_by: "wilku"
         },
         selectedWorkItemId,
         baseRevision.revision_id
@@ -765,7 +613,7 @@ function useContentWorkflowMutations(selectedWorkItemId: string, operatorLabel: 
           expected_proposal_id: proposal.proposal_id,
           expected_planning_digest: proposal.planning_digest,
           expected_planning_input_digest: proposal.planning_input_digest,
-          requested_by: operatorLabel
+          requested_by: "wilku"
         },
         selectedWorkItemId
       );
@@ -800,7 +648,7 @@ function useContentWorkflowMutations(selectedWorkItemId: string, operatorLabel: 
       postContentWorkItemSemanticReview(
         {
           expected_revision_digest: revisionDigest,
-          requested_by: operatorLabel
+          requested_by: "wilku"
         },
         selectedWorkItemId,
         revisionId
@@ -839,8 +687,7 @@ function useContentWorkflowMutations(selectedWorkItemId: string, operatorLabel: 
 function contentWorkflowActions(
   data: ContentWorkflowSnapshot,
   mutations: ContentWorkflowMutations,
-  authoringProfile: WordPressAuthoringProfile | null,
-  operatorLabel: string
+  authoringProfile: WordPressAuthoringProfile | null
 ) {
   const latestRevision = data.revisionWorkspace.latest_revision;
   const revisionEvidenceIds = latestRevision
@@ -872,7 +719,7 @@ function contentWorkflowActions(
         expected_planning_digest: planning.proposal.planning_digest,
         service_card_id: stage === "scope" ? serviceCardId : undefined,
         decision,
-        reviewed_by: operatorLabel,
+        reviewed_by: "wilku",
         checked_items: checkedItems,
         notes
       });
@@ -896,8 +743,7 @@ function contentWorkflowActions(
       mutations.codexProposalMutation.variables?.baseRevision ?? null,
     initialDraftPending: mutations.initialDraftMutation.isPending,
     initialDraftError: mutations.initialDraftMutation.error,
-    initialDraftResult:
-      mutations.initialDraftStatusQuery.data ?? mutations.initialDraftMutation.data ?? null,
+    initialDraftResult: mutations.initialDraftMutation.data ?? null,
     generateInitialDraft: () => {
       const proposal = data.planningWorkspace?.proposal;
       if (proposal) mutations.initialDraftMutation.mutate(proposal);
@@ -958,7 +804,7 @@ function contentWorkflowActions(
         revisionId: latestRevision.revision_id,
         request: {
           expected_revision_digest: latestRevision.content_digest,
-          reviewed_by: operatorLabel,
+          reviewed_by: "wilku",
           decision,
           notes,
           checked_items: checkedItems,

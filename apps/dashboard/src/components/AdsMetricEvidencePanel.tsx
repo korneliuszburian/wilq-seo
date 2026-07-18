@@ -24,7 +24,6 @@ import {
 import { AdsNegativeKeywordCandidatesPanel } from "./AdsNegativeKeywordCandidatesPanel";
 import {
   AdsKeywordMatchContextRowsTable,
-  AdsSearchTermCoveragePanel,
   AdsSearchTermNgramRowsTable,
   AdsSearchTermReviewSummaryPanel,
   AdsSearchTermRowsTable,
@@ -102,13 +101,6 @@ export function AdsMetricEvidencePanel({
       </div>
 
       <div className="grid gap-4">
-        <AdsSearchTermCoveragePanel
-          coverage={[
-            ...data.search_terms_read_contract.coverage,
-            ...data.search_term_safety_read_contract.coverage,
-            ...data.negative_keywords_read_contract.coverage
-          ]}
-        />
         <AdsBusinessTargetInterpretationPanel
           contract={data.business_context_read_contract}
         />

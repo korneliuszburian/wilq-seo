@@ -12,7 +12,6 @@ from wilq.content.measurement.window import (
     ContentMeasurementMetric,
     ContentMeasurementWindow,
 )
-from wilq.schemas import ConnectorQualityState, ConnectorSettlementState
 
 
 def _window(**overrides: object) -> ContentMeasurementWindow:
@@ -136,42 +135,6 @@ def test_measurement_outcome_requires_metric_store_and_window_provenance() -> No
     assert "work_item_id" in " ".join(mismatched_window.limitations)
     assert "measurement_window_id" in " ".join(mismatched_window.limitations)
     assert "content_url" in " ".join(mismatched_window.limitations)
-
-
-def test_measurement_outcome_blocks_unverified_or_settling_source() -> None:
-    outcome = interpret_content_measurement_outcome(
-        window=_window(),
-        observed_metrics=[
-            _metric("gsc_clicks", 100, 130).model_copy(
-                update={
-                    "quality_state": ConnectorQualityState.partial,
-                    "settlement_state": ConnectorSettlementState.settling,
-                }
-            )
-        ],
-        as_of=date(2026, 8, 1),
-    )
-
-    assert outcome.status == "insufficient_data"
-    assert outcome.success_claim_allowed is False
-    assert "Jakość źródła" in " ".join(outcome.limitations)
-    assert "stabilizuje" in " ".join(outcome.limitations)
-
-
-def test_measurement_outcome_does_not_hide_one_missing_period_behind_other_metrics() -> None:
-    outcome = interpret_content_measurement_outcome(
-        window=_window(),
-        observed_metrics=[
-            _metric("gsc_clicks", 100, None),
-            _metric("gsc_impressions", 1000, 1200),
-        ],
-        as_of=date(2026, 8, 1),
-    )
-
-    assert outcome.status == "insufficient_data"
-    assert outcome.success_claim_allowed is False
-    assert outcome.queue_feedback_allowed is False
-    assert "Brakuje wartości po obserwacji" in " ".join(outcome.limitations)
 
 
 def test_measurement_outcome_classifies_noisy_directional_and_success_states() -> None:

@@ -51,14 +51,6 @@ if turn["params"]["input"][0]["text"] == "Attempt a tool.":
         "params": {{"item": {{"type": "commandExecution"}}}},
     }})
     raise SystemExit(0)
-if turn["params"]["input"][0]["text"] == "Reject this schema.":
-    write({{
-        "method": "error",
-        "params": {{
-            "error": {{"message": "invalid_json_schema: synthetic detail"}},
-        }},
-    }})
-    raise SystemExit(0)
 write({{
     "id": turn["id"],
     "result": {{"turn": {{"id": "turn-test", "items": []}}}},
@@ -153,17 +145,3 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     assert blocked.external_call_attempted is True
     assert blocked.output_text is None
     assert [blocker.code for blocker in blocked.blockers] == ["codex_external_call_blocked"]
-
-    invalid_schema = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
-        CodexAppServerStructuredTurnRequest(
-            instruction="Reject this schema.",
-            application_context="application",
-            untrusted_context="untrusted",
-            output_schema={"type": "object"},
-        )
-    )
-    assert invalid_schema.status == "failed"
-    assert invalid_schema.output_text is None
-    assert [blocker.code for blocker in invalid_schema.blockers] == [
-        "codex_output_schema_invalid_other"
-    ]

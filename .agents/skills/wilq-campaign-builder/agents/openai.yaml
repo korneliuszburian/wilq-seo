@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Plan kampanii"
   short_description: "Buduje bezpieczne szkice kampanii i podgląd zmian"
-  default_prompt: "Użyj $wilq-campaign-builder: przygotuj evidence-bound przegląd istniejących kampanii Ekologus z landingiem, metrykami, brakami i podglądem bez zapisu; nie wymyślaj keywords, assetów, targetowania ani budżetu docelowego."
+  default_prompt: "Użyj $wilq-campaign-builder: przygotuj strukturę kampanii dla Ekologus z dowodami i pokaż podgląd zmian bez zapisu zmian."

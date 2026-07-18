@@ -17,6 +17,9 @@ from wilq.content.knowledge.cards import ContentKnowledgeCardMatch
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
+from wilq.content.planning.dynamic_input import (
+    build_content_planning_input_from_components,
+)
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionWorkspace,
@@ -306,7 +309,6 @@ def _assemble_delivery(
     revision_workspace = _gate_revision_workspace(
         revision_workspace,
         foundation.planning_workspace,
-        material_confidence=item.wordpress_content_material_confidence,
     )
     human_review = callbacks.human_review(
         item,
@@ -356,19 +358,7 @@ def _assemble_delivery(
 def _gate_revision_workspace(
     workspace: ContentDraftRevisionWorkspace,
     planning_workspace: ContentPlanningWorkspace | None,
-    *,
-    material_confidence: str | None = None,
 ) -> ContentDraftRevisionWorkspace:
-    if material_confidence == "review_required" and workspace.latest_revision is not None:
-        return workspace.model_copy(
-            update={
-                "can_review": False,
-                "safe_next_step": (
-                    "Najpierw zatwierdź źródłowy materiał WordPress; tej wersji nie można "
-                    "reviewować ani przekazać dalej."
-                ),
-            }
-        )
     if workspace.latest_revision is not None or planning_workspace is None:
         return workspace
     if planning_workspace.scope_current and planning_workspace.section_map_current:
@@ -521,7 +511,26 @@ def _current_planning_proposal(
     service_card_id = service_profile_context.service_card_id
     if baseline is None or generated is None or service_card_id is None:
         return baseline
-    return generated if generated.service_card_id == service_card_id else baseline
+    planning_input = build_content_planning_input_from_components(
+        item=item,
+        service_profile=service_profile_context,
+        inventory_resolution=preflight.inventory_resolution,
+        brief=brief,
+        draft=draft,
+        baseline_proposal=baseline,
+        freshness=freshness,
+        claim_ledger=claim_ledger,
+        service_card_id=service_card_id,
+    )
+    current_input = planning_input.planning_input
+    if planning_input.blockers or current_input is None:
+        return baseline
+    if (
+        generated.service_card_id != service_card_id
+        or generated.planning_input_digest != current_input.planning_input_digest
+    ):
+        return baseline
+    return generated
 
 
 def build_content_draft_revision_workspace(

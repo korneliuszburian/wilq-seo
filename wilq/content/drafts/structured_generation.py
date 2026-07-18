@@ -121,10 +121,6 @@ class StructuredDraftGenerationInput(BaseModel):
     final_canonical_url: str
     source_public_url: str | None = None
     preview_url: str | None = None
-    existing_content_text: str | None = None
-    existing_content_source_kind: str | None = None
-    existing_content_extraction_region: str | None = None
-    existing_content_source_field_lineage: list[str] = Field(default_factory=list)
     target_reader: str
     buyer_problem: str
     buyer_trigger: str
@@ -234,10 +230,6 @@ def build_structured_draft_generation_contract(
         final_canonical_url=final_canonical_url,
         source_public_url=item.source_public_url,
         preview_url=item.preview_url,
-        existing_content_text=item.wordpress_content_text,
-        existing_content_source_kind=item.wordpress_content_source_kind,
-        existing_content_extraction_region=item.wordpress_content_extraction_region,
-        existing_content_source_field_lineage=item.wordpress_content_source_field_lineage,
         target_reader=sales_brief.target_reader,
         buyer_problem=sales_brief.buyer_problem,
         buyer_trigger=sales_brief.buyer_trigger,
@@ -552,10 +544,6 @@ def _user_instruction(model_input: StructuredDraftGenerationInput) -> str:
         f"Temat: {model_input.title}. "
         f"Odbiorca: {model_input.target_reader}. "
         f"Problem kupującego: {model_input.buyer_problem}. "
-        "Jeżeli istniejąca treść jest dostępna, traktuj ją jako materiał do "
-        "odświeżenia i nie wymyślaj faktów poza jej lineage. "
-        f"Źródło istniejącej treści: {model_input.existing_content_source_kind or 'brak'}. "
-        f"Lineage: {', '.join(model_input.existing_content_source_field_lineage) or 'brak'}. "
         "Każda sekcja musi wskazywać użyte identyfikatory dowodów. "
         f"Jakość sygnału briefu: {model_input.sales_brief_signal_quality.status_label}. "
         "Używaj wyłącznie claimów z claim_markers/claims_allowed. "

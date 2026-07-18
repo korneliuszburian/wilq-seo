@@ -395,28 +395,7 @@ export function ContentPageWorkbench({
                           ? "Zapisuję wersję..."
                           : "Zapisz poprawioną wersję do review"}
                       </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          actions.saveDraftRevision(
-                            revisionWorkspace.editor_title,
-                            sectionOverrides
-                          )
-                        }
-                        disabled={
-                          !revisionWorkspace.can_save ||
-                          !sectionOverrides.length ||
-                          hasEmptyRevisionSection ||
-                          actions.revisionSavePending
-                        }
-                        className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {actions.revisionSavePending
-                          ? "Zapisuję wersję..."
-                          : "Zapisz wersję do review"}
-                      </button>
-                    )}
+                    ) : null}
                     <button
                       type="button"
                       onClick={() =>
@@ -536,10 +515,6 @@ export function ContentPageWorkbench({
           ) : null}
 
           {activeStepId === "review" ? (
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
-            {latestRevision?.schema_version === "wilq_content_draft_revision_v2" ? (
-              <ContentFullPagePreview revision={latestRevision} proposal={generatedPlanning} />
-            ) : null}
             <section className="rounded-md border border-line bg-white p-4 shadow-sm" aria-labelledby="review-workspace-title">
               <h2 id="review-workspace-title" className="text-base font-semibold text-ink">
                 Review konkretnej wersji szkicu
@@ -558,29 +533,24 @@ export function ContentPageWorkbench({
                     </p>
                   </div>
 
-                  <details className="rounded-md border border-line bg-surface px-3 py-2">
-                    <summary className="cursor-pointer text-sm font-semibold text-action">
-                      Źródła i powiązania sekcji
-                    </summary>
-                    <div className="mt-3 space-y-3" data-testid="immutable-revision-content">
-                      {latestRevision.sections.map((section) => (
-                        <article
-                          key={section.heading}
-                          className="rounded-md border border-line bg-white p-3"
-                        >
-                          <h3 className="text-sm font-semibold text-ink">{section.heading}</h3>
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                            {section.body_markdown}
-                          </p>
-                          <p className="mt-2 break-all text-xs leading-5 text-slate-500">
-                            Źródła: {section.evidence_ids.length
-                              ? section.evidence_ids.join(", ")
-                              : "brak przypisanych źródeł"}
-                          </p>
-                        </article>
-                      ))}
-                    </div>
-                  </details>
+                  <div className="space-y-3" data-testid="immutable-revision-content">
+                    {latestRevision.sections.map((section) => (
+                      <article
+                        key={section.heading}
+                        className="rounded-md border border-line bg-white p-3"
+                      >
+                        <h3 className="text-sm font-semibold text-ink">{section.heading}</h3>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                          {section.body_markdown}
+                        </p>
+                        <p className="mt-2 break-all text-xs leading-5 text-slate-500">
+                          Dowody: {section.evidence_ids.length
+                            ? section.evidence_ids.join(", ")
+                            : "brak przypisanych dowodów"}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
 
                   <section className="rounded-md border border-action/25 bg-action/5 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -784,7 +754,6 @@ export function ContentPageWorkbench({
                 </p>
               )}
             </section>
-            </div>
           ) : null}
 
           {activeStepId === "dev_draft" ? (

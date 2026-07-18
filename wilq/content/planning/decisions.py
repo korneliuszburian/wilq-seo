@@ -66,12 +66,6 @@ def gsc_content_decisions(
         wordpress_section_count = optional_int_text(
             first.dimensions.get("wordpress_section_heading_count")
         )
-        wordpress_acf_section_headings = wordpress_section_headings_from_dimensions(
-            first.dimensions.get("wordpress_acf_section_headings_json")
-        )
-        wordpress_acf_section_count = optional_int_text(
-            first.dimensions.get("wordpress_acf_section_count")
-        )
         wordpress_content_summary = first.dimensions.get("wordpress_content_summary") or None
         wordpress_content_word_count = optional_int_text(
             first.dimensions.get("wordpress_content_word_count")
@@ -98,21 +92,10 @@ def gsc_content_decisions(
         wordpress_section_inventory_status: Literal["available", "missing"] = (
             "available" if wordpress_section_headings else "missing"
         )
-        wordpress_acf_section_inventory_status: Literal["available", "missing"] = (
-            "available" if wordpress_acf_section_headings else "missing"
-        )
         wordpress_acf_section_inventory_note = (
-            None
-            if wordpress_acf_section_headings
-            else (
-                "Nie wykryto sekcji ACF/flexible content; aktualna treść jest "
-                "czytana z the_content. WILQ nie udaje dodatkowego układu "
-                "edytora WordPress, którego źródło nie potwierdza."
-                if wordpress_content_summary
-                else "Brakuje read-only kontraktu aktualnych wierszy "
-                "ACF/flexible content dla tej strony. WILQ widzi publiczne "
-                "nagłówki HTML, ale nie udaje pełnego układu edytora WordPress."
-            )
+            "Brakuje read-only kontraktu aktualnych wierszy ACF/flexible content "
+            "dla tej strony. WILQ widzi publiczne nagłówki HTML, ale nie udaje "
+            "pełnego układu edytora WordPress."
         )
         queries = _unique(
             item.dimensions.get("query") for item in page_items if item.dimensions.get("query")
@@ -236,10 +219,8 @@ def gsc_content_decisions(
                 wordpress_content_inventory_note=wordpress_content_inventory_note,
                 wordpress_block_names=wordpress_block_names,
                 wordpress_block_count=wordpress_block_count,
-                wordpress_acf_section_inventory_status=wordpress_acf_section_inventory_status,
+                wordpress_acf_section_inventory_status="missing",
                 wordpress_acf_section_inventory_note=wordpress_acf_section_inventory_note,
-                wordpress_acf_section_headings=wordpress_acf_section_headings,
-                wordpress_acf_section_count=wordpress_acf_section_count,
                 source_public_url=url_semantics["source_public_url"],
                 preview_url=url_semantics["preview_url"],
                 intended_final_url=url_semantics["intended_final_url"],

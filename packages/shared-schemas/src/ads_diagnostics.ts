@@ -45,25 +45,6 @@ export const AdsFreshnessAssessmentSchema = z.object({
   next_step: z.string()
 });
 
-export const AdsAggregationContractSchema = z.object({
-  id: z.string(),
-  view: z.enum(["full", "summary"]),
-  campaign_window: z.string(),
-  search_term_windows: z.array(z.string()),
-  summary_row_limit: z.number(),
-  campaign_rows_returned: z.number(),
-  campaign_rows_available: z.number().nullable().optional(),
-  search_term_rows_returned: z.number(),
-  search_term_rows_available: z.number().nullable().optional(),
-  is_exhaustive: z.boolean(),
-  summary_scope: z.string(),
-  pacing_basis: z.string(),
-  currency_code: z.string().nullable().optional(),
-  currency_status: z.enum(["ready", "blocked", "missing"]),
-  money_aggregation_allowed: z.boolean(),
-  caveats: z.array(z.string())
-});
-
 export const AdsDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -75,7 +56,6 @@ export const AdsDiagnosticsResponseSchema = z.object({
   live_data_status_label: z.string().default(""),
   live_data_available: z.boolean(),
   freshness_assessment: AdsFreshnessAssessmentSchema,
-  aggregation_contract: AdsAggregationContractSchema,
   campaign_read_contract: AdsCampaignReadContractSchema,
   account_currency_read_contract: AdsAccountCurrencyReadContractSchema,
   business_context_read_contract: AdsBusinessContextReadContractSchema,
@@ -106,3 +86,4 @@ export const AdsDiagnosticsResponseSchema = z.object({
   action_summary_label: z.string().default(""),
   blocker_count: z.number()
 });
+

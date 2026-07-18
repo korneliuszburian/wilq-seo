@@ -72,7 +72,11 @@ def test_adversarial_wordpress_publish_request_is_rejected_and_live_write_is_blo
             "mode": "live",
         },
     )
-    assert live_response.status_code == 422
+    assert live_response.status_code == 200
+    result = live_response.json()["execution_result"]
+    assert result["status"] == "blocked"
+    assert result["external_write_attempted"] is False
+    assert _blocker_codes(result) == {"action_apply_required"}
 
 
 def test_adversarial_measurement_outcome_is_blocked_before_window_is_ready() -> None:
@@ -88,7 +92,14 @@ def test_adversarial_measurement_outcome_is_blocked_before_window_is_ready() -> 
         },
     )
 
-    assert response.status_code == 422
+    assert response.status_code == 200
+    data = response.json()
+    window = data["measurement_window_result"]["window"]
+    assert window["status"] == "planned"
+    assert window["success_claim_allowed"] is False
+    assert [blocker["code"] for blocker in data["outcome_blockers"]] == [
+        "measurement_window_not_ready"
+    ]
 
 
 def test_adversarial_wrong_item_review_cannot_unlock_handoff() -> None:

@@ -1279,10 +1279,6 @@ def _wordpress_match_dimensions(wordpress_match: WordPressMatch) -> dict[str, st
         "wordpress_block_names_json": dimensions.get("block_names_json", ""),
         "wordpress_block_name_count": dimensions.get("block_name_count", ""),
         "wordpress_acf_field_count": dimensions.get("acf_field_count", ""),
-        "wordpress_acf_section_headings_json": dimensions.get(
-            "acf_section_headings_json", ""
-        ),
-        "wordpress_acf_section_count": dimensions.get("acf_section_count", ""),
         "wordpress_content_host": _url_host(dimensions.get("content_url", "")),
         "wordpress_matched_url_key": _normalize_url_key(dimensions.get("content_url", "")),
         "wordpress_matched_path": _normalize_path_key(dimensions.get("content_url", "")),

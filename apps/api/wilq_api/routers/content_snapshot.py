@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from threading import RLock
-from time import monotonic
-
 from fastapi import HTTPException
 
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
@@ -17,7 +14,6 @@ from wilq.content.canonical.landing_identity import (
     match_landing_page,
 )
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
-from wilq.content.planning.generated_proposal import read_content_planning_proposal
 from wilq.content.planning.generated_proposal_store import (
     content_planning_proposal_store,
 )
@@ -42,7 +38,6 @@ from wilq.content.workflow.demand_evidence import (
 from wilq.content.workflow.exact_demand_decision import (
     content_decision_with_exact_demand,
 )
-from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
 from wilq.content.workflow.planning import ContentPlanningDecision
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import (
@@ -52,16 +47,6 @@ from wilq.schemas import (
 )
 from wilq.storage.exact_metric_batch import list_exact_metric_batch
 from wilq.storage.metric_store import metric_store
-
-# Exact demand enrichment is a read-only projection of the already cached
-# diagnostics.  Keep it briefly per work item so dashboard polling does not
-# repeat the same GSC/Ads scans, while a refreshed base diagnostics object
-# naturally invalidates the entry.
-_EXACT_DIAGNOSTICS_CACHE_SECONDS = 15.0
-_exact_diagnostics_cache: dict[
-    str, tuple[float, int, str | None, ContentDiagnosticsResponse]
-] = {}
-_exact_diagnostics_cache_lock = RLock()
 
 
 def snapshot_for_work_item_or_404(
@@ -79,7 +64,7 @@ def snapshot_for_work_item_or_404(
         if planning_decisions_override is None
         else planning_decisions_override
     )
-    proposal_store = content_planning_proposal_store()
+    generated_planning_proposal = content_planning_proposal_store().latest(work_item_id)
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,
@@ -87,35 +72,13 @@ def snapshot_for_work_item_or_404(
         audit=audit,
         revision_state=revision_state,
         planning_decisions=planning_decisions,
-        generated_planning_proposal=None,
+        generated_planning_proposal=generated_planning_proposal,
     )
     if snapshot is None:
         raise HTTPException(
             status_code=404,
             detail="Content work item is not available for the gated workflow.",
         )
-    generated_response = read_content_planning_proposal(
-        snapshot=snapshot,
-        store=proposal_store,
-    )
-    generated_planning_proposal = (
-        generated_response.proposal if generated_response.status == "ready" else None
-    )
-    if generated_planning_proposal is not None:
-        snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-            diagnostics,
-            work_item_id,
-            human_review=human_review,
-            audit=audit,
-            revision_state=revision_state,
-            planning_decisions=planning_decisions,
-            generated_planning_proposal=generated_planning_proposal,
-        )
-        if snapshot is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Content work item is not available after planning lookup.",
-            )
     review = store.latest_human_review(work_item_id)
     if human_review is None and review is not None:
         audit_record = store.latest_audit_for_review(review.id)
@@ -156,7 +119,23 @@ def snapshot_for_work_item_or_blocked_or_404(
         planning_decisions=store.load_planning_decisions(work_item_id),
     )
     if snapshot is not None:
-        return snapshot_for_work_item_or_404(work_item_id)
+        review = store.latest_human_review(work_item_id)
+        if review is None:
+            return snapshot
+        audit_record = store.latest_audit_for_review(review.id)
+        reviewed_snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
+            diagnostics,
+            work_item_id,
+            human_review=review,
+            audit=audit_record,
+            revision_state=revision_state,
+            planning_decisions=store.load_planning_decisions(work_item_id),
+        )
+        return (
+            snapshot
+            if reviewed_snapshot is None
+            else _with_recorded_human_review(reviewed_snapshot)
+        )
     blocked_snapshot = build_content_work_item_blocked_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,
@@ -185,40 +164,11 @@ def diagnostics_with_exact_gsc_demand(
     work_item_id: str,
 ) -> ContentDiagnosticsResponse:
     diagnostics = build_content_diagnostics_cached()
-    base_cache_key = id(diagnostics)
-    latest_ads_run = next(
-        iter(list_connector_refresh_runs(connector_id="google_ads")), None
-    )
-    latest_ads_run_key = latest_ads_run.id if latest_ads_run is not None else None
-    now = monotonic()
-    with _exact_diagnostics_cache_lock:
-        expired = [
-            key
-            for key, value in _exact_diagnostics_cache.items()
-            if now - value[0] >= _EXACT_DIAGNOSTICS_CACHE_SECONDS
-        ]
-        for key in expired:
-            _exact_diagnostics_cache.pop(key, None)
-        cached = _exact_diagnostics_cache.get(work_item_id)
-        if (
-            cached is not None
-            and cached[1] == base_cache_key
-            and cached[2] == latest_ads_run_key
-            and now - cached[0] < _EXACT_DIAGNOSTICS_CACHE_SECONDS
-        ):
-            return cached[3]
-    inventory_decision = inventory_decision_for_work_item(work_item_id)
-    if inventory_decision is not None and not any(
-        item.id == inventory_decision.id for item in diagnostics.decision_queue
-    ):
-        diagnostics = diagnostics.model_copy(
-            update={"decision_queue": [*diagnostics.decision_queue, inventory_decision]}
-        )
     diagnostics = content_diagnostics_with_ads_refresh(
         diagnostics,
         latest_ads_refresh(
             diagnostics,
-            [] if latest_ads_run is None else [latest_ads_run],
+            list_connector_refresh_runs(connector_id="google_ads"),
         ),
     )
     decision_id = work_item_id.removeprefix("content_work_item_")
@@ -227,15 +177,7 @@ def diagnostics_with_exact_gsc_demand(
         None,
     )
     if decision is None or not decision.page:
-        result = diagnostics
-        with _exact_diagnostics_cache_lock:
-            _exact_diagnostics_cache[work_item_id] = (
-                now,
-                base_cache_key,
-                latest_ads_run_key,
-                result,
-            )
-        return result
+        return diagnostics
     current_evidence_ids = set(decision.evidence_ids)
     candidate_facts = [
         fact
@@ -262,22 +204,14 @@ def diagnostics_with_exact_gsc_demand(
         and content_query_is_planning_signal(fact.dimensions.get("query", ""))
     ]
     if not exact_facts:
-        result = diagnostics
-        with _exact_diagnostics_cache_lock:
-            _exact_diagnostics_cache[work_item_id] = (
-                now,
-                base_cache_key,
-                latest_ads_run_key,
-                result,
-            )
-        return result
+        return diagnostics
     ads_facts = _latest_ads_demand_facts(diagnostics)
     enriched_decision = content_decision_with_exact_demand(
         decision,
         gsc_facts=exact_facts,
         ads_facts=ads_facts,
     )
-    result = diagnostics.model_copy(
+    return diagnostics.model_copy(
         update={
             "decision_queue": [
                 enriched_decision if item.id == decision_id else item
@@ -285,14 +219,6 @@ def diagnostics_with_exact_gsc_demand(
             ]
         }
     )
-    with _exact_diagnostics_cache_lock:
-        _exact_diagnostics_cache[work_item_id] = (
-            now,
-            base_cache_key,
-            latest_ads_run_key,
-            result,
-        )
-    return result
 
 
 def _latest_ads_demand_facts(

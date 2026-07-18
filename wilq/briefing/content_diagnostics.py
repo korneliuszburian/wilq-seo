@@ -86,6 +86,8 @@ GSC_CONTENT_KNOWLEDGE_CARD_IDS = (
 GSC_CONTENT_EXPERT_RULE_IDS = (
     "seo_gsc_opportunities_v1",
     "seo_query_page_matrix_v1",
+    "seo_content_decay_v1",
+    "seo_cannibalization_v1",
     "content_duplication_rules_v1",
     "content_brief_rules_v1",
 )
@@ -258,27 +260,6 @@ def build_content_diagnostics_cached() -> ContentDiagnosticsResponse:
         return diagnostics
 
 
-def build_content_freshness_assessment_fast() -> ContentFreshnessAssessment:
-    """Build only connector freshness for the selected decision read."""
-    connectors = [
-        connector
-        for connector_id in CONTENT_CONNECTOR_IDS
-        if (connector := get_connector_status(connector_id)) is not None
-    ]
-    latest_refreshes = _latest_refreshes(CONTENT_CONNECTOR_IDS)
-    latest_by_connector = {refresh.connector_id: refresh for refresh in latest_refreshes}
-    live_data_available = all(
-        connector_refresh_has_live_data(latest_by_connector[connector_id])
-        for connector_id in PRIMARY_CONTENT_CONNECTORS
-        if connector_id in latest_by_connector
-    ) and all(connector_id in latest_by_connector for connector_id in PRIMARY_CONTENT_CONNECTORS)
-    return _content_freshness_assessment(
-        connectors,
-        latest_refreshes,
-        live_data_available=live_data_available,
-    )
-
-
 def clear_content_diagnostics_cache() -> None:
     global _cached_content_diagnostics
     with _content_diagnostics_cache_lock:
@@ -357,11 +338,7 @@ def _content_metric_facts(connector_ids: Iterable[str]) -> list[MetricFact]:
 def _content_metric_facts_by_connector(
     connector_ids: Iterable[str],
 ) -> dict[str, list[MetricFact]]:
-    # Content diagnostics only consume the latest fact groups.  The historical
-    # ``previous_*`` lineage is intentionally not part of this read model and
-    # computing it here forces DuckDB to window over the complete metric store
-    # on every cold snapshot (124k+ facts in the local Ekologus store).
-    facts_by_connector = metric_store().list_latest_metric_facts_by_connector(
+    facts_by_connector = metric_store().list_metric_facts_by_connector(
         list(connector_ids),
         limit_per_connector=CONTENT_WORDPRESS_METRIC_FACT_LIMIT,
     )
@@ -421,28 +398,6 @@ def _content_freshness_assessment(
         _content_connector_short_label(connector_by_id.get(connector_id), connector_id)
         for connector_id in requiring_refresh_ids
     ]
-    quality_fields = {
-        "connector_refresh_run_ids": {
-            connector_id: refresh.id for connector_id, refresh in refresh_by_connector.items()
-        },
-        "connector_covered_windows": {
-            connector_id: refresh.covered_window
-            for connector_id, refresh in refresh_by_connector.items()
-        },
-        "connector_settlement_states": {
-            connector_id: refresh.settlement_state
-            for connector_id, refresh in refresh_by_connector.items()
-        },
-        "connector_quality_states": {
-            connector_id: refresh.quality_state
-            for connector_id, refresh in refresh_by_connector.items()
-        },
-        "connector_quality_caveats": {
-            connector_id: refresh.covered_window.interpretation_caveats
-            for connector_id, refresh in refresh_by_connector.items()
-            if refresh.covered_window.interpretation_caveats
-        },
-    }
 
     if missing_ids:
         return ContentFreshnessAssessment(
@@ -454,7 +409,6 @@ def _content_freshness_assessment(
             blocked_connector_ids=blocked_ids,
             stale_connector_ids=stale_ids,
             connector_labels_requiring_refresh=requiring_refresh_labels,
-            **quality_fields,
             summary=(
                 "Brakuje podstawowego odczytu danych treści dla: "
                 f"{_join_labels(requiring_refresh_labels)}."
@@ -479,7 +433,6 @@ def _content_freshness_assessment(
             blocked_connector_ids=blocked_ids,
             stale_connector_ids=stale_ids,
             connector_labels_requiring_refresh=requiring_refresh_labels or blocked_labels,
-            **quality_fields,
             summary=(
                 "Podstawowe dane treści nie mają pełnego odczytu metryk dla: "
                 f"{_join_labels(blocked_labels)}."
@@ -500,7 +453,6 @@ def _content_freshness_assessment(
             blocked_connector_ids=blocked_ids,
             stale_connector_ids=stale_ids,
             connector_labels_requiring_refresh=requiring_refresh_labels,
-            **quality_fields,
             summary=(
                 "Dane treści są do odświeżenia dla: "
                 f"{_join_labels(requiring_refresh_labels)}. "
@@ -518,7 +470,6 @@ def _content_freshness_assessment(
         state_label="dane treści świeże",
         stale_after_hours=CONTENT_STALE_AFTER_HOURS,
         requires_refresh=False,
-        **quality_fields,
         summary=(
             f"Podstawowe dane treści mieszczą się w progu {CONTENT_STALE_AFTER_HOURS}h."
         ),

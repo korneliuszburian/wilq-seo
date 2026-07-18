@@ -20,13 +20,7 @@ _INSTRUCTION = (
     "Nie dodawaj faktów, zapytań, obietnic efektu, zgodności prawnej ani twierdzeń "
     "spoza przekazanych source facts i claim policy. CTA ma pomagać w następnym "
     "kroku bez gwarancji wyniku. Nie zatwierdzaj tekstu, nie wykonuj write i zawsze "
-    "zwróć publish_ready=false. Każde pole ze schema jest obowiązkowe: podaj "
-    "language=pl-PL, page_assets, wszystkie sekcje, wszystkie pytania FAQ, wszystkie "
-    "CTA, wszystkie linki oraz publish_ready=false. Nie używaj linków Markdown ani "
-    "adresów URL w title, leadzie, sekcjach, FAQ ani CTA. Jedyny link zwróć wyłącznie "
-    "w internal_links: zachowaj dokładny target_url z planu, a anchor_text podaj jako "
-    "krótki zwykły tekst bez nawiasów, bez Markdown i bez adresu URL. "
-    "Zwróć wyłącznie JSON zgodny ze schema."
+    "zwróć publish_ready=false. Zwróć wyłącznie JSON zgodny ze schema."
 )
 
 
@@ -78,7 +72,6 @@ def initial_full_draft_output_schema(
     proposal: ContentPlanningProposal,
 ) -> dict[str, object]:
     schema = deepcopy(ContentInitialDraftModelOutput.model_json_schema())
-    _require_all_object_properties(schema)
     properties = _mapping(schema, "properties")
     definitions = _mapping(schema, "$defs")
     section = _properties(_mapping(definitions, "ContentInitialDraftSectionOutput"))
@@ -115,21 +108,6 @@ def _set_array_size(properties: dict[str, object], key: str, size: int) -> None:
     field = _mapping(properties, key)
     field["minItems"] = size
     field["maxItems"] = size
-
-
-def _require_all_object_properties(value: object) -> None:
-    """Make Pydantic's optional defaults valid for Codex structured output."""
-
-    if isinstance(value, dict):
-        properties = value.get("properties")
-        if isinstance(properties, dict):
-            value["required"] = list(properties)
-        value.pop("default", None)
-        for nested in value.values():
-            _require_all_object_properties(nested)
-    elif isinstance(value, list):
-        for nested in value:
-            _require_all_object_properties(nested)
 
 
 __all__ = ["initial_full_draft_output_schema", "initial_full_draft_turn_request"]

@@ -805,73 +805,33 @@ class _SocialReuseStoreMixin(_StoreConnectionMixin):
             redact_mapping(result.model_dump(mode="json"))
         )
         with self._connect() as connection:
-            if redacted.revision_binding is not None:
-                binding = redacted.revision_binding
-                connection.execute(
-                    """
-                    INSERT INTO content_wordpress_draft_execution_history
-                      (work_item_id, handoff_id, revision_id, revision_digest, payload_json)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(work_item_id, handoff_id, revision_id, revision_digest)
-                    DO UPDATE SET payload_json = excluded.payload_json
-                    """,
-                    (
-                        work_item_id,
-                        binding.handoff_id,
-                        binding.revision_id,
-                        binding.content_digest,
-                        _model_json(redacted),
-                    ),
-                )
-            else:
-                # Preserve readable v1/history rows that predate exact bindings.
-                connection.execute(
-                    """
-                    INSERT INTO content_wordpress_draft_executions (work_item_id, payload_json)
-                    VALUES (?, ?)
-                    ON CONFLICT(work_item_id) DO UPDATE SET payload_json = excluded.payload_json
-                    """,
-                    (work_item_id, _model_json(redacted)),
-                )
+            connection.execute(
+                """
+                INSERT INTO content_wordpress_draft_executions (work_item_id, payload_json)
+                VALUES (?, ?)
+                ON CONFLICT(work_item_id) DO UPDATE SET
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    work_item_id,
+                    _model_json(redacted),
+                ),
+            )
         return redacted
 
     def latest_wordpress_draft_execution(
         self,
         work_item_id: str,
-        *,
-        handoff_id: str | None = None,
-        revision_id: str | None = None,
-        revision_digest: str | None = None,
     ) -> ContentWordPressDraftExecutionResult | None:
-        binding_values = (handoff_id, revision_id, revision_digest)
-        # A caller that starts an exact lookup must provide the complete
-        # binding. Never fall back to a work-item-wide legacy execution for a
-        # partially specified revision, since that could unlock measurement
-        # for a different document.
-        if any(value is not None for value in binding_values) and not all(
-            value for value in binding_values
-        ):
-            return None
         with self._connect() as connection:
-            if handoff_id and revision_id and revision_digest:
-                row = connection.execute(
-                    """
-                    SELECT payload_json FROM content_wordpress_draft_execution_history
-                    WHERE work_item_id = ? AND handoff_id = ? AND revision_id = ?
-                      AND revision_digest = ?
-                    LIMIT 1
-                    """,
-                    (work_item_id, handoff_id, revision_id, revision_digest),
-                ).fetchone()
-            else:
-                row = connection.execute(
-                    """
-                    SELECT payload_json FROM content_wordpress_draft_executions
-                    WHERE work_item_id = ?
-                    LIMIT 1
-                    """,
-                    (work_item_id,),
-                ).fetchone()
+            row = connection.execute(
+                """
+                SELECT payload_json FROM content_wordpress_draft_executions
+                WHERE work_item_id = ?
+                LIMIT 1
+                """,
+                (work_item_id,),
+            ).fetchone()
         if row is None:
             return None
         return ContentWordPressDraftExecutionResult.model_validate(
