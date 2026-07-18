@@ -20,7 +20,6 @@ capabilities:
   - ads_holiday_impact_diagnostics
   - ads_seasonality_adjustments
   - ads_recommendations_review
-  - ads_quality_score_diagnostics
   - ads_rsa_generation_and_validation
   - ads_campaign_builder
   - ads_pmax_channels

@@ -37,7 +37,6 @@ OPPORTUNITY_TYPES = (
     "google_ads_negative_keywords",
     "google_ads_landing_mismatch",
     "google_ads_recommendation_review",
-    "google_ads_quality_score_issue",
     "gsc_ctr_opportunity",
     "gsc_content_decay",
     "gsc_cannibalization",

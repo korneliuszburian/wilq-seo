@@ -1,4 +1,6 @@
 id: ads_quality_score_v1
+status: quarantined
+availability: blocked_missing_component_contract
 name: Quality score diagnostics
 version: 1
 source_anchor: Google Ads quality score diagnostics
@@ -8,4 +10,3 @@ diagnostic_logic: [map_component_to_cause, require_landing_page_evidence]
 recommended_actions: [landing_page_alignment, rsa_revision, keyword_structure_review]
 risk_notes: Do not claim causality without component evidence.
 output_contract: Quality score opportunities.
-
