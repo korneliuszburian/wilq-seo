@@ -15,7 +15,9 @@ def _request() -> ContentInitialDraftRequest:
     )
 
 
-def _snapshot(*, latest_revision: object | None) -> SimpleNamespace:
+def _snapshot(
+    *, latest_revision: object | None, context_current: bool = True
+) -> SimpleNamespace:
     return SimpleNamespace(
         planning_workspace=SimpleNamespace(
             scope_current=True,
@@ -26,7 +28,10 @@ def _snapshot(*, latest_revision: object | None) -> SimpleNamespace:
                 planning_input_digest="b" * 64,
             ),
         ),
-        revision_workspace=SimpleNamespace(latest_revision=latest_revision),
+        revision_workspace=SimpleNamespace(
+            latest_revision=latest_revision,
+            context_current=context_current,
+        ),
     )
 
 
@@ -40,5 +45,12 @@ def test_existing_revision_never_enters_async_initial_draft_queue() -> None:
 def test_currently_approved_plan_without_revision_can_enter_queue() -> None:
     assert _can_queue_initial_draft(
         _snapshot(latest_revision=None),
+        _request(),
+    ) is True
+
+
+def test_stale_revision_can_enter_refresh_queue_without_overwriting_history() -> None:
+    assert _can_queue_initial_draft(
+        _snapshot(latest_revision=object(), context_current=False),
         _request(),
     ) is True

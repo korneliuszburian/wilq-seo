@@ -33,6 +33,7 @@ def build_initial_draft_revision_command(
     proposal: ContentPlanningProposal,
     output: ContentInitialDraftModelOutput,
     run: CodexRun,
+    base_revision_id: str | None = None,
 ) -> ContentDraftRevisionAppendCommand:
     package = snapshot.draft_package.draft_package_result.draft_package
     if package is None:
@@ -53,6 +54,7 @@ def build_initial_draft_revision_command(
     return ContentDraftRevisionAppendCommand(
         schema_version="wilq_content_draft_revision_v2",
         work_item_id=planning_input.work_item_id,
+        base_revision_id=base_revision_id,
         draft_package_id=package.id,
         draft_package_digest=content_draft_package_digest(package),
         planning_digest=proposal.planning_digest,

@@ -41,6 +41,7 @@ class _InitialDraftInputs:
     planning_input: ContentPlanningInput
     proposal: ContentPlanningProposal
     generation_contract: StructuredDraftGenerationContract
+    base_revision_id: str | None = None
 
 
 def generate_initial_full_draft(
@@ -88,7 +89,8 @@ def _prepare_inputs(
     request: ContentInitialDraftRequest,
 ) -> _InitialDraftInputs | ContentInitialDraftResponse:
     planning = snapshot.planning_workspace
-    if snapshot.revision_workspace.latest_revision is not None:
+    latest_revision = snapshot.revision_workspace.latest_revision
+    if latest_revision is not None and snapshot.revision_workspace.context_current:
         return _blocked_response(
             snapshot,
             proposal=None if planning is None else planning.proposal,
@@ -96,9 +98,9 @@ def _prepare_inputs(
             blockers=[
                 _blocker(
                     "revision_already_exists",
-                    "Pierwsza wersja już istnieje",
-                    "Initial draft może utworzyć tylko pierwszą niezmienną rewizję.",
-                    "Otwórz zapisaną wersję; kolejne zmiany twórz jako child revision.",
+                    "Aktualna wersja już istnieje",
+                    "Nowy pełny draft może powstać tylko jako kolejna rewizja aktualnego planu.",
+                    "Otwórz aktualny plan albo pracuj na zapisanej wersji.",
                 )
             ],
         )
@@ -185,6 +187,7 @@ def _prepare_inputs(
         planning_input=planning_input,
         proposal=proposal,
         generation_contract=generation.contract,
+        base_revision_id=None if latest_revision is None else latest_revision.revision_id,
     )
 
 
@@ -490,6 +493,7 @@ def _persist_document(
             proposal=inputs.proposal,
             output=output,
             run=run,
+            base_revision_id=inputs.base_revision_id,
         )
     except (ValueError, StopIteration):
         blocker = _blocker(

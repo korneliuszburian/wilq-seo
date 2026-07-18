@@ -178,10 +178,11 @@ def _can_queue_initial_draft(
         planning is None
         or not planning.scope_current
         or not planning.section_map_current
-        or snapshot.revision_workspace.latest_revision is not None
+        or (
+            snapshot.revision_workspace.latest_revision is not None
+            and snapshot.revision_workspace.context_current
+        )
     ):
-        return False
-    if snapshot.revision_workspace.latest_revision is not None:
         return False
     proposal = planning.proposal
     return (
