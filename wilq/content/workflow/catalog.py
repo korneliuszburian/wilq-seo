@@ -16,6 +16,7 @@ from wilq.content.canonical.landing_identity import (
     landing_page_metric_lookup_path,
     landing_page_metric_lookup_urls,
 )
+from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
@@ -139,7 +140,7 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
             continue
         dimensions: dict[str, Any] = fact.dimensions
         url = str(dimensions.get("content_url") or dimensions.get("canonical_url") or "").strip()
-        if not url or url in rows:
+        if not content_is_safe_public_url(url) or url in rows:
             continue
         headings = _json_list(dimensions.get("acf_section_headings_json"))
         acf_fields = _json_list(dimensions.get("acf_field_names_json"))

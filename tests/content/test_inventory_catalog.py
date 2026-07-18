@@ -55,6 +55,33 @@ def test_inventory_catalog_deduplicates_urls_and_keeps_acf_headings(monkeypatch)
     assert result.items[0].evidence_id == "ev_wp"
 
 
+def test_inventory_catalog_excludes_non_public_hosts(monkeypatch):
+    rows = [
+        SimpleNamespace(
+            name="content_object_seen",
+            dimensions={"content_url": "https://ekologus.dev.proudsite.pl/bdo/"},
+            source_connector="wordpress_ekologus",
+            evidence_id="ev_wp_dev",
+            collected_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+        ),
+        SimpleNamespace(
+            name="content_object_seen",
+            dimensions={"content_url": "https://www.ekologus.pl/bdo/"},
+            source_connector="wordpress_ekologus",
+            evidence_id="ev_wp_public",
+            collected_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+        ),
+    ]
+    monkeypatch.setattr(
+        "wilq.content.workflow.catalog.metric_store",
+        lambda: SimpleNamespace(list_metric_facts=lambda *_args, **_kwargs: rows),
+    )
+
+    result = build_content_inventory_catalog()
+
+    assert [item.url for item in result.items] == ["https://www.ekologus.pl/bdo/"]
+
+
 def test_inventory_catalog_uses_the_latest_wordpress_refresh_batch(monkeypatch):
     old_row = SimpleNamespace(
         name="content_object_seen",
