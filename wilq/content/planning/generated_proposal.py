@@ -104,7 +104,14 @@ def read_content_planning_proposal(
                 "input_summary": input_summary,
             }
         )
-    latest = store.latest(planning_input.work_item_id)
+    # A newer proposal for another input digest must not shadow an exact
+    # proposal that is valid for the current fixed point. History remains
+    # immutable, but reads are keyed by the requested input first.
+    latest = store.for_input(
+        planning_input.work_item_id,
+        service_card_id,
+        planning_input.planning_input_digest,
+    ) or store.latest(planning_input.work_item_id)
     if latest is None:
         return ContentPlanningProposalResponse(
             status="not_generated",
