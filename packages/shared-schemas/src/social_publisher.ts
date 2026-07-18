@@ -38,6 +38,8 @@ export const SocialPublisherContextPackSchema = z.object({
 export const SocialReuseProposalSchema = z.object({
   contract: z.literal("social_reuse_proposal_v1"),
   proposal_id: z.string().min(1),
+  parent_proposal_id: z.string().min(1).nullable().optional(),
+  proposal_number: z.number().int().positive().default(1),
   work_item_id: z.string().min(1),
   platform: z.enum(["linkedin", "facebook"]),
   source_revision_id: z.string().min(1),

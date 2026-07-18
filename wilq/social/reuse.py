@@ -36,11 +36,31 @@ class SocialReuseProposalRequest(BaseModel):
         return value.strip()
 
 
+class SocialReuseRevisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expected_proposal_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    audience: str = Field(min_length=1)
+    angle: str = Field(min_length=1)
+    body: str = Field(min_length=1)
+    claim_ids: list[str] = Field(default_factory=list)
+    measurement_hypothesis: str = Field(min_length=1)
+
+    @field_validator("audience", "angle", "body", "measurement_hypothesis")
+    @classmethod
+    def require_visible_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Social reuse revision fields cannot be blank.")
+        return value.strip()
+
+
 class SocialReuseProposal(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     contract: Literal["social_reuse_proposal_v1"] = "social_reuse_proposal_v1"
     proposal_id: str = Field(min_length=1)
+    parent_proposal_id: str | None = None
+    proposal_number: int = Field(default=1, ge=1)
     work_item_id: str = Field(min_length=1)
     platform: SocialReusePlatform
     source_revision_id: str = Field(min_length=1)
@@ -141,6 +161,8 @@ def build_social_reuse_proposal(
     inventory: SocialHistoryInventory,
     *,
     now: datetime,
+    parent_proposal_id: str | None = None,
+    proposal_number: int = 1,
 ) -> SocialReuseProposal:
     source_evidence_ids = sorted(
         {
@@ -181,9 +203,9 @@ def build_social_reuse_proposal(
     }
     if any(claim_id not in allowed_claim_ids for claim_id in request.claim_ids):
         raise ValueError("Social reuse claim_ids must belong to the source revision.")
-    proposal_id = (
-        f"social_reuse_{request.platform}_{request.expected_revision_id}"
-    )
+    proposal_id = f"social_reuse_{request.platform}_{request.expected_revision_id}"
+    if parent_proposal_id is not None:
+        proposal_id += f"_child_{proposal_number}"
     constraints = [
         "review_only",
         "no_vendor_publish",
@@ -193,6 +215,8 @@ def build_social_reuse_proposal(
     payload = {
         "contract": "social_reuse_proposal_v1",
         "proposal_id": proposal_id,
+        "parent_proposal_id": parent_proposal_id,
+        "proposal_number": proposal_number,
         "work_item_id": request.work_item_id,
         "platform": request.platform,
         "source_revision_id": revision.revision_id,

@@ -20,6 +20,7 @@ from wilq.social.reuse import (
     SocialReuseReview,
     SocialReuseReviewRequest,
     SocialReuseReviewResponse,
+    SocialReuseRevisionRequest,
     build_social_reuse_proposal,
     social_history_inventory_digest,
 )
@@ -225,6 +226,74 @@ def review_social_reuse_proposal(
         proposal=proposal,
         review=persisted,
         next_step=_social_review_next_step(persisted.decision),
+    )
+
+
+@router.post(
+    "/api/social/reuse-proposals/{proposal_id}/revise",
+    response_model=SocialReuseProposalResponse,
+    responses={409: {"model": SocialReuseProposalResponse}},
+)
+def revise_social_reuse_proposal(
+    proposal_id: str,
+    request: SocialReuseRevisionRequest,
+) -> SocialReuseProposalResponse | JSONResponse:
+    store = content_workflow_store()
+    parent = store.get_social_reuse_proposal(proposal_id)
+    if parent is None:
+        return _social_reuse_blocked(
+            "social_reuse_proposal_not_found",
+            "Utwórz propozycję na podstawie aktualnej rewizji treści.",
+        )
+    if request.expected_proposal_digest != parent.proposal_digest:
+        return _social_reuse_conflict(
+            "stale_proposal",
+            "Propozycja zmieniła się. Otwórz jej aktualną wersję przed poprawą.",
+        )
+    state = store.load_draft_revision_state(parent.work_item_id)
+    current = state.latest_revision
+    if current is None or current.content_digest != parent.source_revision_digest:
+        return _social_reuse_conflict(
+            "source_revision_changed",
+            "Rewizja treści zmieniła się. Przygotuj propozycję od nowa.",
+        )
+    inventory = _current_social_history_inventory()
+    if (
+        inventory.status != "review_ready"
+        or social_history_inventory_digest(inventory)
+        != parent.duplicate_risk_inventory_digest
+    ):
+        return _social_reuse_conflict(
+            "social_history_changed",
+            "Historia social zmieniła się albo wymaga ponownego review.",
+        )
+    number = store.next_social_reuse_child_number(proposal_id)
+    revised = build_social_reuse_proposal(
+        SocialReuseProposalRequest(
+            work_item_id=parent.work_item_id,
+            expected_revision_id=parent.source_revision_id,
+            expected_revision_digest=parent.source_revision_digest,
+            platform=parent.platform,
+            audience=request.audience,
+            angle=request.angle,
+            body=request.body,
+            claim_ids=request.claim_ids,
+            measurement_hypothesis=request.measurement_hypothesis,
+        ),
+        current,
+        inventory,
+        now=utc_now(),
+        parent_proposal_id=proposal_id,
+        proposal_number=number,
+    )
+    persisted = store.save_social_reuse_child_proposal(revised)
+    return SocialReuseProposalResponse(
+        status="created",
+        proposal=persisted,
+        next_step=(
+            "Nowa propozycja wymaga osobnego review człowieka; "
+            "poprzednia pozostaje niezmieniona."
+        ),
     )
 
 

@@ -237,6 +237,65 @@ def test_social_reuse_review_records_human_decision_and_is_idempotent(monkeypatc
     assert repeated.json()["review"]["review_id"] == first.json()["review"]["review_id"]
 
 
+def test_social_reuse_needs_changes_creates_child_proposal(monkeypatch) -> None:
+    revision = _revision()
+    inventory = build_social_history_inventory(
+        {},
+        {},
+        audit_social_history_metadata_payload(
+            {
+                "items": [
+                    {"channel": "linkedin", **_history_fields("linkedin")},
+                    {"channel": "facebook", **_history_fields("facebook")},
+                ]
+            }
+        ),
+        metadata_source_configured=True,
+    )
+    parent = build_social_reuse_proposal(
+        SocialReuseProposalRequest(
+            work_item_id=revision.work_item_id,
+            expected_revision_id=revision.revision_id,
+            expected_revision_digest=revision.content_digest,
+            platform="linkedin",
+            audience="przedsiębiorcy",
+            angle="pierwszy kąt",
+            body="Pierwsza propozycja.",
+            claim_ids=["claim_1"],
+            measurement_hypothesis="Obserwujemy wejścia.",
+        ),
+        revision,
+        inventory,
+        now=datetime(2026, 7, 18, tzinfo=UTC),
+    )
+    store = _FakeStore(revision, status="approved")
+    store.saved = parent
+    monkeypatch.setattr(social_router, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        social_router,
+        "build_social_history_inventory_from_env",
+        lambda *_args: inventory,
+    )
+    response = TestClient(app).post(
+        f"/api/social/reuse-proposals/{parent.proposal_id}/revise",
+        json={
+            "expected_proposal_digest": parent.proposal_digest,
+            "audience": "przedsiębiorcy",
+            "angle": "drugi kąt",
+            "body": "Poprawiona propozycja.",
+            "claim_ids": ["claim_1"],
+            "measurement_hypothesis": "Obserwujemy wejścia.",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "created"
+    assert response.json()["proposal"]["parent_proposal_id"] == parent.proposal_id
+    assert response.json()["proposal"]["proposal_number"] == 2
+    assert response.json()["proposal"]["body"] == "Poprawiona propozycja."
+    assert store.child_saved is not None
+
+
 def _revision() -> ContentDraftRevision:
     return ContentDraftRevision.model_validate(
         {
@@ -282,6 +341,7 @@ class _FakeStore:
         self.status = status
         self.saved: SocialReuseProposal | None = None
         self.saved_review: SocialReuseReview | None = None
+        self.child_saved: SocialReuseProposal | None = None
 
     def load_draft_revision_state(self, work_item_id: str):
         return SimpleNamespace(
@@ -306,3 +366,13 @@ class _FakeStore:
     def save_social_reuse_review(self, review: SocialReuseReview) -> SocialReuseReview:
         self.saved_review = review
         return review
+
+    def next_social_reuse_child_number(self, parent_proposal_id: str) -> int:
+        return 2
+
+    def save_social_reuse_child_proposal(
+        self,
+        proposal: SocialReuseProposal,
+    ) -> SocialReuseProposal:
+        self.child_saved = proposal
+        return proposal
