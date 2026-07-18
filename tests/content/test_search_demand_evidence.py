@@ -175,10 +175,53 @@ def test_search_demand_keeps_exact_ads_term_without_gsc_overlap_as_page_only() -
         for row in evidence.ads_term_rows
         if row.term == "bdo konsultacja dla firmy"
     )
-    assert row.page == page
+    assert row.page == page.rstrip("/")
     assert row.section_mapping_status == "page_only"
     assert row.section_headings == []
     assert row.alignment_basis == "same_window_search_term_landing"
+    assert row.review_required is True
+
+
+def test_search_demand_rejects_exact_ads_batch_without_landing_identity() -> None:
+    page = "https://www.ekologus.pl/bdo/"
+    dimensions = {
+        "campaign_id": "105",
+        "ad_group_id": "205",
+        "search_term": "bdo bez identity",
+        "landing_mapping_status": "resolved",
+        "actual_clicked_in_window": "true",
+    }
+    facts = [
+        MetricFact(
+            name=name,
+            value=value,
+            period="last_30_days",
+            source_connector="google_ads",
+            evidence_id="ev_ads_null_identity",
+            dimensions=dimensions,
+        )
+        for name, value in (
+            ("search_term_clicks", 1),
+            ("search_term_impressions", 10),
+            ("search_term_cost_micros", 100_000),
+            ("search_term_conversions", 0.0),
+            ("search_term_conversion_value", 0.0),
+        )
+    ]
+    facts.append(
+        MetricFact(
+            name="search_term_payload_status",
+            value="ready",
+            period="last_30_days",
+            source_connector="google_ads",
+            evidence_id="ev_ads_null_identity",
+            dimensions={},
+        )
+    )
+
+    evidence = _build_demand([*_demand_facts(page, "service_bdo"), *facts], page)
+
+    assert all(row.term != "bdo bez identity" for row in evidence.ads_term_rows)
 
 
 def test_search_demand_ignores_exact_term_for_a_different_clicked_landing() -> None:

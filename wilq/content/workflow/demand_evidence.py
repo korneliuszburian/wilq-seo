@@ -454,7 +454,9 @@ def _ads_row(
     landing_match_tiers = _landing_match_tiers(facts, final_canonical_url)
     if not landing_match_tiers:
         return None
-    page = gsc_row.page if gsc_row is not None else final_canonical_url
+    page = gsc_row.page if gsc_row is not None else _fact_page(facts[0])
+    if page is None:
+        return None
     section_headings = gsc_row.section_headings if gsc_row is not None else []
     section_mapping_status = (
         gsc_row.section_mapping_status if gsc_row is not None else "page_only"
@@ -471,7 +473,7 @@ def _ads_row(
             if any(ADS_LANDING_IDENTITY in fact.dimensions for fact in facts)
             else "direct_page_service_scope"
         ),
-        review_required=False,
+        review_required=gsc_row is None,
         section_headings=section_headings,
         section_mapping_status=section_mapping_status,
         period=facts[0].period,
@@ -571,7 +573,13 @@ def _exact_ads_groups(
             continue
         page_scoped_facts = [
             fact.model_copy(
-                update={"dimensions": {**fact.dimensions, "final_url": landing_page}}
+                update={
+                    "dimensions": {
+                        **fact.dimensions,
+                        "mapped_allowed_page": landing_page,
+                        "final_url": fact.dimensions.get("final_url", landing_page),
+                    }
+                }
             )
             for fact in term_facts
         ]
