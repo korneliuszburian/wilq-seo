@@ -20,10 +20,13 @@ odczytu i działania workflow, nie UAT Wilka ani zgoda na publikację.
 - URL: `https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/`
 - Karta: `ekologus_service_bdo_reporting`.
 - Aktualne wejście: GSC exact page, 266 wyświetleń, 1 kliknięcie, CTR 0,38%.
-- API prawidłowo oznacza zapisany starszy plan jako `stale`; nie pokazuje go jako
-  aktualnego planu do review i nie pozwala zatwierdzić jego mapy sekcji.
-- Następny krok: odświeżyć zakres po ponownym potwierdzeniu usługi i uruchomić
-  jedną nową wersję planu.
+- 18/19 lipca uruchomiono jedną nową wersję planu na aktualnym digest:
+  proposal v5, 12 sekcji, 7 materiałów i 4 karty wiedzy. Stary zapis został
+  zastąpiony przez exact, świeży fixed point; nie jest mieszany z nowym wejściem.
+- Operator potwierdził zakres i mapę sekcji, a następnie uruchomiono pełny draft:
+  `content_revision_f942b8008f99493693eb991050a074f5`, 5 sekcji, 3 FAQ, 2 CTA,
+  1 link wewnętrzny, 7 materiałów i 4 karty wiedzy. Draft pozostaje
+  `publish_ready=false` i nie wykonuje zapisu do WordPressa.
 
 ### Doradztwo i outsourcing
 
