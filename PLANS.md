@@ -181,6 +181,25 @@ Review nie poprawia automatycznie własnego tekstu i nie wykonuje vendor write.
 Finding wybiera marketer, a Codex zapisuje nową immutable child revision.
 Nie przedstawiamy syntetycznego browser proof jako realnego UAT.
 
+### Jeden wynik kanoniczny, nie galeria wersji
+
+Planer i generator mają zwracać jeden rekomendowany wynik dla jednego
+`planning_input_digest`. Idempotentne ponowienie tego samego wejścia odczytuje
+ten sam proposal albo jego stan generowania; nie tworzy v2, v3 i v10 tylko
+dlatego, że marketer ponownie otworzył ekran.
+
+Numery wersji dotyczą wyłącznie trwałości kontraktu i historii rewizji:
+`ContentDraftRevision` v1/v2 oznacza schemat odczytu, a numer rewizji oznacza
+niezmienny punkt dokumentu. Nie są to alternatywne teksty do wyboru.
+
+Warianty mogą powstać tylko jako mały, wewnętrzny eksperyment jakościowy dla
+konkretnego pola lub sekcji (np. dwa leady po findingu dotyczącym bezpośredniości).
+Każdy wariant musi mieć te same query/evidence/claim IDs, a marketer dostaje
+jedną rekomendację z krótkim uzasadnieniem. Alternatywy nie są zapisywane jako
+konkurencyjne propozycje, nie trafiają do głównego UI i nie mogą omijać review.
+Domyślna ścieżka nie generuje wariantów. Testy A/B po publikacji należą do
+istniejącego publication-bound measurement loopu, nie do planera.
+
 ### Standard dla całego Marketing OS
 
 Każdy moduł (treści, GSC, GA4, Ads, Ahrefs, Merchant, Localo, Social i
