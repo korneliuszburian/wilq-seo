@@ -115,6 +115,46 @@ def test_queue_can_include_selected_inventory_work_item_not_in_recommendation_qu
     assert queue.candidates[0].final_canonical_url == selected_decision.final_canonical_url
 
 
+def test_queue_rebuilds_source_labels_from_authoritative_connector_ids() -> None:
+    decision = ContentDecisionItem(
+        id="content_decision_source_labels",
+        decision_type="refresh_or_merge",
+        status="ready",
+        title="Strona z pełnym śladem źródeł",
+        primary_query="doradztwo środowiskowe",
+        priority=10,
+        source_public_url="https://www.ekologus.pl/doradztwo/",
+        final_canonical_url="https://www.ekologus.pl/doradztwo/",
+        source_connectors=["wordpress_ekologus", "google_search_console", "google_ads"],
+        # Simulate a legacy persisted projection that predates Ads lineage.
+        source_connector_labels=["WordPress ekologus.pl", "Google Search Console"],
+        evidence_ids=["ev_wp", "ev_gsc", "ev_ads"],
+        rationale="Test pełnego śladu źródeł.",
+        next_step="Przejdź do decyzji.",
+    )
+    diagnostics = ContentDiagnosticsResponse.model_construct(
+        freshness_assessment=ContentFreshnessAssessment(
+            state="fresh",
+            state_label="dane treści świeże",
+            requires_refresh=False,
+            summary="Dane są świeże.",
+            next_step="Można przejść do decyzji.",
+        ),
+        decision_queue=[decision],
+    )
+
+    queue = build_content_work_item_queue_response(
+        diagnostics,
+        minimum_actionable_candidates=1,
+    )
+
+    assert queue.candidates[0].source_connector_labels == [
+        "WordPress ekologus.pl",
+        "Google Search Console",
+        "Google Ads",
+    ]
+
+
 def test_selected_inventory_queue_reads_material_without_full_diagnostics(monkeypatch) -> None:
     inventory_id = "content_work_item_inventory_fast"
     selected_decision = ContentDecisionItem(

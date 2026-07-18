@@ -22,6 +22,7 @@ from wilq.content.workflow.models import (
     ContentWorkflowBlocker,
     content_workflow_blockers,
 )
+from wilq.operator_labels import source_connector_labels
 from wilq.schemas import (
     ContentDecisionItem,
     ContentDiagnosticsResponse,
@@ -307,7 +308,11 @@ def _candidate_from_decision(
         reason=_candidate_reason(decision, preflight, blockers),
         evidence_ids=decision.evidence_ids,
         source_connectors=decision.source_connectors,
-        source_connector_labels=decision.source_connector_labels,
+        # Persisted decisions may carry labels from an older connector set.
+        # Rebuild this operator projection from the authoritative connector IDs
+        # so a newly used source (for example Google Ads) cannot disappear from
+        # the marketer-facing snapshot.
+        source_connector_labels=source_connector_labels(decision.source_connectors),
         action_ids=decision.action_ids,
         action_summary_label=decision.action_summary_label,
         source_public_url=decision.source_public_url or decision.page,
