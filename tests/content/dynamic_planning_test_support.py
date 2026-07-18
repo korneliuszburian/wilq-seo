@@ -14,6 +14,7 @@ from apps.api.wilq_api.routers import content_initial_draft as initial_draft_rou
 from apps.api.wilq_api.routers import content_planning_proposals as planning_router
 from apps.api.wilq_api.routers import content_semantic_review as semantic_review_router
 from apps.api.wilq_api.routers import content_snapshot as content_snapshot_router
+from wilq.briefing import content_diagnostics
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.knowledge import cards as knowledge_cards
 from wilq.content.planning import dynamic_input
@@ -440,6 +441,10 @@ def _patch_approved_service_cards(monkeypatch: pytest.MonkeyPatch) -> None:
 def _patch_fresh_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
     original_diagnostics = content_snapshot_router.diagnostics_with_exact_gsc_demand
     diagnostics_cache: dict[str, Any] = {}
+    # Planning/child-revision tests do not exercise action registry output.
+    # Avoid rebuilding every metric-backed action candidate while constructing
+    # the snapshot; those candidates have their own focused proof suite.
+    monkeypatch.setattr(content_diagnostics, "_list_actions", lambda: [])
 
     def fresh_diagnostics(work_item_id: str) -> Any:
         cached = diagnostics_cache.get(work_item_id)
