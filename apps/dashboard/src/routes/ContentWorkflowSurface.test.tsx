@@ -1065,12 +1065,12 @@ describe("ContentWorkflowSurface", () => {
       "true"
     );
     expect(screen.getByText("Decyzja, blocker i następny bezpieczny krok.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Audyt techniczny" }));
-    expect(screen.getByRole("button", { name: "Audyt techniczny" })).toHaveAttribute(
+    fireEvent.click(screen.getByRole("button", { name: "Źródła i szczegóły" }));
+    expect(screen.getByRole("button", { name: "Źródła i szczegóły" })).toHaveAttribute(
       "aria-pressed",
       "true"
     );
-    expect(screen.getByText("Dowody, audyt i kontrakty do sprawdzenia technicznego.")).toBeInTheDocument();
+    expect(screen.getByText("Metryki, źródła i szczegóły do sprawdzenia przed przekazaniem.")).toBeInTheDocument();
     expect(screen.getByTestId("content-workflow-technical-audit")).toBeInTheDocument();
     expect(screen.queryByTestId("content-workflow-marketer-journey")).not.toBeInTheDocument();
     expect(screen.getByText("Workflow treści: jeden aktywny krok")).toBeInTheDocument();
@@ -1524,7 +1524,7 @@ describe("ContentWorkflowSurface", () => {
 });
 
 async function openWorkflowDetails() {
-  fireEvent.click(await screen.findByRole("button", { name: "Audyt techniczny" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Źródła i szczegóły" }));
   await screen.findByTestId("content-workflow-technical-audit");
 }
 

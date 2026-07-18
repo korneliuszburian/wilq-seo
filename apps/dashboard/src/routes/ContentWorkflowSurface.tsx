@@ -293,7 +293,7 @@ function ContentWorkflowLoaded({
           <p className="mt-1 hidden text-sm text-slate-700 sm:block">
             {viewMode === "marketer"
               ? "Decyzja, blocker i następny bezpieczny krok."
-              : "Dowody, audyt i kontrakty do sprawdzenia technicznego."}
+              : "Metryki, źródła i szczegóły do sprawdzenia przed przekazaniem."}
           </p>
         </div>
         <div className="flex rounded-md border border-line bg-surface p-1" role="group" aria-label="Tryb widoku">
@@ -315,7 +315,7 @@ function ContentWorkflowLoaded({
               viewMode === "technical" ? "bg-white text-action shadow-sm" : "text-slate-600"
             }`}
           >
-            Audyt techniczny
+            Źródła i szczegóły
           </button>
         </div>
       </section>
@@ -335,7 +335,7 @@ function ContentWorkflowLoaded({
       ) : (
         <section
           id="content-workflow-details"
-          aria-label="Audyt techniczny workflow treści"
+          aria-label="Źródła i szczegóły workflow treści"
           className="mb-6 rounded-md border border-line bg-white p-4"
           data-testid="content-workflow-technical-audit"
         >
