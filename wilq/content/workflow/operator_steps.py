@@ -422,7 +422,7 @@ def _draft_status_label(
     if not facts.structured_contract_present:
         return "szkic zablokowany"
     if not facts.revision_context_current:
-        return "plan lub adres wersji zmienił się"
+        return "wymaga świeżej wersji z aktualnego planu"
     labels: dict[ContentDraftRevisionWorkspaceStatus, str] = {
         "empty": "pierwsza wersja wymaga zapisu",
         "unreviewed": "wersja zapisana do sprawdzenia",
@@ -449,10 +449,10 @@ def _current_draft_blocker(
     if not facts.revision_context_current:
         return ContentWorkflowOperatorBlocker(
             code="revision_context_changed",
-            label="Zmienił się plan albo adres strony",
+            label="Wersja wymaga odświeżenia",
             reason=(
                 "Zapisana wersja dotyczy wcześniejszego planu sekcji albo adresu. "
-                "Stare sprawdzenie nie może przejść na aktualny kontekst."
+                "Zatwierdź aktualny plan i wygeneruj świeżą wersję; stara pozostaje historią."
             ),
         )
     if status == "needs_changes":
@@ -490,7 +490,7 @@ def _draft_safe_next_step(
         return facts.structured_contract_safe_next_step
     if not facts.revision_context_current:
         return (
-            "Zapisz nową wersję powiązaną z aktualnym planem sekcji i adresem strony."
+            "Zatwierdź aktualny plan, a następnie wygeneruj świeżą pełną wersję tekstu."
         )
     if facts.revision_workspace_status == "needs_changes":
         return "Wprowadź opisane poprawki i zapisz je jako kolejną wersję."
@@ -512,8 +512,11 @@ def _review_blocker(
     if not facts.revision_context_current:
         return ContentWorkflowOperatorBlocker(
             code="revision_context_changed",
-            label="Wersja dotyczy wcześniejszego kontekstu",
-            reason="Plan sekcji albo adres strony zmienił się po zapisaniu tej wersji.",
+            label="Wersja pochodzi z wcześniejszego planu",
+            reason=(
+                "Plan sekcji albo adres strony zmienił się po zapisaniu tej wersji. "
+                "Najpierw wygeneruj świeżą wersję z aktualnego planu."
+            ),
         )
     if status == "unreviewed":
         return ContentWorkflowOperatorBlocker(
@@ -570,7 +573,7 @@ def _review_safe_next_step(facts: ContentWorkflowOperatorFacts) -> str:
     if not facts.structured_contract_present:
         return facts.structured_contract_safe_next_step
     if not facts.revision_context_current:
-        return "Zapisz nową wersję powiązaną z aktualnym planem i adresem strony."
+        return "Wygeneruj świeżą wersję powiązaną z aktualnym planem i adresem strony."
     status = facts.revision_workspace_status
     if status == "unreviewed":
         return "Sprawdź dokładną wersję i zapisz decyzję człowieka."
@@ -594,8 +597,10 @@ def _dev_draft_blocker(
     if not facts.revision_context_current:
         return ContentWorkflowOperatorBlocker(
             code="revision_context_changed",
-            label="Zatwierdzenie dotyczy wcześniejszego kontekstu",
-            reason="Zmiana planu albo adresu wymaga zapisania i sprawdzenia nowej wersji.",
+            label="Zatwierdzenie dotyczy wcześniejszego planu",
+            reason=(
+                "Zmiana planu albo adresu wymaga wygenerowania i sprawdzenia świeżej wersji."
+            ),
         )
     if status == "approved" and facts.revision_bound_wordpress_handoff_ready:
         return None
@@ -626,7 +631,7 @@ def _dev_draft_safe_next_step(facts: ContentWorkflowOperatorFacts) -> str:
     if not facts.structured_contract_present:
         return facts.structured_contract_safe_next_step
     if not facts.revision_context_current:
-        return "Zapisz i sprawdź nową wersję powiązaną z aktualnym planem strony."
+        return "Wygeneruj i sprawdź świeżą wersję powiązaną z aktualnym planem strony."
     if status == "approved":
         if facts.revision_bound_wordpress_handoff_ready:
             return (

@@ -202,6 +202,12 @@ def test_operator_journey_returns_to_draft_when_revision_context_changed() -> No
     assert steps["dev_draft"].blocker is not None
     assert steps["dev_draft"].blocker.code == "revision_context_changed"
     assert steps["dev_draft"].can_submit is False
+    assert steps["draft"].safe_next_step == (
+        "Zatwierdź aktualny plan, a następnie wygeneruj świeżą pełną wersję tekstu."
+    )
+    assert steps["review"].safe_next_step == (
+        "Wygeneruj świeżą wersję powiązaną z aktualnym planem i adresem strony."
+    )
 
 
 def test_operator_journey_rejects_reordered_steps() -> None:
