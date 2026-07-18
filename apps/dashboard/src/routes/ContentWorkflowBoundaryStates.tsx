@@ -69,6 +69,13 @@ export function ContentWorkflowSelectedLoading({
             <p className="mt-1 text-slate-700">{candidate.safe_next_step}</p>
           </div>
         </div>
+        {candidate.search_metrics ? (
+          <div className="mt-3 rounded-md border border-action/20 bg-action/5 p-3 text-sm" data-testid="content-queue-metrics">
+            <div className="text-xs font-semibold uppercase tracking-normal text-action">Co już wiemy z danych</div>
+            <p className="mt-1 text-slate-700">{queueMetricSummary(candidate)}</p>
+            <p className="mt-1 text-xs text-slate-600">To aktualny punkt odniesienia; trend pokażemy tylko przy dwóch porównywalnych okresach.</p>
+          </div>
+        ) : null}
         <div className="mt-4 rounded-md border border-line bg-white px-3 py-3 text-sm text-slate-600">
           <p className="font-semibold text-ink">
             {error ? "Nie udało się odczytać szczegółów workflow" : "Ładowanie szczegółów workflow"}
@@ -82,4 +89,13 @@ export function ContentWorkflowSelectedLoading({
       </section>
     </main>
   );
+}
+
+function queueMetricSummary(candidate: ContentWorkItemQueueCandidate): string {
+  const metrics = candidate.search_metrics;
+  if (!metrics) return "Brakuje świeżych danych dla tej strony.";
+  const values = [`${metrics.impressions ?? 0} wyświetleń`, `${metrics.clicks ?? 0} kliknięć`];
+  if (metrics.ctr !== null && metrics.ctr !== undefined) values.push(`CTR ${(metrics.ctr * 100).toFixed(2)}%`);
+  if (metrics.primary_query) values.push(`zapytanie: „${metrics.primary_query}”`);
+  return values.join(" · ");
 }
