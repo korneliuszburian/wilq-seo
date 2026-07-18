@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import json
+import sqlite3
+from pathlib import Path
+
 from wilq.content.workflow.revision_persistence import (
     build_stored_draft_revision,
     draft_revision_content_digest,
@@ -9,6 +13,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionSection,
 )
+from wilq.content.workflow.store import ContentWorkflowStore
 
 
 def _command(
@@ -102,3 +107,31 @@ def test_v2_lineage_is_deterministic_and_part_of_digest() -> None:
 
     assert first == second
     assert changed != first
+
+
+def test_store_reads_a_legacy_payload_without_new_lineage_fields(tmp_path: Path) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    created = store.append_draft_revision(_command(schema_version="wilq_content_draft_revision_v1"))
+    assert created.revision is not None
+
+    with sqlite3.connect(tmp_path / "wilq.sqlite3") as connection:
+        row = connection.execute(
+            "SELECT payload_json FROM content_draft_revisions WHERE revision_id = ?",
+            (created.revision.revision_id,),
+        ).fetchone()
+        assert row is not None
+        payload = json.loads(row[0])
+        payload.pop("source_material_ids", None)
+        payload.pop("knowledge_card_ids", None)
+        for section in payload["sections"]:
+            section.pop("source_material_ids", None)
+            section.pop("knowledge_card_ids", None)
+        connection.execute(
+            "UPDATE content_draft_revisions SET payload_json = ? WHERE revision_id = ?",
+            (json.dumps(payload), created.revision.revision_id),
+        )
+
+    state = store.load_draft_revision_state("content_work_item_lineage")
+    assert state.latest_revision is not None
+    assert state.latest_revision.source_material_ids == []
+    assert state.latest_revision.sections[0].knowledge_card_ids == []
