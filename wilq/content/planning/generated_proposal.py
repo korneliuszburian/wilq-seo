@@ -147,7 +147,10 @@ def read_content_planning_proposal(
             ],
             safe_next_step="Uruchom nową próbę planowania z aktualnego wejścia.",
         )
-    if not _persisted_inventory_mapping_is_current(planning_input, latest):
+    if (
+        not _persisted_inventory_mapping_is_current(planning_input, latest)
+        or _inventory_mapping_has_unresolved_rows(latest)
+    ):
         remapped = _remapped_proposal_projection(planning_input, latest)
         return ContentPlanningProposalResponse(
             status="stale",
@@ -499,6 +502,15 @@ def _persisted_inventory_mapping_is_current(
     proposal: ContentPlanningProposal,
 ) -> bool:
     return _expected_inventory_mapping(planning_input, proposal) == proposal.inventory_mapping
+
+
+def _inventory_mapping_has_unresolved_rows(
+    proposal: ContentPlanningProposal,
+) -> bool:
+    return any(
+        mapping.status in {"unmapped", "ambiguous"}
+        for mapping in proposal.inventory_mapping
+    )
 
 
 def _remapped_proposal_projection(
