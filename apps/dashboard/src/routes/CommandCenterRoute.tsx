@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -152,9 +153,9 @@ export function CommandCenter() {
               key: "next",
               header: "Następny krok",
               render: (item) => (
-                <a href={item.route} className="font-medium text-action hover:underline">
+                <Link to={item.route} className="font-medium text-action hover:underline">
                   {nextStepLabel(item)}
-                </a>
+                </Link>
               )
             }
           ]}
@@ -198,12 +199,12 @@ function MobileDailyTriage({
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">Powód: {item.summary}</p>
           <p className="mt-3 text-sm font-semibold leading-6 text-ink">{item.next_safe_step}</p>
-          <a
-            href={item.route}
+          <Link
+            to={item.route}
             className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-md bg-action px-4 text-sm font-semibold text-white"
           >
             Otwórz tę pracę
-          </a>
+          </Link>
         </article>
       ) : (
         <BlockerNotice message="Brak zlecenia pracy z WILQ API." />
@@ -278,12 +279,12 @@ function NextBestWorkCard({ item }: { item: WorkOrder }) {
         <p className="mt-2 text-sm leading-6 text-slate-700">{item.next_safe_step}</p>
 
         <div className="mt-4 flex flex-wrap gap-3">
-          <a
-            href={item.route}
+          <Link
+            to={item.route}
             className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
           >
             Otwórz pracę
-          </a>
+          </Link>
           <details className="inline-flex">
             <summary className="inline-flex h-10 cursor-pointer items-center rounded-md border border-action/30 px-4 text-sm font-semibold text-action hover:bg-action/10">
               Pokaż dowody
