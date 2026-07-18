@@ -485,7 +485,6 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
         item.source_public_url,
         item.final_canonical_url,
         item.intended_final_url,
-        *item.wordpress_section_headings,
         *(
             str(fact.dimensions.get("query") or "")
             for fact in item.metric_facts
@@ -494,10 +493,10 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
         *item.evidence_ids,
         *item.source_connectors,
     ]
-    # Rendered HTML commonly contains navigation and footer copy from unrelated
-    # services. Trust the full body only when the selected URL is itself an
-    # exact service landing from a card's source lineage; otherwise title,
-    # headings, URL and query demand are the bounded matching surface.
+    # Rendered HTML commonly contains navigation, related-content and footer
+    # headings from unrelated services. Trust the full body only when the
+    # selected URL is itself an exact service landing from a card's source
+    # lineage; otherwise title, URL and query demand are the bounded surface.
     exact_service_urls = {
         _normalize_search_text(lineage)
         for card in cards

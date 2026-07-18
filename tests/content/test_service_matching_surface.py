@@ -25,7 +25,11 @@ def test_article_navigation_copy_does_not_bind_a_service_card() -> None:
             "Czy przygotowane wieloletnie plany inwestycyjne z zakresu gospodarki "
             "odpadami spełniają nowe wymagania prawne?"
         ),
-        wordpress_section_headings=["Wymagania prawne", "Plany inwestycyjne"],
+        wordpress_section_headings=[
+            "Doradztwo środowiskowe i EKO-consulting",
+            "Wymagania prawne",
+            "Plany inwestycyjne",
+        ],
         evidence_ids=["ev_wp_article"],
         source_connectors=["wordpress_ekologus"],
     )
