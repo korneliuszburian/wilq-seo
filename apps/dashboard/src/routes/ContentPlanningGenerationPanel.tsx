@@ -356,6 +356,7 @@ function landingTierLabel(tier: string) {
 function planningStatusLabel(status: string) {
   const labels: Record<string, string> = {
     not_generated: "nie wygenerowano",
+    generating: "w przygotowaniu",
     created: "nowy plan",
     idempotent: "ta sama wersja",
     ready: "gotowy do review",
