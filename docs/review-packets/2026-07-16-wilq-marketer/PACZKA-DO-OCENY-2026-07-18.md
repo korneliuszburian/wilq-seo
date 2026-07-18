@@ -36,8 +36,10 @@ Testowany adres BDO:
 - świeżość: GSC settled/partial, GA4 settling/unverified;
 - bezpieczny krok: sprawdzić materiał, wybrać kartę usługi i wygenerować plan;
 - realne plany BDO i doradztwa/outsourcingu zostały zapisane w API (odpowiednio
-  6/5 sekcji, 4/3 FAQ i po 2 CTA), ale pełny tekst i WordPress draft pozostają
-  zablokowane do wymaganych review.
+  6/5 sekcji, 4/3 FAQ i po 2 CTA): BDO `content_planning_proposal_92df327510d64e97bc3e32a387f49839`,
+  outsourcing `content_planning_proposal_245ee55e7d4e46808397f9509b94d34d`;
+  oba powstały przez ten sam asynchroniczny planner i mają `publish_ready=false`.
+  Pełny tekst i WordPress draft pozostają zablokowane do wymaganych review.
 
 ### Co oznaczają adresy bez materiału
 
@@ -57,10 +59,14 @@ nie jest zastępowany domysłem.
 
 ### Baza wiedzy i materiały Ekologusa
 
-WILQ widzi manifest 15 zatwierdzonych, oczyszczonych materiałów, ale ich
-kontrolowany import excerptów nie został jeszcze aktywowany (`import_pending
-15/15`). Nie oznacza to, że model może czytać surowe transkrypcje. Przed pełnym
-tekstem trzeba wykonać import z checksumem, lineage i jawną decyzją review.
+WILQ widzi manifest 15 zatwierdzonych, oczyszczonych materiałów. 7 z nich ma
+już kontrolowany import zredagowanych excerptów (`imported 7/15`) i jest
+powiązanych z planami przez identyfikatory `ekologus_material_kb002`, `kb003`,
+`kb013`, `kb014`, `kb015`, `kb021`, `kb022` oraz dowód
+`ev_content_approved_source_materials_manifest`. Pozostałe 8 nadal ma
+`import_pending`. Model nie czyta surowych transkrypcji: do planu trafiają
+wyłącznie krótkie, zatwierdzone i zredagowane fakty z lineage. Pełny tekst nadal
+czeka na review materiału WordPress, pozostałej bazy i właściciela.
 
 ## Formularz zwrotny
 
