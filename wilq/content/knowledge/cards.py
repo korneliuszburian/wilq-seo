@@ -474,25 +474,44 @@ def content_knowledge_production_depth_readiness(
 
 def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCardMatch:
     cards = list(ekologus_content_knowledge_cards())
-    text = _search_text(
-        [
-            item.topic,
-            item.wordpress_content_text,
-            item.source_public_url,
-            item.final_canonical_url,
-            *_homepage_match_markers(item),
-            *item.evidence_ids,
-            *item.source_connectors,
-        ]
-    )
+    exact_urls = {
+        _normalize_search_text(url)
+        for url in (item.source_public_url, item.final_canonical_url)
+        if url
+    }
+    text_values: list[object] = [
+        item.topic,
+        item.wordpress_title_or_h1,
+        item.source_public_url,
+        item.final_canonical_url,
+        item.intended_final_url,
+        *item.wordpress_section_headings,
+        *(
+            str(fact.dimensions.get("query") or "")
+            for fact in item.metric_facts
+        ),
+        *_homepage_match_markers(item),
+        *item.evidence_ids,
+        *item.source_connectors,
+    ]
+    # Rendered HTML commonly contains navigation and footer copy from unrelated
+    # services. Trust the full body only when the selected URL is itself an
+    # exact service landing from a card's source lineage; otherwise title,
+    # headings, URL and query demand are the bounded matching surface.
+    exact_service_urls = {
+        _normalize_search_text(lineage)
+        for card in cards
+        if card.card_type == "service"
+        for lineage in card.source_lineage
+        if lineage.startswith("http")
+    }
+    if exact_urls & exact_service_urls:
+        text_values.append(item.wordpress_content_text)
+    text = _search_text(text_values)
     service_candidates = _matching_service_candidates(
         cards,
         text,
-        exact_urls={
-            _normalize_search_text(url)
-            for url in (item.source_public_url, item.final_canonical_url)
-            if url
-        },
+        exact_urls=exact_urls,
     )
     service_cards = [candidate.card for candidate in service_candidates]
     cta_cards = _matching_cards(cards, text, "cta_pattern")
