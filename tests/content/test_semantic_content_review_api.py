@@ -5,6 +5,7 @@ import sqlite3
 import pytest
 from fastapi.testclient import TestClient
 
+from apps.api.wilq_api.routers import content_semantic_review as semantic_review_router
 from tests.content.dynamic_planning_test_support import PlanningClient
 from tests.content.test_dynamic_planning_proposals_api import (
     BDO_WORK_ITEM_ID,
@@ -14,10 +15,27 @@ from tests.content.test_dynamic_planning_proposals_api import (
     _initial_draft_request,
     _snapshot,
 )
+from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.quality import semantic_review_store as semantic_review_store_module
 from wilq.storage.local_state import local_state_store
 
 pytest_plugins = ("tests.content.test_dynamic_planning_proposals_api",)
+
+
+def test_semantic_runtime_uses_a_separate_bounded_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WILQ_SEMANTIC_REVIEW_CODEX_TIMEOUT_SECONDS", "211")
+    monkeypatch.setattr(
+        semantic_review_router,
+        "content_codex_app_server_client",
+        lambda: StdioCodexAppServerClient(),
+    )
+
+    client = semantic_review_router._semantic_codex_client()
+
+    assert isinstance(client, StdioCodexAppServerClient)
+    assert client.timeout_seconds == 211.0
 
 
 def test_semantic_review_is_exact_persisted_advisory_for_both_services(

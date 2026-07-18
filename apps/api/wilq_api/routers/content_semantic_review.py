@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from os import environ
 from uuid import uuid4
 
 from fastapi import APIRouter
@@ -27,6 +28,8 @@ from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import local_state_store
 
+_REAL_STDIO_CODEX_CLIENT = StdioCodexAppServerClient
+
 ContentSemanticSnapshotLoader = Callable[
     [str],
     ContentWorkItemWorkflowSnapshotResponse,
@@ -36,6 +39,31 @@ _SEMANTIC_REVIEW_EXECUTOR = ThreadPoolExecutor(
     max_workers=1,
     thread_name_prefix="wilq-content-review",
 )
+_DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS = 180.0
+
+
+def _semantic_codex_client():
+    """Give the full-document reviewer the same bounded budget as planning.
+
+    The semantic prompt contains the complete revision, proposal and planning
+    input. The generic Codex client deadline is too short for that structured
+    payload on real pages, so the API keeps a separate, configurable deadline.
+    Test and harness clients remain unchanged.
+    """
+
+    client = content_codex_app_server_client()
+    if not isinstance(client, _REAL_STDIO_CODEX_CLIENT):
+        return client
+    try:
+        timeout_seconds = float(
+            environ.get(
+                "WILQ_SEMANTIC_REVIEW_CODEX_TIMEOUT_SECONDS",
+                str(_DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS),
+            )
+        )
+    except ValueError:
+        timeout_seconds = _DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS
+    return _REAL_STDIO_CODEX_CLIENT(timeout_seconds=max(5.0, timeout_seconds))
 
 
 def register_content_semantic_review_routes(
@@ -83,7 +111,7 @@ def register_content_semantic_review_routes(
         request: ContentSemanticReviewRequest,
     ) -> ContentSemanticReviewResponse | JSONResponse:
         snapshot = snapshot_loader(work_item_id)
-        client = content_codex_app_server_client()
+        client = _semantic_codex_client()
         revision = snapshot.revision_workspace.latest_revision
         if (
             isinstance(client, StdioCodexAppServerClient)

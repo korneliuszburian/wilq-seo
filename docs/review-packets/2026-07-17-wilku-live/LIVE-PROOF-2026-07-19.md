@@ -57,6 +57,11 @@ Advisory semantic review dla obu rewizji zwraca ten sam jawny blocker
 immutable semantic review. API nie udaje, że review zostało wykonane; wymaga
 tymczasowego storage do proof albo osobnego backupu i maintenance window.
 
+W izolowanym klonie SQLite temporary storage zgłosił `write_ready=true`, ale
+próba prawdziwego semantic runu Codexem zakończyła się typed `runtime_failed`;
+nie powstał żaden częściowy review. To jest osobny blocker runtime do naprawy,
+nie dowód jakości ani zgody na publikację.
+
 ## Jedna decyzja produktu
 
 Marketer nie wybiera dziesięciu wersji. WILQ prowadzi do jednego aktualnego
