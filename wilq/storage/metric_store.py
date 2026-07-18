@@ -484,7 +484,30 @@ class DuckDbMetricStore:
         landing_identity = identity_dimensions.get(LANDING_IDENTITY_DIMENSION)
         if not landing_identity:
             return []
-        query = """
+        legacy_predicates: list[str] = []
+        legacy_params: list[Any] = []
+        if landing_page_metric_lookup_path(content_url) == content_path:
+            url_bases = [
+                base.rstrip("/").casefold()
+                for base in landing_page_metric_legacy_base_urls(content_url)
+            ]
+            for dimension_path in (
+                "$.content_url",
+                "$.final_url",
+                "$.landing_page",
+                "$.landing_page_plus_query_string",
+                "$.page",
+                "$.page_location",
+            ):
+                legacy_predicates.append(
+                    "lower(rtrim(split_part("
+                    "json_extract_string(facts.dimensions_json, ?), '?', 1), '/')) = ANY(?)"
+                )
+                legacy_params.extend((dimension_path, url_bases))
+        legacy_match = (
+            f" OR ({' OR '.join(legacy_predicates)})" if legacy_predicates else ""
+        )
+        query = f"""
             SELECT
               facts.metric_name,
               facts.metric_value_double,
@@ -502,43 +525,34 @@ class DuckDbMetricStore:
               NULL AS previous_evidence_id,
               NULL AS previous_collected_at
             FROM connector_metric_facts facts
-            LEFT JOIN wilq_legacy_landing_identity identity
-              ON identity.run_id = facts.run_id
-             AND identity.metric_name = facts.metric_name
-             AND identity.dimensions_json = facts.dimensions_json
             WHERE facts.connector_id = ANY(?)
-              AND COALESCE(
-                json_extract_string(
-                  facts.dimensions_json, '$._wilq_landing_identity'
-                ),
-                identity.landing_identity
-              ) = ?
+              AND (
+                json_extract_string(facts.dimensions_json, '$._wilq_landing_identity') = ?
+                {legacy_match}
+              )
             ORDER BY
               facts.collected_at DESC,
               facts.connector_id ASC,
               facts.metric_name ASC,
+              facts.dimensions_json ASC,
               facts.evidence_id ASC
             LIMIT ?
         """
         params: list[Any] = [
             list(dict.fromkeys(connector_ids)),
             landing_identity,
-            bounded_limit,
+            *legacy_params,
+            MAX_METRIC_FACT_READ_LIMIT,
         ]
         with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
-            _prepare_legacy_landing_identity_index(
-                connection,
-                connector_ids,
-                content_url=content_url,
-                content_path=content_path,
-            )
             rows = connection.execute(query, params).fetchall()
         facts = [_metric_fact_from_row(row) for row in rows]
-        return [
+        filtered = [
             fact
             for fact in facts
             if metric_dimensions_match_landing(fact.dimensions, content_url)
         ]
+        return _apply_metric_history(filtered)[:bounded_limit]
 
     def _connect(self, read_only: bool = False) -> duckdb.DuckDBPyConnection:
         prepare_private_store_path(
@@ -798,11 +812,17 @@ def _detailed_metric_row(
     run: ConnectorRefreshRun,
     fact: VendorMetricFact,
 ) -> MetricRow:
+    period = fact.period
+    if period == "connector_refresh" and run.connector_id == "google_search_console":
+        date_start = run.metric_summary.get("date_start")
+        date_end = run.metric_summary.get("date_end")
+        if isinstance(date_start, str) and isinstance(date_end, str):
+            period = f"{date_start}/{date_end}"
     return _metric_row_from_parts(
         run=run,
         name=fact.name,
         value=fact.value,
-        period=fact.period,
+        period=period,
         unit=fact.unit,
         dimensions=fact.dimensions,
     )
@@ -877,6 +897,57 @@ def _metric_fact_from_row(row: tuple[Any, ...]) -> MetricFact:
         freshness_state=freshness_state,
         freshness_label=freshness_label,
     )
+
+
+def _apply_metric_history(facts: list[MetricFact]) -> list[MetricFact]:
+    """Compute deltas only after the public landing-dimension filter."""
+    previous_by_group: dict[tuple[str, str], MetricFact] = {}
+    enriched_by_key: dict[tuple[str, str, str, str], MetricFact] = {}
+    ordered = sorted(
+        facts,
+        key=lambda fact: (
+            fact.collected_at or datetime.min.replace(tzinfo=UTC),
+            fact.evidence_id,
+        ),
+    )
+    for fact in ordered:
+        group = (fact.source_connector, fact.name)
+        previous = previous_by_group.get(group)
+        delta, delta_percent, trend = _metric_delta(
+            fact.value,
+            previous.value if previous is not None else None,
+        )
+        enriched = fact.model_copy(
+            update={
+                "previous_value": previous.value if previous is not None else None,
+                "previous_evidence_id": previous.evidence_id if previous is not None else None,
+                "previous_collected_at": (
+                    previous.collected_at if previous is not None else None
+                ),
+                "delta": delta,
+                "delta_percent": delta_percent,
+                "trend": trend,
+            }
+        )
+        key = (
+            fact.source_connector,
+            fact.name,
+            fact.evidence_id,
+            json.dumps(fact.dimensions, sort_keys=True, ensure_ascii=False),
+        )
+        enriched_by_key[key] = enriched
+        previous_by_group[group] = enriched
+    return [
+        enriched_by_key[
+            (
+                fact.source_connector,
+                fact.name,
+                fact.evidence_id,
+                json.dumps(fact.dimensions, sort_keys=True, ensure_ascii=False),
+            )
+        ]
+        for fact in facts
+    ]
 
 
 def _dimensions_json(dimensions: dict[str, str]) -> str:

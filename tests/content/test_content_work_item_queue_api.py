@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from apps.api.wilq_api.routers import content_workflow
 from wilq.content.workflow.queue import build_content_work_item_queue_response
 from wilq.schemas import (
     ContentDecisionItem,
@@ -67,6 +68,103 @@ def test_content_work_item_queue_exposes_api_owned_candidates() -> None:
     assert {
         blocker["code"] for blocker in blocked_without_final_url[0]["blockers"]
     } >= {"missing_final_canonical"}
+
+
+def test_queue_can_include_selected_inventory_work_item_not_in_recommendation_queue(
+    monkeypatch,
+) -> None:
+    inventory_id = "content_work_item_inventory_selected"
+    selected_decision = ContentDecisionItem(
+        id="inventory_selected",
+        decision_type="refresh_or_merge",
+        status="ready",
+        title="Istniejący materiał do pracy",
+        primary_query="gospodarka odpadami",
+        priority=50,
+        source_public_url="https://www.ekologus.pl/gospodarka-odpadami/",
+        final_canonical_url="https://www.ekologus.pl/gospodarka-odpadami/",
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+        evidence_ids=["ev_gsc_selected", "ev_wp_selected"],
+        rationale="Inventory binding wskazał istniejący materiał.",
+        next_step="Przejdź do planu odświeżenia.",
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.queue.inventory_decision_for_work_item",
+        lambda work_item_id, **_kwargs: (
+            selected_decision if work_item_id == inventory_id else None
+        ),
+    )
+    diagnostics = ContentDiagnosticsResponse.model_construct(
+        freshness_assessment=ContentFreshnessAssessment(
+            state="fresh",
+            state_label="dane treści świeże",
+            requires_refresh=False,
+            summary="Dane są świeże.",
+            next_step="Można przejść do decyzji.",
+        ),
+        decision_queue=[],
+    )
+
+    queue = build_content_work_item_queue_response(
+        diagnostics,
+        minimum_actionable_candidates=1,
+        selected_work_item_id=inventory_id,
+    )
+
+    assert [candidate.work_item_id for candidate in queue.candidates] == [inventory_id]
+    assert queue.candidates[0].final_canonical_url == selected_decision.final_canonical_url
+
+
+def test_selected_inventory_queue_reads_material_without_full_diagnostics(monkeypatch) -> None:
+    inventory_id = "content_work_item_inventory_fast"
+    selected_decision = ContentDecisionItem(
+        id="inventory_fast",
+        decision_type="refresh_or_merge",
+        status="ready",
+        title="Szybki odczyt wybranej strony",
+        primary_query="gospodarka odpadami",
+        priority=10,
+        source_public_url="https://www.ekologus.pl/gospodarka-odpadami/",
+        final_canonical_url="https://www.ekologus.pl/gospodarka-odpadami/",
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+        evidence_ids=["ev_gsc_fast", "ev_wp_fast"],
+        rationale="Wybrany materiał z inventory.",
+        next_step="Przejdź do decyzji.",
+    )
+    calls: list[bool] = []
+
+    def selected_inventory_decision(work_item_id: str, **kwargs):
+        calls.append(kwargs["read_material"])
+        assert kwargs["allow_material_pending"] is True
+        return selected_decision if work_item_id == inventory_id else None
+
+    monkeypatch.setattr(
+        content_workflow,
+        "inventory_decision_for_work_item",
+        selected_inventory_decision,
+    )
+    monkeypatch.setattr(
+        content_workflow,
+        "build_content_freshness_assessment_fast",
+        lambda: ContentFreshnessAssessment(
+            state="fresh",
+            state_label="dane treści świeże",
+            requires_refresh=False,
+            summary="Dane są świeże.",
+            next_step="Można przejść do decyzji.",
+        ),
+    )
+    monkeypatch.setattr(
+        content_workflow,
+        "build_content_diagnostics_cached",
+        lambda: (_ for _ in ()).throw(AssertionError("full diagnostics must not run")),
+    )
+
+    response = TestClient(app).get(f"/api/content/work-items/queue?work_item_id={inventory_id}")
+
+    assert response.status_code == 200
+    assert response.json()["candidates"][0]["work_item_id"] == inventory_id
+    assert calls == [False]
 
 
 def test_content_work_item_queue_blocks_dev_url_as_final_canonical() -> None:

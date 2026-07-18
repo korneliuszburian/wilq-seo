@@ -1,6 +1,6 @@
 # Dashboard State
 
-Last updated: 2026-07-16
+Last updated: 2026-07-17
 
 This is the living state file for WILQ dashboard work. Read it before changing
 any dashboard route, dashboard API view-model, dashboard copy, dashboard test or
@@ -36,6 +36,23 @@ work across the whole dashboard.
 
 Target: `/content-workflow`.
 
+Performance check (2026-07-18): the selected inventory queue no longer performs
+a synchronous WordPress material read. On a managed-stack restart its first
+read returned in 1.08s, then 0.50s/0.18s on subsequent reads; the background
+inventory prewarm owns the cold catalog build. The selected queue exposes the
+page and its material-read state, while the full snapshot still performs the
+exact read-only WordPress/ACF/the_content read independently. The first
+viewport must not claim material readiness until that snapshot confirms it.
+Earlier measurements after the first optimization and managed-stack restart
+were 4.26s for queue and 7.08s for snapshot. `inventory_decision_for_work_item`
+now reuses its current
+catalog instead of rebuilding the 601-row inventory during material read. The
+selected loading state renders candidate title, reason, source count and safe
+next step while the snapshot is pending, but the snapshot remains an active P0
+optimization target. Secondary authoring/enrichment/activation reads must stay
+independent of the first marketer viewport; no GET may invoke Codex or a vendor
+write.
+
 `/content-workflow` is the primary "Treści i SEO" marketer workspace. Its
 snapshot owns one five-step journey: `scope → section_map → draft → review →
 dev_draft`. Every step carries typed phase/readiness, open/submit permissions,
@@ -59,13 +76,50 @@ proof is not evidence of final text quality.
 Read-only Ahrefs and `wordpress_sklep` refreshes on 2026-07-16 restored source
 freshness. The live snapshot honestly remains on `scope`: the API exposes one
 baseline proposal and digest for scope plus section map, neither decision has
-been recorded, and the first revision cannot be saved yet. The new dynamic
-planning read remains blocked until the matched Service Profile has
-`approved_current`; it does not call Codex or create its proposal table. The
-queue still has only
-1 actionable item from 2 candidates and
-remains density-blocked; WILQ must not invent a third topic. Service Profile
-remains review-required. Exact-page GSC queries remain visible in scope, while
+been recorded, and the first revision cannot be saved yet. The dynamic
+planning read now builds an exact input digest for the selected inventory item
+and binds the approved BDO source fact
+`ekologus_public_bdo_faq_2026_07_01`; its current blocker is the honest
+`wordpress_material_review_required` gate for rendered `the_content`. It does
+not call Codex or create a proposal table on GET. The
+queue currently exposes 6 candidates and 5 actionable candidates for the
+selected inventory proof; WILQ must still not invent topics outside inventory.
+After bounding the first structured plan to 12 sections, 8 FAQ items, 4 CTA
+blocks and 4 conditional hypotheses, a fresh API proof persisted proposal
+`content_planning_proposal_cf7df83857fd4a80ba21efa8717f422e` for this page:
+6 sections, 4 FAQ, 2 CTA and 1 internal link, with exact input digest
+`bc1bec7dc771f5bd9717ef546f5f58edf962baca532f65db3069b6c9475dd511`, source
+fact `ekologus_public_bdo_faq_2026_07_01` and `publish_ready=false`. Repeating
+the same POST returned `idempotent`; the plan remains unreviewed.
+The second exact pilot now resolves the offer URL to
+`ekologus_service_environmental_consulting_outsourcing` with source fact
+`ekologus_public_consulting_outsourcing_offer_2026_07_01`, even when the page
+copy also mentions BDO. Exact canonical URL matching is ranked ahead of broad
+copy-term overlap, with a focused regression.
+Planning POST is now API-owned and non-blocking: it persists an exact queued
+job and returns `generating` in tens of milliseconds; the background task builds
+the heavy snapshot and Codex turn. GET remains model-free and polls only while
+that exact job is active. A real outsourcing run returned `generating` in 36ms
+and later read back `ready` with proposal
+`content_planning_proposal_137e054968ef4f54b0229fd5a5f7edf7`.
+Repeated POST for that exact digest returns `idempotent` immediately; a
+mismatched digest returns HTTP 409 `stale_input` before any model call.
+Queued jobs older than the 15-minute runtime window are exposed as a typed
+retry blocker; the next identical POST atomically replaces the stale queued
+row and schedules one fresh background attempt. Concurrent identical POSTs
+share the same queued row, so only one returns `queued` and the others read
+`generating` without duplicating the Codex turn.
+The selected inventory queue now uses a bounded material read for the chosen
+URL and fast connector-freshness projection; it does not build the full
+diagnostics/action registry. A 30-second URL+evidence cache prevents repeated
+WordPress requests on reload, while a changed evidence ID forces a new read.
+Managed proof: first selected queue about 2.50s, subsequent reads 0.17–0.19s;
+the browser shows the selected material before a deliberately delayed queue
+response. The live `the_content`/ACF read remains review-required when it came
+from rendered HTML.
+Service Profile is approved-current for the BDO card used by this proof, while
+other cards retain their own lifecycle statuses. Exact-page GSC queries remain
+visible in scope, while
 shared refresh-level evidence no longer pretends that every query supports every
 section. The same intent-aware mapper now assigns a query only when one planned
 section uniquely answers its intent; ambiguous or uncovered demand remains
@@ -75,6 +129,12 @@ proof for both pilots shows BDO applicability queries only in the applicability
 section, exact general consulting queries only in the general service section,
 exact Śląsk demand in the locality section, and unmatched qualifiers—including
 Ruda Śląska or unsupported cities—as page-level evidence.
+Generated plan scope now also shows its internal-link count. Planning input v3
+allows only link directions that resolve to an exact current public WordPress
+inventory fact under the same evidence set; the model schema cannot introduce a
+different URL. The persisted full-document link keeps placement and lineage in
+page preview and the WordPress renderer, while missing inventory remains an
+honest zero-link input.
 Stateful proof is under
 `.local-lab/proof/dashboard-content-workflow/2026-07-15T11-50-52-058Z/`.
 The server-side Codex app-server path uses the existing ChatGPT login and full
@@ -108,9 +168,9 @@ Architecture proof (2026-07-15):
   and result states at 1440×900 and 390×844, and proves zero WordPress requests
   plus no horizontal overflow. The older ActionObject proof separately keeps
   WordPress apply synthetic and draft-only.
-- Dynamic planning v2 uses one versioned input digest covering the exact page,
-  confirmed service, one exact WordPress inventory record, knowledge, source
-  facts and metrics. Its compact summary always exposes exactly ten unique
+- Dynamic planning v3 uses one versioned input digest covering the exact page,
+  confirmed service, one exact WordPress inventory record, verified internal-link
+  candidates, knowledge, source facts and metrics. Its compact summary exposes ten unique
   source assessments with landing tiers and per-connector freshness. Only
   `used` lineage reaches model-authorized evidence; stale or blocked inputs
   return a typed blocker before stale-digest handling. GET is read-only and
@@ -129,10 +189,10 @@ Readiness is a product/usefulness estimate, not a test pass rate.
 | --- | ---: | --- | --- | --- | --- | --- |
 | `/command-center` | 70% | Daily priority, blockers and source freshness remain useful. Expired daily-check dependencies no longer make an operator wait for staggered Command Center/GA4/content rebuilds: one background prewarm starts and the existing typed blocker returns in `0.003 s`; full follow-up reads measured `0.018/0.020/0.018 s` with unchanged proof projection. Mobile keeps two blocker/claim details above the fold and exposes exact remaining counts with disclosure instead of silently truncating them. Fresh browser smoke passes 1/1 in 3.2 s. | Existing `GET /api/dashboard/command-center`, `GET /api/marketing/daily-check`, current read caches and `getCommandCenter()`; no new endpoint. | Daily queue, blocked claims, source freshness and honest in-progress state. | Still needs stronger routing into one concrete work item; prewarm never means source refresh or recommendation readiness. | Keep as cockpit; preserve explicit invalidation and typed blocker, then route into content workbench. |
 | `/opportunities` | 50% | Useful as registry but overlaps with Command Center and Actions. | `GET /api/opportunities`, `getOpportunities()` | Opportunity list with evidence/action links. | Duplicates "Kolejka" mental model. | Eventually merge into one decision/action queue; avoid new UI work here now. |
-| `/content-workflow` | 7.5/10 operator workflow; real text quality still unscored; 8/10 handoff safety | Primary five-step "Treści i SEO" journey carries one exact service and page from dynamic planning through full-document generation, exact advisory review, persisted positive or negative human decision and selected-section child revision. The immutable v2 document includes title/meta/H1/lead, stable sections, FAQ, CTA and internal links. Marketer mode renders the page; GSC and exact clicked-landing Ads metrics are decision inputs, while stale/blocked Ads remain explicitly excluded. | Existing queue/snapshot and planning seams plus exact `initial-draft`, revision-bound `semantic-review` GET/POST and existing `codex-proposal`, all through the same server-side Codex app-server. Review and terminal run persist atomically; model output never approves or creates an ActionObject. Human review exposes separate `recordable`, `recorded` and `wordpress_handoff_allowed` states. | Synthetic approved-card/temp-SQLite proof runs BDO and outsourcing through the same contracts. Ads lineage requires a complete same-evidence five-metric batch and clicked landing digest. A valid `needs_changes` decision survives reload and updates the reviewed item while WordPress remains blocked; mismatched review is not stored. | Both real service cards still require owner review, so no real full text was generated. No live Ads vendor call was made for the new GAQL contract. Real semantic storage activation requires backup and a maintenance window. Desktop/mobile proof and real Wilku UAT remain open. | Prepare both pilot packets to the owner-review boundary, then run bounded desktop/mobile proof; do not claim real text quality, live Ads proof or UAT. |
-| `/content-inventory` | 20% | Hidden technical placeholder. Inventory remains an input to `/content-workflow`, not a separate writing cockpit. | currently generic/compact route; check `surfaceRegistry.ts` before adding code | Concept is needed inside content workbench. | Not a real marketer view yet. | Do not build separate cockpit; expose inventory inside content workbench. |
+| `/content-workflow` | 7.5/10 operator workflow; real text quality still unscored; 8/10 handoff safety | Primary five-step "Treści i SEO" journey carries one exact service and page from dynamic planning through full-document generation, exact advisory review, persisted positive or negative human decision and selected-section child revision. The immutable v2 document includes title/meta/H1/lead, stable sections, FAQ, CTA and internal links. Marketer mode renders the page; GSC and exact clicked-landing Ads metrics are decision inputs, while stale/blocked Ads remain explicitly excluded. Inventory-bound IDs now receive an API-owned queue candidate on demand, so “Rozpocznij workflow” opens the selected page instead of falling back to an empty/error state. WordPress dry-run preserves all page assets and marks SEO meta as explicit human-only until mapping is confirmed. | Existing queue/snapshot and planning seams plus exact `initial-draft`, revision-bound `semantic-review` GET/POST and existing `codex-proposal`, all through the same server-side Codex app-server. Review and terminal run persist atomically; model output never approves or creates an ActionObject. Human review exposes separate `recordable`, `recorded` and `wordpress_handoff_allowed` states. | Synthetic approved-card/temp-SQLite proof runs BDO and outsourcing through the same contracts. Ads lineage requires a complete same-evidence five-metric batch and clicked landing digest. A valid `needs_changes` decision survives reload and updates the reviewed item while WordPress remains blocked; mismatched review is not stored. Focused inventory-queue, authoring-preview, shared-schema and dashboard proofs are green. | Both real service cards still require owner review, so no real full text was generated. No live Ads vendor call was made for the new GAQL contract. Real semantic storage activation requires backup and a maintenance window. Desktop/mobile proof and real Wilku UAT remain open. | Prepare both pilot packets to the owner-review boundary, then run bounded desktop/mobile proof; do not claim real text quality, live Ads proof or UAT. |
+| `/content-inventory` | 45% | Inventory is now exposed inside `/content-workflow`: 601 read-only WordPress objects, searchable by URL/title/section, with material-source labels and dynamic REST/HTML readback. It is not a separate writing cockpit. | `GET /api/content/inventory/catalog`, `GET /api/content/inventory/material` and `POST /api/content/inventory/bind` read sanitized WordPress material; the dashboard separates recommendation queue from full inventory. | Marketer can see whether an address has content + structure, summary only, structure only, or URL only. Latest managed read refresh projected 113 material-ready, 7 structure-only and 481 URL-only objects; counts remain API-owned and freshness-bound. | Arbitrary inventory binding now exists, but service-card matching, exact analytics projection, knowledge coverage and generation readiness remain separate blockers. | Add typed service/knowledge/metrics readiness before allowing any inventory work item into planning and draft generation. |
 | `/service-profile` | 55% | Useful for owner/claim review, not daily writing screen. Its selected-card policy is now projected into the existing content work-item snapshot. | `GET /api/content/service-profile` is the source assembly; `GET /api/content/work-items/{id}/snapshot` projects its compact typed context; no frontend join. | Services, claim policy, source status and review-required data. | Not enough approved-current production depth; can overwhelm writer. | Keep owner review here; preserve the compact work-item projection instead of duplicating a second content view. |
-| `/knowledge` | 65% | Admin/review support surface with current "Wiedza" IA. Operating-map remains the only initial read; cards/playbooks defer until disclosure. `list_workflows()` now uses only command-center decisions; standalone map core is `4.878 s`. Managed runtime starts a non-blocking map prewarm after readiness; first/second warmed HTTP reads measured `0.003550 s` / `0.003175 s`. First decision/blockers render in the browser proof; focused current Playwright passes 1/1 in 2.7 s. | `GET /api/knowledge/cards`, `/api/knowledge/playbooks`, `/api/knowledge/operating-map`; `build_knowledge_operating_map_cached()` and existing disclosure controls | Source lineage and claim review. | Prewarm stability must be checked on subsequent restarts; live knowledge/source freshness remains separate from cache latency. | Keep prewarm fail-open and non-blocking; do not re-enable concurrent subordinate reads. |
+| `/knowledge` | 65% | Admin/review support surface now leads with real Ekologus source facts and the metadata-only manifest of 15 approved-corpus files; operational cards/playbooks are explicitly secondary and remain behind disclosure. The UI calls out `import_pending` instead of presenting the manifest as production knowledge. `list_workflows()` still uses only command-center decisions; the focused browser proof passes 1/1. | `GET /api/knowledge/source-facts`, `GET /api/knowledge/source-materials`, existing `GET /api/knowledge/cards`, `/api/knowledge/playbooks`, `/api/knowledge/operating-map` | Source lineage, generation eligibility and claim review. | The 15 files are metadata-only until controlled redacted excerpt/transcript import and owner review; live source freshness remains separate from cache latency. | Extend the existing private-source review seam for redacted excerpts; never copy raw private material into prompts or mark `import_pending` text as eligible. |
 | `/actions` | 75% | Safe action queue renders from a cached/prewarmed existing list seam; after managed restart HTTP reads measured `0.082513 s` and `0.021151 s`. First decision card remains useful while mutation readiness is pending and explicitly keeps write blocked; operation labels wrap without overlap. | `GET /api/actions`, existing action validate/preview/review/confirm/impact endpoints; `list_actions_cached()` lifecycle seam | Review/preview/confirm/audit flow; evidence IDs remain in list response. | Full dashboard-api smoke now asserts current queue, blocker and lifecycle copy; mutation readiness remains separately review-gated. | `c9h9.11` and stale assertion work in `c9h9.8` are closed; do not restore registry IA. |
 | `/actions/:id` | 70% | Decision-first detail answers what to do, why, write status, evidence and next safe step. Existing-draft action now has typed current/proposed/blocked preview. Fresh full-page and first-viewport screenshots exist locally. | `GET /api/actions/{id}`, `GET /api/actions/{id}/mutation-readiness`, preview/validate/review/confirm endpoints | Polish decision hero, explicit blocked write, typed preview card, evidence summary; raw payload/audit stay in disclosure. Focused Vitest and Playwright pass. | One below-fold readiness sentence still uses technical `apply-capable ActionObject`; queue performance is separate. | Keep pattern; copy-tune below-fold term later, never bypass safety. |
 | `/ads-doctor` | 75% | Existing summary remains evidence-first and cached. Negative-keyword review now emits preview/action only for an exact term + campaign + ad-group match with 90-day evidence; a 30-day-only candidate stays visible as `needs_90_day_review` without a fake action. Live proof has 5 matched review-only previews, all `apply=false`; current browser heading first paint is `1.432 s`. | Existing `GET /api/ads/diagnostics?view=summary`, `build_ads_diagnostics_summary_cached()` and ActionObject validator; no new endpoint. | Fresh Ads data, campaign rows, decisions and safe review actions; no writes or unsupported claims. | Ads conclusions still depend on current source freshness; 90-day evidence permits review, never automatic exclusion or waste/ROAS claims. | Preserve exact 90-day matching, cache invalidation and blocked claims. |

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import NoReturn
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from apps.api.wilq_api.routers.content_model_routes import (
@@ -21,7 +21,10 @@ from apps.api.wilq_api.routers.content_workflow_http import (
     project_content_work_item_browser_snapshot,
     revision_conflict_next_step,
 )
-from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
+from wilq.briefing.content_diagnostics import (
+    build_content_diagnostics_cached,
+    build_content_freshness_assessment_fast,
+)
 from wilq.connectors.wordpress.authoring import (
     WordPressAuthoringProfile,
     build_wordpress_authoring_profile,
@@ -30,6 +33,7 @@ from wilq.content.enrichment.opportunity import (
     ContentOpportunityEnrichmentResponse,
     build_content_opportunity_enrichment_response,
 )
+from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
 from wilq.content.knowledge.cards import (
     ContentKnowledgeCardsResponse,
     content_knowledge_cards_response,
@@ -49,6 +53,15 @@ from wilq.content.workflow.api import (
     build_content_work_item_snapshot_human_review_response,
     build_content_work_item_wordpress_authoring_payload_preview_response,
     build_content_work_item_wordpress_draft_execution_response,
+)
+from wilq.content.workflow.catalog import (
+    ContentInventoryBindingRequest,
+    ContentInventoryBindingResponse,
+    ContentInventoryCatalogResponse,
+    ContentInventoryMaterialResponse,
+    bind_content_inventory_item,
+    build_content_inventory_catalog_cached,
+    read_content_inventory_material,
 )
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionConflictResponse,
@@ -93,6 +106,8 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
+from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
+from wilq.content.workflow.operator import ContentOperatorContext, content_operator_context
 from wilq.content.workflow.planning import (
     ContentPlanningDecision,
     ContentPlanningProposal,
@@ -103,6 +118,7 @@ from wilq.content.workflow.planning import (
 from wilq.content.workflow.queue import (
     ContentWorkItemQueueResponse,
     build_content_work_item_queue_response,
+    build_selected_content_work_item_queue_response,
 )
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionAppendCommand,
@@ -137,6 +153,39 @@ from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas.core import utc_now
 
 router = APIRouter()
+
+
+@router.get("/api/content/operator-context", response_model=ContentOperatorContext)
+def content_operator_context_route() -> ContentOperatorContext:
+    return content_operator_context()
+
+
+@router.get(
+    "/api/content/inventory/catalog",
+    response_model=ContentInventoryCatalogResponse,
+)
+def content_inventory_catalog() -> ContentInventoryCatalogResponse:
+    return build_content_inventory_catalog_cached()
+
+
+@router.get(
+    "/api/content/inventory/material",
+    response_model=ContentInventoryMaterialResponse,
+)
+def content_inventory_material(
+    url: str = Query(min_length=1),
+) -> ContentInventoryMaterialResponse:
+    return read_content_inventory_material(url)
+
+
+@router.post(
+    "/api/content/inventory/bind",
+    response_model=ContentInventoryBindingResponse,
+)
+def content_inventory_bind(
+    request: ContentInventoryBindingRequest,
+) -> ContentInventoryBindingResponse:
+    return bind_content_inventory_item(request.url)
 
 
 @router.get(
@@ -191,6 +240,26 @@ def content_wordpress_existing_draft_update_readiness(
     return build_content_wordpress_existing_draft_update_readiness_response(snapshot)
 
 
+def _latest_exact_wordpress_execution(
+    snapshot: ContentWorkItemBrowserWorkflowSnapshotResponse,
+) -> ContentWordPressDraftExecutionResult | None:
+    handoff = snapshot.wordpress_handoff.handoff_result.handoff
+    binding = handoff.revision_binding if handoff is not None else None
+    if handoff is None:
+        return None
+    if binding is None:
+        # Legacy v1 handoffs have no revision binding; keep their history readable.
+        return content_workflow_store().latest_wordpress_draft_execution(
+            snapshot.preflight.item.id
+        )
+    return content_workflow_store().latest_wordpress_draft_execution(
+        snapshot.preflight.item.id,
+        handoff_id=handoff.id,
+        revision_id=binding.revision_id,
+        revision_digest=binding.content_digest,
+    )
+
+
 @router.get(
     "/api/content/wordpress/draft-activation-packet",
     response_model=ContentWordPressDraftActivationPacketResponse,
@@ -199,18 +268,15 @@ def content_wordpress_draft_activation_packet(
     work_item_id: str | None = None,
 ) -> ContentWordPressDraftActivationPacketResponse:
     if work_item_id is not None:
+        snapshot = _snapshot_for_work_item_or_404(work_item_id)
         return build_content_wordpress_draft_activation_packet_response(
-            _snapshot_for_work_item_or_404(work_item_id),
-            latest_execution_result=content_workflow_store().latest_wordpress_draft_execution(
-                work_item_id
-            ),
+            snapshot,
+            latest_execution_result=_latest_exact_wordpress_execution(snapshot),
         )
     snapshot = _snapshot_for_default_work_item_or_404()
     return build_content_wordpress_draft_activation_packet_response(
         snapshot,
-        latest_execution_result=content_workflow_store().latest_wordpress_draft_execution(
-            snapshot.preflight.item.id
-        ),
+        latest_execution_result=_latest_exact_wordpress_execution(snapshot),
     )
 
 
@@ -218,8 +284,28 @@ def content_wordpress_draft_activation_packet(
     "/api/content/work-items/queue",
     response_model=ContentWorkItemQueueResponse,
 )
-def content_work_item_queue() -> ContentWorkItemQueueResponse:
-    return build_content_work_item_queue_response(build_content_diagnostics_cached())
+def content_work_item_queue(
+    work_item_id: str | None = Query(default=None),
+) -> ContentWorkItemQueueResponse:
+    if work_item_id is not None:
+        inventory_decision = inventory_decision_for_work_item(
+            work_item_id,
+            # A selected inventory item is the operator's explicit request to
+            # open the workflow.  Keep this first read limited to the catalog;
+            # the heavier WordPress material read belongs to the snapshot and
+            # must not make the decision screen look like a stalled refresh.
+            read_material=False,
+            allow_material_pending=True,
+        )
+        if inventory_decision is not None:
+            return build_selected_content_work_item_queue_response(
+                inventory_decision,
+                build_content_freshness_assessment_fast(),
+            )
+    return build_content_work_item_queue_response(
+        build_content_diagnostics_cached(),
+        selected_work_item_id=work_item_id,
+    )
 
 
 @router.get(
