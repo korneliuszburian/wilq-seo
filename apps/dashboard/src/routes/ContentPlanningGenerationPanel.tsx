@@ -123,8 +123,9 @@ export function ContentPlanningGenerationPanel({
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
             Na czym opiera się ta decyzja
           </p>
-          <div className="mt-2 grid gap-2 text-sm sm:grid-cols-4">
+          <div className="mt-2 grid gap-2 text-sm sm:grid-cols-5">
             <PlanningInputFact label="Fakty firmy" value={inputSummary.source_fact_count} />
+            <PlanningInputFact label="Materiały firmy" value={inputSummary.source_material_ids.length} />
             <PlanningInputFact label="Karty wiedzy" value={inputSummary.knowledge_card_count} />
             <PlanningInputFact label="Metryki" value={inputSummary.measurement_metrics.length} />
             <PlanningInputFact label="Ślady źródeł" value={inputSummary.evidence_id_count} />
