@@ -32,6 +32,7 @@ from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRequest
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 from wilq.storage.recovery import copy_storage_pair
+from wilq.storage.semantic_review_activation import activate_semantic_review_storage
 
 app = typer.Typer(help="WILQ local operator CLI for API-backed runtime checks.")
 connectors_app = typer.Typer(help="Connector readiness and refresh commands.")
@@ -137,6 +138,28 @@ def storage_restore(
         duckdb_source=duckdb_backup,
         sqlite_destination=sqlite_destination,
         duckdb_destination=duckdb_destination,
+    )
+
+
+@storage_app.command("activate-semantic-review")
+def storage_activate_semantic_review(
+    sqlite_source: Annotated[Path, typer.Option("--sqlite-source")],
+    duckdb_source: Annotated[Path, typer.Option("--duckdb-source")],
+    sqlite_backup: Annotated[Path, typer.Option("--sqlite-backup")],
+    duckdb_backup: Annotated[Path, typer.Option("--duckdb-backup")],
+    approved_maintenance_window: Annotated[
+        bool, typer.Option("--approved-maintenance-window")
+    ] = False,
+) -> None:
+    """Activate semantic review only after backup proof and explicit approval."""
+    _print_json(
+        activate_semantic_review_storage(
+            state_path=sqlite_source,
+            metric_path=duckdb_source,
+            backup_state_path=sqlite_backup,
+            backup_metric_path=duckdb_backup,
+            approved_maintenance_window=approved_maintenance_window,
+        )
     )
 
 
