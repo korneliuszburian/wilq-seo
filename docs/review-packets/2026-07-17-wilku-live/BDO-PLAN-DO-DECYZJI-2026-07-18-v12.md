@@ -8,7 +8,7 @@ Plan: `content_planning_proposal_983e3de920424a229499102b5c940da0` · v12
 
 ## Decyzja w 30 sekund
 
-Odświeżamy istniejącą stronę jako praktyczny przewodnik dla przedsiębiorcy:
+Proponujemy odświeżyć istniejącą stronę jako praktyczny przewodnik dla przedsiębiorcy:
 najpierw odpowiedzi na pytania „co to jest BDO”, „kogo dotyczy” i „co trzeba
 sprawdzić”, potem bezpieczny krok do konsultacji. Nie obiecujemy zgodności,
 uniknięcia kary ani wyniku prawnego.
@@ -40,7 +40,7 @@ decyzji tylko dlatego, że wyświetlił tę listę.
 7. **Jakie materiały edukacyjne rzeczywiście pomogą w obowiązkach BDO?** — review
 8. **Które dodatkowe informacje są potrzebne do prawidłowego prowadzenia BDO?** — review
 9. **Co sprawdzić przed przygotowaniem rocznego sprawozdania w BDO?** — przepisz
-10. **Jakie ryzyko wiąże się z niezłożeniem wymaganego sprawozdania?** — scal
+10. **Jakie ryzyko wiąże się z niezłożeniem wymaganego sprawozdania?** — scal; cel scalania do wskazania
 11. **Jak ocenić, czy wsparcie w BDO odpowiada potrzebom firmy?** — review
 12. **Jakie doświadczenie jest istotne przy wyborze wsparcia w BDO?** — review
 
@@ -53,6 +53,8 @@ status `excluded`. Nie są cicho wciskane do tekstu.
 - [ ] zakres: praktyczny przewodnik dla przedsiębiorcy;
 - [ ] CTA: konsultacja obowiązków BDO;
 - [ ] sekcje 1–6 można przepisać;
+- [ ] sekcja 9 do przepisania;
+- [ ] sekcja 10: wskazać sekcję docelową scalania;
 - [ ] sekcje 7, 8, 11 i 12 wymagają decyzji redakcyjnej;
 - [ ] nie ma zgody na twierdzenia o wyniku prawnym, karach ani przychodzie.
 
