@@ -12,6 +12,9 @@ rewizji ani nie zatwierdza jej.
 - WordPress: **12 nagłówków, 842 słowa**
 - porównanie okresów: **brak dwóch dokładnych okien**, więc nie ma wniosku o trendzie
 - źródła: Google Search Console, WordPress Ekologus
+- bieżący plan WILQ: `content_planning_proposal_3afad6caf74244328e7b2b6d70fbe03e`
+- bieżący digest wejścia planu: `ca656336139c266e30367949916da9df80859531c18001ca176b7580dcdcb525`
+- bieżący plan zawiera: **12 sekcji, 4 FAQ, 2 CTA, 1 link**
 
 ## Co to oznacza dla paczki
 
