@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 _HEADER = re.compile(
-    r"^(?P<kind>build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)"
+    r"^(?P<kind>build|chore|ci|docs|feat|fix|perf|refactor|refine|revert|style|test)"
     r"(?:\([a-z0-9][a-z0-9._/-]*\))?: (?P<subject>\S.*\S)$"
 )
 _MAX_SUBJECT_LENGTH = 100
@@ -31,7 +31,8 @@ def validate_commit_message(message: str) -> list[str]:
     if match is None:
         return [
             "header must match '<type>(optional-scope): <imperative description>' "
-            "using feat, fix, docs, refactor, perf, test, build, ci, chore, revert, or style"
+            "using feat, fix, docs, refactor, refine, perf, test, build, ci, "
+            "chore, revert, or style"
         ]
     if len(header) > _MAX_SUBJECT_LENGTH:
         return [f"semantic header must be at most {_MAX_SUBJECT_LENGTH} characters"]

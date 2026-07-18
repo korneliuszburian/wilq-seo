@@ -5,6 +5,7 @@ from scripts.check_commit_message import validate_commit_message
 
 def test_accepts_semantic_commit_with_scope() -> None:
     assert validate_commit_message("fix(content): preserve exact revision\n\nDetails") == []
+    assert validate_commit_message("refine: present one current version") == []
 
 
 def test_rejects_untyped_commit_header() -> None:
