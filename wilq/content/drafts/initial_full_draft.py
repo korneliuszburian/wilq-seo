@@ -392,7 +392,11 @@ def _document_scope_errors(
     if any(not values for values in lineage_groups):
         errors.append("missing_evidence_lineage")
     lineage_atoms = [
-        *(value for item in proposal.sections for value in (*item.query_terms, *item.claim_ids)),
+        *(
+            value
+            for item in draftable_sections
+            for value in (*item.query_terms, *item.claim_ids)
+        ),
         *(value for item in proposal.faq for value in (*item.query_terms, *item.claim_ids)),
         *(value for item in proposal.cta_blocks for value in item.claim_ids),
         *(value for item in proposal.internal_links for value in item.claim_ids),
@@ -410,9 +414,8 @@ def _claim_safety_output(
 ) -> StructuredDraftOutput:
     claim_text_by_id = {item.id: item.claim_text for item in inputs.planning_input.claim_ledger}
     sections: list[StructuredDraftOutputSection] = []
-    global_claim_ids = [
-        claim_id for item in inputs.proposal.sections for claim_id in item.claim_ids
-    ]
+    draftable_sections = draftable_planning_sections(inputs.proposal.sections)
+    global_claim_ids = [claim_id for item in draftable_sections for claim_id in item.claim_ids]
     sections.append(
         StructuredDraftOutputSection(
             heading="Page assets",
@@ -421,7 +424,7 @@ def _claim_safety_output(
             claims_used=_claim_texts(global_claim_ids, claim_text_by_id),
         )
     )
-    for plan, generated in zip(inputs.proposal.sections, output.sections, strict=True):
+    for plan, generated in zip(draftable_sections, output.sections, strict=True):
         sections.append(
             StructuredDraftOutputSection(
                 heading=generated.heading,
