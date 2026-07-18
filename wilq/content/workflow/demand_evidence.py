@@ -692,6 +692,7 @@ def _fact_page(fact: MetricFact) -> str | None:
     return (
         fact.dimensions.get("page")
         or fact.dimensions.get("landing_page")
+        or fact.dimensions.get("mapped_allowed_page")
         or fact.dimensions.get("final_url")
     )
 
