@@ -2,9 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { History, ShieldAlert } from "lucide-react";
 
 import {
+  getSocialReuseProposals,
   getSocialPublisherContextPack,
   type SocialDraftContext,
-  type SocialHistoryInventory
+  type SocialHistoryInventory,
+  type SocialReuseProposalListResponse
 } from "../lib/api";
 import {
   BlockerNotice,
@@ -31,6 +33,10 @@ export function SocialPublisherSurface() {
   const contextPack = useQuery({
     queryKey: ["social-publisher-context-pack"],
     queryFn: getSocialPublisherContextPack
+  });
+  const proposals = useQuery({
+    queryKey: ["social-reuse-proposals"],
+    queryFn: () => getSocialReuseProposals()
   });
 
   if (contextPack.isLoading) return <LoadingBand />;
@@ -69,9 +75,68 @@ export function SocialPublisherSurface() {
       <div className="grid gap-6">
         <SocialDecisionSummary socialContext={socialContext} inventory={inventory} />
         <SocialHistoryBlocker inventory={inventory} socialContext={socialContext} />
+        <SocialReuseProposalsPanel proposals={proposals.data} loading={proposals.isLoading} />
         <ActionFocus actions={actions} />
       </div>
     </main>
+  );
+}
+
+function SocialReuseProposalsPanel({
+  proposals,
+  loading
+}: {
+  proposals: SocialReuseProposalListResponse | undefined;
+  loading: boolean;
+}) {
+  if (loading) return <LoadingBand />;
+  const items = proposals?.proposals ?? [];
+  return (
+    <section className="rounded-md border border-line bg-white p-4" aria-labelledby="social-reuse-proposals-title">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id="social-reuse-proposals-title" className="text-base font-semibold text-ink">
+            Propozycje treści do social
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Każda propozycja jest przypięta do konkretnej rewizji treści i wymaga osobnego sprawdzenia.
+          </p>
+        </div>
+        <MetricTile label="propozycje" value={items.length} />
+      </div>
+      {items.length === 0 ? (
+        <p className="mt-4 rounded border border-dashed border-line bg-surface p-3 text-sm text-slate-600">
+          Brak zapisanych propozycji dla aktualnych źródeł. Najpierw musi powstać review-only materiał z dokładnej rewizji treści.
+        </p>
+      ) : (
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {items.map((item) => {
+            const proposal = item.proposal;
+            if (!proposal) return null;
+            const decision = item.review?.decision;
+            return (
+              <article key={proposal.proposal_id} className="rounded border border-line bg-surface p-3">
+                <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                  <span className="font-semibold text-action">
+                    {proposal.platform === "linkedin" ? "LinkedIn" : "Facebook"}
+                  </span>
+                  <span>{decision === "approved" ? "zaakceptowane" : decision === "needs_changes" ? "do poprawy" : decision === "rejected" ? "odrzucone" : "do review"}</span>
+                </div>
+                <h3 className="mt-2 text-sm font-semibold text-ink">{proposal.angle}</h3>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{proposal.body}</p>
+                <p className="mt-3 text-xs text-slate-500">
+                  {proposal.parent_proposal_id ? "Poprawiona wersja · " : ""}
+                  {proposal.source_evidence_ids.length} źródeł · publikacja wyłączona
+                </p>
+                {item.review?.notes ? (
+                  <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-slate-600">Uwagi: {item.review.notes}</p>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 

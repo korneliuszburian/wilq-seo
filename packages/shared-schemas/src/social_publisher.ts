@@ -98,3 +98,12 @@ export const SocialReuseReviewResponseSchema = z.object({
   blocker: z.string().nullable().optional(),
   next_step: z.string().min(1)
 });
+
+export const SocialReuseProposalListResponseSchema = z.object({
+  proposals: z.array(SocialReuseProposalResponseSchema),
+  next_step: z.string().min(1)
+});
+
+export type SocialReuseProposalListResponse = z.infer<
+  typeof SocialReuseProposalListResponseSchema
+>;

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Query
 from fastapi.responses import JSONResponse
 
 from wilq.connectors.registry import list_connector_statuses
@@ -15,6 +15,7 @@ from wilq.social.history import (
     build_social_history_inventory_from_env,
 )
 from wilq.social.reuse import (
+    SocialReuseProposalListResponse,
     SocialReuseProposalRequest,
     SocialReuseProposalResponse,
     SocialReuseReview,
@@ -56,6 +57,35 @@ def social_history_inventory_audit(
     payload: Any = SOCIAL_HISTORY_AUDIT_BODY,  # noqa: ANN401 - accepts arbitrary JSON.
 ) -> SocialHistoryImportAudit:
     return audit_social_history_metadata_payload(payload)
+
+
+@router.get(
+    "/api/social/reuse-proposals",
+    response_model=SocialReuseProposalListResponse,
+)
+def list_social_reuse_proposals(
+    work_item_id: str | None = Query(default=None),
+) -> SocialReuseProposalListResponse:
+    store = content_workflow_store()
+    proposals = store.list_social_reuse_proposals(work_item_id)
+    return SocialReuseProposalListResponse(
+        proposals=[
+            SocialReuseProposalResponse(
+                status="created",
+                proposal=proposal,
+                review=store.latest_social_reuse_review(proposal.proposal_id),
+                next_step=(
+                    "Otwórz propozycję i sprawdź decyzję człowieka; "
+                    "publikacja pozostaje wyłączona."
+                ),
+            )
+            for proposal in proposals
+        ],
+        next_step=(
+            "Propozycje są review-only. Wybierz aktualną treść i sprawdź źródła "
+            "przed decyzją."
+        ),
+    )
 
 
 @router.post(

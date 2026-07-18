@@ -124,6 +124,7 @@ def test_social_reuse_store_is_idempotent_for_exact_revision(tmp_path) -> None:
     assert first.proposal_digest == second.proposal_digest
     assert second.body == first.body
     assert store.get_social_reuse_proposal(proposal.proposal_id) == first
+    assert store.list_social_reuse_proposals(revision.work_item_id) == [first]
 
 
 def test_social_reuse_read_becomes_stale_when_history_digest_changes(monkeypatch) -> None:

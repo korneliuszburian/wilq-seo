@@ -567,6 +567,37 @@ class _SocialReuseStoreMixin(_StoreConnectionMixin):
             return None
         return SocialReuseProposal.model_validate(json.loads(cast(str, row["payload_json"])))
 
+    def list_social_reuse_proposals(
+        self,
+        work_item_id: str | None = None,
+    ) -> list[SocialReuseProposal]:
+        with self._connect() as connection:
+            if work_item_id is None:
+                rows = connection.execute(
+                    """
+                    SELECT created_at, payload_json FROM social_reuse_proposals
+                    UNION ALL
+                    SELECT created_at, payload_json FROM social_reuse_child_proposals
+                    ORDER BY created_at DESC
+                    """
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    """
+                    SELECT created_at, payload_json FROM social_reuse_proposals
+                    WHERE work_item_id = ?
+                    UNION ALL
+                    SELECT created_at, payload_json FROM social_reuse_child_proposals
+                    WHERE work_item_id = ?
+                    ORDER BY created_at DESC
+                    """,
+                    (work_item_id, work_item_id),
+                ).fetchall()
+        return [
+            SocialReuseProposal.model_validate(json.loads(cast(str, row["payload_json"])))
+            for row in rows
+        ]
+
     def next_social_reuse_child_number(self, parent_proposal_id: str) -> int:
         with self._connect() as connection:
             row = connection.execute(

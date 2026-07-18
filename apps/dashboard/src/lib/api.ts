@@ -73,6 +73,7 @@ import {
   OpportunitySchema,
   SocialHistoryInventorySchema,
   SocialPublisherContextPackSchema,
+  SocialReuseProposalListResponseSchema,
   TacticalQueueResponseSchema,
   WorkflowRunSchema,
   WorkflowSchema,
@@ -172,6 +173,7 @@ import {
   type SocialDraftContext,
   type SocialHistoryInventory,
   type SocialPublisherContextPack,
+  type SocialReuseProposalListResponse,
   type TacticalQueueResponse,
   type Workflow,
   type WorkflowRun,
@@ -323,6 +325,16 @@ export function getSocialPublisherContextPack(): Promise<SocialPublisherContextP
 
 export function getSocialHistoryInventory(): Promise<SocialHistoryInventory> {
   return apiGet("/api/social/history-inventory", SocialHistoryInventorySchema);
+}
+
+export function getSocialReuseProposals(
+  workItemId?: string | null
+): Promise<SocialReuseProposalListResponse> {
+  const query = workItemId ? `?work_item_id=${encodeURIComponent(workItemId)}` : "";
+  return apiGet(
+    `/api/social/reuse-proposals${query}`,
+    SocialReuseProposalListResponseSchema
+  );
 }
 
 export function getWordPressAuthoringProfile(): Promise<WordPressAuthoringProfile> {
@@ -902,6 +914,7 @@ export type {
   SocialDraftContext,
   SocialHistoryInventory,
   SocialPublisherContextPack,
+  SocialReuseProposalListResponse,
   TacticalQueueResponse,
   Workflow,
   WorkflowRun,

@@ -90,6 +90,13 @@ class SocialReuseProposalResponse(BaseModel):
     next_step: str
 
 
+class SocialReuseProposalListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    proposals: list[SocialReuseProposalResponse]
+    next_step: str
+
+
 class SocialReuseReviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
