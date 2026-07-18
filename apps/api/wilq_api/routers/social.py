@@ -17,6 +17,9 @@ from wilq.social.history import (
 from wilq.social.reuse import (
     SocialReuseProposalRequest,
     SocialReuseProposalResponse,
+    SocialReuseReview,
+    SocialReuseReviewRequest,
+    SocialReuseReviewResponse,
     build_social_reuse_proposal,
     social_history_inventory_digest,
 )
@@ -142,7 +145,86 @@ def get_social_reuse_proposal(proposal_id: str) -> SocialReuseProposalResponse:
     return SocialReuseProposalResponse(
         status="created",
         proposal=proposal,
+        review=content_workflow_store().latest_social_reuse_review(proposal_id),
         next_step="Propozycja wymaga review człowieka; publikacja jest wyłączona.",
+    )
+
+
+@router.post(
+    "/api/social/reuse-proposals/{proposal_id}/review",
+    response_model=SocialReuseReviewResponse,
+    responses={409: {"model": SocialReuseReviewResponse}},
+)
+def review_social_reuse_proposal(
+    proposal_id: str,
+    request: SocialReuseReviewRequest,
+) -> SocialReuseReviewResponse | JSONResponse:
+    store = content_workflow_store()
+    proposal = store.get_social_reuse_proposal(proposal_id)
+    if proposal is None:
+        return _social_review_blocked(
+            "social_reuse_proposal_not_found",
+            "Utwórz propozycję na podstawie aktualnej rewizji treści.",
+        )
+    if request.expected_proposal_digest != proposal.proposal_digest:
+        return _social_review_conflict(
+            "stale_proposal",
+            "Propozycja zmieniła się. Otwórz jej aktualną wersję przed review.",
+        )
+    state = store.load_draft_revision_state(proposal.work_item_id)
+    current = state.latest_revision
+    if current is None or current.content_digest != proposal.source_revision_digest:
+        return _social_review_conflict(
+            "source_revision_changed",
+            "Rewizja treści zmieniła się. Przygotuj nową propozycję social.",
+        )
+    inventory = _current_social_history_inventory()
+    if (
+        inventory.status != "review_ready"
+        or social_history_inventory_digest(inventory)
+        != proposal.duplicate_risk_inventory_digest
+    ):
+        return _social_review_conflict(
+            "social_history_changed",
+            "Historia social zmieniła się albo wymaga ponownego review.",
+        )
+    latest = store.latest_social_reuse_review(proposal_id)
+    if (
+        latest is not None
+        and latest.proposal_digest == proposal.proposal_digest
+        and latest.reviewed_by == request.reviewed_by
+        and latest.decision == request.decision
+        and latest.notes == request.notes
+        and latest.checked_items == request.checked_items
+        and latest.evidence_ids == request.evidence_ids
+    ):
+        return SocialReuseReviewResponse(
+            status="idempotent",
+            proposal=proposal,
+            review=latest,
+            next_step=_social_review_next_step(latest.decision),
+        )
+    review = SocialReuseReview(
+        review_id=(
+            f"social_review_{proposal_id}_"
+            f"{1 if latest is None else latest.review_number + 1}"
+        ),
+        proposal_id=proposal_id,
+        proposal_digest=proposal.proposal_digest,
+        review_number=1 if latest is None else latest.review_number + 1,
+        decision=request.decision,
+        reviewed_by=request.reviewed_by,
+        notes=request.notes,
+        checked_items=request.checked_items,
+        evidence_ids=request.evidence_ids,
+        created_at=utc_now(),
+    )
+    persisted = store.save_social_reuse_review(review)
+    return SocialReuseReviewResponse(
+        status="recorded",
+        proposal=proposal,
+        review=persisted,
+        next_step=_social_review_next_step(persisted.decision),
     )
 
 
@@ -162,6 +244,35 @@ def _social_reuse_conflict(blocker: str, next_step: str) -> JSONResponse:
         next_step=next_step,
     )
     return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
+
+
+def _social_review_blocked(blocker: str, next_step: str) -> JSONResponse:
+    payload = SocialReuseReviewResponse(
+        status="blocked",
+        blocker=blocker,
+        next_step=next_step,
+    )
+    return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
+
+
+def _social_review_conflict(blocker: str, next_step: str) -> JSONResponse:
+    payload = SocialReuseReviewResponse(
+        status="stale",
+        blocker=blocker,
+        next_step=next_step,
+    )
+    return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
+
+
+def _social_review_next_step(decision: str) -> str:
+    if decision == "approved":
+        return (
+            "Propozycja ma decyzję człowieka; publikacja nadal wymaga osobnej "
+            "akcji i pozostaje wyłączona."
+        )
+    if decision == "needs_changes":
+        return "Przygotuj nową propozycję na podstawie uwag; ta rewizja nie jest zatwierdzona."
+    return "Nie używaj tej propozycji; wróć do aktualnej rewizji treści."
 
 
 def _current_social_history_inventory() -> SocialHistoryInventory:

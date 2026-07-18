@@ -16,6 +16,7 @@ from wilq.social.history import (
 from wilq.social.reuse import (
     SocialReuseProposal,
     SocialReuseProposalRequest,
+    SocialReuseReview,
     build_social_reuse_proposal,
 )
 
@@ -97,6 +98,7 @@ def test_social_reuse_store_is_idempotent_for_exact_revision(tmp_path) -> None:
                 ]
             }
         ),
+        metadata_source_configured=True,
     )
     proposal = build_social_reuse_proposal(
         SocialReuseProposalRequest(
@@ -171,6 +173,70 @@ def test_social_reuse_read_becomes_stale_when_history_digest_changes(monkeypatch
     assert response.json()["blocker"] == "social_history_changed"
 
 
+def test_social_reuse_review_records_human_decision_and_is_idempotent(monkeypatch) -> None:
+    revision = _revision()
+    inventory = build_social_history_inventory(
+        {},
+        {},
+        audit_social_history_metadata_payload(
+            {
+                "items": [
+                    {"channel": "linkedin", **_history_fields("linkedin")},
+                    {"channel": "facebook", **_history_fields("facebook")},
+                ]
+            }
+        ),
+        metadata_source_configured=True,
+    )
+    proposal = build_social_reuse_proposal(
+        SocialReuseProposalRequest(
+            work_item_id=revision.work_item_id,
+            expected_revision_id=revision.revision_id,
+            expected_revision_digest=revision.content_digest,
+            platform="linkedin",
+            audience="przedsiębiorcy",
+            angle="konkretny pierwszy krok",
+            body="Sprawdź pierwszy krok.",
+            claim_ids=["claim_1"],
+            measurement_hypothesis="Obserwujemy wejścia na stronę.",
+        ),
+        revision,
+        inventory,
+        now=datetime(2026, 7, 18, tzinfo=UTC),
+    )
+    store = _FakeStore(revision, status="approved")
+    store.saved = proposal
+    monkeypatch.setattr(social_router, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        social_router,
+        "build_social_history_inventory_from_env",
+        lambda *_args: inventory,
+    )
+    payload = {
+        "expected_proposal_digest": proposal.proposal_digest,
+        "reviewed_by": "wilku",
+        "decision": "approved",
+        "checked_items": ["claimy", "CTA"],
+        "evidence_ids": ["ev_source_1"],
+    }
+
+    first = TestClient(app).post(
+        f"/api/social/reuse-proposals/{proposal.proposal_id}/review",
+        json=payload,
+    )
+    repeated = TestClient(app).post(
+        f"/api/social/reuse-proposals/{proposal.proposal_id}/review",
+        json=payload,
+    )
+
+    assert first.status_code == 200, first.json()
+    assert first.json()["status"] == "recorded"
+    assert first.json()["review"]["decision"] == "approved"
+    assert repeated.status_code == 200
+    assert repeated.json()["status"] == "idempotent"
+    assert repeated.json()["review"]["review_id"] == first.json()["review"]["review_id"]
+
+
 def _revision() -> ContentDraftRevision:
     return ContentDraftRevision.model_validate(
         {
@@ -215,6 +281,7 @@ class _FakeStore:
         self.revision = revision
         self.status = status
         self.saved: SocialReuseProposal | None = None
+        self.saved_review: SocialReuseReview | None = None
 
     def load_draft_revision_state(self, work_item_id: str):
         return SimpleNamespace(
@@ -230,3 +297,12 @@ class _FakeStore:
 
     def get_social_reuse_proposal(self, proposal_id: str):
         return self.saved if self.saved and self.saved.proposal_id == proposal_id else None
+
+    def latest_social_reuse_review(self, proposal_id: str):
+        if self.saved_review and self.saved_review.proposal_id == proposal_id:
+            return self.saved_review
+        return None
+
+    def save_social_reuse_review(self, review: SocialReuseReview) -> SocialReuseReview:
+        self.saved_review = review
+        return review

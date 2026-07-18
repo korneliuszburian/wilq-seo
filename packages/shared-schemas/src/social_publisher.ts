@@ -60,7 +60,39 @@ export const SocialReuseProposalSchema = z.object({
 export const SocialReuseProposalResponseSchema = z.object({
   status: z.enum(["created", "blocked", "stale"]),
   proposal: SocialReuseProposalSchema.optional(),
+  review: z.object({
+    contract: z.literal("social_reuse_review_v1"),
+    review_id: z.string().min(1),
+    proposal_id: z.string().min(1),
+    proposal_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    review_number: z.number().int().positive(),
+    decision: z.enum(["approved", "needs_changes", "rejected"]),
+    reviewed_by: z.string().min(1),
+    notes: z.string(),
+    checked_items: z.array(z.string().min(1)).min(1),
+    evidence_ids: z.array(z.string().min(1)).min(1),
+    created_at: z.string()
+  }).optional(),
   blocker: z.string().nullable().optional(),
   next_step: z.string().min(1)
 });
 
+export const SocialReuseReviewResponseSchema = z.object({
+  status: z.enum(["recorded", "idempotent", "blocked", "stale"]),
+  proposal: SocialReuseProposalSchema.optional(),
+  review: z.object({
+    contract: z.literal("social_reuse_review_v1"),
+    review_id: z.string().min(1),
+    proposal_id: z.string().min(1),
+    proposal_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    review_number: z.number().int().positive(),
+    decision: z.enum(["approved", "needs_changes", "rejected"]),
+    reviewed_by: z.string().min(1),
+    notes: z.string(),
+    checked_items: z.array(z.string().min(1)).min(1),
+    evidence_ids: z.array(z.string().min(1)).min(1),
+    created_at: z.string()
+  }).optional(),
+  blocker: z.string().nullable().optional(),
+  next_step: z.string().min(1)
+});

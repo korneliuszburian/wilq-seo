@@ -105,6 +105,17 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS social_reuse_reviews (
+      review_id TEXT PRIMARY KEY,
+      proposal_id TEXT NOT NULL,
+      proposal_digest TEXT NOT NULL,
+      review_number INTEGER NOT NULL CHECK (review_number >= 1),
+      created_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      UNIQUE (proposal_id, proposal_digest, review_number)
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS audit_events (
       id TEXT PRIMARY KEY,
       action_id TEXT,

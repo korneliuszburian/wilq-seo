@@ -24,7 +24,7 @@ from wilq.content.workflow.revisions import (
 )
 from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent
 from wilq.security.redaction import redact_mapping
-from wilq.social.reuse import SocialReuseProposal
+from wilq.social.reuse import SocialReuseProposal, SocialReuseReview
 
 
 def model_json(
@@ -42,6 +42,7 @@ def model_json(
         | AuditEvent
         | ActionMutationAuditRecord
         | SocialReuseProposal
+        | SocialReuseReview
     ),
 ) -> str:
     return json.dumps(model.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))

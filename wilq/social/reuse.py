@@ -5,13 +5,14 @@ from datetime import datetime
 from hashlib import sha256
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.social.history import SocialHistoryInventory
 
 SocialReusePlatform = Literal["linkedin", "facebook"]
 SocialReuseStatus = Literal["review_required", "approved", "rejected", "stale", "blocked"]
+SocialReuseReviewDecision = Literal["approved", "needs_changes", "rejected"]
 
 
 class SocialReuseProposalRequest(BaseModel):
@@ -64,6 +65,66 @@ class SocialReuseProposalResponse(BaseModel):
 
     status: Literal["created", "blocked", "stale"]
     proposal: SocialReuseProposal | None = None
+    review: SocialReuseReview | None = None
+    blocker: str | None = None
+    next_step: str
+
+
+class SocialReuseReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expected_proposal_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    reviewed_by: str = Field(min_length=1)
+    decision: SocialReuseReviewDecision
+    notes: str = ""
+    checked_items: list[str] = Field(min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
+
+    @field_validator("reviewed_by", "notes")
+    @classmethod
+    def normalize_text(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("checked_items", "evidence_ids")
+    @classmethod
+    def normalize_items(cls, values: list[str]) -> list[str]:
+        normalized = [value.strip() for value in values if value.strip()]
+        if not normalized:
+            raise ValueError("Review requires checked items and evidence IDs.")
+        return list(dict.fromkeys(normalized))
+
+    @model_validator(mode="after")
+    def require_change_reason(self) -> SocialReuseReviewRequest:
+        if self.decision != "approved" and not self.notes:
+            raise ValueError("Review requiring changes or rejection needs notes.")
+        return self
+
+
+class SocialReuseReview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    contract: Literal["social_reuse_review_v1"] = "social_reuse_review_v1"
+    review_id: str = Field(min_length=1)
+    proposal_id: str = Field(min_length=1)
+    proposal_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    review_number: int = Field(ge=1)
+    decision: SocialReuseReviewDecision
+    reviewed_by: str = Field(min_length=1)
+    notes: str = ""
+    checked_items: list[str] = Field(min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
+    created_at: datetime
+
+
+SocialReuseProposalResponse.model_rebuild()
+
+
+class SocialReuseReviewResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["recorded", "idempotent", "blocked", "stale"]
+    proposal: SocialReuseProposal | None = None
+    review: SocialReuseReview | None = None
     blocker: str | None = None
     next_step: str
 

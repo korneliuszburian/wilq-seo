@@ -78,7 +78,7 @@ from wilq.content.workflow.store_schema import ensure_content_workflow_schema
 from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent, CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
-from wilq.social.reuse import SocialReuseProposal
+from wilq.social.reuse import SocialReuseProposal, SocialReuseReview
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
 
@@ -560,6 +560,57 @@ class _SocialReuseStoreMixin(_StoreConnectionMixin):
         if row is None:
             return None
         return SocialReuseProposal.model_validate(json.loads(cast(str, row["payload_json"])))
+
+    def latest_social_reuse_review(self, proposal_id: str) -> SocialReuseReview | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json FROM social_reuse_reviews
+                WHERE proposal_id = ? ORDER BY review_number DESC LIMIT 1
+                """,
+                (proposal_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return SocialReuseReview.model_validate(json.loads(cast(str, row["payload_json"])))
+
+    def save_social_reuse_review(self, review: SocialReuseReview) -> SocialReuseReview:
+        redacted = SocialReuseReview.model_validate(
+            redact_mapping(review.model_dump(mode="json"))
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO social_reuse_reviews (
+                  review_id, proposal_id, proposal_digest, review_number,
+                  created_at, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(proposal_id, proposal_digest, review_number) DO NOTHING
+                """,
+                (
+                    redacted.review_id,
+                    redacted.proposal_id,
+                    redacted.proposal_digest,
+                    redacted.review_number,
+                    redacted.created_at.isoformat(),
+                    _model_json(redacted),
+                ),
+            )
+            row = connection.execute(
+                """
+                SELECT payload_json FROM social_reuse_reviews
+                WHERE proposal_id = ? AND proposal_digest = ? AND review_number = ?
+                LIMIT 1
+                """,
+                (
+                    redacted.proposal_id,
+                    redacted.proposal_digest,
+                    redacted.review_number,
+                ),
+            ).fetchone()
+        if row is None:
+            raise RuntimeError("Social reuse review was not persisted.")
+        return SocialReuseReview.model_validate(json.loads(cast(str, row["payload_json"])))
 
     def latest_human_review(self, work_item_id: str) -> ContentHumanReview | None:
         with self._connect() as connection:
