@@ -114,6 +114,12 @@ export function ContentPlanningReviewPanel({
               value={proposal.internal_link_directions.join(" · ") || "Brak kierunku linkowania"}
             />
           </dl>
+          <p
+            className="mt-4 rounded-md border border-line bg-surface px-3 py-2 text-xs leading-5 text-slate-600"
+            data-testid="planning-source-summary"
+          >
+            {planningSourceSummary(proposal)}
+          </p>
           <SearchDemandSummary demand={proposal.search_demand} />
         </>
       ) : (
@@ -298,6 +304,19 @@ export function planningScopeSummary(
         : "sekcji";
   const excludedLabel = excluded === 1 ? "element" : "elementów";
   return `${draftable} ${sectionLabel} trafi do pełnego tekstu · ${excluded} ${excludedLabel} pozostaje do osobnego review`;
+}
+
+type PlanningSourceSummaryInput = Pick<
+  ContentPlanningWorkspace["proposal"],
+  "evidence_ids" | "source_material_ids" | "knowledge_card_ids" | "source_connectors"
+>;
+
+export function planningSourceSummary(proposal: PlanningSourceSummaryInput): string {
+  const sourceCount = proposal.evidence_ids.length;
+  const materialCount = proposal.source_material_ids.length;
+  const knowledgeCount = proposal.knowledge_card_ids.length;
+  const connectorCount = proposal.source_connectors.length;
+  return `Plan opiera się na ${sourceCount} ${sourceCount === 1 ? "źródle" : "źródłach"} · ${materialCount} ${materialCount === 1 ? "materiale" : "materiałach"} Ekologusa · ${knowledgeCount} ${knowledgeCount === 1 ? "karcie" : "kartach"} · ${connectorCount} ${connectorCount === 1 ? "połączeniu" : "połączeniach"}`;
 }
 
 function SearchDemandSummary({

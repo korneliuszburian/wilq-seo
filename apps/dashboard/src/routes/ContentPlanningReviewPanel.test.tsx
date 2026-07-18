@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { inventoryDispositionLabel, planningScopeSummary } from "./ContentPlanningReviewPanel";
+import {
+  inventoryDispositionLabel,
+  planningScopeSummary,
+  planningSourceSummary
+} from "./ContentPlanningReviewPanel";
 
 describe("inventoryDispositionLabel", () => {
   it("keeps inventory actions concrete and Polish", () => {
@@ -20,5 +24,18 @@ describe("planningScopeSummary", () => {
         { inventory_disposition: "remove_review_required" }
       ])
     ).toBe("2 sekcje trafi do pełnego tekstu · 1 element pozostaje do osobnego review");
+  });
+});
+
+describe("planningSourceSummary", () => {
+  it("shows source, material, knowledge and connector counts without raw IDs", () => {
+    expect(
+      planningSourceSummary({
+        evidence_ids: ["ev_1", "ev_2"],
+        source_material_ids: ["material_1"],
+        knowledge_card_ids: ["card_1", "card_2"],
+        source_connectors: ["gsc", "wordpress"]
+      })
+    ).toBe("Plan opiera się na 2 źródłach · 1 materiale Ekologusa · 2 kartach · 2 połączeniach");
   });
 });
