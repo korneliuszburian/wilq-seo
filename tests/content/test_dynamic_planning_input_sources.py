@@ -262,6 +262,41 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
     assert ads_assessment.evidence_ids == ["ev_ads_blocked"]
 
 
+def test_owner_reviewed_rendered_content_unblocks_material_gate_and_changes_digest(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, resolution, _ = source_context
+    brief, service_profile, baseline = _planning_models(_demand())
+    blocked = _build_result(
+        item, resolution, brief, service_profile, baseline, _freshness([])
+    )
+    reviewed = build_content_planning_input_from_components(
+        item=item,
+        service_profile=service_profile,
+        inventory_resolution=resolution,
+        brief=brief,
+        draft=ContentDraftPackage.model_construct(),
+        baseline_proposal=baseline,
+        freshness=_freshness([]),
+        claim_ledger=ContentClaimLedger(id="claim_ledger", work_item_id=item.id),
+        service_card_id="service_card",
+        existing_content_material_reviewed=True,
+    )
+
+    assert "wordpress_material_review_required" in {
+        blocker.code for blocker in blocked.blockers
+    }
+    assert "wordpress_material_review_required" not in {
+        blocker.code for blocker in reviewed.blockers
+    }
+    assert blocked.planning_input is not None
+    assert reviewed.planning_input is not None
+    assert (
+        blocked.planning_input.planning_input_digest
+        != reviewed.planning_input.planning_input_digest
+    )
+
+
 def test_source_quality_is_part_of_planning_lineage_and_digest(
     source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
 ) -> None:

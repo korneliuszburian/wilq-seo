@@ -215,6 +215,12 @@ def build_content_planning_input(
         freshness=snapshot.freshness_assessment,
         claim_ledger=snapshot.claim_ledger,
         service_card_id=service_card_id,
+        existing_content_material_reviewed=bool(
+            planning
+            and planning.section_map_decision
+            and "existing_content_provenance"
+            in planning.section_map_decision.checked_items
+        ),
     )
 
 
@@ -229,6 +235,7 @@ def build_content_planning_input_from_components(
     freshness: ContentFreshnessAssessment,
     claim_ledger: ContentClaimLedger,
     service_card_id: str,
+    existing_content_material_reviewed: bool = False,
 ) -> ContentPlanningInputBuildResult:
     candidate, blocker = _resolve_service_candidate(service_profile, service_card_id)
     if blocker is not None:
@@ -252,6 +259,7 @@ def build_content_planning_input_from_components(
         inventory=inventory,
         freshness=freshness,
         source_assessments=source_assessments,
+        existing_content_material_reviewed=existing_content_material_reviewed,
     )
     source_facts = build_source_facts(brief, source_assessments, service_profile)
     metric_comparisons = compare_exact_page_metric_periods(
@@ -278,6 +286,7 @@ def build_content_planning_input_from_components(
             "schema_name": "wilq_content_planning_input_v6",
             "criteria_version": "wilq_people_first_planning_v4",
             "inventory_mapping_policy": "wilq_inventory_mapping_v4",
+            "existing_content_material_reviewed": existing_content_material_reviewed,
             **payload,
         }
     )
@@ -334,6 +343,7 @@ def _readiness_blockers(
     inventory: ContentPlanningInventory,
     freshness: ContentFreshnessAssessment,
     source_assessments: list[ContentPlanningSourceAssessment],
+    existing_content_material_reviewed: bool,
 ) -> list[ContentPlanningInputBlocker]:
     blockers: list[ContentPlanningInputBlocker] = []
     if not service_profile.service_selection_confirmed:
@@ -373,7 +383,11 @@ def _readiness_blockers(
                 "Odczytaj aktualną treść główną i układ strony WordPress przed planowaniem.",
             )
         )
-    if inventory.content_text and inventory.material_confidence == "review_required":
+    if (
+        inventory.content_text
+        and inventory.material_confidence == "review_required"
+        and not existing_content_material_reviewed
+    ):
         blockers.append(
             _blocker(
                 "wordpress_material_review_required",
