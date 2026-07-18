@@ -346,7 +346,7 @@ export function ContentPageWorkbench({
                           {selectedSection.heading}
                         </span>
                         <span className="text-xs text-slate-500">
-                          Dowody: {selectedSection.evidence_ids.length || "brak"}
+                          Źródła: {selectedSection.evidence_ids.length || "brak"}
                         </span>
                       </div>
                       <textarea
@@ -529,7 +529,7 @@ export function ContentPageWorkbench({
                       Identyfikator treści: {latestRevision.content_digest}
                     </p>
                     <p className="mt-1 text-xs text-slate-600">
-                      {latestRevision.sections.length} sekcji · {revisionEvidenceCount} dowodów
+                      {latestRevision.sections.length} sekcji · {revisionEvidenceCount} źródeł
                     </p>
                   </div>
 
