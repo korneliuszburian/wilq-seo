@@ -72,6 +72,8 @@ class ContentWorkItemServiceProfileContext(BaseModel):
     missing_contracts: list[str] = Field(default_factory=list)
     safe_next_step: str
     source_connectors: list[str] = Field(default_factory=list)
+    source_fact_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
     review_action_id: str | None = None
@@ -137,19 +139,12 @@ def build_content_work_item_service_profile_context(
         service_section.freshness_label,
         service_section.status,
     )
-    decision_status = _decision_status(
-        service_status=service_section.status,
-        profile_blocked=profile.approval_readiness.status == "blocked",
-        production_depth_unlocked=profile.approval_readiness.production_depth_unlocked,
-    )
+    decision_status = _decision_status(service_status=service_section.status)
     return ContentWorkItemServiceProfileContext(
         binding_status="bound",
         decision_status=decision_status,
         status_label=_decision_status_label(decision_status),
-        reason=_decision_reason(
-            service_section=service_section,
-            profile_blocked=profile.approval_readiness.status == "blocked",
-        ),
+        reason=_decision_reason(service_section=service_section),
         service_card_id=service_section.card_id,
         service_label=service_section.title,
         service_status=service_section.status,
@@ -175,15 +170,35 @@ def build_content_work_item_service_profile_context(
         ),
         missing_contracts=_missing_contracts(
             service_status=service_section.status,
-            profile_blockers=profile.approval_readiness.blockers,
             match=match,
         ),
         safe_next_step=_safe_next_step(service_section, review_action),
         source_connectors=service_section.source_connector_labels,
+        source_fact_ids=service_section.source_fact_ids,
+        source_material_ids=_source_material_ids_for_match(match),
         evidence_ids=service_section.evidence_ids,
         knowledge_card_ids=required_content_knowledge_card_ids(match),
         review_action_id=None if review_action is None else review_action.action_id,
         review_action_label=None if review_action is None else review_action.label,
+    )
+
+
+def _source_material_ids_for_match(match: ContentKnowledgeCardMatch) -> list[str]:
+    cards = [
+        match.service_card,
+        *match.buyer_problem_cards,
+        *match.cta_cards,
+        *match.claim_policy_cards,
+        *match.evidence_requirement_cards,
+        *match.measurement_sensitive_cards,
+    ]
+    return list(
+        dict.fromkeys(
+            source_material_id
+            for card in cards
+            if card is not None
+            for source_material_id in card.source_material_ids
+        )
     )
 
 
@@ -264,12 +279,10 @@ def _review_action_for_card(
 def _decision_status(
     *,
     service_status: str,
-    profile_blocked: bool,
-    production_depth_unlocked: bool,
 ) -> ContentWorkItemServiceProfileDecisionStatus:
-    if profile_blocked or service_status in {"seeded_contract_proof", "stale", "rejected"}:
+    if service_status in {"seeded_contract_proof", "stale", "rejected"}:
         return "blocked"
-    if service_status == "approved_current" and production_depth_unlocked:
+    if service_status == "approved_current":
         return "ready"
     return "review_required"
 
@@ -286,13 +299,7 @@ def _decision_status_label(status: ContentWorkItemServiceProfileDecisionStatus) 
 def _decision_reason(
     *,
     service_section: ContentServiceProfileServiceSection,
-    profile_blocked: bool,
 ) -> str:
-    if profile_blocked:
-        return (
-            f"WILQ dopasował kartę „{service_section.title}”, ale Service Profile "
-            "nie ma jeszcze zatwierdzenia do production-depth."
-        )
     return (
         f"WILQ dopasował typed kartę „{service_section.title}”; "
         f"jej status: {service_section.status_label}."
@@ -343,12 +350,13 @@ def _source_summary_label(source_connectors: list[str]) -> str:
 def _missing_contracts(
     *,
     service_status: str,
-    profile_blockers: list[str],
     match: ContentKnowledgeCardMatch,
 ) -> list[str]:
-    contracts = list(profile_blockers)
+    contracts: list[str] = []
     if service_status == "seeded_contract_proof":
         contracts.append("Karta ma seed proof, ale nie reviewed source fact.")
+    if service_status == "source_backed_review_required":
+        contracts.append("Karta usługi wymaga review przed użyciem w finalnym szkicu.")
     contracts.extend(blocker.label for blocker in match.blockers)
     return _unique(contracts)
 

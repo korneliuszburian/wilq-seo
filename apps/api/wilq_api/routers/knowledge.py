@@ -4,6 +4,8 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from wilq.content.knowledge.source_facts import ekologus_source_facts
+from wilq.content.knowledge.source_materials import ekologus_source_materials
 from wilq.knowledge.compilers.playbook_compiler import (
     compile_playbook_cards,
     condense_playbooks,
@@ -16,6 +18,9 @@ from wilq.schemas import (
     KnowledgeCard,
     KnowledgeCompilerResult,
     KnowledgeOperatingMapResponse,
+    KnowledgeSourceFactView,
+    KnowledgeSourceMaterialReadiness,
+    KnowledgeSourceMaterialView,
     KnowledgeTaxonomyEntry,
     MarketingPlaybook,
 )
@@ -26,6 +31,109 @@ router = APIRouter()
 @router.get("/api/knowledge/cards", response_model=list[KnowledgeCard])
 def knowledge_cards() -> list[KnowledgeCard]:
     return compile_playbook_cards()
+
+
+@router.get("/api/knowledge/source-facts", response_model=list[KnowledgeSourceFactView])
+def knowledge_source_facts() -> list[KnowledgeSourceFactView]:
+    """Expose the real, redacted source corpus separately from system playbooks."""
+    return [
+        KnowledgeSourceFactView(
+            source_id=fact.source_id,
+            source_type=fact.source_type,
+            privacy_class=fact.privacy_class,
+            source_url_or_path=fact.source_url_or_path,
+            extracted_fact=fact.extracted_fact,
+            scope=fact.scope,
+            freshness_date=fact.freshness_date,
+            confidence=fact.confidence,
+            review_status=fact.review_status,
+            generation_status=(
+                "eligible"
+                if fact.review_status == "approved"
+                and (
+                    fact.privacy_class == "commit_safe"
+                    or (
+                        fact.privacy_class == "redacted_only"
+                        and fact.source_type == "reviewed_internal"
+                    )
+                )
+                and fact.evidence_ids
+                else "blocked_review_required"
+            ),
+            reviewer=fact.reviewer,
+            evidence_ids=fact.evidence_ids,
+            source_connectors=fact.source_connectors,
+            target_card_id=fact.target_card_id,
+            target_card_title=fact.target_card_title,
+            blocked_claims=fact.blocked_claims,
+            usage_notes=fact.usage_notes,
+        )
+        for fact in ekologus_source_facts()
+    ]
+
+
+@router.get("/api/knowledge/source-materials", response_model=list[KnowledgeSourceMaterialView])
+def knowledge_source_materials() -> list[KnowledgeSourceMaterialView]:
+    """Expose the approved-corpus manifest without copying private source text."""
+    return [
+        KnowledgeSourceMaterialView.model_validate(material.model_dump())
+        for material in ekologus_source_materials()
+    ]
+
+
+@router.get(
+    "/api/knowledge/source-materials/readiness",
+    response_model=KnowledgeSourceMaterialReadiness,
+)
+def knowledge_source_material_readiness() -> KnowledgeSourceMaterialReadiness:
+    """Expose the corpus gate without exposing source text or private payloads."""
+    materials = ekologus_source_materials()
+    counts = {status: 0 for status in ("imported", "import_pending", "excerpt_review_required")}
+    for material in materials:
+        counts[material.import_status] += 1
+    imported = counts["imported"]
+    pending = counts["import_pending"]
+    excerpt_review = counts["excerpt_review_required"]
+    if pending:
+        return KnowledgeSourceMaterialReadiness(
+            status="import_pending",
+            total_count=len(materials),
+            imported_count=imported,
+            import_pending_count=pending,
+            excerpt_review_required_count=excerpt_review,
+            ready_for_generation=False,
+            blocker=(
+                "Korpus zatwierdzonych materiałów nie został jeszcze zaimportowany "
+                "do warstwy źródeł."
+            ),
+            next_step=(
+                "Wykonaj kontrolowany import metadanych i redagowanych excerptów "
+                "po owner review."
+            ),
+        )
+    if excerpt_review:
+        return KnowledgeSourceMaterialReadiness(
+            status="excerpt_review_required",
+            total_count=len(materials),
+            imported_count=imported,
+            import_pending_count=pending,
+            excerpt_review_required_count=excerpt_review,
+            ready_for_generation=False,
+            blocker=(
+                "Część materiałów wymaga przeglądu redagowanych excerptów przed "
+                "użyciem generatywnym."
+            ),
+            next_step="Zatwierdź excerpty i ich lineage dla konkretnych kart usług.",
+        )
+    return KnowledgeSourceMaterialReadiness(
+        status="ready",
+        total_count=len(materials),
+        imported_count=imported,
+        import_pending_count=pending,
+        excerpt_review_required_count=excerpt_review,
+        ready_for_generation=True,
+        next_step="Można używać wyłącznie zaimportowanych faktów z zachowanym lineage.",
+    )
 
 
 @router.get("/api/knowledge/search")

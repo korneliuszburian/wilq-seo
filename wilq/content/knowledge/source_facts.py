@@ -161,9 +161,16 @@ class ContentSourceFactRegistry(BaseModel):
 
 @lru_cache(maxsize=1)
 def ekologus_source_facts() -> tuple[ContentSourceFact, ...]:
-    path = Path(__file__).with_name("source_facts.json")
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    facts = [ContentSourceFact.model_validate(item) for item in payload["facts"]]
+    paths = (
+        Path(__file__).with_name("source_facts.json"),
+        Path(__file__).with_name("approved_material_facts.json"),
+    )
+    raw_facts = [
+        item
+        for path in paths
+        for item in json.loads(path.read_text(encoding="utf-8"))["facts"]
+    ]
+    facts = [ContentSourceFact.model_validate(item) for item in raw_facts]
     return tuple(facts)
 
 

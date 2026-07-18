@@ -70,6 +70,7 @@ class ContentKnowledgeCard(BaseModel):
     measurement_sensitive_claims: list[ContentKnowledgeClaimRule] = Field(default_factory=list)
     source_lineage: list[str] = Field(default_factory=list)
     source_fact_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     lifecycle_status: ContentKnowledgeLifecycleStatus | None = None
@@ -338,7 +339,9 @@ def compile_source_facts_to_knowledge_cards(
     for fact in facts:
         if fact.review_status == "rejected":
             continue
-        if fact.privacy_class != "commit_safe":
+        # Approved, condensed internal excerpts are safe to compile into
+        # lineage-preserving cards. Raw/private candidates remain excluded.
+        if fact.privacy_class not in {"commit_safe", "redacted_only"}:
             continue
         grouped[fact.target_card_id].append(fact)
 
@@ -384,6 +387,11 @@ def compile_source_facts_to_knowledge_cards(
                 ),
                 source_lineage=_unique(fact.source_url_or_path for fact in card_facts),
                 source_fact_ids=[fact.source_id for fact in card_facts],
+                source_material_ids=[
+                    source_material_id
+                    for fact in card_facts
+                    for source_material_id in _source_material_id_for_fact(fact)
+                ],
                 evidence_ids=_unique(
                     evidence_id
                     for fact in card_facts
@@ -469,6 +477,7 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
     text = _search_text(
         [
             item.topic,
+            item.wordpress_content_text,
             item.source_public_url,
             item.final_canonical_url,
             *_homepage_match_markers(item),
@@ -476,7 +485,15 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
             *item.source_connectors,
         ]
     )
-    service_candidates = _matching_service_candidates(cards, text)
+    service_candidates = _matching_service_candidates(
+        cards,
+        text,
+        exact_urls={
+            _normalize_search_text(url)
+            for url in (item.source_public_url, item.final_canonical_url)
+            if url
+        },
+    )
     service_cards = [candidate.card for candidate in service_candidates]
     cta_cards = _matching_cards(cards, text, "cta_pattern")
     claim_policy_cards = [
@@ -628,6 +645,14 @@ def _source_fact_review_claim_rules(
     return rules
 
 
+def _source_material_id_for_fact(fact: ContentSourceFact) -> list[str]:
+    """Map a condensed approved-material fact back to its manifest item."""
+    if not fact.source_id.startswith("ekologus_material_fact_"):
+        return []
+    suffix = fact.source_id.removeprefix("ekologus_material_fact_")
+    return [f"ekologus_material_{suffix.split('_', 1)[0]}"]
+
+
 def _source_fact_evidence_ids(fact: ContentSourceFact) -> list[str]:
     if fact.evidence_ids:
         return fact.evidence_ids
@@ -687,6 +712,8 @@ def _matching_cards(
 def _matching_service_candidates(
     cards: Iterable[ContentKnowledgeCard],
     search_text: str,
+    *,
+    exact_urls: set[str] | None = None,
 ) -> list[ContentKnowledgeServiceCandidate]:
     candidates = [
         ContentKnowledgeServiceCandidate(card=card, matched_terms=matched_terms)
@@ -701,7 +728,20 @@ def _matching_service_candidates(
             ]
         )
     ]
-    return sorted(candidates, key=lambda candidate: _match_rank(candidate.card))
+    normalized_urls = exact_urls or set()
+    return sorted(
+        candidates,
+        key=lambda candidate: (
+            0
+            if any(
+                _normalize_search_text(lineage) in normalized_urls
+                for lineage in candidate.card.source_lineage
+                if lineage.startswith("http")
+            )
+            else 1,
+            *_match_rank(candidate.card),
+        ),
+    )
 
 
 def _match_rank(card: ContentKnowledgeCard) -> tuple[int, float]:

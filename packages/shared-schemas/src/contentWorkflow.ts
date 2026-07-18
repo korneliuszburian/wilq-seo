@@ -457,6 +457,7 @@ export const ContentKnowledgeCardSchema = z.object({
   measurement_sensitive_claims: z.array(ContentKnowledgeClaimRuleSchema).default([]),
   source_lineage: z.array(z.string()).default([]),
   source_fact_ids: z.array(z.string()).default([]),
+  source_material_ids: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()).default([]),
   lifecycle_status: ContentKnowledgeLifecycleStatusSchema.nullable().optional(),
   confidence: z.number(),

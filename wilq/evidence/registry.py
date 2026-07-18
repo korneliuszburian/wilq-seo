@@ -21,6 +21,7 @@ METRIC_EVIDENCE_CONNECTORS = (
 )
 
 SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID = "ev_content_service_profile_source_facts"
+APPROVED_SOURCE_MATERIALS_EVIDENCE_ID = "ev_content_approved_source_materials_manifest"
 
 
 def connector_evidence_id(connector_id: str) -> str:
@@ -32,7 +33,10 @@ def refresh_run_evidence_id(run_id: str) -> str:
 
 
 def list_evidence() -> list[Evidence]:
-    service_profile_evidence = [_service_profile_source_facts_evidence()]
+    service_profile_evidence = [
+        _service_profile_source_facts_evidence(),
+        _approved_source_materials_evidence(),
+    ]
     connector_evidence = [
         Evidence(
             id=connector_evidence_id(connector.id),
@@ -69,6 +73,10 @@ def list_evidence_by_ids(evidence_ids: list[str]) -> list[Evidence]:
     if SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID in requested_id_set:
         evidence_by_id[SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID] = (
             _service_profile_source_facts_evidence()
+        )
+    if APPROVED_SOURCE_MATERIALS_EVIDENCE_ID in requested_id_set:
+        evidence_by_id[APPROVED_SOURCE_MATERIALS_EVIDENCE_ID] = (
+            _approved_source_materials_evidence()
         )
 
     for connector in list_connector_statuses():
@@ -132,6 +140,27 @@ def _service_profile_source_facts_evidence() -> Evidence:
             "review-required facts still need Wilku/owner approval before promotion."
         ),
         raw_ref="wilq/content/knowledge/source_facts.json",
+    )
+
+
+def _approved_source_materials_evidence() -> Evidence:
+    return Evidence(
+        id=APPROVED_SOURCE_MATERIALS_EVIDENCE_ID,
+        source_connector="ekologus_source_materials",
+        source_type="approved_redacted_source_materials",
+        source_id="ekologus_source_material_manifest",
+        freshness=FreshnessState(
+            state="unknown",
+            notes=(
+                "Evidence proves the approved, checksum-bound manifest and condensed "
+                "excerpts; it does not expose raw internal material."
+            ),
+        ),
+        summary=(
+            "Approved Ekologus source materials condensed into lineage-preserving "
+            "redacted facts from the reviewed manifest."
+        ),
+        raw_ref="materials_clean/approved:source_manifest.yaml",
     )
 
 
