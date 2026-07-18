@@ -117,6 +117,7 @@ def generate_content_semantic_review(
     client: CodexAppServerClientProtocol,
     store: ContentSemanticReviewStore,
     run_store: LocalStateStore,
+    run_id: str | None = None,
 ) -> ContentSemanticReviewResponse:
     prepared = _prepare_inputs(snapshot, revision_id, request, store)
     if isinstance(prepared, ContentSemanticReviewResponse):
@@ -128,7 +129,7 @@ def generate_content_semantic_review(
     )
     if existing is not None:
         return _review_response("idempotent", prepared.revision, existing)
-    run = _start_run(prepared, run_store)
+    run = _start_run(prepared, run_store, run_id=run_id)
     runtime = _execute(snapshot, prepared, run, client, run_store)
     if isinstance(runtime, ContentSemanticReviewResponse):
         return runtime
@@ -277,7 +278,13 @@ def _prepare_inputs(
         or planning_result.blockers
         or planning_result.planning_input.planning_input_digest != revision.planning_input_digest
     ):
-        return _blocked(snapshot, revision=revision, blockers=[_planning_blocker()])
+        blocker_codes = [item.code for item in planning_result.blockers]
+        blocker = (
+            _source_material_review_blocker(blocker_codes)
+            if "wordpress_material_review_required" in blocker_codes
+            else _planning_blocker(blocker_codes)
+        )
+        return _blocked(snapshot, revision=revision, blockers=[blocker])
     if not store.write_ready():
         return _blocked(snapshot, revision=revision, blockers=[_storage_blocker()])
     return _SemanticInputs(
@@ -434,11 +441,16 @@ def _build_review(
     )
 
 
-def _start_run(inputs: _SemanticInputs, store: LocalStateStore) -> CodexRun:
+def _start_run(
+    inputs: _SemanticInputs,
+    store: LocalStateStore,
+    *,
+    run_id: str | None = None,
+) -> CodexRun:
     revision = inputs.revision
     return store.save_codex_run(
         CodexRun(
-            id=f"codex_content_semantic_review_{uuid4().hex}",
+            id=run_id or f"codex_content_semantic_review_{uuid4().hex}",
             skill="wilq-content-operator",
             hook="content_semantic_review",
             source="wilq_api",
@@ -558,12 +570,29 @@ def _missing_revision_blocker() -> ContentSemanticReviewBlocker:
     )
 
 
-def _planning_blocker() -> ContentSemanticReviewBlocker:
+def _planning_blocker(source_codes: list[str] | None = None) -> ContentSemanticReviewBlocker:
     return _blocker(
         "missing_planning_input",
         "Brakuje aktualnego wejścia strategicznego",
         "Review musi porównać rewizję z tym samym planem, usługą, inventory i metrykami.",
         "Odśwież albo wygeneruj aktualny plan przed review semantycznym.",
+        source_codes=source_codes,
+    )
+
+
+def _source_material_review_blocker(
+    source_codes: list[str],
+) -> ContentSemanticReviewBlocker:
+    return _blocker(
+        "source_material_review_required",
+        "Materiał źródłowy wymaga potwierdzenia",
+        "Rewizja korzysta z publicznego materiału WordPress, którego pochodzenie "
+        "nie zostało jeszcze zatwierdzone do pełnego dokumentu.",
+        (
+            "Zakończ kontrolowany import/redakcję i owner review materiału, "
+            "potem uruchom review ponownie."
+        ),
+        source_codes=source_codes,
     )
 
 

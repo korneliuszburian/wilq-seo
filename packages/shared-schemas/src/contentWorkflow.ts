@@ -2896,7 +2896,8 @@ export const ContentSemanticReviewBlockerCodeSchema = z.enum([
   "invalid_structured_output",
   "semantic_scope_mismatch",
   "persistence_failed",
-  "review_conflict"
+  "review_conflict",
+  "generation_in_progress"
 ]);
 
 export const ContentSemanticReviewBlockerSchema = z.object({
@@ -2909,6 +2910,7 @@ export const ContentSemanticReviewBlockerSchema = z.object({
 
 export const ContentSemanticReviewResponseSchema = z.object({
   status: z.enum([
+    "generating",
     "not_generated",
     "created",
     "idempotent",

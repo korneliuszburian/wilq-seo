@@ -33,6 +33,7 @@ CONTENT_SEMANTIC_DIMENSIONS: tuple[ContentSemanticDimension, ...] = (
 ContentSemanticTarget = str
 ContentSemanticStatus = Literal["reviewable", "needs_changes"]
 ContentSemanticResponseStatus = Literal[
+    "generating",
     "not_generated",
     "created",
     "idempotent",
@@ -48,6 +49,7 @@ ContentSemanticBlockerCode = Literal[
     "legacy_revision",
     "stale_content_context",
     "missing_planning_input",
+    "source_material_review_required",
     "storage_activation_required",
     "runtime_blocked",
     "runtime_failed",
@@ -55,6 +57,7 @@ ContentSemanticBlockerCode = Literal[
     "semantic_scope_mismatch",
     "persistence_failed",
     "review_conflict",
+    "generation_in_progress",
 ]
 
 
@@ -200,6 +203,9 @@ class ContentSemanticReviewResponse(BaseModel):
         if self.status in {"created", "idempotent", "ready", "stale"}:
             if self.review is None or self.blockers:
                 raise ValueError("Readable semantic-review status requires one review.")
+        elif self.status == "generating":
+            if self.review is not None or not self.blockers:
+                raise ValueError("Generating semantic review requires blockers and no review.")
         elif self.status == "not_generated":
             if self.review is not None or self.blockers:
                 raise ValueError("Not-generated semantic review cannot expose a result or blocker.")
