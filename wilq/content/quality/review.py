@@ -14,6 +14,7 @@ from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.drafts.structured_generation import StructuredDraftOutput
 from wilq.content.inventory.records import ContentInventoryDuplicateRisk
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.revisions import ContentDraftRevision
 
 ContentQualityVerdict = Literal[
     "blocked",
@@ -89,6 +90,7 @@ class ContentQualityReview(BaseModel):
     review_id: str
     work_item_id: str
     draft_package_id: str | None = None
+    revision_digest: str | None = None
     verdict: ContentQualityVerdict
     evidence_coverage: ContentQualityDimension
     claim_safety: ContentQualityDimension
@@ -115,6 +117,7 @@ def build_content_quality_review(
     item: ContentWorkItem,
     draft_package: ContentDraftPackage | None,
     structured_output: StructuredDraftOutput | None,
+    revision: ContentDraftRevision | None = None,
     claim_ledger: ContentClaimLedger | None,
     sales_brief: ContentSalesBrief | None = None,
     duplicate_risk: ContentInventoryDuplicateRisk = "clear",
@@ -125,6 +128,7 @@ def build_content_quality_review(
             item=item,
             draft_package=draft_package,
             structured_output=structured_output,
+            revision=revision,
         ),
         *_claim_findings(
             item=item,
@@ -152,9 +156,14 @@ def build_content_quality_review(
 
     evidence_ids = _review_evidence_ids(item, draft_package, structured_output, claim_ledger)
     return ContentQualityReview(
-        review_id=f"quality_review_{item.id}",
+        review_id=(
+            f"quality_review_{item.id}"
+            if revision is None
+            else f"quality_review_{item.id}_{revision.content_digest[:12]}"
+        ),
         work_item_id=item.id,
         draft_package_id=None if draft_package is None else draft_package.id,
+        revision_digest=None if revision is None else revision.content_digest,
         verdict=verdict,
         evidence_coverage=_dimension(
             "Pokrycie dowodami",
@@ -308,8 +317,11 @@ def _structured_output_findings(
     item: ContentWorkItem,
     draft_package: ContentDraftPackage | None,
     structured_output: StructuredDraftOutput | None,
+    revision: ContentDraftRevision | None = None,
 ) -> list[ContentQualityFinding]:
     if structured_output is None:
+        if revision is not None and revision.schema_version == "wilq_content_draft_revision_v2":
+            return []
         return [
             _finding(
                 "missing_structured_output",

@@ -222,6 +222,7 @@ def build_content_work_item_quality_review_response(
             item=request.item,
             draft_package=request.draft_package,
             structured_output=request.structured_output,
+            revision=request.revision,
             claim_ledger=request.claim_ledger,
             sales_brief=request.sales_brief,
             duplicate_risk=request.duplicate_risk,

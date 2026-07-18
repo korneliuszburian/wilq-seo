@@ -26,7 +26,6 @@ from wilq.content.handoff.wordpress_authoring import (
     ContentWordPressAuthoringPayloadPreviewResult,
 )
 from wilq.content.handoff.wordpress_execution import (
-    ContentWordPressDraftExecutionMode,
     ContentWordPressDraftExecutionResult,
     ContentWordPressDraftSectionOverride,
     ContentWordPressDraftWriteAuthorization,
@@ -140,6 +139,7 @@ class ContentWorkItemQualityReviewRequest(BaseModel):
     item: ContentWorkItem
     draft_package: ContentDraftPackage | None = None
     structured_output: StructuredDraftOutput | None = None
+    revision: ContentDraftRevision | None = None
     claim_ledger: ContentClaimLedger | None = None
     sales_brief: ContentSalesBrief | None = None
     duplicate_risk: ContentInventoryDuplicateRisk = "clear"
@@ -204,7 +204,7 @@ class ContentWorkItemWordPressDraftHandoffResponse(BaseModel):
 class ContentWorkItemWordPressDraftExecutionRequest(BaseModel):
     handoff: ContentWordPressDraftHandoff | None = None
     draft_package: ContentDraftPackage | None = None
-    mode: ContentWordPressDraftExecutionMode = "dry_run"
+    mode: Literal["dry_run"] = "dry_run"
     write_authorization: ContentWordPressDraftWriteAuthorization | None = None
     section_overrides: list[ContentWordPressDraftSectionOverride] = Field(
         default_factory=list
