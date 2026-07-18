@@ -103,12 +103,12 @@ def knowledge_source_material_readiness() -> KnowledgeSourceMaterialReadiness:
             excerpt_review_required_count=excerpt_review,
             ready_for_generation=False,
             blocker=(
-                "Korpus zatwierdzonych materiałów nie został jeszcze zaimportowany "
-                "do warstwy źródeł."
+                f"Zaimportowano {imported} z {len(materials)} zatwierdzonych materiałów; "
+                "pozostała część korpusu nie jest jeszcze dostępna dla generowania."
             ),
             next_step=(
-                "Wykonaj kontrolowany import metadanych i redagowanych excerptów "
-                "po owner review."
+                "Dla konkretnej strony używaj wyłącznie widocznych faktów z lineage; "
+                "pozostałe redagowane excerpty aktywuj kontrolowanym importem po owner review."
             ),
         )
     if excerpt_review:
