@@ -91,6 +91,21 @@ def register_content_semantic_review_routes(
             and revision.revision_id == revision_id
             and revision.content_digest == request.expected_revision_digest
         ):
+            # Known preflight blockers must be returned before queueing.  Otherwise
+            # the browser sees a misleading ``generating`` response, while the
+            # worker exits before starting a CodexRun (for example when semantic
+            # review storage still needs an approved maintenance window).  The
+            # read-only readiness check cannot invoke Codex or mutate state.
+            review_store = content_semantic_review_store()
+            if not review_store.write_ready():
+                return generate_content_semantic_review(
+                    snapshot=snapshot,
+                    revision_id=revision_id,
+                    request=request,
+                    client=client,
+                    store=review_store,
+                    run_store=local_state_store(),
+                )
             active = _latest_semantic_run(work_item_id, revision_id)
             if active is not None and active.status == "started":
                 return _generating_response(
