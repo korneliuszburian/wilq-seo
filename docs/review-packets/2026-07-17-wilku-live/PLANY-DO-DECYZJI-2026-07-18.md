@@ -8,10 +8,10 @@ readback planów, nie zgoda na publikację ani UAT.
 
 | Strona | Usługa | Proposal / run | Wynik |
 |---|---|---|---|
-| `/bdo-co-musi-wiedziec-przedsiebiorca/` | `ekologus_service_bdo_reporting` | `content_planning_proposal_6a68bd59362641ce90f390b3dfb328c2` / `codex_content_planning_87135135b26d4b58b81f77b4412dac6d` | 8 sekcji, 4 FAQ, 2 CTA, 1 link |
+| `/bdo-co-musi-wiedziec-przedsiebiorca/` | `ekologus_service_bdo_reporting` | `content_planning_proposal_d0e26eb81e7a4d909e83ed831511454c` / `codex_content_planning_60536efbe93e46bf913e8e0241e0183f` | 6 sekcji, 4 FAQ, 2 CTA, 1 link |
 | `/oferta/doradztwo-i-outsourcing-ekologiczny/` | `ekologus_service_environmental_consulting_outsourcing` | `content_planning_proposal_275274ee443c48339785b0e14ec65f86` / `codex_content_planning_3424be8f758a4e89bfc9f2653431edc9` | 5 sekcji, 3 FAQ, 2 CTA, 1 link |
 
-Oba plany są `ready`, mają pełne title/H1/lead/meta, a każde przypisane
+Oba plany są `ready` na swoich exact digestach, mają pełne title/H1/lead/meta, a każde przypisane
 zapytanie i evidence pochodzi z aktualnego inputu. Żaden plan nie jest
 zatwierdzony i oba mają `publish_ready=false`.
 
@@ -24,7 +24,8 @@ Zakres odpowiada na pytania: czym jest BDO, kto składa wniosek, jakie
 dokumenty i karty są potrzebne, papierowa ewidencja, logowanie, przepisy,
 obowiązki i konsekwencje. Istniejące sekcje są głównie do przepisania; plan
 nie obiecuje zgodności ani uniknięcia kary. Twierdzenia prawne wymagają
-aktualnego review Ekologusa.
+aktualnego review Ekologusa. Nagłówki wydarzeń, nawigacji i promocji są
+odfiltrowywane z transportu do modelu, ale pozostają w pełnym inventory.
 
 ## Doradztwo i outsourcing
 
@@ -56,8 +57,8 @@ uruchomić trwały pełny dokument. Następny dokument nadal będzie
   udaje. GA4 ma osobny blocker jakości pomiaru: brak key events/transactions.
 - Ads, Merchant, Localo i Social są oznaczone jako nieadekwatne dla tych stron,
   zamiast zasilać plan przypadkowymi danymi.
-- Korpus 15 materiałów Ekologusa nadal ma `import_pending`; nie twierdzimy,
-  że tekst korzysta już z niezaimportowanych transkrypcji.
+- Korpus ma 7/15 materiałów w statusie imported, a 8 pozostaje `import_pending`;
+  nie twierdzimy, że tekst korzysta już z niezaimportowanych transkrypcji.
 - Pełny draft, semantic review, realny human review i WP dry-run pozostają
   kolejnymi krokami.
 
