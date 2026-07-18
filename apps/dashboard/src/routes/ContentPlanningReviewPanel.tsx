@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type {
   ContentPlanningReviewConflict,
@@ -41,6 +41,14 @@ export function ContentPlanningReviewPanel({
   const [selectedServiceCardId, setSelectedServiceCardId] = useState(
     proposal.service_selection_confirmed ? proposal.service_card_id ?? "" : ""
   );
+  useEffect(() => {
+    setSelectedServiceCardId(
+      proposal.service_selection_confirmed ? proposal.service_card_id ?? "" : ""
+    );
+    setDecision("approved");
+    setNotes("");
+    setChecked(false);
+  }, [proposal.proposal_id, proposal.service_card_id, proposal.service_selection_confirmed, stage]);
   const selectedService = serviceCandidates.find(
     (candidate) => candidate.service_card_id === selectedServiceCardId
   );
