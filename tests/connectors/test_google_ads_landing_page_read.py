@@ -9,6 +9,7 @@ from wilq.connectors.google_ads.ad_landing_pages import (
     ADS_LANDING_IDENTITY,
     ADS_LANDING_MAPPING_STATUS,
     ADS_SEARCH_TERM_PAYLOAD_STATUS,
+    search_term_landing_dimensions_from_inventory,
 )
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.vendor import VendorReadResult
@@ -43,6 +44,50 @@ def test_google_ads_refresh_keeps_search_terms_live_when_landing_join_is_unavail
         fact.name == ADS_SEARCH_TERM_PAYLOAD_STATUS and fact.value == "ready"
         for fact in result.metric_facts
     )
+
+
+def test_google_ads_refresh_joins_exact_auxiliary_final_url_inventory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: object,
+) -> None:
+    result, queries = _run_refresh(
+        monkeypatch,
+        tmp_path,
+        _search_term_row(),
+        final_url_rows=[
+            {
+                "campaign": {"id": "101"},
+                "adGroup": {"id": "201"},
+                "adGroupAd": {
+                    "ad": {"finalUrls": ["https://www.ekologus.pl/oferta/"]}
+                },
+            }
+        ],
+    )
+
+    click_fact = next(
+        fact for fact in result.metric_facts if fact.name == "search_term_clicks"
+    )
+    assert click_fact.dimensions[ADS_LANDING_MAPPING_STATUS] == "resolved"
+    assert len(click_fact.dimensions[ADS_LANDING_IDENTITY]) == 64
+    assert any("ad_group_ad.ad.final_urls" in query for query in queries)
+
+
+def test_auxiliary_landing_join_keeps_missing_and_ambiguous_unresolved() -> None:
+    row = _search_term_row()
+    missing = search_term_landing_dimensions_from_inventory(row, {})
+    ambiguous = search_term_landing_dimensions_from_inventory(
+        row,
+        {
+            ("101", "201"): {
+                ("resolved", "a" * 64, False, False),
+                ("resolved", "b" * 64, False, False),
+            }
+        },
+    )
+
+    assert missing == {}
+    assert ambiguous == {ADS_LANDING_MAPPING_STATUS: "ambiguous"}
 
 
 @pytest.mark.parametrize("malformed_case", ["missing_metrics", "infinite_metric"])
@@ -82,6 +127,7 @@ def _run_refresh(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: object,
     search_term_row: dict[str, object],
+    final_url_rows: list[dict[str, object]] | None = None,
 ) -> tuple[VendorReadResult, list[str]]:
     clear_google_ads_env(monkeypatch)
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path))
@@ -101,6 +147,11 @@ def _run_refresh(
             return httpx.Response(200, json={"results": []})
         query = payload["query"]
         queries.append(query)
+        if "ad_group_ad.ad.final_urls" in query:
+            return httpx.Response(
+                200,
+                json=[{"results": final_url_rows or []}],
+            )
         if "FROM search_term_view" in query and "LAST_30_DAYS" in query:
             return httpx.Response(200, json=[{"results": [search_term_row]}])
         return httpx.Response(200, json=[])

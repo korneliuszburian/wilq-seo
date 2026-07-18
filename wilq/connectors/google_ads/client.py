@@ -13,10 +13,13 @@ from wilq.connectors.google_ads.ad_landing_pages import (
     ADS_LANDING_MAPPING_STATUS,
     ADS_LANDING_RESOLVED,
     ADS_SEARCH_TERM_PAYLOAD_STATUS,
+    AdsLandingInventory,
     search_term_landing_dimensions,
+    search_term_landing_dimensions_from_inventory,
     strict_search_stream_rows,
 )
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
+from wilq.content.canonical.redacted_landing import build_redacted_landing_reference
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
@@ -92,6 +95,18 @@ FROM search_term_view
 WHERE segments.date DURING LAST_30_DAYS
   AND metrics.clicks > 0
 LIMIT 50
+""".strip()
+
+AD_FINAL_URL_INVENTORY_QUERY = """
+SELECT
+  campaign.id,
+  ad_group.id,
+  ad_group_ad.status,
+  ad_group_ad.ad.final_urls
+FROM ad_group_ad
+WHERE campaign.status != 'REMOVED'
+  AND ad_group_ad.status != 'REMOVED'
+LIMIT 500
 """.strip()
 
 SEARCH_TERM_SAFETY_LOOKBACK_DAYS = 90
@@ -293,10 +308,16 @@ def refresh_google_ads_campaign_summary(
                 credentials,
                 access_token,
             )
+            landing_inventory = _fetch_ad_final_url_inventory(
+                client,
+                credentials,
+                access_token,
+            )
             search_term_summary, search_term_facts = _fetch_search_term_summary(
                 client,
                 credentials,
                 access_token,
+                landing_inventory=landing_inventory,
             )
             search_term_safety_summary, search_term_safety_facts = (
                 _fetch_search_term_safety_summary(
@@ -592,10 +613,64 @@ def _fetch_campaign_summary(
     return _summarize_search_stream_response(response.json())
 
 
+def _fetch_ad_final_url_inventory(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+) -> AdsLandingInventory:
+    """Read ad final URLs separately because search-term GAQL may reject them."""
+    customer_id = credentials["customer_id"]
+    try:
+        response = client.post(
+            f"https://googleads.googleapis.com/{GOOGLE_ADS_API_VERSION}/customers/"
+            f"{customer_id}/googleAds:searchStream",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "developer-token": str(credentials["developer_token"]),
+                "login-customer-id": str(credentials["login_customer_id"]),
+                "Content-Type": "application/json",
+            },
+            json={"query": AD_FINAL_URL_INVENTORY_QUERY},
+        )
+        response.raise_for_status()
+    except httpx.HTTPError:
+        return {}
+    rows = _search_stream_rows(response.json())
+    inventory: AdsLandingInventory = {}
+    for row in rows:
+        campaign = row.get("campaign", {})
+        ad_group = row.get("adGroup", row.get("ad_group", {}))
+        ad_group_ad = row.get("adGroupAd", row.get("ad_group_ad", {}))
+        ad = ad_group_ad.get("ad", {}) if isinstance(ad_group_ad, dict) else {}
+        if not isinstance(campaign, dict) or not isinstance(ad_group, dict) or not isinstance(
+            ad, dict
+        ):
+            continue
+        campaign_id = campaign.get("id")
+        ad_group_id = ad_group.get("id")
+        final_urls = ad.get("finalUrls", ad.get("final_urls", []))
+        if campaign_id is None or ad_group_id is None or not isinstance(final_urls, list):
+            continue
+        references = inventory.setdefault((str(campaign_id), str(ad_group_id)), set())
+        for url in final_urls:
+            reference = build_redacted_landing_reference(url if isinstance(url, str) else None)
+            references.add(
+                (
+                    reference.status,
+                    reference.identity_sha256,
+                    reference.tracking_parameters_removed,
+                    reference.has_functional_query,
+                )
+            )
+    return inventory
+
+
 def _fetch_search_term_summary(
     client: httpx.Client,
     credentials: Mapping[str, str | None],
     access_token: str,
+    *,
+    landing_inventory: AdsLandingInventory | None = None,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     customer_id = credentials["customer_id"]
     response = client.post(
@@ -610,7 +685,7 @@ def _fetch_search_term_summary(
         json={"query": SEARCH_TERM_SUMMARY_QUERY},
     )
     response.raise_for_status()
-    return _summarize_search_term_response(response.json())
+    return _summarize_search_term_response(response.json(), landing_inventory=landing_inventory)
 
 
 def _fetch_search_term_safety_summary(
@@ -1524,6 +1599,8 @@ def _clip_dimension(value: str, limit: int = 240) -> str:
 
 def _summarize_search_term_response(
     payload: Any,
+    *,
+    landing_inventory: AdsLandingInventory | None = None,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     rows, payload_valid = strict_search_stream_rows(payload)
     clicks = 0
@@ -1550,6 +1627,13 @@ def _summarize_search_term_response(
         conversion_value += row_conversion_value
         dimensions = _search_term_dimensions(row)
         dimensions.update(search_term_landing_dimensions(row))
+        if (
+            landing_inventory
+            and dimensions.get(ADS_LANDING_MAPPING_STATUS) != ADS_LANDING_RESOLVED
+        ):
+            dimensions.update(
+                search_term_landing_dimensions_from_inventory(row, landing_inventory)
+            )
         if dimensions.get(ADS_LANDING_MAPPING_STATUS) == ADS_LANDING_RESOLVED:
             mapped_landing_rows += 1
         else:

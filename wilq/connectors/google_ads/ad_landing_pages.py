@@ -12,6 +12,9 @@ ADS_LANDING_IDENTITY = "landing_identity_sha256"
 ADS_LANDING_ACTUAL_CLICKED = "actual_clicked_in_window"
 ADS_LANDING_RESOLVED = "resolved"
 ADS_DEMAND_INPUT_FACT_NAMES = {ADS_SEARCH_TERM_PAYLOAD_STATUS}
+type AdsLandingInventory = dict[
+    tuple[str, str], set[tuple[str, str | None, bool, bool]]
+]
 
 
 def search_term_landing_dimensions(row: dict[str, Any]) -> dict[str, str]:
@@ -39,6 +42,45 @@ def search_term_landing_dimensions(row: dict[str, Any]) -> dict[str, str]:
     if reference.tracking_parameters_removed:
         dimensions["tracking_parameters_removed"] = "true"
     if reference.has_functional_query:
+        dimensions["functional_query_present"] = "true"
+    return dimensions
+
+
+def search_term_landing_dimensions_from_inventory(
+    row: dict[str, Any],
+    inventory: AdsLandingInventory,
+) -> dict[str, str]:
+    """Resolve a search term through a separate ad final-URL read.
+
+    Google Ads rejects the landing field in some search-term queries. The
+    auxiliary ad inventory keeps that failure from dropping demand rows while
+    still requiring an exact campaign+ad-group identity and a single landing.
+    """
+    campaign = row.get("campaign", {})
+    ad_group = row.get("adGroup", row.get("ad_group", {}))
+    if not isinstance(campaign, dict) or not isinstance(ad_group, dict):
+        return {}
+    campaign_id = campaign.get("id")
+    ad_group_id = ad_group.get("id")
+    if campaign_id is None or ad_group_id is None:
+        return {}
+    references = inventory.get((str(campaign_id), str(ad_group_id)))
+    if not references:
+        return {}
+    resolved = {reference for reference in references if reference[0] == ADS_LANDING_RESOLVED}
+    if len(resolved) != 1:
+        return {ADS_LANDING_MAPPING_STATUS: "ambiguous" if len(resolved) > 1 else "invalid"}
+    _, identity, tracking_removed, functional_query = next(iter(resolved))
+    if not identity:
+        return {ADS_LANDING_MAPPING_STATUS: "invalid"}
+    dimensions = {
+        ADS_LANDING_MAPPING_STATUS: ADS_LANDING_RESOLVED,
+        ADS_LANDING_IDENTITY: identity,
+        ADS_LANDING_ACTUAL_CLICKED: "true",
+    }
+    if tracking_removed:
+        dimensions["tracking_parameters_removed"] = "true"
+    if functional_query:
         dimensions["functional_query_present"] = "true"
     return dimensions
 
