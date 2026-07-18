@@ -17,6 +17,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
 )
+from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import CodexRun
@@ -102,7 +103,6 @@ def register_content_initial_draft_route(
     def content_work_item_initial_full_draft_status(
         work_item_id: str,
     ) -> ContentInitialDraftResponse:
-        snapshot = snapshot_loader(work_item_id)
         endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
         runs = [
             run
@@ -110,11 +110,8 @@ def register_content_initial_draft_route(
             if run.hook == "content_initial_full_draft" and endpoint in run.used_endpoints
         ]
         latest = max(runs, key=lambda run: run.started_at, default=None)
-        proposal = (
-            None
-            if snapshot.planning_workspace is None
-            else snapshot.planning_workspace.proposal
-        )
+        proposal = content_planning_proposal_store().latest(work_item_id)
+        revision = content_workflow_store().load_draft_revision_state(work_item_id).latest_revision
         if latest is not None and latest.status == "started":
             return ContentInitialDraftResponse(
                 status="generating",
@@ -124,7 +121,6 @@ def register_content_initial_draft_route(
                 blockers=[_generation_in_progress_blocker()],
                 safe_next_step="Pełny tekst jest przygotowywany; odśwież ten etap za chwilę.",
             )
-        revision = snapshot.revision_workspace.latest_revision
         if (
             latest is not None
             and latest.status == "completed"
