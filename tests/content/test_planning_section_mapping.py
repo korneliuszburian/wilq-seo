@@ -52,6 +52,7 @@ def test_existing_inventory_is_mapped_without_requiring_model_to_repeat_heading(
 
     canonical = canonicalize_model_inventory_headings(planning_input, output)
     assert canonical.sections[0].inventory_heading == "Korzyści ze współpracy"
+    assert canonical.sections[0].inventory_section_id == "inventory_01"
     mappings = build_inventory_mapping(
         planning_input,
         canonical,
@@ -128,6 +129,36 @@ def test_stable_inventory_id_wins_when_the_plan_renames_a_section() -> None:
     mappings = build_inventory_mapping(planning_input, canonical, ["plan_01"])
     assert mappings[0].status == "mapped"
     assert mappings[0].mapped_section_id == "plan_01"
+
+
+def test_unique_existing_heading_is_upgraded_to_stable_inventory_id() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_the_content_02",
+                    heading="Najczęstsze pytania",
+                    evidence_ids=["ev_wp"],
+                )
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Najczęstsze pytania",
+                purpose="Odpowiedzieć na pytania czytelnika.",
+                reader_question="Co trzeba wiedzieć?",
+                inventory_disposition="rewrite",
+                inventory_heading="Najczęstsze pytania",
+            )
+        ]
+    )
+
+    canonical = canonicalize_model_inventory_headings(planning_input, output)
+
+    assert canonical.sections[0].inventory_section_id == "inventory_the_content_02"
 
 
 def test_decorative_or_dated_inventory_is_explicitly_excluded_for_review() -> None:

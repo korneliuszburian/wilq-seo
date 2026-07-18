@@ -21,6 +21,11 @@ def canonicalize_model_inventory_headings(
     inventory_by_id = {
         section.section_id: section.heading for section in planning_input.inventory.sections
     }
+    inventory_ids_by_heading: dict[str, list[str]] = {}
+    for inventory_section in planning_input.inventory.sections:
+        inventory_ids_by_heading.setdefault(inventory_section.heading, []).append(
+            inventory_section.section_id
+        )
     if not inventory:
         return output
     used: set[str] = set()
@@ -43,13 +48,26 @@ def canonicalize_model_inventory_headings(
             continue
         if section.inventory_heading:
             used.add(section.inventory_heading)
-            sections.append(section)
+            matching_ids = inventory_ids_by_heading.get(section.inventory_heading, [])
+            if len(matching_ids) == 1 and section.inventory_section_id != matching_ids[0]:
+                sections.append(
+                    section.model_copy(
+                        update={"inventory_section_id": matching_ids[0]}
+                    )
+                )
+                changed = True
+            else:
+                sections.append(section)
             continue
         match = _best_inventory_heading(section.heading, inventory, used)
         if match is None:
             sections.append(section)
             continue
-        sections.append(section.model_copy(update={"inventory_heading": match}))
+        matching_ids = inventory_ids_by_heading.get(match, [])
+        update = {"inventory_heading": match}
+        if len(matching_ids) == 1:
+            update["inventory_section_id"] = matching_ids[0]
+        sections.append(section.model_copy(update=update))
         used.add(match)
         changed = True
     return output.model_copy(update={"sections": sections}) if changed else output
