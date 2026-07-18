@@ -4,6 +4,7 @@ import {
   getContentWorkItemPlanningProposal,
   postContentWorkItemPlanningProposal
 } from "../lib/api";
+import type { ContentPlanningProposalResponse } from "../lib/api";
 
 export function ContentPlanningGenerationPanel({
   serviceCardId,
@@ -16,7 +17,9 @@ export function ContentPlanningGenerationPanel({
   const queryKey = ["content-workflow", "work-item", workItemId, "planning-proposal"];
   const status = useQuery({
     queryKey,
-    queryFn: () => getContentWorkItemPlanningProposal(workItemId)
+    queryFn: () => getContentWorkItemPlanningProposal(workItemId),
+    refetchInterval: (query) =>
+      query.state.data?.status === "generating" ? 1500 : false
   });
   const generation = useMutation({
     mutationFn: () => {
@@ -54,7 +57,9 @@ export function ContentPlanningGenerationPanel({
     return (
       <section className="rounded-md border border-danger/30 bg-danger/5 p-4 shadow-sm">
         <p className="font-semibold text-danger">Nie udało się odczytać stanu planu</p>
-        <p className="mt-1 text-sm text-slate-700">WILQ nie uruchomił Codexa.</p>
+        <p className="mt-1 text-sm text-slate-700">
+          Odśwież stronę albo spróbuj ponownie, gdy stan danych będzie dostępny.
+        </p>
       </section>
     );
   }
@@ -75,6 +80,7 @@ export function ContentPlanningGenerationPanel({
   const inputReady = Boolean(
     inputSummary &&
       inputSummary.inventory_status === "available" &&
+      inputSummary.content_inventory_status === "available" &&
       !inputSummary.source_assessments.some(
         (source) => source.status === "stale" || source.status === "blocked"
       )
@@ -104,13 +110,27 @@ export function ContentPlanningGenerationPanel({
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">
             {blocker?.reason ??
               currentProposal?.value_proposition ??
-              "Codex użyje wyłącznie exact inventory, zatwierdzonej usługi i dowodów WILQ."}
+              "Plan powstanie z aktualnej strony, wybranej usługi i dostępnych danych."}
           </p>
         </div>
         <span className="rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-slate-600">
           {planningStatusLabel(state.status)}
         </span>
       </div>
+
+      {inputSummary ? (
+        <div className="mt-4 rounded-md border border-line bg-surface p-3">
+          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Na czym opiera się ta decyzja
+          </p>
+          <div className="mt-2 grid gap-2 text-sm sm:grid-cols-4">
+            <PlanningInputFact label="Fakty firmy" value={inputSummary.source_fact_count} />
+            <PlanningInputFact label="Karty wiedzy" value={inputSummary.knowledge_card_count} />
+            <PlanningInputFact label="Metryki" value={inputSummary.measurement_metrics.length} />
+            <PlanningInputFact label="Ślady źródeł" value={inputSummary.evidence_id_count} />
+          </div>
+        </div>
+      ) : null}
 
       {currentProposal ? (
         <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)]">
@@ -122,32 +142,30 @@ export function ContentPlanningGenerationPanel({
           <div className="rounded-md border border-line bg-surface p-3">
             <p className="text-xs font-semibold uppercase text-slate-500">Zakres</p>
             <p className="mt-1 text-sm text-slate-700">
-              {currentProposal.sections.length} sekcji · {currentProposal.faq.length} FAQ · {currentProposal.cta_blocks.length} CTA
+              {currentProposal.sections.length} sekcji · {currentProposal.faq.length} FAQ · {currentProposal.cta_blocks.length} CTA · {currentProposal.internal_links.length} linków
             </p>
           </div>
         </div>
       ) : null}
 
-      {inputSummary ? (
-        <div className="mt-4 grid gap-2 sm:grid-cols-3" aria-label="Gotowość danych do planu">
-          <div className="rounded-md border border-line bg-surface p-3">
-            <p className="text-xs font-semibold uppercase text-slate-500">Źródła użyte</p>
-            <p className="mt-1 text-sm font-semibold text-ink">
-              {usedSourceCount} z {inputSummary.source_assessments.length}
-            </p>
+      {currentProposal?.search_demand.gsc_query_rows.length ? (
+        <div className="mt-4 rounded-md border border-line bg-surface p-3">
+          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Metryki, od których zaczynamy
+          </p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            {currentProposal.search_demand.gsc_query_rows.slice(0, 3).map((row) => (
+              <div key={`${row.term}-${row.page}`} className="rounded-md border border-line bg-white p-3">
+                <p className="text-sm font-semibold text-ink">{row.term}</p>
+                <p className="mt-1 text-xs leading-5 text-slate-600">
+                  {formatDemandMetrics(row)}
+                </p>
+              </div>
+            ))}
           </div>
-          <div className="rounded-md border border-line bg-surface p-3">
-            <p className="text-xs font-semibold uppercase text-slate-500">Powiązanie landing</p>
-            <p className="mt-1 text-sm font-semibold text-ink">
-              {landingBoundSourceCount} {landingBoundSourceCount === 1 ? "źródło" : "źródła"}
-            </p>
-          </div>
-          <div className="rounded-md border border-line bg-surface p-3">
-            <p className="text-xs font-semibold uppercase text-slate-500">Dowody wejścia</p>
-            <p className="mt-1 text-sm font-semibold text-ink">
-              {inputSummary.evidence_id_count}
-            </p>
-          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            To punkt wyjścia do decyzji o treści, nie obietnica wyniku.
+          </p>
         </div>
       ) : null}
 
@@ -159,11 +177,22 @@ export function ContentPlanningGenerationPanel({
           className="mt-4 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           {generation.isPending
-            ? "Codex buduje plan…"
+            ? "Przygotowujemy plan…"
             : state.status === "stale"
               ? "Wygeneruj aktualny plan"
               : "Wygeneruj plan"}
         </button>
+      ) : null}
+
+      {state.status === "generating" ? (
+        <p
+          aria-live="polite"
+          className="mt-4 rounded-md border border-action/20 bg-action/5 p-3 text-sm text-slate-700"
+        >
+          Plan jest przygotowywany z aktualnej strony, metryk i wybranej usługi.
+          Ten panel odświeży wynik automatycznie. Możesz przejść do innego kroku;
+          nie uruchamiaj kolejnego planu dla tego samego wejścia.
+        </p>
       ) : null}
 
       {blocker ? (
@@ -184,7 +213,13 @@ export function ContentPlanningGenerationPanel({
           Input: {state.planning_input_digest ?? "brak"} · wersja: {currentProposal?.proposal_version ?? "brak"}
         </p>
         {inputSummary ? (
-          <ul className="mt-3 space-y-2">
+          <>
+            <p className="mt-2">
+              Użyto {usedSourceCount} z {inputSummary.source_assessments.length} źródeł;
+              {" "}{landingBoundSourceCount} ma potwierdzone powiązanie z tą stroną;
+              {" "}{inputSummary.evidence_id_count} zapisów źródłowych.
+            </p>
+            <ul className="mt-3 space-y-2">
             {inputSummary.source_assessments.map((source) => (
               <li key={source.source} className="rounded-md border border-line bg-surface p-2">
                 <span className="font-semibold text-ink">
@@ -196,16 +231,39 @@ export function ContentPlanningGenerationPanel({
                 <span className="block mt-1 leading-5 text-slate-600">{source.reason}</span>
               </li>
             ))}
-          </ul>
+            </ul>
+          </>
         ) : null}
-        <p className="mt-1">Codex nigdy nie uruchamia się przy GET ani bez gotowego inputu.</p>
+        <p className="mt-1">Samo otwarcie tego widoku nie uruchamia generowania.</p>
       </details>
     </section>
   );
 }
 
+function PlanningInputFact({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-line bg-white px-3 py-2">
+      <span className="block text-xs text-slate-500">{label}</span>
+      <span className="mt-1 block text-base font-semibold text-ink">{value}</span>
+    </div>
+  );
+}
+
+function formatDemandMetrics(
+  row: NonNullable<ContentPlanningProposalResponse["proposal"]>["search_demand"]["gsc_query_rows"][number]
+) {
+  const metrics = [
+    row.impressions === null ? null : `${row.impressions} wyśw.`,
+    row.clicks === null ? null : `${row.clicks} klik.`,
+    row.ctr === null ? null : `CTR ${(row.ctr * 100).toFixed(1)}%`,
+    row.average_position === null ? null : `poz. ${row.average_position.toFixed(1)}`
+  ].filter(Boolean);
+  return metrics.join(" · ") || "Brak metryk liczbowych";
+}
+
 function planningHeadline(status: string, hasCurrentProposal: boolean) {
   if (hasCurrentProposal) return "Plan strony jest gotowy do review";
+  if (status === "generating") return "Przygotowujemy plan strony";
   if (status === "stale") return "Plan wymaga aktualizacji";
   if (status === "blocked") return "Plan jest zablokowany";
   if (status === "failed") return "Nie udało się zbudować planu";
