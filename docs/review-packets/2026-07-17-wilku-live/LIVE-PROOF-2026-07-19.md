@@ -62,6 +62,10 @@ próba prawdziwego semantic runu Codexem zakończyła się typed `runtime_failed
 nie powstał żaden częściowy review. To jest osobny blocker runtime do naprawy,
 nie dowód jakości ani zgody na publikację.
 
+Po naprawie readbacku terminalny failed/blocked CodexRun nie wraca już po
+odświeżeniu do mylącego `not_generated`: API pokazuje exact rewizję, run ID,
+typed blocker i następny krok ponowienia. Review nadal nie jest zatwierdzeniem.
+
 ## Jedna decyzja produktu
 
 Marketer nie wybiera dziesięciu wersji. WILQ prowadzi do jednego aktualnego
