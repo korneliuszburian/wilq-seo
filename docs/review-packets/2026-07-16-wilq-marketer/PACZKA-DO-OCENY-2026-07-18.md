@@ -9,6 +9,10 @@ pełny read-only inventory WordPress (aktualnie 601 adresów), wyszukiwarkę,
 status materiału, dostępne metryki i rozpoznane sekcje ACF. Rekomendowane
 okazje są osobną kolejką — nic nie jest wybierane automatycznie.
 
+Aktualny coverage rozdziela zakresy: podstawowy sitemap ma 102/102 adresy,
+a publiczna mapa dodatkowe 500 adresów; katalog deduplikuje oba źródła. To
+potwierdza zakres adresów, ale nie oznacza kompletności pól ACF dla każdej strony.
+
 Wyszukaj dowolną stronę, kliknij `Sprawdź materiał`, a następnie `Rozpocznij
 workflow`. Dla adresu spoza kolejki WILQ tworzy jego identyfikator workflow na
 podstawie dokładnego URL-u. Pierwszy ekran powinien pokazać wybraną stronę,
