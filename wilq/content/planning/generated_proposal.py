@@ -325,7 +325,7 @@ def _prepare_generation(
         request.service_card_id,
         planning_input.planning_input_digest,
     )
-    if existing is not None:
+    if existing is not None and not request.regenerate_stale_mapping:
         if (
             _proposal_quality_errors(existing)
             or any(

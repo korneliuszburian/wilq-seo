@@ -145,13 +145,14 @@ def register_content_planning_proposal_routes(
                 snapshot=snapshot_loader(work_item_id),
                 store=store,
             )
-            if not (
+            stale_mapping = (
                 current.status == "stale"
                 and any(
                     blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
                     for blocker in current.blockers
                 )
-            ):
+            )
+            if not stale_mapping:
                 return ContentPlanningProposalResponse(
                     status="idempotent",
                     work_item_id=work_item_id,
@@ -162,6 +163,7 @@ def register_content_planning_proposal_routes(
                         "bez ponownego uruchamiania Codexa."
                     ),
                 )
+            request = request.model_copy(update={"regenerate_stale_mapping": True})
         # A changed digest is the normal re-plan path after fresh metrics,
         # inventory or knowledge arrive.  The background generator validates
         # the request against the rebuilt snapshot and returns typed stale_input

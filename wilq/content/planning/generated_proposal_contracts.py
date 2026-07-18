@@ -22,6 +22,7 @@ from wilq.content.workflow.planning import (
 
 ContentPlanningProposalStatus = Literal[
     "not_generated",
+    "generating",
     "created",
     "idempotent",
     "ready",
@@ -35,6 +36,7 @@ ContentPlanningProposalBlockerCode = Literal[
     "runtime_blocked",
     "runtime_failed",
     "invalid_structured_output",
+    "quality_gate_failed",
     "lineage_mismatch",
     "persistence_failed",
 ]
@@ -47,6 +49,7 @@ class ContentPlanningProposalRequest(BaseModel):
     expected_planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     operator_hint: str = Field(default="", max_length=500)
     requested_by: str = Field(min_length=1)
+    regenerate_stale_mapping: bool = False
 
     @model_validator(mode="after")
     def strip_visible_text(self) -> ContentPlanningProposalRequest:
@@ -125,6 +128,11 @@ class ContentPlanningModelOutput(BaseModel):
             raise ValueError("Every FAQ item requires evidence lineage.")
         if any(not item.evidence_ids for item in self.cta_blocks):
             raise ValueError("Every CTA block requires evidence lineage.")
+        if any(not item.evidence_ids for item in self.internal_links):
+            raise ValueError("Every internal link requires evidence lineage.")
+        link_targets = [item.target_url for item in self.internal_links]
+        if len(link_targets) != len(set(link_targets)):
+            raise ValueError("Planning output internal-link targets must be unique.")
         if not self.measurement_plan.observation_rule.strip():
             raise ValueError("Planning output requires an observation rule.")
         if not self.measurement_plan.success_claim_rule.strip():
@@ -161,6 +169,9 @@ class ContentPlanningProposalResponse(BaseModel):
         elif self.status == "not_generated":
             if self.proposal is not None or self.blockers:
                 raise ValueError("Not-generated response cannot expose proposal or blockers.")
+        elif self.status == "generating":
+            if self.proposal is not None or self.blockers:
+                raise ValueError("Generating response cannot expose proposal or blockers.")
         elif not self.blockers:
             raise ValueError("Non-ready planning response requires typed blockers.")
         return self
