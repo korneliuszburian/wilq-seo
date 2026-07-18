@@ -128,7 +128,9 @@ def test_semantic_review_runtime_failure_leaves_no_partial_review(
 
     assert failed.json()["status"] == "failed"
     calls_after_failure = runtime.calls
-    assert client.get(path).json()["status"] == "not_generated"
+    terminal = client.get(path).json()
+    assert terminal["status"] == "failed"
+    assert terminal["blockers"][0]["code"] == "runtime_failed"
     assert runtime.calls == calls_after_failure
 
 

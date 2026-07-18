@@ -12,6 +12,7 @@ from apps.api.wilq_api.routers.content_codex_proposal import (
     content_codex_app_server_client,
 )
 from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticReviewBlocker,
     ContentSemanticReviewRequest,
@@ -81,8 +82,8 @@ def register_content_semantic_review_routes(
         work_item_id: str,
         revision_id: str,
     ) -> ContentSemanticReviewResponse:
-        active = _latest_semantic_run(work_item_id, revision_id)
-        if active is not None and active.status == "started":
+        latest_run = _latest_semantic_run(work_item_id, revision_id)
+        if latest_run is not None and latest_run.status == "started":
             revision = content_workflow_store().load_draft_revision_state(
                 work_item_id
             ).latest_revision
@@ -90,9 +91,18 @@ def register_content_semantic_review_routes(
                 work_item_id,
                 revision_id,
                 None if revision is None else revision.content_digest,
-                active.id,
+                latest_run.id,
             )
         snapshot = snapshot_loader(work_item_id)
+        if latest_run is not None and latest_run.status in {"failed", "blocked"}:
+            revision = snapshot.revision_workspace.latest_revision
+            if revision is not None and revision.revision_id == revision_id:
+                return _terminal_run_response(
+                    work_item_id=work_item_id,
+                    revision_id=revision_id,
+                    revision_digest=revision.content_digest,
+                    run=latest_run,
+                )
         result = read_content_semantic_review(
             snapshot=snapshot,
             revision_id=revision_id,
@@ -202,6 +212,46 @@ def _generating_response(
             )
         ],
         safe_next_step="Odśwież sprawdzenie za chwilę. Nie uruchamiaj drugiego review.",
+    )
+
+
+def _terminal_run_response(
+    *,
+    work_item_id: str,
+    revision_id: str,
+    revision_digest: str,
+    run: CodexRun,
+) -> ContentSemanticReviewResponse:
+    blocked = run.status == "blocked"
+    code = "runtime_blocked" if blocked else "runtime_failed"
+    status = "blocked" if blocked else "failed"
+    return ContentSemanticReviewResponse(
+        status=status,
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision_digest=revision_digest,
+        run_id=run.id,
+        runtime=ContentCodexRuntimeTrace(status=status),
+        blockers=[
+            ContentSemanticReviewBlocker(
+                code=code,
+                label=(
+                    "Codex zatrzymał sprawdzenie semantyczne"
+                    if blocked
+                    else "Codex nie zakończył sprawdzenia semantycznego"
+                ),
+                reason=(
+                    "Poprzednia próba review została bezpiecznie zatrzymana; "
+                    "tekst nie został zmieniony."
+                    if blocked
+                    else "Poprzednia próba review nie zwróciła poprawnego wyniku; "
+                    "tekst nie został zmieniony."
+                ),
+                next_step="Uruchom nową próbę review dla tej samej exact rewizji.",
+                source_codes=[run.error] if run.error else [],
+            )
+        ],
+        safe_next_step="Uruchom nową próbę review dla tej samej exact rewizji.",
     )
 
 

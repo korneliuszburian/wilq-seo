@@ -66,6 +66,63 @@ def test_active_semantic_review_poll_avoids_heavy_snapshot_loader(monkeypatch) -
     assert snapshot_calls == 0
 
 
+def test_failed_semantic_run_remains_visible_after_reload(monkeypatch) -> None:
+    app = FastAPI()
+    work_item_id = "content_work_item_bdo"
+    revision_id = "content_revision_bdo_full_1"
+    endpoint = (
+        f"/api/content/work-items/{work_item_id}/draft-revisions/"
+        f"{revision_id}/semantic-review"
+    )
+    failed_run = SimpleNamespace(
+        hook="content_semantic_review",
+        status="failed",
+        id="codex_content_semantic_review_failed",
+        error="runtime_failed",
+        started_at=datetime(2026, 7, 18, 8, 0, tzinfo=UTC),
+        used_endpoints=[endpoint],
+    )
+
+    class LocalState:
+        def list_codex_runs(self):
+            return [failed_run]
+
+    class RevisionStore:
+        def load_draft_revision_state(self, _work_item_id: str):
+            return SimpleNamespace(
+                latest_revision=SimpleNamespace(
+                    revision_id=revision_id,
+                    content_digest="a" * 64,
+                )
+            )
+
+    class Snapshot:
+        revision_workspace = SimpleNamespace(
+            latest_revision=SimpleNamespace(
+                revision_id=revision_id,
+                content_digest="a" * 64,
+            )
+        )
+
+    monkeypatch.setattr(content_semantic_review, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(
+        content_semantic_review,
+        "content_workflow_store",
+        lambda: RevisionStore(),
+    )
+    content_semantic_review.register_content_semantic_review_routes(
+        app,
+        snapshot_loader=lambda _work_item_id: Snapshot(),
+    )
+
+    response = TestClient(app).get(endpoint)
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "failed"
+    assert response.json()["run_id"] == failed_run.id
+    assert response.json()["blockers"][0]["code"] == "runtime_failed"
+
+
 def test_semantic_review_returns_known_storage_blocker_before_queueing(monkeypatch) -> None:
     app = FastAPI()
     work_item_id = "content_work_item_bdo"
