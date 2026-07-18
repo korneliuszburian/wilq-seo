@@ -142,6 +142,7 @@ export function AdsSearchTermRowsTable({
             <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
             <th className="py-2 pr-4 font-semibold">Koszt</th>
             <th className="py-2 pr-4 font-semibold">Konwersje</th>
+            <th className="py-2 pr-4 font-semibold">Landing</th>
             <th className="py-2 pr-3 font-semibold">Dowody</th>
           </tr>
         </thead>
@@ -165,6 +166,9 @@ export function AdsSearchTermRowsTable({
                 {adsCost(row.cost_micros, currencyCode)}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
+              <td className="py-2 pr-4 text-xs text-slate-700">
+                {adsLandingMappingLabel(row.landing_mapping_status)}
+              </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
                 {row.evidence_summary_label}
               </td>
@@ -344,4 +348,21 @@ export function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatc
       </table>
     </div>
   );
+}
+
+function adsLandingMappingLabel(status: string | null | undefined): string {
+  switch (status) {
+    case "resolved":
+      return "landing dopasowany";
+    case "page_only":
+      return "tylko strona · do potwierdzenia";
+    case "ambiguous":
+      return "landing niejednoznaczny";
+    case "missing":
+      return "brak mapowania";
+    case "blocked":
+      return "mapowanie zablokowane";
+    default:
+      return "mapowanie do sprawdzenia";
+  }
 }
