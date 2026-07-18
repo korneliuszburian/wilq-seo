@@ -28,9 +28,9 @@ export function ContentWorkflowNextDecisionPanel({
       <p className="mt-3 text-base font-semibold leading-6 text-ink">{decisionTitle}</p>
       <p className="mt-2 text-sm leading-6 text-slate-700">{decisionReason}</p>
       <div className="mt-4 grid gap-2 md:grid-cols-3">
-        <FactTile label="Dowody WILQ" value={`${evidenceCount}`} />
-        <FactTile label="Twierdzenia do review" value={`${reviewClaims}`} />
-        <FactTile label="Twierdzenia zablokowane" value={`${blockedClaims}`} />
+        <FactTile label="Źródła decyzji" value={`${evidenceCount}`} />
+        <FactTile label="Do sprawdzenia" value={`${reviewClaims}`} />
+        <FactTile label="Zablokowane twierdzenia" value={`${blockedClaims}`} />
       </div>
       <div className="mt-4"><div className="text-sm font-semibold text-ink">Następny krok</div><p className="mt-1 text-sm leading-6 text-slate-700">{nextStep}</p></div>
       <div className="mt-4 flex flex-wrap gap-3">

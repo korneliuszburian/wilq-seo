@@ -412,6 +412,15 @@ describe("ContentWorkflowSurface", () => {
   });
 
   it("starts dynamic planning only from the explicit strategy action", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValueOnce(
+      planningProposalStatus({
+        proposal: {
+          ...planningWorkspace().proposal,
+          service_card_id: "ekologus_service_bdo_reporting",
+          service_selection_confirmed: true
+        } as never
+      })
+    );
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
       workflowSnapshot({
         planning: planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false }),
