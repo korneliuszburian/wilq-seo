@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ContentInventoryCatalogResponse } from "../lib/api";
 import {
   compareInventoryItems,
+  inventoryWorkItemIdFor,
   inventoryStructureLabel,
   InventoryWorkflowStartingPanel,
   matchesInventoryView
@@ -11,7 +12,7 @@ import {
 
 const item = {
   catalog_id: "catalog_1",
-  work_item_id: null,
+  work_item_id: "content_work_item_inventory_1",
   url: "https://www.ekologus.pl/artykul/",
   path: "/artykul/",
   title: "Przykładowy artykuł",
@@ -56,6 +57,15 @@ describe("compareInventoryItems", () => {
     expect(
       compareInventoryItems(queuedUrlOnly, readyWithMetrics, new Map([["/queued", "work_item_1"]]))
     ).toBeLessThan(0);
+  });
+});
+
+describe("inventoryWorkItemIdFor", () => {
+  it("opens any catalog page directly without a blocking bind read", () => {
+    expect(inventoryWorkItemIdFor(item, new Map())).toBe("content_work_item_inventory_1");
+    expect(
+      inventoryWorkItemIdFor(item, new Map([["/artykul", "content_work_item_queue_1"]]))
+    ).toBe("content_work_item_queue_1");
   });
 });
 

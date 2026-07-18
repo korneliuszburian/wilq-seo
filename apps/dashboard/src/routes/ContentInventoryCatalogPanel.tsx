@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
-import { getContentInventoryMaterial, postContentInventoryBinding, type ContentInventoryCatalogResponse, type ContentInventoryMaterialResponse, type ContentServiceProfileResponse, type ContentWorkItemQueueResponse } from "../lib/api";
+import { getContentInventoryMaterial, type ContentInventoryCatalogResponse, type ContentInventoryMaterialResponse, type ContentServiceProfileResponse, type ContentWorkItemQueueResponse } from "../lib/api";
 
 type InventoryCatalogView = "ready" | "metrics" | "all";
 
@@ -19,21 +19,11 @@ export function ContentInventoryCatalogPanel({
   const [search, setSearch] = useState("");
   const [catalogView, setCatalogView] = useState<InventoryCatalogView>("ready");
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
-  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
-  const bind = useMutation({
-    mutationFn: postContentInventoryBinding,
-    onSuccess: (result) => {
-      if (result.status === "ready" && result.work_item_id) onSelectWorkItem(result.work_item_id);
-    }
-  });
   const material = useQuery({
     queryKey: ["content-workflow", "inventory-material", inspectedUrl],
     queryFn: () => getContentInventoryMaterial(inspectedUrl ?? ""),
     enabled: Boolean(inspectedUrl)
   });
-  const pendingItem = pendingUrl
-    ? catalog.items.find((item) => normalizeUrl(item.url) === normalizeUrl(pendingUrl)) ?? null
-    : null;
   const candidateByUrl = useMemo(() => {
     const map = new Map<string, string>();
     for (const candidate of queue.candidates) {
@@ -101,13 +91,6 @@ export function ContentInventoryCatalogPanel({
           </div>
         </div>
       ) : null}
-      {pendingItem ? (
-        <InventoryWorkflowStartingPanel
-          item={pendingItem}
-          isPending={bind.isPending}
-          error={bind.error?.message ?? bind.data?.blocker ?? null}
-        />
-      ) : null}
       {inspectedUrl ? <InventoryMaterialPreview material={material.data} isLoading={material.isLoading} url={inspectedUrl} /> : null}
       <input
         id="content-inventory-search"
@@ -135,14 +118,14 @@ export function ContentInventoryCatalogPanel({
           </thead>
           <tbody className="divide-y divide-line">
             {items.map((item) => {
-              const workItemId = candidateByUrl.get(normalizeUrl(item.url));
+              const workItemId = inventoryWorkItemIdFor(item, candidateByUrl);
               return (
                 <tr key={item.catalog_id} className="align-top">
                   <td className="px-3 py-3"><div className="font-medium text-ink">{item.title || item.path}</div><div className="mt-1 text-xs text-slate-500">{item.path}</div>{item.content_summary ? <div className="mt-1 max-w-xl text-xs leading-5 text-slate-600">{item.content_summary}</div> : null}</td>
                   <td className="px-3 py-3 text-xs text-slate-600">{item.content_type}<div className="mt-1 font-medium text-slate-700">{materialLabel(item.material_status)}</div></td>
               <td className="px-3 py-3 text-xs text-slate-600">{item.metrics_status === "available" ? <><div className="font-medium text-action">GSC/GA4 dostępne</div><div className="mt-1">{item.metrics_impressions.toLocaleString("pl-PL")} wyśw. · {item.metrics_clicks.toLocaleString("pl-PL")} klik.</div><div className="mt-1 text-slate-500">{item.metrics_query_count} zapytań · {item.metrics_evidence_ids.length} źródeł</div></> : <span className="text-wait">Brak dokładnych metryk</span>}</td>
                   <td className="px-3 py-3 text-xs text-slate-600">{inventoryStructureLabel(item)}{item.content_word_count ? <div className="mt-1 text-slate-500">{item.content_word_count} słów treści</div> : null}</td>
-              <td className="px-3 py-3"><div className="flex flex-wrap gap-2">{workItemId ? <button type="button" className="rounded bg-action px-2 py-1 text-xs font-semibold text-white" onClick={() => onSelectWorkItem(workItemId)}>Otwórz plan</button> : <button type="button" className="rounded bg-action px-2 py-1 text-xs font-semibold text-white disabled:opacity-50" disabled={bind.isPending && bind.variables === item.url} onClick={() => { setPendingUrl(item.url); setInspectedUrl(item.url); bind.mutate(item.url); }}>{bind.isPending && bind.variables === item.url ? "Czytam materiał…" : item.material_status === "url_only" ? "Sprawdź i rozpocznij" : "Rozpocznij workflow"}</button>}<button type="button" className="rounded border border-line bg-white px-2 py-1 text-xs font-semibold text-slate-700" onClick={() => setInspectedUrl(item.url)}>{inspectedUrl === item.url ? "Materiał otwarty" : "Sprawdź materiał"}</button></div>{!workItemId ? <div className="mt-2 text-xs text-slate-500">Powiązanie opiera się na dokładnym URL-u i aktualnym odczycie strony; adresy bez REST/ACF są sprawdzane przez publiczny HTML.</div> : null}{bind.error ? <div className="mt-2 text-xs text-wait">{bind.error.message}</div> : null}</td>
+              <td className="px-3 py-3"><div className="flex flex-wrap gap-2"><button type="button" className="rounded bg-action px-2 py-1 text-xs font-semibold text-white" onClick={() => onSelectWorkItem(workItemId)}>{candidateByUrl.has(normalizeUrl(item.url)) ? "Otwórz plan" : "Rozpocznij workflow"}</button><button type="button" className="rounded border border-line bg-white px-2 py-1 text-xs font-semibold text-slate-700" onClick={() => setInspectedUrl(item.url)}>{inspectedUrl === item.url ? "Materiał otwarty" : "Sprawdź materiał"}</button></div><div className="mt-2 text-xs text-slate-500">Pierwszy ekran otwiera tę stronę od razu; materiał WordPress i dopasowanie usługi są doczytywane w workflow.</div></td>
                 </tr>
               );
             })}
@@ -229,6 +212,13 @@ export function compareInventoryItems(
   }
   if (left.metrics_clicks !== right.metrics_clicks) return right.metrics_clicks - left.metrics_clicks;
   return `${left.title ?? ""} ${left.path}`.localeCompare(`${right.title ?? ""} ${right.path}`, "pl");
+}
+
+export function inventoryWorkItemIdFor(
+  item: ContentInventoryCatalogResponse["items"][number],
+  candidateByUrl: Map<string, string>
+) {
+  return candidateByUrl.get(normalizeUrl(item.url)) ?? item.work_item_id;
 }
 
 export function matchesInventoryView(
