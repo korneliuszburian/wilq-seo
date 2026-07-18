@@ -69,6 +69,26 @@ def test_v1_payload_without_lineage_still_reads_with_empty_defaults() -> None:
     assert revision.sections[0].source_material_ids == []
 
 
+def test_v1_digest_remains_isolated_from_v2_lineage_fields() -> None:
+    baseline = _command(schema_version="wilq_content_draft_revision_v1")
+    with_lineage = baseline.model_copy(
+        update={
+            "source_material_ids": ["legacy_material"],
+            "knowledge_card_ids": ["legacy_card"],
+            "sections": [
+                baseline.sections[0].model_copy(
+                    update={
+                        "source_material_ids": ["legacy_material"],
+                        "knowledge_card_ids": ["legacy_card"],
+                    }
+                )
+            ],
+        }
+    )
+
+    assert draft_revision_content_digest(baseline) == draft_revision_content_digest(with_lineage)
+
+
 def test_v2_lineage_is_deterministic_and_part_of_digest() -> None:
     command = _command(
         schema_version="wilq_content_draft_revision_v2",
