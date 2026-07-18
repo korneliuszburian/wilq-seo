@@ -216,7 +216,7 @@ export function ContentPageWorkbench({
     ? unique(latestRevision.sections.flatMap((section) => section.evidence_ids)).length
     : 0;
   const revisionStatusLabel = latestRevision
-    ? `Wersja ${latestRevision.revision_number} · treść ${latestRevision.content_digest.slice(0, 10)}`
+    ? `Aktualny draft · treść ${latestRevision.content_digest.slice(0, 10)}`
     : "Szkic nie ma jeszcze zapisanej wersji";
   const blockedClaims = blockedClaimsForWorkbench(data);
   const evidenceRows = evidenceRowsForWorkbench(data, enrichment);
@@ -523,7 +523,7 @@ export function ContentPageWorkbench({
                 <div className="mt-3 space-y-4">
                   <div className="rounded-md border border-line bg-surface p-3 text-sm leading-6 text-slate-700">
                     <p className="font-semibold text-ink">
-                      Wersja {latestRevision.revision_number}: {latestRevision.title}
+                      Aktualny draft: {latestRevision.title}
                     </p>
                     <p className="mt-1 break-all text-xs text-slate-500">
                       Identyfikator treści: {latestRevision.content_digest}
@@ -739,7 +739,7 @@ export function ContentPageWorkbench({
                   >
                     {actions.revisionReviewPending
                       ? "Zapisuję decyzję..."
-                      : `Zapisz decyzję dla wersji ${latestRevision.revision_number}`}
+                      : "Zapisz decyzję dla aktualnego draftu"}
                   </button>
                   <RevisionMutationFeedback
                     conflict={actions.revisionReviewConflict}
