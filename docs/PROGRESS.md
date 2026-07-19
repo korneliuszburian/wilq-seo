@@ -154,6 +154,21 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   Disposition jest zapisane poza repo; nie ma reviewerowego PASS ani zmiany
   produktu opartej na tym niewalidowanym wyniku.
 
+- 2026-07-19: Ads landing identity ma teraz typed join do WordPress inventory i
+  Service Profile. `approved_current` jest jedynym stanem, który może zasilać
+  usługę; `review_required`, `unbound` i `ambiguous` blokują planning. Ten stan
+  jest widoczny w tabeli Ads obok mapowania landingu, a raw URL nadal nie trafia
+  do kontraktu. Live Ads ma 23 wiersze, ale bez zatwierdzonej karty nie udajemy
+  exact-service pilotu.
+
+- 2026-07-19: Ahrefs gap records pokazują derived method, sample/limit coverage
+  i `mapping_status`; exact WordPress URL awansuje rekord dopiero po jednym
+  typed exact cross-checku. Live stan ma 8 rekordów i 0 exact mapowań. Odczyt
+  rozlicza także estymowany zakres 13 wywołań i failed stages (`partial=false`).
+  GA4 planning przyjmuje tylko pełny URL z exact/tracking-only/host-alias;
+  path-only pozostaje zablokowane. Focused proofy są zielone, ale realny
+  GSC/GA4/WordPress pilot i Wilku verdict nadal pozostają otwarte.
+
 ## Ostatnie zakresy i proofy
 
 - `wilq-seo-v9ab.18.2` ma pierwszy produkcyjny slice wspólnej tożsamości
