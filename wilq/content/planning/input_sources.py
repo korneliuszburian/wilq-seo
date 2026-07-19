@@ -216,6 +216,7 @@ def build_source_assessments(
     gsc_tiers = _demand_tiers(demand.gsc_query_rows)
     ads_tiers = _demand_tiers(demand.ads_term_rows)
     planner_tiers = _demand_tiers(demand.keyword_planner_rows)
+    ga4_evidence, ga4_tiers = _ga4_page_signal(item, brief.final_canonical_url)
     wordpress_status = _source_status(
         available=inventory.status == "available",
         connector_ids=inventory.source_connectors,
@@ -256,10 +257,14 @@ def build_source_assessments(
             gsc_evidence,
             landing_match_tiers=gsc_tiers,
         ),
-        _blocked_typed_source(
-            "ga4", "google_analytics_4", fact_kinds, fact_evidence,
-            "GA4 ma evidence, ale bez typed landing match tieru nie zasila planu.",
-            "Brak dokładnego sygnału GA4 dla tej strony.",
+        _assessment(
+            "ga4",
+            _available_status(ga4_evidence and ga4_tiers, ["google_analytics_4"], freshness),
+            "GA4 ma exact landing signal i zasila diagnozę zachowania strony."
+            if ga4_evidence and ga4_tiers
+            else "Brak exact sygnału GA4 dla tej strony.",
+            ga4_evidence,
+            landing_match_tiers=ga4_tiers,
         ),
         _ads_source_assessment(
             demand=demand,
@@ -292,6 +297,38 @@ def build_source_assessments(
         assessment.model_copy(update=_source_quality_update(assessment.source, freshness))
         for assessment in assessments
     ]
+
+
+def _ga4_page_signal(
+    item: ContentWorkItem,
+    final_canonical_url: str,
+) -> tuple[list[str], list[ContentAcceptedLandingMatchTier]]:
+    evidence_ids: list[str] = []
+    tiers: list[ContentAcceptedLandingMatchTier] = []
+    for fact in item.metric_facts:
+        if fact.source_connector != "google_analytics_4":
+            continue
+        candidate_url = next(
+            (
+                fact.dimensions.get(key)
+                for key in ("landing_page", "landingPagePlusQueryString", "page")
+                if fact.dimensions.get(key)
+            ),
+            None,
+        )
+        if not candidate_url:
+            continue
+        match = match_landing_page(
+            final_canonical_url,
+            LandingPageCandidate(
+                candidate_id=f"ga4_{fact.evidence_id}_{fact.name}",
+                url=candidate_url,
+            ),
+        )
+        if match.matched and match.tier in {"exact", "tracking_only", "host_alias"}:
+            evidence_ids.append(fact.evidence_id)
+            tiers.append(match.tier)
+    return list(dict.fromkeys(evidence_ids)), list(dict.fromkeys(tiers))
 
 
 _SOURCE_QUALITY_CONNECTORS: dict[ContentPlanningSourceName, tuple[str, ...]] = {

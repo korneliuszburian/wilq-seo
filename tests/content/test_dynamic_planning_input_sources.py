@@ -86,6 +86,26 @@ def test_model_planning_envelope_compacts_repeated_query_lineage_without_droppin
     ]
 
 
+def test_ga4_page_signal_accepts_exact_landing_and_tracking_only_variants() -> None:
+    item = ContentWorkItem.model_construct(
+        metric_facts=[
+            MetricFact(
+                name="engaged_sessions",
+                value=12,
+                period="last_28_days",
+                source_connector="google_analytics_4",
+                evidence_id="ev_ga4",
+                dimensions={"landing_page": "https://www.ekologus.pl/usluga/?utm_source=google"},
+            )
+        ]
+    )
+
+    evidence_ids, tiers = input_sources._ga4_page_signal(item, PAGE)
+
+    assert evidence_ids == ["ev_ga4"]
+    assert tiers == ["tracking_only"]
+
+
 def test_model_planning_envelope_drops_inventory_navigation_and_dated_noise() -> None:
     planning_input = ContentPlanningInput.model_construct(
         inventory=ContentPlanningInventory(
