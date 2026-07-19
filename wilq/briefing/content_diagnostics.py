@@ -744,9 +744,9 @@ def _content_action_ids(actions: list[ActionObject]) -> list[str]:
 
 
 def _list_actions() -> list[ActionObject]:
-    from wilq.actions.service import list_actions
+    from wilq.actions.service import list_actions_cached
 
-    return list_actions()
+    return list_actions_cached()
 
 
 def _unique(values: Iterable[object]) -> list[str]:
