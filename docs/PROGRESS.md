@@ -1358,3 +1358,14 @@ http://127.0.0.1:8000` po zmianie: 14 powierzchni, 11 `demo_ready`, 2
 minimum usefulness score 7. Raport nadal wskazuje brak private-source review
 queue na większości powierzchni jako metadata audytu; nie zmieniam tego w
 fałszywy blocker dla bieżącego slice'u.
+
+Read-only cross-source pilot na dwóch exact work itemach użył tego samego
+kontraktu `planning-proposals`: BDO wiąże kartę
+`ekologus_service_bdo_reporting`, outsourcing wiąże
+`ekologus_service_environmental_consulting_outsourcing`; oba mają exact
+WordPress/GSC, 7 source-material IDs i ten sam pełny zestaw 10 ocen źródeł.
+Brak exact GA4/Ahrefs, Ads i Keyword Planner pozostaje jawnie `missing` lub
+`not_applicable` — bez zgadywania. Outsourcing ma istniejący proposal, ale
+status `stale`; BDO ma `failed` z istniejącym typed provider blockerem i bez
+proposal. To dowodzi wspólnego mapowania i granic dowodu, nie pełnej generacji
+tekstu ani UAT.
