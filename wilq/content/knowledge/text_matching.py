@@ -27,8 +27,23 @@ def normalized_term_matches(term: str, normalized_search_text: str) -> bool:
         return False
     return any(
         all(
-            search_tokens[start + offset].startswith(token)
+            _token_matches(token, search_tokens[start + offset])
             for offset, token in enumerate(term_tokens)
         )
         for start in range(len(search_tokens) - len(term_tokens) + 1)
+    )
+
+
+def _token_matches(term_token: str, search_token: str) -> bool:
+    common = 0
+    for left, right in zip(term_token, search_token, strict=False):
+        if left != right:
+            break
+        common += 1
+    if common == len(term_token):
+        return common >= 5
+    return (
+        term_token[-1] in "aeiouąęó"
+        and common >= 5
+        and common / min(len(term_token), len(search_token)) >= 0.75
     )

@@ -2682,6 +2682,22 @@ przechodzą bez naruszeń. Live snapshot strony opakowaniowej zwraca teraz
 oraz drugiego kandydata `ekologus_service_waste_packaging_obligations`, oba z
 matched term `opakowani`; ranking nadal pozostaje jawny i reviewable.
 
+### 2026-07-19 — artykuł o pozwoleniu dostaje jawny kandydat review-required
+
+Exact snapshot `analiza-pozwolen-zintegrowanych` wcześniej pozostawał `unbound`,
+mimo że materiał WordPress zawierał realny kontekst dokumentacji. Matcher
+otrzymuje teraz ograniczoną fleksję: exact prefiks pozostaje bez zmian, a
+odmieniony token jest dopuszczany tylko przy wspólnym rdzeniu ≥5 znaków i
+75% długości krótszego tokenu, z wyłączeniem krótkich/broad stemów typu
+`odpady`. Materiał `wordpress_rest.content` jest traktowany jako zaufany,
+wydzielony body input; test na nawigacji artykułu nadal blokuje przypadkowe
+przypisanie outsourcingu.
+
+Focused matching/profile tests: 10 passed; Ruff, mypy i complexity audit
+przechodzą. Live snapshot: GSC 2 wyświetlenia, 0 kliknięć, pozycja 9, 2 query,
+service `ekologus_service_environmental_compliance_audit`, status
+`review_required`; brak twierdzenia o skuteczności lub trendzie.
+
 ### 2026-07-19 — panel nie sugeruje marketerowi ukrytego wyboru strony
 
 Katalog `/content-workflow` już zawiera pełny read-only inventory WordPressa

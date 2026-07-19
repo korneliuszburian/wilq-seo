@@ -507,7 +507,10 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
         for lineage in card.source_lineage
         if lineage.startswith("http")
     }
-    if exact_urls & exact_service_urls:
+    if (
+        exact_urls & exact_service_urls
+        or item.wordpress_content_extraction_region == "wordpress_rest.content"
+    ):
         text_values.append(item.wordpress_content_text)
     text = _search_text(text_values)
     service_candidates = _matching_service_candidates(

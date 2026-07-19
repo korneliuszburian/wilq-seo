@@ -71,6 +71,31 @@ def test_inflected_page_topic_matches_service_fit_stem() -> None:
     )
 
 
+def test_inflected_documentation_query_exposes_reviewable_service_candidate() -> None:
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_integrated_permit_analysis",
+            topic="Analiza pozwolenia zintegrowanego",
+            source_public_url="https://www.ekologus.pl/analiza-pozwolen-zintegrowanych/",
+            final_canonical_url="https://www.ekologus.pl/analiza-pozwolen-zintegrowanych/",
+            wordpress_content_text=(
+                "Firma przygotuje niezbędną dokumentacji potrzebną do analizy "
+                "pozwolenia zintegrowanego."
+            ),
+            wordpress_content_source_kind="wordpress_rest",
+            wordpress_content_extraction_region="wordpress_rest.content",
+            evidence_ids=["ev_wp_integrated_permit_analysis"],
+            source_connectors=["wordpress_ekologus"],
+        )
+    )
+
+    assert any(
+        candidate.card.id == "ekologus_service_environmental_compliance_audit"
+        and "dokumentacja" in candidate.matched_terms
+        for candidate in match.service_candidates
+    )
+
+
 @pytest.mark.parametrize(
     ("url", "expected_card_id"),
     [
