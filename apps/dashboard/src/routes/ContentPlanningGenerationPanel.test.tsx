@@ -9,6 +9,7 @@ import {
 } from "../lib/api";
 import {
   ContentPlanningGenerationPanel,
+  planningSourceOutcomeLabels,
   planningSourceSummary
 } from "./ContentPlanningGenerationPanel";
 
@@ -28,7 +29,7 @@ vi.mock("../lib/api", async (importOriginal) => ({
 
 describe("ContentPlanningGenerationPanel", () => {
   it("summarizes used sources and excludes unbound GA4/Ads from the plan", () => {
-    const summary = planningSourceSummary({
+    const summaryInput: Parameters<typeof planningSourceSummary>[0] = {
       source_assessments: [
         { source: "wordpress", status: "used", reason: "", landing_match_tiers: ["exact"], evidence_ids: [], knowledge_card_ids: [] },
         { source: "gsc", status: "used", reason: "", landing_match_tiers: ["exact"], evidence_ids: [], knowledge_card_ids: [] },
@@ -45,11 +46,18 @@ describe("ContentPlanningGenerationPanel", () => {
       evidence_id_count: 0,
       knowledge_card_count: 0,
       measurement_metrics: []
-    });
+    };
+    const summary = planningSourceSummary(summaryInput);
 
     expect(summary).toContain("Źródła planu: 2/4 użyte · 2 z exact powiązaniem ze stroną.");
     expect(summary).toContain("GA4: nie dotyczy");
     expect(summary).toContain("Google Ads: zablokowane");
+    expect(planningSourceOutcomeLabels(summaryInput.source_assessments)).toEqual([
+      "WordPress: użyte · exact",
+      "GSC: użyte · exact",
+      "GA4: nie dotyczy",
+      "Google Ads: zablokowane"
+    ]);
   });
 
   it("shows the real corpus gate without blocking the planning view", async () => {

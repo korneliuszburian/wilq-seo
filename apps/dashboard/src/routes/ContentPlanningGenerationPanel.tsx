@@ -143,6 +143,7 @@ export function ContentPlanningGenerationPanel({
           <p className="mt-2 text-xs leading-5 text-slate-600" data-testid="content-planning-source-summary">
             {planningSourceSummary(inputSummary)}
           </p>
+          <PlanningSourceOutcomeStrip assessments={inputSummary.source_assessments} />
         </div>
       ) : null}
 
@@ -329,6 +330,51 @@ function PlanningPageAsset({ label, value }: { label: string; value: string }) {
     <div className="rounded-md border border-line bg-white p-3">
       <dt className="text-[11px] font-semibold uppercase tracking-normal text-slate-500">{label}</dt>
       <dd className="mt-1 text-sm leading-6 text-ink">{value || "Brak elementu w planie"}</dd>
+    </div>
+  );
+}
+
+type PlanningSourceAssessment = NonNullable<
+  ContentPlanningProposalResponse["input_summary"]
+>["source_assessments"][number];
+
+export function planningSourceOutcomeLabels(
+  assessments: PlanningSourceAssessment[]
+): string[] {
+  return assessments
+    .filter((assessment) =>
+      ["wordpress", "gsc", "ga4", "google_ads", "ahrefs"].includes(assessment.source)
+    )
+    .map((assessment) => {
+      const landing = assessment.landing_match_tiers.length
+        ? ` · ${assessment.landing_match_tiers.map(landingTierLabel).join(", ")}`
+        : "";
+      return `${planningSourceLabel(assessment.source)}: ${planningSourceStatusLabel(assessment.status)}${landing}`;
+    });
+}
+
+function PlanningSourceOutcomeStrip({
+  assessments
+}: {
+  assessments: PlanningSourceAssessment[];
+}) {
+  const outcomes = planningSourceOutcomeLabels(assessments);
+  if (!outcomes.length) return null;
+  return (
+    <div className="mt-3" data-testid="content-planning-source-outcomes">
+      <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+        Źródła i dopasowanie strony
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {outcomes.map((outcome) => (
+          <span
+            key={outcome}
+            className="rounded-full border border-line bg-white px-2.5 py-1 text-xs font-medium text-slate-700"
+          >
+            {outcome}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
