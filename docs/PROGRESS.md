@@ -2707,3 +2707,20 @@ Katalog `/content-workflow` już zawiera pełny read-only inventory WordPressa
 mechanizmu ani API: nie ma automatycznego wyboru ani publikacji, a kliknięcie
 „Rozpocznij workflow” nadal otwiera dokładnie wybrany `work_item_id`.
 Focused dashboard test i typecheck przechodzą.
+
+### 2026-07-19 — realny BDO proposal zapisany przez API-owned Codex seam
+
+Z dokładnego snapshotu BDO zbudowano `ContentPlanningInput` v6 z digestem
+`71f98e22c830430f6126dfb3b3f654b5692c89f4a5616a6f93e432a4864f1ee4`:
+7 sekcji inventory, 2 source facts i wszystkie 10 ocen źródeł. Brakujące GA4,
+Ads, Ahrefs i Keyword Planner pozostały `missing`; Merchant, Localo i Social
+pozostały `not_applicable`.
+
+POST przez `/api/content/work-items/{id}/planning-proposals` uruchomił realny
+server-side Codex run `codex_content_planning_e3ccc6ace99f47b7bdf5b85b82336a7d`
+i trwale zapisał proposal
+`content_planning_proposal_2e21360b96f44c609811490d6d1aec74`, version 16,
+status `ready`. Readback po reloadzie zwraca ten sam proposal i digest bez
+ponownego model call. Proposal ma 7 stabilnych sekcji, 8 exact GSC query, 3 FAQ
+i pełne title/H1/lead/meta assets. Pozostaje niezatwierdzony: marketer/owner
+muszą ocenić zakres i kartę usługi; mapa sekcji nie jest osobnym głosowaniem.
