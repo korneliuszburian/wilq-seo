@@ -30,6 +30,7 @@ GA4_CONVERSION_METRICS = (
 GA4_METRICS = (*GA4_BEHAVIOR_METRICS, *GA4_CONVERSION_METRICS)
 GA4_DIMENSIONS = (
     "landingPagePlusQueryString",
+    "hostName",
     "sessionSourceMedium",
     "sessionCampaignName",
 )
@@ -422,6 +423,7 @@ def _snake_case_ga4_metric(value: str) -> str:
 def _snake_case_ga4_dimension(value: str) -> str:
     mapping = {
         "landingPagePlusQueryString": "landing_page",
+        "hostName": "host_name",
         "sessionSourceMedium": "source_medium",
         "sessionCampaignName": "campaign_name",
         "itemId": "item_id",

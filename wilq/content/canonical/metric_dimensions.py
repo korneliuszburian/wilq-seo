@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlsplit
+
 from wilq.content.canonical.landing_identity import (
     LandingPageCandidate,
     build_landing_page_identity,
@@ -17,6 +19,33 @@ METRIC_LANDING_URL_DIMENSIONS = frozenset(
     }
 )
 LANDING_IDENTITY_DIMENSION = "_wilq_landing_identity"
+GA4_HOST_DIMENSION = "host_name"
+
+
+def _metric_landing_candidates(dimensions: dict[str, str]) -> list[LandingPageCandidate]:
+    landing_page = dimensions.get("landing_page")
+    host_name = dimensions.get(GA4_HOST_DIMENSION)
+    candidates = [
+        LandingPageCandidate(candidate_id=key, url=dimensions.get(key))
+        for key in METRIC_LANDING_URL_DIMENSIONS
+        if dimensions.get(key)
+        and not (
+            key == "landing_page"
+            and host_name
+            and landing_page
+            and not urlsplit(landing_page).netloc
+        )
+    ]
+    if landing_page and host_name:
+        parsed = urlsplit(landing_page)
+        if not parsed.netloc and parsed.path.startswith("/"):
+            candidates.append(
+                LandingPageCandidate(
+                    candidate_id="landing_page_with_host_name",
+                    url=f"https://{host_name}{landing_page}",
+                )
+            )
+    return candidates
 
 
 def dimensions_with_metric_identity(dimensions: dict[str, str]) -> dict[str, str]:
@@ -28,9 +57,8 @@ def dimensions_with_metric_identity(dimensions: dict[str, str]) -> dict[str, str
         and not str(key).startswith("_wilq_")
     }
     landing_dimensions = [
-        build_landing_page_identity(value)
-        for key, value in cleaned.items()
-        if key in METRIC_LANDING_URL_DIMENSIONS
+        build_landing_page_identity(candidate.url)
+        for candidate in _metric_landing_candidates(cleaned)
     ]
     if not landing_dimensions or any(
         identity.status != "resolved" or not identity.canonical_url
@@ -59,11 +87,7 @@ def metric_dimensions_match_landing(
     expected_url: str | None,
 ) -> bool:
     matches = [
-        match_landing_page(
-            expected_url,
-            LandingPageCandidate(candidate_id=key, url=dimensions.get(key)),
-        )
-        for key in METRIC_LANDING_URL_DIMENSIONS
-        if dimensions.get(key)
+        match_landing_page(expected_url, candidate)
+        for candidate in _metric_landing_candidates(dimensions)
     ]
     return bool(expected_url) and bool(matches) and all(match.matched for match in matches)

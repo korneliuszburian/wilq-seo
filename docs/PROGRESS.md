@@ -1134,3 +1134,14 @@ raw content or credentials. Existing vendor-read and inventory contract tests
 coverage. The dashboard shows returned/source counts and a caveat; historical
 refreshes without the new counters remain `coverage niepotwierdzone`, never
 implicitly complete.
+
+### 2026-07-19 — GA4 landing facts carry host-bound identity
+
+GA4 behavior reads now request `hostName` alongside
+`landingPagePlusQueryString`, source and campaign. The canonical metric seam
+combines a GA4 path with that host into an exact landing identity; a path
+without host remains `path_only` and is not promoted to an exact match. This
+prevents cross-host joins while allowing fresh GA4 facts to participate in
+the existing metric-store and publication-bound measurement loop. Focused
+vendor and identity proof: 3/3, Ruff and diff-check pass. No vendor write or
+storage migration was performed.

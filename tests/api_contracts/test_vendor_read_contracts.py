@@ -220,6 +220,7 @@ def test_ga4_vendor_read_uses_run_report(
         dimensions = [dimension["name"] for dimension in body["dimensions"]]
         if dimensions == [
             "landingPagePlusQueryString",
+            "hostName",
             "sessionSourceMedium",
             "sessionCampaignName",
         ]:
@@ -241,6 +242,7 @@ def test_ga4_vendor_read_uses_run_report(
                 json={
                     "dimensionHeaders": [
                         {"name": "landingPagePlusQueryString"},
+                        {"name": "hostName"},
                         {"name": "sessionSourceMedium"},
                         {"name": "sessionCampaignName"},
                     ],
@@ -260,6 +262,7 @@ def test_ga4_vendor_read_uses_run_report(
                         {
                             "dimensionValues": [
                                 {"value": "/oferta/"},
+                                {"value": "www.ekologus.pl"},
                                 {"value": "google / cpc"},
                                 {"value": "PMax odpady"},
                             ],
@@ -346,6 +349,7 @@ def test_ga4_vendor_read_uses_run_report(
     assert result.metric_facts[0].value == 20
     assert result.metric_facts[0].dimensions == {
         "landing_page": "/oferta/",
+        "host_name": "www.ekologus.pl",
         "source_medium": "google / cpc",
         "campaign_name": "PMax odpady",
     }
