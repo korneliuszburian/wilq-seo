@@ -3019,3 +3019,17 @@ operatu, BDO ani outsourcingu.
 
 Focused proof: `tests/content/test_service_matching_surface.py` oraz
 `tests/content/test_work_item_service_profile.py` — 11/11, Ruff PASS.
+
+### 2026-07-20 — selected-page snapshot nie skanuje legacy indeksu przy każdej ścieżce
+
+Pomiar selected-page snapshotu wykazał, że `inventory_metric_facts` tracił
+większość czasu na budowanie tymczasowego indeksu legacy URL-i z całej tabeli
+DuckDB. Dla zwykłych adresów bez funkcjonalnego query stringu odczyt filtruje
+legacy wprost w SQL i nie uruchamia tego indeksu. Funkcjonalne adresy zachowują
+stary indeks, bo musi on rozstrzygać query identity przed bounded limit.
+
+Focused proof: istniejące testy bounded landing identity, GA4 relative path i
+inventory catalog — 3/3; Ruff PASS. Na realnym selected work item czas
+`inventory_decision_for_work_item` spadł z 6,753 s do 2,262 s, a HTTP snapshot
+z timeoutu >10 s do 4,119 s; odpowiedź nadal zawiera usługę
+`ekologus_service_operat_wodnoprawny` i pełne candidate lineage.

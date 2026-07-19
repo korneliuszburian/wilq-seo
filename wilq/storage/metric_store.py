@@ -488,6 +488,48 @@ class DuckDbMetricStore:
         landing_identity = identity_dimensions.get(LANDING_IDENTITY_DIMENSION)
         if not landing_identity:
             return []
+        legacy_dimension_paths = [
+            "$.content_url",
+            "$.final_url",
+            "$.landing_page",
+            "$.landing_page_plus_query_string",
+            "$.page",
+            "$.page_location",
+        ]
+        legacy_url_bases = [
+            base.rstrip("/").casefold()
+            for base in landing_page_metric_legacy_base_urls(content_url)
+        ]
+        functional_identity = "?" in landing_identity
+        legacy_match = ""
+        legacy_params: list[Any] = []
+        if (
+            not functional_identity
+            and landing_page_metric_lookup_path(content_url) == content_path
+        ):
+            legacy_match = " OR (" + " OR ".join(
+                "lower(rtrim(split_part("
+                "json_extract_string(facts.dimensions_json, ?), '?', 1), '/')) = ANY(?)"
+                for _ in legacy_dimension_paths
+            ) + ")"
+            legacy_params = [
+                value
+                for dimension_path in legacy_dimension_paths
+                for value in (dimension_path, legacy_url_bases)
+            ]
+        legacy_join = (
+            "LEFT JOIN wilq_legacy_landing_identity legacy\n"
+            "              ON facts.run_id = legacy.run_id\n"
+            "             AND facts.metric_name = legacy.metric_name\n"
+            "             AND facts.dimensions_json = legacy.dimensions_json"
+            if functional_identity
+            else ""
+        )
+        legacy_condition = (
+            " OR legacy.landing_identity = ?"
+            if functional_identity
+            else legacy_match
+        )
         # Resolve legacy URL dimensions into the same private identity before
         # applying the bounded read limit. A base-path SQL predicate alone
         # would let functional-query interlopers consume the limit and only be
@@ -510,14 +552,11 @@ class DuckDbMetricStore:
               NULL AS previous_evidence_id,
               NULL AS previous_collected_at
             FROM connector_metric_facts facts
-            LEFT JOIN wilq_legacy_landing_identity legacy
-              ON facts.run_id = legacy.run_id
-             AND facts.metric_name = legacy.metric_name
-             AND facts.dimensions_json = legacy.dimensions_json
+            {legacy_join}
             WHERE facts.connector_id = ANY(?)
               AND (
                 json_extract_string(facts.dimensions_json, '$._wilq_landing_identity') = ?
-                OR legacy.landing_identity = ?
+                {legacy_condition}
                 OR (
                   facts.connector_id = 'google_analytics_4'
                   AND (
@@ -539,22 +578,25 @@ class DuckDbMetricStore:
               facts.dimensions_json ASC,
               facts.evidence_id ASC
             LIMIT ?
-        """
+        """.replace("{legacy_join}", legacy_join).replace(
+            "{legacy_condition}", legacy_condition
+        )
         params: list[Any] = [
             list(dict.fromkeys(connector_ids)),
             landing_identity,
-            landing_identity,
+            *( [landing_identity] if functional_identity else legacy_params ),
             content_path,
             content_path,
             candidate_limit,
         ]
         with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
-            _prepare_legacy_landing_identity_index(
-                connection,
-                list(dict.fromkeys(connector_ids)),
-                content_url=content_url,
-                content_path=content_path,
-            )
+            if functional_identity:
+                _prepare_legacy_landing_identity_index(
+                    connection,
+                    list(dict.fromkeys(connector_ids)),
+                    content_url=content_url,
+                    content_path=content_path,
+                )
             rows = connection.execute(query, params).fetchall()
         facts = [_metric_fact_from_row(row) for row in rows]
         filtered = [
