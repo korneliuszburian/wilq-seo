@@ -1410,3 +1410,11 @@ ten sam wybór bez udawania gotowego planu i bez zapisu proposal/revision.
 Proof: `uv run pytest -q tests/content/test_dynamic_planning_proposals_api.py
 -k executor_submission_failure_is_typed_and_retryable` (1 passed) oraz Ruff
 dla zmienionego routera i testu. Provider Codex pozostaje niezależnym blockerem.
+
+Second-opinion checker dla tego fixed pointu nie został przedstawiony jako
+PASS: dwa świeże, osobne passy zostały odrzucone przez walidator za cytacje
+Claude'a przekraczające 20 linii (F4, następnie F3). Disposition i ścieżki obu
+prób są zachowane poza repozytorium; brak retained findings. Szerszy run całego
+pliku ujawnił dwa niezwiązane expectation failures (test starego timeoutu 120 s
+przy produkcyjnym 180 s oraz fixture quality-gate bez CTA) i został przerwany;
+nie przypisuję ich temu slice'owi.
