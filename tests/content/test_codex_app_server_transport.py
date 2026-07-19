@@ -61,6 +61,14 @@ if turn["params"]["input"][0]["text"] == "Reject this schema.":
         }},
     }})
     raise SystemExit(0)
+if turn["params"]["input"][0]["text"] == "Retry transiently.":
+    write({{
+        "method": "error",
+        "params": {{
+            "error": {{"message": "Reconnecting... 1/5"}},
+            "willRetry": True,
+        }},
+    }})
 write({{
     "id": turn["id"],
     "result": {{"turn": {{"id": "turn-test", "items": []}}}},
@@ -191,3 +199,13 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     assert [blocker.code for blocker in invalid_schema.blockers] == [
         "codex_output_schema_invalid_other"
     ]
+
+    retried = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
+        CodexAppServerStructuredTurnRequest(
+            instruction="Retry transiently.",
+            application_context="application",
+            untrusted_context="untrusted",
+            output_schema={"type": "object"},
+        )
+    )
+    assert retried.status == "completed"

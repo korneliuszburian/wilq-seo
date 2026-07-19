@@ -767,6 +767,11 @@ def _observe_inbound_method(
             "Codex próbował wykonać operację zewnętrzną; wynik został odrzucony.",
         )
     if method == "error":
+        params = _as_object(message.get("params"))
+        if params is not None and params.get("willRetry") is True:
+            # Reconnect notices are transient app-server events. Let its
+            # retry loop reach turn/completed before classifying the turn.
+            return params
         raise _codex_error_blocker(message.get("params"))
     params_value = message.get("params", {})
     params = _as_object(params_value)
