@@ -19,7 +19,11 @@ from wilq.storage.schema_versions import (
     reject_newer_sqlite_schema,
 )
 
-_PLANNING_JOB_STALE_AFTER_SECONDS = 120
+# Keep the recovery window longer than the bounded Codex planning turn
+# (currently 180s) so a slow but still-valid worker cannot be replaced while
+# it is running. The grace is deliberately explicit and remains below a
+# normal operator retry horizon.
+_PLANNING_JOB_STALE_AFTER_SECONDS = 240
 
 
 def content_planning_proposal_store() -> ContentPlanningProposalStore:
