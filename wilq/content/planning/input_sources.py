@@ -411,7 +411,7 @@ def _ads_source_assessment(
     )
     reason = (
         "Landing Ads pasuje dokładnie, ale karta usługi wymaga owner review; termy nie "
-        "zasilą planu, dopóki usługa nie będzie approved_current."
+        "zasilą planu, dopóki karta nie będzie zatwierdzona i aktualna."
         if "review_required" in service_binding_statuses
         else "Landing Ads nie ma jednego rozstrzygniętego powiązania z usługą; termy "
         "pozostają poza planem do czasu rozstrzygnięcia inventory/service binding."

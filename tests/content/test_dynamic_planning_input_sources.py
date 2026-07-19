@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Literal
 
 import pytest
 
@@ -321,8 +322,53 @@ def test_ads_source_assessment_explains_service_review_blocker(
     ads = next(assessment for assessment in assessments if assessment.source == "google_ads")
 
     assert ads.status == "blocked"
-    assert "approved_current" in ads.reason
+    assert "zatwierdzona i aktualna" in ads.reason
     assert ads.landing_match_tiers == ["exact"]
+
+
+@pytest.mark.parametrize("binding_status", ["unbound", "ambiguous"])
+def test_ads_source_assessment_explains_unresolved_service_binding(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+    binding_status: Literal["unbound", "ambiguous"],
+) -> None:
+    item, _, inventory = source_context
+    brief, service_profile, _ = _planning_models(_demand())
+    row = ContentSearchDemandRow(
+        source_kind="ads_search_term",
+        source_connector="google_ads",
+        term="usługa środowiskowa",
+        page=PAGE,
+        landing_match_tiers=["exact"],
+        service_binding_status=binding_status,
+        section_mapping_status="page_only",
+        period="last_30_days",
+        freshness="fresh",
+        evidence_ids=["ev_ads_exact"],
+    )
+    demand = _demand().model_copy(
+        update={
+            "ads_term_rows": [row],
+            "optional_ads_status": "exact_rows_available",
+            "optional_ads_evidence_ids": ["ev_ads_exact"],
+        }
+    )
+
+    ads = next(
+        assessment
+        for assessment in build_source_assessments(
+            item=item,
+            inventory=inventory,
+            service_profile=service_profile,
+            freshness=_freshness([]),
+            brief=brief,
+            demand=demand,
+            service_lifecycle="approved_current",
+        )
+        if assessment.source == "google_ads"
+    )
+
+    assert ads.status == "blocked"
+    assert "jednego rozstrzygniętego powiązania" in ads.reason
 
 
 def test_owner_reviewed_rendered_content_unblocks_material_gate_without_replanning(
