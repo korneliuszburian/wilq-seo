@@ -151,6 +151,79 @@ def test_marketing_brief_omits_metric_facts_from_blocked_localo(
     assert all(item.source_connectors != ["localo"] for item in recommendations.items)
 
 
+def test_marketing_brief_blocked_gsc_removes_known_and_recommended_items() -> None:
+    fact = MetricFact(
+        name="clicks",
+        value=12,
+        period="last_28_days",
+        source_connector="google_search_console",
+        evidence_id="ev_gsc_blocked_consumer",
+    )
+    fresh_connector = ConnectorStatus(
+        id="google_search_console",
+        label="Google Search Console",
+        status=ConnectorStatusValue.configured,
+        configured=True,
+        freshness=FreshnessState(state="fresh"),
+        capabilities=ConnectorCapability(read=True),
+        health_check="configured",
+    )
+    fresh_brief = build_marketing_brief(
+        connectors=[fresh_connector],
+        refresh_runs=[],
+        actions=[],
+        metric_facts_by_connector={"google_search_console": [fact]},
+    )
+    fresh_known = next(section for section in fresh_brief.sections if section.id == "what_we_know")
+    fresh_recommendations = next(
+        section for section in fresh_brief.sections if section.id == "recommended_focus"
+    )
+    assert any(item.source_connectors == ["google_search_console"] for item in fresh_known.items)
+    assert any(
+        item.source_connectors == ["google_search_console"] for item in fresh_recommendations.items
+    )
+
+    blocked_connector = fresh_connector.model_copy(
+        update={
+            "status": ConnectorStatusValue.auth_error,
+            "freshness": FreshnessState(state="stale"),
+            "health_check": "auth_error",
+        }
+    )
+    blocked_run = ConnectorRefreshRun(
+        id="refresh_gsc_blocked_consumer",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.blocked,
+        completed_at=datetime.now(UTC),
+        evidence_ids=[fact.evidence_id],
+        external_call_attempted=True,
+        vendor_data_collected=False,
+        summary="Google Search Console read blocked.",
+    )
+    blocked_brief = build_marketing_brief(
+        connectors=[blocked_connector],
+        refresh_runs=[blocked_run],
+        actions=[],
+        metric_facts_by_connector={"google_search_console": [fact]},
+    )
+    blocked_known = next(
+        section for section in blocked_brief.sections if section.id == "what_we_know"
+    )
+    blocked_recommendations = next(
+        section for section in blocked_brief.sections if section.id == "recommended_focus"
+    )
+    blocked_items = next(
+        section for section in blocked_brief.sections if section.id == "what_blocks_us"
+    )
+    assert all(item.source_connectors != ["google_search_console"] for item in blocked_known.items)
+    assert all(
+        item.source_connectors != ["google_search_console"]
+        for item in blocked_recommendations.items
+    )
+    assert any(item.source_connectors == ["google_search_console"] for item in blocked_items.items)
+
+
 def test_marketing_brief_localo_blocker_uses_marketer_copy() -> None:
     connector = ConnectorStatus(
         id="localo",

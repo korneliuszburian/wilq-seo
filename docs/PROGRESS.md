@@ -2161,6 +2161,13 @@ ani w `what_we_know`, ani w `recommended_focus`, podczas gdy `what_blocks_us`
 pozostaje widoczne. Marketing brief/localo focused proof wynosi teraz 9/9;
 pozostałe źródła i consumerzy wymagają osobnych kontraktów.
 
+Domknięto causal proof przez porównanie tego samego GSC metric factu w dwóch
+stanach: świeży connector tworzy wpis `what_we_know` i `recommended_focus`, a
+identyczny fact przy `auth_error`/stale/blocked refresh znika z obu sekcji i
+pojawia się wyłącznie jako blocker. To odróżnia prawdziwe filtrowanie od testu,
+który przechodziłby przez pusty fixture. Brief/command-center focused proof:
+10/10, Ruff i mypy clean.
+
 ### 2026-07-19 — readiness test korzysta z realnego `/api/connectors`
 
 Domknięto pierwszy follow-up z checker'a: focused falsifier pobiera listę
