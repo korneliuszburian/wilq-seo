@@ -6,20 +6,34 @@ from typing import Any, cast
 import pytest
 from fastapi.testclient import TestClient
 
-from apps.api.wilq_api.main import app
+from tests.content.dynamic_planning_test_support import (
+    PlanningClient,
+    configure_planning_harness,
+)
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
 from wilq.content.workflow.api import _gate_candidate_on_service_binding
+from wilq.content.workflow.catalog import inventory_work_item_id
 from wilq.content.workflow.queue import ContentWorkItemQueueCandidate
+
+BDO_WORK_ITEM_ID = inventory_work_item_id(
+    "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+)
+
+
+@pytest.fixture
+def planning_harness(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> tuple[TestClient, PlanningClient]:
+    return configure_planning_harness(monkeypatch, tmp_path)
 
 
 def test_planning_scope_persists_only_allowed_service_override(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
+    planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
-    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
+    client, _runtime = planning_harness
     work_item_id, snapshot = _snapshot_with_service_override(client)
     proposal = snapshot["planning_workspace"]["proposal"]
     candidates = snapshot["service_profile_context"]["service_candidates"]
@@ -94,16 +108,11 @@ def test_unbound_service_candidate_cannot_look_plan_ready() -> None:
 def _snapshot_with_service_override(
     client: TestClient,
 ) -> tuple[str, dict[str, Any]]:
-    queue = client.get("/api/content/work-items/queue").json()
-    for candidate in queue["candidates"]:
-        snapshot = _selected_snapshot(client, candidate["work_item_id"])
-        if (
-            snapshot.get("response_type") == "workflow_snapshot"
-            and snapshot.get("planning_workspace") is not None
-            and len(snapshot["service_profile_context"]["service_candidates"]) > 1
-        ):
-            return candidate["work_item_id"], snapshot
-    pytest.fail("Planning override proof requires two allowed service candidates.")
+    snapshot = _selected_snapshot(client, BDO_WORK_ITEM_ID)
+    assert snapshot.get("response_type") == "workflow_snapshot"
+    assert snapshot.get("planning_workspace") is not None
+    assert len(snapshot["service_profile_context"]["service_candidates"]) > 1
+    return BDO_WORK_ITEM_ID, snapshot
 
 
 def _selected_snapshot(client: TestClient, work_item_id: str) -> dict[str, Any]:

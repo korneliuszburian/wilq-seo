@@ -2298,3 +2298,12 @@ nagłówki z `the_content`, jak i istniejące nagłówki ACF. Dzięki temu marke
 może znaleźć adres po konkretnym fragmencie strony, zanim wybierze sesję i plan.
 Nie zmienia to kolejki ani rankingu kandydatów. Proof: `ContentCandidateQueuePanel`
 2/2 oraz dashboard typecheck clean.
+
+### 2026-07-19 — bounded proof wyboru usługi bez skanowania całej kolejki
+
+Test API wyboru usługi nie miał deadlocka: skanował 54 kandydatów i wykonywał
+ciężkie snapshoty po około 2 sekundy każdy. Harness używa teraz istniejącego
+syntetycznego BDO work item z aktualnym kontraktem planowania, więc sprawdza
+ten sam publiczny route bez zależności od całego runtime queue. Proof:
+`test_content_service_selection_api.py` 2/2 (35,7 s), Ruff clean. Nie jest to
+dowód szybkości produkcyjnego snapshotu; ten pozostaje osobnym ryzykiem.
