@@ -39,6 +39,10 @@ from wilq.content.planning.generated_proposal_store import (
     content_planning_proposal_store,
 )
 from wilq.content.planning.input_sources import ContentPlanningSourceAssessment
+from wilq.content.planning.runtime_contract import (
+    planning_codex_timeout_seconds,
+    planning_job_stale_after_seconds,
+)
 from wilq.content.workflow.catalog import inventory_work_item_id
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import ContentDraftRevision
@@ -341,6 +345,15 @@ def test_planning_runtime_default_allows_full_structured_turn(
 
     assert isinstance(client, StdioCodexAppServerClient)
     assert client.timeout_seconds == 180.0
+
+
+def test_planning_stale_window_shares_configured_codex_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WILQ_PLANNING_CODEX_TIMEOUT_SECONDS", "17")
+
+    assert planning_codex_timeout_seconds() == 17.0
+    assert planning_job_stale_after_seconds() == 17.0
 
 
 def test_planning_runtime_stream_failure_has_operator_safe_next_step() -> None:

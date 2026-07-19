@@ -9,6 +9,7 @@ from typing import Literal, cast
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
+from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.schemas import CodexRun
 from wilq.security.redaction import redact_mapping
@@ -19,7 +20,6 @@ from wilq.storage.schema_versions import (
     reject_newer_sqlite_schema,
 )
 
-_PLANNING_JOB_STALE_AFTER_SECONDS = 120
 PlanningEnqueueOutcome = Literal["queued", "existing", "in_flight"]
 
 
@@ -528,9 +528,7 @@ def _job_is_stale(updated_at: str) -> bool:
         return True
     # A queued row older than this is eligible for retry. The planner's
     # bounded Codex deadline is configured separately by the API router.
-    return (
-        datetime.now(UTC) - timestamp
-    ).total_seconds() > _PLANNING_JOB_STALE_AFTER_SECONDS
+    return (datetime.now(UTC) - timestamp).total_seconds() > planning_job_stale_after_seconds()
 
 
 def _proposal_from_row(row: sqlite3.Row | None) -> ContentPlanningProposal | None:

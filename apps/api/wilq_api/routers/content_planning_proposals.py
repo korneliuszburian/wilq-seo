@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from os import environ
 from uuid import uuid4
 
 from fastapi import APIRouter
@@ -33,6 +32,7 @@ from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
     content_planning_proposal_store,
 )
+from wilq.content.planning.runtime_contract import planning_codex_timeout_seconds
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.storage.local_state import local_state_store
 
@@ -50,9 +50,6 @@ _PLANNING_GENERATION_EXECUTOR = ThreadPoolExecutor(
 # pages can need more structured-output search, while a timeout remains a
 # typed runtime blocker and can be retried from the same exact input digest.
 # The first useful browser response remains the queued ``generating`` state.
-_DEFAULT_PLANNING_TIMEOUT_SECONDS = 180.0
-
-
 def _planning_codex_client() -> StdioCodexAppServerClient:
     """Keep planning bounded without changing draft/review runtime budgets.
 
@@ -63,16 +60,7 @@ def _planning_codex_client() -> StdioCodexAppServerClient:
     client = content_codex_app_server_client()
     if not isinstance(client, StdioCodexAppServerClient):
         return client
-    try:
-        timeout_seconds = float(
-            environ.get(
-                "WILQ_PLANNING_CODEX_TIMEOUT_SECONDS",
-                str(_DEFAULT_PLANNING_TIMEOUT_SECONDS),
-            )
-        )
-    except ValueError:
-        timeout_seconds = _DEFAULT_PLANNING_TIMEOUT_SECONDS
-    return StdioCodexAppServerClient(timeout_seconds=max(5.0, timeout_seconds))
+    return StdioCodexAppServerClient(timeout_seconds=planning_codex_timeout_seconds())
 
 
 def register_content_planning_proposal_routes(

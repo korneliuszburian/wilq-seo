@@ -1513,3 +1513,19 @@ zmianie: 35 faktów, 4 typowane exclusions (`wrong_period`). Focused aggregate
 and evidence proof: 9 testów, Ruff passed. Nie zmienia to zasad wykluczania,
 nie dopuszcza historycznych okresów do measurement loopu i nie tworzy
 synthetic metrics.
+
+### 2026-07-19 — wspólny deadline planowania i stale joba
+
+W storage stale job był ustawiony na 120 sekund, podczas gdy bounded Codex
+planning turn miał 180 sekund. To tworzyło ryzyko ponownego enqueue i drugiego
+turnu, gdy pierwszy nadal pracował. Router i store korzystają teraz z jednego
+env-backed `runtime_contract`: domyślnie 180 sekund, a stale detection używa
+tej samej wartości. Jawna grace wynosi `0.0`, ponieważ istniejący publiczny
+kontrakt traktuje dokładnie trzy minuty jako retryable; zmiana tej granicy
+wymagałaby osobnej decyzji właściciela.
+
+Focused proof: timeout/default/shared-config 3 passed, stale queued-generation
+falsifier passed, Ruff i diff-check passed. Claude checker został przygotowany
+z fingerprintem fixed pointu, ale okno wykonania było zamknięte (przed 12:00
+Europe/Warsaw); nie claimuję review PASS. Human-only pozostaje decyzja, czy
+przyszły maintenance window może przyjąć dodatnią grace.
