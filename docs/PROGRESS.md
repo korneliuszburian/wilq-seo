@@ -2593,3 +2593,19 @@ w lineage wybranej strony; stale/zablokowane źródło nadal ma pierwszeństwo n
 liczbą. Live BDO snapshot: 266 wyświetleń, 1 kliknięcie, CTR 0,3759%, pozycja
 8,5, 18 zapytań, `bdo co to`. Focused chip test, dashboard typecheck,
 dynamic-input test, Ruff, mypy i diff-check przechodzą.
+
+### 2026-07-19 — realny initial draft przeszedł do trwałej rewizji v2
+
+Po dynamicznym odczycie kanonicznego WordPress REST i wygenerowaniu propozycji
+planowania dla `ekologus_service_environmental_consulting_outsourcing` powstała
+trwała rewizja v2 `content_revision_62c7467f39b74033b399e8ad166674c5`.
+Zawiera page assets, 4 sekcje, 3 FAQ, 2 CTA i link wewnętrzny; jej digest to
+`57f4c6b00d288787bc9bd9b0facc6953bec6d5c8022fef33be7831cfbada0edc`, a
+`publish_ready=false`. Initial draft jest realnym readbackiem dokumentu,
+nie tylko podglądem modelu.
+
+Quality review nie blokuje już wersji v2 wyłącznie dlatego, że publication-bound
+measurement window nie może istnieć przed publikacją. Przed handoffem pokazuje
+informację `measurement_window_pending_publication`; stary blocker pozostaje dla
+payloadów bez exact revision. Semantic review nadal ma osobny, uczciwy blocker
+`storage_activation_required` do maintenance window.
