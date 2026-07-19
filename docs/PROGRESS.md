@@ -2140,6 +2140,13 @@ zablokowany connector danych. Readiness projection rozróżnia teraz
 2 missing credentials. Proof: focused context safety 3/3, Ruff i modułowy
 mypy clean, managed API runtime zgodny z tym rozdziałem.
 
+Wydzielono nazwany seam `select_business_metric_facts`: jedna selekcja po
+freshness/readiness, potem wyłącznie jej wynik zasila `what_we_know`,
+`recommended_focus` i `top_metric_facts`. `rg` po module pokazuje pojedyncze
+wywołanie selekcji przed trzema projekcjami; comparative GSC proof obejmuje
+również brak zablokowanego źródła w representative facts. Focused brief tests
+pozostają 8/8, command-center marketing tests 6/6, Ruff+mypy clean.
+
 ### 2026-07-19 — marketing brief fail-closed dla zablokowanych źródeł
 
 Marketing brief jest teraz rzeczywistym consumerem freshness/readiness: przed

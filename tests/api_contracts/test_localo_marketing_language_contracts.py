@@ -223,6 +223,10 @@ def test_marketing_brief_blocked_gsc_removes_known_and_recommended_items() -> No
         for item in blocked_recommendations.items
     )
     assert any(item.source_connectors == ["google_search_console"] for item in blocked_items.items)
+    assert all(
+        fact.source_connector != "google_search_console"
+        for fact in blocked_brief.top_metric_facts
+    )
 
 
 @pytest.mark.parametrize("freshness_state", ["fresh", "stale", "missing", "unknown"])

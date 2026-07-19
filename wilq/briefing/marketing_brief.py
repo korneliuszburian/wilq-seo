@@ -103,18 +103,11 @@ def build_marketing_brief(
     latest_runs = _prefer_successful_localo_access_probe(latest_runs, refresh_runs)
     blocked_connector_ids = _blocked_metric_connector_ids(connectors, latest_runs)
 
-    business_metric_facts = [
-        fact
-        for fact in metric_facts
-        if not _is_probe_only_fact(fact)
-        and _metric_fact_allowed_by_latest_refresh(
-            fact,
-            latest_runs,
-            blocked_connector_ids,
-        )
-    ]
-    business_metric_facts = _latest_metric_facts_by_identity(business_metric_facts)
-    business_metric_facts = _brief_metric_facts_with_labels(business_metric_facts)
+    business_metric_facts = select_business_metric_facts(
+        metric_facts,
+        latest_runs=latest_runs,
+        blocked_connector_ids=blocked_connector_ids,
+    )
     metric_items = _metric_items(business_metric_facts)
     if command_center is not None:
         metric_items = _decision_metric_items(command_center.daily_decisions) + [
@@ -267,6 +260,32 @@ def _latest_successful_localo_mcp_run(
         ):
             return run
     return None
+
+
+def select_business_metric_facts(
+    metric_facts: list[MetricFact],
+    *,
+    latest_runs: dict[str, ConnectorRefreshRun],
+    blocked_connector_ids: set[str],
+) -> list[MetricFact]:
+    """Return the only metric-fact set allowed into marketer-facing brief sections.
+
+    Every downstream metric, recommendation, and representative-fact projection
+    must consume this selection so blocked or ambiguous source data cannot
+    re-enter through a parallel list.
+    """
+    selected = [
+        fact
+        for fact in metric_facts
+        if not _is_probe_only_fact(fact)
+        and _metric_fact_allowed_by_latest_refresh(
+            fact,
+            latest_runs,
+            blocked_connector_ids,
+        )
+    ]
+    selected = _latest_metric_facts_by_identity(selected)
+    return _brief_metric_facts_with_labels(selected)
 
 
 def _metric_items(metric_facts: list[MetricFact]) -> list[MarketingBriefItem]:
