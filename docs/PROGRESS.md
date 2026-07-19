@@ -2785,3 +2785,14 @@ proposal `content_planning_proposal_d77cf0828c3849518726aaee8e18ef94`, version
 6, status `ready`: 3 sekcje, 2 FAQ, 2 query i komplet page assets. Stara wersja
 nie jest traktowana jako aktualna. Nowy proposal nadal wymaga scope/service
 review przed initial draft.
+
+### 2026-07-19 — panel uczciwie oznacza rewizję z nieaktualnym kontekstem
+
+Dashboard nie pokazuje już każdej zapisanej rewizji jako bieżącego draftu. Gdy
+API zwraca `revision_workspace.context_current=false`, status brzmi teraz
+„Zapisana wersja · wymaga odświeżenia”; historia rewizji pozostaje zachowana, a
+istniejące bramki `revision_context_changed` nadal decydują o dalszej pracy.
+
+Focused regression (1 test) i dashboard typecheck przechodzą. Zmiana została
+niezależnie sprawdzona przez advisory checker; wynik jest evidence-bounded i nie
+jest akceptacją produktu ani gotowości do publikacji.
