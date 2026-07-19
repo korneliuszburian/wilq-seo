@@ -42,7 +42,7 @@ read()
 thread = read()
 diagnostic["auth_after_initialize"] = (codex_home / "auth.json").is_file()
 diagnostic["thread_params"] = thread["params"]
-write({{"id": thread["id"], "result": {{"thread": {{"id": "thread-test"}}}}}})
+write({{"id": thread["id"], "result": {{"thread": {{"id": "thread-test"}}, "model": "gpt-test"}}}})
 turn = read()
 diagnostic["turn_params"] = turn["params"]
 if turn["params"]["input"][0]["text"] == "Attempt a tool.":
@@ -97,7 +97,14 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     source_codex_home.mkdir(parents=True)
     source_xdg.mkdir()
     (source_codex_home / "auth.json").write_text("fake-login", encoding="utf-8")
-    (source_codex_home / "config.toml").write_text("web_search='live'", encoding="utf-8")
+    (source_codex_home / "config.toml").write_text(
+        "model='gpt-test'\nmodel_provider='codex'\n"
+        "[model_providers.codex]\n"
+        "name='codex'\nbase_url='https://provider.example/v1'\n"
+        "wire_api='responses'\nrequires_openai_auth=true\n"
+        "web_search='live'",
+        encoding="utf-8",
+    )
     fake_bin = tmp_path / "bin"
     _install_fake_app_server(fake_bin)
     monkeypatch.setenv("HOME", str(source_home))
@@ -120,14 +127,24 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     payload = json.loads(result.output_text or "")
     assert payload["api_key_names"] == []
     assert payload["auth_at_initialize"] is True
-    assert payload["auth_after_initialize"] is False
+    assert payload["auth_after_initialize"] is True
     assert payload["home"] != str(source_home)
     assert payload["codex_home"] != str(source_codex_home)
     assert payload["xdg_config_home"] != str(source_xdg)
     argv = payload["argv"]
     overrides = {argv[index + 1] for index, value in enumerate(argv) if value == "--config"}
     disabled = {argv[index + 1] for index, value in enumerate(argv) if value == "--disable"}
-    assert {'web_search="disabled"', "mcp_servers={}"} <= overrides
+    assert {
+        'web_search="disabled"',
+        "mcp_servers={}",
+        "features.remote_models=false",
+        'model="gpt-test"',
+        'model_provider="codex"',
+        'model_providers.codex.name="codex"',
+        'model_providers.codex.base_url="https://provider.example/v1"',
+        'model_providers.codex.wire_api="responses"',
+        'model_providers.codex.requires_openai_auth=true',
+    } <= overrides
     assert {"apps", "browser_use", "multi_agent", "plugins", "shell_tool"} <= disabled
     thread = payload["thread_params"]
     assert thread["environments"] == []
@@ -136,6 +153,7 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     assert thread["dynamicTools"] == []
     assert thread["config"]["web_search"] == "disabled"
     assert thread["config"]["mcp_servers"] == {}
+    assert payload["turn_params"]["model"] == "gpt-test"
     turn = payload["turn_params"]
     assert turn["environments"] == []
     assert turn["runtimeWorkspaceRoots"] == []

@@ -6,6 +6,7 @@ import os
 import shutil
 import signal
 import tempfile
+import tomllib
 from collections.abc import Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -85,6 +86,7 @@ _DISABLED_TOOL_FEATURES = (
 _CODEX_CONFIG_OVERRIDES = (
     'approval_policy="never"',
     'sandbox_mode="read-only"',
+    "features.remote_models=false",
     'web_search="disabled"',
     "mcp_servers={}",
     "apps={_default={enabled=false,destructive_enabled=false,open_world_enabled=false}}",
@@ -151,6 +153,7 @@ class _ExternalCallBlocked(_SafeTransportFailure):
 @dataclass(slots=True)
 class _TurnObserver:
     thread_id: str | None = None
+    model: str | None = None
     turn_id: str | None = None
     event_methods: list[str] = field(default_factory=list)
     item_types: list[str] = field(default_factory=list)
@@ -386,13 +389,10 @@ async def _initialize_app_server(
         },
     )
     await _wait_for_response(stdout, request_id=1, observer=observer)
-    try:
-        runtime.auth_path.unlink()
-    except OSError as exc:
-        raise _SafeTransportFailure(
-            "codex_auth_isolation_failed",
-            "Nie udało się usunąć roboczej kopii sesji Codexa.",
-        ) from exc
+    # Newer app-server versions refresh model metadata after ``initialize``
+    # and still need the isolated login for thread/turn startup. The copy is
+    # scoped to this TemporaryDirectory and is removed with the whole runtime
+    # in ``_run_turn``'s finally block; never persist it or expose its path.
     await _send_notification(stdin, method="initialized")
 
 
@@ -437,6 +437,7 @@ async def _start_thread(
             "codex_protocol_error",
             "Codex nie zwrócił identyfikatora wątku.",
         )
+    observer.model = _string_value(result, "model")
 
 
 async def _start_turn(
@@ -446,30 +447,33 @@ async def _start_turn(
     request: CodexAppServerStructuredTurnRequest,
     observer: _TurnObserver,
 ) -> None:
+    turn_params: dict[str, object] = {
+        "additionalContext": {
+            "wilq_application": {
+                "kind": "application",
+                "value": request.application_context,
+            },
+            "wilq_untrusted_source": {
+                "kind": "untrusted",
+                "value": request.untrusted_context,
+            },
+        },
+        "approvalPolicy": "never",
+        "cwd": cwd,
+        "environments": [],
+        "input": [{"type": "text", "text": request.instruction}],
+        "outputSchema": dict(request.output_schema),
+        "runtimeWorkspaceRoots": [],
+        "sandboxPolicy": {"type": "readOnly", "networkAccess": False},
+        "threadId": observer.thread_id,
+    }
+    if observer.model:
+        turn_params["model"] = observer.model
     await _send_request(
         stdin,
         request_id=3,
         method="turn/start",
-        params={
-            "additionalContext": {
-                "wilq_application": {
-                    "kind": "application",
-                    "value": request.application_context,
-                },
-                "wilq_untrusted_source": {
-                    "kind": "untrusted",
-                    "value": request.untrusted_context,
-                },
-            },
-            "approvalPolicy": "never",
-            "cwd": cwd,
-            "environments": [],
-            "input": [{"type": "text", "text": request.instruction}],
-            "outputSchema": dict(request.output_schema),
-            "runtimeWorkspaceRoots": [],
-            "sandboxPolicy": {"type": "readOnly", "networkAccess": False},
-            "threadId": observer.thread_id,
-        },
+        params=turn_params,
     )
     result = await _wait_for_response(stdout, request_id=3, observer=observer)
     turn = _nested_object(result, "turn")
@@ -554,11 +558,85 @@ def _codex_process_environment(
 
 def _codex_process_command() -> tuple[str, ...]:
     command = ["codex", "app-server", "--stdio"]
-    for override in _CODEX_CONFIG_OVERRIDES:
+    overrides = list(_CODEX_CONFIG_OVERRIDES)
+    configured_model = _configured_model()
+    if configured_model is not None:
+        overrides.append(f"model={json.dumps(configured_model, ensure_ascii=False)}")
+    provider_overrides = _configured_model_provider_overrides()
+    overrides.extend(provider_overrides)
+    for override in overrides:
         command.extend(("--config", override))
     for feature in _DISABLED_TOOL_FEATURES:
         command.extend(("--disable", feature))
     return tuple(command)
+
+
+def _configured_model() -> str | None:
+    """Read only the selected model from the operator's Codex config.
+
+    The isolated runtime intentionally does not copy user config wholesale:
+    MCP, plugin and credential settings must not cross the boundary. Newer
+    app-server versions nevertheless need the selected model explicitly when
+    remote model refresh is disabled, so carry this one non-secret scalar.
+    """
+
+    auth_path = codex_auth_path()
+    if auth_path is None:
+        return None
+    config_path = auth_path.parent / "config.toml"
+    try:
+        config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return None
+    model = config.get("model")
+    if not isinstance(model, str):
+        return None
+    model = model.strip()
+    return model if 0 < len(model) <= 200 else None
+
+
+def _configured_model_provider_overrides() -> list[str]:
+    """Carry only non-secret fields for the selected Codex provider."""
+
+    auth_path = codex_auth_path()
+    if auth_path is None:
+        return []
+    config_path = auth_path.parent / "config.toml"
+    try:
+        config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return []
+    provider_id = config.get("model_provider")
+    providers = config.get("model_providers")
+    if not isinstance(providers, dict):
+        return []
+    if provider_id is None and len(providers) == 1:
+        provider_id = next(iter(providers))
+    if not isinstance(provider_id, str):
+        return []
+    provider = providers.get(provider_id)
+    if not isinstance(provider, dict) or not _safe_provider_id(provider_id):
+        return []
+    values: list[tuple[str, object]] = [
+        ("name", provider.get("name")),
+        ("base_url", provider.get("base_url")),
+        ("wire_api", provider.get("wire_api")),
+        ("requires_openai_auth", provider.get("requires_openai_auth")),
+    ]
+    overrides = [f"model_provider={json.dumps(provider_id, ensure_ascii=False)}"]
+    for field_name, value in values:
+        if isinstance(value, (str, bool)):
+            if isinstance(value, str) and not value.strip():
+                continue
+            overrides.append(
+                "model_providers."
+                f"{provider_id}.{field_name}={json.dumps(value, ensure_ascii=False)}"
+            )
+    return overrides
+
+
+def _safe_provider_id(value: str) -> bool:
+    return bool(value) and all(character.isalnum() or character in "_-" for character in value)
 
 
 async def _send_request(
