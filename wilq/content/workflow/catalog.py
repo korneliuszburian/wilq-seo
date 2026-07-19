@@ -28,6 +28,12 @@ _inventory_material_cache: dict[
     tuple[str, str | None], tuple[float, ContentInventoryMaterialResponse]
 ] = {}
 _inventory_material_cache_lock = RLock()
+_INVENTORY_METRIC_CACHE_SECONDS = 15.0
+_inventory_metric_cache: dict[
+    tuple[str, str, tuple[tuple[str, str, tuple[str, ...]], ...]],
+    tuple[float, list[Any]],
+] = {}
+_inventory_metric_cache_lock = RLock()
 
 
 class ContentInventoryCatalogItem(BaseModel):
@@ -526,6 +532,28 @@ def inventory_work_item_id(url: str) -> str:
 
 
 def inventory_metric_facts(url: str, path: str) -> list[Any]:
+    latest_runs: dict[str, Any | None] = {}
+    refresh_key: list[tuple[str, str, tuple[str, ...]]] = []
+    for connector_id in ("google_search_console", "google_analytics_4"):
+        latest = _latest_metric_refresh(connector_id)
+        latest_runs[connector_id] = latest
+        refresh_key.append(
+            (
+                connector_id,
+                str(getattr(latest, "id", "")) if latest is not None else "",
+                tuple(getattr(latest, "evidence_ids", ()) or ())
+                if latest is not None
+                else (),
+            )
+        )
+    cache_key = (url.rstrip("/"), path, tuple(refresh_key))
+    now = monotonic()
+    with _inventory_metric_cache_lock:
+        cached = _inventory_metric_cache.get(cache_key)
+        if cached is not None and now - cached[0] < _INVENTORY_METRIC_CACHE_SECONDS:
+            return list(cached[1])
+        if cached is not None:
+            _inventory_metric_cache.pop(cache_key, None)
     facts: list[Any] = []
     for lookup_url in landing_page_metric_lookup_urls(url):
         for connector_id in ("google_search_console", "google_analytics_4"):
@@ -534,14 +562,22 @@ def inventory_metric_facts(url: str, path: str) -> list[Any]:
                 lookup_url,
                 content_path=landing_page_metric_lookup_path(url) or path,
             )
-            facts.extend(_restrict_to_latest_refresh_batch(connector_id, connector_facts))
-    return list({fact.model_dump_json(): fact for fact in facts}.values())
+            facts.extend(
+                _restrict_to_latest_refresh_batch(
+                    connector_id,
+                    connector_facts,
+                    latest_run=latest_runs[connector_id],
+                )
+            )
+    result = list({fact.model_dump_json(): fact for fact in facts}.values())
+    with _inventory_metric_cache_lock:
+        _inventory_metric_cache[cache_key] = (now, result)
+    return list(result)
 
 
-def _restrict_to_latest_refresh_batch(connector_id: str, facts: list[Any]) -> list[Any]:
-    """Prevent demand rows from mixing evidence across connector refresh history."""
+def _latest_metric_refresh(connector_id: str) -> Any | None:
     runs = local_state_store().list_connector_refresh_runs(connector_id=connector_id)
-    latest = next(
+    return next(
         (
             run
             for run in runs
@@ -549,6 +585,16 @@ def _restrict_to_latest_refresh_batch(connector_id: str, facts: list[Any]) -> li
         ),
         None,
     )
+
+
+def _restrict_to_latest_refresh_batch(
+    connector_id: str,
+    facts: list[Any],
+    *,
+    latest_run: Any | None = None,
+) -> list[Any]:
+    """Prevent demand rows from mixing evidence across connector refresh history."""
+    latest = latest_run if latest_run is not None else _latest_metric_refresh(connector_id)
     if latest is None or not latest.evidence_ids:
         return facts
     allowed = set(latest.evidence_ids)
