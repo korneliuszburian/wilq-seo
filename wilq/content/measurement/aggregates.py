@@ -21,6 +21,7 @@ MeasurementAggregateExclusionCode = Literal[
 ]
 
 MeasurementComparisonStatus = Literal["available", "not_available", "ambiguous"]
+MeasurementConnector = Literal["google_search_console", "google_analytics_4"]
 
 
 class MeasurementAggregateExclusion(BaseModel):
@@ -209,12 +210,7 @@ def aggregate_exact_page_metric_facts(
                     if metric_name == "ctr"
                     else _numeric_sum(by_name.get("engaged_sessions", []))
                 )
-                value = (
-                    None
-                    if denominator in {None, 0} or numerator is None
-                    else numerator / denominator
-                )
-                if value is None:
+                if denominator is None or denominator == 0 or numerator is None:
                     exclusions.append(
                         MeasurementAggregateExclusion(
                             code="missing_denominator",
@@ -225,6 +221,7 @@ def aggregate_exact_page_metric_facts(
                         )
                     )
                     continue
+                value = numerator / denominator
             elif metric_name == "average_position":
                 value = _weighted_average(metric_rows, by_name.get("impressions", []))
                 if value is None:
@@ -301,11 +298,11 @@ def compare_exact_page_metric_periods(
     the connector's minimum metric set in each of the two latest periods.
     """
     aggregate = aggregate_exact_page_metric_facts(facts, content_url=content_url)
-    required = {
+    required: dict[MeasurementConnector, set[str]] = {
         "google_search_console": {"clicks", "impressions"},
         "google_analytics_4": {"sessions", "engaged_sessions"},
     }
-    by_connector_period: dict[tuple[str, str], list[MetricFact]] = defaultdict(list)
+    by_connector_period: dict[tuple[MeasurementConnector, str], list[MetricFact]] = defaultdict(list)
     for fact in aggregate.facts:
         if fact.source_connector in required and _is_exact_period(fact.period):
             by_connector_period[(fact.source_connector, fact.period)].append(fact)
@@ -414,14 +411,16 @@ def _weighted_average(
     impression_rows: list[MetricFact],
 ) -> float | None:
     denominator = _numeric_sum(impression_rows)
-    if denominator in {None, 0} or len(rows) != len(impression_rows):
+    if denominator is None or denominator == 0 or len(rows) != len(impression_rows):
         return None
     weighted = [
         float(row.value) * float(weight.value)
         for row, weight in zip(rows, impression_rows, strict=True)
         if isinstance(row.value, (int, float)) and isinstance(weight.value, (int, float))
     ]
-    return sum(weighted) / denominator if len(weighted) == len(rows) else None
+    if len(weighted) != len(rows) or denominator is None or denominator == 0:
+        return None
+    return sum(weighted) / denominator
 
 
 def _deduplicate_exclusions(

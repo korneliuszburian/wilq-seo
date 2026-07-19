@@ -2244,3 +2244,12 @@ nieujemne metryki), ale usuwa ryzyko obsługi `None` jako obiektu oraz błędną
 inferencję wartości statusowych. Proof: modułowy mypy clean i testy
 `tests/connectors/test_google_ads_ad_landing_pages.py`
 oraz `tests/connectors/test_google_ads_landing_page_read.py` (16/16).
+
+### 2026-07-19 — fail-closed obliczenia porównań GSC/GA4
+
+Agregaty pomiarowe mają jawny alias dozwolonych connectorów GSC/GA4, a CTR,
+engagement rate i weighted average sprawdzają `None` oraz zero przed dzieleniem.
+Nie zmienia to admission danych; usuwa tylko niebezpieczne ścieżki typu
+`float / None` i utrzymuje brak wyniku przy niepełnym denominatorze. Proof:
+`uv run mypy wilq/content/measurement/aggregates.py --no-incremental` oraz
+`tests/content/test_measurement_aggregates.py` (8/8).
