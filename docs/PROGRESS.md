@@ -2280,3 +2280,13 @@ queue/snapshot wystawia `page_inventory.section_headings`. Runtime proof na
 obu dokładnych case'ach pokazuje 12 nagłówków z publicznego HTML, ACF pozostaje
 jawnie `missing`, a `content_word_count` i evidence pozostają zachowane.
 Focused proof: inventory catalog + queue `9/9`, mypy trzech modułów clean.
+
+### 2026-07-19 — marketer wybiera sekcję przed wygenerowaniem planu
+
+Shared queue schema wystawia teraz `page_inventory.section_headings`, a
+`/content-workflow` używa tych nagłówków jako źródła wyboru sekcji, gdy plan
+Codexa jeszcze nie istnieje. Po wygenerowaniu planu picker przełącza się na
+stabilne nagłówki propozycji; stary `planning_digest` nie może zanieczyścić
+wyboru z bieżącej strony. To jest tylko fokus sesji — nie tworzy planu ani nie
+udaje akceptacji. Proof: dashboard route testy 35/35 oraz shared-schema i
+dashboard typecheck clean.

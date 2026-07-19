@@ -496,6 +496,7 @@ function ContentWorkflowMarketerJourney({
         planningGenerationStatus={data.planningWorkspace?.proposal.generation_status ?? "baseline"}
         planningDigest={data.planningWorkspace?.proposal.planning_digest ?? null}
         planningSections={data.planningWorkspace?.proposal.sections ?? []}
+        currentSectionHeadings={data.candidate.page_inventory?.section_headings ?? []}
         queue={queue}
         selectedWorkItemId={selectedWorkItemId}
         onSelectWorkItem={onSelectWorkItem}
@@ -530,6 +531,7 @@ function ContentSessionPicker({
   planningGenerationStatus,
   planningDigest,
   planningSections,
+  currentSectionHeadings,
   queue,
   selectedWorkItemId,
   onSelectWorkItem
@@ -537,6 +539,7 @@ function ContentSessionPicker({
   planningGenerationStatus: ContentPlanningGenerationStatus;
   planningDigest: string | null;
   planningSections: ContentPlanningSections;
+  currentSectionHeadings: string[];
   queue: ContentWorkItemQueueResponse;
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
@@ -552,13 +555,19 @@ function ContentSessionPicker({
   const selected = candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
-  const selectedSection =
-    (requestedPlanningDigest === planningDigest
-      ? planningSections.find((section) => section.heading === requestedSectionHeading)
-      : null) ??
-    planningSections[0] ??
-    null;
   const hasGeneratedPlan = planningGenerationStatus === "codex_generated";
+  const selectedSectionHeading = hasGeneratedPlan
+    ? (requestedPlanningDigest === planningDigest
+        ? planningSections.find((section) => section.heading === requestedSectionHeading)?.heading
+        : null) ?? planningSections[0]?.heading ?? null
+    : (!requestedPlanningDigest &&
+        requestedSectionHeading &&
+        currentSectionHeadings.includes(requestedSectionHeading)
+        ? requestedSectionHeading
+        : null) ?? currentSectionHeadings[0] ?? null;
+  const availableSectionHeadings = hasGeneratedPlan
+    ? planningSections.map((section) => section.heading)
+    : currentSectionHeadings;
   if (!selected) return null;
 
   return (
@@ -628,13 +637,13 @@ function ContentSessionPicker({
           </button>
         ))}
       </div>
-      {selectedSection ? (
+      {selectedSectionHeading ? (
         <label className="mt-3 block text-sm font-semibold text-ink" htmlFor="content-session-section">
           {hasGeneratedPlan ? "Sekcja z planu" : "Sekcja z aktualnej strony"}
           <select
             id="content-session-section"
             className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
-            value={selectedSection.heading}
+            value={selectedSectionHeading}
             onChange={(event) => {
               void navigate({
                 to: "/content-workflow",
@@ -642,15 +651,15 @@ function ContentSessionPicker({
                   ...previous,
                   work_item_id: selectedWorkItemId,
                   section_heading: event.target.value,
-                  planning_digest: planningDigest ?? undefined
+                  planning_digest: hasGeneratedPlan ? planningDigest ?? undefined : undefined
                 }),
                 replace: true
               });
             }}
           >
-            {planningSections.map((section) => (
-              <option key={section.heading} value={section.heading}>
-                {section.heading}
+            {availableSectionHeadings.map((heading) => (
+              <option key={heading} value={heading}>
+                {heading}
               </option>
             ))}
           </select>

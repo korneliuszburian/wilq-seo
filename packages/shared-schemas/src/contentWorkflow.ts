@@ -178,6 +178,7 @@ export const ContentWorkItemQueueSearchMetricsSchema = z.object({
 export const ContentWorkItemQueuePageInventorySchema = z.object({
   title_or_h1: z.string().nullable().optional(),
   section_count: z.number().int().nonnegative().nullable().optional(),
+  section_headings: z.array(z.string().min(1)).default([]),
   section_inventory_status: ContentWordPressSectionInventoryStatusSchema.default("missing"),
   content_inventory_status: z.enum(["available", "missing"]).default("missing"),
   content_summary: z.string().nullable().optional(),

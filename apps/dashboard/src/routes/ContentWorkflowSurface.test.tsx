@@ -533,12 +533,33 @@ describe("ContentWorkflowSurface", () => {
         "Jak przygotować dokumenty"
       )
     );
-    expect(Reflect.get(appRouter.state.location.search, "planning_digest")).toBe("a".repeat(64));
+    expect(Reflect.get(appRouter.state.location.search, "planning_digest")).toBeUndefined();
     expect(screen.getByRole("combobox", { name: "Sekcja z aktualnej strony" })).toHaveValue(
       "Jak przygotować dokumenty"
     );
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
+  });
+
+  it("uses current page headings before a plan exists", async () => {
+    const snapshot = workflowSnapshot();
+    snapshot.planning_workspace!.proposal.sections = [];
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValueOnce(snapshot);
+
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo",
+          defaultPendingMinMs: 0
+        })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const sectionPicker = await screen.findByRole("combobox", { name: "Sekcja z aktualnej strony" });
+    expect(within(sectionPicker).getAllByRole("option")).toHaveLength(2);
+    expect(sectionPicker).toHaveValue("Kogo dotyczy BDO");
+    expect(within(sectionPicker).getByRole("option", { name: "Jak przygotować dokumenty" })).toBeInTheDocument();
   });
 
   it("starts dynamic planning only from the explicit strategy action", async () => {
@@ -1820,6 +1841,15 @@ function contentQueueResponse(): ContentWorkItemQueueResponse {
           label: "pomiar do zaplanowania",
           reason: "WILQ może przygotować okno pomiaru po szkicu.",
           source_connectors: ["google_search_console"]
+        },
+        page_inventory: {
+          title_or_h1: "BDO dla firm",
+          section_count: 2,
+          section_headings: ["Kogo dotyczy BDO", "Jak przygotować dokumenty"],
+          section_inventory_status: "available",
+          content_inventory_status: "available",
+          acf_section_inventory_status: "missing",
+          acf_section_headings: []
         },
         safe_next_step: "Przejdź do workflow wybranego tematu.",
         freshness_assessment: contentFreshnessAssessment(),
