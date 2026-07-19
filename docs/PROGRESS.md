@@ -1791,3 +1791,10 @@ payload wybiera sekcję przez `selected_section_headings`, review używa etykiet
 tekstu → dev`. Produkcja nie została zmieniona. To świeży synthetic browser
 proof, nie realny Wilku UAT ani zgoda na vendor write; nadal obowiązują blokery
 importu materiałów, owner review i storage maintenance window.
+
+Świeży checker fixed pointu został przygotowany poza repo w
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-content-browser-contract-v2-TfOhjc`.
+Runner został poprawnie zatrzymany o `10:24 CEST` przez ograniczenie okna i nie
+ma jeszcze outputu Claude; po `12:00` można uruchomić wyłącznie ten pass, jeśli
+fingerprint repo pozostanie niezmieniony. Brak outputu nie jest ani PASS, ani
+findingiem.
