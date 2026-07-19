@@ -1472,6 +1472,10 @@ strona oraz sekcja są wybierane przez `work_item_id`/`section_heading` w URL.
 Nie znaleziono regresji hardkodującej temat ani usuwającej katalog stron, więc
 nie wprowadzono pozornej zmiany UI.
 
+Live queue potwierdza 54 kandydatów: 53 `refresh` i 1 jawnie `block`; blokowany
+rekord Ahrefs jest widoczny w kolejce z powodem, a BDO i inne istniejące URL-e
+mają osobne tytuły, metryki, usługi i tryb odświeżenia.
+
 Na żywym API przeszedł też `wilq-ads-doctor/scripts/smoke_skill_contract.py`.
 Wszystkie 21 modułów Ads ma rzeczywiste importy z entrypointu/orchestratora i
 chroni odrębne kontrakty; brak bezpiecznej redundancji do kasowania bez
