@@ -600,6 +600,7 @@ def _ahrefs_gap_read_contract(
         action_ids=action_ids,
         gap_records=gap_records,
         gap_record_count=len(gap_records),
+        coverage_summary=_gap_records_coverage_summary(gap_records),
         cross_check_status=cross_check.status,
         cross_check_status_label=_ahrefs_cross_check_status_label(cross_check.status),
         cross_check_summary=_ahrefs_cross_check_summary(
@@ -984,6 +985,21 @@ def _gap_coverage_summary(facts: list[MetricFact]) -> str:
     if sample and limit:
         return f"próbka domeny docelowej: {sample}; limit porównania: {limit}"
     return "zakres próby nie został podany w rekordzie"
+
+
+def _gap_records_coverage_summary(records: list[AhrefsGapRecord]) -> str:
+    summaries = list(
+        dict.fromkeys(
+            record.coverage_summary
+            for record in records
+            if record.coverage_summary
+        )
+    )
+    if not summaries:
+        return "Brak potwierdzonego zakresu próby."
+    if len(summaries) == 1:
+        return summaries[0]
+    return "Zakres rekordów: " + "; ".join(summaries[:3])
 
 
 def _gap_type_for_fact(fact: MetricFact) -> AhrefsGapType:

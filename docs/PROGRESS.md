@@ -1667,3 +1667,14 @@ material IDs są faktycznie `imported`. Oba runy kończą się jednak typed
 `codex_response_stream_disconnected`, bez proposal/revision/vendor write. To
 potwierdza parity wejścia i lineage dwóch pilotów, nie sukces providera ani
 gotowy tekst.
+
+### 2026-07-19 — aggregate coverage dla Ahrefs gap contract
+
+Kontrakt `AhrefsGapReadContract` eksponuje teraz również zbiorczy, API-owned
+`coverage_summary`, złożony z zakresów zapisanych przy poszczególnych rekordach
+luk. Panel pokazuje ten zakres nad listą rekordów, a rekordy nadal zachowują
+`derived_method`, własny `coverage_summary` i status mapowania. Live readback
+zwrócił 8 rekordów oraz mieszany zakres: próbka domeny docelowej 100, limit
+porównania 1000 i rekordy bez podanego zakresu. To poprawia widoczność
+ograniczenia próby; nie jest dowodem kompletności całego Ahrefs ani nie odblokowuje
+automatycznego mapowania strony/usługi.

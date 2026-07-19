@@ -116,6 +116,7 @@ export const AhrefsGapReadContractSchema = z.object({
   action_summary_label: z.string().default(""),
   gap_records: z.array(AhrefsGapRecordSchema),
   gap_record_count: z.number(),
+  coverage_summary: z.string().default(""),
   cross_check_status: z.enum(["api_backed", "manual_required", "missing"]).default("missing"),
   cross_check_status_label: z.string().default(""),
   cross_check_summary: z.string().default(""),

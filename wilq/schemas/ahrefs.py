@@ -142,6 +142,7 @@ class AhrefsGapReadContract(BaseModel):
     action_summary_label: str = ""
     gap_records: list[AhrefsGapRecord] = Field(default_factory=list)
     gap_record_count: int = 0
+    coverage_summary: str = ""
     cross_check_status: Literal["api_backed", "manual_required", "missing"] = "missing"
     cross_check_status_label: str = ""
     cross_check_summary: str = ""

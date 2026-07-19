@@ -215,6 +215,11 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
             Luki SEO z Ahrefs
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">{contract.summary}</p>
+          {contract.coverage_summary ? (
+            <p className="mt-2 text-xs leading-5 text-slate-600">
+              Zakres danych: {contract.coverage_summary}
+            </p>
+          ) : null}
         </div>
         <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">
           Status danych Ahrefs: {contract.status_label}
