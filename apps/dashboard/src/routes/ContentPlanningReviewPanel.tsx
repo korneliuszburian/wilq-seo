@@ -71,6 +71,7 @@ export function ContentPlanningReviewPanel({
     (candidate) => candidate.service_card_id === selectedServiceCardId
   );
   const serviceOverrideReviewRequired = requiresServiceOverrideReview(selectedService);
+  const serviceSelectionMessage = planningServiceSelectionMessage(serviceCandidates.length);
   const sectionMapReady = planningSectionMapReady(proposal);
   const latestDecision = stage === "scope" ? planning.scope_decision : planning.section_map_decision;
   const inventoryMapping = planning.proposal.inventory_mapping ?? [];
@@ -126,6 +127,14 @@ export function ContentPlanningReviewPanel({
               ))}
             </select>
           </label>
+          {serviceSelectionMessage ? (
+            <p
+              className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700"
+              data-testid="planning-service-candidates-blocker"
+            >
+              {serviceSelectionMessage}
+            </p>
+          ) : null}
           {selectedService ? (
             <p className="mt-2 text-xs leading-5 text-slate-600">
               {selectedService.match_reasons.join(" ")}
@@ -404,6 +413,12 @@ export function requiresServiceOverrideReview(
   candidate: ContentWorkItemServiceCandidate | undefined
 ): boolean {
   return Boolean(candidate && candidate.lifecycle_status !== "approved_current");
+}
+
+export function planningServiceSelectionMessage(candidateCount: number): string | null {
+  return candidateCount > 0
+    ? null
+    : "WILQ nie znalazł karty usługi pasującej do tej strony i źródeł. Plan pozostaje zablokowany — sprawdź Service Profile albo uzupełnij jego zatwierdzone źródło, zamiast wybierać usługę na podstawie samego tematu.";
 }
 
 export function planningInventorySourceLabel(

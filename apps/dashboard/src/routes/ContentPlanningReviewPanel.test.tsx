@@ -4,6 +4,7 @@ import {
   inventoryDispositionLabel,
   planningReviewCheckedItems,
   planningSectionMapReady,
+  planningServiceSelectionMessage,
   planningScopeSummary,
   planningSourceSummary,
   requiresServiceOverrideReview,
@@ -99,6 +100,13 @@ describe("requiresServiceOverrideReview", () => {
     expect(
       requiresServiceOverrideReview({ lifecycle_status: "source_backed_review_required" } as never)
     ).toBe(true);
+  });
+});
+
+describe("planningServiceSelectionMessage", () => {
+  it("keeps an unbound page blocked instead of implying a service choice", () => {
+    expect(planningServiceSelectionMessage(0)).toContain("nie znalazł karty usługi");
+    expect(planningServiceSelectionMessage(1)).toBeNull();
   });
 });
 
