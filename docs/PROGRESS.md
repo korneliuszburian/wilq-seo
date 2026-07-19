@@ -2365,3 +2365,14 @@ uczciwie wskazać jednej usługi: 11 landingów ma exact inventory, lecz
 `review_required` i zero typed service candidates, a 12 jest `unbound`.
 Pilot single-service pozostaje więc właścicielsko zablokowany do review/karty
 Service Profile; nie wykonujemy leksykalnego przypisania ani Ads write.
+
+### 2026-07-19 — app-server blocker odseparowany od loginu Codexa
+
+Kontrolowany direct `codex exec --ephemeral --sandbox read-only -m
+gpt-5.6-sol --json` zwrócił poprawne `agent_message` i `turn.completed`. Ten
+sam izolowany auth/env uruchomiony przez `codex app-server --stdio` przechodzi
+initialize/thread/turn startup, ale dostaje `responseStreamDisconnected` i
+reconnecty 1/5…5/5; zachowanie pozostaje takie samo po usunięciu
+`features.remote_models=false`. Diagnoza zawęża blocker do bieżącego
+app-server/provider protocol path. Nie wprowadzamy obejścia przez CLI, drugi
+model ani fallback; wynik zapisany w Bead recovery.
