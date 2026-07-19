@@ -444,11 +444,16 @@ def _run_planning_turn(
     output = canonicalize_model_inventory_headings(planning_input, output)
     quality_errors = _planning_output_quality_errors(output)
     if quality_errors:
+        quality_reason = (
+            "Plan nie zawiera żadnego bloku CTA wymaganego dla bezpiecznego następnego kroku."
+            if "missing_cta" in quality_errors
+            else "Plan zawiera nagłówki nawigacyjne, promocyjne albo datowane, "
+            "które nie są użyteczną strukturą odpowiedzi dla czytelnika."
+        )
         blocker = _blocker(
             "quality_gate_failed",
             "Plan nie przeszedł bramki jakości",
-            "Plan zawiera nagłówki nawigacyjne, promocyjne albo datowane, "
-            "które nie są użyteczną strukturą odpowiedzi dla czytelnika.",
+            quality_reason,
             "Uruchom nową próbę po oczyszczeniu materiału wejściowego; WILQ nic nie zapisał.",
             source_codes=quality_errors,
         )

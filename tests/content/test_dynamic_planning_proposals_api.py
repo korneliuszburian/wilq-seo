@@ -116,6 +116,7 @@ def test_dynamic_planning_rejects_a_plan_without_cta(
     blocker = result.json()["blockers"][0]
     assert blocker["code"] == "quality_gate_failed"
     assert "missing_cta" in blocker["source_codes"]
+    assert "bloku CTA" in blocker["reason"]
     assert runtime.calls == 1
 
 
