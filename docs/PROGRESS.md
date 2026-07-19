@@ -2855,3 +2855,9 @@ Profilowanie selected snapshot wykazało, że `inventory_metric_facts()` odbudow
 Focused proof: Ruff i 2 testy `test_inventory_catalog.py -k 'metric_facts'` passed. Po restarcie live snapshot warm: BDO ~1,94 s (wcześniej ~3,3 s), outsourcing ~1,21 s (wcześniej ~2,0 s); cold BDO ~9,43 s pozostaje osobnym klastrem import/diagnostics. Claude checker nie wyemitował JSON, więc nie przedstawiam review jako PASS.
 
 Kolejny micro-slice performance: content diagnostics korzysta teraz z istniejącego `list_actions_cached()` zamiast odbudowywać registry akcji przy każdym cold snapshot. `tests/test_content_diagnostics.py` (7) i Ruff passed. Cold start pozostaje osobnym problemem; nie deklaruję pełnego rozwiązania latency.
+
+### 2026-07-19 — measurement evidence nie skanuje ponownie tego samego refresh snapshotu
+
+`load_content_measurement_evidence()` ma teraz krótki, read-only cache związany z konkretnym store, URL/path oraz najnowszymi run IDs, statusami i evidence IDs dla WordPress, GSC i GA4. Cache wygasa po 15 sekundach, a nowy refresh identity wymusza ponowny odczyt; exact URL/path filtering i agregacja pozostają bez zmian.
+
+Focused proof: `tests/content/test_measurement_aggregates.py` 9/9, Ruff i `git diff --check` passed. Live selected BDO snapshot readback: 4269 ms cold, 1880 ms i 1937 ms warm. To jest kierunkowy pomiar jednej ścieżki, nie obietnica uniwersalnego SLA. Bounded Claude checker zakończył się przed schema output; disposition pozostaje `evidence_gap`, bez PASS ani approval: `/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-measurement-evidence-cache-GxSrWB/disposition.md`.
