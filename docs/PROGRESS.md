@@ -1978,3 +1978,8 @@ konkretny `ContentPlanningModelOutput`, a kandydaci i `_mapped_status` używają
 `tests/content/test_planning_section_mapping.py` 7/7, `git diff --check` clean.
 To nie zamyka jeszcze freshness seam, TS/Python contract drift ani całego
 repozytoryjnego mypy.
+
+Po tym slice pełny odczyt `uv run mypy wilq apps/api --no-incremental` spadł z
+100 błędów w 19 plikach do 90 błędów w 17 plikach. To jest licznik długu, nie
+claim gotowości; pozostałe klastry obejmują freshness diagnostics, initial draft,
+Ads, GA4, WordPress inventory i shared-contract seams.
