@@ -679,6 +679,16 @@ function KnowledgeReadinessNotice({
       </div>
     );
   }
+  if (query.isLoading) {
+    return (
+      <div
+        className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+        data-testid="content-workflow-knowledge-readiness-loading"
+      >
+        Sprawdzam gotowość korpusu źródłowego przed przygotowaniem planu…
+      </div>
+    );
+  }
   if (!readiness || readiness.ready_for_generation) return null;
   const pendingParts = [
     readiness.import_pending_count > 0
@@ -696,7 +706,9 @@ function KnowledgeReadinessNotice({
       <p className="font-semibold">Korpus źródłowy nie jest jeszcze kompletny</p>
       <p className="mt-1 leading-6">
         Zaimportowano {readiness.imported_count} z {readiness.total_count} materiałów.
-        {pendingParts.length ? ` ${pendingParts.join("; ")}.` : null} {readiness.next_step}
+        {pendingParts.length ? ` ${pendingParts.join("; ")}.` : null}{" "}
+        {readiness.next_step ||
+          "Skontaktuj się z administratorem, aby ustalić kolejny krok dla korpusu źródłowego."}
       </p>
     </div>
   );

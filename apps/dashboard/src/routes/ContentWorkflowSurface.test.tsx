@@ -289,6 +289,30 @@ describe("ContentWorkflowSurface", () => {
     expect(notice).not.toHaveTextContent("kontrolowany import");
   });
 
+  it("keeps a non-ready corpus actionable when the API omits its next step", async () => {
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue({
+      status: "import_pending",
+      total_count: 0,
+      imported_count: 0,
+      import_pending_count: 0,
+      excerpt_review_required_count: 0,
+      ready_for_generation: false,
+      blocker: "Korpus wymaga obsługi.",
+      next_step: ""
+    });
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-workflow-knowledge-readiness")).toHaveTextContent(
+      "Skontaktuj się z administratorem"
+    );
+  });
+
   it("does not silently treat a readiness fetch error as generation-ready", async () => {
     vi.mocked(getKnowledgeSourceMaterialReadiness).mockRejectedValue(new Error("offline"));
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
