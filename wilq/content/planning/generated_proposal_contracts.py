@@ -121,6 +121,16 @@ class ContentPlanningModelOutput(BaseModel):
                 "CTA and internal-link placement must name after_lead, "
                 "after_content, or an exact planned section heading."
             )
+        removed_section_headings = {
+            section.heading
+            for section in self.sections
+            if section.inventory_disposition == "remove_review_required"
+        }
+        if removed_section_headings.intersection(placements):
+            raise ValueError(
+                "CTA and internal-link placement cannot target a section marked "
+                "remove_review_required."
+            )
         page_assets = self.page_assets.model_dump()
         if any(not str(value).strip() for value in page_assets.values()):
             raise ValueError("Planning output requires every page asset.")

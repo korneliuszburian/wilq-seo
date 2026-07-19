@@ -82,3 +82,55 @@ def test_planning_model_output_enforces_compactness_caps_at_validation_boundary(
 
         with pytest.raises(ValueError, match=field):
             ContentPlanningModelOutput.model_validate(payload)
+
+
+def test_planning_model_output_rejects_placement_after_removed_section() -> None:
+    payload = {
+        "language": "pl-PL",
+        "service_card_id": "ekologus_service_bdo_reporting",
+        "target_reader": "przedsiębiorca",
+        "buyer_problem": "Nie wie, co sprawdzić.",
+        "buyer_trigger": "Przed przygotowaniem obowiązków.",
+        "search_intent": "informational",
+        "angle": "Praktyczny przewodnik",
+        "value_proposition": "Porządkuje pierwszy krok.",
+        "page_assets": {
+            "title": "Tytuł",
+            "h1": "Nagłówek",
+            "lead": "Lead.",
+            "meta_title": "Meta title",
+            "meta_description": "Meta description.",
+        },
+        "sections": [
+            {
+                "heading": "Sekcja do usunięcia",
+                "purpose": "Oznaczyć element do osobnego review.",
+                "reader_question": "Czy ta sekcja zostaje?",
+                "inventory_disposition": "remove_review_required",
+                "evidence_ids": ["ev_planning"],
+            },
+            {
+                "heading": "Sekcja zachowana",
+                "purpose": "Odpowiedzieć.",
+                "reader_question": "Co sprawdzić?",
+                "inventory_disposition": "preserve",
+                "evidence_ids": ["ev_planning"],
+            },
+        ],
+        "cta_blocks": [
+            {
+                "placement": "Sekcja do usunięcia",
+                "purpose": "Skierować do kontaktu.",
+                "copy_direction": "Opisz sytuację.",
+                "evidence_ids": ["ev_planning"],
+            }
+        ],
+        "measurement_plan": {
+            "observation_rule": "Porównaj ten sam okres po zmianie.",
+            "success_claim_rule": "Nie twierdź o efekcie bez porównania.",
+        },
+        "publish_ready": False,
+    }
+
+    with pytest.raises(ValueError, match="remove_review_required"):
+        ContentPlanningModelOutput.model_validate(payload)
