@@ -2451,3 +2451,13 @@ dziedziczy typed blocker aktualnego kroku, więc marketer widzi jeden prawdziwy
 następny krok zamiast równoczesnego „gotowe” i „zablokowane”. Live proof dla
 outsourcingu: `current_step_id=scope`, readiness `blocked`, blocker
 `scope_review_required`; focused snapshot test, Ruff i mypy clean.
+
+### 2026-07-19 — pełny draft zachowuje lineage na poziomie dokumentu i sekcji
+
+Focused proof obu pilotów przechodzi ponownie po rozszerzeniu falsyfikatora:
+rewizja v2 ma globalne `source_material_ids` i `knowledge_card_ids`, a każda
+sekcja zachowuje własne `evidence_ids` oraz `knowledge_card_ids`. Nie wymuszamy
+fałszywego `source_material_id` przy sekcjach opartych wyłącznie na aktualnym
+live evidence; materiał źródłowy pozostaje jednak trwały na poziomie dokumentu.
+Proof: `test_initial_full_draft_uses_the_same_atomic_contract_for_both_services`
+pass dla BDO i outsourcingu, bez częściowej rewizji i bez publish-ready.

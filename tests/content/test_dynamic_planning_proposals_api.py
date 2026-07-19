@@ -629,6 +629,12 @@ def test_initial_full_draft_uses_the_same_atomic_contract_for_both_services(
         assert revision["planning_input_digest"] == proposal["planning_input_digest"]
         assert revision["service_card_id"] == proposal["service_card_id"]
         assert all(section["evidence_ids"] for section in revision["sections"])
+        assert revision["source_material_ids"]
+        assert revision["knowledge_card_ids"]
+        assert all(
+            section["evidence_ids"] and section["knowledge_card_ids"]
+            for section in revision["sections"]
+        )
         assert revision["internal_links"][0]["target_url"] == (
             "https://www.ekologus.pl/kontakt"
         )
