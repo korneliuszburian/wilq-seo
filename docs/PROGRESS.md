@@ -2051,3 +2051,8 @@ covered windows, settlementu i caveats; wcześniejsze `**dict[str, object]`
 nie przechodziły bezpiecznie do `ContentFreshnessAssessment`. Proof:
 `uv run mypy wilq/briefing/content_diagnostics.py` clean, Ruff clean,
 `tests/test_content_diagnostics.py` 7/7, diff-check clean.
+
+Freshness slice zmniejszył pełny mypy z 72 do 47 błędów; następnie
+`_persisted_runtime_trace` mapuje teraz stan CodexRun `started` do bezpiecznego
+runtime statusu zamiast przekazywać niedozwolony Literal. Proof: modułowy mypy
+clean, dynamic planning runtime/stale tests 5/5.
