@@ -2155,6 +2155,12 @@ pokazuje realny summary 12/9/2, a obecny brief nie pokazuje LinkedIn/Facebook
 jako danych marketingowych. To nie jest jeszcze dowód pełnego downstream
 omission dla wszystkich consumerów.
 
+Fresh checker dla `d7dcf0b9` potwierdził gate i wskazał brak asercji sekcji
+rekomendacji. Falsifier rozszerzono: zablokowany Localo nie może pojawić się
+ani w `what_we_know`, ani w `recommended_focus`, podczas gdy `what_blocks_us`
+pozostaje widoczne. Marketing brief/localo focused proof wynosi teraz 9/9;
+pozostałe źródła i consumerzy wymagają osobnych kontraktów.
+
 ### 2026-07-19 — readiness test korzysta z realnego `/api/connectors`
 
 Domknięto pierwszy follow-up z checker'a: focused falsifier pobiera listę

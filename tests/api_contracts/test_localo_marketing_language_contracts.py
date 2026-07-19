@@ -145,6 +145,10 @@ def test_marketing_brief_omits_metric_facts_from_blocked_localo(
     assert all(item.source_connectors != ["localo"] for item in known.items)
     blockers = next(section for section in brief.sections if section.id == "what_blocks_us")
     assert any(item.source_connectors == ["localo"] for item in blockers.items)
+    recommendations = next(
+        section for section in brief.sections if section.id == "recommended_focus"
+    )
+    assert all(item.source_connectors != ["localo"] for item in recommendations.items)
 
 
 def test_marketing_brief_localo_blocker_uses_marketer_copy() -> None:
