@@ -2609,3 +2609,11 @@ measurement window nie może istnieć przed publikacją. Przed handoffem pokazuj
 informację `measurement_window_pending_publication`; stary blocker pozostaje dla
 payloadów bez exact revision. Semantic review nadal ma osobny, uczciwy blocker
 `storage_activation_required` do maintenance window.
+
+### 2026-07-19 — review exact revision zna lineage całego dokumentu
+
+Walidacja decyzji człowieka nie ogranicza się już do evidence sekcji. Dopuszcza
+lineage z sekcji, FAQ, CTA i linków wewnętrznych zapisanych w tej samej rewizji
+v2, nadal odrzucając dowody spoza snapshotu. Falsyfikator
+`test_revision_review_accepts_lineage_from_all_page_assets` przechodzi razem z
+Ruff i mypy dla routera oraz testu.
