@@ -116,13 +116,13 @@ def register_content_initial_draft_route(
         proposal = _proposal_bound_to_latest_approved_plan(
             work_item_id,
             proposal_store,
-        ) or proposal_store.latest(work_item_id)
+        )
         latest = max(
             (
                 run
                 for run in runs
-                if proposal is None
-                or (
+                if proposal is not None
+                and (
                     run.proposal_id == proposal.proposal_id
                     and run.planning_input_digest == proposal.planning_input_digest
                 )
