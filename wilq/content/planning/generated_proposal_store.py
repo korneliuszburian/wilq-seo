@@ -91,6 +91,34 @@ class ContentPlanningProposalStore:
             connection.close()
         return _proposal_from_row(row)
 
+    def latest_for_planning_digest(
+        self,
+        work_item_id: str,
+        planning_digest: str,
+    ) -> ContentPlanningProposal | None:
+        """Read the newest proposal bound to an approved planning workspace."""
+        connection = self._read_connection()
+        if connection is None:
+            return None
+        try:
+            with connection:
+                if not _table_exists(connection, "content_planning_proposals"):
+                    return None
+                row = connection.execute(
+                    """
+                    SELECT payload_json
+                    FROM content_planning_proposals
+                    WHERE work_item_id = ?
+                      AND json_extract(payload_json, '$.planning_digest') = ?
+                    ORDER BY proposal_version DESC
+                    LIMIT 1
+                    """,
+                    (work_item_id, planning_digest),
+                ).fetchone()
+        finally:
+            connection.close()
+        return _proposal_from_row(row)
+
     def queued_response(
         self,
         work_item_id: str,

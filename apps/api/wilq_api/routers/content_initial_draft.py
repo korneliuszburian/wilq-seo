@@ -112,7 +112,11 @@ def register_content_initial_draft_route(
                 and endpoint in run.used_endpoints
             )
         ]
-        proposal = content_planning_proposal_store().latest(work_item_id)
+        proposal_store = content_planning_proposal_store()
+        proposal = _proposal_bound_to_latest_approved_plan(
+            work_item_id,
+            proposal_store,
+        ) or proposal_store.latest(work_item_id)
         latest = max(
             (
                 run
@@ -182,6 +186,21 @@ def register_content_initial_draft_route(
             blockers=[blocker],
             safe_next_step=blocker.next_step,
         )
+
+
+def _proposal_bound_to_latest_approved_plan(
+    work_item_id: str,
+    proposal_store,
+):
+    decisions = content_workflow_store().load_planning_decisions(work_item_id)
+    approved_digests = [
+        decision.planning_digest
+        for decision in decisions
+        if decision.decision == "approved"
+    ]
+    if len(approved_digests) < 2 or len(set(approved_digests)) != 1:
+        return None
+    return proposal_store.latest_for_planning_digest(work_item_id, approved_digests[0])
 
 
 def _can_queue_initial_draft(
