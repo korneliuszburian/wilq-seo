@@ -70,6 +70,7 @@ def content_decision_with_exact_demand(
                     [
                         *decision.source_connectors,
                         *(fact.source_connector for fact in ads_facts),
+                        *(fact.source_connector for fact in retained_facts),
                     ]
                 )
             ),
