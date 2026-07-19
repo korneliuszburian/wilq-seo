@@ -81,6 +81,9 @@ if turn["params"]["input"][0]["text"] == "Terminal stream failure.":
         }},
     }})
     raise SystemExit(0)
+if turn["params"]["input"][0]["text"] == "Terminal stderr failure.":
+    print("responseStreamDisconnected", file=sys.stderr, flush=True)
+    raise SystemExit(0)
 write({{
     "id": turn["id"],
     "result": {{"turn": {{"id": "turn-test", "items": []}}}},
@@ -232,5 +235,18 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     )
     assert stream_failure.status == "failed"
     assert [blocker.code for blocker in stream_failure.blockers] == [
+        "codex_response_stream_disconnected"
+    ]
+
+    stderr_stream_failure = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
+        CodexAppServerStructuredTurnRequest(
+            instruction="Terminal stderr failure.",
+            application_context="application",
+            untrusted_context="untrusted",
+            output_schema={"type": "object"},
+        )
+    )
+    assert stderr_stream_failure.status == "failed"
+    assert [blocker.code for blocker in stderr_stream_failure.blockers] == [
         "codex_response_stream_disconnected"
     ]

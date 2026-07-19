@@ -159,6 +159,7 @@ class _TurnObserver:
     item_types: list[str] = field(default_factory=list)
     final_output_text: str | None = None
     unphased_output_text: str | None = None
+    stderr_stream_disconnected: bool = False
 
     def add_event_method(self, method: str) -> None:
         if method not in self.event_methods:
@@ -268,6 +269,17 @@ class StdioCodexAppServerClient:
                 )
             )
         except TimeoutError:
+            if observer.stderr_stream_disconnected:
+                return observer.result(
+                    "failed",
+                    blocker=CodexAppServerTurnBlocker(
+                        code="codex_response_stream_disconnected",
+                        message=(
+                            "Provider Codexa przerwał strumień odpowiedzi przed "
+                            "zakończeniem tury."
+                        ),
+                    ),
+                )
             return observer.result(
                 "failed",
                 blocker=CodexAppServerTurnBlocker(
@@ -282,6 +294,17 @@ class StdioCodexAppServerClient:
                 external_call_attempted=True,
             )
         except _SafeTransportFailure as exc:
+            if observer.stderr_stream_disconnected:
+                return observer.result(
+                    "failed",
+                    blocker=CodexAppServerTurnBlocker(
+                        code="codex_response_stream_disconnected",
+                        message=(
+                            "Provider Codexa przerwał strumień odpowiedzi przed "
+                            "zakończeniem tury."
+                        ),
+                    ),
+                )
             return observer.result(
                 "failed",
                 blocker=CodexAppServerTurnBlocker(code=exc.code, message=exc.safe_message),
@@ -314,25 +337,35 @@ class StdioCodexAppServerClient:
                 *_codex_process_command(),
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.PIPE,
                 cwd=runtime.cwd,
                 env=dict(runtime.environment),
                 limit=_READ_LIMIT_BYTES,
                 start_new_session=True,
             )
+            stderr_task: asyncio.Task[None] | None = None
             try:
                 stdin, stdout = process.stdin, process.stdout
-                if stdin is None or stdout is None:
+                stderr = process.stderr
+                if stdin is None or stdout is None or stderr is None:
                     raise _SafeTransportFailure(
                         "codex_transport_error",
                         "Nie udało się otworzyć bezpiecznego kanału do Codexa.",
                     )
+                stderr_task = asyncio.create_task(_observe_stderr(stderr, observer=observer))
                 await _initialize_app_server(stdin, stdout, runtime, observer)
                 await _start_thread(stdin, stdout, runtime.cwd, observer)
                 await _start_turn(stdin, stdout, runtime.cwd, request, observer)
                 return await _complete_turn(stdout, observer)
             finally:
                 await _terminate_process(process)
+                if stderr_task is not None:
+                    try:
+                        await asyncio.wait_for(stderr_task, timeout=0.25)
+                    except TimeoutError:
+                        stderr_task.cancel()
+                        with suppress(asyncio.CancelledError):
+                            await stderr_task
 
 
 def _prepare_isolated_runtime(root: Path) -> _IsolatedCodexRuntime:
@@ -495,6 +528,14 @@ async def _complete_turn(
     stdout: asyncio.StreamReader, observer: _TurnObserver
 ) -> CodexAppServerTurnResult:
     if await _wait_for_turn_completion(stdout, observer=observer) != "completed":
+        if observer.stderr_stream_disconnected:
+            return observer.result(
+                "failed",
+                blocker=CodexAppServerTurnBlocker(
+                    code="codex_response_stream_disconnected",
+                    message="Provider Codexa przerwał strumień odpowiedzi przed zakończeniem tury.",
+                ),
+            )
         return observer.result(
             "failed",
             blocker=CodexAppServerTurnBlocker(
@@ -511,6 +552,20 @@ async def _complete_turn(
             ),
         )
     return observer.result("completed")
+
+
+async def _observe_stderr(
+    stderr: asyncio.StreamReader, *, observer: _TurnObserver
+) -> None:
+    """Classify one safe provider signal without retaining stderr payloads."""
+
+    while True:
+        chunk = await stderr.read(4096)
+        if not chunk:
+            return
+        lowered = chunk.decode("utf-8", errors="ignore").lower()
+        if "responsestreamdisconnected" in lowered or "stream disconnected" in lowered:
+            observer.stderr_stream_disconnected = True
 
 
 def _validate_request(

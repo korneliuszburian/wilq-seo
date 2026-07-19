@@ -1539,3 +1539,21 @@ opcjonalny `service_card_id`, a initial-draft GET przekazuje kartę zatwierdzone
 propozycji. Focused status suite: 6 passed; Ruff, diff-check i live BDO GET
 przeszły. Dodany checker ma osobny fingerprint i prompt; wynik Claude’a jest
 jeszcze pending przez zamknięte okno wykonania.
+
+### 2026-07-19 — klasyfikacja provider stream disconnect ze stderr
+
+Minimalny repro izolowanego structured turnu kończył się po 20 sekundach bez
+outputu, z `codex_timeout`, mimo że lokalny Codex wypisywał bezpieczny sygnał
+`responseStreamDisconnected` na stderr. Transport odrzucał cały stderr przez
+`DEVNULL`, więc operator dostawał zbyt ogólny blocker i nie dało się odróżnić
+przerwania strumienia od zwykłego timeoutu.
+
+Adapter czyta teraz stderr do krótkotrwałego, nieutrwalającego obserwatora i
+zapamiętuje wyłącznie boolean dla rozpoznanego disconnectu. Nie zapisuje ani nie
+ujawnia payloadu providera, nie dodaje fallbacku ani drugiej ścieżki modelowej.
+Focused falsifier w `tests/content/test_codex_app_server_transport.py` dowodzi,
+że stderr-only disconnect kończy się typed `codex_response_stream_disconnected`;
+transport suite, Ruff i diff-check przechodzą. Realny probe po zmianie również
+zwrócił ten kod, nadal bez outputu, zapisu, vendor write i `external_call_attempted`.
+To poprawia diagnozę, ale nie dowodzi dostępności providera ani gotowości
+pełnego planowania; provider/runtime pozostaje blockerem.
