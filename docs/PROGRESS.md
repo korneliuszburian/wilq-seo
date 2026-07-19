@@ -1746,6 +1746,16 @@ realne landing rows są `unbound` albo `review_required`, więc nie ma jeszcze
 zatwierdzonej usługi ani native-UI handoffu. To jest dowód read/review, nie
 gotowości do wykonania ani UAT.
 
+### 2026-07-19 — runner planowania: jawne odroczenie migracji
+
+Lab durable store potwierdził readback queued run identity po odtworzeniu
+store, stale re-enqueue, idempotent identical enqueue i izolację usług (3/3).
+APScheduler pozostaje connector-only z `autostart=false`; brak crash-injection
+i no-duplicate model proofu oraz brak autoryzacji do migracji produkcyjnej.
+Bead `wilq-seo-1dke` zamknięty decyzją **DEFER**: utrzymujemy obecny
+ThreadPoolExecutor, durable queued rows i typed stale retry. To decyzja
+operacyjna, nie claim pełnej recovery ani sukcesu providera.
+
 ### 2026-07-19 — planowanie nie duplikuje turnów i nie ściga żywego workera
 
 Planowanie używa jednego kontraktu czasu: router Codex i store stale detection
