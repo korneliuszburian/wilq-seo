@@ -2093,3 +2093,6 @@ Domknięto dwa najmniejsze remaining clusters: baseline inventory disposition
 ma jawnie typowaną mapę, a exact-demand title używa bezpiecznego fallbacku dla
 opcjonalnego `page`. Proof: oba moduły mypy/Ruff clean,
 `tests/content/test_planning_decisions.py` 7/7, diff-check clean.
+
+Pełny mypy po tych dwóch singletonach wynosi 44 błędy w 7 plikach; następne
+klastry są już większe i wymagają osobnych publicznych proofów.
