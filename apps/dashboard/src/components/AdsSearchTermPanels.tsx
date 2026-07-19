@@ -16,6 +16,16 @@ type AdsKeywordMatchContextRow =
 type AdsSearchTermCoverage =
   AdsDiagnosticsResponse["search_terms_read_contract"]["coverage"][number];
 
+function adsServiceBindingLabel(
+  binding: AdsSearchTermMetricRow["landing_service_binding"]
+) {
+  if (!binding) return "usługa: brak exact powiązania";
+  if (binding.status === "approved_current") return "usługa: potwierdzona";
+  if (binding.status === "review_required") return "usługa: wymaga review";
+  if (binding.status === "ambiguous") return "usługa: niejednoznaczna";
+  return "usługa: niepowiązana";
+}
+
 export function AdsSearchTermCoveragePanel({
   coverage
 }: {
@@ -197,7 +207,10 @@ export function AdsSearchTermRowsTable({
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
               <td className="py-2 pr-4 text-xs text-slate-700">
-                {adsLandingMappingLabel(row.landing_mapping_status)}
+                <div>{adsLandingMappingLabel(row.landing_mapping_status)}</div>
+                <div className="mt-1 text-[11px] text-slate-500" data-testid="ads-service-binding-status">
+                  {adsServiceBindingLabel(row.landing_service_binding)}
+                </div>
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
                 {row.evidence_summary_label}

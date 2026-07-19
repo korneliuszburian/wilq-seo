@@ -2412,9 +2412,9 @@ const ContentSearchDemandRowSchema = z.object({
     "ambiguous",
     "review_required",
     "approved_current"
-  ]).default("not_required"),
-  service_candidate_ids: z.array(z.string()).default([]),
-  service_lifecycle_statuses: z.array(z.string()).default([]),
+  ]).optional(),
+  service_candidate_ids: z.array(z.string()).optional(),
+  service_lifecycle_statuses: z.array(z.string()).optional(),
   alignment_basis: z.enum([
     "legacy_unspecified",
     "gsc_exact_page",
