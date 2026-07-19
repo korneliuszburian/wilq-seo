@@ -956,6 +956,7 @@ def _persisted_runtime_trace(proposal: ContentPlanningProposal) -> ContentCodexR
         return ContentCodexRuntimeTrace(status="not_started")
     return ContentCodexRuntimeTrace(
         status=run.status,
+        run_id=run.id,
         external_call_attempted=run.status in {"completed", "failed", "blocked"},
     )
 

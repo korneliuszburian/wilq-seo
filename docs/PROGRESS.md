@@ -1589,3 +1589,12 @@ potwierdza zachowanie statusu i thread ID. Live BDO terminal readback
 potwierdził `run_id=codex_content_planning_7ac5982747154662aadc0d9c957eed80`
 razem z thread/turn oraz `codex_response_stream_disconnected`; plan nie został
 zapisany. Nie claimuję pełnego planu.
+
+### 2026-07-19 — persisted planning readback zachowuje CodexRun ID
+
+Po naprawie terminalnego trace znaleziono drugi, niezależny read path: GET
+istniejącej propozycji odbudowywał status z lokalnego `CodexRun`, ale pomijał
+jego `id`. `_persisted_runtime_trace` zwraca teraz `run_id` również po reloadzie;
+focused readback test, Ruff i diff-check przechodzą. To spina historię zapisanego
+planu z tym samym runem, bez ujawniania provider payloadu. Nie dowodzi jakości
+tekstu ani sukcesu nowej generacji.

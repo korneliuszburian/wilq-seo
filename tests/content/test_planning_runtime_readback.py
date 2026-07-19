@@ -20,4 +20,5 @@ def test_persisted_generated_plan_reports_completed_codex_after_reload(monkeypat
     )
 
     assert trace.status == "completed"
+    assert trace.run_id == "codex_content_planning_demo"
     assert trace.external_call_attempted is True
