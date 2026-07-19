@@ -1,6 +1,6 @@
 # WILQ Progress Ledger
 
-Ostatnia aktualizacja: 2026-07-18.
+Ostatnia aktualizacja: 2026-07-19.
 
 To jest krótki stan bieżący. Historia zmian i proofów pozostaje w git, Beads
 i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
@@ -89,6 +89,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   a bezpośrednie wejście na URL inventory otwiera właściwy workflow zamiast
   pustego stanu. Playwright: 2 testy passed (desktopowy lokalny API na porcie
   proofowym 8875).
+
+- 2026-07-19: live inventory proof dla URL-only `/badania-obecnosci-radonu/`
+  potwierdził, że wybór strony uruchamia ten sam dynamiczny seam WordPress:
+  `POST /api/content/inventory/bind` zwrócił `ready`, metryki GSC (17
+  wyświetleń, 2 kliknięcia), materiał `content_and_structure`, źródło
+  `rendered_html`/`the_content`, `review_required` i lineage
+  `public_html.main_or_article`. Nie jest to approval ani gotowość do draftu;
+  `tests/content/test_inventory_catalog.py` przechodzi 13/13.
 
 - 2026-07-18: cold selected queue nie wykonuje już synchronicznego pełnego
   odczytu WordPress. Jawnie wybrany inventory item dostaje szybki, katalogowy
