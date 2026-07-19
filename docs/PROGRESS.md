@@ -1833,3 +1833,13 @@ Panel review używa tego samego rozróżnienia: baseline mówi „Zakres opiera 
 na…”, a wygenerowany plan „Plan opiera się na…”. Focused
 `ContentPlanningReviewPanel`: 7/7 i dashboard typecheck przechodzą; źródła,
 digesty i decyzje pozostają bez zmian.
+
+### 2026-07-19 — marketing brief dostaje istniejący startup prewarm
+
+Cold read `/api/marketing/brief` po managed restart był wcześniej obciążony
+buildem około 3,6 s, mimo że kolejka była już prewarmed. Lifespan wywołuje teraz
+`build_daily_marketing_brief()` w tym samym nieblokującym prewarmie co
+daily-check i GA4. Po restarcie pierwszy pomiar wyniósł 1,096 s, następne
+0,010–0,011 s; kolejka 0,063 s. Focused `tests/test_daily_runtime_prewarm.py`:
+4/4, Ruff i diff-check przechodzą. To poprawa cold-startu, nie deklaracja SLO
+ani kompletności danych.

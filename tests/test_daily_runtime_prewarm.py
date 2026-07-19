@@ -13,11 +13,12 @@ def test_daily_runtime_prewarm_builds_the_daily_check_runtime(
     calls: list[bool] = []
 
     monkeypatch.setattr(main, "build_daily_check_runtime", lambda: calls.append(True))
+    monkeypatch.setattr(main, "build_daily_marketing_brief", lambda: calls.append(True))
     monkeypatch.setattr(main, "build_ga4_diagnostics_cached", lambda: None)
 
     asyncio.run(main._prewarm_daily_runtime())
 
-    assert calls == [True]
+    assert calls == [True, True]
 
 
 def test_daily_runtime_prewarm_clears_in_progress_state_on_failure(monkeypatch) -> None:
@@ -26,6 +27,11 @@ def test_daily_runtime_prewarm_clears_in_progress_state_on_failure(monkeypatch) 
     monkeypatch.setattr(
         main,
         "build_daily_check_runtime",
+        lambda: (_ for _ in ()).throw(RuntimeError()),
+    )
+    monkeypatch.setattr(
+        main,
+        "build_daily_marketing_brief",
         lambda: (_ for _ in ()).throw(RuntimeError()),
     )
     monkeypatch.setattr(main, "build_ga4_diagnostics_cached", lambda: None)

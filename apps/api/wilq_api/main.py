@@ -47,6 +47,7 @@ from wilq.briefing.content_diagnostics import (
 )
 from wilq.briefing.daily_runtime import (
     build_daily_check_runtime,
+    build_daily_marketing_brief,
     clear_daily_runtime_cache,
     finish_daily_check_prewarm,
     start_daily_check_prewarm,
@@ -135,6 +136,8 @@ async def _prewarm_daily_runtime() -> None:
     try:
         with suppress(Exception):
             await asyncio.to_thread(build_daily_check_runtime)
+        with suppress(Exception):
+            await asyncio.to_thread(build_daily_marketing_brief)
         with suppress(Exception):
             await asyncio.to_thread(build_ga4_diagnostics_cached)
     finally:
