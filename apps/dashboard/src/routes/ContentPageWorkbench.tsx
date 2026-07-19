@@ -564,12 +564,17 @@ export function ContentPageWorkbench({
                     <p className="font-semibold text-ink">
                       Aktualny draft: {latestRevision.title}
                     </p>
-                    <p className="mt-1 break-all text-xs text-slate-500">
-                      Identyfikator treści: {latestRevision.content_digest}
-                    </p>
                     <p className="mt-1 text-xs text-slate-600">
                       {latestRevision.sections.length} sekcji · {revisionEvidenceCount} źródeł
                     </p>
+                    <details className="mt-2 text-xs text-slate-600">
+                      <summary className="cursor-pointer font-semibold text-action">
+                        Szczegóły techniczne wersji
+                      </summary>
+                      <p className="mt-2 break-all leading-5">
+                        Exact digest: {latestRevision.content_digest}
+                      </p>
+                    </details>
                   </div>
 
                   <details className="rounded-md border border-line bg-surface px-3 py-2">
