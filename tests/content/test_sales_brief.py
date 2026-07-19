@@ -22,7 +22,9 @@ from wilq.content.enrichment.opportunity import (
 from wilq.content.inventory.records import ContentInventoryRecord, resolve_content_inventory
 from wilq.content.knowledge.cards import match_content_knowledge_cards
 from wilq.content.preflight.workflow import build_content_preflight_verdict
+from wilq.content.workflow.decision_mapping import content_sales_brief_seed_from_decision
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.schemas import ContentDecisionItem
 
 
 def _item(**overrides: object) -> ContentWorkItem:
@@ -554,6 +556,36 @@ def test_product_guard_does_not_misclassify_legal_productowa_language() -> None:
         "Informacja o gospodarce opakowaniami i opłacie produktowej"
     )
     assert _looks_like_product_cta_or_topic("Kup sorbent w sklepie Ekologus")
+
+
+def test_inventory_seed_drops_dated_testimonial_headings() -> None:
+    decision = ContentDecisionItem(
+        id="inventory_packaging",
+        decision_type="refresh_or_merge",
+        title="Gospodarka opakowaniami",
+        queries=["gospodarka opakowaniami"],
+        wordpress_section_headings=[
+            "Obowiązki przedsiębiorcy",
+            "SERTOP Sp. z o.o. [2013 r.]",
+            "Jak przygotować dokumenty?",
+        ],
+        evidence_ids=["ev_wp"],
+        source_connectors=["wordpress_ekologus"],
+        rationale="Istniejąca treść wymaga odświeżenia.",
+        next_step="Sprawdź materiał.",
+        source_public_url="https://www.ekologus.pl/informacja-o-opakowaniach/",
+        final_canonical_url="https://www.ekologus.pl/informacja-o-opakowaniach/",
+        intended_final_url="https://www.ekologus.pl/informacja-o-opakowaniach/",
+        inventory_gate_status="confirmed_current_inventory",
+        duplicate_gate_status="checked",
+    )
+
+    seed = content_sales_brief_seed_from_decision(decision)
+
+    assert seed.h2_direction == [
+        "Obowiązki przedsiębiorcy",
+        "Jak przygotować dokumenty?",
+    ]
 
 
 def test_product_guard_ignores_product_words_in_metric_fact_summaries() -> None:
