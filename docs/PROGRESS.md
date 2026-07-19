@@ -2096,3 +2096,16 @@ opcjonalnego `page`. Proof: oba moduły mypy/Ruff clean,
 
 Pełny mypy po tych dwóch singletonach wynosi 44 błędy w 7 plikach; następne
 klastry są już większe i wymagają osobnych publicznych proofów.
+
+### 2026-07-19 — quality-max goal i świeży checker z realnym connector context
+
+Ustawiono jeden aktywny quality-max goal: WILQ API jest jedynym źródłem
+kontekstu/metryk, Codex ma pobierać aktualny context pack, a brak/stalenie
+źródła ma być typed blockerem. Checker dla fixed pointu `bbd3e076` został
+zwalidowany jako `valid evidence-bounded review`; disposition jest poza repo w
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-wilq-quality-max-fixed-point-EpCxsO/`.
+Operator-provided connector summary mówi: 12 total, 9 configured, 2 missing
+credentials. Checker retained: verify zatrzymuje się przed testami po mypy,
+draft/model/UAT nie mają realnego proofu, wpływ dwóch brakujących connectorów na
+consumerów nie jest jeszcze zmapowany, a metryki potrzebują realnego API fetchu
+z exact lineage. Nie ma approval, publish ani vendor write.
