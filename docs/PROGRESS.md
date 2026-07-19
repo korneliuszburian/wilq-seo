@@ -1338,3 +1338,11 @@ tablicę findings. Pięć zgłoszonych `evidence_gaps` wynika z briefu bez
 cytowanych linii, nie jest defektem produktu; zostały zachowane w
 `disposition.md`. Pierwszy pass zakończył się błędem transportu bez JSON i nie
 został użyty jako wynik.
+
+### 2026-07-19 — kontekst decyzji pokazuje źródła i świeżość metryk
+
+Rozwijane `Dlaczego ta decyzja?` w wybranym workflow pokazuje teraz nazwy
+źródeł metryk oraz API-owy stan świeżości danych. Nie dodaje własnych obliczeń,
+trendów ani technicznych evidence ID do głównego widoku; brak źródeł jest
+jawny. Proof: `ContentWorkflowSurface` 34 testy i dashboard typecheck.
+Commit oraz niezależny checker dla tego fixed pointu są jeszcze do wykonania.

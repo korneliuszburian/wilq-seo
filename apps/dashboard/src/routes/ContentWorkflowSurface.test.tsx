@@ -201,6 +201,13 @@ describe("ContentWorkflowSurface", () => {
       within(marketerJourney).getByText("BDO i sprawozdawczość środowiskowa")
     ).toBeInTheDocument();
     expect(within(marketerJourney).getAllByText("odśwież istniejącą treść").length).toBeGreaterThan(0);
+    fireEvent.click(within(marketerJourney).getByText("Dlaczego ta decyzja?"));
+    expect(within(marketerJourney).getByTestId("content-metric-sources")).toHaveTextContent(
+      "Google Search Console"
+    );
+    expect(within(marketerJourney).getByTestId("content-metric-sources")).toHaveTextContent(
+      "dane treści świeże"
+    );
     expect(within(taskMap).getByText("Brakuje zapisanej wersji szkicu")).toBeInTheDocument();
     expect(within(taskMap).getByText(/Przygotuj podgląd/)).toBeInTheDocument();
 

@@ -66,6 +66,11 @@ export function ContentWorkflowJourneyContext({
       <details className="mt-3 text-xs text-slate-600">
         <summary className="cursor-pointer font-semibold text-action">Dlaczego ta decyzja?</summary>
         <p className="mt-2 leading-5">{candidate.reason}</p>
+        <p className="mt-2 leading-5" data-testid="content-metric-sources">
+          Źródła metryk: {candidate.source_connector_labels.length
+            ? candidate.source_connector_labels.join(" · ")
+            : "brak potwierdzonych źródeł"}. Stan danych: {data.freshnessAssessment.state_label}.
+        </p>
         <p className="mt-2 leading-5">
           Usługa: {data.serviceProfileContext.service_label ?? "nieprzypisana"}. {publicUrl}
         </p>
