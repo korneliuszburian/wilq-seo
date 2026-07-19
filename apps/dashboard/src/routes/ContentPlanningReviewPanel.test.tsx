@@ -41,6 +41,15 @@ describe("planningSourceSummary", () => {
         source_connectors: ["gsc", "wordpress"]
       })
     ).toBe("Plan opiera się na 2 źródłach · 1 materiale Ekologusa · 2 kartach · 2 połączeniach");
+    expect(
+      planningSourceSummary({
+        evidence_ids: ["ev_1"],
+        source_material_ids: [],
+        knowledge_card_ids: [],
+        source_connectors: ["gsc"],
+        generation_status: "baseline"
+      })
+    ).toBe("Zakres opiera się na 1 źródle · 0 materiałach Ekologusa · 0 kartach · 1 połączeniu");
   });
 });
 

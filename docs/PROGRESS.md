@@ -1828,3 +1828,8 @@ marketerowi jako „Poprawiana sekcja”. Picker używa teraz API-owned
 `codex_generated` „Sekcja z planu”. Nie zmienia to wyboru, digestu ani zapisów;
 usuwa tylko sugestię, że plan lub rewrite został już wygenerowany. Focused
 ContentWorkflowSurface: 34/34, dashboard typecheck i diff-check przechodzą.
+
+Panel review używa tego samego rozróżnienia: baseline mówi „Zakres opiera się
+na…”, a wygenerowany plan „Plan opiera się na…”. Focused
+`ContentPlanningReviewPanel`: 7/7 i dashboard typecheck przechodzą; źródła,
+digesty i decyzje pozostają bez zmian.

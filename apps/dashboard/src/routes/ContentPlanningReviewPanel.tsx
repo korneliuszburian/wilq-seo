@@ -423,14 +423,16 @@ export function planningScopeSummary(
 type PlanningSourceSummaryInput = Pick<
   ContentPlanningWorkspace["proposal"],
   "evidence_ids" | "source_material_ids" | "knowledge_card_ids" | "source_connectors"
->;
+> &
+  Partial<Pick<ContentPlanningWorkspace["proposal"], "generation_status">>;
 
 export function planningSourceSummary(proposal: PlanningSourceSummaryInput): string {
   const sourceCount = proposal.evidence_ids.length;
   const materialCount = proposal.source_material_ids.length;
   const knowledgeCount = proposal.knowledge_card_ids.length;
   const connectorCount = proposal.source_connectors.length;
-  return `Plan opiera się na ${sourceCount} ${sourceCount === 1 ? "źródle" : "źródłach"} · ${materialCount} ${materialCount === 1 ? "materiale" : "materiałach"} Ekologusa · ${knowledgeCount} ${knowledgeCount === 1 ? "karcie" : "kartach"} · ${connectorCount} ${connectorCount === 1 ? "połączeniu" : "połączeniach"}`;
+  const subject = proposal.generation_status === "baseline" ? "Zakres" : "Plan";
+  return `${subject} opiera się na ${sourceCount} ${sourceCount === 1 ? "źródle" : "źródłach"} · ${materialCount} ${materialCount === 1 ? "materiale" : "materiałach"} Ekologusa · ${knowledgeCount} ${knowledgeCount === 1 ? "karcie" : "kartach"} · ${connectorCount} ${connectorCount === 1 ? "połączeniu" : "połączeniach"}`;
 }
 
 function SearchDemandSummary({
