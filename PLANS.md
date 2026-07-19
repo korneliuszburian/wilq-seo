@@ -19,7 +19,7 @@ Oba piloty planowania nadal kończą się typed `runtime_failed` z
 i persisted readback są zachowane;
 pełna generacja, semantic storage, jakość tekstu i UAT pozostają nieudowodnione.
 
-Ostatni wypchnięty commit: `f80d9320` (`chore(beads): record persisted run readback`).
+Ostatni wypchnięty commit: `b266f65b` (`chore(beads): record run input binding`).
 Po poprzednim pomiarze doszły wspólny kontrakt deadline/stale job oraz izolacja
 starych planning jobs po `service_card_id`: nowszy run innej usługi nie może już
 unieważnić aktualnego proposal/draft statusu. Transport Codexa klasyfikuje
