@@ -1631,3 +1631,14 @@ test suite: 5 passed; Ruff i diff-check przechodzą. Kontrolny odczyt outsourcin
 po reloadzie miał 4,955 s, potem 1,573 s; wcześniejszy cold baseline w tym samym
 stacku wynosił 7,543 s. To jest dowód usunięcia powtórnego odczytu, nie obietnica
 docelowego czasu ani dowód UAT.
+
+### 2026-07-19 — snapshot blocker probe bez drugiej pełnej assembly
+
+Po reuse diagnostics pozostał jeszcze drugi koszt: endpoint budował pełny
+snapshot tylko po to, by sprawdzić, czy element nie jest zablokowany, a potem
+budował go ponownie z proposal/review state. Probe używa teraz bezpośrednio
+blocked projection; pełną assembly wykonuje tylko dla elementu przechodzącego
+do workflow. Publiczny kontrakt inventory suite: 5 passed; Ruff i diff-check
+przechodzą. Ten sam cold outsourcing snapshot po reloadzie zmierzono na 3,134 s,
+a warm na 1,053 s. To redukuje powtórną pracę, ale nie jest jeszcze docelowym
+SLO ani dowodem realnego UAT.

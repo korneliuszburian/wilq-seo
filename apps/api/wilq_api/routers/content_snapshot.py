@@ -159,28 +159,17 @@ def snapshot_for_work_item_or_blocked_or_404(
     store = content_workflow_store()
     revision_state = store.load_draft_revision_state(work_item_id)
     planning_decisions = store.load_planning_decisions(work_item_id)
-    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-        diagnostics,
-        work_item_id,
-        revision_state=revision_state,
-        planning_decisions=planning_decisions,
-    )
-    if snapshot is not None:
-        return snapshot_for_work_item_or_404(
-            work_item_id,
-            diagnostics_override=diagnostics,
-            revision_state_override=revision_state,
-            planning_decisions_override=planning_decisions,
-        )
     blocked_snapshot = build_content_work_item_blocked_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,
     )
     if blocked_snapshot is not None:
         return blocked_snapshot
-    raise HTTPException(
-        status_code=404,
-        detail="Content work item is not available for the gated workflow.",
+    return snapshot_for_work_item_or_404(
+        work_item_id,
+        diagnostics_override=diagnostics,
+        revision_state_override=revision_state,
+        planning_decisions_override=planning_decisions,
     )
 
 
