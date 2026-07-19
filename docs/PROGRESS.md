@@ -2326,3 +2326,16 @@ z kolejki i blokuje twierdzenie o kompletności zakresu; proste syntetyczne
 agregaty bez deklarowanego scope pozostają kompatybilne. Live API potwierdza
 obecnie `blocked`, brak akcji i rekordy organiczne bez zakresu jako realny
 external/data-quality blocker. Proof: test kontraktu Ahrefs 2/2 oraz Ruff.
+
+### 2026-07-19 — reprodukcja awarii runtime planowania bez częściowego zapisu
+
+Aktualny context pack WILQ potwierdza 8 gotowych źródeł marketingowych z 9
+aktywnych w tym consumerze; brakujące materiały wiedzy nadal są osobnym
+blockerem. Kontrolowana próba BDO przez API zwróciła `generating` natychmiast,
+a po około 65 sekundach `failed` z `runtime_failed` /
+`codex_response_stream_disconnected`, `external_call_attempted=false`, bez
+proposal. Bezpośredni minimalny structured turn app-servera reprodukuje ten
+sam błąd; obserwowany przebieg to `thread/started → turn/started →
+item/userMessage → error`. To jest realny provider/runtime blocker, nie zgoda
+na fallback ani dowód gotowości planów. Dashboard-state zaktualizowany do tego
+fixed pointu; następny slice dotyczy recovery UX i diagnostyki tego runtime’u.

@@ -87,26 +87,25 @@ not call Codex or create a proposal table on GET. The
 queue currently exposes 6 candidates and 5 actionable candidates for the
 selected inventory proof; WILQ must still not invent topics outside inventory.
 After bounding the first structured plan to 12 sections, 8 FAQ items, 4 CTA
-blocks and 4 conditional hypotheses, the latest knowledge-bound live proof
-persisted proposal `content_planning_proposal_9e0bd2c118b6443285392b1a96284375`
-for BDO (6 sections, 3 FAQ, 2 CTA) and
-`content_planning_proposal_245ee55e7d4e46808397f9509b94d34d` for outsourcing
-(5 sections, 3 FAQ, 2 CTA). Both include the seven imported material IDs,
-current WordPress/GSC lineage and `publish_ready=false`; both remain
-unreviewed. The remaining eight manifest materials stay `import_pending`.
-The 2026-07-18 BDO regeneration replaced the stale prior input with digest
-`4b6065acaceabf7443fa030155a3725a50fd9b5af7cae687f8d59a06e1144f08`; its
+blocks and 4 conditional hypotheses, prior synthetic/knowledge-bound runs
+produced unreviewed proposals, but the current managed API no longer exposes
+those as the active fixed point. Both exact pilot reads currently return
+`failed` with `runtime_failed` / `codex_response_stream_disconnected`, no
+proposal and `publish_ready=false`; no successful plan is claimed here. The
+remaining eight manifest materials stay `import_pending`. A fresh BDO retry
+returned `generating` immediately and later failed without partial state. The
+2026-07-18 BDO regeneration replaced the stale prior input with digest
+`4b6065acaceab7443fa030155a3725a50fd9b5af7cae687f8d59a06e1144f08`; its
 old scope and section-map decisions are intentionally not reused. The second exact pilot now resolves the offer URL to
 `ekologus_service_environmental_consulting_outsourcing` with source fact
 `ekologus_public_consulting_outsourcing_offer_2026_07_01`, even when the page
 copy also mentions BDO. Exact canonical URL matching is ranked ahead of broad
 copy-term overlap, with a focused regression.
-Planning POST is now API-owned and non-blocking: it persists an exact queued
-job and returns `generating` in tens of milliseconds; the background task builds
+Planning POST is API-owned and non-blocking: it persists an exact queued job
+and returns `generating` in tens of milliseconds; the background task builds
 the heavy snapshot and Codex turn. GET remains model-free and polls only while
-that exact job is active. A real outsourcing run returned `generating` in 36ms
-and later read back `ready` with the knowledge-bound outsourcing proposal
-`content_planning_proposal_245ee55e7d4e46808397f9509b94d34d`.
+that exact job is active. The current provider disconnect is surfaced as a
+typed retry blocker with runtime trace; WILQ writes no partial proposal.
 Repeated POST for that exact digest returns `idempotent` immediately; a
 mismatched digest returns HTTP 409 `stale_input` before any model call.
 Queued jobs older than the 15-minute runtime window are exposed as a typed
