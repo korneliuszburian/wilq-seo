@@ -39,6 +39,10 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   kontrolowanym imporcie oraz jasno zaznacza, że generowanie używa wyłącznie
   dostępnych zatwierdzonych faktów. Przy gotowym korpusie komunikat znika;
   nie powstał nowy score ani równoległa logika blokad.
+- Follow-up po checkerze: komunikat rozróżnia teraz `import_pending` od
+  `excerpt_review_required`, pokazuje API-owy `next_step` i ma jawny degraded
+  state przy błędzie odczytu readiness. Nie ukrywa już awarii jako pozornej
+  gotowości i nie składa własnej obietnicy o zachowaniu backendu.
 - Kanoniczny przebieg marketera ma pięć kroków:
   `scope → section_map → draft → review → dev_draft`.
 - 2026-07-18: świeży BDO plan został najpierw poprawnie zablokowany przez

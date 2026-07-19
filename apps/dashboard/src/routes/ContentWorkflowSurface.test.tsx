@@ -261,7 +261,46 @@ describe("ContentWorkflowSurface", () => {
     const notice = await screen.findByTestId("content-workflow-knowledge-readiness");
     expect(notice).toHaveTextContent("Zaimportowano 7 z 15 materiałów");
     expect(notice).toHaveTextContent("8 oczekuje na kontrolowany import");
-    expect(notice).toHaveTextContent("Generowanie korzysta wyłącznie z już dostępnych");
+    expect(notice).toHaveTextContent("Dokończ kontrolowany import materiałów.");
+  });
+
+  it("distinguishes excerpt review from pending import in corpus readiness", async () => {
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue({
+      status: "excerpt_review_required",
+      total_count: 15,
+      imported_count: 13,
+      import_pending_count: 0,
+      excerpt_review_required_count: 2,
+      ready_for_generation: false,
+      blocker: "Dwa excerpty wymagają review.",
+      next_step: "Zatwierdź excerpty i ich lineage."
+    });
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const notice = await screen.findByTestId("content-workflow-knowledge-readiness");
+    expect(notice).toHaveTextContent("2 wymaga review excerptów");
+    expect(notice).toHaveTextContent("Zatwierdź excerpty i ich lineage.");
+    expect(notice).not.toHaveTextContent("kontrolowany import");
+  });
+
+  it("does not silently treat a readiness fetch error as generation-ready", async () => {
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockRejectedValue(new Error("offline"));
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-workflow-knowledge-readiness-error"))
+      .toHaveTextContent("Nie udało się odczytać gotowości korpusu");
   });
 
   it("does not present an old proposal as ready when planning input is blocked", async () => {

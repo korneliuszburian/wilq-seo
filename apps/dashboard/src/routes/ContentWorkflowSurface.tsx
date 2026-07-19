@@ -668,7 +668,26 @@ function KnowledgeReadinessNotice({
   query: KnowledgeSourceMaterialReadinessQuery;
 }) {
   const readiness = query.data;
+  if (query.isError) {
+    return (
+      <div
+        className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-950"
+        data-testid="content-workflow-knowledge-readiness-error"
+      >
+        Nie udało się odczytać gotowości korpusu źródłowego. Nie zakładaj, że
+        generowanie jest odblokowane — odśwież dane przed przygotowaniem planu.
+      </div>
+    );
+  }
   if (!readiness || readiness.ready_for_generation) return null;
+  const pendingParts = [
+    readiness.import_pending_count > 0
+      ? `${readiness.import_pending_count} oczekuje na kontrolowany import`
+      : null,
+    readiness.excerpt_review_required_count > 0
+      ? `${readiness.excerpt_review_required_count} wymaga review excerptów`
+      : null
+  ].filter((part): part is string => Boolean(part));
   return (
     <div
       className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
@@ -676,9 +695,8 @@ function KnowledgeReadinessNotice({
     >
       <p className="font-semibold">Korpus źródłowy nie jest jeszcze kompletny</p>
       <p className="mt-1 leading-6">
-        Zaimportowano {readiness.imported_count} z {readiness.total_count} materiałów;
-        {" "}{readiness.import_pending_count} oczekuje na kontrolowany import.
-        Generowanie korzysta wyłącznie z już dostępnych, zatwierdzonych faktów.
+        Zaimportowano {readiness.imported_count} z {readiness.total_count} materiałów.
+        {pendingParts.length ? ` ${pendingParts.join("; ")}.` : null} {readiness.next_step}
       </p>
     </div>
   );
