@@ -918,9 +918,7 @@ def _validate_review_evidence(
             status_code=422,
             detail="Brakuje zapisanej wersji, której dowody można sprawdzić.",
         )
-    allowed_evidence = {
-        evidence_id for section in latest_revision.sections for evidence_id in section.evidence_ids
-    }
+    allowed_evidence = _revision_evidence_ids(latest_revision)
     unknown_evidence = sorted(set(request.evidence_ids).difference(allowed_evidence))
     if unknown_evidence:
         raise HTTPException(
@@ -930,6 +928,21 @@ def _validate_review_evidence(
                 + ", ".join(unknown_evidence)
             ),
         )
+
+
+def _revision_evidence_ids(revision: ContentDraftRevision) -> set[str]:
+    """Return every evidence lineage attached to the persisted document."""
+
+    return {
+        evidence_id
+        for evidence_ids in (
+            *(section.evidence_ids for section in revision.sections),
+            *(faq.evidence_ids for faq in revision.faq),
+            *(cta.evidence_ids for cta in revision.cta_blocks),
+            *(link.evidence_ids for link in revision.internal_links),
+        )
+        for evidence_id in evidence_ids
+    }
 
 
 def _review_request_matches_latest(
