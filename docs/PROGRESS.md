@@ -7,6 +7,17 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: zamknięto dwa cross-source seamy po audycie fixed pointu.
+  Wspólny `LandingPageIdentity` rozróżnia exact, tracking-only, host-alias,
+  functional-query, ambiguous, missing i no-match; metric store filtruje tę
+  tożsamość przed limitem i historią. Planning source assessments przenoszą
+  match tier/status, a Ads hash-only landing join i oba piloty używają tego
+  samego kontraktu. Publication-bound aggregate przyjmuje tylko exact URL +
+  exact period GSC/GA4; wrong period, query/detail, ambiguous lineage i
+  insufficient quality zostają wykluczone z typed reason/evidence. Focused
+  cross-source suites: 24 testy; Beads `wilq-seo-v9ab.18.2` i
+  `wilq-seo-1oa.36.20` zamknięte. To nie jest dowód publikacji, outcome ani UAT.
+
 - 2026-07-19: live Ads smoke ujawnił niespójność w mixed negative-keyword
   queue. Kontrakt miał `status=ready`, mimo że część z 12 kandydatów nie miała
   dokładnego 90-dniowego wiersza bezpieczeństwa, więc nie było bezpiecznego
