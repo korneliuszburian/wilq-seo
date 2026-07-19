@@ -1732,3 +1732,16 @@ pilot pozostaje otwarty, bo realne dane nie dostarczają jeszcze zatwierdzonego
 service bindingu ani native-UI handoffu. Szerszy Ads contract suite ma nadal
 znaną, niezwiązaną awarię fixture/query dla Demand Gen; nie jest ona
 przedstawiana jako zielony wynik.
+
+### 2026-07-19 — planowanie nie duplikuje turnów i nie ściga żywego workera
+
+Planowanie używa jednego kontraktu czasu: router Codex i store stale detection
+czytają `WILQ_PLANNING_CODEX_TIMEOUT_SECONDS` (domyślnie 180 s), a istniejąca
+granica 3 minut pozostaje zachowana przez jawne `grace=0`. Osobna transakcja
+`BEGIN IMMEDIATE` blokuje nowy digest dla tego samego `work_item_id` +
+`service_card_id`, gdy rodzeństwo jest queued/running; API zwraca typed
+`in_flight`, aktywny run i retry-after zamiast drugiego turnu. Focused dynamic
+planning suite i falsifiers timeout/stale/concurrency przechodzą, a Beads
+`wilq-seo-v1um` i `wilq-seo-tcd7` są zamknięte. Nie oznacza to sukcesu providera,
+wygenerowanego tekstu ani approval; wcześniejsze checker dispositions z
+evidence gaps pozostają jawne.
