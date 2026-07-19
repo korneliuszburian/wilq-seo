@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ContentWorkItemQueueCandidate } from "../lib/api";
-import { matchesContentQueueCandidate } from "./ContentCandidateQueuePanel";
+import { candidateEvidenceSummary, matchesContentQueueCandidate } from "./ContentCandidateQueuePanel";
 
 const candidate = {
   title: "Istniejąca strona BDO",
@@ -18,5 +18,27 @@ describe("matchesContentQueueCandidate", () => {
     expect(matchesContentQueueCandidate(candidate, "/bdo-co-musi-wiedziec")).toBe(true);
     expect(matchesContentQueueCandidate(candidate, "outsourcing")).toBe(false);
     expect(matchesContentQueueCandidate(candidate, "")).toBe(true);
+  });
+});
+
+describe("candidateEvidenceSummary", () => {
+  it("shows the decision meat without inventing missing metrics", () => {
+    const withMetrics = {
+      ...candidate,
+      search_metrics: {
+        impressions: 266,
+        clicks: 1,
+        ctr: 0.003759398,
+        primary_query: "bdo co to"
+      },
+      page_inventory: {
+        section_count: 12,
+        content_inventory_status: "available"
+      }
+    } as unknown as ContentWorkItemQueueCandidate;
+    expect(candidateEvidenceSummary(withMetrics)).toContain("266 wyśw.");
+    expect(candidateEvidenceSummary(withMetrics)).toContain("CTR 0,38%");
+    expect(candidateEvidenceSummary(withMetrics)).toContain("12 sekcji");
+    expect(candidateEvidenceSummary(candidate)).toBe("Brak exact metryk lub materiału do wyboru.");
   });
 });

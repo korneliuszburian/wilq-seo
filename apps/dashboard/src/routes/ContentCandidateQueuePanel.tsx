@@ -57,6 +57,9 @@ export function ContentCandidateQueuePanel({
             <div className="mt-1 text-xs font-medium uppercase tracking-normal text-slate-500">
               {candidate.recommended_mode_label} · {candidate.status_label}
             </div>
+            <div className="mt-2 rounded border border-line bg-white/70 px-2 py-1.5 text-xs text-slate-700" data-testid={`content-candidate-evidence-${candidate.work_item_id}`}>
+              {candidateEvidenceSummary(candidate)}
+            </div>
             <p className="mt-2 leading-6 text-slate-600">{candidate.reason}</p>
             <div className="mt-2 text-xs text-slate-500">
               {candidate.evidence_ids.length} źródła · {candidate.measurement_readiness.label}
@@ -83,6 +86,28 @@ export function matchesContentQueueCandidate(
   ]
     .filter(Boolean)
     .some((value) => value!.toLocaleLowerCase("pl-PL").includes(normalizedSearch));
+}
+
+export function candidateEvidenceSummary(candidate: ContentWorkItemQueueCandidate): string {
+  const metrics = candidate.search_metrics;
+  const metricParts: string[] = [];
+  if (metrics?.impressions !== null && metrics?.impressions !== undefined) {
+    metricParts.push(`${metrics.impressions.toLocaleString("pl-PL")} wyśw.`);
+  }
+  if (metrics?.clicks !== null && metrics?.clicks !== undefined) {
+    metricParts.push(`${metrics.clicks.toLocaleString("pl-PL")} klik.`);
+  }
+  if (metrics?.ctr !== null && metrics?.ctr !== undefined) {
+    metricParts.push(`CTR ${(metrics.ctr * 100).toLocaleString("pl-PL", { maximumFractionDigits: 2 })}%`);
+  }
+  if (metrics?.primary_query) metricParts.push(`query: „${metrics.primary_query}”`);
+  const inventory = candidate.page_inventory;
+  if (inventory?.section_count !== null && inventory?.section_count !== undefined) {
+    metricParts.push(`${inventory.section_count} sekcji`);
+  } else if (inventory?.content_inventory_status === "available") {
+    metricParts.push("treść odczytana");
+  }
+  return metricParts.length ? metricParts.join(" · ") : "Brak exact metryk lub materiału do wyboru.";
 }
 
 function FactTile({ label, value }: { label: string; value: string }) {
