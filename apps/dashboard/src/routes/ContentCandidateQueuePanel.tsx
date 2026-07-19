@@ -22,7 +22,7 @@ export function ContentCandidateQueuePanel({
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">Wybierz stronę lub temat</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">Wybierz stronę do pracy</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{queue.operator_summary}</p>
         </div>
         <div className="grid gap-2 text-sm sm:grid-cols-2">

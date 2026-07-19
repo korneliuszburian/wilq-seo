@@ -349,7 +349,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    expect(await screen.findByText("Wybierz stronę lub temat")).toBeInTheDocument();
+    expect(await screen.findByText("Wybierz stronę do pracy")).toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "Aktywna strona" })).not.toBeInTheDocument();
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalledWith("missing_work_item");
