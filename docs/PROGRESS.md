@@ -2995,3 +2995,14 @@ Focused proof: typecheck dashboard PASS; dedykowany merge test 2/2 PASS. Pełny
 `ContentWorkflowSurface` ma jeden niezależny, wcześniejszy kontraktowy fail
 (`getByText` znajduje dwa już renderowane statusy GA4); nie zmieniałem testu ani
 nie udawałem PASS całego pakietu.
+
+### 2026-07-20 — statusy źródeł nie dublują się w panelu planu
+
+Usunięto rzeczywiste powtórzenie statusu źródła w `ContentPlanningGenerationPanel`:
+widoczny chip nadal pokazuje krótką decyzję, a rozwijane „Dlaczego ten stan?”
+pokazuje teraz techniczny format `Źródło · status` wraz z powodem. Nie znika
+żadna informacja o GA4/Ads ani lineage, ale marketer nie czyta dwa razy tego
+samego komunikatu.
+
+Focused proof: ContentWorkflowSurface + ContentPlanningGenerationPanel 41/41,
+dashboard typecheck PASS, `git diff --check` PASS.

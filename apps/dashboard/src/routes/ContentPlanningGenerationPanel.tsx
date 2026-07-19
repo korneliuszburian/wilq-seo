@@ -289,7 +289,7 @@ export function ContentPlanningGenerationPanel({
             {inputSummary.source_assessments.map((source) => (
               <li key={source.source} className="rounded-md border border-line bg-surface p-2">
                 <span className="font-semibold text-ink">
-                  {planningSourceLabel(source.source)}: {planningSourceStatusLabel(source.status)}
+                  Źródło: {planningSourceLabel(source.source)} · status: {planningSourceStatusLabel(source.status)}
                 </span>
                 {source.landing_match_tiers.length ? (
                   <span> · landing {source.landing_match_tiers.map(landingTierLabel).join(", ")}</span>
