@@ -522,6 +522,15 @@ def _planning_output_quality_errors(
     errors = _planning_heading_quality_errors(section.heading for section in output.sections)
     if not output.cta_blocks:
         errors.append("missing_cta")
+    errors.extend(
+        _orphaned_placement_quality_errors(
+            sections=output.sections,
+            placements=[
+                *(item.placement for item in output.cta_blocks),
+                *(item.placement for item in output.internal_links),
+            ],
+        )
+    )
     return list(dict.fromkeys(errors))
 
 
@@ -529,7 +538,29 @@ def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
     errors = _planning_heading_quality_errors(section.heading for section in proposal.sections)
     if not proposal.cta_blocks:
         errors.append("missing_cta")
+    errors.extend(
+        _orphaned_placement_quality_errors(
+            sections=proposal.sections,
+            placements=[
+                *(item.placement for item in proposal.cta_blocks),
+                *(item.placement for item in proposal.internal_links),
+            ],
+        )
+    )
     return list(dict.fromkeys(errors))
+
+
+def _orphaned_placement_quality_errors(
+    *,
+    sections: Iterable[object],
+    placements: Iterable[str],
+) -> list[str]:
+    removed_headings = {
+        section.heading
+        for section in sections
+        if getattr(section, "inventory_disposition", None) == "remove_review_required"
+    }
+    return ["orphaned_placement"] if removed_headings.intersection(placements) else []
 
 
 def _expected_inventory_mapping(
