@@ -2376,3 +2376,18 @@ reconnecty 1/5…5/5; zachowanie pozostaje takie samo po usunięciu
 `features.remote_models=false`. Diagnoza zawęża blocker do bieżącego
 app-server/provider protocol path. Nie wprowadzamy obejścia przez CLI, drugi
 model ani fallback; wynik zapisany w Bead recovery.
+
+### 2026-07-19 — naprawa app-server: nie wymuszamy niestandardowego providera
+
+Oficjalny kontrakt app-servera potwierdza zgodność naszego handshake’u i pól
+`input`/`threadId`/`model`/`outputSchema`. Dodatkowy probe `codex debug
+app-server send-message-v2` zakończył się poprawnie na `gpt-5.6-sol`, podczas
+gdy adapter WILQ kończył się reconnectami. Fixed-point probe wykazał przyczynę:
+po usunięciu przekazywania `model_provider`/`model_providers` z lokalnego
+`config.toml` ten sam adapter zwrócił `completed` i `{"ok":true}`. App-server
+ma wybierać provider z własnego uwierzytelnionego katalogu; niestandardowy
+override był kompatybilny z `codex exec`, ale nie z tą ścieżką strumieniową.
+Usunięto martwy helper provider override, zachowując model scalar, izolację,
+read-only i brak fallbacku. Proof: transport test 1/1, Ruff, mypy oraz live
+structured-turn `completed` bez blockera. Nie jest to druga ścieżka modelowa —
+to naprawa jedynego istniejącego app-server seamu.

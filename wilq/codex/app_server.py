@@ -632,8 +632,13 @@ def _codex_process_command() -> tuple[str, ...]:
     configured_model = _configured_model()
     if configured_model is not None:
         overrides.append(f"model={json.dumps(configured_model, ensure_ascii=False)}")
-    provider_overrides = _configured_model_provider_overrides()
-    overrides.extend(provider_overrides)
+    # App-server owns provider selection and its model catalog.  Passing a
+    # custom ``model_providers`` block here looks harmless, but it routes the
+    # Responses stream through providers that are valid for ``codex exec`` and
+    # can still be incompatible with app-server (the observed failure is a
+    # reconnect loop ending in ``responseStreamDisconnected``).  Keep the
+    # app-server on the authenticated provider selected by Codex itself; carry
+    # only the model scalar above.
     for override in overrides:
         command.extend(("--config", override))
     for feature in _DISABLED_TOOL_FEATURES:
@@ -663,50 +668,6 @@ def _configured_model() -> str | None:
         return None
     model = model.strip()
     return model if 0 < len(model) <= 200 else None
-
-
-def _configured_model_provider_overrides() -> list[str]:
-    """Carry only non-secret fields for the selected Codex provider."""
-
-    auth_path = codex_auth_path()
-    if auth_path is None:
-        return []
-    config_path = auth_path.parent / "config.toml"
-    try:
-        config = tomllib.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
-        return []
-    provider_id = config.get("model_provider")
-    providers = config.get("model_providers")
-    if not isinstance(providers, dict):
-        return []
-    if provider_id is None and len(providers) == 1:
-        provider_id = next(iter(providers))
-    if not isinstance(provider_id, str):
-        return []
-    provider = providers.get(provider_id)
-    if not isinstance(provider, dict) or not _safe_provider_id(provider_id):
-        return []
-    values: list[tuple[str, object]] = [
-        ("name", provider.get("name")),
-        ("base_url", provider.get("base_url")),
-        ("wire_api", provider.get("wire_api")),
-        ("requires_openai_auth", provider.get("requires_openai_auth")),
-    ]
-    overrides = [f"model_provider={json.dumps(provider_id, ensure_ascii=False)}"]
-    for field_name, value in values:
-        if isinstance(value, (str, bool)):
-            if isinstance(value, str) and not value.strip():
-                continue
-            overrides.append(
-                "model_providers."
-                f"{provider_id}.{field_name}={json.dumps(value, ensure_ascii=False)}"
-            )
-    return overrides
-
-
-def _safe_provider_id(value: str) -> bool:
-    return bool(value) and all(character.isalnum() or character in "_-" for character in value)
 
 
 async def _send_request(

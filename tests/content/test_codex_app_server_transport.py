@@ -168,12 +168,9 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
         "mcp_servers={}",
         "features.remote_models=false",
         'model="gpt-test"',
-        'model_provider="codex"',
-        'model_providers.codex.name="codex"',
-        'model_providers.codex.base_url="https://provider.example/v1"',
-        'model_providers.codex.wire_api="responses"',
-        'model_providers.codex.requires_openai_auth=true',
     } <= overrides
+    assert not any(value.startswith("model_provider=") for value in overrides)
+    assert not any(value.startswith("model_providers.") for value in overrides)
     assert {"apps", "browser_use", "multi_agent", "plugins", "shell_tool"} <= disabled
     thread = payload["thread_params"]
     assert thread["environments"] == []
