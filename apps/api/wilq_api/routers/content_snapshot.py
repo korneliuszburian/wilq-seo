@@ -99,6 +99,16 @@ def _merge_selected_inventory_fields(
         for field in _SELECTED_INVENTORY_FIELDS
         if getattr(selected, field) is not None
     }
+    if selected.metric_facts:
+        facts_by_key = {
+            fact.model_dump_json(): fact
+            for fact in [*existing.metric_facts, *selected.metric_facts]
+        }
+        updates["metric_facts"] = list(facts_by_key.values())
+    updates["source_connectors"] = list(
+        dict.fromkeys([*existing.source_connectors, *selected.source_connectors])
+    )
+    updates["evidence_ids"] = list(dict.fromkeys([*existing.evidence_ids, *selected.evidence_ids]))
     return existing.model_copy(update=updates)
 
 

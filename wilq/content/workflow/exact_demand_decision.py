@@ -18,6 +18,11 @@ def content_decision_with_exact_demand(
     queries = list(dict.fromkeys(fact.dimensions["query"] for fact in gsc_facts))
     metrics = content_decision_metrics(gsc_facts, queries)
     wordpress_match = decision.wordpress_match or "missing"
+    retained_facts = [
+        fact
+        for fact in decision.metric_facts
+        if fact.source_connector not in {"google_search_console", "google_ads"}
+    ]
     return decision.model_copy(
         update={
             "title": content_decision_title(
@@ -50,12 +55,13 @@ def content_decision_with_exact_demand(
             "total_impressions": metrics.total_impressions,
             "aggregate_ctr": metrics.aggregate_ctr,
             "best_average_position": metrics.best_average_position,
-            "metric_facts": [*gsc_facts, *ads_facts],
+            "metric_facts": [*gsc_facts, *ads_facts, *retained_facts],
             "evidence_ids": list(
                 dict.fromkeys(
                     [
                         *decision.evidence_ids,
                         *(fact.evidence_id for fact in ads_facts),
+                        *(fact.evidence_id for fact in retained_facts),
                     ]
                 )
             ),
