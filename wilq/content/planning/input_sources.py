@@ -406,7 +406,7 @@ def _ads_source_assessment(
             bool(evidence_ids and landing_match_tiers),
             ["google_ads"],
             freshness,
-            absent_status="not_applicable",
+            absent_status="missing",
         )
     )
     reason = (
