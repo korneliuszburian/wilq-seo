@@ -23,7 +23,7 @@ export function ContentPlanningGenerationPanel({
       query.state.data?.status === "generating" ? 1500 : false
   });
   const materialReadiness = useQuery({
-    queryKey: ["knowledge-source-material-readiness"],
+    queryKey: ["content-workflow", "knowledge-source-material-readiness"],
     queryFn: getKnowledgeSourceMaterialReadiness,
     staleTime: 60_000
   });

@@ -1369,3 +1369,8 @@ Brak exact GA4/Ahrefs, Ads i Keyword Planner pozostaje jawnie `missing` lub
 status `stale`; BDO ma `failed` z istniejącym typed provider blockerem i bez
 proposal. To dowodzi wspólnego mapowania i granic dowodu, nie pełnej generacji
 tekstu ani UAT.
+
+Ujednolicono też klucz React Query dla gotowości korpusu między głównym
+workflow i panelem generowania. Ten sam endpoint ma teraz wspólny cache i nie
+tworzy dwóch niezależnych odczytów ani rozjechanych blockerów. Proof:
+`ContentPlanningGenerationPanel` 3 testy i dashboard typecheck.
