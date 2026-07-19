@@ -1746,6 +1746,17 @@ realne landing rows są `unbound` albo `review_required`, więc nie ma jeszcze
 zatwierdzonej usługi ani native-UI handoffu. To jest dowód read/review, nie
 gotowości do wykonania ani UAT.
 
+### 2026-07-19 — Ads contract fixture rozdziela auxiliary final-URL od Demand Gen
+
+Pełny `tests/api_contracts/test_ads_contracts.py` był czerwony nie przez
+produkcyjne GAQL, ale przez MockTransport: szerokie `FROM ad_group_ad` łapało
+auxiliary `AD_FINAL_URL_INVENTORY_QUERY` jako zapytanie Demand Gen i wymuszało
+niepasujący filtr. Fixture rozdziela teraz final-URL inventory od
+`DEMAND_GEN_AD_GROUP_AD_QUERY`; produkcja pozostała bez zmian. Pełny Ads
+contract suite przechodzi, a `py_compile`, Ruff `E9/F` i diff-check są zielone.
+To usuwa fałszywy czerwony sygnał w review, nie jest dowodem vendor write ani
+native-UI handoffu.
+
 ### 2026-07-19 — runner planowania: jawne odroczenie migracji
 
 Lab durable store potwierdził readback queued run identity po odtworzeniu

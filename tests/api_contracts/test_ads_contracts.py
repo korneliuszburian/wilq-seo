@@ -3183,7 +3183,36 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     }
                 ],
             )
-        if "FROM ad_group_ad" in query:
+        if (
+            "FROM ad_group_ad" in query
+            and "ad_group_ad.ad.final_urls" in query
+            and "demand_gen_multi_asset_ad.marketing_images" not in query
+        ):
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "campaign": {"id": "103"},
+                                "adGroup": {"id": "203"},
+                                "adGroupAd": {
+                                    "status": "ENABLED",
+                                    "ad": {
+                                        "finalUrls": [
+                                            "https://www.ekologus.pl/oferta/"
+                                        ]
+                                    },
+                                },
+                            }
+                        ]
+                    }
+                ],
+            )
+        if (
+            "FROM ad_group_ad" in query
+            and "demand_gen_multi_asset_ad.marketing_images" in query
+        ):
             assert "campaign.advertising_channel_type = DEMAND_GEN" in query
             assert "ad_group_ad.ad.type" in query
             assert "ad_group_ad.ad.final_urls" in query
