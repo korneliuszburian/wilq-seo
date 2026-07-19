@@ -1228,3 +1228,14 @@ returns one typed candidate for an existing page without rebuilding the full
 54-item diagnostics queue; ambiguous bounded-slug matches are refused instead
 of opening the wrong page. Focused queue/catalog falsifiers pass, and the live
 BDO decision URL returns `candidate_count=1` with no model call or vendor write.
+
+### 2026-07-19 — live BDO planning retry ends as a typed runtime blocker
+
+The current BDO input digest `35497582…` was submitted through the canonical
+planning POST with `requested_by=operator_local_dashboard`. The API returned
+`generating` immediately, then persisted `runtime_failed` with source code
+`codex_timeout` after the bounded 180-second app-server deadline. No proposal,
+revision or WordPress write was created; subsequent GET returns the durable
+failed state and its retry step. This is an honest app-server/runtime blocker,
+not a planning or content-quality PASS. The next retry requires runtime health
+evidence, not a client-side fallback or a second parallel model path.
