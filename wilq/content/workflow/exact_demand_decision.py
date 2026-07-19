@@ -22,7 +22,7 @@ def content_decision_with_exact_demand(
         update={
             "title": content_decision_title(
                 decision.decision_type,
-                decision.page,
+                decision.page or decision.normalized_page_path or "",
                 len(queries),
                 metrics,
             ),

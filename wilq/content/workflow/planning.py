@@ -297,11 +297,12 @@ def _baseline_inventory_disposition(
     existing headings as newly created sections. Generated proposals may later
     choose a different disposition after human review.
     """
-    return {
+    dispositions: dict[str, ContentPlanningInventoryDisposition] = {
         "preserve": "preserve",
         "refresh": "rewrite",
         "merge": "merge",
-    }.get(brief.operations_context.recommended_mode, "create")
+    }
+    return dispositions.get(brief.operations_context.recommended_mode, "create")
 
 
 def _planning_digest(payload: Mapping[str, object]) -> str:

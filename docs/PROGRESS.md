@@ -2088,3 +2088,8 @@ nie są stage'owane. `state_sha256` second-opinion obejmuje porcelain status,
 staged/unstaged binary diffs oraz mode i pełny hash każdej ścieżki cached albo
 untracked; to pozwala odtworzyć, dlaczego commit sam nie opisuje całego fixed
 pointu.
+
+Domknięto dwa najmniejsze remaining clusters: baseline inventory disposition
+ma jawnie typowaną mapę, a exact-demand title używa bezpiecznego fallbacku dla
+opcjonalnego `page`. Proof: oba moduły mypy/Ruff clean,
+`tests/content/test_planning_decisions.py` 7/7, diff-check clean.
