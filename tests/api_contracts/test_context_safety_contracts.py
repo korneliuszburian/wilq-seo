@@ -51,6 +51,28 @@ def test_connector_consumer_readiness_fails_closed_for_missing_source() -> None:
     assert "zablokowane" in row["effect"]
 
 
+def test_connector_consumer_readiness_excludes_runtime_connector_from_blockers() -> None:
+    payload = connector_readiness_for_context(
+        [
+            {
+                "id": "openai_codex",
+                "label": "Codex runtime",
+                "status": "configured",
+                "configured": True,
+                "product_scope": "runtime",
+                "active_for_daily_work": False,
+                "freshness": {"state": "unknown"},
+                "capabilities": {"read": True},
+            }
+        ]
+    )
+
+    assert payload["blocked"] == 0
+    assert payload["ready"] == 0
+    assert payload["not_applicable"] == 1
+    assert payload["rows"][0]["status"] == "not_applicable"
+
+
 def test_daily_context_pack_uses_daily_decisions_for_action_summaries(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

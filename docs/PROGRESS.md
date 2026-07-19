@@ -2126,3 +2126,16 @@ czterech context modules clean. Read-only runtime przez
 gotowych; pełny pack pokazał 12 connectorów, 8 gotowych i 4 zablokowane
 (`google_sheets`, `linkedin`, `facebook`, `openai_codex`). To jest jawny
 consumer impact, nie dowód gotowości draft/model/UAT.
+
+### 2026-07-19 — runtime i źródła marketingowe nie są tym samym
+
+Read-only porównanie `/api/system/status` i pełnego context packu wykazało
+ważny rozjazd prezentacyjny: `openai_codex` jest skonfigurowanym runtime'em
+operatora, ale nie źródłem marketingowym, więc nie powinien liczyć się jako
+zablokowany connector danych. Readiness projection rozróżnia teraz
+`not_applicable` dla runtime/wyłączonych opcjonalnych connectorów od
+`blocked` dla realnych źródeł. Aktualny runtime: 12 total, 8 ready,
+2 blocked (`linkedin`, `facebook`) i 2 not applicable (`google_sheets`,
+`openai_codex`); system summary pozostaje 12 total, 9 configured,
+2 missing credentials. Proof: focused context safety 3/3, Ruff i modułowy
+mypy clean, managed API runtime zgodny z tym rozdziałem.

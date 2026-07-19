@@ -359,6 +359,25 @@ def connector_readiness_for_context(
             continue
         status = str(dumped.get("status") or "unknown")
         configured = bool(dumped.get("configured"))
+        product_scope = str(dumped.get("product_scope") or "production")
+        active_for_daily_work = bool(dumped.get("active_for_daily_work", True))
+        if product_scope == "runtime" or (
+            product_scope == "optional_disabled" and not active_for_daily_work
+        ):
+            rows.append(
+                {
+                    "connector_id": connector_id,
+                    "label": dumped.get("label"),
+                    "status": "not_applicable",
+                    "blocker_code": None,
+                    "configured": configured,
+                    "read_available": False,
+                    "freshness_state": "not_applicable",
+                    "missing_credentials": [],
+                    "effect": "nie jest źródłem marketingowym dla tego consumer'a",
+                }
+            )
+            continue
         capabilities = dumped.get("capabilities")
         read_available = bool(capabilities.get("read")) if isinstance(capabilities, dict) else False
         freshness = dumped.get("freshness")
@@ -403,12 +422,15 @@ def connector_readiness_for_context(
             }
         )
     blocked = [row for row in rows if row["status"] == "blocked"]
+    ready = [row for row in rows if row["status"] == "ready"]
+    not_applicable = [row for row in rows if row["status"] == "not_applicable"]
     return {
         "contract": "connector_consumer_readiness_v1",
         "rows": rows,
         "total": len(rows),
-        "ready": len(rows) - len(blocked),
+        "ready": len(ready),
         "blocked": len(blocked),
+        "not_applicable": len(not_applicable),
         "blocked_connector_ids": [row["connector_id"] for row in blocked],
         "instruction": (
             "Źródło z blokadą nie może zasilać metryk, rekomendacji ani claimów; "
