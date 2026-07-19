@@ -67,3 +67,24 @@ def test_system_status_exposes_latest_typed_codex_failure_without_provider_paylo
         "error": "runtime_failed:codex_response_stream_disconnected",
     }
     assert runtime["last_codex_error"] == "runtime_failed:codex_response_stream_disconnected"
+
+
+def test_system_status_redacts_untyped_codex_error_payload(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "codex_status_untyped.sqlite3"))
+    local_state_store().save_codex_run(
+        CodexRun(
+            id="codex_untyped_error_status_test",
+            skill="wilq-content-operator",
+            source="wilq_api",
+            status="failed",
+            error='runtime_failed:{"provider_payload":"private"}',
+        )
+    )
+
+    runtime = client.get("/api/system/status").json()["codex_runtime"]
+
+    assert runtime["operational_blocker_code"] == "codex_run_error_unclassified"
+    assert "private" not in str(runtime)

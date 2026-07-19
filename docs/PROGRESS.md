@@ -2352,3 +2352,6 @@ contract 2/2, mypy i Ruff clean. Nie są ujawniane surowe payloady provider’a.
 Ponieważ login/CLI pozostają dostępne, `readiness_status` nadal opisuje
 gotowość lokalnej sesji, ale nowy `operational_status=degraded` i
 `operational_blocker_code` nie pozwalają pomylić jej z działającym providerem.
+Status sanitizuje też niezgodny z typed-code format błędu do
+`codex_run_error_unclassified`, więc system status nie staje się kanałem dla
+surowego payloadu provider’a. Proof: system-status contract 3/3, mypy i Ruff.

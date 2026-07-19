@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import sqlite3
 from dataclasses import dataclass
@@ -8,6 +9,8 @@ from pathlib import Path
 from typing import Any, Literal
 
 from wilq.codex.model_policy import MODEL_POLICY_NOTES
+
+_SAFE_RUN_ERROR = re.compile(r"^[a-z][a-z0-9_]*(?::[a-z][a-z0-9_]*)*$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,5 +117,15 @@ def _last_codex_run_summary() -> dict[str, Any] | None:
         "hook": run.hook,
         "started_at": run.started_at.isoformat(),
         "completed_at": run.completed_at.isoformat() if run.completed_at else None,
-        "error": run.error,
+        "error": _safe_codex_error(run.error),
     }
+
+
+def _safe_codex_error(error: str | None) -> str | None:
+    """Keep the status contract typed-looking and exclude raw provider payloads."""
+
+    if error is None:
+        return None
+    if len(error) > 200 or _SAFE_RUN_ERROR.fullmatch(error) is None:
+        return "codex_run_error_unclassified"
+    return error
