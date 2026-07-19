@@ -2632,3 +2632,6 @@ Pełny review surface pokazuje teraz również liczbę FAQ, CTA i linków wewnę
 a licznik evidence obejmuje lineage wszystkich tych assetów, nie tylko sekcji.
 To odpowiada backendowej walidacji exact revision i nie zmienia żadnej władzy
 approval. Focused dashboard review tests: 5 passed; typecheck przechodzi.
+Po drugim checkerze dodano opcjonalny dostęp i fallbacki dla liczników oraz
+lineage kolekcji assetów, więc częściowy payload nie wywraca review surface.
+Focused dashboard review tests: 5 passed; typecheck przechodzi.
