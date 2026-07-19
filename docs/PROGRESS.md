@@ -1686,3 +1686,11 @@ nagłówki `acf_section_headings` z inventory WordPressa. Dzięki temu marketer 
 znaleźć istniejącą podstronę po sekcji, a nie tylko po URL, tytule lub query.
 To jest wyłącznie filtr prezentacyjny nad pełną kolejką API; nie zmienia
 rekomendacji, mapowania usługi, digestów ani żadnej decyzji generacyjnej.
+
+### 2026-07-19 — karta kolejki pokazuje pozycję i status porównania
+
+Karta kandydata w kolejce pokazuje teraz, gdy API je dostarcza, najlepszą
+średnią pozycję, liczbę zapytań oraz jawny status porównania okresów. Brak
+porównywalnego okresu i niejednoznaczne porównanie są komunikowane wprost,
+zamiast znikać za samym CTR. To nadal read-only prezentacja istniejących
+metryk GSC; nie wyprowadza przyczyny ani prognozy efektu.

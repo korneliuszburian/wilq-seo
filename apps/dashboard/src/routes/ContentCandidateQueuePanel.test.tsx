@@ -41,6 +41,9 @@ describe("candidateEvidenceSummary", () => {
         impressions: 266,
         clicks: 1,
         ctr: 0.003759398,
+        best_average_position: 12.5521,
+        query_count: 7,
+        comparison_status: "not_available",
         primary_query: "bdo co to"
       },
       page_inventory: {
@@ -50,6 +53,9 @@ describe("candidateEvidenceSummary", () => {
     } as unknown as ContentWorkItemQueueCandidate;
     expect(candidateEvidenceSummary(withMetrics)).toContain("266 wyśw.");
     expect(candidateEvidenceSummary(withMetrics)).toContain("CTR 0,38%");
+    expect(candidateEvidenceSummary(withMetrics)).toContain("poz. 12,6");
+    expect(candidateEvidenceSummary(withMetrics)).toContain("7 zapytań");
+    expect(candidateEvidenceSummary(withMetrics)).toContain("brak porównywalnego okresu");
     expect(candidateEvidenceSummary(withMetrics)).toContain("12 sekcji");
     expect(candidateEvidenceSummary(candidate)).toBe("Brak exact metryk lub materiału do wyboru.");
   });

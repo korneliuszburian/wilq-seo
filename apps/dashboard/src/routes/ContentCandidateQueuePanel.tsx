@@ -102,7 +102,18 @@ export function candidateEvidenceSummary(candidate: ContentWorkItemQueueCandidat
   if (metrics?.ctr !== null && metrics?.ctr !== undefined) {
     metricParts.push(`CTR ${(metrics.ctr * 100).toLocaleString("pl-PL", { maximumFractionDigits: 2 })}%`);
   }
+  if (metrics?.best_average_position !== null && metrics?.best_average_position !== undefined) {
+    metricParts.push(`poz. ${metrics.best_average_position.toLocaleString("pl-PL", { maximumFractionDigits: 1 })}`);
+  }
+  if (metrics?.query_count) metricParts.push(`${metrics.query_count} zapytań`);
   if (metrics?.primary_query) metricParts.push(`query: „${metrics.primary_query}”`);
+  if (metrics?.comparison_status === "available" && metrics.comparison_periods?.length === 2) {
+    metricParts.push(`porównanie: ${metrics.comparison_periods[0]} → ${metrics.comparison_periods[1]}`);
+  } else if (metrics?.comparison_status === "ambiguous") {
+    metricParts.push("porównanie niejednoznaczne");
+  } else if (metrics?.comparison_status === "not_available") {
+    metricParts.push("brak porównywalnego okresu");
+  }
   const inventory = candidate.page_inventory;
   if (inventory?.section_count !== null && inventory?.section_count !== undefined) {
     metricParts.push(`${inventory.section_count} sekcji`);
