@@ -12,6 +12,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   wyłącznie w Beads pod `wilq-seo-1oa` i review-only `wilq-seo-v9ab`.
 - Priorytetem jest jeden użyteczny workspace `/content-workflow`, a nie nowe
   ekrany ani kolejne warstwy ceremonii.
+- 2026-07-19: ponowny live timing wejścia z `content_decision_*` nie odtwarza
+  zgłoszonych 10 minut: selected queue 3,06 s na zimnym procesie, snapshot
+  BDO 1,05 s; kolejne odczyty korzystają z cache. Zaobserwowany koszt jest
+  konkretny: decyzja nie trafia w katalogowy fast path i zwraca pełną kolejkę
+  54 kandydatów. To pozostaje osobnym Beadem (`wilq-seo-z023`) do naprawy po
+  dowodzie, bez twierdzenia, że problem 10-minutowy został rozwiązany.
 - Kanoniczny przebieg marketera ma pięć kroków:
   `scope → section_map → draft → review → dev_draft`.
 - 2026-07-18: świeży BDO plan został najpierw poprawnie zablokowany przez
