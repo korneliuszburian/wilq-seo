@@ -1704,3 +1704,17 @@ propozycję, jeśli historia nie ma evidence; dashboard pokazuje osobno liczbę
 źródeł rewizji treści i dowodów historii. Digest historii nadal unieważnia
 readback po zmianie, a publikacja pozostaje wyłączona. Live inventory nadal ma
 status `missing`, więc ten slice nie odblokowuje social reuse dla Ekologusa.
+
+### 2026-07-19 — świeży context WILQ API po kolejnym fixed poincie
+
+Bezpośredni odczyt API o `2026-07-19T07:51:54Z` potwierdził 12 konektorów,
+9 skonfigurowanych i 2 brakujące credentials; brief ma 1 blocker i 3
+rekomendacje. Kolejka treści pozostaje `ready`: 54 kandydatów, 53 actionable,
+świeżość `fresh` (`checked_at=2026-07-19T07:51:56Z`). Baza materiałów Ekologusa
+ma 15 pozycji, z czego 7 zaimportowanych i 8 `import_pending`; generation
+pozostaje jawnie zablokowane do kontrolowanego importu i owner review. Pomiar
+bezpośredniego endpointu wybranego snapshotu BDO wyniósł 3,36 s w ciepłym
+stacku, a osobny odczyt briefu i kolejki odpowiednio 0,002 s i 0,039 s. To
+potwierdza, że API jest dostępne i kolejka nie jest źródłem 10-minutowego
+spinnera; snapshot pozostaje osobnym hotspotem do dalszej optymalizacji i
+browser proof, bez claimu docelowego SLO ani UAT.

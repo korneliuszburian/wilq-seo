@@ -19,7 +19,7 @@ Oba piloty planowania nadal kończą się typed `runtime_failed` z
 i persisted readback są zachowane;
 pełna generacja, semantic storage, jakość tekstu i UAT pozostają nieudowodnione.
 
-Ostatni wypchnięty commit: `f7208d2b` (`chore(beads): record ads script audit`).
+Ostatni wypchnięty commit: `c4780e8b` (`docs(plan): refresh long-running fixed point`).
 Po tym punkcie social reuse zachowuje osobne `source_evidence_ids` historii
 duplikacji w immutable proposal i blokuje reuse bez zatwierdzonego inventory;
 live social history nadal jest `missing`. Audyt Ads obejrzał wszystkie 21
