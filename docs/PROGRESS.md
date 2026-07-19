@@ -24,6 +24,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   inventory/service. Wszystkie trzy stany pozostają fail-closed. Focused
   3-case proof przeszedł; checker retry zwrócił `findings=[]`. To poprawa
   decyzji i następnego kroku, nie automatyczna akceptacja usługi.
+- 2026-07-19: brak exact term→landing→service dla Ads ma teraz status
+  `missing`, a nie `not_applicable`; źródła naprawdę nieadekwatne do strony
+  (Merchant/Localo/Social) zachowują `not_applicable`. Live outsourcing
+  zwraca `missing` bez evidence IDs. To rozróżnia „oceniono, ale brak dowodu”
+  od „źródło nie dotyczy” bez zmiany fail-closed policy.
 - 2026-07-19: read-only Ads pilot pobrany przez kanoniczne
   `/api/ads/diagnostics`: świeży odczyt (`live_data_available=true`), 18 kampanii,
   23 wiersze zapytań, 12 kandydatów wykluczeń z 90-dniowym kontekstem, 9 akcji
