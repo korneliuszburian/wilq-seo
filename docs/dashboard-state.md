@@ -1,6 +1,6 @@
 # Dashboard State
 
-Last updated: 2026-07-17
+Last updated: 2026-07-19
 
 This is the living state file for WILQ dashboard work. Read it before changing
 any dashboard route, dashboard API view-model, dashboard copy, dashboard test or
@@ -122,6 +122,14 @@ Managed proof: first selected queue about 2.50s, subsequent reads 0.17–0.19s;
 the browser shows the selected material before a deliberately delayed queue
 response. The live `the_content`/ACF read remains review-required when it came
 from rendered HTML.
+The entry screen also reads the API-owned knowledge readiness contract before
+planning. A failed readiness fetch is an explicit degraded blocker, loading is
+visibly separate from ready, and an empty `next_step` cannot leave the
+marketer without a safe action. Local state remains `import_pending` (7 of 15
+materials imported), so this is a truthful gate, not generation approval.
+Fixed point `b5c28415` has 202 dashboard tests and typecheck passing. The
+independent checker emitted no findings but had source-transport evidence gaps,
+so it is not recorded as PASS.
 Service Profile is approved-current for the BDO card used by this proof, while
 other cards retain their own lifecycle statuses. Exact-page GSC queries remain
 visible in scope, while
