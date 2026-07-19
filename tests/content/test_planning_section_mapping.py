@@ -258,6 +258,43 @@ def test_footer_tail_after_related_content_is_excluded_without_model_rows():
     assert all(item.reason == "navigation_or_promotional_inventory" for item in mappings)
 
 
+def test_footer_tail_cannot_be_reintroduced_by_a_similar_model_section():
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_related",
+                    heading="Może Cię również zainteresować",
+                    evidence_ids=["ev_wp"],
+                ),
+                ContentPlanningInventorySection(
+                    section_id="inventory_footer",
+                    heading="Doradztwo środowiskowe i EKO–consulting",
+                    evidence_ids=["ev_wp"],
+                ),
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Doradztwo środowiskowe i EKO–consulting",
+                purpose="Nawigacja do oferty.",
+                reader_question="Czy potrzebuję usługi?",
+                inventory_disposition="rewrite",
+                inventory_section_id="inventory_footer",
+            )
+        ]
+    )
+
+    mappings = build_inventory_mapping(planning_input, output, ["plan_01"])
+
+    assert mappings[1].status == "excluded"
+    assert mappings[1].mapped_section_id is None
+    assert mappings[1].reason == "navigation_or_promotional_inventory"
+
+
 def test_faq_lead_inventory_is_excluded_for_review_when_model_omits_it() -> None:
     planning_input = ContentPlanningInput.model_construct(
         inventory=ContentPlanningInventory(

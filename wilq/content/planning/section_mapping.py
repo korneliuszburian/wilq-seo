@@ -107,6 +107,21 @@ def build_inventory_mapping(
     inventory_reasons = _inventory_exclusion_reasons(planning_input)
     mappings: list[ContentPlanningInventoryMapping] = []
     for inventory_section in planning_input.inventory.sections:
+        reason = inventory_reasons[inventory_section.section_id]
+        if reason == "navigation_or_promotional_inventory":
+            mappings.append(
+                ContentPlanningInventoryMapping(
+                    inventory_section_id=inventory_section.section_id,
+                    inventory_heading=inventory_section.heading,
+                    status="excluded",
+                    mapped_section_id=None,
+                    mapped_section_heading=None,
+                    disposition="remove_review_required",
+                    reason=reason,
+                    evidence_ids=inventory_section.evidence_ids,
+                )
+            )
+            continue
         explicit_id = by_inventory_id.get(inventory_section.section_id, [])
         if len(explicit_id) == 1 and explicit_id[0][0] not in used_plan_indices:
             index, section = explicit_id[0]
