@@ -173,3 +173,60 @@ def test_weak_ahrefs_cross_check_is_manual_and_has_no_queue_action(
         "google_search_console",
         "wordpress_ekologus",
     ]
+
+
+def test_gap_contract_blocks_mixed_record_coverage_before_actions(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ahrefs_coverage_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ahrefs_coverage.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+    run = _run(
+        run_id="refresh_ahrefs_mixed_coverage_test",
+        connector_id="ahrefs",
+        evidence_id="ev_refresh_ahrefs_mixed_coverage_test",
+        summary="Ahrefs mixed coverage fixture.",
+    )
+    local_state_store().save_connector_refresh_run(run)
+    metric_store().save_connector_refresh_metrics(
+        run,
+        detailed_facts=[
+            VendorMetricFact(
+                "ahrefs_content_gap_count",
+                1,
+                {
+                    "gap_type": "content_gap",
+                    "keyword": "bdo odpady",
+                    "competitor_domain": "denios.pl",
+                    "target_domain": "ekologus.pl",
+                    "target_keyword_sample_size": "100",
+                    "target_keyword_limit": "1000",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_content_gap_count",
+                1,
+                {
+                    "gap_type": "content_gap",
+                    "keyword": "bdo raport",
+                    "competitor_domain": "denios.pl",
+                    "target_domain": "ekologus.pl",
+                },
+                period="ahrefs_gap",
+            ),
+        ],
+    )
+
+    response = client.get("/api/ahrefs/diagnostics")
+
+    assert response.status_code == 200
+    contract = response.json()["gap_read_contract"]
+    assert contract["status"] == "blocked"
+    assert "ahrefs_gap_coverage" in contract["missing_read_contracts"]
+    assert any("zakres próby" in label for label in contract["missing_read_contract_labels"])
+    assert contract["action_ids"] == []
+    assert "kompletność zakresu porównania" in contract["blocked_claims"]

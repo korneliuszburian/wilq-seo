@@ -68,6 +68,7 @@ AHREFS_GAP_READ_CONTRACTS = [
     "ahrefs_backlink_gap_records",
     "ahrefs_organic_keywords_by_url",
     "ahrefs_top_pages_by_competitor",
+    "ahrefs_gap_coverage",
 ]
 AHREFS_GAP_BLOCKED_CLAIMS = [
     "luka względem konkurencji",
@@ -126,6 +127,7 @@ AHREFS_READ_CONTRACT_LABELS = {
     "ahrefs_backlink_gap_records": "rekordy luk linków",
     "ahrefs_organic_keywords_by_url": "organiczne słowa dla URL",
     "ahrefs_top_pages_by_competitor": "najlepsze strony konkurencji",
+    "ahrefs_gap_coverage": "zakres próby i limit porównania dla każdej luki",
     "domain_rating": "ocena domeny Ahrefs",
 }
 AHREFS_REVIEW_GATE_LABELS = {
@@ -1867,11 +1869,33 @@ def _missing_gap_contracts(gap_facts: list[MetricFact]) -> list[str]:
     missing_contracts = [
         contract
         for contract in AHREFS_GAP_READ_CONTRACTS
+        if contract != "ahrefs_gap_coverage"
         if not fact_names.intersection(present_by_fact[contract])
     ]
-    if not _ahrefs_gap_records(gap_facts) and "ahrefs_content_gap_records" not in missing_contracts:
+    gap_records = _ahrefs_gap_records(gap_facts)
+    if not gap_records and "ahrefs_content_gap_records" not in missing_contracts:
         missing_contracts.append("ahrefs_content_gap_records")
+    if _gap_coverage_is_expected(gap_facts) and not all(
+        _gap_record_has_complete_coverage(record) for record in gap_records
+    ):
+        missing_contracts.append("ahrefs_gap_coverage")
     return missing_contracts
+
+
+def _gap_coverage_is_expected(gap_facts: list[MetricFact]) -> bool:
+    """Only enforce comparison scope when the source declares that scope."""
+    return any(
+        fact.dimensions.get("target_domain")
+        or fact.dimensions.get("target_keyword_sample_size")
+        or fact.dimensions.get("target_keyword_limit")
+        for fact in gap_facts
+    )
+
+
+def _gap_record_has_complete_coverage(record: AhrefsGapRecord) -> bool:
+    return bool(record.coverage_summary) and (
+        record.coverage_summary != "zakres próby nie został podany w rekordzie"
+    )
 
 
 def _available_gap_contracts(missing_contracts: list[str]) -> list[str]:
@@ -1897,6 +1921,7 @@ def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[
         "ahrefs_backlink_gap_records": "luka linków",
         "ahrefs_organic_keywords_by_url": "szansa na wzrost pozycji",
         "ahrefs_top_pages_by_competitor": "wzrost ruchu",
+        "ahrefs_gap_coverage": "kompletność zakresu porównania",
     }
     claims = [
         claim for contract, claim in claims_by_contract.items() if contract in missing_contracts

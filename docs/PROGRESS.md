@@ -2316,3 +2316,13 @@ pierwszy snapshot outsourcingu 6,12 s, kolejne około 0,9 s. To nie jest
 10-minutowy hang, ale pierwszy odczyt outsourcingu jest za ciężki dla
 30-sekundowego doświadczenia marketera i wymaga osobnego profilowania. Nie
 zmieniano cache ani polityki freshness bez dowodu przyczyny.
+
+### 2026-07-19 — Ahrefs nie przepuszcza luk z niepełnym zakresem
+
+Kontrakt luk Ahrefs ma teraz osobny `ahrefs_gap_coverage`: gdy rekordy
+porównania deklarują domenę docelową, każdy rekord musi nieść próbkę i limit
+porównania. Mieszany lub niepełny zakres przechodzi w `blocked`, usuwa akcje
+z kolejki i blokuje twierdzenie o kompletności zakresu; proste syntetyczne
+agregaty bez deklarowanego scope pozostają kompatybilne. Live API potwierdza
+obecnie `blocked`, brak akcji i rekordy organiczne bez zakresu jako realny
+external/data-quality blocker. Proof: test kontraktu Ahrefs 2/2 oraz Ruff.
