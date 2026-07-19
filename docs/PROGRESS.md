@@ -1733,6 +1733,19 @@ service bindingu ani native-UI handoffu. Szerszy Ads contract suite ma nadal
 znaną, niezwiązaną awarię fixture/query dla Demand Gen; nie jest ona
 przedstawiana jako zielony wynik.
 
+### 2026-07-19 — realny Ads read/review pilot ma dowód, ale nie ma jeszcze service handoffu
+
+Live smoke `smoke_skill_contract.py --api-base http://127.0.0.1:8000` zakończył
+się kodem 0. Odczyt Ads jest dostępny; WILQ ma evidence
+`ev_connector_google_ads_status` i `ev_refresh_refresh_google_ads_1b4938f44dd1`,
+23 wiersze search-term, 32 kliknięcia, 503 wyświetlenia, koszt 163 PLN i 0
+konwersji. Sześć review actions przechodzi walidację. Apply/write pozostaje
+wyłączone, a twierdzenia CPA/ROAS, zmarnowanego budżetu, wykluczeń i zmian
+budżetu są jawnie zablokowane. P0 `wilq-seo-v9ab.17.7` pozostaje otwarty:
+realne landing rows są `unbound` albo `review_required`, więc nie ma jeszcze
+zatwierdzonej usługi ani native-UI handoffu. To jest dowód read/review, nie
+gotowości do wykonania ani UAT.
+
 ### 2026-07-19 — planowanie nie duplikuje turnów i nie ściga żywego workera
 
 Planowanie używa jednego kontraktu czasu: router Codex i store stale detection
