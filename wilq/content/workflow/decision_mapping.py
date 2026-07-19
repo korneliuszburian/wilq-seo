@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from wilq.content.briefs.sales import ContentSalesBriefSeed, ContentSalesBriefSourceFact
 from wilq.content.canonical.urls import (
     CONTENT_SOURCE_SITE_HOSTS,
@@ -233,6 +235,10 @@ def _usable_inventory_headings(headings: list[str]) -> list[str]:
     for raw_heading in headings:
         heading = " ".join(raw_heading.split())
         if not heading or any(fragment in heading.casefold() for fragment in ignored_fragments):
+            continue
+        # Customer stories and testimonial rows often arrive as a heading plus
+        # a bracketed year. They belong to page chrome, not to the answer map.
+        if re.search(r"\[\s*(?:19|20)\d{2}\s*r?\.?\s*\]", heading, re.IGNORECASE):
             continue
         if heading.casefold().startswith("oferta "):
             continue
