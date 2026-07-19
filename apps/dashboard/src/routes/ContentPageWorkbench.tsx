@@ -18,7 +18,10 @@ import {
 import { ContentCodexSectionProposalPanel } from "./ContentCodexSectionProposalPanel";
 import { ContentFreshnessBanner } from "./ContentWorkflowBoundaryStates";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
-import { ContentPlanningReviewPanel } from "./ContentPlanningReviewPanel";
+import {
+  ContentPlanningReviewPanel,
+  planningInventorySourceLabel
+} from "./ContentPlanningReviewPanel";
 import { ContentPlanningGenerationPanel } from "./ContentPlanningGenerationPanel";
 import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
 import { ContentWordPressDraftActionWizard } from "./ContentWordPressDraftActionWizard";
@@ -264,6 +267,10 @@ export function ContentPageWorkbench({
                 }}
                 planning={data.planningWorkspace}
                 serviceCandidates={data.serviceProfileContext.service_candidates}
+                inventorySourceLabel={planningInventorySourceLabel(
+                  data.preflight.item.wordpress_acf_section_inventory_status,
+                  data.preflight.item.wordpress_content_inventory_status
+                )}
                 existingContentProvenanceRequired={
                   data.preflight.item.wordpress_content_material_confidence === "review_required"
                 }

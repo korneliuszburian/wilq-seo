@@ -6,7 +6,8 @@ import {
   planningSectionMapReady,
   planningScopeSummary,
   planningSourceSummary,
-  requiresServiceOverrideReview
+  requiresServiceOverrideReview,
+  planningInventorySourceLabel
 } from "./ContentPlanningReviewPanel";
 
 describe("inventoryDispositionLabel", () => {
@@ -81,5 +82,15 @@ describe("requiresServiceOverrideReview", () => {
     expect(
       requiresServiceOverrideReview({ lifecycle_status: "source_backed_review_required" } as never)
     ).toBe(true);
+  });
+});
+
+describe("planningInventorySourceLabel", () => {
+  it("names the actual WordPress content seam instead of inventing ACF sections", () => {
+    expect(planningInventorySourceLabel("missing", "available")).toBe(
+      "the_content (główna treść WordPress)"
+    );
+    expect(planningInventorySourceLabel("available", "missing")).toBe("ACF/flexible content");
+    expect(planningInventorySourceLabel("missing", "missing")).toBe("niepotwierdzone");
   });
 });

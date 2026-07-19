@@ -27,12 +27,14 @@ export function ContentPlanningReviewPanel({
   actions,
   planning,
   serviceCandidates,
+  inventorySourceLabel,
   existingContentProvenanceRequired = false,
   stage
 }: {
   actions: ContentPlanningReviewPanelActions;
   planning: ContentPlanningWorkspace;
   serviceCandidates: ContentWorkItemServiceCandidate[];
+  inventorySourceLabel?: string;
   existingContentProvenanceRequired?: boolean;
   stage: PlanningStage;
 }) {
@@ -166,6 +168,14 @@ export function ContentPlanningReviewPanel({
           </p>
         ) : (
           <>
+          {inventorySourceLabel ? (
+            <p
+              className="mt-3 rounded-md border border-line bg-surface p-3 text-sm leading-6 text-slate-700"
+              data-testid="planning-inventory-source"
+            >
+              Źródło spisu istniejącej strony: <span className="font-semibold">{inventorySourceLabel}</span>.
+            </p>
+          ) : null}
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
             WILQ automatycznie przypisał istniejące sekcje ACF lub treści głównej do planu.
             Sprawdź tylko decyzję redakcyjną i elementy oznaczone jako niejednoznaczne.
@@ -367,6 +377,18 @@ export function requiresServiceOverrideReview(
   candidate: ContentWorkItemServiceCandidate | undefined
 ): boolean {
   return Boolean(candidate && candidate.lifecycle_status !== "approved_current");
+}
+
+export function planningInventorySourceLabel(
+  acfStatus: string | undefined,
+  contentStatus: string | undefined
+): string {
+  if (acfStatus === "available" && contentStatus === "available") {
+    return "ACF/flexible content i the_content";
+  }
+  if (acfStatus === "available") return "ACF/flexible content";
+  if (contentStatus === "available") return "the_content (główna treść WordPress)";
+  return "niepotwierdzone";
 }
 
 export function inventoryDispositionLabel(
