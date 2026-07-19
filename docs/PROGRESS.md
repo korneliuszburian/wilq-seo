@@ -2617,3 +2617,10 @@ lineage z sekcji, FAQ, CTA i linków wewnętrznych zapisanych w tej samej rewizj
 v2, nadal odrzucając dowody spoza snapshotu. Falsyfikator
 `test_revision_review_accepts_lineage_from_all_page_assets` przechodzi razem z
 Ruff i mypy dla routera oraz testu.
+
+### 2026-07-19 — exact digest nie dominuje pierwszego widoku review
+
+Panel rewizji pokazuje marketerowi najpierw tytuł, liczbę sekcji i źródeł;
+pełny digest exact wersji pozostaje dostępny w rozwijanych szczegółach
+technicznych. Zachowano trace dla supportu bez wypychania identyfikatora nad
+tekst i decyzję. Focused dashboard review tests: 5 passed; typecheck przechodzi.
