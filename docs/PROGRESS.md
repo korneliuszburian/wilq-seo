@@ -2724,3 +2724,8 @@ status `ready`. Readback po reloadzie zwraca ten sam proposal i digest bez
 ponownego model call. Proposal ma 7 stabilnych sekcji, 8 exact GSC query, 3 FAQ
 i pełne title/H1/lead/meta assets. Pozostaje niezatwierdzony: marketer/owner
 muszą ocenić zakres i kartę usługi; mapa sekcji nie jest osobnym głosowaniem.
+
+Próba przejścia dalej przez `POST /initial-draft` została uczciwie zatrzymana
+typed blockerem `planning_not_approved`; nie uruchomiła modelu i nie zapisała
+częściowej rewizji. To jest właściwa granica człowieka: zatwierdza zakres i
+usługę, nie ręcznie mapuje sekcji.
