@@ -225,7 +225,7 @@ export function ContentPageWorkbench({
       ]).length
     : 0;
   const revisionStatusLabel = latestRevision
-    ? `Aktualny draft · treść ${latestRevision.content_digest.slice(0, 10)}`
+    ? "Aktualny draft · wersja zapisana"
     : "Szkic nie ma jeszcze zapisanej wersji";
   const blockedClaims = blockedClaimsForWorkbench(data);
   const evidenceRows = evidenceRowsForWorkbench(data, enrichment);
