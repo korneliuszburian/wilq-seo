@@ -1396,3 +1396,17 @@ Checker dla `e8727eeb` przeszedł walidację i zwrócił trzy LOW confirmations,
 bez defektu do naprawy. Disposition zachowuje granice: retry nie dowodzi
 akceptacji API ani sukcesu providera; pierwsza generacja nadal wymaga decyzji
 człowieka.
+
+### 2026-07-19 — typed failure zachowuje exact input retry
+
+Focused falsifier ujawnił, że błąd submitu do executora zwracał
+`planning_input_digest: null`, mimo że request miał exact digest. Pierwsza próba
+testu zakończyła się więc poprawnie czerwono. Naprawa obejmuje zarówno
+natychmiastowy failure route, jak i wyjątek workera: odpowiedź typed `failed`
+odtwarza z bieżącego snapshotu pełny `input_summary` oraz zachowuje
+`service_card_id` i digest, a jeśli snapshot nie daje bezpiecznego summary,
+nie emituje częściowego digestu. Dzięki temu panel może bezpiecznie retryować
+ten sam wybór bez udawania gotowego planu i bez zapisu proposal/revision.
+Proof: `uv run pytest -q tests/content/test_dynamic_planning_proposals_api.py
+-k executor_submission_failure_is_typed_and_retryable` (1 passed) oraz Ruff
+dla zmienionego routera i testu. Provider Codex pozostaje niezależnym blockerem.

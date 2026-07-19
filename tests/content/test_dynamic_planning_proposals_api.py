@@ -189,6 +189,8 @@ def test_executor_submission_failure_is_typed_and_retryable(
     )
     assert first.status_code == 200
     assert first.json()["status"] == "failed"
+    assert first.json()["planning_input_digest"] == digest
+    assert first.json()["service_card_id"] == service_card_id
     assert first.json()["blockers"][0]["code"] == "runtime_failed"
     monkeypatch.setattr(
         planning_router,
