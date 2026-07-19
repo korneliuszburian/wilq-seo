@@ -1418,3 +1418,18 @@ prób są zachowane poza repozytorium; brak retained findings. Szerszy run całe
 pliku ujawnił dwa niezwiązane expectation failures (test starego timeoutu 120 s
 przy produkcyjnym 180 s oraz fixture quality-gate bez CTA) i został przerwany;
 nie przypisuję ich temu slice'owi.
+
+### 2026-07-19 — świeży exact pilot i synchronizacja kontraktu testowego
+
+Z `/api/marketing/brief` pobrano świeży kontekst: 12 connectorów, 9
+skonfigurowanych i 2 bez credentials. Oba exact work itemy zostały ponownie
+uruchomione przez kanoniczny `planning-proposals` POST na bieżących digestach.
+Oba zakończyły się tym samym typed blockerem `runtime_failed/codex_turn_failed`
+po utworzeniu thread/turn; `external_call_attempted=false`, proposal/revision
+nie powstały i nie było vendor write. To potwierdza aktualny blocker providera,
+nie problem mapowania BDO/outsourcing.
+
+Naprawiono dwa ujawnione przez pełniejszy run rozjazdy testowego kontraktu:
+domyślny planning timeout testuje obecne 180 sekund, a fixture sprawdzający
+hałaśliwe nagłówki zawiera neutralny CTA, więc test nie miesza brakującego CTA z
+celem testu. Focused proof obu testów, Ruff i `git diff --check` przechodzą.

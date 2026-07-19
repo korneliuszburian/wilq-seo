@@ -27,6 +27,7 @@ from wilq.content.planning.generated_proposal import (
     read_content_planning_proposal,
 )
 from wilq.content.planning.generated_proposal_contracts import (
+    ContentPlanningCtaBlock,
     ContentPlanningModelOutput,
     ContentPlanningModelSection,
     ContentPlanningProposalRequest,
@@ -338,7 +339,7 @@ def test_planning_runtime_default_allows_full_structured_turn(
     client = planning_router._planning_codex_client()
 
     assert isinstance(client, StdioCodexAppServerClient)
-    assert client.timeout_seconds == 120.0
+    assert client.timeout_seconds == 180.0
 
 
 def test_planning_output_quality_gate_rejects_navigation_and_dated_headings() -> None:
@@ -353,7 +354,8 @@ def test_planning_output_quality_gate_rejects_navigation_and_dated_headings() ->
             ContentPlanningModelSection.model_construct(
                 heading="Powiązane materiały o gospodarce odpadami"
             ),
-        ]
+        ],
+        cta_blocks=[ContentPlanningCtaBlock.model_construct()],
     )
 
     assert _planning_output_quality_errors(output) == [
