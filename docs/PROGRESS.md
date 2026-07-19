@@ -1246,3 +1246,21 @@ catalog refreshes and a `failed to refresh available models` timeout before a
 turn could start. The same isolated client then timed out even for a tiny
 structured request. This identifies the current external/runtime seam as
 model-catalog/network startup, not WILQ prompt size or planning digest logic.
+
+### 2026-07-19 — isolated provider compatibility fixed, runtime still unproven
+
+Commit `57f6e216` carries only the selected model and non-secret provider fields
+into the isolated Codex app-server command, keeps the copied login available
+through thread/turn lifetime, and propagates the model returned by
+`thread/start` into `turn/start`. Focused transport pytest, Ruff and mypy pass.
+The real isolated structured-turn probe still ended in typed `codex_timeout`
+after 90 seconds, so this is a compatibility attempt rather than a successful
+runtime proof. The BDO planning retry remains blocked; no proposal, revision or
+vendor write was created.
+
+The independent Claude checker pass
+`~/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-codex-provider-runtime-GAxNxh`
+was schema-validated. It returned no line-cited findings but recorded eight
+evidence gaps, chiefly the missing completion proof and insufficient evidence
+that the installed provider path works end to end. Its disposition explicitly
+does not claim PASS or UAT.
