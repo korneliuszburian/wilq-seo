@@ -2890,3 +2890,17 @@ usuniętych powierzchni tylko dla zielonego testu; pozostaje to jawny dług
 testów/retired API. Bounded checker dla fixed pointu jest schema-valid, ale ma
 wyłącznie evidence gaps (brak bezpośrednich diff/AST excerpts); disposition:
 `/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-production-ruff-cleanup-final-DccFi8/disposition.md`.
+
+### 2026-07-19 — verify nie ładuje już usuniętych legacy testów
+
+Usunięto wyłącznie testy, które wywoływały skasowane endpointy
+`revision-plan`/`revision-apply` albo dawny ręczny payload measurement window.
+Aktualny łańcuch preflight → brief → draft → human review → WordPress draft-only
+pozostał, a focused quality/brief suite przechodzi 16/16. `pytest --collect-only`
+przechodzi bez import errors.
+
+Jednorazowy szeroki verify doszedł do 438 passed, ale ujawnił 9 niezależnych
+starych oczekiwań kontraktowych w action mockach, context cards, daily-check,
+Ahrefs, Localo i Ads snapshot; został przerwany po 491 s, bez claimu PASS. To
+następny cluster migracji testów do aktualnych typed seamów, nie powód do
+przywracania usuniętego API.
