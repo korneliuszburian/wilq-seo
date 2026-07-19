@@ -1798,3 +1798,16 @@ Runner został poprawnie zatrzymany o `10:24 CEST` przez ograniczenie okna i nie
 ma jeszcze outputu Claude; po `12:00` można uruchomić wyłącznie ten pass, jeśli
 fingerprint repo pozostanie niezmieniony. Brak outputu nie jest ani PASS, ani
 findingiem.
+
+### 2026-07-19 — oba exact piloty przechodzą ten sam selected-work-item seam
+
+Read-only API odczytał oba kanoniczne work itemy jako `workflow_snapshot`:
+BDO w 2,527 s z kartą `ekologus_service_bdo_reporting` oraz doradztwo i
+outsourcing w 1,378 s z kartą
+`ekologus_service_environmental_consulting_outsourcing`. Oba mają `scope`,
+planning digest, trzy konektory źródłowe i trzy evidence IDs. Unfiltered queue
+nie musi zawierać inventory-bound URL; jawne
+`GET /api/content/work-items/queue?work_item_id=...` zwraca dla outsourcingu
+`candidate_count=1`, `actionable=1`, a dashboard używa właśnie tej ścieżki po
+wyborze adresu. To dowód wspólnego API seamu, nie owner approval, pełny draft,
+UAT ani vendor write.
