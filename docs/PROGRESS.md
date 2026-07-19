@@ -1346,3 +1346,8 @@ Rozwijane `Dlaczego ta decyzja?` w wybranym workflow pokazuje teraz nazwy
 trendów ani technicznych evidence ID do głównego widoku; brak źródeł jest
 jawny. Proof: `ContentWorkflowSurface` 34 testy i dashboard typecheck.
 Commit oraz niezależny checker dla tego fixed pointu są jeszcze do wykonania.
+
+Checker dla `0a9e53a4` przeszedł walidację schematu. Zwrócił dwa MEDIUM jako
+braki dostarczonego źródła (runner przekazał zakresy bez literalnych linii),
+więc oba zostały `reject_with_evidence` w disposition; ograniczenia upstreamu
+i UAT pozostają jawne.
