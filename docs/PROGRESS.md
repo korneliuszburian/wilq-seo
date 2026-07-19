@@ -2624,3 +2624,6 @@ Panel rewizji pokazuje marketerowi najpierw tytuł, liczbę sekcji i źródeł;
 pełny digest exact wersji pozostaje dostępny w rozwijanych szczegółach
 technicznych. Zachowano trace dla supportu bez wypychania identyfikatora nad
 tekst i decyzję. Focused dashboard review tests: 5 passed; typecheck przechodzi.
+Po advisory second opinion dodano też fallback licznika źródeł, więc niepełny
+snapshot nie może wyświetlić `undefined źródeł`. Po poprawce focused review tests
+ponownie: 5 passed; typecheck przechodzi.
