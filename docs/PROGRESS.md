@@ -2399,3 +2399,11 @@ Plan zachował 7 identyfikatorów materiałów źródłowych, exact GSC evidence
 service-card binding, query→section assignments oraz measurement plan bez
 wymyślonych targetów. To jest pierwszy live proof całego API→app-server→store
 seamu po naprawie; nadal wymaga human review przed draftem/publikacją.
+
+Drugi exact case przeszedł tym samym kontraktem po ponowieniu z aktualnym
+digestem: outsourcing ma własną propozycję `content_planning_proposal_80090cb7…`,
+kartę `ekologus_service_environmental_consulting_outsourcing`, canonical URL
+`/oferta/doradztwo-i-outsourcing-ekologiczny/`, 12 własnych sekcji i 24 query
+assignments. Serializowany plan nie zawiera literalnego `bdo` (0 wystąpień),
+ma 3 evidence IDs i 4 claim IDs. To potwierdza, że naprawiony app-server i
+planner obsługują oba case’y dynamicznie, bez kopiowania BDO.
