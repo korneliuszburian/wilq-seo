@@ -1933,3 +1933,14 @@ zmiany runtime ani serializacji. Focused
 `uv run mypy wilq/storage/semantic_review_activation.py` jest czyste. Pełny
 repozytoryjny mypy nadal ma szeroki, niezależny klaster 100+ błędów w wielu
 modułach; nie przedstawiam tego slice'a jako zamknięcia całej bramki.
+
+### 2026-07-19 — pełna bramka po slice'ie typowania: jakość tekstowa zielona, mypy jawnie czerwone
+
+Po commitcie `a0f1c8f1` i pushu `scripts/verify.sh` ponownie przechodzi lint
+shared schemas oraz dashboard, skill hygiene i marketer language guard. Mypy
+zatrzymuje bramkę na 100 błędach w 19 plikach, głównie w istniejących kontraktach
+Literal/TypedDict, optional payloadach i niezaanotowanych seamach Ads, GA4,
+WordPress inventory, planning, semantic review oraz routerach draftu. To nie
+jest awaria jednego flow ani dowód na brak działania runtime; jest to osobny
+repozytoryjny dług typowania, który pozostaje kolejnym zadaniem. Nie claimuję
+pełnego `verify.sh` PASS.
