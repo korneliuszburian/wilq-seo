@@ -314,7 +314,7 @@ export function ContentPageWorkbench({
                       </button>
                       {!initialDraftReady ? (
                         <p className="mt-2 text-xs leading-5 text-slate-600">
-                          Najpierw wygeneruj plan z kompletem page assets i zatwierdź jego aktualny zakres oraz mapę sekcji.
+                          Najpierw wygeneruj plan z kompletem page assets i zatwierdź jego aktualny zakres. Mapa sekcji jest wyliczana automatycznie z aktualnego inventory, usługi, zapytań i dowodów.
                         </p>
                       ) : null}
                       {actions.initialDraftResult && actions.initialDraftResult.status !== "created" ? (

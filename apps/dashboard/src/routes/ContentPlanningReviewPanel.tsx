@@ -192,8 +192,11 @@ export function ContentPlanningReviewPanel({
             </p>
           ) : null}
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ automatycznie przypisał istniejące sekcje ACF lub treści głównej do planu.
-            Sprawdź tylko decyzję redakcyjną i elementy oznaczone jako niejednoznaczne.
+            WILQ automatycznie zbudował mapę z tego, co faktycznie odczytał ze strony:
+            pól ACF, jeśli są dostępne, albo treści głównej <code>the_content</code>.
+            Do tego dopasował usługę, zapytania i dowody. To podgląd mechanizmu, nie
+            osobna decyzja właściciela — ręcznie sprawdzasz tylko elementy oznaczone jako
+            niejednoznaczne w ramach review zakresu.
           </p>
         {!inventoryMapping.length ? (
           <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700" data-testid="planning-legacy-mapping-notice">
@@ -274,7 +277,9 @@ export function ContentPlanningReviewPanel({
           data-testid="planning-section-map-auto-status"
         >
           Ta mapa została wyliczona automatycznie z aktualnego inventory, usługi,
-          zapytań i dowodów. Nie wymaga osobnej decyzji — przejdź do szkicu treści.
+          zapytań i dowodów, niezależnie od tego, czy strona używa ACF czy
+          <code>the_content</code>. Nie wymaga osobnej decyzji — po review zakresu
+          przejdź do szkicu treści.
         </p>
       ) : null}
 
