@@ -1642,3 +1642,8 @@ do workflow. Publiczny kontrakt inventory suite: 5 passed; Ruff i diff-check
 przechodzą. Ten sam cold outsourcing snapshot po reloadzie zmierzono na 3,134 s,
 a warm na 1,053 s. To redukuje powtórną pracę, ale nie jest jeszcze docelowym
 SLO ani dowodem realnego UAT.
+
+Kontrolny odczyt blocked itemu `content_work_item_content_decision_ahrefs_gap_records_review`
+zwrócił poprawnie `recommended_mode=block` i powód, bez próby przypisania usługi
+ani uruchomienia planera. To zachowuje bezpieczną gałąź po usunięciu pełnej
+assembly dla elementów nieblokowanych.
