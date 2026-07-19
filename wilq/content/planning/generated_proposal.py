@@ -510,11 +510,17 @@ _HEADING_NOISE_PATTERNS = (
 def _planning_output_quality_errors(
     output: ContentPlanningModelOutput,
 ) -> list[str]:
-    return _planning_heading_quality_errors(section.heading for section in output.sections)
+    errors = _planning_heading_quality_errors(section.heading for section in output.sections)
+    if not output.cta_blocks:
+        errors.append("missing_cta")
+    return list(dict.fromkeys(errors))
 
 
 def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
-    return _planning_heading_quality_errors(section.heading for section in proposal.sections)
+    errors = _planning_heading_quality_errors(section.heading for section in proposal.sections)
+    if not proposal.cta_blocks:
+        errors.append("missing_cta")
+    return list(dict.fromkeys(errors))
 
 
 def _expected_inventory_mapping(

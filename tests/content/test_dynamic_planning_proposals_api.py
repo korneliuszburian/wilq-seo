@@ -94,6 +94,31 @@ def test_dynamic_planning_proposals_are_two_case_and_idempotent(
     )
 
 
+def test_dynamic_planning_rejects_a_plan_without_cta(
+    planning_harness: tuple[TestClient, PlanningClient],
+) -> None:
+    client, runtime = planning_harness
+    runtime.planning_cta_blocks = False
+    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
+    service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    before = client.get(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    ).json()
+
+    result = _post_planning(
+        client,
+        BDO_WORK_ITEM_ID,
+        _generation_request(service_card_id, before["planning_input_digest"]),
+    )
+
+    assert result.status_code == 200
+    assert result.json()["status"] == "blocked"
+    blocker = result.json()["blockers"][0]
+    assert blocker["code"] == "quality_gate_failed"
+    assert "missing_cta" in blocker["source_codes"]
+    assert runtime.calls == 1
+
+
 def test_explicit_plan_request_confirms_only_service_selection(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:

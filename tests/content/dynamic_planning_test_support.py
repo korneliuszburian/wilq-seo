@@ -36,6 +36,7 @@ class PlanningClient:
         self.calls = 0
         self.fail = False
         self.planning_placement = "after_content"
+        self.planning_cta_blocks = True
         self.planning_link_target: str | None = None
         self.planning_link_evidence_ids: list[str] | None = None
         self.planning_link_claim_ids: list[str] | None = None
@@ -120,7 +121,7 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
             for heading in inventory_headings
         ],
         "faq": [_planning_faq(query_terms, lineage)],
-        "cta_blocks": [_planning_cta(client, lineage)],
+        "cta_blocks": [_planning_cta(client, lineage)] if client.planning_cta_blocks else [],
         "internal_links": [_planning_link(client, item) for item in candidates],
         "conditional_hypotheses": [],
         "measurement_plan": {
