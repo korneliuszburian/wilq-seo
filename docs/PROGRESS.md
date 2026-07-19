@@ -2039,3 +2039,9 @@ ma właściwy Literal, a proposal store i proposal mają konkretne typy. Proof:
 `uv run mypy apps/api/wilq_api/routers/content_initial_draft.py` clean,
 Ruff clean, `tests/content/test_initial_draft_status_read_path.py` oraz
 `tests/content/test_initial_draft_queue_gate.py` razem 9/9, diff-check clean.
+
+Semantic-review router ma teraz jawny `ContentSemanticBlockerCode`, typ klienta
+Codex i status terminalny; modułowy mypy oraz Ruff są czyste. Istniejący
+`tests/content/test_semantic_content_review_api.py` został uruchomiony, ale
+zawisł w `threading` bez wyniku i został przerwany. Nie jest to PASS; pozostaje
+osobnym blockerem runtime/test harnessu.

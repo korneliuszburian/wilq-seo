@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from os import environ
+from typing import Literal
 from uuid import uuid4
 
 from fastapi import APIRouter
@@ -14,6 +15,7 @@ from apps.api.wilq_api.routers.content_codex_proposal import (
 from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.quality.semantic_review_contracts import (
+    ContentSemanticBlockerCode,
     ContentSemanticReviewBlocker,
     ContentSemanticReviewRequest,
     ContentSemanticReviewResponse,
@@ -43,7 +45,7 @@ _SEMANTIC_REVIEW_EXECUTOR = ThreadPoolExecutor(
 _DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS = 180.0
 
 
-def _semantic_codex_client():
+def _semantic_codex_client() -> StdioCodexAppServerClient:
     """Give the full-document reviewer the same bounded budget as planning.
 
     The semantic prompt contains the complete revision, proposal and planning
@@ -223,8 +225,10 @@ def _terminal_run_response(
     run: CodexRun,
 ) -> ContentSemanticReviewResponse:
     blocked = run.status == "blocked"
-    code = "runtime_blocked" if blocked else "runtime_failed"
-    status = "blocked" if blocked else "failed"
+    code: ContentSemanticBlockerCode = (
+        "runtime_blocked" if blocked else "runtime_failed"
+    )
+    status: Literal["blocked", "failed"] = "blocked" if blocked else "failed"
     source_code = None if run.error is None else run.error.split(":", 1)[-1]
     return ContentSemanticReviewResponse(
         status=status,
