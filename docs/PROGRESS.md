@@ -1570,3 +1570,10 @@ w queued readback; Ruff i diff-check przechodzą. Live POST+GET outsourcingu
 potwierdził digest `f695aed7…`, service card i run ID bez czekania na model.
 Nie zmienia to zasad stale detection ani nie udaje sukcesu providera; oba realne
 turny nadal mogą zakończyć się typed runtime blockerem.
+
+Live terminal proof po tej zmianie zakończył outsourcingowy run jako `failed`,
+z zachowanym digestem `f695aed7…`, service card, thread/turn IDs i
+`source_codes=[codex_response_stream_disconnected]`. Nie zapisano propozycji,
+rewizji ani vendor write; `external_call_attempted=false`. To jest dowód
+bezpiecznego zakończenia i readbacku kolejki, nie dowód dostępności providera,
+pełnego tekstu ani gotowości pilota.
