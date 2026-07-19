@@ -2490,3 +2490,12 @@ ekstrakcję. Mapa sekcji pozostaje automatyczna; REST/ACF, `the_content` i inne
 warianty nadal są wybierane dynamicznie przez inventory seam. Focused dynamic
 input 10/10, API runtime falsifier pass, dashboard proof 8/8, Ruff/mypy i
 typecheck przechodzą.
+
+### 2026-07-19 — pasek źródeł pokazuje tylko lineage wybranej strony
+
+`ContentSourceStatusBar` nie ma już stałego zestawu GSC/Ahrefs. Z API-owned
+`source_connectors` buduje chipy dla faktycznie powiązanych źródeł (GSC, GA4,
+Ads, Ahrefs), a freshness assessment oznacza źródło jako `w dowodach`,
+`wymaga odświeżenia` albo `zablokowane`. Dzięki temu BDO pokaże Ads, gdy Ads
+jest w jego lineage, ale nie będzie udawać GA4/Merchant/Localo bez exact
+powiązania. Focused test 1/1 i dashboard typecheck przechodzą.
