@@ -1293,7 +1293,7 @@ def _ads_aggregation_contract(
     account_currency_read_contract: AdsAccountCurrencyReadContract,
 ) -> AdsAggregationContract:
     summary = view == "summary"
-    currency_status = (
+    currency_status: Literal["ready", "blocked", "missing"] = (
         "ready"
         if account_currency_read_contract.status == "ready"
         else "blocked"

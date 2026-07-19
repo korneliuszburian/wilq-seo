@@ -1993,3 +1993,7 @@ caveats. To nie zmienia decyzji pomiarowych, ale usuwa niezaanotowany seam
 odpowiedzialny za interpretację świeżości. Proof: modułowy mypy clean,
 `tests/content/test_publication_bound_measurement.py` oraz
 `tests/content/test_measurement_aggregates.py` razem 13/13, diff-check clean.
+
+Po tym slice pełny odczyt mypy wynosi 87 błędów w 16 plikach. Najmniejszy
+następny klaster Ads został już zawężony do jednego literalnego statusu waluty;
+nie jest to jeszcze pełna bramka ani dowód poprawności raportów Ads.
