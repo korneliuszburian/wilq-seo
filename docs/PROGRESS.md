@@ -2643,3 +2643,5 @@ Rozwijane źródła review renderują teraz również pełne lineage FAQ, CTA i 
 wewnętrznych, nie tylko sekcji. Marketer może sprawdzić cały dokument w jednym
 read-only miejscu przed decyzją człowieka. Focused dashboard review tests:
 5 passed; typecheck przechodzi.
+Hardening dopina też spread fallbacków `?? []`, więc brak którejkolwiek
+kolekcji assetów nie wywołuje wyjątku podczas liczenia evidence.
