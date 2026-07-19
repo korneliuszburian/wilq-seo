@@ -282,6 +282,49 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
     assert ads_assessment.evidence_ids == ["ev_ads_blocked"]
 
 
+def test_ads_source_assessment_explains_service_review_blocker(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, _, inventory = source_context
+    brief, service_profile, _ = _planning_models(_demand())
+    row = ContentSearchDemandRow(
+        source_kind="ads_search_term",
+        source_connector="google_ads",
+        term="usługa środowiskowa",
+        page=PAGE,
+        landing_match_tiers=["exact"],
+        service_binding_status="review_required",
+        section_mapping_status="page_only",
+        period="last_30_days",
+        freshness="fresh",
+        evidence_ids=["ev_ads_exact"],
+        clicks=2,
+        impressions=10,
+    )
+    demand = _demand().model_copy(
+        update={
+            "ads_term_rows": [row],
+            "optional_ads_status": "exact_rows_available",
+            "optional_ads_evidence_ids": ["ev_ads_exact"],
+        }
+    )
+
+    assessments = build_source_assessments(
+        item=item,
+        inventory=inventory,
+        service_profile=service_profile,
+        freshness=_freshness([]),
+        brief=brief,
+        demand=demand,
+        service_lifecycle="approved_current",
+    )
+    ads = next(assessment for assessment in assessments if assessment.source == "google_ads")
+
+    assert ads.status == "blocked"
+    assert "approved_current" in ads.reason
+    assert ads.landing_match_tiers == ["exact"]
+
+
 def test_owner_reviewed_rendered_content_unblocks_material_gate_without_replanning(
     source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
 ) -> None:

@@ -387,9 +387,12 @@ def _ads_source_assessment(
     evidence_ids: list[str],
     landing_match_tiers: list[ContentAcceptedLandingMatchTier],
 ) -> ContentPlanningSourceAssessment:
-    service_binding_blocked = any(
-        row.service_binding_status in {"unbound", "ambiguous", "review_required"}
-        for row in demand.ads_term_rows
+    service_binding_statuses = {
+        row.service_binding_status for row in demand.ads_term_rows
+    }
+    service_binding_blocked = bool(
+        service_binding_statuses
+        & {"unbound", "ambiguous", "review_required"}
     )
     blocked = (
         demand.optional_ads_status == "blocked"
@@ -407,7 +410,13 @@ def _ads_source_assessment(
         )
     )
     reason = (
-        "Raport Ads jest niepełny albo nie pozwala na ścisłe mapowanie landingu lub usługi."
+        "Landing Ads pasuje dokładnie, ale karta usługi wymaga owner review; termy nie "
+        "zasilą planu, dopóki usługa nie będzie approved_current."
+        if "review_required" in service_binding_statuses
+        else "Landing Ads nie ma jednego rozstrzygniętego powiązania z usługą; termy "
+        "pozostają poza planem do czasu rozstrzygnięcia inventory/service binding."
+        if service_binding_statuses & {"unbound", "ambiguous"}
+        else "Raport Ads jest niepełny albo nie pozwala na ścisłe mapowanie landingu lub usługi."
         if blocked
         else "Dopasowanie termu i klikniętego landingu jest dokładne, ale batch Ads "
         "jest nieaktualny i nie zasila planu do czasu odświeżenia."
