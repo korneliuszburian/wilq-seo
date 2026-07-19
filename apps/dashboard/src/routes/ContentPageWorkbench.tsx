@@ -28,7 +28,8 @@ import { ContentWordPressDraftActionWizard } from "./ContentWordPressDraftAction
 import {
   blockedClaimsForWorkbench,
   environmentLabel,
-  evidenceRowsForWorkbench
+  evidenceRowsForWorkbench,
+  planningPageAssetsReady
 } from "./contentPageWorkbenchModel";
 import {
   sectionOverrideKey,
@@ -237,6 +238,7 @@ export function ContentPageWorkbench({
       generatedPlanning?.generation_status === "codex_generated" &&
       generatedPlanning.proposal_id &&
       generatedPlanning.planning_input_digest &&
+      planningPageAssetsReady(generatedPlanning.page_assets) &&
       data.planningWorkspace?.scope_current &&
       data.planningWorkspace.section_map_current
   );
@@ -310,7 +312,7 @@ export function ContentPageWorkbench({
                       </button>
                       {!initialDraftReady ? (
                         <p className="mt-2 text-xs leading-5 text-slate-600">
-                          Najpierw wygeneruj plan i zatwierdź jego aktualny zakres oraz mapę sekcji.
+                          Najpierw wygeneruj plan z kompletem page assets i zatwierdź jego aktualny zakres oraz mapę sekcji.
                         </p>
                       ) : null}
                       {actions.initialDraftResult && actions.initialDraftResult.status !== "created" ? (

@@ -18,6 +18,30 @@ export function environmentLabel(value: string) {
   }
 }
 
+export function planningPageAssetsReady(
+  pageAssets:
+    | {
+        title?: string | null;
+        h1?: string | null;
+        lead?: string | null;
+        meta_title?: string | null;
+        meta_description?: string | null;
+      }
+    | null
+    | undefined
+): boolean {
+  return Boolean(
+    pageAssets &&
+      [
+        pageAssets.title,
+        pageAssets.h1,
+        pageAssets.lead,
+        pageAssets.meta_title,
+        pageAssets.meta_description
+      ].every((value) => Boolean(value?.trim()))
+  );
+}
+
 export function contentMetricTilesForWorkbench(
   item: ContentWorkflowSnapshot["preflight"]["item"],
   devPage: WordPressAuthoringDevPage | null
