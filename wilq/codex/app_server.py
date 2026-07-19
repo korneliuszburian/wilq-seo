@@ -800,6 +800,15 @@ def _codex_error_blocker(params_value: object) -> _SafeTransportFailure:
             f"codex_output_schema_invalid_{category}",
             "Schemat odpowiedzi WILQ został odrzucony przez lokalny runtime Codexa.",
         )
+    codex_error_info = None if error is None else _as_object(error.get("codexErrorInfo"))
+    if (
+        codex_error_info is not None
+        and "responseStreamDisconnected" in codex_error_info
+    ) or (isinstance(message, str) and "disconnected" in message.lower()):
+        return _SafeTransportFailure(
+            "codex_response_stream_disconnected",
+            "Provider Codexa przerwał strumień odpowiedzi przed zakończeniem tury.",
+        )
     return _SafeTransportFailure(
         "codex_turn_failed",
         "Codex zgłosił błąd podczas generowania.",

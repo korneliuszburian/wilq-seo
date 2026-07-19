@@ -69,6 +69,18 @@ if turn["params"]["input"][0]["text"] == "Retry transiently.":
             "willRetry": True,
         }},
     }})
+if turn["params"]["input"][0]["text"] == "Terminal stream failure.":
+    write({{
+        "method": "error",
+        "params": {{
+            "error": {{
+                "message": "stream disconnected",
+                "codexErrorInfo": {{"responseStreamDisconnected": {{}}}},
+            }},
+            "willRetry": False,
+        }},
+    }})
+    raise SystemExit(0)
 write({{
     "id": turn["id"],
     "result": {{"turn": {{"id": "turn-test", "items": []}}}},
@@ -209,3 +221,16 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
         )
     )
     assert retried.status == "completed"
+
+    stream_failure = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
+        CodexAppServerStructuredTurnRequest(
+            instruction="Terminal stream failure.",
+            application_context="application",
+            untrusted_context="untrusted",
+            output_schema={"type": "object"},
+        )
+    )
+    assert stream_failure.status == "failed"
+    assert [blocker.code for blocker in stream_failure.blockers] == [
+        "codex_response_stream_disconnected"
+    ]
