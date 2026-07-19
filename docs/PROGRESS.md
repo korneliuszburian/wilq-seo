@@ -1194,3 +1194,12 @@ start a sibling Codex turn while another generation is queued; the API returns
 same-input requests remain idempotent, stale jobs remain retryable, and
 terminal proposal history is unchanged. Focused store and API falsifiers,
 Python typecheck/Ruff, and shared-schema typecheck/tests pass.
+
+### 2026-07-19 — selected diagnostics pages use the catalog fast path
+
+The selected queue endpoint now resolves the canonical diagnostics work-item
+key from the same WordPress inventory catalog used for inventory binding. It
+returns one typed candidate for an existing page without rebuilding the full
+54-item diagnostics queue; ambiguous bounded-slug matches are refused instead
+of opening the wrong page. Focused queue/catalog falsifiers pass, and the live
+BDO decision URL returns `candidate_count=1` with no model call or vendor write.

@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Literal
 
-from wilq.content.planning.decisions import content_decision_metrics
+from wilq.content.planning.decisions import (
+    content_decision_metrics,
+    content_decision_work_item_id_for_url,
+)
 from wilq.content.workflow.catalog import (
+    ContentInventoryCatalogResponse,
     build_content_inventory_catalog_cached,
     inventory_metric_facts,
     inventory_work_item_id,
@@ -12,7 +17,7 @@ from wilq.content.workflow.catalog import (
 from wilq.schemas import ActionRisk, ContentDecisionItem
 
 
-def build_content_inventory_catalog():
+def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
     """Keep the existing test seam while using the shared short-lived cache."""
     return build_content_inventory_catalog_cached()
 
@@ -24,14 +29,15 @@ def inventory_decision_for_work_item(
     allow_material_pending: bool = False,
 ) -> ContentDecisionItem | None:
     catalog = build_content_inventory_catalog()
-    item = next(
-        (
-            candidate
-            for candidate in catalog.items
-            if inventory_work_item_id(candidate.url) == work_item_id
-        ),
-        None,
-    )
+    matches = [
+        candidate
+        for candidate in catalog.items
+        if inventory_work_item_id(candidate.url) == work_item_id
+        or content_decision_work_item_id_for_url(candidate.url) == work_item_id
+    ]
+    # The diagnostics queue truncates URL slugs to a bounded ID. Refuse an
+    # ambiguous catalog match rather than opening the wrong page.
+    item = matches[0] if len(matches) == 1 else None
     if item is None:
         return None
     material = (
@@ -82,7 +88,9 @@ def inventory_decision_for_work_item(
     evidence_ids = _unique([item.evidence_id, *(fact.evidence_id for fact in facts)])
     source_connectors = _unique([item.source_connector, *(fact.source_connector for fact in facts)])
     title = item.title or item.path
-    decision_status = "ready" if material_ready or item.material_status != "url_only" else "blocked"
+    decision_status: Literal["ready", "blocked"] = (
+        "ready" if material_ready or item.material_status != "url_only" else "blocked"
+    )
     # An explicitly selected inventory item may enter the decision view before
     # the heavier WordPress material read finishes. This is not content
     # readiness: the missing material remains visible on the decision and

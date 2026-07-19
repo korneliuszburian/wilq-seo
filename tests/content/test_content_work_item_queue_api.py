@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_workflow
+from wilq.content.planning.decisions import content_decision_work_item_id_for_url
 from wilq.content.workflow.queue import build_content_work_item_queue_response
 from wilq.schemas import (
     ContentDecisionItem,
@@ -206,6 +207,54 @@ def test_selected_inventory_queue_reads_material_without_full_diagnostics(monkey
     assert response.json()["candidates"][0]["work_item_id"] == inventory_id
     assert calls == [False]
     assert response.json()["candidates"][0]["status_label"] == "materiał wymaga odczytu"
+
+
+def test_selected_diagnostics_work_item_uses_the_catalog_fast_path(monkeypatch) -> None:
+    url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    work_item_id = content_decision_work_item_id_for_url(url)
+    selected_decision = ContentDecisionItem(
+        id=work_item_id.removeprefix("content_work_item_"),
+        decision_type="refresh_or_merge",
+        status="ready",
+        title="BDO",
+        primary_query="bdo",
+        priority=10,
+        source_public_url=url,
+        final_canonical_url=url,
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+        evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
+        rationale="Katalog WordPress i GSC.",
+        next_step="Przejdź do decyzji.",
+    )
+    monkeypatch.setattr(
+        content_workflow,
+        "inventory_decision_for_work_item",
+        lambda selected_id, **_kwargs: selected_decision
+        if selected_id == work_item_id
+        else None,
+    )
+    monkeypatch.setattr(
+        content_workflow,
+        "build_content_diagnostics_cached",
+        lambda: (_ for _ in ()).throw(AssertionError("full diagnostics must not run")),
+    )
+    monkeypatch.setattr(
+        content_workflow,
+        "build_content_freshness_assessment_fast",
+        lambda: ContentFreshnessAssessment(
+            state="fresh",
+            state_label="dane treści świeże",
+            requires_refresh=False,
+            summary="Dane są świeże.",
+            next_step="Można przejść do decyzji.",
+        ),
+    )
+
+    response = TestClient(app).get(f"/api/content/work-items/queue?work_item_id={work_item_id}")
+
+    assert response.status_code == 200
+    assert response.json()["candidate_count"] == 1
+    assert response.json()["candidates"][0]["decision_id"] == selected_decision.id
 
 
 def test_content_work_item_queue_blocks_dev_url_as_final_canonical() -> None:

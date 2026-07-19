@@ -4,18 +4,17 @@ from types import SimpleNamespace
 import httpx
 
 import wilq.content.workflow.catalog as catalog_module
-from wilq.content.workflow.catalog import (
-    bind_content_inventory_item,
-    build_content_inventory_catalog,
-    inventory_metric_facts,
-)
+from wilq.connectors.wordpress.client import WordPressCredentials, read_wordpress_content_material
+from wilq.content.planning.decisions import content_decision_work_item_id_for_url
 from wilq.content.workflow.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
+    bind_content_inventory_item,
+    build_content_inventory_catalog,
+    inventory_metric_facts,
     inventory_work_item_id,
 )
 from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
-from wilq.connectors.wordpress.client import WordPressCredentials, read_wordpress_content_material
 
 
 def test_inventory_catalog_deduplicates_urls_and_keeps_acf_headings(monkeypatch):
@@ -428,6 +427,44 @@ def test_inventory_decision_reuses_the_current_catalog_for_material_read(monkeyp
     assert decision is not None
     assert calls == 1
     assert seen_catalogs == [catalog]
+
+
+def test_inventory_decision_resolves_the_canonical_diagnostics_work_item_id(
+    monkeypatch,
+):
+    url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    item = ContentInventoryCatalogItem(
+        catalog_id="catalog_bdo",
+        work_item_id=inventory_work_item_id(url),
+        url=url,
+        path="/bdo-co-musi-wiedziec-przedsiebiorca/",
+        title="BDO — co musi wiedzieć przedsiębiorca",
+        content_type="page",
+        material_status="content_summary",
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_bdo",
+        collected_at=datetime(2026, 7, 17, tzinfo=timezone.utc),
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",
+        lambda: ContentInventoryCatalogResponse(total_count=1, items=[item]),
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.inventory_binding.inventory_metric_facts",
+        lambda *_args, **_kwargs: [],
+    )
+
+    decision = inventory_decision_for_work_item(
+        content_decision_work_item_id_for_url(url),
+        read_material=False,
+        allow_material_pending=True,
+    )
+
+    assert decision is not None
+    assert decision.id == content_decision_work_item_id_for_url(url).removeprefix(
+        "content_work_item_"
+    )
+    assert decision.page == url
 
 
 def test_inventory_catalog_cache_reuses_one_snapshot(monkeypatch):

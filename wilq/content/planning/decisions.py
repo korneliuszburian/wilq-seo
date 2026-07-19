@@ -609,6 +609,11 @@ def slug(value: str) -> str:
     )[:80]
 
 
+def content_decision_work_item_id_for_url(url: str) -> str:
+    """Return the canonical work-item key used by the diagnostics queue."""
+    return f"content_work_item_content_decision_{slug(url)}"
+
+
 def _unique(values: Iterable[object]) -> list[str]:
     unique_values: list[str] = []
     for value in values:
