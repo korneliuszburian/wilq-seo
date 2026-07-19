@@ -2941,3 +2941,20 @@ Focused proof: test równości katalogu source-backed cards, Ruff i mypy PASS.
 Live operator context po reloadzie: 22 karty `ekologus_*`, 51 decyzji
 diagnostycznych i 36 evidence summaries. Nie oznacza to jeszcze owner review
 wszystkich kart ani gotowości pełnego draftu.
+
+### 2026-07-20 — outsourcing odzyskał aktualny, reviewable planning fixed point
+
+Krótki test lokalnego Codex app-server zakończył się poprawnym structured
+JSON-em bez próby tool call, więc odświeżyłem wyłącznie przeterminowany plan
+outsourcingu przez istniejący API-owned endpoint. POST zwrócił `generating`, a
+GET po zakończeniu odczytał proposal
+`content_planning_proposal_e3dcd3dfc621403dbc57760cd673b992`, run
+`codex_content_planning_7dc6a18992904db69bd2ba10330d81f9` i digest wejścia
+`23d20cacf8026625bec3d6f246082e2a66d3fb51215c534e6e07cd4f8131f697`.
+
+Plan ma 12 sekcji, 3 FAQ, 2 CTA, 1 link i pełną lineage evidence dla sekcji;
+6 sekcji ma `rewrite`, 1 `merge`, a 5 pozostaje
+`remove_review_required`. Źródła zostały ocenione jawnie: WordPress,
+Service Profile i GSC `used`; GA4, Ads, Ahrefs i Keyword Planner `missing`;
+Merchant, Localo i Social `not_applicable`. Snapshot poprawnie pokazuje
+`scope_current=false`, więc nie uruchamiam draftu ani nie udaję approval.
