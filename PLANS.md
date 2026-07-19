@@ -4,7 +4,7 @@ Status: aktywny, długotrwały plan wykonawczy. Właścicielem zadań i zależno
 pozostaje Beads (`wilq-seo-1oa`); ten plik definiuje produkt, standard i kolejność.
 Nie jest historią commitów ani listą zastępczą dla Beads.
 
-### Checkpoint 2026-07-19
+### Checkpoint 2026-07-19 — fixed point po lineage social i audycie Ads
 
 Ostatni utrwalony stan obejmuje serię runtime i lineage hardening slices. `GET /initial-draft` nie
 pokazuje już starej rewizji jako aktualnej po nowszym planning jobie z innym
@@ -19,7 +19,19 @@ Oba piloty planowania nadal kończą się typed `runtime_failed` z
 i persisted readback są zachowane;
 pełna generacja, semantic storage, jakość tekstu i UAT pozostają nieudowodnione.
 
-Ostatni wypchnięty commit: `b266f65b` (`chore(beads): record run input binding`).
+Ostatni wypchnięty commit: `f7208d2b` (`chore(beads): record ads script audit`).
+Po tym punkcie social reuse zachowuje osobne `source_evidence_ids` historii
+duplikacji w immutable proposal i blokuje reuse bez zatwierdzonego inventory;
+live social history nadal jest `missing`. Audyt Ads obejrzał wszystkie 21
+skryptów: każdy ma realnego callera i odrębne ryzyko kontraktowe, więc nie ma
+udowodnionej bezpiecznej kasacji ani mechanicznego merge'u. Deterministyczny
+Ads smoke nadal przechodzi na żywym API (6 walidacji akcji, 16 sekcji, 14
+decyzji, 7 kart wiedzy). Bead pozostaje jawnie `in_progress`, dopóki nie
+pojawi się konkretny caller diff uzasadniający redukcję powierzchni.
+
+Poprzedni stan po `b266f65b` (`chore(beads): record run input binding`) został
+zachowany w historii git; nie nadpisujemy go ani nie udajemy, że transport
+Codexa, pełna generacja, semantic storage lub UAT są zamknięte.
 Po poprzednim pomiarze doszły wspólny kontrakt deadline/stale job oraz izolacja
 starych planning jobs po `service_card_id`: nowszy run innej usługi nie może już
 unieważnić aktualnego proposal/draft statusu. Transport Codexa klasyfikuje
