@@ -504,6 +504,10 @@ def _ahrefs_gap_read_contract(
         cross_check_facts=cross_check_facts,
         gap_records=gap_records,
     )
+    gap_records = _apply_exact_wordpress_cross_checks(
+        gap_records,
+        cross_check.candidates,
+    )
     blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
     evidence_ids = _unique(
         [
@@ -526,6 +530,7 @@ def _ahrefs_gap_read_contract(
         missing_contracts=missing_contracts,
         cross_check_status=cross_check.status,
     )
+
     return AhrefsGapReadContract(
         status="ready" if gap_records and not missing_contracts else "blocked",
         title="Luki SEO z Ahrefs",
@@ -587,6 +592,44 @@ def _ahrefs_gap_read_contract(
         ),
         risk=ActionRisk.medium,
     )
+
+
+def _apply_exact_wordpress_cross_checks(
+    records: list[AhrefsGapRecord],
+    candidates: list[ContentAhrefsCandidateRow],
+) -> list[AhrefsGapRecord]:
+    """Promote only an exact typed WordPress URL match, never phrase overlap."""
+    for record in records:
+        matches = [
+            candidate
+            for candidate in candidates
+            if candidate.keyword == record.keyword
+            and candidate.source_url == record.source_url
+            and candidate.wordpress_cross_check.strength == "exact"
+        ]
+        urls = {
+            url
+            for candidate in matches
+            for url in candidate.wordpress_overlap_urls
+            if url.startswith("https://")
+        }
+        if len(urls) != 1:
+            continue
+        record.referenced_public_url = next(iter(urls))
+        record.mapping_status = "exact"
+        record.evidence_ids = list(
+            dict.fromkeys(
+                [
+                    *record.evidence_ids,
+                    *(
+                        evidence_id
+                        for candidate in matches
+                        for evidence_id in candidate.wordpress_cross_check.evidence_ids
+                    ),
+                ]
+            )
+        )
+    return records
 
 
 def _build_ahrefs_gap_cross_check(
