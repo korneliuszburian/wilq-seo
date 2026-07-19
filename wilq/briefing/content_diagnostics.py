@@ -303,7 +303,7 @@ def clear_content_diagnostics_cache() -> None:
 def content_diagnostics_cache_ready() -> bool:
     return (
         _content_diagnostics_cache_seconds() <= 0
-        or _read_content_diagnostics_cache() is not None
+        or _read_content_diagnostics_cache(_content_diagnostics_refresh_identity()) is not None
     )
 
 

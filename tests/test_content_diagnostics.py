@@ -96,6 +96,7 @@ def test_content_diagnostics_cache_invalidates_when_refresh_identity_changes(mon
     assert calls == 1
 
     refresh_identity = ("refresh-b",)
+    assert content_diagnostics_module.content_diagnostics_cache_ready() is False
     assert content_diagnostics_module.build_content_diagnostics_cached() is second
     assert calls == 2
     content_diagnostics_module.clear_content_diagnostics_cache()
