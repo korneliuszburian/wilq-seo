@@ -1577,3 +1577,13 @@ z zachowanym digestem `f695aed7…`, service card, thread/turn IDs i
 rewizji ani vendor write; `external_call_attempted=false`. To jest dowód
 bezpiecznego zakończenia i readbacku kolejki, nie dowód dostępności providera,
 pełnego tekstu ani gotowości pilota.
+
+### 2026-07-19 — run ID w terminalnym planning trace
+
+W terminalnym readbacku provider failure miał thread/turn, ale `runtime.run_id`
+był pusty, mimo że worker utworzył i zakończył `CodexRun`. Trace planowania
+wiąże teraz failed/persistence-failed/success response z rzeczywistym
+`codex_content_planning_*` ID; queued `planning_generation_*` pozostaje tylko
+identyfikatorem oczekującej próby przed startem workera. Helper-level proof
+potwierdza zachowanie statusu i thread ID; live terminal probe tej konkretnej
+wersji oczekuje jeszcze na zakończenie providera. Nie claimuję pełnego planu.

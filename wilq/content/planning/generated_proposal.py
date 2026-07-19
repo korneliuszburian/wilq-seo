@@ -226,6 +226,7 @@ def generate_content_planning_proposal(
             blocker,
             status=status,
             trace=trace,
+            run_id=run.id,
         )
     assert output is not None
     completed_run = run.model_copy(
@@ -603,6 +604,7 @@ def _persist_generated_proposal(
             blocker,
             status="failed",
             trace=trace,
+            run_id=started_run.id,
         )
     return ContentPlanningProposalResponse(
         status="created" if store_status == "created" else "idempotent",
@@ -611,7 +613,7 @@ def _persist_generated_proposal(
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=content_planning_input_summary(planning_input),
         proposal=stored,
-        runtime=trace or ContentCodexRuntimeTrace(status="completed"),
+        runtime=_runtime_trace_with_run_id(trace, started_run.id),
         safe_next_step="Sprawdź strategię i każdą sekcję; plan pozostaje niezatwierdzony.",
     )
 
@@ -928,6 +930,15 @@ def _runtime_trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace
     )
 
 
+def _runtime_trace_with_run_id(
+    trace: ContentCodexRuntimeTrace | None,
+    run_id: str,
+) -> ContentCodexRuntimeTrace:
+    if trace is None:
+        return ContentCodexRuntimeTrace(status="completed", run_id=run_id)
+    return trace.model_copy(update={"run_id": run_id})
+
+
 def _persisted_runtime_trace(proposal: ContentPlanningProposal) -> ContentCodexRuntimeTrace:
     """Keep a completed plan from looking like it never reached Codex after reload."""
 
@@ -955,6 +966,7 @@ def _runtime_failure_response(
     *,
     status: Literal["blocked", "failed"],
     trace: ContentCodexRuntimeTrace | None = None,
+    run_id: str | None = None,
 ) -> ContentPlanningProposalResponse:
     return ContentPlanningProposalResponse(
         status=status,
@@ -962,7 +974,11 @@ def _runtime_failure_response(
         service_card_id=planning_input.confirmed_service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=content_planning_input_summary(planning_input),
-        runtime=trace or ContentCodexRuntimeTrace(status="failed"),
+        runtime=(
+            trace.model_copy(update={"run_id": run_id})
+            if trace is not None and run_id is not None
+            else trace or ContentCodexRuntimeTrace(status="failed", run_id=run_id)
+        ),
         blockers=[blocker],
         safe_next_step=blocker.next_step,
     )

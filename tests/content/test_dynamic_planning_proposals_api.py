@@ -563,6 +563,8 @@ def test_dynamic_planning_input_change_is_stale_and_runtime_fails_closed(
         run_store=local_state_store(),
     )
     assert failed.status == "failed"
+    assert failed.runtime.run_id
+    assert failed.runtime.run_id.startswith("codex_content_planning_")
     assert content_planning_proposal_store().latest(BDO_WORK_ITEM_ID) == (
         generated_proposal_from(generated)
     )
@@ -579,6 +581,8 @@ def test_dynamic_planning_input_change_is_stale_and_runtime_fails_closed(
         run_store=local_state_store(),
     )
     assert persistence_failed.status == "failed"
+    assert persistence_failed.runtime.run_id
+    assert persistence_failed.runtime.run_id.startswith("codex_content_planning_")
     assert persistence_failed.blockers[0].code == "persistence_failed"
     assert content_planning_proposal_store().latest(BDO_WORK_ITEM_ID) == (
         generated_proposal_from(generated)
