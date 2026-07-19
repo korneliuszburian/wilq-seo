@@ -210,7 +210,10 @@ def build_content_planning_input(
             service_card_id=service_card_id,
             draft=draft,
             freshness=snapshot.freshness_assessment,
-            inventory_section_headings=snapshot.preflight.item.wordpress_section_headings,
+            inventory_section_headings=_resolved_inventory_section_headings(
+                snapshot.preflight.item,
+                snapshot.preflight.inventory_resolution,
+            ),
         )
         baseline = build_content_planning_proposal(
             brief=brief,
@@ -239,6 +242,15 @@ def build_content_planning_input(
             )
         ),
     )
+
+
+def _resolved_inventory_section_headings(
+    item: ContentWorkItem,
+    inventory_resolution: ContentInventoryResolution,
+) -> list[str]:
+    """Return the one inventory projection used by planning and query mapping."""
+    inventory = build_planning_inventory(item, inventory_resolution)
+    return [section.heading for section in inventory.sections]
 
 
 def build_content_planning_input_from_components(

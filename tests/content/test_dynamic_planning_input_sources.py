@@ -21,6 +21,7 @@ from wilq.content.planning import input_sources
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBuildResult,
+    _resolved_inventory_section_headings,
     build_content_planning_input_from_components,
     content_planning_input_summary,
     planning_generation_blockers,
@@ -235,6 +236,24 @@ def test_content_headings_remain_inventory_when_acf_has_fields_but_no_sections(
 
     assert inventory.status == "available"
     assert [section.heading for section in inventory.sections] == ["Zakres usługi"]
+
+
+def test_query_mapping_uses_resolved_acf_inventory_when_sections_are_exposed(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, resolution, _ = source_context
+    item = item.model_copy(
+        update={
+            "wordpress_section_headings": ["Stary the_content H2"],
+            "wordpress_acf_section_inventory_status": "available",
+            "wordpress_acf_section_headings": ["Nowy blok ACF", "Dowody i zakres"],
+        }
+    )
+
+    assert _resolved_inventory_section_headings(item, resolution) == [
+        "Nowy blok ACF",
+        "Dowody i zakres",
+    ]
 
 
 def test_planning_readiness_uses_connector_freshness_not_global_state(

@@ -2969,3 +2969,14 @@ scope review pełny draft nadal nie startuje.
 
 Focused proof: 9 testów initial-draft/status, Ruff i mypy; live outsourcing GET
 zwraca `blocked/planning_not_approved` z nowym następnym krokiem.
+
+### 2026-07-20 — query mapping używa tego samego dynamicznego inventory co plan sekcji
+
+Naprawiono rozjazd w budowie planning input: po odczycie snapshotu portfolio
+zapytań nie bierze już surowej listy `wordpress_section_headings`. Korzysta z
+tego samego rozstrzygniętego inventory, które wybiera dostępne nagłówki ACF albo
+publiczny `the_content`. Dzięki temu mapowanie metryk → sekcji pozostaje
+dynamiczne także dla stron, których układ jest wystawiony przez ACF.
+
+Focused proof: test ACF-vs-`the_content` inventory mapping 15/15, Ruff i
+`git diff --check` PASS.
