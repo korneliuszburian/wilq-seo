@@ -269,6 +269,44 @@ def compact_knowledge_card_for_operator_context(card: KnowledgeCard) -> dict[str
     }
 
 
+def compact_content_knowledge_card_for_operator_context(card: Any) -> dict[str, Any]:
+    """Expose real Ekologus source-fact cards without raw private material."""
+    dumped = card.model_dump(mode="json")
+    return {
+        "id": dumped["id"],
+        "card_type": dumped["card_type"],
+        "title": dumped["title"],
+        "summary": dumped["summary"],
+        "lifecycle_status": dumped.get("lifecycle_status"),
+        "confidence": dumped.get("confidence"),
+        "freshness": dumped.get("freshness"),
+        "source_fact_ids": dumped.get("source_fact_ids", []),
+        "source_material_ids": dumped.get("source_material_ids", []),
+        "evidence_ids": dumped.get("evidence_ids", []),
+        "source_connectors": dumped.get("source_connectors", []),
+        "source_lineage": dumped.get("source_lineage", []),
+        "allowed_claims": dumped.get("allowed_claims", [])[:8],
+        "claims_needing_review": [
+            {
+                "id": claim.get("id"),
+                "status": claim.get("status"),
+                "label": claim.get("label"),
+                "reason": claim.get("reason"),
+            }
+            for claim in dumped.get("claims_needing_review", [])[:8]
+        ],
+        "forbidden_claims": [
+            {
+                "id": claim.get("id"),
+                "status": claim.get("status"),
+                "label": claim.get("label"),
+                "reason": claim.get("reason"),
+            }
+            for claim in dumped.get("forbidden_claims", [])[:8]
+        ],
+    }
+
+
 def compact_expert_rule_for_operator_context(rule: ExpertRuleSummary) -> dict[str, Any]:
     dumped = rule.model_dump(mode="json")
     return {

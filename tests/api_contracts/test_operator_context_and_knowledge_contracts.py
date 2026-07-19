@@ -8,6 +8,8 @@ from typing import Any
 
 import pytest
 
+from apps.api.wilq_api.context_daily import compact_content_knowledge_card_for_operator_context
+from apps.api.wilq_api.context_knowledge import content_knowledge_cards_for_skill
 from tests._contract_support.action_candidate_seed import seed_action_candidate_metric_facts
 from tests._contract_support.api_client import client
 from wilq.actions.social import social_draft_actions
@@ -994,6 +996,24 @@ def test_codex_context_pack_includes_compiled_knowledge_cards() -> None:
     assert "card_goal_001_rules" in card_ids
     evidence_ids = {item["id"] for item in data["evidence_summaries"]}
     assert "ev_connector_google_ads_status" in evidence_ids
+
+
+def test_content_context_uses_real_ekologus_source_fact_cards() -> None:
+    cards = content_knowledge_cards_for_skill("wilq-content-operator")
+    card_ids = {card.id for card in cards}
+
+    assert "ekologus_service_bdo_reporting" in card_ids
+    assert "ekologus_service_environmental_consulting_outsourcing" in card_ids
+
+    bdo = next(card for card in cards if card.id == "ekologus_service_bdo_reporting")
+    compact = compact_content_knowledge_card_for_operator_context(bdo)
+    assert compact["summary"]
+    assert compact["source_fact_ids"]
+    assert compact["evidence_ids"]
+    assert compact["source_lineage"]
+    assert compact["lifecycle_status"] == "approved_current"
+    assert compact["forbidden_claims"]
+    assert any(card.source_material_ids for card in cards)
 
 
 def test_knowledge_operating_map_binds_sources_to_decisions() -> None:

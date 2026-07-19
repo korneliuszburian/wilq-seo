@@ -94,6 +94,17 @@ def skill_scoped_context_pack(
         evidence_summary_limit = 1 if skill == "wilq-ads-doctor" else 40
     connector_refresh_run_limit = 2 if skill == "wilq-ads-doctor" else 3
 
+    if skill in context_knowledge.CONTENT_KNOWLEDGE_SKILLS:
+        knowledge_card_summaries = [
+            context_daily.compact_content_knowledge_card_for_operator_context(card)
+            for card in context_knowledge.content_knowledge_cards_for_skill(skill)
+        ]
+    else:
+        knowledge_card_summaries = [
+            context_daily.compact_knowledge_card_for_operator_context(card)
+            for card in context_knowledge.knowledge_cards_for_skill(skill)
+        ]
+
     pack = {
         "context_scope": {
             "mode": "skill",
@@ -132,10 +143,7 @@ def skill_scoped_context_pack(
             context_daily.compact_evidence_for_operator_context(evidence)
             for evidence in scoped_evidence
         ][:evidence_summary_limit],
-        "knowledge_card_summaries": [
-            context_daily.compact_knowledge_card_for_operator_context(card)
-            for card in context_knowledge.knowledge_cards_for_skill(skill)
-        ],
+        "knowledge_card_summaries": knowledge_card_summaries,
         "expert_rule_summaries": [
             context_daily.compact_expert_rule_for_operator_context(rule)
             for rule in context_knowledge.expert_rules_for_skill(skill)

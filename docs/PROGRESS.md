@@ -2430,3 +2430,15 @@ ocenia wygenerowany tekst. Journey, pełny draft i zapis rewizji korzystają z
 tej samej zasady. Focused proof: operator journey 18/18, w tym jawny przypadek
 z `section_map_review_current=false`, który przechodzi bez ręcznego review mapy;
 Ruff i mypy clean.
+
+### 2026-07-19 — content context pack pokazuje realną wiedzę Ekologusa
+
+Context pack dla `wilq-content-operator`, `wilq-content-strategist` i
+`wilq-gsc-content-doctor` nie używa już ogólnych kart playbooków jako głównej
+wiedzy treściowej. Zwraca skompilowane source-fact cards Ekologusa z realnym
+tytułem i streszczeniem, `source_fact_ids`, `source_material_ids`, evidence,
+lineage, lifecycle, freshness, dozwolonymi i zablokowanymi claimami. Karty
+Ads/playbook pozostają bez zmian dla operatorów kampanii. Live proof po reloadzie
+API: context pack zawiera m.in. `ekologus_service_bdo_reporting`,
+`ekologus_service_environmental_consulting_outsourcing` oraz zatwierdzone karty
+KB z material IDs; focused test przechodzi.
