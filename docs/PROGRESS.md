@@ -1585,5 +1585,7 @@ był pusty, mimo że worker utworzył i zakończył `CodexRun`. Trace planowania
 wiąże teraz failed/persistence-failed/success response z rzeczywistym
 `codex_content_planning_*` ID; queued `planning_generation_*` pozostaje tylko
 identyfikatorem oczekującej próby przed startem workera. Helper-level proof
-potwierdza zachowanie statusu i thread ID; live terminal probe tej konkretnej
-wersji oczekuje jeszcze na zakończenie providera. Nie claimuję pełnego planu.
+potwierdza zachowanie statusu i thread ID. Live BDO terminal readback
+potwierdził `run_id=codex_content_planning_7ac5982747154662aadc0d9c957eed80`
+razem z thread/turn oraz `codex_response_stream_disconnected`; plan nie został
+zapisany. Nie claimuję pełnego planu.
