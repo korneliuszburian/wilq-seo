@@ -555,12 +555,18 @@ def _orphaned_placement_quality_errors(
     sections: Iterable[object],
     placements: Iterable[str],
 ) -> list[str]:
-    removed_headings = {
-        section.heading
+    removed_targets = {
+        target
         for section in sections
         if getattr(section, "inventory_disposition", None) == "remove_review_required"
+        for target in (
+            getattr(section, "heading", None),
+            getattr(section, "section_id", None),
+            getattr(section, "inventory_section_id", None),
+        )
+        if target
     }
-    return ["orphaned_placement"] if removed_headings.intersection(placements) else []
+    return ["orphaned_placement"] if removed_targets.intersection(placements) else []
 
 
 def _expected_inventory_mapping(
