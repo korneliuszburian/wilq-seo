@@ -79,6 +79,10 @@ export function ContentPlanningReviewPanel({
     !actions.pending &&
     (decision === "approved" ? checked : notes.trim().length > 0) &&
     (!serviceOverrideReviewRequired || notes.trim().length > 0) &&
+    (stage !== "scope" ||
+      !existingContentProvenanceRequired ||
+      decision !== "approved" ||
+      provenanceChecked) &&
     (stage !== "scope" || Boolean(selectedServiceCardId));
 
   return (
@@ -310,6 +314,17 @@ export function ContentPlanningReviewPanel({
             />
             Sprawdziłem stronę, usługę, intencję, odbiorcę i CTA.
           </label>
+          {existingContentProvenanceRequired ? (
+            <label className="flex items-start gap-2 text-sm leading-6 text-slate-700">
+              <input
+                type="checkbox"
+                checked={provenanceChecked}
+                onChange={(event) => setProvenanceChecked(event.target.checked)}
+                className="mt-1"
+              />
+              Sprawdziłem dokładny materiał odczytany z publicznej strony i potwierdzam jego zakres.
+            </label>
+          ) : null}
         </div>
       ) : null : null}
 
@@ -324,8 +339,8 @@ export function ContentPlanningReviewPanel({
             planningReviewCheckedItems(
               stage,
               checked,
-              false,
-              false
+              existingContentProvenanceRequired,
+              provenanceChecked
             ),
             stage === "scope" ? selectedServiceCardId : undefined
           )
@@ -366,7 +381,7 @@ export function planningReviewCheckedItems(
   if (!checked) return [];
   return [
     stage === "scope" ? "zakres i CTA" : "kolejność, cel i źródła",
-    ...(stage === "section_map" &&
+    ...((stage === "scope" || stage === "section_map") &&
     existingContentProvenanceRequired &&
     provenanceChecked
       ? ["existing_content_provenance"]

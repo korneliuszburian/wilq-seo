@@ -2477,3 +2477,16 @@ WordPress, H1, leadu, meta title i meta description. Dane pochodzą wyłącznie 
 `proposal.page_assets`; panel jasno oznacza brak zapisu do WordPress. To skraca
 decyzję przed pełnym draftem i nie tworzy drugiej ścieżki autorstwa. Focused
 panel proof: 5/5, dashboard typecheck przechodzi.
+
+### 2026-07-19 — provenance `the_content` jest decyzją zakresu, nie fikcyjną akceptacją mapy
+
+Po przejściu mapy sekcji na tryb automatyczny usunięto pozostałą bramkę, która
+wymagała `existing_content_provenance` na nieistniejącym już approvalu
+`section_map`. Dla materiału `review_required` marketer potwierdza teraz w
+jedynym realnym formularzu — zatwierdzeniu scope — dokładny zakres odczytanego
+publicznego materiału. API wiąże ten checked item z `scope_decision`, a initial
+full draft nie omija już blokera materiału tylko dlatego, że HTML ma poprawną
+ekstrakcję. Mapa sekcji pozostaje automatyczna; REST/ACF, `the_content` i inne
+warianty nadal są wybierane dynamicznie przez inventory seam. Focused dynamic
+input 10/10, API runtime falsifier pass, dashboard proof 8/8, Ruff/mypy i
+typecheck przechodzą.

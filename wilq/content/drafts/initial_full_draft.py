@@ -157,14 +157,7 @@ def _prepare_inputs(
     # Keep every readiness blocker here: review-required WordPress material,
     # unapproved service cards and stale/blocked sources must not become a
     # real draft merely because the planner was allowed to inspect them.
-    draft_blockers = [
-        blocker
-        for blocker in planning_result.blockers
-        if not (
-            blocker.code == "wordpress_material_review_required"
-            and _usable_rendered_content_baseline(planning_result.planning_input)
-        )
-    ]
+    draft_blockers = planning_result.blockers
     if planning_result.planning_input is None or draft_blockers:
         return _blocked_response(
             snapshot,
@@ -214,29 +207,6 @@ def _prepare_inputs(
         proposal=proposal,
         generation_contract=generation_contract,
         base_revision_id=None if latest_revision is None else latest_revision.revision_id,
-    )
-
-
-def _usable_rendered_content_baseline(
-    planning_input: ContentPlanningInput | None,
-) -> bool:
-    """Allow an existing public page body to ground a refresh draft.
-
-    A rendered ``the_content`` read is not an approved knowledge source, but it
-    is a valid baseline for an unreviewed refresh when the API has preserved
-    exact evidence and extraction lineage.  Claims and human scope/map gates
-    remain enforced elsewhere in this preparation path.
-    """
-    if planning_input is None:
-        return False
-    inventory = planning_input.inventory
-    return bool(
-        inventory.content_status == "available"
-        and inventory.content_text
-        and inventory.material_confidence == "review_required"
-        and inventory.extraction_region == "main_or_article_visible_text"
-        and inventory.evidence_ids
-        and inventory.source_field_lineage
     )
 
 

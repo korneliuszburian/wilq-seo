@@ -56,6 +56,13 @@ describe("planningSourceSummary", () => {
 
 describe("planningReviewCheckedItems", () => {
   it("records explicit the_content provenance only after the marketer checks it", () => {
+    expect(planningReviewCheckedItems("scope", true, true, false)).toEqual([
+      "zakres i CTA"
+    ]);
+    expect(planningReviewCheckedItems("scope", true, true, true)).toEqual([
+      "zakres i CTA",
+      "existing_content_provenance"
+    ]);
     expect(planningReviewCheckedItems("section_map", true, true, false)).toEqual([
       "kolejność, cel i źródła"
     ]);

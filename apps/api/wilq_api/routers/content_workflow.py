@@ -382,19 +382,6 @@ def content_work_item_planning_review(
         )
     if request.stage == "section_map":
         _require_generated_section_map(workspace.proposal)
-        if (
-            request.decision == "approved"
-            and snapshot.preflight.item.wordpress_content_material_confidence
-            == "review_required"
-            and "existing_content_provenance" not in request.checked_items
-        ):
-            raise HTTPException(
-                status_code=422,
-                detail=(
-                    "Potwierdź zakres istniejącego materiału strony przed akceptacją "
-                    "mapy sekcji."
-                ),
-            )
     if (
         request.stage == "section_map"
         and request.service_card_id is not None

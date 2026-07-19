@@ -228,9 +228,15 @@ def build_content_planning_input(
         freshness=snapshot.freshness_assessment,
         claim_ledger=snapshot.claim_ledger,
         service_card_id=service_card_id,
-        existing_content_material_reviewed=bool(
+        existing_content_material_reviewed=(
             snapshot.preflight.item.wordpress_content_material_confidence
             != "review_required"
+            or (
+                snapshot.planning_workspace is not None
+                and snapshot.planning_workspace.scope_decision is not None
+                and "existing_content_provenance"
+                in snapshot.planning_workspace.scope_decision.checked_items
+            )
         ),
     )
 
