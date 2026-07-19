@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Literal
 
 import pytest
 
@@ -222,6 +223,47 @@ def test_marketing_brief_blocked_gsc_removes_known_and_recommended_items() -> No
         for item in blocked_recommendations.items
     )
     assert any(item.source_connectors == ["google_search_console"] for item in blocked_items.items)
+
+
+@pytest.mark.parametrize("freshness_state", ["fresh", "stale", "missing", "unknown"])
+def test_marketing_brief_metric_admission_follows_freshness_state(
+    freshness_state: Literal["fresh", "stale", "missing", "unknown"],
+) -> None:
+    fact = MetricFact(
+        name="clicks",
+        value=12,
+        period="last_28_days",
+        source_connector="google_search_console",
+        evidence_id=f"ev_gsc_freshness_{freshness_state}",
+    )
+    connector = ConnectorStatus(
+        id="google_search_console",
+        label="Google Search Console",
+        status=ConnectorStatusValue.configured,
+        configured=True,
+        freshness=FreshnessState(state=freshness_state),
+        capabilities=ConnectorCapability(read=True),
+        health_check="configured",
+    )
+    brief = build_marketing_brief(
+        connectors=[connector],
+        refresh_runs=[],
+        actions=[],
+        metric_facts_by_connector={"google_search_console": [fact]},
+    )
+    known = next(section for section in brief.sections if section.id == "what_we_know")
+    recommendations = next(
+        section for section in brief.sections if section.id == "recommended_focus"
+    )
+    admitted = freshness_state == "fresh"
+    assert (
+        any(item.source_connectors == ["google_search_console"] for item in known.items)
+        is admitted
+    )
+    assert (
+        any(item.source_connectors == ["google_search_console"] for item in recommendations.items)
+        is admitted
+    )
 
 
 def test_marketing_brief_localo_blocker_uses_marketer_copy() -> None:

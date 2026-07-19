@@ -2155,6 +2155,12 @@ pokazuje realny summary 12/9/2, a obecny brief nie pokazuje LinkedIn/Facebook
 jako danych marketingowych. To nie jest jeszcze dowód pełnego downstream
 omission dla wszystkich consumerów.
 
+Dodano freshness matrix dla tego samego GSC factu: tylko `fresh` dopuszcza
+metric item do `what_we_know` i `recommended_focus`; `stale`, `missing` oraz
+`unknown` są fail-closed. Proof obejmuje cztery stany na publicznym builderze,
+bez zmiany kontraktu blockera. Local marketing-brief focused proof wzrósł do
+8/8, a modułowy Ruff/mypy pozostaje clean.
+
 Fresh checker dla `d7dcf0b9` potwierdził gate i wskazał brak asercji sekcji
 rekomendacji. Falsifier rozszerzono: zablokowany Localo nie może pojawić się
 ani w `what_we_know`, ani w `recommended_focus`, podczas gdy `what_blocks_us`
