@@ -3058,3 +3058,7 @@ testowe pozostały bez zmian.
 
 Focused proof: architektura dashboardu 4/4, knowledge-readiness cases 4/4,
 typecheck PASS.
+
+Pełna regresja dashboardu po refaktorze: 51 plików, 212 testów PASS oraz
+typecheck PASS. To jest proof zachowania powierzchni po przeniesieniu notice,
+nie dowód jakości finalnego tekstu ani realnego Wilku UAT.
