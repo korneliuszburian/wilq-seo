@@ -164,9 +164,13 @@ def build_planning_inventory(
             status="missing",
             note="Dokładny rekord inventory nie ma rozwiązywalnego evidence WordPress.",
         )
+    # ACF fields can be exposed without an ACF section schema. In that case
+    # the public H2/H3 inventory from the_content remains the authoritative
+    # section map; never turn an empty ACF heading list into a false blocker.
     headings = (
         item.wordpress_acf_section_headings
         if item.wordpress_acf_section_inventory_status == "available"
+        and item.wordpress_acf_section_headings
         else item.wordpress_section_headings
     )
     return ContentPlanningInventory(

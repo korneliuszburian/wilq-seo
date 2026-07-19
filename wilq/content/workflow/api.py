@@ -112,6 +112,7 @@ from wilq.content.workflow.decision_mapping import (
     content_sales_brief_seed_from_decision,
     content_work_item_from_decision,
 )
+from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.planning import ContentPlanningDecision, ContentPlanningProposal
 from wilq.content.workflow.queue import (
@@ -438,6 +439,15 @@ def build_content_work_item_diagnostics_snapshot_response_for_work_item(
     )
     if decision is None:
         return None
+    inventory_decision = inventory_decision_for_work_item(work_item_id)
+    if inventory_decision is not None and inventory_decision.status == "ready":
+        # The diagnostics queue owns demand identity, while the selected
+        # inventory binding owns the freshest dynamic WordPress material.
+        # Keep the caller's stable work-item ID when replacing the payload so
+        # alias and canonical routes share one workflow identity.
+        decision = inventory_decision.model_copy(
+            update={"id": work_item_id.removeprefix("content_work_item_")}
+        )
     candidate = _queue_candidate_for_decision(diagnostics, decision.id)
     return _build_content_work_item_diagnostics_snapshot_response_from_decision(
         decision,

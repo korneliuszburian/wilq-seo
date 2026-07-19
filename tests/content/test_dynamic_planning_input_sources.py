@@ -219,6 +219,24 @@ def test_planning_inventory_requires_one_exact_wordpress_record(
     ).status == "missing"
 
 
+def test_content_headings_remain_inventory_when_acf_has_fields_but_no_sections(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, resolution, _ = source_context
+    item = item.model_copy(
+        update={
+            "wordpress_acf_section_inventory_status": "available",
+            "wordpress_acf_section_headings": [],
+            "wordpress_acf_field_names": ["hero"],
+        }
+    )
+
+    inventory = build_planning_inventory(item, resolution)
+
+    assert inventory.status == "available"
+    assert [section.heading for section in inventory.sections] == ["Zakres usługi"]
+
+
 def test_planning_readiness_uses_connector_freshness_not_global_state(
     source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
 ) -> None:
