@@ -4,6 +4,24 @@ Status: aktywny, długotrwały plan wykonawczy. Właścicielem zadań i zależno
 pozostaje Beads (`wilq-seo-1oa`); ten plik definiuje produkt, standard i kolejność.
 Nie jest historią commitów ani listą zastępczą dla Beads.
 
+### Checkpoint 2026-07-19
+
+Ostatni utrwalony stan przesunął pipeline w trzech konkretnych miejscach:
+metadata-only manifest oczekujących materiałów jest widoczny w blockerze
+korpusu, wybrany workflow pokazuje źródła metryk i ich API-ową świeżość, a
+read-only pilot BDO + outsourcing potwierdził wspólne exact URL/service/source
+assessment bez hardkodowanego wyjątku. Lokalny runtime ma 12 konektorów, 9
+skonfigurowanych; BDO używa WP/GSC, GA4/Ahrefs są `missing`, Ads/Localo/
+Merchant/Social `not_applicable` lub bez exact matchu, a Keyword Planner
+pozostaje zablokowany brakiem tokena. Outsourcing ma proposal `stale`; BDO
+pozostaje `failed` z typed provider blockerem. To nie jest jeszcze dowód
+pełnej generacji, jakości tekstu ani UAT.
+
+Ostatnie wypchnięte commity: `f60c7f84`, `c4a01b0a`, `0a9e53a4`, `e9b98a5d`,
+`30fb530c`, `0d6e51f6`, `ae3b804d`. Niezależne review passy i dispositions
+znajdują się poza repo w katalogu second-opinion-review; findings bez źródła
+są klasyfikowane jako evidence gaps/reject, nigdy jako PASS.
+
 ## 1. Cel i granica produktu
 
 WILQ jest API-first Marketing Operating System dla Ekologus. Ma pomagać
