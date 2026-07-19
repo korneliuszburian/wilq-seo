@@ -6,11 +6,13 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 ## Najbliższa instrukcja
 
 Po evidence-bound query mappingu, pełnym dokumencie i inventory-verified
-linkowaniu najwyższym bezpiecznym P0 jest `wilq-seo-1oa.36.23`: redakcja
-bezpieczeństwa nie może zmieniać utrwalanej prozy ani prowadzić do fałszywej
-idempotencji. Następnie `.36.22` wiąże WordPress execution readback z exact
-revision handoff, a `.36.21` chroni historię measurement windows. Każdy slice
-pozostaje osobno claimowany i proofowany; nie łącz tych władz w jeden cleanup.
+linkowaniu dawny P0 `wilq-seo-1oa.36.23` jest już zamknięty po proofie redakcji
+bezpieczeństwa. Aktualnie najwyższym bezpiecznym P0 z kolejki jest
+`wilq-seo-1oa.36.14`: aktywacja trwałego semantic-review storage wymaga
+backupu i maintenance window. `.36.22` wiąże WordPress execution readback z
+exact revision handoff, a `.36.21` chroni historię measurement windows, jeśli
+ich zależności zostaną odblokowane. Każdy slice pozostaje osobno claimowany i
+proofowany; nie łącz tych władz w jeden cleanup.
 Realne initial draft i semantic review nadal wymagają owner review obu kart, a
 aktywacja storage wymaga backupu i maintenance window.
 Placement pełnego dokumentu nie ma fallbacku: nowy plan może wskazać tylko
