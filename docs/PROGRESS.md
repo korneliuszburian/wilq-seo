@@ -2638,3 +2638,8 @@ Focused dashboard review tests: 5 passed; typecheck przechodzi.
 Status badge kroku `draft` również nie pokazuje już skróconego digestu; mówi
 po prostu, że zapisana wersja jest aktualna, a exact trace pozostaje w
 szczegółach technicznych.
+
+Rozwijane źródła review renderują teraz również pełne lineage FAQ, CTA i linków
+wewnętrznych, nie tylko sekcji. Marketer może sprawdzić cały dokument w jednym
+read-only miejscu przed decyzją człowieka. Focused dashboard review tests:
+5 passed; typecheck przechodzi.
