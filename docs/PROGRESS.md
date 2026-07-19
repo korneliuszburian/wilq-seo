@@ -2797,6 +2797,19 @@ Focused regression (1 test) i dashboard typecheck przechodzą. Zmiana została
 niezależnie sprawdzona przez advisory checker; wynik jest evidence-bounded i nie
 jest akceptacją produktu ani gotowości do publikacji.
 
+### 2026-07-19 — placement CTA nie może wskazywać sekcji usuniętej po review
+
+Planowanie odrzuca teraz CTA albo link, którego placement wskazuje sekcję z
+`remove_review_required`. Guard działa zarówno na świeżym modelowym outputcie,
+jak i przy readbacku już zapisanej propozycji; rozpoznaje heading oraz stabilne
+`section_id`/`inventory_section_id`. Nie przenosimy elementu automatycznie.
+
+Realny readback WILQ po restarcie potwierdził guard: BDO proposal
+`content_planning_proposal_2e21360b96f44c609811490d6d1aec74` zwraca typed
+`quality_gate_failed` z `orphaned_placement`; outsourcing pozostaje `ready`.
+Focused falsifier, Ruff i diff-check przechodzą. To nie jest jeszcze zgoda na
+scope, pełny draft ani publikację.
+
 ### 2026-07-19 — brak dopasowanej usługi nie udaje wyboru
 
 Zakres workflow ma teraz jawny stan pustego dopasowania: gdy API nie zwraca
