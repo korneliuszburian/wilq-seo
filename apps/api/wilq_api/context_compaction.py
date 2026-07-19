@@ -284,7 +284,7 @@ def compact_connector_status_for_operator_context(
     else:
         compact_freshness = freshness
     capabilities = dumped.get("capabilities")
-    compact_capabilities = (
+    compact_capabilities: dict[str, Any] = (
         {
             "read": bool(capabilities.get("read")),
             "write": bool(capabilities.get("write")),

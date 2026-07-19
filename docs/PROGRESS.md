@@ -2002,3 +2002,10 @@ Ahrefs gap diagnostics ma teraz jawny fallback dla nieufnych wartości
 `gap_method`: `_gap_derived_method` zwraca wyłącznie `str` i nie przepuszcza
 `None` z zewnętrznego payloadu. Proof: modułowy mypy clean,
 `tests/content/test_ahrefs_planning.py` 4/4, diff-check clean.
+
+Po naprawie Ahrefs pełny mypy wynosił 85 błędów w 14 plikach. Domknięty został
+także `compact_capabilities` w API context compaction: ma jawny
+`dict[str, Any]`, bez zmiany redakcji payloadu. Proof: modułowy mypy clean,
+`tests/api_contracts/test_metric_context_contracts.py` i
+`tests/api_contracts/test_security_connector_contracts.py` razem 17/17,
+diff-check clean.
