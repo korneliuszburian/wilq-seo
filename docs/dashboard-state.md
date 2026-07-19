@@ -127,6 +127,10 @@ planning. A failed readiness fetch is an explicit degraded blocker, loading is
 visibly separate from ready, and an empty `next_step` cannot leave the
 marketer without a safe action. Local state remains `import_pending` (7 of 15
 materials imported), so this is a truthful gate, not generation approval.
+The selected-workflow decision disclosure also shows the API-provided source
+connector labels and freshness state for displayed metrics. It does not derive
+new metrics, infer trends, or claim that a source is applicable when planning
+marks it missing or not applicable.
 Fixed point `b5c28415` has 202 dashboard tests and typecheck passing. The
 independent checker emitted no findings but had source-transport evidence gaps,
 so it is not recorded as PASS.
