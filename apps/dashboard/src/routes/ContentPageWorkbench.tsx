@@ -565,7 +565,7 @@ export function ContentPageWorkbench({
                       Aktualny draft: {latestRevision.title}
                     </p>
                     <p className="mt-1 text-xs text-slate-600">
-                      {latestRevision.sections.length} sekcji · {revisionEvidenceCount} źródeł
+                      {latestRevision.sections.length} sekcji · {revisionEvidenceCount ?? "—"} źródeł
                     </p>
                     <details className="mt-2 text-xs text-slate-600">
                       <summary className="cursor-pointer font-semibold text-action">
