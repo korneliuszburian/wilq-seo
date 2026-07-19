@@ -127,7 +127,10 @@ def build_content_workflow_operator_journey(
     if not scope_complete:
         current_step_id = "scope"
     elif not section_map_complete:
-        current_step_id = "section_map"
+        # The section map is an API-owned projection, not a human task. Keep
+        # the marketer on the scope surface while the generated plan is being
+        # produced instead of presenting a phantom approval step.
+        current_step_id = "scope"
     elif (
         facts.structured_contract_present
         and facts.revision_context_current
@@ -179,7 +182,11 @@ def build_content_workflow_operator_journey(
                 can_open=scope_phase != "pending",
                 can_submit=False,
                 blocker=scope_blocker,
-                safe_next_step=facts.sales_brief_safe_next_step,
+                safe_next_step=(
+                    facts.sales_brief_safe_next_step
+                    if not scope_complete or section_map_complete
+                    else "Uruchom generowanie planu — mapa sekcji zostanie wyliczona automatycznie."
+                ),
             ),
             ContentWorkflowOperatorStep(
                 id="section_map",
@@ -374,7 +381,7 @@ def _draft_blocker(
     if not section_map_complete:
         return _prerequisite_blocker(
             "section_map",
-            "Najpierw domknij plan sekcji i przypisane dowody.",
+            "Plan sekcji jest jeszcze wyliczany automatycznie z inventory, usługi i dowodów.",
         )
     if not facts.structured_contract_present:
         return facts.structured_contract_blocker or ContentWorkflowOperatorBlocker(

@@ -645,11 +645,14 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
     if brief is None or brief["signal_quality"]["status"] == "thin":
         assert data["current_step_id"] == "scope"
     elif draft_package is None:
-        assert data["current_step_id"] == "section_map"
+        # Section mapping is an API-owned projection. The marketer stays on
+        # scope while the generated plan is being produced; no map approval
+        # step is exposed.
+        assert data["current_step_id"] == "scope"
     elif not planning_workspace["scope_current"]:
         assert data["current_step_id"] == "scope"
     elif not planning_workspace["section_map_current"]:
-        assert data["current_step_id"] == "section_map"
+        assert data["current_step_id"] == "scope"
     else:
         assert data["current_step_id"] == "draft"
         draft_step = current_steps[0]

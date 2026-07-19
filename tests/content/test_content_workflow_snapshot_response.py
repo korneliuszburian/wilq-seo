@@ -48,11 +48,11 @@ def test_public_workflow_snapshot_exposes_readiness_without_execution_contract(
     _assert_browser_safe_generation_readiness(valid_workflow_snapshot_payload)
 
 
-def test_public_readiness_cannot_be_ready_before_scope_or_section_map(
+def test_public_readiness_cannot_be_ready_before_scope_or_generated_plan(
     valid_workflow_snapshot_payload: dict[str, Any],
 ) -> None:
     current_step_id = valid_workflow_snapshot_payload["current_step_id"]
-    if current_step_id not in {"scope", "section_map"}:
+    if current_step_id != "scope":
         pytest.skip("fixture is already beyond planning gates")
 
     readiness = valid_workflow_snapshot_payload["structured_generation_readiness"]

@@ -53,8 +53,8 @@ def _facts(
         ),
         (
             _facts(sales_brief_present=True, sales_brief_signal_status="strong"),
-            "section_map",
-            ("complete", "current", "pending", "pending", "pending"),
+            "scope",
+            ("current", "pending", "pending", "pending", "pending"),
         ),
         (
             _facts(
@@ -129,7 +129,10 @@ def test_operator_journey_blocks_draft_until_section_map_is_complete() -> None:
     journey = build_content_workflow_operator_journey(facts)
     steps = {step.id: step for step in journey.steps}
 
-    assert journey.current_step_id == "section_map"
+    assert journey.current_step_id == "scope"
+    assert steps["scope"].safe_next_step == (
+        "Uruchom generowanie planu — mapa sekcji zostanie wyliczona automatycznie."
+    )
     assert steps["section_map"].readiness == "blocked"
     assert steps["draft"].readiness == "blocked"
     assert steps["draft"].blocker is not None

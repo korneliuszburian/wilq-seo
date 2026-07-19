@@ -89,15 +89,16 @@ kontynuuj najwyższy bezpieczny task.
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`;
   publiczny `ekologus.pl` pozostaje SEO truth, a Proudsite jest wyłącznie
   draft/dev workspace.
-- Snapshot ma jeden kanoniczny journey `scope → section_map → draft → review →
-  dev_draft`. Live krok to teraz uczciwie `scope`: zakres i mapa sekcji mają
-  typed proposal, exact digest i append-only decyzje, lecz w realnym stanie nie
-  zostały jeszcze zatwierdzone. Pierwszy zapis rewizji pozostaje zablokowany do
-  dwóch aktualnych approvals.
-- Aktywny `scope` i `section_map` używają jednego zwartego panelu decyzji.
-  Marketer nie ogląda już trzykolumnowej mapy public/signals/dev ani ACF wall:
-  najpierw zatwierdza zakres, potem kolejność, cel i dowody sekcji. Konflikt
-  zachowuje lokalną notatkę i wymaga jawnego odświeżenia.
+- Snapshot zachowuje pięć kontraktowych etapów `scope → section_map → draft →
+  review → dev_draft`, ale `section_map` jest wyłącznie projekcją API. Gdy plan
+  jest generowany, bieżący krok pozostaje uczciwie `scope`; po wygenerowaniu
+  system przechodzi bezpośrednio do `draft`. Pierwszy zapis rewizji pozostaje
+  zablokowany do aktualnej decyzji zakresu/usługi, nie do zatwierdzania nagłówków.
+- Aktywny `scope` pokazuje jeden zwarty panel decyzji oraz podgląd mapy, gdy ta
+  istnieje. Marketer nie zatwierdza kolejności, celu ani dowodów sekcji osobnym
+  formularzem: mapa powstaje dynamicznie z odczytanego ACF albo `the_content`,
+  inventory, usługi, zapytań i evidence. Konflikt zachowuje lokalną notatkę i
+  wymaga jawnego odświeżenia.
 - Scope pokazuje typed zapytania GSC z metrykami, okresem, freshness i
   konserwatywnym przypisaniem do sekcji. Same exact page i wspólny refresh-level
   evidence ID nie wystarczają już do przypisania query do każdej sekcji. Ogólny
