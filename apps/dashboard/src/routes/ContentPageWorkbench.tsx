@@ -218,10 +218,10 @@ export function ContentPageWorkbench({
     exactSemanticReviewForRevision(semanticReviewQuery.data ?? null, latestRevision);
   const revisionEvidenceCount = latestRevision
     ? unique([
-        ...latestRevision.sections.flatMap((section) => section.evidence_ids),
-        ...latestRevision.faq.flatMap((item) => item.evidence_ids),
-        ...latestRevision.cta_blocks.flatMap((item) => item.evidence_ids),
-        ...latestRevision.internal_links.flatMap((item) => item.evidence_ids)
+        ...latestRevision.sections?.flatMap((section) => section.evidence_ids ?? []),
+        ...latestRevision.faq?.flatMap((item) => item.evidence_ids ?? []),
+        ...latestRevision.cta_blocks?.flatMap((item) => item.evidence_ids ?? []),
+        ...latestRevision.internal_links?.flatMap((item) => item.evidence_ids ?? [])
       ]).length
     : 0;
   const revisionStatusLabel = latestRevision
@@ -570,8 +570,8 @@ export function ContentPageWorkbench({
                       Aktualny draft: {latestRevision.title}
                     </p>
                     <p className="mt-1 text-xs text-slate-600">
-                      {latestRevision.sections.length} sekcji · {latestRevision.faq.length} FAQ ·{" "}
-                      {latestRevision.cta_blocks.length} CTA · {latestRevision.internal_links.length} linków ·{" "}
+                      {latestRevision?.sections.length ?? 0} sekcji · {latestRevision?.faq.length ?? 0} FAQ ·{" "}
+                      {latestRevision?.cta_blocks.length ?? 0} CTA · {latestRevision?.internal_links.length ?? 0} linków ·{" "}
                       {revisionEvidenceCount ?? "—"} źródeł
                     </p>
                     <details className="mt-2 text-xs text-slate-600">
