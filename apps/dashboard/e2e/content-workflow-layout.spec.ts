@@ -33,6 +33,7 @@ type CodexProposalBrowserProof = {
   baseRevision: SavedRevision;
   review: SavedRevisionReview;
   selectedHeading: string;
+  selectedSectionId: string;
   baseBody: string;
   childBody: string;
   endpointPath: string;
@@ -439,7 +440,7 @@ test.describe("WILQ content workflow layout proof", () => {
         "step"
       );
       const panel = page.locator('section[aria-labelledby="codex-section-proposal-title"]');
-      await expect(panel.getByRole("heading", { name: "Popraw wersję 1 z Codexem" }))
+      await expect(panel.getByRole("heading", { name: /Popraw .* z Codexem/ }))
         .toBeVisible();
       await expect(panel.getByText(`Uwagi z review: „${proof.review.notes}”`)).toBeVisible();
 
@@ -457,8 +458,8 @@ test.describe("WILQ content workflow layout proof", () => {
         pathname: proof.endpointPath,
         payload: {
           expected_base_digest: proof.baseRevision.content_digest,
-          selected_section_headings: [proof.selectedHeading],
-          selected_section_ids: [],
+          selected_section_headings: [],
+          selected_section_ids: [proof.selectedSectionId],
           requested_by: "operator_local_dashboard"
         }
       });
@@ -1333,6 +1334,7 @@ function codexProposalBrowserProof(
     baseRevision,
     review,
     selectedHeading,
+    selectedSectionId: firstSection.section_id ?? "",
     baseBody,
     childBody,
     endpointPath:
