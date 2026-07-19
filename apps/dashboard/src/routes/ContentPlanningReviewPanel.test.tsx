@@ -5,7 +5,8 @@ import {
   planningReviewCheckedItems,
   planningSectionMapReady,
   planningScopeSummary,
-  planningSourceSummary
+  planningSourceSummary,
+  requiresServiceOverrideReview
 } from "./ContentPlanningReviewPanel";
 
 describe("inventoryDispositionLabel", () => {
@@ -67,6 +68,18 @@ describe("planningSectionMapReady", () => {
         generation_status: "codex_generated",
         proposal_id: "proposal_1"
       } as never)
+    ).toBe(true);
+  });
+});
+
+describe("requiresServiceOverrideReview", () => {
+  it("keeps non-current service cards visibly review-bound", () => {
+    expect(requiresServiceOverrideReview(undefined)).toBe(false);
+    expect(
+      requiresServiceOverrideReview({ lifecycle_status: "approved_current" } as never)
+    ).toBe(false);
+    expect(
+      requiresServiceOverrideReview({ lifecycle_status: "source_backed_review_required" } as never)
     ).toBe(true);
   });
 });

@@ -62,6 +62,7 @@ export function ContentPlanningReviewPanel({
   const selectedService = serviceCandidates.find(
     (candidate) => candidate.service_card_id === selectedServiceCardId
   );
+  const serviceOverrideReviewRequired = requiresServiceOverrideReview(selectedService);
   const sectionMapReady = planningSectionMapReady(proposal);
   const latestDecision = stage === "scope" ? planning.scope_decision : planning.section_map_decision;
   const inventoryMapping = planning.proposal.inventory_mapping ?? [];
@@ -69,6 +70,7 @@ export function ContentPlanningReviewPanel({
   const canSubmit =
     !actions.pending &&
     (decision === "approved" ? checked : notes.trim().length > 0) &&
+    (!serviceOverrideReviewRequired || notes.trim().length > 0) &&
     (decision !== "approved" || !existingContentProvenanceRequired || provenanceChecked) &&
     (stage !== "section_map" || sectionMapReady) &&
     (stage !== "scope" || Boolean(selectedServiceCardId));
@@ -117,6 +119,15 @@ export function ContentPlanningReviewPanel({
           {selectedService ? (
             <p className="mt-2 text-xs leading-5 text-slate-600">
               {selectedService.match_reasons.join(" ")}
+            </p>
+          ) : null}
+          {serviceOverrideReviewRequired ? (
+            <p
+              className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700"
+              data-testid="planning-service-override-review"
+            >
+              Ta karta usługi nie ma statusu „zatwierdzona i aktualna”. Jeśli wybierasz ją
+              mimo tego, wpisz w notatce, dlaczego ten wybór jest właściwy dla tej strony.
             </p>
           ) : null}
           <dl className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -350,6 +361,12 @@ export function planningSectionMapReady(
   proposal: ContentPlanningWorkspace["proposal"]
 ): boolean {
   return proposal.generation_status === "codex_generated" && Boolean(proposal.proposal_id);
+}
+
+export function requiresServiceOverrideReview(
+  candidate: ContentWorkItemServiceCandidate | undefined
+): boolean {
+  return Boolean(candidate && candidate.lifecycle_status !== "approved_current");
 }
 
 export function inventoryDispositionLabel(
