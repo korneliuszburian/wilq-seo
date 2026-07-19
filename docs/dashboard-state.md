@@ -1,6 +1,6 @@
 # Dashboard State
 
-Last updated: 2026-07-19
+Last updated: 2026-07-20
 
 This is the living state file for WILQ dashboard work. Read it before changing
 any dashboard route, dashboard API view-model, dashboard copy, dashboard test or
@@ -83,9 +83,11 @@ assets, 4 sections, 3 FAQ items, 2 CTA blocks and one internal link, with
 `publish_ready=false`. The dynamic planning read builds an exact input digest
 for the selected inventory item and binds the service, current public material,
 GSC lineage and approved redacted source-material IDs. It does not call Codex or
-create a proposal table on GET. The queue currently exposes 6 candidates and 5
-actionable candidates for the selected inventory proof; WILQ must still not
-invent topics outside inventory. The remaining semantic-review storage gate is
+create a proposal table on GET. The live queue currently exposes 51 candidates
+and 50 actionable candidates. When a marketer opens a URL directly, the
+lightweight selected-page response is merged with the full queue catalog in the
+browser, so the picker never collapses to one preselected page. WILQ must still
+not invent topics outside inventory. The remaining semantic-review storage gate is
 `storage_activation_required`; it is a maintenance-window concern, not a reason
 to pretend that a pre-publication measurement window already exists.
 After bounding the first structured plan to 12 sections, 8 FAQ items, 4 CTA
