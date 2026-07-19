@@ -586,7 +586,7 @@ export function ContentPageWorkbench({
 
                   <details className="rounded-md border border-line bg-surface px-3 py-2">
                     <summary className="cursor-pointer text-sm font-semibold text-action">
-                      Źródła i powiązania sekcji
+                      Źródła i powiązania dokumentu
                     </summary>
                     <div className="mt-3 space-y-3" data-testid="immutable-revision-content">
                       {latestRevision.sections.map((section) => (
@@ -601,6 +601,60 @@ export function ContentPageWorkbench({
                           <p className="mt-2 break-all text-xs leading-5 text-slate-500">
                             Źródła: {section.evidence_ids.length
                               ? section.evidence_ids.join(", ")
+                              : "brak przypisanych źródeł"}
+                          </p>
+                        </article>
+                      ))}
+                      {latestRevision.faq.map((item) => (
+                        <article
+                          key={item.faq_id}
+                          className="rounded-md border border-line bg-white p-3"
+                        >
+                          <h3 className="text-sm font-semibold text-ink">
+                            FAQ: {item.question}
+                          </h3>
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                            {item.answer_markdown}
+                          </p>
+                          <p className="mt-2 break-all text-xs leading-5 text-slate-500">
+                            Źródła: {item.evidence_ids.length
+                              ? item.evidence_ids.join(", ")
+                              : "brak przypisanych źródeł"}
+                          </p>
+                        </article>
+                      ))}
+                      {latestRevision.cta_blocks.map((item) => (
+                        <article
+                          key={item.cta_id}
+                          className="rounded-md border border-line bg-white p-3"
+                        >
+                          <h3 className="text-sm font-semibold text-ink">
+                            CTA: {item.placement}
+                          </h3>
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                            {item.body_markdown}
+                          </p>
+                          <p className="mt-2 break-all text-xs leading-5 text-slate-500">
+                            Źródła: {item.evidence_ids.length
+                              ? item.evidence_ids.join(", ")
+                              : "brak przypisanych źródeł"}
+                          </p>
+                        </article>
+                      ))}
+                      {latestRevision.internal_links.map((item) => (
+                        <article
+                          key={item.link_id}
+                          className="rounded-md border border-line bg-white p-3"
+                        >
+                          <h3 className="text-sm font-semibold text-ink">
+                            Link: {item.anchor_text}
+                          </h3>
+                          <p className="mt-2 text-sm leading-6 text-slate-700">
+                            Miejsce: {item.placement}
+                          </p>
+                          <p className="mt-2 break-all text-xs leading-5 text-slate-500">
+                            Źródła: {item.evidence_ids.length
+                              ? item.evidence_ids.join(", ")
                               : "brak przypisanych źródeł"}
                           </p>
                         </article>
