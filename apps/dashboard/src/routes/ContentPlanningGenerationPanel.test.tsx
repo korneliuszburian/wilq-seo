@@ -45,7 +45,8 @@ describe("ContentPlanningGenerationPanel", () => {
       source_material_ids: [],
       evidence_id_count: 0,
       knowledge_card_count: 0,
-      measurement_metrics: []
+      measurement_metrics: [],
+      metric_comparisons: []
     };
     const summary = planningSourceSummary(summaryInput);
 
@@ -58,6 +59,71 @@ describe("ContentPlanningGenerationPanel", () => {
       "GA4: nie dotyczy",
       "Google Ads: zablokowane"
     ]);
+  });
+
+  it("renders exact page-scoped metric changes without inventing targets", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValueOnce({
+      status: "not_generated",
+      work_item_id: "work_item",
+      proposal: null,
+      input_summary: {
+        final_canonical_url: "https://ekologus.pl/bdo/",
+        service_label: "BDO",
+        inventory_status: "available",
+        content_inventory_status: "available",
+        source_assessments: Array.from({ length: 10 }, (_, index) => ({
+          source: ["wordpress", "service_profile", "gsc", "ga4", "google_ads", "ahrefs", "keyword_planner", "merchant", "localo", "social"][index],
+          status: "used",
+          reason: "",
+          landing_match_tiers: ["exact"],
+          evidence_ids: [],
+          knowledge_card_ids: []
+        })),
+        source_fact_count: 0,
+        source_fact_ids: [],
+        source_material_ids: [],
+        evidence_id_count: 2,
+        knowledge_card_count: 0,
+        measurement_metrics: ["clicks"],
+        metric_comparisons: [{
+          source_connector: "google_search_console",
+          status: "available",
+          baseline_period: "2026-06-01/2026-06-28",
+          comparison_period: "2026-06-29/2026-07-26",
+          metric_names: ["clicks", "ctr"],
+          baseline_values: { clicks: 12, ctr: 0.04 },
+          comparison_values: { clicks: 19, ctr: 0.06 },
+          evidence_ids: ["ev_gsc_1"],
+          reason: ""
+        }]
+      },
+      blockers: [],
+      safe_next_step: "Wybierz usługę.",
+      publish_ready: false
+    } as never);
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValueOnce({
+      status: "ready",
+      total_count: 15,
+      imported_count: 15,
+      import_pending_count: 0,
+      excerpt_review_required_count: 0,
+      ready_for_generation: true,
+      blocker: null,
+      next_step: "Można planować."
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(
+      <QueryClientProvider client={client}>
+        <ContentPlanningGenerationPanel serviceCardId={null} workItemId="work_item" />
+      </QueryClientProvider>
+    );
+
+    const comparisons = await screen.findByTestId("content-planning-metric-comparisons");
+    expect(comparisons).toHaveTextContent("Google Search Console");
+    expect(comparisons).toHaveTextContent("12 → 19");
+    expect(comparisons).toHaveTextContent("2026-06-01/2026-06-28 → 2026-06-29/2026-07-26");
+    expect(comparisons).not.toHaveTextContent("cel");
   });
 
   it("shows the real corpus gate without blocking the planning view", async () => {

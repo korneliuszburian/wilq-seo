@@ -2583,6 +2583,18 @@ export const ContentPlanningMeasurementPlanSchema = z.object({
   success_claim_rule: z.string().default("")
 });
 
+export const ContentPlanningMetricComparisonSchema = z.object({
+  source_connector: z.enum(["google_search_console", "google_analytics_4"]),
+  status: z.enum(["available", "not_available", "ambiguous"]),
+  baseline_period: z.string().nullable().optional(),
+  comparison_period: z.string().nullable().optional(),
+  metric_names: z.array(z.string()).default([]),
+  baseline_values: z.record(z.string(), z.number()).default({}),
+  comparison_values: z.record(z.string(), z.number()).default({}),
+  evidence_ids: z.array(z.string()).default([]),
+  reason: z.string()
+});
+
 export const ContentPlanningProposalSchema = z.object({
   work_item_id: z.string().min(1),
   planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
@@ -2746,7 +2758,10 @@ export const ContentPlanningInputSummarySchema = z.object({
   source_material_ids: z.array(z.string()).default([]),
   evidence_id_count: z.number().int().nonnegative(),
   knowledge_card_count: z.number().int().nonnegative(),
-  measurement_metrics: z.array(z.string()).default([])
+  measurement_metrics: z.array(z.string()).default([]),
+  // Optional for read compatibility with planning responses created before
+  // exact page-scoped comparisons were exposed; new API responses populate it.
+  metric_comparisons: z.array(ContentPlanningMetricComparisonSchema).optional()
 }).superRefine((summary, context) => {
   const sources = summary.source_assessments.map((assessment) => assessment.source);
   if (

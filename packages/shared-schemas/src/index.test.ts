@@ -387,7 +387,18 @@ describe("ContentPlanningProposalResponseSchema", () => {
         source_fact_count: 1,
         evidence_id_count: 1,
         knowledge_card_count: 1,
-        measurement_metrics: ["gsc_clicks"]
+        measurement_metrics: ["gsc_clicks"],
+        metric_comparisons: [{
+          source_connector: "google_search_console",
+          status: "available",
+          baseline_period: "2026-06-01/2026-06-28",
+          comparison_period: "2026-06-29/2026-07-26",
+          metric_names: ["clicks"],
+          baseline_values: { clicks: 12 },
+          comparison_values: { clicks: 19 },
+          evidence_ids: ["ev_1"],
+          reason: "Exact page periods."
+        }]
       },
       proposal: {
         work_item_id: "content_work_item_bdo",
@@ -463,6 +474,7 @@ describe("ContentPlanningProposalResponseSchema", () => {
     };
 
     const parsed = ContentPlanningProposalResponseSchema.parse(response);
+    expect(parsed.input_summary?.metric_comparisons?.[0]?.comparison_values.clicks).toBe(19);
     const staleAdsRow = {
       source_kind: "ads_search_term",
       source_connector: "google_ads",

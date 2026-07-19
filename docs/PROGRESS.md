@@ -3073,3 +3073,16 @@ zatwierdzonych kartach lub skuteczności treści.
 
 Focused proof: `KnowledgeSurface.test.tsx` 3/3, dashboard typecheck i
 `git diff --check` PASS.
+
+### 2026-07-20 — panel planu pokazuje realne zmiany GSC/GA4
+
+Planning input już wylicza exact page-scoped porównania GSC/GA4, ale poprzedni
+shared response wystawiał tylko liczbę nazw metryk. Dodałem kompatybilne pole
+`metric_comparisons` do `ContentPlanningInputSummary` oraz kompaktowy blok w
+panelu strategii: connector, okres bazowy i porównawczy, rzeczywiste wartości,
+status porównania i liczba evidence. Brak porównania pozostaje jawny jako
+`brak porównania`/`niejednoznaczne`; UI nie tworzy targetów ani score'ów.
+
+Focused proof: shared-schema round-trip z 12 → 19 kliknięć, panel 6/6,
+dashboard typecheck i `git diff --check` PASS. Starsze odpowiedzi bez pola są
+czytelne dzięki opcjonalności pola.

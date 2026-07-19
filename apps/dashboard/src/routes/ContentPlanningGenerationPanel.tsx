@@ -145,6 +145,7 @@ export function ContentPlanningGenerationPanel({
             {planningSourceSummary(inputSummary)}
           </p>
           <PlanningSourceOutcomeStrip assessments={inputSummary.source_assessments} />
+          <PlanningMetricComparisons comparisons={inputSummary.metric_comparisons} />
         </div>
       ) : null}
 
@@ -380,6 +381,85 @@ function PlanningSourceOutcomeStrip({
   );
 }
 
+function PlanningMetricComparisons({
+  comparisons
+}: {
+  comparisons?: NonNullable<ContentPlanningProposalResponse["input_summary"]>["metric_comparisons"];
+}) {
+  if (!comparisons?.length) return null;
+  return (
+    <div className="mt-4" data-testid="content-planning-metric-comparisons">
+      <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+        Rzeczywiste zmiany metryk strony
+      </p>
+      <div className="mt-2 grid gap-2 md:grid-cols-2">
+        {comparisons.map((comparison) => (
+          <div key={comparison.source_connector} className="rounded-md border border-line bg-white p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-ink">
+                {planningSourceLabel(comparison.source_connector)}
+              </span>
+              <span className="text-xs font-semibold text-slate-500">
+                {comparisonStatusLabel(comparison.status)}
+              </span>
+            </div>
+            {comparison.status === "available" ? (
+              <>
+                <p className="mt-1 text-xs text-slate-500">
+                  {comparison.baseline_period ?? "okres bazowy"} → {comparison.comparison_period ?? "ostatni okres"}
+                </p>
+                <ul className="mt-2 grid gap-1 text-xs text-slate-700 sm:grid-cols-2">
+                  {comparison.metric_names.map((metric) => (
+                    <li key={metric}>
+                      <span className="font-medium">{metricLabel(metric)}:</span>{" "}
+                      {formatMetricValue(comparison.baseline_values[metric])} → {formatMetricValue(comparison.comparison_values[metric])}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="mt-1 text-xs leading-5 text-slate-600">{comparison.reason}</p>
+            )}
+            {comparison.evidence_ids.length ? (
+              <p className="mt-2 text-[11px] text-slate-500">
+                Evidence: {comparison.evidence_ids.length} exact {comparison.evidence_ids.length === 1 ? "ślad" : "ślady"}
+              </p>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function comparisonStatusLabel(status: string) {
+  return {
+    available: "porównywalne",
+    not_available: "brak porównania",
+    ambiguous: "niejednoznaczne"
+  }[status] ?? status;
+}
+
+function metricLabel(metric: string) {
+  return {
+    clicks: "kliknięcia",
+    impressions: "wyświetlenia",
+    ctr: "CTR",
+    average_position: "średnia pozycja",
+    sessions: "sesje",
+    engaged_sessions: "sesje zaangażowane",
+    engagement_rate: "zaangażowanie",
+    key_events: "key events"
+  }[metric] ?? metric;
+}
+
+function formatMetricValue(value: number | undefined) {
+  if (value === undefined) return "brak";
+  return Number.isInteger(value)
+    ? value.toLocaleString("pl-PL")
+    : value.toLocaleString("pl-PL", { maximumFractionDigits: 2 });
+}
+
 function formatDemandMetrics(
   row: NonNullable<ContentPlanningProposalResponse["proposal"]>["search_demand"]["gsc_query_rows"][number]
 ) {
@@ -406,7 +486,9 @@ function planningSourceLabel(source: string) {
     wordpress: "WordPress",
     service_profile: "Profil usługi",
     gsc: "GSC",
+    google_search_console: "Google Search Console",
     ga4: "GA4",
+    google_analytics_4: "Google Analytics 4",
     google_ads: "Google Ads",
     ahrefs: "Ahrefs",
     keyword_planner: "Keyword Planner",
