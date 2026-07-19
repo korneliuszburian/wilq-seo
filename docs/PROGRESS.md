@@ -7,6 +7,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: usunięto fałszywy blocker productowy w briefie: słowa z
+  zapytań/faktów GSC nie są już traktowane jako CTA zakupowe. Produktowy guard
+  patrzy wyłącznie na temat, URL i deklarowany CTA; jawne „kup sorbent” nadal
+  wymaga Merchant/sklepu. Live inventory `0454...` (edukacyjny artykuł o
+  opakowaniach) ma teraz pustą listę blockerów Sales Brief i zatrzymuje się
+  dopiero na decyzji zakresu. Fixed point `b830ec5a` przeszedł 4 focused testy,
+  Ruff, mypy, diff-check i live snapshot. Checker został odrzucony przez
+  nielegalną cytację ponad 20 linii; nie traktuję go jako PASS.
 - 2026-07-19: naprawiono realny błąd wyboru strony: inventory ID
   `content_work_item_inventory_*` mogło otworzyć snapshot, ale następne
   zapytanie enrichment szukało wyłącznie canonicalnego
