@@ -162,7 +162,11 @@ class ContentPlanningProposalResponse(BaseModel):
 
     @model_validator(mode="after")
     def require_status_payload(self) -> ContentPlanningProposalResponse:
-        if self.planning_input_digest is not None and self.input_summary is None:
+        if (
+            self.planning_input_digest is not None
+            and self.input_summary is None
+            and self.status != "generating"
+        ):
             raise ValueError("Planning input digest requires its exact input summary.")
         if self.status in {"created", "idempotent", "ready"}:
             if self.proposal is None or self.blockers:

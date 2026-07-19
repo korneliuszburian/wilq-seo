@@ -174,6 +174,7 @@ def register_content_planning_proposal_routes(
             status="generating",
             work_item_id=work_item_id,
             service_card_id=request.service_card_id,
+            planning_input_digest=request.expected_planning_input_digest,
             runtime=ContentCodexRuntimeTrace(
                 status="not_started",
                 run_id=f"planning_generation_{uuid4().hex}",

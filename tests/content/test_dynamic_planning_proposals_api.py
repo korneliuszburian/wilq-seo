@@ -429,6 +429,7 @@ def test_changed_input_can_enqueue_replan_when_older_proposal_exists(
 
     assert response.status_code == 200
     assert response.json()["status"] == "generating"
+    assert response.json()["planning_input_digest"] == changed_digest
     assert executor.submitted == 1
 
 def test_dynamic_planning_rejects_an_unknown_document_placement(
