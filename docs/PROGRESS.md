@@ -32,6 +32,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   write/publish bez preview → review → confirm → audit. Pierwszy odczyt w trakcie
   prewarmu zwracał `daily_check_runtime_prewarm`, a retry przechodzi do pełnego
   kontraktu — to ważny stan przejściowy, nie błąd maskowany jako gotowość.
+- 2026-07-19: `POST /api/codex/context-pack` dla `wilq-content-operator`
+  zwraca API-owned context: 12 konektorów, 9 statusów, 24 evidence summaries,
+  8 knowledge-card summaries, 8 expert-rule summaries, 29 capability entries,
+  18 aktywnych ActionObjects i brief z 19 evidence IDs. Strict instruction
+  wymusza odczyt metryk z WILQ API; kompaktowanie oznacza pominięcie historii,
+  nie utratę kontraktu. To dowód seam-u Codex → API, nie dowód jakości tekstu.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily
