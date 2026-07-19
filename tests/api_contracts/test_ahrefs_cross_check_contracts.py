@@ -126,6 +126,10 @@ def test_weak_ahrefs_cross_check_is_manual_and_has_no_queue_action(
     contract = payload["gap_read_contract"]
     assert contract["status"] == "ready"
     assert contract["missing_read_contracts"] == []
+    record = contract["gap_records"][0]
+    assert record["mapping_status"] == "unbound"
+    assert record["derived_method"]
+    assert "zakres próby" in record["coverage_summary"]
     assert contract["cross_check_status"] == "manual_required"
     assert contract["cross_check_gsc_match_count"] == 0
     assert contract["cross_check_wordpress_match_count"] == 0

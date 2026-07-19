@@ -857,6 +857,9 @@ def _ahrefs_gap_record(
         referenced_public_url=referenced_public_url,
         competitor_domain=competitor_domain,
         keyword=keyword,
+        mapping_status=_gap_mapping_status(referenced_public_url, facts),
+        derived_method=_gap_derived_method(facts),
+        coverage_summary=_gap_coverage_summary(facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         metric_fact_labels=_metric_fact_labels_for_facts(facts),
         evidence_ids=_unique(fact.evidence_id for fact in facts),
@@ -864,6 +867,52 @@ def _ahrefs_gap_record(
         next_step=_gap_record_next_step(gap_type),
         risk=ActionRisk.medium,
     )
+
+
+def _gap_mapping_status(
+    referenced_public_url: str | None,
+    facts: list[MetricFact],
+) -> Literal["unbound", "review_required", "exact"]:
+    configured = next(
+        (fact.dimensions.get("mapping_status") for fact in facts),
+        None,
+    )
+    if configured == "exact" and referenced_public_url:
+        return "exact"
+    return "review_required" if referenced_public_url else "unbound"
+
+
+def _gap_derived_method(facts: list[MetricFact]) -> str:
+    return next(
+        (
+            fact.dimensions.get("gap_method")
+            for fact in facts
+            if fact.dimensions.get("gap_method")
+        ),
+        "różnica zbioru słów konkurencji i słów domeny docelowej",
+    )
+
+
+def _gap_coverage_summary(facts: list[MetricFact]) -> str:
+    sample = next(
+        (
+            fact.dimensions.get("target_keyword_sample_size")
+            for fact in facts
+            if fact.dimensions.get("target_keyword_sample_size")
+        ),
+        None,
+    )
+    limit = next(
+        (
+            fact.dimensions.get("target_keyword_limit")
+            for fact in facts
+            if fact.dimensions.get("target_keyword_limit")
+        ),
+        None,
+    )
+    if sample and limit:
+        return f"próbka domeny docelowej: {sample}; limit porównania: {limit}"
+    return "zakres próby nie został podany w rekordzie"
 
 
 def _gap_type_for_fact(fact: MetricFact) -> AhrefsGapType:

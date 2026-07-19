@@ -73,6 +73,9 @@ export const AhrefsGapRecordSchema = z.object({
   referenced_public_url: z.string().nullable().optional(),
   competitor_domain: z.string().nullable().optional(),
   keyword: z.string().nullable().optional(),
+  mapping_status: z.enum(["unbound", "review_required", "exact"]).optional(),
+  derived_method: z.string().optional(),
+  coverage_summary: z.string().optional(),
   metric_facts: z.array(MetricFactSchema),
   metric_fact_labels: z.record(z.string(), z.string()).default({}),
   evidence_ids: z.array(z.string()),
@@ -170,5 +173,4 @@ export const AhrefsDiagnosticsResponseSchema = z.object({
   action_summary_label: z.string().default(""),
   blocker_count: z.number()
 });
-
 

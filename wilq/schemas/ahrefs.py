@@ -106,6 +106,9 @@ class AhrefsGapRecord(BaseModel):
     referenced_public_url: str | None = None
     competitor_domain: str | None = None
     keyword: str | None = None
+    mapping_status: Literal["unbound", "review_required", "exact"] = "unbound"
+    derived_method: str = ""
+    coverage_summary: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     metric_fact_labels: dict[str, str] = Field(default_factory=dict)
     evidence_ids: list[str] = Field(default_factory=list)

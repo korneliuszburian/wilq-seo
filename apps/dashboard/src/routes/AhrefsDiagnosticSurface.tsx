@@ -302,6 +302,17 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
                 </p>
                 <h3 className="mt-1 text-sm font-semibold">{record.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-700">{record.summary}</p>
+                <div className="mt-2 grid gap-1 text-xs text-slate-600">
+                  <span>
+                    Mapowanie: {record.mapping_status === "exact"
+                      ? "exact"
+                      : record.mapping_status === "review_required"
+                        ? "wymaga review"
+                        : "brak exact strony"}
+                  </span>
+                  {record.derived_method ? <span>Metoda: {record.derived_method}</span> : null}
+                  {record.coverage_summary ? <span>Zakres: {record.coverage_summary}</span> : null}
+                </div>
                 <p className="mt-2 text-xs font-semibold leading-5 text-ink">
                   {record.next_step}
                 </p>
