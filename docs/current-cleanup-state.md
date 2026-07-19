@@ -15,6 +15,9 @@ ich zależności zostaną odblokowane. Każdy slice pozostaje osobno claimowany 
 proofowany; nie łącz tych władz w jeden cleanup.
 Realne initial draft i semantic review nadal wymagają owner review obu kart, a
 aktywacja storage wymaga backupu i maintenance window.
+Seam aktywacji jest już jawny i nie jest wywoływany przez API: `uv run wilq
+storage activate-semantic-review` wymaga osobnych ścieżek SQLite/DuckDB backupu
+oraz `--approved-maintenance-window`; bez tej flagi nie modyfikuje storage.
 Placement pełnego dokumentu nie ma fallbacku: nowy plan może wskazać tylko
 `after_lead`, `after_content` albo dokładny nagłówek własnej sekcji, który przy
 składaniu dokumentu staje się stabilnym `section_id`. Nieznana wartość blokuje
