@@ -753,12 +753,14 @@ describe("content workflow API helpers", () => {
       human_review_required: true,
       action_object_created: false
     } as const;
-    const fetchMock = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) =>
-      new Response(JSON.stringify(response), {
+    const fetchMock = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => {
+      void _url;
+      void _init;
+      return new Response(JSON.stringify(response), {
         status: 200,
         headers: { "Content-Type": "application/json" }
-      })
-    );
+      });
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     await getContentWorkItemSemanticReview("content/work item", "revision/1");

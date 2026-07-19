@@ -1864,7 +1864,10 @@ def assert_ads_search_terms_contract_basics(payload: dict[str, Any]) -> None:
             "connector_cap": 50,
             "cap_applied": False,
             "coverage_status": "bounded_sample",
-            "privacy_omission_caveat": "Google Ads może pomijać niskowolumenowe zapytania; wynik nie jest pełnym uniwersum."
+            "privacy_omission_caveat": (
+                "Google Ads może pomijać niskowolumenowe zapytania; wynik nie jest "
+                "pełnym uniwersum."
+            ),
         }
     ]
 

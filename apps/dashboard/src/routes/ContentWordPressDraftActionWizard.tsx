@@ -91,6 +91,7 @@ export function ContentWordPressDraftActionWizard({
   handoffBlocker: { label: string; reason: string; next_step: string } | null;
   revisionNumber: number | null;
 }) {
+  void revisionNumber;
   const queryClient = useQueryClient();
   const [reviewAcknowledgementKey, setReviewAcknowledgementKey] = useState<string | null>(null);
   const [confirmationAcknowledgementKey, setConfirmationAcknowledgementKey] = useState<

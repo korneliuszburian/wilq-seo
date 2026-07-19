@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import httpx
@@ -31,18 +31,26 @@ def test_inventory_catalog_deduplicates_urls_and_keeps_acf_headings(monkeypatch)
             },
             source_connector="wordpress_ekologus",
             evidence_id="ev_wp",
-            collected_at=datetime(2026, 7, 17, tzinfo=timezone.utc),
+            collected_at=datetime(2026, 7, 17, tzinfo=UTC),
         ),
         SimpleNamespace(
             name="content_object_seen",
-            dimensions={"content_url": "https://www.ekologus.pl/oferta/", "title_or_h1": "duplicate"},
+            dimensions={
+                "content_url": "https://www.ekologus.pl/oferta/",
+                "title_or_h1": "duplicate",
+            },
             source_connector="wordpress_ekologus",
             evidence_id="ev_wp_old",
-            collected_at=datetime(2026, 7, 16, tzinfo=timezone.utc),
+            collected_at=datetime(2026, 7, 16, tzinfo=UTC),
         ),
         SimpleNamespace(name="clicks", dimensions={"content_url": "https://ignored"}),
     ]
-    monkeypatch.setattr("wilq.content.workflow.catalog.metric_store", lambda: SimpleNamespace(list_metric_facts=lambda *_args, **_kwargs: rows))
+    monkeypatch.setattr(
+        "wilq.content.workflow.catalog.metric_store",
+        lambda: SimpleNamespace(
+            list_metric_facts=lambda *_args, **_kwargs: rows
+        ),
+    )
 
     result = build_content_inventory_catalog()
 
@@ -61,14 +69,14 @@ def test_inventory_catalog_excludes_non_public_hosts(monkeypatch):
             dimensions={"content_url": "https://ekologus.dev.proudsite.pl/bdo/"},
             source_connector="wordpress_ekologus",
             evidence_id="ev_wp_dev",
-            collected_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+            collected_at=datetime(2026, 7, 18, tzinfo=UTC),
         ),
         SimpleNamespace(
             name="content_object_seen",
             dimensions={"content_url": "https://www.ekologus.pl/bdo/"},
             source_connector="wordpress_ekologus",
             evidence_id="ev_wp_public",
-            collected_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+            collected_at=datetime(2026, 7, 18, tzinfo=UTC),
         ),
     ]
     monkeypatch.setattr(
@@ -87,14 +95,14 @@ def test_inventory_catalog_uses_the_latest_wordpress_refresh_batch(monkeypatch):
         dimensions={"content_url": "https://www.ekologus.pl/old-page/"},
         source_connector="wordpress_ekologus",
         evidence_id="ev_refresh_old",
-        collected_at=datetime(2026, 7, 16, tzinfo=timezone.utc),
+        collected_at=datetime(2026, 7, 16, tzinfo=UTC),
     )
     current_row = SimpleNamespace(
         name="content_object_seen",
         dimensions={"content_url": "https://www.ekologus.pl/current-page/"},
         source_connector="wordpress_ekologus",
         evidence_id="ev_refresh_current",
-        collected_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+        collected_at=datetime(2026, 7, 18, tzinfo=UTC),
     )
     latest_run = SimpleNamespace(
         mode=SimpleNamespace(value="vendor_read"),
@@ -133,7 +141,7 @@ def test_inventory_catalog_uses_only_latest_search_refresh_metrics(monkeypatch):
         dimensions={"content_url": page_url},
         source_connector="wordpress_ekologus",
         evidence_id="ev_wp_current",
-        collected_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+        collected_at=datetime(2026, 7, 18, tzinfo=UTC),
     )
     old_clicks = SimpleNamespace(
         name="clicks",
@@ -141,7 +149,7 @@ def test_inventory_catalog_uses_only_latest_search_refresh_metrics(monkeypatch):
         source_connector="google_search_console",
         evidence_id="ev_gsc_old",
         value="99",
-        collected_at=datetime(2026, 7, 17, tzinfo=timezone.utc),
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     current_clicks = SimpleNamespace(
         name="clicks",
@@ -149,7 +157,7 @@ def test_inventory_catalog_uses_only_latest_search_refresh_metrics(monkeypatch):
         source_connector="google_search_console",
         evidence_id="ev_gsc_current",
         value="1",
-        collected_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+        collected_at=datetime(2026, 7, 18, tzinfo=UTC),
     )
     wordpress_run = SimpleNamespace(
         mode=SimpleNamespace(value="vendor_read"),
@@ -296,7 +304,11 @@ def test_dynamic_material_falls_back_to_rendered_the_content(monkeypatch):
             200,
             request=request,
             headers={"content-type": "text/html"},
-            text="<html><head><title>Artykuł</title></head><body><main><h1>Artykuł</h1><p>Pełny materiał z the_content.</p></main></body></html>",
+            text=(
+                "<html><head><title>Artykuł</title></head><body><main>"
+                "<h1>Artykuł</h1><p>Pełny materiał z the_content.</p>"
+                "</main></body></html>"
+            ),
         )
 
     material = read_wordpress_content_material(
@@ -315,7 +327,7 @@ def test_inventory_binding_is_stable_and_evidence_bound(monkeypatch):
         dimensions={"content_url": "https://www.ekologus.pl/news/"},
         source_connector="wordpress_ekologus",
         evidence_id="ev_wp",
-        collected_at=datetime(2026, 7, 17, tzinfo=timezone.utc),
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     monkeypatch.setattr(
         "wilq.content.workflow.catalog.metric_store",
@@ -340,7 +352,7 @@ def test_inventory_binding_resolves_public_material_for_url_only_row(monkeypatch
         dimensions={"content_url": "https://www.ekologus.pl/oferta/doradztwo/"},
         source_connector="wordpress_ekologus",
         evidence_id="ev_wp",
-        collected_at=datetime(2026, 7, 17, tzinfo=timezone.utc),
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     monkeypatch.setattr(
         "wilq.content.workflow.catalog.metric_store",
@@ -386,7 +398,7 @@ def test_inventory_decision_reuses_the_current_catalog_for_material_read(monkeyp
         material_status="content_summary",
         source_connector="wordpress_ekologus",
         evidence_id="ev_news",
-        collected_at=datetime(2026, 7, 17, tzinfo=timezone.utc),
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     catalog = ContentInventoryCatalogResponse(total_count=1, items=[item])
     calls = 0
@@ -443,7 +455,7 @@ def test_inventory_decision_resolves_the_canonical_diagnostics_work_item_id(
         material_status="content_summary",
         source_connector="wordpress_ekologus",
         evidence_id="ev_bdo",
-        collected_at=datetime(2026, 7, 17, tzinfo=timezone.utc),
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     monkeypatch.setattr(
         "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",
@@ -500,7 +512,7 @@ def test_inventory_material_cache_reuses_read_only_wordpress_material(monkeypatc
                 material_status="url_only",
                 source_connector="wordpress_ekologus",
                 evidence_id="ev_new",
-                collected_at=datetime(2026, 7, 17, tzinfo=timezone.utc),
+                collected_at=datetime(2026, 7, 17, tzinfo=UTC),
             )
         ],
     )
@@ -550,7 +562,7 @@ def test_inventory_decision_metadata_only_skips_live_material(monkeypatch):
         material_status="content_summary",
         source_connector="wordpress_ekologus",
         evidence_id="ev_news_fast",
-        collected_at=datetime(2026, 7, 17, tzinfo=timezone.utc),
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     monkeypatch.setattr(
         "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",

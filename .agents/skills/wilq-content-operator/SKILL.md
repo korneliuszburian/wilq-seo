@@ -168,7 +168,7 @@ Zacznij od krótkiej karty, nie od architektury:
 - `Co już jest zapisane`: planning decision, revision i human review.
 - `Co blokuje`: jeden realny blocker i czego WILQ celowo nie claimuje.
 - `Następny bezpieczny krok`: dokładnie jedna czynność.
-- `Ślad WILQ`: work item, revision/planning/action ID, evidence IDs i source
+- `Ślad WILQ`: work item, revision/planning/action ID, identyfikatory dowodów i source
   connectors poniżej części decyzyjnej.
 
 Pisz po polsku z polskimi znakami. Endpointy, ID i enumy pozostaw bez zmian.

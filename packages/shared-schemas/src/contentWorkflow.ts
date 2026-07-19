@@ -1698,13 +1698,23 @@ const containsInlineLink = (value: string): boolean => {
     folded.includes("javascript:") ||
     folded.includes("href=") ||
     folded.includes("href =") ||
-    /[\[\]<>]/.test(value) ||
+    ["[", "]", "<", ">"].some((character) => value.includes(character)) ||
     value.includes("//")
   );
 };
 
 const isSafePublicContentUrl = (value: string): boolean => {
-  if (value !== value.trim() || /[\x00-\x20\x7f<>"'`()\[\]{}|\\^]/.test(value)) return false;
+  const containsControlCharacter = Array.from(value).some((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 0x20 || code === 0x7f;
+  });
+  if (
+    value !== value.trim() ||
+    containsControlCharacter ||
+    /[<>"'`(){}|\\^]/.test(value) ||
+    value.includes("[") ||
+    value.includes("]")
+  ) return false;
   try {
     const parsed = new URL(value);
     return (
@@ -1825,7 +1835,9 @@ export const ContentDraftRevisionSchema = z.object({
   revision.internal_links.forEach((link, index) => {
     const anchor = link.anchor_text.trim();
     if (
-      /[\[\]<>\\\r\n\t]/.test(anchor) ||
+      ["[", "]", "<", ">", "\\", "\r", "\n", "\t"].some((character) =>
+        anchor.includes(character)
+      ) ||
       anchor.includes("://") ||
       /^(mailto|javascript):/i.test(anchor)
     ) {

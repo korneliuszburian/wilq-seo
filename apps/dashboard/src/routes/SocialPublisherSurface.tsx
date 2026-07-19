@@ -111,7 +111,7 @@ function SocialReuseProposalsPanel({
         notes: notes[input.proposalId]?.trim() ?? "",
         checked_items: [
           "Treść zgodna z dokładną rewizją źródłową",
-          "Źródła i claimy sprawdzone",
+"Źródła i twierdzenia sprawdzone",
           "Publikacja pozostaje wyłączona"
         ],
         evidence_ids: proposals?.proposals

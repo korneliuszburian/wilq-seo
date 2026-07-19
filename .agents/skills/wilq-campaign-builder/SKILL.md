@@ -1,6 +1,6 @@
 ---
 name: wilq-campaign-builder
-description: Przygotowuje evidence-bound kolejkę przeglądu istniejących kampanii Google Ads dla Ekologus przez WILQ API. Użyj, gdy marketer chce ocenić istniejące kampanie, landing page, metryki, ryzyka budżetowe albo bezpieczny podgląd review-only. Nie obiecuje kompletnej struktury nowej kampanii, słów kluczowych, assetów, sitelinków, targetowania ani budżetu bez osobnego kontraktu danych. Musi sprawdzać propozycje w WILQ przed zapisem zmian i nie wolno omijać audytu.
+description: Przygotowuje evidence-bound kolejkę przeglądu istniejących kampanii Google Ads dla Ekologus przez WILQ API. Użyj, gdy marketer chce ocenić istniejące kampanie, stronę wejścia, metryki, ryzyka budżetowe albo bezpieczny podgląd review-only. Nie obiecuje kompletnej struktury nowej kampanii, słów kluczowych, assetów, sitelinków, targetowania ani budżetu bez osobnego kontraktu danych. Musi sprawdzać propozycje w WILQ przed zapisem zmian i nie wolno omijać audytu.
 ---
 
 # WILQ Plan kampanii
@@ -19,13 +19,13 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 - "Oceń istniejące kampanie dla tej usługi Ekologus."
 - "Pokaż, co trzeba sprawdzić przed zmianą budżetu lub kampanii."
-- "Połącz landing page, GSC, GA4 i Ads w kolejkę review."
+- "Połącz stronę wejścia, GSC, GA4 i Ads w kolejkę review."
 - "Pokaż podgląd zmian i ryzyka przed zapisem zmian."
 
 ## Zakres, który faktycznie dostarcza API
 
 WILQ zwraca evidence-bound `campaign_candidates` z istniejących odczytów Ads,
-policzonymi metrykami, priorytetem review, kontekstem landing page, jawnie
+  policzonymi metrykami, priorytetem review, kontekstem strony wejścia, jawnie
 brakującymi kontraktami oraz niemutującym `budget_payload_preview`. To jest
 materiał do decyzji człowieka i native-UI handoff, nie generator nowej kampanii.
 

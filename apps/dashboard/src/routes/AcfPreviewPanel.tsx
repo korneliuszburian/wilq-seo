@@ -31,7 +31,7 @@ export function AcfPreviewPanel({ result, safetyText }: AcfPreviewPanelProps) {
           <p className="mt-2 text-sm leading-6 text-slate-600">{safetyText}</p>
           {result?.page_assets ? (
             <div className="mt-3 rounded-md border border-line bg-surface p-3 text-sm text-slate-700">
-              <div className="text-xs uppercase tracking-normal text-slate-500">Page assets zachowane w dry-runie</div>
+<div className="text-xs uppercase tracking-normal text-slate-500">Elementy strony zachowane w podglądzie zmian</div>
               <dl className="mt-2 grid gap-2 sm:grid-cols-2">
                 <div><dt className="font-medium text-ink">Tytuł / H1</dt><dd className="mt-1 text-xs leading-5">{result.page_assets.wordpress_title} · {result.page_assets.h1}</dd></div>
                 <div><dt className="font-medium text-ink">Meta</dt><dd className="mt-1 text-xs leading-5">{result.page_assets.meta_write_status === "mapped" ? "mapowanie potwierdzone" : "przekazanie ręczne — mapowanie niepotwierdzone"}</dd></div>

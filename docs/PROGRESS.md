@@ -73,6 +73,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   `store_measurement.py`) ich Ruff jest zielony, a `scripts/verify.sh` spadł do
   21 błędów — pozostały w testach i niezwiązanych plikach. Bezpośrednie testy
   WordPress inventory/handoff/measurement przeszły; release gate nadal otwarty.
+- 2026-07-19: po wyczyszczeniu Ruffa i shared-schema regexów `scripts/verify.sh`
+  przechodzi Python/Ruff, ESLint, shared-schemas, dashboard, skill hygiene i
+  marketer-language guard. Zatrzymuje się na mypy: 102 błędy w 20 plikach
+  (typowanie kontraktów/API/measurement). To osobny release blocker; nie
+  redukuję go masowym `Any` ani przypadkowym castowaniem.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily

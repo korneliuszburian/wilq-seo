@@ -47,6 +47,8 @@ export function ContentPlanningReviewPanel({
     proposal.service_selection_confirmed ? proposal.service_card_id ?? "" : ""
   );
   useEffect(() => {
+    // Reset the local review form when the API-owned proposal or stage changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedServiceCardId(
       proposal.service_selection_confirmed ? proposal.service_card_id ?? "" : ""
     );

@@ -12,8 +12,15 @@ def test_tactical_queue_keeps_domain_floor_after_full_content_extraction() -> No
         _tactical_item(f"gsc-{index}", OpportunityDomain.gsc_seo, priority=1)
         for index in range(30)
     ]
-    for domain in (OpportunityDomain.ga4, OpportunityDomain.merchant, OpportunityDomain.ahrefs):
-        items.extend(_tactical_item(f"{domain.value}-{index}", domain, priority=100) for index in range(4))
+    for domain in (
+        OpportunityDomain.ga4,
+        OpportunityDomain.merchant,
+        OpportunityDomain.ahrefs,
+    ):
+        items.extend(
+            _tactical_item(f"{domain.value}-{index}", domain, priority=100)
+            for index in range(4)
+        )
 
     balanced = _balanced_tactical_items(items, limit=24)
 

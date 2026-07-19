@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -316,7 +316,7 @@ def test_wordpress_authoring_preview_preserves_full_document_assets_and_meta_blo
         )],
         publish_ready=False,
         created_by="codex",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     result = build_content_wordpress_authoring_payload_preview(
         handoff=_handoff().model_copy(update={"revision_document": document}),
