@@ -36,6 +36,8 @@ diagnostic = {{
     "codex_home": str(codex_home),
     "home": os.environ["HOME"],
     "xdg_config_home": os.environ["XDG_CONFIG_HOME"],
+    "mise_data_dir": os.environ.get("MISE_DATA_DIR"),
+    "npm_config_cache": os.environ.get("NPM_CONFIG_CACHE"),
 }}
 write({{"id": initialize["id"], "result": {{}}}})
 read()
@@ -96,6 +98,8 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     source_xdg = tmp_path / "source-xdg"
     source_codex_home.mkdir(parents=True)
     source_xdg.mkdir()
+    (source_home / ".local" / "share" / "mise").mkdir(parents=True)
+    (source_home / ".npm").mkdir()
     (source_codex_home / "auth.json").write_text("fake-login", encoding="utf-8")
     (source_codex_home / "config.toml").write_text(
         "model='gpt-test'\nmodel_provider='codex'\n"
@@ -131,6 +135,8 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     assert payload["home"] != str(source_home)
     assert payload["codex_home"] != str(source_codex_home)
     assert payload["xdg_config_home"] != str(source_xdg)
+    assert payload["mise_data_dir"] == str(source_home / ".local" / "share" / "mise")
+    assert payload["npm_config_cache"] == str(source_home / ".npm")
     argv = payload["argv"]
     overrides = {argv[index + 1] for index, value in enumerate(argv) if value == "--config"}
     disabled = {argv[index + 1] for index, value in enumerate(argv) if value == "--disable"}

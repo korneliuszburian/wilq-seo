@@ -553,6 +553,21 @@ def _codex_process_environment(
             "XDG_STATE_HOME": str(root / "xdg-state"),
         }
     )
+    source_auth = codex_auth_path()
+    if source_auth is not None:
+        source_home = source_auth.parent.parent
+        mise_data = source_auth.parent.parent / ".local" / "share" / "mise"
+        if mise_data.is_dir():
+            # The local `codex` launcher resolves its installed Node runtime
+            # through mise. Keep that runtime lookup available without
+            # inheriting the operator's HOME, config, cache, or credentials.
+            environment["MISE_DATA_DIR"] = str(mise_data)
+        npm_cache = source_home / ".npm"
+        if npm_cache.is_dir():
+            # The launcher resolves @openai/codex through npx. Reuse only the
+            # package cache so an isolated HOME does not trigger a network
+            # install before app-server JSON-RPC can answer.
+            environment["NPM_CONFIG_CACHE"] = str(npm_cache)
     return environment
 
 
