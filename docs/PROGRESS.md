@@ -13,6 +13,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   review-only i 1 blocker. API jawnie blokuje ocenę opłacalności, CPA/ROAS,
   skalowanie i zapis zmian bez brakujących kontraktów/człowieka. To jest dowód
   konektora i kolejki decyzji, nie ukończony exact-service pilot ani UAT.
+- 2026-07-19: świeży read-only GA4 cross-source odczyt ma status `fresh` (28,7 h
+  przy progu 48 h), 8 dowodów źródłowych i 1 akcję review. API rozdziela 1
+  problem pomiaru `(not set)`, 2 brakujące strony WordPress i 2 czytelne wiersze
+  ruchu; konwersje, przychód, ROAS, atrybucja i naprawa pomiaru pozostają
+  `review_required`. To dowód jakości kontraktu, nie wynik biznesowy ani UAT.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily
