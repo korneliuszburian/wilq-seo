@@ -2045,3 +2045,9 @@ Codex i status terminalny; modułowy mypy oraz Ruff są czyste. Istniejący
 `tests/content/test_semantic_content_review_api.py` został uruchomiony, ale
 zawisł w `threading` bez wyniku i został przerwany. Nie jest to PASS; pozostaje
 osobnym blockerem runtime/test harnessu.
+
+Freshness diagnostics ma teraz typed `TypedDict` dla wszystkich pól jakości,
+covered windows, settlementu i caveats; wcześniejsze `**dict[str, object]`
+nie przechodziły bezpiecznie do `ContentFreshnessAssessment`. Proof:
+`uv run mypy wilq/briefing/content_diagnostics.py` clean, Ruff clean,
+`tests/test_content_diagnostics.py` 7/7, diff-check clean.

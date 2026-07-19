@@ -5,6 +5,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from threading import Lock
 from time import monotonic
+from typing import TypedDict
 
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.metric_fact_identity import latest_metric_facts_by_identity
@@ -53,7 +54,10 @@ from wilq.operator_labels import (
 )
 from wilq.schemas import (
     ActionObject,
+    ConnectorCoveredWindow,
+    ConnectorQualityState,
     ConnectorRefreshRun,
+    ConnectorSettlementState,
     ConnectorStatus,
     ContentDecisionItem,
     ContentDiagnosticsResponse,
@@ -78,6 +82,14 @@ PRIMARY_CONTENT_CONNECTORS = ("google_search_console", "wordpress_ekologus")
 CONTENT_METRIC_FACT_LIMIT = 300
 CONTENT_GSC_METRIC_FACT_LIMIT = 1200
 CONTENT_WORDPRESS_METRIC_FACT_LIMIT = 1200
+
+
+class _ContentFreshnessQualityFields(TypedDict):
+    connector_refresh_run_ids: dict[str, str]
+    connector_covered_windows: dict[str, ConnectorCoveredWindow]
+    connector_settlement_states: dict[str, ConnectorSettlementState]
+    connector_quality_states: dict[str, ConnectorQualityState]
+    connector_quality_caveats: dict[str, list[str]]
 CONTENT_STALE_AFTER_HOURS = 48
 GSC_CONTENT_KNOWLEDGE_CARD_IDS = (
     "card_gsc_seo_content_playbook",
@@ -421,7 +433,7 @@ def _content_freshness_assessment(
         _content_connector_short_label(connector_by_id.get(connector_id), connector_id)
         for connector_id in requiring_refresh_ids
     ]
-    quality_fields = {
+    quality_fields: _ContentFreshnessQualityFields = {
         "connector_refresh_run_ids": {
             connector_id: refresh.id for connector_id, refresh in refresh_by_connector.items()
         },
