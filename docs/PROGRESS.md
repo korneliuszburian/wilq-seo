@@ -1718,3 +1718,17 @@ stacku, a osobny odczyt briefu i kolejki odpowiednio 0,002 s i 0,039 s. To
 potwierdza, że API jest dostępne i kolejka nie jest źródłem 10-minutowego
 spinnera; snapshot pozostaje osobnym hotspotem do dalszej optymalizacji i
 browser proof, bez claimu docelowego SLO ani UAT.
+
+### 2026-07-19 — Ads landing/service binding domknięty jako kontrakt review-only
+
+Hash-only join Ads → WordPress inventory → Service Profile ma teraz zamknięty
+focused proof: test dopasowanego landingu z kartą `review_required`, test BDO
+bez dopasowania oraz powierzchnia Ads przechodzą 3/3, Ruff i diff-check. Live
+`/api/ads/diagnostics` jest świeży i ma `live_data_available=true`; 23 wiersze
+search-term dzielą się na 12 `resolved → unbound` i 11
+`resolved → review_required`. Żaden nie jest udawany jako `approved_current`, a
+raw landing URL nie wraca z kontraktu Ads. P1 `wilq-seo-wgaq` zamknięty; P0 Ads
+pilot pozostaje otwarty, bo realne dane nie dostarczają jeszcze zatwierdzonego
+service bindingu ani native-UI handoffu. Szerszy Ads contract suite ma nadal
+znaną, niezwiązaną awarię fixture/query dla Demand Gen; nie jest ona
+przedstawiana jako zielony wynik.
