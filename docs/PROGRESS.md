@@ -1379,3 +1379,9 @@ Checker dla `eb0bb331` przeszedł walidację schematu bez findings. Zgłoszone
 evidence gaps dotyczyły wyłącznie braku literalnych linii w transporcie; lokalna
 disposition potwierdza identyczny klucz w obu deklaracjach. Nie rozszerzamy
 tego proofu na poprawność upstream freshness ani wszystkie scenariusze mountu.
+
+Nowy niemutujący provider health probe (`StdioCodexAppServerClient`, 75 s,
+minimalny schema-only turn) ponownie zakończył się `codex_turn_failed` po
+utworzeniu thread/turn; nie było external tool call ani outputu. Nie zapisano
+planu, rewizji ani vendor action. To aktualizuje blocker runtime, ale nie
+unieważnia ukończonych kontraktów API/UI.
