@@ -1239,3 +1239,10 @@ revision or WordPress write was created; subsequent GET returns the durable
 failed state and its retry step. This is an honest app-server/runtime blocker,
 not a planning or content-quality PASS. The next retry requires runtime health
 evidence, not a client-side fallback or a second parallel model path.
+
+Additional transport diagnosis: a native Codex 0.144.6 probe answered the
+`initialize` JSON-RPC request, while debug stderr showed repeated online model
+catalog refreshes and a `failed to refresh available models` timeout before a
+turn could start. The same isolated client then timed out even for a tiny
+structured request. This identifies the current external/runtime seam as
+model-catalog/network startup, not WILQ prompt size or planning digest logic.
