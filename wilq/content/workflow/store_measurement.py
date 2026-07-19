@@ -9,8 +9,8 @@ from wilq.content.measurement.learning import ContentLearningProposal
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import ContentMeasurementWindow
 from wilq.content.workflow.store_queries import model_json
-from wilq.security.redaction import redact_mapping
 from wilq.schemas.core import utc_now
+from wilq.security.redaction import redact_mapping
 
 
 class MeasurementStoreMixin:
@@ -143,9 +143,14 @@ class MeasurementStoreMixin:
             connection.execute(
                 """
                 INSERT INTO content_measurement_outcome_history
-                  (work_item_id, measurement_window_id, outcome_id, outcome_digest, stored_at, payload_json)
+                  (
+                    work_item_id, measurement_window_id, outcome_id,
+                    outcome_digest, stored_at, payload_json
+                  )
                 VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(work_item_id, measurement_window_id, outcome_id, outcome_digest) DO NOTHING
+                ON CONFLICT(
+                  work_item_id, measurement_window_id, outcome_id, outcome_digest
+                ) DO NOTHING
                 """,
                 (
                     redacted_outcome.work_item_id,

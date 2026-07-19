@@ -68,6 +68,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   `wilq/content/workflow/store_measurement.py`. Żaden z tych plików nie był
   częścią ostatniego cache/runtime slice; nie poprawiam masowo niezwiązanej
   powierzchni. Release gate pozostaje otwarty i nie claimujemy PASS.
+- 2026-07-19: po mechanicznym formatowaniu wyłącznie trzech śledzonych modułów
+  produkcyjnych (`wordpress/client.py`, `wordpress_authoring.py`,
+  `store_measurement.py`) ich Ruff jest zielony, a `scripts/verify.sh` spadł do
+  21 błędów — pozostały w testach i niezwiązanych plikach. Bezpośrednie testy
+  WordPress inventory/handoff/measurement przeszły; release gate nadal otwarty.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily

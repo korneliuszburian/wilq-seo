@@ -12,18 +12,18 @@ from wilq.connectors.wordpress.inventory import (
     WORDPRESS_CONTENT_PER_PAGE,
     WORDPRESS_CONTENT_TYPES,
     WORDPRESS_READ_FIELDS,
+    _HtmlMetadataParser,
     acf_inventory,
     content_inventory,
     fetch_content_inventory,
-    _HtmlMetadataParser,
 )
-from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.connectors.wordpress.text import (
     clean_metadata_text,
     html_text,
     summary_text_limited,
     wordpress_title,
 )
+from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
@@ -443,7 +443,11 @@ def read_wordpress_content_material(
             content_text=text,
             content_summary=summary_text_limited(text, 240),
             content_word_count=len(text.split()),
-            section_headings=[clean_metadata_text(value) for value in parser.section_headings if clean_metadata_text(value)],
+            section_headings=[
+                clean_metadata_text(value)
+                for value in parser.section_headings
+                if clean_metadata_text(value)
+            ],
             acf_field_names=[],
             acf_section_headings=[],
             modified_gmt="",
@@ -458,11 +462,19 @@ def read_wordpress_content_material(
             client.close()
 
 
-def _material_from_rest_item(item: dict[str, Any], *, requested_url: str) -> WordPressContentMaterial:
+def _material_from_rest_item(
+    item: dict[str, Any], *, requested_url: str
+) -> WordPressContentMaterial:
     content = item.get("content")
     raw = content.get("raw") if isinstance(content, dict) else None
     rendered = content.get("rendered") if isinstance(content, dict) else None
-    source = raw if isinstance(raw, str) and raw.strip() else rendered if isinstance(rendered, str) else ""
+    source = (
+        raw
+        if isinstance(raw, str) and raw.strip()
+        else rendered
+        if isinstance(rendered, str)
+        else ""
+    )
     text = clean_metadata_text(html_text(source))
     content_dimensions = content_inventory(content)
     acf_dimensions = acf_inventory(item.get("acf"))

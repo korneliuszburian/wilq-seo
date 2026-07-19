@@ -205,7 +205,10 @@ def _page_assets_preview(
             ContentWordPressAuthoringPreviewBlocker(
                 code="missing_wordpress_meta_mapping",
                 label="Meta pola wymagają mapowania WordPress",
-                reason="Tytuł i opis meta są zachowane, ale profil SEO/ACF nie potwierdza pola zapisu.",
+                reason=(
+                    "Tytuł i opis meta są zachowane, ale profil SEO/ACF nie "
+                    "potwierdza pola zapisu."
+                ),
                 next_step="Przekaż meta ręcznie albo potwierdź dokładne pola profilu WordPress.",
             )
         ],
