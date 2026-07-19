@@ -7,6 +7,17 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: cross-source planning snapshot zachowuje dokładne fakty GA4 i
+  inne nie-GSC/Ads fakty po projekcji exact-demand oraz przy scalaniu selected
+  inventory. Live URL `/szkolenie/gospodarka-odpadami-i-opakowaniami-
+  kompendium-wiedzy-dla-przedsiebiorcow/` ma 11 exact Ads rows, świeży wspólny
+  evidence i metryki kliknięć/kosztu, ale pozostaje `review_required`, bo
+  dopasowana karta usługi nie ma `approved_current`. Landing outsourcingu ma
+  GSC exact, lecz Ads `not_exactly_mapped` i brak exact GA4; WILQ nie dopisuje
+  tych źródeł przez podobieństwo tekstu. Focused proof fixed pointów
+  `772b262d`/`251f215f` przeszedł Ruff, mypy, diff-check i live snapshot;
+  second-opinion findings zostały sklasyfikowane z lokalnym dowodem. To jest
+  postęp exact landing-alignment, nie UAT ani gotowość do draftu.
 - 2026-07-19: read-only Ads pilot pobrany przez kanoniczne
   `/api/ads/diagnostics`: świeży odczyt (`live_data_available=true`), 18 kampanii,
   23 wiersze zapytań, 12 kandydatów wykluczeń z 90-dniowym kontekstem, 9 akcji
