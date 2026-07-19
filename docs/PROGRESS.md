@@ -2635,3 +2635,6 @@ approval. Focused dashboard review tests: 5 passed; typecheck przechodzi.
 Po drugim checkerze dodano opcjonalny dostęp i fallbacki dla liczników oraz
 lineage kolekcji assetów, więc częściowy payload nie wywraca review surface.
 Focused dashboard review tests: 5 passed; typecheck przechodzi.
+Status badge kroku `draft` również nie pokazuje już skróconego digestu; mówi
+po prostu, że zapisana wersja jest aktualna, a exact trace pozostaje w
+szczegółach technicznych.
