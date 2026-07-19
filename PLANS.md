@@ -17,7 +17,10 @@ actionable. Exact BDO readback ma 35 faktów i 4 wykluczenia `wrong_period`.
 Oba piloty planowania nadal kończą się typed `runtime_failed/codex_turn_failed`;
 pełna generacja, semantic storage, jakość tekstu i UAT pozostają nieudowodnione.
 
-Ostatni wypchnięty commit: `45a5a896`. Niezależne review passy i dispositions
+Ostatni wypchnięty commit: `12ed0215` (`fix(content): scope stale jobs to service`).
+Po poprzednim pomiarze doszły wspólny kontrakt deadline/stale job oraz izolacja
+starych planning jobs po `service_card_id`: nowszy run innej usługi nie może już
+unieważnić aktualnego proposal/draft statusu. Niezależne review passy i dispositions
 znajdują się poza repo w katalogu second-opinion-review; findings bez źródła
 są klasyfikowane jako evidence gaps/reject, nigdy jako PASS.
 
