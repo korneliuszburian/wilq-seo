@@ -1944,3 +1944,25 @@ WordPress inventory, planning, semantic review oraz routerach draftu. To nie
 jest awaria jednego flow ani dowód na brak działania runtime; jest to osobny
 repozytoryjny dług typowania, który pozostaje kolejnym zadaniem. Nie claimuję
 pełnego `verify.sh` PASS.
+
+### 2026-07-19 — świeży checker Claude i pierwszy następny slice po jego findingu
+
+Po otwarciu dozwolonego okna uruchomiono dokładnie jeden bounded checker Claude
+dla fixed pointu `6d779c9b` (tree `c63791a3`, dirty state SHA
+`cf44bf12…`). Output został zwalidowany jako `valid evidence-bounded review`;
+pełny JSON i disposition są poza repo w katalogu
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-content-ops-final-typing-gate-oK9lL7/`.
+Checker zwrócił 6 findings: dwa HIGH wokół bramki mypy i typu głównego
+snapshotu, MEDIUM dla section mapping, freshness oraz TS/Python contract
+drift, LOW dla szerszego proofu storage. Żaden finding nie został przedstawiony
+jako approval; UAT, provider execution, knowledge approval i vendor write nadal
+są jawnie nieudowodnione.
+
+F2 został od razu zamieniony w produkcyjny slice: helper
+`_latest_exact_wordpress_execution` przyjmuje oba istniejące typy snapshotu, a
+carryover v2 wymaga nie-null planning digestu. `uv run mypy
+apps/api/wilq_api/routers/content_workflow.py` jest czyste,
+`tests/content/test_revision_lineage_contract.py -k editor_save_v2` przechodzi
+1/1, a `git diff --check` jest zielony. Szerszy selector activation-packet ma
+3 istniejące fixture failures (`KeyError: preflight`) poza zakresem tej zmiany;
+nie maskujemy ich zmianą testów.

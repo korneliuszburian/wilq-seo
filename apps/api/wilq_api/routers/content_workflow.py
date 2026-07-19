@@ -248,7 +248,10 @@ def content_wordpress_existing_draft_update_readiness(
 
 
 def _latest_exact_wordpress_execution(
-    snapshot: ContentWorkItemBrowserWorkflowSnapshotResponse,
+    snapshot: (
+        ContentWorkItemBrowserWorkflowSnapshotResponse
+        | ContentWorkItemWorkflowSnapshotResponse
+    ),
 ) -> ContentWordPressDraftExecutionResult | None:
     handoff = snapshot.wordpress_handoff.handoff_result.handoff
     binding = handoff.revision_binding if handoff is not None else None
@@ -496,6 +499,7 @@ def _build_editor_save_command(
         latest_revision is not None
         and latest_revision.schema_version == "wilq_content_draft_revision_v2"
         and request.base_revision_id == latest_revision.revision_id
+        and latest_revision.planning_digest is not None
     ):
         return ContentDraftRevisionAppendCommand(
             schema_version="wilq_content_draft_revision_v2",
