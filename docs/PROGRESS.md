@@ -2796,3 +2796,16 @@ istniejące bramki `revision_context_changed` nadal decydują o dalszej pracy.
 Focused regression (1 test) i dashboard typecheck przechodzą. Zmiana została
 niezależnie sprawdzona przez advisory checker; wynik jest evidence-bounded i nie
 jest akceptacją produktu ani gotowości do publikacji.
+
+### 2026-07-19 — brak dopasowanej usługi nie udaje wyboru
+
+Zakres workflow ma teraz jawny stan pustego dopasowania: gdy API nie zwraca
+żadnej karty usługi, select jest wyłączony, pokazuje „Brak dopasowanej usługi”,
+a panel prowadzi do Service Profile zamiast pozwalać wybierać usługę z samego
+tematu. Przy istniejących kandydatach zachowanie pozostaje bez zmian — marketer
+widzi lifecycle, powody dopasowania i może potwierdzić właściwą kartę.
+
+Focused panel suite: 9 testów; dashboard typecheck i diff-check przechodzą.
+Follow-up advisory checker zaakceptował mechanikę; pozostałą uwagę o wiring
+zaklasyfikowano jako lukę cytowania i zamknięto lokalną inspekcją. Nie jest to
+dowód kompletności matcherów ani owner review kart.
