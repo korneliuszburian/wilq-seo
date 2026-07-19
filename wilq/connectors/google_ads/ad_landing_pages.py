@@ -30,7 +30,7 @@ def search_term_landing_dimensions(row: dict[str, Any]) -> dict[str, str]:
     reference = build_redacted_landing_reference(
         raw_url if isinstance(raw_url, str) else None
     )
-    dimensions = {ADS_LANDING_MAPPING_STATUS: reference.status}
+    dimensions: dict[str, str] = {ADS_LANDING_MAPPING_STATUS: reference.status}
     if reference.status != ADS_LANDING_RESOLVED or not reference.identity_sha256:
         return dimensions
     dimensions.update(
@@ -112,7 +112,7 @@ def _search_term_row_is_complete(row: dict[str, Any]) -> bool:
         "expanded_landing_page_view",
     )
     metrics = _nested_object(row, "metrics")
-    if not all((campaign, ad_group, search_term, metrics)):
+    if campaign is None or ad_group is None or search_term is None or metrics is None:
         return False
     clicks = _metric_number(metrics, "clicks")
     required_metrics = (

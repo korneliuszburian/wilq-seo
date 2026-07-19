@@ -2234,3 +2234,13 @@ Helpery blockerów w `semantic_review_service.py` przyjmują teraz
 invariance debt bez zmiany kodów blockerów ani ścieżki fail-closed. Proof:
 modułowy mypy clean oraz `tests/content/test_semantic_review_polling_read_path.py`
 (3/3).
+
+### 2026-07-19 — bezpieczne zawężenie Ads search-term payload
+
+Na granicy Google Ads search-termów zawężono nested objects przed przekazaniem
+do helperów metryk i jawnie opisano słownik wymiarów jako `dict[str, str]`.
+Nie zmienia to kryteriów admission (kompletny rekord, kliknięcia > 0,
+nieujemne metryki), ale usuwa ryzyko obsługi `None` jako obiektu oraz błędną
+inferencję wartości statusowych. Proof: modułowy mypy clean i testy
+`tests/connectors/test_google_ads_ad_landing_pages.py`
+oraz `tests/connectors/test_google_ads_landing_page_read.py` (16/16).
