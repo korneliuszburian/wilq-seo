@@ -38,6 +38,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   18 aktywnych ActionObjects i brief z 19 evidence IDs. Strict instruction
   wymusza odczyt metryk z WILQ API; kompaktowanie oznacza pominięcie historii,
   nie utratę kontraktu. To dowód seam-u Codex → API, nie dowód jakości tekstu.
+- 2026-07-19: pierwszy content-operator context-pack trwał 5,926 s przy
+  pięciosekundowym cache, więc domyślny TTL API-owned skill context został
+  wydłużony do 300 s. Env override, freshness connectorów i invalidacja po
+  refresh/write pozostają bez zmian. Focused kontrakt cache + Ruff przechodzą;
+  to nie jest dowód produkcyjnej wydajności.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily

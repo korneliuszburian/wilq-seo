@@ -7,7 +7,10 @@ from typing import Any
 
 from apps.api.wilq_api.context_models import ContextPackRequest
 
-DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
+# Keep API-owned Codex context warm across a normal operator session. Connector
+# freshness and write/refresh invalidation remain authoritative; this cache only
+# avoids rebuilding the same redacted context on every adjacent request.
+DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 300.0
 _cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
 
 
