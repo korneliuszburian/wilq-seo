@@ -2861,3 +2861,17 @@ Kolejny micro-slice performance: content diagnostics korzysta teraz z istniejąc
 `load_content_measurement_evidence()` ma teraz krótki, read-only cache związany z konkretnym store, URL/path oraz najnowszymi run IDs, statusami i evidence IDs dla WordPress, GSC i GA4. Cache wygasa po 15 sekundach, a nowy refresh identity wymusza ponowny odczyt; exact URL/path filtering i agregacja pozostają bez zmian.
 
 Focused proof: `tests/content/test_measurement_aggregates.py` 9/9, Ruff i `git diff --check` passed. Live selected BDO snapshot readback: 4269 ms cold, 1880 ms i 1937 ms warm. To jest kierunkowy pomiar jednej ścieżki, nie obietnica uniwersalnego SLA. Bounded Claude checker zakończył się przed schema output; disposition pozostaje `evidence_gap`, bez PASS ani approval: `/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-measurement-evidence-cache-GxSrWB/disposition.md`.
+
+### 2026-07-19 — cache diagnostyki unieważnia się po nowym refreshu
+
+Główny cache `content_diagnostics` nie opiera się już wyłącznie na TTL. Przechowuje
+ID, status i evidence IDs najnowszego refreshu każdego content connectora; nowy
+refresh wymusza rebuild, a `content_diagnostics_cache_ready` również odrzuca stary
+identity. To chroni decyzje marketera przed chwilowym pokazaniem danych sprzed
+odświeżenia, zachowując reuse podczas startup waterfall.
+
+Focused proof: `tests/test_content_diagnostics.py` 8/8, Ruff, mypy i diff-check
+passed. Live BDO snapshot: 5206 ms cold, 2756 ms i 2455 ms warm; freshness `fresh`
+z jawnymi connector refresh run IDs. Checker Claude odrzucił niewalidowany output
+przez cytację ponad 20 linii (`F-3`); nie traktuję go jako PASS:
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-diagnostics-refresh-identity-final-6sTMAN/disposition.md`.
