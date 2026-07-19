@@ -1374,3 +1374,8 @@ Ujednolicono też klucz React Query dla gotowości korpusu między głównym
 workflow i panelem generowania. Ten sam endpoint ma teraz wspólny cache i nie
 tworzy dwóch niezależnych odczytów ani rozjechanych blockerów. Proof:
 `ContentPlanningGenerationPanel` 3 testy i dashboard typecheck.
+
+Checker dla `eb0bb331` przeszedł walidację schematu bez findings. Zgłoszone
+evidence gaps dotyczyły wyłącznie braku literalnych linii w transporcie; lokalna
+disposition potwierdza identyczny klucz w obu deklaracjach. Nie rozszerzamy
+tego proofu na poprawność upstream freshness ani wszystkie scenariusze mountu.
