@@ -1264,3 +1264,16 @@ was schema-validated. It returned no line-cited findings but recorded eight
 evidence gaps, chiefly the missing completion proof and insufficient evidence
 that the installed provider path works end to end. Its disposition explicitly
 does not claim PASS or UAT.
+
+### 2026-07-19 — transient provider reconnects remain an honest runtime failure
+
+The app-server now ignores only `error` events explicitly marked
+`willRetry=true`, allowing Codex's own reconnect loop to reach the terminal
+`turn/completed` event. A focused fake-transport falsifier covers that seam;
+transport pytest, Ruff and mypy pass (`64428c29`). The live tiny structured
+turn now reaches the turn and waits through reconnects, then returns typed
+`codex_turn_failed` after roughly 42 seconds. Native stderr identifies the
+upstream response stream as disconnected and reports temporary high demand;
+this is not a WILQ prompt or digest failure. Planning remains blocked until a
+successful or otherwise diagnosable provider response is available; no
+fallback model, vendor write or approval was introduced.
