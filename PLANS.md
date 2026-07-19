@@ -19,7 +19,12 @@ Oba piloty planowania nadal kończą się typed `runtime_failed` z
 i persisted readback są zachowane;
 pełna generacja, semantic storage, jakość tekstu i UAT pozostają nieudowodnione.
 
-Ostatni wypchnięty commit: `7d950236` (`test(content): align browser proof with current UI`).
+Ostatni wypchnięty commit: `e615205d` (`perf(runtime): keep daily brief warm for marketer sessions`).
+Po zmierzonym cold-starcie `/api/marketing/brief` (4,056 s) i kolejki (2,820 s)
+po wygaśnięciu 30-sekundowego cache domyślny TTL read-only daily runtime wynosi
+300 s. Env override i jawne connector freshness pozostają bez zmian; focused
+cache contract i Ruff przechodzą. To nie jest dowód produkcyjnej wydajności ani
+UAT.
 Pełny `apps/dashboard/e2e/content-workflow-layout.spec.ts` przechodzi 6/6 w
 jednym przebiegu; obejmuje desktop/mobile, inventory-bound workflow, planning,
 Codex section rewrite oraz save → reload → exact review → draft-only wizard.
