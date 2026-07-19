@@ -1463,3 +1463,17 @@ poniżej w rozwijanym „Dlaczego”, bez zaśmiecania pierwszego widoku markete
 To daje supportowi dokładny ślad (`codex_*`) przy zachowaniu polskiego labelu i
 następnego kroku na wierzchu. Proof: `ContentPlanningGenerationPanel` 4/4 oraz
 dashboard `tsc --noEmit`.
+
+### 2026-07-19 — audyt wyboru stron i kontraktu Ads
+
+Sprawdzono aktualny `/content-workflow`: picker nie ma literalnego wyboru BDO,
+korzysta z API-owej kolejki kandydatów i pozwala przełączać dostępne work itemy;
+strona oraz sekcja są wybierane przez `work_item_id`/`section_heading` w URL.
+Nie znaleziono regresji hardkodującej temat ani usuwającej katalog stron, więc
+nie wprowadzono pozornej zmiany UI.
+
+Na żywym API przeszedł też `wilq-ads-doctor/scripts/smoke_skill_contract.py`.
+Wszystkie 21 modułów Ads ma rzeczywiste importy z entrypointu/orchestratora i
+chroni odrębne kontrakty; brak bezpiecznej redundancji do kasowania bez
+przenoszenia logiki. Zadanie cleanup pozostaje otwarte, ale nie redukujemy
+liczby plików kosztem czytelności i ochrony ryzyk.
