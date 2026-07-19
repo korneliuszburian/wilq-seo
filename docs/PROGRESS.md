@@ -3104,3 +3104,14 @@ auto-approval ani vendor write.
 Bounded second-opinion dla tego fixed pointu zwrócił jeden HIGH dotyczący
 braku artefaktu w izolowanej sesji review oraz trzy evidence gaps. Nie jest to
 finding produktu ani PASS; lokalny zapis znajduje się w katalogu review.
+
+### 2026-07-20 — API nie przyjmuje już ręcznej decyzji mapy sekcji
+
+Usunięto drugą władzę nad mapą sekcji: POST `planning-review` z
+`stage=section_map` zwraca teraz typed `409`, a historyczne decyzje pozostają
+czytelne w workspace. Jedynym źródłem mapy jest wygenerowana propozycja z
+aktualnego inventory/usługi/evidence; człowiek zatwierdza scope i później exact
+revision, nie nagłówki. Draft gate nie został poluzowany.
+
+Focused proof: route/revision planning tests, planning-review gate,
+contract inventory 5/5, Ruff, dashboard typecheck i `git diff --check` PASS.

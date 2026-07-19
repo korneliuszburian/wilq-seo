@@ -36,6 +36,11 @@ from wilq.schemas import (
     OpportunityDomain,
 )
 
+_AUTO_SECTION_MAP_REJECTION = (
+    "Mapa sekcji jest wyliczana automatycznie z aktualnego inventory, usługi i "
+    "dowodów; nie zapisuj osobnej decyzji dla sekcji."
+)
+
 
 def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
     monkeypatch: pytest.MonkeyPatch,
@@ -55,9 +60,7 @@ def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
         json=_planning_review_payload("section_map", digest),
     )
     assert premature_section_map.status_code == 409
-    assert premature_section_map.json()["detail"] == (
-        "Najpierw zatwierdź aktualny zakres treści."
-    )
+    assert premature_section_map.json()["detail"] == _AUTO_SECTION_MAP_REJECTION
 
     scope_payload = _planning_review_payload("scope", digest)
     scope_payload["reviewed_by"] = "authenticated_expert"
@@ -84,16 +87,14 @@ def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
         json=_planning_review_payload("section_map", stale_digest),
     )
     assert stale.status_code == 409
-    assert stale.json()["detail"] == (
-        "Plan treści zmienił się. Odśwież element przed zapisaniem decyzji."
-    )
+    assert stale.json()["detail"] == _AUTO_SECTION_MAP_REJECTION
 
     section_map = client.post(
         _planning_review_path(work_item_id),
         json=_planning_review_payload("section_map", digest),
     )
-    assert section_map.status_code == 200
-    assert section_map.json()["planning_workspace"]["section_map_current"] is True
+    assert section_map.status_code == 409
+    assert section_map.json()["detail"] == _AUTO_SECTION_MAP_REJECTION
 
     unlocked = _selected_snapshot(client, work_item_id)
     assert unlocked["current_step_id"] == "draft"
@@ -945,12 +946,11 @@ def _revision_ready_snapshot(
 ) -> tuple[TestClient, str, dict[str, Any]]:
     client, work_item_id, snapshot = _planning_review_snapshot(monkeypatch, tmp_path)
     digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
-    for stage in ("scope", "section_map"):
-        response = client.post(
-            _planning_review_path(work_item_id),
-            json=_planning_review_payload(stage, digest),
-        )
-        assert response.status_code == 200
+    response = client.post(
+        _planning_review_path(work_item_id),
+        json=_planning_review_payload("scope", digest),
+    )
+    assert response.status_code == 200
     snapshot = _selected_snapshot(client, work_item_id)
     assert snapshot["revision_workspace"]["can_save"] is True
     return client, work_item_id, snapshot

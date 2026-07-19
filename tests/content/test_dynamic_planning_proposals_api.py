@@ -831,20 +831,19 @@ def _approve_generated_plan(
     work_item_id: str,
     proposal: dict[str, Any],
 ) -> None:
-    for stage in ("scope", "section_map"):
-        response = client.post(
-            f"/api/content/work-items/{work_item_id}/planning-review",
-            json={
-                "stage": stage,
-                "service_card_id": proposal["service_card_id"] if stage == "scope" else None,
-                "expected_planning_digest": proposal["planning_digest"],
-                "decision": "approved",
-                "reviewed_by": "wilku",
-                "checked_items": ["strona", "usługa", "intencja", "sekcje", "CTA"],
-                "notes": "Syntetyczne zatwierdzenie aktualnego planu.",
-            },
-        )
-        assert response.status_code == 200, response.json()
+    response = client.post(
+        f"/api/content/work-items/{work_item_id}/planning-review",
+        json={
+            "stage": "scope",
+            "service_card_id": proposal["service_card_id"],
+            "expected_planning_digest": proposal["planning_digest"],
+            "decision": "approved",
+            "reviewed_by": "wilku",
+            "checked_items": ["strona", "usługa", "intencja", "CTA"],
+            "notes": "Syntetyczne zatwierdzenie aktualnego planu.",
+        },
+    )
+    assert response.status_code == 200, response.json()
 
 
 def _initial_draft_request(proposal: dict[str, Any]) -> dict[str, str]:

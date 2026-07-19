@@ -151,15 +151,14 @@ from wilq.schemas.core import utc_now
 router = APIRouter()
 
 
-def _require_generated_section_map(proposal: ContentPlanningProposal) -> None:
-    if proposal.generation_status != "codex_generated" or proposal.proposal_id is None:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "Mapa sekcji może być zatwierdzona dopiero po wygenerowaniu aktualnego "
-                "planu; baseline nie jest planem do akceptacji."
-            ),
-        )
+def _reject_manual_section_map_review() -> NoReturn:
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "Mapa sekcji jest wyliczana automatycznie z aktualnego inventory, usługi "
+            "i dowodów; nie zapisuj osobnej decyzji dla sekcji."
+        ),
+    )
 
 
 @router.get("/api/content/operator-context", response_model=ContentOperatorContext)
@@ -369,6 +368,11 @@ def content_work_item_planning_review(
 ) -> ContentPlanningReviewResponse:
     snapshot = _snapshot_for_work_item_or_404(work_item_id)
     workspace = snapshot.planning_workspace
+    if request.stage == "section_map":
+        # Keep the historical decision field readable, but remove the old
+        # write authority. The generated proposal is the sole section-map
+        # projection and the human reviews scope and the resulting revision.
+        _reject_manual_section_map_review()
     if workspace is None or (
         request.expected_planning_digest != workspace.proposal.planning_digest
     ):
@@ -383,8 +387,6 @@ def content_work_item_planning_review(
             status_code=409,
             detail="Najpierw zatwierdź aktualny zakres treści.",
         )
-    if request.stage == "section_map":
-        _require_generated_section_map(workspace.proposal)
     if (
         request.stage == "section_map"
         and request.service_card_id is not None
