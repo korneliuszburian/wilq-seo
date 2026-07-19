@@ -2307,3 +2307,12 @@ syntetycznego BDO work item z aktualnym kontraktem planowania, więc sprawdza
 ten sam publiczny route bez zależności od całego runtime queue. Proof:
 `test_content_service_selection_api.py` 2/2 (35,7 s), Ruff clean. Nie jest to
 dowód szybkości produkcyjnego snapshotu; ten pozostaje osobnym ryzykiem.
+
+### 2026-07-19 — baseline latencji snapshotu produkcyjnego
+
+Read-only timing na managed API: pierwszy `/api/content/work-items/queue`
+3,64 s, kolejne 0,05 s; pierwszy snapshot BDO 3,87 s, kolejne około 0,8 s;
+pierwszy snapshot outsourcingu 6,12 s, kolejne około 0,9 s. To nie jest
+10-minutowy hang, ale pierwszy odczyt outsourcingu jest za ciężki dla
+30-sekundowego doświadczenia marketera i wymaga osobnego profilowania. Nie
+zmieniano cache ani polityki freshness bez dowodu przyczyny.
