@@ -2681,3 +2681,13 @@ przechodzą bez naruszeń. Live snapshot strony opakowaniowej zwraca teraz
 `bound/ready`, kartę `ekologus_service_environmental_consulting_outsourcing`
 oraz drugiego kandydata `ekologus_service_waste_packaging_obligations`, oba z
 matched term `opakowani`; ranking nadal pozostaje jawny i reviewable.
+
+### 2026-07-19 — panel nie sugeruje marketerowi ukrytego wyboru strony
+
+Katalog `/content-workflow` już zawiera pełny read-only inventory WordPressa
+(808 adresów, 73 z materiałem), ale copy aktywnej sesji mówiło wcześniej, że
+„WILQ wybrał stronę”. Zmieniono je na neutralne „Strona do pracy” i wskazanie,
+że marketer może przełączyć się na dowolny adres z inventory. Nie zmieniono
+mechanizmu ani API: nie ma automatycznego wyboru ani publikacji, a kliknięcie
+„Rozpocznij workflow” nadal otwiera dokładnie wybrany `work_item_id`.
+Focused dashboard test i typecheck przechodzą.

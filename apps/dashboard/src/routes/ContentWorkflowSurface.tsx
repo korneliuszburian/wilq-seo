@@ -582,12 +582,12 @@ function ContentSessionPicker({
             Strona do pracy
           </p>
           <h2 id="content-session-picker-title" className="mt-1 text-lg font-semibold text-ink">
-            {explicitlyRequested ? "Aktywna strona do pracy" : "WILQ wybrał stronę do pracy"}
+            {explicitlyRequested ? "Aktywna strona do pracy" : "Strona do pracy"}
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {explicitlyRequested
               ? "Pracujesz teraz na tej stronie. Możesz przełączyć ją na inną dostępną stronę."
-              : "To rekomendowana pierwsza strona z kolejki — WILQ wybrał ją na podstawie dostępnych danych z wyszukiwarki i WordPressa. Możesz ją przełączyć w każdej chwili."}
+              : "To strona z aktualnej kolejki. Możesz przełączyć ją na dowolną dostępną stronę z inventory WordPressa."}
           </p>
         </div>
         <label className="text-sm font-semibold text-ink" htmlFor="content-session-work-item">
