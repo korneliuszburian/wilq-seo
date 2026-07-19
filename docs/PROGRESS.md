@@ -61,6 +61,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   evidence IDs, 1 akcję i gotowe agregaty miejsc, rankingów, GBP, konkurencji i
   opinii; `local_tasks` pozostaje brakującym kontraktem, a write/publish GBP i
   wzrost widoczności są zablokowane.
+- 2026-07-19: szeroki `scripts/verify.sh` nie jest zielony: Ruff zgłosił 29
+  istniejących błędów (głównie E501/UP017/I001) w testach inventory/Ads oraz
+  modułach `wilq/connectors/wordpress/client.py`,
+  `wilq/content/handoff/wordpress_authoring.py` i
+  `wilq/content/workflow/store_measurement.py`. Żaden z tych plików nie był
+  częścią ostatniego cache/runtime slice; nie poprawiam masowo niezwiązanej
+  powierzchni. Release gate pozostaje otwarty i nie claimujemy PASS.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily
