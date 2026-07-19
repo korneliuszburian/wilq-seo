@@ -16,6 +16,18 @@ describe("matchesContentQueueCandidate", () => {
     expect(matchesContentQueueCandidate(candidate, "BDO")).toBe(true);
     expect(matchesContentQueueCandidate(candidate, "bdo co to")).toBe(true);
     expect(matchesContentQueueCandidate(candidate, "/bdo-co-musi-wiedziec")).toBe(true);
+    expect(
+      matchesContentQueueCandidate(
+        {
+          ...candidate,
+          page_inventory: {
+            content_summary: "Informacje o obowiązkach przedsiębiorcy",
+            acf_section_headings: ["Kogo dotyczy obowiązek BDO"]
+          }
+        } as unknown as ContentWorkItemQueueCandidate,
+        "kogo dotyczy obowiązek"
+      )
+    ).toBe(true);
     expect(matchesContentQueueCandidate(candidate, "outsourcing")).toBe(false);
     expect(matchesContentQueueCandidate(candidate, "")).toBe(true);
   });

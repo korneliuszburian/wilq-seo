@@ -82,7 +82,9 @@ export function matchesContentQueueCandidate(
     candidate.topic,
     candidate.reason,
     candidate.source_public_url,
-    candidate.final_canonical_url
+    candidate.final_canonical_url,
+    candidate.page_inventory?.content_summary,
+    ...(candidate.page_inventory?.acf_section_headings ?? [])
   ]
     .filter(Boolean)
     .some((value) => value!.toLocaleLowerCase("pl-PL").includes(normalizedSearch));

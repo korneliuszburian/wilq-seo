@@ -1678,3 +1678,11 @@ zwrócił 8 rekordów oraz mieszany zakres: próbka domeny docelowej 100, limit
 porównania 1000 i rekordy bez podanego zakresu. To poprawia widoczność
 ograniczenia próby; nie jest dowodem kompletności całego Ahrefs ani nie odblokowuje
 automatycznego mapowania strony/usługi.
+
+### 2026-07-19 — wyszukiwanie kolejki obejmuje realne sekcje strony
+
+Wybór strony w `/content-workflow` przeszukuje teraz także `content_summary` oraz
+nagłówki `acf_section_headings` z inventory WordPressa. Dzięki temu marketer może
+znaleźć istniejącą podstronę po sekcji, a nie tylko po URL, tytule lub query.
+To jest wyłącznie filtr prezentacyjny nad pełną kolejką API; nie zmienia
+rekomendacji, mapowania usługi, digestów ani żadnej decyzji generacyjnej.
