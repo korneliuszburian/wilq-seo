@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 
 import {
@@ -51,22 +52,37 @@ export type KnowledgeSourceMaterialsQuery = UseQueryResult<KnowledgeSourceMateri
 
 export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
   const queryClient = useQueryClient();
-  const queue = useQuery({
-    queryKey: ["content-workflow", "queue", selectedWorkItemId],
-    queryFn: () => getContentWorkItemQueue(selectedWorkItemId ?? undefined),
-    // Keep the already loaded decision queue visible while the selected
-    // candidate's API-owned response is fetched. This prevents a click from
-    // looking like a route reset; the selected queue request still replaces
-    // the placeholder with its exact server response.
-    placeholderData: selectedWorkItemId
-      ? () =>
-          queryClient.getQueryData<ContentWorkItemQueueResponse>([
-            "content-workflow",
-            "queue",
-            null
-          ])
-      : undefined
+  const queueCatalog = useQuery({
+    queryKey: ["content-workflow", "queue", "catalog"],
+    queryFn: () => getContentWorkItemQueue(),
+    staleTime: 30_000
   });
+  const selectedQueue = useQuery({
+    queryKey: ["content-workflow", "queue", "selected", selectedWorkItemId],
+    queryFn: () => getContentWorkItemQueue(selectedWorkItemId ?? undefined),
+    enabled: Boolean(selectedWorkItemId),
+    // The selected response is intentionally lightweight. It opens the page
+    // quickly while the catalog query fills the picker with every available
+    // page instead of replacing the catalog with one selected candidate.
+    placeholderData: () =>
+      queryClient.getQueryData<ContentWorkItemQueueResponse>([
+        "content-workflow",
+        "queue",
+        "catalog"
+      ])
+  });
+  const queueData = useMemo(
+    () => mergeContentWorkItemQueueCatalog(queueCatalog.data, selectedQueue.data),
+    [queueCatalog.data, selectedQueue.data]
+  );
+  const queue = (selectedWorkItemId ? selectedQueue : queueCatalog) as ContentWorkItemQueueQuery;
+  const mergedQueue = {
+    ...queue,
+    data: queueData,
+    error: queue.error ?? queueCatalog.error,
+    isLoading: queue.isLoading && !queueData,
+    isPending: queue.isPending && !queueData
+  } as ContentWorkItemQueueQuery;
   const inventory = useQuery({
     queryKey: ["content-workflow", "inventory-catalog"],
     queryFn: getContentInventoryCatalog
@@ -87,12 +103,12 @@ export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
     queryKey: ["content-workflow", "operator-context"],
     queryFn: getContentOperatorContext
   });
-  const requestedCandidate = queue.data?.candidates.find(
+  const requestedCandidate = mergedQueue.data?.candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
   const activeWorkItemId = requestedCandidate?.work_item_id ?? null;
   const selectedCandidate =
-    queue.data?.candidates.find((candidate) => candidate.work_item_id === activeWorkItemId) ?? null;
+    mergedQueue.data?.candidates.find((candidate) => candidate.work_item_id === activeWorkItemId) ?? null;
   const selectedCandidateBlocked = selectedCandidate?.recommended_mode === "block";
   const workflow = useQuery({
     queryKey: ["content-workflow", "work-item", activeWorkItemId],
@@ -131,10 +147,27 @@ export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
     knowledgeMaterials,
     operatorContext,
     serviceProfile,
-    queue,
+    queue: mergedQueue,
     selectedCandidate,
     workflow
   };
+}
+
+export function mergeContentWorkItemQueueCatalog(
+  catalog: ContentWorkItemQueueResponse | undefined,
+  selected: ContentWorkItemQueueResponse | undefined
+): ContentWorkItemQueueResponse | undefined {
+  if (!selected) return catalog;
+  if (!catalog) return selected;
+  const selectedCandidate = selected.candidates[0];
+  const candidates = catalog.candidates.some(
+    (candidate) => candidate.work_item_id === selectedCandidate?.work_item_id
+  )
+    ? catalog.candidates
+    : selectedCandidate
+      ? [...catalog.candidates, selectedCandidate]
+      : catalog.candidates;
+  return { ...catalog, candidates, candidate_count: candidates.length };
 }
 
 export type { ContentWorkItemQueueCandidate };

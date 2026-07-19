@@ -13,6 +13,8 @@ describe("ContentWorkflow architecture boundary", () => {
     expect(routeSource).not.toContain('queryKey: ["content-workflow", "queue"]');
     expect(querySource).toContain("useQuery");
     expect(querySource).toContain("getContentWorkItemQueue");
+    expect(querySource).toContain('queryKey: ["content-workflow", "queue", "catalog"]');
+    expect(querySource).toContain('queryKey: ["content-workflow", "queue", "selected", selectedWorkItemId]');
   });
 
   it("keeps the route's first responsibility as typed state selection", () => {

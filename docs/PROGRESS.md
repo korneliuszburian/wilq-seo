@@ -2980,3 +2980,18 @@ dynamiczne także dla stron, których układ jest wystawiony przez ACF.
 
 Focused proof: test ACF-vs-`the_content` inventory mapping 15/15, Ruff i
 `git diff --check` PASS.
+
+### 2026-07-20 — wybrana strona nie zastępuje już całej kolejki
+
+Endpoint lekkiej kandydatury dla jawnie wskazanego `work_item_id` zwraca jedną
+stronę, żeby pierwszy ekran nie czekał na ciężki diagnostyk. Dashboard błędnie
+traktował tę odpowiedź jako całą kolejkę, przez co po wejściu bezpośrednim
+picker pokazywał jedną stronę zamiast wszystkich dostępnych adresów. Hook teraz
+ładuje lekką kandydaturę natychmiast i scala ją z pełnym katalogiem w tle; strony
+nie giną, a nieznany w katalogu wybrany adres pozostaje widoczny z własnym
+blockerem.
+
+Focused proof: typecheck dashboard PASS; dedykowany merge test 2/2 PASS. Pełny
+`ContentWorkflowSurface` ma jeden niezależny, wcześniejszy kontraktowy fail
+(`getByText` znajduje dwa już renderowane statusy GA4); nie zmieniałem testu ani
+nie udawałem PASS całego pakietu.
