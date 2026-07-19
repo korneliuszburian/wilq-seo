@@ -513,10 +513,21 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
     ):
         text_values.append(item.wordpress_content_text)
     text = _search_text(text_values)
+    priority_text = _search_text(
+        [
+            item.topic,
+            item.wordpress_title_or_h1,
+            item.source_public_url,
+            item.final_canonical_url,
+            item.intended_final_url,
+            *(str(fact.dimensions.get("query") or "") for fact in item.metric_facts),
+        ]
+    )
     service_candidates = _matching_service_candidates(
         cards,
         text,
         exact_urls=exact_urls,
+        priority_text=priority_text,
     )
     service_cards = [candidate.card for candidate in service_candidates]
     cta_cards = _matching_cards(cards, text, "cta_pattern")
@@ -759,6 +770,7 @@ def _matching_service_candidates(
     search_text: str,
     *,
     exact_urls: set[str] | None = None,
+    priority_text: str = "",
 ) -> list[ContentKnowledgeServiceCandidate]:
     candidates = [
         ContentKnowledgeServiceCandidate(card=card, matched_terms=matched_terms)
@@ -774,18 +786,33 @@ def _matching_service_candidates(
         )
     ]
     normalized_urls = exact_urls or set()
+    normalized_priority_text = normalize_search_text(priority_text)
+
+    def rank(candidate: ContentKnowledgeServiceCandidate) -> tuple[int, int, int, int, float]:
+        exact_url = any(
+            normalize_search_text(lineage) in normalized_urls
+            for lineage in candidate.card.source_lineage
+            if lineage.startswith("http")
+        )
+        priority_matches = [
+            term
+            for term in candidate.matched_terms
+            if normalized_term_matches(term, normalized_priority_text)
+        ]
+        strongest_term = max(
+            (len(normalize_search_text(term)) for term in priority_matches),
+            default=0,
+        )
+        return (
+            0 if exact_url else 1,
+            0 if priority_matches else 1,
+            -strongest_term,
+            *_match_rank(candidate.card),
+        )
+
     return sorted(
         candidates,
-        key=lambda candidate: (
-            0
-            if any(
-                normalize_search_text(lineage) in normalized_urls
-                for lineage in candidate.card.source_lineage
-                if lineage.startswith("http")
-            )
-            else 1,
-            *_match_rank(candidate.card),
-        ),
+        key=rank,
     )
 
 

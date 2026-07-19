@@ -3006,3 +3006,16 @@ samego komunikatu.
 
 Focused proof: ContentWorkflowSurface + ContentPlanningGenerationPanel 41/41,
 dashboard typecheck PASS, `git diff --check` PASS.
+
+### 2026-07-20 — ranking usługi respektuje intencję strony przed szumem treści
+
+Dopasowanie kart usług zachowuje teraz osobny sygnał priorytetowy z tematu,
+tytułu, adresu i zapytań. Najpierw wygrywa dokładna lineage URL, następnie
+termin występujący w tym sygnale, dopiero później długość frazy i lifecycle
+karty. Dzięki temu artykuł o operacie wodnoprawnym nie jest rekomendowany jako
+Eko-Opieka tylko dlatego, że pełny `the_content` zawiera ogólne słowa „terminy”
+albo „decyzje”. Mechanizm jest wspólny dla wszystkich usług; nie ma wyjątku dla
+operatu, BDO ani outsourcingu.
+
+Focused proof: `tests/content/test_service_matching_surface.py` oraz
+`tests/content/test_work_item_service_profile.py` — 11/11, Ruff PASS.

@@ -96,6 +96,31 @@ def test_inflected_documentation_query_exposes_reviewable_service_candidate() ->
     )
 
 
+def test_specific_page_intent_beats_broad_body_terms() -> None:
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_operat_page",
+            topic="Operat wodnoprawny – wszystko co musisz wiedzieć",
+            source_public_url=(
+                "https://www.ekologus.pl/operat-wodnoprawny-wszystko-co-musisz-wiedziec/"
+            ),
+            final_canonical_url=(
+                "https://www.ekologus.pl/operat-wodnoprawny-wszystko-co-musisz-wiedziec/"
+            ),
+            wordpress_content_text=(
+                "Tekst wspomina też o decyzjach administracyjnych i terminach."
+            ),
+            wordpress_content_source_kind="wordpress_rest",
+            wordpress_content_extraction_region="wordpress_rest.content",
+            evidence_ids=["ev_wp_operat_page"],
+            source_connectors=["wordpress_ekologus"],
+        )
+    )
+
+    assert match.service_card is not None
+    assert match.service_card.id == "ekologus_service_operat_wodnoprawny"
+
+
 @pytest.mark.parametrize(
     ("url", "expected_card_id"),
     [
