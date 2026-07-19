@@ -106,6 +106,9 @@ and returns `generating` in tens of milliseconds; the background task builds
 the heavy snapshot and Codex turn. GET remains model-free and polls only while
 that exact job is active. The current provider disconnect is surfaced as a
 typed retry blocker with runtime trace; WILQ writes no partial proposal.
+When the last attempt is `failed`, the marketer-facing panel now says
+`Spróbuj ponownie` instead of implying a first generation and keeps the exact
+runtime run ID in the technical disclosure for support/debugging.
 Repeated POST for that exact digest returns `idempotent` immediately; a
 mismatched digest returns HTTP 409 `stale_input` before any model call.
 Queued jobs older than the 15-minute runtime window are exposed as a typed

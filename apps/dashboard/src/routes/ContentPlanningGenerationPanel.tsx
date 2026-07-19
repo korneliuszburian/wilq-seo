@@ -208,6 +208,8 @@ export function ContentPlanningGenerationPanel({
         >
           {generation.isPending
             ? "Przygotowujemy plan…"
+            : state.status === "failed"
+              ? "Spróbuj ponownie"
             : state.status === "stale"
               ? "Wygeneruj aktualny plan"
               : "Wygeneruj plan"}
@@ -277,6 +279,11 @@ export function ContentPlanningGenerationPanel({
         {blocker?.source_codes?.length ? (
           <p className="mt-2" data-testid="content-planning-blocker-trace">
             Ślad runtime: {blocker.source_codes.join(", ")}
+          </p>
+        ) : null}
+        {state.status === "failed" && state.runtime?.run_id ? (
+          <p className="mt-2" data-testid="content-planning-runtime-run">
+            Ostatnia próba: {state.runtime.run_id}
           </p>
         ) : null}
         <p className="mt-1">Samo otwarcie tego widoku nie uruchamia generowania.</p>

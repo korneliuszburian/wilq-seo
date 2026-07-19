@@ -138,6 +138,15 @@ describe("ContentPlanningGenerationPanel", () => {
         next_step: "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
         source_codes: ["codex_response_stream_disconnected"]
       }],
+      runtime: {
+        status: "failed",
+        run_id: "codex_content_planning_test",
+        thread_id: null,
+        turn_id: null,
+        event_methods: ["error"],
+        item_types: ["userMessage"],
+        external_call_attempted: false
+      },
       safe_next_step: "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
       publish_ready: false
     } as never);
@@ -168,8 +177,11 @@ describe("ContentPlanningGenerationPanel", () => {
       </QueryClientProvider>
     );
 
-    const retry = await screen.findByRole("button", { name: "Wygeneruj plan" });
+    const retry = await screen.findByRole("button", { name: "Spróbuj ponownie" });
     expect(retry).toBeInTheDocument();
+    expect(await screen.findByTestId("content-planning-runtime-run")).toHaveTextContent(
+      "codex_content_planning_test"
+    );
     expect(await screen.findByTestId("content-planning-blocker-trace")).toHaveTextContent(
       "codex_response_stream_disconnected"
     );
