@@ -1351,3 +1351,10 @@ Checker dla `0a9e53a4` przeszedł walidację schematu. Zwrócił dwa MEDIUM jako
 braki dostarczonego źródła (runner przekazał zakresy bez literalnych linii),
 więc oba zostały `reject_with_evidence` w disposition; ograniczenia upstreamu
 i UAT pozostają jawne.
+
+Szeroki audyt `scripts/dashboard_usefulness_audit.py --api-base
+http://127.0.0.1:8000` po zmianie: 14 powierzchni, 11 `demo_ready`, 2
+`review_ready`, 1 jawnie zablokowana (Demand Gen), 0 produkcyjnych failures,
+minimum usefulness score 7. Raport nadal wskazuje brak private-source review
+queue na większości powierzchni jako metadata audytu; nie zmieniam tego w
+fałszywy blocker dla bieżącego slice'u.
