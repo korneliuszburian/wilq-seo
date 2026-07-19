@@ -2853,3 +2853,5 @@ Live `GET /initial-draft` dla obu świeżych proposalów zwraca typed `stale_pla
 Profilowanie selected snapshot wykazało, że `inventory_metric_facts()` odbudowywał legacy landing index przy powtarzanych odczytach GSC/GA4. Dodałem 15-sekundowy, read-only cache związany z URL/path oraz ID i evidence IDs najnowszego vendor-read refreshu. Zmiana nie może przenieść danych między batchami; istniejąca filtracja latest evidence pozostaje aktywna.
 
 Focused proof: Ruff i 2 testy `test_inventory_catalog.py -k 'metric_facts'` passed. Po restarcie live snapshot warm: BDO ~1,94 s (wcześniej ~3,3 s), outsourcing ~1,21 s (wcześniej ~2,0 s); cold BDO ~9,43 s pozostaje osobnym klastrem import/diagnostics. Claude checker nie wyemitował JSON, więc nie przedstawiam review jako PASS.
+
+Kolejny micro-slice performance: content diagnostics korzysta teraz z istniejącego `list_actions_cached()` zamiast odbudowywać registry akcji przy każdym cold snapshot. `tests/test_content_diagnostics.py` (7) i Ruff passed. Cold start pozostaje osobnym problemem; nie deklaruję pełnego rozwiązania latency.
