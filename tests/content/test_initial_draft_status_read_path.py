@@ -56,6 +56,7 @@ def test_initial_draft_status_get_avoids_heavy_snapshot_loader(monkeypatch) -> N
     assert response.status_code == 200
     assert response.json()["status"] == "blocked"
     assert response.json()["blockers"][0]["code"] == "planning_not_approved"
+    assert "mapa sekcji jest wyliczana automatycznie" in response.json()["safe_next_step"]
     assert snapshot_calls == 0
 
 

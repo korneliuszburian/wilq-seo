@@ -248,7 +248,10 @@ def register_content_initial_draft_route(
             code="planning_not_approved",
             label="Pełny tekst czeka na aktualny plan",
             reason="Nie ma zakończonego uruchomienia pełnego tekstu dla bieżącego planu.",
-            next_step="Zatwierdź zakres i mapę sekcji, a następnie uruchom pełny tekst.",
+            next_step=(
+                "Zatwierdź aktualny zakres i usługę; mapa sekcji jest "
+                "wyliczana automatycznie."
+            ),
         )
         return ContentInitialDraftResponse(
             status="blocked",

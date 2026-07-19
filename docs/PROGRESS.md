@@ -2958,3 +2958,14 @@ Plan ma 12 sekcji, 3 FAQ, 2 CTA, 1 link i pełną lineage evidence dla sekcji;
 Service Profile i GSC `used`; GA4, Ads, Ahrefs i Keyword Planner `missing`;
 Merchant, Localo i Social `not_applicable`. Snapshot poprawnie pokazuje
 `scope_current=false`, więc nie uruchamiam draftu ani nie udaję approval.
+
+### 2026-07-20 — blocker pełnego draftu nie żąda już review sekcji
+
+Typed `planning_not_approved` i snapshot workspace prowadzą teraz marketera do
+jednej decyzji: aktualny zakres i usługa. Komunikat jawnie mówi, że mapa sekcji
+jest wyliczana automatycznie z inventory, zamiast sugerować osobne zatwierdzanie
+nagłówków. To porządkuje UX bez zmiany bramki bezpieczeństwa: bez aktualnego
+scope review pełny draft nadal nie startuje.
+
+Focused proof: 9 testów initial-draft/status, Ruff i mypy; live outsourcing GET
+zwraca `blocked/planning_not_approved` z nowym następnym krokiem.

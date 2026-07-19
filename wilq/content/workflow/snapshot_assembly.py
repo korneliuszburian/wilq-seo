@@ -377,7 +377,12 @@ def _gate_revision_workspace(
     return workspace.model_copy(
         update={
             "can_save": False,
-            "safe_next_step": "Najpierw zatwierdź aktualny zakres i plan sekcji.",
+            "safe_next_step": (
+                "Najpierw zatwierdź aktualny zakres i usługę; mapa sekcji jest "
+                "wyliczana automatycznie."
+                if not planning_workspace.scope_current
+                else "WILQ wylicza mapę sekcji z aktualnego inventory; odśwież plan."
+            ),
         }
     )
 
