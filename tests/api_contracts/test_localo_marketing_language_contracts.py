@@ -90,6 +90,63 @@ def test_marketing_brief_localo_metric_headline_is_marketer_friendly(
     assert labels_by_name["localo_total_keyword_volume"] == "łączny wolumen fraz"
 
 
+def test_marketing_brief_omits_metric_facts_from_blocked_localo(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class BlockedLocaloMetricStore:
+        def list_metric_facts_by_connector(
+            self,
+            connector_ids: list[str],
+            limit_per_connector: int,
+        ) -> dict[str, list[MetricFact]]:
+            assert connector_ids == ["localo"]
+            assert limit_per_connector > 0
+            return {
+                "localo": [
+                    MetricFact(
+                        name="localo_avg_visibility_current",
+                        value=53.17,
+                        period="connector_refresh",
+                        source_connector="localo",
+                        evidence_id="ev_refresh_localo_blocked_metric",
+                    )
+                ]
+            }
+
+    monkeypatch.setattr("wilq.briefing.marketing_brief.metric_store", BlockedLocaloMetricStore)
+    connector = ConnectorStatus(
+        id="localo",
+        label="Localo",
+        status=ConnectorStatusValue.auth_error,
+        configured=True,
+        missing_credentials=[],
+        freshness=FreshnessState(state="stale"),
+        capabilities=ConnectorCapability(read=True),
+        health_check="auth_error",
+    )
+    refresh_run = ConnectorRefreshRun(
+        id="refresh_localo_blocked_metric",
+        connector_id="localo",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.blocked,
+        completed_at=datetime.now(UTC),
+        evidence_ids=["ev_refresh_localo_blocked_metric"],
+        external_call_attempted=True,
+        vendor_data_collected=False,
+        summary="Localo read blocked.",
+    )
+    brief = build_marketing_brief(
+        connectors=[connector],
+        refresh_runs=[refresh_run],
+        actions=[],
+    )
+
+    known = next(section for section in brief.sections if section.id == "what_we_know")
+    assert all(item.source_connectors != ["localo"] for item in known.items)
+    blockers = next(section for section in brief.sections if section.id == "what_blocks_us")
+    assert any(item.source_connectors == ["localo"] for item in blockers.items)
+
+
 def test_marketing_brief_localo_blocker_uses_marketer_copy() -> None:
     connector = ConnectorStatus(
         id="localo",

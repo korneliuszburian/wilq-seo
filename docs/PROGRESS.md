@@ -2140,6 +2140,21 @@ zablokowany connector danych. Readiness projection rozróżnia teraz
 2 missing credentials. Proof: focused context safety 3/3, Ruff i modułowy
 mypy clean, managed API runtime zgodny z tym rozdziałem.
 
+### 2026-07-19 — marketing brief fail-closed dla zablokowanych źródeł
+
+Marketing brief jest teraz rzeczywistym consumerem freshness/readiness: przed
+budową sekcji `Co wiemy` odrzuca metric facts z connectorów
+`missing/stale/unknown`, z błędem odczytu oraz z ostatnim refresh'em
+`blocked/failed`. Zablokowane źródło nie trafia do metryk ani rekomendacji, ale
+jego osobny blocker nadal jest widoczny operatorowi.
+
+Proof: Localo z auth error/stale refresh i metric factem — metric item znika,
+blocker pozostaje; `tests/api_contracts/test_localo_marketing_language_contracts.py`
+3/3, marketing brief contract 6/6, Ruff i mypy clean. Managed API nadal
+pokazuje realny summary 12/9/2, a obecny brief nie pokazuje LinkedIn/Facebook
+jako danych marketingowych. To nie jest jeszcze dowód pełnego downstream
+omission dla wszystkich consumerów.
+
 ### 2026-07-19 — readiness test korzysta z realnego `/api/connectors`
 
 Domknięto pierwszy follow-up z checker'a: focused falsifier pobiera listę

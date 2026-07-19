@@ -101,12 +101,17 @@ def build_marketing_brief(
     actions = actions if actions is not None else list_actions()
     latest_runs = _latest_run_by_connector(refresh_runs)
     latest_runs = _prefer_successful_localo_access_probe(latest_runs, refresh_runs)
+    blocked_connector_ids = _blocked_metric_connector_ids(connectors, latest_runs)
 
     business_metric_facts = [
         fact
         for fact in metric_facts
         if not _is_probe_only_fact(fact)
-        and _metric_fact_allowed_by_latest_refresh(fact, latest_runs)
+        and _metric_fact_allowed_by_latest_refresh(
+            fact,
+            latest_runs,
+            blocked_connector_ids,
+        )
     ]
     business_metric_facts = _latest_metric_facts_by_identity(business_metric_facts)
     business_metric_facts = _brief_metric_facts_with_labels(business_metric_facts)
@@ -628,13 +633,50 @@ def _numeric_sort_value(value: float | int | str) -> float:
 def _metric_fact_allowed_by_latest_refresh(
     fact: MetricFact,
     latest_runs: dict[str, ConnectorRefreshRun],
+    blocked_connector_ids: set[str],
 ) -> bool:
+    if fact.source_connector in blocked_connector_ids:
+        return False
+    latest_run = latest_runs.get(fact.source_connector)
+    if latest_run is not None and latest_run.status in {
+        ConnectorRefreshStatus.blocked,
+        ConnectorRefreshStatus.failed,
+    }:
+        return False
     if fact.source_connector != "google_ads":
         return True
-    latest_run = latest_runs.get(fact.source_connector)
     if latest_run is None:
         return True
     return connector_refresh_has_live_data(latest_run)
+
+
+def _blocked_metric_connector_ids(
+    connectors: list[ConnectorStatus],
+    latest_runs: dict[str, ConnectorRefreshRun],
+) -> set[str]:
+    blocked: set[str] = set()
+    for connector in connectors:
+        if (
+            connector.missing_credentials
+            or not connector.configured
+            or connector.status
+            in {
+                ConnectorStatusValue.disabled,
+                ConnectorStatusValue.auth_error,
+                ConnectorStatusValue.unreachable,
+                ConnectorStatusValue.rate_limited,
+                ConnectorStatusValue.error,
+                ConnectorStatusValue.missing_dependency,
+            }
+            or connector.freshness.state in {"stale", "missing", "unknown"}
+        ):
+            blocked.add(connector.id)
+    blocked.update(
+        connector_id
+        for connector_id, run in latest_runs.items()
+        if run.status in {ConnectorRefreshStatus.blocked, ConnectorRefreshStatus.failed}
+    )
+    return blocked
 
 
 def _blocker_items(
