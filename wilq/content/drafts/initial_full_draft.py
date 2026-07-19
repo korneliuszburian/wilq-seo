@@ -114,9 +114,12 @@ def _prepare_inputs(
             blockers=[
                 _blocker(
                     "planning_not_approved",
-                    "Plan nie ma dwóch aktualnych decyzji",
-                    "Zakres i mapa sekcji muszą być zatwierdzone dla dokładnej wersji planu.",
-                    "Sprawdź plan, zatwierdź zakres oraz mapę sekcji i spróbuj ponownie.",
+                    "Zakres nie jest aktualnie zatwierdzony",
+                    (
+                        "Zakres musi być zatwierdzony dla dokładnej wersji planu; "
+                        "mapa sekcji jest generowana automatycznie."
+                    ),
+                    "Sprawdź brief i zatwierdź zakres, a następnie uruchom pełny draft.",
                 )
             ],
         )

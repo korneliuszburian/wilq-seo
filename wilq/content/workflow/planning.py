@@ -326,9 +326,9 @@ def build_content_planning_workspace(
             and scope.planning_digest == proposal.planning_digest
             and scope.decision == "approved"
         ),
-        section_map_current=bool(
-            section_map
-            and section_map.planning_digest == proposal.planning_digest
-            and section_map.decision == "approved"
-        ),
+        # The generated proposal is the API-owned section map.  A marketer
+        # reviews the scope and the resulting text; they must not re-enter or
+        # separately approve headings that Codex already mapped from the
+        # current inventory, evidence and service profile.
+        section_map_current=bool(proposal.sections),
     )

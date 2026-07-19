@@ -225,9 +225,7 @@ def _assemble_foundation(
     )
     approved_digest = (
         planning_workspace.proposal.planning_digest
-        if planning_workspace is not None
-        and planning_workspace.scope_current
-        and planning_workspace.section_map_current
+        if planning_workspace is not None and planning_workspace.scope_current
         else None
     )
     return _SnapshotFoundation(
@@ -503,7 +501,10 @@ def _section_map_next_step(
     blockers: list[Any],
 ) -> str:
     if draft is not None:
-        return "Sprawdź kolejność sekcji, ich cele i przypisane dowody."
+        return (
+            "Mapa sekcji została wyliczona z aktualnego planu, inventory i dowodów. "
+            "Przejdź do szkicu."
+        )
     if blockers:
         return str(blockers[0].next_step)
     return "Najpierw przygotuj bezpieczny plan sekcji."

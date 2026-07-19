@@ -229,10 +229,8 @@ def build_content_planning_input(
         claim_ledger=snapshot.claim_ledger,
         service_card_id=service_card_id,
         existing_content_material_reviewed=bool(
-            planning
-            and planning.section_map_decision
-            and "existing_content_provenance"
-            in planning.section_map_decision.checked_items
+            snapshot.preflight.item.wordpress_content_material_confidence
+            != "review_required"
         ),
     )
 

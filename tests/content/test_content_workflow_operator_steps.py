@@ -137,6 +137,25 @@ def test_operator_journey_blocks_draft_until_section_map_is_complete() -> None:
     assert steps["draft"].safe_next_step == facts.section_map_safe_next_step
 
 
+def test_operator_journey_uses_generated_section_map_without_manual_section_approval() -> None:
+    facts = _facts(
+        sales_brief_present=True,
+        sales_brief_signal_status="strong",
+        section_map_present=True,
+        structured_contract_present=True,
+    )
+    facts = replace(facts, section_map_review_current=False)
+
+    journey = build_content_workflow_operator_journey(facts)
+    steps = {step.id: step for step in journey.steps}
+
+    assert journey.current_step_id == "draft"
+    assert steps["section_map"].phase == "complete"
+    assert steps["section_map"].readiness == "ready"
+    assert steps["section_map"].blocker is None
+    assert steps["draft"].can_submit is True
+
+
 @pytest.mark.parametrize(
     (
         "revision_status",

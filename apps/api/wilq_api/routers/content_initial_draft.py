@@ -244,9 +244,9 @@ def _proposal_bound_to_latest_approved_plan(
     approved_digests = [
         decision.planning_digest
         for decision in decisions
-        if decision.decision == "approved"
+        if decision.stage == "scope" and decision.decision == "approved"
     ]
-    if len(approved_digests) < 2 or len(set(approved_digests)) != 1:
+    if not approved_digests:
         return None
     return proposal_store.latest_for_planning_digest(work_item_id, approved_digests[0])
 

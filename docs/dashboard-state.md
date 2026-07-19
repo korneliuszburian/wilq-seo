@@ -57,6 +57,9 @@ write.
 snapshot owns one five-step journey: `scope → section_map → draft → review →
 dev_draft`. Every step carries typed phase/readiness, open/submit permissions,
 a blocker and the next safe step; React no longer parses Polish status copy.
+`section_map` is an API-generated projection of the current plan, inventory and
+evidence lineage. It is displayed for transparency but is not a second human
+approval gate; the operator reviews scope and the resulting exact revision.
 Marketer mode renders one compact page/service/decision context, the task map
 and exactly one selected workspace. The former queue/action/proof wall mounts
 only after an explicit switch to `Audyt techniczny`.

@@ -48,7 +48,7 @@ def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
     assert snapshot["current_step_id"] == "scope"
     assert snapshot["revision_workspace"]["can_save"] is False
     assert planning["scope_current"] is False
-    assert planning["section_map_current"] is False
+    assert planning["section_map_current"] is True
 
     premature_section_map = client.post(
         _planning_review_path(work_item_id),
@@ -69,7 +69,7 @@ def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
     assert scope.json()["decision"]["trust_level"] == "local_unverified"
     assert scope.json()["decision"]["reviewed_by"] == "authenticated_expert"
     assert scope.json()["planning_workspace"]["scope_current"] is True
-    assert _selected_snapshot(client, work_item_id)["current_step_id"] == "section_map"
+    assert _selected_snapshot(client, work_item_id)["current_step_id"] == "draft"
 
     repeated = client.post(_planning_review_path(work_item_id), json=scope_payload)
     assert repeated.status_code == 200
@@ -120,7 +120,7 @@ def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
         ],
     )
     assert changed_workspace.scope_current is False
-    assert changed_workspace.section_map_current is False
+    assert changed_workspace.section_map_current is True
 
 
 def test_snapshot_seeds_api_owned_editor_and_starts_at_draft(

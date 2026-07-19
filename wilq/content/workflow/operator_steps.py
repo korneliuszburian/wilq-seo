@@ -122,9 +122,7 @@ def build_content_workflow_operator_journey(
     from ``draft`` to ``review`` and then to the blocked ``dev_draft`` boundary.
     """
     scope_complete = facts.scope_review_current and _scope_readiness(facts) != "blocked"
-    section_map_complete = (
-        scope_complete and facts.section_map_present and facts.section_map_review_current
-    )
+    section_map_complete = scope_complete and facts.section_map_present
     current_step_id: ContentWorkflowOperatorStepId
     if not scope_complete:
         current_step_id = "scope"
@@ -208,7 +206,7 @@ def build_content_workflow_operator_journey(
                 safe_next_step=(
                     facts.sales_brief_safe_next_step
                     if not scope_complete
-                    else facts.section_map_safe_next_step
+                    else "Mapa sekcji została wyliczona automatycznie. Przejdź do szkicu treści."
                 ),
             ),
             ContentWorkflowOperatorStep(
@@ -654,17 +652,8 @@ def _section_map_blocker(
 ) -> ContentWorkflowOperatorBlocker | None:
     if not scope_complete:
         return _prerequisite_blocker("scope", "Najpierw domknij zakres i cel.")
-    if facts.section_map_present and facts.section_map_review_current:
-        return None
     if facts.section_map_present:
-        return ContentWorkflowOperatorBlocker(
-            code="section_map_review_missing",
-            label="Plan sekcji wymaga decyzji marketera",
-            reason=(
-                "Kolejność, cel i dowody sekcji nie zostały zatwierdzone dla "
-                "aktualnej wersji planu."
-            ),
-        )
+        return None
     return facts.section_map_blocker or ContentWorkflowOperatorBlocker(
         code="missing_section_map",
         label="Brakuje planu sekcji",

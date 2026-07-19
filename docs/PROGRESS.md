@@ -2419,3 +2419,14 @@ digest wejścia lub proposal ID się zmieniły, marketer dostaje typed
 `blocked`, `stale_planning_input`, bez budowania snapshotu; focused status suite
 7/7, Ruff i mypy clean. To chroni pełny dokument przed cichym użyciem starego
 tekstu.
+
+### 2026-07-19 — mapa sekcji jest generowana, nie zatwierdzana ręcznie
+
+Usunięto błędną bramkę, która wymagała osobnej decyzji `section_map` mimo że
+aktualna propozycja planu już zawierała stabilne sekcje, inventory disposition,
+query assignments i evidence lineage. `section_map_current` wynika teraz z
+aktualnej propozycji z niepustą mapą; marketer zatwierdza zakres, a następnie
+ocenia wygenerowany tekst. Journey, pełny draft i zapis rewizji korzystają z
+tej samej zasady. Focused proof: operator journey 18/18, w tym jawny przypadek
+z `section_map_review_current=false`, który przechodzi bez ręcznego review mapy;
+Ruff i mypy clean.

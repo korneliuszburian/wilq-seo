@@ -162,7 +162,7 @@ def test_explicit_plan_request_confirms_only_service_selection(
         "proposal"
     ]["proposal_id"]
     assert after["planning_workspace"]["scope_current"] is False
-    assert after["planning_workspace"]["section_map_current"] is False
+    assert after["planning_workspace"]["section_map_current"] is True
 
 
 def test_executor_submission_failure_is_typed_and_retryable(
