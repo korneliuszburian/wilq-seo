@@ -7,6 +7,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
+  wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily
+  runtime został wydłużony do 300 s, nadal z env override i bez zmiany
+  connector freshness/invalidacji. Focused proof kontraktu cache i Ruff są
+  zielone; nie jest to dowód produkcyjnej wydajności ani świeżości danych poza
+  jawnym TTL.
+
 - Kanoniczny bieżący cel jest w `docs/goals/001-goal.md`; archiwalny Goal 005
   nie jest już aktywnym recovery entrypointem. Operacyjna kolejka pozostaje
   wyłącznie w Beads pod `wilq-seo-1oa` i review-only `wilq-seo-v9ab`.

@@ -268,7 +268,7 @@ def test_daily_runtime_cache_seconds_default_and_env(
 
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
     monkeypatch.delenv("WILQ_DAILY_RUNTIME_CACHE_SECONDS", raising=False)
-    assert daily_runtime._cache_seconds() == 30.0
+    assert daily_runtime._cache_seconds() == 300.0
 
     monkeypatch.setenv("WILQ_DAILY_RUNTIME_CACHE_SECONDS", "7.5")
     assert daily_runtime._cache_seconds() == 7.5
@@ -277,7 +277,7 @@ def test_daily_runtime_cache_seconds_default_and_env(
     assert daily_runtime._cache_seconds() == 0.0
 
     monkeypatch.setenv("WILQ_DAILY_RUNTIME_CACHE_SECONDS", "invalid")
-    assert daily_runtime._cache_seconds() == 30.0
+    assert daily_runtime._cache_seconds() == 300.0
 
 
 def test_tactical_queue_uses_short_ttl_cache(

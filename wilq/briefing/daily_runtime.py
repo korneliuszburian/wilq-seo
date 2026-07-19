@@ -26,7 +26,10 @@ from wilq.schemas import (
 )
 from wilq.storage.metric_store import metric_store
 
-DEFAULT_DAILY_RUNTIME_CACHE_SECONDS = 30.0
+# Keep the marketer's first view warm across a normal working session. Connector
+# freshness and explicit refresh state remain part of the response; this cache
+# only avoids rebuilding the same read-only aggregate on every navigation.
+DEFAULT_DAILY_RUNTIME_CACHE_SECONDS = 300.0
 _cached_base: DailyRuntimeBaseCacheEntry | None = None
 _cached_command_center: DailyCommandCenterCacheEntry | None = None
 _cached_marketing_brief: DailyMarketingBriefCacheEntry | None = None
