@@ -1994,6 +1994,11 @@ odpowiedzialny za interpretację świeżości. Proof: modułowy mypy clean,
 `tests/content/test_publication_bound_measurement.py` oraz
 `tests/content/test_measurement_aggregates.py` razem 13/13, diff-check clean.
 
-Po tym slice pełny odczyt mypy wynosi 87 błędów w 16 plikach. Najmniejszy
-następny klaster Ads został już zawężony do jednego literalnego statusu waluty;
-nie jest to jeszcze pełna bramka ani dowód poprawności raportów Ads.
+Po tym slice pełny odczyt mypy wynosił 87 błędów w 16 plikach. Literalny status
+waluty Ads został następnie domknięty; aktualny odczyt wynosi 86 błędów w 15
+plikach. To nadal nie jest pełna bramka ani dowód poprawności raportów Ads.
+
+Ahrefs gap diagnostics ma teraz jawny fallback dla nieufnych wartości
+`gap_method`: `_gap_derived_method` zwraca wyłącznie `str` i nie przepuszcza
+`None` z zewnętrznego payloadu. Proof: modułowy mypy clean,
+`tests/content/test_ahrefs_planning.py` 4/4, diff-check clean.

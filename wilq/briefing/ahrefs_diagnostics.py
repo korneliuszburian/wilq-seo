@@ -955,13 +955,18 @@ def _gap_mapping_status(
 
 
 def _gap_derived_method(facts: list[MetricFact]) -> str:
-    return next(
+    derived = next(
         (
             fact.dimensions.get("gap_method")
             for fact in facts
             if fact.dimensions.get("gap_method")
         ),
-        "różnica zbioru słów konkurencji i słów domeny docelowej",
+        None,
+    )
+    return (
+        derived
+        if isinstance(derived, str)
+        else "różnica zbioru słów konkurencji i słów domeny docelowej"
     )
 
 
