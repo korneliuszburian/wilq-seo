@@ -44,6 +44,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   `content_planning_proposal_b271ade8deff47f6980fb9cbb11b0c62`. Live API zwraca
   `ready`, `blockers=[]`, `publish_ready=false`; nadal nie jest to zgoda
   człowieka ani draft WordPress.
+- Niezależny checker tego fixed pointu został uruchomiony w pass
+  `2026-07-19-dynamic-footer-mapping-pbUJxT`, ale runner odrzucił wynik przez
+  cytację F1 ponad limit 20 linii. Pass ma `evidence_gap`; nie przedstawiam go
+  jako PASS ani approval i nie zmieniam kodu na podstawie niewalidowanego
+  findingu.
 - 2026-07-19: dynamiczny odczyt WordPress rozróżnia teraz strukturę ACF od
   `the_content` także wtedy, gdy materiał przychodzi przez REST. Parser zapisuje
   H2/H3 z REST-owego HTML, a binding preferuje sekcje ACF i dopiero potem
