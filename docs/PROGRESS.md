@@ -2349,3 +2349,6 @@ marketera wraz ze statusem, czasem, skill/hook oraz bezpiecznym błędem. Live
 status pokazuje `codex_content_planning_e5967...` jako `failed` z
 `runtime_failed:codex_response_stream_disconnected`. Proof: system-status
 contract 2/2, mypy i Ruff clean. Nie są ujawniane surowe payloady provider’a.
+Ponieważ login/CLI pozostają dostępne, `readiness_status` nadal opisuje
+gotowość lokalnej sesji, ale nowy `operational_status=degraded` i
+`operational_blocker_code` nie pozwalają pomylić jej z działającym providerem.

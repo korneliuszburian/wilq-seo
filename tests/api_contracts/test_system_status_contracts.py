@@ -52,6 +52,11 @@ def test_system_status_exposes_latest_typed_codex_failure_without_provider_paylo
 
     assert response.status_code == 200
     runtime = response.json()["codex_runtime"]
+    assert runtime["operational_status"] == "degraded"
+    assert runtime["operational_blocker_code"] == (
+        "runtime_failed:codex_response_stream_disconnected"
+    )
+    assert runtime["operational_blocker_label"]
     assert runtime["last_codex_run"] == {
         "id": "codex_content_planning_status_test",
         "status": "failed",

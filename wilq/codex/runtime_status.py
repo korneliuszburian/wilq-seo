@@ -61,12 +61,25 @@ def codex_runtime_status() -> dict[str, Any]:
     skills_dir = Path(".agents/skills")
     hooks_file = Path(".codex/hooks.json")
     last_run = _last_codex_run_summary()
+    operational_failure = bool(last_run and last_run["status"] in {"failed", "blocked"})
+    operational_error = (
+        last_run["error"]
+        if last_run is not None and operational_failure
+        else None
+    )
     return {
         "readiness_status": readiness.status,
+        "operational_status": "degraded" if operational_failure else readiness.status,
         "codex_available": readiness.cli_available,
         "login_available": readiness.login_available,
         "blocker_code": readiness.blocker_code,
         "blocker_label": readiness.blocker_label,
+        "operational_blocker_code": operational_error,
+        "operational_blocker_label": (
+            "Ostatni istotny run Codexa zakończył się błędem; sprawdź runtime przed retry."
+            if operational_failure
+            else None
+        ),
         "codex_version_if_known": None,
         "skills_directory_status": "present" if skills_dir.exists() else "missing",
         "hooks_status": "present" if hooks_file.exists() else "missing",
