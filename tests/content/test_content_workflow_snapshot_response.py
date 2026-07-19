@@ -48,6 +48,25 @@ def test_public_workflow_snapshot_exposes_readiness_without_execution_contract(
     _assert_browser_safe_generation_readiness(valid_workflow_snapshot_payload)
 
 
+def test_public_readiness_cannot_be_ready_before_scope_or_section_map(
+    valid_workflow_snapshot_payload: dict[str, Any],
+) -> None:
+    current_step_id = valid_workflow_snapshot_payload["current_step_id"]
+    if current_step_id not in {"scope", "section_map"}:
+        pytest.skip("fixture is already beyond planning gates")
+
+    readiness = valid_workflow_snapshot_payload["structured_generation_readiness"]
+    current_step = next(
+        step
+        for step in valid_workflow_snapshot_payload["operator_steps"]
+        if step["phase"] == "current"
+    )
+    assert readiness["status"] == "blocked"
+    assert readiness["blockers"]
+    if current_step["blocker"] is not None:
+        assert readiness["blockers"][0]["code"] == current_step["blocker"]["code"]
+
+
 def test_selected_public_workflow_snapshot_uses_same_safe_projection(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

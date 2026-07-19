@@ -2442,3 +2442,12 @@ Ads/playbook pozostają bez zmian dla operatorów kampanii. Live proof po reload
 API: context pack zawiera m.in. `ekologus_service_bdo_reporting`,
 `ekologus_service_environmental_consulting_outsourcing` oraz zatwierdzone karty
 KB z material IDs; focused test przechodzi.
+
+### 2026-07-19 — readiness nie rozjeżdża się już z journey
+
+Browser snapshot nie pokazuje `structured_generation_readiness=ready`, gdy
+kanoniczny operator journey nadal jest na `scope` albo `section_map`. Readiness
+dziedziczy typed blocker aktualnego kroku, więc marketer widzi jeden prawdziwy
+następny krok zamiast równoczesnego „gotowe” i „zablokowane”. Live proof dla
+outsourcingu: `current_step_id=scope`, readiness `blocked`, blocker
+`scope_review_required`; focused snapshot test, Ruff i mypy clean.

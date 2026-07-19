@@ -30,11 +30,32 @@ def project_content_work_item_browser_snapshot(
         for blocker in generation_result.blockers
     ]
     contract = generation_result.contract
+    current_step = next(
+        step for step in snapshot.operator_steps if step.phase == "current"
+    )
+    journey_blocker = None
+    if (
+        not blockers
+        and current_step.id in {"scope", "section_map"}
+        and current_step.blocker is not None
+    ):
+        journey_blocker = ContentStructuredGenerationReadinessBlocker(
+            code=current_step.blocker.code,
+            label=current_step.blocker.label,
+            reason=current_step.blocker.reason,
+            next_step=current_step.safe_next_step,
+        )
     if blockers:
         readiness = ContentStructuredGenerationReadiness(
             status="blocked",
             blockers=blockers,
             safe_next_step=blockers[0].next_step,
+        )
+    elif journey_blocker is not None:
+        readiness = ContentStructuredGenerationReadiness(
+            status="blocked",
+            blockers=[journey_blocker],
+            safe_next_step=journey_blocker.next_step,
         )
     elif contract is None:
         blocker = ContentStructuredGenerationReadinessBlocker(
