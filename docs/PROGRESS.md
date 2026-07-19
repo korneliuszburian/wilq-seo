@@ -2835,3 +2835,9 @@ Ponieważ zmiana bramki jakości musi unieważnić starszy plan, `ContentPlannin
 Nowy plan ma 7 sekcji z dynamicznego inventory, 2 CTA (`after_lead`, `after_content`) i 1 link osadzony w zachowanej sekcji. Dated training material dostał `remove_review_required`; żadna CTA ani link nie wskazuje usuniętej sekcji. To dowodzi świeżego planu i kontraktu placementu, nie akceptacji, pełnego draftu, semantic review ani publikacji.
 
 Focused proof: Ruff, 3 testy dynamic input, 2 testy contract limits i shared-schema TypeScript `tsc --noEmit` passed. No vendor write.
+
+### 2026-07-19 — oba exact piloty przeszły ten sam dynamiczny planner v5
+
+Po tym samym bumpie kryteriów wygenerowano drugi case: `ekologus_service_environmental_consulting_outsourcing`, digest `43fbabec…`, proposal `content_planning_proposal_1b298307e78d453ab5d2ff2e069d64e7`, `ready`, criteria v5. Jego inventory ma jedną istniejącą sekcję, poprawnie zmapowaną po `inventory_section_id`; cztery kolejne sekcje zostały utworzone dynamicznie, bez `unmapped` ani `ambiguous`. Plan ma 2 CTA i link `after_content`.
+
+Wraz z BDO (`content_planning_proposal_d67afa3376b046d8bdab27c9e582ef4e`) daje to dwa różne adresy, karty usług i kształty inventory obsłużone przez ten sam API-owned kontrakt. Oba plany pozostają niezatwierdzone; semantic storage, pełne rewizje, human acceptance i draft-only handoff są nadal otwarte.
