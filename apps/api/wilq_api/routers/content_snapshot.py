@@ -44,6 +44,7 @@ from wilq.content.workflow.exact_demand_decision import (
 )
 from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
 from wilq.content.workflow.planning import ContentPlanningDecision
+from wilq.content.workflow.revisions import ContentDraftRevisionState
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import (
     ContentDiagnosticsResponse,
@@ -70,10 +71,16 @@ def snapshot_for_work_item_or_404(
     human_review: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
     planning_decisions_override: list[ContentPlanningDecision] | None = None,
+    diagnostics_override: ContentDiagnosticsResponse | None = None,
+    revision_state_override: ContentDraftRevisionState | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
-    diagnostics = diagnostics_with_exact_gsc_demand(work_item_id)
+    diagnostics = diagnostics_override or diagnostics_with_exact_gsc_demand(work_item_id)
     store = content_workflow_store()
-    revision_state = store.load_draft_revision_state(work_item_id)
+    revision_state = (
+        revision_state_override
+        if revision_state_override is not None
+        else store.load_draft_revision_state(work_item_id)
+    )
     planning_decisions = (
         store.load_planning_decisions(work_item_id)
         if planning_decisions_override is None
@@ -151,14 +158,20 @@ def snapshot_for_work_item_or_blocked_or_404(
     diagnostics = diagnostics_with_exact_gsc_demand(work_item_id)
     store = content_workflow_store()
     revision_state = store.load_draft_revision_state(work_item_id)
+    planning_decisions = store.load_planning_decisions(work_item_id)
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,
         revision_state=revision_state,
-        planning_decisions=store.load_planning_decisions(work_item_id),
+        planning_decisions=planning_decisions,
     )
     if snapshot is not None:
-        return snapshot_for_work_item_or_404(work_item_id)
+        return snapshot_for_work_item_or_404(
+            work_item_id,
+            diagnostics_override=diagnostics,
+            revision_state_override=revision_state,
+            planning_decisions_override=planning_decisions,
+        )
     blocked_snapshot = build_content_work_item_blocked_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,

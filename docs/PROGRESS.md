@@ -1619,3 +1619,15 @@ z ciepłego cache trwały 1,2–1,4 s. To dowodzi, że API nie wisi przez 10 min
 ale pierwszy snapshot nadal jest mierzalnym hotspotem do redukcji; nie claimuję
 jeszcze docelowego UX ani realnego UAT. Claude checker pozostaje przygotowany na
 świeżym fixed poincie, lecz wykonanie jest niedostępne przed 12:00 Europe/Warsaw.
+
+### 2026-07-19 — snapshot nie buduje diagnostics drugi raz
+
+Wybrany browser snapshot przechodzi przez warstwę „czy to nie jest blocker”, a
+następnie ponownie wołał pełne `diagnostics_with_exact_gsc_demand` i odczyty stanu
+store. Ten sam request budował więc ciężki exact diagnostics path dwukrotnie.
+Route zachowuje teraz pierwszy wynik diagnostics, revision state i planning
+decisions przy przejściu do pełnego snapshotu. Publiczny kontrakt inventory
+test suite: 5 passed; Ruff i diff-check przechodzą. Kontrolny odczyt outsourcing
+po reloadzie miał 4,955 s, potem 1,573 s; wcześniejszy cold baseline w tym samym
+stacku wynosił 7,543 s. To jest dowód usunięcia powtórnego odczytu, nie obietnica
+docelowego czasu ani dowód UAT.
