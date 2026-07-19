@@ -7,6 +7,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: live Ads smoke ujawnił niespójność w mixed negative-keyword
+  queue. Kontrakt miał `status=ready`, mimo że część z 12 kandydatów nie miała
+  dokładnego 90-dniowego wiersza bezpieczeństwa, więc nie było bezpiecznego
+  `payload_preview` ani akcji do review. API teraz fail-closed oznacza całą
+  kolejkę jako `blocked`, zostawia kandydaty i ich statusy do diagnozy, ale
+  usuwa preview/akcje oraz dodaje `90_day_safety_check`. Focused testy
+  negative-keyword 3/3, Ruff, mypy i live Ads smoke przechodzą.
+
 - 2026-07-19: świeży Ads pilot ma exact reviewed service binding. Read-only
   refresh `refresh_google_ads_51d766262b25` jest świeży i zwraca
   `live_data_available=true`. Kanoniczna kolejka `ads_review_search_terms` ma

@@ -4338,8 +4338,27 @@ def _negative_keywords_read_contract(
     if any(candidate.safety_status != "read_ready_needs_human_review" for candidate in candidates):
         missing_read_contracts.insert(1, "90_day_safety_check")
 
+    # A mixed queue is not safe to expose as a ready review action.  A payload
+    # preview is only meaningful when every candidate has the exact matched
+    # 90-day safety row; otherwise the operator could mistake the ready subset
+    # for a complete, serviceable exclusion queue.  Keep the candidates and
+    # their per-row status visible, but fail closed at the contract boundary.
+    contract_status: Literal["ready", "blocked"] = (
+        "blocked" if missing_read_contracts else "ready"
+    )
+    safe_payload_preview = (
+        [
+            candidate.payload_preview
+            for candidate in candidates
+            if candidate.payload_preview is not None
+        ]
+        if contract_status == "ready"
+        else []
+    )
+    safe_action_ids = negative_keyword_action_ids if contract_status == "ready" else []
+
     return AdsNegativeKeywordsReadContract(
-        status="ready",
+        status=contract_status,
         title="Ocena wykluczeń z wyszukiwanych haseł",
         summary=(
             f"WILQ ma {len(candidates)} terminów do oceny: mają koszt lub kliknięcia, "
@@ -4347,11 +4366,7 @@ def _negative_keywords_read_contract(
             "90-dniowy odczyt, jeśli WILQ ma pasujący wiersz."
         ),
         candidates=candidates,
-        payload_preview=[
-            candidate.payload_preview
-            for candidate in candidates
-            if candidate.payload_preview is not None
-        ],
+        payload_preview=safe_payload_preview,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_unique(
             evidence_id
@@ -4365,7 +4380,7 @@ def _negative_keywords_read_contract(
         coverage=[*search_terms_read_contract.coverage, *search_term_safety_read_contract.coverage],
         missing_read_contracts=missing_read_contracts,
         blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
-        action_ids=negative_keyword_action_ids,
+        action_ids=safe_action_ids,
         next_step=(
             "Przejrzyj propozycje do sprawdzenia. Przed jakimkolwiek zapisem "
             "zmian wymagaj kontekstu dopasowania, podglądu zmian i sprawdzenia "
