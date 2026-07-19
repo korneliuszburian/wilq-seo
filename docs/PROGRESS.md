@@ -7,6 +7,20 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: świeży Ads pilot ma exact reviewed service binding. Read-only
+  refresh `refresh_google_ads_51d766262b25` jest świeży i zwraca
+  `live_data_available=true`. Kanoniczna kolejka `ads_review_search_terms` ma
+  21 wierszy w bounded oknie 30 dni oraz 200 wierszy bezpieczeństwa z 90 dni;
+  9 wierszy ma status `approved_current` dla karty
+  `ekologus_service_environmental_consulting_outsourcing` i inventory work
+  itemu `content_work_item_inventory_6caeaa2acb57bd46d278ca73`. Ta sama
+  decyzja ma akcje `act_prepare_custom_segments_from_search_terms` i
+  `act_prepare_negative_keyword_review_queue`; obie walidacje zwróciły
+  `valid`. Nie ma żadnego vendor write. Keyword Planner pozostaje typowanym
+  blockerem `DEVELOPER_TOKEN_NOT_APPROVED`, a native Google Ads handoff i
+  realne UAT nadal czekają na człowieka. Bead `wilq-seo-v9ab.17.7` pozostaje
+  otwarty.
+
 - 2026-07-19: dynamiczna mapa briefu odrzuca teraz datowane testimonial/case
   rows (np. nazwa klienta z `[2013 r.]`) przed wyznaczeniem kierunków H2. Reguła
   działa po wzorcu roku, nie po nazwie klienta; live 0454 nie pokazuje już SERTOP
