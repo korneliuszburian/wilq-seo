@@ -1481,3 +1481,23 @@ Wszystkie 21 modułów Ads ma rzeczywiste importy z entrypointu/orchestratora i
 chroni odrębne kontrakty; brak bezpiecznej redundancji do kasowania bez
 przenoszenia logiki. Zadanie cleanup pozostaje otwarte, ale nie redukujemy
 liczby plików kosztem czytelności i ochrony ryzyk.
+
+### 2026-07-19 — stale detection dla pełnego draftu
+
+Live BDO ujawnił rozjazd: zatwierdzony plan i istniejąca rewizja miały digest
+`550ba271…`, ale późniejszy planning job zakończył się błędem dla digestu
+`0ffb4109…`. `GET /initial-draft` zwracał wcześniej `created` starej rewizji,
+co mogło pokazać marketerowi nieaktualny tekst jako bieżący.
+
+Naprawiono read path: bez ciężkiego snapshotu odczytuje najnowszy queued/failed
+planning job, porównuje jego `planning_input_digest` z zatwierdzoną propozycją i
+zwraca typed `blocked/stale_planning_input` z bezpiecznym retry. Historia rewizji
+pozostaje niezmienna; GET nie uruchamia modelu ani vendor write. Focused proof:
+`tests/content/test_initial_draft_status_read_path.py` 5 passed, Ruff passed,
+live BDO GET zwraca blocker zamiast `created`.
+
+Second-opinion checker dla fixed pointu: pierwsza próba została odrzucona przez
+walidator (Claude przekroczył limit 20 linii cytacji), bez retained outputu.
+Świeża próba jest schema-valid i nie ma findings; pozostawia wyłącznie jawne
+evidence gaps wynikające z tool-free transportu oraz human-only decyzję o
+akceptacji planu/draftu. Nie claimuję UAT, jakości tekstu ani gotowości publikacji.

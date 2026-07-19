@@ -117,6 +117,38 @@ def register_content_initial_draft_route(
             work_item_id,
             proposal_store,
         )
+        newer_planning_response = (
+            None
+            if proposal is None
+            else getattr(
+                proposal_store,
+                "latest_generation_response",
+                lambda *_: None,
+            )(work_item_id)
+        )
+        if (
+            proposal is not None
+            and newer_planning_response is not None
+            and newer_planning_response.planning_input_digest is not None
+            and newer_planning_response.planning_input_digest
+            != proposal.planning_input_digest
+        ):
+            blocker = ContentInitialDraftBlocker(
+                code="stale_planning_input",
+                label="Metryki albo kontekst planu zmieniły się",
+                reason=(
+                    "Nowsze uruchomienie planowania ma inny planning_input_digest "
+                    "niż zatwierdzona rewizja."
+                ),
+                next_step="Wygeneruj i zatwierdź nowy plan przed tworzeniem tekstu.",
+            )
+            return ContentInitialDraftResponse(
+                status="blocked",
+                work_item_id=work_item_id,
+                proposal_id=proposal.proposal_id,
+                blockers=[blocker],
+                safe_next_step=blocker.next_step,
+            )
         latest = max(
             (
                 run
