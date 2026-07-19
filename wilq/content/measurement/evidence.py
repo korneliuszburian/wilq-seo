@@ -28,7 +28,12 @@ from wilq.content.measurement.window import (
     ContentMeasurementWindowBuildResult,
 )
 from wilq.content.workflow.models import ContentWorkItem
-from wilq.schemas import ConnectorQualityState, ConnectorSettlementState, MetricFact
+from wilq.schemas import (
+    ConnectorQualityState,
+    ConnectorRefreshRun,
+    ConnectorSettlementState,
+    MetricFact,
+)
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
@@ -259,7 +264,10 @@ def _metric_connector(metric: ContentMeasurementMetric) -> str:
     return "google_analytics_4" if metric.startswith("ga4_") else "google_search_console"
 
 
-def _quality_metadata(evidence_ids, refresh_runs):
+def _quality_metadata(
+    evidence_ids: list[str],
+    refresh_runs: dict[str, ConnectorRefreshRun],
+) -> tuple[ConnectorQualityState, ConnectorSettlementState, list[str]]:
     runs = [
         refresh_runs[_refresh_run_id(evidence_id)]
         for evidence_id in evidence_ids

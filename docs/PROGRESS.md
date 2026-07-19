@@ -1983,3 +1983,13 @@ Po tym slice pełny odczyt `uv run mypy wilq apps/api --no-incremental` spadł z
 100 błędów w 19 plikach do 90 błędów w 17 plikach. To jest licznik długu, nie
 claim gotowości; pozostałe klastry obejmują freshness diagnostics, initial draft,
 Ads, GA4, WordPress inventory i shared-contract seams.
+
+### 2026-07-19 — measurement evidence zachowuje typ świeżości i settlementu
+
+Następny klaster długu został zamknięty w
+`wilq/content/measurement/evidence.py`: `_quality_metadata` przyjmuje teraz
+typed `ConnectorRefreshRun` i zwraca jawny tuple stanów jakości, settlementu i
+caveats. To nie zmienia decyzji pomiarowych, ale usuwa niezaanotowany seam
+odpowiedzialny za interpretację świeżości. Proof: modułowy mypy clean,
+`tests/content/test_publication_bound_measurement.py` oraz
+`tests/content/test_measurement_aggregates.py` razem 13/13, diff-check clean.
