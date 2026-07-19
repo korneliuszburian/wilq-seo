@@ -2391,3 +2391,11 @@ Usunięto martwy helper provider override, zachowując model scalar, izolację,
 read-only i brak fallbacku. Proof: transport test 1/1, Ruff, mypy oraz live
 structured-turn `completed` bez blockera. Nie jest to druga ścieżka modelowa —
 to naprawa jedynego istniejącego app-server seamu.
+
+Kontrolowany POST pełnego `/api/content/work-items/{id}/planning-proposals`
+przeszedł po reloadzie API: status `ready`, proposal v15, `generation_status`
+`codex_generated`, runtime `completed`, bez blockerów i bez częściowego stanu.
+Plan zachował 7 identyfikatorów materiałów źródłowych, exact GSC evidence,
+service-card binding, query→section assignments oraz measurement plan bez
+wymyślonych targetów. To jest pierwszy live proof całego API→app-server→store
+seamu po naprawie; nadal wymaga human review przed draftem/publikacją.
