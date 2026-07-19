@@ -14,7 +14,7 @@ from tests.content.dynamic_planning_test_support import (
     PlanningClient,
     configure_planning_harness,
 )
-from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.codex.app_server import CodexAppServerTurnBlocker, StdioCodexAppServerClient
 from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.handoff.revision_document_renderer import revision_document_markdown
 from wilq.content.planning.dynamic_input import (
@@ -23,6 +23,7 @@ from wilq.content.planning.dynamic_input import (
 )
 from wilq.content.planning.generated_proposal import (
     _planning_output_quality_errors,
+    _planning_runtime_blocker,
     generate_content_planning_proposal,
     read_content_planning_proposal,
 )
@@ -340,6 +341,24 @@ def test_planning_runtime_default_allows_full_structured_turn(
 
     assert isinstance(client, StdioCodexAppServerClient)
     assert client.timeout_seconds == 180.0
+
+
+def test_planning_runtime_stream_failure_has_operator_safe_next_step() -> None:
+    blocker = _planning_runtime_blocker(
+        [
+            CodexAppServerTurnBlocker(
+                "codex_response_stream_disconnected", "ignored"
+            ).code
+        ]
+    )
+
+    assert blocker == (
+        "Połączenie z Codexem zostało przerwane",
+        "Provider Codexa przerwał strumień odpowiedzi przed końcem tury; "
+        "WILQ nie otrzymał bezpiecznego planu.",
+        "Sprawdź status app-servera i połączenie, a potem uruchom nową próbę; "
+        "WILQ nic nie zapisał.",
+    )
 
 
 def test_planning_output_quality_gate_rejects_navigation_and_dated_headings() -> None:

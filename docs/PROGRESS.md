@@ -1433,3 +1433,13 @@ Naprawiono dwa ujawnione przez pełniejszy run rozjazdy testowego kontraktu:
 domyślny planning timeout testuje obecne 180 sekund, a fixture sprawdzający
 hałaśliwe nagłówki zawiera neutralny CTA, więc test nie miesza brakującego CTA z
 celem testu. Focused proof obu testów, Ruff i `git diff --check` przechodzą.
+
+### 2026-07-19 — runtime blocker ma operator-facing next step
+
+Znane, bezpieczne kody app-servera są teraz mapowane w planowaniu na konkretny
+polski blocker: przerwany `codex_response_stream_disconnected` mówi o zerwanym
+strumieniu i sprawdzeniu połączenia, a `codex_timeout` o przekroczeniu
+ograniczonego okna. Nie pokazujemy surowego payloadu providera i nie zmieniamy
+statusu `failed`, lineage ani zasad retry. Inne kody zachowują dotychczasowy
+generic fallback. Focused proof: test mapowania stream failure, timeout
+contract i heading-quality fixture (3 passed), Ruff oraz `git diff --check`.

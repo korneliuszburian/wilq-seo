@@ -414,11 +414,14 @@ def _run_planning_turn(
         status: Literal["blocked", "failed"] = (
             "blocked" if runtime_result.status == "blocked" else "failed"
         )
+        runtime_blocker = _planning_runtime_blocker(
+            [entry.code for entry in runtime_result.blockers]
+        )
         blocker = _blocker(
             "runtime_blocked" if status == "blocked" else "runtime_failed",
-            "Codex nie zwrócił bezpiecznego planu",
-            "App-server nie zakończył turnu poprawnym ustrukturyzowanym wynikiem.",
-            "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
+            runtime_blocker[0],
+            runtime_blocker[1],
+            runtime_blocker[2],
             source_codes=[entry.code for entry in runtime_result.blockers],
         )
         return None, trace, blocker, status
@@ -1026,6 +1029,31 @@ def _blocker(
         reason=reason,
         next_step=next_step,
         source_codes=source_codes or [],
+    )
+
+
+def _planning_runtime_blocker(source_codes: list[str]) -> tuple[str, str, str]:
+    """Turn safe runtime codes into an operator-useful blocker."""
+
+    codes = set(source_codes)
+    if "codex_response_stream_disconnected" in codes:
+        return (
+            "Połączenie z Codexem zostało przerwane",
+            "Provider Codexa przerwał strumień odpowiedzi przed końcem tury; "
+            "WILQ nie otrzymał bezpiecznego planu.",
+            "Sprawdź status app-servera i połączenie, a potem uruchom nową próbę; "
+            "WILQ nic nie zapisał.",
+        )
+    if "codex_timeout" in codes:
+        return (
+            "Codex nie zakończył planowania w limicie czasu",
+            "App-server nie zwrócił bezpiecznego planu przed końcem ograniczonego okna.",
+            "Sprawdź status Codexa i uruchom nową próbę; WILQ nic nie zapisał.",
+        )
+    return (
+        "Codex nie zwrócił bezpiecznego planu",
+        "App-server nie zakończył turnu poprawnym ustrukturyzowanym wynikiem.",
+        "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
     )
 
 
