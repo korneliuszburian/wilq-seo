@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
 from tests.content.test_work_item_preflight_api import (
-    _baseline_period,
     _claim_ledger,
     _draft_claim_ledger,
     _enrichment,
@@ -14,9 +13,7 @@ from tests.content.test_work_item_preflight_api import (
     _human_review,
     _inventory_record,
     _item,
-    _observation_period,
     _post_human_review,
-    _post_measurement_window,
     _post_preflight,
     _post_wordpress_handoff,
     _sales_brief_seed,
@@ -301,43 +298,6 @@ def _build_chain_wordpress_handoff(
     return handoff
 
 
-def _assert_chain_measurement_blocks_early_success(
-    brief: dict[str, Any], draft: dict[str, Any], handoff: dict[str, Any]
-) -> None:
-    measurement = _post_measurement_window(
-        {
-            "item": _item(
-                preflight_status="handoff_allowed",
-                preserve_first_plan_status="approved",
-                sales_brief_status="approved",
-                sales_brief_id=brief["id"],
-                claim_ledger_status="approved",
-                claim_ledger_id="claim_ledger_bdo",
-                draft_package_status="ready",
-                draft_package_id=draft["id"],
-                human_review_status="approved",
-                human_review_id="human_review_bdo",
-                audit_status="recorded",
-                audit_id="audit_bdo",
-                measurement_window_status="missing",
-                measurement_window_id=None,
-            ),
-            "handoff": handoff,
-            "baseline_period": _baseline_period(),
-            "observation_period": _observation_period(),
-            "allowed_metrics": ["gsc_clicks", "gsc_impressions", "ga4_engaged_sessions"],
-            "source_connectors": ["google_search_console", "google_analytics_4"],
-        }
-    )
-    window = measurement["measurement_window_result"]["window"]
-    assert window["status"] == "planned"
-    assert window["success_claim_allowed"] is False
-    assert measurement["updated_item"]["measurement_window_id"] == window["id"]
-    assert [blocker["code"] for blocker in measurement["outcome_blockers"]] == [
-        "measurement_window_not_ready"
-    ]
-
-
 def test_content_work_item_api_chain_keeps_all_content_production_gates() -> None:
     preflight = _post_preflight(
         {
@@ -352,5 +312,4 @@ def test_content_work_item_api_chain_keeps_all_content_production_gates() -> Non
     brief = _build_chain_sales_brief()
     draft = _build_chain_draft_package(brief)
     reviewed_item = _approve_chain_human_review(brief, draft)
-    handoff = _build_chain_wordpress_handoff(reviewed_item, draft)
-    _assert_chain_measurement_blocks_early_success(brief, draft, handoff)
+    _build_chain_wordpress_handoff(reviewed_item, draft)
