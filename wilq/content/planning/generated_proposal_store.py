@@ -156,6 +156,7 @@ class ContentPlanningProposalStore:
     def latest_generation_response(
         self,
         work_item_id: str,
+        service_card_id: str | None = None,
     ) -> ContentPlanningProposalResponse | None:
         """Read the newest queued/failed job without rebuilding a snapshot."""
         connection = self._read_connection()
@@ -163,16 +164,17 @@ class ContentPlanningProposalStore:
             return None
         try:
             with connection:
-                row = connection.execute(
-                    """
+                query = """
                     SELECT payload_json, status, updated_at
                     FROM content_planning_generation_jobs
                     WHERE work_item_id = ? AND status IN ('queued', 'failed')
-                    ORDER BY updated_at DESC
-                    LIMIT 1
-                    """,
-                    (work_item_id,),
-                ).fetchone()
+                """
+                parameters: list[str] = [work_item_id]
+                if service_card_id is not None:
+                    query += " AND service_card_id = ?"
+                    parameters.append(service_card_id)
+                query += " ORDER BY updated_at DESC LIMIT 1"
+                row = connection.execute(query, parameters).fetchone()
         finally:
             connection.close()
         if row is None:

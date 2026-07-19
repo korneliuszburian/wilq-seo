@@ -1529,3 +1529,13 @@ falsifier passed, Ruff i diff-check passed. Claude checker został przygotowany
 z fingerprintem fixed pointu, ale okno wykonania było zamknięte (przed 12:00
 Europe/Warsaw); nie claimuję review PASS. Human-only pozostaje decyzja, czy
 przyszły maintenance window może przyjąć dodatnią grace.
+
+### 2026-07-19 — service-scoped stale detection
+
+Po wcześniejszym stale hardeningu wykryto drugi edge case: lookup najnowszego
+planning joba był tylko po `work_item_id`. Przy kilku kartach usług job innej
+usługi mógłby fałszywie unieważnić aktualny plan. Store przyjmuje teraz
+opcjonalny `service_card_id`, a initial-draft GET przekazuje kartę zatwierdzonej
+propozycji. Focused status suite: 6 passed; Ruff, diff-check i live BDO GET
+przeszły. Dodany checker ma osobny fingerprint i prompt; wynik Claude’a jest
+jeszcze pending przez zamknięte okno wykonania.

@@ -124,7 +124,10 @@ def register_content_initial_draft_route(
                 proposal_store,
                 "latest_generation_response",
                 lambda *_: None,
-            )(work_item_id)
+            )(
+                work_item_id,
+                getattr(proposal, "service_card_id", None),
+            )
         )
         if (
             proposal is not None
