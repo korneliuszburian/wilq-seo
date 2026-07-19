@@ -2841,3 +2841,9 @@ Focused proof: Ruff, 3 testy dynamic input, 2 testy contract limits i shared-sch
 Po tym samym bumpie kryteriów wygenerowano drugi case: `ekologus_service_environmental_consulting_outsourcing`, digest `43fbabec…`, proposal `content_planning_proposal_1b298307e78d453ab5d2ff2e069d64e7`, `ready`, criteria v5. Jego inventory ma jedną istniejącą sekcję, poprawnie zmapowaną po `inventory_section_id`; cztery kolejne sekcje zostały utworzone dynamicznie, bez `unmapped` ani `ambiguous`. Plan ma 2 CTA i link `after_content`.
 
 Wraz z BDO (`content_planning_proposal_d67afa3376b046d8bdab27c9e582ef4e`) daje to dwa różne adresy, karty usług i kształty inventory obsłużone przez ten sam API-owned kontrakt. Oba plany pozostają niezatwierdzone; semantic storage, pełne rewizje, human acceptance i draft-only handoff są nadal otwarte.
+
+### 2026-07-19 — granica plan → pełny draft jest jawna i nie wymaga review sekcji
+
+Live `GET /initial-draft` dla obu świeżych proposalów zwraca typed `stale_planning_input`, ponieważ istniejące scope decisions należą do poprzednich digestów v4. To jest poprawny blocker: nie zapisuję fałszywej akceptacji w imieniu Wilku. API ma `section_map_current=true` na podstawie wygenerowanych sekcji; marketer zatwierdza tylko aktualny zakres/usługę, a mapa ACF/the_content pozostaje automatyczna.
+
+Świeży katalog ma 808 adresów publicznego sitemapu, pełne pokrycie tego odczytu i jawne rozróżnienie `content_and_structure` / `url_only`; nie oznacza to kompletności ACF. Korpus wiedzy Ekologusa pozostaje częściowy: 7/15 materiałów ma kontrolowany redacted import, 8 czeka na owner-governed ingest. Nie uruchamiam pełnego draftu ani semantic storage bez odpowiedniej decyzji/maintenance window.
