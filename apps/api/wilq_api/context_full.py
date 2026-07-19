@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from apps.api.wilq_api import context_actions
+from apps.api.wilq_api import context_actions, context_compaction
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.daily_runtime import build_daily_runtime
@@ -32,6 +32,9 @@ def full_context_pack(
         "current_product_rules": product_rules,
         "available_connectors": [connector.id for connector in connectors],
         "connector_status": [connector.model_dump(mode="json") for connector in connectors],
+        "connector_consumer_readiness": context_compaction.connector_readiness_for_context(
+            connectors
+        ),
         "top_opportunities": [
             opportunity.model_dump(mode="json") for opportunity in opportunities[:max_opportunities]
         ],

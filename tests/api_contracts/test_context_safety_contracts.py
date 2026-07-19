@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from apps.api.wilq_api.context_compaction import connector_readiness_for_context
 from tests._contract_support.action_candidate_seed import seed_action_candidate_metric_facts
 from tests._contract_support.api_client import client
 
@@ -24,6 +25,30 @@ def test_codex_context_pack_contains_no_metric_invention_instruction(
     assert "must not invent metrics" not in serialized
     assert "No evidence ID" not in serialized
     assert "sk-supersecretvalue1234567890" not in serialized
+
+
+def test_connector_consumer_readiness_fails_closed_for_missing_source() -> None:
+    payload = connector_readiness_for_context(
+        [
+            {
+                "id": "example_missing",
+                "label": "Przykładowe źródło",
+                "status": "missing_credentials",
+                "configured": False,
+                "missing_credentials": ["EXAMPLE_TOKEN"],
+                "freshness": {"state": "missing"},
+                "capabilities": {"read": True},
+            }
+        ]
+    )
+
+    assert payload["contract"] == "connector_consumer_readiness_v1"
+    assert payload["blocked"] == 1
+    assert payload["blocked_connector_ids"] == ["example_missing"]
+    row = payload["rows"][0]
+    assert row["status"] == "blocked"
+    assert row["blocker_code"] == "missing_credentials"
+    assert "zablokowane" in row["effect"]
 
 
 def test_daily_context_pack_uses_daily_decisions_for_action_summaries(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from wilq.actions.service import _action_audit_event_label
@@ -332,6 +333,86 @@ def compact_connector_status_for_operator_context(
         "summary": (
             f"Źródło danych {dumped.get('label') or dumped.get('id')}: "
             f"{status_label}; {freshness_label}."
+        ),
+    }
+
+
+def connector_readiness_for_context(
+    connectors: Sequence[ConnectorStatus | dict[str, Any]],
+    scoped_connector_ids: set[str] | None = None,
+) -> dict[str, Any]:
+    """Project connector health into an explicit consumer-facing fail-closed contract.
+
+    A connector count alone cannot tell an operator whether a metric-backed
+    decision may use a source. Keep the existing status as authority, but add
+    the concrete consequence for the current context pack.
+    """
+    rows: list[dict[str, Any]] = []
+    for connector in connectors:
+        dumped = (
+            connector.model_dump(mode="json")
+            if isinstance(connector, ConnectorStatus)
+            else dict(connector)
+        )
+        connector_id = str(dumped.get("id") or "")
+        if scoped_connector_ids is not None and connector_id not in scoped_connector_ids:
+            continue
+        status = str(dumped.get("status") or "unknown")
+        configured = bool(dumped.get("configured"))
+        capabilities = dumped.get("capabilities")
+        read_available = bool(capabilities.get("read")) if isinstance(capabilities, dict) else False
+        freshness = dumped.get("freshness")
+        freshness_state = (
+            str(freshness.get("state") or "unknown")
+            if isinstance(freshness, dict)
+            else "unknown"
+        )
+        missing_credentials = dumped.get("missing_credentials")
+        has_missing_credentials = isinstance(missing_credentials, list) and bool(
+            missing_credentials
+        )
+        if has_missing_credentials or status == "missing_credentials":
+            readiness_status = "blocked"
+            blocker_code = "missing_credentials"
+            effect = "decyzje wymagające tego źródła pozostają zablokowane"
+        elif not configured or not read_available:
+            readiness_status = "blocked"
+            blocker_code = "read_unavailable"
+            effect = "nie wolno opierać decyzji na tym źródle"
+        elif freshness_state != "fresh":
+            readiness_status = "blocked"
+            blocker_code = "stale_or_unknown_source"
+            effect = "metryki i wnioski z tego źródła wymagają odświeżenia"
+        else:
+            readiness_status = "ready"
+            blocker_code = None
+            effect = "źródło może zasilać decyzje w tym kontekście"
+        rows.append(
+            {
+                "connector_id": connector_id,
+                "label": dumped.get("label"),
+                "status": readiness_status,
+                "blocker_code": blocker_code,
+                "configured": configured,
+                "read_available": read_available,
+                "freshness_state": freshness_state,
+                "missing_credentials": (
+                    missing_credentials if isinstance(missing_credentials, list) else []
+                ),
+                "effect": effect,
+            }
+        )
+    blocked = [row for row in rows if row["status"] == "blocked"]
+    return {
+        "contract": "connector_consumer_readiness_v1",
+        "rows": rows,
+        "total": len(rows),
+        "ready": len(rows) - len(blocked),
+        "blocked": len(blocked),
+        "blocked_connector_ids": [row["connector_id"] for row in blocked],
+        "instruction": (
+            "Źródło z blokadą nie może zasilać metryk, rekomendacji ani claimów; "
+            "najpierw usuń wskazaną blokadę lub jawnie oznacz wynik jako niepełny."
         ),
     }
 

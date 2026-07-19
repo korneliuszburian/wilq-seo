@@ -2109,3 +2109,20 @@ credentials. Checker retained: verify zatrzymuje się przed testami po mypy,
 draft/model/UAT nie mają realnego proofu, wpływ dwóch brakujących connectorów na
 consumerów nie jest jeszcze zmapowany, a metryki potrzebują realnego API fetchu
 z exact lineage. Nie ma approval, publish ani vendor write.
+
+### 2026-07-19 — context pack jawnie mapuje gotowość źródła na consumerów
+
+Dodano `connector_consumer_readiness_v1` do pełnego, daily i skill-scoped
+context packu. Każdy rozważany connector ma jawny status `ready` albo
+`blocked`, kod blokady (`missing_credentials`, `read_unavailable`,
+`stale_or_unknown_source`), freshness, dostęp do odczytu i efekt dla decyzji.
+Blokada mówi wprost, że nie wolno zasilać nią metryk, rekomendacji ani claimów;
+nie zmienia to istniejącego statusu connectora i nie udaje brakujących danych.
+
+Proof produkcyjny: `tests/api_contracts/test_context_safety_contracts.py`
+(2/2), content strategist context contract (1/1), Ruff i modułowy mypy dla
+czterech context modules clean. Read-only runtime przez
+`POST /api/codex/context-pack` potwierdził dla content strategist 5/5 źródeł
+gotowych; pełny pack pokazał 12 connectorów, 8 gotowych i 4 zablokowane
+(`google_sheets`, `linkedin`, `facebook`, `openai_codex`). To jest jawny
+consumer impact, nie dowód gotowości draft/model/UAT.

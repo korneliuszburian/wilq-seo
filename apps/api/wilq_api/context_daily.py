@@ -77,6 +77,10 @@ def daily_command_context_pack(
             for connector in connectors
             if connector.id in source_connectors
         ],
+        "connector_consumer_readiness": context_compaction.connector_readiness_for_context(
+            connectors,
+            source_connectors,
+        ),
         "top_opportunities": [
             compact_opportunity_for_daily_context(opportunity)
             for opportunity in scoped_opportunities

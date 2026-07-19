@@ -109,6 +109,10 @@ def skill_scoped_context_pack(
             for connector in connectors
             if connector.id in scoped_connectors
         ],
+        "connector_consumer_readiness": context_compaction.connector_readiness_for_context(
+            connectors,
+            scoped_connectors,
+        ),
         "top_opportunities": [
             context_daily.compact_opportunity_for_daily_context(opportunity)
             for opportunity in scoped_opportunities
