@@ -73,6 +73,27 @@ def test_connector_consumer_readiness_excludes_runtime_connector_from_blockers()
     assert payload["rows"][0]["status"] == "not_applicable"
 
 
+def test_connector_consumer_readiness_excludes_disabled_optional_connector() -> None:
+    payload = connector_readiness_for_context(
+        [
+            {
+                "id": "google_sheets",
+                "label": "Google Sheets",
+                "status": "disabled",
+                "configured": False,
+                "product_scope": "optional_disabled",
+                "active_for_daily_work": False,
+                "freshness": {"state": "missing"},
+                "capabilities": {"read": True},
+            }
+        ]
+    )
+
+    assert payload["blocked"] == 0
+    assert payload["not_applicable"] == 1
+    assert payload["rows"][0]["status"] == "not_applicable"
+
+
 def test_daily_context_pack_uses_daily_decisions_for_action_summaries(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

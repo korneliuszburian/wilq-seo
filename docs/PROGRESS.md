@@ -2139,3 +2139,10 @@ zablokowany connector danych. Readiness projection rozróżnia teraz
 `openai_codex`); system summary pozostaje 12 total, 9 configured,
 2 missing credentials. Proof: focused context safety 3/3, Ruff i modułowy
 mypy clean, managed API runtime zgodny z tym rozdziałem.
+
+Checker dla fixed pointu `b056f6ef` został zwalidowany jako evidence-bounded;
+jedyny praktyczny follow-up dotyczył jawnego testu `optional_disabled`. Dodano
+ten falsifier: readiness nie blokuje wyłączonego Google Sheets i zachowuje
+`not_applicable`. Focused context safety wynosi teraz 4/4; pozostałe granice
+(downstream consumer enforcement, freshness policy, realne UAT i model/draft)
+pozostają otwarte.
