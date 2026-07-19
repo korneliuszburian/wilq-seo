@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Literal, Sequence, cast
+from typing import Literal, cast
 from uuid import uuid4
 
 from wilq.codex.app_server import (

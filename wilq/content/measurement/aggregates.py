@@ -302,7 +302,9 @@ def compare_exact_page_metric_periods(
         "google_search_console": {"clicks", "impressions"},
         "google_analytics_4": {"sessions", "engaged_sessions"},
     }
-    by_connector_period: dict[tuple[MeasurementConnector, str], list[MetricFact]] = defaultdict(list)
+    by_connector_period: dict[
+        tuple[MeasurementConnector, str], list[MetricFact]
+    ] = defaultdict(list)
     for fact in aggregate.facts:
         if fact.source_connector in required and _is_exact_period(fact.period):
             by_connector_period[(fact.source_connector, fact.period)].append(fact)

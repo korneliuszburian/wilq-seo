@@ -368,7 +368,10 @@ def _fetch_public_rest_objects(
                 if not isinstance(item, dict):
                     continue
                 content_url = item.get("link")
-                if not isinstance(content_url, str) or _normalize_base_url(content_url) != requested_url:
+                if (
+                    not isinstance(content_url, str)
+                    or _normalize_base_url(content_url) != requested_url
+                ):
                     continue
                 acf_dimensions = acf_inventory(item.get("acf"))
                 if not (
