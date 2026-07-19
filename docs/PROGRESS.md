@@ -7,6 +7,17 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: naprawiono realny błąd wyboru strony: inventory ID
+  `content_work_item_inventory_*` mogło otworzyć snapshot, ale następne
+  zapytanie enrichment szukało wyłącznie canonicalnego
+  `content_decision_*` i zwracało `missing_work_item`. API rozwiązuje teraz
+  alias przez ten sam evidence-bound inventory binding, a queue przekazuje
+  selected ID do enrichment. Live URL `0454c020b0ddbad0062b3d08` zwrócił
+  enrichment z `inventory_0454...`, bez blokera, w 2,29 s. Fixed point
+  `2b9ed1a6` przeszedł 6 focused testów, Ruff, mypy i diff-check; bounded
+  second-opinion ma ważny schema output, ale jego trzy findingi sklasyfikowano
+  jako evidence gap/follow-up. To naprawia przepływ wyboru strony, nie odblokowuje
+  automatycznie usługi ani generowania tekstu.
 - 2026-07-19: dynamiczny odczyt WordPress rozróżnia teraz strukturę ACF od
   `the_content` także wtedy, gdy materiał przychodzi przez REST. Parser zapisuje
   H2/H3 z REST-owego HTML, a binding preferuje sekcje ACF i dopiero potem
