@@ -2008,4 +2008,5 @@ także `compact_capabilities` w API context compaction: ma jawny
 `dict[str, Any]`, bez zmiany redakcji payloadu. Proof: modułowy mypy clean,
 `tests/api_contracts/test_metric_context_contracts.py` i
 `tests/api_contracts/test_security_connector_contracts.py` razem 17/17,
-diff-check clean.
+diff-check clean. Aktualny pełny odczyt po tej serii wynosi 84 błędy w 13
+plikach; kolejny klaster dotyczy helpera initial-draft.
