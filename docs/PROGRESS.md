@@ -2355,3 +2355,13 @@ gotowość lokalnej sesji, ale nowy `operational_status=degraded` i
 Status sanitizuje też niezgodny z typed-code format błędu do
 `codex_run_error_unclassified`, więc system status nie staje się kanałem dla
 surowego payloadu provider’a. Proof: system-status contract 3/3, mypy i Ruff.
+
+### 2026-07-19 — Ads pilot ma świeże dane, ale brak exact service binding
+
+Live `/api/ads/diagnostics` ma `live_data_available=true` i świeży ostatni
+odczyt. Search terms zwracają 23/50 w bounded sample z caveat prywatności, a
+90-dniowy odczyt bezpieczeństwa obejmuje 200 wierszy. Nie da się jednak
+uczciwie wskazać jednej usługi: 11 landingów ma exact inventory, lecz
+`review_required` i zero typed service candidates, a 12 jest `unbound`.
+Pilot single-service pozostaje więc właścicielsko zablokowany do review/karty
+Service Profile; nie wykonujemy leksykalnego przypisania ani Ads write.
