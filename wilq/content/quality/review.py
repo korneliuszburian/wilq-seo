@@ -40,6 +40,7 @@ ContentQualityFindingCode = Literal[
     "missing_forbidden_claim_acknowledgement",
     "duplicate_risk_not_clear",
     "missing_measurement_window",
+    "measurement_window_pending_publication",
     "sales_brief_signal_review_required",
     "sales_brief_signal_thin",
     "weak_cta",
@@ -141,7 +142,7 @@ def build_content_quality_review(
             duplicate_risk=duplicate_risk,
         ),
         *_brief_fit_findings(sales_brief=sales_brief),
-        *_measurement_findings(item=item),
+        *_measurement_findings(item=item, revision=revision),
     ]
     blockers = [finding for finding in findings if finding.severity == "blocker"]
     needs_changes = [finding for finding in findings if finding.severity == "needs_changes"]
@@ -679,9 +680,30 @@ def _brief_fit_findings(
     return findings
 
 
-def _measurement_findings(item: ContentWorkItem) -> list[ContentQualityFinding]:
+def _measurement_findings(
+    *, item: ContentWorkItem, revision: ContentDraftRevision | None
+) -> list[ContentQualityFinding]:
     if item.measurement_window_status != "missing" and item.measurement_window_id:
         return []
+    if revision is not None and item.wordpress_handoff_status in {
+        "missing",
+        "blocked",
+        "prepared",
+    }:
+        return [
+            _finding(
+                "measurement_window_pending_publication",
+                "info",
+                "Pomiar zostanie otwarty po publikacji",
+                (
+                    "Measurement window wiąże się z exact publikacją i nie może "
+                    "powstać przed WordPress draft handoffem."
+                ),
+                "Po zatwierdzeniu i publikacji utwórz publication-bound measurement window.",
+                evidence_ids=item.evidence_ids,
+                source_connectors=item.source_connectors,
+            )
+        ]
     return [
         _finding(
             "missing_measurement_window",
