@@ -2140,6 +2140,17 @@ zablokowany connector danych. Readiness projection rozróżnia teraz
 2 missing credentials. Proof: focused context safety 3/3, Ruff i modułowy
 mypy clean, managed API runtime zgodny z tym rozdziałem.
 
+### 2026-07-19 — readiness test korzysta z realnego `/api/connectors`
+
+Domknięto pierwszy follow-up z checker'a: focused falsifier pobiera listę
+connectorów z publicznego `GET /api/connectors` i dopiero ją przekazuje do
+readiness projection. Nie testujemy już wyłącznie ręcznie zbudowanych statusów:
+runtime `openai_codex` i disabled `google_sheets` są `not_applicable`, a
+eksperymentalne LinkedIn/Facebook bez dostępu pozostają `blocked`.
+Proof: context readiness 4/4, security connector scope 2/2, Ruff, mypy i
+diff-check clean. Downstream omission (czy rekomendacje faktycznie odrzucają
+blocked source) pozostaje kolejnym osobnym seamem.
+
 Checker dla fixed pointu `b056f6ef` został zwalidowany jako evidence-bounded;
 jedyny praktyczny follow-up dotyczył jawnego testu `optional_disabled`. Dodano
 ten falsifier: readiness nie blokuje wyłączonego Google Sheets i zachowuje

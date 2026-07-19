@@ -94,6 +94,20 @@ def test_connector_consumer_readiness_excludes_disabled_optional_connector() -> 
     assert payload["rows"][0]["status"] == "not_applicable"
 
 
+def test_connector_consumer_readiness_uses_production_connector_descriptors() -> None:
+    response = client.get("/api/connectors")
+
+    assert response.status_code == 200
+    payload = connector_readiness_for_context(response.json())
+    rows = {row["connector_id"]: row for row in payload["rows"]}
+
+    assert rows["openai_codex"]["status"] == "not_applicable"
+    assert rows["google_sheets"]["status"] == "not_applicable"
+    assert rows["linkedin"]["status"] == "blocked"
+    assert rows["facebook"]["status"] == "blocked"
+    assert set(payload["blocked_connector_ids"]) == {"linkedin", "facebook"}
+
+
 def test_daily_context_pack_uses_daily_decisions_for_action_summaries(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
