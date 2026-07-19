@@ -1297,6 +1297,17 @@ successful plan is claimed. Independent checker pass
 is schema-valid; its line-1 findings were rejected as source-omission
 artifacts and its evidence gaps are retained in the disposition.
 
+### 2026-07-19 — candidate picker now shows decision meat
+
+Commit `ff8fc09f` adds an evidence summary to each content candidate card:
+exact impressions, clicks, API-provided CTR, primary query and available page
+section count. Sparse candidates receive a neutral missing-data message; no
+score, forecast, approval or performance claim is added. Focused dashboard
+Vitest (2) and TypeScript typecheck pass. Checker pass
+`~/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-marketer-candidate-evidence-ui-VHdFNR`
+is schema-valid; its line-1 findings were rejected as source-omission
+artifacts and the disposition preserves the evidence limits.
+
 ### 2026-07-19 — pre-plan query mapping uses current page inventory
 
 Commit `28d93d26` adds a generic fallback for GSC demand mapping: when a new
