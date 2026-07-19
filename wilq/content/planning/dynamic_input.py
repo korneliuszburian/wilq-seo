@@ -75,7 +75,7 @@ class ContentPlanningInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     schema_name: Literal["wilq_content_planning_input_v6"] = "wilq_content_planning_input_v6"
-    criteria_version: Literal["wilq_people_first_planning_v4"] = "wilq_people_first_planning_v4"
+    criteria_version: Literal["wilq_people_first_planning_v5"] = "wilq_people_first_planning_v5"
     inventory_mapping_policy: Literal["wilq_inventory_mapping_v6"] = "wilq_inventory_mapping_v6"
     planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     work_item_id: str = Field(min_length=1)
@@ -301,7 +301,7 @@ def build_content_planning_input_from_components(
     digest = _digest(
         {
             "schema_name": "wilq_content_planning_input_v6",
-            "criteria_version": "wilq_people_first_planning_v4",
+            "criteria_version": "wilq_people_first_planning_v5",
             "inventory_mapping_policy": "wilq_inventory_mapping_v6",
             **payload,
         }
