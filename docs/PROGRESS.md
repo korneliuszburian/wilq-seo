@@ -3047,3 +3047,14 @@ Focused proof: `ContentPlanningGenerationPanel.test.tsx` 5/5 oraz dashboard
 typecheck PASS; pełny pakiet ujawnił wcześniejszy, niezależny fail architektury
 (`ContentWorkflowArchitecture`: zakaz `<details>` niezgodny z obecnym
 knowledge-readiness disclosure), którego nie przypisuję tej zmianie.
+
+### 2026-07-20 — knowledge readiness ma własnego właściciela prezentacji
+
+Przeniesiono disclosure gotowości korpusu źródłowego do
+`ContentKnowledgeReadinessNotice`. Route `ContentWorkflowSurface` pozostaje
+orkiestratorem typed state i nie zawiera już własnego `<details>` ani logiki
+renderowania listy materiałów. Tekst, stany loading/error/blocked i identyfikatory
+testowe pozostały bez zmian.
+
+Focused proof: architektura dashboardu 4/4, knowledge-readiness cases 4/4,
+typecheck PASS.
