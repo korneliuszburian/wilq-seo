@@ -2140,6 +2140,11 @@ zablokowany connector danych. Readiness projection rozróżnia teraz
 2 missing credentials. Proof: focused context safety 3/3, Ruff i modułowy
 mypy clean, managed API runtime zgodny z tym rozdziałem.
 
+Selection seam ma teraz jawny alias typu `BusinessMetricFacts`, więc jego
+kontrakt jest nazwany także statycznie, nie tylko przez nazwę funkcji. To nie
+zmienia zachowania ani nie udaje pełnej ochrony przed przyszłym bypass'em;
+stanowi mały, czytelny punkt rozszerzeń dla kolejnych brief projections.
+
 Wydzielono nazwany seam `select_business_metric_facts`: jedna selekcja po
 freshness/readiness, potem wyłącznie jej wynik zasila `what_we_know`,
 `recommended_focus` i `top_metric_facts`. `rg` po module pokazuje pojedyncze

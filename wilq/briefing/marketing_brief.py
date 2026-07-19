@@ -32,6 +32,7 @@ STRICT_BRIEF_INSTRUCTION = (
     "WILQ pokazuje tylko metryki i dowody z danych źródłowych. Brak danych "
     "oznacza blokadę, nie domysł marketingowy."
 )
+type BusinessMetricFacts = list[MetricFact]
 
 CONNECTOR_LABELS = {
     "google_ads": "Google Ads",
@@ -103,7 +104,7 @@ def build_marketing_brief(
     latest_runs = _prefer_successful_localo_access_probe(latest_runs, refresh_runs)
     blocked_connector_ids = _blocked_metric_connector_ids(connectors, latest_runs)
 
-    business_metric_facts = select_business_metric_facts(
+    business_metric_facts: BusinessMetricFacts = select_business_metric_facts(
         metric_facts,
         latest_runs=latest_runs,
         blocked_connector_ids=blocked_connector_ids,
@@ -267,7 +268,7 @@ def select_business_metric_facts(
     *,
     latest_runs: dict[str, ConnectorRefreshRun],
     blocked_connector_ids: set[str],
-) -> list[MetricFact]:
+) -> BusinessMetricFacts:
     """Return the only metric-fact set allowed into marketer-facing brief sections.
 
     Every downstream metric, recommendation, and representative-fact projection
