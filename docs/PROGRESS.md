@@ -12,6 +12,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   wyłącznie w Beads pod `wilq-seo-1oa` i review-only `wilq-seo-v9ab`.
 - Priorytetem jest jeden użyteczny workspace `/content-workflow`, a nie nowe
   ekrany ani kolejne warstwy ceremonii.
+- 2026-07-19: bounded second-opinion campaign
+  `wilq-content-ops-engineering-standard` zakończył dwa research shard’y i
+  syntezę na czystym fixed poincie `d310de05164f0431217c3865fc35af6c2d4b345c`;
+  wszystkie wyniki przeszły walidację. Disposition jest poza repo w katalogu
+  passu. Najważniejsze follow-upy to `wilq-seo-v1um` (stale window — lab test),
+  `wilq-seo-tcd7` (jeden in-flight slot przez digesty), `wilq-seo-k8i5`
+  (server-owned focus) i `wilq-seo-1dke` (durable runner). Żaden wynik review
+  nie jest PASS/UAT/approval.
 - 2026-07-19: ponowny live timing wejścia z `content_decision_*` nie odtwarza
   zgłoszonych 10 minut: selected queue 3,06 s na zimnym procesie, snapshot
   BDO 1,05 s; kolejne odczyty korzystają z cache. Zaobserwowany koszt jest
