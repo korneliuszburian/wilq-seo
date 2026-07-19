@@ -1607,3 +1607,15 @@ persisted runu udowodnić, któremu exact input odpowiadał. Start runu zapisuje
 teraz digest razem z evidence IDs; focused suite ma 2 testy, Ruff i diff-check
 przechodzą. To domyka identyfikację run → input, bez zmiany providerowego
 blockera i bez tworzenia planu.
+
+### 2026-07-19 — świeży API context i timing startu workflow
+
+Bezpośredni odczyt WILQ API: 12 konektorów, 9 skonfigurowanych, 2 bez credentials;
+brief ma 1 blocker, 3 rekomendacje i 17 evidence IDs. Kolejka treści ma 54
+kandydatów, 53 actionable i status `ready`; nie jest ograniczona do dwóch
+pilotów. Pomiar lokalnego seamu dla obu exact pilotów wykazał odpowiedź wybranej
+kolejki w 0,26–0,67 s oraz pierwszy pełny snapshot w 3,9–7,7 s. Kolejne odczyty
+z ciepłego cache trwały 1,2–1,4 s. To dowodzi, że API nie wisi przez 10 minut,
+ale pierwszy snapshot nadal jest mierzalnym hotspotem do redukcji; nie claimuję
+jeszcze docelowego UX ani realnego UAT. Claude checker pozostaje przygotowany na
+świeżym fixed poincie, lecz wykonanie jest niedostępne przed 12:00 Europe/Warsaw.
