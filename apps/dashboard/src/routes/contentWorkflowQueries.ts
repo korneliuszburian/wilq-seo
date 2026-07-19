@@ -8,6 +8,7 @@ import {
   getContentServiceProfile,
   getContentOperatorContext,
   getContentWorkItemQueue,
+  getKnowledgeSourceMaterialReadiness,
   getWordPressAuthoringProfile,
   type ContentWorkItemQueueCandidate,
   type ContentWorkItemQueueResponse,
@@ -17,6 +18,7 @@ import {
   type ContentOpportunityEnrichmentResponse,
   type ContentWordPressDraftActivationPacketResponse,
   type ContentWordPressDraftWriteReadinessResponse,
+  type KnowledgeSourceMaterialReadiness,
   type WordPressAuthoringProfile
 } from "../lib/api";
 import { loadContentWorkflowSnapshot, type ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
@@ -37,6 +39,10 @@ export type WordPressDraftWriteReadinessQuery = UseQueryResult<
 >;
 export type WordPressDraftActivationPacketQuery = UseQueryResult<
   ContentWordPressDraftActivationPacketResponse,
+  Error
+>;
+export type KnowledgeSourceMaterialReadinessQuery = UseQueryResult<
+  KnowledgeSourceMaterialReadiness,
   Error
 >;
 
@@ -65,6 +71,10 @@ export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
   const serviceProfile = useQuery({
     queryKey: ["content-workflow", "service-profile"],
     queryFn: getContentServiceProfile
+  });
+  const knowledgeReadiness = useQuery({
+    queryKey: ["content-workflow", "knowledge-source-material-readiness"],
+    queryFn: getKnowledgeSourceMaterialReadiness
   });
   const operatorContext = useQuery({
     queryKey: ["content-workflow", "operator-context"],
@@ -110,6 +120,7 @@ export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
     draftWriteReadiness,
     enrichment,
     inventory,
+    knowledgeReadiness,
     operatorContext,
     serviceProfile,
     queue,

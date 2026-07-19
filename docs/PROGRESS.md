@@ -33,6 +33,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   dotyczy tylko connector jobs i ma `autostart=false`, więc nie udaje się go
   jeszcze jako recovery runnera planowania; migracja pozostaje odroczona do
   osobnego crash-injection/no-duplicate proofu z autoryzacją właściciela.
+- 2026-07-19: `/content-workflow` pokazuje teraz marketerowi istniejący
+  kontrakt gotowości korpusu źródłowego dokładnie przy wejściu do kolejki.
+  Przy obecnym stanie UI mówi `7/15` materiałów zaimportowanych i `8` w
+  kontrolowanym imporcie oraz jasno zaznacza, że generowanie używa wyłącznie
+  dostępnych zatwierdzonych faktów. Przy gotowym korpusie komunikat znika;
+  nie powstał nowy score ani równoległa logika blokad.
 - Kanoniczny przebieg marketera ma pięć kroków:
   `scope → section_map → draft → review → dev_draft`.
 - 2026-07-18: świeży BDO plan został najpierw poprawnie zablokowany przez

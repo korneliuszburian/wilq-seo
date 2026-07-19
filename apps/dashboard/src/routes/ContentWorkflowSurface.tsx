@@ -59,6 +59,7 @@ import {
   type ContentInventoryCatalogQuery,
   type ContentServiceProfileQuery,
   type ContentWorkflowSnapshotQuery,
+  type KnowledgeSourceMaterialReadinessQuery,
   type WordPressAuthoringProfileQuery,
   type WordPressDraftActivationPacketQuery,
   type WordPressDraftWriteReadinessQuery,
@@ -99,6 +100,7 @@ export function ContentWorkflowSurface() {
     draftWriteReadiness,
     enrichment,
     inventory,
+    knowledgeReadiness,
     operatorContext,
     serviceProfile,
     queue,
@@ -115,6 +117,7 @@ export function ContentWorkflowSurface() {
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       inventory={inventory}
+      knowledgeReadiness={knowledgeReadiness}
       operatorContext={operatorContext}
       serviceProfile={serviceProfile}
       queue={queue}
@@ -138,6 +141,7 @@ function ContentWorkflowRouteState({
   draftWriteReadiness,
   enrichment,
   inventory,
+  knowledgeReadiness,
   operatorContext,
   serviceProfile,
   queue,
@@ -152,6 +156,7 @@ function ContentWorkflowRouteState({
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   inventory: ContentInventoryCatalogQuery;
+  knowledgeReadiness: KnowledgeSourceMaterialReadinessQuery;
   operatorContext: ContentOperatorContextQuery;
   serviceProfile: ContentServiceProfileQuery;
   queue: ContentWorkItemQueueQuery;
@@ -174,6 +179,7 @@ function ContentWorkflowRouteState({
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       inventory={inventory}
+      knowledgeReadiness={knowledgeReadiness}
       operatorContext={operatorContext}
       serviceProfile={serviceProfile}
       queue={queue.data}
@@ -191,6 +197,7 @@ function ContentWorkflowQueueReady({
   draftWriteReadiness,
   enrichment,
   inventory,
+  knowledgeReadiness,
   operatorContext,
   serviceProfile,
   queue,
@@ -204,6 +211,7 @@ function ContentWorkflowQueueReady({
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   inventory: ContentInventoryCatalogQuery;
+  knowledgeReadiness: KnowledgeSourceMaterialReadinessQuery;
   operatorContext: ContentOperatorContextQuery;
   serviceProfile: ContentServiceProfileQuery;
   queue: ContentWorkItemQueueResponse;
@@ -230,6 +238,7 @@ function ContentWorkflowQueueReady({
               <OverviewMetric label="do sprawdzenia" value={inventory.data?.blocked_count ?? 0} muted />
             </div>
           </div>
+          <KnowledgeReadinessNotice query={knowledgeReadiness} />
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
             <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Dane read-only</span>
             <span>WordPress · GSC/GA4 · karty wiedzy</span>
@@ -651,6 +660,28 @@ function pageMetricsSummary(candidate: ContentWorkItemQueueCandidate) {
     values.push("brak dwóch porównywalnych okresów");
   }
   return values.join(" · ");
+}
+
+function KnowledgeReadinessNotice({
+  query
+}: {
+  query: KnowledgeSourceMaterialReadinessQuery;
+}) {
+  const readiness = query.data;
+  if (!readiness || readiness.ready_for_generation) return null;
+  return (
+    <div
+      className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+      data-testid="content-workflow-knowledge-readiness"
+    >
+      <p className="font-semibold">Korpus źródłowy nie jest jeszcze kompletny</p>
+      <p className="mt-1 leading-6">
+        Zaimportowano {readiness.imported_count} z {readiness.total_count} materiałów;
+        {" "}{readiness.import_pending_count} oczekuje na kontrolowany import.
+        Generowanie korzysta wyłącznie z już dostępnych, zatwierdzonych faktów.
+      </p>
+    </div>
+  );
 }
 
 function pageInventorySummary(candidate: ContentWorkItemQueueCandidate) {

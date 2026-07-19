@@ -8,6 +8,7 @@ import {
   getContentWorkItemEnrichment,
   getContentOperatorContext,
   getContentWorkItemQueue,
+  getKnowledgeSourceMaterialReadiness,
   getContentWorkItemPlanningProposal,
   getContentWorkItemSemanticReview,
   getContentWorkItemSnapshot,
@@ -61,6 +62,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemEnrichment: vi.fn(),
     getContentOperatorContext: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
+    getKnowledgeSourceMaterialReadiness: vi.fn(),
     getContentWorkItemPlanningProposal: vi.fn(),
     getContentWorkItemSemanticReview: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
@@ -97,6 +99,7 @@ describe("ContentWorkflowSurface", () => {
     } as never);
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue(knowledgeReadiness());
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(
       planningProposalStatus()
     );
@@ -231,6 +234,34 @@ describe("ContentWorkflowSurface", () => {
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
+  });
+
+  it("shows the real knowledge corpus blocker before a plan can be generated", async () => {
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue({
+      status: "import_pending",
+      total_count: 15,
+      imported_count: 7,
+      import_pending_count: 8,
+      excerpt_review_required_count: 0,
+      ready_for_generation: false,
+      blocker: "Pozostałe materiały oczekują na import.",
+      next_step: "Dokończ kontrolowany import materiałów."
+    });
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const notice = await screen.findByTestId("content-workflow-knowledge-readiness");
+    expect(notice).toHaveTextContent("Zaimportowano 7 z 15 materiałów");
+    expect(notice).toHaveTextContent("8 oczekuje na kontrolowany import");
+    expect(notice).toHaveTextContent("Generowanie korzysta wyłącznie z już dostępnych");
   });
 
   it("does not present an old proposal as ready when planning input is blocked", async () => {
@@ -3530,4 +3561,17 @@ function operatorStepsAtSectionMap(): ContentWorkItemWorkflowSnapshotResponse["o
           ? null
           : step.blocker
   }));
+}
+
+function knowledgeReadiness() {
+  return {
+    status: "ready" as const,
+    total_count: 15,
+    imported_count: 15,
+    import_pending_count: 0,
+    excerpt_review_required_count: 0,
+    ready_for_generation: true,
+    blocker: null,
+    next_step: "Korpus jest gotowy."
+  };
 }
