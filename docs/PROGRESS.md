@@ -1811,3 +1811,11 @@ nie musi zawierać inventory-bound URL; jawne
 `candidate_count=1`, `actionable=1`, a dashboard używa właśnie tej ścieżki po
 wyborze adresu. To dowód wspólnego API seamu, nie owner approval, pełny draft,
 UAT ani vendor write.
+
+Odczyt proposal workspace obu pilotów pozostaje uczciwie przed generowaniem:
+`generation_status=baseline`, `proposal_id=null` i brak `planning_input_digest`.
+BDO ma zapisaną usługę, ale `scope_current=false` i `section_map_current=false`
+po zmianie digestu; outsourcing dodatkowo ma
+`service_selection_confirmed=false`. To nie jest gotowy plan ani zgoda na
+initial draft — dashboard ma pozostać na etapie zakresu i wymagać aktualnego
+review, zamiast przedstawiać baseline jako wygenerowany dokument.
