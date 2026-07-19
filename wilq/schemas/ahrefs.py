@@ -205,6 +205,13 @@ class AhrefsOperatorSummary(BaseModel):
         return self
 
 
+class AhrefsRequestBudget(BaseModel):
+    estimated_calls: int = 0
+    failed_stages: int = 0
+    partial: bool = False
+    summary: str = ""
+
+
 class AhrefsDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -213,6 +220,7 @@ class AhrefsDiagnosticsResponse(BaseModel):
     connector_status_label: str = ""
     latest_refresh: ConnectorRefreshRun | None = None
     latest_refresh_status_label: str | None = None
+    request_budget: AhrefsRequestBudget = Field(default_factory=AhrefsRequestBudget)
     live_data_status_label: str = ""
     live_data_available: bool
     authority_fact_count: int = 0

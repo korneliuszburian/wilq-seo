@@ -64,6 +64,10 @@ export function AhrefsDiagnosticSurface() {
             ]}
           />
         </div>
+        <p className="mt-3 text-xs text-slate-600">
+          Zakres odczytu: {data.request_budget?.summary || "brak rozliczenia zakresu"}
+          {data.request_budget?.partial ? " · odczyt częściowy" : ""}
+        </p>
         {latestRefresh?.errors.length ? (
           <div className="mt-3 rounded-md border border-risk/30 bg-risk/10 p-3 text-sm text-risk">
             {latestRefresh.errors[0]}

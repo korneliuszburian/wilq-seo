@@ -3,6 +3,13 @@ import { z } from "zod";
 import { ConnectorRefreshRunSchema, ConnectorStatusSchema, MetricFactSchema } from "./connectors";
 import { ContentAhrefsCandidateRowSchema } from "./content_diagnostics";
 
+export const AhrefsRequestBudgetSchema = z.object({
+  estimated_calls: z.number().int().nonnegative(),
+  failed_stages: z.number().int().nonnegative(),
+  partial: z.boolean(),
+  summary: z.string()
+});
+
 export const AhrefsDiagnosticSectionSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -158,6 +165,7 @@ export const AhrefsDiagnosticsResponseSchema = z.object({
   connector_status_label: z.string().default(""),
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
   latest_refresh_status_label: z.string().nullable().optional(),
+  request_budget: AhrefsRequestBudgetSchema.optional(),
   live_data_status_label: z.string().default(""),
   live_data_available: z.boolean(),
   authority_fact_count: z.number(),
@@ -173,4 +181,3 @@ export const AhrefsDiagnosticsResponseSchema = z.object({
   action_summary_label: z.string().default(""),
   blocker_count: z.number()
 });
-

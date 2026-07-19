@@ -20,6 +20,7 @@ from wilq.schemas import (
     AhrefsGapReadContract,
     AhrefsGapRecord,
     AhrefsOperatorSummary,
+    AhrefsRequestBudget,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     ContentAhrefsCandidateRow,
@@ -309,6 +310,7 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         latest_refresh_status_label=_ahrefs_refresh_status_label(latest_refresh)
         if latest_refresh
         else None,
+        request_budget=_ahrefs_request_budget(latest_refresh),
         live_data_status_label=_ahrefs_live_data_status_label(live_data_available),
         live_data_available=live_data_available,
         authority_fact_count=len(authority_facts),
@@ -327,6 +329,32 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         source_connector_labels=source_connector_labels(response_source_connectors),
         action_ids=action_ids,
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
+    )
+
+
+def _ahrefs_request_budget(
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AhrefsRequestBudget:
+    if latest_refresh is None:
+        return AhrefsRequestBudget(summary="Brak odczytu Ahrefs do rozliczenia.")
+    summary = latest_refresh.metric_summary
+    failed = len(latest_refresh.errors)
+    estimated = (
+        2
+        + int(summary.get("top_pages_by_competitor_competitors", 0))
+        + int(summary.get("organic_keywords_by_url_urls", 0))
+        + int(bool(summary.get("content_gap_competitor_keywords", 0)))
+        + int(summary.get("backlink_gap_competitors", 0))
+        + int(bool(summary.get("backlink_gap_competitors", 0)))
+    )
+    return AhrefsRequestBudget(
+        estimated_calls=estimated,
+        failed_stages=failed,
+        partial=failed > 0,
+        summary=(
+            f"Szacowany zakres odczytu: {estimated} wywołań; "
+            f"nieudane etapy: {failed}."
+        ),
     )
 
 
