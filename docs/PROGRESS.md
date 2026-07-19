@@ -1647,3 +1647,11 @@ Kontrolny odczyt blocked itemu `content_work_item_content_decision_ahrefs_gap_re
 zwrócił poprawnie `recommended_mode=block` i powód, bez próby przypisania usługi
 ani uruchomienia planera. To zachowuje bezpieczną gałąź po usunięciu pełnej
 assembly dla elementów nieblokowanych.
+
+### 2026-07-19 — audit lineage source facts
+
+Focused audit rzeczywistego rejestru wiedzy wykazał 21 faktów: 9 `approved` i 12
+`review_required`; żaden fakt niezatwierdzony nie ma `evidence_ids`. To ogranicza
+ryzyko, że review-required kandydat trafi do planera jako evidence-bound claim.
+Nie oznacza to kompletności korpusu: 8 z 15 zatwierdzonych materiałów nadal ma
+`import_pending`, a realne owner review pozostaje wymagane.
