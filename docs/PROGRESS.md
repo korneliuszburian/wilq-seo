@@ -1296,3 +1296,18 @@ successful plan is claimed. Independent checker pass
 `~/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-codex-error-classification-rDkEz8`
 is schema-valid; its line-1 findings were rejected as source-omission
 artifacts and its evidence gaps are retained in the disposition.
+
+### 2026-07-19 — pre-plan query mapping uses current page inventory
+
+Commit `28d93d26` adds a generic fallback for GSC demand mapping: when a new
+draft package has no matching evidence IDs yet, WILQ compares the query against
+the exact current WordPress inventory headings supplied by snapshot assembly.
+ACF and `the_content` use the same path; ambiguous or unmatched terms remain
+`page_only`. Focused demand/dynamic-input tests (22), Ruff and mypy pass. Live
+BDO smoke confirms no forced mapping for its broad `bdo co to` terms.
+
+Checker pass
+`~/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-content-inventory-demand-mapping-GYvpUL`
+is schema-valid. Five low-severity findings are retained as confirmations,
+not defects; four evidence gaps remain explicit. This does not prove model
+planning or UAT.
