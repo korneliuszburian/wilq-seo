@@ -7,7 +7,8 @@ import {
   planningScopeSummary,
   planningSourceSummary,
   requiresServiceOverrideReview,
-  planningInventorySourceLabel
+  planningInventorySourceLabel,
+  inventoryMaterialSourceLabel
 } from "./ContentPlanningReviewPanel";
 
 describe("inventoryDispositionLabel", () => {
@@ -101,5 +102,12 @@ describe("planningInventorySourceLabel", () => {
     );
     expect(planningInventorySourceLabel("available", "missing")).toBe("ACF/flexible content");
     expect(planningInventorySourceLabel("missing", "missing")).toBe("niepotwierdzone");
+  });
+});
+
+describe("inventoryMaterialSourceLabel", () => {
+  it("keeps the dynamic REST-versus-rendered fallback visible", () => {
+    expect(inventoryMaterialSourceLabel("wordpress_rest")).toContain("WordPress REST");
+    expect(inventoryMaterialSourceLabel("rendered_html")).toContain("wyrenderowany HTML");
   });
 });

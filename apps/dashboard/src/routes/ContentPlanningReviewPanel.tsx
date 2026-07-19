@@ -28,6 +28,8 @@ export function ContentPlanningReviewPanel({
   planning,
   serviceCandidates,
   inventorySourceLabel,
+  inventorySourceKind,
+  inventoryExtractionRegion,
   existingContentProvenanceRequired = false,
   stage
 }: {
@@ -35,6 +37,8 @@ export function ContentPlanningReviewPanel({
   planning: ContentPlanningWorkspace;
   serviceCandidates: ContentWorkItemServiceCandidate[];
   inventorySourceLabel?: string;
+  inventorySourceKind?: string | null;
+  inventoryExtractionRegion?: string | null;
   existingContentProvenanceRequired?: boolean;
   stage: PlanningStage;
 }) {
@@ -174,6 +178,13 @@ export function ContentPlanningReviewPanel({
               data-testid="planning-inventory-source"
             >
               Źródło spisu istniejącej strony: <span className="font-semibold">{inventorySourceLabel}</span>.
+              {inventorySourceKind ? (
+                <>
+                  <br />
+                  Odczyt materiału: <span className="font-semibold">{inventoryMaterialSourceLabel(inventorySourceKind)}</span>
+                  {inventoryExtractionRegion ? ` · ${inventoryExtractionRegion}` : ""}.
+                </>
+              ) : null}
             </p>
           ) : null}
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
@@ -385,6 +396,13 @@ export function planningInventorySourceLabel(
   if (acfStatus === "available") return "ACF/flexible content";
   if (contentStatus === "available") return "the_content (główna treść WordPress)";
   return "niepotwierdzone";
+}
+
+export function inventoryMaterialSourceLabel(sourceKind: string): string {
+  if (sourceKind === "wordpress_rest") return "WordPress REST / pola strukturalne";
+  if (sourceKind === "wordpress_inventory_snapshot") return "snapshot inventory WordPress";
+  if (sourceKind === "rendered_html") return "wyrenderowany HTML strony (fallback review-required)";
+  return sourceKind;
 }
 
 export function inventoryDispositionLabel(

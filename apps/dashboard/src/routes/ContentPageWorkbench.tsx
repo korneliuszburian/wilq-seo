@@ -273,6 +273,8 @@ export function ContentPageWorkbench({
                   data.preflight.item.wordpress_acf_section_inventory_status,
                   data.preflight.item.wordpress_content_inventory_status
                 )}
+                inventorySourceKind={data.preflight.item.wordpress_content_source_kind}
+                inventoryExtractionRegion={data.preflight.item.wordpress_content_extraction_region}
                 existingContentProvenanceRequired={
                   data.preflight.item.wordpress_content_material_confidence === "review_required"
                 }
