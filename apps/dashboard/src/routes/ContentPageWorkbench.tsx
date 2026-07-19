@@ -217,7 +217,12 @@ export function ContentPageWorkbench({
     exactSemanticReviewForRevision(actions.semanticReviewResult, latestRevision) ??
     exactSemanticReviewForRevision(semanticReviewQuery.data ?? null, latestRevision);
   const revisionEvidenceCount = latestRevision
-    ? unique(latestRevision.sections.flatMap((section) => section.evidence_ids)).length
+    ? unique([
+        ...latestRevision.sections.flatMap((section) => section.evidence_ids),
+        ...latestRevision.faq.flatMap((item) => item.evidence_ids),
+        ...latestRevision.cta_blocks.flatMap((item) => item.evidence_ids),
+        ...latestRevision.internal_links.flatMap((item) => item.evidence_ids)
+      ]).length
     : 0;
   const revisionStatusLabel = latestRevision
     ? `Aktualny draft · treść ${latestRevision.content_digest.slice(0, 10)}`
@@ -565,7 +570,9 @@ export function ContentPageWorkbench({
                       Aktualny draft: {latestRevision.title}
                     </p>
                     <p className="mt-1 text-xs text-slate-600">
-                      {latestRevision.sections.length} sekcji · {revisionEvidenceCount ?? "—"} źródeł
+                      {latestRevision.sections.length} sekcji · {latestRevision.faq.length} FAQ ·{" "}
+                      {latestRevision.cta_blocks.length} CTA · {latestRevision.internal_links.length} linków ·{" "}
+                      {revisionEvidenceCount ?? "—"} źródeł
                     </p>
                     <details className="mt-2 text-xs text-slate-600">
                       <summary className="cursor-pointer font-semibold text-action">
