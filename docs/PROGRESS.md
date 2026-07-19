@@ -7,6 +7,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: dynamiczna mapa briefu odrzuca teraz datowane testimonial/case
+  rows (np. nazwa klienta z `[2013 r.]`) przed wyznaczeniem kierunków H2. Reguła
+  działa po wzorcu roku, nie po nazwie klienta; live 0454 nie pokazuje już SERTOP
+  jako sekcji do napisania. Fixed point `19e5fe05` ma 5 focused testów, Ruff i
+  diff-check; checker został odrzucony przez cytację ponad 20 linii i zapisany
+  jako evidence gap.
 - 2026-07-19: usunięto fałszywy blocker productowy w briefie: słowa z
   zapytań/faktów GSC nie są już traktowane jako CTA zakupowe. Produktowy guard
   patrzy wyłącznie na temat, URL i deklarowany CTA; jawne „kup sorbent” nadal
