@@ -36,6 +36,7 @@ export const SocialHistoryInventorySchema = z.object({
   item_count: z.number(),
   channel_counts: z.record(z.string(), z.number()),
   import_errors: z.array(z.string()),
+  source_evidence_ids: z.array(z.string()).default([]),
   sources: z.array(SocialHistoryInventorySourceSchema),
   discovery_seeds: z.array(SocialHistoryDiscoverySeedSchema),
   input_template: z.object({
@@ -71,9 +72,9 @@ export const SocialHistoryImportAuditSchema = z.object({
   required_metadata_fields: z.array(z.string()),
   forbidden_metadata_fields: z.array(z.string()),
   errors: z.array(z.string()),
+  source_evidence_ids: z.array(z.string()).default([]),
   duplicate_free_claim_allowed: z.literal(false),
   publish_allowed: z.literal(false),
   operator_next_step: z.string()
 });
-
 
