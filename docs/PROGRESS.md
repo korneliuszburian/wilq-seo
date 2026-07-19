@@ -1922,3 +1922,14 @@ daily-check i GA4. Po restarcie pierwszy pomiar wyniósł 1,096 s, następne
 0,010–0,011 s; kolejka 0,063 s. Focused `tests/test_daily_runtime_prewarm.py`:
 4/4, Ruff i diff-check przechodzą. To poprawa cold-startu, nie deklaracja SLO
 ani kompletności danych.
+
+### 2026-07-19 — raport aktywacji semantic review odzyskuje dokładny typ proofu
+
+Mypy wskazał dwa błędy w `wilq/storage/semantic_review_activation.py`: raport
+deklarował `dict[str, int]`, choć `storage_proof()` zwraca kontraktowy
+`StorageProof` TypedDict. Raport używa teraz tego samego typu publicznego bez
+zmiany runtime ani serializacji. Focused
+`tests/storage/test_semantic_review_activation.py` przechodzi 1/1, a
+`uv run mypy wilq/storage/semantic_review_activation.py` jest czyste. Pełny
+repozytoryjny mypy nadal ma szeroki, niezależny klaster 100+ błędów w wielu
+modułach; nie przedstawiam tego slice'a jako zamknięcia całej bramki.

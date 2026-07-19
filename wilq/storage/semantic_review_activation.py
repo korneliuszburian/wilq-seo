@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from typing import TypedDict
 
-from wilq.storage.recovery import copy_storage_pair, storage_proof
+from wilq.storage.recovery import StorageProof, copy_storage_pair, storage_proof
 from wilq.storage.schema_versions import (
     ensure_sqlite_schema_version,
     reject_newer_sqlite_schema,
@@ -15,8 +15,8 @@ class SemanticReviewActivationReport(TypedDict):
     status: str
     backup_sqlite: str
     backup_duckdb: str
-    before: dict[str, int]
-    after: dict[str, int]
+    before: StorageProof
+    after: StorageProof
     table_created: bool
 
 
