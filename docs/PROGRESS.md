@@ -1457,3 +1457,9 @@ Odpowiedź zachowała typed blocker, `external_call_attempted=false`, brak
 proposal/revision i brak vendor write. Runtime zwrócił kod generic, więc
 operator dostał poprawny generic fallback; mapowania stream/timeout pozostają
 gotowe dla odpowiadających kodów providera.
+
+W panelu generowania planu techniczny `source_codes` blokera jest teraz ukryty
+poniżej w rozwijanym „Dlaczego”, bez zaśmiecania pierwszego widoku marketera.
+To daje supportowi dokładny ślad (`codex_*`) przy zachowaniu polskiego labelu i
+następnego kroku na wierzchu. Proof: `ContentPlanningGenerationPanel` 4/4 oraz
+dashboard `tsc --noEmit`.

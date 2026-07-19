@@ -274,6 +274,11 @@ export function ContentPlanningGenerationPanel({
             </ul>
           </>
         ) : null}
+        {blocker?.source_codes?.length ? (
+          <p className="mt-2" data-testid="content-planning-blocker-trace">
+            Ślad runtime: {blocker.source_codes.join(", ")}
+          </p>
+        ) : null}
         <p className="mt-1">Samo otwarcie tego widoku nie uruchamia generowania.</p>
       </details>
     </section>

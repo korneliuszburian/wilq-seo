@@ -135,7 +135,8 @@ describe("ContentPlanningGenerationPanel", () => {
         code: "runtime_failed",
         label: "Codex nie zwrócił bezpiecznego planu",
         reason: "App-server nie zakończył turnu poprawnym ustrukturyzowanym wynikiem.",
-        next_step: "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał."
+        next_step: "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
+        source_codes: ["codex_response_stream_disconnected"]
       }],
       safe_next_step: "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
       publish_ready: false
@@ -169,6 +170,9 @@ describe("ContentPlanningGenerationPanel", () => {
 
     const retry = await screen.findByRole("button", { name: "Wygeneruj plan" });
     expect(retry).toBeInTheDocument();
+    expect(await screen.findByTestId("content-planning-blocker-trace")).toHaveTextContent(
+      "codex_response_stream_disconnected"
+    );
     await retry.click();
     expect(postContentWorkItemPlanningProposal).toHaveBeenCalledTimes(1);
   });
