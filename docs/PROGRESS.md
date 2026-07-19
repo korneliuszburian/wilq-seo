@@ -18,6 +18,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   problem pomiaru `(not set)`, 2 brakujące strony WordPress i 2 czytelne wiersze
   ruchu; konwersje, przychód, ROAS, atrybucja i naprawa pomiaru pozostają
   `review_required`. To dowód jakości kontraktu, nie wynik biznesowy ani UAT.
+- 2026-07-19: `/api/content/diagnostics` potwierdza 53 istniejące URL-e
+  WordPress i 54 decyzje contentowe z 15 dowodami; BDO jest typem
+  `refresh_or_merge` (266 wyświetleń, 1 kliknięcie, CTR 0,38%, średnia pozycja
+  8,50), a nie nowym tematem. API wymaga sprawdzenia aktualnych sekcji i CTA
+  przed rewrite/scaleniem; Ahrefs ma 7 pasujących rekordów, 42 do ręcznej oceny
+  i 68 poza zakresem. To jest realny content queue, nie automatyczna decyzja
+  publikacyjna.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily
