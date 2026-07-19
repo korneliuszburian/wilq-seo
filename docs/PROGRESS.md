@@ -2729,3 +2729,17 @@ Próba przejścia dalej przez `POST /initial-draft` została uczciwie zatrzymana
 typed blockerem `planning_not_approved`; nie uruchomiła modelu i nie zapisała
 częściowej rewizji. To jest właściwa granica człowieka: zatwierdza zakres i
 usługę, nie ręcznie mapuje sekcji.
+
+### 2026-07-19 — outsourcing proposal odtworzony po zmianie exact inventory
+
+Po dynamicznym matcherze i świeżym odczycie `the_content` poprzedni outsourcing
+proposal stał się `stale`; nie został ponownie użyty. Zbudowano nowy input digest
+`736572b57edfb9d1604ede254369e4d8d4946fbcdd4c0e24bec791e623633728` z 1
+rzeczywistą sekcją, 2 source facts, exact GSC i exact GA4 oraz brakującymi
+Ads/Ahrefs/Keyword Planner.
+
+Nowy run `codex_content_planning_7085fbc5d5ab4d25b65d0ce7ac94c522` zapisał
+proposal `content_planning_proposal_d77cf0828c3849518726aaee8e18ef94`, version
+6, status `ready`: 3 sekcje, 2 FAQ, 2 query i komplet page assets. Stara wersja
+nie jest traktowana jako aktualna. Nowy proposal nadal wymaga scope/service
+review przed initial draft.
