@@ -2875,3 +2875,18 @@ passed. Live BDO snapshot: 5206 ms cold, 2756 ms i 2455 ms warm; freshness `fres
 z jawnymi connector refresh run IDs. Checker Claude odrzucił niewalidowany output
 przez cytację ponad 20 linii (`F-3`); nie traktuję go jako PASS:
 `/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-diagnostics-refresh-identity-final-6sTMAN/disposition.md`.
+### 2026-07-19 — produkcyjny lint i typowanie są domknięte
+
+Jednorazowy cross-surface verify potwierdził: marketer-language guard, skill
+hygiene, Ruff produkcyjny, `uv run mypy wilq apps/api --no-incremental` (382
+plików) oraz oba dashboard/shared typechecki przechodzą. Usunięto trzy ostatnie
+produkcyjne Ruff findings w WordPress inventory, measurement aggregates i
+semantic-review service (`0100be4d`). Focused inventory/measurement/semantic
+read-path proof: 30 testów.
+
+Verify nadal zatrzymuje się na kolekcji dwóch historycznych testów, które
+importują usunięte helpery i legacy revision-plan routes (404). Nie przywracam
+usuniętych powierzchni tylko dla zielonego testu; pozostaje to jawny dług
+testów/retired API. Bounded checker dla fixed pointu jest schema-valid, ale ma
+wyłącznie evidence gaps (brak bezpośrednich diff/AST excerpts); disposition:
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-production-ruff-cleanup-final-DccFi8/disposition.md`.
