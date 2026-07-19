@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { KnowledgeOperatingMapResponse } from "../lib/api";
 import { getKnowledgeCards, getKnowledgeOperatingMap, getKnowledgePlaybooks, getKnowledgeSourceFacts, getKnowledgeSourceMaterialReadiness, getKnowledgeSourceMaterials } from "../lib/api";
-import { GenericSurface } from "./GenericSurface";
+import { approvedKnowledgeFactCount, GenericSurface } from "./GenericSurface";
 
 vi.mock("../lib/api", () => ({
   getConnectors: vi.fn(),
@@ -85,6 +85,17 @@ describe("KnowledgeSurface", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+  });
+
+  it("counts only source facts eligible for generation", () => {
+    expect(
+      approvedKnowledgeFactCount([
+        { generation_status: "eligible" },
+        { generation_status: "blocked_review_required" },
+        { generation_status: "eligible" }
+      ])
+    ).toBe(2);
+    expect(approvedKnowledgeFactCount(undefined)).toBe(0);
   });
 
   it("renders the evidence-backed knowledge decision and keeps details behind disclosure", async () => {

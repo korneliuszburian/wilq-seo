@@ -3062,3 +3062,14 @@ typecheck PASS.
 Pełna regresja dashboardu po refaktorze: 51 plików, 212 testów PASS oraz
 typecheck PASS. To jest proof zachowania powierzchni po przeniesieniu notice,
 nie dowód jakości finalnego tekstu ani realnego Wilku UAT.
+
+### 2026-07-20 — knowledge surface pokazuje realną liczbę zatwierdzonych faktów
+
+Usunięto stałe `0` z kafla „zatwierdzonych”. Wartość jest teraz liczona z
+API-owego rejestru source facts i obejmuje wyłącznie rekordy
+`generation_status=eligible`; fakty `blocked_review_required` nie są mylone z
+wiedzą produkcyjną. Etykieta mówi wprost o „zatwierdzonych faktach”, a nie o
+zatwierdzonych kartach lub skuteczności treści.
+
+Focused proof: `KnowledgeSurface.test.tsx` 3/3, dashboard typecheck i
+`git diff --check` PASS.

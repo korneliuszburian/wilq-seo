@@ -616,7 +616,7 @@ function KnowledgeSurfaceSections({
   const reviewClaimCount = Math.max(reviewCount, bindings.length);
   const totalClaims = Math.max(allowedClaimCount + reviewClaimCount + blockedClaimCount, 1);
   const serviceCount = cards.filter((card) => /service|usług|usl|service_profile/i.test(card.card_type)).length;
-  const approvedCurrentCount = 0;
+  const approvedCurrentCount = approvedKnowledgeFactCount(knowledgeSourceFacts.data);
   const pendingMaterialCount = knowledgeSourceMaterials.data?.filter(
     (material) => material.import_status !== "imported"
   ).length ?? 0;
@@ -640,7 +640,7 @@ function KnowledgeSurfaceSections({
         <KnowledgeStatTile value={cards.length} label="kart" cta="Zobacz wszystkie" />
         <KnowledgeStatTile value={serviceCount} label="usług" cta="Zobacz wszystkie" tone="success" />
         <KnowledgeStatTile value={reviewCount} label="do sprawdzenia" cta="Przejdź do kolejki" tone="wait" />
-        <KnowledgeStatTile value={approvedCurrentCount} label="zatwierdzonych" cta="Zobacz zatwierdzone" tone="action" />
+        <KnowledgeStatTile value={approvedCurrentCount} label="zatwierdzonych faktów" cta="Zobacz zatwierdzone fakty" tone="action" />
       </section>
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <article className="rounded-md border border-line bg-white">
@@ -843,6 +843,12 @@ function KnowledgeSurfaceSections({
       ) : null}
     </>
   );
+}
+
+export function approvedKnowledgeFactCount(
+  facts: Array<Pick<KnowledgeSourceFactView, "generation_status">> | undefined
+): number {
+  return facts?.filter((fact) => fact.generation_status === "eligible").length ?? 0;
 }
 
 function KnowledgeStatTile({
