@@ -188,4 +188,58 @@ describe("ContentPlanningGenerationPanel", () => {
     await retry.click();
     expect(postContentWorkItemPlanningProposal).toHaveBeenCalledTimes(1);
   });
+
+  it("shows page assets from the API-owned plan without offering a vendor write", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValueOnce({
+      status: "ready",
+      work_item_id: "work_item",
+      planning_input_digest: "a".repeat(64),
+      proposal: {
+        service_selection_confirmed: true,
+        service_card_id: "service_card",
+        generation_status: "codex_generated",
+        proposal_id: "proposal_1",
+        angle: "konkretny zakres współpracy",
+        search_intent: "commercial",
+        page_assets: {
+          title: "Doradztwo środowiskowe | Ekologus",
+          h1: "Doradztwo środowiskowe dla firm",
+          lead: "Sprawdź zakres wsparcia dla swojej firmy.",
+          meta_title: "Doradztwo środowiskowe | Ekologus",
+          meta_description: "Poznaj zakres doradztwa środowiskowego.",
+        },
+        sections: [],
+        faq: [],
+        cta_blocks: [],
+        internal_links: [],
+        search_demand: { gsc_query_rows: [], ads_term_rows: [], keyword_planner_rows: [] },
+      },
+      blockers: [],
+      safe_next_step: "Sprawdź plan.",
+      publish_ready: false
+    } as never);
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValueOnce({
+      status: "ready",
+      total_count: 15,
+      imported_count: 15,
+      import_pending_count: 0,
+      excerpt_review_required_count: 0,
+      ready_for_generation: true,
+      blocker: null,
+      next_step: "Można planować."
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(
+      <QueryClientProvider client={client}>
+        <ContentPlanningGenerationPanel serviceCardId="service_card" workItemId="work_item" />
+      </QueryClientProvider>
+    );
+
+    const assets = await screen.findByTestId("content-planning-page-assets");
+    expect(assets).toHaveTextContent("Doradztwo środowiskowe | Ekologus");
+    expect(assets).toHaveTextContent("Doradztwo środowiskowe dla firm");
+    expect(assets).toHaveTextContent("bez zapisu do WordPress");
+    expect(screen.queryByRole("button", { name: /WordPress/i })).not.toBeInTheDocument();
+  });
 });

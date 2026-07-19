@@ -2469,3 +2469,11 @@ wyliczoną mapę, inventory disposition, query i evidence, ale nie renderuje pol
 decyzji ani przycisku zapisu. Jedyna planistyczna decyzja marketera dotyczy
 scope/usługi; mapa jest wynikiem kontraktu API. Focused dashboard proof:
 11 testów workflow przechodzi, typecheck dashboardu przechodzi.
+
+### 2026-07-19 — marketer widzi page assets już na etapie planu
+
+Po wygenerowaniu propozycji planu dashboard pokazuje read-only podgląd tytułu
+WordPress, H1, leadu, meta title i meta description. Dane pochodzą wyłącznie z
+`proposal.page_assets`; panel jasno oznacza brak zapisu do WordPress. To skraca
+decyzję przed pełnym draftem i nie tworzy drugiej ścieżki autorstwa. Focused
+panel proof: 5/5, dashboard typecheck przechodzi.

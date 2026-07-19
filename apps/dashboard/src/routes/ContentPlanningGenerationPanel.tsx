@@ -178,6 +178,29 @@ export function ContentPlanningGenerationPanel({
         </div>
       ) : null}
 
+      {currentProposal ? (
+        <div
+          className="mt-4 rounded-md border border-action/20 bg-action/5 p-4"
+          data-testid="content-planning-page-assets"
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+              Podgląd elementów strony
+            </p>
+            <span className="text-xs text-slate-500">wynik planu · bez zapisu do WordPress</span>
+          </div>
+          <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+            <PlanningPageAsset label="Tytuł WordPress" value={currentProposal.page_assets.title} />
+            <PlanningPageAsset label="H1" value={currentProposal.page_assets.h1} />
+            <PlanningPageAsset label="Meta title" value={currentProposal.page_assets.meta_title} />
+            <PlanningPageAsset label="Meta description" value={currentProposal.page_assets.meta_description} />
+            <div className="sm:col-span-2">
+              <PlanningPageAsset label="Lead" value={currentProposal.page_assets.lead} />
+            </div>
+          </dl>
+        </div>
+      ) : null}
+
       {currentProposal?.search_demand.gsc_query_rows.length ? (
         <div className="mt-4 rounded-md border border-line bg-surface p-3">
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
@@ -297,6 +320,15 @@ function PlanningInputFact({ label, value }: { label: string; value: number }) {
     <div className="rounded-md border border-line bg-white px-3 py-2">
       <span className="block text-xs text-slate-500">{label}</span>
       <span className="mt-1 block text-base font-semibold text-ink">{value}</span>
+    </div>
+  );
+}
+
+function PlanningPageAsset({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-line bg-white p-3">
+      <dt className="text-[11px] font-semibold uppercase tracking-normal text-slate-500">{label}</dt>
+      <dd className="mt-1 text-sm leading-6 text-ink">{value || "Brak elementu w planie"}</dd>
     </div>
   );
 }
