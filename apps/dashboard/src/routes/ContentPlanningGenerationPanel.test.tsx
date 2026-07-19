@@ -6,7 +6,10 @@ import {
   getContentWorkItemPlanningProposal,
   getKnowledgeSourceMaterialReadiness
 } from "../lib/api";
-import { ContentPlanningGenerationPanel } from "./ContentPlanningGenerationPanel";
+import {
+  ContentPlanningGenerationPanel,
+  planningSourceSummary
+} from "./ContentPlanningGenerationPanel";
 
 vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
@@ -22,6 +25,31 @@ vi.mock("../lib/api", async (importOriginal) => ({
 }));
 
 describe("ContentPlanningGenerationPanel", () => {
+  it("summarizes used sources and excludes unbound GA4/Ads from the plan", () => {
+    const summary = planningSourceSummary({
+      source_assessments: [
+        { source: "wordpress", status: "used", reason: "", landing_match_tiers: ["exact"], evidence_ids: [], knowledge_card_ids: [] },
+        { source: "gsc", status: "used", reason: "", landing_match_tiers: ["exact"], evidence_ids: [], knowledge_card_ids: [] },
+        { source: "ga4", status: "not_applicable", reason: "", landing_match_tiers: [], evidence_ids: [], knowledge_card_ids: [] },
+        { source: "google_ads", status: "blocked", reason: "", landing_match_tiers: [], evidence_ids: [], knowledge_card_ids: [] }
+      ],
+      final_canonical_url: "https://ekologus.pl/bdo/",
+      service_label: "BDO",
+      inventory_status: "available",
+      content_inventory_status: "available",
+      source_fact_count: 0,
+      source_fact_ids: [],
+      source_material_ids: [],
+      evidence_id_count: 0,
+      knowledge_card_count: 0,
+      measurement_metrics: []
+    });
+
+    expect(summary).toContain("Źródła planu: 2/4 użyte · 2 z exact powiązaniem ze stroną.");
+    expect(summary).toContain("GA4: nie dotyczy");
+    expect(summary).toContain("Google Ads: zablokowane");
+  });
+
   it("shows the real corpus gate without blocking the planning view", async () => {
     vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue({
       status: "import_pending",

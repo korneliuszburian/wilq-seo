@@ -138,6 +138,9 @@ export function ContentPlanningGenerationPanel({
             <PlanningInputFact label="Metryki" value={inputSummary.measurement_metrics.length} />
             <PlanningInputFact label="Ślady źródeł" value={inputSummary.evidence_id_count} />
           </div>
+          <p className="mt-2 text-xs leading-5 text-slate-600" data-testid="content-planning-source-summary">
+            {planningSourceSummary(inputSummary)}
+          </p>
         </div>
       ) : null}
 
@@ -330,6 +333,20 @@ function planningSourceStatusLabel(status: string) {
     blocked: "zablokowane"
   };
   return labels[status] ?? status;
+}
+
+export function planningSourceSummary(
+  inputSummary: NonNullable<ContentPlanningProposalResponse["input_summary"]>
+) {
+  const used = inputSummary.source_assessments.filter((source) => source.status === "used").length;
+  const landingBound = inputSummary.source_assessments.filter(
+    (source) => source.landing_match_tiers.length > 0
+  ).length;
+  const extraSources = inputSummary.source_assessments
+    .filter((source) => ["ga4", "google_ads"].includes(source.source) && source.status !== "used")
+    .map((source) => `${planningSourceLabel(source.source)}: ${planningSourceStatusLabel(source.status)}`);
+  const suffix = extraSources.length ? ` ${extraSources.join(" · ")}.` : "";
+  return `Źródła planu: ${used}/${inputSummary.source_assessments.length} użyte · ${landingBound} z exact powiązaniem ze stroną.${suffix}`;
 }
 
 function landingTierLabel(tier: string) {
