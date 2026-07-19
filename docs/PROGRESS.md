@@ -2056,3 +2056,7 @@ Freshness slice zmniejszył pełny mypy z 72 do 47 błędów; następnie
 `_persisted_runtime_trace` mapuje teraz stan CodexRun `started` do bezpiecznego
 runtime statusu zamiast przekazywać niedozwolony Literal. Proof: modułowy mypy
 clean, dynamic planning runtime/stale tests 5/5.
+
+Po normalizacji runtime trace pełny odczyt `uv run mypy wilq apps/api
+--no-incremental` wynosi 46 błędów w 9 plikach. To aktualny licznik długu na
+fixed poincie `9d6fc711`; nie jest to jeszcze pełna bramka.
