@@ -1443,3 +1443,10 @@ ograniczonego okna. Nie pokazujemy surowego payloadu providera i nie zmieniamy
 statusu `failed`, lineage ani zasad retry. Inne kody zachowują dotychczasowy
 generic fallback. Focused proof: test mapowania stream failure, timeout
 contract i heading-quality fixture (3 passed), Ruff oraz `git diff --check`.
+
+Checker retry dla `0409b4bf` jest schema-valid. Zwrócił cztery LOW/MEDIUM
+uwagi będące brakami literalnej ekspozycji kodu dla tool-free reviewera, nie
+udowodnionymi defektami; wszystkie zostały `reject_with_evidence` w
+disposition. Dwie decyzje — finalne brzmienie po polsku i kompletność przyszłej
+allowlisty kodów — pozostają jawnie human-only. Nie claimuję PASS, provider
+recovery ani UAT.
