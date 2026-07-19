@@ -332,6 +332,44 @@ def test_metric_store_applies_landing_identity_before_content_limit(
     assert exact_limited[0].trend == "up"
 
 
+def test_metric_store_matches_ga4_relative_landing_path_to_selected_host(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    metric_db = tmp_path / "metrics.duckdb"
+    monkeypatch.setenv("WILQ_METRIC_DB", str(metric_db))
+    collected_at = datetime.now(UTC) - timedelta(minutes=5)
+    url = "https://www.ekologus.pl/magazynowanie-odpadow-wg-nowych-przepisow/"
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="ga4_relative_landing",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=collected_at,
+            completed_at=collected_at,
+            evidence_ids=["ev_ga4_relative_landing"],
+            summary="GA4 relative landing path proof.",
+        ),
+        detailed_facts=[
+            VendorMetricFact(
+                name="active_users",
+                value=7,
+                dimensions={"landing_page": "/magazynowanie-odpadow-wg-nowych-przepisow/"},
+            )
+        ],
+    )
+
+    facts = metric_store().list_metric_facts_for_content_url(
+        ["google_analytics_4"],
+        url,
+        content_path="/magazynowanie-odpadow-wg-nowych-przepisow",
+    )
+
+    assert [fact.evidence_id for fact in facts] == ["ev_ga4_relative_landing"]
+    assert facts[0].dimensions["landing_page"].startswith("/")
+
+
 def test_metric_store_owns_and_hides_reserved_dimension_namespace(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

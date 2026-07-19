@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Literal, cast
+from urllib.parse import urljoin, urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -321,6 +322,9 @@ def _ga4_page_signal(
         )
         if not candidate_url:
             continue
+        parsed_candidate = urlsplit(candidate_url)
+        if parsed_candidate.path.startswith("/") and not parsed_candidate.netloc:
+            candidate_url = urljoin(final_canonical_url, candidate_url)
         match = match_landing_page(
             final_canonical_url,
             LandingPageCandidate(

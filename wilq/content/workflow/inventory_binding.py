@@ -78,15 +78,16 @@ def inventory_decision_for_work_item(
         if material_ready and material is not None
         else item.acf_field_names
     )
+    all_metric_facts = inventory_metric_facts(item.url, item.path)
     facts = [
-        fact
-        for fact in inventory_metric_facts(item.url, item.path)
-        if fact.source_connector == "google_search_console"
+        fact for fact in all_metric_facts if fact.source_connector == "google_search_console"
     ]
     queries = _unique(str(fact.dimensions.get("query") or "") for fact in facts)
     metrics = content_decision_metrics(facts, queries)
-    evidence_ids = _unique([item.evidence_id, *(fact.evidence_id for fact in facts)])
-    source_connectors = _unique([item.source_connector, *(fact.source_connector for fact in facts)])
+    evidence_ids = _unique([item.evidence_id, *(fact.evidence_id for fact in all_metric_facts)])
+    source_connectors = _unique(
+        [item.source_connector, *(fact.source_connector for fact in all_metric_facts)]
+    )
     title = item.title or item.path
     decision_status: Literal["ready", "blocked"] = (
         "ready" if material_ready or item.material_status != "url_only" else "blocked"
@@ -164,7 +165,13 @@ def inventory_decision_for_work_item(
         content_gate_summary="Istniejąca treść wymaga decyzji odświeżenia; nie twórz duplikatu.",
         source_connectors=source_connectors,
         evidence_ids=evidence_ids,
-        metric_facts=facts[:8],
+        # Keep the bounded GSC preview for the queue, but retain exact GA4
+        # landing facts so planning can bind behavior to the selected page.
+        metric_facts=[*facts[:8], *[
+            fact
+            for fact in all_metric_facts
+            if fact.source_connector == "google_analytics_4"
+        ]],
         rationale=(
             "Adres został wybrany bezpośrednio z pełnego inventory WordPress, "
             "a nie z okazji wygenerowanej z brainstormingu."

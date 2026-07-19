@@ -518,6 +518,19 @@ class DuckDbMetricStore:
               AND (
                 json_extract_string(facts.dimensions_json, '$._wilq_landing_identity') = ?
                 OR legacy.landing_identity = ?
+                OR (
+                  facts.connector_id = 'google_analytics_4'
+                  AND (
+                    lower(rtrim(split_part(
+                      json_extract_string(facts.dimensions_json, '$.landing_page'), '?', 1
+                    ), '/')) = lower(rtrim(?, '/'))
+                    OR lower(rtrim(split_part(
+                      json_extract_string(
+                        facts.dimensions_json, '$.landing_page_plus_query_string'
+                      ), '?', 1
+                    ), '/')) = lower(rtrim(?, '/'))
+                  )
+                )
               )
             ORDER BY
               facts.collected_at DESC,
@@ -531,6 +544,8 @@ class DuckDbMetricStore:
             list(dict.fromkeys(connector_ids)),
             landing_identity,
             landing_identity,
+            content_path,
+            content_path,
             candidate_limit,
         ]
         with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
@@ -545,7 +560,11 @@ class DuckDbMetricStore:
         filtered = [
             fact
             for fact in facts
-            if metric_dimensions_match_landing(fact.dimensions, content_url)
+            if metric_dimensions_match_landing(
+                fact.dimensions,
+                content_url,
+                allow_relative_path=fact.source_connector == "google_analytics_4",
+            )
         ]
         return _apply_metric_history(filtered)[:bounded_limit]
 

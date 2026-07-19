@@ -15,6 +15,7 @@ from wilq.content.workflow.catalog import (
     inventory_work_item_id,
 )
 from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
+from wilq.schemas import MetricFact
 
 
 def test_inventory_catalog_deduplicates_urls_and_keeps_acf_headings(monkeypatch):
@@ -479,6 +480,61 @@ def test_inventory_decision_resolves_the_canonical_diagnostics_work_item_id(
         "content_work_item_"
     )
     assert decision.page == url
+
+
+def test_inventory_decision_retains_exact_ga4_landing_facts_for_planning(monkeypatch):
+    url = "https://www.ekologus.pl/oferta/"
+    item = ContentInventoryCatalogItem(
+        catalog_id="catalog_offer",
+        work_item_id=inventory_work_item_id(url),
+        url=url,
+        path="/oferta/",
+        title="Oferta",
+        content_type="page",
+        material_status="content_summary",
+        content_summary="Oferta Ekologus",
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_wp_offer",
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",
+        lambda: ContentInventoryCatalogResponse(total_count=1, items=[item]),
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.inventory_binding.inventory_metric_facts",
+        lambda *_args, **_kwargs: [
+            MetricFact(
+                name="clicks",
+                value=2,
+                period="connector_refresh",
+                source_connector="google_search_console",
+                evidence_id="ev_gsc_offer",
+                dimensions={"page": url, "query": "oferta ekologus"},
+            ),
+            MetricFact(
+                name="active_users",
+                value=7,
+                period="connector_refresh",
+                source_connector="google_analytics_4",
+                evidence_id="ev_ga4_offer",
+                dimensions={"landing_page": "/"},
+            ),
+        ],
+    )
+
+    decision = inventory_decision_for_work_item(
+        content_decision_work_item_id_for_url(url),
+        read_material=False,
+        allow_material_pending=True,
+    )
+
+    assert decision is not None
+    assert "google_analytics_4" in decision.source_connectors
+    assert [fact.evidence_id for fact in decision.metric_facts] == [
+        "ev_gsc_offer",
+        "ev_ga4_offer",
+    ]
 
 
 def test_inventory_catalog_cache_reuses_one_snapshot(monkeypatch):

@@ -31,8 +31,8 @@ def _metric_landing_candidates(dimensions: dict[str, str]) -> list[LandingPageCa
         if dimensions.get(key)
         and not (
             key == "landing_page"
-            and host_name
             and landing_page
+            and urlsplit(landing_page).path.startswith("/")
             and not urlsplit(landing_page).netloc
         )
     ]
@@ -85,9 +85,24 @@ def metric_dimensions_landing_identity(dimensions: dict[str, str]) -> str | None
 def metric_dimensions_match_landing(
     dimensions: dict[str, str],
     expected_url: str | None,
+    *,
+    allow_relative_path: bool = False,
 ) -> bool:
+    candidates = _metric_landing_candidates(dimensions)
+    if allow_relative_path and expected_url:
+        expected = urlsplit(expected_url)
+        for key in ("landing_page", "landing_page_plus_query_string"):
+            value = dimensions.get(key)
+            parsed = urlsplit(value or "")
+            if value and parsed.path.startswith("/") and not parsed.netloc:
+                candidates.append(
+                    LandingPageCandidate(
+                        candidate_id=f"{key}_with_expected_host",
+                        url=f"{expected.scheme or 'https'}://{expected.netloc}{value}",
+                    )
+                )
     matches = [
         match_landing_page(expected_url, candidate)
-        for candidate in _metric_landing_candidates(dimensions)
+        for candidate in candidates
     ]
     return bool(expected_url) and bool(matches) and all(match.matched for match in matches)
