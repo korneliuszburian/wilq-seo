@@ -7,6 +7,15 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: exact reviewed-service Ads read/review pilot został zamknięty.
+  Świeży odczyt ma 21 bounded rows/30 dni i 200 rows/90 dni; 9 wierszy wiąże
+  kartę `ekologus_service_environmental_consulting_outsourcing` przez exact
+  inventory binding. Decyzja ma evidence i action IDs, a marketer ma
+  review-only handoff do natywnego Google Ads przez campaign/ad-group/search
+  term identifiers. Mixed safety queue pozostaje `blocked` do czasu pełnego
+  90-dniowego pokrycia; Keyword Planner i realne UAT nie są zamknięte.
+  Bead `wilq-seo-v9ab.17.7` zamknięty bez vendor write.
+
 - 2026-07-19: zamknięto dwa cross-source seamy po audycie fixed pointu.
   Wspólny `LandingPageIdentity` rozróżnia exact, tracking-only, host-alias,
   functional-query, ambiguous, missing i no-match; metric store filtruje tę
