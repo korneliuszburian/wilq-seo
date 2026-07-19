@@ -4,7 +4,7 @@ Status: aktywny, długotrwały plan wykonawczy. Właścicielem zadań i zależno
 pozostaje Beads (`wilq-seo-1oa`); ten plik definiuje produkt, standard i kolejność.
 Nie jest historią commitów ani listą zastępczą dla Beads.
 
-### Checkpoint 2026-07-19 — fixed point po lineage social i audycie Ads
+### Checkpoint 2026-07-19 — fixed point po browser-proof `/content-workflow`
 
 Ostatni utrwalony stan obejmuje serię runtime i lineage hardening slices. `GET /initial-draft` nie
 pokazuje już starej rewizji jako aktualnej po nowszym planning jobie z innym
@@ -19,7 +19,15 @@ Oba piloty planowania nadal kończą się typed `runtime_failed` z
 i persisted readback są zachowane;
 pełna generacja, semantic storage, jakość tekstu i UAT pozostają nieudowodnione.
 
-Ostatni wypchnięty commit: `c4780e8b` (`docs(plan): refresh long-running fixed point`).
+Ostatni wypchnięty commit: `7d950236` (`test(content): align browser proof with current UI`).
+Pełny `apps/dashboard/e2e/content-workflow-layout.spec.ts` przechodzi 6/6 w
+jednym przebiegu; obejmuje desktop/mobile, inventory-bound workflow, planning,
+Codex section rewrite oraz save → reload → exact review → draft-only wizard.
+To synthetic proof, nie UAT ani zgoda na vendor write. Selektory testu zostały
+związane z aktualnymi etykietami UI i payloadem `selected_section_headings`;
+produkcja nie została zmieniona w tym slice.
+
+Poprzedni wypchnięty commit: `c4780e8b` (`docs(plan): refresh long-running fixed point`).
 Po tym punkcie social reuse zachowuje osobne `source_evidence_ids` historii
 duplikacji w immutable proposal i blokuje reuse bez zatwierdzonego inventory;
 live social history nadal jest `missing`. Audyt Ads obejrzał wszystkie 21
