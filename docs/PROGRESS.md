@@ -1779,3 +1779,15 @@ planning suite i falsifiers timeout/stale/concurrency przechodzą, a Beads
 `wilq-seo-v1um` i `wilq-seo-tcd7` są zamknięte. Nie oznacza to sukcesu providera,
 wygenerowanego tekstu ani approval; wcześniejsze checker dispositions z
 evidence gaps pozostają jawne.
+
+### 2026-07-19 — browser proof `/content-workflow` wrócił do aktualnego kontraktu UI
+
+Pełny `apps/dashboard/e2e/content-workflow-layout.spec.ts` przechodzi 6/6 w
+jednym przebiegu (desktop/mobile, inventory, planning, pięć zakładek, Codex
+section rewrite oraz save → reload → exact review → WordPress draft-only wizard).
+Naprawa dotyczyła wyłącznie rozjechanych oczekiwań testu: aktualny API-owned
+payload wybiera sekcję przez `selected_section_headings`, review używa etykiety
+`Zapisz decyzję dla aktualnego draftu`, a wizard ma nagłówek `Szkic aktualnego
+tekstu → dev`. Produkcja nie została zmieniona. To świeży synthetic browser
+proof, nie realny Wilku UAT ani zgoda na vendor write; nadal obowiązują blokery
+importu materiałów, owner review i storage maintenance window.

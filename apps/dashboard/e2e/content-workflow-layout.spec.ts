@@ -458,8 +458,8 @@ test.describe("WILQ content workflow layout proof", () => {
         pathname: proof.endpointPath,
         payload: {
           expected_base_digest: proof.baseRevision.content_digest,
-          selected_section_headings: [],
-          selected_section_ids: [proof.selectedSectionId],
+          selected_section_headings: [proof.selectedHeading],
+          selected_section_ids: [],
           requested_by: "operator_local_dashboard"
         }
       });
@@ -942,7 +942,7 @@ test.describe("WILQ content workflow layout proof", () => {
       await expect(immutableRevision.getByText(exactText)).toBeVisible();
       await expect(immutableRevision.getByText(revisionProofEvidenceId).first()).toBeVisible();
       await page.getByLabel("Decyzja dla wersji szkicu").selectOption("approved");
-      const approveButton = page.getByRole("button", { name: /Zapisz decyzję dla wersji 1/ });
+      const approveButton = page.getByRole("button", { name: "Zapisz decyzję dla aktualnego draftu" });
       await expect(approveButton).toBeDisabled();
       await page
         .getByRole("checkbox", { name: "Przeczytano dokładną treść tej wersji." })
@@ -962,7 +962,7 @@ test.describe("WILQ content workflow layout proof", () => {
         "step"
       );
       const wizard = page.getByTestId("content-wordpress-draft-action-wizard");
-      await expect(wizard.getByRole("heading", { name: "Wersja 1 → szkic na devie" }))
+      await expect(wizard.getByRole("heading", { name: "Szkic aktualnego tekstu → dev" }))
         .toBeVisible();
       await expect(wizard.getByText(/bez publikacji · bez aktualizacji/)).toBeVisible();
       expect(reviewRequests.at(-1)?.expected_revision_digest).toBe(
