@@ -324,6 +324,47 @@ def test_dynamic_material_falls_back_to_rendered_the_content(monkeypatch):
     assert "Pełny materiał" in material.content_text
 
 
+def test_dynamic_material_reads_public_rest_when_authoring_host_is_dev(monkeypatch):
+    monkeypatch.setattr(
+        "wilq.connectors.wordpress.client._wordpress_credentials",
+        lambda _connector: WordPressCredentials(
+            base_url="https://ekologus.dev.proudsite.pl/",
+            public_url="https://www.ekologus.pl/",
+            username="reader",
+            application_auth="password",
+            site_kind="primary",
+        ),
+    )
+    page_url = "https://www.ekologus.pl/oferta/doradztwo/"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host != "www.ekologus.pl":
+            return httpx.Response(404, request=request)
+        assert request.url.params["context"] == "view"
+        assert "authorization" not in request.headers
+        return httpx.Response(
+            200,
+            request=request,
+            json=[
+                {
+                    "link": page_url,
+                    "title": {"rendered": "Doradztwo"},
+                    "content": {"rendered": "<h2>Zakres usługi</h2><p>Treść.</p>"},
+                    "acf": {"hero": "Doradztwo"},
+                }
+            ],
+        )
+
+    material = read_wordpress_content_material(
+        page_url,
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert material.source_kind == "wordpress_rest"
+    assert material.material_confidence == "source_bound"
+    assert material.section_headings == ["Zakres usługi"]
+
+
 def test_dynamic_material_extracts_the_content_headings_from_rest(monkeypatch):
     monkeypatch.setattr(
         "wilq.connectors.wordpress.client._wordpress_credentials",

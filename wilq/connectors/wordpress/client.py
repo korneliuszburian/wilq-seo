@@ -23,7 +23,7 @@ from wilq.connectors.wordpress.text import (
     summary_text_limited,
     wordpress_title,
 )
-from wilq.content.canonical.urls import content_is_safe_public_url
+from wilq.content.canonical.urls import content_is_safe_public_url, content_url_host
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
@@ -406,15 +406,28 @@ def read_wordpress_content_material(
     try:
         requested_path = urlparse(url).path.rstrip("/") or "/"
         slug = requested_path.rsplit("/", 1)[-1]
-        auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
+        configured_host = content_url_host(credentials.base_url)
+        requested_host = content_url_host(url)
+        read_base_url = credentials.base_url or ""
+        auth: httpx.BasicAuth | None = httpx.BasicAuth(
+            credentials.username or "", credentials.application_auth or ""
+        )
+        rest_context = "edit"
+        if requested_host and requested_host != configured_host:
+            # The configured dev host owns safe authoring, but the canonical
+            # public host owns the source material.  Read its public REST
+            # representation without sending dev credentials across hosts.
+            read_base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}/"
+            auth = None
+            rest_context = "view"
         for content_type in WORDPRESS_CONTENT_TYPES:
             try:
                 response = client.get(
-                    urljoin(credentials.base_url or "", f"wp-json/wp/v2/{content_type}"),
+                    urljoin(read_base_url, f"wp-json/wp/v2/{content_type}"),
                     auth=auth,
                     params={
                         "slug": slug,
-                        "context": "edit",
+                        "context": rest_context,
                         "_fields": WORDPRESS_READ_FIELDS,
                     },
                 )
