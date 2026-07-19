@@ -29,6 +29,8 @@ def test_content_diagnostics_default_cache_survives_startup_waterfall(
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
     monkeypatch.delenv("WILQ_CONTENT_DIAGNOSTICS_CACHE_SECONDS", raising=False)
     content_diagnostics_module.clear_content_diagnostics_cache()
+
+
     now = 100.0
     calls = 0
     sentinel = ContentDiagnosticsResponse.model_construct()
@@ -65,6 +67,37 @@ def test_content_diagnostics_default_cache_survives_startup_waterfall(
     assert first is sentinel
     assert second is sentinel
     assert calls == 1
+    content_diagnostics_module.clear_content_diagnostics_cache()
+
+
+def test_content_diagnostics_cache_invalidates_when_refresh_identity_changes(monkeypatch) -> None:
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setenv("WILQ_CONTENT_DIAGNOSTICS_CACHE_SECONDS", "60")
+    content_diagnostics_module.clear_content_diagnostics_cache()
+    refresh_identity = ("refresh-a",)
+    calls = 0
+    first = ContentDiagnosticsResponse.model_construct()
+    second = ContentDiagnosticsResponse.model_construct()
+
+    monkeypatch.setattr(
+        content_diagnostics_module,
+        "_content_diagnostics_refresh_identity",
+        lambda: (("google_search_console", *refresh_identity, ()),),
+    )
+
+    def fake_build() -> ContentDiagnosticsResponse:
+        nonlocal calls
+        calls += 1
+        return first if calls == 1 else second
+
+    monkeypatch.setattr(content_diagnostics_module, "build_content_diagnostics", fake_build)
+    assert content_diagnostics_module.build_content_diagnostics_cached() is first
+    assert content_diagnostics_module.build_content_diagnostics_cached() is first
+    assert calls == 1
+
+    refresh_identity = ("refresh-b",)
+    assert content_diagnostics_module.build_content_diagnostics_cached() is second
+    assert calls == 2
     content_diagnostics_module.clear_content_diagnostics_cache()
 
 

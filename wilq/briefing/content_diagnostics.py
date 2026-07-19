@@ -119,6 +119,7 @@ DEFAULT_CONTENT_DIAGNOSTICS_CACHE_SECONDS = 60.0
 @dataclass(frozen=True)
 class ContentDiagnosticsCacheEntry:
     created_at: float
+    refresh_identity: tuple[tuple[str, str, str, tuple[str, ...]], ...]
     diagnostics: ContentDiagnosticsResponse
 
 
@@ -258,15 +259,17 @@ def build_content_diagnostics(
 
 def build_content_diagnostics_cached() -> ContentDiagnosticsResponse:
     """Reuse one diagnostics build across the initial content workflow reads."""
-    cached = _read_content_diagnostics_cache()
+    refresh_identity = _content_diagnostics_refresh_identity()
+    cached = _read_content_diagnostics_cache(refresh_identity)
     if cached is not None:
         return cached
     with _content_diagnostics_cache_lock:
-        cached = _read_content_diagnostics_cache()
+        refresh_identity = _content_diagnostics_refresh_identity()
+        cached = _read_content_diagnostics_cache(refresh_identity)
         if cached is not None:
             return cached
         diagnostics = build_content_diagnostics()
-        _write_content_diagnostics_cache(diagnostics)
+        _write_content_diagnostics_cache(diagnostics, refresh_identity)
         return diagnostics
 
 
@@ -304,22 +307,48 @@ def content_diagnostics_cache_ready() -> bool:
     )
 
 
-def _read_content_diagnostics_cache() -> ContentDiagnosticsResponse | None:
+def _read_content_diagnostics_cache(
+    refresh_identity: tuple[tuple[str, str, str, tuple[str, ...]], ...] | None = None,
+) -> ContentDiagnosticsResponse | None:
     cache_seconds = _content_diagnostics_cache_seconds()
     if cache_seconds <= 0 or _cached_content_diagnostics is None:
         return None
     if monotonic() - _cached_content_diagnostics.created_at > cache_seconds:
         return None
+    if (
+        refresh_identity is not None
+        and refresh_identity != _cached_content_diagnostics.refresh_identity
+    ):
+        return None
     return _cached_content_diagnostics.diagnostics
 
 
-def _write_content_diagnostics_cache(diagnostics: ContentDiagnosticsResponse) -> None:
+def _write_content_diagnostics_cache(
+    diagnostics: ContentDiagnosticsResponse,
+    refresh_identity: tuple[tuple[str, str, str, tuple[str, ...]], ...],
+) -> None:
     global _cached_content_diagnostics
     if _content_diagnostics_cache_seconds() <= 0:
         return
     _cached_content_diagnostics = ContentDiagnosticsCacheEntry(
         created_at=monotonic(),
+        refresh_identity=refresh_identity,
         diagnostics=diagnostics,
+    )
+
+
+def _content_diagnostics_refresh_identity() -> tuple[tuple[str, str, str, tuple[str, ...]], ...]:
+    latest = _latest_refreshes(CONTENT_CONNECTOR_IDS)
+    latest_by_connector = {run.connector_id: run for run in latest}
+    return tuple(
+        (
+            connector_id,
+            latest_by_connector[connector_id].id,
+            latest_by_connector[connector_id].status.value,
+            tuple(latest_by_connector[connector_id].evidence_ids),
+        )
+        for connector_id in CONTENT_CONNECTOR_IDS
+        if connector_id in latest_by_connector
     )
 
 
