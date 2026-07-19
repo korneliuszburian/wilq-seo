@@ -187,6 +187,20 @@ class ContentPlanningProposalStore:
             return None
         return response
 
+    def latest_for_service(
+        self,
+        work_item_id: str,
+        service_card_id: str,
+    ) -> ContentPlanningProposal | None:
+        """Read the newest persisted proposal for one service card.
+
+        Unlike ``latest_generation_response`` this includes successful jobs.
+        Read-only workflow status needs it to detect a newer ready proposal
+        that invalidates an older approved-plan draft.
+        """
+
+        return self.latest(work_item_id, service_card_id)
+
     def active_generation_response(
         self,
         work_item_id: str,

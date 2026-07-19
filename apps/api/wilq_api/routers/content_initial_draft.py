@@ -125,22 +125,23 @@ def register_content_initial_draft_route(
             work_item_id,
             proposal_store,
         )
-        newer_planning_response = (
-            None
-            if proposal is None
-            else getattr(
+        newer_planning_response = None
+        if proposal is not None:
+            latest_for_service = getattr(
                 proposal_store,
-                "latest_generation_response",
-                lambda *_: None,
-            )(
+                "latest_for_service",
+                getattr(proposal_store, "latest_generation_response", lambda *_: None),
+            )
+            newer_planning_response = latest_for_service(
                 work_item_id,
                 getattr(proposal, "service_card_id", None),
             )
-        )
         if (
             proposal is not None
             and newer_planning_response is not None
             and newer_planning_response.planning_input_digest is not None
+            and getattr(newer_planning_response, "proposal_id", None)
+            != proposal.proposal_id
             and newer_planning_response.planning_input_digest
             != proposal.planning_input_digest
         ):

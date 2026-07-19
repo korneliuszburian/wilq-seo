@@ -2407,3 +2407,15 @@ kartę `ekologus_service_environmental_consulting_outsourcing`, canonical URL
 assignments. Serializowany plan nie zawiera literalnego `bdo` (0 wystąpień),
 ma 3 evidence IDs i 4 claim IDs. To potwierdza, że naprawiony app-server i
 planner obsługują oba case’y dynamicznie, bez kopiowania BDO.
+
+### 2026-07-19 — initial-draft GET nie pokazuje starej rewizji jako aktualnej
+
+Po wygenerowaniu nowego planu BDO stary zatwierdzony plan nadal prowadził
+`GET /initial-draft` do historycznej rewizji `created`. Read seam sprawdza teraz
+najnowszą trwałą propozycję dla tej samej karty usługi, także gdy jej generacja
+już zakończyła się sukcesem (a nie tylko gdy job jest `queued`/`failed`). Jeśli
+digest wejścia lub proposal ID się zmieniły, marketer dostaje typed
+`stale_planning_input` i musi zatwierdzić aktualny plan. Proof live: BDO zwraca
+`blocked`, `stale_planning_input`, bez budowania snapshotu; focused status suite
+7/7, Ruff i mypy clean. To chroni pełny dokument przed cichym użyciem starego
+tekstu.

@@ -89,9 +89,9 @@ selected inventory proof; WILQ must still not invent topics outside inventory.
 After bounding the first structured plan to 12 sections, 8 FAQ items, 4 CTA
 blocks and 4 conditional hypotheses, prior synthetic/knowledge-bound runs
 produced unreviewed proposals, but the current managed API no longer exposes
-those as the active fixed point. Both exact pilot reads currently return
-`failed` with `runtime_failed` / `codex_response_stream_disconnected`, no
-proposal and `publish_ready=false`; no successful plan is claimed here. The
+those as the active fixed point. After the app-server provider fix, both exact
+pilot reads return `ready` with distinct proposals and `publish_ready=false`;
+the plans are generated but still unapproved. The
 remaining eight manifest materials stay `import_pending`. A fresh BDO retry
 returned `generating` immediately and later failed without partial state. The
 2026-07-18 BDO regeneration replaced the stale prior input with digest
