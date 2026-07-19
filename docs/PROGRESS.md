@@ -1322,3 +1322,13 @@ Checker pass
 is schema-valid. Five low-severity findings are retained as confirmations,
 not defects; four evidence gaps remain explicit. This does not prove model
 planning or UAT.
+
+### 2026-07-19 — blocker korpusu pokazuje bezpieczny manifest materiałów
+
+`/content-workflow` korzysta teraz z istniejącego metadata-only endpointu
+`/api/knowledge/source-materials`. Gdy korpus jest niegotowy, marketer może
+rozwinąć listę tytułów i statusów materiałów oczekujących na import/review;
+raw treść oraz `source_path` nie są renderowane. Zmieniony kontrakt nie dodaje
+drugiego źródła prawdy ani nie odblokowuje generowania bez gotowego korpusu.
+Focused proof: `ContentWorkflowSurface` 34 testy oraz dashboard typecheck.
+Niezależny checker i disposition dla tego fixed pointu pozostają do wykonania.

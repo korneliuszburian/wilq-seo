@@ -9,6 +9,7 @@ import {
   getContentOperatorContext,
   getContentWorkItemQueue,
   getKnowledgeSourceMaterialReadiness,
+  getKnowledgeSourceMaterials,
   getContentWorkItemPlanningProposal,
   getContentWorkItemSemanticReview,
   getContentWorkItemSnapshot,
@@ -63,6 +64,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentOperatorContext: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getKnowledgeSourceMaterialReadiness: vi.fn(),
+    getKnowledgeSourceMaterials: vi.fn(),
     getContentWorkItemPlanningProposal: vi.fn(),
     getContentWorkItemSemanticReview: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
@@ -100,6 +102,7 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue(knowledgeReadiness());
+    vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue([]);
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(
       planningProposalStatus()
     );
@@ -237,6 +240,19 @@ describe("ContentWorkflowSurface", () => {
   });
 
   it("shows the real knowledge corpus blocker before a plan can be generated", async () => {
+    vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue([
+      {
+        source_id: "source-transcript-1",
+        file_name: "rozmowa-z-ekologus.txt",
+        title: "Rozmowa z zespołem Ekologus",
+        kind: "transcript",
+        word_count: 1200,
+        digest_prefix: "abc123",
+        privacy_class: "internal",
+        import_status: "import_pending",
+        source_path: "/private/rozmowa-z-ekologus.txt"
+      }
+    ]);
     vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue({
       status: "import_pending",
       total_count: 15,
@@ -262,6 +278,9 @@ describe("ContentWorkflowSurface", () => {
     expect(notice).toHaveTextContent("Zaimportowano 7 z 15 materiałów");
     expect(notice).toHaveTextContent("8 oczekuje na kontrolowany import");
     expect(notice).toHaveTextContent("Dokończ kontrolowany import materiałów.");
+    expect(notice).toHaveTextContent("Materiały oczekujące na obsługę");
+    expect(notice).toHaveTextContent("Rozmowa z zespołem Ekologus");
+    expect(notice).not.toHaveTextContent("/private/rozmowa-z-ekologus.txt");
   });
 
   it("distinguishes excerpt review from pending import in corpus readiness", async () => {

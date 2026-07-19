@@ -59,6 +59,7 @@ import {
   type ContentInventoryCatalogQuery,
   type ContentServiceProfileQuery,
   type ContentWorkflowSnapshotQuery,
+  type KnowledgeSourceMaterialsQuery,
   type KnowledgeSourceMaterialReadinessQuery,
   type WordPressAuthoringProfileQuery,
   type WordPressDraftActivationPacketQuery,
@@ -100,6 +101,7 @@ export function ContentWorkflowSurface() {
     draftWriteReadiness,
     enrichment,
     inventory,
+    knowledgeMaterials,
     knowledgeReadiness,
     operatorContext,
     serviceProfile,
@@ -117,6 +119,7 @@ export function ContentWorkflowSurface() {
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       inventory={inventory}
+      knowledgeMaterials={knowledgeMaterials}
       knowledgeReadiness={knowledgeReadiness}
       operatorContext={operatorContext}
       serviceProfile={serviceProfile}
@@ -141,6 +144,7 @@ function ContentWorkflowRouteState({
   draftWriteReadiness,
   enrichment,
   inventory,
+  knowledgeMaterials,
   knowledgeReadiness,
   operatorContext,
   serviceProfile,
@@ -156,6 +160,7 @@ function ContentWorkflowRouteState({
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   inventory: ContentInventoryCatalogQuery;
+  knowledgeMaterials: KnowledgeSourceMaterialsQuery;
   knowledgeReadiness: KnowledgeSourceMaterialReadinessQuery;
   operatorContext: ContentOperatorContextQuery;
   serviceProfile: ContentServiceProfileQuery;
@@ -179,6 +184,7 @@ function ContentWorkflowRouteState({
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       inventory={inventory}
+      knowledgeMaterials={knowledgeMaterials}
       knowledgeReadiness={knowledgeReadiness}
       operatorContext={operatorContext}
       serviceProfile={serviceProfile}
@@ -197,6 +203,7 @@ function ContentWorkflowQueueReady({
   draftWriteReadiness,
   enrichment,
   inventory,
+  knowledgeMaterials,
   knowledgeReadiness,
   operatorContext,
   serviceProfile,
@@ -211,6 +218,7 @@ function ContentWorkflowQueueReady({
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   inventory: ContentInventoryCatalogQuery;
+  knowledgeMaterials: KnowledgeSourceMaterialsQuery;
   knowledgeReadiness: KnowledgeSourceMaterialReadinessQuery;
   operatorContext: ContentOperatorContextQuery;
   serviceProfile: ContentServiceProfileQuery;
@@ -238,7 +246,7 @@ function ContentWorkflowQueueReady({
               <OverviewMetric label="do sprawdzenia" value={inventory.data?.blocked_count ?? 0} muted />
             </div>
           </div>
-          <KnowledgeReadinessNotice query={knowledgeReadiness} />
+          <KnowledgeReadinessNotice query={knowledgeReadiness} materials={knowledgeMaterials} />
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
             <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Dane read-only</span>
             <span>WordPress · GSC/GA4 · karty wiedzy</span>
@@ -663,9 +671,11 @@ function pageMetricsSummary(candidate: ContentWorkItemQueueCandidate) {
 }
 
 function KnowledgeReadinessNotice({
-  query
+  query,
+  materials
 }: {
   query: KnowledgeSourceMaterialReadinessQuery;
+  materials: KnowledgeSourceMaterialsQuery;
 }) {
   const readiness = query.data;
   if (query.isError) {
@@ -710,6 +720,21 @@ function KnowledgeReadinessNotice({
         {readiness.next_step ||
           "Skontaktuj się z administratorem, aby ustalić kolejny krok dla korpusu źródłowego."}
       </p>
+      {materials.data?.length ? (
+        <details className="mt-3 rounded-lg border border-amber-200/80 bg-white/50 px-3 py-2">
+          <summary className="cursor-pointer font-semibold">Materiały oczekujące na obsługę</summary>
+          <ul className="mt-2 space-y-1 text-xs leading-5 text-amber-900">
+            {materials.data.map((material) => (
+              <li key={material.source_id}>
+                <span className="font-medium">{material.title || material.file_name}</span>
+                <span className="ml-1 opacity-75">· {material.import_status}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : materials.isError ? (
+        <p className="mt-2 text-xs text-amber-900">Lista materiałów jest chwilowo niedostępna.</p>
+      ) : null}
     </div>
   );
 }
