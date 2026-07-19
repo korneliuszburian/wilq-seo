@@ -324,6 +324,50 @@ def test_dynamic_material_falls_back_to_rendered_the_content(monkeypatch):
     assert "Pełny materiał" in material.content_text
 
 
+def test_dynamic_material_extracts_the_content_headings_from_rest(monkeypatch):
+    monkeypatch.setattr(
+        "wilq.connectors.wordpress.client._wordpress_credentials",
+        lambda _connector: WordPressCredentials(
+            base_url="https://staging.example/",
+            public_url="https://www.ekologus.pl/",
+            username="reader",
+            application_auth="password",
+            site_kind="primary",
+        ),
+    )
+
+    page_url = (
+        "https://www.ekologus.pl/czy-przygotowane-wieloletnie-plany-inwestycyjne-z-zakresu-"
+        "gospodarki-odpadami-spelniaja-nowe-wymagania-prawne/"
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "wp-json" not in str(request.url):
+            return httpx.Response(404, request=request)
+        return httpx.Response(
+            200,
+            request=request,
+            json=[
+                {
+                    "link": page_url,
+                    "title": {"rendered": "Plany inwestycyjne"},
+                    "content": {
+                        "raw": "<h2>Nowe wymagania prawne</h2><p>Treść artykułu.</p>"
+                    },
+                    "acf": {},
+                }
+            ],
+        )
+
+    material = read_wordpress_content_material(
+        page_url,
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert material.source_kind == "wordpress_rest"
+    assert material.section_headings == ["Nowe wymagania prawne"]
+
+
 def test_inventory_binding_is_stable_and_evidence_bound(monkeypatch):
     row = SimpleNamespace(
         name="content_object_seen",

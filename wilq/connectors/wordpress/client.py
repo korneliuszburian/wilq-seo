@@ -476,6 +476,9 @@ def _material_from_rest_item(
         else ""
     )
     text = clean_metadata_text(html_text(source))
+    content_parser = _HtmlMetadataParser()
+    content_parser.feed(source)
+    content_parser.close()
     content_dimensions = content_inventory(content)
     acf_dimensions = acf_inventory(item.get("acf"))
     return WordPressContentMaterial(
@@ -485,7 +488,7 @@ def _material_from_rest_item(
         content_text=text,
         content_summary=content_dimensions.get("content_summary", ""),
         content_word_count=_optional_int(content_dimensions.get("content_word_count")),
-        section_headings=[],
+        section_headings=content_parser.section_headings,
         acf_field_names=_json_string_list(acf_dimensions.get("acf_field_names_json")),
         acf_section_headings=_json_string_list(acf_dimensions.get("acf_section_headings_json")),
         modified_gmt=str(item.get("modified_gmt") or ""),

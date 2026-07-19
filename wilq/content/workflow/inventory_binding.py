@@ -64,9 +64,9 @@ def inventory_decision_for_work_item(
         else item.content_word_count
     )
     section_headings = (
-        material.section_headings
+        material.acf_section_headings or material.section_headings
         if material_ready and material is not None
-        else item.section_headings or item.acf_section_headings
+        else item.acf_section_headings or item.section_headings
     )
     acf_headings = (
         material.acf_section_headings
