@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_workflow
 from wilq.content.planning.decisions import content_decision_work_item_id_for_url
+from wilq.content.workflow.catalog import (
+    ContentInventoryCatalogItem,
+    ContentInventoryCatalogResponse,
+    inventory_work_item_id,
+)
 from wilq.content.workflow.queue import build_content_work_item_queue_response
 from wilq.schemas import (
     ContentDecisionItem,
@@ -255,6 +262,52 @@ def test_selected_diagnostics_work_item_uses_the_catalog_fast_path(monkeypatch) 
     assert response.status_code == 200
     assert response.json()["candidate_count"] == 1
     assert response.json()["candidates"][0]["decision_id"] == selected_decision.id
+
+
+def test_selected_diagnostics_work_item_resolves_through_real_catalog_binding(
+    monkeypatch,
+) -> None:
+    url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    work_item_id = content_decision_work_item_id_for_url(url)
+    catalog = ContentInventoryCatalogResponse(
+        total_count=1,
+        items=[
+            ContentInventoryCatalogItem(
+                catalog_id="catalog_bdo",
+                work_item_id=inventory_work_item_id(url),
+                url=url,
+                path="/bdo-co-musi-wiedziec-przedsiebiorca/",
+                title="BDO",
+                content_type="page",
+                material_status="content_summary",
+                content_summary="Istniejąca strona BDO.",
+                source_connector="wordpress_ekologus",
+                evidence_id="ev_wp_bdo",
+                collected_at=datetime(2026, 7, 19, tzinfo=UTC),
+            )
+        ],
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",
+        lambda: catalog,
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.inventory_binding.inventory_metric_facts",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        content_workflow,
+        "build_content_diagnostics_cached",
+        lambda: (_ for _ in ()).throw(AssertionError("full diagnostics must not run")),
+    )
+
+    response = TestClient(app).get(f"/api/content/work-items/queue?work_item_id={work_item_id}")
+
+    assert response.status_code == 200
+    assert response.json()["candidate_count"] == 1
+    assert response.json()["candidates"][0]["decision_id"] == work_item_id.removeprefix(
+        "content_work_item_"
+    )
 
 
 def test_content_work_item_queue_blocks_dev_url_as_final_canonical() -> None:

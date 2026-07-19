@@ -1185,6 +1185,14 @@ synthetic topics. A focused regression proves all seven ranked pages survive
 the builder, and the live API confirms the expanded page inventory. No model
 call, vendor write or approval is implied.
 
+The selected-decision follow-up now has a real resolver-through-catalog API
+falsifier; it forbids the full diagnostics builder while using the canonical
+BDO decision work-item ID. A local timing probe measured the cached catalog at
+0.319s versus 2.682s for the full diagnostics build (same process, same local
+state), so the fast path has a measured cost boundary rather than an implicit
+latency claim. Cold external refresh and all non-inventory IDs remain outside
+this proof.
+
 ### 2026-07-19 — one planning turn per page/service
 
 Planning generation is now serialized by `(work_item_id, service_card_id)`,
