@@ -893,6 +893,7 @@ def _start_run(
                 f"/api/content/work-items/{planning_input.work_item_id}/planning-proposals"
             ],
             evidence_ids=planning_input.evidence_ids,
+            planning_input_digest=planning_input.planning_input_digest,
         )
     )
 

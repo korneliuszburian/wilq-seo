@@ -1598,3 +1598,12 @@ jego `id`. `_persisted_runtime_trace` zwraca teraz `run_id` również po reloadz
 focused readback test, Ruff i diff-check przechodzą. To spina historię zapisanego
 planu z tym samym runem, bez ujawniania provider payloadu. Nie dowodzi jakości
 tekstu ani sukcesu nowej generacji.
+
+### 2026-07-19 — exact planning digest w CodexRun
+
+`CodexRun` miał już pole `planning_input_digest`, ale planningowy `_start_run`
+go nie ustawiał. Run ID można było więc odnaleźć, lecz nie dało się z samego
+persisted runu udowodnić, któremu exact input odpowiadał. Start runu zapisuje
+teraz digest razem z evidence IDs; focused suite ma 2 testy, Ruff i diff-check
+przechodzą. To domyka identyfikację run → input, bez zmiany providerowego
+blockera i bez tworzenia planu.
