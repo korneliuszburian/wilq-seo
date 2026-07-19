@@ -1391,3 +1391,8 @@ Naprawiono retry failed planning run: gdy API zachowuje exact
 Codexa, panel pokazuje ponownie „Wygeneruj plan”. Nie zmienia to bramki
 pierwszego uruchomienia — nadal wymaga human-confirmed service selection.
 Focused proof: `ContentPlanningGenerationPanel` 4 testy i dashboard typecheck.
+
+Checker dla `e8727eeb` przeszedł walidację i zwrócił trzy LOW confirmations,
+bez defektu do naprawy. Disposition zachowuje granice: retry nie dowodzi
+akceptacji API ani sukcesu providera; pierwsza generacja nadal wymaga decyzji
+człowieka.
