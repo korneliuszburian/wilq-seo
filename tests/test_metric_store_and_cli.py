@@ -19,6 +19,7 @@ from wilq.schemas import (
     ConnectorRefreshStatus,
     MetricFact,
 )
+from wilq.storage import metric_store as metric_store_module
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import _connect_with_retry, metric_store
 
@@ -312,6 +313,9 @@ def test_metric_store_applies_landing_identity_before_content_limit(
             ],
         )
 
+    # Force the public bounded-read edge: legacy functional-query rows must
+    # not consume the SQL limit before the shared identity resolver runs.
+    monkeypatch.setattr(metric_store_module, "MAX_METRIC_FACT_READ_LIMIT", 1)
     exact_limited = metric_store().list_metric_facts_for_content_url(
         ["google_search_console"],
         outsourcing_url,

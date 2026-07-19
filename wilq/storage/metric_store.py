@@ -480,34 +480,19 @@ class DuckDbMetricStore:
         if not connector_ids or not content_url or not content_path:
             return []
         bounded_limit = max(1, min(limit, MAX_METRIC_FACT_READ_LIMIT))
+        # Keep one predecessor available for the publication-facing delta
+        # calculation. The public limit is applied after identity filtering
+        # and history enrichment, never before either of those decisions.
+        candidate_limit = max(bounded_limit + 1, MAX_METRIC_FACT_READ_LIMIT)
         identity_dimensions = dimensions_with_metric_identity({"page": content_url})
         landing_identity = identity_dimensions.get(LANDING_IDENTITY_DIMENSION)
         if not landing_identity:
             return []
-        legacy_predicates: list[str] = []
-        legacy_params: list[Any] = []
-        if landing_page_metric_lookup_path(content_url) == content_path:
-            url_bases = [
-                base.rstrip("/").casefold()
-                for base in landing_page_metric_legacy_base_urls(content_url)
-            ]
-            for dimension_path in (
-                "$.content_url",
-                "$.final_url",
-                "$.landing_page",
-                "$.landing_page_plus_query_string",
-                "$.page",
-                "$.page_location",
-            ):
-                legacy_predicates.append(
-                    "lower(rtrim(split_part("
-                    "json_extract_string(facts.dimensions_json, ?), '?', 1), '/')) = ANY(?)"
-                )
-                legacy_params.extend((dimension_path, url_bases))
-        legacy_match = (
-            f" OR ({' OR '.join(legacy_predicates)})" if legacy_predicates else ""
-        )
-        query = f"""
+        # Resolve legacy URL dimensions into the same private identity before
+        # applying the bounded read limit. A base-path SQL predicate alone
+        # would let functional-query interlopers consume the limit and only be
+        # rejected by the public matcher afterwards.
+        query = """
             SELECT
               facts.metric_name,
               facts.metric_value_double,
@@ -525,10 +510,14 @@ class DuckDbMetricStore:
               NULL AS previous_evidence_id,
               NULL AS previous_collected_at
             FROM connector_metric_facts facts
+            LEFT JOIN wilq_legacy_landing_identity legacy
+              ON facts.run_id = legacy.run_id
+             AND facts.metric_name = legacy.metric_name
+             AND facts.dimensions_json = legacy.dimensions_json
             WHERE facts.connector_id = ANY(?)
               AND (
                 json_extract_string(facts.dimensions_json, '$._wilq_landing_identity') = ?
-                {legacy_match}
+                OR legacy.landing_identity = ?
               )
             ORDER BY
               facts.collected_at DESC,
@@ -541,10 +530,16 @@ class DuckDbMetricStore:
         params: list[Any] = [
             list(dict.fromkeys(connector_ids)),
             landing_identity,
-            *legacy_params,
-            MAX_METRIC_FACT_READ_LIMIT,
+            landing_identity,
+            candidate_limit,
         ]
         with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
+            _prepare_legacy_landing_identity_index(
+                connection,
+                list(dict.fromkeys(connector_ids)),
+                content_url=content_url,
+                content_path=content_path,
+            )
             rows = connection.execute(query, params).fetchall()
         facts = [_metric_fact_from_row(row) for row in rows]
         filtered = [

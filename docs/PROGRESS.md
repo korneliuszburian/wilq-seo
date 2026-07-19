@@ -2499,3 +2499,14 @@ Ads, Ahrefs), a freshness assessment oznacza źródło jako `w dowodach`,
 `wymaga odświeżenia` albo `zablokowane`. Dzięki temu BDO pokaże Ads, gdy Ads
 jest w jego lineage, ale nie będzie udawać GA4/Merchant/Localo bez exact
 powiązania. Focused test 1/1 i dashboard typecheck przechodzą.
+
+### 2026-07-19 — legacy landing identity jest rozstrzygane przed bounded LIMIT
+
+`list_metric_facts_for_content_url` używa teraz istniejącego, tymczasowego
+resolvera legacy URL do wyliczenia prywatnego landing identity przed SQL
+LIMIT. Funkcjonalne query na tej samej ścieżce nie mogą już zająć limitu i
+wpłynąć na wynik exact page; publiczny limit nadal jest nakładany dopiero po
+identity filtering i enrichment history. Zachowano poprzednią wartość/delta,
+więc measurement nie traci historii. Falsyfikator wymusza LIMIT=1 z nowszym
+interloperem i nadal zwraca właściwy exact evidence oraz poprzednią wartość;
+2 testy metric-store, Ruff, mypy i diff-check przechodzą.
