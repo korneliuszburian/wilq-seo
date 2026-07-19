@@ -1450,3 +1450,10 @@ udowodnionymi defektami; wszystkie zostały `reject_with_evidence` w
 disposition. Dwie decyzje — finalne brzmienie po polsku i kompletność przyszłej
 allowlisty kodów — pozostają jawnie human-only. Nie claimuję PASS, provider
 recovery ani UAT.
+
+Świeży single-case BDO probe po tym slice'ie przeszedł przez aktualny digest,
+thread i turn, po czym zakończył się `runtime_failed/codex_turn_failed`.
+Odpowiedź zachowała typed blocker, `external_call_attempted=false`, brak
+proposal/revision i brak vendor write. Runtime zwrócił kod generic, więc
+operator dostał poprawny generic fallback; mapowania stream/timeout pozostają
+gotowe dla odpowiadających kodów providera.
