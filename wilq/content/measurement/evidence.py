@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from threading import RLock
+from time import monotonic
 from typing import cast
 
 from wilq.content.canonical.landing_identity import (
@@ -52,6 +54,15 @@ METRIC_NAMES: dict[tuple[str, str], ContentMeasurementMetric] = {
     ("google_analytics_4", "engagement_rate"): "ga4_engagement_rate",
     ("google_analytics_4", "key_events"): "ga4_key_events",
 }
+
+_MEASUREMENT_EVIDENCE_CACHE_TTL_SECONDS = 15.0
+_measurement_evidence_cache_lock = RLock()
+_measurement_evidence_cache: dict[
+    tuple[int, str, str, tuple[tuple[str, str, str, tuple[str, ...]], ...]],
+    tuple[float, MeasurementAggregateResult],
+] = {}
+
+
 def load_content_measurement_facts(content_url: str | None) -> list[MetricFact]:
     return load_content_measurement_evidence(content_url).facts
 
@@ -61,6 +72,18 @@ def load_content_measurement_evidence(
 ) -> MeasurementAggregateResult:
     store = metric_store()
     normalized_path = landing_page_metric_lookup_path(content_url)
+    refresh_identity = _measurement_refresh_identity()
+    cache_key = (
+        id(store),
+        content_url or "",
+        normalized_path,
+        refresh_identity,
+    )
+    now = monotonic()
+    with _measurement_evidence_cache_lock:
+        cached = _measurement_evidence_cache.get(cache_key)
+        if cached is not None and now - cached[0] < _MEASUREMENT_EVIDENCE_CACHE_TTL_SECONDS:
+            return cached[1]
     facts = [
         fact
         for normalized_url in landing_page_metric_lookup_urls(content_url)
@@ -71,9 +94,37 @@ def load_content_measurement_evidence(
         )
     ]
     unique_facts = _unique_metric_facts(facts)
-    return aggregate_exact_page_metric_facts(
+    result = aggregate_exact_page_metric_facts(
         unique_facts,
         content_url=content_url or "",
+    )
+    with _measurement_evidence_cache_lock:
+        _measurement_evidence_cache[cache_key] = (now, result)
+        expired = [
+            key
+            for key, (created_at, _) in _measurement_evidence_cache.items()
+            if now - created_at >= _MEASUREMENT_EVIDENCE_CACHE_TTL_SECONDS
+        ]
+        for key in expired:
+            _measurement_evidence_cache.pop(key, None)
+    return result
+
+
+def _measurement_refresh_identity() -> tuple[tuple[str, str, str, tuple[str, ...]], ...]:
+    latest_by_connector: dict[str, ConnectorRefreshRun] = {}
+    for run in local_state_store().list_connector_refresh_runs():
+        if run.connector_id not in MEASUREMENT_CONNECTORS:
+            continue
+        latest_by_connector.setdefault(run.connector_id, run)
+    return tuple(
+        (
+            connector_id,
+            latest_by_connector[connector_id].id,
+            latest_by_connector[connector_id].status.value,
+            tuple(latest_by_connector[connector_id].evidence_ids),
+        )
+        for connector_id in MEASUREMENT_CONNECTORS
+        if connector_id in latest_by_connector
     )
 
 

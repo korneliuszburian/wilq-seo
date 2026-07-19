@@ -333,3 +333,40 @@ def test_loader_returns_server_owned_aggregate_and_typed_exclusions(
         ("ctr", 0.03),
     }
     assert result.exclusions == []
+
+
+def test_loader_reuses_exact_refresh_snapshot_until_refresh_changes(monkeypatch) -> None:
+    url = "https://www.ekologus.pl/measurement-cache-proof/"
+    calls = 0
+
+    class Store:
+        def list_metric_facts_for_content_url(self, *_args, **_kwargs):
+            nonlocal calls
+            calls += 1
+            return [_fact(
+                connector="google_search_console",
+                name="clicks",
+                value=float(calls),
+                dimensions={"page": url, "query": "cache"},
+            )]
+
+    refresh_identity = ("run-a", "completed")
+    store = Store()
+    monkeypatch.setattr(measurement_evidence, "metric_store", lambda: store)
+    monkeypatch.setattr(
+        measurement_evidence,
+        "_measurement_refresh_identity",
+        lambda: (("google_search_console", *refresh_identity, ()),),
+    )
+
+    first = measurement_evidence.load_content_measurement_evidence(url)
+    first_calls = calls
+    second = measurement_evidence.load_content_measurement_evidence(url)
+    assert first_calls > 0
+    assert calls == first_calls
+    assert first.facts == second.facts
+
+    refresh_identity = ("run-b", "completed")
+    refreshed = measurement_evidence.load_content_measurement_evidence(url)
+    assert calls == first_calls * 2
+    assert refreshed is not first
