@@ -76,7 +76,7 @@ class ContentPlanningInput(BaseModel):
 
     schema_name: Literal["wilq_content_planning_input_v6"] = "wilq_content_planning_input_v6"
     criteria_version: Literal["wilq_people_first_planning_v4"] = "wilq_people_first_planning_v4"
-    inventory_mapping_policy: Literal["wilq_inventory_mapping_v4"] = "wilq_inventory_mapping_v4"
+    inventory_mapping_policy: Literal["wilq_inventory_mapping_v5"] = "wilq_inventory_mapping_v5"
     planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     work_item_id: str = Field(min_length=1)
     goal: Literal["refresh_existing"] = "refresh_existing"
@@ -302,7 +302,7 @@ def build_content_planning_input_from_components(
         {
             "schema_name": "wilq_content_planning_input_v6",
             "criteria_version": "wilq_people_first_planning_v4",
-            "inventory_mapping_policy": "wilq_inventory_mapping_v4",
+            "inventory_mapping_policy": "wilq_inventory_mapping_v5",
             **payload,
         }
     )

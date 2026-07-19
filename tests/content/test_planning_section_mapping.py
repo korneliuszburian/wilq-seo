@@ -223,6 +223,41 @@ def test_model_remove_review_disposition_is_not_presented_as_article_mapping() -
     assert mappings[0].reason == "navigation_or_promotional_inventory"
 
 
+def test_footer_tail_after_related_content_is_excluded_without_model_rows():
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_related",
+                    heading="Może Cię również zainteresować",
+                    evidence_ids=["ev_wp"],
+                ),
+                ContentPlanningInventorySection(
+                    section_id="inventory_service_1",
+                    heading="Dokumentacje środowiskowe",
+                    evidence_ids=["ev_wp"],
+                ),
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Nowa odpowiedź dla czytelnika",
+                purpose="Wyjaśnić temat.",
+                reader_question="Co powinien wiedzieć czytelnik?",
+                inventory_disposition="create",
+            )
+        ]
+    )
+
+    mappings = build_inventory_mapping(planning_input, output, ["plan_01"])
+
+    assert [item.status for item in mappings] == ["excluded", "excluded"]
+    assert all(item.reason == "navigation_or_promotional_inventory" for item in mappings)
+
+
 def test_faq_lead_inventory_is_excluded_for_review_when_model_omits_it() -> None:
     planning_input = ContentPlanningInput.model_construct(
         inventory=ContentPlanningInventory(

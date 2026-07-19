@@ -104,6 +104,7 @@ def build_inventory_mapping(
         if section.inventory_heading:
             by_inventory_heading.setdefault(section.inventory_heading, []).append((index, section))
     used_plan_indices: set[int] = set()
+    inventory_reasons = _inventory_exclusion_reasons(planning_input)
     mappings: list[ContentPlanningInventoryMapping] = []
     for inventory_section in planning_input.inventory.sections:
         explicit_id = by_inventory_id.get(inventory_section.section_id, [])
@@ -164,7 +165,7 @@ def build_inventory_mapping(
                 used_plan_indices.add(chosen[1])
                 if chosen[2].inventory_disposition == "remove_review_required":
                     mapping_status = "excluded"
-        reason = _excluded_reason(inventory_section.heading)
+        reason = inventory_reasons[inventory_section.section_id]
         if chosen is not None and mapping_status == "excluded" and not reason:
             reason = "model_remove_review_required"
         if chosen is None and reason:
@@ -188,6 +189,35 @@ def build_inventory_mapping(
             )
         )
     return mappings
+
+
+def _inventory_exclusion_reasons(
+    planning_input: ContentPlanningInput,
+) -> dict[str, str]:
+    """Treat a detected related/testimonial tail as page chrome as a unit."""
+
+    reasons: dict[str, str] = {}
+    footer_tail = False
+    for section in planning_input.inventory.sections:
+        direct_reason = _excluded_reason(section.heading)
+        if _starts_footer_tail(section.heading):
+            footer_tail = True
+        reason = direct_reason
+        if footer_tail and not reason:
+            reason = "navigation_or_promotional_inventory"
+        reasons[section.section_id] = reason
+    return reasons
+
+
+def _starts_footer_tail(heading: str) -> bool:
+    normalized = _normalize_heading(heading)
+    return normalized.startswith(
+        (
+            "zaufali nam",
+            "moze cie rowniez zainteresowac",
+            "oferta ",
+        )
+    )
 
 
 def _mapped_status(
