@@ -22,10 +22,20 @@ describe("matchesContentQueueCandidate", () => {
           ...candidate,
           page_inventory: {
             content_summary: "Informacje o obowiązkach przedsiębiorcy",
+            section_headings: ["Jak zalogować się do systemu BDO"],
             acf_section_headings: ["Kogo dotyczy obowiązek BDO"]
           }
         } as unknown as ContentWorkItemQueueCandidate,
         "kogo dotyczy obowiązek"
+      )
+    ).toBe(true);
+    expect(
+      matchesContentQueueCandidate(
+        {
+          ...candidate,
+          page_inventory: { section_headings: ["Jak zalogować się do systemu BDO"] }
+        } as unknown as ContentWorkItemQueueCandidate,
+        "zalogować się do systemu"
       )
     ).toBe(true);
     expect(matchesContentQueueCandidate(candidate, "outsourcing")).toBe(false);

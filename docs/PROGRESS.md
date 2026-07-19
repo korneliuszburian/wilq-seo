@@ -2290,3 +2290,11 @@ stabilne nagłówki propozycji; stary `planning_digest` nie może zanieczyścić
 wyboru z bieżącej strony. To jest tylko fokus sesji — nie tworzy planu ani nie
 udaje akceptacji. Proof: dashboard route testy 35/35 oraz shared-schema i
 dashboard typecheck clean.
+
+### 2026-07-19 — wyszukiwanie kolejki obejmuje sekcje `the_content`
+
+Wyszukiwanie strony w kolejce Treści i SEO uwzględnia teraz zarówno zwykłe
+nagłówki z `the_content`, jak i istniejące nagłówki ACF. Dzięki temu marketer
+może znaleźć adres po konkretnym fragmencie strony, zanim wybierze sesję i plan.
+Nie zmienia to kolejki ani rankingu kandydatów. Proof: `ContentCandidateQueuePanel`
+2/2 oraz dashboard typecheck clean.

@@ -84,6 +84,7 @@ export function matchesContentQueueCandidate(
     candidate.source_public_url,
     candidate.final_canonical_url,
     candidate.page_inventory?.content_summary,
+    ...(candidate.page_inventory?.section_headings ?? []),
     ...(candidate.page_inventory?.acf_section_headings ?? [])
   ]
     .filter(Boolean)
