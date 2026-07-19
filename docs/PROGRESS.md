@@ -25,6 +25,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   przed rewrite/scaleniem; Ahrefs ma 7 pasujących rekordów, 42 do ręcznej oceny
   i 68 poza zakresem. To jest realny content queue, nie automatyczna decyzja
   publikacyjna.
+- 2026-07-19: kanoniczny `/api/marketing/daily-check` po zakończeniu prewarmu
+  scala 7 źródeł marketingowych, 18 evidence IDs i 8 reguł eksperckich. Zwraca
+  3 bezpieczne kolejki review (Merchant, content/GSC/WordPress/Ahrefs/GA4,
+  Ads) oraz 1 typed blocker jakości pomiaru GA4; `do_not_touch` jawnie blokuje
+  write/publish bez preview → review → confirm → audit. Pierwszy odczyt w trakcie
+  prewarmu zwracał `daily_check_runtime_prewarm`, a retry przechodzi do pełnego
+  kontraktu — to ważny stan przejściowy, nie błąd maskowany jako gotowość.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily
