@@ -2339,3 +2339,13 @@ sam błąd; obserwowany przebieg to `thread/started → turn/started →
 item/userMessage → error`. To jest realny provider/runtime blocker, nie zgoda
 na fallback ani dowód gotowości planów. Dashboard-state zaktualizowany do tego
 fixed pointu; następny slice dotyczy recovery UX i diagnostyki tego runtime’u.
+
+### 2026-07-19 — system status pokazuje ostatni istotny run Codexa
+
+`/api/system/status` nie udawał wcześniej diagnostyki runtime’u: zawsze
+zwracał `last_codex_run=null`, a częste hooki `Stop` zasłaniały właściwy run
+workflowu. API filtruje teraz hook-only wpisy i wystawia ostatni typed run
+marketera wraz ze statusem, czasem, skill/hook oraz bezpiecznym błędem. Live
+status pokazuje `codex_content_planning_e5967...` jako `failed` z
+`runtime_failed:codex_response_stream_disconnected`. Proof: system-status
+contract 2/2, mypy i Ruff clean. Nie są ujawniane surowe payloady provider’a.
