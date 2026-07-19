@@ -2645,3 +2645,23 @@ read-only miejscu przed decyzją człowieka. Focused dashboard review tests:
 5 passed; typecheck przechodzi.
 Hardening dopina też spread fallbacków `?? []`, więc brak którejkolwiek
 kolekcji assetów nie wywołuje wyjątku podczas liczenia evidence.
+
+### 2026-07-19 — świeży odczyt nie może wywrócić wybranego workflow
+
+Po celowanym, read-only odczycie GA4 dla strony
+`/informacja-o-opakowaniach-i-odpadach-opakowaniowych-oraz-o-oplacie-produktowej/`
+oraz GSC z tego samego adresu zapisany wcześniej wybór usługi outsourcingowej
+przestał być aktualną kandydaturą. Snapshot wcześniej kończył się 500 przez
+`ValueError`; teraz dynamiczny matcher zwraca typed blocker
+`stale_service_selection`, pokazuje aktualną listę kandydatów i bezpieczny krok
+ponownego wyboru. Nie ma automatycznego przepisywania usługi ani zgadywania.
+Focused falsifier przechodzi, Ruff przechodzi, a live snapshot zwraca `blocked`
+z jawnym powodem zamiast błędu serwera.
+
+Ten sam świeży odczyt dostarczył GA4 evidence
+`ev_refresh_refresh_google_analytics_4_adb22a10fd9a`: okno 2026-06-21—2026-07-18,
+1 exact target row, 3 aktywnych użytkowników z `google / organic`; key events i
+konwersje pozostają niezweryfikowane. GSC evidence
+`ev_refresh_refresh_google_search_console_7a17272e2612` ma okno 2026-07-17,
+495 wierszy query/page i `partial_possible`; nie używamy go do trendu ani
+przyczynowości.

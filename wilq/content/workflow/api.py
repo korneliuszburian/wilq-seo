@@ -596,7 +596,9 @@ def _build_content_work_item_snapshot_response(
     service_profile_context = build_content_work_item_service_profile_context(
         item,
         knowledge_match=knowledge_match,
-        service_selection_confirmed=bool(selected_service_card_id),
+        service_selection_confirmed=bool(
+            selected_service_card_id and knowledge_match.service_card is not None
+        ),
         human_override_review_required=bool(
             scope_planning_decision
             and scope_planning_decision.human_override_review_required

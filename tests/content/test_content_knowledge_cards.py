@@ -20,6 +20,7 @@ from wilq.content.knowledge.cards import (
     ekologus_seed_content_knowledge_cards,
     match_content_knowledge_cards,
     required_content_knowledge_card_ids,
+    select_content_knowledge_service_card,
 )
 from wilq.content.knowledge.private_source_proposals import (
     PrivateSourceProposalRegistry,
@@ -684,6 +685,23 @@ def test_homepage_root_matches_review_required_cards_without_url_overmatch() -> 
     blocker_codes = {blocker.code for blocker in content_knowledge_card_blockers(neutral)}
     assert neutral.service_card is None
     assert {"missing_service_card", "missing_cta_card"} <= blocker_codes
+
+
+def test_stale_persisted_service_selection_becomes_typed_blocker() -> None:
+    match = match_content_knowledge_cards(
+        _item(
+            topic="Neutralny temat po odświeżeniu źródeł",
+            source_public_url="https://www.ekologus.pl/neutralny-temat/",
+            final_canonical_url="https://www.ekologus.pl/neutralny-temat/",
+            intended_final_url="https://www.ekologus.pl/neutralny-temat/",
+            evidence_ids=["ev_neutral"],
+        )
+    )
+
+    refreshed = select_content_knowledge_service_card(match, "service_card_from_old_snapshot")
+
+    assert refreshed.service_card is None
+    assert "stale_service_selection" in {blocker.code for blocker in refreshed.blockers}
 
 
 def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -> None:

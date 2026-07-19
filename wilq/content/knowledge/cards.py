@@ -554,7 +554,28 @@ def select_content_knowledge_service_card(
         None,
     )
     if selected is None:
-        raise ValueError("Service card is not an allowed candidate for this work item.")
+        # A persisted selection can become stale after a fresh connector read
+        # changes the dynamically derived candidate set.  Treat that as a
+        # typed workflow blocker instead of crashing the snapshot endpoint.
+        # The current candidates remain visible so the operator can reselect
+        # from the new evidence-backed set.
+        stale_blocker = _blocker(
+            "stale_service_selection",
+            "Wybrana wcześniej usługa nie pasuje już do aktualnych danych",
+            (
+                "Odświeżenie źródeł zmieniło kandydatury usług dla tego tematu; "
+                f"zapisany wybór {service_card_id} nie jest już dozwolony."
+            ),
+            "Wybierz usługę ponownie z aktualnej listy kandydatów.",
+            match.work_item_id,
+            "service",
+        )
+        return match.model_copy(
+            update={
+                "service_card": None,
+                "blockers": [*match.blockers, stale_blocker],
+            }
+        )
     return match.model_copy(update={"service_card": selected})
 
 

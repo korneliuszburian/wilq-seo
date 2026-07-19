@@ -209,14 +209,26 @@ def _unbound_context(
     missing_contracts: list[str] | None = None,
 ) -> ContentWorkItemServiceProfileContext:
     blockers = [blocker.label for blocker in match.blockers]
+    stale_selection = next(
+        (
+            blocker
+            for blocker in match.blockers
+            if blocker.code == "stale_service_selection"
+        ),
+        None,
+    )
     return ContentWorkItemServiceProfileContext(
         binding_status="unbound",
         decision_status="blocked",
         status_label="Brakuje typed powiązania z usługą",
         reason=reason
         or (
-            "WILQ nie ma dopasowanej typed karty usługi dla tego work itemu, "
-            "więc nie użyje ogólnego opisu tematu jako podstawy claimów."
+            stale_selection.reason
+            if stale_selection is not None
+            else (
+                "WILQ nie ma dopasowanej typed karty usługi dla tego work itemu, "
+                "więc nie użyje ogólnego opisu tematu jako podstawy claimów."
+            )
         ),
         missing_contracts=missing_contracts or blockers or ["Brakuje typed karty usługi."],
         service_candidates=_service_candidates(match),
@@ -225,7 +237,9 @@ def _unbound_context(
             "dla tego work itemu."
         ),
         safe_next_step=(
-            "Dodaj albo sprawdź kartę usługi i jej źródło w Service Profile przed szkicem."
+            stale_selection.next_step
+            if stale_selection is not None
+            else "Dodaj albo sprawdź kartę usługi i jej źródło w Service Profile przed szkicem."
         ),
     )
 
