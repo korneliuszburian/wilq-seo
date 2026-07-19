@@ -2461,3 +2461,11 @@ fałszywego `source_material_id` przy sekcjach opartych wyłącznie na aktualnym
 live evidence; materiał źródłowy pozostaje jednak trwały na poziomie dokumentu.
 Proof: `test_initial_full_draft_uses_the_same_atomic_contract_for_both_services`
 pass dla BDO i outsourcingu, bez częściowej rewizji i bez publish-ready.
+
+### 2026-07-19 — dashboard nie prosi już o drugi approval mapy
+
+Panel ukończonego kroku `section_map` jest teraz read-only. Pokazuje automatycznie
+wyliczoną mapę, inventory disposition, query i evidence, ale nie renderuje pola
+decyzji ani przycisku zapisu. Jedyna planistyczna decyzja marketera dotyczy
+scope/usługi; mapa jest wynikiem kontraktu API. Focused dashboard proof:
+11 testów workflow przechodzi, typecheck dashboardu przechodzi.

@@ -225,7 +225,8 @@ describe("ContentWorkflowSurface", () => {
     fireEvent.click(within(taskMap).getByRole("button", { name: /Plan sekcji/ }));
 
     expect(document.querySelector('[data-active-workspace="section_map"]')).toBeInTheDocument();
-    expect(screen.getByText("Zatwierdź plan sekcji")).toBeInTheDocument();
+    expect(screen.getByText("Automatyczna mapa sekcji")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Decyzja planistyczna")).not.toBeInTheDocument();
     expect(await screen.findByText(/Użyto \d+ z 10 źródeł/)).toBeInTheDocument();
     expect(screen.getByTestId("planning-section-map-generation-gate")).toHaveTextContent(
       "Mapa sekcji pojawi się po wygenerowaniu"
@@ -703,7 +704,7 @@ describe("ContentWorkflowSurface", () => {
       },
       "content_work_item_bdo"
     );
-    expect(await screen.findByText("Zatwierdź plan sekcji")).toBeInTheDocument();
+    expect(await screen.findByText("Automatyczna mapa sekcji")).toBeInTheDocument();
     expect(screen.queryByText("Aktualna strona")).not.toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });

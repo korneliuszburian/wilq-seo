@@ -75,8 +75,6 @@ export function ContentPlanningReviewPanel({
     !actions.pending &&
     (decision === "approved" ? checked : notes.trim().length > 0) &&
     (!serviceOverrideReviewRequired || notes.trim().length > 0) &&
-    (decision !== "approved" || !existingContentProvenanceRequired || provenanceChecked) &&
-    (stage !== "section_map" || sectionMapReady) &&
     (stage !== "scope" || Boolean(selectedServiceCardId));
 
   return (
@@ -91,7 +89,7 @@ export function ContentPlanningReviewPanel({
             {stage === "scope" ? "Krok 1 z 5" : "Krok 2 z 5"}
           </p>
           <h2 id="planning-review-title" className="mt-1 text-lg font-semibold text-ink">
-            {stage === "scope" ? "Zatwierdź zakres treści" : "Zatwierdź plan sekcji"}
+            {stage === "scope" ? "Zatwierdź zakres treści" : "Automatyczna mapa sekcji"}
           </h2>
         </div>
         {latestDecision ? (
@@ -255,7 +253,17 @@ export function ContentPlanningReviewPanel({
         </>
       )}
 
-      {stage === "scope" || sectionMapReady ? <div className="mt-5 grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+      {stage === "section_map" && sectionMapReady ? (
+        <p
+          className="mt-4 rounded-md border border-action/20 bg-action/5 p-3 text-sm leading-6 text-slate-700"
+          data-testid="planning-section-map-auto-status"
+        >
+          Ta mapa została wyliczona automatycznie z aktualnego inventory, usługi,
+          zapytań i dowodów. Nie wymaga osobnej decyzji — przejdź do szkicu treści.
+        </p>
+      ) : null}
+
+      {stage === "scope" ? <div className="mt-5 grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
         <label className="text-sm font-semibold text-ink">
           Decyzja
           <select
@@ -280,7 +288,7 @@ export function ContentPlanningReviewPanel({
         </label>
       </div> : null}
 
-      {stage === "scope" || sectionMapReady ? decision === "approved" ? (
+      {stage === "scope" ? decision === "approved" ? (
         <div className="mt-3 space-y-2">
           <label className="flex items-start gap-2 text-sm leading-6 text-slate-700">
             <input
@@ -289,26 +297,12 @@ export function ContentPlanningReviewPanel({
               onChange={(event) => setChecked(event.target.checked)}
               className="mt-1"
             />
-            {stage === "scope"
-              ? "Sprawdziłem stronę, usługę, intencję, odbiorcę i CTA."
-              : "Sprawdziłem kolejność, cel i źródła każdej sekcji."}
+            Sprawdziłem stronę, usługę, intencję, odbiorcę i CTA.
           </label>
-          {stage === "section_map" && existingContentProvenanceRequired ? (
-            <label className="flex items-start gap-2 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
-              <input
-                type="checkbox"
-                checked={provenanceChecked}
-                onChange={(event) => setProvenanceChecked(event.target.checked)}
-                className="mt-1"
-              />
-              Potwierdzam, że zakres istniejącego materiału został sprawdzony na publicznej stronie
-              i może służyć jako podstawa mapy sekcji.
-            </label>
-          ) : null}
         </div>
       ) : null : null}
 
-      {stage === "scope" || sectionMapReady ? <button
+      {stage === "scope" ? <button
         type="button"
         disabled={!canSubmit}
         onClick={() =>
@@ -319,8 +313,8 @@ export function ContentPlanningReviewPanel({
             planningReviewCheckedItems(
               stage,
               checked,
-              existingContentProvenanceRequired,
-              provenanceChecked
+              false,
+              false
             ),
             stage === "scope" ? selectedServiceCardId : undefined
           )
