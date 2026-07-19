@@ -4,7 +4,7 @@ from datetime import datetime
 from hashlib import sha256
 from threading import RLock
 from time import monotonic
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -225,7 +225,7 @@ def _latest_connector_refresh_facts(connector_id: str) -> list[Any]:
     evidence_ids = [] if latest is None else list(latest.evidence_ids)
     by_evidence = getattr(store, "list_metric_facts_by_evidence_ids", None)
     if evidence_ids and callable(by_evidence):
-        return by_evidence(evidence_ids)
+        return cast(list[Any], by_evidence(evidence_ids))
     # Keep lightweight test doubles and pre-migration local stores readable;
     # production DuckDB always has the evidence-scoped method above.
     return store.list_metric_facts(connector_id, limit=5000)
@@ -246,15 +246,15 @@ def _inventory_coverage() -> ContentInventoryCoverage:
     if latest is None:
         return ContentInventoryCoverage()
     summary = latest.metric_summary
-    source_count = summary.get("sitemap_url_source_count")
-    returned_count = summary.get("sitemap_url_returned_count")
-    public_sitemap_returned_count = summary.get("public_sitemap_url_count")
-    public_sitemap_source_count = summary.get("public_sitemap_url_source_count")
-    public_sitemap_returned = summary.get("public_sitemap_url_returned_count")
-    public_sitemap_limit = summary.get("public_sitemap_url_limit")
-    public_sitemap_truncated = summary.get("public_sitemap_url_truncated")
-    limit = summary.get("sitemap_url_limit")
-    truncated = summary.get("sitemap_url_truncated")
+    source_count = _coverage_int(summary.get("sitemap_url_source_count"))
+    returned_count = _coverage_int(summary.get("sitemap_url_returned_count"))
+    public_sitemap_returned_count = _coverage_int(summary.get("public_sitemap_url_count"))
+    public_sitemap_source_count = _coverage_int(summary.get("public_sitemap_url_source_count"))
+    public_sitemap_returned = _coverage_int(summary.get("public_sitemap_url_returned_count"))
+    public_sitemap_limit = _coverage_int(summary.get("public_sitemap_url_limit"))
+    public_sitemap_truncated = _coverage_bool(summary.get("public_sitemap_url_truncated"))
+    limit = _coverage_int(summary.get("sitemap_url_limit"))
+    truncated = _coverage_bool(summary.get("sitemap_url_truncated"))
     if not all(isinstance(value, int) for value in (source_count, returned_count, limit)):
         return ContentInventoryCoverage(
             status="unknown",
@@ -305,7 +305,7 @@ def _inventory_coverage() -> ContentInventoryCoverage:
             else "complete"
         ),
         source_count=source_count,
-        returned_count=returned_count,
+        returned_count=returned_count or 0,
         public_sitemap_source_count=(
             int(public_sitemap_source_count)
             if isinstance(public_sitemap_source_count, (int, float))
@@ -346,6 +346,20 @@ def _inventory_coverage() -> ContentInventoryCoverage:
     )
 
 
+def _coverage_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return None
+
+
+def _coverage_bool(value: Any) -> bool | None:
+    return value if isinstance(value, bool) else None
+
+
 def build_content_inventory_catalog_cached() -> ContentInventoryCatalogResponse:
     """Reuse one short-lived inventory read across the workflow request waterfall."""
     global _inventory_catalog_cache
@@ -383,12 +397,12 @@ def read_content_inventory_material(
     with _inventory_material_cache_lock:
         cached = _inventory_material_cache.get(cache_key)
         if cached is not None and now - cached[0] < _INVENTORY_MATERIAL_CACHE_SECONDS:
-            material = cached[1]
-            return material.model_copy(update={"evidence_id": evidence_id})
+            cached_material = cached[1]
+            return cached_material.model_copy(update={"evidence_id": evidence_id})
         if cached is not None:
             _inventory_material_cache.pop(cache_key, None)
     try:
-        material = read_wordpress_content_material(url)
+        wordpress_material = read_wordpress_content_material(url)
     except WordPressDraftReadError as exc:
         response = ContentInventoryMaterialResponse(
             status="blocked",
@@ -403,20 +417,20 @@ def read_content_inventory_material(
     else:
         response = ContentInventoryMaterialResponse(
             status="ready",
-            url=material.url,
-            source_kind=material.source_kind,
-            title=material.title,
-            content_text=material.content_text,
-            content_summary=material.content_summary,
-            content_word_count=material.content_word_count,
-            section_headings=material.section_headings,
-            acf_field_names=material.acf_field_names,
-            acf_section_headings=material.acf_section_headings,
-            modified_gmt=material.modified_gmt,
+            url=wordpress_material.url,
+            source_kind=wordpress_material.source_kind,
+            title=wordpress_material.title,
+            content_text=wordpress_material.content_text,
+            content_summary=wordpress_material.content_summary,
+            content_word_count=wordpress_material.content_word_count,
+            section_headings=wordpress_material.section_headings,
+            acf_field_names=wordpress_material.acf_field_names,
+            acf_section_headings=wordpress_material.acf_section_headings,
+            modified_gmt=wordpress_material.modified_gmt,
             evidence_id=evidence_id,
-            extraction_region=material.extraction_region,
-            material_confidence=material.material_confidence,
-            source_field_lineage=material.source_field_lineage,
+            extraction_region=wordpress_material.extraction_region,
+            material_confidence=wordpress_material.material_confidence,
+            source_field_lineage=wordpress_material.source_field_lineage,
         )
     with _inventory_material_cache_lock:
         _inventory_material_cache[cache_key] = (now, response)
@@ -499,8 +513,8 @@ def inventory_work_item_id(url: str) -> str:
     return f"content_work_item_inventory_{sha256(url.rstrip('/').encode()).hexdigest()[:24]}"
 
 
-def inventory_metric_facts(url: str, path: str):
-    facts = []
+def inventory_metric_facts(url: str, path: str) -> list[Any]:
+    facts: list[Any] = []
     for lookup_url in landing_page_metric_lookup_urls(url):
         for connector_id in ("google_search_console", "google_analytics_4"):
             connector_facts = metric_store().list_metric_facts_for_content_url(

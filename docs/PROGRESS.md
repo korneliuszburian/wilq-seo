@@ -2261,3 +2261,13 @@ ACF enrichment buduje jawny `dict[str, str]`, a paginowane requesty przekazują
 query params przez właściwy typ HTTPX. Zachowane zostają te same pola inventory,
 ACF i limity odczytu; zmiana wzmacnia mapowanie strony/sekcji. Proof: modułowy
 mypy clean oraz inventory/catalog tests (15/15).
+
+### 2026-07-19 — content diagnostics pokazuje jedną właściwą akcję
+
+Usunięto przeciek akcji z innych workflowów do kolejki Treści i SEO. Content
+diagnostics filtruje teraz registry do `act_prepare_content_refresh_queue`;
+draft handoff i Service Profile promotion pozostają dostępne wyłącznie w swoich
+osobnych, review-bound seamach. Dzięki temu marketer widzi jedną bezpieczną
+decyzję zamiast zawyżonego „2 akcje do sprawdzenia”. Proof: reproducer API
+wrócił z `2` do `1`, zmienione moduły mypy clean, view-model/planning tests
+14/14.

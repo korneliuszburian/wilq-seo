@@ -732,11 +732,14 @@ def _primary_content_data_available(
 
 
 def _content_action_ids(actions: list[ActionObject]) -> list[str]:
+    # Content diagnostics is the marketer's decision queue, not the full
+    # content action registry. Draft handoff and Service Profile promotion
+    # actions belong to their own reviewed workflow seams and must not inflate
+    # the queue's single safe next action.
     return [
         action.id
         for action in actions
         if action.id == "act_prepare_content_refresh_queue"
-        or action.domain == OpportunityDomain.content
     ]
 
 
