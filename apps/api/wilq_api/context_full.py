@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from apps.api.wilq_api import context_actions, context_compaction
+from apps.api.wilq_api import context_actions, context_compaction, context_knowledge
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.daily_runtime import build_daily_runtime
@@ -28,6 +28,16 @@ def full_context_pack(
 ) -> dict[str, Any]:
     active_actions = context_actions.full_context_actions_for_skill(skill)
     daily_runtime = build_daily_runtime()
+    content_diagnostics = build_content_diagnostics().model_dump(mode="json")
+    if skill in context_knowledge.CONTENT_KNOWLEDGE_SKILLS:
+        content_cards, referenced_playbook_cards = context_knowledge.content_context_card_sets(
+            skill, {"content_diagnostics": content_diagnostics}
+        )
+        knowledge_cards = [
+            card.model_dump(mode="json") for card in content_cards
+        ] + [card.model_dump(mode="json") for card in referenced_playbook_cards]
+    else:
+        knowledge_cards = [card.model_dump(mode="json") for card in compile_playbook_cards()]
     pack = {
         "current_product_rules": product_rules,
         "available_connectors": [connector.id for connector in connectors],
@@ -43,9 +53,7 @@ def full_context_pack(
             run.model_dump(mode="json") for run in list_connector_refresh_runs()[:10]
         ],
         "evidence_summaries": [evidence.model_dump(mode="json") for evidence in list_evidence()],
-        "knowledge_card_summaries": [
-            card.model_dump(mode="json") for card in compile_playbook_cards()
-        ],
+        "knowledge_card_summaries": knowledge_cards,
         "expert_rule_summaries": [
             rule.model_dump(mode="json") for rule in list_expert_rule_summaries(limit=12)
         ],
@@ -57,7 +65,7 @@ def full_context_pack(
         "tactical_queue": build_tactical_queue().model_dump(mode="json"),
         "ads_diagnostics": build_ads_diagnostics().model_dump(mode="json"),
         "merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json"),
-        "content_diagnostics": build_content_diagnostics().model_dump(mode="json"),
+        "content_diagnostics": content_diagnostics,
         "ga4_diagnostics": build_ga4_diagnostics().model_dump(mode="json"),
         "strict_instruction": strict_instruction,
     }

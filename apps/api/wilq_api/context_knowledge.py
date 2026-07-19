@@ -69,6 +69,39 @@ def content_knowledge_cards_for_skill(skill: str) -> list[ContentKnowledgeCard]:
     return cards[:12]
 
 
+def knowledge_card_ids_from_diagnostics(diagnostics: dict[str, object]) -> set[str]:
+    """Collect decision card lineage at the API context boundary."""
+    ids: set[str] = set()
+    content = diagnostics.get("content_diagnostics")
+    if not isinstance(content, dict):
+        return ids
+    queue = content.get("decision_queue")
+    if not isinstance(queue, list):
+        return ids
+    for decision in queue:
+        if not isinstance(decision, dict):
+            continue
+        card_ids = decision.get("knowledge_card_ids")
+        if isinstance(card_ids, list):
+            ids.update(card_id for card_id in card_ids if isinstance(card_id, str))
+    return ids
+
+
+def content_context_card_sets(
+    skill: str, diagnostics: dict[str, object]
+) -> tuple[list[ContentKnowledgeCard], list[KnowledgeCard]]:
+    """Return source-backed cards plus only the playbooks referenced by decisions."""
+    content_cards = content_knowledge_cards_for_skill(skill)
+    content_card_ids = {card.id for card in content_cards}
+    referenced_ids = knowledge_card_ids_from_diagnostics(diagnostics)
+    playbook_cards = [
+        card
+        for card in knowledge_cards_for_skill(skill)
+        if card.id in referenced_ids and card.id not in content_card_ids
+    ]
+    return content_cards, playbook_cards
+
+
 def expert_rules_for_skill(skill: str) -> list[ExpertRuleSummary]:
     explicit_ids = SKILL_EXPERT_RULE_IDS.get(skill, [])
     keywords = SKILL_KEYWORD_SCOPES.get(skill, set())

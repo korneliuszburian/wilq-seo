@@ -2904,3 +2904,19 @@ starych oczekiwań kontraktowych w action mockach, context cards, daily-check,
 Ahrefs, Localo i Ads snapshot; został przerwany po 491 s, bez claimu PASS. To
 następny cluster migracji testów do aktualnych typed seamów, nie powód do
 przywracania usuniętego API.
+
+### 2026-07-19 — context-pack dynamicznie domyka lineage kart wiedzy
+
+Content diagnostics i kompilator source-facts są osobnymi właścicielami danych,
+więc context-pack nie zakłada już, że ich listy kart przypadkiem się pokrywają.
+Dla content skills API dynamicznie zbiera `knowledge_card_ids` z bieżącej
+`decision_queue`, dołącza wyłącznie wskazane playbook cards oraz zachowuje
+source-backed karty Ekologusa jako główny materiał dla operatora. Ten sam
+mechanizm działa dla scoped i `full_context` requestu; nie ma ręcznego mapowania
+sekcji ani wyjątku dla pilota.
+
+Focused proof: content contract PASS, Ruff i mypy dla trzech modułów PASS. Live
+context-pack po restarcie: 15 kart (12 kart Ekologusa + 3 dokładnie
+referencjonowane playbooki), 0 brakujących ID lineage, 1000 evidence summaries i
+12 connector statuses. To naprawia spójność wejścia do planowania; nie jest
+jeszcze dowodem pełnego draftu ani publikacji.

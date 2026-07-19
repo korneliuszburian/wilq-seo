@@ -95,9 +95,20 @@ def skill_scoped_context_pack(
     connector_refresh_run_limit = 2 if skill == "wilq-ads-doctor" else 3
 
     if skill in context_knowledge.CONTENT_KNOWLEDGE_SKILLS:
+        # Diagnostics and the source-fact compiler are separate owners. Keep
+        # their lineage joined at the context boundary.
+        content_cards, referenced_playbook_cards = context_knowledge.content_context_card_sets(
+            skill, diagnostics
+        )
         knowledge_card_summaries = [
-            context_daily.compact_content_knowledge_card_for_operator_context(card)
-            for card in context_knowledge.content_knowledge_cards_for_skill(skill)
+            *(
+                context_daily.compact_content_knowledge_card_for_operator_context(card)
+                for card in content_cards
+            ),
+            *(
+                context_daily.compact_knowledge_card_for_operator_context(card)
+                for card in referenced_playbook_cards
+            ),
         ]
     else:
         knowledge_card_summaries = [
