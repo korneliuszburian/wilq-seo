@@ -77,18 +77,17 @@ does not expose a prompt box, approve the child or touch WordPress. Synthetic
 proof is not evidence of final text quality.
 
 Read-only Ahrefs and `wordpress_sklep` refreshes on 2026-07-16 restored source
-freshness. The live snapshot honestly remains on `scope`: the API exposes one
-baseline proposal and digest for scope plus section map, neither decision has
-been recorded, and the first revision cannot be saved yet. The dynamic
-planning read now builds an exact input digest for the selected inventory item
-and binds the approved BDO source fact
-`ekologus_public_bdo_faq_2026_07_01` plus seven approved redacted source-material
-IDs (`ekologus_material_kb002`, `kb003`, `kb013`, `kb014`, `kb015`, `kb021`,
-`kb022`); its current blocker is the honest
-`wordpress_material_review_required` gate for rendered `the_content`. It does
-not call Codex or create a proposal table on GET. The
-queue currently exposes 6 candidates and 5 actionable candidates for the
-selected inventory proof; WILQ must still not invent topics outside inventory.
+freshness. The selected outsourcing fixed point now has a real persisted v2
+revision after dynamic canonical WordPress REST resolution; it includes page
+assets, 4 sections, 3 FAQ items, 2 CTA blocks and one internal link, with
+`publish_ready=false`. The dynamic planning read builds an exact input digest
+for the selected inventory item and binds the service, current public material,
+GSC lineage and approved redacted source-material IDs. It does not call Codex or
+create a proposal table on GET. The queue currently exposes 6 candidates and 5
+actionable candidates for the selected inventory proof; WILQ must still not
+invent topics outside inventory. The remaining semantic-review storage gate is
+`storage_activation_required`; it is a maintenance-window concern, not a reason
+to pretend that a pre-publication measurement window already exists.
 After bounding the first structured plan to 12 sections, 8 FAQ items, 4 CTA
 blocks and 4 conditional hypotheses, prior synthetic/knowledge-bound runs
 produced unreviewed proposals, but the current managed API no longer exposes
