@@ -15,8 +15,12 @@ from tests.content.dynamic_planning_test_support import (
     configure_planning_harness,
 )
 from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.handoff.revision_document_renderer import revision_document_markdown
-from wilq.content.planning.dynamic_input import build_content_planning_input
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInputSummary,
+    build_content_planning_input,
+)
 from wilq.content.planning.generated_proposal import (
     _planning_output_quality_errors,
     generate_content_planning_proposal,
@@ -26,11 +30,13 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
     ContentPlanningModelSection,
     ContentPlanningProposalRequest,
+    ContentPlanningProposalResponse,
 )
 from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
     content_planning_proposal_store,
 )
+from wilq.content.planning.input_sources import ContentPlanningSourceAssessment
 from wilq.content.workflow.catalog import inventory_work_item_id
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import ContentDraftRevision
@@ -218,6 +224,103 @@ def test_planning_runtime_has_separate_bounded_timeout(
 
     assert isinstance(client, StdioCodexAppServerClient)
     assert client.timeout_seconds == 17
+
+
+def test_planning_store_blocks_a_sibling_digest_while_generation_is_in_flight(
+    tmp_path: Path,
+) -> None:
+    store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
+    source_names = (
+        "wordpress", "service_profile", "gsc", "ga4", "google_ads",
+        "ahrefs", "keyword_planner", "merchant", "localo", "social",
+    )
+    summary = ContentPlanningInputSummary(
+        final_canonical_url="https://example.test/page",
+        service_label="Test service",
+        inventory_status="available",
+        content_inventory_status="available",
+        acf_section_inventory_status="missing",
+        source_assessments=[
+            ContentPlanningSourceAssessment(source=name, status="not_applicable", reason="test")
+            for name in source_names
+        ],
+        source_fact_count=0,
+        evidence_id_count=0,
+        knowledge_card_count=0,
+    )
+    first = ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id="work-item",
+        service_card_id="service-card",
+        planning_input_digest="a" * 64,
+        input_summary=summary,
+        safe_next_step="Poczekaj na zakończenie generowania.",
+        runtime=ContentCodexRuntimeTrace(
+            status="not_started",
+            run_id="planning_generation_first",
+        ),
+    )
+    second = first.model_copy(
+        update={
+            "planning_input_digest": "b" * 64,
+            "runtime": ContentCodexRuntimeTrace(
+                status="not_started", run_id="planning_generation_second"
+            ),
+        }
+    )
+
+    assert store.enqueue_pending(
+        work_item_id="work-item",
+        service_card_id="service-card",
+        planning_input_digest="a" * 64,
+        response=first,
+    ) == "queued"
+    assert store.enqueue_pending(
+        work_item_id="work-item",
+        service_card_id="service-card",
+        planning_input_digest="b" * 64,
+        response=second,
+    ) == "in_flight"
+    active = store.active_generation_response(
+        "work-item",
+        "service-card",
+        excluding_digest="b" * 64,
+    )
+    assert active is not None
+    assert active.runtime.run_id == "planning_generation_first"
+
+
+def test_planning_api_returns_typed_blocker_for_a_sibling_generation(
+    planning_harness: tuple[TestClient, PlanningClient],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _runtime = planning_harness
+    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
+    service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    current = client.get(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    ).json()
+
+    class HoldingExecutor:
+        def submit(self, *_args: Any, **_kwargs: Any) -> None:
+            return None
+
+    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", HoldingExecutor())
+    first = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
+        json=_generation_request(service_card_id, current["planning_input_digest"]),
+    )
+    assert first.status_code == 200
+    assert first.json()["status"] == "generating"
+
+    second = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
+        json=_generation_request(service_card_id, "b" * 64),
+    )
+    assert second.status_code == 200
+    assert second.json()["status"] == "blocked"
+    assert second.json()["blockers"][0]["code"] == "runtime_blocked"
+    assert second.json()["runtime"]["run_id"] == first.json()["runtime"]["run_id"]
 
 
 def test_planning_runtime_default_allows_full_structured_turn(

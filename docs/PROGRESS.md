@@ -1184,3 +1184,13 @@ the live queue grew from 5 to 54 candidates (53 actionable) without creating
 synthetic topics. A focused regression proves all seven ranked pages survive
 the builder, and the live API confirms the expanded page inventory. No model
 call, vendor write or approval is implied.
+
+### 2026-07-19 — one planning turn per page/service
+
+Planning generation is now serialized by `(work_item_id, service_card_id)`,
+not only by the exact input digest. A fresh metrics or inventory digest cannot
+start a sibling Codex turn while another generation is queued; the API returns
+`runtime_blocked` with the active run ID and a five-second retry hint. Exact
+same-input requests remain idempotent, stale jobs remain retryable, and
+terminal proposal history is unchanged. Focused store and API falsifiers,
+Python typecheck/Ruff, and shared-schema typecheck/tests pass.

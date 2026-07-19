@@ -20,6 +20,7 @@ from wilq.storage.schema_versions import (
 )
 
 _PLANNING_JOB_STALE_AFTER_SECONDS = 120
+PlanningEnqueueOutcome = Literal["queued", "existing", "in_flight"]
 
 
 def content_planning_proposal_store() -> ContentPlanningProposalStore:
@@ -184,10 +185,42 @@ class ContentPlanningProposalStore:
             return None
         return response
 
+    def active_generation_response(
+        self,
+        work_item_id: str,
+        service_card_id: str,
+        *,
+        excluding_digest: str | None = None,
+    ) -> ContentPlanningProposalResponse | None:
+        """Read the current sibling job without accepting a stale worker."""
+        connection = self._read_connection()
+        if connection is None or not _table_exists(connection, "content_planning_generation_jobs"):
+            return None
+        try:
+            with connection:
+                rows = connection.execute(
+                    """
+                    SELECT planning_input_digest, payload_json, updated_at
+                    FROM content_planning_generation_jobs
+                    WHERE work_item_id = ? AND service_card_id = ? AND status = 'queued'
+                    ORDER BY updated_at DESC
+                    """,
+                    (work_item_id, service_card_id),
+                ).fetchall()
+        finally:
+            connection.close()
+        for row in rows:
+            if excluding_digest and row["planning_input_digest"] == excluding_digest:
+                continue
+            if _job_is_stale(row["updated_at"]):
+                continue
+            return ContentPlanningProposalResponse.model_validate(json.loads(row["payload_json"]))
+        return None
+
     def enqueue(
         self,
         response: ContentPlanningProposalResponse,
-    ) -> Literal["queued", "existing"]:
+    ) -> PlanningEnqueueOutcome:
         if response.planning_input_digest is None or response.service_card_id is None:
             raise ValueError("Queued planning requires an exact service and input digest.")
         payload = redact_mapping(response.model_dump(mode="json"))
@@ -207,6 +240,18 @@ class ContentPlanningProposalStore:
                 and not _job_is_stale(row["updated_at"])
             ):
                 return "existing"
+            sibling = connection.execute(
+                """
+                SELECT planning_input_digest, updated_at
+                FROM content_planning_generation_jobs
+                WHERE work_item_id = ? AND service_card_id = ?
+                  AND status = 'queued' AND planning_input_digest != ?
+                ORDER BY updated_at DESC LIMIT 1
+                """,
+                (response.work_item_id, response.service_card_id, response.planning_input_digest),
+            ).fetchone()
+            if sibling is not None and not _job_is_stale(sibling["updated_at"]):
+                return "in_flight"
             connection.execute(
                 """
                 INSERT INTO content_planning_generation_jobs (
@@ -233,7 +278,7 @@ class ContentPlanningProposalStore:
         service_card_id: str,
         planning_input_digest: str,
         response: ContentPlanningProposalResponse,
-    ) -> Literal["queued", "existing"]:
+    ) -> PlanningEnqueueOutcome:
         """Persist a request before the expensive snapshot is built."""
         payload = redact_mapping(response.model_dump(mode="json"))
         with self._connect() as connection:
@@ -252,6 +297,18 @@ class ContentPlanningProposalStore:
                 and not _job_is_stale(row["updated_at"])
             ):
                 return "existing"
+            sibling = connection.execute(
+                """
+                SELECT planning_input_digest, updated_at
+                FROM content_planning_generation_jobs
+                WHERE work_item_id = ? AND service_card_id = ?
+                  AND status = 'queued' AND planning_input_digest != ?
+                ORDER BY updated_at DESC LIMIT 1
+                """,
+                (work_item_id, service_card_id, planning_input_digest),
+            ).fetchone()
+            if sibling is not None and not _job_is_stale(sibling["updated_at"]):
+                return "in_flight"
             connection.execute(
                 """
                 INSERT INTO content_planning_generation_jobs (
@@ -469,9 +526,8 @@ def _job_is_stale(updated_at: str) -> bool:
         timestamp = datetime.fromisoformat(updated_at).replace(tzinfo=UTC)
     except ValueError:
         return True
-    # The planner has a 60-second Codex deadline. Keep only a short grace
-    # window so an orphaned worker cannot leave the marketer in `generating`
-    # for the old 15-minute interval before a retry becomes possible.
+    # A queued row older than this is eligible for retry. The planner's
+    # bounded Codex deadline is configured separately by the API router.
     return (
         datetime.now(UTC) - timestamp
     ).total_seconds() > _PLANNING_JOB_STALE_AFTER_SECONDS
@@ -507,5 +563,6 @@ def _validate_generated_proposal(
 
 __all__ = [
     "ContentPlanningProposalStore",
+    "PlanningEnqueueOutcome",
     "content_planning_proposal_store",
 ]

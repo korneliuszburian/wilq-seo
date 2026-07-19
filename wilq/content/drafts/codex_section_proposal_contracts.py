@@ -75,6 +75,7 @@ class ContentCodexRuntimeTrace(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     status: Literal["not_started", "completed", "blocked", "failed"]
+    run_id: str | None = None
     thread_id: str | None = None
     turn_id: str | None = None
     event_methods: list[str] = Field(default_factory=list)

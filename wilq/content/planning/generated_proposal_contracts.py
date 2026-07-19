@@ -151,6 +151,7 @@ class ContentPlanningProposalResponse(BaseModel):
         pattern=r"^[0-9a-f]{64}$",
     )
     input_summary: ContentPlanningInputSummary | None = None
+    retry_after_seconds: int | None = Field(default=None, ge=0)
     proposal: ContentPlanningProposal | None = None
     runtime: ContentCodexRuntimeTrace = Field(
         default_factory=lambda: ContentCodexRuntimeTrace(status="not_started")

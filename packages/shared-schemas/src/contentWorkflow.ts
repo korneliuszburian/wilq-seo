@@ -2198,6 +2198,7 @@ export const ContentCodexSectionProposalBlockerSchema = z.object({
 
 export const ContentCodexRuntimeTraceSchema = z.object({
   status: z.enum(["not_started", "completed", "blocked", "failed"]),
+  run_id: z.string().nullable().optional(),
   thread_id: z.string().nullable(),
   turn_id: z.string().nullable(),
   event_methods: z.array(z.string()).default([]),
@@ -2755,6 +2756,7 @@ export const ContentPlanningProposalResponseSchema = z.object({
   service_card_id: z.string().nullable().optional(),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   input_summary: ContentPlanningInputSummarySchema.nullable().optional(),
+  retry_after_seconds: z.number().int().nonnegative().nullable().optional(),
   proposal: ContentPlanningProposalSchema.nullable().optional(),
   runtime: ContentCodexRuntimeTraceSchema,
   blockers: z.array(ContentPlanningProposalBlockerSchema).default([]),

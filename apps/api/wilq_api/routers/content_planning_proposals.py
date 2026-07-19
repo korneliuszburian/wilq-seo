@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from os import environ
+from uuid import uuid4
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -11,6 +12,7 @@ from apps.api.wilq_api.routers.content_codex_proposal import (
     content_codex_app_server_client,
 )
 from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
 from wilq.content.planning.generated_proposal import (
     generate_content_planning_proposal,
@@ -45,7 +47,7 @@ _PLANNING_GENERATION_EXECUTOR = ThreadPoolExecutor(
 _DEFAULT_PLANNING_TIMEOUT_SECONDS = 180.0
 
 
-def _planning_codex_client():
+def _planning_codex_client() -> StdioCodexAppServerClient:
     """Keep planning bounded without changing draft/review runtime budgets.
 
     Test and local harness clients are returned unchanged; only the real stdio
@@ -178,6 +180,10 @@ def register_content_planning_proposal_routes(
             status="generating",
             work_item_id=work_item_id,
             service_card_id=request.service_card_id,
+            runtime=ContentCodexRuntimeTrace(
+                status="not_started",
+                run_id=f"planning_generation_{uuid4().hex}",
+            ),
             safe_next_step="Plan jest przygotowywany; ten widok odświeży się po zakończeniu.",
         )
         outcome = store.enqueue_pending(
@@ -194,6 +200,36 @@ def register_content_planning_proposal_routes(
             )
             if queued is not None:
                 result = queued
+        if outcome == "in_flight":
+            active = store.active_generation_response(
+                work_item_id,
+                request.service_card_id,
+                excluding_digest=request.expected_planning_input_digest,
+            )
+            result = ContentPlanningProposalResponse(
+                status="blocked",
+                work_item_id=work_item_id,
+                service_card_id=request.service_card_id,
+                runtime=active.runtime if active is not None else result.runtime,
+                retry_after_seconds=5,
+                blockers=[
+                    ContentPlanningProposalBlocker(
+                        code="runtime_blocked",
+                        label="Plan jest już przygotowywany",
+                        reason=(
+                            "Dla tej strony i usługi działa już generowanie z innego "
+                            "dokładnego wejścia. Nie uruchamiamy równoległego turnu Codexa."
+                        ),
+                        next_step="Poczekaj na zakończenie bieżącej próby i odśwież stan planu.",
+                        source_codes=[
+                            active.runtime.run_id
+                            if active is not None and active.runtime.run_id
+                            else "planning_generation_in_flight"
+                        ],
+                    )
+                ],
+                safe_next_step="Poczekaj kilka sekund i odśwież stan planu.",
+            )
         if outcome == "queued":
             try:
                 _PLANNING_GENERATION_EXECUTOR.submit(
