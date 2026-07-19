@@ -48,6 +48,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   24 evidence summaries, 19 brief evidence IDs i strict instruction o metrykach
   z WILQ API. API i dashboard pozostały `ready`. To lokalny runtime proof,
   nie produkcyjny SLA ani UAT.
+- 2026-07-19: live inventory material potwierdza dynamiczny fallback WordPress:
+  BDO i news w `the_content` mają status `ready`, odpowiednio 812 i 826 słów,
+  tytuł, nagłówki, evidence `ev_refresh_refresh_wordpress_ekologus_ff4e784ddded`
+  oraz lineage `public_html.main_or_article`; ACF pozostaje puste, bez
+  zgadywania sekcji. To realny dowód `the_content` path, nie dowód każdego
+  wariantu ACF ani UAT.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily
