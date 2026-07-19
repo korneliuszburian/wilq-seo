@@ -1332,3 +1332,9 @@ raw treść oraz `source_path` nie są renderowane. Zmieniony kontrakt nie dodaj
 drugiego źródła prawdy ani nie odblokowuje generowania bez gotowego korpusu.
 Focused proof: `ContentWorkflowSurface` 34 testy oraz dashboard typecheck.
 Niezależny checker i disposition dla tego fixed pointu pozostają do wykonania.
+
+Checker retry dla `f60c7f84` przeszedł walidację schematu i zwrócił pustą
+tablicę findings. Pięć zgłoszonych `evidence_gaps` wynika z briefu bez
+cytowanych linii, nie jest defektem produktu; zostały zachowane w
+`disposition.md`. Pierwszy pass zakończył się błędem transportu bez JSON i nie
+został użyty jako wynik.
