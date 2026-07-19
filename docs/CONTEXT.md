@@ -1,6 +1,6 @@
 # WILQ — kanoniczny kontekst produktu i runtime
 
-Stan na: 2026-07-18.
+Stan na: 2026-07-19.
 
 Ten plik jest pierwszym recovery entrypointem po utracie kontekstu. Pokazuje
 docelowy produkt, aktualną prawdę, aktywny priorytet i granice. Nie jest
