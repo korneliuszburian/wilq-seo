@@ -344,7 +344,7 @@ def test_planning_runtime_default_allows_full_structured_turn(
     client = planning_router._planning_codex_client()
 
     assert isinstance(client, StdioCodexAppServerClient)
-    assert client.timeout_seconds == 180.0
+    assert client.timeout_seconds == 300.0
 
 
 def test_planning_stale_window_shares_configured_codex_deadline(
@@ -354,6 +354,15 @@ def test_planning_stale_window_shares_configured_codex_deadline(
 
     assert planning_codex_timeout_seconds() == 17.0
     assert planning_job_stale_after_seconds() == 17.0
+
+
+def test_planning_default_stale_window_matches_five_minute_codex_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("WILQ_PLANNING_CODEX_TIMEOUT_SECONDS", raising=False)
+
+    assert planning_codex_timeout_seconds() == 300.0
+    assert planning_job_stale_after_seconds() == 300.0
 
 
 def test_planning_runtime_stream_failure_has_operator_safe_next_step() -> None:

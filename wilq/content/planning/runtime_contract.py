@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from os import environ
 
-DEFAULT_PLANNING_CODEX_TIMEOUT_SECONDS = 180.0
-# Keep the deadline in one contract. The explicit zero value preserves the
-# existing three-minute public stale-job boundary without reopening a second
-# turn before the bounded Codex deadline.
+DEFAULT_PLANNING_CODEX_TIMEOUT_SECONDS = 300.0
+# Keep the deadline in one contract. The async API returns a queued state, so
+# five minutes gives a complete evidence-bound plan enough room for a larger
+# inventory without making the browser request itself wait. The explicit zero
+# grace keeps stale-job recovery tied to the same bounded Codex deadline.
 PLANNING_JOB_STALE_GRACE_SECONDS = 0.0
 
 
