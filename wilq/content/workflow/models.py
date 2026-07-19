@@ -96,6 +96,12 @@ class ContentWorkItem(BaseModel):
     wordpress_acf_section_count: int | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    total_clicks: int | None = None
+    total_impressions: int | None = None
+    aggregate_ctr: float | None = None
+    best_average_position: float | None = None
+    query_count: int = 0
+    primary_query: str | None = None
     inventory_status: ContentInventoryStatus = "missing"
     canonical_status: ContentCanonicalStatus = "missing"
     duplicate_status: ContentDuplicateStatus = "missing"

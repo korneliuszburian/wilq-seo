@@ -2510,3 +2510,13 @@ identity filtering i enrichment history. Zachowano poprzednią wartość/delta,
 więc measurement nie traci historii. Falsyfikator wymusza LIMIT=1 z nowszym
 interloperem i nadal zwraca właściwy exact evidence oraz poprzednią wartość;
 2 testy metric-store, Ruff, mypy i diff-check przechodzą.
+
+### 2026-07-19 — selected workflow zachowuje realne agregaty GSC
+
+Typed `ContentWorkItem` i shared schema przenoszą teraz istniejące agregaty
+GSC do snapshotu: kliknięcia, wyświetlenia, CTR, pozycję, liczbę zapytań i
+primary query. Pasek źródeł pokazuje te liczby przy GSC, ale tylko gdy GSC jest
+w lineage wybranej strony; stale/zablokowane źródło nadal ma pierwszeństwo nad
+liczbą. Live BDO snapshot: 266 wyświetleń, 1 kliknięcie, CTR 0,3759%, pozycja
+8,5, 18 zapytań, `bdo co to`. Focused chip test, dashboard typecheck,
+dynamic-input test, Ruff, mypy i diff-check przechodzą.

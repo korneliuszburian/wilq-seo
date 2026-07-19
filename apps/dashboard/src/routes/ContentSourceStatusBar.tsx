@@ -45,14 +45,23 @@ export function contentSourceStatusItems(data: ContentWorkflowSnapshot): Content
       if (!definition) return null;
       const stale = data.freshnessAssessment.stale_connector_ids.includes(id);
       const blocked = data.freshnessAssessment.blocked_connector_ids.includes(id);
+      const metricStatus = id === "google_search_console" ? gscMetricStatus(item) : null;
       return {
         id,
         ...definition,
-        status: blocked ? "zablokowane" : stale ? "wymaga odświeżenia" : "w dowodach",
+        status: blocked ? "zablokowane" : stale ? "wymaga odświeżenia" : metricStatus ?? "w dowodach",
         tone: blocked || stale ? "wait" : "success"
       } satisfies ContentSourceStatusItem;
     })
     .filter((item): item is ContentSourceStatusItem => item !== null);
+}
+
+function gscMetricStatus(item: ContentWorkflowSnapshot["preflight"]["item"]): string | null {
+  if (item.total_impressions === null || item.total_impressions === undefined) return null;
+  const values = [`${item.total_impressions} wyśw.`];
+  if (item.total_clicks !== null && item.total_clicks !== undefined) values.push(`${item.total_clicks} klik.`);
+  if (item.aggregate_ctr !== null && item.aggregate_ctr !== undefined) values.push(`CTR ${(item.aggregate_ctr * 100).toFixed(2)}%`);
+  return values.join(" · ");
 }
 
 function SourceStatusChip({ icon, label, status, tone }: { icon: ReactNode; label: string; status: string; tone: "success" | "wait" }) {
