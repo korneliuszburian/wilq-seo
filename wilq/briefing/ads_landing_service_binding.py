@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from functools import lru_cache
+from typing import Literal
 
 from wilq.content.canonical.landing_identity import build_landing_page_identity
 from wilq.content.knowledge.work_item_service_profile import (
@@ -69,8 +70,8 @@ def resolve_ads_landing_service_binding(
     )
     context = build_content_work_item_service_profile_context(work_item)
     candidates = context.service_candidates
-    lifecycle_statuses = [candidate.lifecycle_status for candidate in candidates]
-    status = (
+    lifecycle_statuses: list[str] = [candidate.lifecycle_status for candidate in candidates]
+    status: Literal["review_required", "approved_current"] = (
         "approved_current"
         if context.service_status == "approved_current"
         else "review_required"

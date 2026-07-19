@@ -2210,3 +2210,11 @@ ten falsifier: readiness nie blokuje wyłączonego Google Sheets i zachowuje
 `not_applicable`. Focused context safety wynosi teraz 4/4; pozostałe granice
 (downstream consumer enforcement, freshness policy, realne UAT i model/draft)
 pozostają otwarte.
+
+### 2026-07-19 — jawny kontrakt statusu Ads→landing
+
+Usunięto kolejny mały klaster długu typów w `resolve_ads_landing_service_binding`:
+status wyniku i lista lifecycle są teraz jawnie zawężone do kontraktu publicznego,
+bez zmiany zachowania dopasowania landingu ani polityki review. Proof:
+`uv run mypy wilq/briefing/ads_landing_service_binding.py --no-incremental` oraz
+`uv run pytest -q tests/test_ads_landing_service_binding.py` (2/2).
