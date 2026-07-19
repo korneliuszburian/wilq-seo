@@ -46,6 +46,31 @@ def test_article_navigation_copy_does_not_bind_a_service_card() -> None:
     )
 
 
+def test_inflected_page_topic_matches_service_fit_stem() -> None:
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_packaging_article",
+            topic="Gospodarka opakowaniami",
+            source_public_url=(
+                "https://www.ekologus.pl/informacja-o-opakowaniach-i-odpadach-"
+                "opakowaniowych-oraz-o-oplacie-produktowej/"
+            ),
+            final_canonical_url=(
+                "https://www.ekologus.pl/informacja-o-opakowaniach-i-odpadach-"
+                "opakowaniowych-oraz-o-oplacie-produktowej/"
+            ),
+            evidence_ids=["ev_wp_packaging_article"],
+            source_connectors=["wordpress_ekologus"],
+        )
+    )
+
+    assert any(
+        candidate.card.id == "ekologus_service_waste_packaging_obligations"
+        and "opakowani" in candidate.matched_terms
+        for candidate in match.service_candidates
+    )
+
+
 @pytest.mark.parametrize(
     ("url", "expected_card_id"),
     [

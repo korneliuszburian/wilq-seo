@@ -2665,3 +2665,19 @@ konwersje pozostają niezweryfikowane. GSC evidence
 `ev_refresh_refresh_google_search_console_7a17272e2612` ma okno 2026-07-17,
 495 wierszy query/page i `partial_possible`; nie używamy go do trendu ani
 przyczynowości.
+
+### 2026-07-19 — dynamiczne dopasowanie obsługuje odmiany polskich zapytań
+
+Po usunięciu stale selection okazało się, że świeży temat `Gospodarka
+opakowaniami` nadal nie odzyskiwał karty usługi: matcher porównywał literalne
+tokeny, mimo że karta używa celowego stema `opakowani`. Wydzielony, mały seam
+`wilq/content/knowledge/text_matching.py` zachowuje exact match i dodaje
+ograniczone dopasowanie prefiksu dla tokenów o długości co najmniej 5 znaków;
+body strony nadal jest używane tylko przy exact service lineage, więc nawigacja
+nie może przypisać obcej usługi.
+
+Focused service matching/profile tests: 9 passed; Ruff, mypy i complexity audit
+przechodzą bez naruszeń. Live snapshot strony opakowaniowej zwraca teraz
+`bound/ready`, kartę `ekologus_service_environmental_consulting_outsourcing`
+oraz drugiego kandydata `ekologus_service_waste_packaging_obligations`, oba z
+matched term `opakowani`; ranking nadal pozostaje jawny i reviewable.

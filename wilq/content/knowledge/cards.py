@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import unicodedata
 from collections import defaultdict
 from collections.abc import Iterable
 from functools import lru_cache
@@ -13,6 +12,10 @@ from wilq.content.knowledge.source_facts import (
     ContentSourceFact,
     ekologus_source_facts,
     knowledge_lifecycle_from_review_status,
+)
+from wilq.content.knowledge.text_matching import (
+    normalize_search_text,
+    normalized_term_matches,
 )
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID
@@ -475,7 +478,7 @@ def content_knowledge_production_depth_readiness(
 def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCardMatch:
     cards = list(ekologus_content_knowledge_cards())
     exact_urls = {
-        _normalize_search_text(url)
+        normalize_search_text(url)
         for url in (item.source_public_url, item.final_canonical_url)
         if url
     }
@@ -498,7 +501,7 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
     # selected URL is itself an exact service landing from a card's source
     # lineage; otherwise title, URL and query demand are the bounded surface.
     exact_service_urls = {
-        _normalize_search_text(lineage)
+        normalize_search_text(lineage)
         for card in cards
         if card.card_type == "service"
         for lineage in card.source_lineage
@@ -740,9 +743,9 @@ def _matching_cards(
         for card in cards
         if card.card_type == card_type
         and any(
-            _normalized_term_matches(term, search_text)
+            normalized_term_matches(term, search_text)
             for term in card.service_fit_terms
-            if _normalize_search_text(term) not in _normalized_broad_service_terms()
+            if normalize_search_text(term) not in _normalized_broad_service_terms()
         )
     ]
     return sorted(matches, key=_match_rank)
@@ -762,8 +765,8 @@ def _matching_service_candidates(
             matched_terms := [
                 term
                 for term in card.service_fit_terms
-                if _normalize_search_text(term) not in _normalized_broad_service_terms()
-                and _normalized_term_matches(term, search_text)
+                if normalize_search_text(term) not in _normalized_broad_service_terms()
+                and normalized_term_matches(term, search_text)
             ]
         )
     ]
@@ -773,7 +776,7 @@ def _matching_service_candidates(
         key=lambda candidate: (
             0
             if any(
-                _normalize_search_text(lineage) in normalized_urls
+                normalize_search_text(lineage) in normalized_urls
                 for lineage in candidate.card.source_lineage
                 if lineage.startswith("http")
             )
@@ -831,28 +834,11 @@ def _blocker(
 
 
 def _search_text(values: Iterable[object]) -> str:
-    return _normalize_search_text(" ".join(str(value) for value in values if value))
-
-
-def _normalized_term_matches(term: str, normalized_search_text: str) -> bool:
-    normalized_term = _normalize_search_text(term)
-    return bool(normalized_term) and f" {normalized_term} " in f" {normalized_search_text} "
-
-
-def _normalize_search_text(value: str) -> str:
-    transliterated = value.casefold().replace("ł", "l")
-    decomposed = unicodedata.normalize("NFKD", transliterated)
-    return " ".join(
-        "".join(
-            character if character.isalnum() else " "
-            for character in decomposed
-            if not unicodedata.combining(character)
-        ).split()
-    )
+    return normalize_search_text(" ".join(str(value) for value in values if value))
 
 
 def _normalized_broad_service_terms() -> frozenset[str]:
-    return frozenset(_normalize_search_text(term) for term in BROAD_SERVICE_FIT_TERMS)
+    return frozenset(normalize_search_text(term) for term in BROAD_SERVICE_FIT_TERMS)
 
 
 def _homepage_match_markers(item: ContentWorkItem) -> list[str]:
