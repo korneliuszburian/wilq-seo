@@ -7,6 +7,7 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.briefing.ads_landing_service_binding import resolve_ads_landing_service_binding
 from wilq.connectors.google_ads.ad_landing_pages import (
     ADS_DEMAND_PERIOD,
     ADS_LANDING_ACTUAL_CLICKED,
@@ -51,6 +52,11 @@ class ContentSearchDemandRow(BaseModel):
         default_factory=list
     )
     service_card_id: str | None = None
+    service_binding_status: Literal[
+        "not_required", "unbound", "ambiguous", "review_required", "approved_current"
+    ] = "not_required"
+    service_candidate_ids: list[str] = Field(default_factory=list)
+    service_lifecycle_statuses: list[str] = Field(default_factory=list)
     alignment_basis: Literal[
         "legacy_unspecified",
         "gsc_exact_page",
@@ -461,6 +467,15 @@ def _ads_row(
     section_mapping_status = (
         gsc_row.section_mapping_status if gsc_row is not None else "page_only"
     )
+    landing_identity = next(
+        (
+            fact.dimensions.get(ADS_LANDING_IDENTITY)
+            for fact in facts
+            if fact.dimensions.get(ADS_LANDING_IDENTITY)
+        ),
+        None,
+    )
+    binding = resolve_ads_landing_service_binding(landing_identity)
     return ContentSearchDemandRow(
         source_kind=source_kind,
         source_connector="google_ads",
@@ -468,6 +483,9 @@ def _ads_row(
         page=page,
         landing_match_tiers=landing_match_tiers,
         service_card_id=service_card_id,
+        service_binding_status=binding.status if binding else "not_required",
+        service_candidate_ids=binding.service_candidate_ids if binding else [],
+        service_lifecycle_statuses=binding.service_lifecycle_statuses if binding else [],
         alignment_basis=(
             "same_window_search_term_landing"
             if any(ADS_LANDING_IDENTITY in fact.dimensions for fact in facts)

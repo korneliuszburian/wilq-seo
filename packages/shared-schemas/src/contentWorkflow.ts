@@ -2406,6 +2406,15 @@ const ContentSearchDemandRowSchema = z.object({
     z.enum(["exact", "tracking_only", "host_alias"])
   ).default([]),
   service_card_id: z.string().nullable(),
+  service_binding_status: z.enum([
+    "not_required",
+    "unbound",
+    "ambiguous",
+    "review_required",
+    "approved_current"
+  ]).default("not_required"),
+  service_candidate_ids: z.array(z.string()).default([]),
+  service_lifecycle_statuses: z.array(z.string()).default([]),
   alignment_basis: z.enum([
     "legacy_unspecified",
     "gsc_exact_page",

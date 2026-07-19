@@ -343,9 +343,14 @@ def _ads_source_assessment(
     evidence_ids: list[str],
     landing_match_tiers: list[ContentAcceptedLandingMatchTier],
 ) -> ContentPlanningSourceAssessment:
+    service_binding_blocked = any(
+        row.service_binding_status in {"unbound", "ambiguous", "review_required"}
+        for row in demand.ads_term_rows
+    )
     blocked = (
         demand.optional_ads_status == "blocked"
         or "google_ads" in freshness.blocked_connector_ids
+        or service_binding_blocked
     )
     status = (
         "blocked"
@@ -358,7 +363,7 @@ def _ads_source_assessment(
         )
     )
     reason = (
-        "Raport Ads jest niepełny albo nie pozwala na ścisłe mapowanie landingu."
+        "Raport Ads jest niepełny albo nie pozwala na ścisłe mapowanie landingu lub usługi."
         if blocked
         else "Dopasowanie termu i klikniętego landingu jest dokładne, ale batch Ads "
         "jest nieaktualny i nie zasila planu do czasu odświeżenia."
