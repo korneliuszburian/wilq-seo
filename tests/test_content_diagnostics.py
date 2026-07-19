@@ -131,7 +131,7 @@ def test_content_diagnostics_uses_latest_metric_evidence_by_identity() -> None:
     assert "ev_old_wp" not in all_section_evidence
 
 
-def test_content_diagnostics_ranks_evidenced_pages_before_daily_queue_limit(
+def test_content_diagnostics_keeps_all_ranked_evidenced_pages_in_workflow_queue(
     monkeypatch,
 ) -> None:
     collected_at = datetime(2026, 7, 15, 8, 0, tzinfo=UTC)
@@ -172,7 +172,8 @@ def test_content_diagnostics_ranks_evidenced_pages_before_daily_queue_limit(
     diagnostics = build_content_diagnostics(actions=[], metric_facts=facts)
 
     assert any(decision.page == bdo_page for decision in diagnostics.decision_queue)
-    assert len(diagnostics.decision_queue) == 5
+    assert len(diagnostics.decision_queue) == len(pages)
+    assert {decision.page for decision in diagnostics.decision_queue} == set(pages)
 
 
 def test_content_diagnostics_ranking_prefers_fresh_primary_over_stale_ahrefs() -> None:

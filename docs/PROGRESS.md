@@ -1145,3 +1145,13 @@ prevents cross-host joins while allowing fresh GA4 facts to participate in
 the existing metric-store and publication-bound measurement loop. Focused
 vendor and identity proof: 3/3, Ruff and diff-check pass. No vendor write or
 storage migration was performed.
+
+### 2026-07-19 — content workflow exposes the full evidenced page queue
+
+The content diagnostics builder no longer truncates the ranked decision queue
+to five rows before `/api/content/work-items/queue`. Ranking is preserved, but
+every evidenced GSC/WordPress page decision is now available to the marketer;
+the live queue grew from 5 to 54 candidates (53 actionable) without creating
+synthetic topics. A focused regression proves all seven ranked pages survive
+the builder, and the live API confirms the expanded page inventory. No model
+call, vendor write or approval is implied.

@@ -790,7 +790,7 @@ def _content_decision_queue(
             for decision in _rank_content_decisions_for_diagnostics(
                 decisions,
                 connector_freshness or {},
-            )[:5]
+            )
         ]
     return [
         _content_decision_with_api_labels(
