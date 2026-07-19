@@ -102,10 +102,9 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   ponownie zaplanowany przez API na aktualnym digest `6239551e…`. Terminalny
   wynik jest `ready`: proposal
   `content_planning_proposal_021231208f884ee099f1658810f4ec76`, 12 sekcji,
-  5 FAQ, 1 link, 7 zatwierdzonych materiałów i 4 karty wiedzy. Sześć sekcji
+  5 FAQ, 2 CTA, 1 link, 7 zatwierdzonych materiałów i 4 karty wiedzy. Sześć sekcji
   roboczych ma lineage do materiałów/faktów, a sześć pobocznych pozostaje
-  `remove_review_required`; brak CTA w tym planie jest widoczny i wymaga review,
-  nie jest dopowiadany. To nie tworzy draftu, approvalu ani publikacji.
+  `remove_review_required`. To nie tworzy draftu, approvalu ani publikacji.
 
 - 2026-07-18: cold selected queue nie wykonuje już synchronicznego pełnego
   odczytu WordPress. Jawnie wybrany inventory item dostaje szybki, katalogowy
