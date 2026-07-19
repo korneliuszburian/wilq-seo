@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from typing import Literal
 from uuid import uuid4
 
 from fastapi import APIRouter
@@ -38,6 +39,23 @@ _INITIAL_DRAFT_EXECUTOR = ThreadPoolExecutor(
     max_workers=1,
     thread_name_prefix="wilq-content-draft",
 )
+
+_INITIAL_DRAFT_BLOCKER_CODES = {
+    "planning_not_approved",
+    "planning_not_generated",
+    "stale_planning_input",
+    "proposal_mismatch",
+    "revision_already_exists",
+    "missing_generation_contract",
+    "runtime_blocked",
+    "runtime_failed",
+    "invalid_structured_output",
+    "document_scope_mismatch",
+    "generated_claim_blocked",
+    "revision_conflict",
+    "persistence_failed",
+    "generation_in_progress",
+}
 
 
 def register_content_initial_draft_route(
@@ -202,14 +220,19 @@ def register_content_initial_draft_route(
                 ),
             )
         if latest is not None and latest.status in {"failed", "blocked"}:
-            code: ContentInitialDraftBlockerCode = (
-                "runtime_failed" if latest.status == "failed" else "runtime_blocked"
-            )
+            code = _terminal_blocker_code(latest)
             blocker = ContentInitialDraftBlocker(
                 code=code,
                 label="Nie udało się przygotować pełnego tekstu",
-                reason=latest.error or "Generowanie zostało zatrzymane przez bramkę workflow.",
-                next_step="Otwórz blocker i ponów po poprawieniu aktualnego wejścia.",
+                reason=(
+                    latest.error
+                    or "Generowanie zostało zatrzymane przez bramkę workflow."
+                ),
+                next_step=(
+                    "Popraw wskazany blocker i uruchom nową próbę."
+                    if code not in {"runtime_failed", "runtime_blocked"}
+                    else "Otwórz blocker i ponów po sprawdzeniu runtime."
+                ),
             )
             return ContentInitialDraftResponse(
                 status=(
@@ -244,7 +267,8 @@ def _proposal_bound_to_latest_approved_plan(
     approved_digests = [
         decision.planning_digest
         for decision in decisions
-        if decision.stage == "scope" and decision.decision == "approved"
+        if getattr(decision, "stage", "scope") == "scope"
+        and decision.decision == "approved"
     ]
     if not approved_digests:
         return None
@@ -301,19 +325,68 @@ def _run_queued_initial_draft(
     snapshot_loader: ContentInitialDraftSnapshotLoader,
 ) -> None:
     try:
-        generate_initial_full_draft(
-            snapshot=snapshot_loader(work_item_id),
+        snapshot = snapshot_loader(work_item_id)
+        result = generate_initial_full_draft(
+            snapshot=snapshot,
             request=request,
             client=client,
             workflow_store=content_workflow_store(),
             run_store=local_state_store(),
             run_id=run_id,
         )
+        if result.status in {"blocked", "failed", "conflict"}:
+            _persist_terminal_preflight_run(
+                snapshot=snapshot,
+                request=request,
+                result=result,
+                run_id=run_id,
+            )
     except Exception as error:
         # The generator records typed terminal state whenever it reaches its
         # own runtime boundary. A worker exception must not leave a permanent
         # ``started`` run or make every retry appear to be still running.
         _mark_initial_draft_run_failed(run_id, error)
+
+
+def _persist_terminal_preflight_run(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    request: ContentInitialDraftRequest,
+    result: ContentInitialDraftResponse,
+    run_id: str,
+) -> None:
+    store = local_state_store()
+    if any(run.id == run_id for run in store.list_codex_runs()):
+        return
+    status: Literal["failed", "blocked"] = (
+        "failed" if result.status == "failed" else "blocked"
+    )
+    blocker_code = result.blockers[0].code if result.blockers else status
+    store.save_codex_run(
+        CodexRun(
+            id=run_id,
+            skill="wilq-content-operator",
+            hook="content_initial_full_draft",
+            source="wilq_api",
+            status=status,
+            used_endpoints=[
+                f"/api/content/work-items/{snapshot.preflight.item.id}/initial-draft"
+            ],
+            evidence_ids=[],
+            proposal_id=request.expected_proposal_id,
+            planning_input_digest=request.expected_planning_input_digest,
+            completed_at=utc_now(),
+            error=blocker_code,
+        )
+    )
+
+
+def _terminal_blocker_code(
+    run: CodexRun,
+) -> ContentInitialDraftBlockerCode:
+    if run.error in _INITIAL_DRAFT_BLOCKER_CODES:
+        return run.error  # type: ignore[return-value]
+    return "runtime_failed" if run.status == "failed" else "runtime_blocked"
 
 
 def _mark_initial_draft_run_failed(run_id: str, error: Exception) -> None:
