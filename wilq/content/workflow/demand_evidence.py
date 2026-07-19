@@ -128,6 +128,7 @@ def build_content_search_demand_evidence(
     service_card_id: str | None,
     draft: ContentDraftPackage,
     freshness: ContentFreshnessAssessment,
+    inventory_section_headings: list[str] | None = None,
 ) -> ContentSearchDemandEvidence:
     allowed_pages = [page for page in (source_page, final_canonical_url) if page]
     gsc_rows = _build_gsc_rows(
@@ -136,6 +137,7 @@ def build_content_search_demand_evidence(
         final_canonical_url=final_canonical_url,
         service_card_id=service_card_id,
         draft=draft,
+        inventory_section_headings=inventory_section_headings or [],
         freshness=freshness,
     )
     gsc_rows.sort(key=lambda row: (row.impressions or 0, row.clicks or 0), reverse=True)
@@ -279,6 +281,7 @@ def _build_gsc_rows(
     final_canonical_url: str,
     service_card_id: str | None,
     draft: ContentDraftPackage,
+    inventory_section_headings: list[str],
     freshness: ContentFreshnessAssessment,
 ) -> list[ContentSearchDemandRow]:
     groups = _group_facts(
@@ -300,6 +303,7 @@ def _build_gsc_rows(
                 final_canonical_url=final_canonical_url,
                 service_card_id=service_card_id,
                 draft=draft,
+                inventory_section_headings=inventory_section_headings,
                 freshness=freshness,
             )
         )
@@ -406,20 +410,26 @@ def _gsc_row(
     final_canonical_url: str,
     service_card_id: str | None,
     draft: ContentDraftPackage,
+    inventory_section_headings: list[str],
     freshness: ContentFreshnessAssessment,
 ) -> ContentSearchDemandRow | None:
     landing_match_tiers = _landing_match_tiers(facts, final_canonical_url)
     if not landing_match_tiers:
         return None
     evidence_ids = list(dict.fromkeys(fact.evidence_id for fact in facts))
-    section_headings = assign_query_to_sections(
-        term,
-        (
-            (section.heading, section.purpose)
-            for section in draft.sections
-            if set(section.evidence_ids).intersection(evidence_ids)
-        ),
-    )
+    draft_sections = [
+        (section.heading, section.purpose)
+        for section in draft.sections
+        if set(section.evidence_ids).intersection(evidence_ids)
+    ]
+    section_headings = assign_query_to_sections(term, draft_sections)
+    if not section_headings and inventory_section_headings:
+        # Before a new plan exists, draft-package evidence IDs cannot join GSC
+        # queries to the current page. Use exact WordPress headings instead;
+        # ambiguous matches remain page_only.
+        section_headings = assign_query_to_sections(
+            term, ((heading, "") for heading in inventory_section_headings)
+        )
     return ContentSearchDemandRow(
         source_kind="gsc_query",
         source_connector="google_search_console",

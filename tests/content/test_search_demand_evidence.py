@@ -325,6 +325,46 @@ def test_search_demand_ignores_exact_term_for_a_different_clicked_landing() -> N
     assert evidence.optional_ads_status == "exact_rows_available"
 
 
+def test_search_demand_falls_back_to_current_inventory_headings_before_new_plan() -> None:
+    page = "https://www.ekologus.pl/bdo/"
+    evidence = build_content_search_demand_evidence(
+        metric_facts=[
+            _fact(
+                "google_search_console",
+                "impressions",
+                40,
+                "ev_gsc_inventory",
+                page,
+                "kto musi złożyć wpis",
+            ),
+            _fact(
+                "google_search_console",
+                "clicks",
+                4,
+                "ev_gsc_inventory",
+                page,
+                "kto musi złożyć wpis",
+            ),
+        ],
+        source_page=page,
+        final_canonical_url=page,
+        service_card_id="service_bdo",
+        draft=_draft(),
+        freshness=ContentFreshnessAssessment(
+            state="fresh",
+            requires_refresh=False,
+            summary="Źródła aktualne.",
+            next_step="Użyj dowodów.",
+        ),
+        inventory_section_headings=["Kto musi złożyć wpis do Rejestru?"],
+    )
+
+    assert evidence.gsc_query_rows[0].section_mapping_status == "intent_relevance"
+    assert evidence.gsc_query_rows[0].section_headings == [
+        "Kto musi złożyć wpis do Rejestru?"
+    ]
+
+
 def test_search_demand_blocks_invalid_clicked_landing_for_overlapping_term() -> None:
     page, facts = _same_window_ads_case()
     invalid_dimensions = {

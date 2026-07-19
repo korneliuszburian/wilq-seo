@@ -210,6 +210,7 @@ def build_content_planning_input(
             service_card_id=service_card_id,
             draft=draft,
             freshness=snapshot.freshness_assessment,
+            inventory_section_headings=snapshot.preflight.item.wordpress_section_headings,
         )
         baseline = build_content_planning_proposal(
             brief=brief,

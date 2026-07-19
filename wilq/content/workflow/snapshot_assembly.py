@@ -205,6 +205,7 @@ def _assemble_foundation(
         freshness_assessment=freshness_assessment,
         demand_metric_facts=demand_metric_facts,
         demand_source_page=demand_source_page,
+        inventory_section_headings=preflight.item.wordpress_section_headings,
     )
     current = _current_planning_proposal(
         item=item,
@@ -246,6 +247,7 @@ def _baseline_planning_proposal(
     freshness_assessment: ContentFreshnessAssessment,
     demand_metric_facts: list[MetricFact] | None,
     demand_source_page: str | None,
+    inventory_section_headings: list[str],
 ) -> ContentPlanningProposal | None:
     if brief is None or draft is None:
         return None
@@ -256,6 +258,7 @@ def _baseline_planning_proposal(
         service_card_id=service_profile_context.service_card_id,
         draft=draft,
         freshness=freshness_assessment,
+        inventory_section_headings=inventory_section_headings,
     )
     return build_content_planning_proposal(
         brief=brief,
