@@ -2847,3 +2847,9 @@ Wraz z BDO (`content_planning_proposal_d67afa3376b046d8bdab27c9e582ef4e`) daje t
 Live `GET /initial-draft` dla obu świeżych proposalów zwraca typed `stale_planning_input`, ponieważ istniejące scope decisions należą do poprzednich digestów v4. To jest poprawny blocker: nie zapisuję fałszywej akceptacji w imieniu Wilku. API ma `section_map_current=true` na podstawie wygenerowanych sekcji; marketer zatwierdza tylko aktualny zakres/usługę, a mapa ACF/the_content pozostaje automatyczna.
 
 Świeży katalog ma 808 adresów publicznego sitemapu, pełne pokrycie tego odczytu i jawne rozróżnienie `content_and_structure` / `url_only`; nie oznacza to kompletności ACF. Korpus wiedzy Ekologusa pozostaje częściowy: 7/15 materiałów ma kontrolowany redacted import, 8 czeka na owner-governed ingest. Nie uruchamiam pełnego draftu ani semantic storage bez odpowiedniej decyzji/maintenance window.
+
+### 2026-07-19 — snapshot performance: cache exact inventory metric batch
+
+Profilowanie selected snapshot wykazało, że `inventory_metric_facts()` odbudowywał legacy landing index przy powtarzanych odczytach GSC/GA4. Dodałem 15-sekundowy, read-only cache związany z URL/path oraz ID i evidence IDs najnowszego vendor-read refreshu. Zmiana nie może przenieść danych między batchami; istniejąca filtracja latest evidence pozostaje aktywna.
+
+Focused proof: Ruff i 2 testy `test_inventory_catalog.py -k 'metric_facts'` passed. Po restarcie live snapshot warm: BDO ~1,94 s (wcześniej ~3,3 s), outsourcing ~1,21 s (wcześniej ~2,0 s); cold BDO ~9,43 s pozostaje osobnym klastrem import/diagnostics. Claude checker nie wyemitował JSON, więc nie przedstawiam review jako PASS.
