@@ -1655,3 +1655,15 @@ Focused audit rzeczywistego rejestru wiedzy wykazał 21 faktów: 9 `approved` i 
 ryzyko, że review-required kandydat trafi do planera jako evidence-bound claim.
 Nie oznacza to kompletności korpusu: 8 z 15 zatwierdzonych materiałów nadal ma
 `import_pending`, a realne owner review pozostaje wymagane.
+
+### 2026-07-19 — exact input readback dla dwóch pilotów
+
+Live GET planning proposal dla BDO i doradztwa/outsourcingu zwraca dwa różne
+`service_card_id` i dwa różne planning digests, ale ten sam dynamiczny zestaw
+ocen źródeł: WordPress, Service Profile i GSC `used`; GA4, Ahrefs i Keyword
+Planner `missing`; Ads, Merchant, Localo i Social `not_applicable`. Oba inputy
+mają 2 source facts, 7 source-material IDs i 3 evidence IDs. Wszystkie 7
+material IDs są faktycznie `imported`. Oba runy kończą się jednak typed
+`codex_response_stream_disconnected`, bez proposal/revision/vendor write. To
+potwierdza parity wejścia i lineage dwóch pilotów, nie sukces providera ani
+gotowy tekst.
