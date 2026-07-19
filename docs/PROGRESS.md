@@ -20,12 +20,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   `wilq-seo-tcd7` (jeden in-flight slot przez digesty), `wilq-seo-k8i5`
   (server-owned focus) i `wilq-seo-1dke` (durable runner). Żaden wynik review
   nie jest PASS/UAT/approval.
-- 2026-07-19: ponowny live timing wejścia z `content_decision_*` nie odtwarza
-  zgłoszonych 10 minut: selected queue 3,06 s na zimnym procesie, snapshot
-  BDO 1,05 s; kolejne odczyty korzystają z cache. Zaobserwowany koszt jest
-  konkretny: decyzja nie trafia w katalogowy fast path i zwraca pełną kolejkę
-  54 kandydatów. To pozostaje osobnym Beadem (`wilq-seo-z023`) do naprawy po
-  dowodzie, bez twierdzenia, że problem 10-minutowy został rozwiązany.
+- 2026-07-19: selected `content_decision_*` ma już katalogowy fast path.
+  Najpierw rozwiązywany jest exact URL przez ten sam inventory catalog, a API
+  zwraca jednego kandydata bez pełnego diagnostics queue; live BDO potwierdza
+  `candidate_count=1`. Pomiar lokalny: katalog 0,319 s vs pełne diagnostics
+  2,682 s. Bead `wilq-seo-z023` zamknięty; zimny refresh zewnętrzny i nieznane
+  lub niejednoznaczne ID nadal bezpiecznie wracają do pełnego kontraktu.
 - Kanoniczny przebieg marketera ma pięć kroków:
   `scope → section_map → draft → review → dev_draft`.
 - 2026-07-18: świeży BDO plan został najpierw poprawnie zablokowany przez
