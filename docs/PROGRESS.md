@@ -1501,3 +1501,15 @@ walidator (Claude przekroczył limit 20 linii cytacji), bez retained outputu.
 Świeża próba jest schema-valid i nie ma findings; pozostawia wyłącznie jawne
 evidence gaps wynikające z tool-free transportu oraz human-only decyzję o
 akceptacji planu/draftu. Nie claimuję UAT, jakości tekstu ani gotowości publikacji.
+
+### 2026-07-19 — compact measurement exclusions
+
+Świeży readback przez WILQ API dla exact BDO URL-u zwrócił 35 użytecznych faktów
+GSC/WP, ale 544 powtórzone row-level exclusions dla historycznych
+`connector_refresh`. Agregator zachowuje teraz jeden wpis na kombinację
+`code/source/metric/period` i scala wszystkie `evidence_ids`, więc nie gubi
+lineage, a wynik nie zalewa marketera technicznym szumem. Live readback po
+zmianie: 35 faktów, 4 typowane exclusions (`wrong_period`). Focused aggregate
+and evidence proof: 9 testów, Ruff passed. Nie zmienia to zasad wykluczania,
+nie dopuszcza historycznych okresów do measurement loopu i nie tworzy
+synthetic metrics.

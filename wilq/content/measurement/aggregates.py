@@ -285,7 +285,7 @@ def aggregate_exact_page_metric_facts(
                 if (fact.source_connector, fact.name, fact.period) not in passthrough_keys
             ],
         ],
-        exclusions=exclusions,
+        exclusions=_deduplicate_exclusions(exclusions),
     )
 
 
@@ -422,6 +422,34 @@ def _weighted_average(
         if isinstance(row.value, (int, float)) and isinstance(weight.value, (int, float))
     ]
     return sum(weighted) / denominator if len(weighted) == len(rows) else None
+
+
+def _deduplicate_exclusions(
+    exclusions: list[MeasurementAggregateExclusion],
+) -> list[MeasurementAggregateExclusion]:
+    """Collapse repeated row-level exclusions without dropping lineage."""
+    merged: dict[tuple[str, str, str, str], MeasurementAggregateExclusion] = {}
+    for exclusion in exclusions:
+        key = (
+            exclusion.code,
+            exclusion.source_connector,
+            exclusion.metric_name,
+            exclusion.period,
+        )
+        existing = merged.get(key)
+        if existing is None:
+            merged[key] = exclusion.model_copy(
+                update={"evidence_ids": sorted(set(exclusion.evidence_ids))}
+            )
+            continue
+        merged[key] = existing.model_copy(
+            update={
+                "evidence_ids": sorted(
+                    set(existing.evidence_ids) | set(exclusion.evidence_ids)
+                )
+            }
+        )
+    return list(merged.values())
 
 
 __all__ = [

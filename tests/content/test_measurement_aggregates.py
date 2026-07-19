@@ -187,6 +187,43 @@ def test_aggregator_excludes_wrong_period_and_mixed_lineage() -> None:
     }
 
 
+def test_aggregator_deduplicates_row_exclusions_and_preserves_evidence() -> None:
+    url = "https://www.ekologus.pl/bdo/"
+    result = aggregate_exact_page_metric_facts(
+        [
+            _fact(
+                connector="google_search_console",
+                name="clicks",
+                value=1,
+                dimensions={"page": url, "query": "bdo"},
+                period="connector_refresh",
+                evidence_id="ev_old_a",
+            ),
+            _fact(
+                connector="google_search_console",
+                name="clicks",
+                value=2,
+                dimensions={"page": url, "query": "bdo dla kogo"},
+                period="connector_refresh",
+                evidence_id="ev_old_a",
+            ),
+            _fact(
+                connector="google_search_console",
+                name="clicks",
+                value=3,
+                dimensions={"page": url, "query": "bdo odpady"},
+                period="connector_refresh",
+                evidence_id="ev_old_b",
+            ),
+        ],
+        content_url=url,
+    )
+
+    assert len(result.exclusions) == 1
+    assert result.exclusions[0].code == "wrong_period"
+    assert result.exclusions[0].evidence_ids == ["ev_old_a", "ev_old_b"]
+
+
 def test_repeated_period_prefers_newest_refresh_lineage() -> None:
     url = "https://www.ekologus.pl/bdo/"
     old = datetime(2026, 1, 29, tzinfo=UTC)
