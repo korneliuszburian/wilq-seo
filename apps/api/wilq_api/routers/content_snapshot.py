@@ -47,6 +47,7 @@ from wilq.content.workflow.planning import ContentPlanningDecision
 from wilq.content.workflow.revisions import ContentDraftRevisionState
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import (
+    ContentDecisionItem,
     ContentDiagnosticsResponse,
     MetricFact,
     connector_refresh_has_live_data,
@@ -63,6 +64,42 @@ _exact_diagnostics_cache: dict[
     str, tuple[float, int, str | None, ContentDiagnosticsResponse]
 ] = {}
 _exact_diagnostics_cache_lock = RLock()
+
+_SELECTED_INVENTORY_FIELDS = (
+    "title",
+    "summary",
+    "wordpress_title_or_h1",
+    "wordpress_section_headings",
+    "wordpress_section_count",
+    "wordpress_section_inventory_status",
+    "wordpress_content_summary",
+    "wordpress_content_text",
+    "wordpress_content_source_kind",
+    "wordpress_content_extraction_region",
+    "wordpress_content_material_confidence",
+    "wordpress_content_source_field_lineage",
+    "wordpress_content_word_count",
+    "wordpress_content_inventory_status",
+    "wordpress_content_inventory_note",
+    "wordpress_acf_section_inventory_status",
+    "wordpress_acf_section_inventory_note",
+    "wordpress_acf_section_headings",
+    "wordpress_acf_section_count",
+)
+
+
+def _merge_selected_inventory_fields(
+    existing: ContentDecisionItem,
+    selected: ContentDecisionItem,
+) -> ContentDecisionItem:
+    """Enrich a diagnostics row without replacing its freshness authority."""
+
+    updates = {
+        field: getattr(selected, field)
+        for field in _SELECTED_INVENTORY_FIELDS
+        if getattr(selected, field) is not None
+    }
+    return existing.model_copy(update=updates)
 
 
 def snapshot_for_work_item_or_404(
@@ -212,12 +249,21 @@ def diagnostics_with_exact_gsc_demand(
         ):
             return cached[3]
     inventory_decision = inventory_decision_for_work_item(work_item_id)
-    if inventory_decision is not None and not any(
-        item.id == inventory_decision.id for item in diagnostics.decision_queue
-    ):
-        diagnostics = diagnostics.model_copy(
-            update={"decision_queue": [*diagnostics.decision_queue, inventory_decision]}
-        )
+    if inventory_decision is not None:
+        # The broad diagnostics queue may already contain a cheap URL-only
+        # decision with the same id. For an explicitly selected page, replace
+        # that row with the exact inventory-bound decision so rendered
+        # provenance (ACF/the_content), source lineage and material confidence
+        # cannot be lost before the snapshot is assembled.
+        decision_queue = [
+            _merge_selected_inventory_fields(item, inventory_decision)
+            if item.id == inventory_decision.id
+            else item
+            for item in diagnostics.decision_queue
+        ]
+        if not any(item.id == inventory_decision.id for item in diagnostics.decision_queue):
+            decision_queue.append(inventory_decision)
+        diagnostics = diagnostics.model_copy(update={"decision_queue": decision_queue})
     diagnostics = content_diagnostics_with_ads_refresh(
         diagnostics,
         latest_ads_refresh(
