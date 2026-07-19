@@ -54,6 +54,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   oraz lineage `public_html.main_or_article`; ACF pozostaje puste, bez
   zgadywania sekcji. To realny dowód `the_content` path, nie dowód każdego
   wariantu ACF ani UAT.
+- 2026-07-19: read-only piloty Merchant/Localo są gotowe do review. Merchant
+  ma świeżość 21,6 h/48 h, 1351 zgłoszonych wystąpień problemów, 6 decyzji,
+  11 klastrów, 4 evidence IDs i 1 akcję; API jawnie odróżnia wystąpienia od
+  unikalnych SKU i nie obiecuje naprawy/przychodu. Localo ma 31 faktów, 2
+  evidence IDs, 1 akcję i gotowe agregaty miejsc, rankingów, GBP, konkurencji i
+  opinii; `local_tasks` pozostaje brakującym kontraktem, a write/publish GBP i
+  wzrost widoczności są zablokowane.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily
