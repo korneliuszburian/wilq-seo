@@ -7,6 +7,15 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: dynamiczny odczyt WordPress rozróżnia teraz strukturę ACF od
+  `the_content` także wtedy, gdy materiał przychodzi przez REST. Parser zapisuje
+  H2/H3 z REST-owego HTML, a binding preferuje sekcje ACF i dopiero potem
+  nagłówki treści głównej. Dzięki temu mapa sekcji nie zależy od ręcznego
+  wpisywania nagłówków ani od jednego typu szablonu. Fixed point `8fed2b67`
+  przeszedł 4 focused testy inventory, Ruff, mypy i diff-check; drugi-opinion
+  checker został odrzucony lokalnie, bo dwukrotnie zwrócił cytację ponad limit
+  20 linii. To naprawa mechanizmu odczytu, nie dowód UAT ani jakości generowanego
+  tekstu.
 - 2026-07-19: cross-source planning snapshot zachowuje dokładne fakty GA4 i
   inne nie-GSC/Ads fakty po projekcji exact-demand oraz przy scalaniu selected
   inventory. Live URL `/szkolenie/gospodarka-odpadami-i-opakowaniami-
