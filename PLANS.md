@@ -6,19 +6,18 @@ Nie jest historią commitów ani listą zastępczą dla Beads.
 
 ### Checkpoint 2026-07-19
 
-Ostatni utrwalony stan przesunął pipeline w trzech konkretnych miejscach:
-metadata-only manifest oczekujących materiałów jest widoczny w blockerze
-korpusu, wybrany workflow pokazuje źródła metryk i ich API-ową świeżość, a
-read-only pilot BDO + outsourcing potwierdził wspólne exact URL/service/source
-assessment bez hardkodowanego wyjątku. Lokalny runtime ma 12 konektorów, 9
-skonfigurowanych; BDO używa WP/GSC, GA4/Ahrefs są `missing`, Ads/Localo/
-Merchant/Social `not_applicable` lub bez exact matchu, a Keyword Planner
-pozostaje zablokowany brakiem tokena. Outsourcing ma proposal `stale`; BDO
-pozostaje `failed` z typed provider blockerem. To nie jest jeszcze dowód
-pełnej generacji, jakości tekstu ani UAT.
+Ostatni utrwalony stan ma dwa ważne hardening slices. `GET /initial-draft` nie
+pokazuje już starej rewizji jako aktualnej po nowszym planning jobie z innym
+digestem; zwraca typed `stale_planning_input` bez model call. Measurement
+aggregator scala powtórzone exclusions per `code/source/metric/period`,
+zachowując pełną union evidence IDs. Świeży WILQ API context: 12 konektorów,
+9 skonfigurowanych, 2 brakujące credentials; brief ma 1 blocker, 3
+rekomendacje i 17 evidence IDs; kolejka ma 54 kandydatów, z czego 53 są
+actionable. Exact BDO readback ma 35 faktów i 4 wykluczenia `wrong_period`.
+Oba piloty planowania nadal kończą się typed `runtime_failed/codex_turn_failed`;
+pełna generacja, semantic storage, jakość tekstu i UAT pozostają nieudowodnione.
 
-Ostatnie wypchnięte commity: `f60c7f84`, `c4a01b0a`, `0a9e53a4`, `e9b98a5d`,
-`30fb530c`, `0d6e51f6`, `ae3b804d`. Niezależne review passy i dispositions
+Ostatni wypchnięty commit: `45a5a896`. Niezależne review passy i dispositions
 znajdują się poza repo w katalogu second-opinion-review; findings bez źródła
 są klasyfikowane jako evidence gaps/reject, nigdy jako PASS.
 

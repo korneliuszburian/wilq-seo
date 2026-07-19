@@ -142,9 +142,9 @@ Aktywny graf:
   stare, częściowe, wrażliwe i niepasujące dane są jawnie odrzucane.
 - Realny Codex proposal został poprawnie związany z wersją i dowodami, lecz
   quality review zwrócił `needs_changes`; jakość tekstu pozostaje około 5/10.
-- Kolejka ma 5 kandydatów, z czego 4 są actionable. BDO jest pierwszym
-  wykonalnym exact work itemem i jego wybór przeżywa reload przez typed URL
-  search.
+- Kolejka ma 54 kandydatów, z czego 53 są actionable; jeden rekord Ahrefs jest
+  jawnie zablokowany przed tworzeniem nowego URL. BDO jest pierwszym wykonalnym
+  exact work itemem i jego wybór przeżywa reload przez typed URL search.
 - Karta BDO ma public source lineage i `approved_current`; wspiera aktualny
   scope do review, ale nie finalny claim prawny ani publikację.
 
