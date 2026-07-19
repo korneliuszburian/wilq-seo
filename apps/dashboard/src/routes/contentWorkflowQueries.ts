@@ -1,4 +1,4 @@
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 
 import {
   getContentWordPressDraftActivationPacket,
@@ -41,9 +41,22 @@ export type WordPressDraftActivationPacketQuery = UseQueryResult<
 >;
 
 export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
+  const queryClient = useQueryClient();
   const queue = useQuery({
     queryKey: ["content-workflow", "queue", selectedWorkItemId],
-    queryFn: () => getContentWorkItemQueue(selectedWorkItemId ?? undefined)
+    queryFn: () => getContentWorkItemQueue(selectedWorkItemId ?? undefined),
+    // Keep the already loaded decision queue visible while the selected
+    // candidate's API-owned response is fetched. This prevents a click from
+    // looking like a route reset; the selected queue request still replaces
+    // the placeholder with its exact server response.
+    placeholderData: selectedWorkItemId
+      ? () =>
+          queryClient.getQueryData<ContentWorkItemQueueResponse>([
+            "content-workflow",
+            "queue",
+            null
+          ])
+      : undefined
   });
   const inventory = useQuery({
     queryKey: ["content-workflow", "inventory-catalog"],
