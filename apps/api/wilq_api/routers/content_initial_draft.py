@@ -14,11 +14,16 @@ from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
+    ContentInitialDraftBlockerCode,
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
 )
-from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
+from wilq.content.planning.generated_proposal_store import (
+    ContentPlanningProposalStore,
+    content_planning_proposal_store,
+)
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -54,9 +59,12 @@ def register_content_initial_draft_route(
         if _can_queue_initial_draft(snapshot, request) and isinstance(
             client, StdioCodexAppServerClient
         ):
+            planning = snapshot.planning_workspace
+            if planning is None:
+                raise RuntimeError("Initial draft queue requires a planning workspace.")
             existing = _latest_initial_draft_run(work_item_id)
             if existing is not None and existing.status == "started":
-                proposal = snapshot.planning_workspace.proposal
+                proposal = planning.proposal
                 return ContentInitialDraftResponse(
                     status="generating",
                     work_item_id=work_item_id,
@@ -76,7 +84,7 @@ def register_content_initial_draft_route(
                 run_id,
                 snapshot_loader,
             )
-            proposal = snapshot.planning_workspace.proposal
+            proposal = planning.proposal
             return ContentInitialDraftResponse(
                 status="generating",
                 work_item_id=work_item_id,
@@ -193,7 +201,9 @@ def register_content_initial_draft_route(
                 ),
             )
         if latest is not None and latest.status in {"failed", "blocked"}:
-            code = "runtime_failed" if latest.status == "failed" else "runtime_blocked"
+            code: ContentInitialDraftBlockerCode = (
+                "runtime_failed" if latest.status == "failed" else "runtime_blocked"
+            )
             blocker = ContentInitialDraftBlocker(
                 code=code,
                 label="Nie udało się przygotować pełnego tekstu",
@@ -201,7 +211,9 @@ def register_content_initial_draft_route(
                 next_step="Otwórz blocker i ponów po poprawieniu aktualnego wejścia.",
             )
             return ContentInitialDraftResponse(
-                status=latest.status,
+                status=(
+                    "failed" if latest.status == "failed" else "blocked"
+                ),
                 work_item_id=work_item_id,
                 proposal_id=None if proposal is None else proposal.proposal_id,
                 run_id=latest.id,
@@ -225,8 +237,8 @@ def register_content_initial_draft_route(
 
 def _proposal_bound_to_latest_approved_plan(
     work_item_id: str,
-    proposal_store,
-):
+    proposal_store: ContentPlanningProposalStore,
+) -> ContentPlanningProposal | None:
     decisions = content_workflow_store().load_planning_decisions(work_item_id)
     approved_digests = [
         decision.planning_digest

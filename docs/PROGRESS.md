@@ -2029,3 +2029,13 @@ oba typy przez jawny union/cast, bez zmiany mapowania. Proof:
 `uv run mypy wilq/content/planning/section_mapping.py` clean,
 `uv run ruff check wilq/content/planning/section_mapping.py` clean. Pełny
 odczyt po tej korekcie wynosi 83 błędy w 13 plikach.
+
+### 2026-07-19 — initial-draft router ma typowany planning/status seam
+
+Naprawiono klaster routera initial draft bez zmiany odpowiedzi workflow:
+planning workspace jest jawnie zawężany przed kolejką, statusy runtime są
+mapowane na kontrakt `generating/created/blocked/failed/conflict`, blocker code
+ma właściwy Literal, a proposal store i proposal mają konkretne typy. Proof:
+`uv run mypy apps/api/wilq_api/routers/content_initial_draft.py` clean,
+Ruff clean, `tests/content/test_initial_draft_status_read_path.py` oraz
+`tests/content/test_initial_draft_queue_gate.py` razem 9/9, diff-check clean.
