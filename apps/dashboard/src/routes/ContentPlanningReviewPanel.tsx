@@ -116,9 +116,14 @@ export function ContentPlanningReviewPanel({
               aria-label="Potwierdzona usługa"
               value={selectedServiceCardId}
               onChange={(event) => setSelectedServiceCardId(event.target.value)}
+              disabled={serviceCandidates.length === 0}
               className="mt-2 h-11 w-full rounded-md border border-line bg-white px-3 font-normal"
             >
-              <option value="">Wybierz usługę do tego adresu</option>
+              <option value="">
+                {serviceCandidates.length === 0
+                  ? "Brak dopasowanej usługi"
+                  : "Wybierz usługę do tego adresu"}
+              </option>
               {serviceCandidates.map((candidate) => (
                 <option key={candidate.service_card_id} value={candidate.service_card_id}>
                   {candidate.service_label} · {candidate.lifecycle_label}
