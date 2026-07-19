@@ -6,7 +6,7 @@ Nie jest historią commitów ani listą zastępczą dla Beads.
 
 ### Checkpoint 2026-07-19
 
-Ostatni utrwalony stan ma dwa ważne hardening slices. `GET /initial-draft` nie
+Ostatni utrwalony stan obejmuje serię runtime i lineage hardening slices. `GET /initial-draft` nie
 pokazuje już starej rewizji jako aktualnej po nowszym planning jobie z innym
 digestem; zwraca typed `stale_planning_input` bez model call. Measurement
 aggregator scala powtórzone exclusions per `code/source/metric/period`,
@@ -14,13 +14,16 @@ zachowując pełną union evidence IDs. Świeży WILQ API context: 12 konektoró
 9 skonfigurowanych, 2 brakujące credentials; brief ma 1 blocker, 3
 rekomendacje i 17 evidence IDs; kolejka ma 54 kandydatów, z czego 53 są
 actionable. Exact BDO readback ma 35 faktów i 4 wykluczenia `wrong_period`.
-Oba piloty planowania nadal kończą się typed `runtime_failed/codex_turn_failed`;
+Oba piloty planowania nadal kończą się typed `runtime_failed` z
+`codex_response_stream_disconnected`; queued digest, terminalny `CodexRun.id`
+i persisted readback są zachowane;
 pełna generacja, semantic storage, jakość tekstu i UAT pozostają nieudowodnione.
 
-Ostatni wypchnięty commit: `12ed0215` (`fix(content): scope stale jobs to service`).
+Ostatni wypchnięty commit: `f80d9320` (`chore(beads): record persisted run readback`).
 Po poprzednim pomiarze doszły wspólny kontrakt deadline/stale job oraz izolacja
 starych planning jobs po `service_card_id`: nowszy run innej usługi nie może już
-unieważnić aktualnego proposal/draft statusu. Niezależne review passy i dispositions
+unieważnić aktualnego proposal/draft statusu. Transport Codexa klasyfikuje
+bezpiecznie stream disconnect ze stderr bez utrwalania payloadu. Niezależne review passy i dispositions
 znajdują się poza repo w katalogu second-opinion-review; findings bez źródła
 są klasyfikowane jako evidence gaps/reject, nigdy jako PASS.
 
