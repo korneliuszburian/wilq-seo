@@ -2253,3 +2253,11 @@ Nie zmienia to admission danych; usuwa tylko niebezpieczne ścieżki typu
 `float / None` i utrzymuje brak wyniku przy niepełnym denominatorze. Proof:
 `uv run mypy wilq/content/measurement/aggregates.py --no-incremental` oraz
 `tests/content/test_measurement_aggregates.py` (8/8).
+
+### 2026-07-19 — typowana granica WordPress inventory
+
+REST inventory odrzuca teraz nie-stringowy lub pusty `link` przed normalizacją,
+ACF enrichment buduje jawny `dict[str, str]`, a paginowane requesty przekazują
+query params przez właściwy typ HTTPX. Zachowane zostają te same pola inventory,
+ACF i limity odczytu; zmiana wzmacnia mapowanie strony/sekcji. Proof: modułowy
+mypy clean oraz inventory/catalog tests (15/15).

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from html.parser import HTMLParser
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -368,7 +368,7 @@ def _fetch_public_rest_objects(
                 if not isinstance(item, dict):
                     continue
                 content_url = item.get("link")
-                if _normalize_base_url(content_url) != requested_url:
+                if not isinstance(content_url, str) or _normalize_base_url(content_url) != requested_url:
                     continue
                 acf_dimensions = acf_inventory(item.get("acf"))
                 if not (
@@ -376,7 +376,7 @@ def _fetch_public_rest_objects(
                     or acf_dimensions.get("acf_section_headings_json")
                 ):
                     continue
-                enriched = {
+                enriched: dict[str, str] = {
                     "content_url": content_url,
                     "acf_field_names_json": acf_dimensions.get("acf_field_names_json", ""),
                 }
@@ -606,7 +606,11 @@ def _fetch_content_type_summary(
         "order": "desc",
         "_fields": WORDPRESS_READ_FIELDS,
     }
-    response = client.get(endpoint, auth=auth, params={**params, "page": 1})
+    response = client.get(
+        endpoint,
+        auth=auth,
+        params=cast(httpx.QueryParams, {**params, "page": 1}),
+    )
     response.raise_for_status()
     payload = response.json()
     objects = _content_objects(payload)
@@ -614,7 +618,11 @@ def _fetch_content_type_summary(
     # WordPress REST is paginated even when the total count is available. Fetch
     # every page so sitemap-only URLs do not masquerade as complete inventory.
     for page in range(2, total_pages + 1):
-        page_response = client.get(endpoint, auth=auth, params={**params, "page": page})
+        page_response = client.get(
+            endpoint,
+            auth=auth,
+            params=cast(httpx.QueryParams, {**params, "page": page}),
+        )
         page_response.raise_for_status()
         page_payload = page_response.json()
         page_objects = _content_objects(page_payload)
