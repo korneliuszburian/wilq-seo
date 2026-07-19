@@ -2822,3 +2822,8 @@ Focused panel suite: 9 testów; dashboard typecheck i diff-check przechodzą.
 Follow-up advisory checker zaakceptował mechanikę; pozostałą uwagę o wiring
 zaklasyfikowano jako lukę cytowania i zamknięto lokalną inspekcją. Nie jest to
 dowód kompletności matcherów ani owner review kart.
+### 2026-07-19 — dynamiczny placement planu respektuje sekcje wymagające usunięcia
+
+W instrukcji planowania CTA i linki są teraz jawnie wiązane z dynamiczną mapą inventory: placement może wskazywać tylko `after_lead`, `after_content` albo konkretną sekcję, która pozostaje użyteczną odpowiedzią dla czytelnika. Sekcja oznaczona `remove_review_required` nie może być miejscem CTA/linku; istniejący model/odczyt nadal fail-closed przez `quality_gate_failed/orphaned_placement`. To nie wymaga ręcznego zatwierdzania każdej sekcji — mapę wyznacza inventory ACF/the_content, a człowiek zatwierdza zakres i usługę.
+
+Focused proof: Ruff oraz `tests/content/test_planning_output_contract_limits.py -k 'compactness or removed_section'` (2 passed). Live BDO rerun z tym samym digestem ponownie zakończył się `blocked/orphaned_placement`; outsourcing pozostaje `ready`. Nie twierdzę, że BDO ma gotowy plan ani draft; wymaga nowego poprawnego fixed pointu.
