@@ -923,6 +923,32 @@ describe("ContentWorkflowSurface", () => {
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
   });
 
+  it("labels a saved revision as stale when the workflow context changed", async () => {
+    const revision = savedDraftRevision();
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        workspace: {
+          ...savedRevisionWorkspace(revision),
+          context_current: false
+        },
+        currentStepId: "draft"
+      })
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByText("Zapisana wersja · wymaga odświeżenia")).toBeInTheDocument();
+    expect(screen.queryByText("Aktualny draft · wersja zapisana")).not.toBeInTheDocument();
+  });
+
   it("shows persisted advisory findings without approving or writing the revision", async () => {
     const revision = savedFullDraftRevision();
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
