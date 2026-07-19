@@ -18,6 +18,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   `772b262d`/`251f215f` przeszedł Ruff, mypy, diff-check i live snapshot;
   second-opinion findings zostały sklasyfikowane z lokalnym dowodem. To jest
   postęp exact landing-alignment, nie UAT ani gotowość do draftu.
+- 2026-07-19: Ads source assessment pokazuje teraz marketerowi właściwy
+  blocker zamiast ogólnego błędu: exact landing z `review_required` mówi o
+  owner review karty, a `unbound`/`ambiguous` o nierozstrzygniętym powiązaniu
+  inventory/service. Wszystkie trzy stany pozostają fail-closed. Focused
+  3-case proof przeszedł; checker retry zwrócił `findings=[]`. To poprawa
+  decyzji i następnego kroku, nie automatyczna akceptacja usługi.
 - 2026-07-19: read-only Ads pilot pobrany przez kanoniczne
   `/api/ads/diagnostics`: świeży odczyt (`live_data_available=true`), 18 kampanii,
   23 wiersze zapytań, 12 kandydatów wykluczeń z 90-dniowym kontekstem, 9 akcji
