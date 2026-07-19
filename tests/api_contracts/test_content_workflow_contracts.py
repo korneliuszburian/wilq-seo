@@ -2157,6 +2157,8 @@ def test_content_operator_context_pack_exposes_service_profile_review_actions() 
     data = response.json()
     assert data["context_scope"]["mode"] == "skill"
     assert data["context_scope"]["skill"] == "wilq-content-operator"
+    assert data["content_diagnostics"]["decision_queue"]
+    assert data["content_preflight"]["items"]
 
     actions_by_id = {action["id"]: action for action in data["active_action_objects"]}
     public_action = actions_by_id["act_prepare_service_profile_knowledge_promotion"]

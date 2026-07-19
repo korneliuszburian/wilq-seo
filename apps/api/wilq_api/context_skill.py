@@ -195,7 +195,7 @@ def skill_scoped_context_pack(
 
 
 def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
-    if skill == "wilq-content-strategist":
+    if skill in {"wilq-content-operator", "wilq-content-strategist"}:
         content = build_content_diagnostics()
         return {
             "content_diagnostics": context_content.compact_content_diagnostics_for_context(

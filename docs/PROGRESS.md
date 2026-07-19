@@ -2920,3 +2920,11 @@ context-pack po restarcie: 15 kart (12 kart Ekologusa + 3 dokładnie
 referencjonowane playbooki), 0 brakujących ID lineage, 1000 evidence summaries i
 12 connector statuses. To naprawia spójność wejścia do planowania; nie jest
 jeszcze dowodem pełnego draftu ani publikacji.
+
+W tym samym seamie operator content dostał również `content_diagnostics` i
+`content_preflight` w scoped context-packu. Wcześniej operator widział karty i
+akcje review, ale nie kolejkę decyzji; teraz strategist i operator korzystają z
+jednego diagnostyku API, bez osobnej ścieżki modelowej.
+
+Focused proof: `test_content_operator_context_pack_exposes_service_profile_review_actions`
+oraz Ruff PASS.
