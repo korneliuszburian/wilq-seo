@@ -26,6 +26,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   `candidate_count=1`. Pomiar lokalny: katalog 0,319 s vs pełne diagnostics
   2,682 s. Bead `wilq-seo-z023` zamknięty; zimny refresh zewnętrzny i nieznane
   lub niejednoznaczne ID nadal bezpiecznie wracają do pełnego kontraktu.
+- 2026-07-19: lab durable runnera zachował trzy istotne dowody bez migracji
+  produkcyjnego storage: świeży `ContentPlanningProposalStore` odczytuje
+  queued row po restarcie obiektu, stale job można ponownie zakolejkować, a
+  dwa identyczne enqueue kończą się dokładnie `queued` + `existing`. APScheduler
+  dotyczy tylko connector jobs i ma `autostart=false`, więc nie udaje się go
+  jeszcze jako recovery runnera planowania; migracja pozostaje odroczona do
+  osobnego crash-injection/no-duplicate proofu z autoryzacją właściciela.
 - Kanoniczny przebieg marketera ma pięć kroków:
   `scope → section_map → draft → review → dev_draft`.
 - 2026-07-18: świeży BDO plan został najpierw poprawnie zablokowany przez
