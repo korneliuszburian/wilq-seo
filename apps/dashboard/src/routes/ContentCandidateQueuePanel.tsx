@@ -1,4 +1,7 @@
+import { useMemo, useState } from "react";
+
 import type { ContentWorkItemQueueResponse } from "../lib/api";
+import type { ContentWorkItemQueueCandidate } from "../lib/api";
 
 export function ContentCandidateQueuePanel({
   queue,
@@ -9,6 +12,12 @@ export function ContentCandidateQueuePanel({
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
+  const [search, setSearch] = useState("");
+  const visibleCandidates = useMemo(
+    () => queue.candidates.filter((candidate) => matchesContentQueueCandidate(candidate, search)),
+    [queue.candidates, search]
+  );
+
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -21,8 +30,21 @@ export function ContentCandidateQueuePanel({
           <FactTile label="Gotowe do pracy" value={`${queue.actionable_candidate_count}`} />
         </div>
       </div>
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
-        {queue.candidates.map((candidate) => (
+      <label className="mt-4 block max-w-2xl text-sm font-medium text-slate-700">
+        Szukaj strony, usługi lub zapytania
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="np. BDO, doradztwo, /oferta/"
+          className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink outline-none focus:border-action focus:ring-2 focus:ring-action/20"
+        />
+      </label>
+      <p className="mt-3 text-xs text-slate-500">
+        Pokazano {visibleCandidates.length} z {queue.candidate_count} propozycji.
+      </p>
+      <div className="mt-3 grid gap-3 lg:grid-cols-3">
+        {visibleCandidates.map((candidate) => (
           <button
             key={candidate.work_item_id}
             type="button"
@@ -44,6 +66,23 @@ export function ContentCandidateQueuePanel({
       </div>
     </section>
   );
+}
+
+export function matchesContentQueueCandidate(
+  candidate: ContentWorkItemQueueCandidate,
+  search: string
+): boolean {
+  const normalizedSearch = search.trim().toLocaleLowerCase("pl-PL");
+  if (!normalizedSearch) return true;
+  return [
+    candidate.title,
+    candidate.topic,
+    candidate.reason,
+    candidate.source_public_url,
+    candidate.final_canonical_url
+  ]
+    .filter(Boolean)
+    .some((value) => value!.toLocaleLowerCase("pl-PL").includes(normalizedSearch));
 }
 
 function FactTile({ label, value }: { label: string; value: string }) {
