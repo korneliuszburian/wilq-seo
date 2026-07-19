@@ -7,6 +7,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-19: read-only Ads pilot pobrany przez kanoniczne
+  `/api/ads/diagnostics`: świeży odczyt (`live_data_available=true`), 18 kampanii,
+  23 wiersze zapytań, 12 kandydatów wykluczeń z 90-dniowym kontekstem, 9 akcji
+  review-only i 1 blocker. API jawnie blokuje ocenę opłacalności, CPA/ROAS,
+  skalowanie i zapis zmian bez brakujących kontraktów/człowieka. To jest dowód
+  konektora i kolejki decyzji, nie ukończony exact-service pilot ani UAT.
+
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily
   runtime został wydłużony do 300 s, nadal z env override i bez zmiany
