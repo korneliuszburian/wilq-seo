@@ -139,6 +139,7 @@ class SocialHistoryInventory(BaseModel):
     item_count: int = 0
     channel_counts: dict[str, int] = Field(default_factory=dict)
     import_errors: list[str] = Field(default_factory=list)
+    source_evidence_ids: list[str] = Field(default_factory=list)
     sources: list[SocialHistoryInventorySource]
     discovery_seeds: list[SocialHistoryDiscoverySeed] = Field(
         default_factory=_social_history_discovery_seeds
@@ -227,6 +228,11 @@ def build_social_history_inventory(
         item_count=import_audit.item_count if import_audit is not None else 0,
         channel_counts=channel_counts,
         import_errors=import_audit.errors if import_audit is not None else [],
+        source_evidence_ids=(
+            list(import_audit.source_evidence_ids)
+            if import_audit is not None and import_audit.status == "review_ready"
+            else []
+        ),
         sources=sources,
         operator_next_step=_inventory_next_step(status),
     )
@@ -296,6 +302,7 @@ class SocialHistoryImportAudit(BaseModel):
         default_factory=lambda: list(SOCIAL_HISTORY_FORBIDDEN_METADATA_FIELDS)
     )
     errors: list[str]
+    source_evidence_ids: list[str] = Field(default_factory=list)
     duplicate_free_claim_allowed: Literal[False] = False
     publish_allowed: Literal[False] = False
     operator_next_step: str
@@ -346,6 +353,11 @@ def audit_social_history_metadata_payload(payload: object) -> SocialHistoryImpor
         channel_counts=dict(sorted(counts.items())),
         missing_required_sources=missing_sources,
         errors=errors,
+        source_evidence_ids=(
+            sorted({record.source_evidence_id for record in records})
+            if not errors
+            else []
+        ),
         operator_next_step=_social_history_import_next_step(status),
     )
 

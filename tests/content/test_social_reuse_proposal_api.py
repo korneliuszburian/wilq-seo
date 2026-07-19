@@ -116,6 +116,10 @@ def test_social_reuse_store_is_idempotent_for_exact_revision(tmp_path) -> None:
         inventory,
         now=datetime(2026, 7, 18, tzinfo=UTC),
     )
+    assert proposal.duplicate_risk_evidence_ids == [
+        "ev_facebook_history",
+        "ev_linkedin_history",
+    ]
     store = ContentWorkflowStore(tmp_path / "state.sqlite3")
 
     first = store.save_social_reuse_proposal(proposal)

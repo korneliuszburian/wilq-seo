@@ -51,6 +51,7 @@ export const SocialReuseProposalSchema = z.object({
   body: z.string().min(1),
   constraints: z.array(z.string().min(1)).min(1),
   duplicate_risk_inventory_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  duplicate_risk_evidence_ids: z.array(z.string().min(1)).default([]),
   duplicate_risk_status: z.literal("review_ready"),
   measurement_hypothesis: z.string().min(1),
   status: z.enum(["review_required", "approved", "rejected", "stale", "blocked"]),

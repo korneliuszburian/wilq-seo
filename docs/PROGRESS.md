@@ -1694,3 +1694,13 @@ Karta kandydata w kolejce pokazuje teraz, gdy API je dostarcza, najlepszą
 porównywalnego okresu i niejednoznaczne porównanie są komunikowane wprost,
 zamiast znikać za samym CTR. To nadal read-only prezentacja istniejących
 metryk GSC; nie wyprowadza przyczyny ani prognozy efektu.
+
+### 2026-07-19 — social reuse zachowuje evidence historii duplikacji
+
+`SocialHistoryImportAudit` i `SocialHistoryInventory` przenoszą teraz
+zweryfikowane `source_evidence_ids` z metadata-only spisu do immutable
+`SocialReuseProposal` jako `duplicate_risk_evidence_ids`. Builder blokuje nową
+propozycję, jeśli historia nie ma evidence; dashboard pokazuje osobno liczbę
+źródeł rewizji treści i dowodów historii. Digest historii nadal unieważnia
+readback po zmianie, a publikacja pozostaje wyłączona. Live inventory nadal ma
+status `missing`, więc ten slice nie odblokowuje social reuse dla Ekologusa.

@@ -184,7 +184,7 @@ function SocialReuseProposalsPanel({
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{proposal.body}</p>
                 <p className="mt-3 text-xs text-slate-500">
                   {proposal.parent_proposal_id ? "Poprawiona wersja · " : ""}
-                  {proposal.source_evidence_ids.length} źródeł · publikacja wyłączona
+                  {proposal.source_evidence_ids.length} źródeł treści · {proposal.duplicate_risk_evidence_ids.length} dowodów historii · publikacja wyłączona
                 </p>
                 {item.review?.notes ? (
                   <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-slate-600">Uwagi: {item.review.notes}</p>

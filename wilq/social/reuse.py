@@ -72,6 +72,7 @@ class SocialReuseProposal(BaseModel):
     body: str = Field(min_length=1)
     constraints: list[str] = Field(min_length=1)
     duplicate_risk_inventory_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    duplicate_risk_evidence_ids: list[str] = Field(default_factory=list)
     duplicate_risk_status: Literal["review_ready"] = "review_ready"
     measurement_hypothesis: str = Field(min_length=1)
     status: SocialReuseStatus = "review_required"
@@ -210,6 +211,8 @@ def build_social_reuse_proposal(
     }
     if any(claim_id not in allowed_claim_ids for claim_id in request.claim_ids):
         raise ValueError("Social reuse claim_ids must belong to the source revision.")
+    if not inventory.source_evidence_ids:
+        raise ValueError("Social reuse requires reviewed social history evidence.")
     proposal_id = f"social_reuse_{request.platform}_{request.expected_revision_id}"
     if parent_proposal_id is not None:
         proposal_id += f"_child_{proposal_number}"
@@ -235,6 +238,7 @@ def build_social_reuse_proposal(
         "body": request.body,
         "constraints": constraints,
         "duplicate_risk_inventory_digest": social_history_inventory_digest(inventory),
+        "duplicate_risk_evidence_ids": sorted(set(inventory.source_evidence_ids)),
         "duplicate_risk_status": "review_ready",
         "measurement_hypothesis": request.measurement_hypothesis,
         "status": "review_required",
