@@ -2010,3 +2010,22 @@ także `compact_capabilities` w API context compaction: ma jawny
 `tests/api_contracts/test_security_connector_contracts.py` razem 17/17,
 diff-check clean. Aktualny pełny odczyt po tej serii wynosi 84 błędy w 13
 plikach; kolejny klaster dotyczy helpera initial-draft.
+
+### 2026-07-19 — drugi checker potwierdza lukę bramki, a mapping zachowuje oba kontrakty
+
+Drugi checker dla fixed pointu `be409222` został zwalidowany po jednej
+odrzuconej próbie (Claude podał zakres cytacji ponad 20 linii; runner nie
+zapisał JSON-a). Retry zwrócił 5 findings MEDIUM/LOW: brak aktualnego pełnego
+verify na fixed poincie, brak per-file listy 84 błędów, jawnego inwentarza
+dirty artefaktów i liczbowych proofów dla części seamów. Żaden finding nie jest
+approval; disposition pozostaje advisory.
+
+W trakcie weryfikacji wykryto i naprawiono regresję kontraktu: po utwardzeniu
+`build_inventory_mapping` przyjmował tylko modelowy output, choć istniejący
+generator przekazuje także `ContentPlanningProposal`. Funkcja obsługuje teraz
+oba typy przez jawny union/cast, bez zmiany mapowania. Proof:
+`tests/content/test_planning_section_mapping.py` i
+`tests/content/test_generated_proposal_store.py` razem 10/10,
+`uv run mypy wilq/content/planning/section_mapping.py` clean,
+`uv run ruff check wilq/content/planning/section_mapping.py` clean. Pełny
+odczyt po tej korekcie wynosi 83 błędy w 13 plikach.

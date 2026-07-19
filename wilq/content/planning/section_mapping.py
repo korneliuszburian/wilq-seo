@@ -3,14 +3,18 @@ from __future__ import annotations
 import re
 import unicodedata
 from difflib import SequenceMatcher
-from typing import Literal
+from typing import Literal, cast
 
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
     ContentPlanningModelSection,
 )
-from wilq.content.workflow.planning import ContentPlanningInventoryMapping
+from wilq.content.workflow.planning import (
+    ContentPlanningInventoryMapping,
+    ContentPlanningProposal,
+    ContentPlanningSection,
+)
 
 SectionMappingStatus = Literal["mapped", "unmapped", "ambiguous", "excluded"]
 
@@ -78,16 +82,21 @@ def canonicalize_model_inventory_headings(
 
 def build_inventory_mapping(
     planning_input: ContentPlanningInput,
-    output: ContentPlanningModelOutput,
+    output: ContentPlanningModelOutput | ContentPlanningProposal,
     section_ids: list[str],
 ) -> list[ContentPlanningInventoryMapping]:
     """Map all current inventory rows to the generated plan without guessing."""
-    output_sections = output.sections
+    output_sections = cast(
+        list[ContentPlanningModelSection | ContentPlanningSection],
+        output.sections,
+    )
     by_inventory_id: dict[
-        str, list[tuple[int, ContentPlanningModelSection]]
+        str,
+        list[tuple[int, ContentPlanningModelSection | ContentPlanningSection]],
     ] = {}
     by_inventory_heading: dict[
-        str, list[tuple[int, ContentPlanningModelSection]]
+        str,
+        list[tuple[int, ContentPlanningModelSection | ContentPlanningSection]],
     ] = {}
     for index, section in enumerate(output_sections):
         if section.inventory_section_id:
@@ -142,7 +151,9 @@ def build_inventory_mapping(
         ]
         candidates.sort(reverse=True, key=lambda item: item[0])
         mapping_status: SectionMappingStatus = "unmapped"
-        chosen: tuple[float, int, ContentPlanningModelSection] | None = None
+        chosen: tuple[
+            float, int, ContentPlanningModelSection | ContentPlanningSection
+        ] | None = None
         if candidates:
             chosen = candidates[0]
             if len(candidates) > 1 and candidates[0][0] - candidates[1][0] < 0.05:
@@ -180,7 +191,7 @@ def build_inventory_mapping(
 
 
 def _mapped_status(
-    section: ContentPlanningModelSection,
+    section: ContentPlanningModelSection | ContentPlanningSection,
     inventory_heading: str,
 ) -> tuple[SectionMappingStatus, str]:
     if section.inventory_disposition == "remove_review_required":
