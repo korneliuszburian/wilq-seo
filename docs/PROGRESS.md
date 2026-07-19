@@ -2928,3 +2928,16 @@ jednego diagnostyku API, bez osobnej ścieżki modelowej.
 
 Focused proof: `test_content_operator_context_pack_exposes_service_profile_review_actions`
 oraz Ruff PASS.
+
+### 2026-07-20 — content context nie ucina już katalogu kart Ekologusa
+
+Usunięto sztuczny limit `[:12]` z `content_knowledge_cards_for_skill`. Katalog
+kart jest już kompaktowany dopiero na granicy context-packu, więc wybór dowolnej
+aktualnie dostępnej usługi lub reguły Ekologusa nie traci swojej karty tylko
+dlatego, że sortowanie umieściło ją dalej na liście. To jest mechanizm ogólny,
+nie wyjątek dla BDO ani outsourcingu.
+
+Focused proof: test równości katalogu source-backed cards, Ruff i mypy PASS.
+Live operator context po reloadzie: 22 karty `ekologus_*`, 51 decyzji
+diagnostycznych i 36 evidence summaries. Nie oznacza to jeszcze owner review
+wszystkich kart ani gotowości pełnego draftu.

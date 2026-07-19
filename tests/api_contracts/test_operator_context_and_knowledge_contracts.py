@@ -1016,6 +1016,15 @@ def test_content_context_uses_real_ekologus_source_fact_cards() -> None:
     assert any(card.source_material_ids for card in cards)
 
 
+def test_content_context_includes_every_current_ekologus_card() -> None:
+    from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
+
+    cards = content_knowledge_cards_for_skill("wilq-content-operator")
+    assert {card.id for card in cards} == {
+        card.id for card in ekologus_content_knowledge_cards()
+    }
+
+
 def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     response = client.get("/api/knowledge/operating-map")
     assert response.status_code == 200

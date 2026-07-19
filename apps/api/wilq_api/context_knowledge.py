@@ -66,7 +66,11 @@ def content_knowledge_cards_for_skill(skill: str) -> list[ContentKnowledgeCard]:
             card.title,
         )
     )
-    return cards[:12]
+    # The content workflow must be able to select any currently reviewed
+    # Ekologus service, not only the first page of an arbitrary list.  The
+    # cards are already compacted at the context boundary; truncating here
+    # silently made valid service candidates impossible to ground.
+    return cards
 
 
 def knowledge_card_ids_from_diagnostics(diagnostics: dict[str, object]) -> set[str]:
