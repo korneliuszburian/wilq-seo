@@ -2151,6 +2151,13 @@ Proof: context readiness 4/4, security connector scope 2/2, Ruff, mypy i
 diff-check clean. Downstream omission (czy rekomendacje faktycznie odrzucają
 blocked source) pozostaje kolejnym osobnym seamem.
 
+Checker production-descriptor fixed pointu `b755b123` został zwalidowany;
+zwrócił evidence gap dotyczący kompletności payloadu registry. Falsifier
+rozszerzono o `len == 12` oraz obecność runtime/optional/experimental IDs przed
+projekcją readiness. To utrzymuje test na publicznym API seamie i nie pozwala
+przejść pustej albo niepełnej odpowiedzi. Pozostaje osobny downstream omission
+proof; nie jest on udawany przez ten test.
+
 Checker dla fixed pointu `b056f6ef` został zwalidowany jako evidence-bounded;
 jedyny praktyczny follow-up dotyczył jawnego testu `optional_disabled`. Dodano
 ten falsifier: readiness nie blokuje wyłączonego Google Sheets i zachowuje

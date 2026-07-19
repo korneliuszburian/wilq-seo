@@ -98,7 +98,13 @@ def test_connector_consumer_readiness_uses_production_connector_descriptors() ->
     response = client.get("/api/connectors")
 
     assert response.status_code == 200
-    payload = connector_readiness_for_context(response.json())
+    descriptors = response.json()
+    descriptor_ids = {descriptor["id"] for descriptor in descriptors}
+    assert len(descriptors) == 12
+    assert {"google_sheets", "linkedin", "facebook", "openai_codex"}.issubset(
+        descriptor_ids
+    )
+    payload = connector_readiness_for_context(descriptors)
     rows = {row["connector_id"]: row for row in payload["rows"]}
 
     assert rows["openai_codex"]["status"] == "not_applicable"
