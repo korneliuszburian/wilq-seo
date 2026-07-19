@@ -79,6 +79,9 @@ type InitialDraftMutationInput = NonNullable<
 type ContentPlanningSections = NonNullable<
   ContentWorkflowSnapshot["planningWorkspace"]
 >["proposal"]["sections"];
+type ContentPlanningGenerationStatus = NonNullable<
+  ContentWorkflowSnapshot["planningWorkspace"]
+>["proposal"]["generation_status"];
 export function ContentWorkflowSurface() {
   const navigate = useNavigate();
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
@@ -490,6 +493,7 @@ function ContentWorkflowMarketerJourney({
   return (
     <div data-testid="content-workflow-marketer-journey">
       <ContentSessionPicker
+        planningGenerationStatus={data.planningWorkspace?.proposal.generation_status ?? "baseline"}
         planningDigest={data.planningWorkspace?.proposal.planning_digest ?? null}
         planningSections={data.planningWorkspace?.proposal.sections ?? []}
         queue={queue}
@@ -523,12 +527,14 @@ function ContentWorkflowMarketerJourney({
 }
 
 function ContentSessionPicker({
+  planningGenerationStatus,
   planningDigest,
   planningSections,
   queue,
   selectedWorkItemId,
   onSelectWorkItem
 }: {
+  planningGenerationStatus: ContentPlanningGenerationStatus;
   planningDigest: string | null;
   planningSections: ContentPlanningSections;
   queue: ContentWorkItemQueueResponse;
@@ -552,6 +558,7 @@ function ContentSessionPicker({
       : null) ??
     planningSections[0] ??
     null;
+  const hasGeneratedPlan = planningGenerationStatus === "codex_generated";
   if (!selected) return null;
 
   return (
@@ -623,7 +630,7 @@ function ContentSessionPicker({
       </div>
       {selectedSection ? (
         <label className="mt-3 block text-sm font-semibold text-ink" htmlFor="content-session-section">
-          Poprawiana sekcja
+          {hasGeneratedPlan ? "Sekcja z planu" : "Sekcja z aktualnej strony"}
           <select
             id="content-session-section"
             className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"

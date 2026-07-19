@@ -523,7 +523,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const sectionPicker = await screen.findByRole("combobox", { name: "Poprawiana sekcja" });
+    const sectionPicker = await screen.findByRole("combobox", { name: "Sekcja z aktualnej strony" });
     expect(sectionPicker).toHaveValue("Kogo dotyczy BDO");
 
     fireEvent.change(sectionPicker, { target: { value: "Jak przygotować dokumenty" } });
@@ -534,7 +534,7 @@ describe("ContentWorkflowSurface", () => {
       )
     );
     expect(Reflect.get(appRouter.state.location.search, "planning_digest")).toBe("a".repeat(64));
-    expect(screen.getByRole("combobox", { name: "Poprawiana sekcja" })).toHaveValue(
+    expect(screen.getByRole("combobox", { name: "Sekcja z aktualnej strony" })).toHaveValue(
       "Jak przygotować dokumenty"
     );
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();

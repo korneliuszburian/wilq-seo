@@ -1819,3 +1819,12 @@ po zmianie digestu; outsourcing dodatkowo ma
 `service_selection_confirmed=false`. To nie jest gotowy plan ani zgoda na
 initial draft — dashboard ma pozostać na etapie zakresu i wymagać aktualnego
 review, zamiast przedstawiać baseline jako wygenerowany dokument.
+
+### 2026-07-19 — picker rozróżnia baseline strony od wygenerowanego planu
+
+W `/content-workflow` sekcja z baseline’owego inventory nie jest już opisana
+marketerowi jako „Poprawiana sekcja”. Picker używa teraz API-owned
+`generation_status`: dla `baseline` pokazuje „Sekcja z aktualnej strony”, a dla
+`codex_generated` „Sekcja z planu”. Nie zmienia to wyboru, digestu ani zapisów;
+usuwa tylko sugestię, że plan lub rewrite został już wygenerowany. Focused
+ContentWorkflowSurface: 34/34, dashboard typecheck i diff-check przechodzą.
