@@ -43,6 +43,7 @@ class ContentInventoryCatalogItem(BaseModel):
     content_word_count: int | None = None
     section_count: int | None = None
     acf_section_count: int | None = None
+    section_headings: list[str] = Field(default_factory=list)
     acf_field_names: list[str] = Field(default_factory=list)
     material_status: str = Field(min_length=1)
     acf_section_headings: list[str] = Field(default_factory=list)
@@ -142,11 +143,17 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
         url = str(dimensions.get("content_url") or dimensions.get("canonical_url") or "").strip()
         if not content_is_safe_public_url(url) or url in rows:
             continue
+        section_headings = _json_list(dimensions.get("section_headings_json"))
         headings = _json_list(dimensions.get("acf_section_headings_json"))
         acf_fields = _json_list(dimensions.get("acf_field_names_json"))
         summary = _optional_text(dimensions.get("content_summary"))
         word_count = _optional_int(dimensions.get("content_word_count"))
-        material_status = _material_status(summary, headings, acf_fields, word_count)
+        material_status = _material_status(
+            summary,
+            section_headings or headings,
+            acf_fields,
+            word_count,
+        )
         metric_facts = metric_by_path.get(_path(url), [])
         metric_evidence_ids = sorted({fact.evidence_id for fact in metric_facts})
         metrics_clicks = sum(
@@ -173,8 +180,13 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
             content_type=str(dimensions.get("content_type") or "unknown"),
             content_summary=summary,
             content_word_count=word_count,
-            section_count=_optional_int(dimensions.get("section_heading_count")),
+            section_count=(
+                _optional_int(dimensions.get("section_heading_count"))
+                or len(section_headings)
+                or None
+            ),
             acf_section_count=_optional_int(dimensions.get("acf_section_count")),
+            section_headings=section_headings,
             acf_field_names=acf_fields,
             material_status=material_status,
             acf_section_headings=headings,

@@ -26,6 +26,7 @@ def test_inventory_catalog_deduplicates_urls_and_keeps_acf_headings(monkeypatch)
                 "title_or_h1": "Oferta",
                 "content_type": "page",
                 "section_heading_count": "4",
+                "section_headings_json": '["Wstęp", "Zakres usługi", "FAQ", "CTA"]',
                 "acf_section_count": "2",
                 "acf_section_headings_json": '["Hero", "FAQ"]',
             },
@@ -57,6 +58,7 @@ def test_inventory_catalog_deduplicates_urls_and_keeps_acf_headings(monkeypatch)
     assert result.total_count == 1
     assert result.items[0].work_item_id.startswith("content_work_item_inventory_")
     assert result.items[0].path == "/oferta/"
+    assert result.items[0].section_headings == ["Wstęp", "Zakres usługi", "FAQ", "CTA"]
     assert result.items[0].acf_section_headings == ["Hero", "FAQ"]
     assert result.items[0].material_status == "structure_only"
     assert result.items[0].evidence_id == "ev_wp"

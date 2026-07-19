@@ -91,6 +91,7 @@ class ContentWorkItemQueuePageInventory(BaseModel):
 
     title_or_h1: str | None = None
     section_count: int | None = None
+    section_headings: list[str] = Field(default_factory=list)
     section_inventory_status: Literal["available", "missing"] = "missing"
     content_inventory_status: Literal["available", "missing"] = "missing"
     content_summary: str | None = None
@@ -344,6 +345,7 @@ def _candidate_from_decision(
         page_inventory=ContentWorkItemQueuePageInventory(
             title_or_h1=decision.wordpress_title_or_h1,
             section_count=decision.wordpress_section_count,
+            section_headings=decision.wordpress_section_headings,
             section_inventory_status=decision.wordpress_section_inventory_status,
             content_inventory_status=decision.wordpress_content_inventory_status,
             content_summary=decision.wordpress_content_summary,

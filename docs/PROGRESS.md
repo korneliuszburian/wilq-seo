@@ -2271,3 +2271,12 @@ osobnych, review-bound seamach. Dzięki temu marketer widzi jedną bezpieczną
 decyzję zamiast zawyżonego „2 akcje do sprawdzenia”. Proof: reproducer API
 wrócił z `2` do `1`, zmienione moduły mypy clean, view-model/planning tests
 14/14.
+
+### 2026-07-19 — headings z `the_content` trafiają do mapowania sekcji
+
+Naprawiono utratę zwykłych nagłówków WordPress: katalog czyta teraz
+`section_headings_json` obok ACF, binding używa ich jako źródła sekcji, a
+queue/snapshot wystawia `page_inventory.section_headings`. Runtime proof na
+obu dokładnych case'ach pokazuje 12 nagłówków z publicznego HTML, ACF pozostaje
+jawnie `missing`, a `content_word_count` i evidence pozostają zachowane.
+Focused proof: inventory catalog + queue `9/9`, mypy trzech modułów clean.
