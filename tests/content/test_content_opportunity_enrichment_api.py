@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
 from wilq.content.enrichment.opportunity import build_content_opportunity_enrichment
+from wilq.content.workflow.catalog import inventory_work_item_id
 from wilq.schemas import ContentDecisionItem
 
 
@@ -79,6 +80,22 @@ def test_content_work_item_enrichment_returns_typed_blocker_for_unknown_item() -
     data = response.json()
     assert data["enrichment"] is None
     assert [blocker["code"] for blocker in data["blockers"]] == ["missing_work_item"]
+
+
+def test_content_work_item_enrichment_resolves_inventory_alias() -> None:
+    client = TestClient(app)
+    queue = client.get("/api/content/work-items/queue").json()
+    candidate = next(item for item in queue["candidates"] if item["source_public_url"])
+    inventory_id = inventory_work_item_id(candidate["source_public_url"])
+
+    response = client.get(f"/api/content/work-items/{inventory_id}/enrichment")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["enrichment"] is not None
+    assert data["enrichment"]["work_item_id"] == inventory_id
+    assert data["enrichment"]["decision_id"].startswith("inventory_")
+    assert all(blocker["code"] != "missing_work_item" for blocker in data["blockers"])
 
 
 def test_content_opportunity_enrichment_blocks_without_evidence_or_source_connector() -> None:

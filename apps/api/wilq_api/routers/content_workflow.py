@@ -352,7 +352,10 @@ def content_work_item_enrichment(
     return build_content_opportunity_enrichment_response(
         diagnostics,
         work_item_id,
-        queue=build_content_work_item_queue_response(diagnostics),
+        queue=build_content_work_item_queue_response(
+            diagnostics,
+            selected_work_item_id=work_item_id,
+        ),
     )
 
 

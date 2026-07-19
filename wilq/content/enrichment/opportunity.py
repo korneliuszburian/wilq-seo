@@ -112,6 +112,16 @@ def build_content_opportunity_enrichment_response(
 ) -> ContentOpportunityEnrichmentResponse:
     decision = _decision_for_work_item(diagnostics.decision_queue, work_item_id)
     if decision is None:
+        # Inventory-selected pages use a stable hash ID before they have a
+        # diagnostics decision ID. Resolve that alias through the same
+        # evidence-bound inventory seam used by the workflow snapshot instead
+        # of making the browser lose its selected page at enrichment time.
+        from wilq.content.workflow.inventory_binding import (
+            inventory_decision_for_work_item,
+        )
+
+        decision = inventory_decision_for_work_item(work_item_id)
+    if decision is None:
         return ContentOpportunityEnrichmentResponse(
             blockers=[
                 ContentOpportunityEnrichmentBlocker(
