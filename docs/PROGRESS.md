@@ -1966,3 +1966,15 @@ apps/api/wilq_api/routers/content_workflow.py` jest czyste,
 1/1, a `git diff --check` jest zielony. Szerszy selector activation-packet ma
 3 istniejące fixture failures (`KeyError: preflight`) poza zakresem tej zmiany;
 nie maskujemy ich zmianą testów.
+
+### 2026-07-19 — section mapping ma teraz typowany publiczny seam
+
+Finding F3 ze świeżego checkera został zamieniony w produkcyjny slice bez
+zmiany heurystyki dopasowania. `build_inventory_mapping` przyjmuje teraz
+konkretny `ContentPlanningModelOutput`, a kandydaci i `_mapped_status` używają
+`ContentPlanningModelSection` zamiast `object`; lokalny status został nazwany
+`mapping_status`, więc znika także realny `no-redef`. Proof:
+`uv run mypy wilq/content/planning/section_mapping.py` clean,
+`tests/content/test_planning_section_mapping.py` 7/7, `git diff --check` clean.
+To nie zamyka jeszcze freshness seam, TS/Python contract drift ani całego
+repozytoryjnego mypy.

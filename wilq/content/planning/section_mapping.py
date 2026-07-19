@@ -6,7 +6,10 @@ from difflib import SequenceMatcher
 from typing import Literal
 
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.planning.generated_proposal_contracts import ContentPlanningModelOutput
+from wilq.content.planning.generated_proposal_contracts import (
+    ContentPlanningModelOutput,
+    ContentPlanningModelSection,
+)
 from wilq.content.workflow.planning import ContentPlanningInventoryMapping
 
 SectionMappingStatus = Literal["mapped", "unmapped", "ambiguous", "excluded"]
@@ -75,13 +78,17 @@ def canonicalize_model_inventory_headings(
 
 def build_inventory_mapping(
     planning_input: ContentPlanningInput,
-    output: object,
+    output: ContentPlanningModelOutput,
     section_ids: list[str],
 ) -> list[ContentPlanningInventoryMapping]:
     """Map all current inventory rows to the generated plan without guessing."""
-    output_sections = getattr(output, "sections", [])
-    by_inventory_id: dict[str, list[tuple[int, object]]] = {}
-    by_inventory_heading: dict[str, list[tuple[int, object]]] = {}
+    output_sections = output.sections
+    by_inventory_id: dict[
+        str, list[tuple[int, ContentPlanningModelSection]]
+    ] = {}
+    by_inventory_heading: dict[
+        str, list[tuple[int, ContentPlanningModelSection]]
+    ] = {}
     for index, section in enumerate(output_sections):
         if section.inventory_section_id:
             by_inventory_id.setdefault(section.inventory_section_id, []).append((index, section))
@@ -134,35 +141,35 @@ def build_inventory_mapping(
             if score >= 0.72
         ]
         candidates.sort(reverse=True, key=lambda item: item[0])
-        status: SectionMappingStatus = "unmapped"
-        chosen: tuple[float, int, object] | None = None
+        mapping_status: SectionMappingStatus = "unmapped"
+        chosen: tuple[float, int, ContentPlanningModelSection] | None = None
         if candidates:
             chosen = candidates[0]
             if len(candidates) > 1 and candidates[0][0] - candidates[1][0] < 0.05:
-                status = "ambiguous"
+                mapping_status = "ambiguous"
                 chosen = None
             else:
-                status = "mapped"
+                mapping_status = "mapped"
                 used_plan_indices.add(chosen[1])
                 if chosen[2].inventory_disposition == "remove_review_required":
-                    status = "excluded"
+                    mapping_status = "excluded"
         reason = _excluded_reason(inventory_section.heading)
-        if chosen is not None and status == "excluded" and not reason:
+        if chosen is not None and mapping_status == "excluded" and not reason:
             reason = "model_remove_review_required"
         if chosen is None and reason:
-            status = "excluded"
+            mapping_status = "excluded"
         mappings.append(
             ContentPlanningInventoryMapping(
                 inventory_section_id=inventory_section.section_id,
                 inventory_heading=inventory_section.heading,
-                status=status,
+                status=mapping_status,
                 mapped_section_id=section_ids[chosen[1]] if chosen else None,
                 mapped_section_heading=chosen[2].heading if chosen else None,
                 disposition=(
                     chosen[2].inventory_disposition
                     if chosen
                     else "remove_review_required"
-                    if status == "excluded"
+                    if mapping_status == "excluded"
                     else None
                 ),
                 reason=reason,
@@ -172,8 +179,11 @@ def build_inventory_mapping(
     return mappings
 
 
-def _mapped_status(section: object, inventory_heading: str) -> tuple[SectionMappingStatus, str]:
-    if getattr(section, "inventory_disposition", None) == "remove_review_required":
+def _mapped_status(
+    section: ContentPlanningModelSection,
+    inventory_heading: str,
+) -> tuple[SectionMappingStatus, str]:
+    if section.inventory_disposition == "remove_review_required":
         return "excluded", _excluded_reason(inventory_heading) or "model_remove_review_required"
     return "mapped", ""
 
