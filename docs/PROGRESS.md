@@ -2226,3 +2226,11 @@ kontrakty literalne: confidence materiału WordPress oraz akceptowane tiers
 dopasowania landingu. To zmiana type-only, bez luzowania match policy ani
 review gating. Proof: modułowy mypy clean oraz
 `uv run pytest -q tests/content/test_dynamic_planning_input_sources.py` (10/10).
+
+### 2026-07-19 — kontrakt blockerów semantic review
+
+Helpery blockerów w `semantic_review_service.py` przyjmują teraz
+`Sequence[str]` i materializują wartości do listy kontraktu Pydantic. Usuwa to
+invariance debt bez zmiany kodów blockerów ani ścieżki fail-closed. Proof:
+modułowy mypy clean oraz `tests/content/test_semantic_review_polling_read_path.py`
+(3/3).

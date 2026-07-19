@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Literal, Sequence, cast
 from uuid import uuid4
 
 from wilq.codex.app_server import (
@@ -613,7 +613,9 @@ def _missing_revision_blocker() -> ContentSemanticReviewBlocker:
     )
 
 
-def _planning_blocker(source_codes: list[str] | None = None) -> ContentSemanticReviewBlocker:
+def _planning_blocker(
+    source_codes: Sequence[str] | None = None,
+) -> ContentSemanticReviewBlocker:
     return _blocker(
         "missing_planning_input",
         "Brakuje aktualnego wejścia strategicznego",
@@ -624,7 +626,7 @@ def _planning_blocker(source_codes: list[str] | None = None) -> ContentSemanticR
 
 
 def _source_material_review_blocker(
-    source_codes: list[str],
+    source_codes: Sequence[str],
 ) -> ContentSemanticReviewBlocker:
     return _blocker(
         "source_material_review_required",
@@ -654,14 +656,14 @@ def _blocker(
     reason: str,
     next_step: str,
     *,
-    source_codes: list[str] | None = None,
+    source_codes: Sequence[str] | None = None,
 ) -> ContentSemanticReviewBlocker:
     return ContentSemanticReviewBlocker(
         code=cast(ContentSemanticBlockerCode, code),
         label=label,
         reason=reason,
         next_step=next_step,
-        source_codes=source_codes or [],
+        source_codes=list(source_codes or []),
     )
 
 
