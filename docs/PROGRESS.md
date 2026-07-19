@@ -1277,3 +1277,22 @@ upstream response stream as disconnected and reports temporary high demand;
 this is not a WILQ prompt or digest failure. Planning remains blocked until a
 successful or otherwise diagnosable provider response is available; no
 fallback model, vendor write or approval was introduced.
+
+### 2026-07-19 — current API context and diagnostic blocker contract
+
+Live WILQ context is reachable: 12 connectors, 9 configured and 2 missing
+credentials; the content queue contains 54 evidenced candidates, 53
+actionable. GA4, Ads and Ahrefs diagnostics report fresh configured reads. The
+approved knowledge corpus remains `import_pending` (7/15 materials), so
+generation is correctly blocked until the remaining controlled import/owner
+review. BDO's snapshot dynamically resolves 12 `the_content` headings, 842
+words and no ACF/flexible-content sections; the source note explicitly says
+not to invent an editor layout.
+
+Commit `de9cbf32` adds a secret-safe typed category for structured
+`responseStreamDisconnected` errors and a focused falsifier. The live provider
+still returns generic `codex_turn_failed` after its reconnect loop, so no
+successful plan is claimed. Independent checker pass
+`~/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-codex-error-classification-rDkEz8`
+is schema-valid; its line-1 findings were rejected as source-omission
+artifacts and its evidence gaps are retained in the disposition.
