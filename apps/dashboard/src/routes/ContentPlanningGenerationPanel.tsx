@@ -19,6 +19,7 @@ export function ContentPlanningGenerationPanel({
   const status = useQuery({
     queryKey,
     queryFn: () => getContentWorkItemPlanningProposal(workItemId),
+    staleTime: 5_000,
     refetchInterval: (query) =>
       query.state.data?.status === "generating" ? 1500 : false
   });

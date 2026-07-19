@@ -26,6 +26,8 @@ import {
 } from "../lib/api";
 import { loadContentWorkflowSnapshot, type ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
 
+const READ_ONLY_WORKFLOW_STALE_TIME_MS = 30_000;
+
 export type ContentWorkItemQueueQuery = UseQueryResult<ContentWorkItemQueueResponse, Error>;
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
 export type ContentServiceProfileQuery = UseQueryResult<ContentServiceProfileResponse, Error>;
@@ -61,6 +63,7 @@ export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
     queryKey: ["content-workflow", "queue", "selected", selectedWorkItemId],
     queryFn: () => getContentWorkItemQueue(selectedWorkItemId ?? undefined),
     enabled: Boolean(selectedWorkItemId),
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     // The selected response is intentionally lightweight. It opens the page
     // quickly while the catalog query fills the picker with every available
     // page instead of replacing the catalog with one selected candidate.
@@ -85,23 +88,28 @@ export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
   } as ContentWorkItemQueueQuery;
   const inventory = useQuery({
     queryKey: ["content-workflow", "inventory-catalog"],
-    queryFn: getContentInventoryCatalog
+    queryFn: getContentInventoryCatalog,
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
   });
   const serviceProfile = useQuery({
     queryKey: ["content-workflow", "service-profile"],
-    queryFn: getContentServiceProfile
+    queryFn: getContentServiceProfile,
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
   });
   const knowledgeReadiness = useQuery({
     queryKey: ["content-workflow", "knowledge-source-material-readiness"],
-    queryFn: getKnowledgeSourceMaterialReadiness
+    queryFn: getKnowledgeSourceMaterialReadiness,
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
   });
   const knowledgeMaterials = useQuery({
     queryKey: ["content-workflow", "knowledge-source-materials"],
-    queryFn: getKnowledgeSourceMaterials
+    queryFn: getKnowledgeSourceMaterials,
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
   });
   const operatorContext = useQuery({
     queryKey: ["content-workflow", "operator-context"],
-    queryFn: getContentOperatorContext
+    queryFn: getContentOperatorContext,
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
   });
   const requestedCandidate = mergedQueue.data?.candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
@@ -113,26 +121,31 @@ export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
   const workflow = useQuery({
     queryKey: ["content-workflow", "work-item", activeWorkItemId],
     queryFn: () => loadContentWorkflowSnapshot(activeWorkItemId ?? undefined),
+    staleTime: 10_000,
     enabled: Boolean(activeWorkItemId && !selectedCandidateBlocked)
   });
   const enrichment = useQuery({
     queryKey: ["content-workflow", "work-item", activeWorkItemId, "enrichment"],
     queryFn: () => getContentWorkItemEnrichment(activeWorkItemId ?? ""),
+    staleTime: 10_000,
     enabled: Boolean(activeWorkItemId && !selectedCandidateBlocked && workflow.data)
   });
   const authoringProfile = useQuery({
     queryKey: ["content-workflow", "wordpress-authoring-profile"],
     queryFn: getWordPressAuthoringProfile,
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     enabled: Boolean(workflow.data)
   });
   const draftWriteReadiness = useQuery({
     queryKey: ["content-workflow", "wordpress-draft-write-readiness"],
     queryFn: getContentWordPressDraftWriteReadiness,
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     enabled: Boolean(workflow.data)
   });
   const draftActivationPacket = useQuery({
     queryKey: ["content-workflow", "wordpress-draft-activation-packet", activeWorkItemId],
     queryFn: () => getContentWordPressDraftActivationPacket(activeWorkItemId),
+    staleTime: 10_000,
     enabled: Boolean(activeWorkItemId && !selectedCandidateBlocked && workflow.data)
   });
 

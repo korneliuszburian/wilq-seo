@@ -3033,3 +3033,17 @@ inventory catalog — 3/3; Ruff PASS. Na realnym selected work item czas
 `inventory_decision_for_work_item` spadł z 6,753 s do 2,262 s, a HTTP snapshot
 z timeoutu >10 s do 4,119 s; odpowiedź nadal zawiera usługę
 `ekologus_service_operat_wodnoprawny` i pełne candidate lineage.
+
+### 2026-07-20 — dashboard nie odświeża bez potrzeby read-only kontraktów
+
+Read-only query hooks `/content-workflow` dostały jawne okna freshness: katalog
+i profile 30 sekund, snapshot/enrichment 10 sekund, a status planu 5 sekund
+z zachowaniem szybszego pollingu tylko podczas `generating`. Mutacje nadal
+unieważniają właściwe query keys, więc nie opóźnia to decyzji po zapisaniu scope,
+rewizji ani draftu. Zmiana redukuje powtarzane odczyty przy refocusie i remoncie
+komponentów, bez zmiany API, metryk ani blockerów.
+
+Focused proof: `ContentPlanningGenerationPanel.test.tsx` 5/5 oraz dashboard
+typecheck PASS; pełny pakiet ujawnił wcześniejszy, niezależny fail architektury
+(`ContentWorkflowArchitecture`: zakaz `<details>` niezgodny z obecnym
+knowledge-readiness disclosure), którego nie przypisuję tej zmianie.
