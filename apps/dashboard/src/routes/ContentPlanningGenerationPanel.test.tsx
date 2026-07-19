@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   getContentWorkItemPlanningProposal,
-  getKnowledgeSourceMaterialReadiness
+  getKnowledgeSourceMaterialReadiness,
+  postContentWorkItemPlanningProposal
 } from "../lib/api";
 import {
   ContentPlanningGenerationPanel,
@@ -21,7 +22,8 @@ vi.mock("../lib/api", async (importOriginal) => ({
     safe_next_step: "Wybierz usługę.",
     publish_ready: false
   }),
-  getKnowledgeSourceMaterialReadiness: vi.fn()
+  getKnowledgeSourceMaterialReadiness: vi.fn(),
+  postContentWorkItemPlanningProposal: vi.fn()
 }));
 
 describe("ContentPlanningGenerationPanel", () => {
@@ -107,5 +109,67 @@ describe("ContentPlanningGenerationPanel", () => {
       await screen.findByTestId("content-planning-service-confirmation-gate")
     ).toHaveTextContent("Najpierw potwierdź usługę");
     expect(screen.queryByRole("button", { name: "Wygeneruj plan" })).not.toBeInTheDocument();
+  });
+
+  it("keeps retry available after a failed run with no persisted proposal", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValueOnce({
+      status: "failed",
+      work_item_id: "work_item",
+      service_card_id: "service_card",
+      planning_input_digest: "a".repeat(64),
+      proposal: null,
+      input_summary: {
+        final_canonical_url: "https://ekologus.pl/bdo/",
+        service_label: "BDO",
+        inventory_status: "available",
+        content_inventory_status: "available",
+        source_assessments: [],
+        source_fact_count: 0,
+        source_fact_ids: [],
+        source_material_ids: [],
+        evidence_id_count: 0,
+        knowledge_card_count: 0,
+        measurement_metrics: []
+      },
+      blockers: [{
+        code: "runtime_failed",
+        label: "Codex nie zwrócił bezpiecznego planu",
+        reason: "App-server nie zakończył turnu poprawnym ustrukturyzowanym wynikiem.",
+        next_step: "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał."
+      }],
+      safe_next_step: "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
+      publish_ready: false
+    } as never);
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValueOnce({
+      status: "ready",
+      total_count: 15,
+      imported_count: 15,
+      import_pending_count: 0,
+      excerpt_review_required_count: 0,
+      ready_for_generation: true,
+      blocker: null,
+      next_step: "Można planować."
+    });
+    vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValueOnce({
+      status: "generating",
+      work_item_id: "work_item",
+      service_card_id: "service_card",
+      planning_input_digest: "a".repeat(64),
+      blockers: [],
+      safe_next_step: "Poczekaj na plan.",
+      publish_ready: false
+    } as never);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(
+      <QueryClientProvider client={client}>
+        <ContentPlanningGenerationPanel serviceCardId="service_card" workItemId="work_item" />
+      </QueryClientProvider>
+    );
+
+    const retry = await screen.findByRole("button", { name: "Wygeneruj plan" });
+    expect(retry).toBeInTheDocument();
+    await retry.click();
+    expect(postContentWorkItemPlanningProposal).toHaveBeenCalledTimes(1);
   });
 });

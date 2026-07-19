@@ -91,7 +91,9 @@ export function ContentPlanningGenerationPanel({
         (source) => source.status === "stale" || source.status === "blocked"
       )
   );
-  const serviceSelectionConfirmed = state.proposal?.service_selection_confirmed === true;
+  const serviceSelectionConfirmed =
+    state.proposal?.service_selection_confirmed === true ||
+    (state.status === "failed" && state.service_card_id === serviceCardId);
   const canGenerate = Boolean(
     serviceCardId &&
       serviceSelectionConfirmed &&

@@ -1385,3 +1385,9 @@ minimalny schema-only turn) ponownie zakończył się `codex_turn_failed` po
 utworzeniu thread/turn; nie było external tool call ani outputu. Nie zapisano
 planu, rewizji ani vendor action. To aktualizuje blocker runtime, ale nie
 unieważnia ukończonych kontraktów API/UI.
+
+Naprawiono retry failed planning run: gdy API zachowuje exact
+`service_card_id` i `planning_input_digest`, ale nie ma `proposal` po błędzie
+Codexa, panel pokazuje ponownie „Wygeneruj plan”. Nie zmienia to bramki
+pierwszego uruchomienia — nadal wymaga human-confirmed service selection.
+Focused proof: `ContentPlanningGenerationPanel` 4 testy i dashboard typecheck.
