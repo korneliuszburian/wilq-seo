@@ -176,7 +176,10 @@ def build_planning_inventory(
         content_summary=item.wordpress_content_summary,
         content_text=item.wordpress_content_text,
         extraction_region=item.wordpress_content_extraction_region,
-        material_confidence=(item.wordpress_content_material_confidence or "unknown"),
+        material_confidence=cast(
+            Literal["source_bound", "review_required", "unknown"],
+            item.wordpress_content_material_confidence or "unknown",
+        ),
         source_field_lineage=item.wordpress_content_source_field_lineage,
         word_count=item.wordpress_content_word_count,
         sections=[
@@ -327,7 +330,7 @@ def _ga4_page_signal(
         )
         if match.matched and match.tier in {"exact", "tracking_only", "host_alias"}:
             evidence_ids.append(fact.evidence_id)
-            tiers.append(match.tier)
+            tiers.append(cast(ContentAcceptedLandingMatchTier, match.tier))
     return list(dict.fromkeys(evidence_ids)), list(dict.fromkeys(tiers))
 
 

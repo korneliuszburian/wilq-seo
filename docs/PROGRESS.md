@@ -2218,3 +2218,11 @@ status wyniku i lista lifecycle są teraz jawnie zawężone do kontraktu publicz
 bez zmiany zachowania dopasowania landingu ani polityki review. Proof:
 `uv run mypy wilq/briefing/ads_landing_service_binding.py --no-incremental` oraz
 `uv run pytest -q tests/test_ads_landing_service_binding.py` (2/2).
+
+### 2026-07-19 — typowane źródła wejścia planowania
+
+W `wilq/content/planning/input_sources.py` doprecyzowano dwa istniejące
+kontrakty literalne: confidence materiału WordPress oraz akceptowane tiers
+dopasowania landingu. To zmiana type-only, bez luzowania match policy ani
+review gating. Proof: modułowy mypy clean oraz
+`uv run pytest -q tests/content/test_dynamic_planning_input_sources.py` (10/10).
