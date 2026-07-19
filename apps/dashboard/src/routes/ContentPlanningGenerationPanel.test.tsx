@@ -44,7 +44,8 @@ describe("ContentPlanningGenerationPanel", () => {
     expect(
       await screen.findByTestId("content-material-readiness-warning")
     ).toHaveTextContent("7/15");
-    expect(screen.getByText(/plan korzysta wyłącznie z widocznych źródeł/)).toBeInTheDocument();
+    expect(screen.getByText(/Zaimportowano 7 z 15 zatwierdzonych materiałów/)).toBeInTheDocument();
+    expect(screen.getByText(/Kontrolowany import po owner review/)).toBeInTheDocument();
   });
 
   it("does not generate from a recommendation before the marketer confirms the service", async () => {

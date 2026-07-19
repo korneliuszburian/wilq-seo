@@ -147,8 +147,7 @@ export function ContentPlanningGenerationPanel({
           data-testid="content-material-readiness-warning"
         >
           Materiały firmy: {materialReadiness.data.imported_count}/
-          {materialReadiness.data.total_count} dostępnych. Pozostałe materiały czekają na
-          kontrolowany import po review, więc plan korzysta wyłącznie z widocznych źródeł.
+          {materialReadiness.data.total_count} dostępnych. {materialReadiness.data.blocker} {materialReadiness.data.next_step}
         </p>
       ) : null}
 
