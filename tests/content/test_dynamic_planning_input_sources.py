@@ -238,6 +238,8 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
     statuses = {assessment.source: assessment.status for assessment in assessments}
     assert statuses["wordpress"] == "used"
     assert statuses["google_ads"] == "missing"
+    assert statuses["merchant"] == "not_applicable"
+    assert statuses["localo"] == "not_applicable"
     result = _build_result(
         item, resolution, brief, service_profile, baseline, _freshness([])
     )
