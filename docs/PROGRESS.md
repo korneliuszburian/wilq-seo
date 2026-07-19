@@ -3086,3 +3086,21 @@ status porównania i liczba evidence. Brak porównania pozostaje jawny jako
 Focused proof: shared-schema round-trip z 12 → 19 kliknięć, panel 6/6,
 dashboard typecheck i `git diff --check` PASS. Starsze odpowiedzi bez pola są
 czytelne dzięki opcjonalności pola.
+
+### 2026-07-20 — świeży BDO plan po read-only refreshu
+
+Ten sam endpoint planning-proposals wygenerował nowy BDO fixed point po
+odświeżeniu GSC/GA4: proposal `content_planning_proposal_a81059f558b5473197839c8d10639d5a`,
+7 sekcji, 4 FAQ, 2 CTA, 1 link, 7 source-material IDs i 4 evidence IDs.
+WordPress, Service Profile, GSC i GA4 są użyte; Ads, Ahrefs i Keyword Planner
+pozostają `missing`, a Merchant/Localo/Social są `not_applicable`. GSC i GA4
+mają match `exact`, ale porównania okresów pozostają `not_available`, bo
+pojedynczy snapshot nie jest trendem. `publish_ready=false`.
+
+Initial draft nadal zwraca `stale_planning_input`, ponieważ istniejąca decyzja
+scope jest związana ze starszym digestem. To poprawny blocker — nie wykonano
+auto-approval ani vendor write.
+
+Bounded second-opinion dla tego fixed pointu zwrócił jeden HIGH dotyczący
+braku artefaktu w izolowanej sesji review oraz trzy evidence gaps. Nie jest to
+finding produktu ani PASS; lokalny zapis znajduje się w katalogu review.
