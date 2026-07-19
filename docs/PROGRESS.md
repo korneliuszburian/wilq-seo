@@ -43,6 +43,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   wydłużony do 300 s. Env override, freshness connectorów i invalidacja po
   refresh/write pozostają bez zmian. Focused kontrakt cache + Ruff przechodzą;
   to nie jest dowód produkcyjnej wydajności.
+- 2026-07-19: po `scripts/local_stack.sh restart` i 5 s startupu pierwszy
+  content-operator context-pack trwał 1,873 s, a kolejny 0,081 s; oba zachowały
+  24 evidence summaries, 19 brief evidence IDs i strict instruction o metrykach
+  z WILQ API. API i dashboard pozostały `ready`. To lokalny runtime proof,
+  nie produkcyjny SLA ani UAT.
 
 - 2026-07-19: zmierzony cold-start briefu po wygaśnięciu 30-sekundowego cache
   wynosił 4,056 s, a kolejki 2,820 s. Domyślny TTL read-only agregatów daily
