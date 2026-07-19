@@ -683,7 +683,6 @@ def _product_evidence_blockers(
             item.topic,
             item.source_public_url,
             seed.cta_direction,
-            *(fact.summary for fact in seed.source_facts),
         ]
     )
     if not _looks_like_product_cta_or_topic(text):

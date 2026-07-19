@@ -556,6 +556,32 @@ def test_product_guard_does_not_misclassify_legal_productowa_language() -> None:
     assert _looks_like_product_cta_or_topic("Kup sorbent w sklepie Ekologus")
 
 
+def test_product_guard_ignores_product_words_in_metric_fact_summaries() -> None:
+    result = _brief_result(
+        item=_item(topic="Gospodarka opakowaniami"),
+        seed=_seed(
+            cta_direction="Zaproponuj konsultację obowiązków bez gwarancji wyniku.",
+            source_facts=[
+                ContentSalesBriefSourceFact(
+                    evidence_id="ev_gsc_packaging",
+                    source_connector="google_search_console",
+                    summary="Zapytania: produkty opakowaniowe; odpady opakowaniowe.",
+                )
+            ],
+        ),
+        enrichment=_enrichment(
+            title="Gospodarka opakowaniami",
+            topic="Gospodarka opakowaniami",
+            cta_hypothesis="Zaproponuj konsultację obowiązków bez gwarancji wyniku.",
+            source_facts=[],
+            source_connectors=["google_search_console"],
+            evidence_ids=["ev_gsc_packaging"],
+        ),
+    )
+
+    assert "missing_product_evidence" not in [blocker.code for blocker in result.blockers]
+
+
 def test_sales_brief_allows_product_cta_with_merchant_evidence() -> None:
     result = _brief_result(
         item=_item(
