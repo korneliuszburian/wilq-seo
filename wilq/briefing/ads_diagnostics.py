@@ -75,6 +75,9 @@ from wilq.briefing.ads_label_hydration import (
     hydrate_summary_labels,
     hydrate_surface_labels,
 )
+from wilq.briefing.ads_landing_service_binding import (
+    resolve_ads_landing_service_binding,
+)
 from wilq.briefing.ads_metric_tiles import (
     budget_context_metric_tiles,
     business_context_metric_tiles,
@@ -3082,6 +3085,9 @@ def _search_term_metric_row(
         search_term_status=first_dimensions.get("search_term_status"),
         landing_mapping_status=first_dimensions.get("landing_mapping_status"),
         landing_identity_sha256=first_dimensions.get("landing_identity_sha256"),
+        landing_service_binding=resolve_ads_landing_service_binding(
+            first_dimensions.get("landing_identity_sha256")
+        ),
         clicks=_int_metric_value(facts_by_name.get("search_term_clicks")),
         impressions=_int_metric_value(facts_by_name.get("search_term_impressions")),
         cost_micros=_int_metric_value(facts_by_name.get("search_term_cost_micros")),

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_serializer, model_validator
 
 from wilq.operator_labels import (
     action_count_label,
@@ -1059,6 +1059,18 @@ def _ads_ad_group_display_label(
     return "brak grupy reklam w odczycie"
 
 
+class AdsLandingServiceBinding(BaseModel):
+    """Hash-only page-to-service join for review-only Ads context."""
+
+    status: Literal["unbound", "ambiguous", "review_required", "approved_current"]
+    inventory_work_item_id: str | None = None
+    service_candidate_ids: list[str] = Field(default_factory=list)
+    service_candidate_labels: list[str] = Field(default_factory=list)
+    service_lifecycle_statuses: list[str] = Field(default_factory=list)
+    reason: str
+    next_step: str
+
+
 class AdsSearchTermMetricRow(BaseModel):
     search_term: str
     campaign_id: str | None = None
@@ -1070,6 +1082,7 @@ class AdsSearchTermMetricRow(BaseModel):
     search_term_status: str | None = None
     landing_mapping_status: str | None = None
     landing_identity_sha256: str | None = None
+    landing_service_binding: AdsLandingServiceBinding | None = None
     clicks: int | None = None
     impressions: int | None = None
     cost_micros: int | None = None
@@ -1080,6 +1093,12 @@ class AdsSearchTermMetricRow(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+
+    @model_serializer(mode="wrap")
+    def _serialize_without_unset_context(self, handler: Any) -> dict[str, Any]:
+        """Keep optional landing context absent until an exact hash is available."""
+
+        return {key: value for key, value in handler(self).items() if value is not None}
 
     @model_validator(mode="after")
     def hydrate_display_labels(self) -> AdsSearchTermMetricRow:

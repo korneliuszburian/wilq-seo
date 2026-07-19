@@ -2,6 +2,16 @@ import { z } from "zod";
 
 import { MetricFactSchema } from "./connectors";
 
+export const AdsLandingServiceBindingSchema = z.object({
+  status: z.enum(["unbound", "ambiguous", "review_required", "approved_current"]),
+  inventory_work_item_id: z.string().nullable().optional(),
+  service_candidate_ids: z.array(z.string()),
+  service_candidate_labels: z.array(z.string()),
+  service_lifecycle_statuses: z.array(z.string()),
+  reason: z.string(),
+  next_step: z.string()
+});
+
 export const AdsSearchTermMetricRowSchema = z.object({
   search_term: z.string(),
   campaign_id: z.string().nullable().optional(),
@@ -13,6 +23,7 @@ export const AdsSearchTermMetricRowSchema = z.object({
   search_term_status: z.string().nullable().optional(),
   landing_mapping_status: z.string().nullable().optional(),
   landing_identity_sha256: z.string().nullable().optional(),
+  landing_service_binding: AdsLandingServiceBindingSchema.nullable().optional(),
   clicks: z.number().nullable().optional(),
   impressions: z.number().nullable().optional(),
   cost_micros: z.number().nullable().optional(),
