@@ -2060,3 +2060,31 @@ clean, dynamic planning runtime/stale tests 5/5.
 Po normalizacji runtime trace pełny odczyt `uv run mypy wilq apps/api
 --no-incremental` wynosi 46 błędów w 9 plikach. To aktualny licznik długu na
 fixed poincie `9d6fc711`; nie jest to jeszcze pełna bramka.
+
+### 2026-07-19 — checker 46-error fixed point: baseline i reprodukowalność są jawne
+
+Świeży checker dla `d7f537b0` został zwalidowany jako
+`valid evidence-bounded review`; disposition jest poza repo w katalogu
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-19-content-ops-46-mypy-fixed-point-qAfBDN/`.
+Retained findings dotyczą obserwowalności bramki, dirty fixed pointu i baseline
+per-file; human-only pozostają UAT, copy/knowledge approval i decyzja o
+baseline-tolerant verify mode.
+
+Aktualny per-file mypy baseline (46/9):
+
+- `wilq/connectors/google_ads/ad_landing_pages.py`: 14
+- `wilq/content/workflow/catalog.py`: 14
+- `wilq/content/measurement/aggregates.py`: 7
+- `wilq/connectors/wordpress/inventory.py`: 3
+- `wilq/briefing/ads_landing_service_binding.py`: 2
+- `wilq/content/planning/input_sources.py`: 2
+- `wilq/content/quality/semantic_review_service.py`: 2
+- `wilq/content/workflow/exact_demand_decision.py`: 1
+- `wilq/content/workflow/planning.py`: 1
+
+Stan `dirty` jest intencjonalny: nieśledzone paczki marketera, nagrania,
+research oraz task-owned test/code artifacts pozostają własnością użytkownika i
+nie są stage'owane. `state_sha256` second-opinion obejmuje porcelain status,
+staged/unstaged binary diffs oraz mode i pełny hash każdej ścieżki cached albo
+untracked; to pozwala odtworzyć, dlaczego commit sam nie opisuje całego fixed
+pointu.
