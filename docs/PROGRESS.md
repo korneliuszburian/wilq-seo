@@ -32,6 +32,18 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   second-opinion ma ważny schema output, ale jego trzy findingi sklasyfikowano
   jako evidence gap/follow-up. To naprawia przepływ wyboru strony, nie odblokowuje
   automatycznie usługi ani generowania tekstu.
+- 2026-07-19: realny re-run planowania dla aliasu inventory
+  `content_work_item_inventory_0454c020b0ddbad0062b3d08` przeszedł do `ready`
+  po dynamicznej normalizacji mapy. Planner użył digestu
+  `f06c4b2aff00adc8f9e5c8d5af6812a0268a09fc66ef03c24e001d008de82577`;
+  wszystkie 12 wierszy inventory ma jawny wynik, a ogon po sekcji „Może Cię
+  również zainteresować” jest deterministycznie traktowany jako
+  `navigation_or_promotional_inventory`, nawet gdy model próbuje go ponownie
+  przypisać. Zmiana polityki mapowania unieważnia poprzedni proposal (`stale`),
+  a świadomy re-run utworzył
+  `content_planning_proposal_b271ade8deff47f6980fb9cbb11b0c62`. Live API zwraca
+  `ready`, `blockers=[]`, `publish_ready=false`; nadal nie jest to zgoda
+  człowieka ani draft WordPress.
 - 2026-07-19: dynamiczny odczyt WordPress rozróżnia teraz strukturę ACF od
   `the_content` także wtedy, gdy materiał przychodzi przez REST. Parser zapisuje
   H2/H3 z REST-owego HTML, a binding preferuje sekcje ACF i dopiero potem
