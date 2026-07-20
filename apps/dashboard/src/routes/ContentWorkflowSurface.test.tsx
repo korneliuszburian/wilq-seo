@@ -793,10 +793,13 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("bdo odpady")).toBeInTheDocument();
     expect(screen.getByText(/120 wyśw. · 12 klik. · CTR 10.0%/)).toBeInTheDocument();
     expect(screen.getByText(/brak ścisłego mapowania do strony i usługi/)).toBeInTheDocument();
+    const saveScopeButton = screen.getByRole("button", { name: "Zapisz decyzję i przejdź dalej" });
+    expect(saveScopeButton).toBeDisabled();
     fireEvent.click(
       screen.getByLabelText("Sprawdziłem stronę, usługę, intencję, odbiorcę i CTA.")
     );
-    fireEvent.click(screen.getByRole("button", { name: "Zapisz decyzję i przejdź dalej" }));
+    expect(saveScopeButton).not.toBeDisabled();
+    fireEvent.click(saveScopeButton);
 
     await waitFor(() => expect(saveContentWorkItemPlanningReview).toHaveBeenCalledTimes(1));
     expect(saveContentWorkItemPlanningReview).toHaveBeenCalledWith(
