@@ -39,6 +39,7 @@ AhrefsGapType = Literal[
     "organic_keyword_gap",
     "top_page_gap",
 ]
+AhrefsBudgetStageStatus = Literal["completed", "failed", "skipped", "not_run"]
 
 AHREFS_CONNECTOR_ID = "ahrefs"
 AHREFS_CONTENT_REFRESH_ACTION_ID = "act_prepare_content_refresh_queue"
@@ -432,7 +433,7 @@ def _ahrefs_budget_stage(
 ) -> AhrefsRequestBudgetStage:
     raw_status = summary.get(status_key) if status_key else None
     if status_key is None:
-        status = "completed" if summary.get("domain_rating") else (
+        status: AhrefsBudgetStageStatus = "completed" if summary.get("domain_rating") else (
             "failed" if latest_errors else "not_run"
         )
     elif isinstance(raw_status, str) and raw_status == "completed":
@@ -446,7 +447,7 @@ def _ahrefs_budget_stage(
     return AhrefsRequestBudgetStage(
         id=cast(Any, stage_id),
         label=label,
-        status=cast(Literal["completed", "failed", "skipped", "not_run"], status),
+        status=status,
         status_label=_ahrefs_budget_stage_status_label(status),
         requested_calls=max(0, requested_calls),
         rows=max(0, rows),
@@ -457,13 +458,13 @@ def _ahrefs_budget_stage(
     )
 
 
-def _ahrefs_budget_stage_status_label(status: str) -> str:
+def _ahrefs_budget_stage_status_label(status: AhrefsBudgetStageStatus) -> str:
     return {
         "completed": "zakończony",
         "failed": "błąd odczytu",
         "skipped": "pominięty",
         "not_run": "nieuruchomiony",
-    }.get(status, "status do sprawdzenia")
+    }[status]
 
 
 def _operator_summary(
