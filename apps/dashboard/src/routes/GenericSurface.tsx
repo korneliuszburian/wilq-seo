@@ -602,16 +602,21 @@ function KnowledgeSurfaceSections({
   const cards = knowledgeCards.data ?? [];
   const bindings = map?.bindings ?? [];
   const nearestCard = cards[0];
+  const sourceMaterials = knowledgeSourceMaterials.data ?? [];
+  const pendingSourceMaterials = sourceMaterials.filter(
+    (material) => material.import_status !== "imported"
+  );
   const nearestTitle =
-    nearestCard?.display_title || nearestCard?.title || bindings[0]?.title || "Karta wiedzy do review";
+    pendingSourceMaterials[0]?.title ||
+    nearestCard?.display_title ||
+    nearestCard?.title ||
+    bindings[0]?.title ||
+    "Materiał źródłowy do review";
   const blockedClaimCount = bindings.reduce(
     (sum, binding) => sum + binding.blocked_claim_labels.length,
     0
   );
-  const reviewCount = Math.max(
-    cards.length + bindings.filter((binding) => binding.has_blocked_claims || binding.has_missing_contracts).length,
-    0
-  );
+  const reviewCount = pendingSourceMaterials.length;
   const allowedClaimCount = Math.max(0, bindings.length * 3 - blockedClaimCount);
   const reviewClaimCount = Math.max(reviewCount, bindings.length);
   const totalClaims = Math.max(allowedClaimCount + reviewClaimCount + blockedClaimCount, 1);
@@ -732,7 +737,7 @@ function KnowledgeSurfaceSections({
       <section className="grid gap-4 xl:grid-cols-[1fr_280px]">
         <article id="knowledge-review-queue" className="rounded-md border border-line bg-white">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
-            <h2 className="text-base font-semibold text-ink">Kolejka sprawdzania wiedzy</h2>
+            <h2 className="text-base font-semibold text-ink">Kolejka review materiałów źródłowych</h2>
             <button
               type="button"
               className="text-sm font-semibold text-action"
@@ -746,14 +751,14 @@ function KnowledgeSurfaceSections({
               <thead className="bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Typ</th>
-                  <th className="px-4 py-3 font-semibold">Karta</th>
+                  <th className="px-4 py-3 font-semibold">Materiał</th>
                   <th className="px-4 py-3 font-semibold">Źródło</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold">Następny krok</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {knowledgeReviewRows(cards, bindings).map((row) => (
+                {knowledgeReviewRows(sourceMaterials).map((row) => (
                   <tr key={row.id}>
                     <td className="px-4 py-3 font-medium text-action">{row.type}</td>
                     <td className="px-4 py-3 text-slate-700">{row.title}</td>
@@ -766,6 +771,13 @@ function KnowledgeSurfaceSections({
                     <td className="px-4 py-3 text-slate-700">{row.nextStep}</td>
                   </tr>
                 ))}
+                {sourceMaterials.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-5 text-sm text-slate-600">
+                      Brak manifestu materiałów źródłowych. Nie zastępujemy go kartami operacyjnymi.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -906,39 +918,22 @@ type KnowledgeReviewRow = {
 };
 
 function knowledgeReviewRows(
-  cards: KnowledgeCard[],
-  bindings: KnowledgeOperatingMapResponse["bindings"]
+  materials: KnowledgeSourceMaterialView[]
 ): KnowledgeReviewRow[] {
-  const cardRows = cards.slice(0, 4).map((card) => ({
-    id: `card-${card.id}`,
-    type: card.card_type_label || card.card_type || "Karta",
-    title: card.display_title || card.title,
-    source: card.source_type_label || card.source_type,
-    status: "Do review",
-    statusClass: "bg-wait/10 text-wait",
-    nextStep: "Przejdź do review"
-  }));
-  const bindingRows = bindings.slice(0, 4).map((binding) => ({
-    id: `binding-${binding.id}`,
-    type: binding.has_blocked_claims ? "Claim" : "Decyzja",
-    title: binding.title,
-    source: binding.source_connector_summary_label || "WILQ",
-    status: binding.has_blocked_claims ? "Wymaga review" : "Do review",
-    statusClass: binding.has_blocked_claims ? "bg-wait/10 text-wait" : "bg-success/10 text-success",
-    nextStep: binding.next_step
-  }));
-  const blockedRows = bindings.flatMap((binding) =>
-    binding.blocked_claim_labels.slice(0, 2).map((claim, index) => ({
-      id: `claim-${binding.id}-${index}`,
-      type: "Claim",
-      title: claim,
-      source: binding.title,
-      status: "Zakazane",
-      statusClass: "bg-risk/10 text-risk",
-      nextStep: "Zobacz powód"
-    }))
-  );
-  return [...cardRows, ...bindingRows, ...blockedRows].slice(0, 6);
+  return materials.slice(0, 8).map((material) => {
+    const imported = material.import_status === "imported";
+    return {
+      id: `material-${material.source_id}`,
+      type: "Materiał źródłowy",
+      title: material.title || material.file_name || "Materiał bez tytułu",
+      source: material.file_name || material.title || "plik bez nazwy",
+      status: imported ? "Zaimportowany" : "Wymaga review excerptu",
+      statusClass: imported ? "bg-success/10 text-success" : "bg-wait/10 text-wait",
+      nextStep: imported
+        ? "Używaj wyłącznie zatwierdzonych faktów z lineage"
+        : "Zredaguj i zatwierdź fragment z lineage"
+    };
+  });
 }
 
 function ClaimStatusBar({

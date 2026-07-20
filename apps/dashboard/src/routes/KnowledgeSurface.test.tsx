@@ -141,10 +141,13 @@ describe("KnowledgeSurface", () => {
 
     expect(await screen.findByRole("heading", { name: "Źródła i wiedza" })).toBeInTheDocument();
     expect(screen.getByText("Najbliższy krok źródłowy")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Kolejka review materiałów źródłowych" })).toBeInTheDocument();
+    expect(await screen.findByText("Wymaga review excerptu")).toBeInTheDocument();
+    expect(await screen.findByText("KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md")).toBeInTheDocument();
     expect((await screen.findAllByText("Doprowadź 1 materiałów Ekologusa do redakcji i review")).length).toBeGreaterThan(0);
     expect(screen.getByText(/1 twierdzeń wymaga blokady/)).toBeInTheDocument();
     expect(screen.queryByText("binding_ads_review")).not.toBeInTheDocument();
-    expect(screen.getByText("ROAS")).toBeInTheDocument();
+    expect(screen.queryByText("ROAS")).not.toBeInTheDocument();
     expect(screen.getByText("1 materiałów w manifeście Ekologusa")).toBeInTheDocument();
     expect(screen.getByText("Korpus źródłowy: zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Czekają konkretne materiały: Styl marki i język Ekologus")).toBeInTheDocument();
@@ -164,5 +167,28 @@ describe("KnowledgeSurface", () => {
     expect(screen.getByText("Najbliższy krok źródłowy")).toBeInTheDocument();
     expect(screen.getAllByText("Ładowanie stanu WILQ").length).toBeGreaterThan(0);
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+  });
+
+  it("does not substitute operational cards when the source manifest is empty", async () => {
+    vi.mocked(getKnowledgeOperatingMap).mockResolvedValue(operatingMap);
+    vi.mocked(getKnowledgeCards).mockResolvedValue([
+      { id: "card_fake", title: "Nie jest źródłem", display_title: "Nie jest źródłem", card_type: "service", card_type_label: "Karta", source_type: "playbook", source_type_label: "Playbook" } as never
+    ]);
+    vi.mocked(getKnowledgePlaybooks).mockResolvedValue([]);
+    vi.mocked(getKnowledgeSourceFacts).mockResolvedValue([]);
+    vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue([]);
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue({
+      status: "ready",
+      total_count: 0,
+      imported_count: 0,
+      import_pending_count: 0,
+      excerpt_review_required_count: 0,
+      ready_for_generation: false,
+      next_step: "Dodaj zatwierdzone materiały."
+    });
+    renderKnowledge();
+
+    expect(await screen.findByText("Brak manifestu materiałów źródłowych. Nie zastępujemy go kartami operacyjnymi.")).toBeInTheDocument();
+    expect(screen.queryByText("Nie jest źródłem")).not.toBeInTheDocument();
   });
 });
