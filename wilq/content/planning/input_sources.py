@@ -531,7 +531,7 @@ def build_source_facts(
                     source_connector=(service_profile.source_connectors or ["service_profile"])[0],
                     evidence_ids=service_profile.evidence_ids or ["service_profile_source_fact"],
                     knowledge_card_ids=service_profile.knowledge_card_ids,
-                    source_fact_ids=list(service_profile.source_fact_ids),
+                    source_fact_ids=[],
                     source_material_ids=list(service_profile.source_material_ids),
                 )
             )

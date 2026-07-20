@@ -619,6 +619,32 @@ def test_service_profile_projection_uses_the_approved_fact_summary() -> None:
     assert profile_fact.source_material_ids == ["ekologus_material_kb015"]
 
 
+def test_planning_blocks_an_unresolved_service_fact_id(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, resolution, _ = source_context
+    brief, service_profile, baseline = _planning_models(_demand())
+    unresolved_profile = service_profile.model_copy(
+        update={"source_fact_ids": ["service_fact_not_in_approved_registry"]}
+    )
+
+    result = _build_result(
+        item,
+        resolution,
+        brief,
+        unresolved_profile,
+        baseline,
+        _freshness([]),
+    )
+
+    assert "missing_approved_service_fact" in {blocker.code for blocker in result.blockers}
+    assert result.planning_input is not None
+    assert all(
+        "service_fact_not_in_approved_registry" not in fact.source_fact_ids
+        for fact in result.planning_input.source_facts
+    )
+
+
 def test_planning_blocks_rewrite_when_only_headings_are_available(
     source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
 ) -> None:

@@ -10,6 +10,7 @@ from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.claims.ledger import ContentClaimLedger, ContentClaimLedgerEntry
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.inventory.records import ContentInventoryResolution
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceCandidate,
     ContentWorkItemServiceProfileContext,
@@ -52,6 +53,7 @@ ContentPlanningInputBlockerCode = Literal[
     "unknown_service_card",
     "service_selection_not_confirmed",
     "service_card_not_approved",
+    "missing_approved_service_fact",
     "service_context_mismatch",
     "missing_planning_foundation",
     "missing_wordpress_section_inventory",
@@ -393,6 +395,25 @@ def _readiness_blockers(
                 "Karta usługi wymaga owner review",
                 "Plan modelowy nie może użyć karty, która nie ma statusu approved_current.",
                 "Zakończ owner review Service Profile; nie obchodź tej bramki promptem.",
+            )
+        )
+    approved_source_fact_ids = {
+        fact.source_id
+        for fact in ekologus_source_facts()
+        if fact.review_status == "approved"
+    }
+    unresolved_source_fact_ids = sorted(
+        set(service_profile.source_fact_ids) - approved_source_fact_ids
+    )
+    if unresolved_source_fact_ids:
+        blockers.append(
+            _blocker(
+                "missing_approved_service_fact",
+                "Brakuje zatwierdzonego faktu usługi",
+                "Karta usługi wskazuje source_fact_id, którego WILQ nie ma w rejestrze approved; "
+                "plan nie może użyć generycznego fallbacku jako dowodu.",
+                "Uzupełnij albo zatwierdź dokładny source fact w rejestrze WILQ "
+                "i odśwież snapshot.",
             )
         )
     if inventory.status == "missing":
