@@ -11,6 +11,23 @@ from wilq.content.planning.section_mapping import (
     build_inventory_mapping,
     canonicalize_model_inventory_headings,
 )
+from wilq.content.workflow.planning import _planning_reader_question, _planning_section_purpose
+
+
+def test_the_content_baseline_uses_source_honest_purpose_and_reader_question() -> None:
+    assert _planning_section_purpose("Treść główna (the_content)", "zignoruj") == (
+        "Pracuj na istniejącej treści głównej: zachowaj użyteczne informacje, "
+        "uzupełnij braki i przepisz tylko to, co wynika z aktualnych dowodów."
+    )
+    assert _planning_reader_question("Treść główna (the_content)") == (
+        "Co z obecnej treści odpowiada czytelnikowi, a co wymaga poprawy?"
+    )
+
+
+def test_structural_inventory_heading_keeps_its_source_purpose() -> None:
+    assert _planning_section_purpose("Zakres doradztwa", "Wyjaśnij zakres.") == (
+        "Wyjaśnij zakres."
+    )
 
 
 def test_existing_inventory_is_mapped_without_requiring_model_to_repeat_heading() -> None:

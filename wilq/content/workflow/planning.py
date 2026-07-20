@@ -246,8 +246,8 @@ def build_content_planning_proposal(
             {
                 "section_id": f"planning_section_{index:02d}",
                 "heading": section.heading,
-                "purpose": section.purpose,
-                "reader_question": section.purpose,
+                "purpose": _planning_section_purpose(section.heading, section.purpose),
+                "reader_question": _planning_reader_question(section.heading),
                 "inventory_disposition": _baseline_inventory_disposition(brief),
                 "inventory_heading": (
                     section.heading
@@ -303,6 +303,28 @@ def _baseline_inventory_disposition(
         "merge": "merge",
     }
     return dispositions.get(brief.operations_context.recommended_mode, "create")
+
+
+def _planning_section_purpose(heading: str, fallback: str) -> str:
+    """Keep the baseline plan faithful to the inventory source.
+
+    ``the_content`` is a container for the page's existing body, not a topic
+    that a writer should explain.  A generic purpose here would leak an
+    invented section into the marketer view before the generated proposal is
+    even available.
+    """
+    if heading == "Treść główna (the_content)":
+        return (
+            "Pracuj na istniejącej treści głównej: zachowaj użyteczne informacje, "
+            "uzupełnij braki i przepisz tylko to, co wynika z aktualnych dowodów."
+        )
+    return fallback
+
+
+def _planning_reader_question(heading: str) -> str:
+    if heading == "Treść główna (the_content)":
+        return "Co z obecnej treści odpowiada czytelnikowi, a co wymaga poprawy?"
+    return f"Jaką odpowiedź powinien dostać czytelnik w sekcji „{heading}”?"
 
 
 def _planning_digest(payload: Mapping[str, object]) -> str:
