@@ -25,6 +25,8 @@ describe("AhrefsDiagnosticSurface", () => {
     expect(screen.getByText("Status Ahrefs i dowody SEO")).toBeInTheDocument();
     expect(screen.getByText("sprawdzenie GSC i WordPress ma dopasowania z API")).toBeInTheDocument();
     expect(screen.getByText(/Status danych Ahrefs/)).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Etapy odczytu Ahrefs" })).toBeInTheDocument();
+    expect(screen.getByText("Luki treści")).toBeInTheDocument();
     expect(screen.getByText("Luki SEO z Ahrefs")).toBeInTheDocument();
     expect(screen.queryByText("ahrefs")).not.toBeInTheDocument();
   });

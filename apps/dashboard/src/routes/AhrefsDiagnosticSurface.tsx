@@ -73,6 +73,30 @@ export function AhrefsDiagnosticSurface() {
             {latestRefresh.errors[0]}
           </div>
         ) : null}
+        {data.request_budget?.stages?.length ? (
+          <div
+            role="region"
+            className="mt-4 border-t border-line pt-3"
+            aria-label="Etapy odczytu Ahrefs"
+          >
+            <p className="text-xs font-semibold uppercase tracking-normal text-slate-600">
+              Etapy odczytu
+            </p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {data.request_budget.stages.map((stage) => (
+                <div key={stage.id} className="rounded-md border border-line bg-slate-50 p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-slate-700">{stage.label}</span>
+                    <span className="text-[11px] text-slate-500">{stage.status}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    {stage.requested_calls} wywołań · {stage.rows} wierszy
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <AhrefsCrossCheckPriority data={data} />

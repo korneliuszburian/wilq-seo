@@ -206,11 +206,28 @@ class AhrefsOperatorSummary(BaseModel):
         return self
 
 
+class AhrefsRequestBudgetStage(BaseModel):
+    id: Literal[
+        "domain_rating",
+        "organic_competitors",
+        "top_pages_by_competitor",
+        "organic_keywords_by_url",
+        "content_gap",
+        "backlink_gap",
+    ]
+    label: str
+    status: Literal["completed", "failed", "skipped", "not_run"]
+    requested_calls: int = Field(ge=0)
+    rows: int = Field(ge=0)
+    summary: str = ""
+
+
 class AhrefsRequestBudget(BaseModel):
     estimated_calls: int = 0
     failed_stages: int = 0
     partial: bool = False
     summary: str = ""
+    stages: list[AhrefsRequestBudgetStage] = Field(default_factory=list)
 
 
 class AhrefsDiagnosticsResponse(BaseModel):

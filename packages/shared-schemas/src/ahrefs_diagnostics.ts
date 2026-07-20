@@ -7,7 +7,24 @@ export const AhrefsRequestBudgetSchema = z.object({
   estimated_calls: z.number().int().nonnegative(),
   failed_stages: z.number().int().nonnegative(),
   partial: z.boolean(),
-  summary: z.string()
+  summary: z.string(),
+  stages: z.array(
+    z.object({
+      id: z.enum([
+        "domain_rating",
+        "organic_competitors",
+        "top_pages_by_competitor",
+        "organic_keywords_by_url",
+        "content_gap",
+        "backlink_gap"
+      ]),
+      label: z.string(),
+      status: z.enum(["completed", "failed", "skipped", "not_run"]),
+      requested_calls: z.number().int().nonnegative(),
+      rows: z.number().int().nonnegative(),
+      summary: z.string()
+    })
+  ).default([])
 });
 
 export const AhrefsDiagnosticSectionSchema = z.object({

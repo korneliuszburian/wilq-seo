@@ -5,7 +5,7 @@ import unicodedata
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -22,6 +22,7 @@ from wilq.schemas import (
     AhrefsGapRecord,
     AhrefsOperatorSummary,
     AhrefsRequestBudget,
+    AhrefsRequestBudgetStage,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     ContentAhrefsCandidateRow,
@@ -342,22 +343,115 @@ def _ahrefs_request_budget(
     if latest_refresh is None:
         return AhrefsRequestBudget(summary="Brak odczytu Ahrefs do rozliczenia.")
     summary = latest_refresh.metric_summary
-    failed = len(latest_refresh.errors)
-    estimated = (
-        2
-        + int(summary.get("top_pages_by_competitor_competitors", 0))
-        + int(summary.get("organic_keywords_by_url_urls", 0))
-        + int(bool(summary.get("content_gap_competitor_keywords", 0)))
-        + int(summary.get("backlink_gap_competitors", 0))
-        + int(bool(summary.get("backlink_gap_competitors", 0)))
-    )
+    competitor_calls = int(summary.get("organic_competitor_rows", 0))
+    top_page_calls = int(summary.get("top_pages_by_competitor_competitors", 0))
+    keyword_calls = int(summary.get("organic_keywords_by_url_urls", 0))
+    content_calls = int(bool(summary.get("content_gap_competitor_keywords", 0)))
+    backlink_competitor_calls = int(summary.get("backlink_gap_competitors", 0))
+    stages = [
+        _ahrefs_budget_stage(
+            "domain_rating",
+            "Domain Rating",
+            summary,
+            status_key=None,
+            requested_calls=1,
+            rows=int(bool(summary.get("domain_rating"))),
+            latest_errors=latest_refresh.errors,
+        ),
+        _ahrefs_budget_stage(
+            "organic_competitors",
+            "Konkurenci organiczni",
+            summary,
+            status_key="organic_competitor_read_status",
+            requested_calls=1,
+            rows=competitor_calls,
+            latest_errors=latest_refresh.errors,
+        ),
+        _ahrefs_budget_stage(
+            "top_pages_by_competitor",
+            "Najlepsze strony konkurencji",
+            summary,
+            status_key="top_pages_by_competitor_read_status",
+            requested_calls=top_page_calls,
+            rows=int(summary.get("top_pages_by_competitor_rows", 0)),
+            latest_errors=latest_refresh.errors,
+        ),
+        _ahrefs_budget_stage(
+            "organic_keywords_by_url",
+            "Organiczne słowa dla URL",
+            summary,
+            status_key="organic_keywords_by_url_read_status",
+            requested_calls=keyword_calls,
+            rows=int(summary.get("organic_keywords_by_url_rows", 0)),
+            latest_errors=latest_refresh.errors,
+        ),
+        _ahrefs_budget_stage(
+            "content_gap",
+            "Luki treści",
+            summary,
+            status_key="content_gap_read_status",
+            requested_calls=content_calls,
+            rows=int(summary.get("content_gap_rows", 0)),
+            latest_errors=latest_refresh.errors,
+        ),
+        _ahrefs_budget_stage(
+            "backlink_gap",
+            "Luki linków zwrotnych",
+            summary,
+            status_key="backlink_gap_read_status",
+            requested_calls=(1 + backlink_competitor_calls)
+            if backlink_competitor_calls
+            else 0,
+            rows=int(summary.get("backlink_gap_rows", 0)),
+            latest_errors=latest_refresh.errors,
+        ),
+    ]
+    failed = sum(stage.status == "failed" for stage in stages)
+    estimated = sum(stage.requested_calls for stage in stages)
     return AhrefsRequestBudget(
         estimated_calls=estimated,
         failed_stages=failed,
         partial=failed > 0,
+        stages=stages,
         summary=(
             f"Szacowany zakres odczytu: {estimated} wywołań; "
             f"nieudane etapy: {failed}."
+        ),
+    )
+
+
+def _ahrefs_budget_stage(
+    stage_id: str,
+    label: str,
+    summary: dict[str, float | int | str],
+    *,
+    status_key: str | None,
+    requested_calls: int,
+    rows: int,
+    latest_errors: list[str],
+) -> AhrefsRequestBudgetStage:
+    raw_status = summary.get(status_key) if status_key else None
+    if status_key is None:
+        status = "completed" if summary.get("domain_rating") else (
+            "failed" if latest_errors else "not_run"
+        )
+    elif isinstance(raw_status, str) and raw_status == "completed":
+        status = "completed"
+    elif isinstance(raw_status, str) and raw_status.startswith("skipped"):
+        status = "skipped"
+    elif raw_status:
+        status = "failed"
+    else:
+        status = "not_run"
+    return AhrefsRequestBudgetStage(
+        id=cast(Any, stage_id),
+        label=label,
+        status=cast(Literal["completed", "failed", "skipped", "not_run"], status),
+        requested_calls=max(0, requested_calls),
+        rows=max(0, rows),
+        summary=(
+            f"{requested_calls} wywołań, {rows} wierszy; "
+            f"status: {status}."
         ),
     )
 

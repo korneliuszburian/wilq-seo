@@ -263,3 +263,54 @@ def test_latest_ahrefs_refresh_uses_newest_live_run_even_when_storage_order_is_o
     )
 
     assert _latest_relevant_ahrefs_refresh([old, newest]) == newest
+
+
+def test_ahrefs_request_budget_exposes_each_stage_and_partial_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ahrefs_budget_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ahrefs_budget.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+    run = _run(
+        run_id="refresh_ahrefs_budget_test",
+        connector_id="ahrefs",
+        evidence_id="ev_refresh_ahrefs_budget_test",
+        summary="Ahrefs budget fixture.",
+    ).model_copy(
+        update={
+            "metrics_persisted": True,
+            "metric_summary": {
+                "domain_rating": 40,
+                "organic_competitor_read_status": "completed",
+                "organic_competitor_rows": 2,
+                "top_pages_by_competitor_read_status": "completed",
+                "top_pages_by_competitor_competitors": 2,
+                "top_pages_by_competitor_rows": 4,
+                "organic_keywords_by_url_read_status": "http_429",
+                "organic_keywords_by_url_urls": 4,
+                "organic_keywords_by_url_rows": 0,
+                "content_gap_read_status": "skipped_no_competitor_keywords",
+                "content_gap_competitor_keywords": 0,
+                "backlink_gap_read_status": "completed",
+                "backlink_gap_competitors": 2,
+                "backlink_gap_rows": 3,
+            },
+        }
+    )
+    local_state_store().save_connector_refresh_run(run)
+
+    response = client.get("/api/ahrefs/diagnostics")
+
+    assert response.status_code == 200
+    budget = response.json()["request_budget"]
+    assert budget["estimated_calls"] == 11
+    assert budget["failed_stages"] == 1
+    assert budget["partial"] is True
+    stages = {stage["id"]: stage for stage in budget["stages"]}
+    assert stages["organic_keywords_by_url"]["status"] == "failed"
+    assert stages["organic_keywords_by_url"]["requested_calls"] == 4
+    assert stages["content_gap"]["status"] == "skipped"
+    assert stages["backlink_gap"]["requested_calls"] == 3

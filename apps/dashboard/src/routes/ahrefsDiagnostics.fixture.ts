@@ -43,6 +43,30 @@ export const ahrefsDiagnostics = {
     errors: [],
     redacted: true
   },
+  request_budget: {
+    estimated_calls: 4,
+    failed_stages: 1,
+    partial: true,
+    summary: "Szacowany zakres odczytu: 4 wywołania; nieudane etapy: 1.",
+    stages: [
+      {
+        id: "domain_rating",
+        label: "Domain Rating",
+        status: "completed",
+        requested_calls: 1,
+        rows: 1,
+        summary: "1 wywołań, 1 wierszy; status: completed."
+      },
+      {
+        id: "content_gap",
+        label: "Luki treści",
+        status: "failed",
+        requested_calls: 1,
+        rows: 0,
+        summary: "1 wywołań, 0 wierszy; status: failed."
+      }
+    ]
+  },
   latest_refresh_status_label: "zakończony",
   live_data_status_label: "metryki Ahrefs dostępne",
   live_data_available: true,
