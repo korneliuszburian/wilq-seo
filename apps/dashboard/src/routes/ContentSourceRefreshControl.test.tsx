@@ -32,16 +32,19 @@ describe("content source refresh control", () => {
       <ContentFreshnessBanner
         assessment={staleAssessment()}
         refresh={{
-          eligibleConnectorIds: ["wordpress_ekologus"],
-          activeConnectorId: null,
-          runs: {},
-          errors: {},
-          onRefresh
+          active: false,
+          status: "idle",
+          summary: "",
+          error: null,
+          onRefresh: (url) => onRefresh(url)
         }}
+        refreshTargetUrl="https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Odśwież WordPress" }));
-    expect(onRefresh).toHaveBeenCalledWith("wordpress_ekologus");
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź stronę ponownie" }));
+    expect(onRefresh).toHaveBeenCalledWith(
+      "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    );
   });
 });

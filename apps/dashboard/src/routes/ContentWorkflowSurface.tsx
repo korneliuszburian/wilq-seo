@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
@@ -10,9 +10,7 @@ import {
   postContentWorkItemSemanticReview,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
-  getConnectorRefreshRun,
-  getConnectors,
-  refreshConnector,
+  getContentInventoryMaterial,
   saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
   saveContentWorkItemPlanningReview,
@@ -28,7 +26,7 @@ import {
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentOpportunityEnrichment,
   type WordPressAuthoringProfile,
-  type ConnectorRefreshRun
+  type ContentInventoryMaterialResponse
 } from "../lib/api";
 import type { ContentWorkflowSnapshot, WorkflowStepId } from "./contentWorkflowRuntime";
 import { ContentCandidateQueuePanel } from "./ContentCandidateQueuePanel";
@@ -151,76 +149,38 @@ function stringFromSearch(search: string, key: string) {
 
 function useContentSourceRefresh(): ContentSourceRefreshControl {
   const queryClient = useQueryClient();
-  const connectorsQuery = useQuery({
-    queryKey: ["connectors"],
-    queryFn: getConnectors,
-    staleTime: 30_000
-  });
-  const [activeConnectorId, setActiveConnectorId] = useState<string | null>(null);
-  const [activeRunId, setActiveRunId] = useState<string | null>(null);
-  const [runs, setRuns] = useState<Record<string, ConnectorRefreshRun>>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const runQuery = useQuery({
-    queryKey: ["connector-refresh", activeRunId],
-    queryFn: () => getConnectorRefreshRun(activeRunId ?? ""),
-    enabled: Boolean(activeRunId),
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      return status === "queued" || status === "running" ? 1000 : false;
-    }
-  });
+  const [status, setStatus] = useState<ContentSourceRefreshControl["status"]>("idle");
+  const [summary, setSummary] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const refreshMutation = useMutation({
-    mutationFn: refreshConnector,
-    onSuccess: (run) => {
-      setRuns((current) => ({ ...current, [run.connector_id]: run }));
-      setErrors((current) => {
-        if (!current[run.connector_id]) return current;
-        const next = { ...current };
-        delete next[run.connector_id];
-        return next;
-      });
-      setActiveConnectorId(run.connector_id);
-      setActiveRunId(run.id);
+    mutationFn: (url: string) => getContentInventoryMaterial(url),
+    onMutate: () => {
+      setStatus("loading");
+      setSummary("");
+      setError(null);
     },
-    onError: (error, connectorId) => {
-      setErrors((current) => ({
-        ...current,
-        [connectorId]: error instanceof Error
-          ? error.message
-          : "Nie udało się uruchomić odczytu źródła."
-      }));
-      setActiveConnectorId(null);
-      setActiveRunId(null);
+    onSuccess: (result: ContentInventoryMaterialResponse) => {
+      if (result.status === "ready") {
+        setStatus("success");
+        setSummary("Strona została odczytana ponownie.");
+      } else {
+        setStatus("error");
+        setError(result.blocker ?? "Nie udało się odczytać tej strony.");
+      }
+      void queryClient.invalidateQueries({ queryKey: ["content-workflow"] });
+    },
+    onError: (reason) => {
+      setStatus("error");
+      setError(reason instanceof Error ? reason.message : "Nie udało się odczytać tej strony.");
     }
   });
-  useEffect(() => {
-    const run = runQuery.data;
-    if (!run) return;
-    if (run.status === "queued" || run.status === "running") return;
-    void queryClient.invalidateQueries({ queryKey: ["content-workflow"] });
-    void queryClient.invalidateQueries({ queryKey: ["connectors"] });
-  }, [queryClient, runQuery.data]);
-  const visibleRuns = useMemo(() => {
-    if (!runQuery.data) return runs;
-    return { ...runs, [runQuery.data.connector_id]: runQuery.data };
-  }, [runQuery.data, runs]);
-  const activeRunInProgress = runQuery.data?.status === "queued" || runQuery.data?.status === "running";
   return {
-    eligibleConnectorIds: (connectorsQuery.data ?? [])
-      .filter((connector) => connector.configured && connector.refresh_state.refresh_allowed)
-      .map((connector) => connector.id),
-    activeConnectorId: activeRunInProgress ? activeConnectorId : null,
-    runs: Object.fromEntries(
-      Object.entries(visibleRuns).map(([connectorId, run]) => [connectorId, {
-        status: run.status,
-        status_label: run.status_label,
-        summary: run.summary
-      }])
-    ),
-    errors,
-    onRefresh: (connectorId) => {
-      if (refreshMutation.isPending) return;
-      refreshMutation.mutate(connectorId);
+    active: refreshMutation.isPending,
+    status,
+    summary,
+    error,
+    onRefresh: (url) => {
+      if (!refreshMutation.isPending) refreshMutation.mutate(url);
     }
   };
 }
@@ -423,6 +383,7 @@ function ContentWorkflowSelectedReady({
         assessment={queue.freshness_assessment}
         candidate={selectedCandidate}
         refresh={sourceRefresh}
+        refreshTargetUrl={selectedCandidate.final_canonical_url}
       />
     );
   }
@@ -433,6 +394,7 @@ function ContentWorkflowSelectedReady({
         candidate={selectedCandidate}
         error
         refresh={sourceRefresh}
+        refreshTargetUrl={selectedCandidate.final_canonical_url}
       />
     );
   }
@@ -445,6 +407,7 @@ function ContentWorkflowSelectedReady({
       draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
       sourceRefresh={sourceRefresh}
+      refreshTargetUrl={selectedCandidate.final_canonical_url}
       enrichment={enrichment.data?.enrichment ?? null}
       queue={queue}
       inventory={inventory}
@@ -461,6 +424,7 @@ function ContentWorkflowLoaded({
   draftActivationPacket,
   draftWriteReadiness,
   sourceRefresh,
+  refreshTargetUrl,
   enrichment,
   queue,
   inventory,
@@ -473,6 +437,7 @@ function ContentWorkflowLoaded({
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   sourceRefresh: ContentSourceRefreshControl;
+  refreshTargetUrl?: string | null;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
   inventory: ContentInventoryCatalogResponse | null;
@@ -490,7 +455,11 @@ function ContentWorkflowLoaded({
 
   return (
     <main className="w-full px-4 py-3 sm:py-5 lg:px-7 2xl:px-8">
-      <ContentFreshnessBanner assessment={queue.freshness_assessment} refresh={sourceRefresh} />
+      <ContentFreshnessBanner
+        assessment={queue.freshness_assessment}
+        refresh={sourceRefresh}
+        refreshTargetUrl={refreshTargetUrl}
+      />
       <section className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-white px-3 py-2 sm:mb-4 sm:px-4 sm:py-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Widok pracy</p>

@@ -22,7 +22,11 @@ export function ContentWorkflowBlockedCandidate({
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <ContentWorkflowHeader topic={selectedCandidate.topic} />
-      <ContentFreshnessBanner assessment={queue.freshness_assessment} refresh={refresh} />
+      <ContentFreshnessBanner
+        assessment={queue.freshness_assessment}
+        refresh={refresh}
+        refreshTargetUrl={selectedCandidate.final_canonical_url}
+      />
       <ContentCandidateQueuePanel queue={queue} selectedWorkItemId={selectedWorkItemId} onSelectWorkItem={onSelectWorkItem} />
       <section className="mt-6 rounded-md border border-wait/30 bg-wait/10 p-4">
         <h2 className="text-sm font-semibold uppercase tracking-normal text-wait">WILQ blokuje pisanie tego tematu</h2>
