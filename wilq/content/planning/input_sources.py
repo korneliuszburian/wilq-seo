@@ -154,11 +154,18 @@ def build_planning_inventory(
         )
         return ContentPlanningInventory(status="missing", note=note)
     _, record, tiers = matches[0]
-    wordpress_evidence = [
-        evidence
-        for evidence in list_evidence_by_ids(record.evidence_ids)
-        if evidence.source_connector in {"wordpress_ekologus", "wordpress_sklep"}
+    # Inventory evidence is owned by the WordPress refresh record. Do not
+    # hydrate every metric-fact evidence ID attached to the same catalog row:
+    # that list can contain the complete connector history and turns a normal
+    # snapshot read into an unbounded metric reconstruction. Metric evidence
+    # is loaded separately by the demand/measurement projections.
+    wordpress_inventory_evidence_ids = [
+        evidence_id
+        for evidence_id in record.evidence_ids
+        if evidence_id.startswith("ev_refresh_refresh_wordpress_")
+        or evidence_id.startswith("ev_connector_wordpress_")
     ]
+    wordpress_evidence = list_evidence_by_ids(wordpress_inventory_evidence_ids)
     evidence_ids = [evidence.id for evidence in wordpress_evidence]
     connectors = _unique([evidence.source_connector for evidence in wordpress_evidence])
     if not evidence_ids or not connectors:

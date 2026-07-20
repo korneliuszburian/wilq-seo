@@ -52,6 +52,7 @@ _MODEL_INVENTORY_NOISE = (
     ),
     re.compile(r"^(?:zaufali nam|może cię również zainteresować)\b", re.IGNORECASE),
     re.compile(r"^(?:poniżej przedstawiamy|dowiedz się więcej)\b", re.IGNORECASE),
+    re.compile(r"\[\s*(?:19|20)\d{2}\b[^\]]*\]", re.IGNORECASE),
 )
 
 

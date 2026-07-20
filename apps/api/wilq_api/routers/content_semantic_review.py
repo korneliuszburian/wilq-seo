@@ -85,6 +85,12 @@ def register_content_semantic_review_routes(
         revision_id: str,
     ) -> ContentSemanticReviewResponse:
         latest_run = _latest_semantic_run(work_item_id, revision_id)
+        # A runtime safety violation is an audit event, not a semantic review
+        # result. Keep the exact attempt in local state, but expose the
+        # revision as not_generated so the operator can retry after isolation
+        # is repaired and no partial advisory can be mistaken for a result.
+        if latest_run is not None and latest_run.error == "runtime_blocked":
+            latest_run = None
         if latest_run is not None and latest_run.status == "started":
             revision = content_workflow_store().load_draft_revision_state(
                 work_item_id
