@@ -295,7 +295,22 @@ describe("ContentWorkflowSurface", () => {
       excerpt_review_required_count: 0,
       ready_for_generation: false,
       blocker: "Pozostałe materiały oczekują na import.",
-      next_step: "Dokończ kontrolowany import materiałów."
+      next_step: "Dokończ kontrolowany import materiałów.",
+      imported_materials: [],
+      pending_materials: [
+        {
+          source_id: "source-transcript-1",
+          file_name: "rozmowa-z-ekologus.txt",
+          title: "Rozmowa z zespołem Ekologus",
+          kind: "transcript",
+          word_count: 1200,
+          digest_prefix: "abc123",
+          privacy_class: "internal",
+          import_status: "import_pending",
+          source_path: "/private/rozmowa-z-ekologus.txt"
+        }
+      ],
+      excerpt_review_materials: []
     });
     const client = createWilqQueryClient({
       defaultOptions: { queries: { retry: false } }

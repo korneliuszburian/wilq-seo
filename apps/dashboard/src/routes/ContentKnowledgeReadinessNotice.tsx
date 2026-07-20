@@ -34,14 +34,17 @@ export function ContentKnowledgeReadinessNotice({
   }
   if (!readiness) return null;
   if (readiness.ready_for_generation) {
-    if (!materials.data?.length) return null;
+    const importedMaterials = readiness.imported_materials?.length
+      ? readiness.imported_materials
+      : materials.data ?? [];
+    if (!importedMaterials.length) return null;
     return (
       <details
         className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-950"
         data-testid="content-workflow-knowledge-sources"
       >
         <summary className="cursor-pointer font-semibold">
-          Materiały źródłowe używane przez WILQ ({materials.data.length})
+          Materiały źródłowe używane przez WILQ ({importedMaterials.length})
         </summary>
         <p className="mt-2 leading-6">
           To zaakceptowany manifest materiałów Ekologusa. WILQ używa ich jako
@@ -49,7 +52,7 @@ export function ContentKnowledgeReadinessNotice({
           w panelu.
         </p>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {materials.data.map((material) => (
+          {importedMaterials.map((material) => (
             <li
               key={material.source_id}
               className="rounded-lg border border-emerald-200/80 bg-white/70 px-3 py-2 text-xs"
@@ -73,6 +76,11 @@ export function ContentKnowledgeReadinessNotice({
       ? `${readiness.excerpt_review_required_count} wymaga review excerptów`
       : null
   ].filter((part): part is string => Boolean(part));
+  const pendingMaterials = [
+    ...(readiness.pending_materials ?? []),
+    ...(readiness.excerpt_review_materials ?? [])
+  ];
+  const importedMaterials = readiness.imported_materials ?? [];
   return (
     <div
       className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
@@ -85,11 +93,24 @@ export function ContentKnowledgeReadinessNotice({
         {readiness.next_step ||
           "Skontaktuj się z administratorem, aby ustalić kolejny krok dla korpusu źródłowego."}
       </p>
-      {materials.data?.length ? (
+      {importedMaterials.length ? (
+        <details className="mt-3 rounded-lg border border-emerald-200/80 bg-emerald-50/50 px-3 py-2">
+          <summary className="cursor-pointer font-semibold">Materiały już zaimportowane ({importedMaterials.length})</summary>
+          <ul className="mt-2 space-y-1 text-xs leading-5 text-emerald-900">
+            {importedMaterials.map((material) => (
+              <li key={material.source_id}>
+                <span className="font-medium">{material.title || material.file_name}</span>
+                <span className="ml-1 opacity-75">· {material.kind} · {material.word_count.toLocaleString("pl-PL")} słów</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+      {pendingMaterials.length ? (
         <details className="mt-3 rounded-lg border border-amber-200/80 bg-white/50 px-3 py-2">
           <summary className="cursor-pointer font-semibold">Materiały oczekujące na obsługę</summary>
           <ul className="mt-2 space-y-1 text-xs leading-5 text-amber-900">
-            {materials.data.map((material) => (
+            {pendingMaterials.map((material) => (
               <li key={material.source_id}>
                 <span className="font-medium">{material.title || material.file_name}</span>
                 <span className="ml-1 opacity-75">· {material.import_status}</span>
