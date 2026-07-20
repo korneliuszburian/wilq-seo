@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
+from wilq.content.briefs import sales as sales_brief_module
 from wilq.content.briefs.sales import (
     ContentSalesBriefBuildResult,
     ContentSalesBriefForbiddenClaim,
@@ -21,6 +22,7 @@ from wilq.content.enrichment.opportunity import (
 )
 from wilq.content.inventory.records import ContentInventoryRecord, resolve_content_inventory
 from wilq.content.knowledge.cards import match_content_knowledge_cards
+from wilq.content.knowledge.source_facts import ContentSourceFact, ContentSourceFactRegistry
 from wilq.content.preflight.workflow import build_content_preflight_verdict
 from wilq.content.workflow.decision_mapping import content_sales_brief_seed_from_decision
 from wilq.content.workflow.models import ContentWorkItem
@@ -245,6 +247,43 @@ def test_sales_brief_builds_structured_contract_from_valid_work_item() -> None:
         "google_search_console"
     ]
     assert result.brief.measurement_plan.baseline_evidence_ids == ["ev_gsc_bdo"]
+
+
+def test_sales_brief_does_not_attach_unapproved_source_fact_lineage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fact(source_id: str, review_status: str) -> ContentSourceFact:
+        return ContentSourceFact(
+            source_id=source_id,
+            source_type="reviewed_internal",
+            privacy_class="redacted_only",
+            source_url_or_path="internal://approved-material",
+            extracted_fact="Fakt źródłowy.",
+            scope="service",
+            freshness_date="2026-07-18",
+            confidence=0.9,
+            review_status=review_status,
+            reviewer="wilku" if review_status == "approved" else None,
+            evidence_ids=["ev_gsc_bdo"],
+            source_connectors=["approved_materials"],
+            blocked_claims=["brak gwarancji"] if review_status != "approved" else [],
+            target_card_id="ekologus_service_lineage",
+            target_card_type="service",
+            target_card_title="Usługa testowa",
+            evidence_requirements=["review"] if review_status != "approved" else [],
+            usage_notes=["review first"] if review_status != "approved" else [],
+        )
+
+    registry = ContentSourceFactRegistry(
+        facts=[fact("approved_material", "approved"), fact("pending_material", "review_required")],
+        fact_count=2,
+    )
+    monkeypatch.setattr(sales_brief_module, "ekologus_source_fact_registry", lambda: registry)
+
+    result = _brief_result()
+
+    assert result.brief is not None
+    assert result.brief.source_facts[0].source_fact_ids == ["approved_material"]
     assert result.brief.measurement_plan.measurement_readiness_label == (
         "baza pomiaru do zaplanowania"
     )

@@ -462,6 +462,8 @@ def _brief_source_facts_from_enrichment(
 def _source_fact_ids_by_evidence() -> dict[str, list[str]]:
     mapping: dict[str, list[str]] = {}
     for fact in ekologus_source_fact_registry().facts:
+        if fact.review_status != "approved":
+            continue
         for evidence_id in fact.evidence_ids:
             mapping.setdefault(evidence_id, []).append(fact.source_id)
     return mapping

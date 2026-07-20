@@ -7,6 +7,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-20: Sales Brief nie przypina już do enrichmentu lineage
+  `source_fact_ids` z faktów innych niż `approved`. To chroni dynamiczny input
+  przed oznaczeniem materiału `review_required` jako użytego tylko dlatego, że
+  dzieli evidence z zatwierdzonym faktem. Publiczny falsifier briefu przechodzi;
+  nie zmienia to treści ani statusu owner-review materiałów.
+
 - 2026-07-20: panel planowania pokazuje teraz ograniczone, lineage-preserving
   użytych faktów źródłowych, wraz z connectorem oraz licznikami materiałów i
   evidence. Dane pochodzą z tego samego `ContentPlanningInput` i digestu co
