@@ -81,6 +81,10 @@ second-opinion checker is valid at
 `/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-20-fresh-inventory-count-QWGNTz/`;
 its medium findings are classified as evidence gaps caused by omitted source
 excerpts, not as demonstrated product defects.
+The follow-up tone fixed point has a valid checker at
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-20-structure-vs-ga4-tone-6Xdy5D/`;
+all findings are LOW confirmations/evidence gaps and no product defect was
+proven.
 
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
