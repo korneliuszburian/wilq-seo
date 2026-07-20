@@ -218,6 +218,47 @@ def test_executor_submission_failure_is_typed_and_retryable(
     assert executor.calls == 2
 
 
+def test_existing_not_started_job_is_recovered_after_api_process_restart(
+    planning_harness: tuple[TestClient, PlanningClient],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _runtime = planning_harness
+    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
+    service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    current = client.get(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    ).json()
+
+    class HoldingExecutor:
+        calls = 0
+
+        def submit(self, *_args: Any, **_kwargs: Any) -> None:
+            self.calls += 1
+
+    executor = HoldingExecutor()
+    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
+    request = _generation_request(service_card_id, current["planning_input_digest"])
+
+    first = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
+        json=request,
+    )
+    assert first.status_code == 200
+    assert first.json()["status"] == "generating"
+
+    # A development reload loses the in-process executor ownership while the
+    # durable queued row remains. The next POST must reclaim that row instead
+    # of leaving the marketer in an eternal `not_started` state.
+    planning_router._PLANNING_ACTIVE_KEYS.clear()
+    second = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
+        json=request,
+    )
+    assert second.status_code == 200
+    assert second.json()["status"] == "generating"
+    assert executor.calls == 2
+
+
 def test_planning_runtime_has_separate_bounded_timeout(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

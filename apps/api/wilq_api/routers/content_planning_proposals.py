@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 from uuid import uuid4
 
 from fastapi import APIRouter
@@ -45,6 +46,8 @@ _PLANNING_GENERATION_EXECUTOR = ThreadPoolExecutor(
     max_workers=2,
     thread_name_prefix="wilq-content-plan",
 )
+_PLANNING_ACTIVE_KEYS: set[tuple[str, str, str]] = set()
+_PLANNING_ACTIVE_KEYS_LOCK = Lock()
 # Planning is queued and polled by the API, so this deadline is not a browser
 # request budget.  Keep the model turn bounded at three minutes; larger real
 # pages can need more structured-output search, while a timeout remains a
@@ -225,7 +228,11 @@ def register_content_planning_proposal_routes(
                 ],
                 safe_next_step="Poczekaj kilka sekund i odśwież stan planu.",
             )
-        if outcome == "queued":
+        if outcome in {"queued", "existing"} and _claim_planning_job(
+            work_item_id,
+            request.service_card_id,
+            request.expected_planning_input_digest,
+        ):
             try:
                 _PLANNING_GENERATION_EXECUTOR.submit(
                     _run_queued_planning_generation,
@@ -234,6 +241,11 @@ def register_content_planning_proposal_routes(
                     snapshot_loader,
                 )
             except Exception as error:
+                _release_planning_job(
+                    work_item_id,
+                    request.service_card_id,
+                    request.expected_planning_input_digest,
+                )
                 result = _planning_generation_failure_response(
                     work_item_id=work_item_id,
                     service_card_id=request.service_card_id,
@@ -275,7 +287,38 @@ def _run_queued_planning_generation(
             ),
             error=error,
         )
-    _save_terminal_response_safely(store, result)
+    try:
+        _save_terminal_response_safely(store, result)
+    finally:
+        _release_planning_job(
+            work_item_id,
+            request.service_card_id,
+            request.expected_planning_input_digest,
+        )
+
+
+def _claim_planning_job(
+    work_item_id: str,
+    service_card_id: str,
+    planning_input_digest: str,
+) -> bool:
+    key = (work_item_id, service_card_id, planning_input_digest)
+    with _PLANNING_ACTIVE_KEYS_LOCK:
+        if key in _PLANNING_ACTIVE_KEYS:
+            return False
+        _PLANNING_ACTIVE_KEYS.add(key)
+    return True
+
+
+def _release_planning_job(
+    work_item_id: str,
+    service_card_id: str,
+    planning_input_digest: str,
+) -> None:
+    with _PLANNING_ACTIVE_KEYS_LOCK:
+        _PLANNING_ACTIVE_KEYS.discard(
+            (work_item_id, service_card_id, planning_input_digest)
+        )
 
 
 def _save_terminal_response_safely(
