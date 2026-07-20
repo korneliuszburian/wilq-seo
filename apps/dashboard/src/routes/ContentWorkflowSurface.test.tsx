@@ -6,6 +6,7 @@ import {
   confirmAction,
   getAction,
   getContentWorkItemEnrichment,
+  getContentInventoryCatalog,
   getContentOperatorContext,
   getContentWorkItemQueue,
   getKnowledgeSourceMaterialReadiness,
@@ -38,6 +39,7 @@ import {
   type ContentDraftRevisionBinding,
   type ContentInitialDraftResponse,
   type ContentOpportunityEnrichmentResponse,
+  type ContentInventoryCatalogResponse,
   type ContentPlanningProposalResponse,
   type ContentSemanticReviewResponse,
   type ContentWorkItemQueueResponse,
@@ -62,6 +64,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     confirmAction: vi.fn(),
     getAction: vi.fn(),
     getContentWorkItemEnrichment: vi.fn(),
+    getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getKnowledgeSourceMaterialReadiness: vi.fn(),
@@ -101,6 +104,7 @@ describe("ContentWorkflowSurface", () => {
       authentication_status: "not_configured"
     } as never);
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
+    vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue(knowledgeReadiness());
     vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue([]);
@@ -463,7 +467,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     const picker = await screen.findByRole("combobox", { name: "Aktywna strona" });
-    expect(within(picker).getAllByRole("option")).toHaveLength(2);
+    expect(within(picker).getAllByRole("option")).toHaveLength(3);
     expect(picker).toHaveValue("content_work_item_bdo");
 
     fireEvent.change(picker, { target: { value: "content_work_item_green_deal" } });
@@ -562,6 +566,22 @@ describe("ContentWorkflowSurface", () => {
     );
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
+  });
+
+  it("exposes a full-inventory page outside the opportunity queue", async () => {
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const picker = await screen.findByRole("combobox", { name: "Aktywna strona" });
+    expect(within(picker).getByRole("option", { name: /Raportowanie odpadowe/ })).toBeInTheDocument();
+
+    expect(within(picker).getByRole("option", { name: /Raportowanie odpadowe/ })).toHaveValue(
+      "content_work_item_inventory_full_catalog"
+    );
   });
 
   it("uses current page headings before a plan exists", async () => {
@@ -1922,6 +1942,52 @@ function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
     audit_status: "missing",
     audit_id: null,
     ...overrides
+  };
+}
+
+function contentInventoryCatalog(): ContentInventoryCatalogResponse {
+  return {
+    status: "ready",
+    total_count: 1,
+    ready_count: 1,
+    partial_count: 0,
+    blocked_count: 0,
+    items: [
+      {
+        catalog_id: "catalog_full_inventory",
+        work_item_id: "content_work_item_inventory_full_catalog",
+        url: "https://www.ekologus.pl/raportowanie-odpadowe/",
+        path: "/raportowanie-odpadowe/",
+        title: "Raportowanie odpadowe",
+        content_type: "page",
+        content_summary: "Raportowanie odpadowe",
+        content_word_count: 240,
+        section_count: 0,
+        acf_section_count: 0,
+        acf_field_names: [],
+        acf_section_headings: [],
+        material_status: "content_summary",
+        source_connector: "wordpress_ekologus",
+        evidence_id: "ev_wp_full_catalog",
+        collected_at: "2026-07-20T00:00:00Z",
+        metrics_status: "missing",
+        metrics_evidence_ids: [],
+        metrics_query_count: 0,
+        metrics_clicks: 0,
+        metrics_impressions: 0
+      }
+    ],
+    source_connectors: ["wordpress_ekologus"],
+    evidence_ids: ["ev_wp_full_catalog"],
+    coverage: {
+      status: "complete",
+      source_count: 1,
+      returned_count: 1,
+      public_sitemap_source_count: 1,
+      public_sitemap_returned_count: 1,
+      public_sitemap_truncated: false,
+      caveat: ""
+    }
   };
 }
 

@@ -18,6 +18,7 @@ import {
   type ContentDraftRevisionReviewRequest,
   type ContentDraftRevisionSaveRequest,
   type ContentDraftRevisionSection,
+  type ContentInventoryCatalogResponse,
   type ContentPlanningReviewRequest,
   type ContentSemanticReviewResponse,
   type ContentWorkItemQueueResponse,
@@ -277,15 +278,16 @@ function ContentWorkflowQueueReady({
     );
   }
   return (
-    <ContentWorkflowSelectedReady
-      activeWorkItemId={activeWorkItemId}
+      <ContentWorkflowSelectedReady
+        activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
       operatorLabel={operatorContext.data?.request_label ?? "operator_local_dashboard"}
       draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
-      queue={queue}
-      selectedCandidate={selectedCandidate}
+        queue={queue}
+        inventory={inventory.data ?? null}
+        selectedCandidate={selectedCandidate}
       workflow={workflow}
       onSelectWorkItem={onSelectWorkItem}
     />
@@ -304,6 +306,7 @@ function ContentWorkflowSelectedReady({
   draftWriteReadiness,
   enrichment,
   queue,
+  inventory,
   selectedCandidate,
   workflow,
   onSelectWorkItem
@@ -315,6 +318,7 @@ function ContentWorkflowSelectedReady({
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueResponse;
+  inventory: ContentInventoryCatalogResponse | null;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
   onSelectWorkItem: (workItemId: string) => void;
@@ -347,6 +351,7 @@ function ContentWorkflowSelectedReady({
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment.data?.enrichment ?? null}
       queue={queue}
+      inventory={inventory}
       selectedWorkItemId={activeWorkItemId}
       onSelectWorkItem={onSelectWorkItem}
     />
@@ -361,6 +366,7 @@ function ContentWorkflowLoaded({
   draftWriteReadiness,
   enrichment,
   queue,
+  inventory,
   selectedWorkItemId,
   onSelectWorkItem
 }: {
@@ -371,6 +377,7 @@ function ContentWorkflowLoaded({
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
+  inventory: ContentInventoryCatalogResponse | null;
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
@@ -426,7 +433,8 @@ function ContentWorkflowLoaded({
           data={data}
           draftActivationPacket={draftActivationPacket}
           enrichment={enrichment}
-        queue={queue}
+          queue={queue}
+          inventory={inventory}
         selectedWorkItemId={selectedWorkItemId}
         onSelectWorkItem={onSelectWorkItem}
       />
@@ -472,6 +480,7 @@ function ContentWorkflowMarketerJourney({
   draftActivationPacket,
   enrichment,
   queue,
+  inventory,
   selectedWorkItemId,
   onSelectWorkItem
 }: {
@@ -481,6 +490,7 @@ function ContentWorkflowMarketerJourney({
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
+  inventory: ContentInventoryCatalogResponse | null;
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
@@ -499,6 +509,7 @@ function ContentWorkflowMarketerJourney({
         planningSections={data.planningWorkspace?.proposal.sections ?? []}
         currentSectionHeadings={data.candidate.page_inventory?.section_headings ?? []}
         queue={queue}
+        inventory={inventory}
         selectedWorkItemId={selectedWorkItemId}
         onSelectWorkItem={onSelectWorkItem}
       />
@@ -534,6 +545,7 @@ function ContentSessionPicker({
   planningSections,
   currentSectionHeadings,
   queue,
+  inventory,
   selectedWorkItemId,
   onSelectWorkItem
 }: {
@@ -542,6 +554,7 @@ function ContentSessionPicker({
   planningSections: ContentPlanningSections;
   currentSectionHeadings: string[];
   queue: ContentWorkItemQueueResponse;
+  inventory: ContentInventoryCatalogResponse | null;
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
@@ -553,6 +566,13 @@ function ContentSessionPicker({
   const candidates = queue.candidates.filter(
     (candidate) => candidate.recommended_mode !== "block"
   );
+  const queueCandidateIds = new Set(candidates.map((candidate) => candidate.work_item_id));
+  const inventoryPageOptions = (inventory?.items ?? [])
+    .filter((item) => !queueCandidateIds.has(item.work_item_id))
+    .map((item) => ({
+      workItemId: item.work_item_id,
+      label: `${item.title || item.path} — ${item.path}`
+    }));
   const selected = candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
@@ -595,6 +615,7 @@ function ContentSessionPicker({
           Aktywna strona
           <select
             id="content-session-work-item"
+            data-testid="content-session-work-item"
             className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
             value={selectedWorkItemId}
             onChange={(event) => onSelectWorkItem(event.target.value)}
@@ -604,6 +625,15 @@ function ContentSessionPicker({
                 {candidate.topic} — {contentCandidatePath(candidate.final_canonical_url)}
               </option>
             ))}
+            {inventoryPageOptions.length ? (
+              <optgroup label="Pełny inventory WordPress">
+                {inventoryPageOptions.map((item) => (
+                  <option key={item.workItemId} value={item.workItemId}>
+                    {item.label}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
           </select>
         </label>
       </div>
