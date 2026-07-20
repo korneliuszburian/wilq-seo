@@ -61,9 +61,12 @@ export function ContentWorkflowJourneyContext({
       ? `Strona główna ${environmentLabel(publicUrl)}`
       : item.wordpress_title_or_h1 ?? item.topic;
   const metrics = candidate.search_metrics;
-  const pageInventory = candidate.page_inventory;
   const pageMetricFacts = item.metric_facts ?? [];
   const ga4MetricSummaries = summarizeGa4MetricFacts(pageMetricFacts);
+  const sectionCount = resolvedPageSectionCount(
+    data.preflight.item.wordpress_section_count,
+    data.candidate.page_inventory?.section_count
+  );
   const metricSummary =
     metrics?.impressions === undefined || metrics.impressions === null
       ? "Brakuje danych z wyszukiwarki dla tej strony."
@@ -86,8 +89,8 @@ export function ContentWorkflowJourneyContext({
       ? `porównanie: ${metrics.comparison_periods[0]} → ${metrics.comparison_periods[1]}`
       : metrics?.comparison_reason ?? "Brak dwóch porównywalnych okresów — nie oceniamy trendu.";
   const inventorySummary =
-    pageInventory?.section_inventory_status === "available" && pageInventory.section_count !== null
-      ? `${pageInventory.section_count} rozpoznanych sekcji na stronie`
+    sectionCount !== null
+      ? `${sectionCount} rozpoznanych sekcji na stronie`
       : "Sekcje strony wymagają odczytu";
 
   return (
@@ -119,7 +122,7 @@ export function ContentWorkflowJourneyContext({
         />
         <JourneySignalCard
           label="Pomiar i struktura"
-          value={pageInventory?.section_count === null || pageInventory?.section_count === undefined ? "Do odczytu" : `${pageInventory.section_count} sekcji`}
+          value={sectionCount === null ? "Do odczytu" : `${sectionCount} sekcji`}
           detail={ga4MetricSummaries.length ? `GA4: ${ga4MetricSummaries[0]}` : "GA4: brak exact danych"}
           tone={ga4MetricSummaries.length ? "fact" : "blocker"}
         />
@@ -150,6 +153,22 @@ export function ContentWorkflowJourneyContext({
       </details>
     </section>
   );
+}
+
+/**
+ * Prefer the full snapshot's fresh WordPress binding over the compact queue
+ * projection. The queue can legitimately be stale after the page is opened;
+ * showing its section count next to the fresh preflight count makes one page
+ * appear to have two different structures.
+ */
+export function resolvedPageSectionCount(
+  preflightCount: number | null | undefined,
+  queueCount: number | null | undefined
+): number | null {
+  if (typeof preflightCount === "number" && Number.isInteger(preflightCount) && preflightCount >= 0) {
+    return preflightCount;
+  }
+  return typeof queueCount === "number" && Number.isInteger(queueCount) && queueCount >= 0 ? queueCount : null;
 }
 
 function JourneySignalCard({

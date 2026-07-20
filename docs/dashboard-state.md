@@ -1,6 +1,6 @@
 # Dashboard State
 
-Last updated: 2026-07-20
+Last updated: 2026-07-21
 
 This is the living state file for WILQ dashboard work. Read it before changing
 any dashboard route, dashboard API view-model, dashboard copy, dashboard test or
@@ -63,6 +63,13 @@ the fresh selected binding instead of reusing a stale diagnostics queue row.
 This keeps the marketer's section count, ACF/the_content status and headings
 aligned with the preflight read when a WordPress page changes between queue
 load and workflow open.
+
+The journey context now uses the full snapshot's fresh WordPress section count
+for its visible “Pomiar i struktura” card before consulting the compact queue
+projection. This prevents a stale queue count (for example, 1) from
+contradicting the exact selected-page inventory (for example, 7 headings) on
+the same screen. The fallback remains available only when preflight has no
+numeric count.
 
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
