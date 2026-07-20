@@ -47,15 +47,22 @@ export function ContentPlanningReviewPanel({
   const [checked, setChecked] = useState(false);
   const [provenanceChecked, setProvenanceChecked] = useState(false);
   const proposal = planning.proposal;
+  const serviceCandidateSignature = serviceCandidates
+    .map((candidate) => `${candidate.service_card_id}:${candidate.recommended}`)
+    .join("|");
+  const defaultServiceCardId =
+    proposal.service_selection_confirmed
+      ? proposal.service_card_id ?? ""
+      : serviceCandidates.length === 1
+        ? serviceCandidates[0].service_card_id
+        : serviceCandidates.find((candidate) => candidate.recommended)?.service_card_id ?? "";
   const [selectedServiceCardId, setSelectedServiceCardId] = useState(
-    proposal.service_selection_confirmed ? proposal.service_card_id ?? "" : ""
+    defaultServiceCardId
   );
   useEffect(() => {
     // Reset the local review form when the API-owned proposal or stage changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedServiceCardId(
-      proposal.service_selection_confirmed ? proposal.service_card_id ?? "" : ""
-    );
+    setSelectedServiceCardId(defaultServiceCardId);
     setDecision("approved");
     setNotes("");
     setChecked(false);
@@ -65,6 +72,8 @@ export function ContentPlanningReviewPanel({
     proposal.proposal_id,
     proposal.service_card_id,
     proposal.service_selection_confirmed,
+    defaultServiceCardId,
+    serviceCandidateSignature,
     stage
   ]);
   const selectedService = serviceCandidates.find(
@@ -111,8 +120,15 @@ export function ContentPlanningReviewPanel({
 
       {stage === "scope" ? (
         <>
+          <div className="mt-4 rounded-md border border-action/20 bg-action/5 p-3 text-sm leading-6 text-slate-700">
+            <p className="font-semibold text-ink">Co robisz teraz?</p>
+            <ol className="mt-1 list-inside list-decimal space-y-0.5">
+              <li>Sprawdź, czy dopasowana usługa pasuje do tej strony.</li>
+              <li>Zaznacz potwierdzenie i zapisz decyzję. Mapę sekcji zbuduje WILQ automatycznie.</li>
+            </ol>
+          </div>
           <label className="mt-4 block max-w-xl text-sm font-semibold text-ink">
-            Potwierdzona usługa
+            Usługa dla tej strony
             <select
               aria-label="Potwierdzona usługa"
               value={selectedServiceCardId}

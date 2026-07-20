@@ -367,3 +367,11 @@ When asking for a neutral second opinion, include:
 
 Never ask second opinion to validate a self-score. Ask it to roast whether the
 screen helps a marketer perform real work.
+
+## 2026-07-20 — zakres bez zgadywania
+
+Na kroku `Zakres` panel pokazuje teraz krótką instrukcję operatora: sprawdź
+dopasowaną usługę, zaznacz potwierdzenie i zapisz decyzję. WILQ buduje mapę
+sekcji automatycznie; marketer nie zatwierdza ręcznie ACF ani `the_content`.
+Jeśli API zwróci jedną kartę usługi albo jedną rekomendowaną kartę, formularz
+wybiera ją wstępnie, ale nadal wymaga jawnego potwierdzenia człowieka.

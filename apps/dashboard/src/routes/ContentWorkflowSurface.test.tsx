@@ -787,6 +787,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByText("Zatwierdź zakres treści")).toBeInTheDocument();
+    expect(screen.getByText("Co robisz teraz?")).toBeInTheDocument();
     expect(screen.getByText("właściciel firmy")).toBeInTheDocument();
     expect(screen.getByText("Skontaktuj się z Ekologus.")).toBeInTheDocument();
     expect(screen.getByText("bdo odpady")).toBeInTheDocument();
