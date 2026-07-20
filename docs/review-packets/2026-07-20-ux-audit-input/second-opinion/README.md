@@ -21,6 +21,8 @@ prompt dla niezależnego reviewera.
 | `bdo-production-desktop-first-viewport.png` | 1440×900 | Production-ready hero/usługa/next step/evidence, desktop |
 | `bdo-production-mobile-first-viewport-v2.png` | 390×844 | Production-ready header, hero/usługa/next step, mobile |
 | `bdo-stale-scope-action.png` | 1440×900 | Live stale-scope state with explicit next action |
+| `bdo-scope-final-desktop.png` | 1280×640 | Live current fixed point, compact hero and stale-scope CTA |
+| `bdo-scope-final-form.png` | 1280×640 | Live post-CTA plan/page-assets viewport |
 
 Zrzuty są wykonane z lokalnego dashboardu po zakończeniu ładowania i zostały
 sprawdzone wizualnie po zapisie. Pliki `*-first-slice-live.png` pokazują aktualny
