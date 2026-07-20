@@ -279,6 +279,7 @@ def test_selected_inventory_queue_reads_material_without_full_diagnostics(monkey
         next_step="Przejdź do decyzji.",
     )
     calls: list[bool] = []
+    freshness_calls: list[list[str] | None] = []
 
     def selected_inventory_decision(work_item_id: str, **kwargs):
         calls.append(kwargs["read_material"])
@@ -290,17 +291,17 @@ def test_selected_inventory_queue_reads_material_without_full_diagnostics(monkey
         "inventory_decision_for_work_item",
         selected_inventory_decision,
     )
-    monkeypatch.setattr(
-        content_workflow,
-        "build_content_freshness_assessment_fast",
-        lambda: ContentFreshnessAssessment(
+    def fast_freshness(**kwargs):
+        freshness_calls.append(kwargs.get("relevant_connector_ids"))
+        return ContentFreshnessAssessment(
             state="fresh",
             state_label="dane treści świeże",
             requires_refresh=False,
             summary="Dane są świeże.",
             next_step="Można przejść do decyzji.",
-        ),
-    )
+        )
+
+    monkeypatch.setattr(content_workflow, "build_content_freshness_assessment_fast", fast_freshness)
     monkeypatch.setattr(
         content_workflow,
         "build_content_diagnostics_cached",
@@ -312,6 +313,7 @@ def test_selected_inventory_queue_reads_material_without_full_diagnostics(monkey
     assert response.status_code == 200
     assert response.json()["candidates"][0]["work_item_id"] == inventory_id
     assert calls == [False]
+    assert freshness_calls == [selected_decision.source_connectors]
     assert response.json()["candidates"][0]["status_label"] == "materiał wymaga odczytu"
 
 
@@ -344,23 +346,26 @@ def test_selected_diagnostics_work_item_uses_the_catalog_fast_path(monkeypatch) 
         "build_content_diagnostics_cached",
         lambda: (_ for _ in ()).throw(AssertionError("full diagnostics must not run")),
     )
-    monkeypatch.setattr(
-        content_workflow,
-        "build_content_freshness_assessment_fast",
-        lambda: ContentFreshnessAssessment(
+    freshness_calls: list[list[str] | None] = []
+
+    def fast_freshness(**kwargs):
+        freshness_calls.append(kwargs.get("relevant_connector_ids"))
+        return ContentFreshnessAssessment(
             state="fresh",
             state_label="dane treści świeże",
             requires_refresh=False,
             summary="Dane są świeże.",
             next_step="Można przejść do decyzji.",
-        ),
-    )
+        )
+
+    monkeypatch.setattr(content_workflow, "build_content_freshness_assessment_fast", fast_freshness)
 
     response = TestClient(app).get(f"/api/content/work-items/queue?work_item_id={work_item_id}")
 
     assert response.status_code == 200
     assert response.json()["candidate_count"] == 1
     assert response.json()["candidates"][0]["decision_id"] == selected_decision.id
+    assert freshness_calls == [selected_decision.source_connectors]
 
 
 def test_selected_diagnostics_work_item_resolves_through_real_catalog_binding(
