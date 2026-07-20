@@ -96,6 +96,11 @@ The bounded checker for this copy is valid at
 its medium/low items are evidence gaps from omitted JSX excerpts, not proven
 product defects.
 
+The five-step task map now uses a compact five-column layout on mobile rather
+than forcing 144px cards into a clipped horizontal strip. All five stages are
+visible at 390px, with full status retained in the accessible labels; desktop
+keeps the expanded labels and status text.
+
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
 

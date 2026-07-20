@@ -38,12 +38,12 @@ export function ContentWorkflowTaskMap({
         </p>
       </div>
 
-      <ol className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:grid lg:grid-cols-5 lg:gap-3" aria-label="Etapy tworzenia treści">
+      <ol className="mt-4 grid grid-cols-5 gap-1 pb-1 sm:flex sm:gap-2 sm:overflow-x-auto lg:grid lg:grid-cols-5 lg:gap-3" aria-label="Etapy tworzenia treści">
         {steps.map((step, index) => {
           const isCurrent = step.id === currentStepId;
           const isSelected = step.id === selectedStepId;
           return (
-            <li key={step.id} className="shrink-0">
+            <li key={step.id} className="min-w-0 shrink-0 sm:min-w-max lg:min-w-0">
               <button
                 type="button"
                 aria-current={isCurrent ? "step" : undefined}
@@ -51,7 +51,7 @@ export function ContentWorkflowTaskMap({
                 aria-label={`${index + 1}. ${step.title}: ${step.statusLabel}`}
                 disabled={!step.canOpen}
                 onClick={() => onSelectStep(step.id)}
-                className={`flex min-w-36 items-center gap-2 rounded-md border px-2.5 py-2 text-left text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 lg:min-w-0 ${
+                className={`flex min-w-0 w-full flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-36 sm:flex-row sm:justify-start sm:gap-2 sm:px-2.5 sm:text-left lg:min-w-0 ${
                   isSelected
                     ? "border-action bg-action/10 text-action"
                     : step.phase === "complete" && step.readiness === "ready"
@@ -61,10 +61,10 @@ export function ContentWorkflowTaskMap({
                       : "border-line bg-surface text-slate-600"
                 }`}
               >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current text-xs font-bold">{index + 1}</span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm">{shortWorkflowStepTitle(step.id)}</span>
-                  <span className="mt-0.5 block truncate text-[11px] font-normal opacity-75">{step.statusLabel}</span>
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-[11px] font-bold sm:h-7 sm:w-7 sm:text-xs">{index + 1}</span>
+                <span className="min-w-0 max-w-full">
+                  <span className="block truncate text-[11px] sm:text-sm">{shortWorkflowStepTitle(step.id)}</span>
+                  <span className="mt-0.5 hidden truncate text-[11px] font-normal opacity-75 sm:block">{step.statusLabel}</span>
                 </span>
               </button>
             </li>
