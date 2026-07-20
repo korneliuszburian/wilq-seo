@@ -7,6 +7,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-20: initial-draft seam nie chowa już pierwszego konkretnego
+  planistycznego blokera za generycznym komunikatem. Draft zachowuje kod
+  `stale_planning_input`, ale pokazuje label, reason i next step pierwszej
+  bramki oraz pełne `source_codes`; marketer dostaje np. brak approved faktu,
+  a nie „coś w kontekście jest nieaktualne”. Focused initial-draft scope i
+  queue proof 7/7, Ruff przechodzą.
+
 - 2026-07-20: nieznany `service_fact_id` nie przechodzi już przez fallback jako
   lineage. Planner zwraca typed `missing_approved_service_fact` i nie buduje
   żadnego generycznego pseudo-faktu. Dzięki temu karta bez exact approved

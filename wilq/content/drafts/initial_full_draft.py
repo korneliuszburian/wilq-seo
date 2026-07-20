@@ -28,6 +28,7 @@ from wilq.content.drafts.structured_generation import (
 )
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
+    ContentPlanningInputBlocker,
     build_content_planning_input,
 )
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
@@ -163,15 +164,7 @@ def _prepare_inputs(
             snapshot,
             proposal=proposal,
             status="blocked",
-            blockers=[
-                _blocker(
-                    "stale_planning_input",
-                    "Wejście tekstu nie jest aktualne",
-                    "Usługa, wiedza, inventory albo metryki nie przechodzą bieżących bramek.",
-                    "Odśwież źródła lub zatwierdzenia i wygeneruj aktualny plan.",
-                    source_codes=[item.code for item in draft_blockers],
-                )
-            ],
+            blockers=[_planning_input_blocker(draft_blockers)],
         )
     planning_input = planning_result.planning_input
     if planning_input.planning_input_digest != request.expected_planning_input_digest:
@@ -637,6 +630,24 @@ def _stale_input_blocker() -> ContentInitialDraftBlocker:
         "Metryki albo kontekst planu zmieniły się",
         "Bieżący planning_input_digest nie odpowiada zatwierdzonej wersji.",
         "Wygeneruj i zatwierdź nowy plan przed tworzeniem tekstu.",
+    )
+
+
+def _planning_input_blocker(
+    blockers: list[ContentPlanningInputBlocker],
+) -> ContentInitialDraftBlocker:
+    """Keep the first actionable planning gate visible at the draft seam."""
+    first = blockers[0] if blockers else None
+    return _blocker(
+        "stale_planning_input",
+        first.label if first is not None else "Wejście tekstu nie jest aktualne",
+        first.reason
+        if first is not None
+        else "Usługa, wiedza, inventory albo metryki nie przechodzą bieżących bramek.",
+        first.next_step
+        if first is not None
+        else "Odśwież źródła lub zatwierdzenia i wygeneruj aktualny plan.",
+        source_codes=[item.code for item in blockers],
     )
 
 

@@ -1,10 +1,11 @@
-from wilq.content.drafts.initial_full_draft import _document_scope_errors
+from wilq.content.drafts.initial_full_draft import _document_scope_errors, _planning_input_blocker
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftSectionOutput,
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_output_schema
+from wilq.content.planning.dynamic_input import ContentPlanningInputBlocker
 from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
 from wilq.content.workflow.revisions import ContentDraftRevisionPageAssets
 
@@ -89,3 +90,29 @@ def test_document_scope_accepts_the_same_excluded_section_projection() -> None:
     )
 
     assert _document_scope_errors(proposal, output) == []
+
+
+def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None:
+    blocker = _planning_input_blocker([
+        ContentPlanningInputBlocker(
+            code="missing_approved_service_fact",
+            label="Brakuje zatwierdzonego faktu usługi",
+            reason="Karta wskazuje nieznany source fact.",
+            next_step="Uzupełnij approved source fact.",
+        ),
+        ContentPlanningInputBlocker(
+            code="stale_planning_sources",
+            label="Źródła są nieświeże",
+            reason="Odśwież dane.",
+            next_step="Uruchom refresh.",
+        ),
+    ])
+
+    assert blocker.code == "stale_planning_input"
+    assert blocker.label == "Brakuje zatwierdzonego faktu usługi"
+    assert blocker.reason == "Karta wskazuje nieznany source fact."
+    assert blocker.next_step == "Uzupełnij approved source fact."
+    assert blocker.source_codes == [
+        "missing_approved_service_fact",
+        "stale_planning_sources",
+    ]
