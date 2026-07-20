@@ -207,15 +207,20 @@ def _duplicate_status(decision: ContentDecisionItem) -> ContentDuplicateStatus:
 
 
 def _decision_h2_direction(decision: ContentDecisionItem) -> list[str]:
+    existing_headings = _usable_inventory_headings(decision.wordpress_section_headings)
+    if existing_headings:
+        return existing_headings[:4]
     if _decision_is_homepage(decision):
         return [
             "W czym pomaga Ekologus",
             "Kiedy warto skonsultować obowiązki środowiskowe",
             "Jak przygotować się do rozmowy",
         ]
-    existing_headings = _usable_inventory_headings(decision.wordpress_section_headings)
-    if existing_headings:
-        return existing_headings[:4]
+    if (
+        decision.wordpress_content_inventory_status == "available"
+        and decision.wordpress_content_text
+    ):
+        return ["Treść główna (the_content)"]
     return [
         "Najważniejsze pytania odbiorców",
         "Zakres informacji i następny krok",
