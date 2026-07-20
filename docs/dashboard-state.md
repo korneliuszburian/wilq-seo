@@ -375,3 +375,9 @@ dopasowaną usługę, zaznacz potwierdzenie i zapisz decyzję. WILQ buduje mapę
 sekcji automatycznie; marketer nie zatwierdza ręcznie ACF ani `the_content`.
 Jeśli API zwróci jedną kartę usługi albo jedną rekomendowaną kartę, formularz
 wybiera ją wstępnie, ale nadal wymaga jawnego potwierdzenia człowieka.
+
+Na aktywnym kroku `Zakres` formularz decyzji jest renderowany przed technicznym
+panelem generatora planu. Dzięki temu pierwszy ruch nie wymaga przewijania przez
+page assets ani ślady źródeł. Stara decyzja otrzymuje etykietę `nieaktualna`, gdy
+digest zakresu nie jest już bieżący; samo wcześniejsze `zaakceptowano` nie oznacza
+gotowości do przejścia dalej.

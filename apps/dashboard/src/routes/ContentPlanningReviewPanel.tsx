@@ -83,6 +83,7 @@ export function ContentPlanningReviewPanel({
   const serviceSelectionMessage = planningServiceSelectionMessage(serviceCandidates.length);
   const sectionMapReady = planningSectionMapReady(proposal);
   const latestDecision = stage === "scope" ? planning.scope_decision : planning.section_map_decision;
+  const latestDecisionCurrent = stage === "scope" ? planning.scope_current : planning.section_map_current;
   const inventoryMapping = planning.proposal.inventory_mapping ?? [];
   const documentScopeSummary = planningScopeSummary(proposal.sections);
   const canSubmit =
@@ -112,8 +113,15 @@ export function ContentPlanningReviewPanel({
           </h2>
         </div>
         {latestDecision ? (
-          <span className="rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-slate-600">
+          <span
+            className={`rounded-md border px-3 py-2 text-xs font-semibold ${
+              latestDecisionCurrent
+                ? "border-line bg-surface text-slate-600"
+                : "border-wait/30 bg-wait/10 text-wait"
+            }`}
+          >
             Ostatnia decyzja: {latestDecision.decision === "approved" ? "zaakceptowano" : "do zmiany"}
+            {!latestDecisionCurrent ? " · nieaktualna" : ""}
           </span>
         ) : null}
       </div>

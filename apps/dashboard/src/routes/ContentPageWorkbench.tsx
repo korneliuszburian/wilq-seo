@@ -257,8 +257,37 @@ export function ContentPageWorkbench({
 
       <div className={`grid gap-4 ${activeStepId === "draft" ? "xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_300px]" : "grid-cols-1"}`}>
         <div className="min-w-0 space-y-3">
-          {(activeStepId === "scope" || activeStepId === "section_map") &&
-          data.planningWorkspace ? (
+          {activeStepId === "scope" && data.planningWorkspace ? (
+            <>
+              <ContentPlanningReviewPanel
+                actions={{
+                  conflict: actions.planningReviewConflict,
+                  error: actions.planningReviewError,
+                  pending: actions.planningReviewPending,
+                  refresh: actions.refreshPlanningWorkspace,
+                  save: actions.savePlanningReview
+                }}
+                planning={data.planningWorkspace}
+                serviceCandidates={data.serviceProfileContext.service_candidates}
+                inventorySourceLabel={planningInventorySourceLabel(
+                  data.preflight.item.wordpress_acf_section_inventory_status,
+                  data.preflight.item.wordpress_content_inventory_status
+                )}
+                inventorySourceKind={data.preflight.item.wordpress_content_source_kind}
+                inventoryExtractionRegion={data.preflight.item.wordpress_content_extraction_region}
+                existingContentProvenanceRequired={
+                  data.preflight.item.wordpress_content_material_confidence === "review_required"
+                }
+                stage="scope"
+              />
+              <ContentPlanningGenerationPanel
+                serviceCardId={data.serviceProfileContext.service_card_id}
+                workItemId={item.id}
+              />
+            </>
+          ) : null}
+
+          {activeStepId === "section_map" && data.planningWorkspace ? (
             <>
               <ContentPlanningGenerationPanel
                 serviceCardId={data.serviceProfileContext.service_card_id}
@@ -283,7 +312,7 @@ export function ContentPageWorkbench({
                 existingContentProvenanceRequired={
                   data.preflight.item.wordpress_content_material_confidence === "review_required"
                 }
-                stage={activeStepId}
+                stage="section_map"
               />
             </>
           ) : null}
