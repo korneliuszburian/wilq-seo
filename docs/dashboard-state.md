@@ -91,6 +91,10 @@ language: automatic checking is temporarily unavailable, while reading the
 exact text, checking sources and recording a human decision remain available.
 The maintenance/storage detail is kept as the safe next technical step rather
 than exposed as the primary button label.
+The bounded checker for this copy is valid at
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-20-semantic-review-blocker-copy-v3-JfkeDr/`;
+its medium/low items are evidence gaps from omitted JSX excerpts, not proven
+product defects.
 
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
