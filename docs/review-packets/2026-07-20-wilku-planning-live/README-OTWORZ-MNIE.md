@@ -4,6 +4,8 @@ To jest paczka do sprawdzenia przez marketera. Otwórz najpierw:
 
 1. [Plany i metryki](PLANY-I-WYNIKI.md)
 2. [Karta decyzji](KARTA-DECYZJI-WILKA.md)
+3. [Screenshot BDO z działającego dashboardu](proof/content-workflow-bdo-live.png)
+4. [Screenshot outsourcingu z działającego dashboardu](proof/content-workflow-outsourcing-live.png)
 
 Możesz zobaczyć ten sam workflow na żywo pod:
 

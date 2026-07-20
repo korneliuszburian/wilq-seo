@@ -3341,3 +3341,10 @@ mapuje sekcje. Przygotowałem paczkę do tej decyzji w
 `docs/review-packets/2026-07-20-wilku-planning-live/`: live metryki GSC,
 lineage, status GA4, instrukcję wejścia do dashboardu i kartę jednej decyzji na
 stronę.
+
+Browser proof aktualnego dashboardu został zapisany w tej samej paczce jako dwa
+screenshots i nagranie `proof/content-workflow-live-demo.webm`. To pokazuje
+rzeczywisty ekran wyboru strony, metryki i bramkę zakresu; nie jest to publikacja
+ani UAT. Próba bounded second-opinion dla tego fixed pointu nie sfinalizowała
+JSON-u (pierwszy pass odrzucony przez cytację katalogu, retry zakończony błędem
+runnera/modelu), więc nie przedstawiam review jako PASS.
