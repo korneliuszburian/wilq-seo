@@ -1,4 +1,5 @@
 import { environmentLabel } from "./contentPageWorkbenchModel";
+import { formatContentMetricValue } from "../lib/contentLabels";
 import type { ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
 import { normalizedPath } from "./contentWorkflowTarget";
 
@@ -17,6 +18,10 @@ export function ContentWorkflowJourneyContext({
       : item.wordpress_title_or_h1 ?? item.topic;
   const metrics = candidate.search_metrics;
   const pageInventory = candidate.page_inventory;
+  const pageMetricFacts = item.metric_facts ?? [];
+  const ga4MetricFacts = pageMetricFacts
+    .filter((fact) => fact.source_connector === "google_analytics_4")
+    .slice(0, 4);
   const metricSummary =
     metrics?.impressions === undefined || metrics.impressions === null
       ? "Brakuje danych z wyszukiwarki dla tej strony."
@@ -59,6 +64,18 @@ export function ContentWorkflowJourneyContext({
         <JourneyFact label="Decyzja" value={candidate.recommended_mode_label} />
       </dl>
       <p className="mt-2 text-sm leading-6 text-slate-700">{metricSummary}</p>
+      <p className="mt-1 text-xs leading-5 text-slate-600" data-testid="content-ga4-metrics">
+        {ga4MetricFacts.length
+          ? `GA4 dla tej strony: ${ga4MetricFacts
+              .map((fact) => {
+                const source = fact.dimensions.source_medium
+                  ? ` · ${fact.dimensions.source_medium}`
+                  : "";
+                return `${fact.metric_label || fact.name}: ${formatContentMetricValue(fact.name, fact.value)}${source}`;
+              })
+              .join(" | ")}`
+          : "GA4 dla tej strony: brak dokładnych faktów w aktualnym odczycie."}
+      </p>
       <p className="mt-1 text-xs leading-5 text-slate-500" data-testid="content-metric-comparison">
         {comparisonSummary}
       </p>

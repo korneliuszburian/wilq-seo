@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ContentDraftRevisionBindingSchema } from "./actions";
+import { MetricFactSchema } from "./connectors";
 
 export const ContentInventoryStatusSchema = z.enum(["missing", "resolved", "blocked"]);
 export const ContentOperatorContextSchema = z.object({
@@ -77,6 +78,7 @@ export const ContentWorkItemSchema = z.object({
   wordpress_content_inventory_note: z.string().nullable().optional(),
   wordpress_acf_section_inventory_status: ContentWordPressSectionInventoryStatusSchema.optional(),
   wordpress_acf_section_inventory_note: z.string().nullable().optional(),
+  metric_facts: z.array(MetricFactSchema).optional(),
   evidence_ids: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()).default([]),
   total_clicks: z.number().int().nonnegative().nullable().optional(),

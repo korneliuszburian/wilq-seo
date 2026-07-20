@@ -201,6 +201,9 @@ describe("ContentWorkflowSurface", () => {
       within(marketerJourney).getByText("BDO i sprawozdawczość środowiskowa")
     ).toBeInTheDocument();
     expect(within(marketerJourney).getAllByText("odśwież istniejącą treść").length).toBeGreaterThan(0);
+    expect(within(marketerJourney).getByTestId("content-ga4-metrics")).toHaveTextContent(
+      "GA4 dla tej strony: aktywni użytkownicy: 26 · google / organic"
+    );
     fireEvent.click(within(marketerJourney).getByText("Dlaczego ta decyzja?"));
     expect(within(marketerJourney).getByTestId("content-metric-sources")).toHaveTextContent(
       "Google Search Console"
@@ -1843,6 +1846,19 @@ function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
     wordpress_section_count: 3,
     wordpress_section_inventory_status: "available",
     wordpress_content_inventory_status: "available",
+    metric_facts: [
+      {
+        name: "active_users",
+        metric_label: "aktywni użytkownicy",
+        value: 26,
+        period: "2026-06-22/2026-07-19",
+        source_connector: "google_analytics_4",
+        evidence_id: "ev_ga4_bdo",
+        dimensions: { source_medium: "google / organic" },
+        dimension_labels: {},
+        dimension_value_labels: {}
+      }
+    ],
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
     inventory_status: "resolved",
