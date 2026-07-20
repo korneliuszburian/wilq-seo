@@ -6,7 +6,11 @@ from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, Field
 
-from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
+from wilq.content.canonical.urls import (
+    CONTENT_SOURCE_SITE_HOSTS,
+    content_normalized_path,
+    content_url_host,
+)
 from wilq.content.claims.ledger import (
     ContentClaimLedger,
     ContentClaimStatus,
@@ -680,13 +684,13 @@ def _product_evidence_blockers(
     preflight: ContentPreflightVerdict,
     seed: ContentSalesBriefSeed,
 ) -> list[ContentSalesBriefBlocker]:
-    text = _search_text(
-        [
-            item.topic,
-            item.source_public_url,
-            seed.cta_direction,
-        ]
-    )
+    product_signals: list[str | None] = [item.source_public_url, seed.cta_direction]
+    # A broad homepage title may mention a product category among many services
+    # without making the page a product landing page. Keep topic-based product
+    # gating for non-homepage pages, while CTA/URL signals remain authoritative.
+    if content_normalized_path(item.final_canonical_url or item.source_public_url) != "/":
+        product_signals.append(item.topic)
+    text = _search_text(product_signals)
     if not _looks_like_product_cta_or_topic(text):
         return []
     connectors = set(_unique([*item.source_connectors, *preflight.source_connectors]))

@@ -666,6 +666,26 @@ def test_sales_brief_blocks_product_cta_without_merchant_or_shop_evidence() -> N
     assert "missing_product_evidence" in [blocker.code for blocker in result.blockers]
 
 
+def test_sales_brief_does_not_block_broad_homepage_for_product_word_in_title() -> None:
+    result = _brief_result(
+        item=_item(
+            topic="Ekologus | ochrona środowiska | szkolenia | sorbenty",
+            source_public_url="https://www.ekologus.pl/",
+            final_canonical_url="https://www.ekologus.pl/",
+        ),
+        seed=_seed(
+            cta_direction="Zaproponuj konsultację obowiązków bez gwarancji wyniku.",
+        ),
+        enrichment=_enrichment(
+            title="Strona główna Ekologus",
+            topic="ochrona środowiska bielsko",
+            cta_hypothesis="Zaproponuj konsultację obowiązków bez gwarancji wyniku.",
+        ),
+    )
+
+    assert "missing_product_evidence" not in [blocker.code for blocker in result.blockers]
+
+
 def test_product_guard_does_not_misclassify_legal_productowa_language() -> None:
     assert not _looks_like_product_cta_or_topic(
         "Informacja o gospodarce opakowaniami i opłacie produktowej"
