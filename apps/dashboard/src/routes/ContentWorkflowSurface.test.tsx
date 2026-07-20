@@ -173,6 +173,11 @@ describe("ContentWorkflowSurface", () => {
     const facts = workItem().metric_facts ?? [];
     const reordered = [...facts].reverse();
     expect(summarizeGa4MetricFacts(facts)).toEqual(summarizeGa4MetricFacts(reordered));
+    const duplicate = { ...facts[0] };
+    const unknown = { ...facts[0], name: "new_metric", metric_label: "nowa metryka", value: 7 };
+    expect(summarizeGa4MetricFacts([...facts, duplicate, unknown])).toContain(
+      "nowa metryka (google / organic: 7)"
+    );
     expect(summarizeGa4MetricFacts(facts)).toEqual([
       "aktywni użytkownicy (google / cpc: 12, google / organic: 26)",
       "wskaźnik zaangażowania (google / organic: 42%)"

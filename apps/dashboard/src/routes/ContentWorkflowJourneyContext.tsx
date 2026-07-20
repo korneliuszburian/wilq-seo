@@ -25,6 +25,8 @@ export function summarizeGa4MetricFacts(facts: BrowserMetricFact[]): string[] {
     byName.set(fact.name, group);
   }
   const unknownNames = [...byName.keys()]
+    // The priority list is the known operator vocabulary; every other name is
+    // retained as an unknown metric and shown after the known metrics.
     .filter((name) => !GA4_METRIC_PRIORITY.includes(name as (typeof GA4_METRIC_PRIORITY)[number]))
     .sort((left, right) => left.localeCompare(right, "pl"));
   const orderedNames = [...GA4_METRIC_PRIORITY, ...unknownNames];
@@ -42,7 +44,7 @@ export function summarizeGa4MetricFacts(facts: BrowserMetricFact[]): string[] {
       return `${group[0].metric_label || metricName} (${uniqueChannels.join(", ")})`;
     })
     .filter((summary): summary is string => summary !== null)
-    .slice(0, 4);
+    ;
 }
 
 export function ContentWorkflowJourneyContext({
