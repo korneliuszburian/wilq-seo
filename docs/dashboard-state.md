@@ -386,3 +386,7 @@ W planie podstawowy widok pokazuje tylko liczby wejściowe i statusy źródeł.
 Dokładne fakty oraz porównania okresów są dostępne pod jednym rozwijanym
 `Pokaż dokładne fakty i porównania metryk`, żeby marketer widział mięso bez
 ściany technicznego payloadu.
+
+Podgląd `Tekst` ma jawny status `wersja robocza`, licznik sekcji/FAQ i lokalną
+nawigację po całej stronie. Marketer może czytać materiał jak finalną stronę,
+a lineage i digest pozostają w rozwijanym panelu technicznym.
