@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
+from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.operator_steps import (
     CONTENT_WORKFLOW_OPERATOR_STEP_ORDER,
     ContentDraftRevisionWorkspaceStatus,
@@ -16,6 +17,11 @@ from wilq.content.workflow.operator_steps import (
     ContentWorkflowOperatorStepPhase,
     ContentWorkflowSalesBriefSignalStatus,
     build_content_workflow_operator_journey,
+)
+from wilq.content.workflow.planning import (
+    ContentPlanningProposal,
+    ContentPlanningSection,
+    build_content_planning_workspace,
 )
 
 
@@ -87,6 +93,40 @@ def test_operator_journey_builder_uses_canonical_scope_section_map_draft_states(
     assert [step.id for step in journey.steps if step.phase == "current"] == [
         expected_current_step_id
     ]
+
+
+def test_baseline_sections_are_preview_until_generated_proposal_exists() -> None:
+    baseline = ContentPlanningProposal(
+        work_item_id="content_work_item_baseline",
+        planning_digest="a" * 64,
+        final_canonical_url="https://www.ekologus.pl/",
+        target_reader="firma",
+        buyer_problem="brak porządku",
+        buyer_trigger="zmiana wymagań",
+        search_intent="informational",
+        cta_direction="Skonsultuj sytuację.",
+        sections=[
+            ContentPlanningSection(
+                heading="Istniejąca sekcja",
+                purpose="Porządkuje temat.",
+            )
+        ],
+        search_demand=ContentSearchDemandEvidence(
+            status="missing",
+            optional_ads_status="not_exactly_mapped",
+            safe_next_step="Brak dokładnych danych.",
+        ),
+    )
+
+    assert build_content_planning_workspace(baseline, []).section_map_current is False
+
+    generated = baseline.model_copy(
+        update={
+            "generation_status": "codex_generated",
+            "proposal_id": "proposal-baseline",
+        }
+    )
+    assert build_content_planning_workspace(generated, []).section_map_current is True
 
 
 @pytest.mark.parametrize(
