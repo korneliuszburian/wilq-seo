@@ -577,13 +577,19 @@ def inventory_metric_facts(url: str, path: str) -> list[Any]:
 
 def _latest_metric_refresh(connector_id: str) -> Any | None:
     runs = local_state_store().list_connector_refresh_runs(connector_id=connector_id)
-    return next(
-        (
-            run
-            for run in runs
-            if run.mode.value == "vendor_read" and run.status.value == "completed"
-        ),
-        None,
+    completed_reads = [
+        run
+        for run in runs
+        if run.mode.value == "vendor_read" and run.status.value == "completed"
+    ]
+    def recency(run: Any) -> datetime:
+        value = getattr(run, "completed_at", None) or getattr(run, "started_at", None)
+        return value if isinstance(value, datetime) else datetime.min
+
+    return (
+        max(completed_reads, key=recency)
+        if completed_reads
+        else None
     )
 
 

@@ -333,6 +333,32 @@ def test_inventory_metric_facts_reuses_same_refresh_snapshot(monkeypatch):
     assert calls == ["google_search_console", "google_analytics_4"]
 
 
+def test_latest_metric_refresh_uses_completion_time_not_storage_order(monkeypatch):
+    from datetime import UTC, datetime
+
+    old = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        started_at=datetime(2026, 7, 20, 8, tzinfo=UTC),
+        completed_at=datetime(2026, 7, 20, 8, 1, tzinfo=UTC),
+    )
+    newest = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        started_at=datetime(2026, 7, 20, 9, tzinfo=UTC),
+        completed_at=datetime(2026, 7, 20, 9, 1, tzinfo=UTC),
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: [old, newest]
+        ),
+    )
+
+    assert catalog_module._latest_metric_refresh("google_analytics_4") is newest
+
+
 def test_dynamic_material_falls_back_to_rendered_the_content(monkeypatch):
     monkeypatch.setattr(
         "wilq.connectors.wordpress.client._wordpress_credentials",
