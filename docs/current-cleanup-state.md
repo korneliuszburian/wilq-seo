@@ -1,4 +1,4 @@
-# Current Cleanup State — 2026-07-17
+# Current Cleanup State — 2026-07-20
 
 Przeczytaj przed cleanupem, refaktorem dashboardu albo zmianą kontraktu API.
 Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
@@ -166,7 +166,10 @@ kontynuuj najwyższy bezpieczny task.
   unieważnia review. WordPress handoff/apply jest revision-bound i wysyła body
   immutable rewizji. `dev_draft` prowadzi ten sam binding przez cały inline
   ActionObject chain i po sukcesie odświeża snapshot, readiness i readback.
-  Obecny dowód jest syntetyczny; nie wykonano realnego write do WordPressa.
+  BDO ma już realny, revision-bound draft-only write na dev WordPressie:
+  post `1278`, status `draft`, readback dostępny, audit `external_write_attempted=true`.
+  Outsourcing pozostaje zatrzymany przed handoffem przez `revision_not_approved`;
+  nie wolno udawać decyzji człowieka.
 - Nawigacja nie wywołuje write requestów. Preview pozostaje dry-run, a każdy
   przyszły zapis WordPress musi przejść przez exact ActionObject, confirmation i
   audit; publish/update/delete pozostają poza tym journey.
@@ -312,10 +315,9 @@ kontynuuj najwyższy bezpieczny task.
   bez requestu WordPress. Proof:
   `.local-lab/proof/dashboard-content-workflow/2026-07-15T19-06-55-670Z/`.
 - Osobny browser proof handoff: save → refetch/reload → exact review → preview → review akcji
-  → confirm → impact → syntetyczny apply → draft-only readback, 1440×900 i
-  390×844. Endpointy ActionObjectu są przechwycone; zero realnego WordPress
-  write. Proof:
-  `.local-lab/proof/dashboard-content-workflow/2026-07-15T11-50-52-058Z/`.
+  → confirm → impact → revision-bound draft-only apply → readback, z aktualnym
+  dowodem w `docs/review-packets/2026-07-20-live-draft-proof/`. Ten proof dotyczy
+  realnego BDO post `1278`; publikacja i update/delete pozostają zablokowane.
 - Focused API/UI przechodzą 32/32, TypeScript i ESLint są zielone, focused
   Playwright przechodzi 1/1, a niezależny Standards+Spec review nie znalazł
   uchybień. Syntetyczny proof nie zastępuje Wilku UAT.
