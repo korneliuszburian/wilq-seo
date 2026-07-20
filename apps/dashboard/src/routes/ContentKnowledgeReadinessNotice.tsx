@@ -32,7 +32,39 @@ export function ContentKnowledgeReadinessNotice({
       </div>
     );
   }
-  if (!readiness || readiness.ready_for_generation) return null;
+  if (!readiness) return null;
+  if (readiness.ready_for_generation) {
+    if (!materials.data?.length) return null;
+    return (
+      <details
+        className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-950"
+        data-testid="content-workflow-knowledge-sources"
+      >
+        <summary className="cursor-pointer font-semibold">
+          Materiały źródłowe używane przez WILQ ({materials.data.length})
+        </summary>
+        <p className="mt-2 leading-6">
+          To zaakceptowany manifest materiałów Ekologusa. WILQ używa ich jako
+          źródeł, ale nie pokazuje prywatnych ścieżek ani surowych transcriptów
+          w panelu.
+        </p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {materials.data.map((material) => (
+            <li
+              key={material.source_id}
+              className="rounded-lg border border-emerald-200/80 bg-white/70 px-3 py-2 text-xs"
+            >
+              <span className="font-semibold">{material.title || material.file_name}</span>
+              <span className="mt-1 block text-emerald-900/75">
+                {material.kind} · {material.word_count.toLocaleString("pl-PL")} słów ·
+                {" "}{material.import_status === "imported" ? "zaimportowany" : "review"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </details>
+    );
+  }
   const pendingParts = [
     readiness.import_pending_count > 0
       ? `${readiness.import_pending_count} oczekuje na kontrolowany import`

@@ -317,6 +317,38 @@ describe("ContentWorkflowSurface", () => {
     expect(notice).not.toHaveTextContent("/private/rozmowa-z-ekologus.txt");
   });
 
+  it("shows the approved source manifest when generation is ready", async () => {
+    vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue([
+      {
+        source_id: "source-approved-transcript",
+        file_name: "rozmowa-ekologus.txt",
+        title: "Rozmowa z zespołem Ekologus",
+        kind: "transcript",
+        word_count: 1840,
+        digest_prefix: "abc123",
+        privacy_class: "internal",
+        import_status: "imported",
+        source_path: "/private/rozmowa-ekologus.txt"
+      }
+    ]);
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const sources = await screen.findByTestId("content-workflow-knowledge-sources");
+    expect(sources).toHaveTextContent("Materiały źródłowe używane przez WILQ (1)");
+    expect(sources).toHaveTextContent("Rozmowa z zespołem Ekologus");
+    expect(sources).toHaveTextContent("transcript · 1840 słów · zaimportowany");
+    expect(sources).not.toHaveTextContent("/private/rozmowa-ekologus.txt");
+  });
+
   it("distinguishes excerpt review from pending import in corpus readiness", async () => {
     vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue({
       status: "excerpt_review_required",
