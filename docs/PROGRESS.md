@@ -7,6 +7,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-20: dynamiczny planner przestał streszczać zatwierdzony profil usługi
+  generycznym komunikatem. Gdy karta wskazuje zatwierdzony `source_fact_id`,
+  input bierze rzeczywisty approved `extracted_fact`, connector, evidence i
+  lineage z rejestru WILQ; fallback pozostaje tylko dla starszych/syntetycznych
+  identyfikatorów. BDO/outsourcing używają tego samego mechanizmu, bez wyjątku
+  URL. Focused source-fact planning proof 2/2 i Ruff przechodzą.
+
 - 2026-07-20: Sales Brief nie przypina już do enrichmentu lineage
   `source_fact_ids` z faktów innych niż `approved`. To chroni dynamiczny input
   przed oznaczeniem materiału `review_required` jako użytego tylko dlatego, że

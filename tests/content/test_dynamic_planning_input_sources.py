@@ -32,8 +32,10 @@ from wilq.content.planning.generated_proposal_turn import (
 from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningInventorySection,
+    ContentPlanningSourceAssessment,
     build_planning_inventory,
     build_source_assessments,
+    build_source_facts,
     usable_query_portfolio,
 )
 from wilq.content.workflow.demand_evidence import (
@@ -581,6 +583,38 @@ def test_planning_input_preserves_source_fact_and_material_lineage(
         "ekologus_public_consulting_outsourcing_offer_2026_07_01"
     ]
     assert summary.source_material_ids == ["ekologus_material_portfolio"]
+
+
+def test_service_profile_projection_uses_the_approved_fact_summary() -> None:
+    brief = ContentSalesBrief.model_construct(
+        source_facts=[], knowledge_card_ids=["ekologus_service_bdo_reporting"]
+    )
+    service_profile = ContentWorkItemServiceProfileContext.model_construct(
+        service_label="BDO",
+        source_fact_ids=["ekologus_public_bdo_faq_2026_07_01"],
+        source_material_ids=["ekologus_material_kb015"],
+        knowledge_card_ids=["ekologus_service_bdo_reporting"],
+        source_connectors=["public_site"],
+        evidence_ids=["ev_content_service_profile_source_facts"],
+    )
+    assessments = [
+        ContentPlanningSourceAssessment(
+            source=name,
+            status="used" if name == "service_profile" else "not_applicable",
+            reason="test",
+        )
+        for name in (
+            "wordpress", "service_profile", "gsc", "ga4", "google_ads",
+            "ahrefs", "keyword_planner", "merchant", "localo", "social",
+        )
+    ]
+
+    facts = build_source_facts(brief, assessments, service_profile)
+
+    profile_fact = next(fact for fact in facts if fact.source_fact_ids)
+    assert profile_fact.summary.startswith("Publiczny artykuł Ekologus")
+    assert profile_fact.source_fact_ids == ["ekologus_public_bdo_faq_2026_07_01"]
+    assert profile_fact.source_material_ids == ["ekologus_material_kb015"]
 
 
 def test_planning_blocks_rewrite_when_only_headings_are_available(

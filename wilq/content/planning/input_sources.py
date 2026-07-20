@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.canonical.landing_identity import LandingPageCandidate, match_landing_page
 from wilq.content.inventory.records import ContentInventoryRecord, ContentInventoryResolution
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
@@ -494,20 +495,44 @@ def build_source_facts(
         )
     ]
     if service_profile is not None and service_profile.source_fact_ids:
-        facts.extend(
-            ContentPlanningSourceFact(
-                fact_id=f"planning_service_fact_{index:02d}",
-                summary=(
-                    f"Zatwierdzony fakt profilu usługi: {service_profile.service_label or 'usługa'}"
-                ),
-                source_connector=(service_profile.source_connectors or ["service_profile"])[0],
-                evidence_ids=service_profile.evidence_ids or ["service_profile_source_fact"],
-                knowledge_card_ids=service_profile.knowledge_card_ids,
-                source_fact_ids=list(service_profile.source_fact_ids),
-                source_material_ids=list(service_profile.source_material_ids),
+        source_facts_by_id = {
+            fact.source_id: fact
+            for fact in ekologus_source_facts()
+            if fact.review_status == "approved"
+        }
+        approved_profile_facts = [
+            source_facts_by_id[source_fact_id]
+            for source_fact_id in service_profile.source_fact_ids
+            if source_fact_id in source_facts_by_id
+        ]
+        if approved_profile_facts:
+            facts.extend(
+                ContentPlanningSourceFact(
+                    fact_id=f"planning_service_fact_{index:02d}",
+                    summary=fact.extracted_fact,
+                    source_connector=(fact.source_connectors or ["service_profile"])[0],
+                    evidence_ids=fact.evidence_ids or service_profile.evidence_ids,
+                    knowledge_card_ids=service_profile.knowledge_card_ids,
+                    source_fact_ids=[fact.source_id],
+                    source_material_ids=list(service_profile.source_material_ids),
+                )
+                for index, fact in enumerate(approved_profile_facts, start=1)
             )
-            for index in range(1, 2)
-        )
+        else:
+            facts.append(
+                ContentPlanningSourceFact(
+                    fact_id="planning_service_fact_01",
+                    summary=(
+                        "Zatwierdzony fakt profilu usługi: "
+                        f"{service_profile.service_label or 'usługa'}"
+                    ),
+                    source_connector=(service_profile.source_connectors or ["service_profile"])[0],
+                    evidence_ids=service_profile.evidence_ids or ["service_profile_source_fact"],
+                    knowledge_card_ids=service_profile.knowledge_card_ids,
+                    source_fact_ids=list(service_profile.source_fact_ids),
+                    source_material_ids=list(service_profile.source_material_ids),
+                )
+            )
     return facts
 
 
