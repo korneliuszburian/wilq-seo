@@ -216,6 +216,9 @@ export function ContentPageWorkbench({
   const semanticReviewResult =
     exactSemanticReviewForRevision(actions.semanticReviewResult, latestRevision) ??
     exactSemanticReviewForRevision(semanticReviewQuery.data ?? null, latestRevision);
+  const semanticReviewStorageBlocked = semanticReviewResult?.blockers.some(
+    (blocker) => blocker.code === "storage_activation_required"
+  ) ?? false;
   const revisionEvidenceCount = latestRevision
     ? unique([
         ...(latestRevision.sections?.flatMap((section) => section.evidence_ids ?? []) ?? []),
@@ -678,11 +681,17 @@ export function ContentPageWorkbench({
                       <button
                         type="button"
                         onClick={actions.generateSemanticReview}
-                        disabled={actions.semanticReviewPending || semanticReviewGenerating}
+                        disabled={
+                          actions.semanticReviewPending ||
+                          semanticReviewGenerating ||
+                          semanticReviewStorageBlocked
+                        }
                         className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {actions.semanticReviewPending || semanticReviewGenerating
                           ? "Analizuję wersję..."
+                          : semanticReviewStorageBlocked
+                            ? "Review wymaga aktywacji storage"
                           : semanticReviewResult?.status === "ready"
                             ? "Sprawdź exact review"
                             : "Uruchom review semantyczne"}

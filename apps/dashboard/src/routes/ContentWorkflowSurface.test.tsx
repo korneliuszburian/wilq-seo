@@ -1036,6 +1036,43 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressAuthoringPayloadPreview).not.toHaveBeenCalled();
   });
 
+  it("does not offer a retry when semantic review storage is not activated", async () => {
+    const revision = savedFullDraftRevision();
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        workspace: savedRevisionWorkspace(revision),
+        currentStepId: "review",
+        steps: operatorStepsAtReview()
+      })
+    );
+    vi.mocked(getContentWorkItemSemanticReview).mockResolvedValue({
+      ...semanticReviewNotGenerated(revision),
+      status: "blocked",
+      blockers: [{
+        code: "storage_activation_required",
+        label: "Storage reviewu nieaktywne",
+        reason: "Realny local state nie ma aktywowanej tabeli semantic review.",
+        next_step: "Wykonaj zatwierdzone okno maintenance.",
+        source_codes: ["content_semantic_reviews"]
+      }]
+    });
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
+    });
+
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const button = await screen.findByRole("button", { name: "Review wymaga aktywacji storage" });
+    expect(button).toBeDisabled();
+    expect(screen.getByText("Realny local state nie ma aktywowanej tabeli semantic review.")).toBeInTheDocument();
+    expect(postContentWorkItemSemanticReview).not.toHaveBeenCalled();
+  });
+
   it("runs the exact revision ActionObject inline and stops a typed apply blocker without retry", async () => {
     const revision = savedDraftRevision();
     const revisionReview = savedDraftRevisionReview(revision);
