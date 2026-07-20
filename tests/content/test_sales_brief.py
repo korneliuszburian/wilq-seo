@@ -77,6 +77,34 @@ def test_real_inventory_headings_win_over_the_content_label() -> None:
     ]
 
 
+def test_sentence_like_inventory_heading_falls_back_to_the_content() -> None:
+    decision = ContentDecisionItem(
+        id="inventory_sentence_heading",
+        decision_type="refresh_or_merge",
+        title="Strona z pseudo-nagłówkiem",
+        wordpress_section_headings=[
+            "Obowiązki wynikające z ustawy dotyczą wyłącznie przedsiębiorców "
+            "w rozumieniu przepisów ustawy z dnia 2 lipca 2004 r. o swobodzie "
+            "działalności gospodarczej."
+        ],
+        wordpress_content_inventory_status="available",
+        wordpress_content_text="Istniejąca treść strony.",
+        evidence_ids=["ev_wp_sentence_heading"],
+        source_connectors=["wordpress_ekologus"],
+        source_public_url="https://www.ekologus.pl/artykul-prawny/",
+        final_canonical_url="https://www.ekologus.pl/artykul-prawny/",
+        intended_final_url="https://www.ekologus.pl/artykul-prawny/",
+        inventory_gate_status="confirmed_current_inventory",
+        duplicate_gate_status="checked",
+        rationale="Treść jest dostępna, ale nagłówek jest zdaniem.",
+        next_step="Sprawdź materiał.",
+    )
+
+    assert content_sales_brief_seed_from_decision(decision).h2_direction == [
+        "Treść główna (the_content)"
+    ]
+
+
 def _item(**overrides: object) -> ContentWorkItem:
     payload: dict[str, Any] = {
         "id": "content_work_item_bdo",

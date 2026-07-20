@@ -241,6 +241,12 @@ def _usable_inventory_headings(headings: list[str]) -> list[str]:
         heading = " ".join(raw_heading.split())
         if not heading or any(fragment in heading.casefold() for fragment in ignored_fragments):
             continue
+        # Rendered WordPress content occasionally exposes a full legal or
+        # promotional sentence as an H2. It is body copy, not a stable section
+        # boundary; keeping it would make the planner invent a section around
+        # one sentence instead of working on the source body.
+        if len(heading) > 100 or re.search(r"[.!?]$", heading):
+            continue
         # Customer stories and testimonial rows often arrive as a heading plus
         # a bracketed year. They belong to page chrome, not to the answer map.
         if re.search(r"\[\s*(?:19|20)\d{2}\s*r?\.?\s*\]", heading, re.IGNORECASE):
