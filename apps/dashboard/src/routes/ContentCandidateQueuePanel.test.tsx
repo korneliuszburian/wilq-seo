@@ -95,7 +95,7 @@ describe("candidateEvidenceSummary", () => {
           }
         ]
       } as unknown as ContentInventoryCatalogResponse)
-    ).toContain("12 sekcji");
+    ).toContain("12 nagłówków inventory WordPress");
     expect(
       candidateEvidenceSummary(withStaleQueueProjection, {
         items: [
@@ -107,7 +107,7 @@ describe("candidateEvidenceSummary", () => {
           }
         ]
       } as unknown as ContentInventoryCatalogResponse)
-    ).toContain("1 sekcji");
+    ).toContain("1 sekcji z projekcji kolejki");
   });
 });
 

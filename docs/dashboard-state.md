@@ -524,6 +524,9 @@ rekord tego samego adresu pod innym `work_item_id`. `ContentCandidateQueuePanel`
 wiąże teraz rekord po identyfikatorze albo znormalizowanej ścieżce URL i preferuje
 `ContentInventoryCatalogItem.section_count`; fallbackiem pozostaje kolejka.
 
-Live proof na `/content-workflow` zmienił BDO z błędnego `1 sekcji` na aktualne
-`12 sekcji`, zgodne z panelem pełnego inventory. Nie zmienia to decyzji ani nie
-tworzy nowego URL. Obraz: `.local-lab/proof/dashboard-content-workflow/2026-07-21/queue-inventory-section-count.png`.
+Live proof na `/content-workflow` zmienił BDO z nieopisanej projekcji `1 sekcji`
+na jawne `12 nagłówków inventory WordPress`; po wybraniu strony workflow nadal
+pokazuje 7 nagłówków bezpośredniego materiału REST. Rozbieżność jest teraz
+opisana źródłem zamiast udawania, że oba liczniki oznaczają to samo. Nie zmienia
+to decyzji ani nie tworzy nowego URL. Obraz:
+`.local-lab/proof/dashboard-content-workflow/2026-07-21/queue-inventory-section-count.png`.

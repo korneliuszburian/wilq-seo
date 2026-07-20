@@ -168,8 +168,10 @@ export function candidateEvidenceSummary(
       normalizedInventoryPath(item.url) === candidatePath
   );
   const sectionCount = catalogItem?.section_count ?? queueInventory?.section_count;
-  if (sectionCount !== null && sectionCount !== undefined) {
-    metricParts.push(`${sectionCount} sekcji`);
+  if (catalogItem && sectionCount !== null && sectionCount !== undefined) {
+    metricParts.push(`${sectionCount} nagłówków inventory WordPress`);
+  } else if (sectionCount !== null && sectionCount !== undefined) {
+    metricParts.push(`${sectionCount} sekcji z projekcji kolejki`);
   } else if (catalogItem?.material_status === "content_and_structure" || queueInventory?.content_inventory_status === "available") {
     metricParts.push("treść odczytana");
   }
