@@ -96,7 +96,7 @@ export function ContentPlanningReviewPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            {stage === "scope" ? "Krok 1 z 5" : "Krok 2 z 5"}
+            {stage === "scope" ? "Zakres i brief · krok 1 z 5" : "Plan strony · krok 2 z 5"}
           </p>
           <h2 id="planning-review-title" className="mt-1 text-lg font-semibold text-ink">
             {stage === "scope" ? "Zatwierdź zakres treści" : "Automatyczna mapa sekcji"}

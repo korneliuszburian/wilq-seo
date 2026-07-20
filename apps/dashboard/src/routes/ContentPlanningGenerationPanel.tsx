@@ -113,8 +113,8 @@ export function ContentPlanningGenerationPanel({
       className="rounded-md border border-line bg-white p-4 shadow-sm"
       data-testid="content-planning-generation"
     >
-      <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-        Strategia
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Plan strony · źródła i page assets
       </p>
       <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
         <div>

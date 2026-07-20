@@ -293,7 +293,9 @@ export function ContentPageWorkbench({
             <div className="rounded-md border border-line bg-white p-4 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-semibold text-ink">Tekst sekcji do szkicu</h2>
+                  <h2 className="text-lg font-semibold text-ink">Tekst strony</h2>
+                  <span className="sr-only">Tekst sekcji do szkicu</span>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">Przeczytaj stronę jak finalny materiał, popraw wybraną sekcję i zapisz exact revision.</p>
                 </div>
                 <span className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-slate-600">
                   {revisionStatusLabel}
