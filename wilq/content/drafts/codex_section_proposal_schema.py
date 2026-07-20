@@ -21,6 +21,7 @@ def proposal_output_schema(
     definitions = _mapping(schema, "$defs")
     section_schema = _mapping(definitions, "StructuredDraftOutputSection")
     section_properties = _mapping(section_schema, "properties")
+    sections_schema = _mapping(properties, "sections")
     base_by_heading = {section.heading: section for section in base_revision.sections}
     evidence_ids = _unique(
         evidence_id
@@ -30,6 +31,11 @@ def proposal_output_schema(
 
     _set_const(properties, "title", base_revision.title)
     _set_const(properties, "h1", base_revision.title)
+    # The proposal is a selected-section child revision, not a second full
+    # draft.  Bound the array itself so the model cannot return duplicate or
+    # unselected section objects that only fail after the turn completes.
+    sections_schema["minItems"] = len(selected_headings)
+    sections_schema["maxItems"] = len(selected_headings)
     _set_literals(section_properties, "heading", selected_headings, scalar=True)
     _set_literals(section_properties, "evidence_ids", evidence_ids)
     _set_literals(section_properties, "claims_used", contract.model_input.claims_allowed)

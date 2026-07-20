@@ -4,6 +4,7 @@ import json
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
@@ -24,6 +25,7 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
 )
+from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
 from wilq.storage.local_state import local_state_store
 
 
@@ -58,6 +60,48 @@ class _FakeCodexAppServerClient:
             event_methods=("turn/completed",),
             item_types=("agentMessage",),
         )
+
+
+def test_section_proposal_schema_bounds_selected_section_count() -> None:
+    contract = SimpleNamespace(
+        output_schema={
+            "type": "object",
+            "properties": {
+                "title": {},
+                "h1": {},
+                "sections": {"type": "array"},
+                "source_facts_used": {},
+                "claims_needing_review": {},
+                "forbidden_claims_avoided": {},
+            },
+            "$defs": {
+                "StructuredDraftOutputSection": {
+                    "properties": {
+                        "heading": {},
+                        "evidence_ids": {},
+                        "claims_used": {},
+                    }
+                }
+            },
+        },
+        model_input=SimpleNamespace(
+            claims_allowed=[],
+            claims_removed_or_blocked=[],
+        ),
+    )
+    base_revision = SimpleNamespace(
+        title="Bazowy tytuł",
+        sections=[SimpleNamespace(heading="Sekcja A", evidence_ids=["ev_a"])],
+    )
+
+    schema = proposal_output_schema(
+        contract,
+        base_revision=base_revision,
+        selected_headings=["Sekcja A"],
+    )
+
+    assert schema["properties"]["sections"]["minItems"] == 1
+    assert schema["properties"]["sections"]["maxItems"] == 1
 
 
 def test_codex_section_proposal_is_grounded_and_remains_unreviewed(
@@ -206,6 +250,8 @@ def _assert_literal_schema(
 ) -> None:
     properties = output_schema["properties"]
     section_properties = output_schema["$defs"]["StructuredDraftOutputSection"]["properties"]
+    assert properties["sections"]["minItems"] == 1
+    assert properties["sections"]["maxItems"] == 1
     assert properties["title"]["const"] == case.base_revision["title"]
     assert properties["claims_needing_review"]["items"]["enum"] == ["__WILQ_EMPTY_ARRAY_ONLY__"]
     assert section_properties["heading"]["enum"] == [case.selected_heading]
