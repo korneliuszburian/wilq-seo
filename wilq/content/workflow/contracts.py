@@ -313,6 +313,7 @@ class ContentWordPressDraftReadback(BaseModel):
     post_status: str = ""
     title: str = ""
     link: str = ""
+    edit_link: str = ""
     modified_gmt: str = ""
     content_summary: str = ""
     content_word_count: int | None = None

@@ -212,6 +212,70 @@ def test_failed_wordpress_apply_claim_consumes_binding_and_releases_revision_loc
     )
 
 
+def test_failed_wordpress_apply_claim_retries_when_adapter_was_not_reached(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "retryable_apply_claim.sqlite3"))
+    binding = _seed_approved_revision_binding(
+        work_item_id="work_item_retryable_claim",
+        draft_package_id="draft_package_retryable_claim",
+        final_canonical_url="https://ekologus.pl/retryable-claim/",
+    )
+    store = content_workflow_store()
+    assert (
+        store.claim_wordpress_revision_apply(
+            binding,
+            action_id="act_apply_wordpress_draft_handoff",
+            claimed_by="operator_test",
+        )
+        == "acquired"
+    )
+    outcome_audit = AuditEvent(
+        id="audit_retryable_claim_outcome",
+        action_id="act_apply_wordpress_draft_handoff",
+        event_type="apply_blocked",
+        actor="operator_test",
+        summary="Walidacja zablokowała zapis przed adapterem.",
+        details={"wordpress_draft_binding": binding.model_dump(mode="json")},
+    )
+    mutation_audit = ActionMutationAuditRecord(
+        id="mutation_retryable_claim_outcome",
+        action_id="act_apply_wordpress_draft_handoff",
+        connector="wordpress_ekologus",
+        status="blocked",
+        actor="operator_test",
+        audit_event_id=outcome_audit.id,
+        summary="Zapis zatrzymał się przed wywołaniem vendora.",
+        wordpress_draft_binding=binding,
+    )
+    blocked_execution = ContentWordPressDraftExecutionResult(
+        status="blocked",
+        mode="live",
+        boundary=ContentWordPressDraftExecutionBoundary(
+            live_write_enabled=True,
+            live_adapter_configured=True,
+        ),
+        revision_binding=binding,
+        external_write_attempted=False,
+    )
+    store.finish_wordpress_revision_apply_claim(
+        binding,
+        status="failed",
+        audit_event=outcome_audit,
+        mutation_audit=mutation_audit,
+        adapter_result={"execution_result": blocked_execution.model_dump(mode="json")},
+    )
+    assert (
+        store.claim_wordpress_revision_apply(
+            binding,
+            action_id="act_apply_wordpress_draft_handoff",
+            claimed_by="operator_test",
+        )
+        == "acquired"
+    )
+
+
 def test_wordpress_apply_reconciliation_reads_draft_and_never_retries_write(
     monkeypatch,
     tmp_path,

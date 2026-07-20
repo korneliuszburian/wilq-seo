@@ -1493,6 +1493,7 @@ export const ContentWordPressDraftReadbackSchema = z.object({
   post_status: z.string(),
   title: z.string(),
   link: z.string(),
+  edit_link: z.string().optional(),
   modified_gmt: z.string(),
   content_summary: z.string(),
   content_word_count: z.number().nullable().optional(),

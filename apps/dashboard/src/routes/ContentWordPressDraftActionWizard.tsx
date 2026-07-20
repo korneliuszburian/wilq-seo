@@ -471,14 +471,14 @@ function DraftCreatedSummary({ draftReadback }: { draftReadback: DraftReadback }
       {draftReadback?.status === "available" ? (
         <div className="mt-3">
           <p className="text-sm font-semibold text-ink">{draftReadback.title || "Szkic bez tytułu"}</p>
-          {draftReadback.link ? (
+          {(draftReadback.edit_link || draftReadback.link) ? (
             <a
-              href={draftReadback.link}
+              href={draftReadback.edit_link || draftReadback.link}
               target="_blank"
               rel="noreferrer"
               className="mt-3 inline-flex min-h-10 items-center rounded-md border border-action/40 bg-white px-3 py-2 text-sm font-semibold text-action"
             >
-              Otwórz odczytany szkic na devie
+              Otwórz szkic w WordPress
             </a>
           ) : null}
         </div>
@@ -507,8 +507,12 @@ function matchingCompletedStageCount(
     );
     if (latestIndex <= lastMatchIndex) break;
     const latestEvent = orderedEvents[latestIndex];
+    const expectedEventTypes =
+      stage.id === "apply"
+        ? ["apply_succeeded", "action_apply_completed"]
+        : [stage.eventType];
     if (
-      latestEvent.event_type !== stage.eventType ||
+      !expectedEventTypes.includes(latestEvent.event_type) ||
       !sameRevisionBinding(latestEvent.details.wordpress_draft_binding, binding)
     ) {
       break;
@@ -540,7 +544,13 @@ function stageEventFamily(stage: WizardStageId): string[] {
   if (stage === "impact") {
     return ["action_impact_check_completed", "action_impact_check_blocked"];
   }
-  return ["action_apply_completed", "action_apply_blocked", "apply_confirmation_missing"];
+  return [
+    "apply_succeeded",
+    "action_apply_completed",
+    "apply_blocked",
+    "action_apply_blocked",
+    "apply_confirmation_missing"
+  ];
 }
 
 function findLastIndex<T>(values: T[], predicate: (value: T) => boolean) {
@@ -582,7 +592,9 @@ function latestMatchingApplyBlocker(
   if (latestApplyIndex === -1) return null;
   const event = orderedEvents[latestApplyIndex];
   if (
-    !["action_apply_blocked", "apply_confirmation_missing"].includes(event.event_type) ||
+    !["apply_blocked", "action_apply_blocked", "apply_confirmation_missing"].includes(
+      event.event_type
+    ) ||
     !sameRevisionBinding(event.details.wordpress_draft_binding, binding)
   ) {
     return null;

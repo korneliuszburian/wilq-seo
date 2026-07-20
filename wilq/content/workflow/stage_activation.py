@@ -79,6 +79,7 @@ def wordpress_draft_readback(
         post_status=readback.status,
         title=readback.title,
         link=readback.link,
+        edit_link=readback.edit_link,
         modified_gmt=readback.modified_gmt,
         content_summary=readback.content_summary,
         content_word_count=readback.content_word_count,

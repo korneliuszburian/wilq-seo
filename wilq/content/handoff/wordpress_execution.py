@@ -258,6 +258,7 @@ def content_wordpress_draft_execution_blockers(
         if require_exact_section_overrides:
             blockers.extend(
                 _exact_section_override_blockers(
+                    handoff,
                     draft_package,
                     section_overrides or [],
                 )
@@ -358,10 +359,17 @@ def _handoff_payload_blockers(
 
 
 def _exact_section_override_blockers(
+    handoff: ContentWordPressDraftHandoff,
     draft_package: ContentDraftPackage,
     section_overrides: list[ContentWordPressDraftSectionOverride],
 ) -> list[ContentWordPressDraftExecutionBlocker]:
-    expected_headings = [_section_key(section.heading) for section in draft_package.sections]
+    expected_sections = (
+        handoff.revision_sections
+        if handoff.revision_document is not None
+        and handoff.revision_document.schema_version == "wilq_content_draft_revision_v2"
+        else draft_package.sections
+    )
+    expected_headings = [_section_key(section.heading) for section in expected_sections]
     override_headings = [_section_key(section.heading) for section in section_overrides]
     if (
         override_headings == expected_headings

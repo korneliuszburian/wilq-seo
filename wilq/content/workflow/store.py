@@ -359,8 +359,48 @@ class _WordPressApplyStoreMixin(_StoreConnectionMixin):
         if status == "claimed":
             return "in_progress"
         if status in {"applied", "failed"}:
+            if status == "failed" and self._failed_claim_is_retryable(
+                binding,
+            ):
+                with self._connect() as connection:
+                    connection.execute(
+                        """
+                        DELETE FROM content_wordpress_revision_apply_claims
+                        WHERE claim_key = ? AND status = 'failed'
+                        """,
+                        (claim_key,),
+                    )
+                return self.claim_wordpress_revision_apply(
+                    binding,
+                    action_id=action_id,
+                    claimed_by=claimed_by,
+                )
             return cast(WordPressRevisionApplyClaimResult, status)
         raise RuntimeError("WordPress apply claim has an unsupported status.")
+
+    def _failed_claim_is_retryable(self, binding: ContentDraftRevisionBinding) -> bool:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json
+                FROM content_wordpress_draft_execution_history
+                WHERE work_item_id = ? AND handoff_id = ? AND revision_id = ?
+                  AND revision_digest = ?
+                LIMIT 1
+                """,
+                (
+                    binding.work_item_id,
+                    binding.handoff_id,
+                    binding.revision_id,
+                    binding.content_digest,
+                ),
+            ).fetchone()
+        if row is None:
+            return False
+        execution = ContentWordPressDraftExecutionResult.model_validate(
+            json.loads(cast(str, row["payload_json"]))
+        )
+        return execution.status == "blocked" and not execution.external_write_attempted
 
     def finish_wordpress_revision_apply_claim(
         self,

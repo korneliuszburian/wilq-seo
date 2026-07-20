@@ -81,6 +81,7 @@ class WordPressDraftPostReadback:
     content_word_count: int | None
     acf_field_count: int | None
     acf_field_names: list[str]
+    edit_link: str = ""
 
 
 @dataclass(frozen=True)
@@ -325,7 +326,7 @@ def read_wordpress_draft_post(
         if owns_client:
             client.close()
 
-    return _draft_post_readback(response, normalized_post_id)
+    return _draft_post_readback(response, normalized_post_id, credentials.base_url)
 
 
 def read_wordpress_authoring_pages(
@@ -584,6 +585,7 @@ def _created_draft_post_id(response: httpx.Response) -> str:
 def _draft_post_readback(
     response: httpx.Response,
     requested_post_id: str,
+    credentials_base_url: str | None,
 ) -> WordPressDraftPostReadback:
     body = response.json()
     if not isinstance(body, dict):
@@ -599,12 +601,23 @@ def _draft_post_readback(
         status=str(body.get("status") or ""),
         title=wordpress_title(body.get("title")),
         link=str(body.get("link") or ""),
+        edit_link=_wordpress_edit_link(
+            credentials_base_url,
+            str(post_id) if post_id is not None else requested_post_id,
+        ),
         modified_gmt=str(body.get("modified_gmt") or ""),
         content_summary=content_dimensions.get("content_summary", ""),
         content_word_count=content_word_count,
         acf_field_count=acf_field_count,
         acf_field_names=acf_names,
     )
+
+
+def _wordpress_edit_link(credentials_base_url: str | None, post_id: str) -> str:
+    parsed = urlparse(credentials_base_url or "")
+    if not parsed.scheme or not parsed.netloc or not post_id:
+        return ""
+    return f"{parsed.scheme}://{parsed.netloc}/wp-admin/post.php?post={post_id}&action=edit"
 
 
 def _json_string_list(value: str | None) -> list[str]:

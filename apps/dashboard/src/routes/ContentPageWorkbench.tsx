@@ -545,14 +545,14 @@ export function ContentPageWorkbench({
                       {draftReadback.acf_field_count ?? 0} pól ACF
                     </span>
                   </div>
-                  {draftReadback.link ? (
+                  {(draftReadback.edit_link || draftReadback.link) ? (
                     <a
-                      href={draftReadback.link}
+                      href={draftReadback.edit_link || draftReadback.link}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-action/40 text-sm font-semibold text-action"
                     >
-                      Otwórz podgląd na dev
+                      Otwórz szkic w WordPress
                       <ExternalLink aria-hidden="true" size={14} />
                     </a>
                   ) : null}

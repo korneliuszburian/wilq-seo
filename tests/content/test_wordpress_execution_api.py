@@ -488,6 +488,7 @@ def test_wordpress_activation_packet_remembers_created_dev_draft(
             status="draft",
             title="BDO dla firm - szkic dev",
             link="https://ekologus.dev.proudsite.pl/?p=888",
+            edit_link="https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=888&action=edit",
             modified_gmt="2026-07-07T10:00:00",
             content_summary="Szkic opisuje obowiązki BDO i CTA do konsultacji.",
             content_word_count=86,
@@ -562,6 +563,9 @@ def test_wordpress_activation_packet_remembers_created_dev_draft(
     assert refreshed_packet["draft_readback"]["wordpress_post_id"] == "888"
     assert refreshed_packet["draft_readback"]["post_status"] == "draft"
     assert refreshed_packet["draft_readback"]["title"] == "BDO dla firm - szkic dev"
+    assert refreshed_packet["draft_readback"]["edit_link"] == (
+        "https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=888&action=edit"
+    )
     assert refreshed_packet["draft_readback"]["content_word_count"] == 86
     assert refreshed_packet["draft_readback"]["acf_field_names"] == [
         "glowny_opis",
