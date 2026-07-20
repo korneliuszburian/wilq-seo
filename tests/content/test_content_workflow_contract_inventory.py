@@ -45,6 +45,7 @@ from wilq.content.workflow.contracts import (
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.planning import ContentPlanningReviewResponse
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
+from wilq.schemas import MetricFact
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
@@ -242,13 +243,24 @@ def test_browser_item_does_not_duplicate_full_wordpress_material() -> None:
         topic="Test",
         wordpress_content_text="pełny materiał strony",
         wordpress_content_summary="krótkie podsumowanie",
+        metric_facts=[
+            MetricFact(
+                name=f"metric_{index}",
+                value=index,
+                period="2026-07-20",
+                source_connector="google_analytics_4",
+                evidence_id=f"ev_{index}",
+            )
+            for index in range(13)
+        ],
     )
 
     projected = _browser_item(item)
 
     assert projected.wordpress_content_text is None
     assert projected.wordpress_content_summary == "krótkie podsumowanie"
-    assert projected.metric_facts == []
+    assert len(projected.metric_facts) == 12
+    assert projected.metric_facts == item.metric_facts[:12]
 
 
 def test_selected_snapshot_handler_uses_browser_projection(monkeypatch) -> None:

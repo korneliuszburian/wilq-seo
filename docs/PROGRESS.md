@@ -3194,3 +3194,10 @@ jeszcze nieobecny; jawne `missing` albo pusty inventory pozostają zablokowane.
 Focused proof: `ContentSectionWritingWorkbench` + workflow surface + planning
 tests 48/48 i dashboard typecheck PASS. To guard bezpieczeństwa preview, nie
 jest to ACF write ani dowód kompletności struktury WordPress.
+### 2026-07-20 — dynamiczny wybór najnowszego odczytu metryk
+
+- Naprawiono `inventory_metric_facts`: najnowszy ukończony `vendor_read` jest wybierany po `completed_at` (z fallbackiem do `started_at`), a nie po kolejności rekordów w storage.
+- Falsifier: `tests/content/test_inventory_catalog.py::test_latest_metric_refresh_uses_completion_time_not_storage_order` przechodzi; ruff, mypy i `git diff --check` również.
+- Live readback przez kanoniczny seam potwierdził dla strony WZ 30 faktów GA4 z evidence `ev_refresh_refresh_google_analytics_4_db89091ef7f2`; GSC nie zwrócił exact-page rows. Snapshot HTTP nadal pokazuje pustą sekcję `metric_facts`, więc nie zamykamy tego jako pełnego end-to-end PASS — następny krok to prześledzenie, gdzie snapshot traci fakty po bindingu.
+- Commit/push: `1c574714` (`fix(content): select newest metric refresh`).
+- Root cause of the empty browser snapshot was then isolated: `project_content_work_item_browser_snapshot` intentionally replaced all `metric_facts` with `[]`. It now keeps a bounded 12-fact sanitized projection while still stripping full `the_content`; focused proof passed and the live WZ snapshot exposes 12 GA4 facts from `ev_refresh_refresh_google_analytics_4_db89091ef7f2`.

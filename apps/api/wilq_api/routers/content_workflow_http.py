@@ -8,12 +8,17 @@ from wilq.content.workflow.contracts import (
 )
 from wilq.content.workflow.models import ContentWorkItem
 
+_BROWSER_METRIC_FACT_LIMIT = 12
+
 
 def _browser_item(item: ContentWorkItem) -> ContentWorkItem:
-    """Keep the workflow snapshot small; full HTML is served by inventory."""
+    """Keep the workflow snapshot small while retaining actionable metrics."""
 
     return item.model_copy(
-        update={"wordpress_content_text": None, "metric_facts": []}
+        update={
+            "wordpress_content_text": None,
+            "metric_facts": item.metric_facts[:_BROWSER_METRIC_FACT_LIMIT],
+        }
     )
 
 
