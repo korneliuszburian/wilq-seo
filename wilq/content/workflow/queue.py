@@ -14,6 +14,7 @@ from wilq.content.preflight.workflow import (
     build_content_preflight_verdict,
 )
 from wilq.content.workflow.decision_mapping import (
+    _usable_inventory_headings,
     content_inventory_record_from_decision,
     content_work_item_from_decision,
 )
@@ -297,6 +298,13 @@ def _candidate_from_decision(
         and comparison.comparison_period is not None
         else []
     )
+    raw_inventory_headings = (
+        decision.wordpress_acf_section_headings
+        if decision.wordpress_acf_section_inventory_status == "available"
+        and decision.wordpress_acf_section_headings
+        else decision.wordpress_section_headings
+    )
+    inventory_headings = _usable_inventory_headings(raw_inventory_headings)
     return ContentWorkItemQueueCandidate(
         work_item_id=item.id,
         decision_id=decision.id,
@@ -344,9 +352,9 @@ def _candidate_from_decision(
         ),
         page_inventory=ContentWorkItemQueuePageInventory(
             title_or_h1=decision.wordpress_title_or_h1,
-            section_count=decision.wordpress_section_count,
-            section_headings=decision.wordpress_section_headings,
-            section_inventory_status=decision.wordpress_section_inventory_status,
+            section_count=len(inventory_headings) if inventory_headings else 0,
+            section_headings=inventory_headings,
+            section_inventory_status="available" if inventory_headings else "missing",
             content_inventory_status=decision.wordpress_content_inventory_status,
             content_summary=decision.wordpress_content_summary,
             content_word_count=decision.wordpress_content_word_count,

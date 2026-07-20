@@ -12,7 +12,10 @@ from wilq.content.workflow.catalog import (
     ContentInventoryCatalogResponse,
     inventory_work_item_id,
 )
-from wilq.content.workflow.queue import build_content_work_item_queue_response
+from wilq.content.workflow.queue import (
+    build_content_work_item_queue_candidate,
+    build_content_work_item_queue_response,
+)
 from wilq.schemas import (
     ContentDecisionItem,
     ContentDiagnosticsResponse,
@@ -121,6 +124,46 @@ def test_queue_can_include_selected_inventory_work_item_not_in_recommendation_qu
 
     assert [candidate.work_item_id for candidate in queue.candidates] == [inventory_id]
     assert queue.candidates[0].final_canonical_url == selected_decision.final_canonical_url
+
+
+def test_queue_projection_uses_the_content_when_inventory_heading_is_sentence_like() -> None:
+    decision = ContentDecisionItem(
+        id="inventory_sentence_heading",
+        decision_type="refresh_or_merge",
+        status="ready",
+        title="Informacja o opakowaniach",
+        primary_query="gospodarka opakowaniami",
+        priority=10,
+        source_public_url="https://www.ekologus.pl/opakowania/",
+        final_canonical_url="https://www.ekologus.pl/opakowania/",
+        wordpress_section_headings=[
+            "Obowiązki wynikające z ustawy dotyczą wyłącznie przedsiębiorców w rozumieniu "
+            "przepisów ustawy z dnia 2 lipca 2004 r. o swobodzie działalności gospodarczej."
+        ],
+        wordpress_section_inventory_status="available",
+        wordpress_content_inventory_status="available",
+        wordpress_content_text="Pełny materiał istniejącej strony.",
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+        evidence_ids=["ev_gsc_sentence", "ev_wp_sentence"],
+        rationale="Istniejąca treść wymaga przeglądu.",
+        next_step="Przejdź do planu.",
+    )
+
+    candidate = build_content_work_item_queue_candidate(
+        decision,
+        ContentFreshnessAssessment(
+            state="fresh",
+            state_label="dane treści świeże",
+            requires_refresh=False,
+            summary="Dane są świeże.",
+            next_step="Można przejść do decyzji.",
+        ),
+    )
+
+    assert candidate.page_inventory.section_headings == []
+    assert candidate.page_inventory.section_count == 0
+    assert candidate.page_inventory.section_inventory_status == "missing"
+    assert candidate.page_inventory.content_inventory_status == "available"
 
 
 def test_queue_rebuilds_source_labels_from_authoritative_connector_ids() -> None:
