@@ -152,6 +152,13 @@ the selected public URL and invalidates only the content workflow. It does not
 launch the global WordPress REST/sitemap refresh, which remains available from
 the system source controls. This keeps a marketer's selected-page recovery
 bounded even when the full connector inventory takes minutes.
+
+UX audit baseline captured 2026-07-20 for the current marketer surface:
+`docs/review-packets/2026-07-20-ux-audit-input/second-opinion/` contains
+verified 1440×900 and 390×844 first-view screenshots plus full-page captures for
+both BDO and outsourcing. `prompt.md` is the independent second-opinion brief;
+the screenshots are baseline evidence, not a claim that the current UI is
+finished.
 Fixed point `b5c28415` has 202 dashboard tests and typecheck passing. The
 independent checker emitted no findings but had source-transport evidence gaps,
 so it is not recorded as PASS.
