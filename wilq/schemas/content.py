@@ -79,6 +79,7 @@ class ContentAhrefsCandidateRow(BaseModel):
     competitor_domain: str | None = None
     source_url: str | None = None
     referenced_public_url: str | None = None
+    mapping_key: str = ""
     metric_name: str
     metric_value: int | float | str
     source_connectors: list[str] = Field(default_factory=list)

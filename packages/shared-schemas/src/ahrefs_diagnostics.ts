@@ -98,6 +98,7 @@ export const AhrefsGapRecordSchema = z.object({
   referenced_public_url: z.string().nullable().optional(),
   competitor_domain: z.string().nullable().optional(),
   keyword: z.string().nullable().optional(),
+  mapping_key: z.string().default(""),
   snapshot_date: z.string().nullable().optional(),
   mapping_status: z.enum(["unbound", "review_required", "exact"]).optional(),
   derived_method: z.string().optional(),

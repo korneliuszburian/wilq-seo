@@ -11,6 +11,7 @@ from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.content.planning.ahrefs import ahrefs_cross_source_candidate_rows
+from wilq.content.planning.ahrefs_overlap import ahrefs_gap_mapping_key
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import evidence_count_label, source_connector_labels
 from wilq.schemas import (
@@ -743,11 +744,12 @@ def _apply_exact_wordpress_cross_checks(
 ) -> list[AhrefsGapRecord]:
     """Promote only an exact typed WordPress URL match, never phrase overlap."""
     for record in records:
+        if not record.mapping_key:
+            continue
         matches = [
             candidate
             for candidate in candidates
-            if candidate.keyword == record.keyword
-            and candidate.source_url == record.source_url
+            if candidate.mapping_key == record.mapping_key
             and candidate.wordpress_cross_check.strength == "exact"
         ]
         urls = {
@@ -1053,6 +1055,12 @@ def _ahrefs_gap_record(
         referenced_public_url=referenced_public_url,
         competitor_domain=competitor_domain,
         keyword=keyword,
+        mapping_key=ahrefs_gap_mapping_key(
+            gap_type=gap_type,
+            source_url=source_url,
+            competitor_domain=competitor_domain,
+            keyword=keyword,
+        ),
         snapshot_date=snapshot_date,
         mapping_status=_gap_mapping_status(referenced_public_url, facts),
         derived_method=_gap_derived_method(facts),

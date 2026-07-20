@@ -9,6 +9,7 @@ from typing import Literal
 from wilq.content.planning.ahrefs_overlap import (
     AhrefsCrossSourceMatch,
     AhrefsCrossSourceMatcher,
+    ahrefs_gap_mapping_key,
 )
 from wilq.content.planning.decisions import polish_count_word, slug
 from wilq.schemas import (
@@ -436,6 +437,12 @@ def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRo
         competitor_domain=dimensions.get("competitor_domain") or None,
         source_url=dimensions.get("source_url") or None,
         referenced_public_url=dimensions.get("referenced_public_url") or None,
+        mapping_key=ahrefs_gap_mapping_key(
+            gap_type=dimensions.get("gap_type") or fact.name,
+            source_url=dimensions.get("source_url") or None,
+            competitor_domain=dimensions.get("competitor_domain") or None,
+            keyword=dimensions.get("keyword") or None,
+        ),
         metric_name=fact.name,
         metric_value=fact.value,
         source_connectors=_unique(

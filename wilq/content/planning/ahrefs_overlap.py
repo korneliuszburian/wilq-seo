@@ -15,6 +15,29 @@ from wilq.schemas import MetricFact
 
 AhrefsCrossSourceMatchStrength = Literal["exact", "weak", "missing"]
 
+
+def ahrefs_gap_mapping_key(
+    *,
+    gap_type: str,
+    source_url: str | None,
+    competitor_domain: str | None,
+    keyword: str | None,
+) -> str:
+    """Return the stable typed identity used to join a gap with source rows."""
+
+    def value(raw: str | None) -> str:
+        return (raw or "").strip().casefold()
+
+    return "|".join(
+        (
+            "ahrefs-gap-v1",
+            value(gap_type),
+            value(source_url),
+            value(competitor_domain),
+            value(keyword),
+        )
+    )
+
 _STOPWORDS = {
     "dla",
     "http",
