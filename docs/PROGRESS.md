@@ -5,6 +5,13 @@ Ostatnia aktualizacja: 2026-07-20.
 To jest krótki stan bieżący. Historia zmian i proofów pozostaje w git, Beads
 i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
+- 2026-07-20: child-revision quality projection nie zeruje już CTA i linków
+  całego dokumentu, gdy marketer poprawia tylko wybraną sekcję. Projekcja
+  zachowuje niezmienione page assets z trwałej rewizji, więc review nie tworzy
+  fałszywych findingów `weak_cta`/`missing_internal_links`; nadal ocenia tylko
+  zmienione sekcje. Falsifier `test_child_quality_input_preserves_unchanged_page_assets`
+  oraz dwa istniejące testy lineage przeszły, Ruff, mypy i diff-check również.
+
 ## Aktywny kierunek
 
 - 2026-07-20: matcher usług nie wiąże już strony z pojedynczym krótkim,

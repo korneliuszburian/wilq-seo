@@ -41,8 +41,20 @@ def persisted_selected_sections_quality_input(
             "meta_description": "",
             "sections": sections,
             "faq": [],
-            "cta": "",
-            "internal_links": [],
+            # A section-only proposal does not edit document-level assets.
+            # Keep the persisted assets in the quality projection so the
+            # review scores the changed section, rather than manufacturing
+            # weak-CTA/missing-link findings for assets that already exist.
+            "cta": "\n".join(
+                block.body_markdown
+                for block in base_revision.cta_blocks
+                if block.body_markdown.strip()
+            ),
+            "internal_links": [
+                link.anchor_text
+                for link in base_revision.internal_links
+                if link.anchor_text.strip()
+            ],
             "source_facts_used": _unique(
                 evidence_id for section in sections for evidence_id in section.evidence_ids
             ),

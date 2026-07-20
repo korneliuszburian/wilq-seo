@@ -30,13 +30,23 @@ from wilq.content.drafts.codex_section_proposal import (
     _item_with_revision_lineage,
 )
 from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
+from wilq.content.drafts.proposal_quality_input import (
+    persisted_selected_sections_quality_input,
+)
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftGenerationInput,
+    StructuredDraftOutput,
+    StructuredDraftOutputSection,
     StructuredDraftSectionInput,
 )
 from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionCtaBlock,
+    ContentDraftRevisionInternalLink,
+    ContentDraftRevisionSection,
+)
 from wilq.storage.local_state import local_state_store
 
 
@@ -176,6 +186,61 @@ def test_child_quality_item_merges_exact_persisted_revision_evidence() -> None:
     )
 
     assert enriched.evidence_ids == ["ev_page", "ev_service"]
+
+
+def test_child_quality_input_preserves_unchanged_page_assets() -> None:
+    output = StructuredDraftOutput.model_construct(
+        draft_kind="section_draft",
+        language="pl-PL",
+        title="Tytuł",
+        meta_title="",
+        meta_description="",
+        h1="Tytuł",
+        sections=[
+            StructuredDraftOutputSection(
+                heading="Sekcja",
+                body_markdown="Nowa treść",
+                evidence_ids=["ev_service"],
+                claims_used=[],
+            )
+        ],
+        faq=[],
+        cta="",
+        internal_links=[],
+        source_facts_used=["ev_service"],
+        claims_needing_review=[],
+        forbidden_claims_avoided=[],
+        human_review_checklist=[],
+        publish_ready=False,
+    )
+    revision = ContentDraftRevision.model_construct(
+        title="Tytuł",
+        sections=[
+            ContentDraftRevisionSection.model_construct(
+                heading="Sekcja",
+                evidence_ids=["ev_service"],
+            )
+        ],
+        cta_blocks=[
+            ContentDraftRevisionCtaBlock.model_construct(
+                body_markdown="Opisz sytuację firmy i umów konsultację.",
+            )
+        ],
+        internal_links=[
+            ContentDraftRevisionInternalLink.model_construct(
+                anchor_text="Poznaj zakres konsultacji.",
+            )
+        ],
+    )
+
+    projected = persisted_selected_sections_quality_input(
+        output=output,
+        base_revision=revision,
+        selected_headings=["Sekcja"],
+    )
+
+    assert projected.cta == "Opisz sytuację firmy i umów konsultację."
+    assert projected.internal_links == ["Poznaj zakres konsultacji."]
 
 
 def test_codex_section_proposal_is_grounded_and_remains_unreviewed(
