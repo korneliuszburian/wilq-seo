@@ -346,6 +346,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
                         : "brak exact strony"}
                   </span>
                   {record.derived_method ? <span>Metoda: {record.derived_method}</span> : null}
+                  {record.snapshot_date ? <span>Snapshot: {record.snapshot_date}</span> : null}
                   {record.coverage_summary ? <span>Zakres: {record.coverage_summary}</span> : null}
                 </div>
                 <p className="mt-2 text-xs font-semibold leading-5 text-ink">

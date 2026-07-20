@@ -106,6 +106,7 @@ class AhrefsGapRecord(BaseModel):
     referenced_public_url: str | None = None
     competitor_domain: str | None = None
     keyword: str | None = None
+    snapshot_date: str | None = None
     mapping_status: Literal["unbound", "review_required", "exact"] = "unbound"
     derived_method: str = ""
     coverage_summary: str = ""

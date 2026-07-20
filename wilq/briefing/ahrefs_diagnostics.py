@@ -639,7 +639,8 @@ def _ahrefs_gap_read_contract(
     cross_check_facts: list[MetricFact],
 ) -> AhrefsGapReadContract:
     missing_contracts = _missing_gap_contracts(gap_facts)
-    gap_records = _ahrefs_gap_records(gap_facts)
+    snapshot_date = _ahrefs_snapshot_date(latest_refresh)
+    gap_records = _ahrefs_gap_records(gap_facts, snapshot_date=snapshot_date)
     cross_check = _build_ahrefs_gap_cross_check(
         gap_facts=gap_facts,
         cross_check_facts=cross_check_facts,
@@ -949,7 +950,11 @@ def _gap_facts(facts: list[MetricFact]) -> list[MetricFact]:
     return [fact for fact in facts if fact.name in AHREFS_GAP_FACT_NAMES]
 
 
-def _ahrefs_gap_records(gap_facts: list[MetricFact]) -> list[AhrefsGapRecord]:
+def _ahrefs_gap_records(
+    gap_facts: list[MetricFact],
+    *,
+    snapshot_date: str | None = None,
+) -> list[AhrefsGapRecord]:
     grouped_facts: dict[
         tuple[AhrefsGapType, str | None, str | None, str | None, str | None],
         list[MetricFact],
@@ -993,6 +998,7 @@ def _ahrefs_gap_records(gap_facts: list[MetricFact]) -> list[AhrefsGapRecord]:
             competitor_domain=competitor_domain,
             keyword=keyword,
             facts=facts,
+            snapshot_date=snapshot_date,
         )
         for (
             gap_type,
@@ -1025,6 +1031,7 @@ def _ahrefs_gap_record(
     competitor_domain: str | None,
     keyword: str | None,
     facts: list[MetricFact],
+    snapshot_date: str | None,
 ) -> AhrefsGapRecord:
     title = _gap_record_title(
         gap_type=gap_type,
@@ -1046,6 +1053,7 @@ def _ahrefs_gap_record(
         referenced_public_url=referenced_public_url,
         competitor_domain=competitor_domain,
         keyword=keyword,
+        snapshot_date=snapshot_date,
         mapping_status=_gap_mapping_status(referenced_public_url, facts),
         derived_method=_gap_derived_method(facts),
         coverage_summary=_gap_coverage_summary(facts),
@@ -1182,6 +1190,13 @@ def _gap_records_coverage_summary(records: list[AhrefsGapRecord]) -> str:
     if len(summaries) == 1:
         return summaries[0]
     return "Zakres rekordów: " + "; ".join(summaries[:3])
+
+
+def _ahrefs_snapshot_date(refresh: ConnectorRefreshRun | None) -> str | None:
+    if refresh is None:
+        return None
+    value = refresh.metric_summary.get("date")
+    return str(value) if value else None
 
 
 def _gap_type_for_fact(fact: MetricFact) -> AhrefsGapType:

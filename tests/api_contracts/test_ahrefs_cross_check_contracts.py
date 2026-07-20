@@ -44,7 +44,7 @@ def _seed_weak_ahrefs_gap_contract() -> None:
         connector_id="ahrefs",
         evidence_id="ev_refresh_ahrefs_weak_overlap_test",
         summary="Ahrefs weak-overlap fixture.",
-    )
+    ).model_copy(update={"metric_summary": {"date": "2026-07-19"}})
     local_state_store().save_connector_refresh_run(run)
     metric_store().save_connector_refresh_metrics(
         run,
@@ -135,6 +135,7 @@ def test_weak_ahrefs_cross_check_is_manual_and_has_no_queue_action(
     assert contract["missing_read_contracts"] == []
     record = contract["gap_records"][0]
     assert record["mapping_status"] == "unbound"
+    assert record["snapshot_date"] == "2026-07-19"
     assert record["derived_method"]
     assert "zakres próby" in record["coverage_summary"]
     assert contract["coverage_summary"] == record["coverage_summary"]
