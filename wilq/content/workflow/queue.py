@@ -510,7 +510,7 @@ def _mode_label(mode: ContentQueueRecommendedMode) -> str:
         "refresh": "odśwież istniejącą treść",
         "merge": "scal z istniejącą treścią",
         "create": "utwórz dopiero po sprawdzeniu",
-        "block": "zablokuj pisanie",
+        "block": "wstrzymaj — najpierw sprawdź",
     }
     return labels[mode]
 

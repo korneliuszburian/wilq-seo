@@ -1619,7 +1619,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getAllByText(/Nie można przygotować workflow bez finalnego adresu/)[0])
       .toBeInTheDocument();
     expect(screen.getByText(/Uzupełnij publiczny adres docelowy/)).toBeInTheDocument();
-    expect(screen.getByText("zablokuj pisanie")).toBeInTheDocument();
+    expect(screen.getByText("wstrzymaj — najpierw sprawdź")).toBeInTheDocument();
     expect(screen.getByText("pomiar zablokowany")).toBeInTheDocument();
   });
 
@@ -2128,7 +2128,7 @@ function contentQueueResponse(): ContentWorkItemQueueResponse {
         topic: "Luka Ahrefs bez finalnego adresu",
         priority: 3,
         recommended_mode: "block",
-        recommended_mode_label: "zablokuj pisanie",
+        recommended_mode_label: "wstrzymaj — najpierw sprawdź",
         status_label: "wymaga sprawdzenia przed pisaniem",
         reason: "Nie można przygotować workflow bez finalnego adresu kanonicznego.",
         evidence_ids: ["ev_ahrefs_gap"],

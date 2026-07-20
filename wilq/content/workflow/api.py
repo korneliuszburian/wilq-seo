@@ -675,7 +675,7 @@ def _gate_candidate_on_service_binding(
     return candidate.model_copy(
         update={
             "recommended_mode": "block",
-            "recommended_mode_label": "zablokuj pisanie",
+            "recommended_mode_label": "wstrzymaj — najpierw sprawdź",
             "status_label": "brakuje karty usługi",
             "reason": blocker.reason,
             "preflight_status": "blocked",
