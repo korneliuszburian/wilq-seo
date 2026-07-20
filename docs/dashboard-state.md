@@ -497,3 +497,21 @@ Projekcja inventory jawnie komunikuje też źródło struktury: gdy WILQ nie
 wykryje ACF/flexible content, ale ma czytelny materiał WordPress, marketer
 widzi, że sekcje planu wynikają z `the_content`. Brak ACF nie jest wtedy
 udawany jako brak treści ani nie blokuje planowania.
+
+## 2026-07-21 — świeżość kontra jakość odczytu
+
+Kolejka może mieć stan ogólny `dane treści świeże`, mimo że pojedynczy konektor
+ma `partial`, `unverified` albo `settling`. W marketerowym widoku `/content-workflow`
+nie chowamy już tej różnicy wyłącznie pod `Źródła i szczegóły`: pod grupami
+`Fakty / Sygnały / Blokady` pojawia się jedna kondensowana linia `Źródła do
+interpretacji`. Pokazuje tylko konektory wymagające ostrożności i kończy się
+jasnym zastrzeżeniem, że jakość odczytu nie jest wynikiem kampanii.
+
+Live WILQ proof 2026-07-21 dla BDO pokazał: GSC `odczyt częściowy`, WordPress,
+GA4 i Ahrefs `jakość do sprawdzenia`; panel nadal poprawnie pokazał 181
+wyświetleń, CTR 0,00% i 7 sekcji, bez dopisywania trendu. Focused proof:
+`summarizeContentSourceQuality` (4/4) oraz screenshot
+`.local-lab/proof/dashboard-content-workflow/2026-07-21/bdo-source-quality-caveat.png`.
+Second-opinion checker `2026-07-20-source-quality-caveat-30CWhb` był ważny i
+nie zgłosił findings; odnotował wyłącznie ograniczenie transportu cytacji oraz
+human-only decyzję o naturalności polskiego wording.

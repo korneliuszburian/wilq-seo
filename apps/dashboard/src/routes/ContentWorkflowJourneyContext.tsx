@@ -16,6 +16,32 @@ type BrowserMetricFact = NonNullable<
   ContentWorkflowSnapshot["preflight"]["item"]["metric_facts"]
 >[number];
 
+const SOURCE_QUALITY_LABELS: Record<string, string> = {
+  google_search_console: "GSC",
+  google_analytics_4: "GA4",
+  google_ads: "Ads",
+  ahrefs: "Ahrefs",
+  localo: "Localo",
+  wordpress_ekologus: "WordPress",
+  wordpress_sklep: "WordPress sklep"
+};
+
+export function summarizeContentSourceQuality(
+  assessment: ContentWorkflowSnapshot["freshnessAssessment"]
+): string[] {
+  const qualityStates = assessment.connector_quality_states ?? {};
+  const warnings = Object.entries(qualityStates)
+    .filter(([, state]) => state !== "verified" && state !== "unknown")
+    .map(([connector, state]) => {
+      const label = SOURCE_QUALITY_LABELS[connector] ?? connector;
+      return `${label}: ${state === "partial" ? "odczyt częściowy" : "jakość do sprawdzenia"}`;
+    });
+  const settling = Object.entries(assessment.connector_settlement_states ?? {})
+    .filter(([connector, state]) => state === "settling" && !warnings.some((warning) => warning.startsWith(`${SOURCE_QUALITY_LABELS[connector] ?? connector}:`)))
+    .map(([connector]) => `${SOURCE_QUALITY_LABELS[connector] ?? connector}: dane się rozliczają`);
+  return [...warnings, ...settling];
+}
+
 export function summarizeGa4MetricFacts(facts: BrowserMetricFact[]): string[] {
   const byName = new Map<string, BrowserMetricFact[]>();
   for (const fact of facts) {
@@ -63,6 +89,7 @@ export function ContentWorkflowJourneyContext({
   const metrics = candidate.search_metrics;
   const pageMetricFacts = item.metric_facts ?? [];
   const ga4MetricSummaries = summarizeGa4MetricFacts(pageMetricFacts);
+  const sourceQualityCaveats = summarizeContentSourceQuality(data.freshnessAssessment);
   const sectionCount = resolvedPageSectionCount(
     data.preflight.item.wordpress_section_count,
     data.candidate.page_inventory?.section_count
@@ -132,6 +159,14 @@ export function ContentWorkflowJourneyContext({
         <EvidenceGroup title="Sygnały" detail={metricSummary} tone="signal" />
         <EvidenceGroup title="Blokady" detail={ga4MetricSummaries.length ? "Brak blokady pomiaru GA4" : "Brak dokładnych danych GA4 dla strony"} tone="blocker" />
       </div>
+      {sourceQualityCaveats.length ? (
+        <p
+          className="mt-3 rounded-md border border-wait/20 bg-wait/5 px-3 py-2 text-xs leading-5 text-slate-700"
+          data-testid="content-source-quality-caveat"
+        >
+          Źródła do interpretacji: {sourceQualityCaveats.join(" · ")}. To jakość odczytu, nie wynik kampanii.
+        </p>
+      ) : null}
       <p className="sr-only" data-testid="content-ga4-metrics">
         {ga4MetricSummaries.length
           ? `GA4 dla tej strony: ${ga4MetricSummaries.join(" | ")}`
