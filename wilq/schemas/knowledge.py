@@ -223,7 +223,8 @@ class KnowledgeSourceMaterialView(BaseModel):
     digest_prefix: str
     privacy_class: str
     import_status: str
-    source_path: str
+    # Kept for internal validation compatibility, never serialized to clients.
+    source_path: str | None = Field(default=None, exclude=True)
 
 
 class KnowledgeSourceMaterialReadiness(BaseModel):

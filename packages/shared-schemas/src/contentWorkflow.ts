@@ -522,7 +522,7 @@ export const KnowledgeSourceMaterialViewSchema = z.object({
   digest_prefix: z.string(),
   privacy_class: z.string(),
   import_status: z.string(),
-  source_path: z.string()
+  source_path: z.string().optional()
 });
 
 export const KnowledgeSourceMaterialReadinessSchema = z.object({
