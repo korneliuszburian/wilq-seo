@@ -274,6 +274,7 @@ export function ContentWordPressDraftActionWizard({
       <section
         className="rounded-md border border-wait/30 bg-wait/10 p-4"
         aria-labelledby="dev-draft-workspace-title"
+        id="wordpress-draft-action-wizard"
         data-testid="content-wordpress-draft-action-wizard"
       >
         <h2 id="dev-draft-workspace-title" className="text-base font-semibold text-ink">
@@ -332,6 +333,7 @@ export function ContentWordPressDraftActionWizard({
     <section
       className="overflow-hidden rounded-md border border-action/25 bg-white shadow-sm"
       aria-labelledby="dev-draft-workspace-title"
+      id="wordpress-draft-action-wizard"
       data-testid="content-wordpress-draft-action-wizard"
     >
       <div className="border-b border-action/15 bg-blue-50 px-4 py-3 sm:flex sm:items-start sm:justify-between sm:gap-4">

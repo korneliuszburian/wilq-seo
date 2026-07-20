@@ -593,6 +593,8 @@ function ContentWorkflowMarketerJourney({
         step={data.operatorSteps.find((step) => step.id === selectedStepId) ?? data.operatorSteps[0]}
         nextStep={data.operatorSteps[data.operatorSteps.findIndex((step) => step.id === selectedStepId) + 1]}
         onAdvance={selectStep}
+        onFocusCurrentStep={() => focusWorkflowStep(selectedStepId)}
+        planningCurrent={selectedStepId === "scope" ? data.planningWorkspace?.scope_current ?? true : selectedStepId === "section_map" ? data.planningWorkspace?.section_map_current ?? true : true}
       />
       <div className="flex flex-col">
         <div className="order-1">
@@ -622,14 +624,26 @@ function ContentWorkflowMarketerJourney({
 function ContentNextStepHero({
   step,
   nextStep,
-  onAdvance
+  onAdvance,
+  onFocusCurrentStep,
+  planningCurrent
 }: {
   step: ContentWorkflowSnapshot["operatorSteps"][number] | undefined;
   nextStep: ContentWorkflowSnapshot["operatorSteps"][number] | undefined;
   onAdvance: (stepId: WorkflowStepId) => void;
+  onFocusCurrentStep: () => void;
+  planningCurrent: boolean;
 }) {
   if (!step) return null;
+  const canAdvance = Boolean(nextStep?.canOpen);
   const nextStepLabel = nextStep?.id === "section_map" ? "Przejdź do planu" : nextStep?.id === "draft" ? "Przejdź do tekstu" : nextStep?.id === "review" ? "Przejdź do review" : nextStep?.id === "dev_draft" ? "Przejdź do dev preview" : "Zobacz kolejny krok";
+  const currentStepLabel = step.id === "scope" ? "Otwórz formularz zakresu" : step.id === "section_map" ? "Otwórz plan strony" : step.id === "draft" ? "Otwórz edytor tekstu" : step.id === "review" ? "Otwórz review wersji" : "Otwórz dev preview";
+  const actionLabel = canAdvance ? nextStepLabel : !planningCurrent ? "Sprawdź aktualny zakres" : currentStepLabel;
+  const instruction = !planningCurrent
+    ? "Poprzednia decyzja jest nieaktualna, bo zmienił się plan lub dowody. Sprawdź zakres jeszcze raz i zapisz aktualną decyzję."
+    : nextStep?.canOpen
+      ? step.safeNextStep
+      : workflowStepInstruction(step.id);
   return (
     <section className="wilq-enter wilq-enter-delay-1 mb-3 rounded-md border border-action/30 bg-action/5 p-3 shadow-sm sm:mb-4 sm:p-5" data-testid="content-next-step-hero">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -638,20 +652,32 @@ function ContentNextStepHero({
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-action">Następny krok</p>
             <h2 className="mt-1 text-xl font-semibold text-ink">{step.title}</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-700">{step.blocker?.reason ?? step.summary}</p>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-700">{instruction}</p>
           </div>
         </div>
         <button
           type="button"
-          onClick={() => (nextStep?.canOpen ? onAdvance(nextStep.id) : undefined)}
-          disabled={!nextStep?.canOpen}
+          onClick={() => (canAdvance && nextStep ? onAdvance(nextStep.id) : onFocusCurrentStep())}
           className="inline-flex h-10 self-start items-center justify-center rounded-md bg-action px-4 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto sm:text-sm"
         >
-          {nextStep?.canOpen ? nextStepLabel : "Najpierw uzupełnij ten etap"}
+          {actionLabel}
         </button>
       </div>
     </section>
   );
+}
+
+function workflowStepInstruction(stepId: WorkflowStepId) {
+  if (stepId === "scope") return "Potwierdź usługę, sprawdź cel i odbiorcę briefu, zaznacz potwierdzenie i zapisz decyzję. WILQ sam zbuduje mapę sekcji.";
+  if (stepId === "section_map") return "Sprawdź automatycznie wykrytą strukturę strony, przypisane zapytania i page assets. Nie mapujesz sekcji ręcznie.";
+  if (stepId === "draft") return "Przeczytaj pełny tekst, wybierz sekcję do poprawy albo zapisz exact revision do review.";
+  if (stepId === "review") return "Uruchom advisory review, przeczytaj findings i zapisz własną decyzję dla exact revision.";
+  return "Sprawdź revision-bound dev preview i przygotuj draft-only handoff. Publikacja pozostaje wyłączona.";
+}
+
+function focusWorkflowStep(stepId: WorkflowStepId) {
+  const targetId = stepId === "scope" ? "planning-review-scope" : stepId === "section_map" ? "planning-review-section_map" : stepId === "draft" ? "draft-section-tabs" : stepId === "review" ? "review-workspace-title" : "wordpress-draft-action-wizard";
+  document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function ContentSessionPicker({

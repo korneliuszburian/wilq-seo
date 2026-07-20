@@ -283,6 +283,12 @@ marketer nie ogląda źródeł ani freshness banneru przed decyzją. Live proof:
 `docs/review-packets/2026-07-20-ux-audit-input/second-opinion/` pliki
 `bdo-production-*`.
 
+Stale planning approval jest teraz wyjaśniane językiem marketera: gdy API zwraca
+`scope_current=false`, next-step hero mówi, że poprzednia decyzja jest
+nieaktualna, podaje powód i prowadzi bezpośrednio do aktualnego formularza
+zakresu. Znika niejasne „uzupełnij etap”. Proof:
+`bdo-stale-scope-action.png`.
+
 The first content screen should not be a gallery of cards. It should be a
 working map for one selected content item or one prioritized queue.
 

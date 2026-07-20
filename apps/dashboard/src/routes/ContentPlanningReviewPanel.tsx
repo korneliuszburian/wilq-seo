@@ -89,6 +89,7 @@ export function ContentPlanningReviewPanel({
   return (
     <section
       aria-labelledby="planning-review-title"
+      id={`planning-review-${stage}`}
       className="rounded-md border border-line bg-white p-4 shadow-sm"
       data-testid={`planning-review-${stage}`}
     >

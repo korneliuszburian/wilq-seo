@@ -337,6 +337,7 @@ export function ContentPageWorkbench({
                   ) : null}
                   <div
                     className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1 border-b border-line sm:flex sm:flex-wrap sm:gap-x-5"
+                    id="draft-section-tabs"
                     data-testid="draft-section-tabs"
                   >
                     {revisionSections.map((section) => {

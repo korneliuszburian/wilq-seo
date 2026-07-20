@@ -20,6 +20,7 @@ prompt dla niezależnego reviewera.
 | `bdo-desktop-no-duplicate-banner.png` | 1440×900 | BDO, aktualny ekran po usunięciu powtórzonego bannera freshness |
 | `bdo-production-desktop-first-viewport.png` | 1440×900 | Production-ready hero/usługa/next step/evidence, desktop |
 | `bdo-production-mobile-first-viewport-v2.png` | 390×844 | Production-ready header, hero/usługa/next step, mobile |
+| `bdo-stale-scope-action.png` | 1440×900 | Live stale-scope state with explicit next action |
 
 Zrzuty są wykonane z lokalnego dashboardu po zakończeniu ładowania i zostały
 sprawdzone wizualnie po zapisie. Pliki `*-first-slice-live.png` pokazują aktualny
