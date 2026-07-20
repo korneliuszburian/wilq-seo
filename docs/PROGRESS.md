@@ -3157,3 +3157,15 @@ revision, nie nagłówki. Draft gate nie został poluzowany.
 
 Focused proof: route/revision planning tests, planning-review gate,
 contract inventory 5/5, Ruff, dashboard typecheck i `git diff --check` PASS.
+
+### 2026-07-20 — panel pisania pokazuje rzeczywiste źródło treści
+
+Marketer-facing `ContentSectionWritingWorkbench` nie nazywa już każdej strony
+„Plan sekcji i ACF”. Korzysta z istniejącego API-owego rozróżnienia ACF,
+`the_content` i niepotwierdzonego źródła, a nagłówek i opis mówią o neutralnym
+mapowaniu treści. Nie zmienia to kontraktu draftu ani nie udaje, że pola ACF są
+dostępne, gdy API ich nie odczyta.
+
+Focused proof: `ContentWorkflowSurface` i `ContentPlanningReviewPanel` 46/46,
+dashboard typecheck oraz `git diff --check` PASS. To poprawa prezentacji
+dynamicznego seamu, nie dowód jakości tekstu, ACF write ani UAT.

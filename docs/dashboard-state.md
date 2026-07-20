@@ -36,6 +36,12 @@ work across the whole dashboard.
 
 Target: `/content-workflow`.
 
+The writing workbench now labels its source from API status at render time:
+`ACF/flexible content`, `the_content (główna treść WordPress)` or
+`niepotwierdzone`. The marketer-facing heading is neutral (“Plan treści i
+mapowanie”); it must not imply ACF sections for a page whose inventory came
+from the main WordPress content or a review-required rendered fallback.
+
 Performance check (2026-07-18): the selected inventory queue no longer performs
 a synchronous WordPress material read. On a managed-stack restart its first
 read returned in 1.08s, then 0.50s/0.18s on subsequent reads; the background
