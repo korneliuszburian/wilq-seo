@@ -447,6 +447,7 @@ def _ahrefs_budget_stage(
         id=cast(Any, stage_id),
         label=label,
         status=cast(Literal["completed", "failed", "skipped", "not_run"], status),
+        status_label=_ahrefs_budget_stage_status_label(status),
         requested_calls=max(0, requested_calls),
         rows=max(0, rows),
         summary=(
@@ -454,6 +455,15 @@ def _ahrefs_budget_stage(
             f"status: {status}."
         ),
     )
+
+
+def _ahrefs_budget_stage_status_label(status: str) -> str:
+    return {
+        "completed": "zakończony",
+        "failed": "błąd odczytu",
+        "skipped": "pominięty",
+        "not_run": "nieuruchomiony",
+    }.get(status, "status do sprawdzenia")
 
 
 def _operator_summary(

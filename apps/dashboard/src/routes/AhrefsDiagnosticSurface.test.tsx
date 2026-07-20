@@ -27,6 +27,8 @@ describe("AhrefsDiagnosticSurface", () => {
     expect(screen.getByText(/Status danych Ahrefs/)).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Etapy odczytu Ahrefs" })).toBeInTheDocument();
     expect(screen.getByText("Luki treści")).toBeInTheDocument();
+    expect(screen.getByText("zakończony")).toBeInTheDocument();
+    expect(screen.getByText("błąd odczytu")).toBeInTheDocument();
     expect(screen.getByText("Luki SEO z Ahrefs")).toBeInTheDocument();
     expect(screen.queryByText("ahrefs")).not.toBeInTheDocument();
   });

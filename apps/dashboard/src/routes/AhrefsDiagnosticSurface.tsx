@@ -87,7 +87,9 @@ export function AhrefsDiagnosticSurface() {
                 <div key={stage.id} className="rounded-md border border-line bg-slate-50 p-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-medium text-slate-700">{stage.label}</span>
-                    <span className="text-[11px] text-slate-500">{stage.status}</span>
+                    <span className="text-[11px] text-slate-500">
+                      {stage.status_label || stage.status}
+                    </span>
                   </div>
                   <p className="mt-1 text-[11px] text-slate-500">
                     {stage.requested_calls} wywołań · {stage.rows} wierszy

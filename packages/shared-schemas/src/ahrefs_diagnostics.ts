@@ -20,6 +20,7 @@ export const AhrefsRequestBudgetSchema = z.object({
       ]),
       label: z.string(),
       status: z.enum(["completed", "failed", "skipped", "not_run"]),
+      status_label: z.string().default(""),
       requested_calls: z.number().int().nonnegative(),
       rows: z.number().int().nonnegative(),
       summary: z.string()

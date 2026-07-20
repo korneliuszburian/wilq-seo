@@ -217,6 +217,7 @@ class AhrefsRequestBudgetStage(BaseModel):
     ]
     label: str
     status: Literal["completed", "failed", "skipped", "not_run"]
+    status_label: str = ""
     requested_calls: int = Field(ge=0)
     rows: int = Field(ge=0)
     summary: str = ""

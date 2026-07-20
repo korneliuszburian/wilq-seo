@@ -53,6 +53,7 @@ export const ahrefsDiagnostics = {
         id: "domain_rating",
         label: "Domain Rating",
         status: "completed",
+        status_label: "zakończony",
         requested_calls: 1,
         rows: 1,
         summary: "1 wywołań, 1 wierszy; status: completed."
@@ -61,6 +62,7 @@ export const ahrefsDiagnostics = {
         id: "content_gap",
         label: "Luki treści",
         status: "failed",
+        status_label: "błąd odczytu",
         requested_calls: 1,
         rows: 0,
         summary: "1 wywołań, 0 wierszy; status: failed."

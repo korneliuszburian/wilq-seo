@@ -311,6 +311,8 @@ def test_ahrefs_request_budget_exposes_each_stage_and_partial_failure(
     assert budget["partial"] is True
     stages = {stage["id"]: stage for stage in budget["stages"]}
     assert stages["organic_keywords_by_url"]["status"] == "failed"
+    assert stages["organic_keywords_by_url"]["status_label"] == "błąd odczytu"
     assert stages["organic_keywords_by_url"]["requested_calls"] == 4
     assert stages["content_gap"]["status"] == "skipped"
+    assert stages["content_gap"]["status_label"] == "pominięty"
     assert stages["backlink_gap"]["requested_calls"] == 3
