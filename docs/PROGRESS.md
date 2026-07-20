@@ -7,6 +7,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- 2026-07-20: panel planowania pokazuje teraz redagowane podglądy faktycznie
+  użytych faktów źródłowych, wraz z connectorem oraz licznikami materiałów i
+  evidence. Dane pochodzą z tego samego `ContentPlanningInput` i digestu co
+  plan; nie są to surowe prywatne materiały ani wymyślone tezy. Dla starszych
+  odpowiedzi pole jest opcjonalne, więc readback pozostaje kompatybilny.
+  Focused dashboard test 7/7, typecheck, shared-schema test i Python input
+  proof przechodzą.
+
 - 2026-07-19: exact reviewed-service Ads read/review pilot został zamknięty.
   Świeży odczyt ma 21 bounded rows/30 dni i 200 rows/90 dni; 9 wierszy wiąże
   kartę `ekologus_service_environmental_consulting_outsourcing` przez exact

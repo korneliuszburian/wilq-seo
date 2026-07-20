@@ -76,7 +76,7 @@ export function ContentPlanningGenerationPanel({
   const currentProposal = ["created", "idempotent", "ready"].includes(state.status)
     ? proposal
     : null;
-  const blocker = state.blockers[0] ?? null;
+  const blocker = state.blockers?.[0] ?? null;
   const inputSummary = state.input_summary ?? null;
   const usedSourceCount = inputSummary?.source_assessments.filter(
     (source) => source.status === "used"
@@ -145,6 +145,7 @@ export function ContentPlanningGenerationPanel({
             {planningSourceSummary(inputSummary)}
           </p>
           <PlanningSourceOutcomeStrip assessments={inputSummary.source_assessments} />
+          <PlanningSourceFactPreview facts={inputSummary.source_fact_previews} total={inputSummary.source_fact_count} />
           <PlanningMetricComparisons comparisons={inputSummary.metric_comparisons} />
         </div>
       ) : null}
@@ -318,6 +319,44 @@ export function ContentPlanningGenerationPanel({
   );
 }
 
+function PlanningSourceFactPreview({
+  facts,
+  total
+}: {
+  facts?: NonNullable<ContentPlanningProposalResponse["input_summary"]>["source_fact_previews"];
+  total: number;
+}) {
+  if (!facts?.length) return null;
+  const visible = facts.slice(0, 6);
+  return (
+    <div className="mt-4" data-testid="content-planning-source-facts">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+          Fakty użyte przez plan
+        </p>
+        <span className="text-[11px] text-slate-500">
+          {visible.length} z {total}
+        </span>
+      </div>
+      <ul className="mt-2 grid gap-2 md:grid-cols-2">
+        {visible.map((fact) => (
+          <li key={fact.fact_id} className="rounded-md border border-line bg-white p-3">
+            <p className="text-sm leading-6 text-ink">{fact.summary}</p>
+            <p className="mt-2 text-[11px] text-slate-500">
+              {planningSourceLabel(fact.source_connector)} · {fact.source_material_ids.length} materiałów · {fact.evidence_ids.length} {fact.evidence_ids.length === 1 ? "evidence" : "evidence IDs"}
+            </p>
+          </li>
+        ))}
+      </ul>
+      {total > visible.length ? (
+        <p className="mt-2 text-xs text-slate-500">
+          Pozostałe fakty są związane z tym samym input digestem i pozostają w technicznym śladzie planu.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function PlanningInputFact({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-md border border-line bg-white px-3 py-2">
@@ -484,6 +523,8 @@ function planningHeadline(status: string, hasCurrentProposal: boolean) {
 function planningSourceLabel(source: string) {
   const labels: Record<string, string> = {
     wordpress: "WordPress",
+    public_site: "Publiczna strona Ekologusa",
+    ekologus_ai_private_source_catalog: "Materiały Ekologusa",
     service_profile: "Profil usługi",
     gsc: "GSC",
     google_search_console: "Google Search Console",

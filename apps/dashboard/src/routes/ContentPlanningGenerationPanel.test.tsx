@@ -66,6 +66,7 @@ describe("ContentPlanningGenerationPanel", () => {
       status: "not_generated",
       work_item_id: "work_item",
       proposal: null,
+      blockers: [],
       input_summary: {
         final_canonical_url: "https://ekologus.pl/bdo/",
         service_label: "BDO",
@@ -82,6 +83,15 @@ describe("ContentPlanningGenerationPanel", () => {
         source_fact_count: 0,
         source_fact_ids: [],
         source_material_ids: [],
+        source_fact_previews: [{
+          fact_id: "fact_bdo",
+          summary: "Ekologus wspiera przedsiębiorców w obszarze BDO i sprawozdawczości.",
+          source_connector: "public_site",
+          evidence_ids: ["ev_bdo"],
+          knowledge_card_ids: [],
+          source_fact_ids: ["fact_bdo"],
+          source_material_ids: ["KB_BDO"]
+        }],
         evidence_id_count: 2,
         knowledge_card_count: 0,
         measurement_metrics: ["clicks"],
@@ -97,7 +107,6 @@ describe("ContentPlanningGenerationPanel", () => {
           reason: ""
         }]
       },
-      blockers: [],
       safe_next_step: "Wybierz usługę.",
       publish_ready: false
     } as never);
@@ -124,6 +133,56 @@ describe("ContentPlanningGenerationPanel", () => {
     expect(comparisons).toHaveTextContent("12 → 19");
     expect(comparisons).toHaveTextContent("2026-06-01/2026-06-28 → 2026-06-29/2026-07-26");
     expect(comparisons).not.toHaveTextContent("cel");
+  });
+
+  it("shows the redacted source fact that feeds the plan with lineage", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValueOnce({
+      status: "not_generated",
+      work_item_id: "work_item",
+      proposal: null,
+      blockers: [],
+      input_summary: {
+        final_canonical_url: "https://ekologus.pl/bdo/",
+        service_label: "BDO",
+        inventory_status: "available",
+        source_assessments: [],
+        source_fact_count: 1,
+        source_fact_ids: ["fact_bdo"],
+        source_material_ids: ["KB_BDO"],
+        source_fact_previews: [{
+          fact_id: "fact_bdo",
+          summary: "Ekologus wspiera przedsiębiorców w obszarze BDO i sprawozdawczości.",
+          source_connector: "public_site",
+          evidence_ids: ["ev_bdo"],
+          knowledge_card_ids: [],
+          source_fact_ids: ["fact_bdo"],
+          source_material_ids: ["KB_BDO"]
+        }],
+        evidence_id_count: 1,
+        knowledge_card_count: 1,
+        measurement_metrics: []
+      }
+    } as never);
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValueOnce({
+      status: "ready",
+      total_count: 15,
+      imported_count: 15,
+      import_pending_count: 0,
+      excerpt_review_required_count: 0,
+      ready_for_generation: true,
+      blocker: null,
+      next_step: "Można planować."
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <ContentPlanningGenerationPanel serviceCardId={null} workItemId="work_item" />
+      </QueryClientProvider>
+    );
+    const facts = await screen.findByTestId("content-planning-source-facts");
+    expect(facts).toHaveTextContent("Ekologus wspiera przedsiębiorców");
+    expect(facts).toHaveTextContent("1 materiał");
+    expect(facts).toHaveTextContent("1 evidence");
   });
 
   it("shows the real corpus gate without blocking the planning view", async () => {

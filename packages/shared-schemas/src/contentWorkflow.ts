@@ -2733,6 +2733,16 @@ export const ContentPlanningSourceAssessmentSchema = z.object({
   knowledge_card_ids: z.array(z.string()).default([])
 });
 
+export const ContentPlanningSourceFactPreviewSchema = z.object({
+  fact_id: z.string().min(1),
+  summary: z.string().min(1),
+  source_connector: z.string().min(1),
+  evidence_ids: z.array(z.string()).min(1),
+  knowledge_card_ids: z.array(z.string()).default([]),
+  source_fact_ids: z.array(z.string()).default([]),
+  source_material_ids: z.array(z.string()).default([])
+});
+
 const contentPlanningSourceNames = [
   "wordpress",
   "service_profile",
@@ -2756,6 +2766,7 @@ export const ContentPlanningInputSummarySchema = z.object({
   source_fact_count: z.number().int().nonnegative(),
   source_fact_ids: z.array(z.string()).default([]),
   source_material_ids: z.array(z.string()).default([]),
+  source_fact_previews: z.array(ContentPlanningSourceFactPreviewSchema).optional(),
   evidence_id_count: z.number().int().nonnegative(),
   knowledge_card_count: z.number().int().nonnegative(),
   measurement_metrics: z.array(z.string()).default([]),

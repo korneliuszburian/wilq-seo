@@ -124,6 +124,7 @@ class ContentPlanningInputSummary(BaseModel):
     source_fact_count: int = Field(ge=0)
     source_fact_ids: list[str] = Field(default_factory=list)
     source_material_ids: list[str] = Field(default_factory=list)
+    source_fact_previews: list[ContentPlanningSourceFact] = Field(default_factory=list)
     evidence_id_count: int = Field(ge=0)
     knowledge_card_count: int = Field(ge=0)
     measurement_metrics: list[str] = Field(default_factory=list)
@@ -167,6 +168,7 @@ def content_planning_input_summary(
                 for source_material_id in fact.source_material_ids
             }
         ),
+        source_fact_previews=list(planning_input.source_facts),
         evidence_id_count=len(planning_input.evidence_ids),
         knowledge_card_count=len(planning_input.knowledge_card_ids),
         measurement_metrics=planning_input.measurement_metrics,
