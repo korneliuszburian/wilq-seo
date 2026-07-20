@@ -79,6 +79,10 @@ CONTENT_CONNECTOR_IDS = (
     "ahrefs",
 )
 PRIMARY_CONTENT_CONNECTORS = ("google_search_console", "wordpress_ekologus")
+# The shop WordPress connector is relevant only when the selected work item is
+# a product/shop page. Its freshness must remain visible in quality fields, but
+# it cannot block ordinary ekologus.pl content decisions.
+OPTIONAL_CONTENT_FRESHNESS_CONNECTORS = {"wordpress_sklep"}
 CONTENT_METRIC_FACT_LIMIT = 300
 CONTENT_GSC_METRIC_FACT_LIMIT = 1200
 CONTENT_WORDPRESS_METRIC_FACT_LIMIT = 1200
@@ -454,6 +458,7 @@ def _content_freshness_assessment(
     stale_ids = [
         connector_id
         for connector_id in CONTENT_CONNECTOR_IDS
+        if connector_id not in OPTIONAL_CONTENT_FRESHNESS_CONNECTORS
         if connector_by_id.get(connector_id) is not None
         and connector_by_id[connector_id].freshness.state == "stale"
     ]

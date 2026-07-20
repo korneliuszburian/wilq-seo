@@ -3,13 +3,16 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from time import sleep
+from types import SimpleNamespace
 
 import wilq.briefing.content_diagnostics as content_diagnostics_module
 from wilq.briefing.content_diagnostics import (
+    _content_freshness_assessment,
     _rank_content_decisions_for_diagnostics,
     build_content_diagnostics,
 )
 from wilq.schemas import (
+    ConnectorCoveredWindow,
     ContentDecisionItem,
     ContentDiagnosticsResponse,
     MetricFact,
@@ -21,6 +24,37 @@ def test_content_diagnostics_cache_reuses_one_build_for_initial_request_flow(mon
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
     monkeypatch.setenv("WILQ_CONTENT_DIAGNOSTICS_CACHE_SECONDS", "15")
     content_diagnostics_module.clear_content_diagnostics_cache()
+
+
+def test_stale_shop_wordpress_does_not_block_ordinary_content_freshness(monkeypatch) -> None:
+    monkeypatch.setattr(
+        content_diagnostics_module, "connector_refresh_has_live_data", lambda _: True
+    )
+    connectors = [
+        SimpleNamespace(
+            id=connector_id,
+            label=connector_id,
+            freshness=SimpleNamespace(state="fresh"),
+        )
+        for connector_id in content_diagnostics_module.CONTENT_CONNECTOR_IDS
+    ]
+    connectors[-3].freshness.state = "stale"  # wordpress_sklep
+    refreshes = [
+        SimpleNamespace(
+            connector_id=connector_id,
+            id=f"refresh_{connector_id}",
+            covered_window=ConnectorCoveredWindow(),
+            settlement_state="settled",
+            quality_state="verified",
+        )
+        for connector_id in content_diagnostics_module.CONTENT_CONNECTOR_IDS
+    ]
+
+    assessment = _content_freshness_assessment(connectors, refreshes, live_data_available=True)
+
+    assert assessment.state == "fresh"
+    assert assessment.stale_connector_ids == []
+    assert "wordpress_sklep" in assessment.connector_quality_states
 
 
 def test_content_diagnostics_default_cache_survives_startup_waterfall(
