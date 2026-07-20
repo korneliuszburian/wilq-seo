@@ -41,6 +41,17 @@ def test_knowledge_source_material_readiness_blocks_pending_corpus_without_expos
     assert readiness.imported_count == 7
     assert readiness.import_pending_count == 8
     assert readiness.ready_for_generation is False
+    assert [item.source_id for item in readiness.pending_materials] == [
+        "ekologus_material_strategy",
+        "ekologus_material_portfolio",
+        "ekologus_material_eko_opieka",
+        "ekologus_material_sales_followup",
+        "ekologus_material_kb001",
+        "ekologus_material_kb006",
+        "ekologus_material_kb008",
+        "ekologus_material_index",
+    ]
+    assert len(readiness.imported_materials) == 7
     assert readiness.blocker
     assert "excerpt" in readiness.next_step
 

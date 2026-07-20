@@ -516,6 +516,9 @@ export const KnowledgeSourceMaterialReadinessSchema = z.object({
   import_pending_count: z.number().int().nonnegative(),
   excerpt_review_required_count: z.number().int().nonnegative(),
   ready_for_generation: z.boolean(),
+  imported_materials: z.array(KnowledgeSourceMaterialViewSchema).optional(),
+  pending_materials: z.array(KnowledgeSourceMaterialViewSchema).optional(),
+  excerpt_review_materials: z.array(KnowledgeSourceMaterialViewSchema).optional(),
   blocker: z.string().nullable().optional(),
   next_step: z.string()
 });

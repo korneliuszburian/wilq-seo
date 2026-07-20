@@ -123,6 +123,17 @@ describe("KnowledgeSurface", () => {
       import_pending_count: 15,
       excerpt_review_required_count: 0,
       ready_for_generation: false,
+      pending_materials: [{
+        source_id: "ekologus_material_kb014",
+        file_name: "KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md",
+        title: "Styl marki i język Ekologus",
+        kind: "policy",
+        word_count: 306,
+        digest_prefix: "8186c09a4f715e64",
+        privacy_class: "redacted_only",
+        import_status: "import_pending",
+        source_path: "materials_clean/approved/KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md"
+      }],
       blocker: "Korpus oczekuje na import.",
       next_step: "Zatwierdź excerpty."
     });
@@ -136,6 +147,7 @@ describe("KnowledgeSurface", () => {
     expect(screen.getByText("ROAS")).toBeInTheDocument();
     expect(screen.getByText("1 materiałów w manifeście Ekologusa")).toBeInTheDocument();
     expect(screen.getByText("Korpus źródłowy: zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("Czekają konkretne materiały: Styl marki i język Ekologus")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Zasady pracy z wiedzą" }));
     expect(screen.getByText("Co blokuje produkcję treści")).toBeInTheDocument();

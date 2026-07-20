@@ -94,6 +94,21 @@ def knowledge_source_material_readiness() -> KnowledgeSourceMaterialReadiness:
     imported = counts["imported"]
     pending = counts["import_pending"]
     excerpt_review = counts["excerpt_review_required"]
+    imported_materials = [
+        KnowledgeSourceMaterialView.model_validate(material.model_dump())
+        for material in materials
+        if material.import_status == "imported"
+    ]
+    pending_materials = [
+        KnowledgeSourceMaterialView.model_validate(material.model_dump())
+        for material in materials
+        if material.import_status == "import_pending"
+    ]
+    excerpt_review_materials = [
+        KnowledgeSourceMaterialView.model_validate(material.model_dump())
+        for material in materials
+        if material.import_status == "excerpt_review_required"
+    ]
     if pending:
         return KnowledgeSourceMaterialReadiness(
             status="import_pending",
@@ -102,6 +117,9 @@ def knowledge_source_material_readiness() -> KnowledgeSourceMaterialReadiness:
             import_pending_count=pending,
             excerpt_review_required_count=excerpt_review,
             ready_for_generation=False,
+            imported_materials=imported_materials,
+            pending_materials=pending_materials,
+            excerpt_review_materials=excerpt_review_materials,
             blocker=(
                 f"Zaimportowano {imported} z {len(materials)} zatwierdzonych materiałów; "
                 "pozostała część korpusu nie jest jeszcze dostępna dla generowania."
@@ -119,6 +137,9 @@ def knowledge_source_material_readiness() -> KnowledgeSourceMaterialReadiness:
             import_pending_count=pending,
             excerpt_review_required_count=excerpt_review,
             ready_for_generation=False,
+            imported_materials=imported_materials,
+            pending_materials=pending_materials,
+            excerpt_review_materials=excerpt_review_materials,
             blocker=(
                 "Część materiałów wymaga przeglądu redagowanych excerptów przed "
                 "użyciem generatywnym."
@@ -132,6 +153,9 @@ def knowledge_source_material_readiness() -> KnowledgeSourceMaterialReadiness:
         import_pending_count=pending,
         excerpt_review_required_count=excerpt_review,
         ready_for_generation=True,
+        imported_materials=imported_materials,
+        pending_materials=pending_materials,
+        excerpt_review_materials=excerpt_review_materials,
         next_step="Można używać wyłącznie zaimportowanych faktów z zachowanym lineage.",
     )
 

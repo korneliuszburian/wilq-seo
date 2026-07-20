@@ -235,6 +235,9 @@ class KnowledgeSourceMaterialReadiness(BaseModel):
     import_pending_count: int = Field(ge=0)
     excerpt_review_required_count: int = Field(ge=0)
     ready_for_generation: bool
+    imported_materials: list[KnowledgeSourceMaterialView] = Field(default_factory=list)
+    pending_materials: list[KnowledgeSourceMaterialView] = Field(default_factory=list)
+    excerpt_review_materials: list[KnowledgeSourceMaterialView] = Field(default_factory=list)
     blocker: str | None = None
     next_step: str
 

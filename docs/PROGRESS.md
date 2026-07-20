@@ -12,6 +12,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   zmienione sekcje. Falsifier `test_child_quality_input_preserves_unchanged_page_assets`
   oraz dwa istniejące testy lineage przeszły, Ruff, mypy i diff-check również.
 
+- 2026-07-20: readiness korpusu wiedzy zwraca teraz metadata-only listy
+  zaimportowanych, oczekujących i wymagających review materiałów. Dashboard
+  pokazuje marketerowi konkretne tytuły oczekujących źródeł zamiast samego
+  licznika 7/15; starsze odpowiedzi API pozostają kompatybilne. Live API
+  potwierdza 7 imported / 8 pending i brak pól z surową treścią. Focused
+  knowledge tests, shared-schema tests, dashboard test/typecheck, Ruff,
+  mypy i diff-check przechodzą.
+
 ## Aktywny kierunek
 
 - 2026-07-20: matcher usług nie wiąże już strony z pojedynczym krótkim,

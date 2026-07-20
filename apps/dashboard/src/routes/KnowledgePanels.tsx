@@ -208,6 +208,11 @@ export function KnowledgeSourceMaterialReadinessBanner({
         {readiness.imported_count}/{readiness.total_count} materiałów zaimportowanych · {readiness.import_pending_count} oczekuje na import · {readiness.excerpt_review_required_count} wymaga review excerptów
       </div>
       {readiness.blocker ? <div className="mt-2 text-xs text-wait">{readiness.blocker}</div> : null}
+      {(readiness.pending_materials ?? []).length > 0 ? (
+        <div className="mt-2 text-xs text-slate-600">
+          Czekają konkretne materiały: {(readiness.pending_materials ?? []).map((material) => material.title).join(" · ")}
+        </div>
+      ) : null}
       <div className="mt-2 text-xs text-slate-600">Następny krok: {readiness.next_step}</div>
     </div>
   );
