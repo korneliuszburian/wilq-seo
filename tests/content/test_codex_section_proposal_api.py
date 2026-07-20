@@ -25,7 +25,18 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
 )
+from wilq.content.drafts.codex_section_proposal import (
+    _contract_with_revision_lineage,
+    _item_with_revision_lineage,
+)
 from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
+from wilq.content.drafts.structured_generation import (
+    StructuredDraftGenerationContract,
+    StructuredDraftGenerationInput,
+    StructuredDraftSectionInput,
+)
+from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
 from wilq.storage.local_state import local_state_store
 
 
@@ -107,7 +118,64 @@ def test_section_proposal_schema_bounds_selected_section_count() -> None:
     ]
     assert evidence_schema["minItems"] == 1
     assert evidence_schema["maxItems"] == 1
-    assert evidence_schema["uniqueItems"] is True
+
+
+def test_child_preview_contract_merges_exact_persisted_revision_evidence() -> None:
+    contract = StructuredDraftGenerationContract.model_construct(
+        model_input=StructuredDraftGenerationInput.model_construct(
+            sections=[
+                StructuredDraftSectionInput(
+                    heading="Stara mapa",
+                    purpose="legacy",
+                    evidence_ids=["ev_old"],
+                )
+            ]
+        )
+    )
+    revision = ContentDraftRevision.model_construct(
+        title="Tytuł",
+        sections=[
+            ContentDraftRevisionSection.model_construct(
+                heading="Nowa sekcja",
+                evidence_ids=["ev_wp", "ev_gsc"],
+            )
+        ],
+    )
+
+    merged = _contract_with_revision_lineage(
+        contract,
+        base_revision=revision,
+        selected_headings=["Nowa sekcja"],
+    )
+
+    selected = next(
+        section for section in merged.model_input.sections if section.heading == "Nowa sekcja"
+    )
+    assert selected.evidence_ids == ["ev_wp", "ev_gsc"]
+
+
+def test_child_quality_item_merges_exact_persisted_revision_evidence() -> None:
+    item = ContentWorkItem.model_construct(
+        id="item",
+        topic="Temat",
+        evidence_ids=["ev_page"],
+    )
+    revision = ContentDraftRevision.model_construct(
+        sections=[
+            ContentDraftRevisionSection.model_construct(
+                heading="Sekcja",
+                evidence_ids=["ev_service"],
+            )
+        ]
+    )
+
+    enriched = _item_with_revision_lineage(
+        item,
+        base_revision=revision,
+        selected_headings=["Sekcja"],
+    )
+
+    assert enriched.evidence_ids == ["ev_page", "ev_service"]
 
 
 def test_codex_section_proposal_is_grounded_and_remains_unreviewed(

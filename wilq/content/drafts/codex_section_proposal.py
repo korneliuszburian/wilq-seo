@@ -30,9 +30,11 @@ from wilq.content.drafts.proposal_quality_input import (
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftOutput,
+    StructuredDraftSectionInput,
 )
 from wilq.content.quality.review import ContentQualityReview, build_content_quality_review
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -282,7 +284,11 @@ def _validate_runtime_call(
         )
     preview_blockers = structured_draft_preview_blockers(
         output=output,
-        contract=inputs.contract,
+        contract=_contract_with_revision_lineage(
+            inputs.contract,
+            base_revision=inputs.base_revision,
+            selected_headings=inputs.selected_headings,
+        ),
     )
     if preview_blockers:
         blocker = _blocker(
@@ -311,6 +317,68 @@ def _validate_runtime_call(
     )
 
 
+def _contract_with_revision_lineage(
+    contract: StructuredDraftGenerationContract,
+    *,
+    base_revision: ContentDraftRevision,
+    selected_headings: list[str],
+) -> StructuredDraftGenerationContract:
+    """Allow preview to validate the exact persisted revision lineage.
+
+    The legacy structured-generation contract can predate the v2 revision's
+    generated headings.  The child revision is still authoritative for the
+    selected section and its evidence; merge that lineage into the preview
+    contract without widening claims or other model permissions.
+    """
+
+    base_by_heading = {section.heading: section for section in base_revision.sections}
+    sections = list(contract.model_input.sections)
+    positions = {section.heading: index for index, section in enumerate(sections)}
+    for heading in selected_headings:
+        base_section = base_by_heading.get(heading)
+        if base_section is None:
+            continue
+        revision_evidence = list(base_section.evidence_ids)
+        index = positions.get(heading)
+        if index is None:
+            sections.append(
+                StructuredDraftSectionInput(
+                    heading=heading,
+                    purpose="Selected persisted revision section.",
+                    evidence_ids=revision_evidence,
+                    section_id=str(base_section.section_id or ""),
+                )
+            )
+            positions[heading] = len(sections) - 1
+            continue
+        sections[index] = sections[index].model_copy(
+            update={
+                "evidence_ids": _unique(
+                    [*sections[index].evidence_ids, *revision_evidence]
+                )
+            }
+        )
+    model_input = contract.model_input.model_copy(update={"sections": sections})
+    return contract.model_copy(update={"model_input": model_input})
+
+
+def _item_with_revision_lineage(
+    item: ContentWorkItem,
+    *,
+    base_revision: ContentDraftRevision,
+    selected_headings: list[str],
+) -> ContentWorkItem:
+    revision_evidence = [
+        evidence_id
+        for section in base_revision.sections
+        if section.heading in selected_headings
+        for evidence_id in section.evidence_ids
+    ]
+    return item.model_copy(
+        update={"evidence_ids": _unique([*item.evidence_ids, *revision_evidence])}
+    )
+
+
 def _review_runtime_output(
     *,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
@@ -320,7 +388,11 @@ def _review_runtime_output(
 ) -> ContentQualityReview | ContentCodexSectionProposalResponse:
     quality_review = proposal_stage_quality_review(
         build_content_quality_review(
-            item=snapshot.preflight.item,
+            item=_item_with_revision_lineage(
+                snapshot.preflight.item,
+                base_revision=inputs.base_revision,
+                selected_headings=inputs.selected_headings,
+            ),
             draft_package=inputs.draft_package,
             structured_output=persisted_selected_sections_quality_input(
                 output=runtime.output,
