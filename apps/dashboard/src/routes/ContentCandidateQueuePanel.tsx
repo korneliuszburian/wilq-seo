@@ -3,6 +3,8 @@ import { useMemo, useState } from "react";
 import type { ContentWorkItemQueueResponse } from "../lib/api";
 import type { ContentWorkItemQueueCandidate } from "../lib/api";
 
+const DEFAULT_VISIBLE_CANDIDATES = 12;
+
 export function ContentCandidateQueuePanel({
   queue,
   selectedWorkItemId,
@@ -13,9 +15,14 @@ export function ContentCandidateQueuePanel({
   onSelectWorkItem: (workItemId: string) => void;
 }) {
   const [search, setSearch] = useState("");
-  const visibleCandidates = useMemo(
+  const [showAllCandidates, setShowAllCandidates] = useState(false);
+  const filteredCandidates = useMemo(
     () => queue.candidates.filter((candidate) => matchesContentQueueCandidate(candidate, search)),
     [queue.candidates, search]
+  );
+  const visibleCandidates = useMemo(
+    () => contentQueueVisibleCandidates(filteredCandidates, showAllCandidates),
+    [filteredCandidates, showAllCandidates]
   );
 
   return (
@@ -41,7 +48,7 @@ export function ContentCandidateQueuePanel({
         />
       </label>
       <p className="mt-3 text-xs text-slate-500">
-        Pokazano {visibleCandidates.length} z {queue.candidate_count} propozycji.
+        Pokazano {visibleCandidates.length} z {filteredCandidates.length} pasujących propozycji.
       </p>
       <div className="mt-3 grid gap-3 lg:grid-cols-3">
         {visibleCandidates.map((candidate) => (
@@ -67,8 +74,26 @@ export function ContentCandidateQueuePanel({
           </button>
         ))}
       </div>
+      {filteredCandidates.length > DEFAULT_VISIBLE_CANDIDATES ? (
+        <button
+          type="button"
+          className="mt-4 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-action"
+          onClick={() => setShowAllCandidates((value) => !value)}
+        >
+          {showAllCandidates
+            ? "Pokaż krótszą kolejkę"
+            : `Pokaż wszystkie propozycje (${filteredCandidates.length})`}
+        </button>
+      ) : null}
     </section>
   );
+}
+
+export function contentQueueVisibleCandidates(
+  candidates: ContentWorkItemQueueCandidate[],
+  showAll: boolean
+): ContentWorkItemQueueCandidate[] {
+  return showAll ? candidates : candidates.slice(0, DEFAULT_VISIBLE_CANDIDATES);
 }
 
 export function matchesContentQueueCandidate(

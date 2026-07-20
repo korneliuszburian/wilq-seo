@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { ContentWorkItemQueueCandidate } from "../lib/api";
-import { candidateEvidenceSummary, matchesContentQueueCandidate } from "./ContentCandidateQueuePanel";
+import {
+  candidateEvidenceSummary,
+  contentQueueVisibleCandidates,
+  matchesContentQueueCandidate
+} from "./ContentCandidateQueuePanel";
 
 const candidate = {
   title: "Istniejąca strona BDO",
@@ -68,5 +72,20 @@ describe("candidateEvidenceSummary", () => {
     expect(candidateEvidenceSummary(withMetrics)).toContain("brak porównywalnego okresu");
     expect(candidateEvidenceSummary(withMetrics)).toContain("12 sekcji");
     expect(candidateEvidenceSummary(candidate)).toBe("Brak exact metryk lub materiału do wyboru.");
+  });
+});
+
+describe("contentQueueVisibleCandidates", () => {
+  it("keeps the first view bounded while preserving an explicit full queue", () => {
+    const candidates = Array.from({ length: 13 }, (_, index) => ({
+      ...candidate,
+      work_item_id: `candidate-${index}`
+    })) as unknown as ContentWorkItemQueueCandidate[];
+
+    expect(contentQueueVisibleCandidates(candidates, false)).toHaveLength(12);
+    expect(contentQueueVisibleCandidates(candidates, false).at(-1)?.work_item_id).toBe(
+      "candidate-11"
+    );
+    expect(contentQueueVisibleCandidates(candidates, true)).toHaveLength(13);
   });
 });
