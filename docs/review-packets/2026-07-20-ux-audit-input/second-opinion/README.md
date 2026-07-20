@@ -23,6 +23,7 @@ prompt dla niezależnego reviewera.
 | `bdo-stale-scope-action.png` | 1440×900 | Live stale-scope state with explicit next action |
 | `bdo-scope-final-desktop.png` | 1280×640 | Live current fixed point, compact hero and stale-scope CTA |
 | `bdo-scope-final-form.png` | 1280×640 | Live post-CTA plan/page-assets viewport |
+| `bdo-scope-final-mobile-v2.png` | 390×844 | Live mobile fixed point with explicit stale-scope CTA |
 
 Zrzuty są wykonane z lokalnego dashboardu po zakończeniu ładowania i zostały
 sprawdzone wizualnie po zapisie. Pliki `*-first-slice-live.png` pokazują aktualny
