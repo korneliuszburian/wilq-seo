@@ -518,6 +518,7 @@ def test_dynamic_material_uses_sanitized_acf_text_when_the_content_is_empty(monk
                             ],
                         },
                         "hero": {"obrazek": 297},
+                        "kolor": "#b6ce3c",
                     },
                 }
             ],
@@ -531,6 +532,8 @@ def test_dynamic_material_uses_sanitized_acf_text_when_the_content_is_empty(monk
     assert material.extraction_region == "wordpress_rest.acf"
     assert material.content_text == "Stałe doradztwo środowiskowe. Potrzebujesz doradztwa?"
     assert "example.invalid" not in material.content_text
+    assert "297" not in material.content_text
+    assert "#b6ce3c" not in material.content_text
 
 
 def test_dynamic_material_extracts_the_content_headings_from_rest(monkeypatch):
