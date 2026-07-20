@@ -42,6 +42,14 @@ the stricter section identity check. Deterministic review is `needs_changes`
 only for the source-brief signal, so this is a usable dev demo, not production
 approval or a 10/10 content claim.
 
+The dev target projection was tightened on the same fixed point: when the dev
+REST profile has no page with the selected public path, the dashboard now shows
+`Cel dev · brak exact celu` and does not borrow the first unrelated ACF page.
+The existing dev profile remains available as a target selector, while
+`Szkic na devie` continues to mean the separate revision-bound draft action.
+Focused target proof is 3/3, dashboard typecheck passes, and live desktop/mobile
+browser proof shows no horizontal overflow.
+
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
 

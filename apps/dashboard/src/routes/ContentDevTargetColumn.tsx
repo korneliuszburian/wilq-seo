@@ -20,8 +20,8 @@ export function ContentDevTargetColumn({
   return (
     <ContentMapColumn
       icon={<Code2 aria-hidden="true" size={18} />}
-      title="Dev draft / ACF"
-      subtitle={devPage ? `${devPage.section_count} sekcji na devie` : "czeka na odczyt"}
+      title="Cel dev / ACF"
+      subtitle={devPage ? `${devPage.section_count} sekcji odczytanych` : "brak exact celu dla tej strony"}
     >
       {profile?.dev_content.pages.length ? (
         <label className="mb-3 block">
@@ -68,7 +68,7 @@ export function ContentDevTargetColumn({
         <p className="rounded-md border border-wait/25 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
           {profile?.dev_content.status === "blocked"
             ? profile.dev_content.blockers[0]?.reason
-            : "Nie mamy jeszcze czytelnych sekcji ACF z dev REST dla tej strony."}
+            : "Nie znaleziono strony dev o tym samym adresie. Nie pokazujemy sekcji z innej strony."}
         </p>
       )}
     </ContentMapColumn>

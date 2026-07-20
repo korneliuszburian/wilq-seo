@@ -28,7 +28,10 @@ export function selectDevPage(
     const home = pages.find((page) => normalizedPath(page.link) === "/" && page.section_count > 0);
     if (home) return home;
   }
-  return pages.find((page) => page.section_count > 0) ?? pages[0] ?? null;
+  // Never attach an unrelated dev page to a public work item. A missing exact
+  // path is a typed absence of target, not permission to display another
+  // page's ACF sections as if they belonged to this workflow.
+  return null;
 }
 
 export function normalizedPath(value: string) {

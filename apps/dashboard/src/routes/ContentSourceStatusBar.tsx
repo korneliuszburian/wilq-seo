@@ -19,7 +19,7 @@ export function ContentSourceStatusBar({ data, devPage, profile }: {
     {sourceItems.map((source) => (
       <SourceStatusChip key={source.id} icon={source.icon} label={source.label} status={source.status} tone={source.tone} />
     ))}
-    <SourceStatusChip icon={<Stamp aria-hidden="true" size={18} />} label="WP dev draft" status={devPage ? `${devPage.section_count} sekcji` : "czeka"} tone={devPage ? "success" : "wait"} />
+    <SourceStatusChip icon={<Stamp aria-hidden="true" size={18} />} label="Cel dev" status={devPage ? `${devPage.section_count} sekcji` : "brak exact celu"} tone={devPage ? "success" : "wait"} />
   </div>;
 }
 

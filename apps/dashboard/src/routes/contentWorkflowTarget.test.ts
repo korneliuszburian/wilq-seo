@@ -26,4 +26,13 @@ describe("content workflow dev target", () => {
   it("honours an explicit dev target before inferred matching", () => {
     expect(selectDevPage(profile, item, "https://ekologus.dev.proudsite.pl/kontakt/")?.title).toBe("Kontakt");
   });
+
+  it("does not attach an unrelated dev page when the public path has no exact target", () => {
+    expect(selectDevPage(profile, {
+      preview_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+      source_public_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+      final_canonical_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+      intended_final_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    } as never)).toBeNull();
+  });
 });
