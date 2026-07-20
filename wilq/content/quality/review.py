@@ -124,7 +124,11 @@ def build_content_quality_review(
     duplicate_risk: ContentInventoryDuplicateRisk = "clear",
 ) -> ContentQualityReview:
     findings = [
-        *_draft_package_findings(item=item, draft_package=draft_package),
+        *_draft_package_findings(
+            item=item,
+            draft_package=draft_package,
+            revision=revision,
+        ),
         *_structured_output_findings(
             item=item,
             draft_package=draft_package,
@@ -262,8 +266,15 @@ def _draft_package_findings(
     *,
     item: ContentWorkItem,
     draft_package: ContentDraftPackage | None,
+    revision: ContentDraftRevision | None,
 ) -> list[ContentQualityFinding]:
     if draft_package is None:
+        # Full-document v2 revisions are the durable source of truth for the
+        # current pipeline. They already carry section/evidence/claim lineage;
+        # requiring the legacy draft-package projection here would make a
+        # successfully persisted full document impossible to review.
+        if revision is not None and revision.schema_version == "wilq_content_draft_revision_v2":
+            return []
         return [
             _finding(
                 "missing_draft_package",

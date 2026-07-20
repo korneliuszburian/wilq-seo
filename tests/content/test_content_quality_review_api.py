@@ -17,6 +17,7 @@ from tests.content.test_work_item_preflight_api import (
     _item,
     _sales_brief_seed,
 )
+from wilq.content.quality.review import _draft_package_findings
 from wilq.content.workflow.contracts import ContentWorkItemStructuredDraftGenerationRequest
 from wilq.content.workflow.stage_drafts import (
     build_content_work_item_structured_draft_generation_response,
@@ -36,6 +37,23 @@ def test_content_quality_review_accepts_evidence_bound_draft() -> None:
     assert review["claim_safety"]["status"] == "pass"
     assert review["measurement_readiness"]["status"] == "pass"
     assert review["safe_next_step"].startswith("Przekaż szkic do sprawdzenia człowieka")
+
+
+def test_v2_revision_quality_does_not_require_legacy_draft_package() -> None:
+    item = _item(
+        preflight_status="draft_allowed",
+        duplicate_status="checked",
+        source_public_url="https://www.ekologus.pl/",
+    )
+    revision = type("RevisionMarker", (), {"schema_version": "wilq_content_draft_revision_v2"})()
+
+    findings = _draft_package_findings(
+        item=item,
+        draft_package=None,
+        revision=revision,
+    )
+
+    assert findings == []
 
 
 def test_content_quality_review_blocks_missing_section_evidence() -> None:

@@ -782,7 +782,16 @@ def content_work_item_quality_review_for_selected_item(
             detail="Content quality review item does not match the selected work item.",
         )
     response = build_content_work_item_quality_review_response(
-        request.model_copy(update={"revision": snapshot.revision_workspace.latest_revision})
+        request.model_copy(
+            update={
+                "revision": snapshot.revision_workspace.latest_revision,
+                "claim_ledger": snapshot.claim_ledger,
+                "sales_brief": snapshot.sales_brief.sales_brief_result.brief,
+                "draft_package": (
+                    snapshot.draft_package.draft_package_result.draft_package
+                ),
+            }
+        )
     )
     content_workflow_store().save_quality_review(response.quality_review)
     return response
