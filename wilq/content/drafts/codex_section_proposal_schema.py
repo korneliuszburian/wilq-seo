@@ -38,6 +38,11 @@ def proposal_output_schema(
     sections_schema["maxItems"] = len(selected_headings)
     _set_literals(section_properties, "heading", selected_headings, scalar=True)
     _set_literals(section_properties, "evidence_ids", evidence_ids)
+    if len(selected_headings) == 1:
+        evidence_schema = _mapping(section_properties, "evidence_ids")
+        evidence_schema["minItems"] = len(evidence_ids)
+        evidence_schema["maxItems"] = len(evidence_ids)
+        evidence_schema["uniqueItems"] = True
     _set_literals(section_properties, "claims_used", contract.model_input.claims_allowed)
     _set_literals(properties, "source_facts_used", evidence_ids)
     _set_literals(properties, "claims_needing_review", [])

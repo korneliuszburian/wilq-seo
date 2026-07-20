@@ -102,6 +102,12 @@ def test_section_proposal_schema_bounds_selected_section_count() -> None:
 
     assert schema["properties"]["sections"]["minItems"] == 1
     assert schema["properties"]["sections"]["maxItems"] == 1
+    evidence_schema = schema["$defs"]["StructuredDraftOutputSection"]["properties"][
+        "evidence_ids"
+    ]
+    assert evidence_schema["minItems"] == 1
+    assert evidence_schema["maxItems"] == 1
+    assert evidence_schema["uniqueItems"] is True
 
 
 def test_codex_section_proposal_is_grounded_and_remains_unreviewed(
@@ -255,6 +261,12 @@ def _assert_literal_schema(
     assert properties["title"]["const"] == case.base_revision["title"]
     assert properties["claims_needing_review"]["items"]["enum"] == ["__WILQ_EMPTY_ARRAY_ONLY__"]
     assert section_properties["heading"]["enum"] == [case.selected_heading]
+    assert section_properties["evidence_ids"]["minItems"] == len(
+        case.base_revision["sections"][0]["evidence_ids"]
+    )
+    assert section_properties["evidence_ids"]["maxItems"] == len(
+        case.base_revision["sections"][0]["evidence_ids"]
+    )
     assert (
         section_properties["evidence_ids"]["items"]["enum"]
         == (case.base_revision["sections"][0]["evidence_ids"])
