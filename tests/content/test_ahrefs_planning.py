@@ -217,3 +217,25 @@ def test_candidate_rows_compile_cross_source_records_once_for_a_batch(monkeypatc
     assert len(rows) == 2
     assert gsc_record_calls == 1
     assert wordpress_record_calls == 1
+
+
+def test_candidate_rows_can_return_full_mapping_set_beyond_display_limit() -> None:
+    gap_facts = [
+        _fact(
+            "ahrefs_content_gap_count",
+            evidence_id=f"ev_ahrefs_bdo_{index}",
+            gap_type="content_gap",
+            keyword=f"bdo odpady {index}",
+            competitor_domain="denios.pl",
+        )
+        for index in range(7)
+    ]
+
+    display_rows = ahrefs_cross_source_candidate_rows(gap_facts, [], limit=6)
+    mapping_rows = ahrefs_cross_source_candidate_rows(gap_facts, [], limit=None)
+
+    assert len(display_rows) == 6
+    assert len(mapping_rows) == 7
+    assert {row.mapping_key for row in display_rows}.issubset(
+        {row.mapping_key for row in mapping_rows}
+    )

@@ -234,6 +234,7 @@ POLISH_ASCII_TRANSLATION = str.maketrans(
 @dataclass(frozen=True)
 class AhrefsGapCrossCheck:
     candidates: list[ContentAhrefsCandidateRow]
+    mapping_candidates: list[ContentAhrefsCandidateRow]
     status: Literal["api_backed", "manual_required", "missing"]
     gsc_match_count: int
     wordpress_match_count: int
@@ -649,7 +650,7 @@ def _ahrefs_gap_read_contract(
     )
     gap_records = _apply_exact_wordpress_cross_checks(
         gap_records,
-        cross_check.candidates,
+        cross_check.mapping_candidates,
     )
     blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
     evidence_ids = _unique(
@@ -784,15 +785,21 @@ def _build_ahrefs_gap_cross_check(
     gap_records: list[AhrefsGapRecord],
 ) -> AhrefsGapCrossCheck:
     candidates = ahrefs_cross_source_candidate_rows(gap_facts, cross_check_facts, limit=6)
+    mapping_candidates = ahrefs_cross_source_candidate_rows(
+        gap_facts,
+        cross_check_facts,
+        limit=None,
+    )
     gsc_match_count = sum(
-        candidate.gsc_cross_check.strength == "exact" for candidate in candidates
+        candidate.gsc_cross_check.strength == "exact" for candidate in mapping_candidates
     )
     wordpress_match_count = sum(
-        candidate.wordpress_cross_check.strength == "exact" for candidate in candidates
+        candidate.wordpress_cross_check.strength == "exact" for candidate in mapping_candidates
     )
-    source_connectors, evidence_ids = _ahrefs_cross_check_trace(candidates)
+    source_connectors, evidence_ids = _ahrefs_cross_check_trace(mapping_candidates)
     return AhrefsGapCrossCheck(
         candidates=candidates,
+        mapping_candidates=mapping_candidates,
         status=_ahrefs_cross_check_status(
             gap_records=gap_records,
             gsc_match_count=gsc_match_count,

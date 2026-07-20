@@ -394,13 +394,14 @@ def ahrefs_cross_source_candidate_rows(
     gap_facts: list[MetricFact],
     all_content_facts: list[MetricFact],
     *,
-    limit: int = 6,
+    limit: int | None = 6,
 ) -> list[ContentAhrefsCandidateRow]:
     scored_facts = _score_ahrefs_gap_facts(gap_facts, all_content_facts)
     reviewable_scores = [
         score for score in scored_facts if score.status in {"relevant", "review"}
     ]
-    return [_ahrefs_candidate_row(score) for score in reviewable_scores[:limit]]
+    selected_scores = reviewable_scores if limit is None else reviewable_scores[:limit]
+    return [_ahrefs_candidate_row(score) for score in selected_scores]
 
 
 def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRow:
