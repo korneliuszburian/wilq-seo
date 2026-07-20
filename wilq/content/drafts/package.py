@@ -195,12 +195,21 @@ def _sections_from_brief(sales_brief: ContentSalesBrief) -> list[ContentDraftSec
     return [
         ContentDraftSection(
             heading=heading,
-            purpose=f"Wyjaśnij czytelnikowi, co oznacza temat „{heading}”.",
+            purpose=_section_purpose(heading),
             evidence_ids=evidence_ids,
             draft_notes=[],
         )
         for heading in headings
     ]
+
+
+def _section_purpose(heading: str) -> str:
+    if heading == "Treść główna (the_content)":
+        return (
+            "Zdecyduj, które informacje z istniejącego tekstu głównego zachować, "
+            "uzupełnić albo przepisać."
+        )
+    return f"Wyjaśnij czytelnikowi, co oznacza temat „{heading}”."
 
 
 def _unique(values: Iterable[object]) -> list[str]:

@@ -9,7 +9,10 @@ from wilq.content.briefs.sales import (
     build_content_sales_brief,
 )
 from wilq.content.claims.ledger import ContentClaimLedger, content_claim_entry
-from wilq.content.drafts.package import build_content_draft_package
+from wilq.content.drafts.package import (
+    _section_purpose,
+    build_content_draft_package,
+)
 from wilq.content.enrichment.opportunity import (
     ContentOpportunityEnrichment,
     ContentOpportunityMeasurementBaseline,
@@ -256,6 +259,13 @@ def test_draft_package_is_outline_first_and_not_publish_ready() -> None:
     assert result.draft_package.claims_used == [
         "Ekologus pomaga firmom w obowiązkach związanych z BDO."
     ]
+
+
+def test_draft_outline_for_the_content_does_not_invent_section_purpose() -> None:
+    assert _section_purpose("Treść główna (the_content)") == (
+        "Zdecyduj, które informacje z istniejącego tekstu głównego zachować, "
+        "uzupełnić albo przepisać."
+    )
 
 
 def test_draft_package_carries_sales_brief_forbidden_claims_to_generation_gate() -> None:
