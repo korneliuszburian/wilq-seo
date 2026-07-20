@@ -381,3 +381,8 @@ panelem generatora planu. Dzięki temu pierwszy ruch nie wymaga przewijania prze
 page assets ani ślady źródeł. Stara decyzja otrzymuje etykietę `nieaktualna`, gdy
 digest zakresu nie jest już bieżący; samo wcześniejsze `zaakceptowano` nie oznacza
 gotowości do przejścia dalej.
+
+W planie podstawowy widok pokazuje tylko liczby wejściowe i statusy źródeł.
+Dokładne fakty oraz porównania okresów są dostępne pod jednym rozwijanym
+`Pokaż dokładne fakty i porównania metryk`, żeby marketer widział mięso bez
+ściany technicznego payloadu.

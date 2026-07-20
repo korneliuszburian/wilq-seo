@@ -148,8 +148,13 @@ export function ContentPlanningGenerationPanel({
             {planningSourceSummary(inputSummary)}
           </p>
           <PlanningSourceOutcomeStrip assessments={inputSummary.source_assessments} />
-          <PlanningSourceFactPreview facts={inputSummary.source_fact_previews} total={inputSummary.source_fact_count} />
-          <PlanningMetricComparisons comparisons={inputSummary.metric_comparisons} />
+          <details className="mt-3 rounded-md border border-line bg-white px-3 py-2 text-xs text-slate-600">
+            <summary className="cursor-pointer font-semibold text-action">
+              Pokaż dokładne fakty i porównania metryk
+            </summary>
+            <PlanningSourceFactPreview facts={inputSummary.source_fact_previews} total={inputSummary.source_fact_count} />
+            <PlanningMetricComparisons comparisons={inputSummary.metric_comparisons} />
+          </details>
         </div>
       ) : null}
 
