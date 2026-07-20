@@ -384,20 +384,6 @@ def content_work_item_planning_review(
                 "Plan treści zmienił się. Odśwież element przed zapisaniem decyzji."
             ),
         )
-    if request.stage == "section_map" and not workspace.scope_current:
-        raise HTTPException(
-            status_code=409,
-            detail="Najpierw zatwierdź aktualny zakres treści.",
-        )
-    if (
-        request.stage == "section_map"
-        and request.service_card_id is not None
-        and request.service_card_id != workspace.proposal.service_card_id
-    ):
-        raise HTTPException(
-            status_code=422,
-            detail="Usługę można zmienić tylko podczas review zakresu.",
-        )
     try:
         selection = resolve_content_planning_service_selection(
             snapshot.service_profile_context,
