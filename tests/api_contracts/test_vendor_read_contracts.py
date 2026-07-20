@@ -776,6 +776,8 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
                 "is_informational": "False",
                 "is_local": "False",
                 "is_transactional": "True",
+                "target_keyword_sample_size": "1",
+                "target_keyword_limit": "3",
             },
             period="ahrefs_organic_keywords",
         ),

@@ -470,6 +470,8 @@ def _fetch_organic_keywords_by_top_pages(
                     source_url=top_page["source_url"],
                     country=country,
                     mode=mode,
+                    target_keyword_sample_size=len(rows),
+                    target_keyword_limit=keyword_limit,
                 )
             )
             is not None
@@ -979,6 +981,8 @@ def _organic_keyword_gap_fact(
     source_url: str,
     country: str,
     mode: str,
+    target_keyword_sample_size: int,
+    target_keyword_limit: int,
 ) -> VendorMetricFact | None:
     keyword = _first_text(row, "keyword", "keyword_merged", "organic_keyword")
     if keyword is None:
@@ -1002,6 +1006,8 @@ def _organic_keyword_gap_fact(
             "is_informational": _first_text(row, "is_informational"),
             "is_local": _first_text(row, "is_local"),
             "is_transactional": _first_text(row, "is_transactional"),
+            "target_keyword_sample_size": str(target_keyword_sample_size),
+            "target_keyword_limit": str(target_keyword_limit),
         }
     )
     return VendorMetricFact(
