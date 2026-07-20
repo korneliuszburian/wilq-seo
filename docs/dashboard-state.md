@@ -71,6 +71,14 @@ contradicting the exact selected-page inventory (for example, 7 headings) on
 the same screen. The fallback remains available only when preflight has no
 numeric count.
 
+Fresh fixed-point proof (2026-07-21) is retained at
+`.local-lab/proof/dashboard-content-workflow/2026-07-21/bdo-section-count-metric-fixed.png`.
+The focused helper (2 tests) and dashboard typecheck pass. The bounded
+second-opinion checker is valid at
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-20-fresh-inventory-count-QWGNTz/`;
+its medium findings are classified as evidence gaps caused by omitted source
+excerpts, not as demonstrated product defects.
+
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
 
