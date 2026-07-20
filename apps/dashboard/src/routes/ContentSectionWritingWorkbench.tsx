@@ -33,6 +33,16 @@ type WordPressDraftSectionOverride = NonNullable<
   ContentWorkItemWordPressDraftExecutionRequest["section_overrides"]
 >[number];
 
+export function hasReadableAcfSectionInventory(item: {
+  wordpress_acf_section_inventory_status?: string;
+  wordpress_section_count?: number | null;
+}): boolean {
+  return (
+    item.wordpress_acf_section_inventory_status !== "missing" &&
+    (item.wordpress_section_count ?? 0) > 0
+  );
+}
+
 function unique(values: string[]) {
   return [...new Set(values)];
 }
@@ -90,7 +100,13 @@ export function ContentSectionWritingWorkbench({
     item.wordpress_acf_section_inventory_status,
     item.wordpress_content_inventory_status
   );
-  const canPrepareAcf = Boolean(profile && draft && handoff && !actions.acfPreviewResult);
+  const canPrepareAcf = Boolean(
+    profile &&
+      draft &&
+      handoff &&
+      !actions.acfPreviewResult &&
+      hasReadableAcfSectionInventory(item)
+  );
   const sectionOverrides = editableSections
     .map((section) => ({
       heading: section.heading,

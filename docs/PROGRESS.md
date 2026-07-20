@@ -3183,3 +3183,14 @@ Focused proof: GSC vendor contract 2/2, Ruff, mypy i `git diff --check` PASS.
 Live target read dla `/rewolucja-w-decyzjach-o-warunkach-zabudowy-co-zmienia-sie-od-2026/`
 zakończył się `target_page_requested_count=1`, `target_page_returned_row_count=0`;
 to uczciwy blocker pokrycia, nie dowód braku trendu ani konwersji.
+
+### 2026-07-20 — ACF preview nie uruchamia się bez czytelnej sekcji
+
+Workbench nie pozwala już przygotować podglądu payloadu ACF wyłącznie dlatego,
+że istnieje profil authoringu i draft. Guard wymaga rzeczywistej liczby sekcji
+WordPress oraz nie blokuje starszych odpowiedzi, w których status ACF jest
+jeszcze nieobecny; jawne `missing` albo pusty inventory pozostają zablokowane.
+
+Focused proof: `ContentSectionWritingWorkbench` + workflow surface + planning
+tests 48/48 i dashboard typecheck PASS. To guard bezpieczeństwa preview, nie
+jest to ACF write ani dowód kompletności struktury WordPress.
