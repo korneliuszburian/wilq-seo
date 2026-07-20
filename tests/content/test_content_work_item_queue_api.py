@@ -165,6 +165,7 @@ def test_queue_projection_uses_the_content_when_inventory_heading_is_sentence_li
     assert candidate.page_inventory.section_count == 0
     assert candidate.page_inventory.section_inventory_status == "missing"
     assert candidate.page_inventory.content_inventory_status == "available"
+    assert "the_content" in (candidate.page_inventory.acf_section_inventory_note or "")
 
 
 def test_queue_rebuilds_source_labels_from_authoritative_connector_ids() -> None:

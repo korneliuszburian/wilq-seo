@@ -391,7 +391,16 @@ def _candidate_from_decision(
             content_summary=decision.wordpress_content_summary,
             content_word_count=decision.wordpress_content_word_count,
             acf_section_inventory_status=decision.wordpress_acf_section_inventory_status,
-            acf_section_inventory_note=decision.wordpress_acf_section_inventory_note,
+            acf_section_inventory_note=(
+                decision.wordpress_acf_section_inventory_note
+                or (
+                    "Nie wykryto sekcji ACF/flexible content; sekcje planu wynikają "
+                    "z odczytanego the_content."
+                    if decision.wordpress_acf_section_inventory_status == "missing"
+                    and decision.wordpress_content_inventory_status == "available"
+                    else None
+                )
+            ),
             acf_section_count=decision.wordpress_acf_section_count,
             acf_section_headings=decision.wordpress_acf_section_headings,
         ),

@@ -398,3 +398,8 @@ decyzję dla exact revision. Review semantyczne nie jest automatyczną akceptacj
 Selektor `Aktywna strona` obsługuje również strony spoza kolejki okazji. Wybór
 pozycji z `Pełny inventory WordPress` przechodzi przez ten sam endpoint kolejki
 i ten sam snapshot workflow; nie jest lokalnym wyjątkiem ani atrapą danych.
+
+Projekcja inventory jawnie komunikuje też źródło struktury: gdy WILQ nie
+wykryje ACF/flexible content, ale ma czytelny materiał WordPress, marketer
+widzi, że sekcje planu wynikają z `the_content`. Brak ACF nie jest wtedy
+udawany jako brak treści ani nie blokuje planowania.
