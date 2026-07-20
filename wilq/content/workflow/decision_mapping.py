@@ -44,6 +44,7 @@ def content_work_item_from_decision(decision: ContentDecisionItem) -> ContentWor
         wordpress_content_inventory_note=decision.wordpress_content_inventory_note,
         wordpress_acf_section_inventory_status=decision.wordpress_acf_section_inventory_status,
         wordpress_acf_section_inventory_note=decision.wordpress_acf_section_inventory_note,
+        wordpress_acf_field_names=decision.wordpress_acf_field_names,
         wordpress_acf_section_headings=decision.wordpress_acf_section_headings,
         wordpress_acf_section_count=decision.wordpress_acf_section_count,
         evidence_ids=decision.evidence_ids,

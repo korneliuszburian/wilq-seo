@@ -165,6 +165,7 @@ def inventory_decision_for_work_item(
             "available" if acf_headings or acf_fields else "missing"
         ),
         wordpress_acf_section_headings=acf_headings,
+        wordpress_acf_field_names=acf_fields,
         wordpress_acf_section_count=(
             len(acf_headings) if acf_headings else item.acf_section_count
         ),

@@ -237,6 +237,7 @@ def test_content_headings_remain_inventory_when_acf_has_fields_but_no_sections(
     inventory = build_planning_inventory(item, resolution)
 
     assert inventory.status == "available"
+    assert inventory.acf_field_names == ["hero"]
     assert [section.heading for section in inventory.sections] == ["Zakres usługi"]
 
 

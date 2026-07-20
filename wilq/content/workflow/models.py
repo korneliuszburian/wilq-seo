@@ -92,6 +92,7 @@ class ContentWorkItem(BaseModel):
     wordpress_content_inventory_note: str | None = None
     wordpress_acf_section_inventory_status: Literal["available", "missing"] = "missing"
     wordpress_acf_section_inventory_note: str | None = None
+    wordpress_acf_field_names: list[str] = Field(default_factory=list)
     wordpress_acf_section_headings: list[str] = Field(default_factory=list)
     wordpress_acf_section_count: int | None = None
     evidence_ids: list[str] = Field(default_factory=list)

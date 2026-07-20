@@ -82,6 +82,7 @@ class ContentPlanningInventory(BaseModel):
     status: Literal["available", "missing"]
     content_status: Literal["available", "missing"] = "missing"
     acf_section_status: Literal["available", "missing"] = "missing"
+    acf_field_names: list[str] = Field(default_factory=list)
     title_or_h1: str | None = None
     content_summary: str | None = None
     # Read-only material projection used by the planner.  Keeping the exact
@@ -182,6 +183,7 @@ def build_planning_inventory(
         status="available" if inventory_available else "missing",
         content_status=item.wordpress_content_inventory_status,
         acf_section_status=item.wordpress_acf_section_inventory_status,
+        acf_field_names=item.wordpress_acf_field_names,
         title_or_h1=item.wordpress_title_or_h1,
         content_summary=item.wordpress_content_summary,
         content_text=item.wordpress_content_text,
