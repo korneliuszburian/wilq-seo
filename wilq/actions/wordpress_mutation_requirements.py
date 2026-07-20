@@ -14,6 +14,8 @@ from wilq.content.handoff.wordpress_execution import (
     execute_content_wordpress_draft_handoff,
     wordpress_draft_execution_errors,
 )
+from wilq.content.planning.generated_proposal import read_content_planning_proposal
+from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
 from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
@@ -82,11 +84,12 @@ def wordpress_draft_apply_capability(
     diagnostics = build_content_diagnostics_cached()
     workflow_store = content_workflow_store()
     revision_state = workflow_store.load_draft_revision_state(binding.work_item_id)
+    planning_decisions = workflow_store.load_planning_decisions(binding.work_item_id)
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
         binding.work_item_id,
         revision_state=revision_state,
-        planning_decisions=workflow_store.load_planning_decisions(binding.work_item_id),
+        planning_decisions=planning_decisions,
     )
     if snapshot is None:
         return None, [
@@ -95,6 +98,60 @@ def wordpress_draft_apply_capability(
                 "Wersja nie należy do aktualnej kolejki",
                 "Wskazany work item nie istnieje w bieżącym workflow WILQ.",
                 "Odśwież Treści i SEO i wybierz aktualny work item.",
+            )
+        ]
+    # The action registry is intentionally shared across the dashboard, but
+    # the apply boundary must reconstruct the selected work item's exact
+    # generated proposal before validating its revision context. Without this
+    # second projection, the first snapshot can use the queue baseline while
+    # the persisted v2 revision is bound to the generated planning digest.
+    try:
+        planning_response = read_content_planning_proposal(
+            snapshot=snapshot,
+            store=content_planning_proposal_store(),
+        )
+    except Exception as exc:
+        return None, [
+            _apply_blocker(
+                "wordpress_planning_reconstruction_failed",
+                "Nie udało się odtworzyć planu treści",
+                f"Odczyt zapisanego planu zakończył się błędem: {type(exc).__name__}.",
+                "Odśwież workflow i wygeneruj aktualny plan przed handoffem.",
+            )
+        ]
+    if planning_response.status not in {"ready", "idempotent", "created"}:
+        return None, [
+            _apply_blocker(
+                "wordpress_planning_reconstruction_failed",
+                "Plan treści nie jest gotowy do handoffu",
+                "Nie można zweryfikować wersji WordPress bez aktualnego, zapisanego planu.",
+                "Wygeneruj i zatwierdź aktualny plan, a następnie ponów handoff.",
+            )
+        ]
+    generated_planning_proposal = planning_response.proposal
+    if generated_planning_proposal is None:
+        return None, [
+            _apply_blocker(
+                "wordpress_planning_reconstruction_failed",
+                "Brakuje zapisanego planu treści",
+                "Plan został oznaczony jako gotowy, ale nie zawiera propozycji do weryfikacji.",
+                "Wygeneruj nową wersję planu i ponów handoff.",
+            )
+        ]
+    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
+        diagnostics,
+        binding.work_item_id,
+        revision_state=revision_state,
+        planning_decisions=planning_decisions,
+        generated_planning_proposal=generated_planning_proposal,
+    )
+    if snapshot is None:
+        return None, [
+            _apply_blocker(
+                "wordpress_planning_reconstruction_failed",
+                "Nie udało się odtworzyć planu treści",
+                "Nie udało się odtworzyć aktualnego planu dla zapisanej wersji.",
+                "Odśwież workflow i zapisz nową wersję dla aktualnego planu sekcji.",
             )
         ]
     draft_package = snapshot.draft_package.draft_package_result.draft_package

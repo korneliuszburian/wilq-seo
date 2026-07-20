@@ -730,6 +730,14 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
         "wilq.content.workflow.store.content_workflow_store",
         lambda: SimpleNamespace(
             load_draft_revision_state=lambda _work_item_id: SimpleNamespace(),
+            load_planning_decisions=lambda _work_item_id: [],
+        ),
+    )
+    monkeypatch.setattr(
+        "wilq.actions.wordpress_mutation_requirements.read_content_planning_proposal",
+        lambda **_kwargs: SimpleNamespace(
+            status="ready",
+            proposal=SimpleNamespace(),
         ),
     )
     monkeypatch.setattr(
@@ -802,7 +810,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
                 id="audit_preview_route",
                 action_id="act_apply_wordpress_draft_handoff",
                 event_type="action_preview_generated",
-                actor="operator_route",
+                actor="local_operator",
                 summary="Podgląd.",
                 details=binding_details,
             ),
@@ -810,7 +818,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
                 id="audit_review_route",
                 action_id="act_apply_wordpress_draft_handoff",
                 event_type="human_review_approved_for_prepare",
-                actor="operator_route",
+                actor="local_operator",
                 summary="Review.",
                 details=binding_details,
             ),
@@ -818,7 +826,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
                 id="audit_confirm_route",
                 action_id="act_apply_wordpress_draft_handoff",
                 event_type="action_apply_confirmed",
-                actor="operator_route",
+                actor="local_operator",
                 summary="Potwierdzenie.",
                 details=binding_details,
             ),
@@ -826,7 +834,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
                 id="audit_impact_route",
                 action_id="act_apply_wordpress_draft_handoff",
                 event_type="action_impact_check_completed",
-                actor="operator_route",
+                actor="local_operator",
                 summary="Impact check.",
                 details=binding_details,
             ),
@@ -863,6 +871,14 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
         "wilq.content.workflow.store.content_workflow_store",
         lambda: SimpleNamespace(
             load_draft_revision_state=lambda _id: SimpleNamespace(),
+            load_planning_decisions=lambda _id: [],
+        ),
+    )
+    monkeypatch.setattr(
+        "wilq.actions.wordpress_mutation_requirements.read_content_planning_proposal",
+        lambda **_kwargs: SimpleNamespace(
+            status="ready",
+            proposal=SimpleNamespace(),
         ),
     )
     monkeypatch.setattr(
@@ -902,7 +918,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
 
     apply_payload = {
         "confirm": True,
-        "confirmed_by": "operator_route",
+        "confirmed_by": "local_operator",
         "wordpress_draft": binding.model_dump(mode="json"),
     }
 
