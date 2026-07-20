@@ -18,9 +18,9 @@ export const AhrefsRequestBudgetSchema = z.object({
         "content_gap",
         "backlink_gap"
       ]),
-      label: z.string(),
+      label: z.string().min(1),
       status: z.enum(["completed", "failed", "skipped", "not_run"]),
-      status_label: z.string(),
+      status_label: z.string().min(1),
       requested_calls: z.number().int().nonnegative(),
       rows: z.number().int().nonnegative(),
       summary: z.string()

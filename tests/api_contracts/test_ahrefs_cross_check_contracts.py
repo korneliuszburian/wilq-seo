@@ -9,7 +9,12 @@ from tests._contract_support.api_client import client
 from tests._contract_support.env import clear_ahrefs_env
 from wilq.briefing.ahrefs_diagnostics import _latest_relevant_ahrefs_refresh
 from wilq.connectors.vendor import VendorMetricFact
-from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRun, ConnectorRefreshStatus
+from wilq.schemas import (
+    AhrefsRequestBudgetStage,
+    ConnectorRefreshMode,
+    ConnectorRefreshRun,
+    ConnectorRefreshStatus,
+)
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
@@ -316,3 +321,15 @@ def test_ahrefs_request_budget_exposes_each_stage_and_partial_failure(
     assert stages["content_gap"]["status"] == "skipped"
     assert stages["content_gap"]["status_label"] == "pominięty"
     assert stages["backlink_gap"]["requested_calls"] == 3
+
+
+def test_ahrefs_budget_stage_rejects_empty_operator_labels() -> None:
+    with pytest.raises(ValueError):
+        AhrefsRequestBudgetStage(
+            id="content_gap",
+            label="",
+            status="completed",
+            status_label="",
+            requested_calls=1,
+            rows=0,
+        )

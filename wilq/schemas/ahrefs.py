@@ -215,9 +215,9 @@ class AhrefsRequestBudgetStage(BaseModel):
         "content_gap",
         "backlink_gap",
     ]
-    label: str
+    label: str = Field(min_length=1)
     status: Literal["completed", "failed", "skipped", "not_run"]
-    status_label: str
+    status_label: str = Field(min_length=1)
     requested_calls: int = Field(ge=0)
     rows: int = Field(ge=0)
     summary: str = ""
