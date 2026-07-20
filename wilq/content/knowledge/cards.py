@@ -772,21 +772,27 @@ def _matching_service_candidates(
     exact_urls: set[str] | None = None,
     priority_text: str = "",
 ) -> list[ContentKnowledgeServiceCandidate]:
-    candidates = [
-        ContentKnowledgeServiceCandidate(card=card, matched_terms=matched_terms)
-        for card in cards
-        if card.card_type == "service"
-        and (
-            matched_terms := [
-                term
-                for term in card.service_fit_terms
-                if normalize_search_text(term) not in _normalized_broad_service_terms()
-                and normalized_term_matches(term, search_text)
-            ]
-        )
-    ]
     normalized_urls = exact_urls or set()
     normalized_priority_text = normalize_search_text(priority_text)
+    candidates = []
+    for card in cards:
+        if card.card_type != "service":
+            continue
+        matched_terms = [
+            term
+            for term in card.service_fit_terms
+            if normalize_search_text(term) not in _normalized_broad_service_terms()
+            and normalized_term_matches(term, search_text)
+        ]
+        if not matched_terms or not _service_match_is_specific(
+            card,
+            matched_terms,
+            normalized_urls,
+        ):
+            continue
+        candidates.append(
+            ContentKnowledgeServiceCandidate(card=card, matched_terms=matched_terms)
+        )
 
     def rank(candidate: ContentKnowledgeServiceCandidate) -> tuple[int, int, int, int, float]:
         exact_url = any(
@@ -814,6 +820,28 @@ def _matching_service_candidates(
         candidates,
         key=rank,
     )
+
+
+def _service_match_is_specific(
+    card: ContentKnowledgeCard,
+    matched_terms: list[str],
+    normalized_urls: set[str],
+) -> bool:
+    """Reject a non-service page match based on one short generic word.
+
+    Exact service URLs are authoritative.  Otherwise one-term matches need a
+    reasonably specific term; multi-term matches already carry stronger intent
+    than a generic word such as ``decyzje``.
+    """
+    if any(
+        normalize_search_text(lineage) in normalized_urls
+        for lineage in card.source_lineage
+        if lineage.startswith("http")
+    ):
+        return True
+    if len(matched_terms) >= 2:
+        return True
+    return max(len(normalize_search_text(term)) for term in matched_terms) >= 8
 
 
 def _match_rank(card: ContentKnowledgeCard) -> tuple[int, float]:

@@ -1,11 +1,19 @@
 # WILQ Progress Ledger
 
-Ostatnia aktualizacja: 2026-07-19.
+Ostatnia aktualizacja: 2026-07-20.
 
 To jest krótki stan bieżący. Historia zmian i proofów pozostaje w git, Beads
 i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
+
+- 2026-07-20: matcher usług nie wiąże już strony z pojedynczym krótkim,
+  ogólnym słowem (np. `decyzje`). Exact URL pozostaje autorytatywny, a strony
+  niebędące landingiem usługi potrzebują co najmniej dwóch sygnałów albo jednego
+  wystarczająco specyficznego terminu. Live artykuł o warunkach zabudowy
+  przestał wskazywać Eko-Opiekę i wiąże właściwą kartę audytu zgodności z
+  jawnym `review_required`. Focused matching/selection proof i Ruff/mypy
+  przechodzą.
 
 - 2026-07-20: initial-draft seam nie chowa już pierwszego konkretnego
   planistycznego blokera za generycznym komunikatem. Draft zachowuje kod

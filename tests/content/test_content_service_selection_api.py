@@ -38,7 +38,10 @@ def test_planning_scope_persists_only_allowed_service_override(
     proposal = snapshot["planning_workspace"]["proposal"]
     candidates = snapshot["service_profile_context"]["service_candidates"]
     recommended = next(candidate for candidate in candidates if candidate["recommended"])
-    override = next(candidate for candidate in candidates if not candidate["recommended"])
+    override = next(
+        (candidate for candidate in candidates if not candidate["recommended"]),
+        None,
+    )
 
     unknown_payload = _planning_review_payload(proposal["planning_digest"])
     unknown_payload["service_card_id"] = "ekologus_service_unknown"
@@ -47,6 +50,11 @@ def test_planning_scope_persists_only_allowed_service_override(
     assert unknown.json()["detail"] == (
         "Wybrana karta usługi nie jest dozwolona dla tego work itemu."
     )
+
+    if override is None:
+        # A page with one exact, specific service match should not gain a
+        # second candidate from a generic body word merely to enable override.
+        return
 
     override_payload = _planning_review_payload(proposal["planning_digest"])
     override_payload["service_card_id"] = override["service_card_id"]
@@ -111,7 +119,6 @@ def _snapshot_with_service_override(
     snapshot = _selected_snapshot(client, BDO_WORK_ITEM_ID)
     assert snapshot.get("response_type") == "workflow_snapshot"
     assert snapshot.get("planning_workspace") is not None
-    assert len(snapshot["service_profile_context"]["service_candidates"]) > 1
     return BDO_WORK_ITEM_ID, snapshot
 
 

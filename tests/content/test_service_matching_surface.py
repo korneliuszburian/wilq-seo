@@ -121,6 +121,30 @@ def test_specific_page_intent_beats_broad_body_terms() -> None:
     assert match.service_card.id == "ekologus_service_operat_wodnoprawny"
 
 
+def test_single_short_generic_term_does_not_bind_an_unrelated_service() -> None:
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_zoning_article",
+            topic="Rewolucja w decyzjach o warunkach zabudowy od 2026",
+            source_public_url=(
+                "https://www.ekologus.pl/rewolucja-w-decyzjach-o-warunkach-"
+                "zabudowy-co-zmienia-sie-od-2026/"
+            ),
+            final_canonical_url=(
+                "https://www.ekologus.pl/rewolucja-w-decyzjach-o-warunkach-"
+                "zabudowy-co-zmienia-sie-od-2026/"
+            ),
+            evidence_ids=["ev_wp_zoning_article"],
+            source_connectors=["wordpress_ekologus"],
+        )
+    )
+
+    assert all(
+        candidate.card.id != "ekologus_service_eko_opieka_calendar"
+        for candidate in match.service_candidates
+    )
+
+
 @pytest.mark.parametrize(
     ("url", "expected_card_id"),
     [
