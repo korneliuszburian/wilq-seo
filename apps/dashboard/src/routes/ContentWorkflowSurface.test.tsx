@@ -615,6 +615,21 @@ describe("ContentWorkflowSurface", () => {
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
   });
 
+  it("keeps page discovery secondary and does not ask for a section during scope", async () => {
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot({ currentStepId: "scope" }));
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const picker = await screen.findByTestId("content-session-picker");
+    expect(within(picker).getByText("Zmień stronę lub otwórz pełny inventory")).toBeInTheDocument();
+    expect(within(picker).queryByRole("combobox", { name: "Sekcja z aktualnej strony" })).not.toBeInTheDocument();
+    expect(within(picker).queryByRole("combobox", { name: "Sekcja z planu" })).not.toBeInTheDocument();
+  });
+
   it("exposes a full-inventory page outside the opportunity queue", async () => {
     render(
       <App

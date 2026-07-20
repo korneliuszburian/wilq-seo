@@ -95,7 +95,7 @@ export function ContentWorkflowJourneyContext({
       aria-label="Kontekst zadania treściowego"
       className="mb-3 rounded-md border border-line bg-white p-3 shadow-sm sm:mb-4 sm:p-4"
     >
-      <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Decyzja dla strony</p>
+      <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Treści i SEO · decyzja dla strony</p>
       <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h1 className="min-w-0 text-xl font-semibold text-ink">{pageTitle}</h1>
         <p className="text-sm font-semibold text-action">{candidate.recommended_mode_label}</p>
@@ -105,16 +105,38 @@ export function ContentWorkflowJourneyContext({
         <JourneyFact label="Usługa" value={data.serviceProfileContext.service_label ?? "nieprzypisana"} />
         <JourneyFact label="Decyzja" value={candidate.recommended_mode_label} />
       </dl>
-      <p className="mt-2 text-sm leading-6 text-slate-700">{metricSummary}</p>
-      <p className="mt-1 text-xs leading-5 text-slate-600" data-testid="content-ga4-metrics">
+      <div className="mt-4 grid gap-3 sm:grid-cols-3" aria-label="Najważniejsze dane dla strony">
+        <JourneySignalCard
+          label="Widoczność w GSC"
+          value={metrics?.impressions === undefined || metrics.impressions === null ? "Brak danych" : `${metrics.impressions} wyświetleń`}
+          detail={metrics?.primary_query ? `Główne zapytanie: „${metrics.primary_query}”` : "Brak exact zapytania"}
+          tone="fact"
+        />
+        <JourneySignalCard
+          label="CTR"
+          value={metrics?.ctr === undefined || metrics.ctr === null ? "Brak danych" : `${(metrics.ctr * 100).toFixed(2)}%`}
+          detail={metrics?.clicks === undefined || metrics.clicks === null ? comparisonSummary : `${metrics.clicks} kliknięć · ${comparisonSummary}`}
+          tone="signal"
+        />
+        <JourneySignalCard
+          label="Pomiar i struktura"
+          value={pageInventory?.section_count === null || pageInventory?.section_count === undefined ? "Do odczytu" : `${pageInventory.section_count} sekcji`}
+          detail={ga4MetricSummaries.length ? `GA4: ${ga4MetricSummaries[0]}` : "GA4: brak exact danych"}
+          tone={ga4MetricSummaries.length ? "fact" : "blocker"}
+        />
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3" aria-label="Fakty, sygnały i blokady">
+        <EvidenceGroup title="Fakty" detail={`${candidate.source_connector_labels.join(" · ") || "Brak źródeł"} · ${data.freshnessAssessment.state_label}`} tone="fact" />
+        <EvidenceGroup title="Sygnały" detail={metricSummary} tone="signal" />
+        <EvidenceGroup title="Blokady" detail={ga4MetricSummaries.length ? "Brak blokady pomiaru GA4" : "Brak dokładnych danych GA4 dla strony"} tone="blocker" />
+      </div>
+      <p className="sr-only" data-testid="content-ga4-metrics">
         {ga4MetricSummaries.length
           ? `GA4 dla tej strony: ${ga4MetricSummaries.join(" | ")}`
           : "GA4 dla tej strony: brak dokładnych faktów w aktualnym odczycie."}
       </p>
-      <p className="mt-1 text-xs leading-5 text-slate-500" data-testid="content-metric-comparison">
-        {comparisonSummary}
-      </p>
-      <p className="mt-1 text-xs leading-5 text-slate-500">{inventorySummary}</p>
+      <p className="sr-only" data-testid="content-metric-comparison">{comparisonSummary}</p>
+      <p className="sr-only">{inventorySummary}</p>
       <details className="mt-3 text-xs text-slate-600">
         <summary className="cursor-pointer font-semibold text-action">Dlaczego ta decyzja?</summary>
         <p className="mt-2 leading-5">{candidate.reason}</p>
@@ -128,6 +150,40 @@ export function ContentWorkflowJourneyContext({
         </p>
       </details>
     </section>
+  );
+}
+
+function JourneySignalCard({
+  label,
+  value,
+  detail,
+  tone
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  tone: "fact" | "signal" | "blocker";
+}) {
+  const toneClass = tone === "fact" ? "border-emerald-200 bg-emerald-50/50" : tone === "signal" ? "border-amber-200 bg-amber-50/50" : "border-rose-200 bg-rose-50/50";
+  return (
+    <article className={`rounded-md border p-3 ${toneClass}`}>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-ink">{value}</p>
+      <p className="mt-1 text-xs leading-5 text-slate-600">{detail}</p>
+    </article>
+  );
+}
+
+function EvidenceGroup({ title, detail, tone }: { title: string; detail: string; tone: "fact" | "signal" | "blocker" }) {
+  const dotClass = tone === "fact" ? "bg-emerald-500" : tone === "signal" ? "bg-amber-500" : "bg-rose-500";
+  return (
+    <div className="flex gap-2 rounded-md border border-line bg-surface p-3">
+      <span aria-hidden="true" className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${dotClass}`} />
+      <div>
+        <p className="font-semibold text-ink">{title}</p>
+        <p className="mt-1 text-xs leading-5 text-slate-600">{detail}</p>
+      </div>
+    </div>
   );
 }
 

@@ -15,9 +15,13 @@ prompt dla niezależnego reviewera.
 | `outsourcing-desktop-first-viewport.png` | 1440×900 | outsourcing, pierwszy viewport |
 | `bdo-mobile-first-viewport.png` | 390×844 | BDO, pierwszy viewport |
 | `outsourcing-mobile-first-viewport.png` | 390×844 | outsourcing, pierwszy viewport |
+| `bdo-desktop-first-slice-live.png` | 1440×900 | BDO, po odchudzeniu kolejki i dodaniu kart metryk |
+| `bdo-mobile-first-slice-live.png` | 390×844 | BDO, po odchudzeniu kolejki i dodaniu kart metryk |
 
 Zrzuty są wykonane z lokalnego dashboardu po zakończeniu ładowania i zostały
-sprawdzone wizualnie po zapisie.
+sprawdzone wizualnie po zapisie. Pliki `*-first-slice-live.png` pokazują aktualny
+fixed point po pierwszym slice UX; wcześniejsze pliki pozostają baseline'em do
+porównania.
 
 ## Uruchomienie
 

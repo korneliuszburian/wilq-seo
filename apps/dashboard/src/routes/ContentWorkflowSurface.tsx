@@ -580,12 +580,13 @@ function ContentWorkflowMarketerJourney({
         inventory={inventory}
         selectedWorkItemId={selectedWorkItemId}
         onSelectWorkItem={onSelectWorkItem}
+        activeStepId={selectedStepId}
       />
       <div className="flex flex-col">
-        <div className="order-2 lg:order-1">
+        <div className="order-1">
           <ContentWorkflowJourneyContext data={data} />
         </div>
-        <div className="order-1 lg:order-2">
+        <div className="order-2">
           <ContentWorkflowTaskMap
             currentStepId={data.currentStepId}
             selectedStepId={selectedStepId}
@@ -615,7 +616,8 @@ function ContentSessionPicker({
   queue,
   inventory,
   selectedWorkItemId,
-  onSelectWorkItem
+  onSelectWorkItem,
+  activeStepId
 }: {
   planningGenerationStatus: ContentPlanningGenerationStatus;
   planningDigest: string | null;
@@ -625,6 +627,7 @@ function ContentSessionPicker({
   inventory: ContentInventoryCatalogResponse | null;
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
+  activeStepId: WorkflowStepId;
 }) {
   const navigate = useNavigate();
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
@@ -705,38 +708,37 @@ function ContentSessionPicker({
           </select>
         </label>
       </div>
-      <div className="mt-4 hidden gap-2 lg:grid lg:grid-cols-2" aria-label="Strony dostępne do odświeżenia">
-        {candidates.map((candidate) => (
-          <button
-            key={candidate.work_item_id}
-            type="button"
-            onClick={() => onSelectWorkItem(candidate.work_item_id)}
-            className={`rounded-md border p-3 text-left transition-colors ${
-              candidate.work_item_id === selectedWorkItemId
-                ? "border-action bg-action/10"
-                : "border-line bg-surface hover:border-action/50"
-            }`}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-semibold text-ink">{contentCandidatePath(candidate.final_canonical_url)}</span>
-              <span className="text-xs font-semibold text-slate-500">{candidate.recommended_mode_label}</span>
-            </div>
-            <p className="mt-1 text-sm text-slate-700">{candidate.topic}</p>
-            <p className="mt-2 text-xs leading-5 text-slate-600">
-              {pageMetricsSummary(candidate)}
-            </p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              {pageInventorySummary(candidate)}
-            </p>
-            {candidate.page_inventory?.acf_section_headings.length ? (
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Układ ACF: {acfSectionPreview(candidate.page_inventory.acf_section_headings)}
-              </p>
-            ) : null}
-          </button>
-        ))}
-      </div>
-      {selectedSectionHeading ? (
+      <details className="mt-3 rounded-md border border-line bg-surface px-3 py-2 text-sm">
+        <summary className="cursor-pointer font-semibold text-action">Zmień stronę lub otwórz pełny inventory</summary>
+        <div className="mt-3 hidden gap-2 lg:grid lg:grid-cols-2" aria-label="Strony dostępne do odświeżenia">
+          {candidates.map((candidate) => (
+            <button
+              key={candidate.work_item_id}
+              type="button"
+              onClick={() => onSelectWorkItem(candidate.work_item_id)}
+              className={`rounded-md border p-3 text-left transition-colors ${
+                candidate.work_item_id === selectedWorkItemId
+                  ? "border-action bg-action/10"
+                  : "border-line bg-white hover:border-action/50"
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold text-ink">{contentCandidatePath(candidate.final_canonical_url)}</span>
+                <span className="text-xs font-semibold text-slate-500">{candidate.recommended_mode_label}</span>
+              </div>
+              <p className="mt-1 text-sm text-slate-700">{candidate.topic}</p>
+              <p className="mt-2 text-xs leading-5 text-slate-600">{pageMetricsSummary(candidate)}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">{pageInventorySummary(candidate)}</p>
+              {candidate.page_inventory?.acf_section_headings.length ? (
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Układ ACF: {acfSectionPreview(candidate.page_inventory.acf_section_headings)}
+                </p>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      </details>
+      {selectedSectionHeading && !["scope", "section_map"].includes(activeStepId) ? (
         <label className="mt-3 block text-sm font-semibold text-ink" htmlFor="content-session-section">
           {hasGeneratedPlan ? "Sekcja z planu" : "Sekcja z aktualnej strony"}
           <select

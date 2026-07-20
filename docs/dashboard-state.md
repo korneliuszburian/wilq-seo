@@ -261,6 +261,16 @@ Readiness is a product/usefulness estimate, not a test pass rate.
 
 ## Content Workbench Target Model
 
+## UX slice 2026-07-20
+
+Pierwszy viewport `/content-workflow` został odchudzony: aktywna strona pozostaje
+widoczna, pełna kolejka/inventory jest drugorzędnym disclosure, a wybór sekcji
+nie pojawia się na etapach `scope` ani `section_map` (mapa jest automatyczna).
+Kontekst pokazuje realne GSC/GA4/inventory w kartach oraz grupuje dane na Fakty,
+Sygnały i Blokady. Proof desktop/mobile znajduje się w
+`docs/review-packets/2026-07-20-ux-audit-input/second-opinion/` jako
+`*-first-slice-live.png`.
+
 The first content screen should not be a gallery of cards. It should be a
 working map for one selected content item or one prioritized queue.
 
