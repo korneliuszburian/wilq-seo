@@ -185,6 +185,21 @@ export const ContentWorkItemQueueSearchMetricsSchema = z.object({
   comparison_evidence_ids: z.array(z.string()).optional()
 });
 
+export const ContentWorkItemQueueGa4MetricSchema = z.object({
+  name: z.string(),
+  metric_label: z.string(),
+  value: z.union([z.number(), z.string()]),
+  period: z.string(),
+  evidence_id: z.string(),
+  freshness_state: z.enum(["fresh", "stale", "unknown"])
+});
+
+export const ContentWorkItemQueueGa4MetricsSchema = z.object({
+  status: z.enum(["available", "missing"]).default("missing"),
+  metrics: z.array(ContentWorkItemQueueGa4MetricSchema).default([]),
+  evidence_ids: z.array(z.string()).default([])
+});
+
 export const ContentWorkItemQueuePageInventorySchema = z.object({
   title_or_h1: z.string().nullable().optional(),
   section_count: z.number().int().nonnegative().nullable().optional(),
@@ -230,6 +245,7 @@ export const ContentWorkItemQueueCandidateSchema = z.object({
   duplicate_canonical_risk_summary: z.string(),
   measurement_readiness: ContentWorkItemQueueMeasurementReadinessSchema,
   search_metrics: ContentWorkItemQueueSearchMetricsSchema.optional(),
+  ga4_metrics: ContentWorkItemQueueGa4MetricsSchema.optional(),
   page_inventory: ContentWorkItemQueuePageInventorySchema.optional(),
   safe_next_step: z.string(),
   freshness_assessment: ContentFreshnessAssessmentSchema,

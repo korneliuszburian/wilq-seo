@@ -714,6 +714,16 @@ function pageMetricsSummary(candidate: ContentWorkItemQueueCandidate) {
   } else {
     values.push("brak dwóch porównywalnych okresów");
   }
+  if (candidate.ga4_metrics?.status === "available" && candidate.ga4_metrics.metrics.length) {
+    values.push(
+      `GA4: ${candidate.ga4_metrics.metrics
+        .slice(0, 3)
+        .map((metric) => `${metric.metric_label || metric.name} ${metric.value}`)
+        .join(", ")}`
+    );
+  } else {
+    values.push("GA4: brak exact danych");
+  }
   return values.join(" · ");
 }
 

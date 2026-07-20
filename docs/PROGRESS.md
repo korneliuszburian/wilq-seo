@@ -3281,3 +3281,16 @@ Focused proof: envelope compactness + zachowanie digestu/inventory 1/1, Ruff, my
 diff-check PASS. Wcześniejszy exact two-service plan → v2 draft → semantic harness
 pozostaje PASS; pełny test pliku semantic review został przerwany po zawieszeniu przez
 stare procesy pytest, więc nie jest przedstawiany jako świeży PASS.
+
+### 2026-07-20 — kolejka treści pokazuje exact GA4 obok GSC
+
+Kandydat kolejki ma teraz bounded `ga4_metrics`: tylko fakty Google Analytics 4,
+które przechodzą istniejący exact landing-page matcher. Każdy rekord zachowuje nazwę,
+wartość, okres, evidence ID i freshness; niepasujący landing nie trafia do pierwszego
+ekranu. Shared schema i dashboard pokazują GA4 przy wyborze strony, a brak exact
+faktu pozostaje jawny jako „brak exact danych”.
+
+Focused falsifier: exact landing + obcy landing 1/1, queue API 10/10, dashboard
+candidate suite 220/220, shared-schema tests 43/43, Ruff/mypy/typecheck/diff-check
+PASS. Live selected inventory nie ma obecnie exact GA4 faktu, więc UI uczciwie go nie
+wyświetla — to brak pokrycia danych, nie syntetyczny wynik.

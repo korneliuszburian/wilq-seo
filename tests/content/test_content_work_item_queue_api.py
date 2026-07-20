@@ -20,6 +20,7 @@ from wilq.schemas import (
     ContentDecisionItem,
     ContentDiagnosticsResponse,
     ContentFreshnessAssessment,
+    MetricFact,
 )
 
 
@@ -204,6 +205,61 @@ def test_queue_rebuilds_source_labels_from_authoritative_connector_ids() -> None
         "Google Search Console",
         "Google Ads",
     ]
+
+
+def test_queue_ga4_projection_keeps_only_exact_landing_facts() -> None:
+    decision = ContentDecisionItem(
+        id="content_decision_ga4_exact",
+        decision_type="refresh_or_merge",
+        status="ready",
+        title="Doradztwo środowiskowe",
+        primary_query="doradztwo środowiskowe",
+        priority=10,
+        source_public_url="https://www.ekologus.pl/oferta/doradztwo/",
+        final_canonical_url="https://www.ekologus.pl/oferta/doradztwo/",
+        source_connectors=["google_search_console", "google_analytics_4"],
+        evidence_ids=["ev_gsc_exact", "ev_ga4_exact", "ev_ga4_other"],
+        metric_facts=[
+            MetricFact(
+                name="sessions",
+                value=42,
+                period="2026-07-01/2026-07-07",
+                source_connector="google_analytics_4",
+                evidence_id="ev_ga4_exact",
+                dimensions={"landing_page": "/oferta/doradztwo/", "host_name": "www.ekologus.pl"},
+                freshness_state="fresh",
+            ),
+            MetricFact(
+                name="sessions",
+                value=999,
+                period="2026-07-01/2026-07-07",
+                source_connector="google_analytics_4",
+                evidence_id="ev_ga4_other",
+                dimensions={"landing_page": "/inna-strona/", "host_name": "www.ekologus.pl"},
+                freshness_state="fresh",
+            ),
+        ],
+        rationale="Exact landing page metric projection.",
+        next_step="Przejdź do planu.",
+    )
+
+    candidate = build_content_work_item_queue_candidate(
+        decision,
+        ContentFreshnessAssessment(
+            state="fresh",
+            state_label="dane treści świeże",
+            requires_refresh=False,
+            summary="Dane są świeże.",
+            next_step="Można przejść do decyzji.",
+        ),
+    )
+
+    assert candidate.ga4_metrics.status == "available"
+    assert [
+        (fact.name, fact.value, fact.evidence_id)
+        for fact in candidate.ga4_metrics.metrics
+    ] == [("sessions", 42, "ev_ga4_exact")]
+    assert candidate.ga4_metrics.evidence_ids == ["ev_ga4_exact"]
 
 
 def test_selected_inventory_queue_reads_material_without_full_diagnostics(monkeypatch) -> None:

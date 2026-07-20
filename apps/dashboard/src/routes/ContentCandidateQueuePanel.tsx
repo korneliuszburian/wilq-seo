@@ -115,6 +115,18 @@ export function candidateEvidenceSummary(candidate: ContentWorkItemQueueCandidat
   } else if (metrics?.comparison_status === "not_available") {
     metricParts.push("brak porównywalnego okresu");
   }
+  if (metricParts.length) {
+    const ga4 = candidate.ga4_metrics;
+    if (ga4?.status === "available" && ga4.metrics.length) {
+      const ga4Summary = ga4.metrics
+        .slice(0, 4)
+        .map((metric) => `${metric.metric_label || metric.name}: ${metric.value}`)
+        .join(", ");
+      metricParts.push(`GA4: ${ga4Summary}`);
+    } else {
+      metricParts.push("GA4: brak exact danych");
+    }
+  }
   const inventory = candidate.page_inventory;
   if (inventory?.section_count !== null && inventory?.section_count !== undefined) {
     metricParts.push(`${inventory.section_count} sekcji`);

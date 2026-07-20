@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.content.canonical.metric_dimensions import metric_dimensions_match_landing
 from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
 from wilq.content.inventory.records import resolve_content_inventory
 from wilq.content.measurement.aggregates import compare_exact_page_metric_periods
@@ -85,6 +86,29 @@ class ContentWorkItemQueueSearchMetrics(BaseModel):
     comparison_evidence_ids: list[str] = Field(default_factory=list)
 
 
+class ContentWorkItemQueueGa4Metric(BaseModel):
+    """One exact landing-page GA4 fact for the queue's compact first screen."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    metric_label: str
+    value: float | int | str
+    period: str
+    evidence_id: str
+    freshness_state: Literal["fresh", "stale", "unknown"]
+
+
+class ContentWorkItemQueueGa4Metrics(BaseModel):
+    """Bounded GA4 projection; unrelated landing facts never enter the card."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["available", "missing"] = "missing"
+    metrics: list[ContentWorkItemQueueGa4Metric] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
 class ContentWorkItemQueuePageInventory(BaseModel):
     """What WILQ has actually read about the existing page, without raw page text."""
 
@@ -130,6 +154,9 @@ class ContentWorkItemQueueCandidate(BaseModel):
     measurement_readiness: ContentWorkItemQueueMeasurementReadiness
     search_metrics: ContentWorkItemQueueSearchMetrics = Field(
         default_factory=ContentWorkItemQueueSearchMetrics
+    )
+    ga4_metrics: ContentWorkItemQueueGa4Metrics = Field(
+        default_factory=ContentWorkItemQueueGa4Metrics
     )
     page_inventory: ContentWorkItemQueuePageInventory = Field(
         default_factory=ContentWorkItemQueuePageInventory
@@ -298,6 +325,10 @@ def _candidate_from_decision(
         and comparison.comparison_period is not None
         else []
     )
+    ga4_metrics = _ga4_metrics_for_decision(
+        decision,
+        content_url=decision.final_canonical_url or decision.page or "",
+    )
     raw_inventory_headings = (
         decision.wordpress_acf_section_headings
         if decision.wordpress_acf_section_inventory_status == "available"
@@ -350,6 +381,7 @@ def _candidate_from_decision(
             comparison_periods=comparison_periods,
             comparison_evidence_ids=(comparison.evidence_ids if comparison is not None else []),
         ),
+        ga4_metrics=ga4_metrics,
         page_inventory=ContentWorkItemQueuePageInventory(
             title_or_h1=decision.wordpress_title_or_h1,
             section_count=len(inventory_headings) if inventory_headings else 0,
@@ -366,6 +398,48 @@ def _candidate_from_decision(
         safe_next_step=_safe_next_step(decision, preflight, blockers),
         freshness_assessment=freshness_assessment,
         blockers=blockers,
+    )
+
+
+def _ga4_metrics_for_decision(
+    decision: ContentDecisionItem,
+    *,
+    content_url: str,
+) -> ContentWorkItemQueueGa4Metrics:
+    facts = [
+        fact
+        for fact in decision.metric_facts
+        if fact.source_connector == "google_analytics_4"
+        and metric_dimensions_match_landing(
+            fact.dimensions,
+            content_url,
+            allow_relative_path=True,
+        )
+    ]
+    # Keep the queue compact and deterministic while retaining every metric name
+    # once per period. The full fact lineage remains available in the snapshot.
+    selected: list[ContentWorkItemQueueGa4Metric] = []
+    seen: set[tuple[str, str]] = set()
+    for fact in facts:
+        key = (fact.name, fact.period)
+        if key in seen:
+            continue
+        seen.add(key)
+        selected.append(
+            ContentWorkItemQueueGa4Metric(
+                name=fact.name,
+                metric_label=fact.metric_label,
+                value=fact.value,
+                period=fact.period,
+                evidence_id=fact.evidence_id,
+                freshness_state=fact.freshness_state,
+            )
+        )
+    selected.sort(key=lambda fact: (fact.name, fact.period, fact.evidence_id))
+    return ContentWorkItemQueueGa4Metrics(
+        status="available" if selected else "missing",
+        metrics=selected[:8],
+        evidence_ids=list(dict.fromkeys(fact.evidence_id for fact in selected[:8])),
     )
 
 
