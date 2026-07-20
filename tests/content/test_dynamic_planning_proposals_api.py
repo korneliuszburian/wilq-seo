@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Literal, cast
 
 import pytest
@@ -444,6 +445,29 @@ def test_planning_output_quality_gate_rejects_navigation_and_dated_headings() ->
         "heading_presentation_noise",
         "heading_dated_event_noise",
         "heading_related_content_noise",
+    ]
+
+
+def test_planning_output_quality_gate_requires_query_to_section_assignment() -> None:
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Zakres doradztwa środowiskowego",
+                query_terms=[],
+            )
+        ],
+        cta_blocks=[ContentPlanningCtaBlock.model_construct(placement="after_lead")],
+    )
+    planning_input = SimpleNamespace(
+        query_portfolio=SimpleNamespace(
+            gsc_query_rows=[SimpleNamespace(term="doradztwo środowiskowe")],
+            ads_term_rows=[],
+            keyword_planner_rows=[],
+        )
+    )
+
+    assert _planning_output_quality_errors(output, planning_input=planning_input) == [
+        "missing_query_assignments"
     ]
 
 

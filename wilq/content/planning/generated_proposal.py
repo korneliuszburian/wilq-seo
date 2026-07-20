@@ -446,11 +446,13 @@ def _run_planning_turn(
         )
         return None, trace, blocker, "blocked"
     output = canonicalize_model_inventory_headings(planning_input, output)
-    quality_errors = _planning_output_quality_errors(output)
+    quality_errors = _planning_output_quality_errors(output, planning_input=planning_input)
     if quality_errors:
         quality_reason = (
             "Plan nie zawiera żadnego bloku CTA wymaganego dla bezpiecznego następnego kroku."
             if "missing_cta" in quality_errors
+            else "Plan zawiera exact zapytania, ale nie przypisuje żadnego z nich do sekcji."
+            if "missing_query_assignments" in quality_errors
             else "Plan zawiera nagłówki nawigacyjne, promocyjne albo datowane, "
             "które nie są użyteczną strukturą odpowiedzi dla czytelnika."
         )
@@ -518,6 +520,8 @@ _HEADING_NOISE_PATTERNS = (
 
 def _planning_output_quality_errors(
     output: ContentPlanningModelOutput,
+    *,
+    planning_input: ContentPlanningInput | None = None,
 ) -> list[str]:
     errors = _planning_heading_quality_errors(section.heading for section in output.sections)
     if not output.cta_blocks:
@@ -526,11 +530,17 @@ def _planning_output_quality_errors(
         _orphaned_placement_quality_errors(
             sections=output.sections,
             placements=[
-                *(item.placement for item in output.cta_blocks),
-                *(item.placement for item in output.internal_links),
+                *(getattr(item, "placement", None) for item in output.cta_blocks),
+                *(getattr(item, "placement", None) for item in output.internal_links),
             ],
         )
     )
+    if (
+        planning_input is not None
+        and _has_exact_query_rows(planning_input)
+        and not any(section.query_terms for section in output.sections)
+    ):
+        errors.append("missing_query_assignments")
     return list(dict.fromkeys(errors))
 
 
@@ -542,12 +552,27 @@ def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
         _orphaned_placement_quality_errors(
             sections=proposal.sections,
             placements=[
-                *(item.placement for item in proposal.cta_blocks),
-                *(item.placement for item in proposal.internal_links),
+                *(getattr(item, "placement", None) for item in proposal.cta_blocks),
+                *(getattr(item, "placement", None) for item in proposal.internal_links),
             ],
         )
     )
+    if _has_exact_query_rows(proposal.search_demand) and not any(
+        section.query_terms for section in proposal.sections
+    ):
+        errors.append("missing_query_assignments")
     return list(dict.fromkeys(errors))
+
+
+def _has_exact_query_rows(value: object) -> bool:
+    """Return whether a portfolio contains any exact query/term rows."""
+
+    if hasattr(value, "query_portfolio"):
+        value = value.query_portfolio
+    return any(
+        bool(getattr(value, field, []))
+        for field in ("gsc_query_rows", "ads_term_rows", "keyword_planner_rows")
+    )
 
 
 def _orphaned_placement_quality_errors(

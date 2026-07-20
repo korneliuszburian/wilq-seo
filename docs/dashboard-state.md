@@ -391,6 +391,10 @@ Podgląd `Tekst` ma jawny status `wersja robocza`, licznik sekcji/FAQ i lokalną
 nawigację po całej stronie. Marketer może czytać materiał jak finalną stronę,
 a lineage i digest pozostają w rozwijanym panelu technicznym.
 
+Plan nie przechodzi bramki jakości, jeśli exact portfolio zapytań jest dostępne,
+ale żadna sekcja nie ma jawnego `query_terms`. Zapytania bez pewnego dopasowania
+mogą pozostać `page_only`; całe portfolio nie może jednak zniknąć z mapy sekcji.
+
 Na kroku `Review` operator dostaje tę samą krótką orientację: przeczytaj pełny
 podgląd, uruchom advisory review jako listę uwag, a następnie zapisz własną
 decyzję dla exact revision. Review semantyczne nie jest automatyczną akceptacją.
