@@ -52,6 +52,31 @@ def test_content_body_without_structural_headings_uses_the_content_section_label
     assert seed.h2_direction == ["Treść główna (the_content)"]
 
 
+def test_real_inventory_headings_win_over_the_content_label() -> None:
+    decision = ContentDecisionItem(
+        id="inventory_structured",
+        decision_type="refresh_or_merge",
+        title="Strona z nagłówkami",
+        wordpress_section_headings=["Prawdziwa sekcja", "Następna sekcja"],
+        wordpress_content_inventory_status="available",
+        wordpress_content_text="Treść z istniejącą strukturą.",
+        evidence_ids=["ev_wp_structured"],
+        source_connectors=["wordpress_ekologus"],
+        source_public_url="https://www.ekologus.pl/struktura/",
+        final_canonical_url="https://www.ekologus.pl/struktura/",
+        intended_final_url="https://www.ekologus.pl/struktura/",
+        inventory_gate_status="confirmed_current_inventory",
+        duplicate_gate_status="checked",
+        rationale="Istniejąca treść ma odczytane nagłówki.",
+        next_step="Sprawdź materiał.",
+    )
+
+    assert content_sales_brief_seed_from_decision(decision).h2_direction == [
+        "Prawdziwa sekcja",
+        "Następna sekcja",
+    ]
+
+
 def _item(**overrides: object) -> ContentWorkItem:
     payload: dict[str, Any] = {
         "id": "content_work_item_bdo",
