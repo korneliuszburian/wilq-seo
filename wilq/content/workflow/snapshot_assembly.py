@@ -431,6 +431,10 @@ def _operator_journey(
     sales_blocker = foundation.sales_brief.sales_brief_result.blockers[0:1]
     section_blocker = foundation.draft_package.draft_package_result.blockers[0:1]
     structured_blocker = delivery.structured_generation.structured_generation_result.blockers[0:1]
+    section_map_present = bool(
+        foundation.planning_workspace
+        and foundation.planning_workspace.section_map_current
+    )
     signal = None if brief is None else brief.signal_quality
     return build_content_workflow_operator_journey(
         ContentWorkflowOperatorFacts(
@@ -439,9 +443,14 @@ def _operator_journey(
             sales_brief_signal_reason=None if signal is None else signal.reason,
             sales_brief_safe_next_step=_sales_brief_next_step(signal, sales_blocker),
             sales_brief_blocker=_operator_blocker(sales_blocker),
-            section_map_present=draft is not None,
-            section_map_blocker=_operator_blocker(section_blocker),
-            section_map_safe_next_step=_section_map_next_step(draft, section_blocker),
+            section_map_present=section_map_present,
+            section_map_blocker=(
+                _operator_blocker(section_blocker) if section_map_present else None
+            ),
+            section_map_safe_next_step=_section_map_next_step(
+                section_map_present=section_map_present,
+                blockers=section_blocker if section_map_present else [],
+            ),
             structured_contract_present=(
                 delivery.structured_generation.structured_generation_result.contract is not None
             ),
@@ -502,17 +511,18 @@ def _sales_brief_next_step(signal: Any, blockers: list[Any]) -> str:
 
 
 def _section_map_next_step(
-    draft: ContentDraftPackage | None,
+    *,
+    section_map_present: bool,
     blockers: list[Any],
 ) -> str:
-    if draft is not None:
+    if section_map_present:
         return (
             "Mapa sekcji została wyliczona z aktualnego planu, inventory i dowodów. "
             "Przejdź do szkicu."
         )
     if blockers:
         return str(blockers[0].next_step)
-    return "Najpierw przygotuj bezpieczny plan sekcji."
+    return "Uruchom generowanie planu — mapa sekcji zostanie wyliczona automatycznie."
 
 
 def _current_planning_proposal(

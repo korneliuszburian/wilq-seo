@@ -348,9 +348,14 @@ def build_content_planning_workspace(
             and scope.planning_digest == proposal.planning_digest
             and scope.decision == "approved"
         ),
-        # The generated proposal is the API-owned section map.  A marketer
-        # reviews the scope and the resulting text; they must not re-enter or
-        # separately approve headings that Codex already mapped from the
-        # current inventory, evidence and service profile.
-        section_map_current=bool(proposal.sections),
+        # Preserve-first baseline sections are only a preview.  The section
+        # map becomes current after the API-owned proposal has actually been
+        # generated from the selected service, inventory and evidence.  This
+        # keeps the operator on scope with a visible Generate plan action
+        # instead of unlocking the draft editor on a baseline projection.
+        section_map_current=bool(
+            proposal.generation_status == "codex_generated"
+            and proposal.proposal_id
+            and proposal.sections
+        ),
     )

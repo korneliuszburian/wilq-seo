@@ -53,7 +53,7 @@ def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
     assert snapshot["current_step_id"] == "scope"
     assert snapshot["revision_workspace"]["can_save"] is False
     assert planning["scope_current"] is False
-    assert planning["section_map_current"] is True
+    assert planning["section_map_current"] is False
 
     premature_section_map = client.post(
         _planning_review_path(work_item_id),
@@ -72,7 +72,9 @@ def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
     assert scope.json()["decision"]["trust_level"] == "local_unverified"
     assert scope.json()["decision"]["reviewed_by"] == "authenticated_expert"
     assert scope.json()["planning_workspace"]["scope_current"] is True
-    assert _selected_snapshot(client, work_item_id)["current_step_id"] == "draft"
+    after_scope = _selected_snapshot(client, work_item_id)
+    assert after_scope["current_step_id"] == "scope"
+    assert after_scope["revision_workspace"]["can_save"] is False
 
     repeated = client.post(_planning_review_path(work_item_id), json=scope_payload)
     assert repeated.status_code == 200
@@ -97,11 +99,13 @@ def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
     assert section_map.json()["detail"] == _AUTO_SECTION_MAP_REJECTION
 
     unlocked = _selected_snapshot(client, work_item_id)
-    assert unlocked["current_step_id"] == "draft"
-    assert unlocked["revision_workspace"]["can_save"] is True
+    assert unlocked["current_step_id"] == "scope"
+    assert unlocked["revision_workspace"]["can_save"] is False
     assert next(
-        step for step in unlocked["operator_steps"] if step["id"] == "draft"
-    )["can_submit"] is True
+        step for step in unlocked["operator_steps"] if step["id"] == "scope"
+    )["safe_next_step"] == (
+        "Uruchom generowanie planu — mapa sekcji zostanie wyliczona automatycznie."
+    )
 
     current_planning = ContentPlanningWorkspace.model_validate(
         unlocked["planning_workspace"]
@@ -121,7 +125,7 @@ def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
         ],
     )
     assert changed_workspace.scope_current is False
-    assert changed_workspace.section_map_current is True
+    assert changed_workspace.section_map_current is False
 
 
 def test_snapshot_seeds_api_owned_editor_and_starts_at_draft(

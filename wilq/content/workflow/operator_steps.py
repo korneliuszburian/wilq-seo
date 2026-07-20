@@ -213,6 +213,8 @@ def build_content_workflow_operator_journey(
                 safe_next_step=(
                     facts.sales_brief_safe_next_step
                     if not scope_complete
+                    else facts.section_map_safe_next_step
+                    if not section_map_complete
                     else "Mapa sekcji została wyliczona automatycznie. Przejdź do szkicu treści."
                 ),
             ),
