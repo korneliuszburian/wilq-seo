@@ -4,6 +4,45 @@ Status: aktywny, długotrwały plan wykonawczy. Właścicielem zadań i zależno
 pozostaje Beads (`wilq-seo-1oa`); ten plik definiuje produkt, standard i kolejność.
 Nie jest historią commitów ani listą zastępczą dla Beads.
 
+### Aktywny execution goal — production-ready Treści i SEO (2026-07-20)
+
+Najbliższy rezultat nie jest kolejnym proof-of-conceptem: `/content-workflow`
+ma wyglądać i działać jak gotowe narzędzie pracy marketera. Za wizualny fixed
+point przyjmujemy dostarczone makiety desktop/mobile: kompaktowy hero strony i
+usługi, jeden dominujący next step, realne metryki, grupy Faktów/Sygnałów/Blokad,
+wnioski z powodami, poziomy workflow oraz page-like tekst i review.
+
+Definition of Done dla tej powierzchni:
+
+1. **Wybór**: dowolna strona z kolejki lub pełnego inventory WordPressa, jawnie
+   dobrana usługa, rozpoznanie ACF albo `the_content` bez ręcznej mapy sekcji;
+   BDO jest tylko przykładem, nigdy domyślnym ograniczeniem produktu.
+2. **Brief/plan**: jeden aktualny plan z query assignments, page assets, FAQ,
+   CTA, linkowaniem i źródłami; marketer widzi decyzję, wpływ, freshness i
+   blocker, a szczegóły techniczne są progressive disclosure.
+3. **Tekst**: pełny dokument w układzie strony, stabilne section IDs, meta/H1/
+   lead/FAQ/CTA/linki oraz lineage do zatwierdzonych materiałów i evidence.
+4. **Review**: deterministyczne bramki i persistowany advisory semantic review
+   są widoczne jako pomoc, ale tylko człowiek zatwierdza exact revision.
+5. **Dev preview**: tylko revision-bound WordPress draft preview/action; brak
+   publikacji, brak bezpośredniego vendor write, brak auto-approval.
+6. **Responsive UX**: desktop i mobile mają tę samą hierarchię; pierwszy
+   viewport odpowiada w około 30 sekund: co widzimy, dlaczego teraz, co jest
+   zablokowane i jaki jest następny krok.
+
+Standard wykonania zgodny z aktualnym Codex manualem: każdy slice ma Goal,
+Context, Constraints i Done-when; zmieniamy najmniejszy pionowy fragment,
+wybieramy focused falsifier przed testem, zapisujemy checkpoint w Beads/state,
+oglądamy live browser proof i dopiero wtedy commit/push. Długie zadanie jest
+resumable: context-pack WILQ odświeżany przed decyzjami, brak ponownego
+odtwarzania zielonych drogich testów, brak claimu completion bez rendered proof.
+Second opinion pozostaje jednym bounded checkerem na fixed point, nie approvalem.
+
+Aktualny fixed point wizualny: `6136024a`; pierwszy viewport ma już disclosure
+kolejki, karty realnych metryk i pojedynczy freshness banner. Następny slice
+dotyczy production-ready widoków Plan/Tekst/Review/Dev preview zgodnych z tym
+samym językiem i hierarchią.
+
 ### Checkpoint 2026-07-19 — fixed point po browser-proof `/content-workflow`
 
 Ostatni utrwalony stan obejmuje serię runtime i lineage hardening slices. `GET /initial-draft` nie
