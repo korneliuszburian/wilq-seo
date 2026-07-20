@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from types import SimpleNamespace
 from typing import Any, cast
 
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from apps.api.wilq_api.routers import content_workflow as content_workflow_router
 from tests.content.test_content_work_item_brief_draft_api import (
     _post_draft_package,
     _post_sales_brief,
@@ -17,8 +19,12 @@ from tests.content.test_work_item_preflight_api import (
     _item,
     _sales_brief_seed,
 )
-from wilq.content.quality.review import _draft_package_findings
-from wilq.content.workflow.contracts import ContentWorkItemStructuredDraftGenerationRequest
+from wilq.content.quality.review import ContentQualityReview, _draft_package_findings
+from wilq.content.workflow.contracts import (
+    ContentWorkItemQualityReviewResponse,
+    ContentWorkItemStructuredDraftGenerationRequest,
+)
+from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.stage_drafts import (
     build_content_work_item_structured_draft_generation_response,
 )
@@ -54,6 +60,77 @@ def test_v2_revision_quality_does_not_require_legacy_draft_package() -> None:
     )
 
     assert findings == []
+
+
+def test_selected_quality_review_uses_server_owned_item_not_browser_candidate(
+    monkeypatch: Any,
+) -> None:
+    server_item = ContentWorkItem.model_validate(
+        _item(
+            duplicate_status="checked",
+            inventory_status="resolved",
+            canonical_status="resolved",
+            preflight_status="draft_allowed",
+        )
+    )
+    snapshot = SimpleNamespace(
+        sales_brief=SimpleNamespace(
+            item=server_item,
+            sales_brief_result=SimpleNamespace(brief=None),
+        ),
+        claim_ledger=None,
+        draft_package=SimpleNamespace(draft_package_result=SimpleNamespace(draft_package=None)),
+        revision_workspace=SimpleNamespace(latest_revision=None),
+    )
+    captured: dict[str, Any] = {}
+
+    def fake_quality_review(request: Any) -> Any:
+        captured["item"] = request.item
+        dimension = {"status": "pass", "label": "", "reason": ""}
+        review = ContentQualityReview(
+            review_id="quality_review_test",
+            work_item_id=request.item.id,
+            verdict="ready_for_human_review",
+            evidence_coverage=dimension,
+            claim_safety=dimension,
+            duplicate_risk=dimension,
+            usefulness=dimension,
+            service_fit=dimension,
+            search_intent_fit=dimension,
+            buyer_problem_fit=dimension,
+            cta_quality=dimension,
+            factual_precision=dimension,
+            polish_language_quality=dimension,
+            internal_link_fit=dimension,
+            measurement_readiness=dimension,
+            safe_next_step="review",
+        )
+        return ContentWorkItemQualityReviewResponse(item=request.item, quality_review=review)
+
+    monkeypatch.setattr(
+        content_workflow_router,
+        "_snapshot_for_work_item_or_404",
+        lambda work_item_id, **_: snapshot,
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "build_content_work_item_quality_review_response",
+        fake_quality_review,
+    )
+    compact_candidate = {
+        "id": server_item.id,
+        "topic": server_item.topic,
+        "duplicate_status": "missing",
+    }
+
+    response = TestClient(app).post(
+        f"/api/content/work-items/{server_item.id}/quality-review",
+        json={"item": compact_candidate},
+    )
+
+    assert response.status_code == 200
+    assert captured["item"].duplicate_status == "checked"
+    assert captured["item"].inventory_status == "resolved"
 
 
 def test_content_quality_review_blocks_missing_section_evidence() -> None:

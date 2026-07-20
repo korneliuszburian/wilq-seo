@@ -784,6 +784,11 @@ def content_work_item_quality_review_for_selected_item(
     response = build_content_work_item_quality_review_response(
         request.model_copy(
             update={
+                # The queue candidate is intentionally a compact browser
+                # projection.  Never let it replace the server-owned item
+                # used by quality gates: inventory, duplicate state, metric
+                # baseline and freshness must come from the exact snapshot.
+                "item": snapshot.sales_brief.item,
                 "revision": snapshot.revision_workspace.latest_revision,
                 "claim_ledger": snapshot.claim_ledger,
                 "sales_brief": snapshot.sales_brief.sales_brief_result.brief,
