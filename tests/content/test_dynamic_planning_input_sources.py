@@ -613,6 +613,8 @@ def test_service_profile_projection_uses_the_approved_fact_summary() -> None:
 
     profile_fact = next(fact for fact in facts if fact.source_fact_ids)
     assert profile_fact.summary.startswith("Publiczny artykuł Ekologus")
+    assert profile_fact.source_connector == "public_site"
+    assert profile_fact.evidence_ids == ["ev_content_service_profile_source_facts"]
     assert profile_fact.source_fact_ids == ["ekologus_public_bdo_faq_2026_07_01"]
     assert profile_fact.source_material_ids == ["ekologus_material_kb015"]
 

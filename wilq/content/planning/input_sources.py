@@ -519,6 +519,8 @@ def build_source_facts(
                 for index, fact in enumerate(approved_profile_facts, start=1)
             )
         else:
+            # Compatibility path for synthetic or historical card IDs that are
+            # not present in the approved source-fact registry yet.
             facts.append(
                 ContentPlanningSourceFact(
                     fact_id="planning_service_fact_01",
