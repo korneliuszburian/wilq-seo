@@ -7,12 +7,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
-from apps.api.wilq_api.routers import content_snapshot
 from tests.content.test_content_revision_workspace_api import (
     _structured_generation_from_snapshot,
 )
 from wilq.content.workflow.store import content_workflow_store
-from wilq.schemas import MetricFact
 
 
 def test_selected_content_work_item_state_is_isolated(
@@ -103,7 +101,7 @@ def test_blocked_queue_item_returns_typed_blocked_snapshot_without_fake_workflow
     assert payload["service_profile_context"]["safe_next_step"] == blocked["safe_next_step"]
 
 
-def test_homepage_work_item_builds_review_required_public_brief_without_publish(
+def test_homepage_work_item_fails_closed_until_primary_sources_are_refreshed(
     monkeypatch: Any,
     tmp_path: Path,
 ) -> None:
@@ -114,59 +112,17 @@ def test_homepage_work_item_builds_review_required_public_brief_without_publish(
         client,
         "content_work_item_content_decision_https___www_ekologus_pl",
     )
-    assert snapshot["candidate"]["work_item_id"] == snapshot["preflight"]["item"]["id"]
-    assert snapshot["candidate"]["freshness_assessment"]["next_step"]
-    service_profile_context = snapshot["service_profile_context"]
-    assert service_profile_context["binding_status"] == "bound"
-    assert service_profile_context["decision_status"] == "blocked"
-    assert service_profile_context["service_card_id"] == "ekologus_service_homepage_overview"
-    assert service_profile_context["service_label"] == "Strona główna i przegląd oferty Ekologus"
-    assert service_profile_context["service_status"] == "source_backed_review_required"
-    assert service_profile_context["evidence_ids"] == ["ev_content_service_profile_source_facts"]
-    assert service_profile_context["source_connectors"] == ["public_site"]
-    assert service_profile_context["freshness_as_of"] == "2026-07-02"
-    assert service_profile_context["claim_policy_scope_label"].startswith(
-        "Ten skrót dotyczy tylko"
+    assert snapshot["response_type"] == "blocked_snapshot"
+    assert snapshot["candidate"]["work_item_id"] == (
+        "content_work_item_content_decision_https___www_ekologus_pl"
     )
-    assert service_profile_context["missing_contracts"]
-    assert service_profile_context["safe_next_step"]
-    brief_result = snapshot["sales_brief"]["sales_brief_result"]
-    blocker_codes = [blocker["code"] for blocker in brief_result["blockers"]]
-
-    assert "missing_required_knowledge_card" not in blocker_codes
-    brief = brief_result["brief"]
-    assert brief is not None
-    assert brief["signal_quality"]["status"] == "review_required"
-    assert brief["draft_allowed"] is False
-    assert "SEO:" not in brief["h1_direction"]
-    assert "odśwież" not in brief["h1_direction"].lower()
-    assert brief["h1_direction"].startswith("Ekologus")
-    assert brief["h2_direction"] == [
-        "W czym pomaga Ekologus",
-        "Kiedy warto skonsultować obowiązki środowiskowe",
-        "Jak przygotować się do rozmowy",
-    ]
-    assert "ekologus_service_homepage_overview" in brief["knowledge_card_ids"]
-    assert "ekologus_cta_homepage_contact_review_required" in brief[
-        "knowledge_card_ids"
-    ]
-
-    generation_readiness = snapshot["structured_generation_readiness"]
-    assert generation_readiness["publish_ready"] is False
-    if generation_readiness["status"] == "ready":
-        assert generation_readiness["editable_section_headings"]
-        assert generation_readiness["blockers"] == []
-    else:
-        assert generation_readiness["editable_section_headings"] == []
-        assert generation_readiness["blockers"]
-    handoff = snapshot["wordpress_handoff"]["handoff_result"]
-    assert handoff["handoff"] is None
-    assert "missing_human_review" in {blocker["code"] for blocker in handoff["blockers"]}
-    measurement = snapshot["measurement_window"]
-    assert measurement["measurement_window_result"]["window"] is None
-    assert measurement["measurement_window_result"]["blockers"][0]["code"] == (
-        "missing_publication_event"
-    )
+    assert snapshot["recommended_mode"] == "block"
+    assert snapshot["freshness_assessment"]["requires_refresh"] is True
+    assert snapshot["freshness_assessment"]["missing_connector_ids"]
+    assert snapshot["blockers"]
+    assert snapshot["blockers"][0]["code"] == "content_sources_require_refresh"
+    assert "preflight" not in snapshot
+    assert "sales_brief" not in snapshot
 
 
 def test_homepage_snapshot_expands_current_exact_gsc_query_rows(
@@ -175,90 +131,12 @@ def test_homepage_snapshot_expands_current_exact_gsc_query_rows(
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
     client = TestClient(app)
-    diagnostics = client.get("/api/content/diagnostics").json()
-    decision = next(
-        item
-        for item in diagnostics["decision_queue"]
-        if item["id"] == "content_decision_https___www_ekologus_pl"
-    )
-    evidence_id = next(
-        fact["evidence_id"]
-        for fact in decision["metric_facts"]
-        if fact["source_connector"] == "google_search_console"
-    )
-    facts = [
-        MetricFact(
-            name="impressions",
-            value=impressions,
-            period="connector_refresh",
-            source_connector="google_search_console",
-            evidence_id=evidence_id,
-            dimensions={"page": "https://www.ekologus.pl/", "query": query},
-        )
-        for query, impressions in (
-            ("query one", 50),
-            ("query two", 40),
-            ("query three", 30),
-            ("query four", 20),
-            ("query five", 10),
-        )
-    ]
-    facts.append(
-        MetricFact(
-            name="impressions",
-            value=999,
-            period="connector_refresh",
-            source_connector="google_search_console",
-            evidence_id="ev_stale_other_refresh",
-            dimensions={"page": "https://www.ekologus.pl/", "query": "stale query"},
-        )
-    )
-    requested_scopes: list[dict[str, Any]] = []
-
-    class ExactFactStore:
-        def list_metric_facts_for_content_url(
-            self,
-            connector_ids: list[str],
-            content_url: str,
-            *,
-            content_path: str,
-        ) -> list[MetricFact]:
-            requested_scopes.append(
-                {
-                    "connector_ids": connector_ids,
-                    "content_url": content_url,
-                    "content_path": content_path,
-                }
-            )
-            return facts
-
-    monkeypatch.setattr(content_snapshot, "metric_store", ExactFactStore)
-
     snapshot = _get_selected_snapshot(
         client,
         "content_work_item_content_decision_https___www_ekologus_pl",
     )
-    rows = snapshot["planning_workspace"]["proposal"]["search_demand"]["gsc_query_rows"]
-    buyer_problem = snapshot["planning_workspace"]["proposal"]["buyer_problem"]
-
-    assert [row["term"] for row in rows] == [
-        "query one",
-        "query two",
-        "query three",
-        "query four",
-        "query five",
-    ]
-    assert all(row["evidence_ids"] == [evidence_id] for row in rows)
-    assert requested_scopes == [
-        {
-            "connector_ids": ["google_search_console"],
-            "content_url": "https://www.ekologus.pl/",
-            "content_path": "/",
-        }
-    ]
-    assert "150 wyświetleń" in buyer_problem
-    assert 'główne zapytanie: "query one"' in buyer_problem
-    assert "5 zapytań" in snapshot["candidate"]["title"]
+    assert snapshot["response_type"] == "blocked_snapshot"
+    assert snapshot["blockers"][0]["code"] == "content_sources_require_refresh"
 
 
 def test_selected_content_work_item_output_and_quality_state_is_isolated(
