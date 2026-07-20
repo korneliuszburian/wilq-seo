@@ -118,8 +118,9 @@ export function ContentPlanningReviewPanel({
                 : "border-wait/30 bg-wait/10 text-wait"
             }`}
           >
-            Ostatnia decyzja: {latestDecision.decision === "approved" ? "zaakceptowano" : "do zmiany"}
-            {!latestDecisionCurrent ? " · nieaktualna" : ""}
+            {latestDecisionCurrent
+              ? `Ostatnia decyzja: ${latestDecision.decision === "approved" ? "zaakceptowano" : "do zmiany"}`
+              : "Poprzednia decyzja dotyczy starszego zakresu"}
           </span>
         ) : null}
       </div>

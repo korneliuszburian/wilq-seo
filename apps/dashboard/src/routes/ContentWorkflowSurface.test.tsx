@@ -864,6 +864,32 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
+  it("makes a stale planning decision explicit instead of presenting it as approved", async () => {
+    const planning = planningWorkspace({
+      scopeCurrent: false,
+      sectionMapCurrent: false,
+      staleScopeDecision: true
+    });
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        planning,
+        workspace: { ...revisionWorkspace(), can_save: false },
+        currentStepId: "scope",
+        steps: operatorStepsAtScope()
+      })
+    );
+
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    expect(await screen.findByText("Poprzednia decyzja dotyczy starszego zakresu")).toBeInTheDocument();
+    expect(screen.queryByText("Ostatnia decyzja: zaakceptowano · nieaktualna")).not.toBeInTheDocument();
+  });
+
   it("keeps the planning note after a stale conflict and offers an explicit refresh", async () => {
     const planning = planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false });
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
@@ -2601,11 +2627,13 @@ function workflowSnapshot({
 function planningWorkspace({
   scopeCurrent = true,
   sectionMapCurrent = true,
-  generated = false
+  generated = false,
+  staleScopeDecision = false
 }: {
   scopeCurrent?: boolean;
   sectionMapCurrent?: boolean;
   generated?: boolean;
+  staleScopeDecision?: boolean;
 } = {}): NonNullable<ContentWorkItemWorkflowSnapshotResponse["planning_workspace"]> {
   const proposal = {
     work_item_id: "content_work_item_bdo",
@@ -2715,7 +2743,7 @@ function planningWorkspace({
   });
   return {
     proposal,
-    scope_decision: scopeCurrent ? decision("scope") : null,
+    scope_decision: scopeCurrent || staleScopeDecision ? decision("scope") : null,
     section_map_decision: sectionMapCurrent ? decision("section_map") : null,
     scope_current: scopeCurrent,
     section_map_current: sectionMapCurrent

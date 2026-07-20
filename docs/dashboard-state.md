@@ -463,9 +463,14 @@ wybiera ją wstępnie, ale nadal wymaga jawnego potwierdzenia człowieka.
 
 Na aktywnym kroku `Zakres` formularz decyzji jest renderowany przed technicznym
 panelem generatora planu. Dzięki temu pierwszy ruch nie wymaga przewijania przez
-page assets ani ślady źródeł. Stara decyzja otrzymuje etykietę `nieaktualna`, gdy
-digest zakresu nie jest już bieżący; samo wcześniejsze `zaakceptowano` nie oznacza
-gotowości do przejścia dalej.
+page assets ani ślady źródeł. Stara decyzja otrzymuje etykietę `Poprzednia decyzja
+dotyczy starszego zakresu`, gdy digest zakresu nie jest już bieżący. Nie pokazujemy
+wtedy jednocześnie `zaakceptowano`, żeby marketer nie odczytał historycznej decyzji
+jako gotowej do przejścia dalej; hero prowadzi do `Sprawdź aktualny zakres`.
+
+Na realnym case `content_work_item_content_decision_https___www_ekologus_pl_oferta_doradztwo_i_outsourcing_ekologiczny`
+sprawdzono ten stan w przeglądarce: usługa jest potwierdzona, ale zakres wymaga
+ponownego sprawdzenia po zmianie digestu. Proof obrazu: `.local-lab/proof/dashboard-content-workflow/2026-07-21/outsourcing-stale-decision-copy.png`.
 
 W planie podstawowy widok pokazuje tylko liczby wejściowe i statusy źródeł.
 Dokładne fakty oraz porównania okresów są dostępne pod jednym rozwijanym
