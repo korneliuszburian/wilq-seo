@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  initialServiceCardId,
   inventoryDispositionLabel,
   planningReviewCheckedItems,
   planningSectionMapReady,
@@ -124,5 +125,17 @@ describe("inventoryMaterialSourceLabel", () => {
   it("keeps the dynamic REST-versus-rendered fallback visible", () => {
     expect(inventoryMaterialSourceLabel("wordpress_rest")).toContain("WordPress REST");
     expect(inventoryMaterialSourceLabel("rendered_html")).toContain("wyrenderowany HTML");
+  });
+});
+
+describe("initialServiceCardId", () => {
+  it("does not turn an API recommendation into implicit human confirmation", () => {
+    expect(initialServiceCardId(false, "ekologus_service_bdo_reporting")).toBe("");
+  });
+
+  it("restores only an explicitly confirmed service selection", () => {
+    expect(initialServiceCardId(true, "ekologus_service_bdo_reporting")).toBe(
+      "ekologus_service_bdo_reporting"
+    );
   });
 });

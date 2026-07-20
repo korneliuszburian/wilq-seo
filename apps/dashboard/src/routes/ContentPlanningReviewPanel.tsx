@@ -50,12 +50,10 @@ export function ContentPlanningReviewPanel({
   const serviceCandidateSignature = serviceCandidates
     .map((candidate) => `${candidate.service_card_id}:${candidate.recommended}`)
     .join("|");
-  const defaultServiceCardId =
-    proposal.service_selection_confirmed
-      ? proposal.service_card_id ?? ""
-      : serviceCandidates.length === 1
-        ? serviceCandidates[0].service_card_id
-        : serviceCandidates.find((candidate) => candidate.recommended)?.service_card_id ?? "";
+  const defaultServiceCardId = initialServiceCardId(
+    proposal.service_selection_confirmed,
+    proposal.service_card_id
+  );
   const [selectedServiceCardId, setSelectedServiceCardId] = useState(
     defaultServiceCardId
   );
@@ -414,6 +412,15 @@ export function ContentPlanningReviewPanel({
       ) : null}
     </section>
   );
+}
+
+export function initialServiceCardId(
+  serviceSelectionConfirmed: boolean,
+  proposalServiceCardId: string | null | undefined
+): string {
+  // A recommendation is context, never an implicit human confirmation.
+  if (!serviceSelectionConfirmed) return "";
+  return proposalServiceCardId ?? "";
 }
 
 export function planningReviewCheckedItems(
