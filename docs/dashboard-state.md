@@ -31,6 +31,17 @@ made, but this file is the current operating map.
 
 ## Current Priority
 
+Live fixed point (2026-07-20): BDO has a persisted full v2 revision
+`content_revision_48768eaf127143778094f112b8fa2fcd` with 6 sections, 3 FAQ
+items, 2 CTA blocks and one internal link. Its exact revision-bound WordPress
+handoff reaches the final safety screen; the dry-run returns `dry_run_ready`
+with `external_write_attempted=false`, so no WordPress write was performed.
+The handoff context check allows a generated v2 section map to rewrite/merge
+the baseline while retaining exact planning/service/package bindings; v1 keeps
+the stricter section identity check. Deterministic review is `needs_changes`
+only for the source-brief signal, so this is a usable dev demo, not production
+approval or a 10/10 content claim.
+
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
 

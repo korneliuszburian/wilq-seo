@@ -125,6 +125,51 @@ def test_full_document_v2_round_trips_and_renders_without_losing_assets(
     assert changed_state.latest_review is None
 
 
+def test_full_document_v2_handoff_allows_generated_section_map_to_rewrite_baseline(
+    tmp_path: Path,
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    package = _draft_package()
+    legacy = store.append_draft_revision(_legacy_command(package)).revision
+    assert legacy is not None
+    command = _full_document_command(package, base_revision_id=legacy.revision_id)
+    command = command.model_copy(
+        update={
+            "sections": [
+                command.sections[0].model_copy(
+                    update={"heading": "Nowa sekcja z automatycznej mapy"}
+                )
+            ]
+        }
+    )
+    revision = store.append_draft_revision(command).revision
+    assert revision is not None
+    review = store.review_draft_revision(
+        ContentDraftRevisionReviewCommand(
+            work_item_id=revision.work_item_id,
+            revision_id=revision.revision_id,
+            revision_digest=revision.content_digest,
+            decision="approved",
+            reviewed_by="wilku",
+            checked_items=["pełny dokument"],
+            evidence_ids=["ev_wp"],
+        )
+    ).review
+    assert review is not None
+
+    state = store.load_draft_revision_state(revision.work_item_id)
+    handoff = build_revision_bound_wordpress_draft_handoff(
+        item=_work_item(),
+        draft_package=package,
+        revision_state=state,
+        planning_digest=revision.planning_digest,
+        planning_input_digest=revision.planning_input_digest,
+        service_card_id=revision.service_card_id,
+    )
+    assert handoff.handoff is not None
+    assert handoff.handoff.revision_document == revision
+
+
 def test_renderer_escapes_an_unsafe_historical_internal_link_anchor(
     tmp_path: Path,
 ) -> None:

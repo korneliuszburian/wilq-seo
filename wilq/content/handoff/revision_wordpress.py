@@ -193,11 +193,25 @@ def _revision_context_is_current(
         and revision.draft_package_digest == content_draft_package_digest(draft_package)
         and revision.planning_digest == planning_digest
         and revision.final_canonical_url == item.final_canonical_url
-        and [(section.heading, section.evidence_ids) for section in revision.sections]
-        == [(section.heading, section.evidence_ids) for section in draft_package.sections]
     )
-    if not baseline_current or revision.schema_version == "wilq_content_draft_revision_v1":
+    if not baseline_current:
         return baseline_current
+    if revision.schema_version == "wilq_content_draft_revision_v1":
+        return (
+            [
+                (section.heading, section.evidence_ids)
+                for section in revision.sections
+            ]
+            == [
+                (section.heading, section.evidence_ids)
+                for section in draft_package.sections
+            ]
+        )
+    # A v2 revision is the generated full document. Its section map may
+    # intentionally replace, merge, or rewrite the preserve-first baseline;
+    # the immutable package id/digest above already proves which input it was
+    # generated from. Requiring identical headings here would reject the
+    # normal planning -> full-draft transformation.
     return bool(
         revision.planning_input_digest == planning_input_digest
         and revision.service_card_id == service_card_id
