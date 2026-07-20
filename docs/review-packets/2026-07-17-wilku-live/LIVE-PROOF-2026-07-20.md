@@ -16,6 +16,17 @@ sekretów ani surowych odpowiedzi vendorów.
 - GSC, GA4, Ads, Ahrefs, Merchant, Localo i WordPress raportują świeży odczyt
   w bieżącym context packu. Stan świeżości jest sprawdzany przy każdym odczycie.
 
+Źródło nie trafia do planu tylko dlatego, że jest skonfigurowane. Dla każdego
+adresu WILQ ocenia dopasowanie i świeżość:
+
+| Źródło | Stan dla bieżącej decyzji |
+|---|---|
+| WordPress + GSC | użyte, z exact evidence poniżej |
+| GA4, Ads, Ahrefs | odczyt dostępny, ale tylko exact match może zasilić plan |
+| Merchant, Localo | `not_applicable` dla tych stron |
+| Keyword Planner | brak odblokowanego tokena/developerskiego dostępu |
+| LinkedIn/Facebook | `missing_credentials`; historia postów zablokowana |
+
 ## Dwa kontrolne adresy
 
 ### BDO
@@ -41,6 +52,16 @@ sekretów ani surowych odpowiedzi vendorów.
 - źródła użyte dla tej decyzji: GSC + WordPress;
 - blokady claims: obietnica do sprawdzenia, wpływ na przychód;
 - następny krok: sprawdzić ryzykowne twierdzenia i dopiero przygotować plan.
+
+## Social i ponowne użycie treści
+
+API zwraca `social_history_inventory_v1` ze stanem `missing` oraz
+`duplicate_risk_status=blocked_until_social_history_review`. Brakuje
+metadata-only historii LinkedIn i Facebook (`linkedin_historical_posts`,
+`facebook_historical_posts`), więc WILQ nie tworzy propozycji social reuse i nie
+udaje, że zna wcześniejsze posty. Publiczne adresy profili są tylko seedami do
+przyszłego kontrolowanego importu; surowe treści postów nie są do tego celu
+zapisywane.
 
 ## Jak powstaje mapa sekcji
 
