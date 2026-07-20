@@ -448,7 +448,15 @@ def build_content_work_item_diagnostics_snapshot_response_for_work_item(
         decision = inventory_decision.model_copy(
             update={"id": work_item_id.removeprefix("content_work_item_")}
         )
-    candidate = _queue_candidate_for_decision(diagnostics, decision.id)
+        # The selected inventory binding is the fresh WordPress read. Rebuild
+        # the compact candidate projection from it instead of reusing the
+        # diagnostics queue row, which may carry an older section/ACF shape.
+        candidate = build_content_work_item_queue_candidate(
+            decision,
+            diagnostics.freshness_assessment,
+        )
+    else:
+        candidate = _queue_candidate_for_decision(diagnostics, decision.id)
     return _build_content_work_item_diagnostics_snapshot_response_from_decision(
         decision,
         freshness_assessment=diagnostics.freshness_assessment,

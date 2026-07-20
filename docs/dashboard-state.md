@@ -55,6 +55,12 @@ unresolved source brief: `źródła briefu wymagają review` is not a request to
 map sections manually or select the service again. The distinction is exposed
 by the API-owned operator-step label and a focused journey falsifier.
 
+Selected inventory snapshots now rebuild the compact candidate inventory from
+the fresh selected binding instead of reusing a stale diagnostics queue row.
+This keeps the marketer's section count, ACF/the_content status and headings
+aligned with the preflight read when a WordPress page changes between queue
+load and workflow open.
+
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
 

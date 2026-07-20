@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_workflow
 from wilq.content.planning.decisions import content_decision_work_item_id_for_url
+from wilq.content.workflow import api as workflow_api
 from wilq.content.workflow.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
@@ -367,6 +368,79 @@ def test_selected_diagnostics_work_item_uses_the_catalog_fast_path(monkeypatch) 
     assert response.json()["candidate_count"] == 1
     assert response.json()["candidates"][0]["decision_id"] == selected_decision.id
     assert freshness_calls == [selected_decision.source_connectors]
+
+
+def test_selected_snapshot_rebuilds_candidate_inventory_from_fresh_binding(monkeypatch) -> None:
+    work_item_id = "content_work_item_inventory_fresh_projection"
+    stale_queue_decision = ContentDecisionItem(
+        id="inventory_fresh_projection",
+        decision_type="refresh_or_merge",
+        status="ready",
+        title="Stary rzut inventory",
+        primary_query="gospodarka opakowaniami",
+        priority=10,
+        source_public_url="https://www.ekologus.pl/opakowania/",
+        final_canonical_url="https://www.ekologus.pl/opakowania/",
+        wordpress_section_headings=["Stara sekcja"],
+        wordpress_section_inventory_status="available",
+        wordpress_content_inventory_status="available",
+        wordpress_content_summary="Stary skrót",
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+        evidence_ids=["ev_gsc_old", "ev_wp_old"],
+        rationale="Stara kolejka.",
+        next_step="Odśwież.",
+    )
+    fresh_inventory_decision = stale_queue_decision.model_copy(
+        update={
+            "title": "Świeży odczyt inventory",
+            "wordpress_section_headings": ["Hero", "Usługa", "CTA"],
+            "wordpress_section_count": 3,
+            "wordpress_acf_section_headings": ["Hero", "Usługa", "CTA"],
+            "wordpress_acf_section_count": 3,
+            "wordpress_acf_section_inventory_status": "available",
+            "wordpress_acf_section_inventory_note": None,
+            "wordpress_content_summary": "Świeży skrót",
+        }
+    )
+    diagnostics = ContentDiagnosticsResponse.model_construct(
+        freshness_assessment=ContentFreshnessAssessment(
+            state="fresh",
+            state_label="dane treści świeże",
+            requires_refresh=False,
+            summary="Świeże.",
+            next_step="Można przejść dalej.",
+        ),
+        decision_queue=[stale_queue_decision],
+    )
+    monkeypatch.setattr(
+        workflow_api,
+        "inventory_decision_for_work_item",
+        lambda selected_id, **_kwargs: (
+            fresh_inventory_decision if selected_id == work_item_id else None
+        ),
+    )
+    captured: dict[str, object] = {}
+
+    def capture_snapshot(decision, **kwargs):
+        captured["candidate"] = kwargs["candidate"]
+        return None
+
+    monkeypatch.setattr(
+        workflow_api,
+        "_build_content_work_item_diagnostics_snapshot_response_from_decision",
+        capture_snapshot,
+    )
+
+    workflow_api.build_content_work_item_diagnostics_snapshot_response_for_work_item(
+        diagnostics,
+        work_item_id,
+    )
+
+    candidate = captured["candidate"]
+    assert candidate.page_inventory.section_count == 3
+    assert candidate.page_inventory.section_headings == ["Hero", "Usługa", "CTA"]
+    assert candidate.page_inventory.acf_section_inventory_status == "available"
+    assert candidate.page_inventory.acf_section_inventory_note is None
 
 
 def test_selected_diagnostics_work_item_resolves_through_real_catalog_binding(
