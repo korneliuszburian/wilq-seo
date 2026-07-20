@@ -7,7 +7,7 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
-- 2026-07-20: panel planowania pokazuje teraz redagowane podglądy faktycznie
+- 2026-07-20: panel planowania pokazuje teraz ograniczone, lineage-preserving
   użytych faktów źródłowych, wraz z connectorem oraz licznikami materiałów i
   evidence. Dane pochodzą z tego samego `ContentPlanningInput` i digestu co
   plan; nie są to surowe prywatne materiały ani wymyślone tezy. Dla starszych
