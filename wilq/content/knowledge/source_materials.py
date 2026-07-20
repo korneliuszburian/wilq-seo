@@ -31,6 +31,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         kind="strategy",
         word_count=356,
         digest_prefix="e27259ca8b5b3fc3",
+        import_status="excerpt_review_required",
         source_path="materials_clean/approved/01_STRATEGIA_BIZNESOWA_EKOLOGUS.cleaned.md",
     ),
     ContentSourceMaterial(
@@ -40,6 +41,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         kind="service",
         word_count=321,
         digest_prefix="3bbbfbdae02ca38f",
+        import_status="excerpt_review_required",
         source_path="materials_clean/approved/02_PORTFEL_USLUG_I_MODELE_PRZYCHODU.cleaned.md",
     ),
     ContentSourceMaterial(
@@ -49,6 +51,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         kind="playbook",
         word_count=255,
         digest_prefix="b3ed8d97a9f5262b",
+        import_status="excerpt_review_required",
         source_path="materials_clean/approved/03_EKO_OPIEKA_I_EKO_KALENDARZ_PLAYBOOK.cleaned.md",
     ),
     ContentSourceMaterial(
@@ -58,6 +61,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         kind="playbook",
         word_count=211,
         digest_prefix="de3b411e4d96d550",
+        import_status="excerpt_review_required",
         source_path="materials_clean/approved/04_SPRZEDAZ_MARKETING_FOLLOWUP.cleaned.md",
     ),
     ContentSourceMaterial(
@@ -67,6 +71,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         kind="knowledge_card",
         word_count=166,
         digest_prefix="4493485707a7d57b",
+        import_status="excerpt_review_required",
         source_path="materials_clean/approved/KB_001_EKO_OPIEKA.cleaned.md",
     ),
     ContentSourceMaterial(
@@ -96,6 +101,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         kind="knowledge_card",
         word_count=177,
         digest_prefix="e7fdcf5c70b0cf8a",
+        import_status="excerpt_review_required",
         source_path="materials_clean/approved/KB_006_KWALIFIKACJA_LEADA.cleaned.md",
     ),
     ContentSourceMaterial(
@@ -105,6 +111,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         kind="knowledge_card",
         word_count=155,
         digest_prefix="e958790e0cd9445e",
+        import_status="excerpt_review_required",
         source_path="materials_clean/approved/KB_008_WYCENA_I_STAWKI.cleaned.md",
     ),
     ContentSourceMaterial(
@@ -164,6 +171,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         kind="index",
         word_count=302,
         digest_prefix="c933b0e08b057e29",
+        import_status="excerpt_review_required",
         source_path="materials_clean/approved/KB_INDEX.cleaned.md",
     ),
 )

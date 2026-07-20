@@ -3306,3 +3306,17 @@ wyłączają cache, a freshness nadal pochodzi z API-owych rekordów źródeł.
 Focused falsifier bounded cache + invalidation 1/1, Ruff/mypy/diff-check PASS.
 Live read po reloadzie trwał 22,763 s, kolejny identyczny read 0,232 s; pierwszy
 odczyt pozostaje kosztem cold build, a cache nie zmienia danych po invalidacji.
+
+### 2026-07-20 — manifest realnego korpusu przechodzi do excerpt review
+
+Potwierdziłem lokalnie niezmieniony target repo `krn-ekologus` na branchu
+`v1.3d28-polish-marketing-language-pack`, HEAD `40614cd`, z 15 plikami w
+`materials_clean/approved/` i digestami zgodnymi z manifestem WILQ. Osiem plików,
+które były oznaczone jako `import_pending`, ma teraz typed status
+`excerpt_review_required`: WILQ wie, że materiał istnieje i czeka na kontrolowany,
+redacted excerpt review, ale nadal nie odblokowuje generowania ani nie kopiuje raw
+tekstu do promptów. Live readiness: 7 imported, 8 excerpt-review, 0 pending,
+`ready_for_generation=false`.
+
+Focused proof: knowledge source-facts 4/4, Ruff/mypy/diff-check PASS. Target repo
+pozostał niezmieniony; obserwacja nie jest owner approval ani importem treści.

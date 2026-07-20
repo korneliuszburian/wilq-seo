@@ -28,20 +28,21 @@ def test_knowledge_source_material_manifest_is_metadata_only_and_complete() -> N
 
     assert len(materials) == 15
     assert sum(item.import_status == "imported" for item in materials) == 7
-    assert sum(item.import_status == "import_pending" for item in materials) == 8
+    assert sum(item.import_status == "excerpt_review_required" for item in materials) == 8
     assert all(item.privacy_class == "redacted_only" for item in materials)
     assert all(item.source_path.startswith("materials_clean/approved/") for item in materials)
 
 
-def test_knowledge_source_material_readiness_blocks_pending_corpus_without_exposing_text() -> None:
+def test_knowledge_source_material_readiness_blocks_excerpt_review_without_exposing_text() -> None:
     readiness = knowledge_source_material_readiness()
 
-    assert readiness.status == "import_pending"
+    assert readiness.status == "excerpt_review_required"
     assert readiness.total_count == 15
     assert readiness.imported_count == 7
-    assert readiness.import_pending_count == 8
+    assert readiness.import_pending_count == 0
+    assert readiness.excerpt_review_required_count == 8
     assert readiness.ready_for_generation is False
-    assert [item.source_id for item in readiness.pending_materials] == [
+    assert [item.source_id for item in readiness.excerpt_review_materials] == [
         "ekologus_material_strategy",
         "ekologus_material_portfolio",
         "ekologus_material_eko_opieka",
