@@ -3333,3 +3333,11 @@ BDO wygenerowało `content_planning_proposal_9f5bbe91f1fd4dafb5a05608ec739b71`
 `completed`, `external_call_attempted=true`, a endpoint nie zwrócił blockerów.
 To jest techniczny live proof dynamicznego planowania dwóch usług; nie jest to
 owner acceptance, semantic approval, pełny draft ani UAT.
+
+Initial-draft preflight dla obu exact proposal IDs zwrócił ten sam typed blocker
+`planning_not_approved`, bez uruchomienia modelu (`external_call_attempted=false`)
+i bez rewizji. To potwierdza, że marketer zatwierdza zakres/brief, a nie ręcznie
+mapuje sekcje. Przygotowałem paczkę do tej decyzji w
+`docs/review-packets/2026-07-20-wilku-planning-live/`: live metryki GSC,
+lineage, status GA4, instrukcję wejścia do dashboardu i kartę jednej decyzji na
+stronę.
