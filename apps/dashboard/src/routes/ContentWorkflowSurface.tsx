@@ -707,16 +707,21 @@ function ContentSessionPicker({
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
   const requestedSectionHeading = stringFromSearch(routeSearch, "section_heading");
   const requestedPlanningDigest = stringFromSearch(routeSearch, "planning_digest");
+  const [inventorySearch, setInventorySearch] = useState("");
   const candidates = queue.candidates.filter(
     (candidate) => candidate.recommended_mode !== "block"
   );
   const queueCandidateIds = new Set(candidates.map((candidate) => candidate.work_item_id));
-  const inventoryPageOptions = (inventory?.items ?? [])
+  const allInventoryPageOptions = (inventory?.items ?? [])
     .filter((item) => !queueCandidateIds.has(item.work_item_id))
     .map((item) => ({
       workItemId: item.work_item_id,
       label: `${item.title || item.path} — ${item.path}`
     }));
+  const normalizedInventorySearch = inventorySearch.trim().toLocaleLowerCase("pl-PL");
+  const inventoryPageOptions = allInventoryPageOptions
+    .filter((item) => !normalizedInventorySearch || item.label.toLocaleLowerCase("pl-PL").includes(normalizedInventorySearch))
+    .slice(0, 30);
   const selected = candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
@@ -766,15 +771,11 @@ function ContentSessionPicker({
                 {candidate.topic} — {contentCandidatePath(candidate.final_canonical_url)}
               </option>
             ))}
-            {inventoryPageOptions.length ? (
-              <optgroup label="Pełny inventory WordPress">
-                {inventoryPageOptions.map((item) => (
-                  <option key={item.workItemId} value={item.workItemId}>
-                    {item.label}
-                  </option>
-                ))}
-              </optgroup>
-            ) : null}
+            {selectedWorkItemId && !queueCandidateIds.has(selectedWorkItemId)
+              ? allInventoryPageOptions
+                  .filter((item) => item.workItemId === selectedWorkItemId)
+                  .map((item) => <option key={item.workItemId} value={item.workItemId}>{item.label}</option>)
+              : null}
           </select>
         </label>
       </div>
@@ -788,7 +789,19 @@ function ContentSessionPicker({
       </div>
       <details className="mt-3 rounded-md border border-line bg-surface px-3 py-2 text-sm">
         <summary className="cursor-pointer font-semibold text-action">Zmień stronę lub otwórz pełny inventory</summary>
-        <div className="mt-3 hidden gap-2 lg:grid lg:grid-cols-2" aria-label="Strony dostępne do odświeżenia">
+        <div className="mt-3 space-y-3" aria-label="Strony dostępne do odświeżenia">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Szukaj w pełnym inventory WordPress
+            <input
+              type="search"
+              value={inventorySearch}
+              onChange={(event) => setInventorySearch(event.target.value)}
+              placeholder="Tytuł albo adres URL"
+              className="mt-1 h-10 w-full rounded-md border border-line bg-white px-3 text-sm font-normal normal-case tracking-normal text-ink"
+              aria-label="Szukaj w pełnym inventory WordPress"
+            />
+          </label>
+          <div className="grid gap-2 lg:grid-cols-2">
           {candidates.map((candidate) => (
             <button
               key={candidate.work_item_id}
@@ -814,6 +827,20 @@ function ContentSessionPicker({
               ) : null}
             </button>
           ))}
+          {inventoryPageOptions.map((item) => (
+            <button
+              key={item.workItemId}
+              type="button"
+              onClick={() => onSelectWorkItem(item.workItemId)}
+              className={`rounded-md border p-3 text-left transition-colors ${item.workItemId === selectedWorkItemId ? "border-action bg-action/10" : "border-line bg-white hover:border-action/50"}`}
+            >
+              <span className="font-semibold text-ink">{item.label}</span>
+              <p className="mt-1 text-xs text-slate-500">Pełny inventory WordPress · wybierz, aby odczytać stronę i metryki.</p>
+            </button>
+          ))}
+          {!inventoryPageOptions.length ? <p className="text-sm text-slate-600">Brak stron pasujących do wyszukiwania.</p> : null}
+          </div>
+          {allInventoryPageOptions.length > inventoryPageOptions.length ? <p className="text-xs text-slate-500">Pokazuję maksymalnie 30 wyników. Doprecyzuj wyszukiwanie, aby znaleźć konkretny adres.</p> : null}
         </div>
       </details>
       {selectedSectionHeading && !["scope", "section_map"].includes(activeStepId) ? (
