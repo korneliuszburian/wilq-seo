@@ -3320,3 +3320,16 @@ tekstu do promptów. Live readiness: 7 imported, 8 excerpt-review, 0 pending,
 
 Focused proof: knowledge source-facts 4/4, Ruff/mypy/diff-check PASS. Target repo
 pozostał niezmieniony; obserwacja nie jest owner approval ani importem treści.
+
+### 2026-07-20 — świeże plany dwóch pilotów po bounded WordPress refresh
+
+Po odświeżeniu wybranej strony WordPress GET planning-proposals ujawnił nowy
+`planning_input_digest`, a poprzednie propozycje pozostały jawnie `stale`. Przez
+ten sam API seam uruchomiłem oba exact case’y z potwierdzonymi kartami usług:
+BDO wygenerowało `content_planning_proposal_9f5bbe91f1fd4dafb5a05608ec739b71`
+(v21, 8 sekcji, 3 FAQ, 2 CTA), a outsourcing
+`content_planning_proposal_88b972a5e7584316b8e5181f4f6ed12f` (v6, 5 sekcji,
+3 FAQ, 1 CTA). Oba digesty są zgodne z bieżącym wejściem, runtime ma status
+`completed`, `external_call_attempted=true`, a endpoint nie zwrócił blockerów.
+To jest techniczny live proof dynamicznego planowania dwóch usług; nie jest to
+owner acceptance, semantic approval, pełny draft ani UAT.
