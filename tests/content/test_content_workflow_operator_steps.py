@@ -95,6 +95,17 @@ def test_operator_journey_builder_uses_canonical_scope_section_map_draft_states(
     ]
 
 
+def test_scope_review_label_names_source_brief_without_reopening_scope_decision() -> None:
+    journey = build_content_workflow_operator_journey(
+        _facts(sales_brief_present=True, sales_brief_signal_status="review_required")
+    )
+
+    scope = journey.steps[0]
+    assert scope.status_label == "źródła briefu wymagają review"
+    assert scope.blocker is not None
+    assert scope.blocker.label == "Źródła briefu wymagają review"
+
+
 def test_baseline_sections_are_preview_until_generated_proposal_exists() -> None:
     baseline = ContentPlanningProposal(
         work_item_id="content_work_item_baseline",

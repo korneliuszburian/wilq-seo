@@ -50,6 +50,11 @@ The existing dev profile remains available as a target selector, while
 Focused target proof is 3/3, dashboard typecheck passes, and live desktop/mobile
 browser proof shows no horizontal overflow.
 
+The scope step distinguishes an accepted page/service decision from an
+unresolved source brief: `źródła briefu wymagają review` is not a request to
+map sections manually or select the service again. The distinction is exposed
+by the API-owned operator-step label and a focused journey falsifier.
+
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
 

@@ -337,7 +337,7 @@ def _scope_status_label(facts: ContentWorkflowOperatorFacts) -> str:
     readiness = _scope_readiness(facts)
     labels: dict[ContentWorkflowOperatorStepReadiness, str] = {
         "ready": "zakres gotowy",
-        "review_required": "zakres wymaga review",
+        "review_required": "źródła briefu wymagają review",
         "blocked": "zakres zablokowany",
     }
     return labels[readiness]
@@ -349,7 +349,7 @@ def _scope_blocker(
     if facts.sales_brief_signal_status == "review_required":
         return ContentWorkflowOperatorBlocker(
             code="scope_review_required",
-            label="Zakres wymaga review",
+            label="Źródła briefu wymagają review",
             reason=facts.sales_brief_signal_reason
             or "Część wiedzy albo twierdzeń wymaga decyzji człowieka.",
         )
