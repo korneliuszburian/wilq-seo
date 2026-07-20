@@ -107,6 +107,9 @@ only after an explicit switch to `Audyt techniczny`.
 Wybór work itemu jest własnością zwalidowanego URL-a: zmiana historii lub
 routera po zamontowaniu widoku przełącza kandydaturę i snapshot bez zachowania
 starego lokalnego wyboru React.
+Główny selektor pokazuje kolejkę kandydatów; pozostały pełny inventory
+WordPress jest dostępny przez rozwijaną wyszukiwarkę tytułu/adresu z limitem
+30 wyników, zamiast renderować setki opcji naraz.
 
 The current reviewer estimate is 7.5/10 for the operator workflow, real text
 quality remains unscored and exact-version handoff safety remains 8/10. The
