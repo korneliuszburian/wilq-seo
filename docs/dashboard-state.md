@@ -104,6 +104,9 @@ The mobile fixed point's checker is valid at
 `/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-20-mobile-task-map-lWVzsh/`;
 its LOW items are coverage suggestions only. No product defect or UAT claim is
 made from the 390px proof.
+The section-navigation copy fixed point has a valid checker at
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-20-section-navigation-copy-BWf4x3/`;
+all findings are LOW confirmations or optional coverage follow-ups.
 
 Section navigation in the text/review stages is explicitly labelled
 “Przejdź do sekcji z planu” or “Przejdź do sekcji strony”. It is a navigation
