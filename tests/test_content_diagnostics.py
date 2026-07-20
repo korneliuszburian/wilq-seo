@@ -56,6 +56,16 @@ def test_stale_shop_wordpress_does_not_block_ordinary_content_freshness(monkeypa
     assert assessment.stale_connector_ids == []
     assert "wordpress_sklep" in assessment.connector_quality_states
 
+    product_assessment = _content_freshness_assessment(
+        connectors,
+        refreshes,
+        live_data_available=True,
+        relevant_connector_ids=["google_search_console", "wordpress_ekologus", "wordpress_sklep"],
+    )
+
+    assert product_assessment.state == "stale"
+    assert product_assessment.stale_connector_ids == ["wordpress_sklep"]
+
 
 def test_content_diagnostics_default_cache_survives_startup_waterfall(
     monkeypatch,

@@ -277,7 +277,9 @@ def build_content_diagnostics_cached() -> ContentDiagnosticsResponse:
         return diagnostics
 
 
-def build_content_freshness_assessment_fast() -> ContentFreshnessAssessment:
+def build_content_freshness_assessment_fast(
+    relevant_connector_ids: Iterable[str] | None = None,
+) -> ContentFreshnessAssessment:
     """Build only connector freshness for the selected decision read."""
     connectors = [
         connector
@@ -295,6 +297,7 @@ def build_content_freshness_assessment_fast() -> ContentFreshnessAssessment:
         connectors,
         latest_refreshes,
         live_data_available=live_data_available,
+        relevant_connector_ids=relevant_connector_ids,
     )
 
 
@@ -440,6 +443,7 @@ def _content_freshness_assessment(
     latest_refreshes: Iterable[ConnectorRefreshRun],
     *,
     live_data_available: bool,
+    relevant_connector_ids: Iterable[str] | None = None,
 ) -> ContentFreshnessAssessment:
     connector_by_id = {connector.id: connector for connector in connectors}
     refresh_by_connector = {refresh.connector_id: refresh for refresh in latest_refreshes}
@@ -455,10 +459,12 @@ def _content_freshness_assessment(
         if (refresh := refresh_by_connector.get(connector_id)) is not None
         and not connector_refresh_has_live_data(refresh)
     ]
+    scoped_connector_ids = set(relevant_connector_ids or CONTENT_CONNECTOR_IDS)
+    include_optional_stale = relevant_connector_ids is not None
     stale_ids = [
         connector_id
-        for connector_id in CONTENT_CONNECTOR_IDS
-        if connector_id not in OPTIONAL_CONTENT_FRESHNESS_CONNECTORS
+        for connector_id in scoped_connector_ids
+        if include_optional_stale or connector_id not in OPTIONAL_CONTENT_FRESHNESS_CONNECTORS
         if connector_by_id.get(connector_id) is not None
         and connector_by_id[connector_id].freshness.state == "stale"
     ]

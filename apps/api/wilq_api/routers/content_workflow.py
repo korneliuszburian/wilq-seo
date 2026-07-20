@@ -309,7 +309,9 @@ def content_work_item_queue(
         if inventory_decision is not None:
             return build_selected_content_work_item_queue_response(
                 inventory_decision,
-                build_content_freshness_assessment_fast(),
+                build_content_freshness_assessment_fast(
+                    relevant_connector_ids=inventory_decision.source_connectors,
+                ),
             )
     return build_content_work_item_queue_response(
         build_content_diagnostics_cached(),
