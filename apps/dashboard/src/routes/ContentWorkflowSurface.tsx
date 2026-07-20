@@ -718,10 +718,7 @@ function ContentSessionPicker({
       workItemId: item.work_item_id,
       label: `${item.title || item.path} — ${item.path}`
     }));
-  const normalizedInventorySearch = inventorySearch.trim().toLocaleLowerCase("pl-PL");
-  const inventoryPageOptions = allInventoryPageOptions
-    .filter((item) => !normalizedInventorySearch || item.label.toLocaleLowerCase("pl-PL").includes(normalizedInventorySearch))
-    .slice(0, 30);
+  const inventoryPageOptions = filterInventoryPageOptions(allInventoryPageOptions, inventorySearch);
   const selected = candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
@@ -873,6 +870,17 @@ function ContentSessionPicker({
       ) : null}
     </section>
   );
+}
+
+export function filterInventoryPageOptions(
+  options: Array<{ workItemId: string; label: string }>,
+  search: string,
+  limit = 30
+): Array<{ workItemId: string; label: string }> {
+  const normalizedSearch = search.trim().toLocaleLowerCase("pl-PL");
+  return options
+    .filter((item) => !normalizedSearch || item.label.toLocaleLowerCase("pl-PL").includes(normalizedSearch))
+    .slice(0, Math.max(1, limit));
 }
 
 function pageMetricsSummary(candidate: ContentWorkItemQueueCandidate) {
