@@ -240,6 +240,27 @@ def test_content_headings_remain_inventory_when_acf_has_fields_but_no_sections(
     assert [section.heading for section in inventory.sections] == ["Zakres usługi"]
 
 
+def test_the_content_only_inventory_is_plannable_without_structural_headings(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, resolution, _ = source_context
+    item = item.model_copy(
+        update={
+            "wordpress_section_headings": [],
+            "wordpress_acf_section_inventory_status": "missing",
+            "wordpress_acf_section_headings": [],
+            "wordpress_content_inventory_status": "available",
+        }
+    )
+
+    inventory = build_planning_inventory(item, resolution)
+
+    assert inventory.status == "available"
+    assert inventory.content_status == "available"
+    assert inventory.sections == []
+    assert inventory.content_text == "Pełny materiał z the_content."
+
+
 def test_query_mapping_uses_resolved_acf_inventory_when_sections_are_exposed(
     source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
 ) -> None:

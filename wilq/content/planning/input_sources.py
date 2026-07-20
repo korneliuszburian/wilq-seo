@@ -174,8 +174,12 @@ def build_planning_inventory(
         and item.wordpress_acf_section_headings
         else item.wordpress_section_headings
     )
+    inventory_available = bool(headings) or item.wordpress_content_inventory_status == "available"
     return ContentPlanningInventory(
-        status="available" if headings else "missing",
+        # A page whose only durable body source is the_content is still
+        # plannable. Structural headings enrich the map, but are not a
+        # prerequisite when WordPress exposed readable page material.
+        status="available" if inventory_available else "missing",
         content_status=item.wordpress_content_inventory_status,
         acf_section_status=item.wordpress_acf_section_inventory_status,
         title_or_h1=item.wordpress_title_or_h1,
