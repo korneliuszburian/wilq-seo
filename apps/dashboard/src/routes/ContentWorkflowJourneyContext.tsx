@@ -124,7 +124,7 @@ export function ContentWorkflowJourneyContext({
           label="Pomiar i struktura"
           value={sectionCount === null ? "Do odczytu" : `${sectionCount} sekcji`}
           detail={ga4MetricSummaries.length ? `GA4: ${ga4MetricSummaries[0]}` : "GA4: brak exact danych"}
-          tone={ga4MetricSummaries.length ? "fact" : "blocker"}
+          tone={sectionCount === null ? "blocker" : "fact"}
         />
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-3" aria-label="Fakty, sygnały i blokady">

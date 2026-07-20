@@ -70,6 +70,9 @@ projection. This prevents a stale queue count (for example, 1) from
 contradicting the exact selected-page inventory (for example, 7 headings) on
 the same screen. The fallback remains available only when preflight has no
 numeric count.
+The same card now keeps a confirmed structure in the fact tone even when GA4 is
+missing; the missing exact GA4 read remains a separate blocker below instead of
+making a known WordPress structure look untrusted.
 
 Fresh fixed-point proof (2026-07-21) is retained at
 `.local-lab/proof/dashboard-content-workflow/2026-07-21/bdo-section-count-metric-fixed.png`.
