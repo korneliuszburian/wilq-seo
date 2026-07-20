@@ -191,4 +191,39 @@ describe("KnowledgeSurface", () => {
     expect(await screen.findByText("Brak manifestu materiałów źródłowych. Nie zastępujemy go kartami operacyjnymi.")).toBeInTheDocument();
     expect(screen.queryByText("Nie jest źródłem")).not.toBeInTheDocument();
   });
+
+  it("expands the bounded source queue without opening the operating map", async () => {
+    const materials = Array.from({ length: 9 }, (_, index) => ({
+      source_id: `material_${index + 1}`,
+      file_name: `MATERIAL_${String(index + 1).padStart(2, "0")}.md`,
+      title: `Materiał Ekologusa ${index + 1}`,
+      kind: "transcript",
+      word_count: 100,
+      digest_prefix: `digest-${index + 1}`,
+      privacy_class: "redacted_only",
+      import_status: index < 2 ? "imported" : "excerpt_review_required",
+      source_path: undefined
+    }));
+    vi.mocked(getKnowledgeOperatingMap).mockResolvedValue(operatingMap);
+    vi.mocked(getKnowledgeCards).mockResolvedValue([]);
+    vi.mocked(getKnowledgePlaybooks).mockResolvedValue([]);
+    vi.mocked(getKnowledgeSourceFacts).mockResolvedValue([]);
+    vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue(materials);
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue({
+      status: "excerpt_review_required",
+      total_count: 9,
+      imported_count: 2,
+      import_pending_count: 0,
+      excerpt_review_required_count: 7,
+      ready_for_generation: false,
+      next_step: "Zatwierdź excerpty."
+    });
+    renderKnowledge();
+
+    expect(await screen.findByText("MATERIAL_08.md")).toBeInTheDocument();
+    expect(screen.queryByText("MATERIAL_09.md")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełną kolejkę (9)" }));
+    expect(await screen.findByText("MATERIAL_09.md")).toBeInTheDocument();
+    expect(screen.queryByText("Najważniejsza decyzja z wiedzy")).not.toBeInTheDocument();
+  });
 });

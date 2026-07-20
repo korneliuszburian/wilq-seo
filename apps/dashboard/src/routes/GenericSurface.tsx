@@ -598,6 +598,7 @@ function KnowledgeSurfaceSections({
   showKnowledgePlaybooks: boolean;
   setShowKnowledgePlaybooks: (value: boolean | ((current: boolean) => boolean)) => void;
 }) {
+  const [showAllSourceMaterials, setShowAllSourceMaterials] = useState(false);
   const map = knowledgeMap.data;
   const cards = knowledgeCards.data ?? [];
   const bindings = map?.bindings ?? [];
@@ -741,9 +742,11 @@ function KnowledgeSurfaceSections({
             <button
               type="button"
               className="text-sm font-semibold text-action"
-              onClick={() => setShowKnowledgeMap((value) => !value)}
+              onClick={() => setShowAllSourceMaterials((value) => !value)}
             >
-              Zobacz pełną kolejkę
+              {showAllSourceMaterials
+                ? "Pokaż krótszą kolejkę"
+                : `Pokaż pełną kolejkę (${sourceMaterials.length})`}
             </button>
           </div>
           <div className="overflow-x-auto">
@@ -758,7 +761,10 @@ function KnowledgeSurfaceSections({
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {knowledgeReviewRows(sourceMaterials).map((row) => (
+                {knowledgeReviewRows(
+                  sourceMaterials,
+                  showAllSourceMaterials ? sourceMaterials.length : 8
+                ).map((row) => (
                   <tr key={row.id}>
                     <td className="px-4 py-3 font-medium text-action">{row.type}</td>
                     <td className="px-4 py-3 text-slate-700">{row.title}</td>
@@ -918,9 +924,10 @@ type KnowledgeReviewRow = {
 };
 
 function knowledgeReviewRows(
-  materials: KnowledgeSourceMaterialView[]
+  materials: KnowledgeSourceMaterialView[],
+  limit = 8
 ): KnowledgeReviewRow[] {
-  return materials.slice(0, 8).map((material) => {
+  return materials.slice(0, limit).map((material) => {
     const imported = material.import_status === "imported";
     return {
       id: `material-${material.source_id}`,
