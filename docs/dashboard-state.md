@@ -54,6 +54,9 @@ The scope step distinguishes an accepted page/service decision from an
 unresolved source brief: `źródła briefu wymagają review` is not a request to
 map sections manually or select the service again. The distinction is exposed
 by the API-owned operator-step label and a focused journey falsifier.
+Recommended service candidates are now display-only until the marketer
+explicitly chooses one; a prior choice is restored only when the API marks
+`service_selection_confirmed=true`.
 
 Selected inventory snapshots now rebuild the compact candidate inventory from
 the fresh selected binding instead of reusing a stale diagnostics queue row.
