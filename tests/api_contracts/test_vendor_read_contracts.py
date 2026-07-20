@@ -197,6 +197,72 @@ def test_gsc_vendor_read_uses_search_analytics(
     assert result.metric_facts[0].period == "2026-06-28/2026-06-28"
 
 
+def test_gsc_vendor_read_can_bound_an_exact_target_page(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_SEARCH_CONSOLE_SITE_URL", "sc-domain:ekologus.pl")
+    monkeypatch.setattr(
+        "wilq.connectors.google_search_console.client.google_access_token",
+        lambda scopes: "gsc-access-token",
+    )
+    monkeypatch.setattr(
+        "wilq.connectors.google_search_console.client._default_availability_range",
+        lambda: ("2026-06-19", "2026-06-28"),
+    )
+
+    target_url = "https://www.ekologus.pl/rewolucja-w-decyzjach-o-warunkach-zabudowy-co-zmienia-sie-od-2026/"
+    target_requests: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content.decode())
+        dimensions = body["dimensions"]
+        if dimensions == ["date"]:
+            return httpx.Response(200, json={"rows": [{"keys": ["2026-06-28"]}]})
+        if dimensions == ["country", "device"]:
+            return httpx.Response(200, json={"rows": []})
+        if body.get("dimensionFilterGroups"):
+            target_requests.append(body)
+            return httpx.Response(
+                200,
+                json={
+                    "rows": [
+                        {
+                            "keys": ["warunki zabudowy 2026", target_url],
+                            "clicks": 2,
+                            "impressions": 40,
+                            "ctr": 0.05,
+                            "position": 8.0,
+                        }
+                    ]
+                },
+            )
+        return httpx.Response(200, json={"rows": []})
+
+    result = refresh_search_console_site_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read, target_urls=[target_url]),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.metric_summary["target_page_requested_count"] == 1
+    assert result.metric_summary["target_page_returned_row_count"] == 1
+    assert target_requests[0]["rowLimit"] == 20
+    assert target_requests[0]["dimensionFilterGroups"] == [
+        {
+            "filters": [
+                {"dimension": "page", "operator": "equals", "expression": target_url}
+            ]
+        }
+    ]
+    assert any(
+        fact.name == "clicks" and fact.dimensions["page"] == target_url
+        for fact in result.metric_facts
+    )
+
+
 def test_ga4_vendor_read_uses_run_report(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

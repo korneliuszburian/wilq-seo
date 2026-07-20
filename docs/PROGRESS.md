@@ -3169,3 +3169,17 @@ dostępne, gdy API ich nie odczyta.
 Focused proof: `ContentWorkflowSurface` i `ContentPlanningReviewPanel` 46/46,
 dashboard typecheck oraz `git diff --check` PASS. To poprawa prezentacji
 dynamicznego seamu, nie dowód jakości tekstu, ACF write ani UAT.
+
+### 2026-07-20 — GSC ma bounded exact target-page read
+
+Google Search Console przyjmuje teraz `target_urls` przez istniejący refresh
+contract i wykonuje osobny, ograniczony odczyt `query,page` z filtrem `page =`
+exact public URL (maksymalnie 20 adresów i 20 wierszy na adres). Summary
+zwraca `target_page_requested_count` oraz `target_page_returned_row_count`, a
+brak wierszy pozostaje brakiem popytu dla tej strony — nie jest zastępowany
+metryką z całej domeny.
+
+Focused proof: GSC vendor contract 2/2, Ruff, mypy i `git diff --check` PASS.
+Live target read dla `/rewolucja-w-decyzjach-o-warunkach-zabudowy-co-zmienia-sie-od-2026/`
+zakończył się `target_page_requested_count=1`, `target_page_returned_row_count=0`;
+to uczciwy blocker pokrycia, nie dowód braku trendu ani konwersji.

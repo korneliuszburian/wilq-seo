@@ -16,6 +16,7 @@ GSC_API_BASE = "https://searchconsole.googleapis.com/webmasters/v3"
 GSC_AVAILABILITY_LOOKBACK_DAYS = 10
 GSC_QUERY_PAGE_ROW_LIMIT = 1000
 GSC_QUERY_PAGE_MAX_ROWS = 1000
+GSC_TARGET_PAGE_ROW_LIMIT = 20
 GSC_SEARCH_TYPE = "web"
 GSC_QUERY_PAGE_DETAIL_COMPLETENESS = "partial_possible"
 GSC_AGGREGATE_DIMENSIONS = ["country", "device"]
@@ -52,7 +53,12 @@ def refresh_search_console_site_summary(
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
     try:
-        metric_summary, metric_facts = _fetch_site_summary(client, site_url, access_token)
+        metric_summary, metric_facts = _fetch_site_summary(
+            client,
+            site_url,
+            access_token,
+            target_urls=request.target_urls,
+        )
     except httpx.HTTPStatusError as exc:
         return _http_failure_result(exc)
     except httpx.HTTPError as exc:
@@ -78,6 +84,7 @@ def _fetch_site_summary(
     client: httpx.Client,
     site_url: str,
     access_token: str,
+    target_urls: list[str] | None = None,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     availability_start, availability_end = _default_availability_range()
     endpoint = f"{GSC_API_BASE}/sites/{quote(site_url, safe='')}/searchAnalytics/query"
@@ -164,7 +171,7 @@ def _fetch_site_summary(
         if len(page_rows) < GSC_QUERY_PAGE_ROW_LIMIT:
             break
         start_row += GSC_QUERY_PAGE_ROW_LIMIT
-    return _summarize_search_analytics_response(
+    summary, metric_facts = _summarize_search_analytics_response(
         {"rows": rows[:GSC_QUERY_PAGE_MAX_ROWS]},
         date_start=available_date,
         date_end=available_date,
@@ -173,12 +180,67 @@ def _fetch_site_summary(
         rows_truncated=len(rows) >= GSC_QUERY_PAGE_MAX_ROWS,
         aggregate_summary=aggregate_summary,
     )
+    target_urls = _target_page_urls(target_urls or [])
+    target_facts: list[VendorMetricFact] = []
+    target_row_count = 0
+    for target_url in target_urls:
+        target_response = client.post(
+            endpoint,
+            headers=headers,
+            json={
+                "startDate": available_date,
+                "endDate": available_date,
+                "dimensions": ["query", "page"],
+                "type": GSC_SEARCH_TYPE,
+                "rowLimit": GSC_TARGET_PAGE_ROW_LIMIT,
+                "startRow": 0,
+                "dimensionFilterGroups": [
+                    {
+                        "filters": [
+                            {
+                                "dimension": "page",
+                                "operator": "equals",
+                                "expression": target_url,
+                            }
+                        ]
+                    }
+                ],
+            },
+        )
+        target_response.raise_for_status()
+        target_rows = _payload_rows(target_response.json())[:GSC_TARGET_PAGE_ROW_LIMIT]
+        target_row_count += len(target_rows)
+        _, facts = _summarize_search_analytics_response(
+            {"rows": target_rows},
+            date_start=available_date,
+            date_end=available_date,
+        )
+        target_facts.extend(facts)
+    return (
+        summary
+        | {
+            "target_page_requested_count": len(target_urls),
+            "target_page_returned_row_count": target_row_count,
+        },
+        [*metric_facts, *target_facts],
+    )
 
 
 def _default_availability_range() -> tuple[str, str]:
     end = datetime.now(UTC).date() - timedelta(days=1)
     start = end - timedelta(days=GSC_AVAILABILITY_LOOKBACK_DAYS - 1)
     return start.isoformat(), end.isoformat()
+
+
+def _target_page_urls(target_urls: list[str]) -> list[str]:
+    urls: list[str] = []
+    for value in target_urls:
+        candidate = value.strip()
+        if not candidate or candidate in urls:
+            continue
+        if candidate.startswith("https://") or candidate.startswith("http://"):
+            urls.append(candidate)
+    return urls[:20]
 
 
 def _summarize_search_analytics_response(
