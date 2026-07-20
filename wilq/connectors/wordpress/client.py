@@ -499,6 +499,9 @@ def _material_from_rest_item(
         else ""
     )
     text = clean_metadata_text(html_text(source))
+    acf_text = _acf_material_text(item.get("acf"))
+    if not text and acf_text:
+        text = acf_text
     content_parser = _HtmlMetadataParser()
     content_parser.feed(source)
     content_parser.close()
@@ -509,16 +512,59 @@ def _material_from_rest_item(
         source_kind="wordpress_rest",
         title=wordpress_title(item.get("title")),
         content_text=text,
-        content_summary=content_dimensions.get("content_summary", ""),
-        content_word_count=_optional_int(content_dimensions.get("content_word_count")),
+        content_summary=content_dimensions.get("content_summary", "")
+        or summary_text_limited(text, 240),
+        content_word_count=(
+            _optional_int(content_dimensions.get("content_word_count"))
+            or len(text.split())
+            if text
+            else None
+        ),
         section_headings=content_parser.section_headings,
         acf_field_names=_json_string_list(acf_dimensions.get("acf_field_names_json")),
         acf_section_headings=_json_string_list(acf_dimensions.get("acf_section_headings_json")),
         modified_gmt=str(item.get("modified_gmt") or ""),
-        extraction_region="wordpress_rest.content",
+        extraction_region=(
+            "wordpress_rest.content" if source else "wordpress_rest.acf"
+        ),
         material_confidence="source_bound",
         source_field_lineage=["wordpress_rest.content", "wordpress_rest.acf"],
     )
+
+
+def _acf_material_text(value: Any) -> str:
+    """Extract bounded readable ACF text without retaining media/config values."""
+    parts: list[str] = []
+
+    def visit(node: Any, key: str = "") -> None:
+        if len(" ".join(parts)) >= 12000:
+            return
+        if isinstance(node, dict):
+            for child_key, child in node.items():
+                visit(child, str(child_key))
+            return
+        if isinstance(node, list):
+            for child in node:
+                visit(child, key)
+            return
+        if not isinstance(node, str) or key.casefold() in {
+            "url",
+            "link",
+            "acf_fc_layout",
+            "podstawowy_kolor",
+            "odnosnik_do_calego_filmu",
+            "plik_mp4",
+            "plik_webm",
+        }:
+            return
+        cleaned = clean_metadata_text(html_text(node))
+        if not cleaned or cleaned.startswith("#") and len(cleaned) in {4, 7}:
+            return
+        if cleaned not in parts:
+            parts.append(cleaned)
+
+    visit(value)
+    return " ".join(parts)[:12000]
 
 
 def _created_draft_post_id(response: httpx.Response) -> str:

@@ -484,6 +484,55 @@ def test_dynamic_material_resolves_front_page_from_bounded_rest_collection(monke
     assert material.acf_field_names == ["hero"]
 
 
+def test_dynamic_material_uses_sanitized_acf_text_when_the_content_is_empty(monkeypatch):
+    monkeypatch.setattr(
+        "wilq.connectors.wordpress.client._wordpress_credentials",
+        lambda _connector: WordPressCredentials(
+            base_url="https://staging.example/",
+            public_url="https://www.ekologus.pl/",
+            username="reader",
+            application_auth="password",
+            site_kind="primary",
+        ),
+    )
+    page_url = "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            request=request,
+            json=[
+                {
+                    "link": page_url,
+                    "title": {"rendered": "Doradztwo"},
+                    "content": {"rendered": ""},
+                    "acf": {
+                        "podstrona": {
+                            "lead": "Stałe doradztwo środowiskowe.",
+                            "elementy": [
+                                {
+                                    "acf_fc_layout": "cta",
+                                    "tytul": "Potrzebujesz doradztwa?",
+                                    "przycisk": {"link": "https://example.invalid"},
+                                }
+                            ],
+                        },
+                        "hero": {"obrazek": 297},
+                    },
+                }
+            ],
+        )
+
+    material = read_wordpress_content_material(
+        page_url,
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert material.extraction_region == "wordpress_rest.acf"
+    assert material.content_text == "Stałe doradztwo środowiskowe. Potrzebujesz doradztwa?"
+    assert "example.invalid" not in material.content_text
+
+
 def test_dynamic_material_extracts_the_content_headings_from_rest(monkeypatch):
     monkeypatch.setattr(
         "wilq.connectors.wordpress.client._wordpress_credentials",
