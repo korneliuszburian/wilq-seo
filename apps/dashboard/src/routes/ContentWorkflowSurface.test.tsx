@@ -706,6 +706,7 @@ describe("ContentWorkflowSurface", () => {
         "content_work_item_bdo"
       )
     );
+    expect(screen.getByText("Pokaż dokładne fakty i porównania metryk")).toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
