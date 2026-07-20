@@ -595,6 +595,14 @@ export function ContentPageWorkbench({
               <h2 id="review-workspace-title" className="text-base font-semibold text-ink">
                 Review konkretnej wersji szkicu
               </h2>
+              <div className="mt-3 rounded-md border border-action/20 bg-action/5 p-3 text-sm leading-6 text-slate-700">
+                <p className="font-semibold text-ink">Co robisz teraz?</p>
+                <ol className="mt-1 list-inside list-decimal space-y-0.5">
+                  <li>Przeczytaj podgląd całej strony.</li>
+                  <li>Uruchom review semantyczne i potraktuj je jako listę uwag.</li>
+                  <li>Zapisz własną decyzję dla tej exact revision.</li>
+                </ol>
+              </div>
               {latestRevision ? (
                 <div className="mt-3 space-y-4">
                   <div className="rounded-md border border-line bg-surface p-3 text-sm leading-6 text-slate-700">

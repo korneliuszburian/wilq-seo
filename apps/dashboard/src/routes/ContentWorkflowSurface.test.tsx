@@ -1086,6 +1086,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByText("Advisory review semantyczne")).toBeInTheDocument();
+    expect(screen.getByText("Przeczytaj podgląd całej strony.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Uruchom review semantyczne" }));
 
     await waitFor(() =>
