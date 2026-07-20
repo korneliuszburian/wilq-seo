@@ -134,9 +134,9 @@ export function ContentPlanningReviewPanel({
             </ol>
           </div>
           <label className="mt-4 block max-w-xl text-sm font-semibold text-ink">
-            Usługa dla tej strony
+            {serviceSelectionFieldLabel(proposal.service_selection_confirmed)}
             <select
-              aria-label="Potwierdzona usługa"
+              aria-label={serviceSelectionFieldLabel(proposal.service_selection_confirmed)}
               value={selectedServiceCardId}
               onChange={(event) => setSelectedServiceCardId(event.target.value)}
               disabled={serviceCandidates.length === 0}
@@ -421,6 +421,10 @@ export function initialServiceCardId(
   // A recommendation is context, never an implicit human confirmation.
   if (!serviceSelectionConfirmed) return "";
   return proposalServiceCardId ?? "";
+}
+
+export function serviceSelectionFieldLabel(serviceSelectionConfirmed: boolean): string {
+  return serviceSelectionConfirmed ? "Potwierdzona usługa" : "Wybierz usługę dla tej strony";
 }
 
 export function planningReviewCheckedItems(

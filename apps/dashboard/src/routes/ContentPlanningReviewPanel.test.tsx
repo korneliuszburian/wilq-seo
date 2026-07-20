@@ -10,7 +10,8 @@ import {
   planningSourceSummary,
   requiresServiceOverrideReview,
   planningInventorySourceLabel,
-  inventoryMaterialSourceLabel
+  inventoryMaterialSourceLabel,
+  serviceSelectionFieldLabel
 } from "./ContentPlanningReviewPanel";
 
 describe("inventoryDispositionLabel", () => {
@@ -137,5 +138,12 @@ describe("initialServiceCardId", () => {
     expect(initialServiceCardId(true, "ekologus_service_bdo_reporting")).toBe(
       "ekologus_service_bdo_reporting"
     );
+  });
+});
+
+describe("serviceSelectionFieldLabel", () => {
+  it("names an unresolved recommendation as a choice, not a confirmation", () => {
+    expect(serviceSelectionFieldLabel(false)).toBe("Wybierz usługę dla tej strony");
+    expect(serviceSelectionFieldLabel(true)).toBe("Potwierdzona usługa");
   });
 });
