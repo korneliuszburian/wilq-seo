@@ -42,7 +42,6 @@ def proposal_output_schema(
         evidence_schema = _mapping(section_properties, "evidence_ids")
         evidence_schema["minItems"] = len(evidence_ids)
         evidence_schema["maxItems"] = len(evidence_ids)
-        evidence_schema["uniqueItems"] = True
     _set_literals(section_properties, "claims_used", contract.model_input.claims_allowed)
     _set_literals(properties, "source_facts_used", evidence_ids)
     _set_literals(properties, "claims_needing_review", [])
