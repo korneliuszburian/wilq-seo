@@ -86,6 +86,12 @@ The follow-up tone fixed point has a valid checker at
 all findings are LOW confirmations/evidence gaps and no product defect was
 proven.
 
+The review step now translates the storage activation blocker into marketer
+language: automatic checking is temporarily unavailable, while reading the
+exact text, checking sources and recording a human decision remain available.
+The maintenance/storage detail is kept as the safe next technical step rather
+than exposed as the primary button label.
+
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
 

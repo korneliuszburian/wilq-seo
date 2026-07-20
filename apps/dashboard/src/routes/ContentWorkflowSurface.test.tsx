@@ -1223,9 +1223,9 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const button = await screen.findByRole("button", { name: "Review wymaga aktywacji storage" });
+    const button = await screen.findByRole("button", { name: "Automatyczne sprawdzenie chwilowo niedostępne" });
     expect(button).toBeDisabled();
-    expect(screen.getByText("Realny local state nie ma aktywowanej tabeli semantic review.")).toBeInTheDocument();
+    expect(screen.getByText(/Automatyczne sprawdzenie tekstu jest chwilowo niedostępne/)).toBeInTheDocument();
     expect(postContentWorkItemSemanticReview).not.toHaveBeenCalled();
   });
 

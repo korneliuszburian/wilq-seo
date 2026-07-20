@@ -726,7 +726,7 @@ export function ContentPageWorkbench({
                         {actions.semanticReviewPending || semanticReviewGenerating
                           ? "Analizuję wersję..."
                           : semanticReviewStorageBlocked
-                            ? "Review wymaga aktywacji storage"
+                            ? "Automatyczne sprawdzenie chwilowo niedostępne"
                           : semanticReviewResult?.status === "ready"
                             ? "Sprawdź exact review"
                             : "Uruchom review semantyczne"}
@@ -785,7 +785,9 @@ export function ContentPageWorkbench({
                     ) : null}
                     {semanticReviewResult && semanticReviewResult.blockers.length ? (
                       <p className="mt-3 text-sm text-wait" role="alert">
-                        {semanticReviewResult.blockers[0]?.reason}
+                        {semanticReviewStorageBlocked
+                          ? "Automatyczne sprawdzenie tekstu jest chwilowo niedostępne. Możesz nadal przeczytać pełną wersję, sprawdzić źródła i zapisać własną decyzję. Najbliższy krok techniczny: administrator musi włączyć trwały zapis review."
+                          : semanticReviewResult.blockers[0]?.reason}
                       </p>
                     ) : null}
                     {actions.semanticReviewError || semanticReviewQuery.error ? (
