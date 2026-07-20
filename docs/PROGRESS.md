@@ -3294,3 +3294,15 @@ Focused falsifier: exact landing + obcy landing 1/1, queue API 10/10, dashboard
 candidate suite 220/220, shared-schema tests 43/43, Ruff/mypy/typecheck/diff-check
 PASS. Live selected inventory nie ma obecnie exact GA4 faktu, więc UI uczciwie go nie
 wyświetla — to brak pokrycia danych, nie syntetyczny wynik.
+
+### 2026-07-20 — pełny context pack ma bounded session cache
+
+Pełna ścieżka `/api/codex/context-pack` omijała dotychczas istniejący cache
+skill-scoped i za każdym odczytem przebudowywała wszystkie diagnostyki, evidence
+i playbooki. Dodałem osobny cache keyed by skill/focus/max-opportunities, z tym
+samym limitem 300 s i wspólną invalidacją przy refresh/write. Testy pytest
+wyłączają cache, a freshness nadal pochodzi z API-owych rekordów źródeł.
+
+Focused falsifier bounded cache + invalidation 1/1, Ruff/mypy/diff-check PASS.
+Live read po reloadzie trwał 22,763 s, kolejny identyczny read 0,232 s; pierwszy
+odczyt pozostaje kosztem cold build, a cache nie zmienia danych po invalidacji.

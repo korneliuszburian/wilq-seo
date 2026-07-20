@@ -12,6 +12,7 @@ from apps.api.wilq_api.context_models import ContextPackRequest
 # avoids rebuilding the same redacted context on every adjacent request.
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 300.0
 _cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
+_cached_full_context_packs: dict[str, SkillContextCacheEntry] = {}
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,26 @@ def request_skill(request: ContextPackRequest | None) -> str | None:
 
 def clear_skill_context_cache() -> None:
     _cached_skill_context_packs.clear()
+    _cached_full_context_packs.clear()
+
+
+def read_full_context_cache(request: ContextPackRequest) -> dict[str, Any] | None:
+    cache_seconds = _skill_context_cache_seconds()
+    if cache_seconds <= 0:
+        return None
+    cached = _cached_full_context_packs.get(_full_context_cache_key(request))
+    if cached is None or monotonic() - cached.created_at > cache_seconds:
+        return None
+    return cached.payload
+
+
+def write_full_context_cache(request: ContextPackRequest, payload: dict[str, Any]) -> None:
+    if _skill_context_cache_seconds() <= 0:
+        return
+    _cached_full_context_packs[_full_context_cache_key(request)] = SkillContextCacheEntry(
+        created_at=monotonic(),
+        payload=payload,
+    )
 
 
 def read_skill_context_cache(request: ContextPackRequest) -> dict[str, Any] | None:
@@ -54,6 +75,17 @@ def write_skill_context_cache(request: ContextPackRequest, payload: dict[str, An
 def _skill_context_cache_key(request: ContextPackRequest) -> str:
     return "|".join(
         [
+            request_skill(request) or "",
+            request.focus or "",
+            str(request.max_opportunities),
+        ]
+    )
+
+
+def _full_context_cache_key(request: ContextPackRequest) -> str:
+    return "|".join(
+        [
+            "full",
             request_skill(request) or "",
             request.focus or "",
             str(request.max_opportunities),

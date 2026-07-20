@@ -19,7 +19,9 @@ from apps.api.wilq_api import (
 )
 from apps.api.wilq_api.context_cache import (
     clear_skill_context_cache,
+    read_full_context_cache,
     request_skill,
+    write_full_context_cache,
 )
 from apps.api.wilq_api.context_models import ContextPackRequest
 from apps.api.wilq_api.routers.actions import create_actions_router
@@ -227,7 +229,11 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
             product_rules=CONTEXT_PRODUCT_RULES,
             strict_instruction=CONTEXT_STRICT_INSTRUCTION,
         )
-    return context_full.full_context_pack(
+    full_request = request or ContextPackRequest(full_context=True)
+    cached_full_context = read_full_context_cache(full_request)
+    if cached_full_context is not None:
+        return cached_full_context
+    full_pack = context_full.full_context_pack(
         skill=skill,
         connectors=connectors,
         opportunities=opportunities,
@@ -235,6 +241,8 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         product_rules=CONTEXT_PRODUCT_RULES,
         strict_instruction=CONTEXT_STRICT_INSTRUCTION,
     )
+    write_full_context_cache(full_request, full_pack)
+    return full_pack
 
 
 def clear_api_view_model_caches() -> None:
