@@ -202,7 +202,10 @@ describe("ContentWorkflowSurface", () => {
     ).toBeInTheDocument();
     expect(within(marketerJourney).getAllByText("odśwież istniejącą treść").length).toBeGreaterThan(0);
     expect(within(marketerJourney).getByTestId("content-ga4-metrics")).toHaveTextContent(
-      "GA4 dla tej strony: aktywni użytkownicy: 26 · google / organic"
+      "GA4 dla tej strony: aktywni użytkownicy (google / organic: 26, google / cpc: 12)"
+    );
+    expect(within(marketerJourney).getByTestId("content-ga4-metrics")).toHaveTextContent(
+      "wskaźnik zaangażowania (google / organic: 42%)"
     );
     fireEvent.click(within(marketerJourney).getByText("Dlaczego ta decyzja?"));
     expect(within(marketerJourney).getByTestId("content-metric-sources")).toHaveTextContent(
@@ -1851,6 +1854,28 @@ function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
         name: "active_users",
         metric_label: "aktywni użytkownicy",
         value: 26,
+        period: "2026-06-22/2026-07-19",
+        source_connector: "google_analytics_4",
+        evidence_id: "ev_ga4_bdo",
+        dimensions: { source_medium: "google / organic" },
+        dimension_labels: {},
+        dimension_value_labels: {}
+      },
+      {
+        name: "active_users",
+        metric_label: "aktywni użytkownicy",
+        value: 12,
+        period: "2026-06-22/2026-07-19",
+        source_connector: "google_analytics_4",
+        evidence_id: "ev_ga4_bdo",
+        dimensions: { source_medium: "google / cpc" },
+        dimension_labels: {},
+        dimension_value_labels: {}
+      },
+      {
+        name: "engagement_rate",
+        metric_label: "wskaźnik zaangażowania",
+        value: 0.42,
         period: "2026-06-22/2026-07-19",
         source_connector: "google_analytics_4",
         evidence_id: "ev_ga4_bdo",

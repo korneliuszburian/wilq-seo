@@ -3,6 +3,15 @@ import { formatContentMetricValue } from "../lib/contentLabels";
 import type { ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
 import { normalizedPath } from "./contentWorkflowTarget";
 
+const GA4_METRIC_PRIORITY = [
+  "active_users",
+  "sessions",
+  "engagement_rate",
+  "event_count",
+  "key_events",
+  "ecommerce_purchases"
+] as const;
+
 export function ContentWorkflowJourneyContext({
   data
 }: {
@@ -19,8 +28,23 @@ export function ContentWorkflowJourneyContext({
   const metrics = candidate.search_metrics;
   const pageInventory = candidate.page_inventory;
   const pageMetricFacts = item.metric_facts ?? [];
-  const ga4MetricFacts = pageMetricFacts
-    .filter((fact) => fact.source_connector === "google_analytics_4")
+  const ga4FactsByName = new Map<string, typeof pageMetricFacts>();
+  for (const fact of pageMetricFacts) {
+    if (fact.source_connector !== "google_analytics_4") continue;
+    const facts = ga4FactsByName.get(fact.name) ?? [];
+    facts.push(fact);
+    ga4FactsByName.set(fact.name, facts);
+  }
+  const ga4MetricSummaries = GA4_METRIC_PRIORITY.map((metricName) => {
+    const facts = ga4FactsByName.get(metricName);
+    if (!facts?.length) return null;
+    const channels = facts.map((fact) => {
+      const channel = fact.dimensions.source_medium ?? "źródło nieopisane";
+      return `${channel}: ${formatContentMetricValue(fact.name, fact.value)}`;
+    });
+    return `${facts[0].metric_label || metricName} (${channels.join(", ")})`;
+  })
+    .filter((summary): summary is string => summary !== null)
     .slice(0, 4);
   const metricSummary =
     metrics?.impressions === undefined || metrics.impressions === null
@@ -65,15 +89,8 @@ export function ContentWorkflowJourneyContext({
       </dl>
       <p className="mt-2 text-sm leading-6 text-slate-700">{metricSummary}</p>
       <p className="mt-1 text-xs leading-5 text-slate-600" data-testid="content-ga4-metrics">
-        {ga4MetricFacts.length
-          ? `GA4 dla tej strony: ${ga4MetricFacts
-              .map((fact) => {
-                const source = fact.dimensions.source_medium
-                  ? ` · ${fact.dimensions.source_medium}`
-                  : "";
-                return `${fact.metric_label || fact.name}: ${formatContentMetricValue(fact.name, fact.value)}${source}`;
-              })
-              .join(" | ")}`
+        {ga4MetricSummaries.length
+          ? `GA4 dla tej strony: ${ga4MetricSummaries.join(" | ")}`
           : "GA4 dla tej strony: brak dokładnych faktów w aktualnym odczycie."}
       </p>
       <p className="mt-1 text-xs leading-5 text-slate-500" data-testid="content-metric-comparison">
