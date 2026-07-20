@@ -12,11 +12,9 @@ import {
   type ContentInitialDraftResponse,
   type ContentOpportunityEnrichment,
   type ContentPlanningReviewConflict,
-  type ContentSemanticReviewResponse,
-  type ContentWorkItemQueueResponse
+  type ContentSemanticReviewResponse
 } from "../lib/api";
 import { ContentCodexSectionProposalPanel } from "./ContentCodexSectionProposalPanel";
-import { ContentFreshnessBanner } from "./ContentWorkflowBoundaryStates";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import {
   ContentPlanningReviewPanel,
@@ -115,7 +113,6 @@ export function ContentPageWorkbench({
   data,
   draftActivationPacket,
   enrichment,
-  queue,
   activeStepId
 }: {
   actions: ContentPageWorkbenchActions;
@@ -123,7 +120,6 @@ export function ContentPageWorkbench({
   data: ContentWorkflowSnapshot;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   enrichment: ContentOpportunityEnrichment | null;
-  queue: ContentWorkItemQueueResponse;
   activeStepId: WorkflowStepId;
 }) {
   const item = data.preflight.item;
@@ -255,7 +251,6 @@ export function ContentPageWorkbench({
   const semanticReviewGenerating = semanticReviewResult?.status === "generating";
   return (
     <section className="mb-5" data-active-workspace={activeStepId}>
-      <ContentFreshnessBanner assessment={queue.freshness_assessment} />
       <div className="hidden sm:block">
         <ContentSourceStatusBar data={data} devPage={devPage} profile={profile} />
       </div>

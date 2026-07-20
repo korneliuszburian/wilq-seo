@@ -601,7 +601,6 @@ function ContentWorkflowMarketerJourney({
         data={data}
         draftActivationPacket={draftActivationPacket}
         enrichment={enrichment}
-        queue={queue}
         activeStepId={selectedStepId}
       />
     </div>

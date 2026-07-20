@@ -17,6 +17,7 @@ prompt dla niezależnego reviewera.
 | `outsourcing-mobile-first-viewport.png` | 390×844 | outsourcing, pierwszy viewport |
 | `bdo-desktop-first-slice-live.png` | 1440×900 | BDO, po odchudzeniu kolejki i dodaniu kart metryk |
 | `bdo-mobile-first-slice-live.png` | 390×844 | BDO, po odchudzeniu kolejki i dodaniu kart metryk |
+| `bdo-desktop-no-duplicate-banner.png` | 1440×900 | BDO, aktualny ekran po usunięciu powtórzonego bannera freshness |
 
 Zrzuty są wykonane z lokalnego dashboardu po zakończeniu ładowania i zostały
 sprawdzone wizualnie po zapisie. Pliki `*-first-slice-live.png` pokazują aktualny

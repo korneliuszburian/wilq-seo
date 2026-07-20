@@ -270,6 +270,8 @@ Kontekst pokazuje realne GSC/GA4/inventory w kartach oraz grupuje dane na Fakty,
 Sygnały i Blokady. Proof desktop/mobile znajduje się w
 `docs/review-packets/2026-07-20-ux-audit-input/second-opinion/` jako
 `*-first-slice-live.png`.
+Banner freshness jest renderowany tylko raz przez route shell; plan, tekst,
+review i dev preview nie powielają już tego samego komunikatu.
 
 The first content screen should not be a gallery of cards. It should be a
 working map for one selected content item or one prioritized queue.
