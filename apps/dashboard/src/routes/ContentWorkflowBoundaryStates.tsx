@@ -5,10 +5,20 @@ import type {
 } from "../lib/api";
 import { ContentWorkflowHeader } from "./ContentWorkflowHeader";
 
+export type ContentSourceRefreshControl = {
+  eligibleConnectorIds: string[];
+  activeConnectorId: string | null;
+  runs: Record<string, { status: string; status_label: string; summary: string }>;
+  errors: Record<string, string>;
+  onRefresh: (connectorId: string) => void;
+};
+
 export function ContentFreshnessBanner({
-  assessment
+  assessment,
+  refresh
 }: {
   assessment: ContentWorkItemQueueResponse["freshness_assessment"];
+  refresh?: ContentSourceRefreshControl;
 }) {
   const qualityLabels: Record<string, string> = {
     google_search_console: "GSC",
@@ -43,6 +53,30 @@ export function ContentFreshnessBanner({
           Jakość źródeł: {sourceWarnings.join(" · ")}. To sygnał interpretacyjny, nie wynik kampanii.
         </p>
       ) : null}
+      {refresh && assessment.stale_connector_ids.length ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2" data-testid="content-source-refresh">
+          {assessment.stale_connector_ids.map((connectorId) => {
+            if (!refresh.eligibleConnectorIds.includes(connectorId)) return null;
+            const run = refresh.runs[connectorId];
+            const isActive = refresh.activeConnectorId === connectorId;
+            const error = refresh.errors[connectorId];
+            return (
+              <div key={connectorId} className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="rounded-md border border-action/30 bg-white px-3 py-2 text-xs font-semibold text-action hover:bg-action/5 disabled:cursor-wait disabled:opacity-60"
+                  disabled={isActive}
+                  onClick={() => refresh.onRefresh(connectorId)}
+                >
+                  {isActive ? "Odświeżanie w toku…" : `Odśwież ${qualityLabels[connectorId] ?? connectorId}`}
+                </button>
+                {run ? <span className="text-xs text-slate-600">{run.status_label || run.status}: {run.summary}</span> : null}
+                {error ? <span className="text-xs font-semibold text-wait">{error}</span> : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -58,16 +92,18 @@ export function ContentWorkflowEmptyQueue({ queue }: { queue: ContentWorkItemQue
 export function ContentWorkflowSelectedLoading({
   assessment,
   candidate,
-  error = false
+  error = false,
+  refresh
 }: {
   assessment: ContentWorkItemQueueResponse["freshness_assessment"];
   candidate: ContentWorkItemQueueCandidate;
   error?: boolean;
+  refresh?: ContentSourceRefreshControl;
 }) {
   return (
     <main className="w-full px-4 py-5 lg:px-7 2xl:px-8">
       <ContentWorkflowHeader topic={candidate.title} />
-      <ContentFreshnessBanner assessment={assessment} />
+      <ContentFreshnessBanner assessment={assessment} refresh={refresh} />
       <section className="rounded-md border border-line bg-white p-4 shadow-sm" aria-live="polite">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">

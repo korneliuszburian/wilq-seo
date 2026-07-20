@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
@@ -10,6 +10,9 @@ import {
   postContentWorkItemSemanticReview,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
+  getConnectorRefreshRun,
+  getConnectors,
+  refreshConnector,
   saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
   saveContentWorkItemPlanningReview,
@@ -24,7 +27,8 @@ import {
   type ContentWorkItemQueueResponse,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentOpportunityEnrichment,
-  type WordPressAuthoringProfile
+  type WordPressAuthoringProfile,
+  type ConnectorRefreshRun
 } from "../lib/api";
 import type { ContentWorkflowSnapshot, WorkflowStepId } from "./contentWorkflowRuntime";
 import { ContentCandidateQueuePanel } from "./ContentCandidateQueuePanel";
@@ -33,7 +37,9 @@ import { WorkflowStepsList } from "./WorkflowStepsList";
 import {
   ContentWorkflowError,
   ContentWorkflowSelectedLoading,
-  ContentWorkflowInventorySelectionLoading
+  ContentWorkflowInventorySelectionLoading,
+  ContentFreshnessBanner,
+  type ContentSourceRefreshControl
 } from "./ContentWorkflowBoundaryStates";
 import { ContentOpportunityEnrichmentPanel } from "./ContentOpportunityEnrichmentPanel";
 import { ClaimLedgerGatePanel } from "./ClaimLedgerGatePanel";
@@ -87,6 +93,7 @@ type ContentPlanningGenerationStatus = NonNullable<
 export function ContentWorkflowSurface() {
   const navigate = useNavigate();
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
+  const sourceRefresh = useContentSourceRefresh();
   const selectedWorkItemId = stringFromSearch(routeSearch, "work_item_id");
   const selectWorkItem = (workItemId: string) => {
     void navigate({
@@ -131,6 +138,7 @@ export function ContentWorkflowSurface() {
       queue={queue}
       selectedCandidate={selectedCandidate}
       workflow={workflow}
+      sourceRefresh={sourceRefresh}
       onSelectWorkItem={selectWorkItem}
     />
   );
@@ -139,6 +147,82 @@ export function ContentWorkflowSurface() {
 function stringFromSearch(search: string, key: string) {
   const value = new URLSearchParams(search).get(key);
   return value || null;
+}
+
+function useContentSourceRefresh(): ContentSourceRefreshControl {
+  const queryClient = useQueryClient();
+  const connectorsQuery = useQuery({
+    queryKey: ["connectors"],
+    queryFn: getConnectors,
+    staleTime: 30_000
+  });
+  const [activeConnectorId, setActiveConnectorId] = useState<string | null>(null);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
+  const [runs, setRuns] = useState<Record<string, ConnectorRefreshRun>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const runQuery = useQuery({
+    queryKey: ["connector-refresh", activeRunId],
+    queryFn: () => getConnectorRefreshRun(activeRunId ?? ""),
+    enabled: Boolean(activeRunId),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "queued" || status === "running" ? 1000 : false;
+    }
+  });
+  const refreshMutation = useMutation({
+    mutationFn: refreshConnector,
+    onSuccess: (run) => {
+      setRuns((current) => ({ ...current, [run.connector_id]: run }));
+      setErrors((current) => {
+        if (!current[run.connector_id]) return current;
+        const next = { ...current };
+        delete next[run.connector_id];
+        return next;
+      });
+      setActiveConnectorId(run.connector_id);
+      setActiveRunId(run.id);
+    },
+    onError: (error, connectorId) => {
+      setErrors((current) => ({
+        ...current,
+        [connectorId]: error instanceof Error
+          ? error.message
+          : "Nie udało się uruchomić odczytu źródła."
+      }));
+      setActiveConnectorId(null);
+      setActiveRunId(null);
+    }
+  });
+  useEffect(() => {
+    const run = runQuery.data;
+    if (!run) return;
+    if (run.status === "queued" || run.status === "running") return;
+    void queryClient.invalidateQueries({ queryKey: ["content-workflow"] });
+    void queryClient.invalidateQueries({ queryKey: ["connectors"] });
+  }, [queryClient, runQuery.data]);
+  const visibleRuns = useMemo(() => {
+    if (!runQuery.data) return runs;
+    return { ...runs, [runQuery.data.connector_id]: runQuery.data };
+  }, [runQuery.data, runs]);
+  const activeRunInProgress = runQuery.data?.status === "queued" || runQuery.data?.status === "running";
+  return {
+    eligibleConnectorIds: (connectorsQuery.data ?? [])
+      .filter((connector) => connector.configured && connector.refresh_state.refresh_allowed)
+      .map((connector) => connector.id),
+    activeConnectorId: activeRunInProgress ? activeConnectorId : null,
+    runs: Object.fromEntries(
+      Object.entries(visibleRuns).map(([connectorId, run]) => [connectorId, {
+        status: run.status,
+        status_label: run.status_label,
+        summary: run.summary
+      }])
+    ),
+    errors,
+    onRefresh: (connectorId) => {
+      if (refreshMutation.isPending) return;
+      refreshMutation.mutate(connectorId);
+    }
+  };
 }
 
 function ContentWorkflowRouteState({
@@ -156,6 +240,7 @@ function ContentWorkflowRouteState({
   queue,
   selectedCandidate,
   workflow,
+  sourceRefresh,
   onSelectWorkItem
 }: {
   activeWorkItemId: string | null;
@@ -172,6 +257,7 @@ function ContentWorkflowRouteState({
   queue: ContentWorkItemQueueQuery;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
+  sourceRefresh: ContentSourceRefreshControl;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
   if (queue.isLoading) {
@@ -196,6 +282,7 @@ function ContentWorkflowRouteState({
       queue={queue.data}
       selectedCandidate={selectedCandidate}
       workflow={workflow}
+      sourceRefresh={sourceRefresh}
       onSelectWorkItem={onSelectWorkItem}
     />
   );
@@ -215,6 +302,7 @@ function ContentWorkflowQueueReady({
   queue,
   selectedCandidate,
   workflow,
+  sourceRefresh,
   onSelectWorkItem
 }: {
   activeWorkItemId: string | null;
@@ -230,6 +318,7 @@ function ContentWorkflowQueueReady({
   queue: ContentWorkItemQueueResponse;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
+  sourceRefresh: ContentSourceRefreshControl;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
   if (!activeWorkItemId) {
@@ -274,6 +363,7 @@ function ContentWorkflowQueueReady({
         selectedCandidate={selectedCandidate}
         selectedWorkItemId={activeWorkItemId}
         onSelectWorkItem={onSelectWorkItem}
+        refresh={sourceRefresh}
       />
     );
   }
@@ -288,8 +378,9 @@ function ContentWorkflowQueueReady({
         queue={queue}
         inventory={inventory.data ?? null}
         selectedCandidate={selectedCandidate}
-      workflow={workflow}
-      onSelectWorkItem={onSelectWorkItem}
+        workflow={workflow}
+        sourceRefresh={sourceRefresh}
+        onSelectWorkItem={onSelectWorkItem}
     />
   );
 }
@@ -309,6 +400,7 @@ function ContentWorkflowSelectedReady({
   inventory,
   selectedCandidate,
   workflow,
+  sourceRefresh,
   onSelectWorkItem
 }: {
   activeWorkItemId: string;
@@ -321,6 +413,7 @@ function ContentWorkflowSelectedReady({
   inventory: ContentInventoryCatalogResponse | null;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
+  sourceRefresh: ContentSourceRefreshControl;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
   if (selectedCandidate === null) return <ContentWorkflowError />;
@@ -329,6 +422,7 @@ function ContentWorkflowSelectedReady({
       <ContentWorkflowSelectedLoading
         assessment={queue.freshness_assessment}
         candidate={selectedCandidate}
+        refresh={sourceRefresh}
       />
     );
   }
@@ -338,6 +432,7 @@ function ContentWorkflowSelectedReady({
         assessment={queue.freshness_assessment}
         candidate={selectedCandidate}
         error
+        refresh={sourceRefresh}
       />
     );
   }
@@ -349,6 +444,7 @@ function ContentWorkflowSelectedReady({
       operatorLabel={operatorLabel}
       draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
+      sourceRefresh={sourceRefresh}
       enrichment={enrichment.data?.enrichment ?? null}
       queue={queue}
       inventory={inventory}
@@ -364,6 +460,7 @@ function ContentWorkflowLoaded({
   operatorLabel,
   draftActivationPacket,
   draftWriteReadiness,
+  sourceRefresh,
   enrichment,
   queue,
   inventory,
@@ -375,6 +472,7 @@ function ContentWorkflowLoaded({
   operatorLabel: string;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
+  sourceRefresh: ContentSourceRefreshControl;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
   inventory: ContentInventoryCatalogResponse | null;
@@ -392,6 +490,7 @@ function ContentWorkflowLoaded({
 
   return (
     <main className="w-full px-4 py-3 sm:py-5 lg:px-7 2xl:px-8">
+      <ContentFreshnessBanner assessment={queue.freshness_assessment} refresh={sourceRefresh} />
       <section className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-white px-3 py-2 sm:mb-4 sm:px-4 sm:py-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Widok pracy</p>
