@@ -100,6 +100,10 @@ The five-step task map now uses a compact five-column layout on mobile rather
 than forcing 144px cards into a clipped horizontal strip. All five stages are
 visible at 390px, with full status retained in the accessible labels; desktop
 keeps the expanded labels and status text.
+The mobile fixed point's checker is valid at
+`/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-20-mobile-task-map-lWVzsh/`;
+its LOW items are coverage suggestions only. No product defect or UAT claim is
+made from the 390px proof.
 
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
