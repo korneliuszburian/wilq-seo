@@ -604,6 +604,7 @@ function KnowledgeSurfaceSections({
   const bindings = map?.bindings ?? [];
   const nearestCard = cards[0];
   const sourceMaterials = knowledgeSourceMaterials.data ?? [];
+  const sourceFacts = knowledgeSourceFacts.data ?? [];
   const pendingSourceMaterials = sourceMaterials.filter(
     (material) => material.import_status !== "imported"
   );
@@ -613,14 +614,18 @@ function KnowledgeSurfaceSections({
     nearestCard?.title ||
     bindings[0]?.title ||
     "Materiał źródłowy do review";
-  const blockedClaimCount = bindings.reduce(
-    (sum, binding) => sum + binding.blocked_claim_labels.length,
+  const blockedClaimCount = sourceFacts.reduce(
+    (sum, fact) => sum + fact.blocked_claims.length,
     0
   );
   const reviewCount = pendingSourceMaterials.length;
-  const allowedClaimCount = Math.max(0, bindings.length * 3 - blockedClaimCount);
-  const reviewClaimCount = Math.max(reviewCount, bindings.length);
-  const totalClaims = Math.max(allowedClaimCount + reviewClaimCount + blockedClaimCount, 1);
+  const allowedClaimCount = sourceFacts.filter(
+    (fact) => fact.generation_status === "eligible" && fact.blocked_claims.length === 0
+  ).length;
+  const reviewClaimCount = sourceFacts.filter(
+    (fact) => fact.generation_status !== "eligible" && fact.blocked_claims.length === 0
+  ).length;
+  const totalClaims = allowedClaimCount + reviewClaimCount + blockedClaimCount;
   const serviceCount = cards.filter((card) => /service|usług|usl|service_profile/i.test(card.card_type)).length;
   const approvedCurrentCount = approvedKnowledgeFactCount(knowledgeSourceFacts.data);
   const pendingMaterialCount = knowledgeSourceMaterials.data?.filter(

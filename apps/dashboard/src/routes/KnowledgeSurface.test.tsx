@@ -102,7 +102,62 @@ describe("KnowledgeSurface", () => {
     vi.mocked(getKnowledgeOperatingMap).mockResolvedValue(operatingMap);
     vi.mocked(getKnowledgeCards).mockResolvedValue([]);
     vi.mocked(getKnowledgePlaybooks).mockResolvedValue([]);
-    vi.mocked(getKnowledgeSourceFacts).mockResolvedValue([]);
+    vi.mocked(getKnowledgeSourceFacts).mockResolvedValue([
+      {
+        source_id: "fact_allowed",
+        source_type: "public_site",
+        privacy_class: "commit_safe",
+        source_url_or_path: "https://www.ekologus.pl/",
+        extracted_fact: "Fakt dozwolony",
+        scope: "service",
+        freshness_date: "2026-07-20",
+        confidence: 0.9,
+        review_status: "approved",
+        generation_status: "eligible",
+        evidence_ids: ["ev_allowed"],
+        source_connectors: ["wordpress"],
+        target_card_id: "card_allowed",
+        target_card_title: "Usługa",
+        blocked_claims: [],
+        usage_notes: []
+      },
+      {
+        source_id: "fact_review",
+        source_type: "reviewed_internal",
+        privacy_class: "redacted_only",
+        source_url_or_path: "internal://review",
+        extracted_fact: "Fakt do review",
+        scope: "service",
+        freshness_date: "2026-07-20",
+        confidence: 0.7,
+        review_status: "review_required",
+        generation_status: "blocked_review_required",
+        evidence_ids: [],
+        source_connectors: [],
+        target_card_id: "card_review",
+        target_card_title: "Usługa",
+        blocked_claims: [],
+        usage_notes: []
+      },
+      {
+        source_id: "fact_blocked",
+        source_type: "reviewed_internal",
+        privacy_class: "redacted_only",
+        source_url_or_path: "internal://blocked",
+        extracted_fact: "Fakt z blokadą",
+        scope: "service",
+        freshness_date: "2026-07-20",
+        confidence: 0.6,
+        review_status: "review_required",
+        generation_status: "blocked_review_required",
+        evidence_ids: [],
+        source_connectors: [],
+        target_card_id: "card_blocked",
+        target_card_title: "Usługa",
+        blocked_claims: ["ROAS"],
+        usage_notes: []
+      }
+    ]);
     vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue([
       {
         source_id: "ekologus_material_kb014",
@@ -146,6 +201,7 @@ describe("KnowledgeSurface", () => {
     expect(await screen.findByText("KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md")).toBeInTheDocument();
     expect((await screen.findAllByText("Doprowadź 1 materiałów Ekologusa do redakcji i review")).length).toBeGreaterThan(0);
     expect(screen.getByText(/1 twierdzeń wymaga blokady/)).toBeInTheDocument();
+    expect(screen.getByText("Łącznie 3")).toBeInTheDocument();
     expect(screen.queryByText("binding_ads_review")).not.toBeInTheDocument();
     expect(screen.queryByText("ROAS")).not.toBeInTheDocument();
     expect(screen.getByText("1 materiałów w manifeście Ekologusa")).toBeInTheDocument();
