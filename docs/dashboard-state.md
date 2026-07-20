@@ -515,3 +515,15 @@ wyświetleń, CTR 0,00% i 7 sekcji, bez dopisywania trendu. Focused proof:
 Second-opinion checker `2026-07-20-source-quality-caveat-30CWhb` był ważny i
 nie zgłosił findings; odnotował wyłącznie ograniczenie transportu cytacji oraz
 human-only decyzję o naturalności polskiego wording.
+
+## 2026-07-21 — kolejka używa bieżącego inventory struktury
+
+Karta propozycji na ekranie bez wybranego work itemu nie może pokazywać starej
+liczby sekcji z lekkiej projekcji kolejki, gdy pełny katalog WordPress ma świeży
+rekord tego samego adresu pod innym `work_item_id`. `ContentCandidateQueuePanel`
+wiąże teraz rekord po identyfikatorze albo znormalizowanej ścieżce URL i preferuje
+`ContentInventoryCatalogItem.section_count`; fallbackiem pozostaje kolejka.
+
+Live proof na `/content-workflow` zmienił BDO z błędnego `1 sekcji` na aktualne
+`12 sekcji`, zgodne z panelem pełnego inventory. Nie zmienia to decyzji ani nie
+tworzy nowego URL. Obraz: `.local-lab/proof/dashboard-content-workflow/2026-07-21/queue-inventory-section-count.png`.

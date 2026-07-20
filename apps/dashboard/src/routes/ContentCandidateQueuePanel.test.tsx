@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { ContentWorkItemQueueCandidate } from "../lib/api";
+import type {
+  ContentInventoryCatalogResponse,
+  ContentWorkItemQueueCandidate
+} from "../lib/api";
 import {
   candidateEvidenceSummary,
   contentQueueVisibleCandidates,
@@ -72,6 +75,39 @@ describe("candidateEvidenceSummary", () => {
     expect(candidateEvidenceSummary(withMetrics)).toContain("brak porównywalnego okresu");
     expect(candidateEvidenceSummary(withMetrics)).toContain("12 sekcji");
     expect(candidateEvidenceSummary(candidate)).toBe("Brak exact metryk lub materiału do wyboru.");
+  });
+
+  it("prefers the current full-inventory section count over a stale queue projection", () => {
+    const withStaleQueueProjection = {
+      ...candidate,
+      work_item_id: "work-item-bdo",
+      search_metrics: { impressions: 181, clicks: 0, ctr: 0, query_count: 13 },
+      page_inventory: { section_count: 1, content_inventory_status: "available" }
+    } as unknown as ContentWorkItemQueueCandidate;
+    expect(
+      candidateEvidenceSummary(withStaleQueueProjection, {
+        items: [
+          {
+            work_item_id: "work-item-bdo",
+            url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+            section_count: 12,
+            material_status: "content_and_structure"
+          }
+        ]
+      } as unknown as ContentInventoryCatalogResponse)
+    ).toContain("12 sekcji");
+    expect(
+      candidateEvidenceSummary(withStaleQueueProjection, {
+        items: [
+          {
+            work_item_id: "work-item-other",
+            url: "https://www.ekologus.pl/inna-strona/",
+            section_count: 12,
+            material_status: "content_and_structure"
+          }
+        ]
+      } as unknown as ContentInventoryCatalogResponse)
+    ).toContain("1 sekcji");
   });
 });
 

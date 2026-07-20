@@ -1,16 +1,21 @@
 import { useMemo, useState } from "react";
 
-import type { ContentWorkItemQueueResponse } from "../lib/api";
-import type { ContentWorkItemQueueCandidate } from "../lib/api";
+import type {
+  ContentInventoryCatalogResponse,
+  ContentWorkItemQueueCandidate,
+  ContentWorkItemQueueResponse
+} from "../lib/api";
 
 const DEFAULT_VISIBLE_CANDIDATES = 12;
 
 export function ContentCandidateQueuePanel({
   queue,
+  inventory,
   selectedWorkItemId,
   onSelectWorkItem
 }: {
   queue: ContentWorkItemQueueResponse;
+  inventory?: ContentInventoryCatalogResponse | null;
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
@@ -65,7 +70,7 @@ export function ContentCandidateQueuePanel({
               {candidate.recommended_mode_label} · {candidate.status_label}
             </div>
             <div className="mt-2 rounded border border-line bg-white/70 px-2 py-1.5 text-xs text-slate-700" data-testid={`content-candidate-evidence-${candidate.work_item_id}`}>
-              {candidateEvidenceSummary(candidate)}
+              {candidateEvidenceSummary(candidate, inventory)}
             </div>
             <p className="mt-2 leading-6 text-slate-600">{candidate.reason}</p>
             <div className="mt-2 text-xs text-slate-500">
@@ -116,7 +121,10 @@ export function matchesContentQueueCandidate(
     .some((value) => value!.toLocaleLowerCase("pl-PL").includes(normalizedSearch));
 }
 
-export function candidateEvidenceSummary(candidate: ContentWorkItemQueueCandidate): string {
+export function candidateEvidenceSummary(
+  candidate: ContentWorkItemQueueCandidate,
+  inventory?: ContentInventoryCatalogResponse | null
+): string {
   const metrics = candidate.search_metrics;
   const metricParts: string[] = [];
   if (metrics?.impressions !== null && metrics?.impressions !== undefined) {
@@ -152,13 +160,30 @@ export function candidateEvidenceSummary(candidate: ContentWorkItemQueueCandidat
       metricParts.push("GA4: brak exact danych");
     }
   }
-  const inventory = candidate.page_inventory;
-  if (inventory?.section_count !== null && inventory?.section_count !== undefined) {
-    metricParts.push(`${inventory.section_count} sekcji`);
-  } else if (inventory?.content_inventory_status === "available") {
+  const queueInventory = candidate.page_inventory;
+  const candidatePath = normalizedInventoryPath(candidate.final_canonical_url ?? candidate.source_public_url);
+  const catalogItem = inventory?.items.find(
+    (item) =>
+      item.work_item_id === candidate.work_item_id ||
+      normalizedInventoryPath(item.url) === candidatePath
+  );
+  const sectionCount = catalogItem?.section_count ?? queueInventory?.section_count;
+  if (sectionCount !== null && sectionCount !== undefined) {
+    metricParts.push(`${sectionCount} sekcji`);
+  } else if (catalogItem?.material_status === "content_and_structure" || queueInventory?.content_inventory_status === "available") {
     metricParts.push("treść odczytana");
   }
   return metricParts.length ? metricParts.join(" · ") : "Brak exact metryk lub materiału do wyboru.";
+}
+
+function normalizedInventoryPath(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const path = new URL(url).pathname.toLocaleLowerCase("pl-PL");
+    return path.length > 1 ? path.replace(/\/+$/, "") : "/";
+  } catch {
+    return url.trim().toLocaleLowerCase("pl-PL").replace(/\/+$/, "") || "/";
+  }
 }
 
 function FactTile({ label, value }: { label: string; value: string }) {

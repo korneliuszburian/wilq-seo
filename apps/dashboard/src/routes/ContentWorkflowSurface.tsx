@@ -309,6 +309,7 @@ function ContentWorkflowQueueReady({
         </div>
         <ContentCandidateQueuePanel
           queue={queue}
+          inventory={inventory.data ?? null}
           selectedWorkItemId=""
           onSelectWorkItem={onSelectWorkItem}
         />
