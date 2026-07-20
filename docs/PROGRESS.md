@@ -20,6 +20,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   knowledge tests, shared-schema tests, dashboard test/typecheck, Ruff,
   mypy i diff-check przechodzą.
 
+- 2026-07-20: ten sam konkretny readiness gate jest widoczny bezpośrednio w
+  panelu generowania planu treści. Marketer widzi do trzech tytułów oczekujących
+  materiałów i licznik reszty, bez opuszczania workflow; brak list w starszym
+  payloadzie pozostaje bezpiecznie obsłużony. Focused panel 7/7 i dashboard
+  typecheck przechodzą.
+
 ## Aktywny kierunek
 
 - 2026-07-20: matcher usług nie wiąże już strony z pojedynczym krótkim,

@@ -78,6 +78,9 @@ export function ContentPlanningGenerationPanel({
     : null;
   const blocker = state.blockers?.[0] ?? null;
   const inputSummary = state.input_summary ?? null;
+  const pendingMaterialTitles = (materialReadiness.data?.pending_materials ?? []).map(
+    (material) => material.title
+  );
   const usedSourceCount = inputSummary?.source_assessments.filter(
     (source) => source.status === "used"
   ).length ?? 0;
@@ -157,6 +160,9 @@ export function ContentPlanningGenerationPanel({
         >
           Materiały firmy: {materialReadiness.data.imported_count}/
           {materialReadiness.data.total_count} dostępnych. {materialReadiness.data.blocker} {materialReadiness.data.next_step}
+          {pendingMaterialTitles.length > 0 ? (
+            <> Czekają: {pendingMaterialTitles.slice(0, 3).join(" · ")}{pendingMaterialTitles.length > 3 ? ` · +${pendingMaterialTitles.length - 3}` : ""}.</>
+          ) : null}
         </p>
       ) : null}
 

@@ -193,6 +193,17 @@ describe("ContentPlanningGenerationPanel", () => {
       import_pending_count: 8,
       excerpt_review_required_count: 0,
       ready_for_generation: false,
+      pending_materials: [{
+        source_id: "ekologus_material_kb001",
+        file_name: "KB_001_EKO_OPIEKA.cleaned.md",
+        title: "Eko-Opieka",
+        kind: "knowledge_card",
+        word_count: 166,
+        digest_prefix: "4493485707a7d57b",
+        privacy_class: "redacted_only",
+        import_status: "import_pending",
+        source_path: "materials_clean/approved/KB_001_EKO_OPIEKA.cleaned.md"
+      }],
       blocker: "Zaimportowano 7 z 15 zatwierdzonych materiałów.",
       next_step: "Kontrolowany import po owner review."
     });
@@ -209,6 +220,7 @@ describe("ContentPlanningGenerationPanel", () => {
     ).toHaveTextContent("7/15");
     expect(screen.getByText(/Zaimportowano 7 z 15 zatwierdzonych materiałów/)).toBeInTheDocument();
     expect(screen.getByText(/Kontrolowany import po owner review/)).toBeInTheDocument();
+    expect(screen.getByText(/Czekają: Eko-Opieka/)).toBeInTheDocument();
   });
 
   it("does not generate from a recommendation before the marketer confirms the service", async () => {
