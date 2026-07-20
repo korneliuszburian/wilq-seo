@@ -12,6 +12,39 @@ const GA4_METRIC_PRIORITY = [
   "ecommerce_purchases"
 ] as const;
 
+type BrowserMetricFact = NonNullable<
+  ContentWorkflowSnapshot["preflight"]["item"]["metric_facts"]
+>[number];
+
+export function summarizeGa4MetricFacts(facts: BrowserMetricFact[]): string[] {
+  const byName = new Map<string, BrowserMetricFact[]>();
+  for (const fact of facts) {
+    if (fact.source_connector !== "google_analytics_4") continue;
+    const group = byName.get(fact.name) ?? [];
+    group.push(fact);
+    byName.set(fact.name, group);
+  }
+  const unknownNames = [...byName.keys()]
+    .filter((name) => !GA4_METRIC_PRIORITY.includes(name as (typeof GA4_METRIC_PRIORITY)[number]))
+    .sort((left, right) => left.localeCompare(right, "pl"));
+  const orderedNames = [...GA4_METRIC_PRIORITY, ...unknownNames];
+  return orderedNames
+    .map((metricName) => {
+      const group = byName.get(metricName);
+      if (!group?.length) return null;
+      const channels = group
+        .map((fact) => ({
+          channel: fact.dimensions.source_medium ?? "źródło nieopisane",
+          value: formatContentMetricValue(fact.name, fact.value)
+        }))
+        .sort((left, right) => left.channel.localeCompare(right.channel, "pl"));
+      const uniqueChannels = [...new Set(channels.map(({ channel, value }) => `${channel}: ${value}`))];
+      return `${group[0].metric_label || metricName} (${uniqueChannels.join(", ")})`;
+    })
+    .filter((summary): summary is string => summary !== null)
+    .slice(0, 4);
+}
+
 export function ContentWorkflowJourneyContext({
   data
 }: {
@@ -28,24 +61,7 @@ export function ContentWorkflowJourneyContext({
   const metrics = candidate.search_metrics;
   const pageInventory = candidate.page_inventory;
   const pageMetricFacts = item.metric_facts ?? [];
-  const ga4FactsByName = new Map<string, typeof pageMetricFacts>();
-  for (const fact of pageMetricFacts) {
-    if (fact.source_connector !== "google_analytics_4") continue;
-    const facts = ga4FactsByName.get(fact.name) ?? [];
-    facts.push(fact);
-    ga4FactsByName.set(fact.name, facts);
-  }
-  const ga4MetricSummaries = GA4_METRIC_PRIORITY.map((metricName) => {
-    const facts = ga4FactsByName.get(metricName);
-    if (!facts?.length) return null;
-    const channels = facts.map((fact) => {
-      const channel = fact.dimensions.source_medium ?? "źródło nieopisane";
-      return `${channel}: ${formatContentMetricValue(fact.name, fact.value)}`;
-    });
-    return `${facts[0].metric_label || metricName} (${channels.join(", ")})`;
-  })
-    .filter((summary): summary is string => summary !== null)
-    .slice(0, 4);
+  const ga4MetricSummaries = summarizeGa4MetricFacts(pageMetricFacts);
   const metricSummary =
     metrics?.impressions === undefined || metrics.impressions === null
       ? "Brakuje danych z wyszukiwarki dla tej strony."

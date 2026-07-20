@@ -52,6 +52,7 @@ import {
 import type { ContentWorkItem } from "@wilq/shared-schemas";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
 import { ContentCodexSectionProposalResult } from "./ContentCodexSectionProposalResult";
+import { summarizeGa4MetricFacts } from "./ContentWorkflowJourneyContext";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
@@ -168,6 +169,16 @@ describe("ContentWorkflowSurface", () => {
     vi.clearAllMocks();
   });
 
+  it("keeps GA4 metric grouping stable when source rows arrive in another order", () => {
+    const facts = workItem().metric_facts ?? [];
+    const reordered = [...facts].reverse();
+    expect(summarizeGa4MetricFacts(facts)).toEqual(summarizeGa4MetricFacts(reordered));
+    expect(summarizeGa4MetricFacts(facts)).toEqual([
+      "aktywni użytkownicy (google / cpc: 12, google / organic: 26)",
+      "wskaźnik zaangażowania (google / organic: 42%)"
+    ]);
+  });
+
   it("shows one API-owned marketer step and keeps technical audit out of the journey", async () => {
     const client = createWilqQueryClient({
       defaultOptions: { queries: { retry: false } }
@@ -202,7 +213,7 @@ describe("ContentWorkflowSurface", () => {
     ).toBeInTheDocument();
     expect(within(marketerJourney).getAllByText("odśwież istniejącą treść").length).toBeGreaterThan(0);
     expect(within(marketerJourney).getByTestId("content-ga4-metrics")).toHaveTextContent(
-      "GA4 dla tej strony: aktywni użytkownicy (google / organic: 26, google / cpc: 12)"
+      "GA4 dla tej strony: aktywni użytkownicy (google / cpc: 12, google / organic: 26)"
     );
     expect(within(marketerJourney).getByTestId("content-ga4-metrics")).toHaveTextContent(
       "wskaźnik zaangażowania (google / organic: 42%)"
