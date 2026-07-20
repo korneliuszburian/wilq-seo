@@ -3269,3 +3269,15 @@ jest to ACF write ani dowód kompletności struktury WordPress.
 - Transport planu odrzuca presentation headings z rokiem zapisanym w nawiasach kwadratowych, żeby odziedziczony nagłówek `[2017 r.]` nie łamał później walidatora zakazu inline links.
 - Exact two-service harness plan → approved scope/map → v2 full draft → semantic advisory review przechodzi dla BDO i outsourcingu. External-call safety regression zachowuje audyt runtime, ale GET pozostaje `not_generated`, bez częściowego review.
 - Focused proof: dynamic two-case planning 1/1, semantic exact two-case 1/1, semantic runtime/external safety 2/2, inventory catalog 22/22, Ruff/mypy/diff-check PASS. Semantic storage activation, owner review materiałów i realny Wilku UAT nadal pozostają otwarte.
+
+### 2026-07-20 — kompaktowy envelope pełnego draftu po analizie modelowego transportu
+
+Pełny draft nadal dostaje kompletny, digest-bound `ContentPlanningInput` po stronie
+serwera, ale do modelu przekazywana jest ograniczona projekcja bookkeepingu źródeł i
+porównań metryk. Fakty, inventory, claims, evidence IDs i digest pozostają w
+payloadzie; nie zmieniamy klienta Codex, nie dodajemy SDK ani drugiej ścieżki modelowej.
+
+Focused proof: envelope compactness + zachowanie digestu/inventory 1/1, Ruff, mypy i
+diff-check PASS. Wcześniejszy exact two-service plan → v2 draft → semantic harness
+pozostaje PASS; pełny test pliku semantic review został przerwany po zawieszeniu przez
+stare procesy pytest, więc nie jest przedstawiany jako świeży PASS.

@@ -60,7 +60,11 @@ def initial_full_draft_turn_request(
     )
     untrusted_context = json.dumps(
         {
-            "planning_input": planning_input.model_dump(mode="json"),
+            # The complete planning input remains server-owned for digest,
+            # lineage and stale checks. The model only needs a bounded
+            # projection; generation_contract.model_input carries the
+            # content facts, claims and section instructions it must write.
+            "planning_input": compact_initial_draft_planning_input(planning_input),
             "approved_planning_proposal": proposal.model_dump(mode="json"),
             "generation_constraints": generation_contract.model_input.model_dump(mode="json"),
             "document_scope": {
@@ -85,6 +89,72 @@ def initial_full_draft_turn_request(
         untrusted_context=untrusted_context,
         output_schema=initial_full_draft_output_schema(proposal),
     )
+
+
+def compact_initial_draft_planning_input(
+    planning_input: ContentPlanningInput,
+) -> dict[str, object]:
+    """Keep draft transport useful without replaying connector bookkeeping.
+
+    This is a model-envelope projection only. The caller still validates and
+    persists against the complete typed planning input and its digest.
+    """
+
+    payload = planning_input.model_dump(mode="json", exclude_none=True)
+    assessments = payload.get("source_assessments")
+    if isinstance(assessments, list):
+        compact_assessments: list[object] = []
+        assessment_keys = {
+            "source",
+            "status",
+            "reason",
+            "landing_match_tiers",
+            "evidence_ids",
+            "knowledge_card_ids",
+            "refresh_run_id",
+            "settlement_state",
+            "quality_state",
+            "interpretation_caveats",
+        }
+        for assessment in assessments:
+            if isinstance(assessment, dict):
+                compact_assessments.append(
+                    {
+                        key: value
+                        for key, value in assessment.items()
+                        if key in assessment_keys
+                    }
+                )
+            else:
+                compact_assessments.append(assessment)
+        payload["source_assessments"] = compact_assessments
+
+    comparisons = payload.get("metric_comparisons")
+    if isinstance(comparisons, list):
+        compact_comparisons: list[object] = []
+        comparison_keys = {
+            "source_connector",
+            "status",
+            "baseline_period",
+            "comparison_period",
+            "metric_names",
+            "evidence_ids",
+            "reason",
+        }
+        for comparison in comparisons:
+            if isinstance(comparison, dict):
+                compact_comparisons.append(
+                    {
+                        key: value
+                        for key, value in comparison.items()
+                        if key in comparison_keys
+                    }
+                )
+            else:
+                compact_comparisons.append(comparison)
+        payload["metric_comparisons"] = compact_comparisons
+
+    return payload
 
 
 def initial_full_draft_output_schema(

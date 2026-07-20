@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 
 import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_semantic_review as semantic_review_router
+from apps.api.wilq_api.routers import content_snapshot as content_snapshot_router
 from tests.content.dynamic_planning_test_support import PlanningClient
 from tests.content.test_dynamic_planning_proposals_api import (
     BDO_WORK_ITEM_ID,
@@ -16,6 +18,10 @@ from tests.content.test_dynamic_planning_proposals_api import (
     _snapshot,
 )
 from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.content.drafts.initial_full_draft_turn import (
+    compact_initial_draft_planning_input,
+)
+from wilq.content.planning.dynamic_input import build_content_planning_input
 from wilq.content.quality import semantic_review_store as semantic_review_store_module
 from wilq.storage.local_state import local_state_store
 
@@ -36,6 +42,26 @@ def test_semantic_runtime_uses_a_separate_bounded_timeout(
 
     assert isinstance(client, StdioCodexAppServerClient)
     assert client.timeout_seconds == 211.0
+
+
+def test_full_draft_model_envelope_is_compact_but_digest_bound(
+    planning_harness: tuple[TestClient, PlanningClient],
+) -> None:
+    client, runtime = planning_harness
+    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
+    del client, runtime, proposal
+    snapshot = content_snapshot_router.snapshot_for_work_item_or_404(BDO_WORK_ITEM_ID)
+    service_card_id = snapshot.service_profile_context.service_card_id
+    assert service_card_id is not None
+    result = build_content_planning_input(snapshot, service_card_id=service_card_id)
+    assert result.planning_input is not None
+    full = result.planning_input.model_dump(mode="json")
+    compact = compact_initial_draft_planning_input(result.planning_input)
+    assert compact["planning_input_digest"] == full["planning_input_digest"]
+    assert compact["inventory"] == full["inventory"]
+    assert len(json.dumps(compact, ensure_ascii=False)) < len(
+        json.dumps(full, ensure_ascii=False)
+    )
 
 
 def test_semantic_review_is_exact_persisted_advisory_for_both_services(
