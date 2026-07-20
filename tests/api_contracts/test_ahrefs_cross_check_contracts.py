@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
 from tests._contract_support.api_client import client
 from tests._contract_support.env import clear_ahrefs_env
+from wilq.briefing.ahrefs_diagnostics import _latest_relevant_ahrefs_refresh
 from wilq.connectors.vendor import VendorMetricFact
 from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRun, ConnectorRefreshStatus
 from wilq.storage.local_state import local_state_store
@@ -230,3 +232,34 @@ def test_gap_contract_blocks_mixed_record_coverage_before_actions(
     assert any("zakres próby" in label for label in contract["missing_read_contract_labels"])
     assert contract["action_ids"] == []
     assert "kompletność zakresu porównania" in contract["blocked_claims"]
+
+
+def test_latest_ahrefs_refresh_uses_newest_live_run_even_when_storage_order_is_old_first() -> None:
+    old = _run(
+        run_id="refresh_ahrefs_old",
+        connector_id="ahrefs",
+        evidence_id="ev_refresh_ahrefs_old",
+        summary="old",
+    ).model_copy(
+        update={
+            "started_at": datetime(2026, 7, 20, 8, 0, tzinfo=UTC),
+            "completed_at": datetime(2026, 7, 20, 8, 1, tzinfo=UTC),
+            "metrics_persisted": True,
+            "vendor_data_collected": True,
+        }
+    )
+    newest = _run(
+        run_id="refresh_ahrefs_newest",
+        connector_id="ahrefs",
+        evidence_id="ev_refresh_ahrefs_newest",
+        summary="newest",
+    ).model_copy(
+        update={
+            "started_at": datetime(2026, 7, 20, 9, 0, tzinfo=UTC),
+            "completed_at": datetime(2026, 7, 20, 9, 1, tzinfo=UTC),
+            "metrics_persisted": True,
+            "vendor_data_collected": True,
+        }
+    )
+
+    assert _latest_relevant_ahrefs_refresh([old, newest]) == newest

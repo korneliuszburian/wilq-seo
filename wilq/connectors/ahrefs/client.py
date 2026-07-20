@@ -317,7 +317,15 @@ def _fetch_organic_competitors(
     facts = [
         fact
         for row in rows
-        if (fact := _organic_competitor_fact(row, country=country, mode=mode)) is not None
+        if (
+            fact := _organic_competitor_fact(
+                row,
+                country=country,
+                mode=mode,
+                target_competitor_sample_size=len(rows),
+                target_competitor_limit=limit,
+            )
+        ) is not None
     ]
     return (
         {
@@ -389,6 +397,8 @@ def _fetch_top_pages_by_competitors(
                     competitor_domain=competitor_domain,
                     country=country,
                     mode=mode,
+                    target_page_sample_size=len(rows),
+                    target_page_limit=page_limit,
                 )
             )
             is not None
@@ -865,6 +875,8 @@ def _organic_competitor_fact(
     *,
     country: str,
     mode: str,
+    target_competitor_sample_size: int,
+    target_competitor_limit: int,
 ) -> VendorMetricFact | None:
     competitor_domain = _competitor_domain(row)
     if competitor_domain is None:
@@ -887,6 +899,8 @@ def _organic_competitor_fact(
             "source_url": _first_text(row, "competitor_url", "url", "page_url"),
             "country": country,
             "target_mode": mode,
+            "target_competitor_sample_size": str(target_competitor_sample_size),
+            "target_competitor_limit": str(target_competitor_limit),
             "keywords_common": _first_text(row, "keywords_common"),
             "keywords_competitor": _first_text(row, "keywords_competitor"),
             "keywords_target": _first_text(row, "keywords_target"),
@@ -947,6 +961,8 @@ def _top_page_gap_fact(
     competitor_domain: str,
     country: str,
     mode: str,
+    target_page_sample_size: int,
+    target_page_limit: int,
 ) -> VendorMetricFact | None:
     source_url = _first_text(row, "raw_url", "url", "page_url")
     if source_url is None:
@@ -959,6 +975,8 @@ def _top_page_gap_fact(
             "keyword": _first_text(row, "top_keyword", "keyword"),
             "country": country,
             "target_mode": mode,
+            "target_page_sample_size": str(target_page_sample_size),
+            "target_page_limit": str(target_page_limit),
             "sum_traffic": _first_text(row, "sum_traffic"),
             "keywords": _first_text(row, "keywords"),
             "referring_domains": _first_text(row, "referring_domains"),

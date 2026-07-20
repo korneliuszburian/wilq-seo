@@ -4,6 +4,7 @@ import re
 import unicodedata
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Literal, cast
 
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
@@ -250,6 +251,7 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
             limit=AHREFS_METRIC_FACT_LIMIT,
         ),
         refresh_runs,
+        latest_refresh=latest_refresh,
     )
     authority_facts = _latest_facts_by_name(metric_facts, AHREFS_AUTHORITY_FACT_NAMES)
     competitor_read_facts = _latest_facts_by_name(
@@ -508,10 +510,14 @@ def _ahrefs_review_next_safe_click(gap_read_contract: AhrefsGapReadContract) -> 
 def _facts_for_known_refresh_runs(
     metric_facts: list[MetricFact],
     refresh_runs: list[ConnectorRefreshRun],
+    *,
+    latest_refresh: ConnectorRefreshRun | None = None,
 ) -> list[MetricFact]:
+    selected_runs = [latest_refresh] if latest_refresh is not None else refresh_runs
     known_evidence_ids = {
         evidence_id
-        for run in refresh_runs
+        for run in selected_runs
+        if run is not None
         for evidence_id in run.evidence_ids
         if evidence_id.startswith("ev_refresh_")
     }
@@ -809,13 +815,17 @@ def _ahrefs_cross_check_next_step(status: str) -> str:
 def _latest_relevant_ahrefs_refresh(
     refresh_runs: list[ConnectorRefreshRun],
 ) -> ConnectorRefreshRun | None:
-    for run in refresh_runs:
-        if (
-            run.mode.value == "vendor_read"
-            and connector_refresh_has_live_data(run)
-        ):
-            return run
-    return refresh_runs[0] if refresh_runs else None
+    def recency_key(run: ConnectorRefreshRun) -> datetime:
+        return run.completed_at or run.started_at
+
+    live_vendor_reads = [
+        run
+        for run in refresh_runs
+        if run.mode.value == "vendor_read" and connector_refresh_has_live_data(run)
+    ]
+    if live_vendor_reads:
+        return max(live_vendor_reads, key=recency_key)
+    return max(refresh_runs, key=recency_key) if refresh_runs else None
 
 
 def _latest_facts_by_name(
@@ -991,6 +1001,66 @@ def _gap_coverage_summary(facts: list[MetricFact]) -> str:
     )
     if sample and limit:
         return f"próbka domeny docelowej: {sample}; limit porównania: {limit}"
+    page_sample = next(
+        (
+            fact.dimensions.get("target_page_sample_size")
+            for fact in facts
+            if fact.dimensions.get("target_page_sample_size")
+        ),
+        None,
+    )
+    page_limit = next(
+        (
+            fact.dimensions.get("target_page_limit")
+            for fact in facts
+            if fact.dimensions.get("target_page_limit")
+        ),
+        None,
+    )
+    if page_sample and page_limit:
+        return f"próbka stron konkurencji: {page_sample}; limit porównania: {page_limit}"
+    refdomain_sample = next(
+        (
+            fact.dimensions.get("target_refdomain_sample_size")
+            for fact in facts
+            if fact.dimensions.get("target_refdomain_sample_size")
+        ),
+        None,
+    )
+    refdomain_limit = next(
+        (
+            fact.dimensions.get("target_refdomain_limit")
+            for fact in facts
+            if fact.dimensions.get("target_refdomain_limit")
+        ),
+        None,
+    )
+    if refdomain_sample and refdomain_limit:
+        return (
+            f"próbka domen odsyłających: {refdomain_sample}; "
+            f"limit porównania: {refdomain_limit}"
+        )
+    competitor_sample = next(
+        (
+            fact.dimensions.get("target_competitor_sample_size")
+            for fact in facts
+            if fact.dimensions.get("target_competitor_sample_size")
+        ),
+        None,
+    )
+    competitor_limit = next(
+        (
+            fact.dimensions.get("target_competitor_limit")
+            for fact in facts
+            if fact.dimensions.get("target_competitor_limit")
+        ),
+        None,
+    )
+    if competitor_sample and competitor_limit:
+        return (
+            f"próbka konkurentów: {competitor_sample}; "
+            f"limit porównania: {competitor_limit}"
+        )
     return "zakres próby nie został podany w rekordzie"
 
 
@@ -1888,6 +1958,12 @@ def _gap_coverage_is_expected(gap_facts: list[MetricFact]) -> bool:
         fact.dimensions.get("target_domain")
         or fact.dimensions.get("target_keyword_sample_size")
         or fact.dimensions.get("target_keyword_limit")
+        or fact.dimensions.get("target_page_sample_size")
+        or fact.dimensions.get("target_page_limit")
+        or fact.dimensions.get("target_refdomain_sample_size")
+        or fact.dimensions.get("target_refdomain_limit")
+        or fact.dimensions.get("target_competitor_sample_size")
+        or fact.dimensions.get("target_competitor_limit")
         for fact in gap_facts
     )
 
