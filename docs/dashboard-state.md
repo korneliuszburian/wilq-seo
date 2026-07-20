@@ -145,6 +145,13 @@ The selected-workflow decision disclosure also shows the API-provided source
 connector labels and freshness state for displayed metrics. It does not derive
 new metrics, infer trends, or claim that a source is applicable when planning
 marks it missing or not applicable.
+
+The stale-source action in `/content-workflow` is deliberately page-scoped:
+`Sprawdź stronę ponownie` calls the existing bounded inventory-material read for
+the selected public URL and invalidates only the content workflow. It does not
+launch the global WordPress REST/sitemap refresh, which remains available from
+the system source controls. This keeps a marketer's selected-page recovery
+bounded even when the full connector inventory takes minutes.
 Fixed point `b5c28415` has 202 dashboard tests and typecheck passing. The
 independent checker emitted no findings but had source-transport evidence gaps,
 so it is not recorded as PASS.
