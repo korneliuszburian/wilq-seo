@@ -18,6 +18,8 @@ prompt dla niezależnego reviewera.
 | `bdo-desktop-first-slice-live.png` | 1440×900 | BDO, po odchudzeniu kolejki i dodaniu kart metryk |
 | `bdo-mobile-first-slice-live.png` | 390×844 | BDO, po odchudzeniu kolejki i dodaniu kart metryk |
 | `bdo-desktop-no-duplicate-banner.png` | 1440×900 | BDO, aktualny ekran po usunięciu powtórzonego bannera freshness |
+| `bdo-production-desktop-first-viewport.png` | 1440×900 | Production-ready hero/usługa/next step/evidence, desktop |
+| `bdo-production-mobile-first-viewport-v2.png` | 390×844 | Production-ready header, hero/usługa/next step, mobile |
 
 Zrzuty są wykonane z lokalnego dashboardu po zakończeniu ładowania i zostały
 sprawdzone wizualnie po zapisie. Pliki `*-first-slice-live.png` pokazują aktualny

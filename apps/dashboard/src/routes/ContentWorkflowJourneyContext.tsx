@@ -93,7 +93,7 @@ export function ContentWorkflowJourneyContext({
   return (
     <section
       aria-label="Kontekst zadania treściowego"
-      className="mb-3 rounded-md border border-line bg-white p-3 shadow-sm sm:mb-4 sm:p-4"
+      className="wilq-enter wilq-enter-delay-2 mb-3 rounded-md border border-line bg-white p-3 shadow-sm sm:mb-4 sm:p-4"
     >
       <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Treści i SEO · decyzja dla strony</p>
       <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -102,7 +102,6 @@ export function ContentWorkflowJourneyContext({
       </div>
       <dl className="mt-3 grid gap-x-4 gap-y-2 text-xs sm:grid-cols-3">
         <JourneyFact label="Strona" value={publicUrl ? normalizedPath(publicUrl) : "adres wymaga sprawdzenia"} />
-        <JourneyFact label="Usługa" value={data.serviceProfileContext.service_label ?? "nieprzypisana"} />
         <JourneyFact label="Decyzja" value={candidate.recommended_mode_label} />
       </dl>
       <div className="mt-4 grid gap-3 sm:grid-cols-3" aria-label="Najważniejsze dane dla strony">
@@ -166,7 +165,7 @@ function JourneySignalCard({
 }) {
   const toneClass = tone === "fact" ? "border-emerald-200 bg-emerald-50/50" : tone === "signal" ? "border-amber-200 bg-amber-50/50" : "border-rose-200 bg-rose-50/50";
   return (
-    <article className={`rounded-md border p-3 ${toneClass}`}>
+    <article className={`wilq-hover-lift rounded-md border p-3 ${toneClass}`}>
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-2 text-lg font-semibold text-ink">{value}</p>
       <p className="mt-1 text-xs leading-5 text-slate-600">{detail}</p>
@@ -177,7 +176,7 @@ function JourneySignalCard({
 function EvidenceGroup({ title, detail, tone }: { title: string; detail: string; tone: "fact" | "signal" | "blocker" }) {
   const dotClass = tone === "fact" ? "bg-emerald-500" : tone === "signal" ? "bg-amber-500" : "bg-rose-500";
   return (
-    <div className="flex gap-2 rounded-md border border-line bg-surface p-3">
+    <div className="wilq-hover-lift flex gap-2 rounded-md border border-line bg-surface p-3">
       <span aria-hidden="true" className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${dotClass}`} />
       <div>
         <p className="font-semibold text-ink">{title}</p>

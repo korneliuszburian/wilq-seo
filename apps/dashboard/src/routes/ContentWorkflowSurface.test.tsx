@@ -205,6 +205,8 @@ describe("ContentWorkflowSurface", () => {
       { timeout: 3_000 }
     );
     const marketerJourney = screen.getByTestId("content-workflow-marketer-journey");
+    expect(screen.getByRole("heading", { name: "Treści i SEO" })).toBeInTheDocument();
+    expect(within(marketerJourney).getByTestId("content-next-step-hero")).toBeInTheDocument();
     expect(within(taskMap).getAllByRole("button")).toHaveLength(5);
     expect(within(taskMap).getAllByRole("button").filter(
       (button) => button.getAttribute("aria-current") === "step"

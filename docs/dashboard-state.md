@@ -273,6 +273,16 @@ Sygnały i Blokady. Proof desktop/mobile znajduje się w
 Banner freshness jest renderowany tylko raz przez route shell; plan, tekst,
 review i dev preview nie powielają już tego samego komunikatu.
 
+## Production-ready visual slice 2026-07-20
+
+Surface ma teraz responsive header dla `/content-workflow` (desktop sidebar,
+mobile menu z hamburgerem), subtelny entrance/hover motion z obsługą
+`prefers-reduced-motion`, kompaktowy hero strony/usługi i jeden dominujący
+next-step hero. Tryb technical pozostaje dostępny jako progressive disclosure;
+marketer nie ogląda źródeł ani freshness banneru przed decyzją. Live proof:
+`docs/review-packets/2026-07-20-ux-audit-input/second-opinion/` pliki
+`bdo-production-*`.
+
 The first content screen should not be a gallery of cards. It should be a
 working map for one selected content item or one prioritized queue.
 
