@@ -26,6 +26,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   payloadzie pozostaje bezpiecznie obsłużony. Focused panel 7/7 i dashboard
   typecheck przechodzą.
 
+- 2026-07-20: techniczny GSC+GA4+WordPress landing-alignment pilot został
+  domknięty w Bead `wilq-seo-v9ab.18.12`. Exact/ambiguous/missing identity,
+  evidence IDs, okna źródeł, GA4 key-event/data-quality i bezpieczny next step
+  są zapisane w read-only packet; dwa odczyty zachowują wspólny selected digest.
+  Nie zamyka to Wilku UAT ani nie tworzy claims o konwersji, ROAS, trendzie lub
+  przyczynowości.
+
 ## Aktywny kierunek
 
 - 2026-07-20: matcher usług nie wiąże już strony z pojedynczym krótkim,
