@@ -638,8 +638,9 @@ def _planning_input_blocker(
 ) -> ContentInitialDraftBlocker:
     """Keep the first actionable planning gate visible at the draft seam."""
     first = blockers[0] if blockers else None
+    blocker_code = first.code if first is not None else "stale_planning_input"
     return _blocker(
-        "stale_planning_input",
+        blocker_code,
         first.label if first is not None else "Wejście tekstu nie jest aktualne",
         first.reason
         if first is not None

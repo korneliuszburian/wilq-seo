@@ -108,7 +108,7 @@ def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None
         ),
     ])
 
-    assert blocker.code == "stale_planning_input"
+    assert blocker.code == "missing_approved_service_fact"
     assert blocker.label == "Brakuje zatwierdzonego faktu usługi"
     assert blocker.reason == "Karta wskazuje nieznany source fact."
     assert blocker.next_step == "Uzupełnij approved source fact."
@@ -116,3 +116,19 @@ def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None
         "missing_approved_service_fact",
         "stale_planning_sources",
     ]
+
+
+def test_initial_draft_preserves_source_material_review_blocker() -> None:
+    blocker = _planning_input_blocker(
+        [
+            ContentPlanningInputBlocker(
+                code="wordpress_material_review_required",
+                label="Materiał strony wymaga potwierdzenia",
+                reason="Rendered the_content needs source review.",
+                next_step="Potwierdź materiał REST/ACF.",
+            )
+        ]
+    )
+
+    assert blocker.code == "wordpress_material_review_required"
+    assert blocker.next_step == "Potwierdź materiał REST/ACF."
