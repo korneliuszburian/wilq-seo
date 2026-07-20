@@ -394,3 +394,7 @@ a lineage i digest pozostają w rozwijanym panelu technicznym.
 Na kroku `Review` operator dostaje tę samą krótką orientację: przeczytaj pełny
 podgląd, uruchom advisory review jako listę uwag, a następnie zapisz własną
 decyzję dla exact revision. Review semantyczne nie jest automatyczną akceptacją.
+
+Selektor `Aktywna strona` obsługuje również strony spoza kolejki okazji. Wybór
+pozycji z `Pełny inventory WordPress` przechodzi przez ten sam endpoint kolejki
+i ten sam snapshot workflow; nie jest lokalnym wyjątkiem ani atrapą danych.

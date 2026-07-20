@@ -648,6 +648,50 @@ describe("ContentWorkflowSurface", () => {
     );
   });
 
+  it("opens a selected full-inventory page through the same workflow seam", async () => {
+    const inventoryCandidate: ContentWorkItemQueueResponse["candidates"][number] = {
+      ...contentQueueResponse().candidates[0],
+      work_item_id: "content_work_item_inventory_full_catalog",
+      decision_id: "decision_inventory_full_catalog",
+      title: "Raportowanie odpadowe",
+      topic: "Raportowanie odpadowe",
+      status_label: "gotowe do planu",
+      source_public_url: "https://www.ekologus.pl/raportowanie-odpadowe/",
+      final_canonical_url: "https://www.ekologus.pl/raportowanie-odpadowe/",
+      intended_final_url: "https://www.ekologus.pl/raportowanie-odpadowe/",
+      preview_url: "https://ekologus.dev.proudsite.pl/raportowanie-odpadowe/",
+      page_inventory: {
+        ...contentQueueResponse().candidates[0].page_inventory!,
+        title_or_h1: "Raportowanie odpadowe",
+        section_count: 0,
+        section_headings: [],
+        acf_section_inventory_status: "missing",
+        acf_section_headings: []
+      }
+    };
+    vi.mocked(getContentWorkItemQueue).mockImplementation(async (workItemId) =>
+      workItemId === inventoryCandidate.work_item_id
+        ? { ...contentQueueResponse(), candidates: [inventoryCandidate], candidate_count: 1 }
+        : contentQueueResponse()
+    );
+
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const picker = await screen.findByRole("combobox", { name: "Aktywna strona" });
+    fireEvent.change(picker, { target: { value: inventoryCandidate.work_item_id } });
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Raportowanie odpadowe" })).toBeInTheDocument();
+      expect(picker).toHaveValue(inventoryCandidate.work_item_id);
+    });
+    expect(getContentWorkItemQueue).toHaveBeenCalledWith(inventoryCandidate.work_item_id);
+  });
+
   it("uses current page headings before a plan exists", async () => {
     const snapshot = workflowSnapshot();
     snapshot.planning_workspace!.proposal.sections = [];
