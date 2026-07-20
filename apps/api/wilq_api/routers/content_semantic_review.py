@@ -235,7 +235,8 @@ def _terminal_run_response(
         "runtime_blocked" if blocked else "runtime_failed"
     )
     status: Literal["blocked", "failed"] = "blocked" if blocked else "failed"
-    source_code = None if run.error is None else run.error.split(":", 1)[-1]
+    error = getattr(run, "error", None)
+    source_code = None if error is None else error.split(":", 1)[-1]
     return ContentSemanticReviewResponse(
         status=status,
         work_item_id=work_item_id,
