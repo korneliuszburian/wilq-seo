@@ -18,6 +18,14 @@ def test_skill_context_cache_default_is_session_warm_and_env_overridable(
     assert context_cache._skill_context_cache_seconds() == 0.0
 
 
+def test_full_context_cache_uses_shorter_metric_freshness_ttl(monkeypatch) -> None:
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.delenv("WILQ_FULL_CONTEXT_CACHE_SECONDS", raising=False)
+    assert context_cache._full_context_cache_seconds() == 30.0
+    monkeypatch.setenv("WILQ_FULL_CONTEXT_CACHE_SECONDS", "4.5")
+    assert context_cache._full_context_cache_seconds() == 4.5
+
+
 def test_full_context_cache_is_bounded_and_invalidated(monkeypatch) -> None:
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
     monkeypatch.delenv("WILQ_SKILL_CONTEXT_CACHE_SECONDS", raising=False)

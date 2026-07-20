@@ -11,6 +11,7 @@ from apps.api.wilq_api.context_models import ContextPackRequest
 # freshness and write/refresh invalidation remain authoritative; this cache only
 # avoids rebuilding the same redacted context on every adjacent request.
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 300.0
+DEFAULT_FULL_CONTEXT_CACHE_SECONDS = 30.0
 _cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
 _cached_full_context_packs: dict[str, SkillContextCacheEntry] = {}
 
@@ -33,7 +34,7 @@ def clear_skill_context_cache() -> None:
 
 
 def read_full_context_cache(request: ContextPackRequest) -> dict[str, Any] | None:
-    cache_seconds = _skill_context_cache_seconds()
+    cache_seconds = _full_context_cache_seconds()
     if cache_seconds <= 0:
         return None
     cached = _cached_full_context_packs.get(_full_context_cache_key(request))
@@ -43,7 +44,7 @@ def read_full_context_cache(request: ContextPackRequest) -> dict[str, Any] | Non
 
 
 def write_full_context_cache(request: ContextPackRequest, payload: dict[str, Any]) -> None:
-    if _skill_context_cache_seconds() <= 0:
+    if _full_context_cache_seconds() <= 0:
         return
     _cached_full_context_packs[_full_context_cache_key(request)] = SkillContextCacheEntry(
         created_at=monotonic(),
@@ -103,3 +104,15 @@ def _skill_context_cache_seconds() -> float:
         return max(0.0, float(configured))
     except ValueError:
         return DEFAULT_SKILL_CONTEXT_CACHE_SECONDS
+
+
+def _full_context_cache_seconds() -> float:
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return 0.0
+    configured = os.getenv("WILQ_FULL_CONTEXT_CACHE_SECONDS")
+    if configured is None:
+        return DEFAULT_FULL_CONTEXT_CACHE_SECONDS
+    try:
+        return max(0.0, float(configured))
+    except ValueError:
+        return DEFAULT_FULL_CONTEXT_CACHE_SECONDS

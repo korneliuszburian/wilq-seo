@@ -3299,8 +3299,8 @@ wyświetla — to brak pokrycia danych, nie syntetyczny wynik.
 
 Pełna ścieżka `/api/codex/context-pack` omijała dotychczas istniejący cache
 skill-scoped i za każdym odczytem przebudowywała wszystkie diagnostyki, evidence
-i playbooki. Dodałem osobny cache keyed by skill/focus/max-opportunities, z tym
-samym limitem 300 s i wspólną invalidacją przy refresh/write. Testy pytest
+i playbooki. Dodałem osobny cache keyed by skill/focus/max-opportunities, z TTL
+30 s dla świeżości metryk i wspólną invalidacją przy refresh/write. Testy pytest
 wyłączają cache, a freshness nadal pochodzi z API-owych rekordów źródeł.
 
 Focused falsifier bounded cache + invalidation 1/1, Ruff/mypy/diff-check PASS.
