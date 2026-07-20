@@ -93,6 +93,12 @@ export function ContentKnowledgeReadinessNotice({
         {readiness.next_step ||
           "Skontaktuj się z administratorem, aby ustalić kolejny krok dla korpusu źródłowego."}
       </p>
+      <a
+        className="mt-3 inline-flex min-h-9 items-center rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-950 hover:border-action hover:text-action"
+        href="/knowledge#knowledge-review-queue"
+      >
+        Otwórz kolejkę review wiedzy
+      </a>
       {importedMaterials.length ? (
         <details className="mt-3 rounded-lg border border-emerald-200/80 bg-emerald-50/50 px-3 py-2">
           <summary className="cursor-pointer font-semibold">Materiały już zaimportowane ({importedMaterials.length})</summary>
