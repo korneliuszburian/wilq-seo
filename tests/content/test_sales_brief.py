@@ -686,6 +686,36 @@ def test_sales_brief_does_not_block_broad_homepage_for_product_word_in_title() -
     assert "missing_product_evidence" not in [blocker.code for blocker in result.blockers]
 
 
+def test_sales_brief_keeps_homepage_product_cta_blocked_without_evidence() -> None:
+    result = _brief_result(
+        item=_item(
+            topic="Ekologus | ochrona środowiska | sorbenty",
+            source_public_url="https://www.ekologus.pl/",
+            final_canonical_url="https://www.ekologus.pl/",
+        ),
+        seed=_seed(
+            cta_direction="Kup sorbent do oleju w sklepie Ekologus.",
+            source_facts=[
+                ContentSalesBriefSourceFact(
+                    evidence_id="ev_gsc_bdo",
+                    source_connector="google_search_console",
+                    summary="GSC pokazuje zapytania produktowe o sorbent.",
+                )
+            ],
+        ),
+        enrichment=_enrichment(
+            title="Strona główna Ekologus",
+            topic="ochrona środowiska bielsko",
+            cta_hypothesis="Kup sorbent do oleju w sklepie Ekologus.",
+            source_facts=[],
+            source_connectors=["google_search_console"],
+            evidence_ids=["ev_gsc_bdo"],
+        ),
+    )
+
+    assert "missing_product_evidence" in [blocker.code for blocker in result.blockers]
+
+
 def test_product_guard_does_not_misclassify_legal_productowa_language() -> None:
     assert not _looks_like_product_cta_or_topic(
         "Informacja o gospodarce opakowaniami i opłacie produktowej"
