@@ -1703,7 +1703,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getAllByText(/BDO dla firm - szkic dev/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Szkic opisuje obowiązki BDO/).length).toBeGreaterThan(0);
     expect(screen.getByText("glowny_opis")).toBeInTheDocument();
-    expect(screen.getByText("Plan sekcji i ACF")).toBeInTheDocument();
+    expect(screen.getByText("Plan treści i mapowanie")).toBeInTheDocument();
     expect(screen.getAllByText(/Co to jest BDO/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Kogo dotyczy BDO/).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Przygotuj mapowanie sekcji ACF" }))

@@ -17,6 +17,7 @@ import type {
   WordPressAuthoringProfileQuery,
   WordPressDraftActivationPacketQuery
 } from "./contentWorkflowQueries";
+import { planningInventorySourceLabel } from "./ContentPlanningReviewPanel";
 
 type ContentSectionWritingActions = {
   acfPreviewPending: boolean;
@@ -85,6 +86,10 @@ export function ContentSectionWritingWorkbench({
   const firstAcfFields = firstAcfSection?.field_previews ?? [];
   const sourceHref =
     item.source_public_url ?? item.final_canonical_url ?? item.intended_final_url ?? undefined;
+  const inventorySourceLabel = planningInventorySourceLabel(
+    item.wordpress_acf_section_inventory_status,
+    item.wordpress_content_inventory_status
+  );
   const canPrepareAcf = Boolean(profile && draft && handoff && !actions.acfPreviewResult);
   const sectionOverrides = editableSections
     .map((section) => ({
@@ -100,9 +105,9 @@ export function ContentSectionWritingWorkbench({
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line bg-surface px-4 py-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-action">Roboczy plan treści</p>
-          <h2 className="mt-1 text-base font-semibold text-ink">Plan sekcji i ACF</h2>
+          <h2 className="mt-1 text-base font-semibold text-ink">Plan treści i mapowanie</h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">
-            Zestawienie tego, co jest na publicznej stronie, co ma wejść do szkicu i jak można to przełożyć na dev WordPress/ACF. To jest miejsce pracy nad treścią, nie raport techniczny.
+            Zestawienie tego, co jest na publicznej stronie, co ma wejść do szkicu i jak można to przełożyć na dev WordPress. Źródło tej strony: {inventorySourceLabel}.
           </p>
         </div>
         <span className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink">
