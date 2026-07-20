@@ -105,6 +105,11 @@ The mobile fixed point's checker is valid at
 its LOW items are coverage suggestions only. No product defect or UAT claim is
 made from the 390px proof.
 
+Section navigation in the text/review stages is explicitly labelled
+“Przejdź do sekcji z planu” or “Przejdź do sekcji strony”. It is a navigation
+control, not a manual mapping input; the generated section map remains owned by
+the API.
+
 Bring one content working surface to a genuinely useful state before spreading
 work across the whole dashboard.
 

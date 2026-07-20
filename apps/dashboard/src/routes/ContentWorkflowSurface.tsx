@@ -842,7 +842,7 @@ function ContentSessionPicker({
       </details>
       {selectedSectionHeading && !["scope", "section_map"].includes(activeStepId) ? (
         <label className="mt-3 block text-sm font-semibold text-ink" htmlFor="content-session-section">
-          {hasGeneratedPlan ? "Sekcja z planu" : "Sekcja z aktualnej strony"}
+          {hasGeneratedPlan ? "Przejdź do sekcji z planu" : "Przejdź do sekcji strony"}
           <select
             id="content-session-section"
             className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"

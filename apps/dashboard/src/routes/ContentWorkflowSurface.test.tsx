@@ -599,7 +599,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const sectionPicker = await screen.findByRole("combobox", { name: "Sekcja z aktualnej strony" });
+    const sectionPicker = await screen.findByRole("combobox", { name: "Przejdź do sekcji strony" });
     expect(sectionPicker).toHaveValue("Kogo dotyczy BDO");
 
     fireEvent.change(sectionPicker, { target: { value: "Jak przygotować dokumenty" } });
@@ -610,7 +610,7 @@ describe("ContentWorkflowSurface", () => {
       )
     );
     expect(Reflect.get(appRouter.state.location.search, "planning_digest")).toBeUndefined();
-    expect(screen.getByRole("combobox", { name: "Sekcja z aktualnej strony" })).toHaveValue(
+    expect(screen.getByRole("combobox", { name: "Przejdź do sekcji strony" })).toHaveValue(
       "Jak przygotować dokumenty"
     );
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
@@ -628,8 +628,8 @@ describe("ContentWorkflowSurface", () => {
 
     const picker = await screen.findByTestId("content-session-picker");
     expect(within(picker).getByText("Zmień stronę lub otwórz pełny inventory")).toBeInTheDocument();
-    expect(within(picker).queryByRole("combobox", { name: "Sekcja z aktualnej strony" })).not.toBeInTheDocument();
-    expect(within(picker).queryByRole("combobox", { name: "Sekcja z planu" })).not.toBeInTheDocument();
+    expect(within(picker).queryByRole("combobox", { name: "Przejdź do sekcji strony" })).not.toBeInTheDocument();
+    expect(within(picker).queryByRole("combobox", { name: "Przejdź do sekcji z planu" })).not.toBeInTheDocument();
   });
 
   it("exposes a full-inventory page outside the opportunity queue", async () => {
@@ -707,7 +707,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const sectionPicker = await screen.findByRole("combobox", { name: "Sekcja z aktualnej strony" });
+    const sectionPicker = await screen.findByRole("combobox", { name: "Przejdź do sekcji strony" });
     expect(within(sectionPicker).getAllByRole("option")).toHaveLength(2);
     expect(sectionPicker).toHaveValue("Kogo dotyczy BDO");
     expect(within(sectionPicker).getByRole("option", { name: "Jak przygotować dokumenty" })).toBeInTheDocument();
