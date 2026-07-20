@@ -518,23 +518,6 @@ def build_source_facts(
                 )
                 for index, fact in enumerate(approved_profile_facts, start=1)
             )
-        else:
-            # Compatibility path for synthetic or historical card IDs that are
-            # not present in the approved source-fact registry yet.
-            facts.append(
-                ContentPlanningSourceFact(
-                    fact_id="planning_service_fact_01",
-                    summary=(
-                        "Zatwierdzony fakt profilu usługi: "
-                        f"{service_profile.service_label or 'usługa'}"
-                    ),
-                    source_connector=(service_profile.source_connectors or ["service_profile"])[0],
-                    evidence_ids=service_profile.evidence_ids or ["service_profile_source_fact"],
-                    knowledge_card_ids=service_profile.knowledge_card_ids,
-                    source_fact_ids=[],
-                    source_material_ids=list(service_profile.source_material_ids),
-                )
-            )
     return facts
 
 

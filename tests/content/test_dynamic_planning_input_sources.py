@@ -643,6 +643,10 @@ def test_planning_blocks_an_unresolved_service_fact_id(
         "service_fact_not_in_approved_registry" not in fact.source_fact_ids
         for fact in result.planning_input.source_facts
     )
+    assert all(
+        fact.fact_id != "planning_service_fact_01"
+        for fact in result.planning_input.source_facts
+    )
 
 
 def test_planning_blocks_rewrite_when_only_headings_are_available(

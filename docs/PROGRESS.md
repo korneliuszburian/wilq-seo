@@ -8,17 +8,17 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 ## Aktywny kierunek
 
 - 2026-07-20: nieznany `service_fact_id` nie przechodzi już przez fallback jako
-  lineage. Planner zwraca typed `missing_approved_service_fact`, a generyczny
-  fallback nie niesie żadnego source-fact ID. Dzięki temu karta bez exact
-  approved rejestru zatrzymuje model zamiast udawać realną wiedzę. Falsifier
-  planowania 3/3 i Ruff przechodzą.
+  lineage. Planner zwraca typed `missing_approved_service_fact` i nie buduje
+  żadnego generycznego pseudo-faktu. Dzięki temu karta bez exact approved
+  rejestru zatrzymuje model zamiast udawać realną wiedzę. Falsifier planowania
+  3/3 i Ruff przechodzą.
 
 - 2026-07-20: dynamiczny planner przestał streszczać zatwierdzony profil usługi
   generycznym komunikatem. Gdy karta wskazuje zatwierdzony `source_fact_id`,
   input bierze rzeczywisty approved `extracted_fact`, connector, evidence i
-  lineage z rejestru WILQ; fallback pozostaje tylko dla starszych/syntetycznych
-  identyfikatorów. BDO/outsourcing używają tego samego mechanizmu, bez wyjątku
-  URL. Focused source-fact planning proof 2/2 i Ruff przechodzą.
+  lineage z rejestru WILQ. Brak exact matchu jest blockerem, nie fallbackiem.
+  BDO/outsourcing używają tego samego mechanizmu, bez wyjątku URL. Focused
+  source-fact planning proof 3/3 i Ruff przechodzą.
 
 - 2026-07-20: Sales Brief nie przypina już do enrichmentu lineage
   `source_fact_ids` z faktów innych niż `approved`. To chroni dynamiczny input
