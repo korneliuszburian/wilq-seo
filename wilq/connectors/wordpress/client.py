@@ -429,6 +429,15 @@ def read_wordpress_content_material(
                         "slug": slug,
                         "context": rest_context,
                         "_fields": WORDPRESS_READ_FIELDS,
+                        # The front page has no slug. Fetch the bounded first
+                        # page of objects so a configured WordPress front-page
+                        # record can be resolved by its exact canonical link
+                        # instead of silently falling back to rendered HTML.
+                        **(
+                            {"per_page": WORDPRESS_CONTENT_PER_PAGE}
+                            if requested_path == "/"
+                            else {}
+                        ),
                     },
                 )
                 response.raise_for_status()
@@ -438,7 +447,8 @@ def read_wordpress_content_material(
                 if not isinstance(item, dict):
                     continue
                 link = str(item.get("link") or "")
-                if urlparse(link).path.rstrip("/") != requested_path:
+                link_path = urlparse(link).path.rstrip("/") or "/"
+                if link_path != requested_path:
                     continue
                 return _material_from_rest_item(item, requested_url=url)
 

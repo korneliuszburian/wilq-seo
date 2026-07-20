@@ -436,6 +436,54 @@ def test_dynamic_material_reads_public_rest_when_authoring_host_is_dev(monkeypat
     assert material.section_headings == ["Zakres usługi"]
 
 
+def test_dynamic_material_resolves_front_page_from_bounded_rest_collection(monkeypatch):
+    monkeypatch.setattr(
+        "wilq.connectors.wordpress.client._wordpress_credentials",
+        lambda _connector: WordPressCredentials(
+            base_url="https://ekologus.dev.proudsite.pl/",
+            public_url="https://www.ekologus.pl/",
+            username="reader",
+            application_auth="password",
+            site_kind="primary",
+        ),
+    )
+    page_url = "https://www.ekologus.pl/"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "www.ekologus.pl"
+        assert request.url.params["per_page"] == "100"
+        assert request.url.params["context"] == "view"
+        assert "authorization" not in request.headers
+        return httpx.Response(
+            200,
+            request=request,
+            json=[
+                {
+                    "link": "https://www.ekologus.pl/not-home/",
+                    "title": {"rendered": "Inna strona"},
+                    "content": {"rendered": "<p>Inna.</p>"},
+                    "acf": {},
+                },
+                {
+                    "link": page_url,
+                    "title": {"rendered": "Strona główna"},
+                    "content": {"rendered": "<h2>Zakres oferty</h2><p>Treść.</p>"},
+                    "acf": {"hero": "Ekologus"},
+                },
+            ],
+        )
+
+    material = read_wordpress_content_material(
+        page_url,
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert material.source_kind == "wordpress_rest"
+    assert material.material_confidence == "source_bound"
+    assert material.section_headings == ["Zakres oferty"]
+    assert material.acf_field_names == ["hero"]
+
+
 def test_dynamic_material_extracts_the_content_headings_from_rest(monkeypatch):
     monkeypatch.setattr(
         "wilq.connectors.wordpress.client._wordpress_credentials",
@@ -800,4 +848,54 @@ def test_inventory_decision_metadata_only_skips_live_material(monkeypatch):
 
     assert decision is not None
     assert decision.wordpress_content_summary == "Zatwierdzone podsumowanie materiału."
+    assert decision.wordpress_content_text is None
+
+
+def test_inventory_decision_keeps_rest_bound_acf_only_material_visible(monkeypatch):
+    url = "https://www.ekologus.pl/"
+    item = ContentInventoryCatalogItem(
+        catalog_id="catalog_home",
+        work_item_id=inventory_work_item_id(url),
+        url=url,
+        path="/",
+        title="Ekologus",
+        content_type="page",
+        content_summary="Oferta i usługi Ekologus.",
+        material_status="content_summary",
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_home",
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",
+        lambda: ContentInventoryCatalogResponse(total_count=1, items=[item]),
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.inventory_binding.inventory_metric_facts",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.inventory_binding.read_content_inventory_material",
+        lambda _url, *, catalog: SimpleNamespace(
+            status="ready",
+            content_text="",
+            content_summary="",
+            content_word_count=0,
+            section_headings=[],
+            acf_section_headings=[],
+            acf_field_names=["slajder", "nasze_uslugi"],
+            source_kind="wordpress_rest",
+            extraction_region="wordpress_rest.content",
+            material_confidence="source_bound",
+            source_field_lineage=["wordpress_rest.content", "wordpress_rest.acf"],
+        ),
+    )
+
+    decision = inventory_decision_for_work_item(inventory_work_item_id(url))
+
+    assert decision is not None
+    assert decision.wordpress_content_source_kind == "wordpress_rest"
+    assert decision.wordpress_content_material_confidence == "source_bound"
+    assert decision.wordpress_acf_section_inventory_status == "available"
+    assert decision.wordpress_acf_section_headings == []
     assert decision.wordpress_content_text is None

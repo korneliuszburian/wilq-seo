@@ -45,13 +45,25 @@ def inventory_decision_for_work_item(
         if read_material
         else None
     )
+    # A REST-bound page can legitimately keep its body in exposed ACF fields
+    # while ``the_content`` is empty (for example a flexible homepage).  The
+    # live source is still resolved and must be surfaced to the workflow; an
+    # empty body remains an honest downstream drafting constraint rather than
+    # silently downgrading the page to stale inventory metadata.
     material_ready = (
         material is not None
         and material.status == "ready"
-        and bool(material.content_text)
+        and (
+            bool(material.content_text)
+            or bool(material.acf_field_names)
+            or bool(material.acf_section_headings)
+            or material.source_kind == "wordpress_rest"
+        )
     )
     content_text = (
-        material.content_text if material_ready and material is not None else None
+        material.content_text
+        if material_ready and material is not None and material.content_text
+        else None
     )
     content_summary = (
         material.content_summary
