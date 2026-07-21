@@ -206,112 +206,99 @@ export function ContentPlanningReviewPanel({
           </p>
         ) : (
           <>
-          {inventorySourceLabel ? (
-            <p
-              className="mt-3 rounded-md border border-line bg-surface p-3 text-sm leading-6 text-slate-700"
-              data-testid="planning-inventory-source"
-            >
-              Źródło spisu istniejącej strony: <span className="font-semibold">{inventorySourceLabel}</span>.
-              {inventorySourceKind ? (
-                <>
-                  <br />
-                  Odczyt materiału: <span className="font-semibold">{inventoryMaterialSourceLabel(inventorySourceKind)}</span>
-                  {inventoryExtractionRegion ? ` · ${inventoryExtractionRegion}` : ""}.
-                </>
-              ) : null}
-            </p>
-          ) : null}
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ automatycznie zbudował mapę z tego, co faktycznie odczytał ze strony:
-            pól ACF, jeśli są dostępne, albo treści głównej <code>the_content</code>.
-            Do tego dopasował usługę, zapytania i dowody. To podgląd mechanizmu, nie
-            osobna decyzja właściciela — ręcznie sprawdzasz tylko elementy oznaczone jako
-            niejednoznaczne w ramach review zakresu.
-          </p>
-        {!inventoryMapping.length ? (
-          <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700" data-testid="planning-legacy-mapping-notice">
-            Ten plan powstał przed pełną mapą istniejącej strony. Wygeneruj świeżą wersję, aby WILQ pokazał decyzję dla każdej sekcji ACF lub treści głównej.
+          <div className="mt-4 grid gap-3 rounded-md border border-action/20 bg-action/5 p-3 sm:grid-cols-3" data-testid="planning-section-map-summary">
+            <PlanningFact label="Sekcje dokumentu" value={`${proposal.sections.length}`} />
+            <PlanningFact
+              label="Inventory obsłużone automatycznie"
+              value={inventoryMapping.length
+                ? `${inventoryMapping.filter((item) => item.status === "mapped" || item.status === "excluded").length}/${inventoryMapping.length}`
+                : "brak mapy"}
+            />
+            <PlanningFact
+              label="Wymaga uwagi"
+              value={`${inventoryMapping.filter((item) => item.status !== "mapped" && item.status !== "excluded").length}`}
+            />
           </div>
-        ) : null}
-        {inventoryMapping.length ? (
-          <div className="mt-4 rounded-md border border-line bg-surface p-3" data-testid="planning-inventory-mapping">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="text-sm font-semibold text-ink">Pokrycie istniejącej strony</h3>
-              <span className="text-xs text-slate-500">
-                {inventoryMapping.filter((item) => item.status === "mapped" || item.status === "excluded").length}/
-                {inventoryMapping.length} sekcji obsłużonych automatycznie
-              </span>
-            </div>
-            <ul className="mt-2 grid gap-2 md:grid-cols-2">
-              {inventoryMapping.map((item) => (
-                <li key={item.inventory_section_id} className="rounded border border-line bg-white px-3 py-2 text-xs">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-medium text-ink">{item.inventory_heading}</span>
-                    <span className={item.status === "mapped" ? "font-semibold text-action" : "font-semibold text-wait"}>
-                {item.status === "mapped" ? "przypisana" : item.status === "ambiguous" ? "niejednoznaczna" : item.status === "excluded" ? "pominięta do review" : "do sprawdzenia"}
-                    </span>
+          <p className="mt-3 text-sm leading-6 text-slate-700" data-testid="planning-section-map-auto-status">
+            Mapa została wyliczona automatycznie z aktualnego inventory, usługi, zapytań i dowodów.
+            Nie wymaga osobnego zatwierdzania — przejdź do tekstu, a szczegóły otwórz tylko wtedy, gdy chcesz sprawdzić źródła lub niejednoznaczność.
+          </p>
+          <details className="mt-3 rounded-md border border-line bg-white p-3" data-testid="planning-section-map-details">
+            <summary className="cursor-pointer font-semibold text-action">Pokaż mapę sekcji, inventory i źródła</summary>
+            {inventorySourceLabel ? (
+              <p
+                className="mt-3 rounded-md border border-line bg-surface p-3 text-sm leading-6 text-slate-700"
+                data-testid="planning-inventory-source"
+              >
+                Źródło spisu istniejącej strony: <span className="font-semibold">{inventorySourceLabel}</span>.
+                {inventorySourceKind ? (
+                  <>
+                    <br />
+                    Odczyt materiału: <span className="font-semibold">{inventoryMaterialSourceLabel(inventorySourceKind)}</span>
+                    {inventoryExtractionRegion ? ` · ${inventoryExtractionRegion}` : ""}.
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+              WILQ automatycznie zbudował mapę z tego, co faktycznie odczytał ze strony: pól ACF, jeśli są dostępne, albo treści głównej <code>the_content</code>. Do tego dopasował usługę, zapytania i dowody.
+            </p>
+            {!inventoryMapping.length ? (
+              <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700" data-testid="planning-legacy-mapping-notice">
+                Ten plan powstał przed pełną mapą istniejącej strony. Wygeneruj świeżą wersję, aby WILQ pokazał decyzję dla każdej sekcji ACF lub treści głównej.
+              </div>
+            ) : null}
+            {inventoryMapping.length ? (
+              <div className="mt-4 rounded-md border border-line bg-surface p-3" data-testid="planning-inventory-mapping">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-ink">Pokrycie istniejącej strony</h3>
+                  <span className="text-xs text-slate-500">
+                    {inventoryMapping.filter((item) => item.status === "mapped" || item.status === "excluded").length}/{inventoryMapping.length} sekcji obsłużonych automatycznie
+                  </span>
+                </div>
+                <ul className="mt-2 grid gap-2 md:grid-cols-2">
+                  {inventoryMapping.map((item) => (
+                    <li key={item.inventory_section_id} className="rounded border border-line bg-white px-3 py-2 text-xs">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-medium text-ink">{item.inventory_heading}</span>
+                        <span className={item.status === "mapped" ? "font-semibold text-action" : "font-semibold text-wait"}>
+                          {item.status === "mapped" ? "przypisana" : item.status === "ambiguous" ? "niejednoznaczna" : item.status === "excluded" ? "pominięta do review" : "do sprawdzenia"}
+                        </span>
+                      </div>
+                      {item.mapped_section_heading ? <div className="mt-1 text-slate-500">→ {item.mapped_section_heading} · {item.disposition ?? "bez decyzji"}</div> : null}
+                      {item.reason ? <div className="mt-1 text-slate-500">{item.reason === "dated_or_event_inventory" ? "Element datowany lub wydarzenie — nie jest strukturą odpowiedzi." : item.reason === "navigation_or_promotional_inventory" ? "Element nawigacyjny/promocyjny — wymaga osobnego review." : item.reason}</div> : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <p className="mt-4 rounded-md border border-action/20 bg-action/5 px-3 py-2 text-sm text-slate-700" data-testid="planning-document-scope-summary">
+              {documentScopeSummary}
+            </p>
+            <ol className="mt-4 space-y-3">
+              {proposal.sections.map((section, index) => (
+                <li key={`${index}-${section.heading}`} className="rounded-md border border-line bg-surface p-3">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-action text-xs font-bold text-white">{index + 1}</span>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-ink">{section.heading}</h3>
+                      <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                        <span className="rounded-full border border-action/30 bg-action/5 px-2 py-1 font-semibold text-action">{inventoryDispositionLabel(section.inventory_disposition)}</span>
+                        {section.inventory_heading && section.inventory_heading !== section.heading ? <span className="rounded-full border border-line bg-white px-2 py-1 text-slate-600">obecna sekcja: {section.inventory_heading}</span> : null}
+                      </div>
+                      <p className="mt-1 text-sm leading-6 text-slate-700">{section.purpose}</p>
+                      <p className="mt-1 text-xs text-slate-500">{section.evidence_ids.length} {section.evidence_ids.length === 1 ? "dowód" : "dowodów"}</p>
+                      <SectionDemandTerms queryTerms={section.query_terms} rows={proposal.search_demand.gsc_query_rows} />
+                    </div>
                   </div>
-                  {item.mapped_section_heading ? <div className="mt-1 text-slate-500">→ {item.mapped_section_heading} · {item.disposition ?? "bez decyzji"}</div> : null}
-                  {item.reason ? <div className="mt-1 text-slate-500">{item.reason === "dated_or_event_inventory" ? "Element datowany lub wydarzenie — nie jest strukturą odpowiedzi." : item.reason === "navigation_or_promotional_inventory" ? "Element nawigacyjny/promocyjny — wymaga osobnego review." : item.reason}</div> : null}
                 </li>
               ))}
-            </ul>
-          </div>
-        ) : null}
-        <p
-          className="mt-4 rounded-md border border-action/20 bg-action/5 px-3 py-2 text-sm text-slate-700"
-          data-testid="planning-document-scope-summary"
-        >
-          {documentScopeSummary}
-        </p>
-        <ol className="mt-4 space-y-3">
-          {proposal.sections.map((section, index) => (
-            <li key={`${index}-${section.heading}`} className="rounded-md border border-line bg-surface p-3">
-              <div className="flex items-start gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-action text-xs font-bold text-white">
-                  {index + 1}
-                </span>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-ink">{section.heading}</h3>
-                  <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-                    <span className="rounded-full border border-action/30 bg-action/5 px-2 py-1 font-semibold text-action">
-                      {inventoryDispositionLabel(section.inventory_disposition)}
-                    </span>
-                    {section.inventory_heading && section.inventory_heading !== section.heading ? (
-                      <span className="rounded-full border border-line bg-white px-2 py-1 text-slate-600">
-                        obecna sekcja: {section.inventory_heading}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 text-sm leading-6 text-slate-700">{section.purpose}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {section.evidence_ids.length} {section.evidence_ids.length === 1 ? "dowód" : "dowodów"}
-                  </p>
-                  <SectionDemandTerms
-                    queryTerms={section.query_terms}
-                    rows={proposal.search_demand.gsc_query_rows}
-                  />
-                </div>
-              </div>
-          </li>
-        ))}
-        </ol>
+            </ol>
+          </details>
           </>
         )}
         </>
       )}
-
-      {stage === "section_map" && sectionMapReady ? (
-        <p
-          className="mt-4 rounded-md border border-action/20 bg-action/5 p-3 text-sm leading-6 text-slate-700"
-          data-testid="planning-section-map-auto-status"
-        >
-          Ta mapa została wyliczona automatycznie z aktualnego inventory, usługi,
-          zapytań i dowodów, niezależnie od tego, czy strona używa ACF czy
-          <code>the_content</code>. Nie wymaga osobnej decyzji — po review zakresu
-          przejdź do szkicu treści.
-        </p>
-      ) : null}
 
       {stage === "scope" ? <div className="mt-5 grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
         <label className="text-sm font-semibold text-ink">

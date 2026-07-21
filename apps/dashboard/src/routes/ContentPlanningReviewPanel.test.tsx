@@ -1,6 +1,8 @@
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import {
+  ContentPlanningReviewPanel,
   initialServiceCardId,
   inventoryDispositionLabel,
   planningReviewCheckedItems,
@@ -108,6 +110,77 @@ describe("planningSectionMapReady", () => {
         proposal_id: "proposal_1"
       } as never)
     ).toBe(true);
+  });
+});
+
+describe("generated section-map presentation", () => {
+  it("keeps the automatic map compact until details are requested", () => {
+    render(
+      <ContentPlanningReviewPanel
+        actions={{
+          conflict: null,
+          error: null,
+          pending: false,
+          refresh: () => undefined,
+          save: () => undefined
+        }}
+        planning={{
+          scope_decision: null,
+          scope_current: true,
+          section_map_decision: null,
+          section_map_current: true,
+          proposal: {
+            generation_status: "codex_generated",
+            proposal_id: "proposal_1",
+            service_selection_confirmed: true,
+            service_card_id: "service_bdo",
+            sections: [
+              {
+                heading: "Wprowadzenie",
+                purpose: "Wyjaśnia temat.",
+                inventory_disposition: "create",
+                inventory_heading: null,
+                evidence_ids: ["evidence_1"],
+                query_terms: []
+              }
+            ],
+            inventory_mapping: [
+              {
+                inventory_section_id: "inventory_1",
+                inventory_heading: "Stara sekcja",
+                status: "mapped",
+                mapped_section_heading: "Wprowadzenie",
+                disposition: "rewrite",
+                reason: null
+              }
+            ],
+            search_demand: { gsc_query_rows: [] },
+            evidence_ids: ["evidence_1"],
+            source_material_ids: [],
+            knowledge_card_ids: [],
+            source_connectors: ["gsc"]
+          }
+        } as never}
+        serviceCandidates={[
+          {
+            service_card_id: "service_bdo",
+            service_label: "BDO",
+            lifecycle_label: "zatwierdzona i aktualna",
+            lifecycle_status: "approved_current",
+            recommended: true,
+            matched_terms: ["bdo"],
+            match_reasons: ["bdo"]
+          }
+        ]}
+        stage="section_map"
+      />
+    );
+
+    expect(screen.getByTestId("planning-section-map-summary")).toHaveTextContent("Sekcje dokumentu");
+    expect(screen.getByTestId("planning-section-map-auto-status")).toHaveTextContent(
+      "Nie wymaga osobnego zatwierdzania"
+    );
+    expect(screen.getByTestId("planning-section-map-details")).not.toHaveAttribute("open");
   });
 });
 
