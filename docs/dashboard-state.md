@@ -166,6 +166,12 @@ The section-navigation copy fixed point has a valid checker at
 `/home/krn/coding/krn/second-opinion-review/wilq-seo/check/2026-07-20-section-navigation-copy-BWf4x3/`;
 all findings are LOW confirmations or optional coverage follow-ups.
 
+On 2026-07-21 the task-map status labels were made readable at the current
+desktop width: step titles and statuses now wrap instead of being silently
+truncated. Live proof is in
+`.local-lab/proof/dashboard-content-workflow/2026-07-21/task-map-desktop-fixed-full.png`;
+the 390px viewport remains free of horizontal overflow.
+
 Section navigation in the text/review stages is explicitly labelled
 “Przejdź do sekcji z planu” or “Przejdź do sekcji strony”. It is a navigation
 control, not a manual mapping input; the generated section map remains owned by
