@@ -45,7 +45,7 @@ import { WorkflowRunList } from "./WorkflowPanels";
 export function GenericSurface({ routeName }: { routeName: string }) {
   const compactRoute = compactRouteConfig(routeName);
   const routeKind = genericRouteKind(routeName, compactRoute);
-  const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
+  const [showKnowledgeMap] = useState(false);
   const [showKnowledgeCards, setShowKnowledgeCards] = useState(false);
   const [showKnowledgePlaybooks, setShowKnowledgePlaybooks] = useState(false);
   const connectors = useQuery({
@@ -117,7 +117,6 @@ export function GenericSurface({ routeName }: { routeName: string }) {
         knowledgeSourceMaterialReadiness={knowledgeSourceMaterialReadiness}
         playbooks={playbooks}
         showKnowledgeMap={showKnowledgeMap}
-        setShowKnowledgeMap={setShowKnowledgeMap}
         showKnowledgeCards={showKnowledgeCards}
         setShowKnowledgeCards={setShowKnowledgeCards}
         showKnowledgePlaybooks={showKnowledgePlaybooks}
@@ -209,7 +208,6 @@ function GenericSurfaceSections({
   knowledgeSourceMaterialReadiness,
   playbooks,
   showKnowledgeMap,
-  setShowKnowledgeMap,
   showKnowledgeCards,
   setShowKnowledgeCards,
   showKnowledgePlaybooks,
@@ -227,7 +225,6 @@ function GenericSurfaceSections({
   knowledgeSourceMaterialReadiness: UseQueryResult<KnowledgeSourceMaterialReadiness>;
   playbooks: UseQueryResult<MarketingPlaybook[]>;
   showKnowledgeMap: boolean;
-  setShowKnowledgeMap: (value: boolean | ((current: boolean) => boolean)) => void;
   showKnowledgeCards: boolean;
   setShowKnowledgeCards: (value: boolean | ((current: boolean) => boolean)) => void;
   showKnowledgePlaybooks: boolean;
@@ -247,7 +244,6 @@ function GenericSurfaceSections({
           knowledgeSourceMaterialReadiness={knowledgeSourceMaterialReadiness}
           playbooks={playbooks}
           showKnowledgeMap={showKnowledgeMap}
-          setShowKnowledgeMap={setShowKnowledgeMap}
           showKnowledgeCards={showKnowledgeCards}
           setShowKnowledgeCards={setShowKnowledgeCards}
           showKnowledgePlaybooks={showKnowledgePlaybooks}
@@ -579,7 +575,6 @@ function KnowledgeSurfaceSections({
   knowledgeSourceMaterialReadiness,
   playbooks,
   showKnowledgeMap,
-  setShowKnowledgeMap,
   showKnowledgeCards,
   setShowKnowledgeCards,
   showKnowledgePlaybooks,
@@ -592,7 +587,6 @@ function KnowledgeSurfaceSections({
   knowledgeSourceMaterialReadiness: UseQueryResult<KnowledgeSourceMaterialReadiness>;
   playbooks: UseQueryResult<MarketingPlaybook[]>;
   showKnowledgeMap: boolean;
-  setShowKnowledgeMap: (value: boolean | ((current: boolean) => boolean)) => void;
   showKnowledgeCards: boolean;
   setShowKnowledgeCards: (value: boolean | ((current: boolean) => boolean)) => void;
   showKnowledgePlaybooks: boolean;
