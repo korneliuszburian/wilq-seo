@@ -24,7 +24,7 @@ describe("ContentWorkflowTaskMap", () => {
     );
 
     const map = screen.getByTestId("content-workflow-task-map");
-    expect(within(map).getByText("Tekst")).toBeInTheDocument();
+    expect(within(map).getAllByText("Tekst").length).toBeGreaterThan(0);
     expect(within(map).queryByText("Plan")).not.toBeInTheDocument();
     expect(within(map).getByRole("list", { name: "Stany pracy nad treścią" }).children).toHaveLength(4);
   });

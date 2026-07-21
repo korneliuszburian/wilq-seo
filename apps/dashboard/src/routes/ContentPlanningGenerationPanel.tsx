@@ -117,7 +117,7 @@ export function ContentPlanningGenerationPanel({
       data-testid="content-planning-generation"
     >
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        Plan strony · źródła i page assets
+        Kontekst planu
       </p>
       <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -136,29 +136,24 @@ export function ContentPlanningGenerationPanel({
       </div>
 
       {inputSummary ? (
-        <div className="mt-4 rounded-md border border-line bg-surface p-3">
-          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Podstawa planu
-          </p>
-          <div className="mt-2 grid gap-2 text-sm sm:grid-cols-5">
+        <details className="mt-4 rounded-md border border-line bg-surface p-3 text-xs text-slate-600" data-testid="content-planning-input-details">
+          <summary className="cursor-pointer font-semibold text-action">
+            Źródła planu i szczegóły metryk
+          </summary>
+          <div className="mt-3 grid gap-2 text-sm sm:grid-cols-5">
             <PlanningInputFact label="Fakty firmy" value={inputSummary.source_fact_count} />
             <PlanningInputFact label="Materiały firmy" value={inputSummary.source_material_ids.length} />
             <PlanningInputFact label="Karty wiedzy" value={inputSummary.knowledge_card_count} />
             <PlanningInputFact label="Metryki" value={inputSummary.measurement_metrics.length} />
             <PlanningInputFact label="Ślady źródeł" value={inputSummary.evidence_id_count} />
           </div>
-          <details className="mt-3 rounded-md border border-line bg-white px-3 py-2 text-xs text-slate-600">
-            <summary className="cursor-pointer font-semibold text-action">
-              Pokaż źródła i szczegóły metryk
-            </summary>
             <p className="mt-2 leading-5" data-testid="content-planning-source-summary">
               {planningSourceSummary(inputSummary)}
             </p>
             <PlanningSourceOutcomeStrip assessments={inputSummary.source_assessments} />
             <PlanningSourceFactPreview facts={inputSummary.source_fact_previews} total={inputSummary.source_fact_count} />
             <PlanningMetricComparisons comparisons={inputSummary.metric_comparisons} />
-          </details>
-        </div>
+        </details>
       ) : null}
 
       {materialReadiness.data?.status === "import_pending" ? (

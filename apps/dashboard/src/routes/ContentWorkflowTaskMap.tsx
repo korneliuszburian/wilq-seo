@@ -1,4 +1,4 @@
-import type { WorkflowStep, WorkflowStepId } from "./contentWorkflowRuntime";
+import { marketerWorkflowStepTitle, type WorkflowStep, type WorkflowStepId } from "./contentWorkflowRuntime";
 
 type ContentWorkflowTaskMapProps = {
   currentStepId: WorkflowStepId;
@@ -32,8 +32,8 @@ export function ContentWorkflowTaskMap({
           Stan pracy
         </h2>
         <p className="text-xs text-slate-600">
-          <span className="font-semibold text-ink">{currentStep.title}</span>
-          {selectedStep.id !== currentStep.id ? ` · otwarty: ${selectedStep.title}` : ""}
+          <span className="font-semibold text-ink">{marketerWorkflowStepTitle(currentStep.id)}</span>
+          {selectedStep.id !== currentStep.id ? ` · otwarty: ${marketerWorkflowStepTitle(selectedStep.id)}` : ""}
         </p>
       </div>
 
@@ -47,7 +47,7 @@ export function ContentWorkflowTaskMap({
                 type="button"
                 aria-current={isCurrent ? "step" : undefined}
                 aria-pressed={isSelected}
-                aria-label={`${index + 1}. ${step.title}: ${step.statusLabel}`}
+                aria-label={`${index + 1}. ${marketerWorkflowStepTitle(step.id)}: ${step.statusLabel}`}
                 disabled={!step.canOpen}
                 onClick={() => onSelectStep(step.id)}
                 className={`flex min-w-0 w-full flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:flex-row sm:justify-start sm:gap-2 sm:px-2 sm:text-left ${
@@ -62,7 +62,7 @@ export function ContentWorkflowTaskMap({
               >
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current text-[10px] font-bold sm:h-6 sm:w-6 sm:text-[11px]">{index + 1}</span>
                 <span className="min-w-0 max-w-full text-left">
-                  <span className="block break-words text-[11px] leading-tight sm:text-sm">{shortWorkflowStepTitle(step.id)}</span>
+                  <span className="block break-words text-[11px] leading-tight sm:text-sm">{marketerWorkflowStepTitle(step.id)}</span>
                 </span>
               </button>
             </li>
@@ -72,12 +72,4 @@ export function ContentWorkflowTaskMap({
 
     </section>
   );
-}
-
-function shortWorkflowStepTitle(stepId: WorkflowStepId) {
-  if (stepId === "scope") return "Zakres";
-  if (stepId === "section_map") return "Plan";
-  if (stepId === "draft") return "Tekst";
-  if (stepId === "review") return "Review";
-  return "Dev preview";
 }

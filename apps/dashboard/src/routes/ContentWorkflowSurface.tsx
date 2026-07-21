@@ -28,7 +28,7 @@ import {
   type WordPressAuthoringProfile,
   type ContentInventoryMaterialResponse
 } from "../lib/api";
-import type { ContentWorkflowSnapshot, WorkflowStepId } from "./contentWorkflowRuntime";
+import { marketerWorkflowStepTitle, type ContentWorkflowSnapshot, type WorkflowStepId } from "./contentWorkflowRuntime";
 import { ContentCandidateQueuePanel } from "./ContentCandidateQueuePanel";
 import { ContentInventoryCatalogPanel } from "./ContentInventoryCatalogPanel";
 import { WorkflowStepsList } from "./WorkflowStepsList";
@@ -551,8 +551,9 @@ function ContentWorkflowMarketerJourney({
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
   const initialSectionHeading = stringFromSearch(routeSearch, "section_heading");
   const selectStep = (stepId: WorkflowStepId) => {
-    if (data.operatorSteps.some((step) => step.id === stepId && step.canOpen)) {
-      setSelectedStepId(stepId);
+    const marketerStepId = stepId === "section_map" ? "draft" : stepId;
+    if (data.operatorSteps.some((step) => step.id === marketerStepId && step.canOpen)) {
+      setSelectedStepId(marketerStepId);
     }
   };
 
@@ -631,7 +632,7 @@ function ContentNextStepHero({
 }) {
   if (!step) return null;
   const canAdvance = Boolean(nextStep?.canOpen);
-  const nextStepLabel = nextStep?.id === "section_map" ? "Przejdź do planu" : nextStep?.id === "draft" ? "Przejdź do tekstu" : nextStep?.id === "review" ? "Przejdź do review" : nextStep?.id === "dev_draft" ? "Przejdź do dev preview" : "Zobacz kolejny krok";
+  const nextStepLabel = nextStep?.id === "section_map" || nextStep?.id === "draft" ? "Przejdź do tekstu" : nextStep?.id === "review" ? "Przejdź do review" : nextStep?.id === "dev_draft" ? "Przejdź do odbioru" : "Zobacz kolejny krok";
   const currentStepLabel = workflowStepActionLabel(step.id, Boolean(step.blocker));
   const actionLabel = canAdvance ? nextStepLabel : !planningCurrent ? "Sprawdź aktualny zakres" : currentStepLabel;
   const instruction = !planningCurrent
@@ -649,7 +650,7 @@ function ContentNextStepHero({
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-action">Aktualny krok</p>
-          <h2 className="mt-1 text-lg font-semibold text-ink">{step.title}</h2>
+          <h2 className="mt-1 text-lg font-semibold text-ink">{marketerWorkflowStepTitle(step.id)}</h2>
           <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-700">{instruction}</p>
         </div>
         <button
@@ -667,8 +668,8 @@ function ContentNextStepHero({
 export function workflowStepActionLabel(stepId: WorkflowStepId, blocked: boolean): string {
   if (blocked && stepId === "dev_draft") return "Sprawdź blokadę dev preview";
   if (blocked && stepId === "review") return "Sprawdź blokadę review";
-  if (stepId === "scope") return "Otwórz formularz zakresu";
-  if (stepId === "section_map") return "Otwórz plan strony";
+  if (stepId === "scope") return "Otwórz kontekst strony";
+  if (stepId === "section_map") return "Otwórz tekst";
   if (stepId === "draft") return "Otwórz edytor tekstu";
   if (stepId === "review") return "Otwórz review wersji";
   return "Otwórz dev preview";
@@ -679,8 +680,8 @@ export function workflowStepInstruction(
   blocker?: { label: string; reason: string } | null
 ) {
   if (blocker) return `${blocker.label}: ${blocker.reason}`;
-  if (stepId === "scope") return "Potwierdź usługę, sprawdź cel i odbiorcę briefu, zaznacz potwierdzenie i zapisz decyzję. WILQ sam zbuduje mapę sekcji.";
-  if (stepId === "section_map") return "Sprawdź automatycznie wykrytą strukturę strony, przypisane zapytania i page assets. Nie mapujesz sekcji ręcznie.";
+  if (stepId === "scope") return "Sprawdź aktualny kontekst strony i zapisz jedną decyzję. WILQ sam zbuduje plan i otworzy tekst.";
+  if (stepId === "section_map") return "Plan powstaje automatycznie; po jego odświeżeniu przejdziesz bezpośrednio do tekstu.";
   if (stepId === "draft") return "Przeczytaj pełny tekst, wybierz sekcję do poprawy albo zapisz exact revision do review.";
   if (stepId === "review") return "Uruchom advisory review, przeczytaj findings i zapisz własną decyzję dla exact revision.";
   return "Sprawdź revision-bound dev preview i przygotuj draft-only handoff. Publikacja pozostaje wyłączona.";

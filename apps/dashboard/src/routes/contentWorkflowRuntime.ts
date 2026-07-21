@@ -47,6 +47,13 @@ export type WorkflowStep = {
   safeNextStep: string;
 };
 
+export function marketerWorkflowStepTitle(stepId: WorkflowStepId): string {
+  if (stepId === "scope") return "Kontekst";
+  if (stepId === "draft" || stepId === "section_map") return "Tekst";
+  if (stepId === "review") return "Review";
+  return "Odbiór opcjonalny";
+}
+
 export async function loadContentWorkflowSnapshot(
   workItemId?: string
 ): Promise<ContentWorkflowSnapshot> {
