@@ -62,9 +62,9 @@ export function ContentWorkflowTaskMap({
                 }`}
               >
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-[11px] font-bold sm:h-7 sm:w-7 sm:text-xs">{index + 1}</span>
-                <span className="min-w-0 max-w-full">
-                  <span className="block truncate text-[11px] sm:text-sm">{shortWorkflowStepTitle(step.id)}</span>
-                  <span className="mt-0.5 hidden truncate text-[11px] font-normal opacity-75 sm:block">{step.statusLabel}</span>
+                <span className="min-w-0 max-w-full text-left">
+                  <span className="block break-words text-[11px] leading-tight sm:text-sm">{shortWorkflowStepTitle(step.id)}</span>
+                  <span className="mt-0.5 hidden break-words text-[10px] font-normal leading-tight opacity-75 sm:block">{step.statusLabel}</span>
                 </span>
               </button>
             </li>
