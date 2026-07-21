@@ -969,6 +969,8 @@ describe("ContentWorkflowSurface", () => {
     );
     expect(await screen.findByText("Kontekst planu")).toBeInTheDocument();
     expect(screen.getByTestId("content-planning-generation")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Otwórz kontekst planu" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Przejdź do tekstu" })).not.toBeInTheDocument();
     expect(screen.queryByTestId("content-draft-editor")).not.toBeInTheDocument();
     expect(screen.queryByText("Automatyczna mapa sekcji")).not.toBeInTheDocument();
     expect(screen.queryByText("Aktualna strona")).not.toBeInTheDocument();

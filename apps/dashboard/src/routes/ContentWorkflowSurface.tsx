@@ -580,6 +580,8 @@ function ContentWorkflowMarketerJourney({
         nextStep={data.operatorSteps[data.operatorSteps.findIndex((step) => step.id === selectedStepId) + 1]}
         onAdvance={selectStep}
         onFocusCurrentStep={() => focusWorkflowStep(selectedStepId)}
+        onFocusPlan={() => focusWorkflowStep("section_map")}
+        sectionMapCurrent={data.planningWorkspace?.section_map_current ?? false}
         planningCurrent={selectedStepId === "scope" ? data.planningWorkspace?.scope_current ?? true : selectedStepId === "section_map" ? data.planningWorkspace?.section_map_current ?? true : true}
       />
       <div className="flex flex-col">
@@ -629,20 +631,33 @@ function ContentNextStepHero({
   nextStep,
   onAdvance,
   onFocusCurrentStep,
+  onFocusPlan,
+  sectionMapCurrent,
   planningCurrent
 }: {
   step: ContentWorkflowSnapshot["operatorSteps"][number] | undefined;
   nextStep: ContentWorkflowSnapshot["operatorSteps"][number] | undefined;
   onAdvance: (stepId: WorkflowStepId) => void;
   onFocusCurrentStep: () => void;
+  onFocusPlan: () => void;
+  sectionMapCurrent: boolean;
   planningCurrent: boolean;
 }) {
   if (!step) return null;
-  const canAdvance = Boolean(nextStep?.canOpen);
+  const planNeedsRefresh = step.id === "scope" && nextStep?.id === "section_map" && !sectionMapCurrent;
+  const canAdvance = Boolean(nextStep?.canOpen) && !planNeedsRefresh;
   const nextStepLabel = nextStep?.id === "section_map" || nextStep?.id === "draft" ? "Przejdź do tekstu" : nextStep?.id === "review" ? "Przejdź do review" : nextStep?.id === "dev_draft" ? "Przejdź do odbioru" : "Zobacz kolejny krok";
   const currentStepLabel = workflowStepActionLabel(step.id, Boolean(step.blocker));
-  const actionLabel = canAdvance ? nextStepLabel : !planningCurrent ? "Sprawdź aktualny zakres" : currentStepLabel;
-  const instruction = !planningCurrent
+  const actionLabel = planNeedsRefresh
+    ? "Otwórz kontekst planu"
+    : canAdvance
+      ? nextStepLabel
+      : !planningCurrent
+        ? "Sprawdź aktualny zakres"
+        : currentStepLabel;
+  const instruction = planNeedsRefresh
+    ? "Zakres jest zapisany. Zbuduj plan z aktualnych danych, aby otworzyć tekst."
+    : !planningCurrent
     ? "Poprzednia decyzja jest nieaktualna, bo zmienił się plan lub dowody. Sprawdź zakres jeszcze raz i zapisz aktualną decyzję."
     : nextStep?.canOpen
       ? step.safeNextStep
@@ -662,7 +677,7 @@ function ContentNextStepHero({
         </div>
         <button
           type="button"
-          onClick={() => (canAdvance && nextStep ? onAdvance(nextStep.id) : onFocusCurrentStep())}
+          onClick={() => (planNeedsRefresh ? onFocusPlan() : canAdvance && nextStep ? onAdvance(nextStep.id) : onFocusCurrentStep())}
           className="inline-flex h-10 w-full items-center justify-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
         >
           {actionLabel}
@@ -695,7 +710,7 @@ export function workflowStepInstruction(
 }
 
 function focusWorkflowStep(stepId: WorkflowStepId) {
-  const targetId = stepId === "scope" ? "planning-review-scope" : stepId === "section_map" ? "planning-review-section_map" : stepId === "draft" ? "content-draft-workbench" : stepId === "review" ? "review-workspace-title" : "wordpress-draft-action-wizard";
+  const targetId = stepId === "scope" ? "planning-review-scope" : stepId === "section_map" ? "content-planning-generation" : stepId === "draft" ? "content-draft-workbench" : stepId === "review" ? "review-workspace-title" : "wordpress-draft-action-wizard";
   document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
