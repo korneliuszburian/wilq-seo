@@ -80,16 +80,12 @@ dumps, credential paths, or campaign text dumps.
 
 Load current state only when the task needs it:
 
-1. Read `docs/CONTEXT.md` for the current authority map.
-2. For durable work, use `bd prime`, inspect the named Bead, and claim it
-   before writing. Beads owns tasks and handoffs, not product truth.
-3. Read `docs/current-cleanup-state.md` before cleanup, module extraction, or
-   changes to the active content workflow.
-4. Read `docs/dashboard-state.md` before changing a route, API view model, or
-   marketer-facing behavior.
-5. Read `docs/PROGRESS.md`, the active goal selected by `docs/CONTEXT.md`,
-   and `PLANS.md` only for work whose scope depends on current execution state.
-6. Load the relevant file under `docs/architecture/`, `docs/security/`, or
+1. For durable work, use `bd prime`, inspect the one active Bead, and claim it
+   before writing. Beads owns current task state and handoffs, not product truth.
+2. Read `docs/CONTEXT.md` only when the slice needs the durable authority map.
+3. Load a surface-specific current-state document only when the active Bead
+   links it or the changed boundary cannot be understood from code and tests.
+4. Load the relevant file under `docs/architecture/`, `docs/security/`, or
    `docs/evals/` only for the boundary being changed.
 
 Do not copy active goals, Beads queues, credential incidents, exact live
@@ -120,15 +116,15 @@ reuse existing proof.
 
 | Changed surface | Focused evidence |
 | --- | --- |
-| Docs-only, copy-only, or task-state text | `rtk git diff --check` |
-| Python domain/API/schema/action | Narrow `rtk uv run --extra dev pytest ...`; Ruff/mypy only when the changed boundary needs them |
+| Docs-only, copy-only, or task-state text | `git diff --check` |
+| Python domain/API/schema/action | Narrow `uv run --extra dev pytest ...`; Ruff/mypy only when the changed boundary needs them |
 | Dashboard route/component | Touched test; add dashboard typecheck only when props, routes, or shared types changed |
 | Shared browser/API schema | Focused shared-schema test plus affected producer and consumer |
 | WILQ operator skill behavior | Its deterministic smoke; targeted non-interactive eval only when routing or operator output changed |
-| Cross-surface or release claim | `rtk scripts/verify.sh` once near completion |
+| Cross-surface or release claim | `scripts/verify.sh` once near completion |
 
 Before adding behavior to a known growth hotspot, run
-`rtk uv run python scripts/audit_complexity.py --changed --summary --limit 12`.
+`uv run python scripts/audit_complexity.py --changed --summary --limit 12`.
 An existing large file is not permission for more behavior or proof that a new
 abstraction is warranted.
 
@@ -157,3 +153,29 @@ Stop and return a precise blocker when progress requires:
   authorized by the task;
 - weakening exact revision, evidence lineage, redaction, or ActionObject safety;
 - representing synthetic/browser proof as real Wilku UAT or a real vendor write.
+
+<!-- krn-agent-workflow:start -->
+## Agent workflow
+
+### Issue tracker
+
+Beads owns the durable queue and claim state. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Use the multi-context domain layout. See `docs/agents/domain.md`.
+
+### Delivery
+
+Use the strict PR delivery profile. See `docs/agents/delivery.md`.
+
+### Agent artifacts
+
+Use the repository-local working and retained report paths in `docs/agents/artifacts.md`.
+
+### Review context
+
+Give reviewers the complete bounded decision packet defined in `docs/agents/review.md`.
+
+Installed global skills own implementation, diagnosis, review, and reusable engineering procedure. Do not copy or rename them in this repository.
+<!-- krn-agent-workflow:end -->
