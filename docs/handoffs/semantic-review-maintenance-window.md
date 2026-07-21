@@ -4,6 +4,14 @@ Status: przygotowane, **nieuruchomione**. Wymaga jawnej zgody na maintenance
 window i operatora posiadającego dostęp do lokalnego storage. Normalny API GET,
 POST planowania ani dashboard nie mogą wykonywać tej migracji.
 
+2026-07-21 isolated restore drill: PASS on the alternate copy only. Restoring
+the pre-activation SQLite/DuckDB backup to new paths preserved schema versions
+3/1, 12 revisions, 979 audits and 168707 metric facts; both destination files
+were mode `0600`. The restored pre-activation pair correctly has no
+`content_semantic_reviews` table. Proof:
+`.local-lab/proof/semantic-review/2026-07-21/restore-drill-2026-07-21.json`.
+This is recovery proof, not authorization or activation of the main state.
+
 ## Cel
 
 Aktywować tabelę `content_semantic_reviews` dla trwałego advisory review
