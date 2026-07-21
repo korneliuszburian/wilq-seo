@@ -143,6 +143,43 @@ Commit, push, PR, deploy, vendor writes, and credential operations remain
 separate authorities. If publication is not authorized, leave an attributable
 patch and record that state rather than silently publishing.
 
+## Execution and review protocol
+
+- Keep WIP at one: exactly one implementation Bead may be `in_progress`. Do
+  not claim another Bead to bypass a blocker or to parallelize investigation.
+- The active Bead defines the next executable result. Do not create a separate
+  execution, reviewer, status, or Markdown planning track.
+- The owner runs the external review layer. The implementation agent does not
+  invoke an independent reviewer or second-opinion workflow unless the owner
+  explicitly delegates that run.
+- When owner-supplied reviewer findings arrive, verify each finding against the
+  current fixed point first. Record its disposition in the active Bead; only an
+  accepted finding earns an implementation slice.
+- Each slice has one observable result: trace `caller -> public seam -> result`,
+  make the smallest production change, run the focused falsifier, update the
+  active Bead, make one cohesive commit, then stop for external review.
+- Preserve untracked files unless the active slice explicitly owns them. Commit,
+  push, PR, merge, deploy, and vendor write remain distinct authority decisions.
+
+## Documentation and test topology
+
+Code, typed schemas, API responses, and persisted WILQ records own runtime
+behavior. Tests prove bounded contracts; Beads owns active task state and
+handoffs. Documentation must not restate behavior that can be read from those
+authorities.
+
+- Retained documentation names its role: `current state`, `decision`,
+  `reference`, or `historical`. Only a named current-state record may describe
+  live product status; historical and decision documents must say what they do
+  not supersede.
+- Keep documentation only for decisions, rejected alternatives, domain language,
+  navigation, or human operating context that code cannot explain. Delete or
+  rewrite prose that competes with the source of truth.
+- Keep Python public-contract tests under `tests/` and dashboard tests co-located
+  as `*.test.ts`/`*.test.tsx` with the surface they exercise. Do not mass-move
+  tests into `__tests__` for appearance alone; introduce a new test folder only
+  when it provides a concrete discovery or fixture-ownership benefit.
+
 ## Stop conditions
 
 Stop and return a precise blocker when progress requires:
