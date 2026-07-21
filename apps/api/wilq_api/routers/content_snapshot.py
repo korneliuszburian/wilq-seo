@@ -46,7 +46,7 @@ from wilq.content.workflow.exact_demand_decision import (
     content_decision_with_exact_demand,
 )
 from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
-from wilq.content.workflow.planning import ContentPlanningDecision
+from wilq.content.workflow.planning import ContentPlanningDecision, ContentPlanningProposal
 from wilq.content.workflow.revisions import ContentDraftRevisionState
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import (
@@ -162,9 +162,11 @@ def snapshot_for_work_item_or_404(
         if (
             revision_state.latest_revision is not None
             and revision_state.latest_review is not None
+            and revision_state.latest_revision.planning_digest is not None
         )
         else None
     )
+    generated_planning_proposal: ContentPlanningProposal | None
     if revision_bound_proposal is not None:
         generated_planning_proposal = revision_bound_proposal
     else:

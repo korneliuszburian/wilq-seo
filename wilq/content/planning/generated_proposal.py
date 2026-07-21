@@ -529,10 +529,8 @@ def _planning_output_quality_errors(
     errors.extend(
         _orphaned_placement_quality_errors(
             sections=output.sections,
-            placements=[
-                *(getattr(item, "placement", None) for item in output.cta_blocks),
-                *(getattr(item, "placement", None) for item in output.internal_links),
-            ],
+            placements=_placement_values(output.cta_blocks)
+            + _placement_values(output.internal_links),
         )
     )
     if (
@@ -551,10 +549,8 @@ def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
     errors.extend(
         _orphaned_placement_quality_errors(
             sections=proposal.sections,
-            placements=[
-                *(getattr(item, "placement", None) for item in proposal.cta_blocks),
-                *(getattr(item, "placement", None) for item in proposal.internal_links),
-            ],
+            placements=_placement_values(proposal.cta_blocks)
+            + _placement_values(proposal.internal_links),
         )
     )
     if _has_exact_query_rows(proposal.search_demand) and not any(
@@ -592,6 +588,14 @@ def _orphaned_placement_quality_errors(
         if target
     }
     return ["orphaned_placement"] if removed_targets.intersection(placements) else []
+
+
+def _placement_values(items: Iterable[object]) -> list[str]:
+    return [
+        placement
+        for item in items
+        if isinstance(placement := getattr(item, "placement", None), str)
+    ]
 
 
 def _expected_inventory_mapping(

@@ -20,6 +20,7 @@ from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
 )
+from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.stage_write_readiness import (
     wordpress_draft_binding_from_audit_event,
@@ -143,6 +144,7 @@ def wordpress_draft_apply_capability(
                 "Odśwież workflow i wygeneruj aktualny plan przed handoffem.",
             )
         ]
+    generated_planning_proposal: ContentPlanningProposal | None
     if revision_bound_proposal is not None:
         generated_planning_proposal = revision_bound_proposal
     elif planning_response is None or planning_response.status not in {
