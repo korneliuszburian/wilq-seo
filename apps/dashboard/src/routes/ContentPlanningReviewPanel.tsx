@@ -30,6 +30,7 @@ export function ContentPlanningReviewPanel({
   inventorySourceLabel,
   inventorySourceKind,
   inventoryExtractionRegion,
+  staleLineage,
   existingContentProvenanceRequired = false,
   stage
 }: {
@@ -39,6 +40,7 @@ export function ContentPlanningReviewPanel({
   inventorySourceLabel?: string;
   inventorySourceKind?: string | null;
   inventoryExtractionRegion?: string | null;
+  staleLineage?: PlanningSourceLineageFallback;
   existingContentProvenanceRequired?: boolean;
   stage: PlanningStage;
 }) {
@@ -198,7 +200,7 @@ export function ContentPlanningReviewPanel({
             className="mt-4 rounded-md border border-line bg-surface px-3 py-2 text-xs leading-5 text-slate-600"
             data-testid="planning-source-summary"
           >
-            {planningSourceSummary(proposal)}
+            {planningSourceSummary(proposal, staleLineage)}
           </p>
           <SearchDemandSummary demand={proposal.search_demand} />
         </>
@@ -529,12 +531,43 @@ type PlanningSourceSummaryInput = Pick<
 > &
   Partial<Pick<ContentPlanningWorkspace["proposal"], "generation_status">>;
 
-export function planningSourceSummary(proposal: PlanningSourceSummaryInput): string {
-  const sourceCount = proposal.evidence_ids.length;
-  const materialCount = proposal.source_material_ids.length;
-  const knowledgeCount = proposal.knowledge_card_ids.length;
-  const connectorCount = proposal.source_connectors.length;
-  const subject = proposal.generation_status === "baseline" ? "Zakres" : "Plan";
+type PlanningSourceLineageFallback = Pick<
+  PlanningSourceSummaryInput,
+  "evidence_ids" | "source_material_ids" | "knowledge_card_ids" | "source_connectors"
+>;
+
+export function planningSourceSummary(
+  proposal: PlanningSourceSummaryInput,
+  staleLineage?: PlanningSourceLineageFallback
+): string {
+  const evidenceIds = proposal.evidence_ids.length
+    ? proposal.evidence_ids
+    : staleLineage?.evidence_ids ?? [];
+  const sourceMaterialIds = proposal.source_material_ids.length
+    ? proposal.source_material_ids
+    : staleLineage?.source_material_ids ?? [];
+  const knowledgeCardIds = proposal.knowledge_card_ids.length
+    ? proposal.knowledge_card_ids
+    : staleLineage?.knowledge_card_ids ?? [];
+  const sourceConnectors = proposal.source_connectors.length
+    ? proposal.source_connectors
+    : staleLineage?.source_connectors ?? [];
+  const usedStaleLineage = Boolean(
+    staleLineage &&
+      (proposal.evidence_ids.length === 0 ||
+        proposal.source_material_ids.length === 0 ||
+        proposal.knowledge_card_ids.length === 0 ||
+        proposal.source_connectors.length === 0)
+  );
+  const sourceCount = evidenceIds.length;
+  const materialCount = sourceMaterialIds.length;
+  const knowledgeCount = knowledgeCardIds.length;
+  const connectorCount = sourceConnectors.length;
+  const subject = usedStaleLineage
+    ? "Zakres · lineage poprzedniej wersji"
+    : proposal.generation_status === "baseline"
+      ? "Zakres"
+      : "Plan";
   return `${subject} opiera się na ${sourceCount} ${sourceCount === 1 ? "źródle" : "źródłach"} · ${materialCount} ${materialCount === 1 ? "materiale" : "materiałach"} Ekologusa · ${knowledgeCount} ${knowledgeCount === 1 ? "karcie" : "kartach"} · ${connectorCount} ${connectorCount === 1 ? "połączeniu" : "połączeniach"}`;
 }
 

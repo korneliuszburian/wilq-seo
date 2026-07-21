@@ -55,6 +55,23 @@ describe("planningSourceSummary", () => {
         generation_status: "baseline"
       })
     ).toBe("Zakres opiera się na 1 źródle · 0 materiałach Ekologusa · 0 kartach · 1 połączeniu");
+    expect(
+      planningSourceSummary(
+        {
+          evidence_ids: [],
+          source_material_ids: [],
+          knowledge_card_ids: [],
+          source_connectors: [],
+          generation_status: "baseline"
+        },
+        {
+          evidence_ids: ["ev_previous"],
+          source_material_ids: ["material_previous"],
+          knowledge_card_ids: ["card_previous"],
+          source_connectors: ["gsc", "wordpress"]
+        }
+      )
+    ).toBe("Zakres · lineage poprzedniej wersji opiera się na 1 źródle · 1 materiale Ekologusa · 1 karcie · 2 połączeniach");
   });
 });
 

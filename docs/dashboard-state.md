@@ -576,3 +576,16 @@ Live proof 2026-07-21: snapshot BDO zwraca quality states
 pokazuje `GSC: odczyt częściowy · WordPress: jakość do sprawdzenia`. Focused
 proof: `test_stale_shop_wordpress_does_not_block_ordinary_content_freshness`
 oraz testy API state/queue.
+
+## 2026-07-21 — stale plan nie zeruje bazy wiedzy
+
+Jeśli digest aktualnego zakresu lub planu jest nieaktualny, panel nadal pokazuje
+lineage poprzedniej exact revision, ale nazywa go wprost `Zakres · lineage
+poprzedniej wersji`. Fallback działa per pole: brakujące materiały albo karty
+nie znikają tylko dlatego, że nowy proposal jest pusty; istniejące pola nowego
+proposal pozostają nadrzędne. To nie odblokowuje starego planu i nie udaje, że
+poprzednie źródła są aktualne.
+
+Live BDO proof: panel równocześnie pokazuje `Plan wymaga aktualizacji` oraz
+`7 materiałów Ekologusa · 4 kart`, bez raw IDs. Focused proof:
+`planningSourceSummary` (current + stale lineage) i dashboard typecheck.

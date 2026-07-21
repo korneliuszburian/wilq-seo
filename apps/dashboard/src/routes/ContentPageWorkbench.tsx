@@ -192,6 +192,16 @@ export function ContentPageWorkbench({
     reviewChecks.evidenceChecked ? "Sprawdzono dowody przypisane do tej wersji." : null
   ].filter((item): item is string => item !== null);
   const latestRevision = revisionWorkspace.latest_revision;
+  const staleLineage = latestRevision
+    ? {
+        evidence_ids: unique(
+          latestRevision.sections.flatMap((section) => section.evidence_ids ?? [])
+        ),
+        source_material_ids: latestRevision.source_material_ids,
+        knowledge_card_ids: latestRevision.knowledge_card_ids,
+        source_connectors: unique(data.preflight.item.source_connectors)
+      }
+    : undefined;
   const semanticReviewQuery = useQuery({
     queryKey: [
       "content-workflow",
@@ -275,6 +285,7 @@ export function ContentPageWorkbench({
                 )}
                 inventorySourceKind={data.preflight.item.wordpress_content_source_kind}
                 inventoryExtractionRegion={data.preflight.item.wordpress_content_extraction_region}
+                staleLineage={staleLineage}
                 existingContentProvenanceRequired={
                   data.preflight.item.wordpress_content_material_confidence === "review_required"
                 }
@@ -309,6 +320,7 @@ export function ContentPageWorkbench({
                 )}
                 inventorySourceKind={data.preflight.item.wordpress_content_source_kind}
                 inventoryExtractionRegion={data.preflight.item.wordpress_content_extraction_region}
+                staleLineage={staleLineage}
                 existingContentProvenanceRequired={
                   data.preflight.item.wordpress_content_material_confidence === "review_required"
                 }
