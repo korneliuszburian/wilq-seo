@@ -56,6 +56,12 @@ current inventory digest changes, a marketer still sees the reviewed draft's
 `Zakres i cel`; current-plan drift is shown as lineage context, not as loss of
 the exact reviewable revision. Browser proof is retained at
 `.local-lab/proof/dashboard-content-workflow/2026-07-21/bdo-after-draft-apply-fixed-point.png`.
+The marketer hero now derives its WordPress status from the active operator
+step instead of the stale queue label; a ready exact revision reads
+`WordPress · gotowy szkic na devie`. Desktop and mobile proof for this copy is
+at `.local-lab/proof/dashboard-content-workflow/2026-07-21/bdo-status-copy-fixed.png`
+and `bdo-status-copy-fixed-mobile.png`; the mobile viewport has no horizontal
+overflow.
 The handoff context check allows a generated v2 section map to rewrite/merge
 the baseline while retaining exact planning/service/package bindings; v1 keeps
 the stricter section identity check. Deterministic review is `needs_changes`

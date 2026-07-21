@@ -1416,6 +1416,7 @@ describe("ContentWorkflowSurface", () => {
 
     await waitFor(() => expect(getAction).toHaveBeenCalledWith("act_apply_wordpress_draft_handoff"));
     await screen.findByText("Szkic aktualnego tekstu → dev");
+    expect(screen.getByText("WordPress · gotowy szkic na devie")).toBeInTheDocument();
     const wizard = screen.getByTestId("content-wordpress-draft-action-wizard");
     expect(within(wizard).getByText("Szkic aktualnego tekstu → dev")).toBeInTheDocument();
     expect(within(wizard).getByText(/bez publikacji · bez aktualizacji/)).toBeInTheDocument();

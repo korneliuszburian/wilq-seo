@@ -583,6 +583,7 @@ function ContentWorkflowMarketerJourney({
         planningDigest={data.planningWorkspace?.proposal.planning_digest ?? null}
         planningSections={data.planningWorkspace?.proposal.sections ?? []}
         currentSectionHeadings={data.candidate.page_inventory?.section_headings ?? []}
+        workflowStatusLabel={marketerWorkflowStatusLabel(data)}
         queue={queue}
         inventory={inventory}
         selectedWorkItemId={selectedWorkItemId}
@@ -620,6 +621,21 @@ function ContentWorkflowMarketerJourney({
       />
     </div>
   );
+}
+
+function marketerWorkflowStatusLabel(data: ContentWorkflowSnapshot): string {
+  const current = data.operatorSteps.find((step) => step.id === data.currentStepId);
+  if (!current) return "wymaga sprawdzenia";
+  if (current.id === "dev_draft" && current.readiness === "ready") {
+    return "gotowy szkic na devie";
+  }
+  if (current.id === "review" && current.readiness === "ready") {
+    return "gotowa wersja do review";
+  }
+  if (current.id === "draft" && current.readiness === "ready") {
+    return "gotowy tekst do sprawdzenia";
+  }
+  return current.statusLabel;
 }
 
 function ContentNextStepHero({
@@ -700,6 +716,7 @@ function ContentSessionPicker({
   planningDigest,
   planningSections,
   currentSectionHeadings,
+  workflowStatusLabel,
   queue,
   inventory,
   selectedWorkItemId,
@@ -711,6 +728,7 @@ function ContentSessionPicker({
   planningDigest: string | null;
   planningSections: ContentPlanningSections;
   currentSectionHeadings: string[];
+  workflowStatusLabel: string;
   queue: ContentWorkItemQueueResponse;
   inventory: ContentInventoryCatalogResponse | null;
   selectedWorkItemId: string;
@@ -767,7 +785,7 @@ function ContentSessionPicker({
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {contentCandidatePath(selected.final_canonical_url)}
           </p>
-          <p className="mt-2 text-xs text-slate-500">WordPress · {selected.status_label}</p>
+          <p className="mt-2 text-xs text-slate-500">WordPress · {workflowStatusLabel}</p>
         </div>
         <label className="text-sm font-semibold text-ink" htmlFor="content-session-work-item">
           Aktywna strona
