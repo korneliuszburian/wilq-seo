@@ -246,7 +246,7 @@ def _usable_inventory_headings(headings: list[str]) -> list[str]:
         # promotional sentence as an H2. It is body copy, not a stable section
         # boundary; keeping it would make the planner invent a section around
         # one sentence instead of working on the source body.
-        if len(heading) > 100 or re.search(r"[.!?]$", heading):
+        if len(heading) > 100 or re.search(r"\.$", heading):
             continue
         # Customer stories and testimonial rows often arrive as a heading plus
         # a bracketed year. They belong to page chrome, not to the answer map.
