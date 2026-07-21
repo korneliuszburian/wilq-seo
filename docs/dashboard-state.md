@@ -530,3 +530,16 @@ pokazuje 7 nagłówków bezpośredniego materiału REST. Rozbieżność jest ter
 opisana źródłem zamiast udawania, że oba liczniki oznaczają to samo. Nie zmienia
 to decyzji ani nie tworzy nowego URL. Obraz:
 `.local-lab/proof/dashboard-content-workflow/2026-07-21/queue-inventory-section-count.png`.
+
+## 2026-07-21 — powody dopasowania usługi bez szumu z body
+
+Service Profile nadal zwraca pełną, dynamiczną listę kandydatów i ich lineage.
+W scope panelu nie wypisujemy jednak wszystkich fraz znalezionych w całym body
+strony, bo stopka/nawigacja może wspominać inne obszary Ekologusa. UI pokazuje
+dwie najmocniejsze exact frazy z API oraz liczbę słabszych dopasowań. Nie zmienia
+to wybranej karty, rankingu ani kontraktu API.
+
+Live outsourcing proof pokazuje `outsourcing ekologiczny` i `doradztwo
+środowiskowe` jako główne dopasowania; `bdo`, `kobize` i `opakowani` nie są już
+prezentowane jako równorzędny powód wyboru usługi. Screenshot:
+`.local-lab/proof/dashboard-content-workflow/2026-07-21/outsourcing-service-reasons.png`.

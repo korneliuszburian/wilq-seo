@@ -11,7 +11,8 @@ import {
   requiresServiceOverrideReview,
   planningInventorySourceLabel,
   inventoryMaterialSourceLabel,
-  serviceSelectionFieldLabel
+  serviceSelectionFieldLabel,
+  serviceMatchReasonSummary
 } from "./ContentPlanningReviewPanel";
 
 describe("inventoryDispositionLabel", () => {
@@ -145,5 +146,26 @@ describe("serviceSelectionFieldLabel", () => {
   it("names an unresolved recommendation as a choice, not a confirmation", () => {
     expect(serviceSelectionFieldLabel(false)).toBe("Wybierz usługę dla tej strony");
     expect(serviceSelectionFieldLabel(true)).toBe("Potwierdzona usługa");
+  });
+});
+
+describe("serviceMatchReasonSummary", () => {
+  it("shows the strongest exact terms and condenses weaker body mentions", () => {
+    expect(
+      serviceMatchReasonSummary({
+        matched_terms: [
+          "doradztwo środowiskowe",
+          "outsourcing ekologiczny",
+          "bdo",
+          "kobize"
+        ]
+      })
+    ).toBe("Najmocniejsze dopasowania: „outsourcing ekologiczny” · „doradztwo środowiskowe” · +2 słabsze.");
+  });
+
+  it("does not invent a reason when the API has no exact term", () => {
+    expect(serviceMatchReasonSummary({ matched_terms: [] })).toBe(
+      "Brak exact frazy dopasowania do tej karty usługi."
+    );
   });
 });

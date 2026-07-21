@@ -166,7 +166,7 @@ export function ContentPlanningReviewPanel({
           ) : null}
           {selectedService ? (
             <p className="mt-2 text-xs leading-5 text-slate-600">
-              {selectedService.match_reasons.join(" ")}
+              {serviceMatchReasonSummary(selectedService)}
             </p>
           ) : null}
           {serviceOverrideReviewRequired ? (
@@ -426,6 +426,18 @@ export function initialServiceCardId(
 
 export function serviceSelectionFieldLabel(serviceSelectionConfirmed: boolean): string {
   return serviceSelectionConfirmed ? "Potwierdzona usługa" : "Wybierz usługę dla tej strony";
+}
+
+export function serviceMatchReasonSummary(
+  candidate: Pick<ContentWorkItemServiceCandidate, "matched_terms">
+): string {
+  const reasons = candidate.matched_terms
+    .filter((term) => term.trim().length > 0)
+    .sort((left, right) => right.length - left.length);
+  if (!reasons.length) return "Brak exact frazy dopasowania do tej karty usługi.";
+  const visible = reasons.slice(0, 2).map((term) => `„${term}”`);
+  const remaining = reasons.length - visible.length;
+  return `Najmocniejsze dopasowania: ${visible.join(" · ")}${remaining > 0 ? ` · +${remaining} słabsze` : ""}.`;
 }
 
 export function planningReviewCheckedItems(
