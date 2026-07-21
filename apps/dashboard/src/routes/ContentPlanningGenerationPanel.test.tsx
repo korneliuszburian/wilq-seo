@@ -257,6 +257,54 @@ describe("ContentPlanningGenerationPanel", () => {
     expect(screen.queryByRole("button", { name: "Wygeneruj plan" })).not.toBeInTheDocument();
   });
 
+  it("does not offer generation while the saved scope decision is stale", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValueOnce({
+      status: "stale",
+      work_item_id: "work_item",
+      service_card_id: "service_card",
+      planning_input_digest: "a".repeat(64),
+      proposal: { service_selection_confirmed: true },
+      input_summary: {
+        final_canonical_url: "https://ekologus.pl/bdo/",
+        service_label: "BDO",
+        inventory_status: "available",
+        content_inventory_status: "available",
+        source_assessments: [],
+        source_fact_count: 0,
+        source_fact_ids: [],
+        source_material_ids: [],
+        evidence_id_count: 0,
+        knowledge_card_count: 0,
+        measurement_metrics: []
+      },
+      blockers: [{ code: "stale_input", label: "Wejście planu zmieniło się", reason: "", next_step: "" }],
+      safe_next_step: "Zapisz aktualny zakres.",
+      publish_ready: false
+    } as never);
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValueOnce({
+      status: "ready",
+      total_count: 15,
+      imported_count: 15,
+      import_pending_count: 0,
+      excerpt_review_required_count: 0,
+      ready_for_generation: true,
+      blocker: null,
+      next_step: "Można planować."
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(
+      <QueryClientProvider client={client}>
+        <ContentPlanningGenerationPanel serviceCardId="service_card" workItemId="work_item" scopeCurrent={false} />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByTestId("content-planning-scope-confirmation-gate")).toHaveTextContent(
+      "Najpierw zapisz aktualną decyzję zakresu"
+    );
+    expect(screen.queryByRole("button", { name: "Wygeneruj aktualny plan" })).not.toBeInTheDocument();
+  });
+
   it("keeps retry available after a failed run with no persisted proposal", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValueOnce({
       status: "failed",

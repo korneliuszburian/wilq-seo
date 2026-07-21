@@ -325,6 +325,7 @@ export function ContentPageWorkbench({
               <ContentPlanningGenerationPanel
                 serviceCardId={data.serviceProfileContext.service_card_id}
                 workItemId={item.id}
+                scopeCurrent={data.planningWorkspace.scope_current}
               />
             </>
           ) : null}
@@ -334,6 +335,7 @@ export function ContentPageWorkbench({
               <ContentPlanningGenerationPanel
                 serviceCardId={data.serviceProfileContext.service_card_id}
                 workItemId={item.id}
+                scopeCurrent={data.planningWorkspace.scope_current}
               />
               <ContentPlanningReviewPanel
                 actions={{
