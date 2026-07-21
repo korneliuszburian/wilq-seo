@@ -55,7 +55,7 @@ import type { ContentWorkItem } from "@wilq/shared-schemas";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
 import { ContentCodexSectionProposalResult } from "./ContentCodexSectionProposalResult";
 import { summarizeGa4MetricFacts } from "./ContentWorkflowJourneyContext";
-import { workflowStepActionLabel } from "./ContentWorkflowSurface";
+import { workflowStepActionLabel, workflowStepInstruction } from "./ContentWorkflowSurface";
 
 describe("workflowStepActionLabel", () => {
   it("does not imply dev readiness when the current handoff step is blocked", () => {
@@ -66,6 +66,13 @@ describe("workflowStepActionLabel", () => {
   it("keeps normal current-step actions when no blocker exists", () => {
     expect(workflowStepActionLabel("dev_draft", false)).toBe("Otwórz dev preview");
     expect(workflowStepActionLabel("scope", true)).toBe("Otwórz formularz zakresu");
+  });
+
+  it("puts the API blocker reason into the marketer-facing instruction", () => {
+    expect(workflowStepInstruction("review", { label: "Review wymaga decyzji", reason: "Brak decyzji dla exact revision." })).toBe(
+      "Review wymaga decyzji: Brak decyzji dla exact revision."
+    );
+    expect(workflowStepInstruction("review")).toContain("Uruchom advisory review");
   });
 });
 

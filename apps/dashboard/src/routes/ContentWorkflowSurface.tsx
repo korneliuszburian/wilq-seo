@@ -644,7 +644,7 @@ function ContentNextStepHero({
     ? "Poprzednia decyzja jest nieaktualna, bo zmienił się plan lub dowody. Sprawdź zakres jeszcze raz i zapisz aktualną decyzję."
     : nextStep?.canOpen
       ? step.safeNextStep
-      : workflowStepInstruction(step.id);
+    : workflowStepInstruction(step.id, step.blocker);
   return (
     <section className="wilq-enter wilq-enter-delay-1 mb-3 rounded-md border border-action/30 bg-action/5 p-3 shadow-sm sm:mb-4 sm:p-5" data-testid="content-next-step-hero">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -678,7 +678,11 @@ export function workflowStepActionLabel(stepId: WorkflowStepId, blocked: boolean
   return "Otwórz dev preview";
 }
 
-function workflowStepInstruction(stepId: WorkflowStepId) {
+export function workflowStepInstruction(
+  stepId: WorkflowStepId,
+  blocker?: { label: string; reason: string } | null
+) {
+  if (blocker) return `${blocker.label}: ${blocker.reason}`;
   if (stepId === "scope") return "Potwierdź usługę, sprawdź cel i odbiorcę briefu, zaznacz potwierdzenie i zapisz decyzję. WILQ sam zbuduje mapę sekcji.";
   if (stepId === "section_map") return "Sprawdź automatycznie wykrytą strukturę strony, przypisane zapytania i page assets. Nie mapujesz sekcji ręcznie.";
   if (stepId === "draft") return "Przeczytaj pełny tekst, wybierz sekcję do poprawy albo zapisz exact revision do review.";

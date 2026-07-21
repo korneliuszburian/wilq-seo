@@ -554,3 +554,10 @@ prezentacji istniejącego kontraktu API: nie omija blokady i nie zmienia
 uprawnień do WordPress.
 
 Focused proof: `workflowStepActionLabel` (2/2) oraz dashboard typecheck.
+
+W tym samym hero, gdy API zwraca blocker dla bieżącego kroku, instrukcja
+pokazuje jego ludzki `label` i `reason`. Bez blockera pozostaje standardowa
+instrukcja kroku. Dzięki temu marketer wie, co sprawdzić, bez odsłaniania
+technicznego kodu i bez sugerowania akceptacji albo publikacji.
+
+Focused proof: `workflowStepInstruction` (3/3) oraz dashboard typecheck.
