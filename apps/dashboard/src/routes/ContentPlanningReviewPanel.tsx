@@ -46,7 +46,6 @@ export function ContentPlanningReviewPanel({
 }) {
   const [decision, setDecision] = useState<"approved" | "needs_changes">("approved");
   const [notes, setNotes] = useState("");
-  const [checked, setChecked] = useState(false);
   const [provenanceChecked, setProvenanceChecked] = useState(false);
   const proposal = planning.proposal;
   const serviceCandidateSignature = serviceCandidates
@@ -65,7 +64,6 @@ export function ContentPlanningReviewPanel({
     setSelectedServiceCardId(defaultServiceCardId);
     setDecision("approved");
     setNotes("");
-    setChecked(false);
     setProvenanceChecked(false);
   }, [
     proposal.work_item_id,
@@ -88,7 +86,7 @@ export function ContentPlanningReviewPanel({
   const documentScopeSummary = planningScopeSummary(proposal.sections);
   const canSubmit =
     !actions.pending &&
-    (decision === "approved" ? checked : notes.trim().length > 0) &&
+    (decision === "approved" ? true : notes.trim().length > 0) &&
     (!serviceOverrideReviewRequired || notes.trim().length > 0) &&
     (stage !== "scope" ||
       !existingContentProvenanceRequired ||
@@ -109,7 +107,7 @@ export function ContentPlanningReviewPanel({
             {stage === "scope" ? "Zakres i brief · krok 1 z 5" : "Plan strony · krok 2 z 5"}
           </p>
           <h2 id="planning-review-title" className="mt-1 text-lg font-semibold text-ink">
-            {stage === "scope" ? "Zatwierdź zakres treści" : "Automatyczna mapa sekcji"}
+            {stage === "scope" ? "Sprawdź zakres strony" : "Automatyczna mapa sekcji"}
           </h2>
         </div>
         {latestDecision ? (
@@ -130,11 +128,8 @@ export function ContentPlanningReviewPanel({
       {stage === "scope" ? (
         <>
           <div className="mt-4 rounded-md border border-action/20 bg-action/5 p-3 text-sm leading-6 text-slate-700">
-            <p className="font-semibold text-ink">Co robisz teraz?</p>
-            <ol className="mt-1 list-inside list-decimal space-y-0.5">
-              <li>Sprawdź, czy dopasowana usługa pasuje do tej strony.</li>
-              <li>Zaznacz potwierdzenie i zapisz decyzję. Mapę sekcji zbuduje WILQ automatycznie.</li>
-            </ol>
+            <p className="font-semibold text-ink">Decyzja dla tej strony</p>
+            <p className="mt-1">WILQ przygotował zakres z aktualnej strony, usługi i danych. Sprawdź tylko, czy rekomendacja pasuje — szczegóły są dostępne na żądanie.</p>
           </div>
           <label className="mt-4 block max-w-xl text-sm font-semibold text-ink">
             {serviceSelectionFieldLabel(proposal.service_selection_confirmed)}
@@ -180,29 +175,24 @@ export function ContentPlanningReviewPanel({
               mimo tego, wpisz w notatce, dlaczego ten wybór jest właściwy dla tej strony.
             </p>
           ) : null}
-          <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-            <PlanningFact label="Strona" value={proposal.final_canonical_url} />
-            <PlanningFact
-              label={proposal.service_selection_confirmed ? "Usługa wybrana" : "Dopasowanie robocze"}
-              value={proposal.service_label ?? "Brak dopasowanej usługi"}
-            />
-            <PlanningFact label="Intencja" value={proposal.search_intent} />
-            <PlanningFact label="Odbiorca" value={proposal.target_reader} />
-            <PlanningFact label="Problem" value={proposal.buyer_problem} />
-            <PlanningFact label="Moment decyzji" value={proposal.buyer_trigger} />
-            <PlanningFact label="CTA" value={proposal.cta_direction} />
-            <PlanningFact
-              label="Linkowanie wewnętrzne"
-              value={proposal.internal_link_directions.join(" · ") || "Brak kierunku linkowania"}
-            />
-          </dl>
-          <p
-            className="mt-4 rounded-md border border-line bg-surface px-3 py-2 text-xs leading-5 text-slate-600"
-            data-testid="planning-source-summary"
-          >
-            {planningSourceSummary(proposal, staleLineage)}
-          </p>
-          <SearchDemandSummary demand={proposal.search_demand} />
+          <div className="mt-4 grid gap-3 rounded-md border border-line bg-surface p-3 text-sm sm:grid-cols-3">
+            <PlanningFact label="Główna intencja" value={proposal.search_intent} />
+            <PlanningFact label="Dla kogo" value={proposal.target_reader} />
+            <PlanningFact label="Rezultat" value={proposal.cta_direction} />
+          </div>
+          <details className="mt-3 rounded-md border border-line bg-white p-3 text-sm">
+            <summary className="cursor-pointer font-semibold text-action">Pokaż szczegóły zakresu i źródła</summary>
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+              <PlanningFact label="Strona" value={proposal.final_canonical_url} />
+              <PlanningFact label="Problem" value={proposal.buyer_problem} />
+              <PlanningFact label="Moment decyzji" value={proposal.buyer_trigger} />
+              <PlanningFact label="Linkowanie wewnętrzne" value={proposal.internal_link_directions.join(" · ") || "Brak kierunku linkowania"} />
+            </dl>
+            <p className="mt-3 rounded-md border border-line bg-surface px-3 py-2 text-xs leading-5 text-slate-600" data-testid="planning-source-summary">
+              {planningSourceSummary(proposal, staleLineage)}
+            </p>
+            <SearchDemandSummary demand={proposal.search_demand} />
+          </details>
         </>
       ) : (
         <>
@@ -350,15 +340,6 @@ export function ContentPlanningReviewPanel({
 
       {stage === "scope" ? decision === "approved" ? (
         <div className="mt-3 space-y-2">
-          <label className="flex items-start gap-2 text-sm leading-6 text-slate-700">
-            <input
-              type="checkbox"
-              checked={checked}
-              onChange={(event) => setChecked(event.target.checked)}
-              className="mt-1"
-            />
-            Sprawdziłem stronę, usługę, intencję, odbiorcę i CTA.
-          </label>
           {existingContentProvenanceRequired ? (
             <label className="flex items-start gap-2 text-sm leading-6 text-slate-700">
               <input
@@ -381,12 +362,7 @@ export function ContentPlanningReviewPanel({
             stage,
             decision,
             notes,
-            planningReviewCheckedItems(
-              stage,
-              checked,
-              existingContentProvenanceRequired,
-              provenanceChecked
-            ),
+            planningReviewCheckedItems(stage, true, existingContentProvenanceRequired, provenanceChecked),
             stage === "scope" ? selectedServiceCardId : undefined
           )
         }
@@ -394,8 +370,8 @@ export function ContentPlanningReviewPanel({
       >
         {actions.pending
           ? "Zapisuję decyzję..."
-          : decision === "approved"
-            ? "Zapisz decyzję i przejdź dalej"
+            : decision === "approved"
+            ? "Zapisz decyzję"
             : "Zapisz uwagi do poprawy"}
       </button> : null}
 

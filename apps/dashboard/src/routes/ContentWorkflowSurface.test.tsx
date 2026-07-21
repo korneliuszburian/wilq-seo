@@ -929,18 +929,12 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    expect(await screen.findByText("Zatwierdź zakres treści")).toBeInTheDocument();
-    expect(screen.getByText("Co robisz teraz?")).toBeInTheDocument();
+    expect(await screen.findByText("Decyzja dla tej strony")).toBeInTheDocument();
+    expect(screen.getByText("Główna intencja")).toBeInTheDocument();
     expect(screen.getByText("właściciel firmy")).toBeInTheDocument();
-    expect(screen.getByText("Skontaktuj się z Ekologus.")).toBeInTheDocument();
-    expect(screen.getByText("bdo odpady")).toBeInTheDocument();
-    expect(screen.getByText(/120 wyśw. · 12 klik. · CTR 10.0%/)).toBeInTheDocument();
-    expect(screen.getByText(/brak ścisłego mapowania do strony i usługi/)).toBeInTheDocument();
-    const saveScopeButton = screen.getByRole("button", { name: "Zapisz decyzję i przejdź dalej" });
-    expect(saveScopeButton).toBeDisabled();
-    fireEvent.click(
-      screen.getByLabelText("Sprawdziłem stronę, usługę, intencję, odbiorcę i CTA.")
-    );
+    expect(screen.queryByText("Co robisz teraz?")).not.toBeInTheDocument();
+    expect(screen.getByText("Pokaż szczegóły zakresu i źródła")).toBeInTheDocument();
+    const saveScopeButton = screen.getByRole("button", { name: "Zapisz decyzję" });
     expect(saveScopeButton).not.toBeDisabled();
     fireEvent.click(saveScopeButton);
 
@@ -1009,7 +1003,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    await screen.findByText("Zatwierdź zakres treści");
+    await screen.findByText("Sprawdź zakres strony");
     fireEvent.change(screen.getByLabelText("Decyzja planistyczna"), {
       target: { value: "needs_changes" }
     });
