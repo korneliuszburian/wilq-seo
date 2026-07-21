@@ -598,7 +598,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const picker = await screen.findByRole("combobox", { name: "Aktywna strona" });
+    const picker = await screen.findByRole("combobox", { name: "Strona" });
     expect(within(picker).getAllByRole("option")).toHaveLength(3);
     expect(picker).toHaveValue("content_work_item_bdo");
 
@@ -629,7 +629,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByText("Wybierz stronę do pracy")).toBeInTheDocument();
-    expect(screen.queryByRole("combobox", { name: "Aktywna strona" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Strona" })).not.toBeInTheDocument();
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalledWith("missing_work_item");
   });
@@ -646,12 +646,12 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const picker = await screen.findByRole("combobox", { name: "Aktywna strona" });
+    const picker = await screen.findByRole("combobox", { name: "Strona" });
     expect(picker).toHaveValue("content_work_item_bdo");
 
     fireEvent.change(picker, { target: { value: "content_work_item_green_deal" } });
     await waitFor(() =>
-      expect(screen.getByRole("combobox", { name: "Aktywna strona" })).toHaveValue(
+      expect(screen.getByRole("combobox", { name: "Strona" })).toHaveValue(
         "content_work_item_green_deal"
       )
     );
@@ -663,7 +663,7 @@ describe("ContentWorkflowSurface", () => {
       "content_work_item_bdo"
     );
     await waitFor(() =>
-      expect(screen.getByRole("combobox", { name: "Aktywna strona" })).toHaveValue(
+      expect(screen.getByRole("combobox", { name: "Strona" })).toHaveValue(
         "content_work_item_bdo"
       )
     );
@@ -725,7 +725,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     const picker = await screen.findByTestId("content-session-picker");
-    expect(within(picker).getByText("Zmień stronę lub otwórz pełny inventory")).toBeInTheDocument();
+    expect(within(picker).getByLabelText("Strona")).toBeInTheDocument();
     expect(within(picker).queryByRole("combobox", { name: "Przejdź do sekcji strony" })).not.toBeInTheDocument();
     expect(within(picker).queryByRole("combobox", { name: "Przejdź do sekcji z planu" })).not.toBeInTheDocument();
   });
@@ -738,7 +738,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const picker = await screen.findByRole("combobox", { name: "Aktywna strona" });
+    const picker = await screen.findByRole("combobox", { name: "Strona" });
     expect(within(picker).getByRole("option", { name: /Raportowanie odpadowe/ })).toBeInTheDocument();
 
     expect(within(picker).getByRole("option", { name: /Raportowanie odpadowe/ })).toHaveValue(
@@ -772,6 +772,16 @@ describe("ContentWorkflowSurface", () => {
         ? { ...contentQueueResponse(), candidates: [inventoryCandidate], candidate_count: 1 }
         : contentQueueResponse()
     );
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        candidate: inventoryCandidate,
+        item: workItem({
+          wordpress_title_or_h1: "Raportowanie odpadowe",
+          source_public_url: inventoryCandidate.source_public_url,
+          final_canonical_url: inventoryCandidate.final_canonical_url
+        })
+      })
+    );
 
     render(
       <App
@@ -780,7 +790,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const picker = await screen.findByRole("combobox", { name: "Aktywna strona" });
+    const picker = await screen.findByRole("combobox", { name: "Strona" });
     fireEvent.change(picker, { target: { value: inventoryCandidate.work_item_id } });
 
     await waitFor(() => {
@@ -2601,6 +2611,8 @@ function draftPackage() {
 }
 
 function workflowSnapshot({
+  candidate = contentQueueResponse().candidates[0],
+  item = workItem(),
   review = null,
   handoff = null,
   workspace = revisionWorkspace(),
@@ -2608,6 +2620,8 @@ function workflowSnapshot({
   currentStepId = "draft",
   steps = operatorSteps()
 }: {
+  candidate?: ContentWorkItemQueueResponse["candidates"][number];
+  item?: ContentWorkItem;
   review?: ReturnType<typeof humanReview> | null;
   handoff?: ReturnType<typeof wordpressHandoff> | null;
   workspace?: ContentWorkItemWorkflowSnapshotResponse["revision_workspace"];
@@ -2621,22 +2635,22 @@ function workflowSnapshot({
   return {
     response_type: "workflow_snapshot",
     freshness_assessment: contentFreshnessAssessment(),
-    candidate: contentQueueResponse().candidates[0],
+    candidate,
     service_profile_context: serviceProfileContext(),
     claim_ledger: claimLedger(),
     preflight: {
-      item: workItem(),
+      item,
       inventory_resolution: inventoryResolution(),
       preflight_verdict: preflightVerdict("plan_allowed")
     },
     sales_brief: {
-      item: workItem(),
+      item,
       inventory_resolution: inventoryResolution(),
       preflight_verdict: preflightVerdict("brief_allowed"),
       sales_brief_result: { brief: salesBrief(), blockers: [] }
     },
     draft_package: {
-      item: workItem(),
+      item,
       inventory_resolution: inventoryResolution(),
       preflight_verdict: preflightVerdict("draft_allowed"),
       sales_brief_result: { brief: salesBrief(), blockers: [] },

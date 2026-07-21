@@ -708,22 +708,29 @@ function ContentSessionPicker({
   pageTitle: string;
   pageUrl: string | null | undefined;
 }) {
-  const [inventorySearch, setInventorySearch] = useState("");
   const candidates = queue.candidates.filter(
     (candidate) => candidate.recommended_mode !== "block"
   );
-  const queueCandidateIds = new Set(candidates.map((candidate) => candidate.work_item_id));
   const allInventoryPageOptions = (inventory?.items ?? [])
-    .filter((item) => !queueCandidateIds.has(item.work_item_id))
     .map((item) => ({
       workItemId: item.work_item_id,
       label: `${item.title || item.path} — ${item.path}`
     }));
-  const inventoryPageOptions = filterInventoryPageOptions(allInventoryPageOptions, inventorySearch);
-  const selected = candidates.find(
-    (candidate) => candidate.work_item_id === selectedWorkItemId
-  );
-  if (!selected) return null;
+  const pageOptions = [
+    ...candidates.map((candidate) => ({
+      workItemId: candidate.work_item_id,
+      label: `${candidate.title || candidate.topic} — ${contentCandidatePath(candidate.final_canonical_url)}`
+    })),
+    ...allInventoryPageOptions.filter(
+      (item) => !candidates.some((candidate) => candidate.work_item_id === item.workItemId)
+    )
+  ];
+  if (!pageOptions.some((item) => item.workItemId === selectedWorkItemId)) {
+    pageOptions.unshift({
+      workItemId: selectedWorkItemId,
+      label: `${pageTitle} — ${contentCandidatePath(pageUrl)}`
+    });
+  }
 
   return (
     <section
@@ -738,12 +745,12 @@ function ContentSessionPicker({
             {pageTitle}
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            {contentCandidatePath(pageUrl ?? selected.final_canonical_url)}
+            {contentCandidatePath(pageUrl)}
           </p>
           <p className="mt-2 text-xs text-slate-500">WordPress · {workflowStatusLabel}</p>
         </div>
         <label className="text-sm font-semibold text-ink" htmlFor="content-session-work-item">
-          Aktywna strona
+          Strona
           <select
             id="content-session-work-item"
             data-testid="content-session-work-item"
@@ -751,79 +758,23 @@ function ContentSessionPicker({
             value={selectedWorkItemId}
             onChange={(event) => onSelectWorkItem(event.target.value)}
           >
-            {candidates.map((candidate) => (
-              <option key={candidate.work_item_id} value={candidate.work_item_id}>
-                {candidate.title || candidate.topic} — {contentCandidatePath(candidate.final_canonical_url)}
+            {pageOptions.map((item) => (
+              <option key={item.workItemId} value={item.workItemId}>
+                {item.label}
               </option>
             ))}
-            {selectedWorkItemId && !queueCandidateIds.has(selectedWorkItemId)
-              ? allInventoryPageOptions
-                  .filter((item) => item.workItemId === selectedWorkItemId)
-                  .map((item) => <option key={item.workItemId} value={item.workItemId}>{item.label}</option>)
-              : null}
           </select>
+          {inventory?.total_count ? (
+            <span className="mt-1 block text-xs font-normal text-slate-500">
+              {inventory.total_count.toLocaleString("pl-PL")} stron dostępnych w tym wyborze
+            </span>
+          ) : null}
         </label>
       </div>
       <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-line pt-3 text-sm">
         <p className="font-semibold text-slate-500">Usługa:</p>
         <p className="font-semibold text-ink">{serviceLabel}</p>
       </div>
-      <details className="mt-3 rounded-md border border-line bg-surface px-3 py-2 text-sm">
-        <summary className="cursor-pointer font-semibold text-action">Zmień stronę lub otwórz pełny inventory</summary>
-        <div className="mt-3 space-y-3" aria-label="Strony dostępne do odświeżenia">
-          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Szukaj w pełnym inventory WordPress
-            <input
-              type="search"
-              value={inventorySearch}
-              onChange={(event) => setInventorySearch(event.target.value)}
-              placeholder="Tytuł albo adres URL"
-              className="mt-1 h-10 w-full rounded-md border border-line bg-white px-3 text-sm font-normal normal-case tracking-normal text-ink"
-              aria-label="Szukaj w pełnym inventory WordPress"
-            />
-          </label>
-          <div className="grid gap-2 lg:grid-cols-2">
-          {candidates.map((candidate) => (
-            <button
-              key={candidate.work_item_id}
-              type="button"
-              onClick={() => onSelectWorkItem(candidate.work_item_id)}
-              className={`rounded-md border p-3 text-left transition-colors ${
-                candidate.work_item_id === selectedWorkItemId
-                  ? "border-action bg-action/10"
-                  : "border-line bg-white hover:border-action/50"
-              }`}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-semibold text-ink">{contentCandidatePath(candidate.final_canonical_url)}</span>
-                <span className="text-xs font-semibold text-slate-500">{candidate.recommended_mode_label}</span>
-              </div>
-              <p className="mt-1 text-sm text-slate-700">{candidate.topic}</p>
-              <p className="mt-2 text-xs leading-5 text-slate-600">{pageMetricsSummary(candidate)}</p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">{pageInventorySummary(candidate)}</p>
-              {candidate.page_inventory?.acf_section_headings.length ? (
-                <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Układ ACF: {acfSectionPreview(candidate.page_inventory.acf_section_headings)}
-                </p>
-              ) : null}
-            </button>
-          ))}
-          {inventoryPageOptions.map((item) => (
-            <button
-              key={item.workItemId}
-              type="button"
-              onClick={() => onSelectWorkItem(item.workItemId)}
-              className={`rounded-md border p-3 text-left transition-colors ${item.workItemId === selectedWorkItemId ? "border-action bg-action/10" : "border-line bg-white hover:border-action/50"}`}
-            >
-              <span className="font-semibold text-ink">{item.label}</span>
-              <p className="mt-1 text-xs text-slate-500">Pełny inventory WordPress · wybierz, aby odczytać stronę i metryki.</p>
-            </button>
-          ))}
-          {!inventoryPageOptions.length ? <p className="text-sm text-slate-600">Brak stron pasujących do wyszukiwania.</p> : null}
-          </div>
-          {allInventoryPageOptions.length > inventoryPageOptions.length ? <p className="text-xs text-slate-500">Pokazuję maksymalnie 30 wyników. Doprecyzuj wyszukiwanie, aby znaleźć konkretny adres.</p> : null}
-        </div>
-      </details>
     </section>
   );
 }
@@ -837,55 +788,6 @@ export function filterInventoryPageOptions(
   return options
     .filter((item) => !normalizedSearch || item.label.toLocaleLowerCase("pl-PL").includes(normalizedSearch))
     .slice(0, Math.max(1, limit));
-}
-
-function pageMetricsSummary(candidate: ContentWorkItemQueueCandidate) {
-  const metrics = candidate.search_metrics;
-  if (!metrics || metrics.impressions === null || metrics.impressions === undefined) {
-    return "Brakuje danych z wyszukiwarki dla tej strony.";
-  }
-  const values = [`${metrics.impressions} wyświetleń`];
-  if (metrics.clicks !== null && metrics.clicks !== undefined) values.push(`${metrics.clicks} kliknięć`);
-  if (metrics.ctr !== null && metrics.ctr !== undefined) values.push(`CTR ${(metrics.ctr * 100).toFixed(2)}%`);
-  if (metrics.primary_query) values.push(`najczęściej: „${metrics.primary_query}”`);
-  if (metrics.comparison_status === "available" && metrics.comparison_periods?.length === 2) {
-    values.push(`porównanie: ${metrics.comparison_periods[0]} → ${metrics.comparison_periods[1]}`);
-  } else {
-    values.push("brak dwóch porównywalnych okresów");
-  }
-  if (candidate.ga4_metrics?.status === "available" && candidate.ga4_metrics.metrics.length) {
-    values.push(
-      `GA4: ${candidate.ga4_metrics.metrics
-        .slice(0, 3)
-        .map((metric) => `${metric.metric_label || metric.name} ${metric.value}`)
-        .join(", ")}`
-    );
-  } else {
-    values.push("GA4: brak exact danych");
-  }
-  return values.join(" · ");
-}
-
-function pageInventorySummary(candidate: ContentWorkItemQueueCandidate) {
-  const inventory = candidate.page_inventory;
-  if (!inventory) return "Stan aktualnej strony wymaga odczytu.";
-  const sections =
-    inventory.section_inventory_status === "available" && inventory.section_count !== null
-      ? `${inventory.section_count} rozpoznanych sekcji`
-      : "sekcje wymagają odczytu";
-  const layout =
-    inventory.acf_section_inventory_status === "available"
-      ? `${inventory.acf_section_count ?? ""} sekcji ACF`.trim()
-      : inventory.content_inventory_status === "available"
-        ? "treść w the_content · bez sekcji ACF"
-      : "układ strony wymaga odczytu";
-  return `${sections} · ${layout}`;
-}
-
-function acfSectionPreview(headings: string[]) {
-  const visible = headings.slice(0, 2).join(" · ");
-  const remaining = headings.length - 2;
-  return remaining > 0 ? `${visible} · +${remaining}` : visible;
 }
 
 function contentCandidatePath(url: string | null | undefined) {
