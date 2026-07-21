@@ -108,7 +108,7 @@ export function ContentPlanningReviewPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            {stage === "scope" ? "Zakres i brief · krok 1 z 5" : "Plan strony · krok 2 z 5"}
+            {stage === "scope" ? "Kontekst strony" : "Stan planu"}
           </p>
           <h2 id="planning-review-title" className="mt-1 text-lg font-semibold text-ink">
             {stage === "scope" ? "Sprawdź zakres strony" : "Automatyczna mapa sekcji"}
@@ -562,8 +562,8 @@ export function planningSourceSummary(
   const subject = usedStaleLineage
     ? "Zakres · lineage poprzedniej wersji"
     : proposal.generation_status === "baseline"
-      ? "Zakres"
-      : "Plan";
+      ? "Kontekst"
+      : "Tekst";
   return `${subject} opiera się na ${sourceCount} ${sourceCount === 1 ? "źródle" : "źródłach"} · ${materialCount} ${materialCount === 1 ? "materiale" : "materiałach"} Ekologusa · ${knowledgeCount} ${knowledgeCount === 1 ? "karcie" : "kartach"} · ${connectorCount} ${connectorCount === 1 ? "połączeniu" : "połączeniach"}`;
 }
 

@@ -47,7 +47,7 @@ describe("planningSourceSummary", () => {
         knowledge_card_ids: ["card_1", "card_2"],
         source_connectors: ["gsc", "wordpress"]
       })
-    ).toBe("Plan opiera się na 2 źródłach · 1 materiale Ekologusa · 2 kartach · 2 połączeniach");
+    ).toBe("Tekst opiera się na 2 źródłach · 1 materiale Ekologusa · 2 kartach · 2 połączeniach");
     expect(
       planningSourceSummary({
         evidence_ids: ["ev_1"],
@@ -56,7 +56,7 @@ describe("planningSourceSummary", () => {
         source_connectors: ["gsc"],
         generation_status: "baseline"
       })
-    ).toBe("Zakres opiera się na 1 źródle · 0 materiałach Ekologusa · 0 kartach · 1 połączeniu");
+    ).toBe("Kontekst opiera się na 1 źródle · 0 materiałach Ekologusa · 0 kartach · 1 połączeniu");
     expect(
       planningSourceSummary(
         {
@@ -183,6 +183,9 @@ describe("generated section-map presentation", () => {
     );
 
     expect(screen.getByTestId("planning-section-map-summary")).toHaveTextContent("Sekcje dokumentu");
+    expect(screen.getByText("Stan planu")).toBeInTheDocument();
+    expect(screen.queryByText(/krok [12] z 5/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("Plan strony · krok 2 z 5")).not.toBeInTheDocument();
     expect(screen.getByTestId("planning-section-map-auto-status")).toHaveTextContent(
       "Nie wymaga osobnego zatwierdzania"
     );
