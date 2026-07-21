@@ -49,7 +49,6 @@ export function Shell() {
                 </button>
                 <div className="text-center">
                   <div className="text-base font-semibold text-ink">Treści i SEO</div>
-                  <div className="text-xs text-slate-500">Content workflow</div>
                 </div>
                 <button
                   type="button"

@@ -295,6 +295,69 @@ describe("ContentWorkflowSurface", () => {
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
   });
 
+  it("keeps the first marketer viewport focused on the page, result, reason and current scope", async () => {
+    const snapshot = workflowSnapshot({
+      currentStepId: "scope",
+      steps: operatorStepsAtScope(),
+      planning: planningWorkspace({ scopeCurrent: false })
+    });
+    snapshot.candidate = {
+      ...snapshot.candidate,
+      title: "BDO – co musi wiedzieć przedsiębiorca?",
+      topic: "bdo co to",
+      final_canonical_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+      search_metrics: {
+        impressions: 181,
+        clicks: 0,
+        ctr: 0,
+        query_count: 1,
+        primary_query: "bdo co to",
+        comparison_status: "not_available",
+        comparison_reason: "Brak dwóch porównywalnych okresów."
+      }
+    };
+    snapshot.preflight.item = {
+      ...snapshot.preflight.item,
+      wordpress_title_or_h1: "BDO – co musi wiedzieć przedsiębiorca?",
+      source_public_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+      final_canonical_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+      metric_facts: []
+    };
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(snapshot);
+
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const journey = await screen.findByTestId("content-workflow-marketer-journey");
+    const picker = within(journey).getByTestId("content-session-picker");
+    expect(within(picker).getByRole("heading", { name: "BDO – co musi wiedzieć przedsiębiorca?" })).toBeInTheDocument();
+    expect(within(picker).getByText("/bdo-co-musi-wiedziec-przedsiebiorca/")).toBeInTheDocument();
+    expect(within(picker).getByText("BDO i sprawozdawczość środowiskowa")).toBeInTheDocument();
+    expect(within(journey).getByText("Wersja robocza HTML do review")).toBeInTheDocument();
+    expect(within(journey).getByText("Powstanie po domknięciu aktualnego zakresu.")).toBeInTheDocument();
+    const hero = within(journey).getByTestId("content-next-step-hero");
+    expect(within(hero).getByText("Zakres i cel")).toBeInTheDocument();
+    expect(within(hero).getByRole("button", { name: "Sprawdź aktualny zakres" })).toBeInTheDocument();
+    expect(within(journey).getByText(/Dostępny odczyt GSC: 181 wyświetleń i 0 kliknięć/)).toBeInTheDocument();
+    expect(within(journey).getByText(/Brak exact danych GA4 ogranicza ocenę efektu/)).toBeInTheDocument();
+    expect(within(journey).queryByLabelText("Najważniejsze dane dla strony")).not.toBeInTheDocument();
+    expect(within(journey).queryByLabelText("Fakty, sygnały i blokady")).not.toBeInTheDocument();
+
+    fireEvent.click(within(journey).getByRole("button", { name: "Otwórz źródła i ograniczenia strony" }));
+    expect(await screen.findByTestId("content-workflow-technical-audit")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Wróć do treści i SEO" }));
+    expect(await screen.findByTestId("content-workflow-marketer-journey")).toBeInTheDocument();
+    expect(within(screen.getByTestId("content-session-picker")).getByText("/bdo-co-musi-wiedziec-przedsiebiorca/")).toBeInTheDocument();
+    expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
+    expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
+    expect(postContentWorkItemCodexSectionProposal).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
   it("shows the real knowledge corpus blocker before a plan can be generated", async () => {
     vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue([
       {
@@ -1503,20 +1566,14 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    expect(await screen.findByRole("button", { name: "Marketer" })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-    expect(screen.getByText("Decyzja, blocker i następny bezpieczny krok.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Źródła i szczegóły" }));
-    expect(screen.getByRole("button", { name: "Źródła i szczegóły" })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
+    expect(await screen.findByTestId("content-workflow-marketer-journey")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Otwórz źródła i ograniczenia strony" }));
     expect(screen.getByText("Metryki, źródła i szczegóły do sprawdzenia przed przekazaniem.")).toBeInTheDocument();
     expect(screen.getByTestId("content-workflow-technical-audit")).toBeInTheDocument();
     expect(screen.queryByTestId("content-workflow-marketer-journey")).not.toBeInTheDocument();
     expect(screen.getByText("Workflow treści: jeden aktywny krok")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Wróć do treści i SEO" }));
+    expect(await screen.findByTestId("content-workflow-marketer-journey")).toBeInTheDocument();
   });
 
   it("keeps the queue decision visible while the selected workflow snapshot loads", async () => {
@@ -1966,7 +2023,7 @@ describe("ContentWorkflowSurface", () => {
 });
 
 async function openWorkflowDetails() {
-  fireEvent.click(await screen.findByRole("button", { name: "Źródła i szczegóły" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Otwórz źródła i ograniczenia strony" }));
   await screen.findByTestId("content-workflow-technical-audit");
 }
 

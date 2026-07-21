@@ -429,17 +429,30 @@ Readiness is a product/usefulness estimate, not a test pass rate.
 
 ## Content Workbench Target Model
 
-## UX slice 2026-07-20
+## UX slice 2026-07-21
 
-Pierwszy viewport `/content-workflow` został odchudzony: aktywna strona pozostaje
-widoczna, pełna kolejka/inventory jest drugorzędnym disclosure, a wybór sekcji
-nie pojawia się na etapach `scope` ani `section_map` (mapa jest automatyczna).
-Kontekst pokazuje realne GSC/GA4/inventory w kartach oraz grupuje dane na Fakty,
-Sygnały i Blokady. Proof desktop/mobile znajduje się w
-`docs/review-packets/2026-07-20-ux-audit-input/second-opinion/` jako
-`*-first-slice-live.png`.
-Banner freshness jest renderowany tylko raz przez route shell; plan, tekst,
-review i dev preview nie powielają już tego samego komunikatu.
+Pierwszy załadowany viewport `/content-workflow` odpowiada teraz wprost na
+pięć pytań: rzeczywisty tytuł WordPress i URL, usługa, wynik procesu
+`Wersja robocza HTML do review`, krótkie uzasadnienie GSC/GA4 oraz aktualny
+krok z jednym CTA. `bdo co to` jest tylko zapytaniem GSC, nigdy nazwą
+edytowanej strony. Siatki metryk, `Fakty / Sygnały / Blokady`, liczba sekcji i
+jakość konektorów nie są częścią pierwszego viewportu; pozostają szczegółem
+technicznym.
+
+`Źródła i ograniczenia` jest jedynym drugorzędnym wejściem z uzasadnienia i
+otwiera istniejący tryb techniczny bez zmiany strony ani workflow. Ten slice
+nie zmienia selektora/inventory, authoringu HTML, rewizji, review, handoffu
+ani WordPressa.
+
+Desktop proof dla BDO znajduje się w
+`.local-lab/proof/dashboard-content-workflow/2026-07-21/bdo-first-viewport-1440x900.png`.
+Source open/return wykonał wyłącznie odczyty; nie utworzył rewizji, review,
+handoffu ani WordPress write. Po restarcie stacku obecny lokalny odczyt
+`GET /api/content/work-items/{id}/snapshot` nie odpowiedział w 15 s, choć
+pozostałe read endpoints zwracają `200`; przez ten runtime blocker świeży
+browser proof załadowanego mobile nie jest jeszcze potwierdzony. To jest
+następny problem wydajnościowy, a nie przesłanka do pokazywania loadingu jako
+gotowego UI.
 
 ## Production-ready visual slice 2026-07-20
 

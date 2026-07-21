@@ -445,36 +445,25 @@ function ContentWorkflowLoaded({
 
   return (
     <main className="w-full px-4 py-3 sm:py-5 lg:px-7 2xl:px-8">
-      <ContentWorkflowWorkspaceHeader>
-        <span className="sr-only">
-          {viewMode === "marketer"
-            ? "Decyzja, blocker i następny bezpieczny krok."
-            : "Metryki, źródła i szczegóły do sprawdzenia przed przekazaniem."}
-        </span>
-        <div className="flex rounded-md border border-line bg-white p-1 shadow-sm" role="group" aria-label="Tryb widoku">
-          <button
-            type="button"
-            aria-label="Marketer"
-            aria-pressed={viewMode === "marketer"}
-            onClick={() => setViewMode("marketer")}
-            className={`rounded px-3 py-2 text-sm font-semibold ${viewMode === "marketer" ? "sr-only" : ""} ${
-              viewMode === "marketer" ? "bg-white text-action shadow-sm" : "text-slate-600"
-            }`}
-          >
-            Treści i SEO
-          </button>
-          <button
-            type="button"
-            aria-pressed={viewMode === "technical"}
-            onClick={() => setViewMode("technical")}
-            className={`rounded px-3 py-2 text-sm font-semibold ${
-              viewMode === "technical" ? "bg-white text-action shadow-sm" : "text-slate-600"
-            }`}
-          >
-            Źródła i szczegóły
-          </button>
+      {viewMode === "technical" ? (
+        <ContentWorkflowWorkspaceHeader>
+          <span className="sr-only">Metryki, źródła i szczegóły do sprawdzenia przed przekazaniem.</span>
+          <div className="flex rounded-md border border-line bg-white p-1 shadow-sm" role="group" aria-label="Tryb widoku">
+            <button
+              type="button"
+              aria-label="Wróć do treści i SEO"
+              onClick={() => setViewMode("marketer")}
+              className="rounded px-3 py-2 text-sm font-semibold text-slate-600"
+            >
+              Wróć do treści i SEO
+            </button>
+          </div>
+        </ContentWorkflowWorkspaceHeader>
+      ) : (
+        <div className="hidden lg:block">
+          <ContentWorkflowWorkspaceHeader />
         </div>
-      </ContentWorkflowWorkspaceHeader>
+      )}
 
       {viewMode === "technical" ? (
         <ContentFreshnessBanner
@@ -485,7 +474,7 @@ function ContentWorkflowLoaded({
       ) : null}
 
       {viewMode === "marketer" ? (
-      <ContentWorkflowMarketerJourney
+          <ContentWorkflowMarketerJourney
           key={`${selectedWorkItemId}:${data.currentStepId}`}
           actions={actions}
           authoringProfile={authoringProfile}
@@ -494,9 +483,10 @@ function ContentWorkflowLoaded({
           enrichment={enrichment}
           queue={queue}
           inventory={inventory}
-        selectedWorkItemId={selectedWorkItemId}
-        onSelectWorkItem={onSelectWorkItem}
-      />
+          selectedWorkItemId={selectedWorkItemId}
+          onSelectWorkItem={onSelectWorkItem}
+          onShowSources={() => setViewMode("technical")}
+        />
       ) : (
         <section
           id="content-workflow-details"
@@ -541,7 +531,8 @@ function ContentWorkflowMarketerJourney({
   queue,
   inventory,
   selectedWorkItemId,
-  onSelectWorkItem
+  onSelectWorkItem,
+  onShowSources
 }: {
   actions: ContentWorkflowActions;
   authoringProfile: WordPressAuthoringProfileQuery;
@@ -552,6 +543,7 @@ function ContentWorkflowMarketerJourney({
   inventory: ContentInventoryCatalogResponse | null;
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
+  onShowSources: () => void;
 }) {
   const [selectedStepId, setSelectedStepId] = useState<WorkflowStepId>(data.currentStepId);
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
@@ -571,6 +563,8 @@ function ContentWorkflowMarketerJourney({
         selectedWorkItemId={selectedWorkItemId}
         onSelectWorkItem={onSelectWorkItem}
         serviceLabel={data.serviceProfileContext.service_label ?? "Nieprzypisana usługa"}
+        pageTitle={data.preflight.item.wordpress_title_or_h1 ?? data.candidate.title}
+        pageUrl={data.preflight.item.source_public_url ?? data.preflight.item.final_canonical_url ?? data.preflight.item.intended_final_url}
       />
       <ContentNextStepHero
         step={data.operatorSteps.find((step) => step.id === selectedStepId) ?? data.operatorSteps[0]}
@@ -581,7 +575,7 @@ function ContentWorkflowMarketerJourney({
       />
       <div className="flex flex-col">
         <div className="order-1">
-          <ContentWorkflowJourneyContext data={data} />
+          <ContentWorkflowJourneyContext data={data} onShowSources={onShowSources} />
         </div>
         <div className="order-2">
           <ContentWorkflowTaskMap
@@ -644,20 +638,22 @@ function ContentNextStepHero({
       ? step.safeNextStep
     : workflowStepInstruction(step.id, step.blocker);
   return (
-    <section className="wilq-enter wilq-enter-delay-1 mb-3 rounded-md border border-action/30 bg-action/5 p-3 shadow-sm sm:mb-4 sm:p-5" data-testid="content-next-step-hero">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-action text-2xl text-white" aria-hidden="true">→</span>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-action">Następny krok</p>
-            <h2 className="mt-1 text-xl font-semibold text-ink">{step.title}</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-700">{instruction}</p>
-          </div>
+    <section className="wilq-enter wilq-enter-delay-1 mb-3 rounded-md border border-action/30 bg-action/5 px-3 py-3 shadow-sm sm:mb-4 sm:px-4" data-testid="content-next-step-hero">
+      <div className="grid gap-3 lg:grid-cols-[minmax(13rem,0.8fr)_minmax(0,1.5fr)_auto] lg:items-end">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-action">Wynik pracy</p>
+          <p className="mt-1 text-base font-semibold text-ink">Wersja robocza HTML do review</p>
+          <p className="mt-1 text-xs leading-5 text-slate-600">Powstanie po domknięciu aktualnego zakresu.</p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-action">Aktualny krok</p>
+          <h2 className="mt-1 text-lg font-semibold text-ink">{step.title}</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-700">{instruction}</p>
         </div>
         <button
           type="button"
           onClick={() => (canAdvance && nextStep ? onAdvance(nextStep.id) : onFocusCurrentStep())}
-          className="inline-flex h-10 self-start items-center justify-center rounded-md bg-action px-4 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto sm:text-sm"
+          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
         >
           {actionLabel}
         </button>
@@ -699,7 +695,9 @@ function ContentSessionPicker({
   inventory,
   selectedWorkItemId,
   onSelectWorkItem,
-  serviceLabel
+  serviceLabel,
+  pageTitle,
+  pageUrl
 }: {
   workflowStatusLabel: string;
   queue: ContentWorkItemQueueResponse;
@@ -707,6 +705,8 @@ function ContentSessionPicker({
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
   serviceLabel: string;
+  pageTitle: string;
+  pageUrl: string | null | undefined;
 }) {
   const [inventorySearch, setInventorySearch] = useState("");
   const candidates = queue.candidates.filter(
@@ -735,10 +735,10 @@ function ContentSessionPicker({
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Strona</p>
           <h2 id="content-session-picker-title" className="mt-1 text-xl font-semibold text-ink">
-            {selected.topic}
+            {pageTitle}
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            {contentCandidatePath(selected.final_canonical_url)}
+            {contentCandidatePath(pageUrl ?? selected.final_canonical_url)}
           </p>
           <p className="mt-2 text-xs text-slate-500">WordPress · {workflowStatusLabel}</p>
         </div>
@@ -753,7 +753,7 @@ function ContentSessionPicker({
           >
             {candidates.map((candidate) => (
               <option key={candidate.work_item_id} value={candidate.work_item_id}>
-                {candidate.topic} — {contentCandidatePath(candidate.final_canonical_url)}
+                {candidate.title || candidate.topic} — {contentCandidatePath(candidate.final_canonical_url)}
               </option>
             ))}
             {selectedWorkItemId && !queueCandidateIds.has(selectedWorkItemId)
@@ -764,13 +764,9 @@ function ContentSessionPicker({
           </select>
         </label>
       </div>
-      <div className="mt-4 flex items-center gap-3 rounded-md border border-action/20 bg-action/5 p-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-action text-lg font-semibold text-white" aria-hidden="true">↗</span>
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Usługa</p>
-          <p className="mt-1 font-semibold text-ink">{serviceLabel}</p>
-          <p className="text-xs text-slate-600">Dopasowanie na podstawie strony i danych WILQ</p>
-        </div>
+      <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-line pt-3 text-sm">
+        <p className="font-semibold text-slate-500">Usługa:</p>
+        <p className="font-semibold text-ink">{serviceLabel}</p>
       </div>
       <details className="mt-3 rounded-md border border-line bg-surface px-3 py-2 text-sm">
         <summary className="cursor-pointer font-semibold text-action">Zmień stronę lub otwórz pełny inventory</summary>
