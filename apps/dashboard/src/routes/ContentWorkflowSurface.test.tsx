@@ -1585,6 +1585,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByTestId("technical-workflow-state")).toHaveTextContent("Stan pracy");
     expect(screen.queryByLabelText("Etapy workflow treści")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Kroki workflow treści")).not.toBeInTheDocument();
+    expect(screen.queryByText("Plan sekcji.")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Wróć do treści i SEO" }));
     expect(await screen.findByTestId("content-workflow-marketer-journey")).toBeInTheDocument();
   });

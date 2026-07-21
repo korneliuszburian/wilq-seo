@@ -1,4 +1,4 @@
-import type { WorkflowStep } from "./contentWorkflowRuntime";
+import { marketerWorkflowStepTitle, type WorkflowStep } from "./contentWorkflowRuntime";
 
 type ContentWorkflowPublicationBlockersProps = {
   steps: WorkflowStep[];
@@ -11,7 +11,7 @@ export function ContentWorkflowPublicationBlockers({ steps }: ContentWorkflowPub
       <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-700">
         <li><span className="font-semibold text-ink">Brak zatwierdzenia człowieka.</span> Plan, twierdzenia i paczka szkicu muszą przejść review przed użyciem jako wiedza produkcyjna.</li>
         <li><span className="font-semibold text-ink">WordPress zostaje tylko szkicem.</span> WILQ może przygotować podgląd, ale nie publikuje ani nie nadpisuje strony.</li>
-        {steps.slice(0, 3).map((step) => <li key={step.id}><span className="font-semibold text-ink">{step.title}.</span> {step.statusLabel}: {step.summary}</li>)}
+        {steps.slice(0, 3).map((step) => <li key={step.id}><span className="font-semibold text-ink">{marketerWorkflowStepTitle(step.id)}.</span> {step.statusLabel}: {step.summary}</li>)}
       </ul>
       <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3">
         <div className="text-sm font-semibold text-wait">Nie wolno jeszcze twierdzić</div>
