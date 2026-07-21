@@ -62,6 +62,11 @@ step instead of the stale queue label; a ready exact revision reads
 at `.local-lab/proof/dashboard-content-workflow/2026-07-21/bdo-status-copy-fixed.png`
 and `bdo-status-copy-fixed-mobile.png`; the mobile viewport has no horizontal
 overflow.
+The same browser session can switch the active page from BDO to the exact
+outsourcing work item through the API-owned selector; after the detail read
+settles it shows the outsourcing service, its exact metrics and the same
+`Szkic na devie` handoff state. Proof:
+`.local-lab/proof/dashboard-content-workflow/2026-07-21/outsourcing-selection-after-bdo.png`.
 The handoff context check allows a generated v2 section map to rewrite/merge
 the baseline while retaining exact planning/service/package bindings; v1 keeps
 the stricter section identity check. Deterministic review is `needs_changes`
