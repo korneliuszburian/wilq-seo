@@ -474,12 +474,14 @@ def _build_editor_save_command(
     draft_package: ContentDraftPackage,
     planning: ContentPlanningWorkspace,
     final_canonical_url: str,
+    revision_context_current: bool,
 ) -> ContentDraftRevisionAppendCommand:
     if (
         latest_revision is not None
         and latest_revision.schema_version == "wilq_content_draft_revision_v2"
         and request.base_revision_id == latest_revision.revision_id
         and latest_revision.planning_digest is not None
+        and revision_context_current
     ):
         return ContentDraftRevisionAppendCommand(
             schema_version="wilq_content_draft_revision_v2",
@@ -566,6 +568,7 @@ def content_work_item_draft_revision_save(
         draft_package=draft_package,
         planning=planning,
         final_canonical_url=final_canonical_url,
+        revision_context_current=workspace.context_current,
     )
     result = content_workflow_store().append_draft_revision(command)
     if result.status == "conflict":

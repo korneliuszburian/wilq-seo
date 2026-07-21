@@ -1301,6 +1301,7 @@ export const ContentDraftRevisionSectionSchema = z.object({
   section_id: z.string().min(1).nullable().optional(),
   heading: z.string().refine((value) => value.trim().length > 0),
   body_markdown: z.string().refine((value) => value.trim().length > 0),
+  content_html: z.string().refine((value) => value.trim().length > 0).nullable().optional(),
   query_terms: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
   evidence_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
   claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),

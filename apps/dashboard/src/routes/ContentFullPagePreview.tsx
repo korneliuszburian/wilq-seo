@@ -1,4 +1,5 @@
 import type { ContentDraftRevision, ContentPlanningProposal } from "../lib/api";
+import { ContentHtmlPreview } from "./ContentHtmlPreview";
 
 export function ContentFullPagePreview({
   revision,
@@ -47,9 +48,18 @@ export function ContentFullPagePreview({
           {revision.sections.map((section, index) => (
             <section key={section.section_id ?? section.heading} id={previewSectionId(section.section_id, index)}>
               <h2 className="text-xl font-semibold leading-7 text-ink">{section.heading}</h2>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                {section.body_markdown}
-              </p>
+              {section.content_html ? (
+                <ContentHtmlPreview
+                  contentHtml={section.content_html}
+                  title={`Podgląd HTML sekcji ${section.heading}`}
+                  className="mt-3"
+                  minHeightClass="min-h-56"
+                />
+              ) : (
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                  {section.body_markdown}
+                </p>
+              )}
               {revision.cta_blocks
                 .filter((cta) => cta.placement === section.section_id)
                 .map((cta) => (

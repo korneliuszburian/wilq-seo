@@ -78,8 +78,11 @@ def _section_digest_payload(
 ) -> dict[str, object]:
     if schema_version == "wilq_content_draft_revision_v2":
         return section.model_dump(mode="json")
-    return {
+    payload: dict[str, object] = {
         "heading": section.heading,
         "body_markdown": section.body_markdown,
         "evidence_ids": section.evidence_ids,
     }
+    if section.content_html is not None:
+        payload["content_html"] = section.content_html
+    return payload

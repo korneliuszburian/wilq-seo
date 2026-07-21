@@ -621,25 +621,31 @@ describe("ContentWorkflowSurface", () => {
 
     const sectionPicker = await screen.findByRole("combobox", { name: "Sekcja dokumentu" });
     expect(sectionPicker).toHaveValue("jak przygotować dokumenty");
-    expect(screen.getByLabelText("Tekst sekcji Jak przygotować dokumenty")).toBeInTheDocument();
+    expect(screen.getByLabelText("HTML sekcji Jak przygotować dokumenty")).toBeInTheDocument();
     expect(screen.getByTestId("content-draft-section-preview")).toHaveTextContent(
       "Jak przygotować dokumenty"
     );
 
     fireEvent.change(sectionPicker, { target: { value: "kogo dotyczy bdo" } });
-    const sectionInput = screen.getByLabelText("Tekst sekcji Kogo dotyczy BDO");
-    const localText = "Niezapisany tekst pozostaje w jednym buforze warsztatu.";
-    fireEvent.change(sectionInput, { target: { value: localText } });
-    expect(screen.getByTestId("content-draft-section-preview")).toHaveTextContent(localText);
+    const sectionInput = screen.getByLabelText("HTML sekcji Kogo dotyczy BDO");
+    const localHtml = '<p data-proof="unsaved-html">Niezapisany HTML pozostaje w jednym buforze warsztatu.</p>';
+    fireEvent.change(sectionInput, { target: { value: localHtml } });
+    expect(screen.getByTestId("content-draft-section-html-preview")).toHaveAttribute(
+      "srcdoc",
+      expect.stringContaining('data-proof="unsaved-html"')
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Źródła i ograniczenia/ }));
     expect(screen.getByRole("dialog", { name: "Źródła i ograniczenia" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Zamknij źródła i ograniczenia" }));
     expect(screen.queryByRole("dialog", { name: "Źródła i ograniczenia" })).not.toBeInTheDocument();
-    expect(sectionInput).toHaveValue(localText);
+    expect(sectionInput).toHaveValue(localHtml);
 
     fireEvent.click(screen.getByRole("tab", { name: "Podgląd" }));
-    expect(screen.getByTestId("content-draft-section-preview")).toHaveTextContent(localText);
+    expect(screen.getByTestId("content-draft-section-html-preview")).toHaveAttribute(
+      "srcdoc",
+      expect.stringContaining('data-proof="unsaved-html"')
+    );
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
     expect(postContentWorkItemCodexSectionProposal).not.toHaveBeenCalled();
@@ -972,10 +978,10 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const sectionInput = await screen.findByLabelText("Tekst sekcji Kogo dotyczy BDO");
-    expect(sectionInput).toHaveValue("Zapisana treść pierwszej wersji o obowiązkach BDO.");
-    const editedBody = "Poprawiona treść drugiej wersji zachowana przez workspace.";
-    fireEvent.change(sectionInput, { target: { value: editedBody } });
+    const sectionInput = await screen.findByLabelText("HTML sekcji Kogo dotyczy BDO");
+    expect(sectionInput).toHaveValue("<p>Zapisana treść pierwszej wersji o obowiązkach BDO.</p>");
+    const editedHtml = '<p data-proof="saved-html">Poprawiona treść drugiej wersji zachowana przez workspace.</p>';
+    fireEvent.change(sectionInput, { target: { value: editedHtml } });
     fireEvent.click(screen.getByRole("button", { name: "Zapisz poprawioną wersję do review" }));
 
     await waitFor(() => expect(saveContentWorkItemDraftRevision).toHaveBeenCalledTimes(1));
@@ -987,7 +993,7 @@ describe("ContentWorkflowSurface", () => {
         sections: expect.arrayContaining([
           expect.objectContaining({
             heading: "Kogo dotyczy BDO",
-            body_markdown: editedBody,
+            content_html: editedHtml,
             evidence_ids: ["ev_gsc_bdo"]
           })
         ])
@@ -1022,15 +1028,16 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const sectionInput = await screen.findByLabelText("Tekst sekcji Kogo dotyczy BDO");
+    const sectionInput = await screen.findByLabelText("HTML sekcji Kogo dotyczy BDO");
     const localText = "Moje lokalne poprawki nie mogą zniknąć po konflikcie.";
-    fireEvent.change(sectionInput, { target: { value: localText } });
+    const localHtml = `<p>${localText}</p>`;
+    fireEvent.change(sectionInput, { target: { value: localHtml } });
     fireEvent.click(screen.getByRole("button", { name: "Zapisz poprawioną wersję do review" }));
 
     const conflict = await screen.findByTestId("save-revision-conflict");
     expect(conflict).toHaveTextContent("Twój tekst pozostał w edytorze");
     expect(conflict).toHaveTextContent("Porównaj wersję 2 i scal zmiany ręcznie");
-    expect(sectionInput).toHaveValue(localText);
+    expect(sectionInput).toHaveValue(localHtml);
     expect(getContentWorkItemSnapshot).toHaveBeenCalledTimes(1);
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
@@ -1047,7 +1054,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const sectionInput = await screen.findByLabelText("Tekst sekcji Kogo dotyczy BDO");
+    const sectionInput = await screen.findByLabelText("HTML sekcji Kogo dotyczy BDO");
     fireEvent.change(sectionInput, { target: { value: "" } });
 
     expect(screen.getByText(/Każda zaplanowana sekcja musi zachować treść/))

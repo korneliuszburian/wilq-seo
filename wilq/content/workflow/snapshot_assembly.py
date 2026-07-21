@@ -51,6 +51,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionState,
     content_draft_package_digest,
 )
+from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.schemas import ContentFreshnessAssessment, MetricFact
 
 
@@ -615,27 +616,41 @@ def _revision_editor_sections(
     *,
     latest_revision: ContentDraftRevision | None,
 ) -> list[ContentDraftRevisionSection]:
-    prior_text_by_heading = (
+    prior_sections_by_heading = (
         {}
         if latest_revision is None
-        else {section.heading: section.body_markdown for section in latest_revision.sections}
+        else {section.heading: section for section in latest_revision.sections}
     )
-    return [
-        ContentDraftRevisionSection(
-            heading=section.heading,
-            body_markdown=prior_text_by_heading.get(section.heading)
-            or "\n\n".join(
+    editor_sections: list[ContentDraftRevisionSection] = []
+    for section in draft_package.sections:
+        prior = prior_sections_by_heading.get(section.heading)
+        if prior is not None:
+            editor_sections.append(
+                prior.model_copy(
+                    update={
+                        "content_html": prior.content_html
+                        or content_html_from_markdown(prior.body_markdown),
+                    }
+                )
+            )
+            continue
+        body_markdown = (
+            "\n\n".join(
                 value
                 for value in (
                     section.purpose,
                     *(f"- {note}" for note in section.draft_notes),
                 )
                 if value
-            ),
-            evidence_ids=section.evidence_ids,
+            )
         )
-        for section in draft_package.sections
-    ]
+        editor_sections.append(ContentDraftRevisionSection(
+            heading=section.heading,
+            body_markdown=body_markdown,
+            content_html=content_html_from_markdown(body_markdown),
+            evidence_ids=section.evidence_ids,
+        ))
+    return editor_sections
 
 
 def _revision_context_is_current(

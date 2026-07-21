@@ -15,6 +15,7 @@ from pydantic import (
 
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY, LocalAuditTrustLevel
 from wilq.content.canonical.urls import content_is_safe_public_url
+from wilq.content.workflow.content_html import validate_content_html
 from wilq.content.workflow.revision_binding import (
     ContentDraftRevisionBinding as ContentDraftRevisionBinding,
 )
@@ -203,6 +204,7 @@ class ContentDraftRevisionSection(BaseModel):
     section_id: str | None = Field(default=None, min_length=1)
     heading: str = Field(min_length=1)
     body_markdown: str
+    content_html: str | None = None
     query_terms: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     claim_ids: list[str] = Field(default_factory=list)
@@ -215,6 +217,11 @@ class ContentDraftRevisionSection(BaseModel):
         if not value.strip():
             raise ValueError("Draft revision section text cannot be blank.")
         return value
+
+    @field_validator("content_html")
+    @classmethod
+    def require_safe_html(cls, value: str | None) -> str | None:
+        return None if value is None else validate_content_html(value)
 
 
 class ContentDraftRevision(BaseModel):

@@ -15,6 +15,7 @@ import {
 } from "../lib/api";
 import { ContentCodexSectionProposalPanel } from "./ContentCodexSectionProposalPanel";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
+import { ContentHtmlPreview } from "./ContentHtmlPreview";
 import {
   ContentPlanningReviewPanel,
   planningInventorySourceLabel
@@ -84,6 +85,25 @@ function unique(values: string[]) {
   return [...new Set(values)];
 }
 
+function initialSectionContentHtml(section: ContentDraftRevisionSection) {
+  if (section.content_html) return section.content_html;
+  const paragraphs = section.body_markdown
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`);
+  return paragraphs.join("");
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function exactSemanticReviewForRevision(
   result: ContentSemanticReviewResponse | null,
   revision: ContentDraftRevision | null
@@ -139,7 +159,7 @@ export function ContentPageWorkbench({
       Object.fromEntries(
         revisionSections.map((section) => [
           sectionOverrideKey(section.heading),
-          section.body_markdown
+          initialSectionContentHtml(section)
         ])
       ),
     [revisionSections]
@@ -179,23 +199,24 @@ export function ContentPageWorkbench({
   const selectedSectionEditorKey = selectedSection
     ? sectionOverrideKey(selectedSection.heading)
     : "";
-  const selectedSectionText = selectedSection
-    ? sectionTexts[selectedSectionEditorKey] ?? selectedSection.body_markdown
+  const selectedSectionHtml = selectedSection
+    ? sectionTexts[selectedSectionEditorKey] ?? initialSectionContentHtml(selectedSection)
     : "";
   const sectionOverrides = revisionSections
     .map((section) => ({
       ...section,
       heading: section.heading,
-      body_markdown:
-        sectionTexts[sectionOverrideKey(section.heading)] ?? section.body_markdown,
+      content_html:
+        sectionTexts[sectionOverrideKey(section.heading)] ?? initialSectionContentHtml(section),
       evidence_ids: unique(section.evidence_ids)
     }));
   const hasEmptyRevisionSection = sectionOverrides.some(
-    (section) => section.body_markdown.trim().length === 0
+    (section) => !section.content_html?.trim()
   );
   const hasUnsavedRevisionChanges = revisionSections.some((section) => {
-    const currentText = sectionTexts[sectionOverrideKey(section.heading)] ?? section.body_markdown;
-    return currentText !== section.body_markdown;
+    const currentHtml =
+      sectionTexts[sectionOverrideKey(section.heading)] ?? initialSectionContentHtml(section);
+    return currentHtml !== initialSectionContentHtml(section);
   });
   const reviewCheckedItems = [
     reviewChecks.exactContentRead ? "Przeczytano dokładną treść tej wersji." : null,
@@ -475,11 +496,11 @@ export function ContentPageWorkbench({
                           {selectedSection.heading}
                         </span>
                         <span className="mt-1 block text-sm leading-6 text-slate-600">
-                          Treść w bieżącym buforze tej sekcji.
+                          Kanoniczny HTML bieżącego bufora tej sekcji.
                         </span>
                         <textarea
                           className="mt-3 min-h-[30rem] w-full resize-y rounded-md border border-line bg-white p-4 text-sm leading-6 text-ink outline-none focus:border-action focus:ring-2 focus:ring-action/20"
-                          value={selectedSectionText}
+                          value={selectedSectionHtml}
                           onChange={(event) =>
                             setSectionEditorState({
                               sourceId: draftEditorId,
@@ -489,7 +510,7 @@ export function ContentPageWorkbench({
                               },
                             })
                           }
-                          aria-label={`Tekst sekcji ${selectedSection.heading}`}
+                          aria-label={`HTML sekcji ${selectedSection.heading}`}
                         />
                       </label>
                     ) : null}
@@ -599,10 +620,18 @@ export function ContentPageWorkbench({
                     <h3 className="mt-2 text-2xl font-semibold leading-tight text-ink">
                       {selectedSection?.heading ?? "Wybierz sekcję"}
                     </h3>
-                    <div className="mt-5 border-t border-line pt-5 text-base leading-8 text-slate-700 whitespace-pre-wrap">
-                      {selectedSectionText ||
-                        "Ta sekcja nie ma jeszcze treści."}
-                    </div>
+                    {selectedSectionHtml ? (
+                      <ContentHtmlPreview
+                        contentHtml={selectedSectionHtml}
+                        title={`Podgląd HTML sekcji ${selectedSection?.heading ?? ""}`}
+                        testId="content-draft-section-html-preview"
+                        className="mt-5"
+                      />
+                    ) : (
+                      <p className="mt-5 border-t border-line pt-5 text-base leading-8 text-slate-700">
+                        Ta sekcja nie ma jeszcze treści.
+                      </p>
+                    )}
                   </article>
                 </div>
               </div>

@@ -480,6 +480,8 @@ class ContentDraftRevisionSaveRequest(BaseModel):
             raise ValueError("Draft revision requires a visible title.")
         if not self.created_by.strip():
             raise ValueError("Draft revision requires a visible creator identifier.")
+        if any(section.content_html is None for section in self.sections):
+            raise ValueError("Workshop saves require canonical content_html for every section.")
         return self
 
 
