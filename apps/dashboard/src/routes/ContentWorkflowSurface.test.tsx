@@ -977,6 +977,43 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
+  it("opens text automatically when the refreshed section map becomes current", async () => {
+    const pendingMap = planningWorkspace({ scopeCurrent: true, sectionMapCurrent: false });
+    const readyMap = planningWorkspace({ scopeCurrent: true, sectionMapCurrent: true, generated: true });
+    vi.mocked(getContentWorkItemSnapshot)
+      .mockResolvedValueOnce(
+        workflowSnapshot({
+          planning: pendingMap,
+          currentStepId: "section_map",
+          steps: operatorStepsAtSectionMap()
+        })
+      )
+      .mockResolvedValue(
+        workflowSnapshot({
+          planning: readyMap,
+          currentStepId: "section_map",
+          steps: operatorStepsAtSectionMap()
+        })
+      );
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByRole("button", { name: /1\. Kontekst/ })).toHaveAttribute("aria-pressed", "true");
+    await client.invalidateQueries({ queryKey: ["content-workflow", "work-item", "content_work_item_bdo"] });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("content-draft-workbench")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /2\. Tekst/ })).toHaveAttribute("aria-current", "step");
+    });
+    expect(screen.queryByText("Plan sekcji")).not.toBeInTheDocument();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
   it("makes a stale planning decision explicit instead of presenting it as approved", async () => {
     const planning = planningWorkspace({
       scopeCurrent: false,

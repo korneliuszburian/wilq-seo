@@ -543,18 +543,27 @@ function ContentWorkflowMarketerJourney({
   onSelectWorkItem: (workItemId: string) => void;
   onShowSources: () => void;
 }) {
+  const sectionMapCurrent = data.planningWorkspace?.section_map_current ?? false;
   const [selectedStepId, setSelectedStepId] = useState<WorkflowStepId>(
     data.currentStepId === "section_map"
-      ? data.planningWorkspace?.section_map_current
+      ? sectionMapCurrent
         ? "draft"
         : "scope"
       : data.currentStepId
   );
+  useEffect(() => {
+    if (data.currentStepId !== "section_map") return;
+    setSelectedStepId((current) => {
+      if (sectionMapCurrent && (current === "scope" || current === "section_map")) return "draft";
+      if (!sectionMapCurrent && current === "draft") return "scope";
+      return current;
+    });
+  }, [data.currentStepId, sectionMapCurrent]);
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
   const initialSectionHeading = stringFromSearch(routeSearch, "section_heading");
   const selectStep = (stepId: WorkflowStepId) => {
     const marketerStepId = stepId === "section_map"
-      ? data.planningWorkspace?.section_map_current
+      ? sectionMapCurrent
         ? "draft"
         : "scope"
       : stepId;
@@ -581,8 +590,8 @@ function ContentWorkflowMarketerJourney({
         onAdvance={selectStep}
         onFocusCurrentStep={() => focusWorkflowStep(selectedStepId)}
         onFocusPlan={() => focusWorkflowStep("section_map")}
-        sectionMapCurrent={data.planningWorkspace?.section_map_current ?? false}
-        planningCurrent={selectedStepId === "scope" ? data.planningWorkspace?.scope_current ?? true : selectedStepId === "section_map" ? data.planningWorkspace?.section_map_current ?? true : true}
+        sectionMapCurrent={sectionMapCurrent}
+        planningCurrent={selectedStepId === "scope" ? data.planningWorkspace?.scope_current ?? true : selectedStepId === "section_map" ? sectionMapCurrent : true}
       />
       <div className="flex flex-col">
         <div className="order-1">
@@ -593,7 +602,7 @@ function ContentWorkflowMarketerJourney({
             currentStepId={data.currentStepId}
             selectedStepId={selectedStepId}
             steps={data.operatorSteps}
-            sectionMapCurrent={data.planningWorkspace?.section_map_current ?? false}
+            sectionMapCurrent={sectionMapCurrent}
             onSelectStep={selectStep}
           />
         </div>
