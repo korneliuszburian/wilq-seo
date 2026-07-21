@@ -107,11 +107,10 @@ def test_dynamic_planning_proposals_are_two_case_and_idempotent(
     )
 
 
-def test_dynamic_planning_rejects_a_plan_without_cta(
+def test_dynamic_planning_requires_saved_scope_before_model(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    runtime.planning_cta_blocks = False
     snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
     service_card_id = snapshot["service_profile_context"]["service_card_id"]
     before = client.get(
@@ -127,13 +126,12 @@ def test_dynamic_planning_rejects_a_plan_without_cta(
     assert result.status_code == 200
     assert result.json()["status"] == "blocked"
     blocker = result.json()["blockers"][0]
-    assert blocker["code"] == "quality_gate_failed"
-    assert "missing_cta" in blocker["source_codes"]
-    assert "bloku CTA" in blocker["reason"]
-    assert runtime.calls == 1
+    assert blocker["code"] == "scope_not_current"
+    assert "aktualnej decyzji zakresu" in blocker["reason"]
+    assert runtime.calls == 0
 
 
-def test_explicit_plan_request_confirms_only_service_selection(
+def test_explicit_plan_request_requires_current_scope(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
@@ -152,18 +150,9 @@ def test_explicit_plan_request_confirms_only_service_selection(
     )
 
     assert generated.status_code == 200
-    assert generated.json()["status"] in {"ready", "idempotent"}, generated.json()
-    assert runtime.calls == 1
-    current = client.get(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
-    )
-    assert current.json()["status"] == "ready", current.json()
-    after = _snapshot(client, BDO_WORK_ITEM_ID)
-    assert after["planning_workspace"]["proposal"]["proposal_id"] == generated.json()[
-        "proposal"
-    ]["proposal_id"]
-    assert after["planning_workspace"]["scope_current"] is False
-    assert after["planning_workspace"]["section_map_current"] is True
+    assert generated.json()["status"] == "blocked", generated.json()
+    assert generated.json()["blockers"][0]["code"] == "scope_not_current"
+    assert runtime.calls == 0
 
 
 def test_executor_submission_failure_is_typed_and_retryable(
@@ -505,6 +494,31 @@ def test_changed_input_can_enqueue_replan_when_older_proposal_exists(
     assert response.json()["status"] == "generating"
     assert response.json()["planning_input_digest"] == changed_digest
     assert executor.submitted == 1
+
+
+def test_browser_snapshot_digest_is_accepted_by_scope_review(
+    planning_harness: tuple[TestClient, PlanningClient],
+) -> None:
+    client, _runtime = planning_harness
+    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
+    planning_digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
+    service_card_id = snapshot["service_profile_context"]["service_card_id"]
+
+    reviewed = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-review",
+        json={
+            "stage": "scope",
+            "service_card_id": service_card_id,
+            "expected_planning_digest": planning_digest,
+            "decision": "approved",
+            "reviewed_by": "wilku",
+            "checked_items": ["zakres", "dowody", "CTA"],
+            "notes": "Sprawdzono digest pokazany przez snapshot przeglądarkowy.",
+        },
+    )
+
+    assert reviewed.status_code == 200
+    assert reviewed.json()["decision"]["planning_digest"] == planning_digest
 
 def test_dynamic_planning_rejects_an_unknown_document_placement(
     planning_harness: tuple[TestClient, PlanningClient],

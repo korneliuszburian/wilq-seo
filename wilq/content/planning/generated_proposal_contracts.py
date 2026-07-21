@@ -39,6 +39,7 @@ ContentPlanningProposalBlockerCode = Literal[
     "quality_gate_failed",
     "lineage_mismatch",
     "persistence_failed",
+    "scope_not_current",
 ]
 
 

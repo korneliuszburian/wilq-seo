@@ -1014,6 +1014,29 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
+  it("opens text when a generated map is current even if the raw API step remains scope", async () => {
+    const readyMap = planningWorkspace({ scopeCurrent: false, sectionMapCurrent: true, generated: true });
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        planning: readyMap,
+        currentStepId: "scope",
+        steps: operatorStepsAtScope()
+      })
+    );
+
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    expect(await screen.findByTestId("content-draft-workbench")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /2\. Tekst/ })).toHaveAttribute("aria-current", "step");
+    expect(screen.queryByText("Plan sekcji")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Najpierw zakończ wcześniejszy krok/)).not.toBeInTheDocument();
+  });
+
   it("makes a stale planning decision explicit instead of presenting it as approved", async () => {
     const planning = planningWorkspace({
       scopeCurrent: false,

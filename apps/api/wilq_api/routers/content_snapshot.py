@@ -260,10 +260,13 @@ def snapshot_for_work_item_or_blocked_or_404(
         include_all_metric_facts=True,
     )
     if selected_decision is not None and selected_decision.status == "ready":
-        return _selected_snapshot_for_work_item_or_404(
-            work_item_id,
-            selected_decision,
-        )
+        # The browser and planning write seams must derive the same planning
+        # digest.  The selected-inventory fast path has a different demand
+        # projection, so using it here lets the UI display a digest that the
+        # planning-review endpoint cannot accept.  Keep the blocked fallback
+        # below for pages that are not ready, but use the canonical workflow
+        # snapshot for ready work items.
+        return snapshot_for_work_item_or_404(work_item_id)
     diagnostics = diagnostics_with_exact_gsc_demand(work_item_id)
     store = content_workflow_store()
     revision_state = store.load_draft_revision_state(work_item_id)

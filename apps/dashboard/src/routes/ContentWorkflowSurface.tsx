@@ -545,20 +545,17 @@ function ContentWorkflowMarketerJourney({
 }) {
   const sectionMapCurrent = data.planningWorkspace?.section_map_current ?? false;
   const [selectedStepId, setSelectedStepId] = useState<WorkflowStepId>(
-    data.currentStepId === "section_map"
-      ? sectionMapCurrent
-        ? "draft"
-        : "scope"
-      : data.currentStepId
+    sectionMapCurrent
+      ? "draft"
+      : data.currentStepId === "section_map"
+        ? "scope"
+        : data.currentStepId
   );
-  useEffect(() => {
-    if (data.currentStepId !== "section_map") return;
-    setSelectedStepId((current) => {
-      if (sectionMapCurrent && (current === "scope" || current === "section_map")) return "draft";
-      if (!sectionMapCurrent && current === "draft") return "scope";
-      return current;
-    });
-  }, [data.currentStepId, sectionMapCurrent]);
+  const visibleSelectedStepId = sectionMapCurrent && (selectedStepId === "scope" || selectedStepId === "section_map")
+    ? "draft"
+    : !sectionMapCurrent && data.currentStepId === "section_map" && selectedStepId === "draft"
+      ? "scope"
+      : selectedStepId;
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
   const initialSectionHeading = stringFromSearch(routeSearch, "section_heading");
   const selectStep = (stepId: WorkflowStepId) => {
@@ -585,13 +582,13 @@ function ContentWorkflowMarketerJourney({
         pageUrl={data.preflight.item.source_public_url ?? data.preflight.item.final_canonical_url ?? data.preflight.item.intended_final_url}
       />
       <ContentNextStepHero
-        step={data.operatorSteps.find((step) => step.id === selectedStepId) ?? data.operatorSteps[0]}
-        nextStep={data.operatorSteps[data.operatorSteps.findIndex((step) => step.id === selectedStepId) + 1]}
+        step={data.operatorSteps.find((step) => step.id === visibleSelectedStepId) ?? data.operatorSteps[0]}
+        nextStep={data.operatorSteps[data.operatorSteps.findIndex((step) => step.id === visibleSelectedStepId) + 1]}
         onAdvance={selectStep}
-        onFocusCurrentStep={() => focusWorkflowStep(selectedStepId)}
+        onFocusCurrentStep={() => focusWorkflowStep(visibleSelectedStepId)}
         onFocusPlan={() => focusWorkflowStep("section_map")}
         sectionMapCurrent={sectionMapCurrent}
-        planningCurrent={selectedStepId === "scope" ? data.planningWorkspace?.scope_current ?? true : selectedStepId === "section_map" ? sectionMapCurrent : true}
+        planningCurrent={visibleSelectedStepId === "scope" ? data.planningWorkspace?.scope_current ?? true : visibleSelectedStepId === "section_map" ? sectionMapCurrent : true}
       />
       <div className="flex flex-col">
         <div className="order-1">
@@ -599,8 +596,8 @@ function ContentWorkflowMarketerJourney({
         </div>
         <div className="order-2">
           <ContentWorkflowTaskMap
-            currentStepId={data.currentStepId}
-            selectedStepId={selectedStepId}
+            currentStepId={sectionMapCurrent ? "draft" : data.currentStepId}
+            selectedStepId={visibleSelectedStepId}
             steps={data.operatorSteps}
             sectionMapCurrent={sectionMapCurrent}
             onSelectStep={selectStep}
@@ -613,7 +610,7 @@ function ContentWorkflowMarketerJourney({
         data={data}
         draftActivationPacket={draftActivationPacket}
         enrichment={enrichment}
-        activeStepId={selectedStepId}
+        activeStepId={visibleSelectedStepId}
         initialSectionHeading={initialSectionHeading ?? undefined}
       />
     </div>
@@ -653,7 +650,9 @@ function ContentNextStepHero({
   planningCurrent: boolean;
 }) {
   if (!step) return null;
-  const planNeedsRefresh = planningCurrent && step.id === "scope" && nextStep?.id === "section_map" && !sectionMapCurrent;
+  const generatedTextReady = sectionMapCurrent && (step.id === "scope" || step.id === "draft");
+  const effectivePlanningCurrent = planningCurrent || generatedTextReady;
+  const planNeedsRefresh = effectivePlanningCurrent && step.id === "scope" && nextStep?.id === "section_map" && !sectionMapCurrent;
   const canAdvance = Boolean(nextStep?.canOpen) && !planNeedsRefresh;
   const nextStepLabel = nextStep?.id === "section_map" || nextStep?.id === "draft" ? "Przejdź do tekstu" : nextStep?.id === "review" ? "Przejdź do review" : nextStep?.id === "dev_draft" ? "Przejdź do odbioru" : "Zobacz kolejny krok";
   const currentStepLabel = workflowStepActionLabel(step.id, Boolean(step.blocker));
@@ -661,12 +660,14 @@ function ContentNextStepHero({
     ? "Otwórz kontekst planu"
     : canAdvance
       ? nextStepLabel
-      : !planningCurrent
+      : !effectivePlanningCurrent
         ? "Sprawdź aktualny zakres"
         : currentStepLabel;
   const instruction = planNeedsRefresh
     ? "Zakres jest zapisany. Zbuduj plan z aktualnych danych, aby otworzyć tekst."
-    : !planningCurrent
+    : generatedTextReady
+    ? workflowStepInstruction("draft")
+    : !effectivePlanningCurrent
     ? "Poprzednia decyzja jest nieaktualna, bo zmienił się plan lub dowody. Sprawdź zakres jeszcze raz i zapisz aktualną decyzję."
     : nextStep?.canOpen
       ? step.safeNextStep
