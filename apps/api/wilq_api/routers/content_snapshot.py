@@ -159,7 +159,10 @@ def snapshot_for_work_item_or_404(
             work_item_id,
             revision_state.latest_revision.planning_digest,
         )
-        if revision_state.latest_revision is not None
+        if (
+            revision_state.latest_revision is not None
+            and revision_state.latest_review is not None
+        )
         else None
     )
     if revision_bound_proposal is not None:

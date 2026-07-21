@@ -78,6 +78,21 @@ Recommended service candidates are now display-only until the marketer
 explicitly chooses one; a prior choice is restored only when the API marks
 `service_selection_confirmed=true`.
 
+The second exact pilot is also now a real draft proof. For
+`content_work_item_content_decision_https___www_ekologus_pl_oferta_doradztwo_i_outsourcing_ekologiczny`, proposal v7
+(`content_planning_proposal_3d3fd007acbb4a75b468cb623a4ed1f8`) and revision v2
+`content_revision_40a81d365e294d9e9ffcdd6e71da8eb3` were bound to planning
+digest `dcd0db9d5254685fc1e3c7ccadf2a30c7dea285182975887241afd16355bb43d`.
+The exact ActionObject chain completed and created WordPress `post_id=1280`;
+independent readback confirmed `status=draft`, title `Doradztwo i outsourcing
+ekologiczny dla firm` and 542 words. The dashboard now shows `Szkic na devie`
+and the selected section navigator for this case as well:
+`.local-lab/proof/dashboard-content-workflow/2026-07-21/outsourcing-after-draft-apply.png`.
+The write remains draft-only (`publish_allowed=false`,
+`destructive_update_allowed=false`), and meta mapping is still an explicit
+human review blocker. Semantic review storage remains inactive, so neither
+pilot is presented as a semantic PASS, publication or marketer UAT.
+
 Selected inventory snapshots now rebuild the compact candidate inventory from
 the fresh selected binding instead of reusing a stale diagnostics queue row.
 This keeps the marketer's section count, ACF/the_content status and headings
