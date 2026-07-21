@@ -109,6 +109,9 @@ to the Codex app-server's required-property contract. On an isolated copy of
 the local SQLite/DuckDB pair (not the main state), the exact BDO revision
 produced a persisted advisory review with all 9 dimensions and 3 findings
 (2 medium, 1 low); readback returned `ready` with the same revision digest.
+The same isolated run for outsourcing also returned 9 dimensions and 3
+findings (1 high, 2 medium) with exact-digest readback. Those findings remain
+instructions for selected-section child revisions, not approval.
 The proof is `.local-lab/proof/semantic-review/2026-07-21/bdo-temp-storage-proof.json`.
 This proves the model/store seam, not main-state activation or semantic PASS;
 the maintenance-window gate remains open.
