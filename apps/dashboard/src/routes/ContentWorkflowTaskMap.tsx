@@ -13,8 +13,11 @@ export function ContentWorkflowTaskMap({
   steps,
   onSelectStep
 }: ContentWorkflowTaskMapProps) {
-  const selectedStep = steps.find((step) => step.id === selectedStepId) ?? steps[0];
-  const currentStep = steps.find((step) => step.id === currentStepId) ?? steps[0];
+  const visibleSteps = steps.filter((step) => step.id !== "section_map");
+  const visibleSelectedStepId = selectedStepId === "section_map" ? "draft" : selectedStepId;
+  const visibleCurrentStepId = currentStepId === "section_map" ? "draft" : currentStepId;
+  const selectedStep = visibleSteps.find((step) => step.id === visibleSelectedStepId) ?? visibleSteps[0];
+  const currentStep = visibleSteps.find((step) => step.id === visibleCurrentStepId) ?? visibleSteps[0];
 
   if (!selectedStep || !currentStep) return null;
 
@@ -34,10 +37,10 @@ export function ContentWorkflowTaskMap({
         </p>
       </div>
 
-      <ol className="mt-2 grid grid-cols-5 gap-1" aria-label="Etapy tworzenia treści">
-        {steps.map((step, index) => {
-          const isCurrent = step.id === currentStepId;
-          const isSelected = step.id === selectedStepId;
+      <ol className="mt-2 grid grid-cols-4 gap-1" aria-label="Stany pracy nad treścią">
+        {visibleSteps.map((step, index) => {
+          const isCurrent = step.id === visibleCurrentStepId;
+          const isSelected = step.id === visibleSelectedStepId;
           return (
             <li key={step.id} className="min-w-0 shrink-0 sm:min-w-max lg:min-w-0">
               <button

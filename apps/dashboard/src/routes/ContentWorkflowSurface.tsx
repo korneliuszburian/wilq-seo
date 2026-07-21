@@ -545,7 +545,9 @@ function ContentWorkflowMarketerJourney({
   onSelectWorkItem: (workItemId: string) => void;
   onShowSources: () => void;
 }) {
-  const [selectedStepId, setSelectedStepId] = useState<WorkflowStepId>(data.currentStepId);
+  const [selectedStepId, setSelectedStepId] = useState<WorkflowStepId>(
+    data.currentStepId === "section_map" ? "draft" : data.currentStepId
+  );
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
   const initialSectionHeading = stringFromSearch(routeSearch, "section_heading");
   const selectStep = (stepId: WorkflowStepId) => {
