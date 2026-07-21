@@ -118,6 +118,21 @@ the maintenance-window gate remains open.
 
 Selected inventory snapshots now rebuild the compact candidate inventory from
 the fresh selected binding instead of reusing a stale diagnostics queue row.
+
+The selected snapshot read is now a dedicated, lazy projection: it does not
+rebuild the global diagnostics queue or the full planning input while the
+operator is only opening the workspace. Cold inventory catalog builds are
+coalesced, WordPress material reads are coalesced per URL, and optional
+knowledge/daily/action prewarms no longer run on API readiness. This prevents
+the first content request from competing with unrelated dashboard scans while
+preserving the existing planning, revision, review and draft-only seams.
+Focused local proof: selected snapshot response tests, inventory binding test,
+Ruff and mypy pass. Managed-stack runtime proof after a clean restart recorded
+six `200` reads in 1.376s, 0.650s, 0.751s, 0.719s, 0.739s and 0.593s; the
+BDO → outsourcing → BDO identity sequence preserved URL and service card.
+Desktop/mobile screenshots and the read-only browser request log are retained
+under `.local-lab/proof/dashboard-content-workflow/2026-07-21/`. This is a
+snapshot reliability proof, not marketer UAT or a publication claim.
 This keeps the marketer's section count, ACF/the_content status and headings
 aligned with the preflight read when a WordPress page changes between queue
 load and workflow open.

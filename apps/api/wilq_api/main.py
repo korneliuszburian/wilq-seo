@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import ipaddress
 import os
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -39,36 +38,23 @@ from apps.api.wilq_api.routers.opportunities import router as opportunities_rout
 from apps.api.wilq_api.routers.social import router as social_router
 from apps.api.wilq_api.routers.system import router as system_router
 from apps.api.wilq_api.routers.workflows import router as workflows_router
-from wilq.actions.service import clear_action_list_cache, list_actions_cached
+from wilq.actions.service import clear_action_list_cache
 from wilq.briefing.ads_diagnostics import (
     clear_ads_summary_cache,
 )
 from wilq.briefing.content_diagnostics import (
-    build_content_diagnostics_cached,
     clear_content_diagnostics_cache,
 )
 from wilq.briefing.daily_runtime import (
-    build_daily_check_runtime,
-    build_daily_marketing_brief,
     clear_daily_runtime_cache,
-    finish_daily_check_prewarm,
-    start_daily_check_prewarm,
 )
-from wilq.briefing.ga4_diagnostics import (
-    build_ga4_diagnostics_cached,
-    clear_ga4_diagnostics_cache,
-)
+from wilq.briefing.ga4_diagnostics import clear_ga4_diagnostics_cache
 from wilq.briefing.merchant_diagnostics import (
-    build_merchant_diagnostics_cached,
     clear_merchant_diagnostics_cache,
 )
 from wilq.briefing.tactical_queue import clear_tactical_queue_cache
 from wilq.connectors.registry import list_connector_statuses
-from wilq.content.workflow.catalog import build_content_inventory_catalog_cached
-from wilq.knowledge.operating_map import (
-    build_knowledge_operating_map_cached,
-    clear_knowledge_operating_map_cache,
-)
+from wilq.knowledge.operating_map import clear_knowledge_operating_map_cache
 from wilq.opportunities.engine import list_opportunities
 
 DEFAULT_CORS_ORIGINS = (
@@ -91,59 +77,12 @@ def cors_origins() -> list[str]:
 
 @asynccontextmanager
 async def wilq_lifespan(_: FastAPI) -> AsyncIterator[None]:
-    knowledge_prewarm_task: asyncio.Task[None] | None = None
-    daily_runtime_prewarm_task: asyncio.Task[None] | None = None
-    inventory_catalog_prewarm_task: asyncio.Task[None] | None = None
-    if not os.getenv("PYTEST_CURRENT_TEST"):
-        with suppress(Exception):
-            build_content_diagnostics_cached()
-        with suppress(Exception):
-            build_merchant_diagnostics_cached()
-        with suppress(Exception):
-            list_actions_cached()
-        knowledge_prewarm_task = asyncio.create_task(_prewarm_knowledge_map())
-        inventory_catalog_prewarm_task = asyncio.create_task(
-            _prewarm_inventory_catalog()
-        )
-        start_daily_check_prewarm()
-        daily_runtime_prewarm_task = asyncio.create_task(_prewarm_daily_runtime())
     try:
         yield
     finally:
-        if knowledge_prewarm_task is not None:
-            with suppress(Exception):
-                await knowledge_prewarm_task
-        if daily_runtime_prewarm_task is not None:
-            with suppress(Exception):
-                await daily_runtime_prewarm_task
-        if inventory_catalog_prewarm_task is not None:
-            with suppress(Exception):
-                await inventory_catalog_prewarm_task
-
-
-async def _prewarm_knowledge_map() -> None:
-    """Warm the expensive map after readiness without delaying API startup."""
-    with suppress(Exception):
-        await asyncio.to_thread(build_knowledge_operating_map_cached)
-
-
-async def _prewarm_inventory_catalog() -> None:
-    """Warm the selected-page index without delaying API readiness."""
-    with suppress(Exception):
-        await asyncio.to_thread(build_content_inventory_catalog_cached)
-
-
-async def _prewarm_daily_runtime() -> None:
-    """Warm the daily operator view after readiness without blocking startup."""
-    try:
-        with suppress(Exception):
-            await asyncio.to_thread(build_daily_check_runtime)
-        with suppress(Exception):
-            await asyncio.to_thread(build_daily_marketing_brief)
-        with suppress(Exception):
-            await asyncio.to_thread(build_ga4_diagnostics_cached)
-    finally:
-        finish_daily_check_prewarm()
+        # Optional read models are lazy. Readiness must not spend the first
+        # request's storage/connector budget on unrelated dashboard surfaces.
+        pass
 
 
 app = FastAPI(title="WILQ Marketing API", version="0.1.0", lifespan=wilq_lifespan)

@@ -33,6 +33,7 @@ from wilq.content.workflow.api import (
     build_content_work_item_blocked_snapshot_response_for_work_item,
     build_content_work_item_diagnostics_snapshot_response,
     build_content_work_item_diagnostics_snapshot_response_for_work_item,
+    build_content_work_item_snapshot_response_from_selected_decision,
 )
 from wilq.content.workflow.contracts import (
     ContentWorkItemSnapshotResponse,
@@ -52,6 +53,7 @@ from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import (
     ContentDecisionItem,
     ContentDiagnosticsResponse,
+    ContentFreshnessAssessment,
     MetricFact,
     connector_refresh_has_live_data,
 )
@@ -123,8 +125,19 @@ def snapshot_for_work_item_or_404(
     planning_decisions_override: list[ContentPlanningDecision] | None = None,
     diagnostics_override: ContentDiagnosticsResponse | None = None,
     revision_state_override: ContentDraftRevisionState | None = None,
+    selected_decision_override: ContentDecisionItem | None = None,
+    selected_freshness_override: ContentFreshnessAssessment | None = None,
+    resolve_planning_proposal: bool = True,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
-    diagnostics = diagnostics_override or diagnostics_with_exact_gsc_demand(work_item_id)
+    diagnostics = (
+        diagnostics_override
+        if diagnostics_override is not None
+        else (
+            None
+            if selected_decision_override is not None
+            else diagnostics_with_exact_gsc_demand(work_item_id)
+        )
+    )
     store = content_workflow_store()
     revision_state = (
         revision_state_override
@@ -137,15 +150,39 @@ def snapshot_for_work_item_or_404(
         else planning_decisions_override
     )
     proposal_store = content_planning_proposal_store()
-    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-        diagnostics,
-        work_item_id,
-        human_review=human_review,
-        audit=audit,
-        revision_state=revision_state,
-        planning_decisions=planning_decisions,
-        generated_planning_proposal=None,
-    )
+    def build_snapshot(
+        generated_planning_proposal: ContentPlanningProposal | None,
+        *,
+        human_review_override: ContentHumanReview | None = human_review,
+        audit_override: ContentWordPressDraftAuditEnvelope | None = audit,
+    ) -> ContentWorkItemWorkflowSnapshotResponse | None:
+        if selected_decision_override is not None:
+            if selected_freshness_override is None:
+                raise RuntimeError(
+                    "Selected snapshot requires a current freshness assessment."
+                )
+            return build_content_work_item_snapshot_response_from_selected_decision(
+                selected_decision_override,
+                freshness_assessment=selected_freshness_override,
+                human_review=human_review_override,
+                audit=audit_override,
+                revision_state=revision_state,
+                planning_decisions=planning_decisions,
+                generated_planning_proposal=generated_planning_proposal,
+            )
+        if diagnostics is None:
+            raise RuntimeError("Global diagnostics are required for fallback snapshots.")
+        return build_content_work_item_diagnostics_snapshot_response_for_work_item(
+            diagnostics,
+            work_item_id,
+            human_review=human_review_override,
+            audit=audit_override,
+            revision_state=revision_state,
+            planning_decisions=planning_decisions,
+            generated_planning_proposal=generated_planning_proposal,
+        )
+
+    snapshot = build_snapshot(None)
     if snapshot is None:
         raise HTTPException(
             status_code=404,
@@ -169,6 +206,11 @@ def snapshot_for_work_item_or_404(
     generated_planning_proposal: ContentPlanningProposal | None
     if revision_bound_proposal is not None:
         generated_planning_proposal = revision_bound_proposal
+    elif not resolve_planning_proposal:
+        # The first selected-page read is a context projection. Planning has
+        # its own public read seam and must not rebuild the full planning input
+        # while the operator is only opening the workspace.
+        generated_planning_proposal = None
     else:
         generated_response = read_content_planning_proposal(
             snapshot=snapshot,
@@ -180,15 +222,7 @@ def snapshot_for_work_item_or_404(
             else None
         )
     if generated_planning_proposal is not None:
-        snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-            diagnostics,
-            work_item_id,
-            human_review=human_review,
-            audit=audit,
-            revision_state=revision_state,
-            planning_decisions=planning_decisions,
-            generated_planning_proposal=generated_planning_proposal,
-        )
+        snapshot = build_snapshot(generated_planning_proposal)
         if snapshot is None:
             raise HTTPException(
                 status_code=404,
@@ -197,14 +231,10 @@ def snapshot_for_work_item_or_404(
     review = store.latest_human_review(work_item_id)
     if human_review is None and review is not None:
         audit_record = store.latest_audit_for_review(review.id)
-        snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-            diagnostics,
-            work_item_id,
-            human_review=review,
-            audit=audit_record,
-            revision_state=revision_state,
-            planning_decisions=planning_decisions,
-            generated_planning_proposal=generated_planning_proposal,
+        snapshot = build_snapshot(
+            generated_planning_proposal,
+            human_review_override=review,
+            audit_override=audit_record,
         )
         if snapshot is None:
             raise HTTPException(
@@ -224,6 +254,16 @@ def snapshot_for_default_work_item_or_404() -> ContentWorkItemWorkflowSnapshotRe
 def snapshot_for_work_item_or_blocked_or_404(
     work_item_id: str,
 ) -> ContentWorkItemSnapshotResponse:
+    selected_decision = inventory_decision_for_work_item(
+        work_item_id,
+        read_material=False,
+        include_all_metric_facts=True,
+    )
+    if selected_decision is not None and selected_decision.status == "ready":
+        return _selected_snapshot_for_work_item_or_404(
+            work_item_id,
+            selected_decision,
+        )
     diagnostics = diagnostics_with_exact_gsc_demand(work_item_id)
     store = content_workflow_store()
     revision_state = store.load_draft_revision_state(work_item_id)
@@ -239,6 +279,23 @@ def snapshot_for_work_item_or_blocked_or_404(
         diagnostics_override=diagnostics,
         revision_state_override=revision_state,
         planning_decisions_override=planning_decisions,
+    )
+
+
+def _selected_snapshot_for_work_item_or_404(
+    work_item_id: str,
+    selected_decision: ContentDecisionItem,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    store = content_workflow_store()
+    return snapshot_for_work_item_or_404(
+        work_item_id,
+        revision_state_override=store.load_draft_revision_state(work_item_id),
+        planning_decisions_override=store.load_planning_decisions(work_item_id),
+        selected_decision_override=selected_decision,
+        selected_freshness_override=build_content_freshness_assessment_fast(
+            relevant_connector_ids=selected_decision.source_connectors,
+        ),
+        resolve_planning_proposal=False,
     )
 
 

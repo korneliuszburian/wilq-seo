@@ -469,6 +469,34 @@ def build_content_work_item_diagnostics_snapshot_response_for_work_item(
     )
 
 
+def build_content_work_item_snapshot_response_from_selected_decision(
+    decision: ContentDecisionItem,
+    *,
+    freshness_assessment: ContentFreshnessAssessment,
+    human_review: ContentHumanReview | None = None,
+    audit: ContentWordPressDraftAuditEnvelope | None = None,
+    revision_state: ContentDraftRevisionState | None = None,
+    planning_decisions: list[ContentPlanningDecision] | None = None,
+    generated_planning_proposal: ContentPlanningProposal | None = None,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    """Assemble a selected-page snapshot without rebuilding global diagnostics."""
+
+    candidate = build_content_work_item_queue_candidate(
+        decision,
+        freshness_assessment,
+    )
+    return _build_content_work_item_diagnostics_snapshot_response_from_decision(
+        decision,
+        freshness_assessment=freshness_assessment,
+        candidate=candidate,
+        human_review=human_review,
+        audit=audit,
+        revision_state=revision_state,
+        planning_decisions=planning_decisions,
+        generated_planning_proposal=generated_planning_proposal,
+    )
+
+
 def _build_content_work_item_diagnostics_snapshot_response_from_decision(
     decision: ContentDecisionItem,
     *,

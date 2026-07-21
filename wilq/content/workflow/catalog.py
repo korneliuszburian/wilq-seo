@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from hashlib import sha256
-from threading import RLock
+from threading import Lock, RLock
 from time import monotonic
 from typing import Any, cast
 
@@ -23,11 +23,13 @@ from wilq.storage.metric_store import metric_store
 _INVENTORY_CATALOG_CACHE_SECONDS = 30.0
 _inventory_catalog_cache: tuple[float, ContentInventoryCatalogResponse] | None = None
 _inventory_catalog_cache_lock = RLock()
+_inventory_catalog_build_lock = Lock()
 _INVENTORY_MATERIAL_CACHE_SECONDS = 30.0
 _inventory_material_cache: dict[
     tuple[str, str | None], tuple[float, ContentInventoryMaterialResponse]
 ] = {}
 _inventory_material_cache_lock = RLock()
+_inventory_material_build_locks: dict[tuple[str, str | None], Lock] = {}
 _INVENTORY_METRIC_CACHE_SECONDS = 15.0
 _inventory_metric_cache: dict[
     tuple[str, str, tuple[tuple[str, str, tuple[str, ...]], ...]],
@@ -388,10 +390,22 @@ def build_content_inventory_catalog_cached() -> ContentInventoryCatalogResponse:
             and now - _inventory_catalog_cache[0] < _INVENTORY_CATALOG_CACHE_SECONDS
         ):
             return _inventory_catalog_cache[1]
-    catalog = build_content_inventory_catalog()
-    with _inventory_catalog_cache_lock:
-        _inventory_catalog_cache = (now, catalog)
-    return catalog
+    # The API starts a background prewarm after readiness while the dashboard
+    # may request the selected snapshot immediately. Coalesce those two cold
+    # readers so they do not duplicate the same DuckDB/WordPress inventory
+    # scan and contend on the shared metric-store lock.
+    with _inventory_catalog_build_lock:
+        now = monotonic()
+        with _inventory_catalog_cache_lock:
+            if (
+                _inventory_catalog_cache is not None
+                and now - _inventory_catalog_cache[0] < _INVENTORY_CATALOG_CACHE_SECONDS
+            ):
+                return _inventory_catalog_cache[1]
+        catalog = build_content_inventory_catalog()
+        with _inventory_catalog_cache_lock:
+            _inventory_catalog_cache = (now, catalog)
+        return catalog
 
 
 def read_content_inventory_material(
@@ -419,37 +433,50 @@ def read_content_inventory_material(
             return cached_material.model_copy(update={"evidence_id": evidence_id})
         if cached is not None:
             _inventory_material_cache.pop(cache_key, None)
-    try:
-        wordpress_material = read_wordpress_content_material(url)
-    except WordPressDraftReadError as exc:
-        response = ContentInventoryMaterialResponse(
-            status="blocked",
-            url=url,
-            evidence_id=evidence_id,
-            blocker_code="material_unavailable",
-            blocker=str(exc),
-            extraction_region=None,
-            material_confidence=None,
-            source_field_lineage=[],
-        )
-    else:
-        response = ContentInventoryMaterialResponse(
-            status="ready",
-            url=wordpress_material.url,
-            source_kind=wordpress_material.source_kind,
-            title=wordpress_material.title,
-            content_text=wordpress_material.content_text,
-            content_summary=wordpress_material.content_summary,
-            content_word_count=wordpress_material.content_word_count,
-            section_headings=wordpress_material.section_headings,
-            acf_field_names=wordpress_material.acf_field_names,
-            acf_section_headings=wordpress_material.acf_section_headings,
-            modified_gmt=wordpress_material.modified_gmt,
-            evidence_id=evidence_id,
-            extraction_region=wordpress_material.extraction_region,
-            material_confidence=wordpress_material.material_confidence,
-            source_field_lineage=wordpress_material.source_field_lineage,
-        )
+    with _inventory_material_cache_lock:
+        build_lock = _inventory_material_build_locks.setdefault(cache_key, Lock())
+    # Several dashboard panels can request the same selected URL at once. One
+    # per-key lock makes the first WordPress read the shared cold read instead
+    # of opening duplicate network calls and exhausting the API worker pool.
+    with build_lock:
+        now = monotonic()
+        with _inventory_material_cache_lock:
+            cached = _inventory_material_cache.get(cache_key)
+            if cached is not None and now - cached[0] < _INVENTORY_MATERIAL_CACHE_SECONDS:
+                return cached[1].model_copy(update={"evidence_id": evidence_id})
+            if cached is not None:
+                _inventory_material_cache.pop(cache_key, None)
+        try:
+            wordpress_material = read_wordpress_content_material(url)
+        except WordPressDraftReadError as exc:
+            response = ContentInventoryMaterialResponse(
+                status="blocked",
+                url=url,
+                evidence_id=evidence_id,
+                blocker_code="material_unavailable",
+                blocker=str(exc),
+                extraction_region=None,
+                material_confidence=None,
+                source_field_lineage=[],
+            )
+        else:
+            response = ContentInventoryMaterialResponse(
+                status="ready",
+                url=wordpress_material.url,
+                source_kind=wordpress_material.source_kind,
+                title=wordpress_material.title,
+                content_text=wordpress_material.content_text,
+                content_summary=wordpress_material.content_summary,
+                content_word_count=wordpress_material.content_word_count,
+                section_headings=wordpress_material.section_headings,
+                acf_field_names=wordpress_material.acf_field_names,
+                acf_section_headings=wordpress_material.acf_section_headings,
+                modified_gmt=wordpress_material.modified_gmt,
+                evidence_id=evidence_id,
+                extraction_region=wordpress_material.extraction_region,
+                material_confidence=wordpress_material.material_confidence,
+                source_field_lineage=wordpress_material.source_field_lineage,
+            )
     with _inventory_material_cache_lock:
         _inventory_material_cache[cache_key] = (now, response)
     return response

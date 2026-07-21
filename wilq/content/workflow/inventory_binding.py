@@ -27,6 +27,7 @@ def inventory_decision_for_work_item(
     *,
     read_material: bool = True,
     allow_material_pending: bool = False,
+    include_all_metric_facts: bool = False,
 ) -> ContentDecisionItem | None:
     catalog = build_content_inventory_catalog()
     matches = [
@@ -183,11 +184,18 @@ def inventory_decision_for_work_item(
         evidence_ids=evidence_ids,
         # Keep the bounded GSC preview for the queue, but retain exact GA4
         # landing facts so planning can bind behavior to the selected page.
-        metric_facts=[*facts[:8], *[
-            fact
-            for fact in all_metric_facts
-            if fact.source_connector == "google_analytics_4"
-        ]],
+        metric_facts=[
+            *(
+                facts
+                if include_all_metric_facts
+                else facts[:8]
+            ),
+            *[
+                fact
+                for fact in all_metric_facts
+                if fact.source_connector == "google_analytics_4"
+            ],
+        ],
         rationale=(
             "Adres został wybrany bezpośrednio z pełnego inventory WordPress, "
             "a nie z okazji wygenerowanej z brainstormingu."

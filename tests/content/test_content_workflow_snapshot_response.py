@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
+from apps.api.wilq_api.routers import content_snapshot
 from wilq.content.workflow.contracts import (
     ContentWorkItemBrowserWorkflowSnapshotResponse,
 )
@@ -83,6 +84,62 @@ def test_selected_public_workflow_snapshot_uses_same_safe_projection(
     payload: dict[str, Any] = selected_response.json()
     ContentWorkItemBrowserWorkflowSnapshotResponse.model_validate(payload)
     _assert_browser_safe_generation_readiness(payload)
+
+
+def test_selected_snapshot_uses_current_inventory_without_global_diagnostics(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
+    client = TestClient(app)
+    diagnostics_response = client.get("/api/content/diagnostics")
+    assert diagnostics_response.status_code == 200
+    diagnostics = diagnostics_response.json()
+    decision = next(
+        item
+        for item in diagnostics["decision_queue"]
+        if item["status"] == "ready" and item.get("page")
+    )
+    work_item_id = f"content_work_item_{decision['id']}"
+
+    monkeypatch.setattr(
+        content_snapshot,
+        "inventory_decision_for_work_item",
+        lambda selected_id, **_kwargs: (
+            content_snapshot.ContentDecisionItem.model_validate(decision)
+            if selected_id == work_item_id
+            else None
+        ),
+    )
+    monkeypatch.setattr(
+        content_snapshot,
+        "diagnostics_with_exact_gsc_demand",
+        lambda _work_item_id: (_ for _ in ()).throw(
+            AssertionError("selected snapshot must not build global diagnostics")
+        ),
+    )
+    monkeypatch.setattr(
+        content_snapshot,
+        "build_content_diagnostics_cached",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("selected snapshot must not read global diagnostics")
+        ),
+    )
+
+    response = client.get(f"/api/content/work-items/{work_item_id}/snapshot")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["preflight"]["item"]["id"] == work_item_id
+    assert payload["preflight"]["item"]["final_canonical_url"] == decision[
+        "final_canonical_url"
+    ]
+    assert payload["preflight"]["item"]["total_impressions"] == decision[
+        "total_impressions"
+    ]
+    assert payload["preflight"]["item"]["source_connectors"] == decision[
+        "source_connectors"
+    ]
 
 
 @pytest.mark.parametrize(

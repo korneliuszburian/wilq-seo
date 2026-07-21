@@ -1,4 +1,4 @@
-"""Contract tests for the non-blocking daily runtime prewarm."""
+"""Contract tests for lazy API read-model startup."""
 
 from __future__ import annotations
 
@@ -7,66 +7,14 @@ import asyncio
 from apps.api.wilq_api import main
 
 
-def test_daily_runtime_prewarm_builds_the_daily_check_runtime(
-    monkeypatch,
-) -> None:
-    calls: list[bool] = []
-
-    monkeypatch.setattr(main, "build_daily_check_runtime", lambda: calls.append(True))
-    monkeypatch.setattr(main, "build_daily_marketing_brief", lambda: calls.append(True))
-    monkeypatch.setattr(main, "build_ga4_diagnostics_cached", lambda: None)
-
-    asyncio.run(main._prewarm_daily_runtime())
-
-    assert calls == [True, True]
-
-
-def test_daily_runtime_prewarm_clears_in_progress_state_on_failure(monkeypatch) -> None:
-    calls: list[str] = []
-
-    monkeypatch.setattr(
-        main,
-        "build_daily_check_runtime",
-        lambda: (_ for _ in ()).throw(RuntimeError()),
-    )
-    monkeypatch.setattr(
-        main,
-        "build_daily_marketing_brief",
-        lambda: (_ for _ in ()).throw(RuntimeError()),
-    )
-    monkeypatch.setattr(main, "build_ga4_diagnostics_cached", lambda: None)
-    monkeypatch.setattr(main, "finish_daily_check_prewarm", lambda: calls.append("finished"))
-
-    asyncio.run(main._prewarm_daily_runtime())
-
-    assert calls == ["finished"]
-
-
-def test_lifespan_schedules_daily_runtime_prewarm_after_readiness(monkeypatch) -> None:
-    calls: list[str] = []
-
+def test_lifespan_does_not_preheat_unrelated_read_models(monkeypatch) -> None:
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
-    monkeypatch.setattr(main, "build_content_diagnostics_cached", lambda: None)
-    monkeypatch.setattr(main, "build_merchant_diagnostics_cached", lambda: None)
-    monkeypatch.setattr(main, "list_actions_cached", lambda: [])
-
-    async def fake_knowledge_prewarm() -> None:
-        calls.append("knowledge")
-
-    async def fake_daily_prewarm() -> None:
-        calls.append("daily")
-        main.finish_daily_check_prewarm()
-
-    monkeypatch.setattr(main, "_prewarm_knowledge_map", fake_knowledge_prewarm)
-    monkeypatch.setattr(main, "_prewarm_daily_runtime", fake_daily_prewarm)
 
     async def exercise_lifespan() -> None:
         async with main.wilq_lifespan(None):
-            assert calls == []
+            pass
 
     asyncio.run(exercise_lifespan())
-
-    assert calls == ["knowledge", "daily"]
 
 
 def test_api_cache_invalidation_clears_daily_runtime(monkeypatch) -> None:
