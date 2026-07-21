@@ -31,7 +31,6 @@ import {
 import { marketerWorkflowStepTitle, type ContentWorkflowSnapshot, type WorkflowStepId } from "./contentWorkflowRuntime";
 import { ContentCandidateQueuePanel } from "./ContentCandidateQueuePanel";
 import { ContentInventoryCatalogPanel } from "./ContentInventoryCatalogPanel";
-import { WorkflowStepsList } from "./WorkflowStepsList";
 import {
   ContentWorkflowError,
   ContentWorkflowSelectedLoading,
@@ -515,7 +514,6 @@ function ContentWorkflowLoaded({
           <WorkflowProofSummary data={data} />
           <ClaimLedgerGatePanel data={data} />
           <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
-          <WorkflowStepsList steps={steps} />
         </section>
       )}
     </main>

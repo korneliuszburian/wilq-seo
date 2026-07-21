@@ -5,7 +5,7 @@ import { ContentWorkflowNextDecisionPanel } from "./ContentWorkflowNextDecisionP
 import { ContentWorkflowPublicationBlockers } from "./ContentWorkflowPublicationBlockers";
 import { activeWorkflowStepIndex, blockedWorkflowSteps, claimLedgerSummary } from "./contentWorkflowDecisionModel";
 import type { ContentWorkflowSnapshot, WorkflowStep } from "./contentWorkflowRuntime";
-import { workflowStepShortLabel } from "./WorkflowStepper";
+import { marketerWorkflowStepTitle } from "./contentWorkflowRuntime";
 
 type ContentWorkflowDecisionPanelProps = {
   data: ContentWorkflowSnapshot;
@@ -26,9 +26,9 @@ export function ContentWorkflowDecisionPanel({ data, queue, steps }: ContentWork
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white">
-      <ContentWorkflowDecisionHeader topic={item.topic} activeStepIndex={activeStepIndex} steps={steps} />
+      <ContentWorkflowDecisionHeader topic={item.topic} currentStepId={data.currentStepId} />
       <div className="grid gap-4 p-4 lg:grid-cols-[1.05fr_0.95fr]">
-        <ContentWorkflowNextDecisionPanel activeStepLabel={activeStep ? workflowStepShortLabel(activeStep) : "Plan"} decisionTitle={decisionTitle} decisionReason={decisionReason} evidenceCount={new Set(item.evidence_ids).size} reviewClaims={ledgerSummary.review} blockedClaims={ledgerSummary.blocked} nextStep={nextStep} />
+        <ContentWorkflowNextDecisionPanel activeStepLabel={activeStep ? marketerWorkflowStepTitle(activeStep.id) : "Kontekst"} decisionTitle={decisionTitle} decisionReason={decisionReason} evidenceCount={new Set(item.evidence_ids).size} reviewClaims={ledgerSummary.review} blockedClaims={ledgerSummary.blocked} nextStep={nextStep} />
         <ContentWorkflowPublicationBlockers steps={blockedSteps} />
       </div>
       <ContentWorkflowClaimSummary allowed={ledgerSummary.allowed} review={ledgerSummary.review} blocked={ledgerSummary.blocked} />
