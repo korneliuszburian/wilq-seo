@@ -104,6 +104,15 @@ The write remains draft-only (`publish_allowed=false`,
 human review blocker. Semantic review storage remains inactive, so neither
 pilot is presented as a semantic PASS, publication or marketer UAT.
 
+The semantic schema fixed point now normalizes every Pydantic object property
+to the Codex app-server's required-property contract. On an isolated copy of
+the local SQLite/DuckDB pair (not the main state), the exact BDO revision
+produced a persisted advisory review with all 9 dimensions and 3 findings
+(2 medium, 1 low); readback returned `ready` with the same revision digest.
+The proof is `.local-lab/proof/semantic-review/2026-07-21/bdo-temp-storage-proof.json`.
+This proves the model/store seam, not main-state activation or semantic PASS;
+the maintenance-window gate remains open.
+
 Selected inventory snapshots now rebuild the compact candidate inventory from
 the fresh selected binding instead of reusing a stale diagnostics queue row.
 This keeps the marketer's section count, ACF/the_content status and headings

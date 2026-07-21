@@ -71,6 +71,12 @@ def semantic_review_turn_request(
 
 def semantic_review_output_schema(revision: ContentDraftRevision) -> dict[str, object]:
     schema = deepcopy(ContentSemanticReviewModelOutput.model_json_schema())
+    # Codex app-server's structured-output validator requires every declared
+    # object property to be required. Pydantic emits defaults for the advisory
+    # flags and optional finding evidence, which the provider rejects before
+    # the model turn with ``codex_output_schema_invalid_required``. Normalize
+    # the complete schema before narrowing exact targets.
+    _require_all_object_properties(schema)
     definitions = _mapping(schema, "$defs")
     dimension = _properties(_mapping(definitions, "ContentSemanticDimensionAssessment"))
     finding = _properties(_mapping(definitions, "ContentSemanticFindingOutput"))
@@ -88,6 +94,21 @@ def semantic_review_output_schema(revision: ContentDraftRevision) -> dict[str, o
     _restrict_array(finding, "affected_targets", allowed_targets)
     _restrict_array(finding, "evidence_ids", _revision_evidence_ids(revision))
     return schema
+
+
+def _require_all_object_properties(value: object) -> None:
+    """Make Pydantic defaults explicit for Codex structured output."""
+
+    if isinstance(value, dict):
+        properties = value.get("properties")
+        if isinstance(properties, dict):
+            value["required"] = list(properties)
+        value.pop("default", None)
+        for nested in value.values():
+            _require_all_object_properties(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            _require_all_object_properties(nested)
 
 
 def _revision_evidence_ids(revision: ContentDraftRevision) -> list[str]:

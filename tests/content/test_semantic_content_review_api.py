@@ -23,6 +23,8 @@ from wilq.content.drafts.initial_full_draft_turn import (
 )
 from wilq.content.planning.dynamic_input import build_content_planning_input
 from wilq.content.quality import semantic_review_store as semantic_review_store_module
+from wilq.content.quality.semantic_review_turn import semantic_review_output_schema
+from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.storage.local_state import local_state_store
 
 pytest_plugins = ("tests.content.test_dynamic_planning_proposals_api",)
@@ -42,6 +44,17 @@ def test_semantic_runtime_uses_a_separate_bounded_timeout(
 
     assert isinstance(client, StdioCodexAppServerClient)
     assert client.timeout_seconds == 211.0
+
+
+def test_semantic_output_schema_requires_defaulted_properties_for_codex() -> None:
+    revision = ContentDraftRevision.model_construct(sections=[])
+    schema = semantic_review_output_schema(revision)
+
+    assert set(schema["required"]) == set(schema["properties"])
+    for definition in schema["$defs"].values():
+        if not isinstance(definition, dict) or "properties" not in definition:
+            continue
+        assert set(definition["required"]) == set(definition["properties"])
 
 
 def test_full_draft_model_envelope_is_compact_but_digest_bound(
