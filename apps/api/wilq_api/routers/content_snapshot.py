@@ -5,7 +5,10 @@ from time import monotonic
 
 from fastapi import HTTPException
 
-from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
+from wilq.briefing.content_diagnostics import (
+    build_content_diagnostics_cached,
+    build_content_freshness_assessment_fast,
+)
 from wilq.connectors.google_ads.ad_landing_pages import (
     ADS_DEMAND_INPUT_FACT_NAMES,
 )
@@ -273,7 +276,17 @@ def diagnostics_with_exact_gsc_demand(
         ]
         if not any(item.id == inventory_decision.id for item in diagnostics.decision_queue):
             decision_queue.append(inventory_decision)
-        diagnostics = diagnostics.model_copy(update={"decision_queue": decision_queue})
+        diagnostics = diagnostics.model_copy(
+            update={
+                "decision_queue": decision_queue,
+                # A selected workflow must not inherit connector quality
+                # caveats from unrelated content consumers (for example the
+                # shop WordPress source on an ordinary ekologus.pl page).
+                "freshness_assessment": build_content_freshness_assessment_fast(
+                    relevant_connector_ids=inventory_decision.source_connectors,
+                ),
+            }
+        )
     diagnostics = content_diagnostics_with_ads_refresh(
         diagnostics,
         latest_ads_refresh(

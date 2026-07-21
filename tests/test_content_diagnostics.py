@@ -65,6 +65,23 @@ def test_stale_shop_wordpress_does_not_block_ordinary_content_freshness(monkeypa
 
     assert product_assessment.state == "stale"
     assert product_assessment.stale_connector_ids == ["wordpress_sklep"]
+    assert set(product_assessment.connector_quality_states) == {
+        "google_search_console",
+        "wordpress_ekologus",
+        "wordpress_sklep",
+    }
+
+    ordinary_assessment = _content_freshness_assessment(
+        connectors,
+        refreshes,
+        live_data_available=True,
+        relevant_connector_ids=["google_search_console", "wordpress_ekologus"],
+    )
+    assert set(ordinary_assessment.connector_quality_states) == {
+        "google_search_console",
+        "wordpress_ekologus",
+    }
+    assert "wordpress_sklep" not in ordinary_assessment.connector_quality_states
 
 
 def test_content_diagnostics_default_cache_survives_startup_waterfall(

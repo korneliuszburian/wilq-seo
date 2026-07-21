@@ -561,3 +561,18 @@ instrukcja kroku. Dzięki temu marketer wie, co sprawdzić, bez odsłaniania
 technicznego kodu i bez sugerowania akceptacji albo publikacji.
 
 Focused proof: `workflowStepInstruction` (3/3) oraz dashboard typecheck.
+
+## 2026-07-21 — jakość źródeł jest scoped do wybranej decyzji
+
+Wybrany work item nie dziedziczy już quality states i caveatów wszystkich
+connectorów z szerokiego diagnostics cache. Snapshot BDO ogranicza je do
+WordPress Ekologus i GSC, bo tylko te źródła są w jego aktualnym lineage;
+`WordPress sklep` nie pojawia się jako szum dla zwykłej strony. Pełny widok
+diagnostics nadal może oceniać wszystkie konektory, ale ekran decyzji pokazuje
+wyłącznie źródła relewantne dla tej strony.
+
+Live proof 2026-07-21: snapshot BDO zwraca quality states
+`google_search_console`, `wordpress_ekologus`, bez `wordpress_sklep`; browser
+pokazuje `GSC: odczyt częściowy · WordPress: jakość do sprawdzenia`. Focused
+proof: `test_stale_shop_wordpress_does_not_block_ordinary_content_freshness`
+oraz testy API state/queue.

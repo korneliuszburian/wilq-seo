@@ -475,23 +475,29 @@ def _content_freshness_assessment(
     ]
     quality_fields: _ContentFreshnessQualityFields = {
         "connector_refresh_run_ids": {
-            connector_id: refresh.id for connector_id, refresh in refresh_by_connector.items()
+            connector_id: refresh.id
+            for connector_id, refresh in refresh_by_connector.items()
+            if connector_id in scoped_connector_ids
         },
         "connector_covered_windows": {
             connector_id: refresh.covered_window
             for connector_id, refresh in refresh_by_connector.items()
+            if connector_id in scoped_connector_ids
         },
         "connector_settlement_states": {
             connector_id: refresh.settlement_state
             for connector_id, refresh in refresh_by_connector.items()
+            if connector_id in scoped_connector_ids
         },
         "connector_quality_states": {
             connector_id: refresh.quality_state
             for connector_id, refresh in refresh_by_connector.items()
+            if connector_id in scoped_connector_ids
         },
         "connector_quality_caveats": {
             connector_id: refresh.covered_window.interpretation_caveats
             for connector_id, refresh in refresh_by_connector.items()
+            if connector_id in scoped_connector_ids
             if refresh.covered_window.interpretation_caveats
         },
     }
