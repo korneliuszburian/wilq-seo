@@ -35,18 +35,13 @@ import {
   ContentWorkflowError,
   ContentWorkflowSelectedLoading,
   ContentWorkflowInventorySelectionLoading,
-  ContentFreshnessBanner,
   type ContentSourceRefreshControl
 } from "./ContentWorkflowBoundaryStates";
-import { ContentOpportunityEnrichmentPanel } from "./ContentOpportunityEnrichmentPanel";
-import { ClaimLedgerGatePanel } from "./ClaimLedgerGatePanel";
-import { ContentWorkflowDecisionPanel } from "./ContentWorkflowDecisionPanel";
-import { WordPressDraftWorkPanel as WordPressDraftWorkPanelView } from "./WordPressDraftWorkPanel";
-import { ContentSectionWritingWorkbench as ContentSectionWritingWorkbenchView } from "./ContentSectionWritingWorkbench";
 import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
 import { ContentPageWorkbench as ContentPageWorkbenchView } from "./ContentPageWorkbench";
 import { ContentWorkflowJourneyContext } from "./ContentWorkflowJourneyContext";
 import { ContentWorkflowTaskMap } from "./ContentWorkflowTaskMap";
+import { ContentWorkflowSourcesView } from "./ContentWorkflowSourcesView";
 import { ContentKnowledgeReadinessNotice } from "./ContentKnowledgeReadinessNotice";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 import {
@@ -56,7 +51,6 @@ import {
   submitIfReady,
   wordpressExecutionRequest
 } from "./contentWorkflowActionModel";
-import { WorkflowProofSummary } from "./WorkflowProofSummary";
 import {
   useContentWorkflowQueries,
   type ContentOpportunityEnrichmentQuery,
@@ -69,7 +63,6 @@ import {
   type KnowledgeSourceMaterialReadinessQuery,
   type WordPressAuthoringProfileQuery,
   type WordPressDraftActivationPacketQuery,
-  type WordPressDraftWriteReadinessQuery,
   type ContentWorkItemQueueCandidate
 } from "./contentWorkflowQueries";
 
@@ -102,7 +95,6 @@ export function ContentWorkflowSurface() {
     activeWorkItemId,
     authoringProfile,
     draftActivationPacket,
-    draftWriteReadiness,
     enrichment,
     inventory,
     knowledgeMaterials,
@@ -120,7 +112,6 @@ export function ContentWorkflowSurface() {
       selectedWorkItemId={selectedWorkItemId}
       authoringProfile={authoringProfile}
       draftActivationPacket={draftActivationPacket}
-      draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       inventory={inventory}
       knowledgeMaterials={knowledgeMaterials}
@@ -184,7 +175,6 @@ function ContentWorkflowRouteState({
   selectedWorkItemId,
   authoringProfile,
   draftActivationPacket,
-  draftWriteReadiness,
   enrichment,
   inventory,
   knowledgeMaterials,
@@ -201,7 +191,6 @@ function ContentWorkflowRouteState({
   selectedWorkItemId: string | null;
   authoringProfile: WordPressAuthoringProfileQuery;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
-  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   inventory: ContentInventoryCatalogQuery;
   knowledgeMaterials: KnowledgeSourceMaterialsQuery;
@@ -226,7 +215,6 @@ function ContentWorkflowRouteState({
       activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
       draftActivationPacket={draftActivationPacket}
-      draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       inventory={inventory}
       knowledgeMaterials={knowledgeMaterials}
@@ -246,7 +234,6 @@ function ContentWorkflowQueueReady({
   activeWorkItemId,
   authoringProfile,
   draftActivationPacket,
-  draftWriteReadiness,
   enrichment,
   inventory,
   knowledgeMaterials,
@@ -262,7 +249,6 @@ function ContentWorkflowQueueReady({
   activeWorkItemId: string | null;
   authoringProfile: WordPressAuthoringProfileQuery;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
-  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   inventory: ContentInventoryCatalogQuery;
   knowledgeMaterials: KnowledgeSourceMaterialsQuery;
@@ -324,17 +310,15 @@ function ContentWorkflowQueueReady({
   }
   return (
       <ContentWorkflowSelectedReady
-        activeWorkItemId={activeWorkItemId}
+      activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
       operatorLabel={operatorContext.data?.request_label ?? "operator_local_dashboard"}
       draftActivationPacket={draftActivationPacket}
-      draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
         queue={queue}
         inventory={inventory.data ?? null}
         selectedCandidate={selectedCandidate}
         workflow={workflow}
-        sourceRefresh={sourceRefresh}
         onSelectWorkItem={onSelectWorkItem}
     />
   );
@@ -349,26 +333,22 @@ function ContentWorkflowSelectedReady({
   authoringProfile,
   operatorLabel,
   draftActivationPacket,
-  draftWriteReadiness,
   enrichment,
   queue,
   inventory,
   selectedCandidate,
   workflow,
-  sourceRefresh,
   onSelectWorkItem
 }: {
   activeWorkItemId: string;
   authoringProfile: WordPressAuthoringProfileQuery;
   operatorLabel: string;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
-  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueResponse;
   inventory: ContentInventoryCatalogResponse | null;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
-  sourceRefresh: ContentSourceRefreshControl;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
   if (selectedCandidate === null) return <ContentWorkflowError />;
@@ -394,9 +374,6 @@ function ContentWorkflowSelectedReady({
       authoringProfile={authoringProfile}
       operatorLabel={operatorLabel}
       draftActivationPacket={draftActivationPacket}
-      draftWriteReadiness={draftWriteReadiness}
-      sourceRefresh={sourceRefresh}
-      refreshTargetUrl={selectedCandidate.final_canonical_url}
       enrichment={enrichment.data?.enrichment ?? null}
       queue={queue}
       inventory={inventory}
@@ -411,9 +388,6 @@ function ContentWorkflowLoaded({
   authoringProfile,
   operatorLabel,
   draftActivationPacket,
-  draftWriteReadiness,
-  sourceRefresh,
-  refreshTargetUrl,
   enrichment,
   queue,
   inventory,
@@ -424,9 +398,6 @@ function ContentWorkflowLoaded({
   authoringProfile: WordPressAuthoringProfileQuery;
   operatorLabel: string;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
-  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
-  sourceRefresh: ContentSourceRefreshControl;
-  refreshTargetUrl?: string | null;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
   inventory: ContentInventoryCatalogResponse | null;
@@ -440,8 +411,6 @@ function ContentWorkflowLoaded({
     operatorLabel
   );
   const [viewMode, setViewMode] = useState<"marketer" | "technical">("marketer");
-  const steps = data.operatorSteps;
-
   return (
     <main className="w-full px-4 py-3 sm:py-5 lg:px-7 2xl:px-8">
       {viewMode === "technical" ? (
@@ -464,14 +433,6 @@ function ContentWorkflowLoaded({
         </div>
       )}
 
-      {viewMode === "technical" ? (
-        <ContentFreshnessBanner
-          assessment={queue.freshness_assessment}
-          refresh={sourceRefresh}
-          refreshTargetUrl={refreshTargetUrl}
-        />
-      ) : null}
-
       {viewMode === "marketer" ? (
           <ContentWorkflowMarketerJourney
           key={`${selectedWorkItemId}:${data.currentStepId}`}
@@ -487,34 +448,7 @@ function ContentWorkflowLoaded({
           onShowSources={() => setViewMode("technical")}
         />
       ) : (
-        <section
-          id="content-workflow-details"
-          aria-label="Źródła i szczegóły workflow treści"
-          className="mb-6 rounded-md border border-line bg-white p-4"
-          data-testid="content-workflow-technical-audit"
-        >
-          <ContentWorkflowDecisionPanel data={data} queue={queue} steps={steps} />
-          <WordPressDraftWorkPanelView
-            actions={actions}
-            authoringProfile={authoringProfile}
-            draftActivationPacket={draftActivationPacket}
-            draftWriteReadiness={draftWriteReadiness}
-          />
-          <ContentSectionWritingWorkbenchView
-            actions={actions}
-            authoringProfile={authoringProfile}
-            data={data}
-            draftActivationPacket={draftActivationPacket}
-          />
-          <ContentCandidateQueuePanel
-            queue={queue}
-            selectedWorkItemId={selectedWorkItemId}
-            onSelectWorkItem={onSelectWorkItem}
-          />
-          <WorkflowProofSummary data={data} />
-          <ClaimLedgerGatePanel data={data} />
-          <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
-        </section>
+        <ContentWorkflowSourcesView data={data} />
       )}
     </main>
   );
