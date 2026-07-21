@@ -638,7 +638,7 @@ function ContentNextStepHero({
   if (!step) return null;
   const canAdvance = Boolean(nextStep?.canOpen);
   const nextStepLabel = nextStep?.id === "section_map" ? "Przejdź do planu" : nextStep?.id === "draft" ? "Przejdź do tekstu" : nextStep?.id === "review" ? "Przejdź do review" : nextStep?.id === "dev_draft" ? "Przejdź do dev preview" : "Zobacz kolejny krok";
-  const currentStepLabel = step.id === "scope" ? "Otwórz formularz zakresu" : step.id === "section_map" ? "Otwórz plan strony" : step.id === "draft" ? "Otwórz edytor tekstu" : step.id === "review" ? "Otwórz review wersji" : "Otwórz dev preview";
+  const currentStepLabel = workflowStepActionLabel(step.id, Boolean(step.blocker));
   const actionLabel = canAdvance ? nextStepLabel : !planningCurrent ? "Sprawdź aktualny zakres" : currentStepLabel;
   const instruction = !planningCurrent
     ? "Poprzednia decyzja jest nieaktualna, bo zmienił się plan lub dowody. Sprawdź zakres jeszcze raz i zapisz aktualną decyzję."
@@ -666,6 +666,16 @@ function ContentNextStepHero({
       </div>
     </section>
   );
+}
+
+export function workflowStepActionLabel(stepId: WorkflowStepId, blocked: boolean): string {
+  if (blocked && stepId === "dev_draft") return "Sprawdź blokadę dev preview";
+  if (blocked && stepId === "review") return "Sprawdź blokadę review";
+  if (stepId === "scope") return "Otwórz formularz zakresu";
+  if (stepId === "section_map") return "Otwórz plan strony";
+  if (stepId === "draft") return "Otwórz edytor tekstu";
+  if (stepId === "review") return "Otwórz review wersji";
+  return "Otwórz dev preview";
 }
 
 function workflowStepInstruction(stepId: WorkflowStepId) {

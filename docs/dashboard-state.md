@@ -543,3 +543,14 @@ Live outsourcing proof pokazuje `outsourcing ekologiczny` i `doradztwo
 środowiskowe` jako główne dopasowania; `bdo`, `kobize` i `opakowani` nie są już
 prezentowane jako równorzędny powód wyboru usługi. Screenshot:
 `.local-lab/proof/dashboard-content-workflow/2026-07-21/outsourcing-service-reasons.png`.
+
+## 2026-07-21 — główna akcja nie udaje gotowości przy blockerze
+
+Hero workflow używa teraz typed blockera bieżącego kroku do nazwania akcji.
+Jeśli review jest zablokowane, przycisk mówi `Sprawdź blokadę review`; jeśli
+blokada dotyczy dev preview, mówi `Sprawdź blokadę dev preview`. Przy stanie
+gotowym zachowane są krótkie akcje otwierające właściwy krok. To zmiana
+prezentacji istniejącego kontraktu API: nie omija blokady i nie zmienia
+uprawnień do WordPress.
+
+Focused proof: `workflowStepActionLabel` (2/2) oraz dashboard typecheck.

@@ -55,6 +55,19 @@ import type { ContentWorkItem } from "@wilq/shared-schemas";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
 import { ContentCodexSectionProposalResult } from "./ContentCodexSectionProposalResult";
 import { summarizeGa4MetricFacts } from "./ContentWorkflowJourneyContext";
+import { workflowStepActionLabel } from "./ContentWorkflowSurface";
+
+describe("workflowStepActionLabel", () => {
+  it("does not imply dev readiness when the current handoff step is blocked", () => {
+    expect(workflowStepActionLabel("dev_draft", true)).toBe("Sprawdź blokadę dev preview");
+    expect(workflowStepActionLabel("review", true)).toBe("Sprawdź blokadę review");
+  });
+
+  it("keeps normal current-step actions when no blocker exists", () => {
+    expect(workflowStepActionLabel("dev_draft", false)).toBe("Otwórz dev preview");
+    expect(workflowStepActionLabel("scope", true)).toBe("Otwórz formularz zakresu");
+  });
+});
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
