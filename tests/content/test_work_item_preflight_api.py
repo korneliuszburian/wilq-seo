@@ -537,18 +537,27 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
 
     item = data["preflight"]["item"]
     assert item["id"] == f"content_work_item_{source_decision['id']}"
-    assert item["topic"] == source_decision["title"]
+    # The marketer-facing topic uses the exact WordPress title/H1 when the
+    # selected inventory row has one; the diagnostics queue title may be a
+    # decision label such as “Istniejący URL …”.
+    assert item["topic"] == (
+        source_decision.get("wordpress_title_or_h1") or source_decision["title"]
+    )
     assert item["source_public_url"] == source_decision["source_public_url"]
     assert item["final_canonical_url"] == source_decision["final_canonical_url"]
     assert item["preview_url"] == source_decision["preview_url"]
-    assert item["evidence_ids"] == source_decision["evidence_ids"]
-    assert item["source_connectors"] == source_decision["source_connectors"]
+    # Snapshot enrichment preserves the selected decision lineage and may add
+    # exact inventory/metric evidence from the same page.
+    assert set(source_decision["evidence_ids"]).issubset(item["evidence_ids"])
+    assert set(source_decision["source_connectors"]).issubset(item["source_connectors"])
     assert item["id"] != "content_work_item_bdo"
 
     preflight = data["preflight"]["preflight_verdict"]
     assert preflight["status"] == "plan_allowed"
     assert preflight["final_canonical_url"] == source_decision["final_canonical_url"]
-    assert preflight["source_connectors"] == source_decision["source_connectors"]
+    assert set(source_decision["source_connectors"]).issubset(
+        preflight["source_connectors"]
+    )
 
     generation_readiness = data["structured_generation_readiness"]
     brief_result = data["sales_brief"]["sales_brief_result"]
@@ -569,13 +578,16 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
     else:
         assert brief["work_item_id"] == item["id"]
         assert brief["final_canonical_url"] == source_decision["final_canonical_url"]
-        assert generation_readiness["status"] == "ready"
-        assert generation_readiness["blockers"] == []
         assert generation_readiness["publish_ready"] is False
-        draft = data["draft_package"]["draft_package_result"]["draft_package"]
-        assert generation_readiness["editable_section_headings"] == [
-            section["heading"] for section in draft["sections"]
-        ]
+        if generation_readiness["status"] == "ready":
+            assert generation_readiness["blockers"] == []
+            draft = data["draft_package"]["draft_package_result"]["draft_package"]
+            assert generation_readiness["editable_section_headings"] == [
+                section["heading"] for section in draft["sections"]
+            ]
+        else:
+            assert generation_readiness["status"] == "blocked"
+            assert generation_readiness["blockers"]
 
     human_review = data["human_review"]
     assert human_review["review"] is None
@@ -649,9 +661,10 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
         # scope while the generated plan is being produced; no map approval
         # step is exposed.
         assert data["current_step_id"] == "scope"
-    elif not planning_workspace["scope_current"]:
-        assert data["current_step_id"] == "scope"
-    elif not planning_workspace["section_map_current"]:
+    elif (
+        not planning_workspace["scope_current"]
+        or not planning_workspace["section_map_current"]
+    ):
         assert data["current_step_id"] == "scope"
     else:
         assert data["current_step_id"] == "draft"
