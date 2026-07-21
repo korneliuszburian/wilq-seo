@@ -354,7 +354,7 @@ function PlanningSourceFactPreview({
           <li key={fact.fact_id} className="rounded-md border border-line bg-white p-3">
             <p className="text-sm leading-6 text-ink">{fact.summary}</p>
             <p className="mt-2 text-[11px] text-slate-500">
-              {planningSourceLabel(fact.source_connector)} · {fact.source_material_ids.length} materiałów · {fact.evidence_ids.length} {fact.evidence_ids.length === 1 ? "evidence" : "evidence IDs"}
+              {planningSourceLabel(fact.source_connector)} · {fact.source_material_ids.length} materiałów · {fact.evidence_ids.length} {fact.evidence_ids.length === 1 ? "identyfikator dowodu" : "identyfikatorów dowodów"}
             </p>
           </li>
         ))}
@@ -499,7 +499,7 @@ function metricLabel(metric: string) {
     sessions: "sesje",
     engaged_sessions: "sesje zaangażowane",
     engagement_rate: "zaangażowanie",
-    key_events: "key events"
+    key_events: "zdarzenia kluczowe"
   }[metric] ?? metric;
 }
 

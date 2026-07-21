@@ -182,7 +182,7 @@ describe("ContentPlanningGenerationPanel", () => {
     const facts = await screen.findByTestId("content-planning-source-facts");
     expect(facts).toHaveTextContent("Ekologus wspiera przedsiębiorców");
     expect(facts).toHaveTextContent("1 materiał");
-    expect(facts).toHaveTextContent("1 evidence");
+    expect(facts).toHaveTextContent("1 identyfikator dowodu");
   });
 
   it("shows the real corpus gate without blocking the planning view", async () => {
