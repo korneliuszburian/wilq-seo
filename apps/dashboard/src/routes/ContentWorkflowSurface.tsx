@@ -544,12 +544,20 @@ function ContentWorkflowMarketerJourney({
   onShowSources: () => void;
 }) {
   const [selectedStepId, setSelectedStepId] = useState<WorkflowStepId>(
-    data.currentStepId === "section_map" ? "draft" : data.currentStepId
+    data.currentStepId === "section_map"
+      ? data.planningWorkspace?.section_map_current
+        ? "draft"
+        : "scope"
+      : data.currentStepId
   );
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
   const initialSectionHeading = stringFromSearch(routeSearch, "section_heading");
   const selectStep = (stepId: WorkflowStepId) => {
-    const marketerStepId = stepId === "section_map" ? "draft" : stepId;
+    const marketerStepId = stepId === "section_map"
+      ? data.planningWorkspace?.section_map_current
+        ? "draft"
+        : "scope"
+      : stepId;
     if (data.operatorSteps.some((step) => step.id === marketerStepId && step.canOpen)) {
       setSelectedStepId(marketerStepId);
     }
@@ -583,6 +591,7 @@ function ContentWorkflowMarketerJourney({
             currentStepId={data.currentStepId}
             selectedStepId={selectedStepId}
             steps={data.operatorSteps}
+            sectionMapCurrent={data.planningWorkspace?.section_map_current ?? false}
             onSelectStep={selectStep}
           />
         </div>

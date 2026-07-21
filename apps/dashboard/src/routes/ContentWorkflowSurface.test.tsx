@@ -967,7 +967,10 @@ describe("ContentWorkflowSurface", () => {
       },
       "content_work_item_bdo"
     );
-    expect(await screen.findByText("Automatyczna mapa sekcji")).toBeInTheDocument();
+    expect(await screen.findByText("Kontekst planu")).toBeInTheDocument();
+    expect(screen.getByTestId("content-planning-generation")).toBeInTheDocument();
+    expect(screen.queryByTestId("content-draft-editor")).not.toBeInTheDocument();
+    expect(screen.queryByText("Automatyczna mapa sekcji")).not.toBeInTheDocument();
     expect(screen.queryByText("Aktualna strona")).not.toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });

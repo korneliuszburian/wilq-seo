@@ -4,6 +4,7 @@ type ContentWorkflowTaskMapProps = {
   currentStepId: WorkflowStepId;
   selectedStepId: WorkflowStepId;
   steps: WorkflowStep[];
+  sectionMapCurrent: boolean;
   onSelectStep: (stepId: WorkflowStepId) => void;
 };
 
@@ -11,11 +12,14 @@ export function ContentWorkflowTaskMap({
   currentStepId,
   selectedStepId,
   steps,
+  sectionMapCurrent,
   onSelectStep
 }: ContentWorkflowTaskMapProps) {
   const visibleSteps = steps.filter((step) => step.id !== "section_map");
-  const visibleSelectedStepId = selectedStepId === "section_map" ? "draft" : selectedStepId;
-  const visibleCurrentStepId = currentStepId === "section_map" ? "draft" : currentStepId;
+  const canonicalStepId = (stepId: WorkflowStepId): WorkflowStepId =>
+    stepId === "section_map" ? (sectionMapCurrent ? "draft" : "scope") : stepId;
+  const visibleSelectedStepId = canonicalStepId(selectedStepId);
+  const visibleCurrentStepId = canonicalStepId(currentStepId);
   const selectedStep = visibleSteps.find((step) => step.id === visibleSelectedStepId) ?? visibleSteps[0];
   const currentStep = visibleSteps.find((step) => step.id === visibleCurrentStepId) ?? visibleSteps[0];
 
