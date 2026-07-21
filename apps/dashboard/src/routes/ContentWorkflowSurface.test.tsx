@@ -675,7 +675,13 @@ describe("ContentWorkflowSurface", () => {
     );
   });
 
-  it("keeps one selected-section buffer across preview and sources without a write", async () => {
+  it("shows the generated page as a read-only result without a duplicate section editor", async () => {
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        workspace: savedRevisionWorkspace(savedFullDraftRevision()),
+        currentStepId: "draft"
+      })
+    );
     const appRouter = createWilqRouter({
       initialPath:
         "/content-workflow?work_item_id=content_work_item_bdo&section_heading=Jak%20przygotowa%C4%87%20dokumenty&planning_digest=stale_plan",
@@ -688,33 +694,10 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const sectionPicker = await screen.findByRole("combobox", { name: "Sekcja dokumentu" });
-    expect(sectionPicker).toHaveValue("jak przygotować dokumenty");
-    expect(screen.getByLabelText("HTML sekcji Jak przygotować dokumenty")).toBeInTheDocument();
-    expect(screen.getByTestId("content-draft-section-preview")).toHaveTextContent(
-      "Jak przygotować dokumenty"
-    );
-
-    fireEvent.change(sectionPicker, { target: { value: "kogo dotyczy bdo" } });
-    const sectionInput = screen.getByLabelText("HTML sekcji Kogo dotyczy BDO");
-    const localHtml = '<p data-proof="unsaved-html">Niezapisany HTML pozostaje w jednym buforze warsztatu.</p>';
-    fireEvent.change(sectionInput, { target: { value: localHtml } });
-    expect(screen.getByTestId("content-draft-section-html-preview")).toHaveAttribute(
-      "srcdoc",
-      expect.stringContaining('data-proof="unsaved-html"')
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: /Źródła i ograniczenia/ }));
-    expect(screen.getByRole("dialog", { name: "Źródła i ograniczenia" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Zamknij źródła i ograniczenia" }));
-    expect(screen.queryByRole("dialog", { name: "Źródła i ograniczenia" })).not.toBeInTheDocument();
-    expect(sectionInput).toHaveValue(localHtml);
-
-    fireEvent.click(screen.getByRole("tab", { name: "Podgląd" }));
-    expect(screen.getByTestId("content-draft-section-html-preview")).toHaveAttribute(
-      "srcdoc",
-      expect.stringContaining('data-proof="unsaved-html"')
-    );
+    expect(await screen.findByText(/Pełny draft HTML/)).toBeInTheDocument();
+    expect(screen.getByTestId("content-full-draft-preview")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Sekcja dokumentu" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /HTML sekcji/ })).not.toBeInTheDocument();
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
     expect(postContentWorkItemCodexSectionProposal).not.toHaveBeenCalled();
@@ -1768,19 +1751,10 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
-  it("lets Wilku revise one reviewed section and keeps the Codex child draft-only", async () => {
+  it("keeps section editing and Codex assistance out of the marketer result view", async () => {
     const revision = savedDraftRevision();
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
       workflowSnapshot({ workspace: needsChangesRevisionWorkspace(revision) })
-    );
-    let resolveProposal:
-      | ((response: ContentCodexSectionProposalResponse) => void)
-      | undefined;
-    vi.mocked(postContentWorkItemCodexSectionProposal).mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveProposal = resolve;
-        })
     );
     const client = createWilqQueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
@@ -1792,58 +1766,11 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    expect(await screen.findByText("Popraw aktualny tekst z Codexem")).toBeInTheDocument();
-    expect(screen.getByText(/Uwagi z review: „Ta wersja wymaga opisanych poprawek/))
-      .toBeInTheDocument();
-    const proposalButton = screen.getByRole("button", {
-      name: "Popraw 0 sekcji z Codexem"
-    });
-    expect(proposalButton).toBeDisabled();
-
-    fireEvent.click(screen.getByRole("checkbox", { name: "Kogo dotyczy BDO" }));
-    expect(proposalButton).toBeEnabled();
-    fireEvent.click(proposalButton);
-
-    await waitFor(() =>
-      expect(postContentWorkItemCodexSectionProposal).toHaveBeenCalledWith(
-        {
-          expected_base_digest: revision.content_digest,
-          selected_section_headings: ["Kogo dotyczy BDO"],
-          selected_section_ids: [],
-          requested_by: "wilku"
-        },
-        revision.work_item_id,
-        revision.revision_id
-      )
-    );
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Codex poprawia 1 sekcję i sprawdza przypisane dowody"
-    );
-
-    resolveProposal?.(codexSectionProposalResponse());
-    const result = await screen.findByTestId("codex-proposal-result");
-    expect(result).toHaveTextContent("Poprawiona wersja aktualnego tekstu · wymaga review człowieka");
-    expect(result).toHaveTextContent("Zapisana treść pierwszej wersji o obowiązkach BDO.");
-    expect(result).toHaveTextContent(
-      "Sprawdź, czy zakres działalności firmy tworzy obowiązki BDO"
-    );
-    expect(result).toHaveTextContent("Wzmocnij CTA");
-    expect(result).toHaveTextContent("Semantyka nadal wymaga sprawdzenia człowieka");
-    expect(result).toHaveTextContent("Szkic nie jest gotowy do publikacji");
-    expect(screen.getByText(/Run Codex: codex_section_run_bdo_1/)).not.toBeVisible();
-    expect(screen.queryByRole("button", { name: "Sprawdź gotowość szkicu" }))
-      .not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Przygotuj podgląd draftu" }))
-      .not.toBeInTheDocument();
+    expect(await screen.findByText(/Pełny draft HTML/)).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /HTML sekcji/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("Popraw aktualny tekst z Codexem")).not.toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressAuthoringPayloadPreview).not.toHaveBeenCalled();
-
-    await openWorkflowDetails();
-    fireEvent.click(screen.getByRole("button", { name: /Zielony Ład dla firm/ }));
-    await waitFor(() =>
-      expect(getContentWorkItemSnapshot).toHaveBeenCalledWith("content_work_item_green_deal")
-    );
-    expect(screen.queryByTestId("codex-proposal-result")).not.toBeInTheDocument();
   });
 
   it("fails closed when the Codex child omits a selected section", () => {
@@ -2046,11 +1973,8 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    expect(await screen.findByText("Dev draft odczytany")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Otwórz podgląd na dev" })).toHaveAttribute(
-      "href",
-      "https://ekologus.dev.proudsite.pl/?p=987"
-    );
+    expect(await screen.findByText(/Pełny draft HTML/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Otwórz podgląd na dev" })).not.toBeInTheDocument();
     await openWorkflowDetails();
     expect(screen.getByText(/Szkic utworzony na devie jako WordPress draft, ID 987/))
       .toBeInTheDocument();

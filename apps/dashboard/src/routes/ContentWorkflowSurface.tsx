@@ -589,6 +589,7 @@ function ContentWorkflowMarketerJourney({
         onFocusPlan={() => focusWorkflowStep("section_map")}
         sectionMapCurrent={sectionMapCurrent}
         planningCurrent={visibleSelectedStepId === "scope" ? data.planningWorkspace?.scope_current ?? true : visibleSelectedStepId === "section_map" ? sectionMapCurrent : true}
+        fullDraftReady={Boolean(data.revisionWorkspace.latest_revision?.page_assets)}
       />
       <div className="flex flex-col">
         <div className="order-1">
@@ -639,7 +640,8 @@ function ContentNextStepHero({
   onFocusCurrentStep,
   onFocusPlan,
   sectionMapCurrent,
-  planningCurrent
+  planningCurrent,
+  fullDraftReady
 }: {
   step: ContentWorkflowSnapshot["operatorSteps"][number] | undefined;
   nextStep: ContentWorkflowSnapshot["operatorSteps"][number] | undefined;
@@ -648,6 +650,7 @@ function ContentNextStepHero({
   onFocusPlan: () => void;
   sectionMapCurrent: boolean;
   planningCurrent: boolean;
+  fullDraftReady: boolean;
 }) {
   if (!step) return null;
   const generatedTextReady = sectionMapCurrent && (step.id === "scope" || step.id === "draft");
@@ -662,6 +665,8 @@ function ContentNextStepHero({
       ? nextStepLabel
       : !effectivePlanningCurrent
         ? "Sprawdź aktualny zakres"
+        : step.id === "draft" && !fullDraftReady
+          ? "Sprawdź stan draftu"
         : currentStepLabel;
   const instruction = planNeedsRefresh
     ? "Zakres jest zapisany. Zbuduj plan z aktualnych danych, aby otworzyć tekst."
@@ -669,6 +674,8 @@ function ContentNextStepHero({
     ? workflowStepInstruction("draft")
     : !effectivePlanningCurrent
     ? "Poprzednia decyzja jest nieaktualna, bo zmienił się plan lub dowody. Sprawdź zakres jeszcze raz i zapisz aktualną decyzję."
+    : step.id === "draft" && !fullDraftReady
+    ? "Pełna rewizja HTML nie jest jeszcze gotowa; sprawdź blokadę zamiast otwierać edytor."
     : nextStep?.canOpen
       ? step.safeNextStep
     : workflowStepInstruction(step.id, step.blocker);
@@ -702,7 +709,7 @@ export function workflowStepActionLabel(stepId: WorkflowStepId, blocked: boolean
   if (blocked && stepId === "review") return "Sprawdź blokadę review";
   if (stepId === "scope") return "Otwórz kontekst strony";
   if (stepId === "section_map") return "Otwórz tekst";
-  if (stepId === "draft") return "Otwórz edytor tekstu";
+  if (stepId === "draft") return "Otwórz pełny draft";
   if (stepId === "review") return "Otwórz review wersji";
   return "Otwórz dev preview";
 }
@@ -714,7 +721,7 @@ export function workflowStepInstruction(
   if (blocker) return `${blocker.label}: ${blocker.reason}`;
   if (stepId === "scope") return "Sprawdź aktualny kontekst strony i zapisz jedną decyzję. WILQ sam zbuduje plan i otworzy tekst.";
   if (stepId === "section_map") return "Plan powstaje automatycznie; po jego odświeżeniu przejdziesz bezpośrednio do tekstu.";
-  if (stepId === "draft") return "Przeczytaj pełny tekst, wybierz sekcję do poprawy albo zapisz exact revision do review.";
+  if (stepId === "draft") return "Przeczytaj pełny draft HTML. Edycja pozostaje w docelowym WordPressie; tutaj sprawdzasz wynik, źródła i gotowość do review.";
   if (stepId === "review") return "Uruchom advisory review, przeczytaj findings i zapisz własną decyzję dla exact revision.";
   return "Sprawdź revision-bound dev preview i przygotuj draft-only handoff. Publikacja pozostaje wyłączona.";
 }
