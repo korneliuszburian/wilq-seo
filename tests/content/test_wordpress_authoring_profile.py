@@ -272,6 +272,8 @@ def test_wordpress_authoring_payload_preview_maps_draft_to_acf_without_write(
     assert section.layout_name == "content_section"
     assert section.field_values["heading"] == "Kogo dotyczy BDO"
     assert "Wyjaśnij obowiązki" in (section.field_values["body"] or "")
+    assert "<p>" in (section.field_values["body"] or "")
+    assert "**" not in (section.field_values["body"] or "")
     assert section.field_values["evidence_ids"] == "ev_gsc_bdo"
     assert section.missing_required_fields == []
 

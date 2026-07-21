@@ -6,7 +6,10 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.drafts.package import ContentDraftPackage
-from wilq.content.handoff.revision_document_renderer import revision_document_markdown
+from wilq.content.handoff.revision_document_renderer import (
+    revision_document_html,
+    revision_document_markdown,
+)
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 
@@ -25,6 +28,7 @@ ContentWordPressDraftExecutionBlockerCode = Literal[
     "missing_write_authorization",
     "invalid_write_authorization",
     "revision_section_overrides_mismatch",
+    "acf_authoring_payload_required",
     "live_adapter_failed",
 ]
 
@@ -45,7 +49,11 @@ class ContentWordPressDraftPayload(BaseModel):
     endpoint_kind: Literal["posts"] = "posts"
     post_status: Literal["draft"] = "draft"
     title: str
+    # Legacy callers may still inspect the editorial transport; vendor writes
+    # use content_html so WordPress never receives Markdown syntax.
     content_markdown: str
+    content_html: str | None = None
+    authoring_mode: Literal["the_content", "acf_flexible_content", "unknown"] = "unknown"
     meta_title: str | None = None
     meta_description: str | None = None
     meta_write_status: ContentWordPressMetaWriteStatus = "not_present"
@@ -255,6 +263,16 @@ def content_wordpress_draft_execution_blockers(
         )
     if handoff is not None and draft_package is not None:
         blockers.extend(_handoff_payload_blockers(handoff, draft_package))
+        if handoff.authoring_mode == "acf_flexible_content":
+            blockers.append(
+                _blocker(
+                    "acf_authoring_payload_required",
+                    "Ta strona wymaga payloadu ACF",
+                    "WordPress odczytał sekcje Flexible Content; nie wolno wysłać ich "
+                    "jako zwykły the_content ani udawać mapowania pól.",
+                    "Uruchom podgląd authoringu ACF i zatwierdź dokładny layout oraz pola.",
+                )
+            )
         if require_exact_section_overrides:
             blockers.extend(
                 _exact_section_override_blockers(
@@ -289,6 +307,8 @@ def content_wordpress_draft_payload(
         return ContentWordPressDraftPayload(
             title=document.page_assets.wordpress_title,
             content_markdown=revision_document_markdown(document),
+            content_html=revision_document_html(document),
+            authoring_mode=handoff.authoring_mode,
             meta_title=document.page_assets.meta_title,
             meta_description=document.page_assets.meta_description,
             meta_write_status="review_required",
@@ -303,6 +323,8 @@ def content_wordpress_draft_payload(
             title=handoff.title,
             section_overrides=section_overrides,
         ),
+        content_html=None,
+        authoring_mode="unknown",
         final_canonical_url=handoff.final_canonical_url,
         evidence_ids=handoff.evidence_ids,
     )

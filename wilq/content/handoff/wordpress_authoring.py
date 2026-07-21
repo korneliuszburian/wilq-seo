@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+from markdown_it import MarkdownIt
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.connectors.wordpress.authoring import (
@@ -107,6 +108,7 @@ class ContentWordPressAuthoringPayloadPreviewResult(BaseModel):
     connector: Literal["wordpress_ekologus"] = "wordpress_ekologus"
     endpoint_kind: Literal["posts"] = "posts"
     post_status: Literal["draft"] = "draft"
+    authoring_mode: Literal["acf_flexible_content"] = "acf_flexible_content"
     flexible_content_field_name: str | None = None
     page_assets: ContentWordPressPageAssetsPreview | None = None
     sections: list[ContentWordPressFlexibleSectionPayload] = Field(default_factory=list)
@@ -532,7 +534,8 @@ def _nested_text_value(field: WordPressAcfField, section: ContentDraftSection) -
 def _section_body(section: ContentDraftSection) -> str:
     chunks = [section.purpose]
     chunks.extend(section.draft_notes)
-    return "\n".join(chunk for chunk in chunks if chunk)
+    markdown = "\n".join(chunk for chunk in chunks if chunk)
+    return str(MarkdownIt("commonmark", {"html": False, "linkify": False}).render(markdown))
 
 
 def _blocker(

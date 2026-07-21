@@ -47,6 +47,22 @@ function unique(values: string[]) {
   return [...new Set(values)];
 }
 
+function authoringModeLabel(mode: string | undefined) {
+  if (mode === "the_content") return "HTML → the_content";
+  if (mode === "acf_flexible_content") return "ACF / pola strony";
+  return "Sposób zapisu do potwierdzenia";
+}
+
+function authoringModeHint(mode: string | undefined) {
+  if (mode === "the_content") {
+    return "WILQ przygotuje semantyczny HTML do głównego edytora WordPress.";
+  }
+  if (mode === "acf_flexible_content") {
+    return "Ta strona ma strukturę ACF. WILQ nie wyśle treści do the_content bez dokładnego mapowania pól.";
+  }
+  return "Najpierw odczytaj sposób authoringu strony; bez tego nie ma bezpiecznego handoffu.";
+}
+
 export function ContentSectionWritingWorkbench({
   actions,
   authoringProfile,
@@ -127,9 +143,18 @@ export function ContentSectionWritingWorkbench({
             Zestawienie tego, co jest na publicznej stronie, co ma wejść do szkicu i jak można to przełożyć na dev WordPress. Źródło tej strony: {inventorySourceLabel}.
           </p>
         </div>
-        <span className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink">
-          {draftReadback?.status === "available" ? "dev draft odczytany" : "dev draft do sprawdzenia"}
-        </span>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <span className="rounded-md border border-action/25 bg-action/5 px-3 py-2 text-sm font-semibold text-action">
+            {authoringModeLabel(handoff?.authoring_mode)}
+          </span>
+          <span className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink">
+            {draftReadback?.status === "available" ? "dev draft odczytany" : "dev draft do sprawdzenia"}
+          </span>
+        </div>
+      </div>
+      <div className="border-b border-line bg-white px-4 py-3 text-sm leading-6 text-slate-700">
+        <span className="font-semibold text-ink">Sposób zapisu: </span>
+        {authoringModeHint(handoff?.authoring_mode)}
       </div>
       <div className="grid gap-4 p-4 xl:grid-cols-[1.05fr_1fr_0.95fr]">
         <ContentPublicInventoryPanel

@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+from typing import cast
+
+from markdown_it import MarkdownIt
+
 from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.workflow.revisions import ContentDraftRevision
+
+_WORDPRESS_MARKDOWN = MarkdownIt("commonmark", {"html": False, "linkify": False})
 
 
 def revision_document_markdown(document: ContentDraftRevision) -> str:
@@ -20,6 +26,12 @@ def revision_document_markdown(document: ContentDraftRevision) -> str:
             chunks.extend([f"### {item.question}", item.answer_markdown.strip()])
     chunks.extend(_placed_blocks(document, "after_content"))
     return "\n\n".join(chunk for chunk in chunks if chunk.strip())
+
+
+def revision_document_html(document: ContentDraftRevision) -> str:
+    """Render readable editorial Markdown into safe WordPress HTML."""
+
+    return cast(str, _WORDPRESS_MARKDOWN.render(revision_document_markdown(document)))
 
 
 def _placed_blocks(document: ContentDraftRevision, placement: str) -> list[str]:

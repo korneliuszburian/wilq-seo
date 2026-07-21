@@ -263,7 +263,8 @@ def create_wordpress_draft_post(
                 json={
                     "status": "draft",
                     "title": getattr(payload, "title", ""),
-                    "content": getattr(payload, "content_markdown", ""),
+                    "content": getattr(payload, "content_html", None)
+                    or getattr(payload, "content_markdown", ""),
                 },
             )
             response.raise_for_status()

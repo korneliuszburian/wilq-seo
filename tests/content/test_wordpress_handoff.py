@@ -368,6 +368,40 @@ def test_wordpress_draft_execution_live_mode_uses_explicit_adapter_only() -> Non
     assert created_payload_titles == ["BDO dla firm: co sprawdzić"]
 
 
+def test_acf_page_never_falls_back_to_the_content_draft_payload() -> None:
+    handoff_result = build_content_wordpress_draft_handoff(
+        item=_item(
+            wordpress_content_inventory_status="available",
+            wordpress_acf_section_inventory_status="available",
+            wordpress_acf_section_headings=["Korzyści ze współpracy"],
+            wordpress_acf_section_count=1,
+        ),
+        draft_package=_draft_package(),
+        human_review=_review(),
+        audit=_audit(),
+    )
+    assert handoff_result.handoff is not None
+    assert handoff_result.handoff.authoring_mode == "acf_flexible_content"
+
+    result = execute_content_wordpress_draft_handoff(
+        handoff=handoff_result.handoff,
+        draft_package=_draft_package(),
+        mode="dry_run",
+    )
+
+    assert result.status == "blocked"
+    assert [blocker.code for blocker in result.blockers] == [
+        "acf_authoring_payload_required"
+    ]
+    assert result.boundary.allowed_operation == "create_wordpress_draft"
+    assert result.boundary.live_write_enabled is False
+    assert result.boundary.live_adapter_configured is False
+    assert result.boundary.publish_allowed is False
+    assert result.boundary.destructive_update_allowed is False
+    assert result.external_write_attempted is False
+    assert result.wordpress_post_id is None
+
+
 def _assert_operator_blockers_have_no_jargon(
     blockers: list[ContentWordPressDraftHandoffBlocker],
 ) -> None:

@@ -18,6 +18,7 @@ from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRe
 
 ContentWordPressDraftActor = Literal["wilku", "system", "codex"]
 ContentWordPressDraftHandoffStatus = Literal["prepared"]
+ContentWordPressAuthoringMode = Literal["the_content", "acf_flexible_content", "unknown"]
 ContentWordPressDraftHandoffBlockerCode = Literal[
     "missing_planning_binding",
     "missing_final_canonical",
@@ -56,6 +57,7 @@ class ContentWordPressDraftHandoff(BaseModel):
     operation_type: Literal["create_wordpress_draft"] = "create_wordpress_draft"
     status: ContentWordPressDraftHandoffStatus = "prepared"
     post_status: Literal["draft"] = "draft"
+    authoring_mode: ContentWordPressAuthoringMode = "unknown"
     title: str
     final_canonical_url: str
     intended_final_url: str | None = None
@@ -112,12 +114,23 @@ def build_content_wordpress_draft_handoff(
             human_review_id=human_review.id,
             audit_id=audit.audit_id,
             title=draft_package.title,
+            authoring_mode=_authoring_mode(item),
             final_canonical_url=item.final_canonical_url,
             intended_final_url=item.intended_final_url,
             preview_url=item.preview_url,
             evidence_ids=_unique([*item.evidence_ids, *draft_package_evidence(draft_package)]),
         )
     )
+
+
+def _authoring_mode(item: ContentWorkItem) -> ContentWordPressAuthoringMode:
+    if item.wordpress_acf_section_inventory_status == "available" and (
+        item.wordpress_acf_section_headings or item.wordpress_acf_section_count
+    ):
+        return "acf_flexible_content"
+    if item.wordpress_content_inventory_status == "available":
+        return "the_content"
+    return "unknown"
 
 
 def content_wordpress_draft_handoff_blockers(

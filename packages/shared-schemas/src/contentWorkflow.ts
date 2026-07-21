@@ -1318,6 +1318,7 @@ export const ContentWordPressDraftHandoffSchema = z.object({
   operation_type: z.literal("create_wordpress_draft"),
   status: z.literal("prepared"),
   post_status: z.literal("draft"),
+  authoring_mode: z.enum(["the_content", "acf_flexible_content", "unknown"]).default("unknown"),
   title: z.string(),
   final_canonical_url: z.string(),
   intended_final_url: z.string().nullable().optional(),
@@ -1353,6 +1354,8 @@ export const ContentWordPressDraftExecutionPayloadSchema = z.object({
   post_status: z.literal("draft"),
   title: z.string(),
   content_markdown: z.string(),
+  content_html: z.string().nullable().optional(),
+  authoring_mode: z.enum(["the_content", "acf_flexible_content", "unknown"]).default("unknown"),
   meta_title: z.string().nullable().optional(),
   meta_description: z.string().nullable().optional(),
   meta_write_status: z.enum(["not_present", "review_required", "mapped"])

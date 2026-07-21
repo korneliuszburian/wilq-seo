@@ -94,6 +94,10 @@ def test_full_document_v2_round_trips_and_renders_without_losing_assets(
     assert dry_run.payload.meta_write_status == "review_required"
     assert dry_run.payload.metadata_blockers[0].code == "missing_wordpress_meta_mapping"
     assert dry_run.payload.content_markdown == _expected_markdown()
+    assert dry_run.payload.content_html is not None
+    assert "<h1>" in dry_run.payload.content_html
+    assert "<h2>" in dry_run.payload.content_html
+    assert "# Doradztwo" not in dry_run.payload.content_html
 
     stale_handoff = build_revision_bound_wordpress_draft_handoff(
         item=_work_item(),
