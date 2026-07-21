@@ -49,6 +49,13 @@ selecting a newer stale proposal. Missing or mismatched bindings still fail
 before any vendor call. The generic action payload distinguishes forbidden
 outputs (publish/update/delete) from an unavailable adapter, so draft-only
 apply can pass readiness without weakening those safety boundaries.
+
+The snapshot route uses the same revision-bound proposal lookup. After a
+current inventory digest changes, a marketer still sees the reviewed draft's
+`Szkic na devie` step and section navigator rather than being sent back to
+`Zakres i cel`; current-plan drift is shown as lineage context, not as loss of
+the exact reviewable revision. Browser proof is retained at
+`.local-lab/proof/dashboard-content-workflow/2026-07-21/bdo-after-draft-apply-fixed-point.png`.
 The handoff context check allows a generated v2 section map to rewrite/merge
 the baseline while retaining exact planning/service/package bindings; v1 keeps
 the stricter section identity check. Deterministic review is `needs_changes`

@@ -151,15 +151,29 @@ def snapshot_for_work_item_or_404(
             status_code=404,
             detail="Content work item is not available for the gated workflow.",
         )
-    generated_response = read_content_planning_proposal(
-        snapshot=snapshot,
-        store=proposal_store,
-    )
-    generated_planning_proposal = (
-        generated_response.proposal
-        if generated_response.status in {"ready", "idempotent", "created"}
+    # A persisted revision is an immutable fixed point. Prefer the proposal
+    # bound to its planning digest so a newer current inventory does not hide
+    # the reviewable draft behind a stale-input scope screen.
+    revision_bound_proposal = (
+        proposal_store.latest_for_planning_digest(
+            work_item_id,
+            revision_state.latest_revision.planning_digest,
+        )
+        if revision_state.latest_revision is not None
         else None
     )
+    if revision_bound_proposal is not None:
+        generated_planning_proposal = revision_bound_proposal
+    else:
+        generated_response = read_content_planning_proposal(
+            snapshot=snapshot,
+            store=proposal_store,
+        )
+        generated_planning_proposal = (
+            generated_response.proposal
+            if generated_response.status in {"ready", "idempotent", "created"}
+            else None
+        )
     if generated_planning_proposal is not None:
         snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
             diagnostics,
