@@ -1,118 +1,100 @@
-# Second opinion — WILQ Treści i SEO UX/UI
+# External review — pierwszy viewport `/content-workflow`
 
-Jesteś niezależnym principal product designerem, UX researcherem i reviewerem
-repozytorium WILQ SEO dla Ekologus.
+Jesteś niezależnym principal product designerem i reviewerem UX dla WILQ,
+narzędzia marketingowego Ekologus. Nie masz dostępu do lokalnego dashboardu:
+oceniasz wyłącznie aktualne screenshoty i fakty API z `README.md` w tym folderze.
 
-## Cel
+## Kontekst produktu
 
-Najpierw doprowadzić `/content-workflow` do poziomu bardzo dobrego,
-marketer-first narzędzia do tworzenia i optymalizacji treści SEO. To nie jest
-generator slopu ani panel techniczny. Marketer ma w około 30 sekund rozumieć:
+WILQ ma prowadzić marketera przez konkretną pracę nad stroną. API jest jedynym
+źródłem prawdy dla strony, usługi, metryk, świeżości, blokad i rewizji. Nie wolno
+proponować wymyślonych metryk, magicznych score’ów, automatycznej publikacji,
+bezpośredniego WordPress write ani nowej ścieżki modelowej.
 
-1. którą stronę analizuje;
-2. co pokazują realne metryki;
-3. co WILQ rekomenduje i dlaczego;
-4. co jest zablokowane;
-5. jaki jest jeden następny krok.
+Poprzedni fixed point `9e09fd13` został zaakceptowany: warsztat zapisuje
+`content_html` jako exact revision i nie uruchamia WordPressa. Nie oceniasz tu
+HTML authoringu, generowania Codexa, review, handoffu ani selektora wszystkich
+adresów.
 
-## Materiał wejściowy
+## Materiał do obejrzenia
 
-Obejrzyj wszystkie screenshoty w tym folderze:
+1. `bdo-current-desktop-first-viewport.png`
+2. `bdo-current-mobile-first-viewport.png`
+3. `bdo-current-desktop-sources-open.png`
+4. `README.md` — aktualny, ograniczony kontekst API i proof sieciowy.
 
-- `bdo-desktop-full.png` — pełny desktop BDO;
-- `outsourcing-desktop-full.png` — pełny desktop doradztwa i outsourcingu;
-- `bdo-mobile-full.png` — pełny mobile BDO;
-- `outsourcing-mobile-full.png` — pełny mobile doradztwa i outsourcingu.
+## Proponowany pojedynczy Execution goal
 
-Najpierw obejrzyj cztery pliki `*-first-viewport.png`, bo pokazują dokładnie
-to, co marketer widzi po wejściu. Następnie użyj plików `*-full.png`, żeby
-ocenić całą długość journey i miejsca, w których rośnie gęstość informacji.
+Po załadowaniu `/content-workflow` marketer widzi w pierwszym viewporcie:
 
-To są aktualne zrzuty działającego lokalnego dashboardu, nie mockupy.
+1. jaką stronę edytuje;
+2. dla jakiej usługi;
+3. że wynikiem jest **„Wersja robocza HTML do review”**;
+4. dlaczego warto zająć się nią teraz;
+5. jedno właściwe następne działanie.
 
-Następnie przeczytaj w repozytorium `AGENTS.md`,
-`docs/dashboard-state.md`, `docs/CONTEXT.md`, `docs/PROGRESS.md`, aktualny kod
-`apps/dashboard/src/routes/ContentWorkflow*`, powiązane shared schemas i
-istniejące API contracts.
+### In scope
 
-## Zasady produktu
+- zwarty kontekst: rzeczywisty tytuł WordPress, URL i usługa;
+- rezultat „Wersja robocza HTML do review” oraz jeden, jasny stan aktualności
+  rewizji;
+- zastąpienie dużej karty „Następny krok” zwartym stanem z jednym istniejącym
+  CTA;
+- zastąpienie siatki „Decyzja dla strony” krótkim „Dlaczego teraz?” wyłącznie z
+  obecnego sygnału GSC i ograniczenia GA4;
+- ten sam układ na mobile: bez drugiego nagłówka modułu i bez wypchnięcia CTA
+  poza pierwszy viewport.
 
-- WILQ API jest jedynym źródłem kontekstu i metryk.
-- Nie wymyślaj danych, usług, sekcji, claims ani możliwości API.
-- GSC, GA4, Ads, Ahrefs, Merchant, Localo i Social pokazuj wyłącznie przy
-  exact evidence i freshness.
-- Brak danych pokazuj jako jasny blocker, nigdy jako zero.
-- Pojedynczy snapshot nie jest trendem.
-- Struktura strony jest wykrywana automatycznie z ACF, `the_content` albo
-  innego potwierdzonego wariantu. Marketer nie ma ręcznie mapować każdej sekcji.
-- WordPress pozostaje revision-bound draft-only. Nie proponuj publikacji,
-  aktualizacji istniejących wpisów ani bezpośredniego vendor write.
-- Nie dodawaj magicznych SEO score’ów, Agents SDK, API keya, browser-to-model,
-  równoległej ścieżki modelowej ani technicznego slopu w pierwszym widoku.
+### Out of scope
 
-## Audyt
+- selektor strony, inventory i wybór wszystkich 601 adresów;
+- warsztat HTML, `content_html`, zapis rewizji, mapa/nawigacja sekcji;
+- Codex, generowanie, prompty i review;
+- paczka HTML, WordPress dev i każdy WordPress write;
+- nowe metryki, źródła, score lub zmiana interpretacji danych.
 
-Oceń cały journey, nie pojedynczy komponent:
+### Nienaruszalne kontrakty
 
-### 1. Pierwszy viewport i IA
+- exact revision, lineage i review pozostają bez zmian;
+- HTML jest wynikiem redakcyjnym, a WordPress dev tylko opcjonalnym handoffem;
+- brak wymyślonych danych; pojedynczy GSC snapshot nie jest trendem;
+- zachowanie wyboru strony oraz głównego CTA pozostaje funkcjonalnie to samo;
+- otwieranie i zamykanie „Źródeł i ograniczeń” nie tworzy rewizji, nie generuje
+  treści i nie wykonuje WordPress write.
 
-- Czy od razu widać stronę, URL, cel i następny krok?
-- Czy marketer wybiera stronę, a nie niejasny „temat”?
-- Czy można wybrać dowolną stronę z inventory, a nie tylko okazję z kolejki?
-- Czy usługa jest dobierana z API i pokazana z lifecycle/match reason?
-- Czy pierwsza decyzja jest jedna i oczywista?
-- Czy technical IDs, payloady i trace są poniżej folda?
+## Kryteria akceptacji implementacji
 
-### 2. Metryki i decyzja
+1. Desktop 1440×900 odpowiada bez przewijania na pięć pytań z goalu.
+2. iPhone 14 (390×844) pokazuje te same pięć odpowiedzi i CTA; brak poziomego
+   overflow.
+3. Pokazany tytuł jest tytułem WordPress; zapytanie `bdo co to` nie udaje tytułu
+   strony.
+4. Stan rewizji pojawia się tylko raz i mówi jasno, czy jest aktualny wobec
+   bieżącego kontekstu.
+5. „Dlaczego teraz?” komunikuje 181 wyświetleń / 0 kliknięć z dostępnego GSC
+   odczytu oraz brak exact GA4 bez dopowiadania trendu lub okresu.
+6. Źródła są na żądanie, nie jako domyślny pierwszy ekran.
+7. Jest jedno wizualnie nadrzędne CTA; detale i linki nie konkurują z nim.
+8. Proof widoku nie wykonuje rewizji, generowania, review, handoffu ani
+   WordPress write.
 
-- Czy realne metryki są pokazane jako wynik/insight, a nie ściana liczb?
-- Czy każda liczba ma źródło, freshness i interpretację?
-- Czy brak exact GA4 jest zrozumiały?
-- Czy ekran rozróżnia fakt, sygnał, blocker i hipotezę?
-- Czy marketer wie, co zrobić z niskim CTR bez obietnicy wzrostu?
+## Zadanie reviewera
 
-### 3. Planowanie
+Wydaj jeden werdykt: **ACCEPT** albo **NEEDS_CHANGES** dla powyższego
+Execution goalu jako następnego małego pionowego slice’a.
 
-- Czy plan pokazuje title, H1, lead, meta, sekcje, FAQ, CTA, linkowanie,
-  query assignments i lineage?
-- Czy mapa sekcji jest wyraźnie automatyczna?
-- Czy marketer zatwierdza zakres, a nie ręcznie mapuje sekcje?
-- Czy plan ma jeden główny CTA i jeden następny krok?
+Następnie dostarcz:
 
-### 4. Tekst
+1. Najwyżej pięć konkretnych obserwacji z obecnych kadrów — każda z dowodem w
+   pliku, skutkiem dla marketera i minimalną zmianą w scope.
+2. Weryfikację, czy scope jest wystarczająco wąski i czy czegoś krytycznego nie
+   brakuje, aby kryteria dało się uczciwie udowodnić.
+3. Jeżeli werdykt to `NEEDS_CHANGES`, przepisz tylko konieczne fragmenty goalu;
+   nie proponuj nowego programu prac ani listy życzeń.
+4. Jeden docelowy układ pierwszego viewportu w kolejności informacji, bez
+   mockupów i bez nowych danych/API.
+5. Dokładny browser proof desktop/mobile, który rozróżnia sukces od obecnego
+   stanu.
 
-- Czy widok przypomina finalną stronę, a nie JSON/editor techniczny?
-- Czy wszystkie page assets są widoczne razem?
-- Czy źródła, claims i query assignments są dostępne pod „Dlaczego”?
-- Czy możliwa jest poprawa wybranej sekcji bez utraty lineage?
-
-### 5. Review i dev
-
-- Czy findings są konkretne, zrozumiałe i przypisane do stabilnych sekcji?
-- Czy review nie udaje approval ani wyniku SEO score?
-- Czy marketer rozumie różnicę między preview, handoff i draft-only apply?
-- Czy dev preview pokazuje dokładną rewizję i stan blokad?
-
-### 6. Visual design
-
-Oceń hierarchię, gęstość, typografię, kontrast, statusy, CTA, rytm kart,
-responsywność, loading/stale/empty states oraz poczucie zaufania i jakości.
-
-## Wymagany wynik
-
-1. Executive verdict: co działa, co najbardziej szkodzi, czy marketer może
-   codziennie pracować i pięć największych ryzyk.
-2. Ranking problemów z severity, ekranem/komponentem, dowodem, skutkiem i
-   konkretną naprawą (API, schema, dashboard albo copy/layout).
-3. Jeden spójny docelowy kierunek ekranów: wybór → wynik/metriki → zakres →
-   plan → tekst → review → dev preview.
-4. Konkretne pionowe slice’y: caller → typed API seam → komponent → efekt.
-5. Copy deck po polsku bez słów technicznych, jeśli nie pomagają marketerowi.
-6. Kryteria desktop/mobile proof i gotowości do handoffu.
-7. Na końcu 3–5 wizualizacji/mockupów zgodnych z realnymi kontraktami:
-   desktop first viewport, mobile first viewport, plan/brief, page-like
-   writing preview i review/dev handoff. Jeśli używasz imagegen, traktuj
-   wizualizacje jako eksplorację UX, nie gotowy kod ani dowód istniejącej funkcji.
-
-Nie proponuj dziesięciu wariantów. Wskaż jeden najlepszy kierunek i kolejność
-wdrożenia. Bądź bezlitosny wobec slopu, ale nie proponuj zmian dla samego ruchu.
+Pisz po polsku. Bądź rygorystyczny wobec powtórzeń, ściany kart i języka
+systemowego, ale nie poszerzaj scope’u o inventory, generowanie lub WordPress.
