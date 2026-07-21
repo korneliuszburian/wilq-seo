@@ -421,7 +421,7 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
     blocker_codes = [blocker["code"] for blocker in data["blockers"]]
     requirement_codes = {requirement["code"] for requirement in data["requirements"]}
     assert "missing_apply_mode" not in blocker_codes
-    assert "missing_payload_apply_allowed" in blocker_codes
+    assert "missing_payload_apply_allowed" not in blocker_codes
     assert "missing_mutation_adapter" not in blocker_codes
     assert "wordpress_draft_write_readiness" in requirement_codes
     assert "wordpress_draft_handoff_ready" in requirement_codes
@@ -481,8 +481,8 @@ def test_wordpress_apply_action_blocks_payload_before_vendor_write(
     assert detail["mutation_audit"]["mutation_adapter"] == "wordpress_draft_execution_boundary"
     assert detail["adapter_result"] is None
     serialized = str(detail)
-    assert "Payload akcji nie pozwala jeszcze na zapis zmian." in serialized
-    assert "Payload akcji nie jest gotowy do mutacji API." in serialized
+    assert "Wróć do zatwierdzonej wersji" in serialized
+    assert "Brakuje dokładnej wersji treści" in serialized
     action_response = client.get("/api/actions/act_apply_wordpress_draft_handoff")
     assert action_response.status_code == 200
     review_gate = action_response.json()["review_gate"]

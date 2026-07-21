@@ -250,20 +250,22 @@ def build_content_wordpress_draft_write_readiness_response(
     profile = callbacks.authoring_profile(connector_id)
     rest_adapter_configured = profile.rest_api.status == "configured"
     requirements, authorization = callbacks.audit_readiness(action_id)
-    blockers: list[ContentWordPressDraftWriteReadinessBlocker] = [
-        ContentWordPressDraftWriteReadinessBlocker(
-            code="actionobject_apply_path_required",
-            label="Zapis jest dostępny tylko przez kanoniczną akcję apply",
-            reason=(
-                "Ślad preview/review/confirm nie upoważnia content endpointu do "
-                "samodzielnego wywołania adaptera WordPress."
-            ),
-            next_step=(
-                "Użyj dry-run. Przywrócenie live write wymaga apply-capable "
-                "ActionObject, spójnego mutation readiness i ActionMutationAudit."
-            ),
+    blockers: list[ContentWordPressDraftWriteReadinessBlocker] = []
+    if action_id != "act_apply_wordpress_draft_handoff":
+        blockers.append(
+            ContentWordPressDraftWriteReadinessBlocker(
+                code="actionobject_apply_path_required",
+                label="Zapis jest dostępny tylko przez kanoniczną akcję apply",
+                reason=(
+                    "Ślad preview/review/confirm nie upoważnia content endpointu do "
+                    "samodzielnego wywołania adaptera WordPress."
+                ),
+                next_step=(
+                    "Użyj dry-run. Live write wymaga apply-capable ActionObject, "
+                    "spójnego mutation readiness i ActionMutationAudit."
+                ),
+            )
         )
-    ]
     if not live_write_enabled:
         blockers.append(
             ContentWordPressDraftWriteReadinessBlocker(
@@ -307,18 +309,19 @@ def build_content_wordpress_draft_write_readiness_response(
         ],
         callbacks.authorization_status(requirements, authorization),
     )
-    if authorization is not None:
+    if authorization is not None and action_id != "act_apply_wordpress_draft_handoff":
         authorization_status = "blocked_outside_action_apply"
+    ready = not blockers
     return ContentWordPressDraftWriteReadinessResponse(
         connector=connector_id,
         action_id=action_id,
-        ready=False,
+        ready=ready,
         live_write_enabled_by_env=live_write_enabled,
         rest_adapter_configured=rest_adapter_configured,
         required_audit_events=requirements,
         missing_audit_event_types=missing_audit_event_types,
         write_authorization_status=authorization_status,
-        suggested_write_authorization=None,
+        suggested_write_authorization=authorization if ready else None,
         blockers=blockers,
         operator_next_step=callbacks.next_step(False, blockers),
         evidence_ids=profile.evidence_ids,

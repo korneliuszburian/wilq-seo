@@ -113,7 +113,7 @@ def draft_apply_action(
         payload={
             "action_type": "wordpress_draft_handoff",
             "connector": "wordpress_ekologus",
-            "mode": "apply_blocked",
+            "mode": "apply",
             "preview_contract": "wordpress_draft_apply_preview_v1",
             "depends_on_action_id": handoff_action.id,
             "allowed_operation": "create_wordpress_draft",
@@ -134,7 +134,11 @@ def draft_apply_action(
                 "human_confirm_before_wordpress_write",
                 "wordpress_draft_write_readiness",
             ],
-            "blocked_claims": [
+            # These are forbidden outputs of the draft-only contract, not
+            # blockers for creating the draft itself.  Keep them in the
+            # contract's blocked_outputs so the generic ActionObject gate does
+            # not confuse safety boundaries with an unavailable adapter.
+            "blocked_outputs": [
                 "wordpress_publish",
                 "wordpress_update_existing_post",
                 "wordpress_delete_post",
@@ -142,8 +146,8 @@ def draft_apply_action(
                 "publish_ready_claim",
                 "obietnica wzrostu pozycji albo leadów",
             ],
-            "apply_allowed": False,
-            "api_mutation_ready": False,
+            "apply_allowed": True,
+            "api_mutation_ready": True,
             "destructive": False,
         },
         validation_status="not_validated",

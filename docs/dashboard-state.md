@@ -31,11 +31,24 @@ made, but this file is the current operating map.
 
 ## Current Priority
 
-Live fixed point (2026-07-20): BDO has a persisted full v2 revision
-`content_revision_48768eaf127143778094f112b8fa2fcd` with 6 sections, 3 FAQ
-items, 2 CTA blocks and one internal link. Its exact revision-bound WordPress
-handoff reaches the final safety screen; the dry-run returns `dry_run_ready`
-with `external_write_attempted=false`, so no WordPress write was performed.
+Live fixed point (2026-07-21): BDO has a persisted full v2 revision
+`content_revision_19eb47b728954d319fdaae40dda52adc` with 6 sections, 3 FAQ
+items, 2 CTA blocks and one internal link. After explicit vendor-write
+authority, the canonical ActionObject chain completed preview → review →
+confirm → impact → apply and created exactly one new WordPress draft,
+`post_id=1279`, with `status=draft`, title `BDO – co musi wiedzieć
+przedsiębiorca?` and 601 words on the dev target. Readback confirmed the
+draft. `publish_allowed=false` and `destructive_update_allowed=false` remain
+true in the execution boundary; meta fields stay `review_required` because
+the WordPress SEO/ACF mapping is not confirmed. This is a real draft proof,
+not publication, UAT or a 10/10 claim.
+
+The apply boundary now reconstructs the proposal by the immutable revision's
+exact planning digest instead of rebuilding today's planner and accidentally
+selecting a newer stale proposal. Missing or mismatched bindings still fail
+before any vendor call. The generic action payload distinguishes forbidden
+outputs (publish/update/delete) from an unavailable adapter, so draft-only
+apply can pass readiness without weakening those safety boundaries.
 The handoff context check allows a generated v2 section map to rewrite/merge
 the baseline while retaining exact planning/service/package bindings; v1 keeps
 the stricter section identity check. Deterministic review is `needs_changes`

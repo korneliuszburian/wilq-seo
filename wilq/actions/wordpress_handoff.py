@@ -64,7 +64,7 @@ def build_draft_apply_contract_payload(handoff_action: ActionObject) -> dict[str
         "draft_only": True,
         "publication_allowed": False,
         "destructive_allowed": False,
-        "adapter_status": "not_implemented",
+        "adapter_status": "implemented",
         "required_env_flags": ["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
         "required_input_contracts": handoff_action.payload.get("required_input_contracts", []),
         "required_audit_events": [
@@ -79,9 +79,9 @@ def build_draft_apply_contract_payload(handoff_action: ActionObject) -> dict[str
             "production_publish_ready_claim",
         ],
         "operator_summary": (
-            "Ten apply-mode obiekt nadal jest zablokowany. Może w przyszłości "
-            "utworzyć tylko szkic WordPress po pełnym preview, review, confirm, "
-            "impact check, env readiness i adapterze z audytem."
+            "Apply może utworzyć wyłącznie nowy szkic WordPress po pełnym "
+            "preview, review, confirm, impact check, env readiness i audycie. "
+            "Publikacja, update i delete pozostają zablokowane."
         ),
     }
 

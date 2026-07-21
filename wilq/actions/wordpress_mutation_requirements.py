@@ -106,9 +106,33 @@ def wordpress_draft_apply_capability(
     # second projection, the first snapshot can use the queue baseline while
     # the persisted v2 revision is bound to the generated planning digest.
     try:
-        planning_response = read_content_planning_proposal(
-            snapshot=snapshot,
-            store=content_planning_proposal_store(),
+        proposal_store = content_planning_proposal_store()
+        # A revision is an immutable fixed point. Rebuilding the planner from
+        # today's inventory here can select a newer/stale proposal and make a
+        # still-valid reviewed revision look changed at apply time. Prefer the
+        # proposal bound to the revision's exact planning digest; only fall
+        # back to the live planner projection when no such proposal exists.
+        list_revisions = getattr(workflow_store, "list_draft_revisions", None)
+        latest_revision = (
+            list_revisions(binding.work_item_id)[-1:]
+            if callable(list_revisions)
+            else []
+        )
+        revision_bound_proposal = (
+            proposal_store.latest_for_planning_digest(
+                binding.work_item_id,
+                latest_revision[0].planning_digest,
+            )
+            if latest_revision
+            else None
+        )
+        planning_response = (
+            None
+            if revision_bound_proposal is not None
+            else read_content_planning_proposal(
+                snapshot=snapshot,
+                store=proposal_store,
+            )
         )
     except Exception as exc:
         return None, [
@@ -119,7 +143,13 @@ def wordpress_draft_apply_capability(
                 "Odśwież workflow i wygeneruj aktualny plan przed handoffem.",
             )
         ]
-    if planning_response.status not in {"ready", "idempotent", "created"}:
+    if revision_bound_proposal is not None:
+        generated_planning_proposal = revision_bound_proposal
+    elif planning_response is None or planning_response.status not in {
+        "ready",
+        "idempotent",
+        "created",
+    }:
         return None, [
             _apply_blocker(
                 "wordpress_planning_reconstruction_failed",
@@ -128,7 +158,8 @@ def wordpress_draft_apply_capability(
                 "Wygeneruj i zatwierdź aktualny plan, a następnie ponów handoff.",
             )
         ]
-    generated_planning_proposal = planning_response.proposal
+    else:
+        generated_planning_proposal = planning_response.proposal
     if generated_planning_proposal is None:
         return None, [
             _apply_blocker(
@@ -450,8 +481,14 @@ def wordpress_draft_activation_packet(
 
     diagnostics = build_content_diagnostics_cached()
     initial_snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
-    work_item_id = initial_snapshot.preflight.item.id
+    preflight = getattr(initial_snapshot, "preflight", None)
+    work_item_id = getattr(getattr(preflight, "item", None), "id", None)
     workflow_store = content_workflow_store()
+    if work_item_id is None:
+        return build_content_wordpress_draft_activation_packet_response(
+            initial_snapshot,
+            action_id=action.id,
+        )
     snapshot = build_content_work_item_diagnostics_snapshot_response(
         diagnostics,
         revision_state=workflow_store.load_draft_revision_state(work_item_id),

@@ -154,7 +154,7 @@ def mutation_readiness_next_step(
             "Warunki zapisu są spełnione; apply nadal wymaga osobnego POST z "
             "jawnym potwierdzeniem operatora."
         )
-    if action.id == "act_apply_wordpress_draft_handoff":
+    if getattr(action, "id", None) == "act_apply_wordpress_draft_handoff":
         blocker_codes = {blocker.code for blocker in blockers}
         if {
             "missing_wordpress_draft_handoff_ready",
@@ -179,8 +179,14 @@ def mutation_readiness_next_step(
 
 def vendor_write_possible(action: ActionObject, mutation_adapter: str | None) -> bool:
     preview_items = payload_preview_items(action.payload)
+    wordpress_env_ready = True
+    if getattr(action, "id", None) == "act_apply_wordpress_draft_handoff":
+        from wilq.actions.wordpress_mutation_requirements import wordpress_draft_writes_enabled
+
+        wordpress_env_ready = wordpress_draft_writes_enabled()
     return (
         mutation_adapter is not None
+        and wordpress_env_ready
         and action.mode == ActionMode.apply
         and payload_apply_allowed(action.payload, preview_items)
         and payload_api_mutation_ready(action.payload, preview_items)
