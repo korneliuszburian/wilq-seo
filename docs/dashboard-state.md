@@ -171,6 +171,9 @@ desktop width: step titles and statuses now wrap instead of being silently
 truncated. Live proof is in
 `.local-lab/proof/dashboard-content-workflow/2026-07-21/task-map-desktop-fixed-full.png`;
 the 390px viewport remains free of horizontal overflow.
+The fresh bounded checker for this fixed point exited before emitting JSON;
+its disposition is recorded at
+`/home/krn/second-opinion-review/wilq-seo/check/2026-07-21-task-map-readable-fixed-X5dgJL/disposition.md`.
 
 Section navigation in the text/review stages is explicitly labelled
 “Przejdź do sekcji z planu” or “Przejdź do sekcji strony”. It is a navigation
