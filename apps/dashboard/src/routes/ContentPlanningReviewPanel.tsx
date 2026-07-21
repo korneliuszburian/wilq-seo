@@ -479,12 +479,20 @@ export function planningServiceSelectionMessage(candidateCount: number): string 
 
 export function planningInventorySourceLabel(
   acfStatus: string | undefined,
-  contentStatus: string | undefined
+  contentStatus: string | undefined,
+  acfSectionHeadings: string[] = []
 ): string {
+  const hasAcfSections = acfSectionHeadings.length > 0;
   if (acfStatus === "available" && contentStatus === "available") {
-    return "ACF/flexible content i the_content";
+    return hasAcfSections
+      ? "ACF/flexible content i the_content"
+      : "the_content (główna treść WordPress) · pola ACF bez sekcji";
   }
-  if (acfStatus === "available") return "ACF/flexible content";
+  if (acfStatus === "available") {
+    return hasAcfSections
+      ? "ACF/flexible content"
+      : "pola ACF bez wykrytych sekcji strukturalnych";
+  }
   if (contentStatus === "available") return "the_content (główna treść WordPress)";
   return "niepotwierdzone";
 }

@@ -98,7 +98,8 @@ export function ContentSectionWritingWorkbench({
     item.source_public_url ?? item.final_canonical_url ?? item.intended_final_url ?? undefined;
   const inventorySourceLabel = planningInventorySourceLabel(
     item.wordpress_acf_section_inventory_status,
-    item.wordpress_content_inventory_status
+    item.wordpress_content_inventory_status,
+    item.wordpress_acf_section_headings ?? []
   );
   const canPrepareAcf = Boolean(
     profile &&

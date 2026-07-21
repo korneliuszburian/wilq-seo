@@ -135,7 +135,13 @@ describe("planningInventorySourceLabel", () => {
     expect(planningInventorySourceLabel("missing", "available")).toBe(
       "the_content (główna treść WordPress)"
     );
-    expect(planningInventorySourceLabel("available", "missing")).toBe("ACF/flexible content");
+    expect(planningInventorySourceLabel("available", "missing", ["Hero"])).toBe("ACF/flexible content");
+    expect(planningInventorySourceLabel("available", "missing")).toBe(
+      "pola ACF bez wykrytych sekcji strukturalnych"
+    );
+    expect(planningInventorySourceLabel("available", "available")).toContain(
+      "pola ACF bez sekcji"
+    );
     expect(planningInventorySourceLabel("missing", "missing")).toBe("niepotwierdzone");
   });
 });

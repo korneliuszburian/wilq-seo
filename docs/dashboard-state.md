@@ -177,6 +177,16 @@ the draft has reached dev preview no longer presents a contradictory “Teraz”
 label. Live Review proof is
 `.local-lab/proof/dashboard-content-workflow/2026-07-21/review-state-copy-desktop.png`;
 the mobile viewport remains overflow-free.
+
+The planning source label now uses the typed ACF section-heading inventory,
+not merely the presence of arbitrary ACF fields. Live BDO therefore reads
+`the_content (główna treść WordPress) · pola ACF bez sekcji`, while the
+outsourcing pilot with five structural ACF sections reads
+`ACF/flexible content i the_content`. Proof screenshots are
+`bdo-plan-source-fixed.png` and `outsourcing-plan-source-fixed.png` in the
+same dashboard proof directory. This keeps the automatic ACF/the_content
+fallback honest instead of implying that a metadata-only ACF field is a page
+section map.
 The fresh bounded checker for this fixed point exited before emitting JSON;
 its disposition is recorded at
 `/home/krn/second-opinion-review/wilq-seo/check/2026-07-21-task-map-readable-fixed-X5dgJL/disposition.md`.

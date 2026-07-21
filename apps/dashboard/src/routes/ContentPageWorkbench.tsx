@@ -281,7 +281,8 @@ export function ContentPageWorkbench({
                 serviceCandidates={data.serviceProfileContext.service_candidates}
                 inventorySourceLabel={planningInventorySourceLabel(
                   data.preflight.item.wordpress_acf_section_inventory_status,
-                  data.preflight.item.wordpress_content_inventory_status
+                  data.preflight.item.wordpress_content_inventory_status,
+                  data.preflight.item.wordpress_acf_section_headings ?? []
                 )}
                 inventorySourceKind={data.preflight.item.wordpress_content_source_kind}
                 inventoryExtractionRegion={data.preflight.item.wordpress_content_extraction_region}
@@ -316,7 +317,8 @@ export function ContentPageWorkbench({
                 serviceCandidates={data.serviceProfileContext.service_candidates}
                 inventorySourceLabel={planningInventorySourceLabel(
                   data.preflight.item.wordpress_acf_section_inventory_status,
-                  data.preflight.item.wordpress_content_inventory_status
+                  data.preflight.item.wordpress_content_inventory_status,
+                  data.preflight.item.wordpress_acf_section_headings ?? []
                 )}
                 inventorySourceKind={data.preflight.item.wordpress_content_source_kind}
                 inventoryExtractionRegion={data.preflight.item.wordpress_content_extraction_region}
