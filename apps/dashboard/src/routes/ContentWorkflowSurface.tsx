@@ -49,6 +49,7 @@ import { ContentPageWorkbench as ContentPageWorkbenchView } from "./ContentPageW
 import { ContentWorkflowJourneyContext } from "./ContentWorkflowJourneyContext";
 import { ContentWorkflowTaskMap } from "./ContentWorkflowTaskMap";
 import { ContentKnowledgeReadinessNotice } from "./ContentKnowledgeReadinessNotice";
+import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 import {
   acfPreviewResultFrom,
   acfPreviewRequest,
@@ -381,21 +382,15 @@ function ContentWorkflowSelectedReady({
   if (workflow.isLoading) {
     return (
       <ContentWorkflowSelectedLoading
-        assessment={queue.freshness_assessment}
         candidate={selectedCandidate}
-        refresh={sourceRefresh}
-        refreshTargetUrl={selectedCandidate.final_canonical_url}
       />
     );
   }
   if (workflow.error || !workflow.data) {
     return (
       <ContentWorkflowSelectedLoading
-        assessment={queue.freshness_assessment}
         candidate={selectedCandidate}
         error
-        refresh={sourceRefresh}
-        refreshTargetUrl={selectedCandidate.final_canonical_url}
       />
     );
   }
@@ -456,17 +451,12 @@ function ContentWorkflowLoaded({
 
   return (
     <main className="w-full px-4 py-3 sm:py-5 lg:px-7 2xl:px-8">
-      <header className="mb-3 flex flex-wrap items-end justify-between gap-3 sm:mb-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-action">WILQ · Ekologus</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Treści i SEO</h1>
-          <p className="mt-1 text-sm text-slate-600">Content workflow</p>
-          <span className="sr-only">
-            {viewMode === "marketer"
-              ? "Decyzja, blocker i następny bezpieczny krok."
-              : "Metryki, źródła i szczegóły do sprawdzenia przed przekazaniem."}
-          </span>
-        </div>
+      <ContentWorkflowWorkspaceHeader>
+        <span className="sr-only">
+          {viewMode === "marketer"
+            ? "Decyzja, blocker i następny bezpieczny krok."
+            : "Metryki, źródła i szczegóły do sprawdzenia przed przekazaniem."}
+        </span>
         <div className="flex rounded-md border border-line bg-white p-1 shadow-sm" role="group" aria-label="Tryb widoku">
           <button
             type="button"
@@ -490,7 +480,7 @@ function ContentWorkflowLoaded({
             Źródła i szczegóły
           </button>
         </div>
-      </header>
+      </ContentWorkflowWorkspaceHeader>
 
       {viewMode === "technical" ? (
         <ContentFreshnessBanner

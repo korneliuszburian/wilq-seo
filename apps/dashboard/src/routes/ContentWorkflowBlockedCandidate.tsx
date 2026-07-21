@@ -1,9 +1,9 @@
 import type { ContentWorkItemQueueResponse } from "../lib/api";
-import { ContentWorkflowHeader } from "./ContentWorkflowHeader";
 import { ContentFreshnessBanner, type ContentSourceRefreshControl } from "./ContentWorkflowBoundaryStates";
 import { ContentCandidateQueuePanel } from "./ContentCandidateQueuePanel";
 import { ContentWorkflowFactTile as FactTile } from "./ContentWorkflowFactTile";
 import type { ContentWorkItemQueueCandidate } from "./contentWorkflowQueries";
+import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
 export function ContentWorkflowBlockedCandidate({
   queue,
@@ -21,7 +21,7 @@ export function ContentWorkflowBlockedCandidate({
   const blocker = selectedCandidate.blockers[0];
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <ContentWorkflowHeader topic={selectedCandidate.topic} />
+      <ContentWorkflowWorkspaceHeader />
       <ContentFreshnessBanner
         assessment={queue.freshness_assessment}
         refresh={refresh}

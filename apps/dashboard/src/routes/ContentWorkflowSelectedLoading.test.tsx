@@ -24,7 +24,7 @@ const freshness = {
 } as ContentWorkItemQueueResponse["freshness_assessment"];
 
 describe("ContentWorkflowSelectedLoading", () => {
-  it("keeps live queue metrics visible while the heavy snapshot loads", () => {
+  it("keeps the current content workspace identity while the snapshot loads", () => {
     const candidate = {
       work_item_id: "content_work_item_outsourcing",
       decision_id: "decision_outsourcing",
@@ -70,11 +70,15 @@ describe("ContentWorkflowSelectedLoading", () => {
       blockers: []
     } as ContentWorkItemQueueCandidate;
 
-    render(<ContentWorkflowSelectedLoading assessment={freshness} candidate={candidate} />);
+    render(<ContentWorkflowSelectedLoading candidate={candidate} />);
 
-    expect(screen.getByTestId("content-queue-metrics")).toHaveTextContent(
-      "62 wyświetleń · 0 kliknięć · CTR 0.00%"
-    );
-    expect(screen.getByText(/doradztwo z zakresu ochrony środowiska/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Treści i SEO" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "/oferta/doradztwo-i-outsourcing-ekologiczny/"
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Wczytuję aktualny plan, wersję roboczą i ograniczenia dla tej strony…")).toBeInTheDocument();
+    expect(screen.queryByText("Tworzenie i odświeżanie treści")).not.toBeInTheDocument();
   });
 });
