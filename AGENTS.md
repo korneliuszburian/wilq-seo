@@ -147,6 +147,9 @@ patch and record that state rather than silently publishing.
 
 - Keep WIP at one: exactly one implementation Bead may be `in_progress`. Do
   not claim another Bead to bypass a blocker or to parallelize investigation.
+- This applies regardless of the agent's named role or invoked skill: do not
+  create another Bead for a parallel investigation; a blocked active Bead
+  remains the sole implementation item.
 - The active Bead defines the next executable result. Do not create a separate
   execution, reviewer, status, or Markdown planning track.
 - The owner runs the external review layer. The implementation agent does not

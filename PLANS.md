@@ -1,8 +1,11 @@
-# WILQ — kanoniczny plan doprowadzenia do używalności
+# WILQ — historyczny kontekst planu użyteczności
 
-Status: aktywny, długotrwały plan wykonawczy. Właścicielem zadań i zależności
-pozostaje Beads (`wilq-seo-1oa`); ten plik definiuje produkt, standard i kolejność.
-Nie jest historią commitów ani listą zastępczą dla Beads.
+> Rola: historyczny kontekst produktu. Nie zastępuje `AGENTS.md`, aktywnego
+> Beada ani nazwanego rekordu bieżącego stanu. Sformułowania „aktywny” i
+> „bieżący” poniżej opisują moment powstania dokumentu, nie obecny workflow.
+
+Ten plik zachowuje wcześniejszy standard i kierunek produktu; nie jest aktualnym
+planem wykonawczym ani równoległą kolejką zadań.
 
 ### Aktywny execution goal — production-ready Treści i SEO (2026-07-20)
 

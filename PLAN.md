@@ -1,9 +1,11 @@
-# PLAN.md - WILQ Clean Product Plan
+# PLAN.md — historical product and cleanup context
 
-This is the current canonical execution plan for WILQ in this checkout.
+> Role: historical reference. It does not supersede `AGENTS.md`, the active
+> Bead, or a named current-state record. Phrases such as “current” and “active”
+> below describe the fixed point at which this document was written.
 
-It replaces older demo and dev-preview-heavy plans. Do not recover old tasks
-from git history unless the owner explicitly asks for them.
+This file preserves product and cleanup context from an earlier execution
+phase. Do not recover tasks or treat it as the current execution plan.
 
 ## 1. Product Identity
 
