@@ -714,6 +714,7 @@ function ContentSessionPicker({
   const candidates = queue.candidates.filter(
     (candidate) => candidate.recommended_mode !== "block"
   );
+  const [pageSearch, setPageSearch] = useState("");
   const allInventoryPageOptions = (inventory?.items ?? [])
     .map((item) => ({
       workItemId: item.work_item_id,
@@ -734,6 +735,11 @@ function ContentSessionPicker({
       label: `${pageTitle} — ${contentCandidatePath(pageUrl)}`
     });
   }
+  const filteredPageOptions = filterInventoryPageOptions(pageOptions, pageSearch);
+  const selectedPageOption = pageOptions.find((item) => item.workItemId === selectedWorkItemId);
+  const visiblePageOptions = selectedPageOption && !filteredPageOptions.some((item) => item.workItemId === selectedWorkItemId)
+    ? [selectedPageOption, ...filteredPageOptions.slice(0, 29)]
+    : filteredPageOptions;
 
   return (
     <section
@@ -752,8 +758,20 @@ function ContentSessionPicker({
           </p>
           <p className="mt-2 text-xs text-slate-500">WordPress · {workflowStatusLabel}</p>
         </div>
-        <label className="text-sm font-semibold text-ink" htmlFor="content-session-work-item">
-          Strona
+        <div className="text-sm font-semibold text-ink">
+          <label htmlFor="content-session-search">Szukaj strony</label>
+          <input
+            id="content-session-search"
+            data-testid="content-session-search"
+            type="search"
+            value={pageSearch}
+            onChange={(event) => setPageSearch(event.target.value)}
+            placeholder="Tytuł lub URL"
+            className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
+          />
+          <label className="mt-3 block" htmlFor="content-session-work-item">
+            Strona
+          </label>
           <select
             id="content-session-work-item"
             data-testid="content-session-work-item"
@@ -761,7 +779,7 @@ function ContentSessionPicker({
             value={selectedWorkItemId}
             onChange={(event) => onSelectWorkItem(event.target.value)}
           >
-            {pageOptions.map((item) => (
+            {visiblePageOptions.map((item) => (
               <option key={item.workItemId} value={item.workItemId}>
                 {item.label}
               </option>
@@ -769,10 +787,10 @@ function ContentSessionPicker({
           </select>
           {inventory?.total_count ? (
             <span className="mt-1 block text-xs font-normal text-slate-500">
-              {inventory.total_count.toLocaleString("pl-PL")} stron dostępnych w tym wyborze
+              {inventory.total_count.toLocaleString("pl-PL")} stron dostępnych · pokazano {visiblePageOptions.length}
             </span>
           ) : null}
-        </label>
+        </div>
       </div>
       <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-line pt-3 text-sm">
         <p className="font-semibold text-slate-500">Usługa:</p>

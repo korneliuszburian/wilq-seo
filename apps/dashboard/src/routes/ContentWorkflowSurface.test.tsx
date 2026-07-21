@@ -602,6 +602,12 @@ describe("ContentWorkflowSurface", () => {
     expect(within(picker).getAllByRole("option")).toHaveLength(3);
     expect(picker).toHaveValue("content_work_item_bdo");
 
+    const pageSearch = screen.getByRole("searchbox", { name: "Szukaj strony" });
+    fireEvent.change(pageSearch, { target: { value: "zielony ład" } });
+    expect(within(picker).getByRole("option", { name: /Zielony Ład/i })).toBeInTheDocument();
+    expect(within(picker).getByRole("option", { name: /bdo/i })).toBeInTheDocument();
+    fireEvent.change(pageSearch, { target: { value: "" } });
+
     fireEvent.change(picker, { target: { value: "content_work_item_green_deal" } });
 
     await waitFor(() =>
