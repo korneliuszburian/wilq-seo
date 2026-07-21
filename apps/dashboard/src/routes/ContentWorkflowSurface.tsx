@@ -644,7 +644,7 @@ function ContentNextStepHero({
   planningCurrent: boolean;
 }) {
   if (!step) return null;
-  const planNeedsRefresh = step.id === "scope" && nextStep?.id === "section_map" && !sectionMapCurrent;
+  const planNeedsRefresh = planningCurrent && step.id === "scope" && nextStep?.id === "section_map" && !sectionMapCurrent;
   const canAdvance = Boolean(nextStep?.canOpen) && !planNeedsRefresh;
   const nextStepLabel = nextStep?.id === "section_map" || nextStep?.id === "draft" ? "Przejdź do tekstu" : nextStep?.id === "review" ? "Przejdź do review" : nextStep?.id === "dev_draft" ? "Przejdź do odbioru" : "Zobacz kolejny krok";
   const currentStepLabel = workflowStepActionLabel(step.id, Boolean(step.blocker));
