@@ -33,9 +33,12 @@ export function ContentWorkflowTaskMap({
             {selectedStep.title}
           </h2>
         </div>
-        <p className="text-xs text-slate-600">
-          Teraz: {currentStep.title}
-        </p>
+        <div className="text-right text-xs text-slate-600">
+          <p>Stan wersji: {currentStep.title}</p>
+          {selectedStep.id !== currentStep.id ? (
+            <p className="mt-0.5 text-action">Otwarty krok: {selectedStep.title}</p>
+          ) : null}
+        </div>
       </div>
 
       <ol className="mt-4 grid grid-cols-5 gap-1 pb-1 sm:flex sm:gap-2 sm:overflow-x-auto lg:grid lg:grid-cols-5 lg:gap-3" aria-label="Etapy tworzenia treści">

@@ -171,6 +171,12 @@ desktop width: step titles and statuses now wrap instead of being silently
 truncated. Live proof is in
 `.local-lab/proof/dashboard-content-workflow/2026-07-21/task-map-desktop-fixed-full.png`;
 the 390px viewport remains free of horizontal overflow.
+The same map now separates `Stan wersji` (the API-owned current state) from
+`Otwarty krok` (the step the marketer is inspecting), so opening Review after
+the draft has reached dev preview no longer presents a contradictory “Teraz”
+label. Live Review proof is
+`.local-lab/proof/dashboard-content-workflow/2026-07-21/review-state-copy-desktop.png`;
+the mobile viewport remains overflow-free.
 The fresh bounded checker for this fixed point exited before emitting JSON;
 its disposition is recorded at
 `/home/krn/second-opinion-review/wilq-seo/check/2026-07-21-task-map-readable-fixed-X5dgJL/disposition.md`.
