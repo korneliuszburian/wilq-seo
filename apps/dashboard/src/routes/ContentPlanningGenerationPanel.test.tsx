@@ -129,6 +129,7 @@ describe("ContentPlanningGenerationPanel", () => {
     );
 
     const comparisons = await screen.findByTestId("content-planning-metric-comparisons");
+    expect(screen.getByTestId("content-planning-generation").querySelector("details")).not.toHaveAttribute("open");
     expect(comparisons).toHaveTextContent("Google Search Console");
     expect(comparisons).toHaveTextContent("12 → 19");
     expect(comparisons).toHaveTextContent("2026-06-01/2026-06-28 → 2026-06-29/2026-07-26");

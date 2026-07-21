@@ -135,7 +135,7 @@ export function ContentPlanningGenerationPanel({
       {inputSummary ? (
         <div className="mt-4 rounded-md border border-line bg-surface p-3">
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Na czym opiera się ta decyzja
+            Podstawa planu
           </p>
           <div className="mt-2 grid gap-2 text-sm sm:grid-cols-5">
             <PlanningInputFact label="Fakty firmy" value={inputSummary.source_fact_count} />
@@ -144,14 +144,14 @@ export function ContentPlanningGenerationPanel({
             <PlanningInputFact label="Metryki" value={inputSummary.measurement_metrics.length} />
             <PlanningInputFact label="Ślady źródeł" value={inputSummary.evidence_id_count} />
           </div>
-          <p className="mt-2 text-xs leading-5 text-slate-600" data-testid="content-planning-source-summary">
-            {planningSourceSummary(inputSummary)}
-          </p>
-          <PlanningSourceOutcomeStrip assessments={inputSummary.source_assessments} />
           <details className="mt-3 rounded-md border border-line bg-white px-3 py-2 text-xs text-slate-600">
             <summary className="cursor-pointer font-semibold text-action">
-              Pokaż dokładne fakty i porównania metryk
+              Pokaż źródła i szczegóły metryk
             </summary>
+            <p className="mt-2 leading-5" data-testid="content-planning-source-summary">
+              {planningSourceSummary(inputSummary)}
+            </p>
+            <PlanningSourceOutcomeStrip assessments={inputSummary.source_assessments} />
             <PlanningSourceFactPreview facts={inputSummary.source_fact_previews} total={inputSummary.source_fact_count} />
             <PlanningMetricComparisons comparisons={inputSummary.metric_comparisons} />
           </details>
@@ -194,16 +194,14 @@ export function ContentPlanningGenerationPanel({
       ) : null}
 
       {currentProposal ? (
-        <div
+        <details
           className="mt-4 rounded-md border border-action/20 bg-action/5 p-4"
           data-testid="content-planning-page-assets"
         >
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-              Podgląd elementów strony
-            </p>
-            <span className="text-xs text-slate-500">wynik planu · bez zapisu do WordPress</span>
-          </div>
+          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Pokaż elementy strony i zapytania
+          </summary>
+          <p className="mt-2 text-xs text-slate-500">Wynik planu · bez zapisu do WordPress</p>
           <dl className="mt-3 grid gap-3 sm:grid-cols-2">
             <PlanningPageAsset label="Tytuł WordPress" value={currentProposal.page_assets.title} />
             <PlanningPageAsset label="H1" value={currentProposal.page_assets.h1} />
@@ -213,28 +211,23 @@ export function ContentPlanningGenerationPanel({
               <PlanningPageAsset label="Lead" value={currentProposal.page_assets.lead} />
             </div>
           </dl>
-        </div>
-      ) : null}
-
-      {currentProposal?.search_demand.gsc_query_rows.length ? (
-        <div className="mt-4 rounded-md border border-line bg-surface p-3">
-          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Metryki, od których zaczynamy
-          </p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
-            {currentProposal.search_demand.gsc_query_rows.slice(0, 3).map((row) => (
-              <div key={`${row.term}-${row.page}`} className="rounded-md border border-line bg-white p-3">
-                <p className="text-sm font-semibold text-ink">{row.term}</p>
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  {formatDemandMetrics(row)}
-                </p>
+          {currentProposal.search_demand.gsc_query_rows.length ? (
+            <div className="mt-4 rounded-md border border-line bg-surface p-3">
+              <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                Metryki, od których zaczynamy
+              </p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                {currentProposal.search_demand.gsc_query_rows.slice(0, 3).map((row) => (
+                  <div key={`${row.term}-${row.page}`} className="rounded-md border border-line bg-white p-3">
+                    <p className="text-sm font-semibold text-ink">{row.term}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-600">{formatDemandMetrics(row)}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-slate-500">
-            To punkt wyjścia do decyzji o treści, nie obietnica wyniku.
-          </p>
-        </div>
+              <p className="mt-2 text-xs text-slate-500">To punkt wyjścia do decyzji o treści, nie obietnica wyniku.</p>
+            </div>
+          ) : null}
+        </details>
       ) : null}
 
       {canGenerate ? (
