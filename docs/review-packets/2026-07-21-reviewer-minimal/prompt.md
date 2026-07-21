@@ -18,9 +18,9 @@ adresów.
 
 ## Materiał do obejrzenia
 
-1. `bdo-current-desktop-first-viewport.png`
-2. `bdo-current-mobile-first-viewport.png`
-3. `bdo-current-desktop-sources-open.png`
+1. `01-desktop-full-workflow.png` — pełny, przewijany warsztat desktopowy
+2. `02-mobile-full-workflow.png` — pełny, przewijany warsztat mobilny
+3. `03-desktop-sources-open.png` — źródła otwarte na żądanie
 4. `README.md` — aktualny, ograniczony kontekst API i proof sieciowy.
 
 ## Proponowany pojedynczy Execution goal
