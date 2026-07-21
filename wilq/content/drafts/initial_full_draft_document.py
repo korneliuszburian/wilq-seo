@@ -11,6 +11,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import (
@@ -44,6 +45,7 @@ def build_initial_draft_revision_command(
             section_id=plan.section_id,
             heading=plan.heading,
             body_markdown=generated.body_markdown,
+            content_html=content_html_from_markdown(generated.body_markdown),
             query_terms=plan.query_terms,
             evidence_ids=plan.evidence_ids,
             claim_ids=plan.claim_ids,
