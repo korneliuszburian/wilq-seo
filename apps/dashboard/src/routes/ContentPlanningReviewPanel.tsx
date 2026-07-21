@@ -44,10 +44,13 @@ export function ContentPlanningReviewPanel({
   existingContentProvenanceRequired?: boolean;
   stage: PlanningStage;
 }) {
+  const proposal = planning.proposal;
   const [decision, setDecision] = useState<"approved" | "needs_changes">("approved");
   const [notes, setNotes] = useState("");
   const [provenanceChecked, setProvenanceChecked] = useState(false);
-  const proposal = planning.proposal;
+  const [showServicePicker, setShowServicePicker] = useState(
+    !proposal.service_selection_confirmed
+  );
   const serviceCandidateSignature = serviceCandidates
     .map((candidate) => `${candidate.service_card_id}:${candidate.recommended}`)
     .join("|");
@@ -65,6 +68,7 @@ export function ContentPlanningReviewPanel({
     setDecision("approved");
     setNotes("");
     setProvenanceChecked(false);
+    setShowServicePicker(!proposal.service_selection_confirmed);
   }, [
     proposal.work_item_id,
     proposal.proposal_id,
@@ -131,28 +135,49 @@ export function ContentPlanningReviewPanel({
             <p className="font-semibold text-ink">Decyzja dla tej strony</p>
             <p className="mt-1">WILQ przygotował zakres z aktualnej strony, usługi i danych. Sprawdź tylko, czy rekomendacja pasuje — szczegóły są dostępne na żądanie.</p>
           </div>
-          <label className="mt-4 block max-w-xl text-sm font-semibold text-ink">
-            {serviceSelectionFieldLabel(proposal.service_selection_confirmed)}
-            <select
-              aria-label={serviceSelectionFieldLabel(proposal.service_selection_confirmed)}
-              value={selectedServiceCardId}
-              onChange={(event) => setSelectedServiceCardId(event.target.value)}
-              disabled={serviceCandidates.length === 0}
-              className="mt-2 h-11 w-full rounded-md border border-line bg-white px-3 font-normal"
-            >
-              <option value="">
-                {serviceCandidates.length === 0
-                  ? "Brak dopasowanej usługi"
-                  : "Wybierz usługę do tego adresu"}
-              </option>
-              {serviceCandidates.map((candidate) => (
-                <option key={candidate.service_card_id} value={candidate.service_card_id}>
-                  {candidate.service_label} · {candidate.lifecycle_label}
-                  {candidate.recommended ? " · rekomendowana" : " · wybór wymaga review"}
+          {showServicePicker ? (
+            <label className="mt-4 block max-w-xl text-sm font-semibold text-ink">
+              {serviceSelectionFieldLabel(proposal.service_selection_confirmed)}
+              <select
+                aria-label={serviceSelectionFieldLabel(proposal.service_selection_confirmed)}
+                value={selectedServiceCardId}
+                onChange={(event) => setSelectedServiceCardId(event.target.value)}
+                disabled={serviceCandidates.length === 0}
+                className="mt-2 h-11 w-full rounded-md border border-line bg-white px-3 font-normal"
+              >
+                <option value="">
+                  {serviceCandidates.length === 0
+                    ? "Brak dopasowanej usługi"
+                    : "Wybierz usługę do tego adresu"}
                 </option>
-              ))}
-            </select>
-          </label>
+                {serviceCandidates.map((candidate) => (
+                  <option key={candidate.service_card_id} value={candidate.service_card_id}>
+                    {candidate.service_label} · {candidate.lifecycle_label}
+                    {candidate.recommended ? " · rekomendowana" : " · wybór wymaga review"}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <div
+              className="mt-4 flex max-w-xl items-center justify-between gap-3 rounded-md border border-line bg-surface px-3 py-2 text-sm"
+              data-testid="planning-confirmed-service"
+            >
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Usługa</p>
+                <p className="mt-1 font-semibold text-ink">
+                  {selectedService?.service_label ?? proposal.service_card_id ?? "Usługa potwierdzona"}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="shrink-0 text-sm font-semibold text-action hover:underline"
+                onClick={() => setShowServicePicker(true)}
+              >
+                Zmień usługę
+              </button>
+            </div>
+          )}
           {serviceSelectionMessage ? (
             <p
               className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700"

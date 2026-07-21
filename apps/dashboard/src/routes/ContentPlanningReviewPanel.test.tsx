@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -154,7 +154,13 @@ describe("generated section-map presentation", () => {
                 reason: null
               }
             ],
-            search_demand: { gsc_query_rows: [] },
+            search_demand: {
+              gsc_query_rows: [],
+              ads_term_rows: [],
+              optional_ads_status: "not_available",
+              safe_next_step: "Brak danych.",
+              keyword_planner_rows: []
+            },
             evidence_ids: ["evidence_1"],
             source_material_ids: [],
             knowledge_card_ids: [],
@@ -181,6 +187,61 @@ describe("generated section-map presentation", () => {
       "Nie wymaga osobnego zatwierdzania"
     );
     expect(screen.getByTestId("planning-section-map-details")).not.toHaveAttribute("open");
+  });
+
+  it("does not repeat a confirmed service selector until the marketer asks to change it", () => {
+    render(
+      <ContentPlanningReviewPanel
+        actions={{ conflict: null, error: null, pending: false, refresh: () => undefined, save: () => undefined }}
+        planning={{
+          scope_decision: null,
+          scope_current: true,
+          section_map_decision: null,
+          section_map_current: false,
+          proposal: {
+            generation_status: "baseline",
+            proposal_id: null,
+            service_selection_confirmed: true,
+            service_card_id: "service_bdo",
+            final_canonical_url: "/bdo/",
+            buyer_problem: "problem",
+            buyer_trigger: "trigger",
+            internal_link_directions: [],
+            search_intent: "informational",
+            target_reader: "reader",
+            cta_direction: "contact",
+            sections: [],
+            inventory_mapping: [],
+            search_demand: {
+              gsc_query_rows: [],
+              ads_term_rows: [],
+              optional_ads_status: "not_available",
+              safe_next_step: "Brak danych.",
+              keyword_planner_rows: []
+            },
+            evidence_ids: [],
+            source_material_ids: [],
+            knowledge_card_ids: [],
+            source_connectors: []
+          }
+        } as never}
+        serviceCandidates={[{
+          service_card_id: "service_bdo",
+          service_label: "BDO",
+          lifecycle_label: "zatwierdzona i aktualna",
+          lifecycle_status: "approved_current",
+          recommended: true,
+          matched_terms: ["bdo"],
+          match_reasons: ["bdo"]
+        }]}
+        stage="scope"
+      />
+    );
+
+    expect(screen.getByTestId("planning-confirmed-service")).toHaveTextContent("BDO");
+    expect(screen.queryByLabelText("Potwierdzona usługa")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Zmień usługę" }));
+    expect(screen.getByLabelText("Potwierdzona usługa")).toBeInTheDocument();
   });
 });
 
