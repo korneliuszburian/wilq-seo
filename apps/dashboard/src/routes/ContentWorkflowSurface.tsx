@@ -83,12 +83,6 @@ type CodexProposalMutationInput = {
 type InitialDraftMutationInput = NonNullable<
   ContentWorkflowSnapshot["planningWorkspace"]
 >["proposal"];
-type ContentPlanningSections = NonNullable<
-  ContentWorkflowSnapshot["planningWorkspace"]
->["proposal"]["sections"];
-type ContentPlanningGenerationStatus = NonNullable<
-  ContentWorkflowSnapshot["planningWorkspace"]
->["proposal"]["generation_status"];
 export function ContentWorkflowSurface() {
   const navigate = useNavigate();
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
@@ -560,6 +554,8 @@ function ContentWorkflowMarketerJourney({
   onSelectWorkItem: (workItemId: string) => void;
 }) {
   const [selectedStepId, setSelectedStepId] = useState<WorkflowStepId>(data.currentStepId);
+  const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
+  const initialSectionHeading = stringFromSearch(routeSearch, "section_heading");
   const selectStep = (stepId: WorkflowStepId) => {
     if (data.operatorSteps.some((step) => step.id === stepId && step.canOpen)) {
       setSelectedStepId(stepId);
@@ -569,16 +565,11 @@ function ContentWorkflowMarketerJourney({
   return (
     <div data-testid="content-workflow-marketer-journey">
       <ContentSessionPicker
-        planningGenerationStatus={data.planningWorkspace?.proposal.generation_status ?? "baseline"}
-        planningDigest={data.planningWorkspace?.proposal.planning_digest ?? null}
-        planningSections={data.planningWorkspace?.proposal.sections ?? []}
-        currentSectionHeadings={data.candidate.page_inventory?.section_headings ?? []}
         workflowStatusLabel={marketerWorkflowStatusLabel(data)}
         queue={queue}
         inventory={inventory}
         selectedWorkItemId={selectedWorkItemId}
         onSelectWorkItem={onSelectWorkItem}
-        activeStepId={selectedStepId}
         serviceLabel={data.serviceProfileContext.service_label ?? "Nieprzypisana usługa"}
       />
       <ContentNextStepHero
@@ -608,6 +599,7 @@ function ContentWorkflowMarketerJourney({
         draftActivationPacket={draftActivationPacket}
         enrichment={enrichment}
         activeStepId={selectedStepId}
+        initialSectionHeading={initialSectionHeading ?? undefined}
       />
     </div>
   );
@@ -697,39 +689,25 @@ export function workflowStepInstruction(
 }
 
 function focusWorkflowStep(stepId: WorkflowStepId) {
-  const targetId = stepId === "scope" ? "planning-review-scope" : stepId === "section_map" ? "planning-review-section_map" : stepId === "draft" ? "draft-section-tabs" : stepId === "review" ? "review-workspace-title" : "wordpress-draft-action-wizard";
+  const targetId = stepId === "scope" ? "planning-review-scope" : stepId === "section_map" ? "planning-review-section_map" : stepId === "draft" ? "content-draft-workbench" : stepId === "review" ? "review-workspace-title" : "wordpress-draft-action-wizard";
   document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function ContentSessionPicker({
-  planningGenerationStatus,
-  planningDigest,
-  planningSections,
-  currentSectionHeadings,
   workflowStatusLabel,
   queue,
   inventory,
   selectedWorkItemId,
   onSelectWorkItem,
-  activeStepId,
   serviceLabel
 }: {
-  planningGenerationStatus: ContentPlanningGenerationStatus;
-  planningDigest: string | null;
-  planningSections: ContentPlanningSections;
-  currentSectionHeadings: string[];
   workflowStatusLabel: string;
   queue: ContentWorkItemQueueResponse;
   inventory: ContentInventoryCatalogResponse | null;
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
-  activeStepId: WorkflowStepId;
   serviceLabel: string;
 }) {
-  const navigate = useNavigate();
-  const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
-  const requestedSectionHeading = stringFromSearch(routeSearch, "section_heading");
-  const requestedPlanningDigest = stringFromSearch(routeSearch, "planning_digest");
   const [inventorySearch, setInventorySearch] = useState("");
   const candidates = queue.candidates.filter(
     (candidate) => candidate.recommended_mode !== "block"
@@ -745,19 +723,6 @@ function ContentSessionPicker({
   const selected = candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
-  const hasGeneratedPlan = planningGenerationStatus === "codex_generated";
-  const selectedSectionHeading = hasGeneratedPlan
-    ? (requestedPlanningDigest === planningDigest
-        ? planningSections.find((section) => section.heading === requestedSectionHeading)?.heading
-        : null) ?? planningSections[0]?.heading ?? null
-    : (!requestedPlanningDigest &&
-        requestedSectionHeading &&
-        currentSectionHeadings.includes(requestedSectionHeading)
-        ? requestedSectionHeading
-        : null) ?? currentSectionHeadings[0] ?? null;
-  const availableSectionHeadings = hasGeneratedPlan
-    ? planningSections.map((section) => section.heading)
-    : currentSectionHeadings;
   if (!selected) return null;
 
   return (
@@ -863,34 +828,6 @@ function ContentSessionPicker({
           {allInventoryPageOptions.length > inventoryPageOptions.length ? <p className="text-xs text-slate-500">Pokazuję maksymalnie 30 wyników. Doprecyzuj wyszukiwanie, aby znaleźć konkretny adres.</p> : null}
         </div>
       </details>
-      {selectedSectionHeading && !["scope", "section_map"].includes(activeStepId) ? (
-        <label className="mt-3 block text-sm font-semibold text-ink" htmlFor="content-session-section">
-          {hasGeneratedPlan ? "Przejdź do sekcji z planu" : "Przejdź do sekcji strony"}
-          <select
-            id="content-session-section"
-            className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
-            value={selectedSectionHeading}
-            onChange={(event) => {
-              void navigate({
-                to: "/content-workflow",
-                search: (previous) => ({
-                  ...previous,
-                  work_item_id: selectedWorkItemId,
-                  section_heading: event.target.value,
-                  planning_digest: hasGeneratedPlan ? planningDigest ?? undefined : undefined
-                }),
-                replace: true
-              });
-            }}
-          >
-            {availableSectionHeadings.map((heading) => (
-              <option key={heading} value={heading}>
-                {heading}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
     </section>
   );
 }

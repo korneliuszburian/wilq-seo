@@ -1,6 +1,5 @@
-import { ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   getContentWorkItemSemanticReview,
@@ -30,8 +29,7 @@ import {
   planningPageAssetsReady
 } from "./contentPageWorkbenchModel";
 import {
-  sectionOverrideKey,
-  shortSectionTabLabel
+  sectionOverrideKey
 } from "./contentWorkflowDraftSectionModel";
 import type { ContentWorkflowSnapshot, WorkflowStepId } from "./contentWorkflowRuntime";
 import { normalizedPath, selectDevPage } from "./contentWorkflowTarget";
@@ -113,7 +111,8 @@ export function ContentPageWorkbench({
   data,
   draftActivationPacket,
   enrichment,
-  activeStepId
+  activeStepId,
+  initialSectionHeading
 }: {
   actions: ContentPageWorkbenchActions;
   authoringProfile: WordPressAuthoringProfileQuery;
@@ -121,6 +120,7 @@ export function ContentPageWorkbench({
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   enrichment: ContentOpportunityEnrichment | null;
   activeStepId: WorkflowStepId;
+  initialSectionHeading?: string;
 }) {
   const item = data.preflight.item;
   const draft = data.draftPackage.draft_package_result.draft_package;
@@ -149,6 +149,8 @@ export function ContentPageWorkbench({
     texts: Record<string, string>;
   }>({ sourceId: null, texts: {} });
   const [selectedSectionKey, setSelectedSectionKey] = useState<string | null>(null);
+  const [draftWorkspaceMode, setDraftWorkspaceMode] = useState<"editor" | "preview">("editor");
+  const [sourcePanelOpen, setSourcePanelOpen] = useState(false);
   const [reviewDecision, setReviewDecision] = useState<ContentDraftRevisionDecision>(
     "needs_changes"
   );
@@ -166,6 +168,14 @@ export function ContentPageWorkbench({
     revisionSections.find((section) => sectionOverrideKey(section.heading) === selectedSectionKey) ??
     revisionSections[0] ??
     null;
+  const requestedSectionKey = revisionSections.find(
+    (section) => section.heading === initialSectionHeading
+  )
+    ? sectionOverrideKey(initialSectionHeading ?? "")
+    : null;
+  useEffect(() => {
+    if (requestedSectionKey) setSelectedSectionKey(requestedSectionKey);
+  }, [draftEditorId, requestedSectionKey]);
   const selectedSectionEditorKey = selectedSection
     ? sectionOverrideKey(selectedSection.heading)
     : "";
@@ -265,8 +275,7 @@ export function ContentPageWorkbench({
         <ContentSourceStatusBar data={data} devPage={devPage} profile={profile} />
       </div>
 
-      <div className={`grid gap-4 ${activeStepId === "draft" ? "xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_300px]" : "grid-cols-1"}`}>
-        <div className="min-w-0 space-y-3">
+      <div className="min-w-0 space-y-3">
           {activeStepId === "scope" && data.planningWorkspace ? (
             <>
               <ContentPlanningReviewPanel
@@ -331,119 +340,173 @@ export function ContentPageWorkbench({
             </>
           ) : null}
 
-          {activeStepId === "draft" ? (
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
-            <div className="rounded-md border border-line bg-white p-4 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold text-ink">Tekst strony</h2>
-                  <span className="sr-only">Tekst sekcji do szkicu</span>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">Przeczytaj stronę jak finalny materiał, popraw wybraną sekcję i zapisz exact revision.</p>
-                </div>
-                <span className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-slate-600">
-                  {revisionStatusLabel}
-                </span>
+        {activeStepId === "draft" ? (
+          <section
+            className="rounded-md border border-line bg-white p-4 shadow-sm"
+            data-testid="content-draft-workbench"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-ink">
+                  Wersja robocza treści
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Edytuj jedną sekcję i porównaj ją z podglądem. Zapis utworzy
+                  kolejną exact revision; przekazanie do WordPressa pozostaje
+                  osobnym krokiem.
+                </p>
               </div>
-
-              {revisionSections.length ? (
-                <div className="mt-4">
-                  {!latestRevision ? (
-                    <div className="mb-4 rounded-md border border-action/25 bg-action/5 p-4">
-                      <p className="text-sm font-semibold text-ink">Wygeneruj pełną pierwszą wersję</p>
-                      <p className="mt-1 text-sm leading-6 text-slate-700">
-                        WILQ użyje zatwierdzonego planu, inventory, zapytań i dokładnych faktów.
-                        Wynik pozostanie niezatwierdzony i nie dotknie WordPressa.
+              <span className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-slate-600">
+                {revisionStatusLabel}
+              </span>
+            </div>
+            {revisionSections.length ? (
+              <div className="mt-4">
+                {!latestRevision ? (
+                  <div className="mb-4 rounded-md border border-action/25 bg-action/5 p-4">
+                    <p className="text-sm font-semibold text-ink">
+                      Wygeneruj pełną pierwszą wersję
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-700">
+                      WILQ użyje zatwierdzonego planu, inventory, zapytań i
+                      dokładnych faktów. Wynik pozostanie niezatwierdzony i nie
+                      dotknie WordPressa.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={actions.generateInitialDraft}
+                      disabled={
+                        !initialDraftReady || actions.initialDraftPending
+                      }
+                      className="mt-3 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {actions.initialDraftPending
+                        ? "Tworzę pełny tekst..."
+                        : "Wygeneruj pełny tekst"}
+                    </button>
+                    {!initialDraftReady ? (
+                      <p className="mt-2 text-xs leading-5 text-slate-600">
+                        Najpierw wygeneruj plan z kompletem page assets i
+                        zatwierdź jego aktualny zakres.
                       </p>
+                    ) : null}
+                    {actions.initialDraftResult &&
+                    actions.initialDraftResult.status !== "created" ? (
+                      <p className="mt-2 text-sm text-danger" role="alert">
+                        {actions.initialDraftResult.blockers[0]?.reason ??
+                          actions.initialDraftResult.safe_next_step}
+                      </p>
+                    ) : null}
+                    {actions.initialDraftError ? (
+                      <p className="mt-2 text-sm text-danger" role="alert">
+                        Nie udało się utworzyć pełnej wersji. WILQ nie zapisał
+                        częściowego tekstu.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                <div className="border-b border-line pb-4">
+                  <label
+                    className="block min-w-0 text-sm font-semibold text-ink"
+                    htmlFor="draft-section-selector"
+                  >
+                    Sekcja dokumentu
+                    <select
+                      id="draft-section-selector"
+                      aria-label="Sekcja dokumentu"
+                      value={selectedSectionEditorKey}
+                      onChange={(event) =>
+                        setSelectedSectionKey(event.target.value)
+                      }
+                      className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
+                    >
+                      {revisionSections.map((section) => (
+                        <option
+                          key={sectionOverrideKey(section.heading)}
+                          value={sectionOverrideKey(section.heading)}
+                        >
+                          {section.heading}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSourcePanelOpen(true)}
+                      className="inline-flex h-10 items-center rounded-md border border-line bg-white px-3 text-sm font-semibold text-action"
+                    >
+                      Źródła i ograniczenia (
+                      {selectedSection?.evidence_ids.length ?? 0})
+                    </button>
+                    <div
+                      className="inline-flex rounded-md border border-line bg-surface p-1 lg:hidden"
+                      role="tablist"
+                      aria-label="Tryb warsztatu tekstu"
+                    >
                       <button
                         type="button"
-                        onClick={actions.generateInitialDraft}
-                        disabled={!initialDraftReady || actions.initialDraftPending}
-                        className="mt-3 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        role="tab"
+                        aria-selected={draftWorkspaceMode === "editor"}
+                        onClick={() => setDraftWorkspaceMode("editor")}
+                        className={`rounded px-3 py-2 text-sm font-semibold ${draftWorkspaceMode === "editor" ? "bg-white text-action shadow-sm" : "text-slate-600"}`}
                       >
-                        {actions.initialDraftPending ? "Tworzę pełny tekst..." : "Wygeneruj pełny tekst"}
+                        Edytor
                       </button>
-                      {!initialDraftReady ? (
-                        <p className="mt-2 text-xs leading-5 text-slate-600">
-                          Najpierw wygeneruj plan z kompletem page assets i zatwierdź jego aktualny zakres. Mapa sekcji jest wyliczana automatycznie z aktualnego inventory, usługi, zapytań i dowodów.
-                        </p>
-                      ) : null}
-                      {actions.initialDraftResult && actions.initialDraftResult.status !== "created" ? (
-                        <p className="mt-2 text-sm text-danger" role="alert">
-                          {actions.initialDraftResult.blockers[0]?.reason ??
-                            actions.initialDraftResult.safe_next_step}
-                        </p>
-                      ) : null}
-                      {actions.initialDraftError ? (
-                        <p className="mt-2 text-sm text-danger" role="alert">
-                          Nie udało się utworzyć pełnej wersji. WILQ nie zapisał częściowego tekstu.
-                        </p>
-                      ) : null}
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={draftWorkspaceMode === "preview"}
+                        onClick={() => setDraftWorkspaceMode("preview")}
+                        className={`rounded px-3 py-2 text-sm font-semibold ${draftWorkspaceMode === "preview" ? "bg-white text-action shadow-sm" : "text-slate-600"}`}
+                      >
+                        Podgląd
+                      </button>
                     </div>
-                  ) : null}
-                  <div
-                    className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1 border-b border-line sm:flex sm:flex-wrap sm:gap-x-5"
-                    id="draft-section-tabs"
-                    data-testid="draft-section-tabs"
-                  >
-                    {revisionSections.map((section) => {
-                      const key = sectionOverrideKey(section.heading);
-                      const active = key === selectedSectionEditorKey;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setSelectedSectionKey(key)}
-                          className={`min-w-0 break-words border-b-2 px-1 pb-3 text-left text-sm font-semibold ${
-                            active
-                              ? "border-action text-action"
-                              : "border-transparent text-slate-600"
-                          }`}
-                        >
-                          {shortSectionTabLabel(section.heading)}
-                        </button>
-                      );
-                    })}
                   </div>
-                  {selectedSection ? (
-                    <label className="mt-4 block">
-                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                </div>
+                <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+                  <div
+                    className={`${draftWorkspaceMode === "editor" ? "block" : "hidden"} min-w-0 lg:block`}
+                  >
+                    {selectedSection ? (
+                      <label className="block">
                         <span className="text-lg font-semibold text-ink">
                           {selectedSection.heading}
                         </span>
-                        <span className="text-xs text-slate-500">
-                          Źródła: {selectedSection.evidence_ids.length || "brak"}
+                        <span className="mt-1 block text-sm leading-6 text-slate-600">
+                          Treść w bieżącym buforze tej sekcji.
                         </span>
-                      </div>
-                      <textarea
-                        className="min-h-40 w-full resize-y rounded-md border border-line bg-white p-4 text-sm leading-6 text-ink outline-none focus:border-action focus:ring-2 focus:ring-action/20"
-                        value={selectedSectionText}
-                        onChange={(event) =>
-                          setSectionEditorState({
-                            sourceId: draftEditorId,
-                            texts: {
-                              ...sectionTexts,
-                              [selectedSectionEditorKey]: event.target.value
-                            }
-                          })
-                        }
-                        aria-label={`Tekst sekcji ${selectedSection.heading}`}
-                      />
-                    </label>
-                  ) : null}
-                  {hasEmptyRevisionSection ? (
-                    <p className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm text-slate-700">
-                      Każda zaplanowana sekcja musi zachować treść. Uzupełnij pustą sekcję przed
-                      zapisem lub podglądem — jej opróżnienie nie usunie jej z wersji.
-                    </p>
-                  ) : null}
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    {latestRevision ? (
+                        <textarea
+                          className="mt-3 min-h-[30rem] w-full resize-y rounded-md border border-line bg-white p-4 text-sm leading-6 text-ink outline-none focus:border-action focus:ring-2 focus:ring-action/20"
+                          value={selectedSectionText}
+                          onChange={(event) =>
+                            setSectionEditorState({
+                              sourceId: draftEditorId,
+                              texts: {
+                                ...sectionTexts,
+                                [selectedSectionEditorKey]: event.target.value,
+                              },
+                            })
+                          }
+                          aria-label={`Tekst sekcji ${selectedSection.heading}`}
+                        />
+                      </label>
+                    ) : null}
+                    {hasEmptyRevisionSection ? (
+                      <p className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm text-slate-700">
+                        Każda zaplanowana sekcja musi zachować treść. Uzupełnij
+                        pustą sekcję przed zapisem — jej opróżnienie nie usunie
+                        jej z wersji.
+                      </p>
+                    ) : null}
+                    <div className="mt-4 flex flex-wrap gap-3">
                       <button
                         type="button"
                         onClick={() =>
                           actions.saveDraftRevision(
                             revisionWorkspace.editor_title,
-                            sectionOverrides
+                            sectionOverrides,
                           )
                         }
                         disabled={
@@ -451,154 +514,212 @@ export function ContentPageWorkbench({
                           !sectionOverrides.length ||
                           hasEmptyRevisionSection ||
                           actions.revisionSavePending ||
-                          actions.codexProposalPending ||
-                          proposalCommittedForLatest
+                          (latestRevision !== null &&
+                            (actions.codexProposalPending ||
+                              proposalCommittedForLatest))
                         }
                         className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {actions.revisionSavePending
                           ? "Zapisuję wersję..."
-                          : "Zapisz poprawioną wersję do review"}
+                          : latestRevision
+                            ? "Zapisz poprawioną wersję do review"
+                            : "Zapisz wersję do review"}
                       </button>
-                    ) : (
                       <button
                         type="button"
                         onClick={() =>
-                          actions.saveDraftRevision(
-                            revisionWorkspace.editor_title,
-                            sectionOverrides
-                          )
+                          setSectionEditorState({
+                            sourceId: draftEditorId,
+                            texts: sectionDraftDefaults,
+                          })
                         }
-                        disabled={
-                          !revisionWorkspace.can_save ||
-                          !sectionOverrides.length ||
-                          hasEmptyRevisionSection ||
-                          actions.revisionSavePending
-                        }
-                        className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-10 items-center rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink"
                       >
-                        {actions.revisionSavePending
-                          ? "Zapisuję wersję..."
-                          : "Zapisz wersję do review"}
+                        {latestRevision
+                          ? "Przywróć zapisaną wersję"
+                          : "Przywróć brief"}
                       </button>
-                    )}
+                    </div>
+                    <RevisionMutationFeedback
+                      conflict={actions.revisionSaveConflict}
+                      error={actions.revisionSaveError}
+                      kind="save"
+                    />
+                    <details className="mt-4 rounded-md border border-line bg-surface p-3">
+                      <summary className="cursor-pointer text-sm font-semibold text-action">
+                        Pomoc Codexa dla wybranych sekcji
+                      </summary>
+                      <div className="mt-3">
+                        <ContentCodexSectionProposalPanel
+                          workItemId={item.id}
+                          workspace={revisionWorkspace}
+                          generationReadiness={
+                            data.structuredGenerationReadiness
+                          }
+                          hasUnsavedChanges={hasUnsavedRevisionChanges}
+                          pending={actions.codexProposalPending}
+                          error={actions.codexProposalError}
+                          result={actions.codexProposalResult}
+                          submittedBaseRevision={
+                            actions.codexProposalBaseRevision
+                          }
+                          suggestedSectionIds={
+                            semanticReviewResult?.status === "ready" ||
+                            semanticReviewResult?.status === "created" ||
+                            semanticReviewResult?.status === "idempotent"
+                              ? unique(
+                                  semanticReviewResult.review?.findings.flatMap(
+                                    (finding) =>
+                                      finding.affected_targets.filter(
+                                        (target) =>
+                                          latestRevision?.sections.some(
+                                            (section) =>
+                                              section.section_id === target,
+                                          ),
+                                      ),
+                                  ) ?? [],
+                                )
+                              : []
+                          }
+                          onSubmit={actions.runCodexSectionProposal}
+                          onRefresh={actions.refreshCodexProposalWorkspace}
+                        />
+                      </div>
+                    </details>
+                  </div>
+                  <article
+                    className={`${draftWorkspaceMode === "preview" ? "block" : "hidden"} min-w-0 rounded-md border border-line bg-surface p-5 lg:block`}
+                    aria-label={`Podgląd sekcji ${selectedSection?.heading ?? ""}`}
+                    data-testid="content-draft-section-preview"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Podgląd tej samej sekcji
+                    </p>
+                    <h3 className="mt-2 text-2xl font-semibold leading-tight text-ink">
+                      {selectedSection?.heading ?? "Wybierz sekcję"}
+                    </h3>
+                    <div className="mt-5 border-t border-line pt-5 text-base leading-8 text-slate-700 whitespace-pre-wrap">
+                      {selectedSectionText ||
+                        "Ta sekcja nie ma jeszcze treści."}
+                    </div>
+                  </article>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-4 rounded-md border border-wait/25 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
+                Brakuje paczki szkicu z sekcjami. Najpierw przygotuj brief i
+                draft package dla tej strony.
+              </p>
+            )}
+            {sourcePanelOpen ? (
+              <div
+                className="fixed inset-0 z-50"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="content-section-sources-title"
+              >
+                <button
+                  type="button"
+                  aria-label="Zamknij źródła i ograniczenia"
+                  onClick={() => setSourcePanelOpen(false)}
+                  className="absolute inset-0 cursor-default bg-ink/30"
+                />
+                <section className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col overflow-y-auto border-l border-line bg-white p-5 shadow-2xl">
+                  <div className="flex items-start justify-between gap-3 border-b border-line pb-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Szczegóły techniczne sekcji
+                      </p>
+                      <h3
+                        id="content-section-sources-title"
+                        className="mt-1 text-lg font-semibold text-ink"
+                      >
+                        Źródła i ograniczenia
+                      </h3>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                        {selectedSection?.heading ?? "Wybrana sekcja"}
+                      </p>
+                    </div>
                     <button
                       type="button"
-                      onClick={() =>
-                        setSectionEditorState({
-                          sourceId: draftEditorId,
-                          texts: sectionDraftDefaults
-                        })
-                      }
-                      className="inline-flex h-10 items-center rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink"
+                      onClick={() => setSourcePanelOpen(false)}
+                      className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-ink"
                     >
-                      {latestRevision ? "Przywróć zapisaną wersję" : "Przywróć brief"}
+                      Zamknij
                     </button>
                   </div>
-                  <RevisionMutationFeedback
-                    conflict={actions.revisionSaveConflict}
-                    error={actions.revisionSaveError}
-                    kind="save"
-                  />
-                  <ContentCodexSectionProposalPanel
-                    workItemId={item.id}
-                    workspace={revisionWorkspace}
-                    generationReadiness={data.structuredGenerationReadiness}
-                    hasUnsavedChanges={hasUnsavedRevisionChanges}
-                    pending={actions.codexProposalPending}
-                    error={actions.codexProposalError}
-                    result={actions.codexProposalResult}
-                    submittedBaseRevision={actions.codexProposalBaseRevision}
-                    suggestedSectionIds={
-                      semanticReviewResult?.status === "ready" ||
-                      semanticReviewResult?.status === "created" ||
-                      semanticReviewResult?.status === "idempotent"
-                        ? unique(
-                            semanticReviewResult.review?.findings.flatMap((finding) =>
-                              finding.affected_targets.filter((target) =>
-                                latestRevision?.sections.some(
-                                  (section) => section.section_id === target
-                                )
-                              )
-                            ) ?? []
-                          )
-                        : []
-                    }
-                    onSubmit={actions.runCodexSectionProposal}
-                    onRefresh={actions.refreshCodexProposalWorkspace}
-                  />
-                </div>
-              ) : (
-                <p className="mt-4 rounded-md border border-wait/25 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
-                  Brakuje paczki szkicu z sekcjami. Najpierw przygotuj brief i draft package dla tej
-                  strony.
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              {latestRevision?.schema_version === "wilq_content_draft_revision_v2" ? (
-                <ContentFullPagePreview revision={latestRevision} proposal={generatedPlanning} />
-              ) : null}
-            <div className="rounded-md border border-line bg-white p-4 shadow-sm">
-              <h2 className="text-base font-semibold text-ink">Podgląd na devie</h2>
-              {draftReadback?.status === "available" ? (
-                <div className="mt-3 rounded-md border border-success/25 bg-success/5 p-3">
-                  <p className="text-sm font-semibold text-success">Dev draft odczytany</p>
-                  <p className="mt-2 text-sm font-semibold text-ink">
-                    {draftReadback.title || "Szkic bez tytułu"}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {draftReadback.content_summary || "WordPress zwrócił szkic bez streszczenia."}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-                    <span className="rounded-md border border-line bg-white px-2 py-1">
-                      {draftReadback.content_word_count ?? 0} słów
-                    </span>
-                    <span className="rounded-md border border-line bg-white px-2 py-1">
-                      {draftReadback.acf_field_count ?? 0} pól ACF
-                    </span>
+                  <div className="mt-5 space-y-5">
+                    <section>
+                      <h4 className="text-sm font-semibold text-ink">
+                        Dowody przypisane do sekcji
+                      </h4>
+                      {selectedSection?.evidence_ids.length ? (
+                        <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
+                          {selectedSection.evidence_ids.map((evidenceId) => (
+                            <li
+                              key={evidenceId}
+                              className="break-all rounded-md border border-line bg-surface px-3 py-2"
+                            >
+                              {evidenceId}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-600">
+                          Brak przypisanych dowodów dla tej sekcji.
+                        </p>
+                      )}
+                    </section>
+                    <section>
+                      <h4 className="text-sm font-semibold text-ink">
+                        Ograniczenia do sprawdzenia
+                      </h4>
+                      {blockedClaims.length ? (
+                        <ul className="mt-2 space-y-3">
+                          {blockedClaims.map((claim) => (
+                            <li key={claim.id}>
+                              <p className="text-sm font-semibold text-ink">
+                                {claim.claim_text}
+                              </p>
+                              <p className="mt-1 text-sm leading-6 text-slate-600">
+                                {claim.reason}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-600">
+                          Brak dodatkowych ograniczeń w bieżącym odczycie.
+                        </p>
+                      )}
+                    </section>
+                    <section>
+                      <h4 className="text-sm font-semibold text-ink">
+                        Źródła kontekstu
+                      </h4>
+                      <div className="mt-2 space-y-3">
+                        {evidenceRows.map((row) => (
+                          <div
+                            key={`${row.label}-${row.summary}`}
+                            className="rounded-md border border-line bg-surface p-3"
+                          >
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {row.label}
+                            </p>
+                            <p className="mt-1 text-sm leading-6 text-slate-700">
+                              {row.summary}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
                   </div>
-                  {(draftReadback.edit_link || draftReadback.link) ? (
-                    <a
-                      href={draftReadback.edit_link || draftReadback.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-action/40 text-sm font-semibold text-action"
-                    >
-                      Otwórz szkic w WordPress
-                      <ExternalLink aria-hidden="true" size={14} />
-                    </a>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="mt-3 rounded-md border border-action/20 bg-white p-4">
-                  <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                    {selectedSection ? shortSectionTabLabel(selectedSection.heading) : "Sekcja"}
-                  </div>
-                  <div className="mt-3 text-xl font-semibold leading-7 text-ink">
-                    {selectedSection?.heading ?? pageTitle}
-                  </div>
-                  <p className="mt-3 line-clamp-6 text-sm leading-6 text-slate-700">
-                    {selectedSectionText || "Wybierz sekcję szkicu po lewej."}
-                  </p>
-                </div>
-              )}
-              {devPage?.link ? (
-                <a
-                  href={devPage.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-action text-sm font-semibold text-white"
-                >
-                  Otwórz stronę dev
-                  <ExternalLink aria-hidden="true" size={14} />
-                </a>
-              ) : null}
-            </div>
-            </div>
-            </div>
-          ) : null}
+                </section>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
           {activeStepId === "review" ? (
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -939,52 +1060,6 @@ export function ContentPageWorkbench({
               revisionNumber={latestRevision?.revision_number ?? null}
             />
           ) : null}
-        </div>
-
-        {activeStepId === "draft" ? (
-          <aside className="space-y-3 xl:sticky xl:top-4 xl:self-start">
-          <div className="rounded-md border border-line bg-white p-4 shadow-sm">
-            <h2 className="text-base font-semibold text-ink">Źródła i twierdzenia</h2>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="rounded-md border border-line bg-surface p-3">
-                <div className="text-xs text-slate-500">Dowody</div>
-                <div className="mt-1 text-xl font-semibold text-ink">{evidenceRows.length}</div>
-              </div>
-              <div className="rounded-md border border-line bg-surface p-3">
-                <div className="text-xs text-slate-500">Twierdzenia do sprawdzenia</div>
-                <div className="mt-1 text-xl font-semibold text-ink">{blockedClaims.length}</div>
-              </div>
-            </div>
-            <details className="mt-3 rounded-md border border-line bg-white">
-              <summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-action">
-                Pokaż ograniczenia i źródła
-              </summary>
-              <div className="border-t border-line p-3">
-                <ul className="space-y-3">
-                  {blockedClaims.slice(0, 3).map((claim) => (
-                    <li key={claim.id}>
-                      <div className="text-sm font-semibold text-ink">{claim.claim_text}</div>
-                      <p className="mt-1 text-xs leading-5 text-slate-600">{claim.reason}</p>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-3 border-t border-line pt-3">
-                  {evidenceRows.slice(0, 3).map((row) => (
-                    <div key={`${row.label}-${row.summary}`} className="mt-2 first:mt-0">
-                      <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                        {row.label}
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">
-                        {row.summary}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </details>
-          </div>
-          </aside>
-        ) : null}
       </div>
     </section>
   );

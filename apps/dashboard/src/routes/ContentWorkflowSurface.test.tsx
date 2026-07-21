@@ -606,7 +606,7 @@ describe("ContentWorkflowSurface", () => {
     );
   });
 
-  it("keeps the session focus on an exact section from the current plan", async () => {
+  it("keeps one selected-section buffer across preview and sources without a write", async () => {
     const appRouter = createWilqRouter({
       initialPath:
         "/content-workflow?work_item_id=content_work_item_bdo&section_heading=Jak%20przygotowa%C4%87%20dokumenty&planning_digest=stale_plan",
@@ -619,22 +619,31 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const sectionPicker = await screen.findByRole("combobox", { name: "Przejdź do sekcji strony" });
-    expect(sectionPicker).toHaveValue("Kogo dotyczy BDO");
-
-    fireEvent.change(sectionPicker, { target: { value: "Jak przygotować dokumenty" } });
-
-    await waitFor(() =>
-      expect(Reflect.get(appRouter.state.location.search, "section_heading")).toBe(
-        "Jak przygotować dokumenty"
-      )
-    );
-    expect(Reflect.get(appRouter.state.location.search, "planning_digest")).toBeUndefined();
-    expect(screen.getByRole("combobox", { name: "Przejdź do sekcji strony" })).toHaveValue(
+    const sectionPicker = await screen.findByRole("combobox", { name: "Sekcja dokumentu" });
+    expect(sectionPicker).toHaveValue("jak przygotować dokumenty");
+    expect(screen.getByLabelText("Tekst sekcji Jak przygotować dokumenty")).toBeInTheDocument();
+    expect(screen.getByTestId("content-draft-section-preview")).toHaveTextContent(
       "Jak przygotować dokumenty"
     );
+
+    fireEvent.change(sectionPicker, { target: { value: "kogo dotyczy bdo" } });
+    const sectionInput = screen.getByLabelText("Tekst sekcji Kogo dotyczy BDO");
+    const localText = "Niezapisany tekst pozostaje w jednym buforze warsztatu.";
+    fireEvent.change(sectionInput, { target: { value: localText } });
+    expect(screen.getByTestId("content-draft-section-preview")).toHaveTextContent(localText);
+
+    fireEvent.click(screen.getByRole("button", { name: /Źródła i ograniczenia/ }));
+    expect(screen.getByRole("dialog", { name: "Źródła i ograniczenia" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Zamknij źródła i ograniczenia" }));
+    expect(screen.queryByRole("dialog", { name: "Źródła i ograniczenia" })).not.toBeInTheDocument();
+    expect(sectionInput).toHaveValue(localText);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Podgląd" }));
+    expect(screen.getByTestId("content-draft-section-preview")).toHaveTextContent(localText);
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
+    expect(postContentWorkItemCodexSectionProposal).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
   it("keeps page discovery secondary and does not ask for a section during scope", async () => {
