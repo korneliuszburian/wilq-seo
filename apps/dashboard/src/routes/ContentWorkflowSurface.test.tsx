@@ -8,6 +8,7 @@ import {
   getAction,
   getConnectorRefreshRun,
   getContentWorkItemEnrichment,
+  getContentWorkItemInitialDraft,
   getContentWorkItemDecisionContext,
   getContentInventoryCatalog,
   getContentOperatorContext,
@@ -91,6 +92,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getAction: vi.fn(),
     getConnectorRefreshRun: vi.fn(),
     getContentWorkItemEnrichment: vi.fn(),
+    getContentWorkItemInitialDraft: vi.fn(),
     getContentWorkItemDecisionContext: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
@@ -133,6 +135,7 @@ describe("ContentWorkflowSurface", () => {
       authentication_status: "not_configured"
     } as never);
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
+    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
     vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(contentDecisionContext());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
@@ -309,6 +312,68 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
     expect(previewAction).not.toHaveBeenCalled();
+  });
+
+  it("records human review for the exact Text revision without opening a content write path", async () => {
+    const readyContext = contentDecisionContext();
+    readyContext.evidence_readiness = {
+      ...readyContext.evidence_readiness,
+      status: "ready",
+      label: "Dowody są aktualne",
+      reason: "Dowody są aktualne dla tej strony.",
+      blocker_codes: []
+    };
+    readyContext.next_safe_action = {
+      kind: "open_workspace",
+      label: "Otwórz warsztat strony",
+      reason: "Możesz przejść do read-only warsztatu tej samej strony.",
+      connector_id: null
+    };
+    const revision = savedFullDraftRevision();
+    const workspace = {
+      ...savedRevisionWorkspace(revision as never),
+      latest_revision: revision,
+      editor_title: revision.title,
+      editor_sections: revision.sections
+    } as ContentWorkItemWorkflowSnapshotResponse["revision_workspace"];
+    vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(readyContext);
+    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot({ workspace }));
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22&review=%221%22", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-review-workspace")).toBeInTheDocument();
+    expect(screen.getByTestId("content-full-page-preview")).toBeInTheDocument();
+    const save = screen.getByRole("button", { name: "Zapisz review" });
+    expect(save).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Przeczytano dokładną treść tej wersji." }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Sprawdzono dowody przypisane do tej wersji." }));
+    expect(save).toBeEnabled();
+    fireEvent.click(save);
+
+    await waitFor(() => expect(saveContentWorkItemDraftRevisionReview).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(saveContentWorkItemDraftRevisionReview).mock.calls[0]).toEqual([
+      expect.objectContaining({
+        expected_revision_digest: revision.content_digest,
+        reviewed_by: "wilku",
+        decision: "approved",
+        checked_items: [
+          "Przeczytano dokładną treść tej wersji.",
+          "Sprawdzono dowody przypisane do tej wersji."
+        ],
+        evidence_ids: uniqueTestEvidence(revision)
+      }),
+      revision.work_item_id,
+      revision.revision_id
+    ]);
+    expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
   it("does not reinterpret inspect_object as opening the text workspace", async () => {

@@ -62,7 +62,11 @@ export function contentDecisionContextQueryKey(workItemId: string | null) {
   return ["content-workflow", "work-item", workItemId, "decision-context"] as const;
 }
 
-export function useContentWorkflowQueries(selectedWorkItemId: string | null, textWorkspaceOpen = false) {
+export function useContentWorkflowQueries(
+  selectedWorkItemId: string | null,
+  textWorkspaceOpen = false,
+  reviewOpen = false
+) {
   const queryClient = useQueryClient();
   const queueCatalog = useQuery({
     queryKey: ["content-workflow", "queue", "catalog"],
@@ -137,7 +141,9 @@ export function useContentWorkflowQueries(selectedWorkItemId: string | null, tex
     queryKey: ["content-workflow", "work-item", activeWorkItemId],
     queryFn: () => loadContentWorkflowSnapshot(activeWorkItemId ?? undefined),
     staleTime: 10_000,
-    enabled: false
+    // Review is the one Text substate that needs the persisted, exact
+    // revision-review binding after a reload. Text itself stays lean.
+    enabled: Boolean(activeWorkItemId && reviewOpen)
   });
   const enrichment = useQuery({
     queryKey: ["content-workflow", "work-item", activeWorkItemId, "enrichment"],
