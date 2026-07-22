@@ -33,6 +33,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftSectionInput,
 )
 from wilq.content.quality.review import ContentQualityReview, build_content_quality_review
+from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
@@ -694,7 +695,12 @@ def _merge_selected_sections(
     generated_by_heading = {section.heading: section for section in output.sections}
     return [
         base_section.model_copy(
-            update={"body_markdown": generated_by_heading[base_section.heading].body_markdown}
+            update={
+                "body_markdown": generated_by_heading[base_section.heading].body_markdown,
+                "content_html": content_html_from_markdown(
+                    generated_by_heading[base_section.heading].body_markdown
+                ),
+            }
         )
         if base_section.heading in selected
         else base_section

@@ -28,6 +28,7 @@ from wilq.codex.app_server import (
 from wilq.content.drafts.codex_section_proposal import (
     _contract_with_revision_lineage,
     _item_with_revision_lineage,
+    _merge_selected_sections,
 )
 from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
 from wilq.content.drafts.proposal_quality_input import (
@@ -221,6 +222,38 @@ def test_child_preview_contract_merges_exact_persisted_revision_evidence() -> No
         section for section in merged.model_input.sections if section.heading == "Nowa sekcja"
     )
     assert selected.evidence_ids == ["ev_wp", "ev_gsc"]
+
+
+def test_child_section_proposal_refreshes_canonical_html_with_body_markdown() -> None:
+    base_revision = ContentDraftRevision.model_construct(
+        sections=[
+            ContentDraftRevisionSection(
+                heading="Sekcja",
+                body_markdown="Wersja bazowa.",
+                content_html="<p>Wersja bazowa.</p>",
+                evidence_ids=["ev_wp"],
+            )
+        ]
+    )
+    output = StructuredDraftOutput.model_construct(
+        sections=[
+            StructuredDraftOutputSection(
+                heading="Sekcja",
+                body_markdown="Wersja po humanizacji.",
+                evidence_ids=["ev_wp"],
+                claims_used=[],
+            )
+        ]
+    )
+
+    sections = _merge_selected_sections(
+        base_revision,
+        output,
+        ["Sekcja"],
+    )
+
+    assert sections[0].body_markdown == "Wersja po humanizacji."
+    assert sections[0].content_html == "<p>Wersja po humanizacji.</p>"
 
 
 def test_child_quality_item_merges_exact_persisted_revision_evidence() -> None:
