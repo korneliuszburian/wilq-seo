@@ -42,6 +42,7 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemLearningProposalResponse,
 )
+from wilq.content.workflow.decision_context import ContentDecisionContext
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.planning import ContentPlanningReviewResponse
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
@@ -64,6 +65,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/wordpress/existing-draft-update-readiness",
     ): ContentWordPressExistingDraftUpdateReadinessResponse,
     ("GET", "/api/content/work-items/queue"): ContentWorkItemQueueResponse,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/decision-context",
+    ): ContentDecisionContext,
     (
         "GET",
         "/api/content/work-items/snapshot",

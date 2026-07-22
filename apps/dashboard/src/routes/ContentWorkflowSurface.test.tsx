@@ -1,11 +1,14 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   applyAction,
   confirmAction,
   getAction,
+  getConnectorRefreshRun,
   getContentWorkItemEnrichment,
+  getContentWorkItemDecisionContext,
   getContentInventoryCatalog,
   getContentOperatorContext,
   getContentWorkItemQueue,
@@ -26,6 +29,7 @@ import {
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
   previewAction,
+  refreshConnector,
   reviewAction,
   saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
@@ -39,6 +43,7 @@ import {
   type ContentDraftRevisionBinding,
   type ContentInitialDraftResponse,
   type ContentOpportunityEnrichmentResponse,
+  type ContentDecisionContext,
   type ContentInventoryCatalogResponse,
   type ContentPlanningProposalResponse,
   type ContentSemanticReviewResponse,
@@ -54,6 +59,7 @@ import {
 import type { ContentWorkItem } from "@wilq/shared-schemas";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
 import { ContentCodexSectionProposalResult } from "./ContentCodexSectionProposalResult";
+import { ContentDecisionContextPanel } from "./ContentDecisionContextPanel";
 import { summarizeGa4MetricFacts } from "./ContentWorkflowJourneyContext";
 import { workflowStepActionLabel, workflowStepInstruction } from "./ContentWorkflowSurface";
 
@@ -83,7 +89,9 @@ vi.mock("../lib/api", async (importOriginal) => {
     applyAction: vi.fn(),
     confirmAction: vi.fn(),
     getAction: vi.fn(),
+    getConnectorRefreshRun: vi.fn(),
     getContentWorkItemEnrichment: vi.fn(),
+    getContentWorkItemDecisionContext: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
@@ -104,6 +112,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
     previewAction: vi.fn(),
+    refreshConnector: vi.fn(),
     reviewAction: vi.fn(),
     saveContentWorkItemDraftRevision: vi.fn(),
     saveContentWorkItemDraftRevisionReview: vi.fn(),
@@ -124,6 +133,7 @@ describe("ContentWorkflowSurface", () => {
       authentication_status: "not_configured"
     } as never);
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
+    vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(contentDecisionContext());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue(knowledgeReadiness());
@@ -206,6 +216,465 @@ describe("ContentWorkflowSurface", () => {
       "aktywni użytkownicy (google / cpc: 12, google / organic: 26)",
       "wskaźnik zaangażowania (google / organic: 42%)"
     ]);
+  });
+
+  it("opens an API-owned context with one marketer-first safe action for a blocked public page", async () => {
+    const blockedQueue = contentQueueResponse();
+    blockedQueue.candidates[0] = {
+      ...blockedQueue.candidates[0],
+      recommended_mode: "block",
+      recommended_mode_label: "wstrzymaj — odśwież źródło",
+      status_label: "wymaga aktualnych dowodów",
+      reason: "GSC jest nieświeże.",
+      freshness_assessment: staleGscFreshnessAssessment(),
+      blockers: [{
+        code: "stale_connector_google_search_console",
+        label: "GSC wymaga odświeżenia",
+        reason: "GSC jest nieświeże.",
+        next_step: "Odśwież GSC.",
+        decision_id: "decision_bdo",
+        evidence_ids: ["ev_gsc_bdo"],
+        source_connectors: ["google_search_console"]
+      }]
+    };
+    blockedQueue.freshness_assessment = staleGscFreshnessAssessment();
+    vi.mocked(getContentWorkItemQueue).mockResolvedValue(blockedQueue);
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-decision-context")).toBeInTheDocument();
+    expect(getContentWorkItemDecisionContext).toHaveBeenCalledWith("content_work_item_bdo");
+    expect(screen.getByText("Target dev niepotwierdzony")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Odśwież GSC" })).toBeInTheDocument();
+    expect(screen.getByText("Stan pracy")).toBeInTheDocument();
+    expect(screen.getByText("Rekomendacja WILQ")).toBeInTheDocument();
+    expect(screen.queryByText("Stan tej decyzji")).not.toBeInTheDocument();
+    expect(screen.queryByText("Decyzja", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Odśwież GSC" })).toHaveLength(1);
+    const actionHeading = screen.getByRole("heading", { name: "Odśwież GSC" });
+    const publicSourceLabel = screen.getByText("Publiczne źródło");
+    expect(actionHeading.compareDocumentPosition(publicSourceLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(screen.getByText(/kontrakt inventory/).closest("details")).not.toBeNull();
+    expect(screen.getByText(/evidence-bound/).closest("details")).not.toBeNull();
+    expect(screen.getByText(/ActionObject/).closest("details")).not.toBeNull();
+    expect(screen.getByText(/accepted revision/).closest("details")).not.toBeNull();
+    expect(screen.queryByText("WILQ blokuje pisanie tego tematu")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sprawdź stronę ponownie" })).not.toBeInTheDocument();
+    expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
+    expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("opens the read-only text workspace only after the API-owned open_workspace action", async () => {
+    const readyContext = contentDecisionContext();
+    readyContext.evidence_readiness = {
+      ...readyContext.evidence_readiness,
+      status: "ready",
+      label: "Dowody są aktualne",
+      reason: "Dowody są aktualne dla tej strony.",
+      blocker_codes: []
+    };
+    readyContext.next_safe_action = {
+      kind: "open_workspace",
+      label: "Otwórz warsztat strony",
+      reason: "Możesz przejść do istniejącego warsztatu tej samej strony.",
+      connector_id: null
+    };
+    vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(readyContext);
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-decision-context")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Otwórz warsztat strony" })).toBeInTheDocument();
+    expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Otwórz warsztat strony" }));
+
+    expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
+    expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+    expect(previewAction).not.toHaveBeenCalled();
+  });
+
+  it("does not reinterpret inspect_object as opening the text workspace", async () => {
+    const inspectContext = contentDecisionContext();
+    inspectContext.evidence_readiness = {
+      ...inspectContext.evidence_readiness,
+      status: "ready",
+      label: "Dowody są aktualne",
+      reason: "Dowody są aktualne dla tej strony.",
+      blocker_codes: []
+    };
+    inspectContext.next_safe_action = {
+      kind: "inspect_object",
+      label: "Uzupełnij rozpoznanie obiektu",
+      reason: "Brakuje rozpoznania obiektu publicznego.",
+      connector_id: null
+    };
+    vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(inspectContext);
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-decision-context")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Otwórz warsztat strony" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("content-text-workspace")).not.toBeInTheDocument();
+    expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("refreshes only the connector named by the context once, then refetches that same context", async () => {
+    const blockedQueue = contentQueueResponse();
+    blockedQueue.candidates[0] = {
+      ...blockedQueue.candidates[0],
+      recommended_mode: "block",
+      source_public_url: "https://ekologus.pl/bdo/"
+    };
+    vi.mocked(getContentWorkItemQueue).mockResolvedValue(blockedQueue);
+    const refreshedContext = contentDecisionContext();
+    refreshedContext.evidence_readiness = {
+      ...refreshedContext.evidence_readiness,
+      status: "ready",
+      label: "Dowody są aktualne",
+      reason: "Dowody są aktualne po odczycie GSC.",
+      blocker_codes: []
+    };
+    refreshedContext.next_safe_action = {
+      kind: "inspect_object",
+      label: "Uzupełnij rozpoznanie obiektu",
+      reason: "Brakuje potwierdzonego obiektu WordPress i celu dev.",
+      connector_id: null
+    };
+    vi.mocked(getContentWorkItemDecisionContext)
+      .mockResolvedValueOnce(contentDecisionContext())
+      .mockResolvedValueOnce(refreshedContext);
+    vi.mocked(refreshConnector).mockResolvedValue({
+      id: "refresh-gsc-bdo-1",
+      connector_id: "google_search_console",
+      connector_label: "Google Search Console",
+      mode: "vendor_read",
+      status: "queued",
+      status_label: "odczyt w kolejce",
+      started_at: "2026-07-22T10:00:00Z",
+      completed_at: null,
+      evidence_ids: [],
+      evidence_summary_label: "0 dowodów źródłowych",
+      missing_credentials: [],
+      checked_credentials: [],
+      external_call_attempted: false,
+      vendor_data_collected: false,
+      metrics_persisted: false,
+      metric_summary: {},
+      summary: "Odczyt GSC został dodany do kolejki.",
+      errors: [],
+      redacted: true
+    });
+    vi.mocked(getConnectorRefreshRun).mockResolvedValue({
+      id: "refresh-gsc-bdo-1",
+      connector_id: "google_search_console",
+      connector_label: "Google Search Console",
+      mode: "vendor_read",
+      status: "completed",
+      status_label: "odczyt zakończony",
+      started_at: "2026-07-22T10:00:00Z",
+      completed_at: "2026-07-22T10:00:01Z",
+      evidence_ids: ["ev_refresh_gsc_bdo"],
+      evidence_summary_label: "1 dowód źródłowy",
+      missing_credentials: [],
+      checked_credentials: [],
+      external_call_attempted: true,
+      vendor_data_collected: true,
+      metrics_persisted: true,
+      metric_summary: {},
+      summary: "Odczyt GSC zakończony.",
+      errors: [],
+      redacted: true
+    });
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const refreshButton = await screen.findByRole("button", { name: "Odśwież GSC" });
+    fireEvent.click(refreshButton);
+    fireEvent.click(refreshButton);
+
+    await waitFor(() => expect(refreshConnector).toHaveBeenCalledTimes(1));
+    expect(refreshConnector).toHaveBeenCalledWith("google_search_console", expect.anything());
+    await waitFor(() => expect(getConnectorRefreshRun).toHaveBeenCalledWith("refresh-gsc-bdo-1"));
+    await waitFor(() => expect(getContentWorkItemDecisionContext).toHaveBeenCalledTimes(2));
+    expect(await screen.findByTestId("content-decision-context")).toBeInTheDocument();
+    expect(screen.getByText("Dowody są aktualne po odczycie GSC.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Uzupełnij rozpoznanie obiektu" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Odśwież GSC" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Wczytuję aktualny plan, wersję roboczą i ograniczenia…")).not.toBeInTheDocument();
+    expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
+    expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+    expect(previewAction).not.toHaveBeenCalled();
+  });
+
+  it("keeps a terminal connector failure visible without pretending that the context refreshed", async () => {
+    const blockedQueue = contentQueueResponse();
+    blockedQueue.candidates[0] = {
+      ...blockedQueue.candidates[0],
+      recommended_mode: "block",
+      source_public_url: "https://ekologus.pl/bdo/"
+    };
+    vi.mocked(getContentWorkItemQueue).mockResolvedValue(blockedQueue);
+    vi.mocked(refreshConnector).mockResolvedValue({
+      id: "refresh-gsc-bdo-blocked",
+      connector_id: "google_search_console",
+      connector_label: "Google Search Console",
+      mode: "vendor_read",
+      status: "blocked",
+      status_label: "odczyt zablokowany",
+      started_at: "2026-07-22T10:00:00Z",
+      completed_at: "2026-07-22T10:00:01Z",
+      evidence_ids: [],
+      evidence_summary_label: "0 dowodów źródłowych",
+      missing_credentials: [],
+      checked_credentials: [],
+      external_call_attempted: false,
+      vendor_data_collected: false,
+      metrics_persisted: false,
+      metric_summary: {},
+      summary: "Odczyt GSC został zablokowany.",
+      errors: ["Brakuje dostępu do GSC."],
+      redacted: true
+    });
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Odśwież GSC" }));
+
+    expect(await screen.findByText("odczyt zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("Brakuje dostępu do GSC.")).toBeInTheDocument();
+    expect(getContentWorkItemDecisionContext).toHaveBeenCalledTimes(1);
+    expect(getConnectorRefreshRun).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Odśwież GSC" })).toBeEnabled();
+    expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
+    expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("retries polling the same in-progress run after a transport error without creating another refresh", async () => {
+    const context = contentDecisionContext();
+    vi.mocked(refreshConnector).mockResolvedValue({
+      id: "refresh-gsc-bdo-transport",
+      connector_id: "google_search_console",
+      connector_label: "Google Search Console",
+      mode: "vendor_read",
+      status: "queued",
+      status_label: "odczyt w kolejce",
+      started_at: "2026-07-22T10:00:00Z",
+      completed_at: null,
+      evidence_ids: [],
+      evidence_summary_label: "0 dowodów źródłowych",
+      missing_credentials: [],
+      checked_credentials: [],
+      external_call_attempted: false,
+      vendor_data_collected: false,
+      metrics_persisted: false,
+      metric_summary: {},
+      summary: "Odczyt GSC został dodany do kolejki.",
+      errors: [],
+      redacted: true
+    });
+    vi.mocked(getConnectorRefreshRun)
+      .mockRejectedValueOnce(new Error("transport"))
+      .mockResolvedValueOnce({
+        id: "refresh-gsc-bdo-transport",
+        connector_id: "google_search_console",
+        connector_label: "Google Search Console",
+        mode: "vendor_read",
+        status: "completed",
+        status_label: "odczyt zakończony",
+        started_at: "2026-07-22T10:00:00Z",
+        completed_at: "2026-07-22T10:00:01Z",
+        evidence_ids: ["ev_refresh_gsc_bdo"],
+        evidence_summary_label: "1 dowód źródłowy",
+        missing_credentials: [],
+        checked_credentials: [],
+        external_call_attempted: true,
+        vendor_data_collected: true,
+        metrics_persisted: true,
+        metric_summary: {},
+        summary: "Odczyt GSC zakończony.",
+        errors: [],
+        redacted: true
+      });
+
+    render(
+      <QueryClientProvider client={createWilqQueryClient()}>
+        <ContentDecisionContextPanel context={context} />
+      </QueryClientProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Odśwież GSC" }));
+    expect(await screen.findByText("Nie udało się sprawdzić statusu odświeżenia; ponów sprawdzenie tego samego runu.")).toBeInTheDocument();
+    expect(refreshConnector).toHaveBeenCalledTimes(1);
+    expect(getConnectorRefreshRun).toHaveBeenCalledWith("refresh-gsc-bdo-transport");
+
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź ponownie status GSC" }));
+
+    await waitFor(() => expect(getConnectorRefreshRun).toHaveBeenCalledTimes(2));
+    expect(getConnectorRefreshRun).toHaveBeenLastCalledWith("refresh-gsc-bdo-transport");
+    expect(refreshConnector).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries only the exact decision context after a completed run when its first refetch fails", async () => {
+    const blockedQueue = contentQueueResponse();
+    blockedQueue.candidates[0] = {
+      ...blockedQueue.candidates[0],
+      recommended_mode: "block",
+      source_public_url: "https://ekologus.pl/bdo/"
+    };
+    vi.mocked(getContentWorkItemQueue).mockResolvedValue(blockedQueue);
+    const refreshedContext = contentDecisionContext();
+    refreshedContext.evidence_readiness = {
+      ...refreshedContext.evidence_readiness,
+      status: "ready",
+      label: "Dowody są aktualne",
+      reason: "API zwróciło aktualny kontekst strony.",
+      blocker_codes: []
+    };
+    refreshedContext.next_safe_action = {
+      kind: "inspect_object",
+      label: "Uzupełnij rozpoznanie obiektu",
+      reason: "Brakuje potwierdzonego obiektu WordPress i celu dev.",
+      connector_id: null
+    };
+    vi.mocked(getContentWorkItemDecisionContext)
+      .mockResolvedValueOnce(contentDecisionContext())
+      .mockRejectedValueOnce(new Error("context transport"))
+      .mockResolvedValueOnce(refreshedContext);
+    vi.mocked(refreshConnector).mockResolvedValue({
+      id: "refresh-gsc-bdo-context",
+      connector_id: "google_search_console",
+      connector_label: "Google Search Console",
+      mode: "vendor_read",
+      status: "queued",
+      status_label: "odczyt w kolejce",
+      started_at: "2026-07-22T10:00:00Z",
+      completed_at: null,
+      evidence_ids: [],
+      evidence_summary_label: "0 dowodów źródłowych",
+      missing_credentials: [],
+      checked_credentials: [],
+      external_call_attempted: false,
+      vendor_data_collected: false,
+      metrics_persisted: false,
+      metric_summary: {},
+      summary: "Odczyt GSC został dodany do kolejki.",
+      errors: [],
+      redacted: true
+    });
+    vi.mocked(getConnectorRefreshRun).mockResolvedValue({
+      id: "refresh-gsc-bdo-context",
+      connector_id: "google_search_console",
+      connector_label: "Google Search Console",
+      mode: "vendor_read",
+      status: "completed",
+      status_label: "odczyt zakończony",
+      started_at: "2026-07-22T10:00:00Z",
+      completed_at: "2026-07-22T10:00:01Z",
+      evidence_ids: ["ev_refresh_gsc_bdo"],
+      evidence_summary_label: "1 dowód źródłowy",
+      missing_credentials: [],
+      checked_credentials: [],
+      external_call_attempted: true,
+      vendor_data_collected: true,
+      metrics_persisted: true,
+      metric_summary: {},
+      summary: "Odczyt GSC zakończony.",
+      errors: [],
+      redacted: true
+    });
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Odśwież GSC" }));
+    expect(await screen.findByRole("button", { name: "Sprawdź ponownie kontekst strony" })).toBeEnabled();
+    expect(screen.getByText(/Nie udało się ponownie pobrać kontekstu strony/)).toBeInTheDocument();
+    expect(refreshConnector).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź ponownie kontekst strony" }));
+
+    expect(await screen.findByRole("heading", { name: "Uzupełnij rozpoznanie obiektu" })).toBeInTheDocument();
+    expect(getContentWorkItemDecisionContext).toHaveBeenCalledTimes(3);
+    expect(refreshConnector).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Sprawdzam ponownie kontekst strony.")).not.toBeInTheDocument();
+  });
+
+  it("renders API-owned readiness and material reasons without a status remapper", () => {
+    const context = contentDecisionContext();
+    context.evidence_readiness = {
+      ...context.evidence_readiness,
+      status: "ready",
+      label: "Dowody są aktualne",
+      reason: "Dowody są aktualne dla strony.",
+      technical_reason: "Źródło GSC ma aktualny zakres danych.",
+      blocker_codes: []
+    };
+    context.source_public = {
+      ...context.source_public,
+      identity_status: "observed",
+      label: "Adres rozpoznany; materiał niedostępny",
+      reason: "WILQ zna publiczny adres, ale materiał tej strony nie jest obecnie dostępny do sprawdzenia.",
+      material: {
+        ...context.source_public.material,
+        status: "blocked",
+        caveats: ["Materiał strony nie jest obecnie dostępny do sprawdzenia."]
+      }
+    };
+
+    render(
+      <QueryClientProvider client={createWilqQueryClient()}>
+        <ContentDecisionContextPanel context={context} />
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByText("Dowody są aktualne dla strony.")).toBeInTheDocument();
+    expect(screen.queryByText("Dane SEO dla tej strony wymagają odświeżenia przed decyzją.")).not.toBeInTheDocument();
+    expect(screen.getByText("Adres rozpoznany; materiał niedostępny")).toBeInTheDocument();
+    expect(screen.getByText("WILQ zna publiczny adres, ale materiał tej strony nie jest obecnie dostępny do sprawdzenia.")).toBeInTheDocument();
+    expect(screen.queryByText("Publiczny adres i materiał są rozpoznane.")).not.toBeInTheDocument();
   });
 
   it("shows one API-owned marketer step and keeps technical audit out of the journey", async () => {
@@ -2384,6 +2853,130 @@ function contentFreshnessAssessment() {
     connector_labels_requiring_refresh: [],
     summary: "Podstawowe dane treści są świeże.",
     next_step: "Można przejść do decyzji contentowej."
+  };
+}
+
+function staleGscFreshnessAssessment() {
+  return {
+    ...contentFreshnessAssessment(),
+    state: "stale" as const,
+    state_label: "wymaga odświeżenia",
+    requires_refresh: true,
+    stale_connector_ids: ["google_search_console"],
+    connector_labels_requiring_refresh: ["Google Search Console"],
+    summary: "GSC jest nieświeże dla tej decyzji.",
+    next_step: "Odśwież Google Search Console."
+  };
+}
+
+function contentDecisionContext(): ContentDecisionContext {
+  return {
+    response_type: "content_decision_context",
+    contract_version: "content_decision_context_v1",
+    work_item_id: "content_work_item_bdo",
+    work_kind: "refresh_existing",
+    source_public: {
+      identity_status: "partial",
+      object_id: null,
+      url: "https://ekologus.pl/bdo/",
+      title: "BDO dla firm",
+      post_type: null,
+      post_status: null,
+      template: null,
+      material: {
+        status: "available",
+        source_kind: "wordpress_rest",
+        observed_surfaces: ["wordpress_rest_content"],
+        word_count: 120,
+        section_count: 2,
+        evidence_ids: ["ev_wp_bdo"],
+        caveats: ["Odczyt materiału nie jest mapą targetu dev."]
+      },
+      label: "Adres i materiał rozpoznane częściowo",
+      reason: "WILQ widzi publiczny adres i materiał, ale nie potwierdził jeszcze konkretnego obiektu WordPress ani miejsca przygotowania zmiany.",
+      technical_reason: "WILQ zna adres i materiał, ale obecny kontrakt inventory nie zachowuje exact tożsamości obiektu WordPress."
+    },
+    authoring_target: {
+      mapping_status: "unverified",
+      environment: "staging",
+      object_id: null,
+      post_type: null,
+      post_status: null,
+      template: null,
+      authoring_surfaces: [],
+      allowed_operation: "create_wordpress_draft",
+      label: "Target dev niepotwierdzony",
+      reason: "Brakuje potwierdzonego celu dev dla tej strony.",
+      technical_reason: "Globalny profil WordPress nie mapuje tej strony do obiektu dev."
+    },
+    source_target_relation: {
+      status: "unverified",
+      relation_type: "unknown",
+      label: "Relacja source → target niepotwierdzona",
+      reason: "Brakuje potwierdzenia, że strona publiczna i cel dev dotyczą tego samego elementu.",
+      technical_reason: "Brakuje evidence-bound relacji source do targetu."
+    },
+    object_readiness: {
+      status: "review_required",
+      label: "Obiekt częściowo rozpoznany",
+      reason: "Brakuje potwierdzonego obiektu WordPress i celu dev, w którym można przygotować zmianę.",
+      technical_reason: "Brakuje dokładnego obiektu i targetu dev.",
+      blocker_codes: ["object_identity_unverified"]
+    },
+    decision_disposition: {
+      status: "proposed",
+      proposed_disposition: "refresh_or_merge",
+      label: "Odśwież lub scal istniejącą stronę",
+      reason: "To rekomendowany kierunek; ostateczną decyzję podejmuje człowiek.",
+      technical_reason: "To istniejący publiczny adres."
+    },
+    service: {
+      label: "BDO i sprawozdawczość środowiskowa",
+      reason: "Usługa pochodzi z dopasowanej karty Service Profile."
+    },
+    evidence_readiness: {
+      status: "refresh_required",
+      label: "Dowody wymagają odświeżenia",
+      reason: "GSC jest nieświeże dla tej decyzji.",
+      technical_reason: "GSC jest nieświeże dla tej decyzji.",
+      blocker_codes: ["connector:google_search_console"]
+    },
+    delivery_capability: {
+      capability: "create_draft_only",
+      request_status: "blocked",
+      label: "Szkic dev wymaga potwierdzenia targetu",
+      reason: "Przekazanie szkicu pozostaje zablokowane, dopóki nie potwierdzimy celu dev i nie przejdziemy wymaganych kontroli.",
+      technical_reason: "Brakuje targetu; ActionObject i accepted revision pozostają zablokowane."
+    },
+    measurement_target: {
+      status: "review_required",
+      label: "Pomiar wymaga sprawdzenia",
+      public_url: "https://ekologus.pl/bdo/",
+      reason: "Brakuje exact measurement bindingu.",
+      technical_reason: "Brakuje exact measurement bindingu.",
+      source_connectors: ["google_search_console"]
+    },
+    applicable_signals: [
+      {
+        source_connector: "google_search_console",
+        label: "Wyświetlenia GSC",
+        value: 181,
+        freshness_state: "stale",
+        evidence_ids: ["ev_gsc_bdo"]
+      }
+    ],
+    next_safe_action: {
+      kind: "refresh_connector",
+      label: "Odśwież GSC",
+      reason: "GSC jest nieświeże dla tej decyzji.",
+      connector_id: "google_search_console"
+    },
+    secondary_disclosures: [{
+      id: "delivery-boundary",
+      label: "Granica delivery",
+      summary: "WILQ nie aktualizuje istniejącej strony bez review."
+    }],
+    legacy_aliases: [{ kind: "requested_work_item", value: "content_work_item_bdo" }]
   };
 }
 

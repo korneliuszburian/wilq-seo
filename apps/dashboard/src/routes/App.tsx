@@ -177,7 +177,9 @@ function contentWorkflowSearch(search: Record<string, unknown>) {
   return {
     work_item_id: optionalSearchString(search.work_item_id),
     section_heading: optionalSearchString(search.section_heading),
-    planning_digest: optionalSearchString(search.planning_digest)
+    planning_digest: optionalSearchString(search.planning_digest),
+    workspace: optionalSearchString(search.workspace),
+    text: optionalSearchString(search.text)
   };
 }
 

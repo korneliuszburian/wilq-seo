@@ -635,6 +635,7 @@ def connector_refresh_status_label(status: object) -> str:
         "completed": "odczyt zakończony",
         "failed": "odczyt nieudany",
         "missing_credentials": "brak dostępu",
+        "queued": "odczyt w kolejce",
         "pending": "odczyt w kolejce",
         "running": "odczyt trwa",
         "skipped": "odczyt pominięty",

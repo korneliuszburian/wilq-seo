@@ -14,6 +14,7 @@ import {
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
+  ContentDecisionContextSchema,
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningProposalResponseSchema,
   ContentServiceProfileResponseSchema,
@@ -58,6 +59,101 @@ import {
   WorkOrderSchema,
   WordPressAuthoringProfileSchema
 } from "./index";
+
+describe("ContentDecisionContextSchema", () => {
+  it("keeps an unverified dev target explicit instead of inventing its object identity", () => {
+    const context = ContentDecisionContextSchema.parse({
+      work_item_id: "content_work_item_bdo",
+      work_kind: "refresh_existing",
+      source_public: {
+        identity_status: "partial",
+        object_id: null,
+        url: "https://www.ekologus.pl/bdo/",
+        title: "BDO dla firm",
+        post_type: null,
+        post_status: null,
+        template: null,
+        material: {
+          status: "available",
+          source_kind: "wordpress_rest",
+          observed_surfaces: ["wordpress_rest_content"],
+          word_count: 120,
+          section_count: 2,
+          evidence_ids: ["ev_wp_bdo"],
+          caveats: []
+        },
+        label: "Adres i materiał rozpoznane częściowo",
+        reason: "Brakuje exact tożsamości WordPress."
+      },
+      authoring_target: {
+        mapping_status: "unverified",
+        environment: "staging",
+        object_id: null,
+        post_type: null,
+        post_status: null,
+        template: null,
+        authoring_surfaces: [],
+        allowed_operation: "create_wordpress_draft",
+        label: "Target dev niepotwierdzony",
+        reason: "Profil globalny nie mapuje strony."
+      },
+      source_target_relation: {
+        status: "unverified",
+        relation_type: "unknown",
+        label: "Relacja source → target niepotwierdzona",
+        reason: "Relacja nie ma dowodu."
+      },
+      object_readiness: {
+        status: "review_required",
+        label: "Obiekt częściowo rozpoznany",
+        reason: "Brakuje mapy.",
+        blocker_codes: ["object_identity_unverified"]
+      },
+      decision_disposition: {
+        status: "proposed",
+        proposed_disposition: "refresh_or_merge",
+        label: "Odśwież lub scal istniejącą stronę",
+        reason: "Istniejący adres."
+      },
+      service: {
+        label: "BDO i sprawozdawczość środowiskowa",
+        reason: "Usługa pochodzi z dopasowanej karty Service Profile."
+      },
+      evidence_readiness: {
+        status: "refresh_required",
+        label: "Dowody wymagają odświeżenia",
+        reason: "GSC jest nieświeże.",
+        blocker_codes: ["connector:google_search_console"]
+      },
+      delivery_capability: {
+        capability: "create_draft_only",
+        request_status: "blocked",
+        label: "Szkic dev wymaga potwierdzenia targetu",
+        reason: "Brakuje targetu."
+      },
+      measurement_target: {
+        status: "review_required",
+        label: "Pomiar wymaga sprawdzenia",
+        public_url: "https://www.ekologus.pl/bdo/",
+        reason: "Brakuje exact bindingu.",
+        source_connectors: ["google_search_console"]
+      },
+      applicable_signals: [],
+      next_safe_action: {
+        kind: "refresh_connector",
+        label: "Odśwież GSC",
+        reason: "GSC jest nieświeże.",
+        connector_id: "google_search_console"
+      },
+      secondary_disclosures: [],
+      legacy_aliases: [{ kind: "requested_work_item", value: "content_work_item_bdo" }]
+    });
+
+    expect(context.authoring_target.object_id).toBeNull();
+    expect(context.source_target_relation.status).toBe("unverified");
+    expect("target_id" in context).toBe(false);
+  });
+});
 
 describe("ContentDraftRevisionSchema", () => {
   it("keeps legacy v1 readable and preserves every full-document v2 asset", () => {

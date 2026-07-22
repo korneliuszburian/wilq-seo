@@ -267,6 +267,150 @@ export const ContentWorkItemQueueResponseSchema = z.object({
   ...ContentEvidenceTraceFields
 });
 
+export const ContentDecisionContextSourceMaterialSchema = z.object({
+  status: z.enum(["available", "missing", "blocked", "unknown"]),
+  source_kind: z.string().nullable().optional(),
+  observed_surfaces: z.array(z.string()).default([]),
+  word_count: z.number().int().nonnegative().nullable().optional(),
+  section_count: z.number().int().nonnegative().nullable().optional(),
+  evidence_ids: z.array(z.string()).default([]),
+  caveats: z.array(z.string()).default([])
+});
+
+export const ContentDecisionContextSourcePublicSchema = z.object({
+  identity_status: z.enum(["observed", "partial", "missing", "unknown"]),
+  object_id: z.string().nullable().optional(),
+  url: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  post_type: z.string().nullable().optional(),
+  post_status: z.string().nullable().optional(),
+  template: z.string().nullable().optional(),
+  material: ContentDecisionContextSourceMaterialSchema,
+  label: z.string(),
+  reason: z.string(),
+  technical_reason: z.string().nullable().optional()
+});
+
+export const ContentDecisionContextAuthoringTargetSchema = z.object({
+  mapping_status: z.enum(["exact", "unverified", "missing"]),
+  environment: z.string().nullable().optional(),
+  object_id: z.string().nullable().optional(),
+  post_type: z.string().nullable().optional(),
+  post_status: z.string().nullable().optional(),
+  template: z.string().nullable().optional(),
+  authoring_surfaces: z.array(z.string()).default([]),
+  allowed_operation: z.string().nullable().optional(),
+  label: z.string(),
+  reason: z.string(),
+  technical_reason: z.string().nullable().optional()
+});
+
+export const ContentDecisionContextRelationSchema = z.object({
+  status: z.enum(["exact", "unverified", "missing"]),
+  relation_type: z.enum([
+    "same_page",
+    "replacement",
+    "new_page",
+    "migration",
+    "structure",
+    "unknown"
+  ]).default("unknown"),
+  label: z.string(),
+  reason: z.string(),
+  technical_reason: z.string().nullable().optional()
+});
+
+export const ContentDecisionContextReadinessAxisSchema = z.object({
+  status: z.enum(["ready", "review_required", "refresh_required", "missing", "blocked"]),
+  label: z.string(),
+  reason: z.string(),
+  technical_reason: z.string().nullable().optional(),
+  blocker_codes: z.array(z.string()).default([])
+});
+
+export const ContentDecisionContextDispositionSchema = z.object({
+  status: z.enum(["proposed", "undetermined"]),
+  proposed_disposition: z.enum(["refresh_or_merge", "undetermined"]),
+  label: z.string(),
+  reason: z.string(),
+  technical_reason: z.string().nullable().optional()
+});
+
+export const ContentDecisionContextServiceSchema = z.object({
+  label: z.string().nullable().optional(),
+  reason: z.string()
+});
+
+export const ContentDecisionContextDeliveryCapabilitySchema = z.object({
+  capability: z.enum(["create_draft_only", "manual_handoff", "unsupported"]),
+  request_status: z.enum(["blocked", "not_applicable"]),
+  label: z.string(),
+  reason: z.string(),
+  technical_reason: z.string().nullable().optional()
+});
+
+export const ContentDecisionContextMeasurementTargetSchema = z.object({
+  status: z.string(),
+  label: z.string(),
+  public_url: z.string().nullable().optional(),
+  reason: z.string(),
+  technical_reason: z.string().nullable().optional(),
+  source_connectors: z.array(z.string()).default([])
+});
+
+export const ContentDecisionContextSignalSchema = z.object({
+  source_connector: z.string(),
+  label: z.string(),
+  value: z.union([z.number(), z.string()]),
+  freshness_state: z.enum(["fresh", "stale", "unknown"]),
+  evidence_ids: z.array(z.string()).default([])
+});
+
+export const ContentDecisionContextNextSafeActionSchema = z.object({
+  kind: z.enum([
+    "refresh_connector",
+    "resolve_source_access",
+    "map_authoring_target",
+    "inspect_object",
+    "open_workspace",
+    "none"
+  ]),
+  label: z.string(),
+  reason: z.string(),
+  connector_id: z.string().nullable().optional()
+});
+
+export const ContentDecisionContextDisclosureSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  summary: z.string()
+});
+
+export const ContentDecisionContextAliasSchema = z.object({
+  kind: z.enum(["requested_work_item", "inventory_work_item", "decision_work_item"]),
+  value: z.string()
+});
+
+export const ContentDecisionContextSchema = z.object({
+  response_type: z.literal("content_decision_context").default("content_decision_context"),
+  contract_version: z.literal("content_decision_context_v1").default("content_decision_context_v1"),
+  work_item_id: z.string(),
+  work_kind: z.enum(["refresh_existing", "undetermined"]),
+  source_public: ContentDecisionContextSourcePublicSchema,
+  authoring_target: ContentDecisionContextAuthoringTargetSchema,
+  source_target_relation: ContentDecisionContextRelationSchema,
+  object_readiness: ContentDecisionContextReadinessAxisSchema,
+  decision_disposition: ContentDecisionContextDispositionSchema,
+  service: ContentDecisionContextServiceSchema,
+  evidence_readiness: ContentDecisionContextReadinessAxisSchema,
+  delivery_capability: ContentDecisionContextDeliveryCapabilitySchema,
+  measurement_target: ContentDecisionContextMeasurementTargetSchema,
+  applicable_signals: z.array(ContentDecisionContextSignalSchema).default([]),
+  next_safe_action: ContentDecisionContextNextSafeActionSchema,
+  secondary_disclosures: z.array(ContentDecisionContextDisclosureSchema).default([]),
+  legacy_aliases: z.array(ContentDecisionContextAliasSchema).default([])
+});
+
 export const ContentInventoryRecordSchema = z.object({
   id: z.string(),
   url: z.string(),
@@ -3327,6 +3471,7 @@ export type ContentWorkItemQueueCandidate = z.infer<
   typeof ContentWorkItemQueueCandidateSchema
 >;
 export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueResponseSchema>;
+export type ContentDecisionContext = z.infer<typeof ContentDecisionContextSchema>;
 export type ContentInventoryCatalogItem = z.infer<typeof ContentInventoryCatalogItemSchema>;
 export type ContentInventoryCatalogResponse = z.infer<typeof ContentInventoryCatalogResponseSchema>;
 export type ContentInventoryMaterialResponse = z.infer<typeof ContentInventoryMaterialResponseSchema>;

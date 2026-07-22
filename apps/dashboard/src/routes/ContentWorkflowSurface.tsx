@@ -38,6 +38,8 @@ import {
   type ContentSourceRefreshControl
 } from "./ContentWorkflowBoundaryStates";
 import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
+import { ContentDecisionContextPanel } from "./ContentDecisionContextPanel";
+import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentPageWorkbench as ContentPageWorkbenchView } from "./ContentPageWorkbench";
 import { ContentWorkflowJourneyContext } from "./ContentWorkflowJourneyContext";
 import { ContentWorkflowTaskMap } from "./ContentWorkflowTaskMap";
@@ -54,6 +56,8 @@ import {
 import {
   useContentWorkflowQueries,
   type ContentOpportunityEnrichmentQuery,
+  type ContentDecisionContextQuery,
+  type ContentInitialDraftQuery,
   type ContentOperatorContextQuery,
   type ContentWorkItemQueueQuery,
   type ContentInventoryCatalogQuery,
@@ -80,6 +84,9 @@ export function ContentWorkflowSurface() {
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
   const sourceRefresh = useContentSourceRefresh();
   const selectedWorkItemId = stringFromSearch(routeSearch, "work_item_id");
+  const textWorkspaceOpen = useRouterState({
+    select: (state) => Reflect.get(state.location.search, "text") === "1"
+  });
   const selectWorkItem = (workItemId: string) => {
     void navigate({
       to: "/content-workflow",
@@ -87,7 +94,9 @@ export function ContentWorkflowSurface() {
         ...previous,
         work_item_id: workItemId,
         section_heading: undefined,
-        planning_digest: undefined
+        planning_digest: undefined,
+        workspace: undefined,
+        text: undefined
       })
     });
   };
@@ -95,6 +104,7 @@ export function ContentWorkflowSurface() {
     activeWorkItemId,
     authoringProfile,
     draftActivationPacket,
+    decisionContext,
     enrichment,
     inventory,
     knowledgeMaterials,
@@ -103,8 +113,9 @@ export function ContentWorkflowSurface() {
     serviceProfile,
     queue,
     selectedCandidate,
-    workflow
-  } = useContentWorkflowQueries(selectedWorkItemId);
+    workflow,
+    initialDraft
+  } = useContentWorkflowQueries(selectedWorkItemId, textWorkspaceOpen);
 
   return (
     <ContentWorkflowRouteState
@@ -112,8 +123,10 @@ export function ContentWorkflowSurface() {
       selectedWorkItemId={selectedWorkItemId}
       authoringProfile={authoringProfile}
       draftActivationPacket={draftActivationPacket}
+      decisionContext={decisionContext}
       enrichment={enrichment}
       inventory={inventory}
+      initialDraft={initialDraft}
       knowledgeMaterials={knowledgeMaterials}
       knowledgeReadiness={knowledgeReadiness}
       operatorContext={operatorContext}
@@ -121,8 +134,21 @@ export function ContentWorkflowSurface() {
       queue={queue}
       selectedCandidate={selectedCandidate}
       workflow={workflow}
+      textWorkspaceOpen={textWorkspaceOpen}
       sourceRefresh={sourceRefresh}
       onSelectWorkItem={selectWorkItem}
+      onOpenTextWorkspace={(workItemId) => {
+        void navigate({
+          to: "/content-workflow",
+          search: (previous) => ({
+            work_item_id: workItemId,
+            section_heading: previous.section_heading,
+            planning_digest: previous.planning_digest,
+            workspace: undefined,
+            text: "1"
+          })
+        });
+      }}
     />
   );
 }
@@ -175,8 +201,10 @@ function ContentWorkflowRouteState({
   selectedWorkItemId,
   authoringProfile,
   draftActivationPacket,
+  decisionContext,
   enrichment,
   inventory,
+  initialDraft,
   knowledgeMaterials,
   knowledgeReadiness,
   operatorContext,
@@ -184,15 +212,19 @@ function ContentWorkflowRouteState({
   queue,
   selectedCandidate,
   workflow,
+  textWorkspaceOpen,
   sourceRefresh,
-  onSelectWorkItem
+  onSelectWorkItem,
+  onOpenTextWorkspace
 }: {
   activeWorkItemId: string | null;
   selectedWorkItemId: string | null;
   authoringProfile: WordPressAuthoringProfileQuery;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
+  decisionContext: ContentDecisionContextQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   inventory: ContentInventoryCatalogQuery;
+  initialDraft: ContentInitialDraftQuery;
   knowledgeMaterials: KnowledgeSourceMaterialsQuery;
   knowledgeReadiness: KnowledgeSourceMaterialReadinessQuery;
   operatorContext: ContentOperatorContextQuery;
@@ -200,8 +232,10 @@ function ContentWorkflowRouteState({
   queue: ContentWorkItemQueueQuery;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
+  textWorkspaceOpen: boolean;
   sourceRefresh: ContentSourceRefreshControl;
   onSelectWorkItem: (workItemId: string) => void;
+  onOpenTextWorkspace: (workItemId: string) => void;
 }) {
   if (queue.isLoading) {
     const selectedInventoryItem = selectedWorkItemId
@@ -215,8 +249,10 @@ function ContentWorkflowRouteState({
       activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
       draftActivationPacket={draftActivationPacket}
+      decisionContext={decisionContext}
       enrichment={enrichment}
       inventory={inventory}
+      initialDraft={initialDraft}
       knowledgeMaterials={knowledgeMaterials}
       knowledgeReadiness={knowledgeReadiness}
       operatorContext={operatorContext}
@@ -224,8 +260,10 @@ function ContentWorkflowRouteState({
       queue={queue.data}
       selectedCandidate={selectedCandidate}
       workflow={workflow}
+      textWorkspaceOpen={textWorkspaceOpen}
       sourceRefresh={sourceRefresh}
       onSelectWorkItem={onSelectWorkItem}
+      onOpenTextWorkspace={onOpenTextWorkspace}
     />
   );
 }
@@ -234,8 +272,10 @@ function ContentWorkflowQueueReady({
   activeWorkItemId,
   authoringProfile,
   draftActivationPacket,
+  decisionContext,
   enrichment,
   inventory,
+  initialDraft,
   knowledgeMaterials,
   knowledgeReadiness,
   operatorContext,
@@ -243,14 +283,18 @@ function ContentWorkflowQueueReady({
   queue,
   selectedCandidate,
   workflow,
+  textWorkspaceOpen,
   sourceRefresh,
-  onSelectWorkItem
+  onSelectWorkItem,
+  onOpenTextWorkspace
 }: {
   activeWorkItemId: string | null;
   authoringProfile: WordPressAuthoringProfileQuery;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
+  decisionContext: ContentDecisionContextQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   inventory: ContentInventoryCatalogQuery;
+  initialDraft: ContentInitialDraftQuery;
   knowledgeMaterials: KnowledgeSourceMaterialsQuery;
   knowledgeReadiness: KnowledgeSourceMaterialReadinessQuery;
   operatorContext: ContentOperatorContextQuery;
@@ -258,8 +302,10 @@ function ContentWorkflowQueueReady({
   queue: ContentWorkItemQueueResponse;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
+  textWorkspaceOpen: boolean;
   sourceRefresh: ContentSourceRefreshControl;
   onSelectWorkItem: (workItemId: string) => void;
+  onOpenTextWorkspace: (workItemId: string) => void;
 }) {
   if (!activeWorkItemId) {
     return (
@@ -297,6 +343,21 @@ function ContentWorkflowQueueReady({
       </main>
     );
   }
+  if (textWorkspaceOpen && activeWorkItemId && decisionContext.data) {
+    return <ContentTextWorkspace context={decisionContext.data} initialDraft={initialDraft} />;
+  }
+  if (decisionContext.data && selectedCandidate?.source_public_url) {
+    return <ContentDecisionContextPanel context={decisionContext.data} onOpenTextWorkspace={onOpenTextWorkspace} />;
+  }
+  if (selectedCandidate?.recommended_mode === "block" && selectedCandidate.source_public_url) {
+    if (decisionContext.isLoading) {
+      return <ContentWorkflowSelectedLoading candidate={selectedCandidate} />;
+    }
+    if (decisionContext.error || !decisionContext.data) {
+      return <ContentWorkflowSelectedLoading candidate={selectedCandidate} error />;
+    }
+    return <ContentDecisionContextPanel context={decisionContext.data} onOpenTextWorkspace={onOpenTextWorkspace} />;
+  }
   if (selectedCandidate?.recommended_mode === "block") {
     return (
       <ContentWorkflowBlockedCandidate
@@ -326,6 +387,52 @@ function ContentWorkflowQueueReady({
 
 function OverviewMetric({ label, value, accent = false, muted = false }: { label: string; value: number; accent?: boolean; muted?: boolean }) {
   return <div className={`rounded-xl border px-3 py-3 ${accent ? "border-action/20 bg-action/5" : muted ? "border-slate-200 bg-slate-50" : "border-slate-100 bg-white"}`}><div className={`text-2xl font-semibold ${accent ? "text-action" : muted ? "text-slate-500" : "text-ink"}`}>{value.toLocaleString("pl-PL")}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</div></div>;
+}
+
+function ContentTextWorkspace({
+  context,
+  initialDraft
+}: {
+  context: NonNullable<ContentDecisionContextQuery["data"]>;
+  initialDraft: ContentInitialDraftQuery;
+}) {
+  const revision = initialDraft.data?.status === "created" ? initialDraft.data.revision ?? null : null;
+  const completeRevision = revision?.page_assets ? revision : null;
+  const blocker = initialDraft.data?.blockers[0] ?? null;
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-5 lg:px-8" data-testid="content-text-workspace">
+      <ContentWorkflowWorkspaceHeader />
+      <section className="rounded-2xl border border-action/25 bg-white p-5 shadow-sm lg:p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Tekst strony</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink lg:text-3xl">
+          {context.source_public.title ?? "Wybrana strona"}
+        </h1>
+        {context.source_public.url ? <p className="mt-2 break-all text-sm text-action">{context.source_public.url}</p> : null}
+        <p className="mt-2 text-sm font-medium text-slate-700">Usługa: {context.service.label ?? "niepotwierdzona"}</p>
+        <p className="mt-3 text-sm leading-6 text-slate-700">Wynik pracy: pełna rewizja HTML do review.</p>
+        <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-slate-600" aria-label="Stan pipeline’u">
+          <li>Kontekst</li><li aria-hidden="true">→</li><li className="text-action">Szkic</li><li aria-hidden="true">→</li><li>Review</li><li aria-hidden="true">→</li><li>Odbiór opcjonalny</li>
+        </ol>
+      </section>
+      <section className="mt-4 rounded-2xl border border-line bg-white p-4 shadow-sm lg:p-5">
+        {initialDraft.isLoading ? <p className="text-sm text-slate-700">Wczytuję stan pełnego draftu HTML…</p> : null}
+        {initialDraft.error ? <p className="text-sm font-semibold text-wait">Nie udało się odczytać stanu pełnego draftu HTML.</p> : null}
+        {completeRevision ? <ContentFullPagePreview revision={completeRevision} proposal={null} /> : !initialDraft.isLoading && !initialDraft.error ? (
+          <div data-testid="content-text-workspace-blocker">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Stan tekstu</p>
+            <h2 className="mt-2 text-lg font-semibold text-ink">Pełny draft HTML — niegotowy</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{blocker?.reason ?? initialDraft.data?.safe_next_step ?? "WILQ nie ma kompletnej exact revision do pokazania."}</p>
+            {blocker ? <p className="mt-3 text-sm font-semibold text-slate-700">{blocker.next_step}</p> : null}
+          </div>
+        ) : null}
+      </section>
+      <details className="mt-4 rounded-xl border border-line bg-white p-4 text-sm text-slate-700">
+        <summary className="cursor-pointer font-semibold text-ink">Szczegóły, źródła i ograniczenia</summary>
+        <p className="mt-3 leading-6">{context.delivery_capability.reason}</p>
+      </details>
+    </main>
+  );
 }
 
 function ContentWorkflowSelectedReady({

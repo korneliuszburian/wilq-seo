@@ -15,6 +15,7 @@ from wilq.connectors.registry import get_connector_status
 from wilq.connectors.vendor import VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.evidence.registry import connector_evidence_id, refresh_run_evidence_id
+from wilq.operator_labels import connector_refresh_status_label
 from wilq.schemas import (
     ConnectorCoveredWindow,
     ConnectorQualityState,
@@ -250,6 +251,7 @@ def complete_queued_connector_refresh(
     running_run = queued_run.model_copy(
         update={
             "status": ConnectorRefreshStatus.running,
+            "status_label": connector_refresh_status_label(ConnectorRefreshStatus.running),
             "summary": "Odczyt źródła trwa w trybie read-only.",
         }
     )
@@ -275,6 +277,7 @@ def _persist_refresh_result(
         run.model_copy(
             update={
                 "status": result.status,
+                "status_label": connector_refresh_status_label(result.status),
                 "completed_at": utc_now(),
                 "external_call_attempted": result.external_call_attempted,
                 "vendor_data_collected": result.vendor_data_collected,
@@ -294,6 +297,7 @@ def _persist_refresh_result(
         failed_run = saved_run.model_copy(
             update={
                 "status": ConnectorRefreshStatus.failed,
+                "status_label": connector_refresh_status_label(ConnectorRefreshStatus.failed),
                 "completed_at": utc_now(),
                 "metrics_persisted": False,
                 "summary": (

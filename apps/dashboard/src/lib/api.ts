@@ -20,6 +20,7 @@ import {
   ContentSemanticReviewRequestSchema,
   ContentSemanticReviewResponseSchema,
   ContentDiagnosticsResponseSchema,
+  ContentDecisionContextSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionReviewResponseSchema,
@@ -115,6 +116,7 @@ import {
   type ContentSemanticReviewRequest,
   type ContentSemanticReviewResponse,
   type ContentDiagnosticsResponse,
+  type ContentDecisionContext,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
   type ContentDraftRevisionConflict,
@@ -473,6 +475,15 @@ export function getContentOperatorContext(): Promise<ContentOperatorContext> {
 export function getContentWorkItemQueue(workItemId?: string): Promise<ContentWorkItemQueueResponse> {
   const query = workItemId ? `?work_item_id=${encodeURIComponent(workItemId)}` : "";
   return apiGet(`/api/content/work-items/queue${query}`, ContentWorkItemQueueResponseSchema);
+}
+
+export function getContentWorkItemDecisionContext(
+  workItemId: string
+): Promise<ContentDecisionContext> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/decision-context`,
+    ContentDecisionContextSchema
+  );
 }
 
 export function getContentInventoryCatalog(): Promise<ContentInventoryCatalogResponse> {
@@ -923,6 +934,7 @@ export type {
   AhrefsDiagnosticsResponse,
   CommandCenterResponse,
   ContentDiagnosticsResponse,
+  ContentDecisionContext,
   ContentCodexSectionProposalRequest,
   ContentCodexSectionProposalResponse,
   ContentInitialDraftRequest,

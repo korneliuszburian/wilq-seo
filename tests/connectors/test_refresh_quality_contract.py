@@ -1,9 +1,12 @@
+from types import SimpleNamespace
+
 import wilq.connectors.refresh as refresh_module
 from wilq.connectors.refresh import _persist_refresh_result, _quality_contract
 from wilq.connectors.vendor import VendorReadResult
 from wilq.schemas import (
     ConnectorQualityState,
     ConnectorRefreshMode,
+    ConnectorRefreshRequest,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     ConnectorSettlementState,
@@ -114,3 +117,61 @@ def test_async_persist_reuses_quality_contract_for_completed_vendor_read(monkeyp
     assert completed.settlement_state == ConnectorSettlementState.settling
     assert completed.quality_state == ConnectorQualityState.unverified
     assert saved[0].covered_window.date_start == "2026-06-19"
+    assert completed.status_label == "odczyt zakończony"
+
+
+def test_async_refresh_transitions_keep_api_owned_status_labels(monkeypatch) -> None:
+    saved: list[ConnectorRefreshRun] = []
+
+    class FakeLocalState:
+        def save_connector_refresh_run(self, run: ConnectorRefreshRun) -> ConnectorRefreshRun:
+            saved.append(run)
+            return run
+
+        def get_connector_refresh_run(self, run_id: str) -> ConnectorRefreshRun | None:
+            return next((run for run in reversed(saved) if run.id == run_id), None)
+
+    class FakeMetricStore:
+        def save_connector_refresh_metrics(self, *_args, **_kwargs) -> None:
+            return None
+
+    queued = ConnectorRefreshRun(
+        id="refresh_gsc_queued",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.queued,
+        summary="queued",
+    )
+    monkeypatch.setattr(refresh_module, "local_state_store", lambda: FakeLocalState())
+    monkeypatch.setattr(refresh_module, "metric_store", lambda: FakeMetricStore())
+    monkeypatch.setattr(refresh_module, "get_connector_refresh_run", lambda _run_id: queued)
+    monkeypatch.setattr(
+        refresh_module,
+        "get_connector_status",
+        lambda _connector_id: SimpleNamespace(
+            status="configured",
+            configured=True,
+            missing_credentials=[],
+        ),
+    )
+    monkeypatch.setattr(
+        refresh_module,
+        "_refresh_result",
+        lambda **_kwargs: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="completed",
+        ),
+    )
+
+    completed = refresh_module.complete_queued_connector_refresh(
+        queued.id,
+        "google_search_console",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+    )
+
+    assert completed is not None
+    assert [run.status_label for run in saved] == [
+        "odczyt trwa",
+        "odczyt zakończony",
+        "odczyt zakończony",
+    ]
