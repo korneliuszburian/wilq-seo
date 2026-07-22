@@ -857,6 +857,55 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
+  it("refreshes an incomplete legacy revision without replacing its history", async () => {
+    const planning = planningWorkspace({ generated: true });
+    const legacy = savedDraftRevision();
+    const refreshed = savedFullDraftRevision();
+    vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue(
+      initialDraftResponse(refreshed)
+    );
+    vi.mocked(getContentWorkItemSnapshot)
+      .mockResolvedValueOnce(
+        workflowSnapshot({
+          planning,
+          workspace: { ...savedRevisionWorkspace(legacy), context_current: false },
+          currentStepId: "draft"
+        })
+      )
+      .mockResolvedValue(
+        workflowSnapshot({
+          planning,
+          workspace: savedRevisionWorkspace(refreshed),
+          currentStepId: "draft"
+        })
+      );
+
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const panel = await screen.findByTestId("content-draft-workbench");
+    expect(within(panel).getByText("Pełny draft HTML — niegotowy")).toBeInTheDocument();
+    const refreshButton = within(panel).getByRole("button", { name: "Odśwież pełny draft" });
+    expect(refreshButton).toBeEnabled();
+    fireEvent.click(refreshButton);
+    await waitFor(() => expect(postContentWorkItemInitialDraft).toHaveBeenCalledWith(
+      {
+        expected_proposal_id: "content_planning_proposal_bdo",
+        expected_planning_digest: "a".repeat(64),
+        expected_planning_input_digest: "f".repeat(64),
+        requested_by: "wilku"
+      },
+      "content_work_item_bdo"
+    ));
+    expect(await screen.findByTestId("content-full-page-preview")).toBeInTheDocument();
+    expect(screen.getByText("Pełny draft HTML do review")).toBeInTheDocument();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
   it("records scope review and resumes on the section map without a wall of panels", async () => {
     const initialPlanning = planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false });
     const reviewedPlanning = planningWorkspace({ scopeCurrent: true, sectionMapCurrent: false });

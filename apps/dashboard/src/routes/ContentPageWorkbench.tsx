@@ -193,7 +193,7 @@ export function ContentPageWorkbench({
     : "Szkic nie ma jeszcze zapisanej wersji";
   const generatedPlanning = data.planningWorkspace?.proposal ?? null;
   const initialDraftReady = Boolean(
-    !latestRevision &&
+      (!latestRevision || !revisionWorkspace.context_current) &&
       generatedPlanning?.generation_status === "codex_generated" &&
       generatedPlanning.proposal_id &&
       generatedPlanning.planning_input_digest &&
@@ -201,6 +201,8 @@ export function ContentPageWorkbench({
       data.planningWorkspace?.scope_current &&
       data.planningWorkspace.section_map_current
   );
+  const initialDraftGenerating =
+    actions.initialDraftPending || actions.initialDraftResult?.status === "generating";
   const semanticReviewGenerating = semanticReviewResult?.status === "generating";
   return (
     <section className="mb-5" data-active-workspace={activeStepId}>
@@ -287,18 +289,18 @@ export function ContentPageWorkbench({
                   {fullDraftReady ? "Pełny draft HTML do review" : "Pełny draft HTML — niegotowy"}
                 </h2>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-                  WILQ tworzy kompletną wersję strony. Ten ekran służy do przeczytania wyniku i sprawdzenia kontekstu — nie jest drugim edytorem WordPressa.
+                  WILQ przygotowuje kompletną rewizję HTML do review. Ten ekran służy do przeczytania wyniku i sprawdzenia kontekstu; sposób dalszego odbioru wybierzesz dopiero po review.
                 </p>
               </div>
               <span className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-slate-600">
                 {revisionStatusLabel}
               </span>
             </div>
-            {!latestRevision ? (
+            {!latestRevision || !fullDraftReady ? (
               <div className="mt-4 rounded-md border border-action/25 bg-action/5 p-4">
-                <p className="text-sm font-semibold text-ink">Wygeneruj pełną pierwszą wersję</p>
+                <p className="text-sm font-semibold text-ink">{latestRevision ? "Odśwież pełną rewizję HTML" : "Wygeneruj pełną pierwszą wersję"}</p>
                 <p className="mt-1 text-sm leading-6 text-slate-700">
-                  WILQ użyje zatwierdzonego planu, inventory, zapytań i dokładnych faktów. Wynik pozostanie niezatwierdzony i nie dotknie WordPressa.
+                  WILQ użyje aktualnego, zatwierdzonego planu, inventory, zapytań i dokładnych faktów. Wynik pozostanie niezatwierdzony i nie dotknie WordPressa.
                 </p>
                 <button
                   type="button"
@@ -306,12 +308,12 @@ export function ContentPageWorkbench({
                   disabled={!initialDraftReady || actions.initialDraftPending}
                   className="mt-3 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {actions.initialDraftPending ? "Tworzę pełny tekst..." : "Wygeneruj pełny tekst"}
+                  {initialDraftGenerating ? "Tworzę pełną rewizję..." : latestRevision ? "Odśwież pełny draft" : "Wygeneruj pełny tekst"}
                 </button>
                 {!initialDraftReady ? (
-                  <p className="mt-2 text-xs leading-5 text-slate-600">Najpierw wygeneruj plan z kompletem page assets i zapisz jego aktualny zakres.</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-600">Najpierw przygotuj aktualny plan z kompletem page assets i zapisz jego zakres.</p>
                 ) : null}
-                {actions.initialDraftResult && actions.initialDraftResult.status !== "created" ? (
+                {actions.initialDraftResult && actions.initialDraftResult.status !== "created" && !initialDraftGenerating ? (
                   <p className="mt-2 text-sm text-danger" role="alert">{actions.initialDraftResult.blockers[0]?.reason ?? actions.initialDraftResult.safe_next_step}</p>
                 ) : null}
                 {actions.initialDraftError ? <p className="mt-2 text-sm text-danger" role="alert">Nie udało się utworzyć pełnej wersji. WILQ nie zapisał częściowego tekstu.</p> : null}

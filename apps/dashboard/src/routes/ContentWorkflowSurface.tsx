@@ -880,6 +880,10 @@ function useContentWorkflowMutations(selectedWorkItemId: string, operatorLabel: 
       );
     },
     onSuccess: (result) => {
+      queryClient.setQueryData(
+        ["content-workflow", "initial-draft", selectedWorkItemId],
+        result
+      );
       if (result.status === "created") void refreshRevisionWorkspace();
     }
   });
@@ -1006,7 +1010,7 @@ function contentWorkflowActions(
     initialDraftPending: mutations.initialDraftMutation.isPending,
     initialDraftError: mutations.initialDraftMutation.error,
     initialDraftResult:
-      mutations.initialDraftStatusQuery.data ?? mutations.initialDraftMutation.data ?? null,
+      mutations.initialDraftMutation.data ?? mutations.initialDraftStatusQuery.data ?? null,
     generateInitialDraft: () => {
       const proposal = data.planningWorkspace?.proposal;
       if (proposal) mutations.initialDraftMutation.mutate(proposal);
