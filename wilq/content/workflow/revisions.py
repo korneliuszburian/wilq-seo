@@ -29,6 +29,7 @@ ContentDraftRevisionDecision = Literal[
     "rejected",
     "deferred",
 ]
+ContentDraftRevisionCorrectionReason = Literal["canonical_html_alignment"]
 _UNSAFE_INTERNAL_LINK_ANCHOR_CHARACTERS = frozenset("[]<>\\\r\n\t")
 _INLINE_LINK_MARKERS = (
     "http://",
@@ -250,6 +251,7 @@ class ContentDraftRevision(BaseModel):
     cta_blocks: list[ContentDraftRevisionCtaBlock] = Field(default_factory=list)
     internal_links: list[ContentDraftRevisionInternalLink] = Field(default_factory=list)
     proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
+    correction_reason: ContentDraftRevisionCorrectionReason | None = None
     publish_ready: Literal[False] = False
     created_by: str = Field(min_length=1)
     created_at: datetime
@@ -318,6 +320,7 @@ class ContentDraftRevisionAppendCommand(BaseModel):
     cta_blocks: list[ContentDraftRevisionCtaBlock] = Field(default_factory=list)
     internal_links: list[ContentDraftRevisionInternalLink] = Field(default_factory=list)
     proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
+    correction_reason: ContentDraftRevisionCorrectionReason | None = None
     publish_ready: Literal[False] = False
     created_by: str = Field(min_length=1)
 

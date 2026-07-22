@@ -4,7 +4,14 @@ import json
 import sqlite3
 from pathlib import Path
 
-from apps.api.wilq_api.routers.content_workflow import _build_editor_save_command
+import pytest
+from fastapi import HTTPException
+
+from apps.api.wilq_api.routers.content_workflow import (
+    _build_editor_save_command,
+    _validate_canonical_html_alignment,
+)
+from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import ContentDraftRevisionSaveRequest
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.revision_persistence import (
@@ -12,6 +19,7 @@ from wilq.content.workflow.revision_persistence import (
     draft_revision_content_digest,
 )
 from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionProposalMetadata,
@@ -53,6 +61,11 @@ def _command(
                 section_id="section_lineage",
                 heading="Najważniejsze fakty",
                 body_markdown="Treść oparta na dowodzie.",
+                content_html=(
+                    content_html_from_markdown("Treść oparta na dowodzie.")
+                    if schema_version.endswith("v2")
+                    else None
+                ),
                 query_terms=["fakty"],
                 evidence_ids=["ev_lineage"],
                 source_material_ids=source_material_ids or [],
@@ -196,6 +209,7 @@ def test_editor_save_v2_carries_page_assets_and_lineage() -> None:
         draft_package=None,  # v2 carryover must not read the fallback package.
         planning=None,
         final_canonical_url=revision.final_canonical_url,
+        revision_context_current=True,
     )
 
     assert saved.schema_version == "wilq_content_draft_revision_v2"
@@ -205,3 +219,94 @@ def test_editor_save_v2_carries_page_assets_and_lineage() -> None:
     assert saved.page_assets.meta_description == revision.page_assets.meta_description
     assert saved.source_material_ids == revision.source_material_ids
     assert saved.knowledge_card_ids == revision.knowledge_card_ids
+
+
+def test_canonical_html_alignment_can_change_only_derived_html() -> None:
+    current_section = ContentDraftRevisionSection(
+        section_id="section_lineage",
+        heading="Najważniejsze fakty",
+        body_markdown="Tekst po humanizacji.",
+        content_html="<p>Stary render.</p>",
+        evidence_ids=["ev_lineage"],
+    )
+    latest = ContentDraftRevision.model_construct(
+        revision_id="content_revision_current",
+        title="Treść oparta na źródłach",
+        sections=[current_section],
+    )
+    request = ContentDraftRevisionSaveRequest(
+        base_revision_id=latest.revision_id,
+        title=latest.title,
+        sections=[
+            current_section.model_copy(
+                update={"content_html": content_html_from_markdown(current_section.body_markdown)}
+            )
+        ],
+        correction_reason="canonical_html_alignment",
+        created_by="operator_local_dashboard",
+    )
+
+    _validate_canonical_html_alignment(request, latest)
+
+    changed_body = request.model_copy(
+        update={
+            "sections": [
+                request.sections[0].model_copy(update={"body_markdown": "Inny tekst."})
+            ]
+        }
+    )
+    with pytest.raises(HTTPException, match="wyłącznie kanoniczne HTML"):
+        _validate_canonical_html_alignment(changed_body, latest)
+
+
+def test_canonical_html_alignment_is_not_a_second_codex_proposal() -> None:
+    command = _command(schema_version="wilq_content_draft_revision_v2")
+    proposal_metadata = ContentDraftRevisionProposalMetadata(
+        codex_run_id="codex_historical_proposal",
+        selected_section_headings=[command.sections[0].heading],
+        section_lineage=[
+            {"heading": command.sections[0].heading, "evidence_ids": ["ev_lineage"]}
+        ],
+        quality_verdict="needs_changes",
+    )
+    revision = build_stored_draft_revision(
+        command.model_copy(
+            update={
+                "proposal_metadata": proposal_metadata,
+                "sections": [
+                    command.sections[0].model_copy(update={"content_html": "<p>Stary render.</p>"})
+                ],
+            }
+        ),
+        revision_number=2,
+        content_digest="a" * 64,
+    )
+    request = ContentDraftRevisionSaveRequest(
+        base_revision_id=revision.revision_id,
+        title=revision.title,
+        sections=[
+            revision.sections[0].model_copy(
+                update={
+                    "content_html": content_html_from_markdown(
+                        revision.sections[0].body_markdown
+                    )
+                }
+            )
+        ],
+        correction_reason="canonical_html_alignment",
+        created_by="operator_local_dashboard",
+    )
+
+    saved = _build_editor_save_command(
+        work_item_id=revision.work_item_id,
+        request=request,
+        latest_revision=revision,
+        draft_package=None,
+        planning=None,
+        final_canonical_url=revision.final_canonical_url,
+        revision_context_current=True,
+    )
+
+    assert saved.correction_reason == "canonical_html_alignment"
+    assert saved.proposal_metadata is None
+    assert saved.sections == request.sections

@@ -69,6 +69,7 @@ def _full_document_digest_payload(
         "faq": [item.model_dump(mode="json") for item in command.faq],
         "cta_blocks": [item.model_dump(mode="json") for item in command.cta_blocks],
         "internal_links": [item.model_dump(mode="json") for item in command.internal_links],
+        "correction_reason": command.correction_reason,
     }
 
 

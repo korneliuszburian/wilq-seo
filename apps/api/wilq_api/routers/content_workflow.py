@@ -62,6 +62,7 @@ from wilq.content.workflow.catalog import (
     build_content_inventory_catalog_cached,
     read_content_inventory_material,
 )
+from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionConflictResponse,
     ContentDraftRevisionPublicConflictCode,
@@ -509,7 +510,12 @@ def _build_editor_save_command(
             faq=latest_revision.faq,
             cta_blocks=latest_revision.cta_blocks,
             internal_links=latest_revision.internal_links,
-            proposal_metadata=latest_revision.proposal_metadata,
+            proposal_metadata=(
+                None
+                if request.correction_reason == "canonical_html_alignment"
+                else latest_revision.proposal_metadata
+            ),
+            correction_reason=request.correction_reason,
             created_by=request.created_by,
         )
     return ContentDraftRevisionAppendCommand(
@@ -559,7 +565,10 @@ def content_work_item_draft_revision_save(
             snapshot=snapshot,
             safe_next_step=workspace.safe_next_step,
         )
-    _validate_revision_sections(request, snapshot)
+    if request.correction_reason == "canonical_html_alignment":
+        _validate_canonical_html_alignment(request, latest_revision)
+    else:
+        _validate_revision_sections(request, snapshot)
 
     command = _build_editor_save_command(
         work_item_id=work_item_id,
@@ -913,6 +922,52 @@ def _validate_revision_sections(
                     + section.heading
                 ),
             )
+
+
+def _validate_canonical_html_alignment(
+    request: ContentDraftRevisionSaveRequest,
+    latest_revision: ContentDraftRevision | None,
+) -> None:
+    if latest_revision is None or request.base_revision_id != latest_revision.revision_id:
+        raise HTTPException(
+            status_code=409,
+            detail="Korekta HTML wymaga aktualnej wersji bazowej.",
+        )
+    if request.title != latest_revision.title or len(request.sections) != len(
+        latest_revision.sections
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Korekta HTML nie może zmieniać zakresu wersji.",
+        )
+    changed_html = False
+    for submitted, current in zip(request.sections, latest_revision.sections, strict=True):
+        if (
+            submitted.section_id != current.section_id
+            or submitted.heading != current.heading
+            or submitted.body_markdown != current.body_markdown
+            or submitted.query_terms != current.query_terms
+            or submitted.evidence_ids != current.evidence_ids
+            or submitted.claim_ids != current.claim_ids
+            or submitted.source_material_ids != current.source_material_ids
+            or submitted.knowledge_card_ids != current.knowledge_card_ids
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="Korekta HTML może zmienić wyłącznie kanoniczne HTML sekcji.",
+            )
+        expected_html = content_html_from_markdown(current.body_markdown)
+        if submitted.content_html != expected_html:
+            raise HTTPException(
+                status_code=422,
+                detail="Korekta HTML musi wynikać dokładnie z Markdownu wersji bazowej.",
+            )
+        changed_html = changed_html or current.content_html != expected_html
+    if not changed_html:
+        raise HTTPException(
+            status_code=422,
+            detail="Wersja bazowa nie wymaga korekty kanonicznego HTML.",
+        )
 
 
 def _validate_review_evidence(

@@ -3322,6 +3322,34 @@ describe("Content work item workflow schemas", () => {
       }).success
     ).toBe(false);
     expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "BDO dla firm",
+        sections: [{
+          heading: "Zakres obowiązków",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_gsc_bdo"]
+        }],
+        correction_reason: "canonical_html_alignment",
+        created_by: "operator_local_dashboard"
+      }).success
+    ).toBe(true);
+    expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "BDO dla firm",
+        sections: [{
+          heading: "Zakres obowiązków",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_gsc_bdo"]
+        }],
+        correction_reason: "rewrite_everything",
+        created_by: "operator_local_dashboard"
+      }).success
+    ).toBe(false);
+    expect(
       ContentDraftRevisionReviewRequestSchema.safeParse({
         expected_revision_digest: "a".repeat(64),
         reviewed_by: "wilku",

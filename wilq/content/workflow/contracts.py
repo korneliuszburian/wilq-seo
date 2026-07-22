@@ -56,6 +56,7 @@ from wilq.content.workflow.planning import ContentPlanningWorkspace
 from wilq.content.workflow.queue import ContentWorkItemQueueBlocker, ContentWorkItemQueueCandidate
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
+    ContentDraftRevisionCorrectionReason,
     ContentDraftRevisionDecision,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,
@@ -472,6 +473,7 @@ class ContentDraftRevisionSaveRequest(BaseModel):
     base_revision_id: str | None = None
     title: str = Field(min_length=1)
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)
+    correction_reason: ContentDraftRevisionCorrectionReason | None = None
     created_by: str = Field(min_length=1)
 
     @model_validator(mode="after")

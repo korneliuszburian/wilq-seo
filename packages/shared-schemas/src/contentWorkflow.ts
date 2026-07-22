@@ -1951,6 +1951,7 @@ export const ContentDraftRevisionSchema = z.object({
   cta_blocks: z.array(ContentDraftRevisionCtaBlockSchema).default([]),
   internal_links: z.array(ContentDraftRevisionInternalLinkSchema).default([]),
   proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
+  correction_reason: z.literal("canonical_html_alignment").nullable().optional(),
   publish_ready: z.literal(false),
   created_by: z.string().refine((value) => value.trim().length > 0),
   created_at: z.string()
@@ -2263,6 +2264,7 @@ export const ContentDraftRevisionSaveRequestSchema = z.object({
   base_revision_id: z.string().nullable(),
   title: z.string().refine((value) => value.trim().length > 0),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
+  correction_reason: z.literal("canonical_html_alignment").nullable().optional(),
   created_by: z.string().refine((value) => value.trim().length > 0)
 });
 
