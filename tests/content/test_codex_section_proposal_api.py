@@ -123,11 +123,70 @@ def test_section_proposal_schema_bounds_selected_section_count() -> None:
 
     assert schema["properties"]["sections"]["minItems"] == 1
     assert schema["properties"]["sections"]["maxItems"] == 1
-    evidence_schema = schema["$defs"]["StructuredDraftOutputSection"]["properties"][
-        "evidence_ids"
-    ]
+    evidence_schema = schema["properties"]["sections"]["items"]["anyOf"][0][
+        "properties"
+    ]["evidence_ids"]
     assert evidence_schema["minItems"] == 1
     assert evidence_schema["maxItems"] == 1
+
+
+def test_section_proposal_schema_binds_each_selected_heading_to_its_evidence() -> None:
+    contract = SimpleNamespace(
+        output_schema={
+            "type": "object",
+            "properties": {
+                "title": {},
+                "h1": {},
+                "sections": {"type": "array"},
+                "source_facts_used": {},
+                "claims_needing_review": {},
+                "forbidden_claims_avoided": {},
+            },
+            "$defs": {
+                "StructuredDraftOutputSection": {
+                    "type": "object",
+                    "properties": {
+                        "heading": {},
+                        "evidence_ids": {},
+                        "claims_used": {},
+                    },
+                }
+            },
+        },
+        model_input=SimpleNamespace(
+            claims_allowed=[],
+            claims_removed_or_blocked=[],
+        ),
+    )
+    base_revision = SimpleNamespace(
+        title="Bazowy tytuł",
+        sections=[
+            SimpleNamespace(heading="Sekcja A", evidence_ids=["ev_a"]),
+            SimpleNamespace(heading="Sekcja B", evidence_ids=["ev_b", "ev_wp"]),
+        ],
+    )
+
+    schema = proposal_output_schema(
+        contract,
+        base_revision=base_revision,
+        selected_headings=["Sekcja A", "Sekcja B"],
+    )
+
+    item_schemas = schema["properties"]["sections"]["items"]["anyOf"]
+    assert [item["properties"]["heading"]["const"] for item in item_schemas] == [
+        "Sekcja A",
+        "Sekcja B",
+    ]
+    assert item_schemas[0]["properties"]["evidence_ids"] == {
+        "items": {"enum": ["ev_a"], "type": "string"},
+        "minItems": 1,
+        "maxItems": 1,
+    }
+    assert item_schemas[1]["properties"]["evidence_ids"] == {
+        "items": {"enum": ["ev_b", "ev_wp"], "type": "string"},
+        "minItems": 2,
+        "maxItems": 2,
+    }
 
 
 def test_child_preview_contract_merges_exact_persisted_revision_evidence() -> None:
@@ -389,19 +448,23 @@ def _assert_literal_schema(
 ) -> None:
     properties = output_schema["properties"]
     section_properties = output_schema["$defs"]["StructuredDraftOutputSection"]["properties"]
+    item_schema = output_schema["properties"]["sections"]["items"]["anyOf"][0][
+        "properties"
+    ]
     assert properties["sections"]["minItems"] == 1
     assert properties["sections"]["maxItems"] == 1
     assert properties["title"]["const"] == case.base_revision["title"]
     assert properties["claims_needing_review"]["items"]["enum"] == ["__WILQ_EMPTY_ARRAY_ONLY__"]
     assert section_properties["heading"]["enum"] == [case.selected_heading]
-    assert section_properties["evidence_ids"]["minItems"] == len(
+    assert item_schema["heading"]["const"] == case.selected_heading
+    assert item_schema["evidence_ids"]["minItems"] == len(
         case.base_revision["sections"][0]["evidence_ids"]
     )
-    assert section_properties["evidence_ids"]["maxItems"] == len(
+    assert item_schema["evidence_ids"]["maxItems"] == len(
         case.base_revision["sections"][0]["evidence_ids"]
     )
     assert (
-        section_properties["evidence_ids"]["items"]["enum"]
+        item_schema["evidence_ids"]["items"]["enum"]
         == (case.base_revision["sections"][0]["evidence_ids"])
     )
     assert (

@@ -5,7 +5,7 @@ from copy import deepcopy
 from typing import cast
 
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
 
 
 def proposal_output_schema(
@@ -38,10 +38,16 @@ def proposal_output_schema(
     sections_schema["maxItems"] = len(selected_headings)
     _set_literals(section_properties, "heading", selected_headings, scalar=True)
     _set_literals(section_properties, "evidence_ids", evidence_ids)
-    if len(selected_headings) == 1:
-        evidence_schema = _mapping(section_properties, "evidence_ids")
-        evidence_schema["minItems"] = len(evidence_ids)
-        evidence_schema["maxItems"] = len(evidence_ids)
+    # Bind a section's lineage to its heading before the structured turn runs.
+    # A shared enum is insufficient for a multi-section proposal: it lets the
+    # model place an otherwise allowed evidence id on the wrong section, which
+    # the exact-revision guard must then reject after generation completes.
+    sections_schema["items"] = {
+        "anyOf": [
+            _section_schema_for_heading(section_schema, base_by_heading[heading])
+            for heading in selected_headings
+        ]
+    }
     _set_literals(section_properties, "claims_used", contract.model_input.claims_allowed)
     _set_literals(properties, "source_facts_used", evidence_ids)
     _set_literals(properties, "claims_needing_review", [])
@@ -79,6 +85,22 @@ def _set_literals(
         "enum": _unique(values) or ["__WILQ_EMPTY_ARRAY_ONLY__"],
         "type": "string",
     }
+
+
+def _section_schema_for_heading(
+    section_schema: dict[str, object],
+    section: ContentDraftRevisionSection,
+) -> dict[str, object]:
+    schema = deepcopy(section_schema)
+    properties = _mapping(schema, "properties")
+    heading = section.heading
+    evidence_ids = _unique(section.evidence_ids)
+    _set_const(properties, "heading", heading)
+    _set_literals(properties, "evidence_ids", evidence_ids)
+    evidence_schema = _mapping(properties, "evidence_ids")
+    evidence_schema["minItems"] = len(evidence_ids)
+    evidence_schema["maxItems"] = len(evidence_ids)
+    return schema
 
 
 def _unique(values: Iterable[object]) -> list[str]:

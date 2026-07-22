@@ -16,6 +16,8 @@ _INSTRUCTION = (
     "i liczbę wybranych nagłówków oraz dokładną mapę evidence dla każdej sekcji. "
     "Nie zwracaj żadnej sekcji poza wybranymi i nie powtarzaj sekcji. "
     "Zmień tylko body_markdown wybranych sekcji. "
+    "Gdy review prosi wyłącznie o zmianę stylu, zachowaj faktografię wersji bazowej: "
+    "nie dodawaj żadnych nowych twierdzeń, interpretacji prawnych ani obietnic. "
     "Używaj wyłącznie wartości lineage dopuszczonych przez schema, pozostaw "
     "claims_needing_review puste, potwierdź wszystkie forbidden_claims_avoided i "
     "zawsze zwróć publish_ready=false. Zwróć wyłącznie wynik zgodny ze schema."
