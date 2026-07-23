@@ -322,6 +322,11 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("content-source-snapshot")).toHaveTextContent("Aktualny materiał BDO");
+    const canvas = screen.getByTestId("content-workspace-canvas");
+    const outline = screen.getByLabelText("Struktura strony");
+    expect(canvas.compareDocumentPosition(outline) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
     expect(screen.getAllByText("Jak prowadzić ewidencję odpadów?")).toHaveLength(2);
     fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
     expect(screen.getByText("Nowa wersja czeka na review")).toBeInTheDocument();
@@ -338,6 +343,44 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
     expect(previewAction).not.toHaveBeenCalled();
+  });
+
+  it("does not claim that a document exists when the workspace has no revision", async () => {
+    const noDocument = contentDocumentWorkspace();
+    noDocument.canonical_document = {
+      status: "not_created",
+      revision_id: null,
+      content_digest: null,
+      review_state: "unreviewed",
+      label: "Nowa wersja nie została jeszcze przygotowana",
+      reason: "Nie ma jeszcze zapisanej wersji dokumentu.",
+      preview: null
+    };
+    noDocument.comparison = {
+      status: "unavailable",
+      reason: "Porównanie pojawi się po zapisaniu nowej wersji dokumentu.",
+      items: []
+    };
+    noDocument.next_action = {
+      kind: "prepare_document",
+      label: "Przygotuj nową wersję",
+      reason: "Przygotowanie dokumentu jest kolejnym krokiem."
+    };
+    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(noDocument);
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(screen.getByText(/stan nowego dokumentu i dostępne porównanie/)).toBeInTheDocument();
+    expect(screen.queryByText(/przygotowany dokument i uczciwe różnice/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
+    expect(screen.getAllByText("Nowa wersja nie została jeszcze przygotowana")).toHaveLength(3);
   });
 
   it("records human review for the exact Text revision without opening a content write path", async () => {

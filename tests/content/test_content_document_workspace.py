@@ -88,10 +88,10 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
             "Wprowadzenie.\n\n"
             "Ewidencja odpadów\n"
             "Aktualny opis ewidencji na obecnej stronie.\n\n"
-            "Kontakt\n"
-            "Aktualne wezwanie do kontaktu."
+            "Ewidencja odpadów\n"
+            "Drugi aktualny opis ewidencji na obecnej stronie."
         ),
-        section_headings=["Ewidencja odpadów", "Kontakt"],
+        section_headings=["Ewidencja odpadów", "Ewidencja odpadów"],
         evidence_id="ev_wp_bdo",
         extraction_region="wordpress_rest.content",
     )
@@ -148,5 +148,5 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
     assert comparison_items == [
         ("same_heading", "Ewidencja odpadów", "Ewidencja odpadów"),
         ("document_only", None, "Ryzyka formalne"),
-        ("source_only", "Kontakt", None),
+        ("source_only", "Ewidencja odpadów", None),
     ]

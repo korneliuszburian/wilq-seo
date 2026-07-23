@@ -332,16 +332,18 @@ def _comparison(
             status="unavailable",
             reason="Porównanie pojawi się po zapisaniu nowej wersji dokumentu.",
         )
-    source_by_heading: dict[str, list[ContentDocumentWorkspaceSourceSection]] = {}
-    for section in source.ordered_sections:
-        source_by_heading.setdefault(_heading_key(section.heading), []).append(section)
+    source_by_heading: dict[str, list[tuple[int, ContentDocumentWorkspaceSourceSection]]] = {}
+    for source_index, section in enumerate(source.ordered_sections):
+        source_by_heading.setdefault(_heading_key(section.heading), []).append(
+            (source_index, section)
+        )
     items: list[ContentDocumentWorkspaceComparisonItem] = []
-    matched_source_headings: set[str] = set()
+    matched_source_indices: set[int] = set()
     for section in revision.sections:
         key = _heading_key(section.heading)
         candidates = source_by_heading.get(key, [])
-        source_section = candidates.pop(0) if candidates else None
-        if source_section is None:
+        source_match = candidates.pop(0) if candidates else None
+        if source_match is None:
             items.append(
                 ContentDocumentWorkspaceComparisonItem(
                     status="document_only",
@@ -355,7 +357,8 @@ def _comparison(
                 )
             )
             continue
-        matched_source_headings.add(source_section.heading)
+        source_index, source_section = source_match
+        matched_source_indices.add(source_index)
         items.append(
             ContentDocumentWorkspaceComparisonItem(
                 status="same_heading",
@@ -370,8 +373,8 @@ def _comparison(
                 ),
             )
         )
-    for source_section in source.ordered_sections:
-        if source_section.heading in matched_source_headings:
+    for source_index, source_section in enumerate(source.ordered_sections):
+        if source_index in matched_source_indices:
             continue
         items.append(
             ContentDocumentWorkspaceComparisonItem(

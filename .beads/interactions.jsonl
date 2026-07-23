@@ -978,3 +978,5 @@
 {"id":"int-5b0b521a","kind":"field_change","created_at":"2026-07-23T15:29:27.395082686Z","actor":"codex","issue_id":"wilq-seo-1oa.36.16.2","extra":{"field":"status","new_value":"open","old_value":"in_progress"}}
 {"id":"int-064bc466","kind":"field_change","created_at":"2026-07-23T15:29:31.432299846Z","actor":"codex","issue_id":"wilq-seo-1oa.36.16.3","extra":{"field":"status","new_value":"in_progress","old_value":"open"}}
 {"id":"int-ce9f81e0","kind":"field_change","created_at":"2026-07-23T15:29:31.432446974Z","actor":"codex","issue_id":"wilq-seo-1oa.36.16.3","extra":{"field":"assignee","new_value":"korneliuszburian","old_value":""}}
+{"id":"int-5cbc253b","kind":"field_change","created_at":"2026-07-23T17:28:20.93255134Z","actor":"korneliuszburian","issue_id":"wilq-seo-1oa.36.16.3","extra":{"field":"status","new_value":"open","old_value":"in_progress"}}
+{"id":"int-58ebdaae","kind":"field_change","created_at":"2026-07-23T17:28:23.47299172Z","actor":"korneliuszburian","issue_id":"wilq-seo-1oa.36.16.2","extra":{"field":"status","new_value":"in_progress","old_value":"open"}}

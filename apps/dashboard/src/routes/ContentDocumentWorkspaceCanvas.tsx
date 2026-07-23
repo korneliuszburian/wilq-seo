@@ -32,7 +32,7 @@ export function ContentDocumentWorkspaceCanvas({
             ) : null}
             <p className="mt-2 text-sm font-medium text-slate-700">Usługa: {workspace.service_label ?? "niepotwierdzona"}</p>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-700">
-              W jednym miejscu widzisz obecną stronę, przygotowany dokument i uczciwe różnice między nimi. To nie zmienia WordPressa.
+              W jednym miejscu sprawdzisz obecną stronę, stan nowego dokumentu i dostępne porównanie. To nie zmienia WordPressa.
             </p>
           </div>
           <section className="min-w-64 rounded-xl border border-line bg-surface p-4" data-testid="content-document-state">
@@ -55,7 +55,12 @@ export function ContentDocumentWorkspaceCanvas({
       </nav>
 
       <section className="mt-4 grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_18rem]">
-        <aside className="rounded-2xl border border-line bg-white p-4 shadow-sm" aria-label="Struktura strony">
+        <section className="order-1 min-w-0 rounded-2xl border border-line bg-white p-5 shadow-sm lg:p-7 xl:order-2" data-testid="content-workspace-canvas">
+          {view === "source" ? <CurrentSource workspace={workspace} /> : null}
+          {view === "document" ? <CanonicalDocument workspace={workspace} /> : null}
+          {view === "comparison" ? <Comparison workspace={workspace} /> : null}
+        </section>
+        <aside className="order-2 rounded-2xl border border-line bg-white p-4 shadow-sm xl:order-1" aria-label="Struktura strony">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Struktura strony</p>
           <p className="mt-2 text-sm leading-6 text-slate-700">{outlineLead(view)}</p>
           <ol className="mt-4 space-y-2">
@@ -66,12 +71,7 @@ export function ContentDocumentWorkspaceCanvas({
             ))}
           </ol>
         </aside>
-        <section className="min-w-0 rounded-2xl border border-line bg-white p-5 shadow-sm lg:p-7" data-testid="content-workspace-canvas">
-          {view === "source" ? <CurrentSource workspace={workspace} /> : null}
-          {view === "document" ? <CanonicalDocument workspace={workspace} /> : null}
-          {view === "comparison" ? <Comparison workspace={workspace} /> : null}
-        </section>
-        <aside className="rounded-2xl border border-line bg-white p-4 shadow-sm">
+        <aside className="order-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kontekst pracy</p>
           <StatusCard label="Materiał obecnej strony" value={sourceStatus(workspace.source_snapshot.status)} />
           <StatusCard label="Nowy dokument" value={documentStatus(workspace.canonical_document.status)} />
