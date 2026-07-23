@@ -22,7 +22,10 @@ def register_content_editorial_integrity_route(router: APIRouter) -> None:
                 work_item_id=work_item_id,
                 revision_id=revision_id,
                 revisions=store.list_draft_revisions(work_item_id),
-                human_review=store.load_draft_revision_state(work_item_id).latest_review,
+                human_review=store.load_draft_revision_review(
+                    work_item_id=work_item_id,
+                    revision_id=revision_id,
+                ),
             )
         except ValueError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error

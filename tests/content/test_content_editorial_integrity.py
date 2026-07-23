@@ -110,6 +110,12 @@ def test_editorial_integrity_separates_hard_integrity_from_lexical_changes_and_r
         revisions=revisions,
         human_review=exact_review,
     )
+    r10_with_r11_review = build_content_editorial_integrity_report(
+        work_item_id=r8.work_item_id,
+        revision_id=r10.revision_id,
+        revisions=revisions,
+        human_review=exact_review,
+    )
 
     assert r9_report.result == "invalid_representation"
     assert {item.status for item in r9_report.representation_alignment} == {"mismatch"}
@@ -120,6 +126,7 @@ def test_editorial_integrity_separates_hard_integrity_from_lexical_changes_and_r
     assert any(unit.status != "preserved" for unit in r11_report.protected_content_units)
     assert r11_report.human_review is not None
     assert r11_report.human_review.decision == "approved"
+    assert r10_with_r11_review.human_review is None
 
 
 def test_editorial_integrity_observes_title_change_without_claiming_it_was_unauthorized() -> None:

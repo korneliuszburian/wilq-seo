@@ -182,6 +182,23 @@ def latest_draft_revision_review(
     return _validated_payload(row, ContentDraftRevisionReview)
 
 
+def latest_draft_revision_review_for_work_item(
+    connection: sqlite3.Connection,
+    *,
+    work_item_id: str,
+    revision_id: str,
+) -> ContentDraftRevisionReview | None:
+    row = connection.execute(
+        """
+        SELECT payload_json FROM content_draft_revision_reviews
+        WHERE work_item_id = ? AND revision_id = ?
+        ORDER BY decision_number DESC LIMIT 1
+        """,
+        (work_item_id, revision_id),
+    ).fetchone()
+    return _validated_payload(row, ContentDraftRevisionReview)
+
+
 def latest_planning_decision(
     connection: sqlite3.Connection,
     work_item_id: str,

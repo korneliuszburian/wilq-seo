@@ -81,6 +81,39 @@ def test_identical_revision_and_review_retries_are_idempotent(tmp_path: Path) ->
     assert retry_review.review == first_review.review
 
 
+def test_exact_revision_review_remains_queryable_after_a_newer_revision(
+    tmp_path: Path,
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    first = _require_revision(store.append_draft_revision(_append_command()))
+    first_review = store.review_draft_revision(
+        _approved_review_command(first.revision_id, first.content_digest)
+    )
+    assert first_review.review is not None
+
+    second = _require_revision(
+        store.append_draft_revision(
+            _append_command(
+                base_revision_id=first.revision_id,
+                body_markdown="Nowsza rewizja związana z dowodami.",
+            )
+        )
+    )
+
+    assert store.load_draft_revision_review(
+        work_item_id=first.work_item_id,
+        revision_id=first.revision_id,
+    ) == first_review.review
+    assert store.load_draft_revision_review(
+        work_item_id=first.work_item_id,
+        revision_id=second.revision_id,
+    ) is None
+    assert store.load_draft_revision_review(
+        work_item_id="content_work_item_other",
+        revision_id=first.revision_id,
+    ) is None
+
+
 def test_concurrent_review_decision_must_rebase_on_the_latest_decision(
     tmp_path: Path,
 ) -> None:

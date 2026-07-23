@@ -31,6 +31,7 @@ from wilq.content.workflow.revision_persistence import (
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionReview,
     ContentDraftRevisionReviewCommand,
     ContentDraftRevisionReviewResult,
     ContentDraftRevisionState,
@@ -51,6 +52,9 @@ from wilq.content.workflow.store_queries import (
 )
 from wilq.content.workflow.store_queries import (
     latest_draft_revision_review as _latest_draft_revision_review,
+)
+from wilq.content.workflow.store_queries import (
+    latest_draft_revision_review_for_work_item as _latest_draft_revision_review_for_work_item,
 )
 from wilq.content.workflow.store_queries import (
     latest_planning_decision as _latest_planning_decision,
@@ -255,6 +259,19 @@ class _DraftRevisionStoreMixin(_StoreConnectionMixin):
             latest_review=latest_review,
             revision_count=revision_count,
         )
+
+    def load_draft_revision_review(
+        self,
+        *,
+        work_item_id: str,
+        revision_id: str,
+    ) -> ContentDraftRevisionReview | None:
+        with self._connect() as connection:
+            return _latest_draft_revision_review_for_work_item(
+                connection,
+                work_item_id=work_item_id,
+                revision_id=revision_id,
+            )
 
     def list_draft_revisions(self, work_item_id: str) -> list[ContentDraftRevision]:
         with self._connect() as connection:
