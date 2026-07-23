@@ -457,23 +457,26 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
     vi.mocked(getContentWorkItemEditorialIntegrity).mockResolvedValue({
       work_item_id: revision.work_item_id,
-      baseline_revision: { revision_id: "content_revision_base", content_digest: "b".repeat(64) },
-      direct_parent_revision: { revision_id: "content_revision_base", content_digest: "b".repeat(64) },
-      child_revision: { revision_id: revision.revision_id, content_digest: revision.content_digest },
+      baseline_revision: { revision_id: "content_revision_r8", content_digest: "b".repeat(64), revision_number: 8 },
+      direct_parent_revision: { revision_id: "content_revision_r10", content_digest: "c".repeat(64), revision_number: 10 },
+      child_revision: { revision_id: revision.revision_id, content_digest: revision.content_digest, revision_number: 11 },
+      human_review: { decision: "approved", reviewed_by: "operator_local_dashboard" },
       observed_scope: { section_ids: revision.sections.map((section) => section.section_id ?? "section"), fields: ["body"] },
       structural_invariants: { section_ids_unchanged: true, section_order_unchanged: true, headings_unchanged: true, title_unchanged: true, faq_unchanged: true, cta_semantics_unchanged: true, links_unchanged: true, evidence_lineage_unchanged: true },
-      protected_content_units: [],
-      representation_alignment: [],
-      lint_signals: [],
+      protected_content_units: [{ unit_id: "unit_r10", section_id: "section_1", section_heading: "Ewidencja odpadów", claim_ids: [], evidence_ids: [], before_excerpt: "Sprawdź rodzaje i ilości odpadów.", after_excerpt: "Ustal rodzaje i ilości odpadów.", status: "changed" }],
+      representation_alignment: [{ section_id: "section_1", section_heading: "Ewidencja odpadów", source_body_sha256: "d".repeat(64), rendered_html_sha256: "e".repeat(64), normalized_source_text_sha256: "d".repeat(64), normalized_rendered_text_sha256: "e".repeat(64), status: "aligned" }],
+      lint_signals: [{ code: "repeated_root_warto", section_id: null, occurrences: 3, excerpts: [], reason: "Rdzeń „warto” powtarza się 3 razy; raport nie ocenia, czy to błąd stylu." }],
       human_readable_diff: "Niezmienniki struktury naruszone: 0.",
-      result: "pass"
+      result: "integrity_ok"
     });
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22", defaultPendingMinMs: 0 })} client={client} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Sprawdź zmiany względem wersji bazowej" }));
     await waitFor(() => expect(getContentWorkItemEditorialIntegrity).toHaveBeenCalledWith(revision.work_item_id, revision.revision_id));
-    expect(await screen.findByText("Integralność zachowana")).toBeInTheDocument();
+    expect(await screen.findByText("Twarda integralność zachowana")).toBeInTheDocument();
+    expect(screen.getByText(/Porównanie: R8 → R10 → R11/)).toBeInTheDocument();
+    expect(screen.getByText(/Human review tej rewizji: zatwierdzone/)).toBeInTheDocument();
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
   });

@@ -347,13 +347,14 @@ describe("ContentEditorialIntegrityReportSchema", () => {
   it("keeps an editorial report bound to exact immutable revisions", () => {
     const report = {
       work_item_id: "content_work_item_bdo",
-      baseline_revision: { revision_id: "content_revision_r8", content_digest: "a".repeat(64) },
-      direct_parent_revision: { revision_id: "content_revision_r10", content_digest: "b".repeat(64) },
-      child_revision: { revision_id: "content_revision_r11", content_digest: "c".repeat(64) },
+      baseline_revision: { revision_id: "content_revision_r8", content_digest: "a".repeat(64), revision_number: 8 },
+      direct_parent_revision: { revision_id: "content_revision_r10", content_digest: "b".repeat(64), revision_number: 10 },
+      child_revision: { revision_id: "content_revision_r11", content_digest: "c".repeat(64), revision_number: 11 },
+      human_review: { decision: "approved", reviewed_by: "operator_local_dashboard" },
       observed_scope: { section_ids: ["section_bdo"], fields: ["body"] },
       structural_invariants: { section_ids_unchanged: true, section_order_unchanged: true, headings_unchanged: true, title_unchanged: true, faq_unchanged: true, cta_semantics_unchanged: true, links_unchanged: true, evidence_lineage_unchanged: true },
       protected_content_units: [], representation_alignment: [], lint_signals: [],
-      human_readable_diff: "Niezmienniki struktury naruszone: 0.", result: "pass"
+      human_readable_diff: "Niezmienniki struktury naruszone: 0.", result: "integrity_ok"
     };
     expect(ContentEditorialIntegrityReportSchema.parse(report).child_revision.revision_id).toBe("content_revision_r11");
     expect(ContentEditorialIntegrityReportSchema.safeParse({ ...report, child_revision: { ...report.child_revision, content_digest: "nie-digest" } }).success).toBe(false);

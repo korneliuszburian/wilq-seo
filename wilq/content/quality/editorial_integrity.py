@@ -6,6 +6,7 @@ from hashlib import sha256
 from html.parser import HTMLParser
 
 from wilq.content.workflow.contracts import (
+    ContentEditorialIntegrityHumanReview,
     ContentEditorialIntegrityReport,
     ContentEditorialIntegrityRevision,
     ContentEditorialIntegrityScope,
@@ -14,7 +15,11 @@ from wilq.content.workflow.contracts import (
     ContentProtectedContentUnit,
     ContentRepresentationAlignment,
 )
-from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionReview,
+    ContentDraftRevisionSection,
+)
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 _WORD = re.compile(r"[\wąćęłńóśźż]+", re.IGNORECASE)
@@ -69,6 +74,7 @@ def build_content_editorial_integrity_report(
     work_item_id: str,
     revision_id: str,
     revisions: Iterable[ContentDraftRevision],
+    human_review: ContentDraftRevisionReview | None = None,
 ) -> ContentEditorialIntegrityReport:
     """Compare one immutable child with a stable same-structure ancestor.
 
@@ -90,12 +96,13 @@ def build_content_editorial_integrity_report(
     ]
     protected_units = _protected_units(baseline, child)
     lint_signals = _lint_signals(child)
-    result = _result(invariants, alignment, protected_units, lint_signals)
+    result = _result(invariants, alignment)
     return ContentEditorialIntegrityReport(
         work_item_id=work_item_id,
         baseline_revision=_identity(baseline),
         direct_parent_revision=_identity(direct_parent),
         child_revision=_identity(child),
+        human_review=_exact_human_review(child, human_review),
         observed_scope=_observed_scope(baseline, child),
         structural_invariants=invariants,
         protected_content_units=protected_units,
@@ -130,6 +137,23 @@ def _identity(revision: ContentDraftRevision) -> ContentEditorialIntegrityRevisi
     return ContentEditorialIntegrityRevision(
         revision_id=revision.revision_id,
         content_digest=revision.content_digest,
+        revision_number=revision.revision_number,
+    )
+
+
+def _exact_human_review(
+    child: ContentDraftRevision,
+    human_review: ContentDraftRevisionReview | None,
+) -> ContentEditorialIntegrityHumanReview | None:
+    if (
+        human_review is None
+        or human_review.revision_id != child.revision_id
+        or human_review.revision_digest != child.content_digest
+    ):
+        return None
+    return ContentEditorialIntegrityHumanReview(
+        decision=human_review.decision,
+        reviewed_by=human_review.reviewed_by,
     )
 
 
@@ -205,6 +229,7 @@ def _representation_alignment(
     rendered_text = None if html is None else _normalized_text(_html_text(html))
     return ContentRepresentationAlignment(
         section_id=section.section_id or section.heading,
+        section_heading=section.heading,
         source_body_sha256=_hash(section.body_markdown),
         rendered_html_sha256=None if html is None else _hash(html),
         normalized_source_text_sha256=_hash(source_text),
@@ -237,6 +262,7 @@ def _protected_units(
                 ContentProtectedContentUnit(
                     unit_id=f"unit_{_hash(f'{section.section_id}:{sentence}')[:16]}",
                     section_id=section.section_id,
+                    section_heading=section.heading,
                     claim_ids=section.claim_ids,
                     evidence_ids=section.evidence_ids,
                     before_excerpt=sentence,
@@ -302,16 +328,12 @@ def _lint_signals(revision: ContentDraftRevision) -> list[ContentEditorialLintSi
 def _result(
     invariants: ContentEditorialStructuralInvariants,
     alignment: list[ContentRepresentationAlignment],
-    units: list[ContentProtectedContentUnit],
-    lint: list[ContentEditorialLintSignal],
 ) -> str:
     if any(item.status == "mismatch" for item in alignment):
         return "invalid_representation"
     if not all(invariants.model_dump().values()):
-        return "unauthorized_scope_change"
-    if any(unit.status != "preserved" for unit in units) or lint:
-        return "review_required"
-    return "pass"
+        return "structural_change_observed"
+    return "integrity_ok"
 
 
 def _diff_summary(
@@ -327,7 +349,7 @@ def _diff_summary(
     return (
         f"Niezmienniki struktury naruszone: {changed_invariants}; "
         f"niespójne reprezentacje body/HTML: {mismatches}; "
-        f"jednostki zachowane ze zmianą: {changed}; usunięte: {removed}; "
+        f"sygnały leksykalne: zmienione {changed}; niedopasowane {removed}; "
         f"sygnały redakcyjne: {len(lint)}."
     )
 

@@ -551,10 +551,9 @@ class ContentRevisionHtmlPackageResponse(BaseModel):
 
 
 ContentEditorialIntegrityResult = Literal[
-    "pass",
-    "review_required",
+    "integrity_ok",
     "invalid_representation",
-    "unauthorized_scope_change",
+    "structural_change_observed",
 ]
 ContentProtectedContentUnitStatus = Literal["preserved", "changed", "removed"]
 ContentRepresentationAlignmentStatus = Literal["aligned", "mismatch"]
@@ -567,6 +566,16 @@ class ContentEditorialIntegrityRevision(BaseModel):
 
     revision_id: str = Field(min_length=1)
     content_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    revision_number: int = Field(ge=1)
+
+
+class ContentEditorialIntegrityHumanReview(BaseModel):
+    """Persisted decision only when it targets this exact candidate revision."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    decision: ContentDraftRevisionDecision
+    reviewed_by: str = Field(min_length=1)
 
 
 class ContentEditorialIntegrityScope(BaseModel):
@@ -600,6 +609,7 @@ class ContentProtectedContentUnit(BaseModel):
 
     unit_id: str = Field(min_length=1)
     section_id: str = Field(min_length=1)
+    section_heading: str = Field(min_length=1)
     claim_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     before_excerpt: str = Field(min_length=1)
@@ -611,6 +621,7 @@ class ContentRepresentationAlignment(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     section_id: str = Field(min_length=1)
+    section_heading: str = Field(min_length=1)
     source_body_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     rendered_html_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     normalized_source_text_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -639,6 +650,7 @@ class ContentEditorialIntegrityReport(BaseModel):
     baseline_revision: ContentEditorialIntegrityRevision
     direct_parent_revision: ContentEditorialIntegrityRevision | None = None
     child_revision: ContentEditorialIntegrityRevision
+    human_review: ContentEditorialIntegrityHumanReview | None = None
     observed_scope: ContentEditorialIntegrityScope
     structural_invariants: ContentEditorialStructuralInvariants
     protected_content_units: list[ContentProtectedContentUnit] = Field(default_factory=list)

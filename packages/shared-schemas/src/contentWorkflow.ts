@@ -2332,7 +2332,13 @@ export const ContentRevisionHtmlPackageResponseSchema = z.object({
 
 export const ContentEditorialIntegrityRevisionSchema = z.object({
   revision_id: z.string().min(1),
-  content_digest: z.string().regex(/^[0-9a-f]{64}$/)
+  content_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  revision_number: z.number().int().positive()
+});
+
+export const ContentEditorialIntegrityHumanReviewSchema = z.object({
+  decision: ContentDraftRevisionDecisionSchema,
+  reviewed_by: z.string().min(1)
 });
 
 export const ContentEditorialIntegrityScopeSchema = z.object({
@@ -2354,6 +2360,7 @@ export const ContentEditorialStructuralInvariantsSchema = z.object({
 export const ContentProtectedContentUnitSchema = z.object({
   unit_id: z.string().min(1),
   section_id: z.string().min(1),
+  section_heading: z.string().min(1),
   claim_ids: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()).default([]),
   before_excerpt: z.string().min(1),
@@ -2363,6 +2370,7 @@ export const ContentProtectedContentUnitSchema = z.object({
 
 export const ContentRepresentationAlignmentSchema = z.object({
   section_id: z.string().min(1),
+  section_heading: z.string().min(1),
   source_body_sha256: z.string().regex(/^[0-9a-f]{64}$/),
   rendered_html_sha256: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
   normalized_source_text_sha256: z.string().regex(/^[0-9a-f]{64}$/),
@@ -2383,13 +2391,14 @@ export const ContentEditorialIntegrityReportSchema = z.object({
   baseline_revision: ContentEditorialIntegrityRevisionSchema,
   direct_parent_revision: ContentEditorialIntegrityRevisionSchema.nullable(),
   child_revision: ContentEditorialIntegrityRevisionSchema,
+  human_review: ContentEditorialIntegrityHumanReviewSchema.nullable(),
   observed_scope: ContentEditorialIntegrityScopeSchema,
   structural_invariants: ContentEditorialStructuralInvariantsSchema,
   protected_content_units: z.array(ContentProtectedContentUnitSchema).default([]),
   representation_alignment: z.array(ContentRepresentationAlignmentSchema).default([]),
   lint_signals: z.array(ContentEditorialLintSignalSchema).default([]),
   human_readable_diff: z.string().min(1),
-  result: z.enum(["pass", "review_required", "invalid_representation", "unauthorized_scope_change"])
+  result: z.enum(["integrity_ok", "invalid_representation", "structural_change_observed"])
 });
 
 export const ContentDraftRevisionConflictSchema = z.object({

@@ -17,10 +17,12 @@ def register_content_editorial_integrity_route(router: APIRouter) -> None:
         revision_id: str,
     ) -> ContentEditorialIntegrityReport:
         try:
+            store = content_workflow_store()
             return build_content_editorial_integrity_report(
                 work_item_id=work_item_id,
                 revision_id=revision_id,
-                revisions=content_workflow_store().list_draft_revisions(work_item_id),
+                revisions=store.list_draft_revisions(work_item_id),
+                human_review=store.load_draft_revision_state(work_item_id).latest_review,
             )
         except ValueError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
