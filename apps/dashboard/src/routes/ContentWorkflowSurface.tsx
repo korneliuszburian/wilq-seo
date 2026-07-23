@@ -93,9 +93,13 @@ export function ContentWorkflowSurface() {
   const browseInventory = useRouterState({
     select: (state) => Reflect.get(state.location.search, "browse") === "1"
   });
-  const newPageOpen = useRouterState({
-    select: (state) => Reflect.get(state.location.search, "new_page") === "1"
+  const newPageId = useRouterState({
+    select: (state) => {
+      const value = Reflect.get(state.location.search, "new_page");
+      return typeof value === "string" && value ? value : null;
+    }
   });
+  const newPageOpen = Boolean(newPageId);
   const selectWorkItem = (workItemId: string) => {
     void navigate({
       to: "/content-workflow",
@@ -148,6 +152,7 @@ export function ContentWorkflowSurface() {
       reviewOpen={reviewOpen}
       browseInventory={browseInventory}
       newPageOpen={newPageOpen}
+      newPageId={newPageId}
       operatorLabel={operatorContext.data?.request_label ?? null}
       sourceRefresh={sourceRefresh}
       onSelectWorkItem={selectWorkItem}
@@ -161,6 +166,12 @@ export function ContentWorkflowSurface() {
         void navigate({
           to: "/content-workflow",
           search: (previous) => ({ ...contentWorkflowSearch(previous), browse: undefined, new_page: "1" })
+        });
+      }}
+      onNewPageBriefSaved={(briefId) => {
+        void navigate({
+          to: "/content-workflow",
+          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: undefined, new_page: briefId })
         });
       }}
       onCloseEntrySecondaryView={() => {
@@ -302,11 +313,13 @@ function ContentWorkflowRouteState({
   reviewOpen,
   browseInventory,
   newPageOpen,
+  newPageId,
   operatorLabel,
   sourceRefresh,
   onSelectWorkItem,
   onBrowseInventory,
   onOpenNewPage,
+  onNewPageBriefSaved,
   onCloseEntrySecondaryView,
   onOpenTextWorkspace,
   onOpenReview,
@@ -330,11 +343,13 @@ function ContentWorkflowRouteState({
   reviewOpen: boolean;
   browseInventory: boolean;
   newPageOpen: boolean;
+  newPageId: string | null;
   operatorLabel: string | null;
   sourceRefresh: ContentSourceRefreshControl;
   onSelectWorkItem: (workItemId: string) => void;
   onBrowseInventory: () => void;
   onOpenNewPage: () => void;
+  onNewPageBriefSaved: (briefId: string) => void;
   onCloseEntrySecondaryView: () => void;
   onOpenTextWorkspace: (workItemId: string) => void;
   onOpenReview: (workItemId: string) => void;
@@ -351,9 +366,11 @@ function ContentWorkflowRouteState({
         inventory={inventory.data ?? null}
         browseInventory={browseInventory}
         newPageOpen={newPageOpen}
+        newPageId={newPageId}
         onBrowseInventory={onBrowseInventory}
         onCloseSecondaryView={onCloseEntrySecondaryView}
         onOpenNewPage={onOpenNewPage}
+        onNewPageBriefSaved={onNewPageBriefSaved}
         onSelectWorkItem={onSelectWorkItem}
       />
     );

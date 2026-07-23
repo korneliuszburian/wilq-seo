@@ -38,9 +38,11 @@ function renderEntry(overrides: Partial<ComponentProps<typeof ContentWorkflowEnt
     inventory: null,
     browseInventory: false,
     newPageOpen: false,
+    newPageId: null,
     onBrowseInventory: vi.fn(),
     onCloseSecondaryView: vi.fn(),
     onOpenNewPage: vi.fn(),
+    onNewPageBriefSaved: vi.fn(),
     onSelectWorkItem: vi.fn(),
     ...overrides
   };

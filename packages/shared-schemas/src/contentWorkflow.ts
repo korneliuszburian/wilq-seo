@@ -529,6 +529,54 @@ export const ContentWorkflowEntryResponseSchema = z.object({
   browse_inventory_label: z.string().min(1)
 });
 
+export const ContentNewPageBriefInputSchema = z.object({
+  title: z.string().min(3).max(160),
+  purpose: z.string().min(8).max(800),
+  service: z.string().min(2).max(160),
+  audience: z.string().min(3).max(300),
+  search_intent: z.string().min(3).max(300),
+  proposed_ia_location: z.string().min(3).max(300)
+});
+
+export const ContentNewPageBriefSchema = ContentNewPageBriefInputSchema.extend({
+  brief_id: z.string().min(1),
+  brief_digest: z.string().length(64),
+  created_at: z.string(),
+  work_kind: z.literal("new_page")
+});
+
+export const ContentNewPageOverlapCandidateSchema = z.object({
+  title: z.string().min(1),
+  url: z.string().url(),
+  match_kind: z.enum(["same_title", "shared_intent", "shared_service"]),
+  evidence_ids: z.array(z.string()).default([])
+});
+
+export const ContentNewPageOverlapGuardSchema = z.object({
+  disposition: z.enum([
+    "no_conflict",
+    "differentiate",
+    "reuse",
+    "merge",
+    "human_decision_required"
+  ]),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  caveat: z.string().min(1),
+  evidence_ids: z.array(z.string()).default([]),
+  candidates: z.array(ContentNewPageOverlapCandidateSchema).default([])
+});
+
+export const ContentNewPageBriefWorkspaceSchema = z.object({
+  response_type: z.literal("content_new_page_brief_workspace"),
+  contract_version: z.literal("content_new_page_brief_workspace_v1"),
+  brief: ContentNewPageBriefSchema,
+  overlap_guard: ContentNewPageOverlapGuardSchema,
+  review_status: z.literal("blocked"),
+  review_reason: z.string().min(1),
+  next_action_label: z.string().min(1)
+});
+
 export const ContentInventoryRecordSchema = z.object({
   id: z.string(),
   url: z.string(),
@@ -3682,6 +3730,8 @@ export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueRe
 export type ContentDecisionContext = z.infer<typeof ContentDecisionContextSchema>;
 export type ContentDocumentWorkspace = z.infer<typeof ContentDocumentWorkspaceSchema>;
 export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
+export type ContentNewPageBriefInput = z.input<typeof ContentNewPageBriefInputSchema>;
+export type ContentNewPageBriefWorkspace = z.infer<typeof ContentNewPageBriefWorkspaceSchema>;
 export type ContentInventoryCatalogItem = z.infer<typeof ContentInventoryCatalogItemSchema>;
 export type ContentInventoryCatalogResponse = z.infer<typeof ContentInventoryCatalogResponseSchema>;
 export type ContentInventoryMaterialResponse = z.infer<typeof ContentInventoryMaterialResponseSchema>;

@@ -120,6 +120,13 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_new_page_briefs (
+      brief_id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_draft_revision_reviews (
       decision_id TEXT PRIMARY KEY,
       work_item_id TEXT NOT NULL,

@@ -1,9 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
 
 import {
   getContentWorkflowEntry,
+  createContentNewPageBrief,
+  getContentNewPageBriefWorkspace,
   type ContentInventoryCatalogResponse,
+  type ContentNewPageBriefInput,
+  type ContentNewPageBriefWorkspace,
   type ContentWorkflowEntryResponse
 } from "../lib/api";
 
@@ -12,22 +16,26 @@ export function ContentWorkflowEntryPanel({
   inventory,
   browseInventory,
   newPageOpen,
+  newPageId,
   onBrowseInventory,
   onCloseSecondaryView,
   onOpenNewPage,
+  onNewPageBriefSaved,
   onSelectWorkItem
 }: {
   entry: ContentWorkflowEntryResponse;
   inventory: ContentInventoryCatalogResponse | null;
   browseInventory: boolean;
   newPageOpen: boolean;
+  newPageId: string | null;
   onBrowseInventory: () => void;
   onCloseSecondaryView: () => void;
   onOpenNewPage: () => void;
+  onNewPageBriefSaved: (briefId: string) => void;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
   if (newPageOpen) {
-    return <ContentWorkflowNewPageStart onReturn={onCloseSecondaryView} />;
+    return <ContentWorkflowNewPageBrief briefId={newPageId === "1" ? null : newPageId} onReturn={onCloseSecondaryView} onSaved={onNewPageBriefSaved} />;
   }
   if (browseInventory) {
     return <ContentWorkflowInventoryBrowse inventory={inventory} onReturn={onCloseSecondaryView} onSelectWorkItem={onSelectWorkItem} />;
@@ -163,8 +171,58 @@ function EntrySearchResults({ loading, error, entry, onSelectWorkItem }: { loadi
   </div>;
 }
 
-function ContentWorkflowNewPageStart({ onReturn }: { onReturn: () => void }) {
-  return <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#e7f8ee,_transparent_32%),linear-gradient(180deg,_#fbfdff_0%,_#ffffff_58%)] px-4 py-5 lg:px-7 lg:py-8" data-testid="content-workflow-new-page-start"><div className="mx-auto max-w-4xl"><button type="button" className="text-sm font-semibold text-action" onClick={onReturn}>← Wróć do wyboru pracy</button><section className="mt-6 rounded-2xl border border-emerald-200 bg-white p-6 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] lg:p-9"><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-700">Nowa strona</p><h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink">Zaczynamy od briefu, nie od adresu</h1><p className="mt-4 max-w-2xl text-sm leading-7 text-slate-700">W kolejnym etapie określisz cel strony, usługę, odbiorcę, intencję i jej miejsce w serwisie. Zanim dokument trafi do review, WILQ sprawdzi też pokrycie istniejących treści.</p><div className="mt-7 grid gap-3 sm:grid-cols-2"><InfoTile label="Potrzebne w briefie" value="cel, usługa, odbiorca, intencja i miejsce w serwisie" /><InfoTile label="Nie jest potrzebne teraz" value="stary URL, docelowy post WordPressa ani układ ACF" /></div><p className="mt-7 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950">Brief nowej strony zostanie zapisany w następnym etapie. Samo wejście tutaj niczego nie tworzy ani nie publikuje.</p></section></div></main>;
+function ContentWorkflowNewPageBrief({ briefId, onReturn, onSaved }: { briefId: string | null; onReturn: () => void; onSaved: (briefId: string) => void }) {
+  const savedBrief = useQuery({
+    queryKey: ["content-workflow", "new-page-brief", briefId],
+    queryFn: () => getContentNewPageBriefWorkspace(briefId ?? ""),
+    enabled: Boolean(briefId),
+    staleTime: 30_000
+  });
+  const [form, setForm] = useState<ContentNewPageBriefInput>({
+    title: "", purpose: "", service: "", audience: "", search_intent: "", proposed_ia_location: ""
+  });
+  const saveBrief = useMutation({
+    mutationFn: createContentNewPageBrief,
+    onSuccess: (workspace) => onSaved(workspace.brief.brief_id)
+  });
+  const workspace = savedBrief.data;
+  if (briefId && savedBrief.isLoading) return <NewPageShell onReturn={onReturn}><p className="text-sm text-slate-600">Wczytuję zapisany brief…</p></NewPageShell>;
+  if (briefId && (savedBrief.error || !workspace)) return <NewPageShell onReturn={onReturn}><p className="rounded-xl border border-wait/30 bg-white px-4 py-3 text-sm text-ink">Nie udało się odczytać briefu. Wróć do wyboru i spróbuj ponownie.</p></NewPageShell>;
+  if (workspace) return <NewPageSaved workspace={workspace} onReturn={onReturn} />;
+  return <NewPageShell onReturn={onReturn}>
+    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-700">Nowa strona</p>
+    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink">Zacznij od briefu nowej strony</h1>
+    <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-700">Nie potrzebujesz starego adresu ani miejsca w WordPressie. Opisz planowaną stronę, a WILQ sprawdzi jej pokrycie w aktualnym serwisie.</p>
+    <form className="mt-7 grid gap-4" onSubmit={(event) => { event.preventDefault(); saveBrief.mutate(form); }}>
+      <BriefField label="Roboczy tytuł strony" value={form.title} onChange={(title) => setForm({ ...form, title })} placeholder="np. Audyt środowiskowy dla inwestycji" />
+      <BriefField label="Cel strony" value={form.purpose} onChange={(purpose) => setForm({ ...form, purpose })} placeholder="Co ta strona ma pomóc odbiorcy zrozumieć lub zrobić?" multiline />
+      <div className="grid gap-4 md:grid-cols-2"><BriefField label="Usługa" value={form.service} onChange={(service) => setForm({ ...form, service })} placeholder="np. Dokumentacja środowiskowa" /><BriefField label="Odbiorca" value={form.audience} onChange={(audience) => setForm({ ...form, audience })} placeholder="np. Inwestor planujący przedsięwzięcie" /></div>
+      <div className="grid gap-4 md:grid-cols-2"><BriefField label="Intencja wyszukiwania" value={form.search_intent} onChange={(search_intent) => setForm({ ...form, search_intent })} placeholder="Jakiego problemu szuka odbiorca?" /><BriefField label="Miejsce w serwisie" value={form.proposed_ia_location} onChange={(proposed_ia_location) => setForm({ ...form, proposed_ia_location })} placeholder="np. Usługi → Dokumentacja środowiskowa" /></div>
+      {saveBrief.error ? <p className="text-sm text-wait">Nie udało się zapisać briefu. Uzupełnij wymagane pola i spróbuj ponownie.</p> : null}
+      <div className="flex flex-wrap items-center gap-3"><button type="submit" disabled={saveBrief.isPending} className="rounded-xl bg-action px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{saveBrief.isPending ? "Zapisuję brief…" : "Zapisz brief i sprawdź pokrycie"}</button><p className="text-xs leading-5 text-slate-600">To nie tworzy dokumentu, rewizji ani niczego w WordPressie.</p></div>
+    </form>
+  </NewPageShell>;
+}
+
+function NewPageSaved({ workspace, onReturn }: { workspace: ContentNewPageBriefWorkspace; onReturn: () => void }) {
+  const guard = workspace.overlap_guard;
+  return <NewPageShell onReturn={onReturn}>
+    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-700">Brief nowej strony</p>
+    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink">{workspace.brief.title}</h1>
+    <p className="mt-3 text-sm leading-7 text-slate-700">Brief jest zapisany. To nadal plan nowej strony, nie dokument do publikacji ani układ WordPressa.</p>
+    <dl className="mt-6 grid gap-3 sm:grid-cols-2"><InfoTile label="Cel" value={workspace.brief.purpose} /><InfoTile label="Usługa" value={workspace.brief.service} /><InfoTile label="Odbiorca" value={workspace.brief.audience} /><InfoTile label="Miejsce w serwisie" value={workspace.brief.proposed_ia_location} /></dl>
+    <section className="mt-7 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800">Pokrycie istniejących treści</p><h2 className="mt-2 text-xl font-semibold text-ink">{guard.label}</h2><p className="mt-2 text-sm leading-6 text-slate-700">{guard.reason}</p>{guard.candidates.length ? <ul className="mt-4 space-y-2">{guard.candidates.map((candidate) => <li key={`${candidate.url}-${candidate.match_kind}`} className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm"><span className="font-semibold text-ink">{candidate.title}</span><span className="block text-xs text-slate-600">{candidate.url}</span></li>)}</ul> : null}<p className="mt-4 text-xs leading-5 text-slate-600">{guard.caveat}</p></section>
+    <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Co dalej?</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-slate-700">{workspace.next_action_label}</p></section>
+  </NewPageShell>;
+}
+
+function NewPageShell({ onReturn, children }: { onReturn: () => void; children: ReactNode }) {
+  return <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#e7f8ee,_transparent_32%),linear-gradient(180deg,_#fbfdff_0%,_#ffffff_58%)] px-4 py-5 lg:px-7 lg:py-8" data-testid="content-workflow-new-page-brief"><div className="mx-auto max-w-4xl"><button type="button" className="text-sm font-semibold text-action" onClick={onReturn}>← Wróć do wyboru pracy</button><section className="mt-6 rounded-2xl border border-emerald-200 bg-white p-6 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] lg:p-9">{children}</section></div></main>;
+}
+
+function BriefField({ label, value, onChange, placeholder, multiline = false }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; multiline?: boolean }) {
+  const className = "mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-ink outline-none focus:border-action focus:bg-white focus:ring-4 focus:ring-action/10";
+  return <label className="block text-sm font-semibold text-ink"><span>{label}</span>{multiline ? <textarea required value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} rows={3} className={className} /> : <input required value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className={className} />}</label>;
 }
 
 function ContentWorkflowInventoryBrowse({ inventory, onReturn, onSelectWorkItem }: { inventory: ContentInventoryCatalogResponse | null; onReturn: () => void; onSelectWorkItem: (workItemId: string) => void }) {

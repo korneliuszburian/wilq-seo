@@ -23,6 +23,8 @@ import {
   ContentDecisionContextSchema,
   ContentDocumentWorkspaceSchema,
   ContentWorkflowEntryResponseSchema,
+  ContentNewPageBriefInputSchema,
+  ContentNewPageBriefWorkspaceSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionReviewResponseSchema,
@@ -123,6 +125,8 @@ import {
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
   type ContentWorkflowEntryResponse,
+  type ContentNewPageBriefInput,
+  type ContentNewPageBriefWorkspace,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
   type ContentDraftRevisionConflict,
@@ -506,6 +510,25 @@ export function getContentWorkItemDocumentWorkspace(
 export function getContentWorkflowEntry(search?: string): Promise<ContentWorkflowEntryResponse> {
   const query = search?.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";
   return apiGet(`/api/content/workflow-entry${query}`, ContentWorkflowEntryResponseSchema);
+}
+
+export function createContentNewPageBrief(
+  request: ContentNewPageBriefInput
+): Promise<ContentNewPageBriefWorkspace> {
+  return apiPost(
+    "/api/content/new-page-briefs",
+    ContentNewPageBriefWorkspaceSchema,
+    ContentNewPageBriefInputSchema.parse(request)
+  );
+}
+
+export function getContentNewPageBriefWorkspace(
+  briefId: string
+): Promise<ContentNewPageBriefWorkspace> {
+  return apiGet(
+    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}`,
+    ContentNewPageBriefWorkspaceSchema
+  );
 }
 
 export function getContentInventoryCatalog(): Promise<ContentInventoryCatalogResponse> {
@@ -979,6 +1002,8 @@ export type {
   ContentDecisionContext,
   ContentDocumentWorkspace,
   ContentWorkflowEntryResponse,
+  ContentNewPageBriefInput,
+  ContentNewPageBriefWorkspace,
   ContentCodexSectionProposalRequest,
   ContentCodexSectionProposalResponse,
   ContentInitialDraftRequest,

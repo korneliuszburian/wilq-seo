@@ -45,13 +45,24 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemLearningProposalResponse,
 )
 from wilq.content.workflow.decision_context import ContentDecisionContext
+from wilq.content.workflow.document_workspace import ContentDocumentWorkspace
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.new_page import ContentNewPageBriefWorkspace
 from wilq.content.workflow.planning import ContentPlanningReviewResponse
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 from wilq.schemas import MetricFact
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
+    ("POST", "/api/content/new-page-briefs"): ContentNewPageBriefWorkspace,
+    (
+        "GET",
+        "/api/content/new-page-briefs/{brief_id}",
+    ): ContentNewPageBriefWorkspace,
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/document-workspace",
+    ): ContentDocumentWorkspace,
     ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
     ("GET", "/api/content/wordpress/authoring-profile"): WordPressAuthoringProfile,
     (
@@ -308,6 +319,7 @@ def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
                 "/api/content/work-items",
                 "/api/content/knowledge-cards",
                 "/api/content/service-profile",
+                "/api/content/new-page-briefs",
                 "/api/content/wordpress",
             )
         ):
