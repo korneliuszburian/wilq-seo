@@ -21,6 +21,7 @@ import {
   ContentSemanticReviewResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentDecisionContextSchema,
+  ContentDocumentWorkspaceSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionReviewResponseSchema,
@@ -119,6 +120,7 @@ import {
   type ContentSemanticReviewResponse,
   type ContentDiagnosticsResponse,
   type ContentDecisionContext,
+  type ContentDocumentWorkspace,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
   type ContentDraftRevisionConflict,
@@ -487,6 +489,15 @@ export function getContentWorkItemDecisionContext(
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/decision-context`,
     ContentDecisionContextSchema
+  );
+}
+
+export function getContentWorkItemDocumentWorkspace(
+  workItemId: string
+): Promise<ContentDocumentWorkspace> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/document-workspace`,
+    ContentDocumentWorkspaceSchema
   );
 }
 
@@ -959,6 +970,7 @@ export type {
   CommandCenterResponse,
   ContentDiagnosticsResponse,
   ContentDecisionContext,
+  ContentDocumentWorkspace,
   ContentCodexSectionProposalRequest,
   ContentCodexSectionProposalResponse,
   ContentInitialDraftRequest,

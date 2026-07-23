@@ -12,6 +12,7 @@ import {
   getContentWorkItemEditorialIntegrity,
   getContentWorkItemRevisionHtmlPackage,
   getContentWorkItemDecisionContext,
+  getContentWorkItemDocumentWorkspace,
   getContentInventoryCatalog,
   getContentOperatorContext,
   getContentWorkItemQueue,
@@ -47,6 +48,7 @@ import {
   type ContentInitialDraftResponse,
   type ContentOpportunityEnrichmentResponse,
   type ContentDecisionContext,
+  type ContentDocumentWorkspace,
   type ContentInventoryCatalogResponse,
   type ContentPlanningProposalResponse,
   type ContentSemanticReviewResponse,
@@ -98,6 +100,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemEditorialIntegrity: vi.fn(),
     getContentWorkItemRevisionHtmlPackage: vi.fn(),
     getContentWorkItemDecisionContext: vi.fn(),
+    getContentWorkItemDocumentWorkspace: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
@@ -141,6 +144,7 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
     vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
     vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(contentDecisionContext());
+    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(contentDocumentWorkspace());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue(knowledgeReadiness());
@@ -313,6 +317,9 @@ describe("ContentWorkflowSurface", () => {
     fireEvent.click(screen.getByRole("button", { name: "Otwórz warsztat strony" }));
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(screen.getByTestId("content-source-snapshot")).toHaveTextContent("Aktualny materiał BDO");
+    expect(screen.getByText("Jak prowadzić ewidencję odpadów?")).toBeInTheDocument();
+    expect(getContentWorkItemDocumentWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
@@ -3147,6 +3154,48 @@ function contentDecisionContext(): ContentDecisionContext {
       summary: "WILQ nie aktualizuje istniejącej strony bez review."
     }],
     legacy_aliases: [{ kind: "requested_work_item", value: "content_work_item_bdo" }]
+  };
+}
+
+function contentDocumentWorkspace(): ContentDocumentWorkspace {
+  const revision = savedFullDraftRevision();
+  return {
+    response_type: "content_document_workspace",
+    contract_version: "content_document_workspace_v1",
+    work_item_id: revision.work_item_id,
+    work_kind: "refresh_existing",
+    service_label: "BDO i sprawozdawczość środowiskowa",
+    source_snapshot: {
+      status: "available",
+      title: "Aktualny materiał BDO",
+      url: "https://ekologus.pl/bdo/",
+      extraction_method: "wordpress_rest.content",
+      lead: "Aktualna strona wyjaśnia podstawowe obowiązki BDO.",
+      content_excerpt: "Aktualny fragment materiału źródłowego BDO.",
+      ordered_sections: [
+        { heading: "Kto powinien sprawdzić obowiązek wpisu?" },
+        { heading: "Jak prowadzić ewidencję odpadów?" }
+      ],
+      faq_status: "not_observed",
+      cta_status: "not_observed",
+      reason: "WILQ odczytał aktualny publiczny materiał tej strony.",
+      caveats: [],
+      evidence_ids: ["ev_wp_bdo"]
+    },
+    canonical_document: {
+      status: "unreviewed",
+      revision_id: revision.revision_id,
+      content_digest: revision.content_digest,
+      review_state: "unreviewed",
+      label: "Nowa wersja czeka na review",
+      reason: "Istnieje dokładna rewizja dokumentu, ale nie ma jeszcze decyzji człowieka."
+    },
+    next_action: {
+      kind: "open_review",
+      label: "Przejdź do review",
+      reason: "Dokument istnieje i czeka na decyzję człowieka."
+    },
+    secondary_disclosures: []
   };
 }
 

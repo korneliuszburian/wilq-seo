@@ -411,6 +411,52 @@ export const ContentDecisionContextSchema = z.object({
   legacy_aliases: z.array(ContentDecisionContextAliasSchema).default([])
 });
 
+export const ContentDocumentWorkspaceSourceSectionSchema = z.object({
+  heading: z.string().min(1)
+});
+
+export const ContentDocumentWorkspaceSourceSnapshotSchema = z.object({
+  status: z.enum(["available", "partial", "unavailable"]),
+  title: z.string().nullable().optional(),
+  url: z.string().nullable().optional(),
+  extraction_method: z.string().nullable().optional(),
+  lead: z.string().nullable().optional(),
+  content_excerpt: z.string().nullable().optional(),
+  ordered_sections: z.array(ContentDocumentWorkspaceSourceSectionSchema).default([]),
+  faq_status: z.enum(["observed", "not_observed", "unavailable"]).default("not_observed"),
+  cta_status: z.enum(["observed", "not_observed", "unavailable"]).default("not_observed"),
+  reason: z.string(),
+  caveats: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([])
+});
+
+export const ContentDocumentWorkspaceDocumentSchema = z.object({
+  status: z.enum(["not_created", "unreviewed", "needs_changes", "approved", "rejected", "deferred"]),
+  revision_id: z.string().nullable().optional(),
+  content_digest: z.string().nullable().optional(),
+  review_state: z.enum(["unreviewed", "needs_changes", "approved", "rejected", "deferred"]).default("unreviewed"),
+  label: z.string(),
+  reason: z.string()
+});
+
+export const ContentDocumentWorkspaceNextActionSchema = z.object({
+  kind: z.enum(["open_review", "prepare_document", "none"]),
+  label: z.string(),
+  reason: z.string()
+});
+
+export const ContentDocumentWorkspaceSchema = z.object({
+  response_type: z.literal("content_document_workspace").default("content_document_workspace"),
+  contract_version: z.literal("content_document_workspace_v1").default("content_document_workspace_v1"),
+  work_item_id: z.string(),
+  work_kind: z.literal("refresh_existing"),
+  service_label: z.string().nullable().optional(),
+  source_snapshot: ContentDocumentWorkspaceSourceSnapshotSchema,
+  canonical_document: ContentDocumentWorkspaceDocumentSchema,
+  next_action: ContentDocumentWorkspaceNextActionSchema,
+  secondary_disclosures: z.array(z.string()).default([])
+});
+
 export const ContentInventoryRecordSchema = z.object({
   id: z.string(),
   url: z.string(),
@@ -3562,6 +3608,7 @@ export type ContentWorkItemQueueCandidate = z.infer<
 >;
 export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueResponseSchema>;
 export type ContentDecisionContext = z.infer<typeof ContentDecisionContextSchema>;
+export type ContentDocumentWorkspace = z.infer<typeof ContentDocumentWorkspaceSchema>;
 export type ContentInventoryCatalogItem = z.infer<typeof ContentInventoryCatalogItemSchema>;
 export type ContentInventoryCatalogResponse = z.infer<typeof ContentInventoryCatalogResponseSchema>;
 export type ContentInventoryMaterialResponse = z.infer<typeof ContentInventoryMaterialResponseSchema>;

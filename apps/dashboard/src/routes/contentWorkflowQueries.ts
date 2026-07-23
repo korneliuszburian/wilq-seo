@@ -5,6 +5,7 @@ import {
   getContentWordPressDraftActivationPacket,
   getContentWordPressDraftWriteReadiness,
   getContentWorkItemDecisionContext,
+  getContentWorkItemDocumentWorkspace,
   getContentWorkItemInitialDraft,
   getContentWorkItemEnrichment,
   getContentInventoryCatalog,
@@ -17,6 +18,7 @@ import {
   type ContentWorkItemQueueCandidate,
   type ContentWorkItemQueueResponse,
   type ContentDecisionContext,
+  type ContentDocumentWorkspace,
   type ContentInitialDraftResponse,
   type ContentInventoryCatalogResponse,
   type ContentServiceProfileResponse,
@@ -34,6 +36,7 @@ const READ_ONLY_WORKFLOW_STALE_TIME_MS = 30_000;
 
 export type ContentWorkItemQueueQuery = UseQueryResult<ContentWorkItemQueueResponse, Error>;
 export type ContentDecisionContextQuery = UseQueryResult<ContentDecisionContext, Error>;
+export type ContentDocumentWorkspaceQuery = UseQueryResult<ContentDocumentWorkspace, Error>;
 export type ContentInitialDraftQuery = UseQueryResult<ContentInitialDraftResponse, Error>;
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
 export type ContentServiceProfileQuery = UseQueryResult<ContentServiceProfileResponse, Error>;
@@ -135,7 +138,17 @@ export function useContentWorkflowQueries(
     queryKey: contentDecisionContextQueryKey(activeWorkItemId),
     queryFn: () => getContentWorkItemDecisionContext(activeWorkItemId ?? ""),
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    enabled: Boolean(activeWorkItemId && selectedCandidate?.source_public_url)
+    enabled: Boolean(
+      activeWorkItemId &&
+      selectedCandidate?.source_public_url &&
+      (!textWorkspaceOpen || reviewOpen)
+    )
+  });
+  const documentWorkspace = useQuery({
+    queryKey: ["content-workflow", "work-item", activeWorkItemId, "document-workspace"],
+    queryFn: () => getContentWorkItemDocumentWorkspace(activeWorkItemId ?? ""),
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    enabled: Boolean(activeWorkItemId && textWorkspaceOpen)
   });
   const workflow = useQuery({
     queryKey: ["content-workflow", "work-item", activeWorkItemId],
@@ -173,7 +186,7 @@ export function useContentWorkflowQueries(
     queryKey: ["content-workflow", "work-item", activeWorkItemId, "initial-draft"],
     queryFn: () => getContentWorkItemInitialDraft(activeWorkItemId ?? ""),
     staleTime: 10_000,
-    enabled: Boolean(activeWorkItemId && textWorkspaceOpen)
+    enabled: Boolean(activeWorkItemId && reviewOpen)
   });
 
   return {
@@ -182,6 +195,7 @@ export function useContentWorkflowQueries(
     draftActivationPacket,
     draftWriteReadiness,
     decisionContext,
+    documentWorkspace,
     enrichment,
     inventory,
     initialDraft,
