@@ -120,6 +120,22 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(screen.getByText("Podstawa dopasowania: wspólna intencja wyszukiwania.")).toBeInTheDocument();
     expect(screen.getByText("Dowody: ev_wp_audit")).toBeInTheDocument();
   });
+
+  it("does not describe an unevidenced human-decision guard as no direct coverage", async () => {
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({
+      disposition: "human_decision_required",
+      label: "Nie można jeszcze ocenić pokrycia serwisu",
+      candidates: [],
+      evidence_ids: []
+    }));
+
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_missing_evidence" });
+
+    expect(await screen.findByText("Nie można jeszcze ocenić pokrycia serwisu")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Sprawdzone strony i dowody"));
+    expect(screen.getByText("Nie ma potwierdzonych danych pozwalających ocenić pokrycie.")).toBeInTheDocument();
+    expect(screen.queryByText("Nie znaleziono strony z bezpośrednim pokryciem. Poniżej są dowody z katalogu sprawdzonego dla tego briefu.")).not.toBeInTheDocument();
+  });
 });
 
 function savedBriefWorkspace(overlap: Partial<ContentNewPageBriefWorkspace["overlap_guard"]> = {}): ContentNewPageBriefWorkspace {
