@@ -23,6 +23,7 @@ import {
   ContentDecisionContextSchema,
   ContentDocumentWorkspaceSchema,
   ContentTargetDiscoverySchema,
+  ContentTargetMappingPreviewSchema,
   ContentWorkflowEntryResponseSchema,
   ContentNewPageBriefInputSchema,
   ContentNewPageBriefWorkspaceSchema,
@@ -126,6 +127,7 @@ import {
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
   type ContentTargetDiscovery,
+  type ContentTargetMappingPreview,
   type ContentWorkflowEntryResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
@@ -515,6 +517,16 @@ export function getContentWorkItemTargetDiscovery(
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/target-discovery`,
     ContentTargetDiscoverySchema
+  );
+}
+
+export function getContentRevisionTargetMapping(
+  workItemId: string,
+  revisionId: string
+): Promise<ContentTargetMappingPreview> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/target-mapping`,
+    ContentTargetMappingPreviewSchema
   );
 }
 
@@ -1013,6 +1025,7 @@ export type {
   ContentDecisionContext,
   ContentDocumentWorkspace,
   ContentTargetDiscovery,
+  ContentTargetMappingPreview,
   ContentWorkflowEntryResponse,
   ContentNewPageBriefInput,
   ContentNewPageBriefWorkspace,

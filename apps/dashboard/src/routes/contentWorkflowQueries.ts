@@ -7,6 +7,7 @@ import {
   getContentWorkItemDecisionContext,
   getContentWorkItemDocumentWorkspace,
   getContentWorkItemTargetDiscovery,
+  getContentRevisionTargetMapping,
   getContentWorkItemInitialDraft,
   getContentWorkItemEnrichment,
   getContentWorkflowEntry,
@@ -22,6 +23,7 @@ import {
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
   type ContentTargetDiscovery,
+  type ContentTargetMappingPreview,
   type ContentWorkflowEntryResponse,
   type ContentInitialDraftResponse,
   type ContentInventoryCatalogResponse,
@@ -42,6 +44,7 @@ export type ContentWorkItemQueueQuery = UseQueryResult<ContentWorkItemQueueRespo
 export type ContentDecisionContextQuery = UseQueryResult<ContentDecisionContext, Error>;
 export type ContentDocumentWorkspaceQuery = UseQueryResult<ContentDocumentWorkspace, Error>;
 export type ContentTargetDiscoveryQuery = UseQueryResult<ContentTargetDiscovery, Error>;
+export type ContentTargetMappingPreviewQuery = UseQueryResult<ContentTargetMappingPreview, Error>;
 export type ContentWorkflowEntryQuery = UseQueryResult<ContentWorkflowEntryResponse, Error>;
 export type ContentInitialDraftQuery = UseQueryResult<ContentInitialDraftResponse, Error>;
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
@@ -80,6 +83,26 @@ export function useContentTargetDiscovery(
     queryFn: () => getContentWorkItemTargetDiscovery(workItemId),
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     enabled
+  });
+}
+
+export function useContentRevisionTargetMapping(
+  workItemId: string,
+  revisionId: string | null,
+  enabled: boolean
+): ContentTargetMappingPreviewQuery {
+  return useQuery({
+    queryKey: [
+      "content-workflow",
+      "work-item",
+      workItemId,
+      "draft-revisions",
+      revisionId,
+      "target-mapping"
+    ],
+    queryFn: () => getContentRevisionTargetMapping(workItemId, revisionId ?? ""),
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    enabled: Boolean(enabled && revisionId)
   });
 }
 

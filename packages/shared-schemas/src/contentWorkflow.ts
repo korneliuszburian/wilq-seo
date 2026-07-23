@@ -609,7 +609,7 @@ export const ContentTargetObservationEvidenceSchema = z.object({
   url: z.string().url(),
   post_status: z.string().min(1),
   modified: z.string(),
-  observed_at: z.string().datetime()
+  observed_at: z.string().datetime({ offset: true })
 });
 
 export const ContentTargetDiscoveryCandidateSchema = z.object({
@@ -643,6 +643,52 @@ export const ContentTargetDiscoverySchema = z.object({
   target: ContentTargetDiscoveryTargetSchema.nullable().optional(),
   candidates: z.array(ContentTargetDiscoveryCandidateSchema).default([]),
   evidence_ids: z.array(z.string()).default([]),
+  caveats: z.array(z.string()).default([])
+});
+
+export const ContentTargetMappingRevisionSchema = z.object({
+  revision_id: z.string().min(1),
+  content_digest: z.string().regex(/^[0-9a-f]{64}$/)
+});
+
+export const ContentTargetMappingTargetSchema = z.object({
+  target_contract: ContentTargetContractSchema,
+  target_contract_digest: z.string().length(64),
+  observation_evidence: ContentTargetObservationEvidenceSchema
+});
+
+export const ContentTargetMappingComponentSchema = z.object({
+  component_id: z.string().min(1),
+  kind: z.enum(["document_title", "page_assets", "rich_text", "faq", "cta", "internal_link"]),
+  label: z.string().min(1),
+  status: z.enum(["mapped", "human_only", "blocked"]),
+  reason: z.string().min(1),
+  target_root_field: z.string().nullable().optional(),
+  available_layouts: z.array(z.string()).default([])
+});
+
+export const ContentTargetMappingBlockerSchema = z.object({
+  code: z.enum([
+    "revision_not_approved",
+    "target_unavailable",
+    "target_ambiguous",
+    "authoring_surface_unknown"
+  ]),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  next_step: z.string().min(1)
+});
+
+export const ContentTargetMappingPreviewSchema = z.object({
+  response_type: z.literal("content_target_mapping_preview"),
+  contract_version: z.literal("content_target_mapping_preview_v1"),
+  work_item_id: z.string().min(1),
+  revision: ContentTargetMappingRevisionSchema,
+  status: z.enum(["ready_for_human_mapping", "blocked"]),
+  target: ContentTargetMappingTargetSchema.nullable().optional(),
+  binding_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  components: z.array(ContentTargetMappingComponentSchema).default([]),
+  blockers: z.array(ContentTargetMappingBlockerSchema).default([]),
   caveats: z.array(z.string()).default([])
 });
 
@@ -3799,6 +3845,7 @@ export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueRe
 export type ContentDecisionContext = z.infer<typeof ContentDecisionContextSchema>;
 export type ContentDocumentWorkspace = z.infer<typeof ContentDocumentWorkspaceSchema>;
 export type ContentTargetDiscovery = z.infer<typeof ContentTargetDiscoverySchema>;
+export type ContentTargetMappingPreview = z.infer<typeof ContentTargetMappingPreviewSchema>;
 export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
 export type ContentNewPageBriefInput = z.input<typeof ContentNewPageBriefInputSchema>;
 export type ContentNewPageBriefWorkspace = z.infer<typeof ContentNewPageBriefWorkspaceSchema>;

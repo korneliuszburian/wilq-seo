@@ -36,6 +36,7 @@ import {
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
   ContentTargetDiscoverySchema,
+  ContentTargetMappingPreviewSchema,
   ContentSemanticReviewRequestSchema,
   ContentSemanticReviewResponseSchema,
   ContentKnowledgeConstraintTypeSchema,
@@ -1519,12 +1520,65 @@ describe("ContentTargetDiscoverySchema", () => {
           url: "https://ekologus.dev.proudsite.pl/bdo/",
           post_status: "publish",
           modified: "2026-07-24T10:00:00",
-          observed_at: "2026-07-24T10:00:01Z"
+          observed_at: "2026-07-24T10:00:01+00:00"
         }
       },
       candidates: [],
       evidence_ids: ["ev_wordpress_target_observation_example"],
       caveats: ["Odczyt nie daje prawa do zapisu."]
+    }).success).toBe(true);
+  });
+});
+
+describe("ContentTargetMappingPreviewSchema", () => {
+  it("keeps an exact read-only revision and target binding public", () => {
+    expect(ContentTargetMappingPreviewSchema.safeParse({
+      response_type: "content_target_mapping_preview",
+      contract_version: "content_target_mapping_preview_v1",
+      work_item_id: "content_work_item_bdo",
+      revision: { revision_id: "revision_bdo_11", content_digest: "a".repeat(64) },
+      status: "ready_for_human_mapping",
+      target: {
+        target_contract: {
+          environment: "dev",
+          object_id: "1353",
+          url: "https://ekologus.dev.proudsite.pl/bdo/",
+          post_type: "post",
+          post_status: "publish",
+          modified: "2026-07-24T10:00:00",
+          template: null,
+          authority: "observation_only",
+          write_authorized: false,
+          authoring_surface: {
+            kind: "acf_flexible_content",
+            root_field: "content_sections",
+            layouts: [{ name: "text_section", fields: ["title", "body"] }]
+          }
+        },
+        target_contract_digest: "b".repeat(64),
+        observation_evidence: {
+          evidence_id: "ev_wordpress_target_observation_example",
+          connector_id: "wordpress_ekologus",
+          object_id: "1353",
+          post_type: "post",
+          url: "https://ekologus.dev.proudsite.pl/bdo/",
+          post_status: "publish",
+          modified: "2026-07-24T10:00:00",
+          observed_at: "2026-07-24T10:00:01+00:00"
+        }
+      },
+      binding_digest: "c".repeat(64),
+      components: [{
+        component_id: "section:section_bdo",
+        kind: "rich_text",
+        label: "Obowiązki BDO",
+        status: "human_only",
+        reason: "Brak zatwierdzonego przypisania.",
+        target_root_field: "content_sections",
+        available_layouts: ["text_section"]
+      }],
+      blockers: [],
+      caveats: ["To nie jest zapis do WordPressa."]
     }).success).toBe(true);
   });
 });

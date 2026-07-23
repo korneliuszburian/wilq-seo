@@ -2,9 +2,13 @@ import { useState } from "react";
 
 import {
   type ContentDocumentWorkspace,
-  type ContentTargetDiscovery
+  type ContentTargetDiscovery,
+  type ContentTargetMappingPreview
 } from "../lib/api";
-import { useContentTargetDiscovery } from "./contentWorkflowQueries";
+import {
+  useContentRevisionTargetMapping,
+  useContentTargetDiscovery
+} from "./contentWorkflowQueries";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
 type View = "source" | "document" | "comparison";
@@ -18,7 +22,13 @@ export function ContentDocumentWorkspaceCanvas({
 }) {
   const [view, setView] = useState<View>("source");
   const [devDetailsOpen, setDevDetailsOpen] = useState(false);
+  const [mappingOpen, setMappingOpen] = useState(false);
   const targetDiscovery = useContentTargetDiscovery(workspace.work_item_id, devDetailsOpen);
+  const targetMapping = useContentRevisionTargetMapping(
+    workspace.work_item_id,
+    workspace.canonical_document.revision_id ?? null,
+    mappingOpen && workspace.canonical_document.status === "approved"
+  );
   const hasReviewAction = workspace.next_action.kind === "open_review";
 
   return (
@@ -95,9 +105,111 @@ export function ContentDocumentWorkspaceCanvas({
             {targetDiscovery.isError ? <p className="mt-3 leading-6">Nie udało się odczytać strony roboczej na dev. Spróbuj ponownie później.</p> : null}
             {targetDiscovery.data ? <DevTargetDetails discovery={targetDiscovery.data} /> : null}
           </details>
+          {workspace.canonical_document.status === "approved" ? <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
+            if ((event.currentTarget as HTMLDetailsElement).open) setMappingOpen(true);
+          }}>
+            <summary className="cursor-pointer font-semibold text-ink">Przypisanie dokumentu do dev</summary>
+            {!mappingOpen ? <p className="mt-3 leading-6">Otwórz, aby sprawdzić, które elementy zatwierdzonego dokumentu wymagają jeszcze potwierdzenia w układzie dev.</p> : null}
+            {targetMapping.isPending ? <p className="mt-3 leading-6">Sprawdzam przypisanie zatwierdzonego dokumentu…</p> : null}
+            {targetMapping.isError ? <p className="mt-3 leading-6">Nie udało się odczytać przypisania dokumentu. Spróbuj ponownie później.</p> : null}
+            {targetMapping.data ? <TargetMappingDetails preview={targetMapping.data} /> : null}
+          </details> : null}
         </aside>
       </section>
     </main>
+  );
+}
+
+function TargetMappingDetails({ preview }: { preview: ContentTargetMappingPreview }) {
+  if (preview.status === "blocked") {
+    return (
+      <>
+        {preview.target ? (
+          <p className="mt-3 leading-6">
+            Znaleziono artykuł na dev: {" "}
+            <a
+              className="break-all font-medium text-action hover:underline"
+              href={preview.target.target_contract.url}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {preview.target.target_contract.url}
+            </a>
+          </p>
+        ) : null}
+        {preview.blockers.map((blocker) => (
+          <div key={blocker.code} className="mt-3 rounded-lg bg-wait/10 p-3">
+            <p className="font-semibold text-ink">{blocker.label}</p>
+            <p className="mt-2 leading-6">{blocker.reason}</p>
+            <p className="mt-2 leading-6 text-slate-600">{blocker.next_step}</p>
+          </div>
+        ))}
+        <ComponentMappingList components={preview.components} />
+        {preview.caveats.map((caveat) => (
+          <p key={caveat} className="mt-2 leading-6 text-slate-600">
+            {caveat}
+          </p>
+        ))}
+      </>
+    );
+  }
+  const humanOnly = preview.components.filter(
+    (component) => component.status === "human_only"
+  );
+  return (
+    <>
+      <p className="mt-3 font-semibold text-ink">
+        Dokument jest gotowy do ręcznego przypisania
+      </p>
+      <p className="mt-2 leading-6">
+        Odczytano układ dev, ale żaden element dokumentu nie został przypisany
+        automatycznie. Dzięki temu WILQ nie zgaduje pól ani layoutów.
+      </p>
+      <p className="mt-3 text-sm leading-6 text-slate-600">
+        {humanOnly.length} elementów wymaga decyzji człowieka.
+      </p>
+      <ComponentMappingList components={preview.components} />
+      {preview.caveats.map((caveat) => (
+        <p key={caveat} className="mt-2 leading-6 text-slate-600">
+          {caveat}
+        </p>
+      ))}
+      <details className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+        <summary className="cursor-pointer font-semibold text-slate-700">
+          Szczegóły techniczne odczytu
+        </summary>
+        <p className="mt-2 break-all">Wersja dokumentu: {preview.revision.revision_id}</p>
+        <p className="mt-2 break-all">Identyfikator przypisania: {preview.binding_digest}</p>
+        <p className="mt-2 break-all">
+          Identyfikator kontraktu: {preview.target?.target_contract_digest}
+        </p>
+      </details>
+    </>
+  );
+}
+
+function ComponentMappingList({
+  components
+}: {
+  components: ContentTargetMappingPreview["components"];
+}) {
+  if (components.length === 0) {
+    return null;
+  }
+  return (
+    <details className="mt-3 rounded-lg bg-slate-50 p-3">
+      <summary className="cursor-pointer font-semibold text-ink">
+        Elementy dokumentu ({components.length})
+      </summary>
+      <ul className="mt-3 space-y-2">
+        {components.map((component) => (
+          <li key={component.component_id} className="rounded-lg bg-white p-3">
+            <p className="font-semibold text-ink">{component.label}</p>
+            <p className="mt-1 leading-6 text-slate-700">{component.reason}</p>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 

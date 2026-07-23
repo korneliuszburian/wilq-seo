@@ -34,6 +34,9 @@ from apps.api.wilq_api.routers.content_semantic_review import (
 from apps.api.wilq_api.routers.content_target_discovery import (
     register_content_target_discovery_route,
 )
+from apps.api.wilq_api.routers.content_target_mapping import (
+    register_content_target_mapping_route,
+)
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 
 ContentModelSnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]
@@ -54,6 +57,7 @@ def register_content_model_routes(
     register_content_planning_proposal_routes(router, snapshot_loader=snapshot_loader)
     register_content_semantic_review_routes(router, snapshot_loader=snapshot_loader)
     register_content_target_discovery_route(router)
+    register_content_target_mapping_route(router)
 
 
 __all__ = ["register_content_model_routes"]
