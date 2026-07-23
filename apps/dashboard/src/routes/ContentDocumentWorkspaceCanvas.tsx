@@ -1,6 +1,10 @@
 import { useState } from "react";
 
-import type { ContentDocumentWorkspace } from "../lib/api";
+import {
+  type ContentDocumentWorkspace,
+  type ContentTargetDiscovery
+} from "../lib/api";
+import { useContentTargetDiscovery } from "./contentWorkflowQueries";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
 type View = "source" | "document" | "comparison";
@@ -13,6 +17,8 @@ export function ContentDocumentWorkspaceCanvas({
   onOpenReview: () => void;
 }) {
   const [view, setView] = useState<View>("source");
+  const [devDetailsOpen, setDevDetailsOpen] = useState(false);
+  const targetDiscovery = useContentTargetDiscovery(workspace.work_item_id, devDetailsOpen);
   const hasReviewAction = workspace.next_action.kind === "open_review";
 
   return (
@@ -80,10 +86,42 @@ export function ContentDocumentWorkspaceCanvas({
             <p className="mt-3 leading-6">{workspace.source_snapshot.reason}</p>
             {workspace.secondary_disclosures.map((detail) => <p key={detail} className="mt-3 leading-6">{detail}</p>)}
           </details>
+          <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
+            if ((event.currentTarget as HTMLDetailsElement).open) setDevDetailsOpen(true);
+          }}>
+            <summary className="cursor-pointer font-semibold text-ink">Strona robocza na dev</summary>
+            {!devDetailsOpen ? <p className="mt-3 leading-6">Otwórz, aby sprawdzić, co WILQ odczytał na dev. To nie zmienia strony ani nie uruchamia WordPressa.</p> : null}
+            {targetDiscovery.isPending ? <p className="mt-3 leading-6">Wczytuję odczyt strony roboczej na dev…</p> : null}
+            {targetDiscovery.isError ? <p className="mt-3 leading-6">Nie udało się odczytać strony roboczej na dev. Spróbuj ponownie później.</p> : null}
+            {targetDiscovery.data ? <DevTargetDetails discovery={targetDiscovery.data} /> : null}
+          </details>
         </aside>
       </section>
     </main>
   );
+}
+
+function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscovery }) {
+  if (discovery.relation_status === "unavailable") return <>
+    <p className="mt-3 font-semibold text-ink">{discovery.label}</p>
+    <p className="mt-2 leading-6">{discovery.reason}</p>
+    {discovery.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
+  </>;
+  const target = discovery.target;
+  return <>
+    <p className="mt-3 font-semibold text-ink">{discovery.label}</p>
+    <p className="mt-2 leading-6">{discovery.reason}</p>
+    {target ? <div className="mt-3 rounded-lg bg-slate-50 p-3">
+      <p className="font-semibold text-ink">Zaobserwowana strona robocza</p>
+      <p className="mt-1 break-all leading-6">{target.url}</p>
+      <p className="mt-2 leading-6">Status: {target.post_status}. {target.observed_surfaces.includes("acf_flexible_content") ? "WILQ odczytał układ ACF Flexible Content." : "Nie rozpoznano układu treści na tej stronie."}</p>
+    </div> : null}
+    {discovery.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
+    <details className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+      <summary className="cursor-pointer font-semibold text-slate-700">Szczegóły techniczne odczytu</summary>
+      <p className="mt-2 break-all">Identyfikator kontraktu: {target?.target_contract_digest ?? "brak"}</p>
+    </details>
+  </>;
 }
 
 function Tab({ active, children, onClick }: { active: boolean; children: string; onClick: () => void }) {

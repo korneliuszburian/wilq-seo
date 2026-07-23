@@ -22,6 +22,7 @@ import {
   ContentDiagnosticsResponseSchema,
   ContentDecisionContextSchema,
   ContentDocumentWorkspaceSchema,
+  ContentTargetDiscoverySchema,
   ContentWorkflowEntryResponseSchema,
   ContentNewPageBriefInputSchema,
   ContentNewPageBriefWorkspaceSchema,
@@ -124,6 +125,7 @@ import {
   type ContentDiagnosticsResponse,
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
+  type ContentTargetDiscovery,
   type ContentWorkflowEntryResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
@@ -504,6 +506,15 @@ export function getContentWorkItemDocumentWorkspace(
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/document-workspace`,
     ContentDocumentWorkspaceSchema
+  );
+}
+
+export function getContentWorkItemTargetDiscovery(
+  workItemId: string
+): Promise<ContentTargetDiscovery> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/target-discovery`,
+    ContentTargetDiscoverySchema
   );
 }
 
@@ -1001,6 +1012,7 @@ export type {
   ContentDiagnosticsResponse,
   ContentDecisionContext,
   ContentDocumentWorkspace,
+  ContentTargetDiscovery,
   ContentWorkflowEntryResponse,
   ContentNewPageBriefInput,
   ContentNewPageBriefWorkspace,

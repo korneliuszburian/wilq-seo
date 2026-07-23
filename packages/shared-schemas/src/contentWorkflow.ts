@@ -577,6 +577,29 @@ export const ContentNewPageBriefWorkspaceSchema = z.object({
   next_action_label: z.string().min(1)
 });
 
+export const ContentTargetDiscoveryTargetSchema = z.object({
+  object_id: z.string().min(1),
+  url: z.string().url(),
+  post_type: z.string().min(1),
+  post_status: z.string().min(1),
+  template: z.string().nullable().optional(),
+  observed_surfaces: z.array(z.string()).default([]),
+  target_contract_digest: z.string().length(64)
+});
+
+export const ContentTargetDiscoverySchema = z.object({
+  response_type: z.literal("content_target_discovery"),
+  contract_version: z.literal("content_target_discovery_v1"),
+  work_item_id: z.string().min(1),
+  public_url: z.string().url().nullable().optional(),
+  relation_status: z.enum(["partial", "unavailable"]),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  target: ContentTargetDiscoveryTargetSchema.nullable().optional(),
+  evidence_ids: z.array(z.string()).default([]),
+  caveats: z.array(z.string()).default([])
+});
+
 export const ContentInventoryRecordSchema = z.object({
   id: z.string(),
   url: z.string(),
@@ -3729,6 +3752,7 @@ export type ContentWorkItemQueueCandidate = z.infer<
 export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueResponseSchema>;
 export type ContentDecisionContext = z.infer<typeof ContentDecisionContextSchema>;
 export type ContentDocumentWorkspace = z.infer<typeof ContentDocumentWorkspaceSchema>;
+export type ContentTargetDiscovery = z.infer<typeof ContentTargetDiscoverySchema>;
 export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
 export type ContentNewPageBriefInput = z.input<typeof ContentNewPageBriefInputSchema>;
 export type ContentNewPageBriefWorkspace = z.infer<typeof ContentNewPageBriefWorkspaceSchema>;

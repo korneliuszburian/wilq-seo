@@ -6,6 +6,7 @@ import {
   getContentWordPressDraftWriteReadiness,
   getContentWorkItemDecisionContext,
   getContentWorkItemDocumentWorkspace,
+  getContentWorkItemTargetDiscovery,
   getContentWorkItemInitialDraft,
   getContentWorkItemEnrichment,
   getContentWorkflowEntry,
@@ -20,6 +21,7 @@ import {
   type ContentWorkItemQueueResponse,
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
+  type ContentTargetDiscovery,
   type ContentWorkflowEntryResponse,
   type ContentInitialDraftResponse,
   type ContentInventoryCatalogResponse,
@@ -39,6 +41,7 @@ const READ_ONLY_WORKFLOW_STALE_TIME_MS = 30_000;
 export type ContentWorkItemQueueQuery = UseQueryResult<ContentWorkItemQueueResponse, Error>;
 export type ContentDecisionContextQuery = UseQueryResult<ContentDecisionContext, Error>;
 export type ContentDocumentWorkspaceQuery = UseQueryResult<ContentDocumentWorkspace, Error>;
+export type ContentTargetDiscoveryQuery = UseQueryResult<ContentTargetDiscovery, Error>;
 export type ContentWorkflowEntryQuery = UseQueryResult<ContentWorkflowEntryResponse, Error>;
 export type ContentInitialDraftQuery = UseQueryResult<ContentInitialDraftResponse, Error>;
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
@@ -66,6 +69,18 @@ export type KnowledgeSourceMaterialsQuery = UseQueryResult<KnowledgeSourceMateri
 
 export function contentDecisionContextQueryKey(workItemId: string | null) {
   return ["content-workflow", "work-item", workItemId, "decision-context"] as const;
+}
+
+export function useContentTargetDiscovery(
+  workItemId: string,
+  enabled: boolean
+): ContentTargetDiscoveryQuery {
+  return useQuery({
+    queryKey: ["content-workflow", "work-item", workItemId, "target-discovery"],
+    queryFn: () => getContentWorkItemTargetDiscovery(workItemId),
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    enabled
+  });
 }
 
 export function useContentWorkflowQueries(
