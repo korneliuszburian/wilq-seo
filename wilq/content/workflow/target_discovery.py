@@ -136,6 +136,28 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
                 "Brak adresu nie blokuje pracy nad dokumentem, ale blokuje rozpoznanie targetu."
             ],
         )
+    if profile.dev_content.status != "available":
+        blocker = next(iter(profile.dev_content.blockers), None)
+        return ContentTargetDiscovery(
+            work_item_id=work_item_id,
+            public_url=public_url,
+            relation_status="unavailable",
+            label="Nie można teraz odczytać obiektów dev",
+            reason=(
+                blocker.reason
+                if blocker is not None
+                else "WILQ nie ma potwierdzonego odczytu obiektów dev."
+            ),
+            evidence_ids=evidence_ids,
+            caveats=[
+                (
+                    blocker.next_step
+                    if blocker is not None
+                    else "Spróbuj ponownie, gdy odczyt inventory dev będzie dostępny."
+                ),
+                "Brak odczytu nie jest dowodem, że odpowiadający obiekt dev nie istnieje.",
+            ],
+        )
     matching_items = [
         item for item in profile.dev_content.items if _path(item.link) == _path(public_url)
     ]

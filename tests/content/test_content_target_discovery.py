@@ -19,7 +19,7 @@ def _profile(*items: WordPressAuthoringDevContentObject) -> SimpleNamespace:
     return SimpleNamespace(
         authoring_target="dev",
         evidence_ids=["ev_wordpress_dev_read"],
-        dev_content=SimpleNamespace(items=list(items)),
+        dev_content=SimpleNamespace(status="available", items=list(items), blockers=[]),
     )
 
 
@@ -120,6 +120,47 @@ def test_target_discovery_does_not_infer_a_target_when_dev_path_differs(monkeypa
     assert discovery.relation_status == "unavailable"
     assert discovery.target is None
     assert discovery.evidence_ids == ["ev_wordpress_dev_read"]
+
+
+def test_target_discovery_does_not_claim_no_match_when_dev_inventory_is_blocked(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        discovery_module,
+        "inventory_decision_for_work_item",
+        lambda _work_item_id, **_kwargs: SimpleNamespace(
+            source_public_url=PUBLIC_URL,
+            final_canonical_url=None,
+            page=PUBLIC_URL,
+        ),
+    )
+    profile = _profile()
+    profile.dev_content = SimpleNamespace(
+        status="blocked",
+        items=[],
+        blockers=[
+            SimpleNamespace(
+                reason="WP REST nie odpowiedział podczas odczytu inventory dev.",
+                next_step="Sprawdź dostęp do WP REST na dev.",
+            )
+        ],
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "build_wordpress_authoring_profile",
+        lambda _connector_id, include_dev_content=False: profile,
+    )
+
+    discovery = discovery_module.build_content_target_discovery(WORK_ITEM_ID)
+
+    assert discovery is not None
+    assert discovery.relation_status == "unavailable"
+    assert discovery.target is None
+    assert discovery.label == "Nie można teraz odczytać obiektów dev"
+    assert discovery.reason == "WP REST nie odpowiedział podczas odczytu inventory dev."
+    assert "Nie znaleziono odpowiadającego obiektu" not in (
+        f"{discovery.label} {discovery.reason}"
+    )
 
 
 def test_target_discovery_requires_human_choice_for_same_path_page_and_post(monkeypatch) -> None:
