@@ -577,6 +577,49 @@ export const ContentNewPageBriefWorkspaceSchema = z.object({
   next_action_label: z.string().min(1)
 });
 
+export const ContentTargetAuthoringLayoutSchema = z.object({
+  name: z.string().min(1),
+  fields: z.array(z.string()).default([])
+});
+
+export const ContentTargetAuthoringSurfaceSchema = z.object({
+  kind: z.literal("acf_flexible_content"),
+  root_field: z.string().min(1),
+  layouts: z.array(ContentTargetAuthoringLayoutSchema).default([])
+});
+
+export const ContentTargetContractSchema = z.object({
+  environment: z.string().min(1),
+  object_id: z.string().min(1),
+  url: z.string().url(),
+  post_type: z.string().min(1),
+  post_status: z.string().min(1),
+  modified: z.string(),
+  template: z.string().nullable().optional(),
+  authority: z.literal("observation_only"),
+  write_authorized: z.literal(false),
+  authoring_surface: ContentTargetAuthoringSurfaceSchema.nullable().optional()
+});
+
+export const ContentTargetObservationEvidenceSchema = z.object({
+  evidence_id: z.string().min(1),
+  connector_id: z.string().min(1),
+  object_id: z.string().min(1),
+  post_type: z.string().min(1),
+  url: z.string().url(),
+  post_status: z.string().min(1),
+  modified: z.string(),
+  observed_at: z.string().datetime()
+});
+
+export const ContentTargetDiscoveryCandidateSchema = z.object({
+  object_id: z.string().min(1),
+  url: z.string().url(),
+  post_type: z.string().min(1),
+  post_status: z.string().min(1),
+  observation_evidence: ContentTargetObservationEvidenceSchema
+});
+
 export const ContentTargetDiscoveryTargetSchema = z.object({
   object_id: z.string().min(1),
   url: z.string().url(),
@@ -584,18 +627,21 @@ export const ContentTargetDiscoveryTargetSchema = z.object({
   post_status: z.string().min(1),
   template: z.string().nullable().optional(),
   observed_surfaces: z.array(z.string()).default([]),
-  target_contract_digest: z.string().length(64)
+  target_contract: ContentTargetContractSchema,
+  target_contract_digest: z.string().length(64),
+  observation_evidence: ContentTargetObservationEvidenceSchema
 });
 
 export const ContentTargetDiscoverySchema = z.object({
   response_type: z.literal("content_target_discovery"),
-  contract_version: z.literal("content_target_discovery_v1"),
+  contract_version: z.literal("content_target_discovery_v2"),
   work_item_id: z.string().min(1),
   public_url: z.string().url().nullable().optional(),
-  relation_status: z.enum(["partial", "unavailable"]),
+  relation_status: z.enum(["partial", "ambiguous", "unavailable"]),
   label: z.string().min(1),
   reason: z.string().min(1),
   target: ContentTargetDiscoveryTargetSchema.nullable().optional(),
+  candidates: z.array(ContentTargetDiscoveryCandidateSchema).default([]),
   evidence_ids: z.array(z.string()).default([]),
   caveats: z.array(z.string()).default([])
 });

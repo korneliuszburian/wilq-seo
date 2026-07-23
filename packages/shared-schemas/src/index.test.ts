@@ -35,6 +35,7 @@ import {
   ContentDraftRevisionWorkspaceSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
+  ContentTargetDiscoverySchema,
   ContentSemanticReviewRequestSchema,
   ContentSemanticReviewResponseSchema,
   ContentKnowledgeConstraintTypeSchema,
@@ -1477,6 +1478,54 @@ describe("WordPressAuthoringProfileSchema", () => {
         }
       }).success
     ).toBe(false);
+  });
+});
+
+describe("ContentTargetDiscoverySchema", () => {
+  it("keeps an observed target contract and its exact observation public", () => {
+    expect(ContentTargetDiscoverySchema.safeParse({
+      response_type: "content_target_discovery",
+      contract_version: "content_target_discovery_v2",
+      work_item_id: "content_work_item_bdo",
+      public_url: "https://www.ekologus.pl/bdo/",
+      relation_status: "partial",
+      label: "Znaleziono obiekt dev do sprawdzenia",
+      reason: "Adres jest tylko obserwacją.",
+      target: {
+        object_id: "1353",
+        url: "https://ekologus.dev.proudsite.pl/bdo/",
+        post_type: "post",
+        post_status: "publish",
+        template: null,
+        observed_surfaces: [],
+        target_contract: {
+          environment: "dev",
+          object_id: "1353",
+          url: "https://ekologus.dev.proudsite.pl/bdo/",
+          post_type: "post",
+          post_status: "publish",
+          modified: "2026-07-24T10:00:00",
+          template: null,
+          authority: "observation_only",
+          write_authorized: false,
+          authoring_surface: null
+        },
+        target_contract_digest: "a".repeat(64),
+        observation_evidence: {
+          evidence_id: "ev_wordpress_target_observation_example",
+          connector_id: "wordpress_ekologus",
+          object_id: "1353",
+          post_type: "post",
+          url: "https://ekologus.dev.proudsite.pl/bdo/",
+          post_status: "publish",
+          modified: "2026-07-24T10:00:00",
+          observed_at: "2026-07-24T10:00:01Z"
+        }
+      },
+      candidates: [],
+      evidence_ids: ["ev_wordpress_target_observation_example"],
+      caveats: ["Odczyt nie daje prawa do zapisu."]
+    }).success).toBe(true);
   });
 });
 

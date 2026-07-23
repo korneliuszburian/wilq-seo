@@ -20,8 +20,8 @@ export function ContentDevTargetColumn({
   return (
     <ContentMapColumn
       icon={<Code2 aria-hidden="true" size={18} />}
-      title="Cel dev / ACF"
-      subtitle={devPage ? `${devPage.section_count} sekcji odczytanych` : "brak exact celu dla tej strony"}
+      title="Obiekt dev"
+      subtitle={devPage ? `${devPage.section_count} sekcji odczytanych` : "brak exact obiektu dla tej strony"}
     >
       {profile?.dev_content.items.length ? (
         <label className="mb-3 block">
@@ -64,11 +64,15 @@ export function ContentDevTargetColumn({
             </li>
           ) : null}
         </ol>
+      ) : devPage ? (
+        <p className="rounded-md border border-wait/25 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
+          Znaleziono {devPage.content_type === "post" ? "artykuł" : "stronę"} dev ({devPage.post_id}); nie rozpoznano sekcyjnego układu authoringu.
+        </p>
       ) : (
         <p className="rounded-md border border-wait/25 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
           {profile?.dev_content.status === "blocked"
             ? profile.dev_content.blockers[0]?.reason
-            : "Nie znaleziono strony dev o tym samym adresie. Nie pokazujemy sekcji z innej strony."}
+            : "Nie znaleziono obiektu dev o tym samym adresie. Nie pokazujemy sekcji z innego obiektu."}
         </p>
       )}
     </ContentMapColumn>

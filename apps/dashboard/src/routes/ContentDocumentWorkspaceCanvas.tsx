@@ -107,6 +107,17 @@ function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscovery }) 
     <p className="mt-2 leading-6">{discovery.reason}</p>
     {discovery.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
   </>;
+  if (discovery.relation_status === "ambiguous") return <>
+    <p className="mt-3 font-semibold text-ink">{discovery.label}</p>
+    <p className="mt-2 leading-6">{discovery.reason}</p>
+    <ul className="mt-3 space-y-2">
+      {discovery.candidates.map((candidate) => <li key={candidate.observation_evidence.evidence_id} className="rounded-lg bg-slate-50 p-3">
+        <p className="font-semibold text-ink">{candidate.post_type === "post" ? "Artykuł" : "Strona"} · {wordpressStatus(candidate.post_status)}</p>
+        <p className="mt-1 break-all leading-6">{candidate.url}</p>
+      </li>)}
+    </ul>
+    {discovery.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
+  </>;
   const target = discovery.target;
   return <>
     <p className="mt-3 font-semibold text-ink">{discovery.label}</p>
@@ -114,11 +125,13 @@ function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscovery }) 
     {target ? <div className="mt-3 rounded-lg bg-slate-50 p-3">
       <p className="font-semibold text-ink">Zaobserwowana strona robocza</p>
       <p className="mt-1 break-all leading-6">{target.url}</p>
-      <p className="mt-2 leading-6">To {target.post_type === "post" ? "artykuł" : "strona"}. Status na dev: {wordpressStatus(target.post_status)}. {target.observed_surfaces.includes("acf_flexible_content") ? "WILQ odczytał układ ACF Flexible Content." : "Nie rozpoznano układu treści na tej stronie."}</p>
+      <p className="mt-2 leading-6">To {target.post_type === "post" ? "artykuł" : "strona"}. Status na dev: {wordpressStatus(target.post_status)}. {target.target_contract.authoring_surface ? "WILQ odczytał układ ACF Flexible Content." : "Nie rozpoznano układu treści na tym obiekcie."}</p>
     </div> : null}
     {discovery.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
     <details className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
       <summary className="cursor-pointer font-semibold text-slate-700">Szczegóły techniczne odczytu</summary>
+      <p className="mt-2">Środowisko: {target?.target_contract.environment ?? "brak"}. Zapis: niedozwolony.</p>
+      <p className="mt-2 break-all">Identyfikator obserwacji: {target?.observation_evidence.evidence_id ?? "brak"}</p>
       <p className="mt-2 break-all">Identyfikator kontraktu: {target?.target_contract_digest ?? "brak"}</p>
     </details>
   </>;
