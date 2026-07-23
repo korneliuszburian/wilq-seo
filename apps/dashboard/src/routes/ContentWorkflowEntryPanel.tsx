@@ -210,8 +210,8 @@ function NewPageSaved({ workspace, onReturn }: { workspace: ContentNewPageBriefW
     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-700">Brief nowej strony</p>
     <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink">{workspace.brief.title}</h1>
     <p className="mt-3 text-sm leading-7 text-slate-700">Brief jest zapisany. To nadal plan nowej strony, nie dokument do publikacji ani układ WordPressa.</p>
-    <dl className="mt-6 grid gap-3 sm:grid-cols-2"><InfoTile label="Cel" value={workspace.brief.purpose} /><InfoTile label="Usługa" value={workspace.brief.service} /><InfoTile label="Odbiorca" value={workspace.brief.audience} /><InfoTile label="Miejsce w serwisie" value={workspace.brief.proposed_ia_location} /></dl>
-    <section className="mt-7 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800">Pokrycie istniejących treści</p><h2 className="mt-2 text-xl font-semibold text-ink">{guard.label}</h2><p className="mt-2 text-sm leading-6 text-slate-700">{guard.reason}</p>{guard.candidates.length ? <ul className="mt-4 space-y-2">{guard.candidates.map((candidate) => <li key={`${candidate.url}-${candidate.match_kind}`} className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm"><span className="font-semibold text-ink">{candidate.title}</span><span className="block text-xs text-slate-600">{candidate.url}</span></li>)}</ul> : null}<p className="mt-4 text-xs leading-5 text-slate-600">{guard.caveat}</p></section>
+    <dl className="mt-6 grid gap-3 sm:grid-cols-2"><InfoTile label="Cel" value={workspace.brief.purpose} /><InfoTile label="Usługa" value={workspace.brief.service} /><InfoTile label="Odbiorca" value={workspace.brief.audience} /><InfoTile label="Intencja wyszukiwania" value={workspace.brief.search_intent} /><InfoTile label="Miejsce w serwisie" value={workspace.brief.proposed_ia_location} /></dl>
+    <section className="mt-7 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800">Pokrycie istniejących treści</p><h2 className="mt-2 text-xl font-semibold text-ink">{guard.label}</h2><p className="mt-2 text-sm leading-6 text-slate-700">{guard.reason}</p><details className="mt-4 rounded-xl border border-emerald-200 bg-white px-3 py-2"><summary className="cursor-pointer text-sm font-semibold text-ink">Sprawdzone strony i dowody</summary>{guard.candidates.length ? <ul className="mt-3 space-y-3">{guard.candidates.map((candidate) => <li key={`${candidate.url}-${candidate.match_kind}`} className="border-t border-slate-100 pt-3 text-sm first:border-t-0 first:pt-0"><span className="font-semibold text-ink">{candidate.title}</span><span className="mt-1 block text-xs text-slate-600">{candidate.url}</span><span className="mt-2 block text-xs text-slate-700">{overlapMatchLabel(candidate.match_kind)}</span><EvidenceIds evidenceIds={candidate.evidence_ids} /></li>)}</ul> : <p className="mt-3 text-sm leading-6 text-slate-700">Nie znaleziono strony z bezpośrednim pokryciem. Poniżej są dowody z katalogu sprawdzonego dla tego briefu.</p>}<EvidenceIds evidenceIds={guard.evidence_ids} label="Dowody sprawdzonego katalogu" /></details><p className="mt-4 text-xs leading-5 text-slate-600">{guard.caveat}</p></section>
     <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Co dalej?</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-slate-700">{workspace.next_action_label}</p></section>
   </NewPageShell>;
 }
@@ -236,4 +236,14 @@ function ContentWorkflowInventoryBrowse({ inventory, onReturn, onSelectWorkItem 
 
 function InfoTile({ label, value }: { label: string; value: string }) {
   return <div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-sm leading-6 text-slate-700">{value}</p></div>;
+}
+
+function EvidenceIds({ evidenceIds, label = "Dowody" }: { evidenceIds: string[]; label?: string }) {
+  return evidenceIds.length ? <p className="mt-2 break-words text-[11px] leading-5 text-slate-500">{label}: {evidenceIds.join(", ")}</p> : <p className="mt-2 text-[11px] leading-5 text-wait">{label}: brak potwierdzonego dowodu</p>;
+}
+
+function overlapMatchLabel(kind: ContentNewPageBriefWorkspace["overlap_guard"]["candidates"][number]["match_kind"]) {
+  if (kind === "same_title") return "Podstawa dopasowania: ten sam tytuł strony.";
+  if (kind === "shared_intent") return "Podstawa dopasowania: wspólna intencja wyszukiwania.";
+  return "Podstawa dopasowania: wspólna usługa.";
 }

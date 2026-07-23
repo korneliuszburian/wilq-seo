@@ -116,13 +116,17 @@ def build_new_page_overlap_guard(
 ) -> ContentNewPageOverlapGuard:
     """Return only observed inventory signals; never infer a match from a URL slug."""
 
-    if not catalog.items:
+    catalog_evidence_ids = _catalog_evidence_ids(catalog)
+    if not catalog.items or not catalog_evidence_ids:
         return ContentNewPageOverlapGuard(
             disposition="human_decision_required",
             label="Nie można jeszcze ocenić pokrycia serwisu",
-            reason="Aktualny katalog stron nie zawiera materiału, z którym można porównać brief.",
-            caveat="Brak katalogu nie jest zgodą na tworzenie duplikatu.",
-            evidence_ids=list(catalog.evidence_ids),
+            reason=(
+                "Aktualny katalog stron nie zawiera materiału z potwierdzonym źródłem, "
+                "z którym można porównać brief."
+            ),
+            caveat="Brak katalogu lub dowodów nie jest zgodą na tworzenie duplikatu.",
+            evidence_ids=catalog_evidence_ids,
         )
 
     exact_title = _normalized(brief.title)
@@ -180,7 +184,7 @@ def build_new_page_overlap_guard(
             "To wynik porównania z aktualnym katalogiem, nie dowód braku wszystkich "
             "możliwych duplikatów."
         ),
-        evidence_ids=list(catalog.evidence_ids),
+        evidence_ids=catalog_evidence_ids,
     )
 
 
@@ -219,6 +223,17 @@ def _evidence_ids(candidates: list[ContentNewPageOverlapCandidate]) -> list[str]
             evidence_id
             for candidate in candidates
             for evidence_id in candidate.evidence_ids
+        }
+    )
+
+
+def _catalog_evidence_ids(catalog: ContentInventoryCatalogResponse) -> list[str]:
+    """Keep the guard tied to every inventory record actually inspected."""
+
+    return sorted(
+        {
+            *catalog.evidence_ids,
+            *(item.evidence_id for item in catalog.items),
         }
     )
 

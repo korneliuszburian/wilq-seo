@@ -113,3 +113,23 @@ def test_new_page_overlap_guard_does_not_infer_a_match_from_an_inventory_slug() 
 
     assert guard.disposition == "no_conflict"
     assert guard.candidates == []
+    assert guard.evidence_ids == ["ev_wp_other"]
+
+
+def test_new_page_overlap_guard_does_not_claim_no_conflict_without_catalog_evidence() -> None:
+    brief = build_new_page_brief(
+        ContentNewPageBriefInput(
+            title="Audyt inwestycji liniowej",
+            purpose="Wyjaśnić przygotowanie audytu dla inwestycji liniowej.",
+            service="Dokumentacja inwestycji",
+            audience="Inwestor",
+            search_intent="audyt inwestycji liniowej",
+            proposed_ia_location="Usługi → Dokumentacja",
+        )
+    )
+    catalog = ContentInventoryCatalogResponse(total_count=0)
+
+    guard = build_new_page_overlap_guard(brief, catalog=catalog)
+
+    assert guard.disposition == "human_decision_required"
+    assert guard.evidence_ids == []
