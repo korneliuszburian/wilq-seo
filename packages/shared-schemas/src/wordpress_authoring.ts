@@ -44,6 +44,7 @@ const WordPressAuthoringDevSectionSchema = z.object({
 
 const WordPressAuthoringDevPageSchema = z.object({
   post_id: z.string(),
+  content_type: z.enum(["page", "post"]).default("page"),
   slug: z.string(),
   title: z.string(),
   link: z.string(),
@@ -243,4 +244,3 @@ export const ContentWorkItemWordPressAuthoringPayloadPreviewResponseSchema = z.o
   authoring_profile: WordPressAuthoringProfileSchema,
   preview_result: ContentWordPressAuthoringPayloadPreviewResultSchema
 });
-

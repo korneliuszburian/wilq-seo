@@ -99,6 +99,7 @@ class WordPressAuthoringSectionReadback:
 @dataclass(frozen=True)
 class WordPressAuthoringPageReadback:
     post_id: str
+    content_type: str
     slug: str
     title: str
     link: str
@@ -355,18 +356,26 @@ def read_wordpress_authoring_pages(
     auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
     try:
         try:
-            response = client.get(
-                urljoin(credentials.base_url or "", f"wp-json/wp/v2/{normalized_type}"),
-                auth=auth,
-                params={
-                    "context": "edit",
-                    "per_page": max(1, min(limit, WORDPRESS_CONTENT_PER_PAGE)),
-                    "orderby": "modified",
-                    "order": "desc",
-                    "_fields": WORDPRESS_AUTHORING_PAGE_FIELDS,
-                },
-            )
+            endpoint = urljoin(credentials.base_url or "", f"wp-json/wp/v2/{normalized_type}")
+            params = {
+                "context": "edit",
+                "per_page": max(1, min(limit, WORDPRESS_CONTENT_PER_PAGE)),
+                "orderby": "modified",
+                "order": "desc",
+                "_fields": WORDPRESS_AUTHORING_PAGE_FIELDS,
+            }
+            response = client.get(endpoint, auth=auth, params=params)
             response.raise_for_status()
+            payloads = [response.json()]
+            total_pages = _header_int(response.headers.get("X-WP-TotalPages"))
+            for page_number in range(2, total_pages + 1):
+                page_response = client.get(
+                    endpoint,
+                    auth=auth,
+                    params={**params, "page": page_number},
+                )
+                page_response.raise_for_status()
+                payloads.append(page_response.json())
         except httpx.HTTPStatusError as exc:
             raise WordPressAuthoringReadError(
                 f"WordPress odrzucił odczyt stron authoringu HTTP {exc.response.status_code}."
@@ -379,10 +388,15 @@ def read_wordpress_authoring_pages(
         if owns_client:
             client.close()
 
-    return _authoring_pages_from_response(
-        response.json(),
-        preferred_flexible_field_name=preferred_flexible_field_name,
-    )
+    return [
+        page
+        for payload in payloads
+        for page in _authoring_pages_from_response(
+            payload,
+            content_type=normalized_type,
+            preferred_flexible_field_name=preferred_flexible_field_name,
+        )
+    ]
 
 
 def read_wordpress_content_material(
@@ -703,6 +717,7 @@ def _transport_failure_result(connector_id: str, exc: httpx.HTTPError) -> Vendor
 def _authoring_pages_from_response(
     payload: Any,
     *,
+    content_type: str,
     preferred_flexible_field_name: str | None,
 ) -> list[WordPressAuthoringPageReadback]:
     if not isinstance(payload, list):
@@ -722,6 +737,7 @@ def _authoring_pages_from_response(
         pages.append(
             WordPressAuthoringPageReadback(
                 post_id=str(post_id) if post_id is not None else "",
+                content_type=content_type,
                 slug=clean_metadata_text(slug_value if isinstance(slug_value, str) else ""),
                 title=wordpress_title(item.get("title")),
                 link=str(item.get("link") or ""),
@@ -736,6 +752,13 @@ def _authoring_pages_from_response(
             )
         )
     return pages
+
+
+def _header_int(value: str | None) -> int:
+    try:
+        return int(value) if value is not None else 0
+    except ValueError:
+        return 0
 
 
 def _authoring_sections_from_acf(

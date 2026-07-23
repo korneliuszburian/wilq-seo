@@ -117,7 +117,7 @@ def _target(page: WordPressAuthoringDevPage) -> ContentTargetDiscoveryTarget:
     payload = {
         "object_id": page.post_id,
         "url": page.link,
-        "post_type": "page",
+        "post_type": page.content_type,
         "post_status": page.status,
         "template": page.template or None,
         "observed_surfaces": surfaces,
@@ -130,6 +130,7 @@ def _target(page: WordPressAuthoringDevPage) -> ContentTargetDiscoveryTarget:
     return ContentTargetDiscoveryTarget(
         object_id=page.post_id,
         url=page.link,
+        post_type=page.content_type,
         post_status=page.status,
         template=page.template or None,
         observed_surfaces=surfaces,

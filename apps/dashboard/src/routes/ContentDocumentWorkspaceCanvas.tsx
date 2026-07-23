@@ -114,7 +114,7 @@ function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscovery }) 
     {target ? <div className="mt-3 rounded-lg bg-slate-50 p-3">
       <p className="font-semibold text-ink">Zaobserwowana strona robocza</p>
       <p className="mt-1 break-all leading-6">{target.url}</p>
-      <p className="mt-2 leading-6">Status: {target.post_status}. {target.observed_surfaces.includes("acf_flexible_content") ? "WILQ odczytał układ ACF Flexible Content." : "Nie rozpoznano układu treści na tej stronie."}</p>
+      <p className="mt-2 leading-6">To {target.post_type === "post" ? "artykuł" : "strona"}. Status na dev: {wordpressStatus(target.post_status)}. {target.observed_surfaces.includes("acf_flexible_content") ? "WILQ odczytał układ ACF Flexible Content." : "Nie rozpoznano układu treści na tej stronie."}</p>
     </div> : null}
     {discovery.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
     <details className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
@@ -122,6 +122,10 @@ function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscovery }) 
       <p className="mt-2 break-all">Identyfikator kontraktu: {target?.target_contract_digest ?? "brak"}</p>
     </details>
   </>;
+}
+
+function wordpressStatus(status: string) {
+  return { publish: "opublikowany", draft: "szkic", pending: "oczekuje na przegląd" }[status] ?? status;
 }
 
 function Tab({ active, children, onClick }: { active: boolean; children: string; onClick: () => void }) {

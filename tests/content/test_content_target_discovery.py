@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Literal
 
 import wilq.content.workflow.target_discovery as discovery_module
 from wilq.connectors.wordpress.authoring import (
@@ -19,9 +20,12 @@ def _profile(*pages: WordPressAuthoringDevPage) -> SimpleNamespace:
     )
 
 
-def _page(url: str) -> WordPressAuthoringDevPage:
+def _page(
+    url: str, *, content_type: Literal["page", "post"] = "page"
+) -> WordPressAuthoringDevPage:
     return WordPressAuthoringDevPage(
         post_id="346",
+        content_type=content_type,
         slug="bdo",
         title="BDO",
         link=url,
@@ -57,7 +61,7 @@ def test_target_discovery_reads_exact_dev_object_but_does_not_confirm_relation(m
         discovery_module,
         "build_wordpress_authoring_profile",
         lambda _connector_id, include_dev_content=False: _profile(
-            _page("https://dev.ekologus.pl/bdo/")
+            _page("https://dev.ekologus.pl/bdo/", content_type="post")
         ),
     )
 
@@ -67,6 +71,7 @@ def test_target_discovery_reads_exact_dev_object_but_does_not_confirm_relation(m
     assert discovery.relation_status == "partial"
     assert discovery.target is not None
     assert discovery.target.object_id == "346"
+    assert discovery.target.post_type == "post"
     assert discovery.target.post_status == "draft"
     assert discovery.target.observed_surfaces == ["acf_flexible_content"]
     assert discovery.evidence_ids == ["ev_wordpress_dev_read"]

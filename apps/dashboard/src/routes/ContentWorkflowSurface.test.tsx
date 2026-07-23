@@ -4837,6 +4837,7 @@ function wordpressAuthoringProfile(): WordPressAuthoringProfile {
       pages: [
         {
           post_id: "2",
+          content_type: "page",
           slug: "bdo",
           title: "BDO dla firm",
           link: "https://ekologus.dev.proudsite.pl/bdo/",

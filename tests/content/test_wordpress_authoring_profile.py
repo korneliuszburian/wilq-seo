@@ -173,8 +173,9 @@ def test_wordpress_authoring_profile_reads_generic_dev_acf_rest_sections(
 
     assert profile.dev_content.status == "available"
     assert profile.dev_content.source_method == "acf_rest"
-    assert profile.dev_content.page_count == 1
+    assert profile.dev_content.page_count == 3
     page = profile.dev_content.pages[0]
+    assert page.content_type == "page"
     assert page.title == "Strona główna"
     assert page.acf_field_name == "sekcje_strony"
     assert page.section_count == 2
@@ -187,6 +188,10 @@ def test_wordpress_authoring_profile_reads_generic_dev_acf_rest_sections(
     assert "obrazek" in first_section.field_names
     assert any("naglowek_modulu" in path for path in first_section.text_field_paths)
     assert "hero" not in {section.layout_name for section in page.sections}
+    article = profile.dev_content.pages[1]
+    assert article.content_type == "post"
+    assert article.slug == "bdo-co-musi-wiedziec-przedsiebiorca"
+    assert profile.dev_content.pages[2].slug == "kolejny-artykul"
 
 
 def test_wordpress_authoring_profile_derives_layouts_from_acf_groups(
@@ -518,6 +523,45 @@ def _configure_rest(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _dev_pages_acf_rest_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/wp-json/wp/v2/posts":
+        page = request.url.params.get("page", "1")
+        if page == "2":
+            return httpx.Response(
+                200,
+                headers={"X-WP-TotalPages": "2"},
+                json=[
+                    {
+                        "id": 4,
+                        "slug": "kolejny-artykul",
+                        "link": "https://wp.example.test/kolejny-artykul/",
+                        "title": {"rendered": "Kolejny artykuł"},
+                        "status": "publish",
+                        "modified": "2026-07-08T10:00:00",
+                        "modified_gmt": "2026-07-08T08:00:00",
+                        "template": "",
+                        "parent": 0,
+                        "acf": {},
+                    }
+                ],
+            )
+        return httpx.Response(
+            200,
+            headers={"X-WP-TotalPages": "2"},
+            json=[
+                {
+                    "id": 3,
+                    "slug": "bdo-co-musi-wiedziec-przedsiebiorca",
+                    "link": "https://wp.example.test/bdo-co-musi-wiedziec-przedsiebiorca/",
+                    "title": {"rendered": "BDO"},
+                    "status": "publish",
+                    "modified": "2026-07-08T10:00:00",
+                    "modified_gmt": "2026-07-08T08:00:00",
+                    "template": "",
+                    "parent": 0,
+                    "acf": {},
+                }
+            ],
+        )
     assert request.url.path == "/wp-json/wp/v2/pages"
     return httpx.Response(
         200,

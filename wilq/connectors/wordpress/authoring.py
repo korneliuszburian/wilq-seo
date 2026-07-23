@@ -128,6 +128,7 @@ class WordPressAuthoringDevPage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     post_id: str
+    content_type: Literal["page", "post"] = "page"
     slug: str
     title: str
     link: str
@@ -352,7 +353,7 @@ def _dev_content_profile(
     include_dev_content: bool,
     http_client: httpx.Client | None,
 ) -> WordPressAuthoringDevContentProfile:
-    source_ref = f"{prefix}_URL wp-json/wp/v2/pages?context=edit"
+    source_ref = f"{prefix}_URL wp-json/wp/v2/pages,posts?context=edit"
     if not include_dev_content:
         return WordPressAuthoringDevContentProfile(status="unknown", source_ref=source_ref)
     if rest_profile.status != "configured":
@@ -376,11 +377,16 @@ def _dev_content_profile(
             ],
         )
     try:
-        pages = read_wordpress_authoring_pages(
-            connector_id,
-            preferred_flexible_field_name=acf.flexible_content_field_name,
-            http_client=http_client,
-        )
+        pages = [
+            page
+            for endpoint, content_type in (("pages", "page"), ("posts", "post"))
+            for page in read_wordpress_authoring_pages(
+                connector_id,
+                preferred_flexible_field_name=acf.flexible_content_field_name,
+                content_type=endpoint,
+                http_client=http_client,
+            )
+        ]
     except WordPressAuthoringReadError as exc:
         return WordPressAuthoringDevContentProfile(
             status="blocked",
@@ -423,6 +429,7 @@ def _dev_content_profile(
 def _dev_page_from_readback(page: WordPressAuthoringPageReadback) -> WordPressAuthoringDevPage:
     return WordPressAuthoringDevPage(
         post_id=page.post_id,
+        content_type="post" if page.content_type == "posts" else "page",
         slug=page.slug,
         title=page.title,
         link=page.link,
