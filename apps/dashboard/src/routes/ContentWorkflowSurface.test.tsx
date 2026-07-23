@@ -9,6 +9,7 @@ import {
   getConnectorRefreshRun,
   getContentWorkItemEnrichment,
   getContentWorkItemInitialDraft,
+  getContentWorkItemEditorialIntegrity,
   getContentWorkItemRevisionHtmlPackage,
   getContentWorkItemDecisionContext,
   getContentInventoryCatalog,
@@ -94,6 +95,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getConnectorRefreshRun: vi.fn(),
     getContentWorkItemEnrichment: vi.fn(),
     getContentWorkItemInitialDraft: vi.fn(),
+    getContentWorkItemEditorialIntegrity: vi.fn(),
     getContentWorkItemRevisionHtmlPackage: vi.fn(),
     getContentWorkItemDecisionContext: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
@@ -444,6 +446,36 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
     anchorClick.mockRestore();
+  });
+
+  it("reads editorial integrity for the exact revision without starting a revision or review mutation", async () => {
+    const readyContext = contentDecisionContext();
+    readyContext.evidence_readiness = { ...readyContext.evidence_readiness, status: "ready", label: "Dowody są aktualne", reason: "Dowody są aktualne dla tej strony.", blocker_codes: [] };
+    readyContext.next_safe_action = { kind: "open_workspace", label: "Otwórz warsztat strony", reason: "Możesz przejść do read-only warsztatu tej samej strony.", connector_id: null };
+    const revision = { ...savedFullDraftRevision(), base_revision_id: "content_revision_base" };
+    vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(readyContext);
+    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
+    vi.mocked(getContentWorkItemEditorialIntegrity).mockResolvedValue({
+      work_item_id: revision.work_item_id,
+      baseline_revision: { revision_id: "content_revision_base", content_digest: "b".repeat(64) },
+      direct_parent_revision: { revision_id: "content_revision_base", content_digest: "b".repeat(64) },
+      child_revision: { revision_id: revision.revision_id, content_digest: revision.content_digest },
+      observed_scope: { section_ids: revision.sections.map((section) => section.section_id ?? "section"), fields: ["body"] },
+      structural_invariants: { section_ids_unchanged: true, section_order_unchanged: true, headings_unchanged: true, title_unchanged: true, faq_unchanged: true, cta_semantics_unchanged: true, links_unchanged: true, evidence_lineage_unchanged: true },
+      protected_content_units: [],
+      representation_alignment: [],
+      lint_signals: [],
+      human_readable_diff: "Niezmienniki struktury naruszone: 0.",
+      result: "pass"
+    });
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22", defaultPendingMinMs: 0 })} client={client} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Sprawdź zmiany względem wersji bazowej" }));
+    await waitFor(() => expect(getContentWorkItemEditorialIntegrity).toHaveBeenCalledWith(revision.work_item_id, revision.revision_id));
+    expect(await screen.findByText("Integralność zachowana")).toBeInTheDocument();
+    expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
+    expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
   });
 
   it("does not reinterpret inspect_object as opening the text workspace", async () => {

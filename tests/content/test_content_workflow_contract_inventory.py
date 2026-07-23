@@ -39,6 +39,7 @@ from wilq.content.workflow.contracts import (
     ContentDraftRevisionReviewResponse,
     ContentDraftRevisionSaveResponse,
     ContentRevisionHtmlPackageResponse,
+    ContentEditorialIntegrityReport,
     ContentWorkItemBrowserSnapshotResponse,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemLearningProposalResponse,
@@ -110,6 +111,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/html-package",
     ): ContentRevisionHtmlPackageResponse,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/editorial-integrity",
+    ): ContentEditorialIntegrityReport,
     (
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",

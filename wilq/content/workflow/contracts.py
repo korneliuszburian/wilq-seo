@@ -550,6 +550,104 @@ class ContentRevisionHtmlPackageResponse(BaseModel):
     html_document: str = Field(min_length=1)
 
 
+ContentEditorialIntegrityResult = Literal[
+    "pass",
+    "review_required",
+    "invalid_representation",
+    "unauthorized_scope_change",
+]
+ContentProtectedContentUnitStatus = Literal["preserved", "changed", "removed"]
+ContentRepresentationAlignmentStatus = Literal["aligned", "mismatch"]
+
+
+class ContentEditorialIntegrityRevision(BaseModel):
+    """Exact immutable revision identity shown by the editorial comparison."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    revision_id: str = Field(min_length=1)
+    content_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class ContentEditorialIntegrityScope(BaseModel):
+    """Observed change surface; it does not claim an unpersisted request."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    section_ids: list[str] = Field(default_factory=list)
+    fields: list[Literal["body", "title", "faq", "cta", "links"]] = Field(
+        default_factory=list
+    )
+
+
+class ContentEditorialStructuralInvariants(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    section_ids_unchanged: bool
+    section_order_unchanged: bool
+    headings_unchanged: bool
+    title_unchanged: bool
+    faq_unchanged: bool
+    cta_semantics_unchanged: bool
+    links_unchanged: bool
+    evidence_lineage_unchanged: bool
+
+
+class ContentProtectedContentUnit(BaseModel):
+    """A parent-derived lexical unit, never a claim invented by the report."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    unit_id: str = Field(min_length=1)
+    section_id: str = Field(min_length=1)
+    claim_ids: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    before_excerpt: str = Field(min_length=1)
+    after_excerpt: str | None = None
+    status: ContentProtectedContentUnitStatus
+
+
+class ContentRepresentationAlignment(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    section_id: str = Field(min_length=1)
+    source_body_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    rendered_html_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    normalized_source_text_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    normalized_rendered_text_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    status: ContentRepresentationAlignmentStatus
+
+
+class ContentEditorialLintSignal(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1)
+    section_id: str | None = None
+    occurrences: int = Field(ge=1)
+    excerpts: list[str] = Field(default_factory=list)
+    reason: str = Field(min_length=1)
+
+
+class ContentEditorialIntegrityReport(BaseModel):
+    """Read-only comparison of an exact revision with its stable baseline."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    work_item_id: str = Field(min_length=1)
+    baseline_revision: ContentEditorialIntegrityRevision
+    direct_parent_revision: ContentEditorialIntegrityRevision | None = None
+    child_revision: ContentEditorialIntegrityRevision
+    observed_scope: ContentEditorialIntegrityScope
+    structural_invariants: ContentEditorialStructuralInvariants
+    protected_content_units: list[ContentProtectedContentUnit] = Field(default_factory=list)
+    representation_alignment: list[ContentRepresentationAlignment] = Field(default_factory=list)
+    lint_signals: list[ContentEditorialLintSignal] = Field(default_factory=list)
+    human_readable_diff: str = Field(min_length=1)
+    result: ContentEditorialIntegrityResult
+
+
 class ContentDraftRevisionConflictResponse(BaseModel):
     status: Literal["conflict"] = "conflict"
     code: ContentDraftRevisionPublicConflictCode

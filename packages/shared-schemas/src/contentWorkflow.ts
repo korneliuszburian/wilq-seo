@@ -2330,6 +2330,68 @@ export const ContentRevisionHtmlPackageResponseSchema = z.object({
   html_document: z.string().min(1)
 });
 
+export const ContentEditorialIntegrityRevisionSchema = z.object({
+  revision_id: z.string().min(1),
+  content_digest: z.string().regex(/^[0-9a-f]{64}$/)
+});
+
+export const ContentEditorialIntegrityScopeSchema = z.object({
+  section_ids: z.array(z.string()).default([]),
+  fields: z.array(z.enum(["body", "title", "faq", "cta", "links"])).default([])
+});
+
+export const ContentEditorialStructuralInvariantsSchema = z.object({
+  section_ids_unchanged: z.boolean(),
+  section_order_unchanged: z.boolean(),
+  headings_unchanged: z.boolean(),
+  title_unchanged: z.boolean(),
+  faq_unchanged: z.boolean(),
+  cta_semantics_unchanged: z.boolean(),
+  links_unchanged: z.boolean(),
+  evidence_lineage_unchanged: z.boolean()
+});
+
+export const ContentProtectedContentUnitSchema = z.object({
+  unit_id: z.string().min(1),
+  section_id: z.string().min(1),
+  claim_ids: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  before_excerpt: z.string().min(1),
+  after_excerpt: z.string().nullable(),
+  status: z.enum(["preserved", "changed", "removed"])
+});
+
+export const ContentRepresentationAlignmentSchema = z.object({
+  section_id: z.string().min(1),
+  source_body_sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  rendered_html_sha256: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
+  normalized_source_text_sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  normalized_rendered_text_sha256: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
+  status: z.enum(["aligned", "mismatch"])
+});
+
+export const ContentEditorialLintSignalSchema = z.object({
+  code: z.string().min(1),
+  section_id: z.string().nullable(),
+  occurrences: z.number().int().positive(),
+  excerpts: z.array(z.string()).default([]),
+  reason: z.string().min(1)
+});
+
+export const ContentEditorialIntegrityReportSchema = z.object({
+  work_item_id: z.string().min(1),
+  baseline_revision: ContentEditorialIntegrityRevisionSchema,
+  direct_parent_revision: ContentEditorialIntegrityRevisionSchema.nullable(),
+  child_revision: ContentEditorialIntegrityRevisionSchema,
+  observed_scope: ContentEditorialIntegrityScopeSchema,
+  structural_invariants: ContentEditorialStructuralInvariantsSchema,
+  protected_content_units: z.array(ContentProtectedContentUnitSchema).default([]),
+  representation_alignment: z.array(ContentRepresentationAlignmentSchema).default([]),
+  lint_signals: z.array(ContentEditorialLintSignalSchema).default([]),
+  human_readable_diff: z.string().min(1),
+  result: z.enum(["pass", "review_required", "invalid_representation", "unauthorized_scope_change"])
+});
+
 export const ContentDraftRevisionConflictSchema = z.object({
   status: z.literal("conflict"),
   code: z.enum([
@@ -3620,6 +3682,9 @@ export type ContentRevisionHtmlPackageManifest = z.infer<
 >;
 export type ContentRevisionHtmlPackageResponse = z.infer<
   typeof ContentRevisionHtmlPackageResponseSchema
+>;
+export type ContentEditorialIntegrityReport = z.infer<
+  typeof ContentEditorialIntegrityReportSchema
 >;
 export type ContentDraftRevisionConflict = z.infer<
   typeof ContentDraftRevisionConflictSchema

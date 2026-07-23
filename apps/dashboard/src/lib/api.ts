@@ -24,6 +24,7 @@ import {
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionReviewResponseSchema,
+  ContentEditorialIntegrityReportSchema,
   ContentRevisionHtmlPackageResponseSchema,
   ContentDraftRevisionSaveRequestSchema,
   ContentDraftRevisionSaveResponseSchema,
@@ -124,6 +125,7 @@ import {
   type ContentDraftRevisionDecision,
   type ContentDraftRevisionReviewRequest,
   type ContentDraftRevisionReviewResponse,
+  type ContentEditorialIntegrityReport,
   type ContentRevisionHtmlPackageResponse,
   type ContentDraftRevisionSaveRequest,
   type ContentDraftRevisionSaveResponse,
@@ -592,6 +594,16 @@ export function getContentWorkItemRevisionHtmlPackage(
   );
 }
 
+export function getContentWorkItemEditorialIntegrity(
+  workItemId: string,
+  revisionId: string
+): Promise<ContentEditorialIntegrityReport> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/editorial-integrity`,
+    ContentEditorialIntegrityReportSchema
+  );
+}
+
 export function postContentWorkItemCodexSectionProposal(
   request: ContentCodexSectionProposalRequest,
   workItemId: string,
@@ -960,6 +972,7 @@ export type {
   ContentDraftRevisionDecision,
   ContentDraftRevisionReviewRequest,
   ContentDraftRevisionReviewResponse,
+  ContentEditorialIntegrityReport,
   ContentRevisionHtmlPackageResponse,
   ContentDraftRevisionSaveRequest,
   ContentDraftRevisionSaveResponse,

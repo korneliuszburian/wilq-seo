@@ -41,6 +41,7 @@ import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandida
 import { ContentDecisionContextPanel } from "./ContentDecisionContextPanel";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
+import { ContentEditorialIntegrityReport } from "./ContentEditorialIntegrityReport";
 import { ContentPageWorkbench as ContentPageWorkbenchView } from "./ContentPageWorkbench";
 import { ContentWorkflowJourneyContext } from "./ContentWorkflowJourneyContext";
 import { ContentWorkflowTaskMap } from "./ContentWorkflowTaskMap";
@@ -482,7 +483,7 @@ function ContentTextWorkspace({
       <section className="mt-4 rounded-2xl border border-line bg-white p-4 shadow-sm lg:p-5">
         {initialDraft.isLoading ? <p className="text-sm text-slate-700">Wczytuję stan pełnego draftu HTML…</p> : null}
         {initialDraft.error ? <p className="text-sm font-semibold text-wait">Nie udało się odczytać stanu pełnego draftu HTML.</p> : null}
-        {completeRevision ? <><ContentFullPagePreview revision={completeRevision} proposal={null} /><div className="mt-4 rounded-xl border border-action/20 bg-action/5 p-4"><p className="text-sm font-semibold text-ink">Pełna rewizja HTML</p><p className="mt-1 text-sm text-slate-700">Rewizja: {completeRevision.revision_id.slice(0, 12)} · stan: nieprzejrzana</p><button type="button" className="mt-3 rounded-md bg-action px-3 py-2 text-sm font-semibold text-white" onClick={() => onOpenReview(context.work_item_id)}>Przejdź do review</button></div></> : !initialDraft.isLoading && !initialDraft.error ? (
+        {completeRevision ? <><ContentFullPagePreview revision={completeRevision} proposal={null} /><div className="mt-4 rounded-xl border border-action/20 bg-action/5 p-4"><p className="text-sm font-semibold text-ink">Pełna rewizja HTML</p><p className="mt-1 text-sm text-slate-700">Rewizja: {completeRevision.revision_id.slice(0, 12)} · stan: nieprzejrzana</p><button type="button" className="mt-3 rounded-md bg-action px-3 py-2 text-sm font-semibold text-white" onClick={() => onOpenReview(context.work_item_id)}>Przejdź do review</button></div>{completeRevision.base_revision_id ? <ContentEditorialIntegrityReport workItemId={context.work_item_id} revisionId={completeRevision.revision_id} /> : null}</> : !initialDraft.isLoading && !initialDraft.error ? (
           <div data-testid="content-text-workspace-blocker">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Stan tekstu</p>
             <h2 className="mt-2 text-lg font-semibold text-ink">Pełny draft HTML — niegotowy</h2>
@@ -585,7 +586,7 @@ function ContentReviewWorkspace({
           </div>
         )}
         {completeRevision ? (
-          <ReviewDecisionPanel
+          <><ReviewDecisionPanel
             revision={completeRevision}
             matchingReview={matchingReview}
             isLoadingPersistedState={workflow.isLoading}
@@ -611,7 +612,7 @@ function ContentReviewWorkspace({
               ]);
             }}
             onReturnToText={() => onReturnToText(context.work_item_id)}
-          />
+          />{completeRevision.base_revision_id ? <ContentEditorialIntegrityReport workItemId={context.work_item_id} revisionId={completeRevision.revision_id} /> : null}</>
         ) : null}
       </section>
       <details className="mt-4 rounded-xl border border-line bg-white p-4 text-sm text-slate-700">
