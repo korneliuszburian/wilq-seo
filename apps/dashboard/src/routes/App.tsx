@@ -180,7 +180,9 @@ function contentWorkflowSearch(search: Record<string, unknown>) {
     planning_digest: optionalSearchString(search.planning_digest),
     workspace: optionalSearchString(search.workspace),
     text: optionalSearchString(search.text),
-    review: optionalSearchString(search.review)
+    review: optionalSearchString(search.review),
+    browse: optionalSearchString(search.browse),
+    new_page: optionalSearchString(search.new_page)
   };
 }
 

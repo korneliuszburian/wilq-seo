@@ -8,6 +8,7 @@ import {
   getContentWorkItemDocumentWorkspace,
   getContentWorkItemInitialDraft,
   getContentWorkItemEnrichment,
+  getContentWorkflowEntry,
   getContentInventoryCatalog,
   getContentServiceProfile,
   getContentOperatorContext,
@@ -19,6 +20,7 @@ import {
   type ContentWorkItemQueueResponse,
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
+  type ContentWorkflowEntryResponse,
   type ContentInitialDraftResponse,
   type ContentInventoryCatalogResponse,
   type ContentServiceProfileResponse,
@@ -37,6 +39,7 @@ const READ_ONLY_WORKFLOW_STALE_TIME_MS = 30_000;
 export type ContentWorkItemQueueQuery = UseQueryResult<ContentWorkItemQueueResponse, Error>;
 export type ContentDecisionContextQuery = UseQueryResult<ContentDecisionContext, Error>;
 export type ContentDocumentWorkspaceQuery = UseQueryResult<ContentDocumentWorkspace, Error>;
+export type ContentWorkflowEntryQuery = UseQueryResult<ContentWorkflowEntryResponse, Error>;
 export type ContentInitialDraftQuery = UseQueryResult<ContentInitialDraftResponse, Error>;
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
 export type ContentServiceProfileQuery = UseQueryResult<ContentServiceProfileResponse, Error>;
@@ -68,13 +71,21 @@ export function contentDecisionContextQueryKey(workItemId: string | null) {
 export function useContentWorkflowQueries(
   selectedWorkItemId: string | null,
   textWorkspaceOpen = false,
-  reviewOpen = false
+  reviewOpen = false,
+  browseInventory = false
 ) {
   const queryClient = useQueryClient();
+  const entry = useQuery({
+    queryKey: ["content-workflow", "entry"],
+    queryFn: () => getContentWorkflowEntry(),
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    enabled: !selectedWorkItemId
+  });
   const queueCatalog = useQuery({
     queryKey: ["content-workflow", "queue", "catalog"],
     queryFn: () => getContentWorkItemQueue(),
-    staleTime: 30_000
+    staleTime: 30_000,
+    enabled: Boolean(selectedWorkItemId)
   });
   const selectedQueue = useQuery({
     queryKey: ["content-workflow", "queue", "selected", selectedWorkItemId],
@@ -106,27 +117,32 @@ export function useContentWorkflowQueries(
   const inventory = useQuery({
     queryKey: ["content-workflow", "inventory-catalog"],
     queryFn: getContentInventoryCatalog,
-    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    enabled: Boolean(selectedWorkItemId || browseInventory)
   });
   const serviceProfile = useQuery({
     queryKey: ["content-workflow", "service-profile"],
     queryFn: getContentServiceProfile,
-    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    enabled: Boolean(selectedWorkItemId)
   });
   const knowledgeReadiness = useQuery({
     queryKey: ["content-workflow", "knowledge-source-material-readiness"],
     queryFn: getKnowledgeSourceMaterialReadiness,
-    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    enabled: Boolean(selectedWorkItemId)
   });
   const knowledgeMaterials = useQuery({
     queryKey: ["content-workflow", "knowledge-source-materials"],
     queryFn: getKnowledgeSourceMaterials,
-    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    enabled: Boolean(selectedWorkItemId)
   });
   const operatorContext = useQuery({
     queryKey: ["content-workflow", "operator-context"],
     queryFn: getContentOperatorContext,
-    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    enabled: Boolean(selectedWorkItemId)
   });
   const requestedCandidate = mergedQueue.data?.candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
@@ -196,6 +212,7 @@ export function useContentWorkflowQueries(
     draftWriteReadiness,
     decisionContext,
     documentWorkspace,
+    entry,
     enrichment,
     inventory,
     initialDraft,

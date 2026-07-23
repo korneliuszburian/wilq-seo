@@ -102,6 +102,10 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
+from wilq.content.workflow.entry import (
+    ContentWorkflowEntryResponse,
+    build_content_workflow_entry,
+)
 from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
 from wilq.content.workflow.operator import ContentOperatorContext, content_operator_context
 from wilq.content.workflow.planning import (
@@ -318,6 +322,16 @@ def content_work_item_queue(
         build_content_diagnostics_cached(),
         selected_work_item_id=work_item_id,
     )
+
+
+@router.get(
+    "/api/content/workflow-entry",
+    response_model=ContentWorkflowEntryResponse,
+)
+def content_workflow_entry(
+    search: str | None = Query(default=None, max_length=120),
+) -> ContentWorkflowEntryResponse:
+    return build_content_workflow_entry(search=search)
 
 
 @router.get(

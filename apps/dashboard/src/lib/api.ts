@@ -22,6 +22,7 @@ import {
   ContentDiagnosticsResponseSchema,
   ContentDecisionContextSchema,
   ContentDocumentWorkspaceSchema,
+  ContentWorkflowEntryResponseSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionReviewResponseSchema,
@@ -121,6 +122,7 @@ import {
   type ContentDiagnosticsResponse,
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
+  type ContentWorkflowEntryResponse,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
   type ContentDraftRevisionConflict,
@@ -499,6 +501,11 @@ export function getContentWorkItemDocumentWorkspace(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/document-workspace`,
     ContentDocumentWorkspaceSchema
   );
+}
+
+export function getContentWorkflowEntry(search?: string): Promise<ContentWorkflowEntryResponse> {
+  const query = search?.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";
+  return apiGet(`/api/content/workflow-entry${query}`, ContentWorkflowEntryResponseSchema);
 }
 
 export function getContentInventoryCatalog(): Promise<ContentInventoryCatalogResponse> {
@@ -971,6 +978,7 @@ export type {
   ContentDiagnosticsResponse,
   ContentDecisionContext,
   ContentDocumentWorkspace,
+  ContentWorkflowEntryResponse,
   ContentCodexSectionProposalRequest,
   ContentCodexSectionProposalResponse,
   ContentInitialDraftRequest,

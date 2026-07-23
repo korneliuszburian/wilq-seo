@@ -492,6 +492,43 @@ export const ContentDocumentWorkspaceSchema = z.object({
   secondary_disclosures: z.array(z.string()).default([])
 });
 
+export const ContentWorkflowEntryModeSchema = z.object({
+  kind: z.enum(["refresh_existing", "new_page"]),
+  label: z.string().min(1),
+  description: z.string().min(1),
+  route: z.enum(["refresh_existing", "new_page"])
+});
+
+export const ContentWorkflowEntryFactSchema = z.object({
+  label: z.string().min(1),
+  value: z.string().min(1)
+});
+
+export const ContentWorkflowEntryRecommendationSchema = z.object({
+  work_item_id: z.string().min(1),
+  title: z.string().min(1),
+  url: z.string().url(),
+  reason: z.string().min(1),
+  facts: z.array(ContentWorkflowEntryFactSchema).default([])
+});
+
+export const ContentWorkflowEntrySearchResultSchema = z.object({
+  work_item_id: z.string().min(1),
+  title: z.string().min(1),
+  url: z.string().url(),
+  material_label: z.string().min(1)
+});
+
+export const ContentWorkflowEntryResponseSchema = z.object({
+  response_type: z.literal("content_workflow_entry").default("content_workflow_entry"),
+  refresh_existing: ContentWorkflowEntryModeSchema,
+  new_page: ContentWorkflowEntryModeSchema,
+  recommendations: z.array(ContentWorkflowEntryRecommendationSchema).max(3).default([]),
+  search_query: z.string().nullable().optional(),
+  search_results: z.array(ContentWorkflowEntrySearchResultSchema).max(10).default([]),
+  browse_inventory_label: z.string().min(1)
+});
+
 export const ContentInventoryRecordSchema = z.object({
   id: z.string(),
   url: z.string(),
@@ -3644,6 +3681,7 @@ export type ContentWorkItemQueueCandidate = z.infer<
 export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueResponseSchema>;
 export type ContentDecisionContext = z.infer<typeof ContentDecisionContextSchema>;
 export type ContentDocumentWorkspace = z.infer<typeof ContentDocumentWorkspaceSchema>;
+export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
 export type ContentInventoryCatalogItem = z.infer<typeof ContentInventoryCatalogItemSchema>;
 export type ContentInventoryCatalogResponse = z.infer<typeof ContentInventoryCatalogResponseSchema>;
 export type ContentInventoryMaterialResponse = z.infer<typeof ContentInventoryMaterialResponseSchema>;
