@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.workflow.catalog import read_content_inventory_material
 from wilq.content.workflow.decision_context import build_content_decision_context
+from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.content.workflow.store import content_workflow_store
 
 
@@ -13,6 +14,7 @@ class ContentDocumentWorkspaceSourceSection(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     heading: str
+    excerpt: str | None = None
 
 
 class ContentDocumentWorkspaceSourceSnapshot(BaseModel):
@@ -47,6 +49,27 @@ class ContentDocumentWorkspaceDocument(BaseModel):
     )
     label: str
     reason: str
+    preview: ContentDocumentWorkspaceDocumentPreview | None = None
+
+
+class ContentDocumentWorkspaceDocumentSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    section_id: str | None = None
+    heading: str
+    body_markdown: str
+    content_html: str | None = None
+
+
+class ContentDocumentWorkspaceDocumentPreview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str
+    h1: str | None = None
+    lead: str | None = None
+    sections: list[ContentDocumentWorkspaceDocumentSection] = Field(default_factory=list)
+    faq_count: int = 0
+    cta_count: int = 0
 
 
 class ContentDocumentWorkspaceNextAction(BaseModel):
@@ -55,6 +78,28 @@ class ContentDocumentWorkspaceNextAction(BaseModel):
     kind: Literal["open_review", "prepare_document", "none"]
     label: str
     reason: str
+
+
+class ContentDocumentWorkspaceComparisonItem(BaseModel):
+    """One honest source/document relation; never a semantic similarity guess."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["same_heading", "source_only", "document_only"]
+    source_heading: str | None = None
+    source_excerpt: str | None = None
+    document_section_id: str | None = None
+    document_heading: str | None = None
+    document_excerpt: str | None = None
+    reason: str
+
+
+class ContentDocumentWorkspaceComparison(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["available", "unavailable"]
+    reason: str
+    items: list[ContentDocumentWorkspaceComparisonItem] = Field(default_factory=list)
 
 
 class ContentDocumentWorkspace(BaseModel):
@@ -69,6 +114,7 @@ class ContentDocumentWorkspace(BaseModel):
     service_label: str | None = None
     source_snapshot: ContentDocumentWorkspaceSourceSnapshot
     canonical_document: ContentDocumentWorkspaceDocument
+    comparison: ContentDocumentWorkspaceComparison
     next_action: ContentDocumentWorkspaceNextAction
     secondary_disclosures: list[str] = Field(default_factory=list)
 
@@ -93,6 +139,7 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
         service_label=context.service.label,
         source_snapshot=source_snapshot,
         canonical_document=document,
+        comparison=_comparison(source_snapshot, revision_state.latest_revision),
         next_action=_next_action(document),
         secondary_disclosures=[
             (
@@ -131,7 +178,8 @@ def _source_snapshot(context, material) -> ContentDocumentWorkspaceSourceSnapsho
         lead=lead,
         content_excerpt=_excerpt(text),
         ordered_sections=[
-            ContentDocumentWorkspaceSourceSection(heading=heading) for heading in headings
+            ContentDocumentWorkspaceSourceSection(heading=heading, excerpt=excerpt)
+            for heading, excerpt in _source_sections(text, headings)
         ],
         faq_status="not_observed",
         cta_status="not_observed",
@@ -166,14 +214,53 @@ def _lead(text: str) -> str | None:
     for paragraph in text.split("\n\n"):
         candidate = paragraph.strip()
         if candidate and not candidate.startswith("#"):
-            return candidate[:420]
-    return text[:420]
+            return _excerpt(candidate, limit=420)
+    return _excerpt(text, limit=420)
 
 
-def _excerpt(text: str) -> str | None:
+def _excerpt(text: str, *, limit: int = 1000) -> str | None:
     if not text:
         return None
-    return text[:1000]
+    if len(text) <= limit:
+        return text
+    boundary = max(text.rfind(marker, 0, limit) for marker in (". ", "! ", "? ", "\n"))
+    if boundary < max(80, limit // 2):
+        boundary = text.rfind(" ", 0, limit)
+    if boundary <= 0:
+        boundary = limit
+    return f"{text[: boundary + 1].rstrip()}…"
+
+
+def _source_sections(text: str, headings: list[str]) -> list[tuple[str, str | None]]:
+    """Split only at exact observed headings; a missing match remains an honest outline item."""
+
+    positions: list[tuple[str, int]] = []
+    cursor = 0
+    folded_text = text.casefold()
+    for heading in headings:
+        clean_heading = heading.strip()
+        if not clean_heading:
+            continue
+        position = folded_text.find(clean_heading.casefold(), cursor)
+        if position < 0:
+            positions.append((clean_heading, -1))
+            continue
+        positions.append((clean_heading, position))
+        cursor = position + len(clean_heading)
+    sections: list[tuple[str, str | None]] = []
+    for index, (heading, position) in enumerate(positions):
+        if position < 0:
+            sections.append((heading, None))
+            continue
+        next_positions = [
+            item_position
+            for _, item_position in positions[index + 1 :]
+            if item_position >= 0
+        ]
+        end = next_positions[0] if next_positions else len(text)
+        body = text[position + len(heading) : end].strip()
+        sections.append((heading, _excerpt(body, limit=460)))
+    return sections
 
 
 def _canonical_document(status: str, revision) -> ContentDocumentWorkspaceDocument:
@@ -212,7 +299,103 @@ def _canonical_document(status: str, revision) -> ContentDocumentWorkspaceDocume
         review_state=normalized,
         label=labels[normalized],
         reason=reasons[normalized],
+        preview=_document_preview(revision),
     )
+
+
+def _document_preview(revision: ContentDraftRevision) -> ContentDocumentWorkspaceDocumentPreview:
+    assets = revision.page_assets
+    return ContentDocumentWorkspaceDocumentPreview(
+        title=revision.title,
+        h1=None if assets is None else assets.h1,
+        lead=None if assets is None else assets.lead,
+        sections=[
+            ContentDocumentWorkspaceDocumentSection(
+                section_id=section.section_id,
+                heading=section.heading,
+                body_markdown=section.body_markdown,
+                content_html=section.content_html,
+            )
+            for section in revision.sections
+        ],
+        faq_count=len(revision.faq),
+        cta_count=len(revision.cta_blocks),
+    )
+
+
+def _comparison(
+    source: ContentDocumentWorkspaceSourceSnapshot,
+    revision: ContentDraftRevision | None,
+) -> ContentDocumentWorkspaceComparison:
+    if revision is None:
+        return ContentDocumentWorkspaceComparison(
+            status="unavailable",
+            reason="Porównanie pojawi się po zapisaniu nowej wersji dokumentu.",
+        )
+    source_by_heading: dict[str, list[ContentDocumentWorkspaceSourceSection]] = {}
+    for section in source.ordered_sections:
+        source_by_heading.setdefault(_heading_key(section.heading), []).append(section)
+    items: list[ContentDocumentWorkspaceComparisonItem] = []
+    matched_source_headings: set[str] = set()
+    for section in revision.sections:
+        key = _heading_key(section.heading)
+        candidates = source_by_heading.get(key, [])
+        source_section = candidates.pop(0) if candidates else None
+        if source_section is None:
+            items.append(
+                ContentDocumentWorkspaceComparisonItem(
+                    status="document_only",
+                    document_section_id=section.section_id,
+                    document_heading=section.heading,
+                    document_excerpt=_excerpt(section.body_markdown, limit=460),
+                    reason=(
+                        "Ta sekcja nie ma bezpośrednio rozpoznanego odpowiednika "
+                        "w układzie obecnej strony."
+                    ),
+                )
+            )
+            continue
+        matched_source_headings.add(source_section.heading)
+        items.append(
+            ContentDocumentWorkspaceComparisonItem(
+                status="same_heading",
+                source_heading=source_section.heading,
+                source_excerpt=source_section.excerpt,
+                document_section_id=section.section_id,
+                document_heading=section.heading,
+                document_excerpt=_excerpt(section.body_markdown, limit=460),
+                reason=(
+                    "Obie wersje mają identycznie odczytany nagłówek. WILQ nie ocenia "
+                    "automatycznie, czy znaczenie akapitów jest takie samo."
+                ),
+            )
+        )
+    for source_section in source.ordered_sections:
+        if source_section.heading in matched_source_headings:
+            continue
+        items.append(
+            ContentDocumentWorkspaceComparisonItem(
+                status="source_only",
+                source_heading=source_section.heading,
+                source_excerpt=source_section.excerpt,
+                reason=(
+                    "Ten element układu obecnej strony nie ma bezpośrednio rozpoznanego "
+                    "odpowiednika w nowym dokumencie."
+                ),
+            )
+        )
+    return ContentDocumentWorkspaceComparison(
+        status="available",
+        reason=(
+            "Porównanie pokazuje tylko jednoznaczne relacje nagłówków oraz elementy "
+            "występujące po jednej stronie."
+        ),
+        items=items,
+    )
+
+
+def _heading_key(value: str) -> str:
+    return " ".join(value.casefold().split())
 
 
 def _next_action(document: ContentDocumentWorkspaceDocument) -> ContentDocumentWorkspaceNextAction:

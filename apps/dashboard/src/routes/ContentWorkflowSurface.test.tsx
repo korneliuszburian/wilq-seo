@@ -318,7 +318,11 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("content-source-snapshot")).toHaveTextContent("Aktualny materiał BDO");
-    expect(screen.getByText("Jak prowadzić ewidencję odpadów?")).toBeInTheDocument();
+    expect(screen.getAllByText("Jak prowadzić ewidencję odpadów?")).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
+    expect(screen.getByText("Nowa wersja czeka na review")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Porównanie" }));
+    expect(screen.getByText("Brak bezpośrednio rozpoznanego odpowiednika.")).toBeInTheDocument();
     expect(getContentWorkItemDocumentWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
@@ -3173,8 +3177,8 @@ function contentDocumentWorkspace(): ContentDocumentWorkspace {
       lead: "Aktualna strona wyjaśnia podstawowe obowiązki BDO.",
       content_excerpt: "Aktualny fragment materiału źródłowego BDO.",
       ordered_sections: [
-        { heading: "Kto powinien sprawdzić obowiązek wpisu?" },
-        { heading: "Jak prowadzić ewidencję odpadów?" }
+        { heading: "Kto powinien sprawdzić obowiązek wpisu?", excerpt: "Aktualna odpowiedź." },
+        { heading: "Jak prowadzić ewidencję odpadów?", excerpt: "Aktualny opis ewidencji." }
       ],
       faq_status: "not_observed",
       cta_status: "not_observed",
@@ -3188,7 +3192,33 @@ function contentDocumentWorkspace(): ContentDocumentWorkspace {
       content_digest: revision.content_digest,
       review_state: "unreviewed",
       label: "Nowa wersja czeka na review",
-      reason: "Istnieje dokładna rewizja dokumentu, ale nie ma jeszcze decyzji człowieka."
+      reason: "Istnieje dokładna rewizja dokumentu, ale nie ma jeszcze decyzji człowieka.",
+      preview: {
+        title: revision.title,
+        h1: revision.page_assets?.h1 ?? null,
+        lead: revision.page_assets?.lead ?? null,
+        sections: revision.sections.map((section) => ({
+          section_id: section.section_id,
+          heading: section.heading,
+          body_markdown: section.body_markdown,
+          content_html: section.content_html
+        })),
+        faq_count: revision.faq.length,
+        cta_count: revision.cta_blocks.length
+      }
+    },
+    comparison: {
+      status: "available",
+      reason: "Porównanie pokazuje tylko jawne relacje między nagłówkami.",
+      items: [{
+        status: "source_only",
+        source_heading: "Kto powinien sprawdzić obowiązek wpisu?",
+        source_excerpt: "Aktualna odpowiedź.",
+        document_section_id: null,
+        document_heading: null,
+        document_excerpt: null,
+        reason: "Brak bezpośrednio rozpoznanego odpowiednika."
+      }]
     },
     next_action: {
       kind: "open_review",

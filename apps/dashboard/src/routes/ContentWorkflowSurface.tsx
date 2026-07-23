@@ -39,6 +39,7 @@ import {
 } from "./ContentWorkflowBoundaryStates";
 import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
 import { ContentDecisionContextPanel } from "./ContentDecisionContextPanel";
+import { ContentDocumentWorkspaceCanvas } from "./ContentDocumentWorkspaceCanvas";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentEditorialIntegrityReport } from "./ContentEditorialIntegrityReport";
@@ -479,50 +480,7 @@ function ContentTextWorkspace({
     return <DocumentWorkspaceError onRetry={() => void documentWorkspace.refetch()} />;
   }
   const workspace = documentWorkspace.data;
-
-  return (
-    <main className="mx-auto max-w-7xl px-4 py-5 lg:px-8" data-testid="content-text-workspace">
-      <ContentWorkflowWorkspaceHeader />
-      <section className="rounded-2xl border border-action/25 bg-white p-5 shadow-sm lg:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Tekst strony</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink lg:text-3xl">
-          {workspace.source_snapshot.title ?? "Wybrana strona"}
-        </h1>
-        {workspace.source_snapshot.url ? <p className="mt-2 break-all text-sm text-action">{workspace.source_snapshot.url}</p> : null}
-        <p className="mt-2 text-sm font-medium text-slate-700">Usługa: {workspace.service_label ?? "niepotwierdzona"}</p>
-        <p className="mt-3 text-sm leading-6 text-slate-700">Wynik pracy: pełna rewizja HTML do review.</p>
-        <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-slate-600" aria-label="Stan pipeline’u">
-          <li>Kontekst</li><li aria-hidden="true">→</li><li className="text-action">Szkic</li><li aria-hidden="true">→</li><li>Review</li><li aria-hidden="true">→</li><li>Odbiór opcjonalny</li>
-        </ol>
-      </section>
-      <section className="mt-4 rounded-2xl border border-line bg-white p-4 shadow-sm lg:p-5" data-testid="content-document-state">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Nowa wersja</p>
-        <h2 className="mt-2 text-lg font-semibold text-ink">{workspace.canonical_document.label}</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-700">{workspace.canonical_document.reason}</p>
-        {workspace.canonical_document.revision_id ? <p className="mt-3 text-sm font-semibold text-slate-700">Dokładna rewizja · status: {documentStatusLabel(workspace.canonical_document.status)}</p> : null}
-        {workspace.next_action.kind === "open_review" ? <button type="button" className="mt-3 rounded-md bg-action px-3 py-2 text-sm font-semibold text-white" onClick={() => onOpenReview(workItemId)}>{workspace.next_action.label}</button> : null}
-        {workspace.next_action.kind === "prepare_document" ? <div className="mt-3 rounded-xl border border-wait/25 bg-wait/5 p-3" data-testid="content-text-workspace-blocker"><p className="text-sm font-semibold text-ink">{workspace.next_action.label}</p><p className="mt-1 text-sm leading-6 text-slate-700">{workspace.next_action.reason}</p></div> : null}
-      </section>
-      <section className="mt-4 rounded-2xl border border-line bg-white p-4 shadow-sm lg:p-5" data-testid="content-source-snapshot">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Obecna strona</p>
-            <h2 className="mt-1 text-lg font-semibold text-ink">{workspace.source_snapshot.title ?? "Publiczny materiał źródłowy"}</h2>
-          </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{sourceSnapshotLabel(workspace.source_snapshot.status)}</span>
-        </div>
-        {workspace.source_snapshot.url ? <a className="mt-2 block break-all text-sm text-action underline-offset-2 hover:underline" href={workspace.source_snapshot.url} target="_blank" rel="noreferrer">{workspace.source_snapshot.url}</a> : null}
-        <p className="mt-3 text-sm leading-6 text-slate-700">{workspace.source_snapshot.reason}</p>
-        {workspace.source_snapshot.lead ? <p className="mt-3 border-l-2 border-action/40 pl-3 text-sm leading-6 text-slate-700">{workspace.source_snapshot.lead}</p> : null}
-        {workspace.source_snapshot.ordered_sections.length ? <div className="mt-4"><p className="text-sm font-semibold text-ink">Układ obecnej strony</p><ol className="mt-2 grid gap-2 sm:grid-cols-2">{workspace.source_snapshot.ordered_sections.map((section, index) => <li key={`${section.heading}-${index}`} className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700"><span className="mr-2 font-semibold text-slate-500">{index + 1}.</span>{section.heading}</li>)}</ol></div> : null}
-        {workspace.source_snapshot.content_excerpt ? <details className="mt-4 rounded-lg border border-line p-3"><summary className="cursor-pointer font-semibold text-ink">Fragment odczytanego materiału</summary><p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{workspace.source_snapshot.content_excerpt}</p></details> : null}
-      </section>
-      <details className="mt-4 rounded-xl border border-line bg-white p-4 text-sm text-slate-700">
-        <summary className="cursor-pointer font-semibold text-ink">Szczegóły, źródła i ograniczenia</summary>
-        {workspace.secondary_disclosures.map((detail) => <p key={detail} className="mt-3 leading-6">{detail}</p>)}
-      </details>
-    </main>
-  );
+  return <ContentDocumentWorkspaceCanvas workspace={workspace} onOpenReview={() => onOpenReview(workItemId)} />;
 }
 
 function DocumentWorkspacePending() {
@@ -531,14 +489,6 @@ function DocumentWorkspacePending() {
 
 function DocumentWorkspaceError({ onRetry }: { onRetry: () => void }) {
   return <main className="mx-auto max-w-7xl px-4 py-5 lg:px-8" data-testid="content-document-workspace-error"><ContentWorkflowWorkspaceHeader /><section className="mt-4 rounded-2xl border border-wait/30 bg-white p-5 shadow-sm"><p className="mt-2 text-lg font-semibold text-ink">Nie udało się odczytać workspace’u strony.</p><button type="button" className="mt-3 rounded-md bg-action px-3 py-2 text-sm font-semibold text-white" onClick={onRetry}>Spróbuj ponownie</button></section></main>;
-}
-
-function sourceSnapshotLabel(status: "available" | "partial" | "unavailable") {
-  return { available: "materiał dostępny", partial: "materiał częściowy", unavailable: "materiał niedostępny" }[status];
-}
-
-function documentStatusLabel(status: "not_created" | "unreviewed" | "needs_changes" | "approved" | "rejected" | "deferred") {
-  return { not_created: "nie utworzono", unreviewed: "nieprzejrzana", needs_changes: "wymaga zmian", approved: "zatwierdzona", rejected: "odrzucona", deferred: "odłożona" }[status];
 }
 
 function ContentReviewWorkspace({

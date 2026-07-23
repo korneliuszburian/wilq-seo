@@ -412,7 +412,8 @@ export const ContentDecisionContextSchema = z.object({
 });
 
 export const ContentDocumentWorkspaceSourceSectionSchema = z.object({
-  heading: z.string().min(1)
+  heading: z.string().min(1),
+  excerpt: z.string().nullable().optional()
 });
 
 export const ContentDocumentWorkspaceSourceSnapshotSchema = z.object({
@@ -436,13 +437,46 @@ export const ContentDocumentWorkspaceDocumentSchema = z.object({
   content_digest: z.string().nullable().optional(),
   review_state: z.enum(["unreviewed", "needs_changes", "approved", "rejected", "deferred"]).default("unreviewed"),
   label: z.string(),
-  reason: z.string()
+  reason: z.string(),
+  preview: z.lazy(() => ContentDocumentWorkspaceDocumentPreviewSchema).nullable().optional()
+});
+
+export const ContentDocumentWorkspaceDocumentSectionSchema = z.object({
+  section_id: z.string().nullable().optional(),
+  heading: z.string().min(1),
+  body_markdown: z.string().min(1),
+  content_html: z.string().nullable().optional()
+});
+
+export const ContentDocumentWorkspaceDocumentPreviewSchema = z.object({
+  title: z.string().min(1),
+  h1: z.string().nullable().optional(),
+  lead: z.string().nullable().optional(),
+  sections: z.array(ContentDocumentWorkspaceDocumentSectionSchema).default([]),
+  faq_count: z.number().int().nonnegative(),
+  cta_count: z.number().int().nonnegative()
 });
 
 export const ContentDocumentWorkspaceNextActionSchema = z.object({
   kind: z.enum(["open_review", "prepare_document", "none"]),
   label: z.string(),
   reason: z.string()
+});
+
+export const ContentDocumentWorkspaceComparisonItemSchema = z.object({
+  status: z.enum(["same_heading", "source_only", "document_only"]),
+  source_heading: z.string().nullable().optional(),
+  source_excerpt: z.string().nullable().optional(),
+  document_section_id: z.string().nullable().optional(),
+  document_heading: z.string().nullable().optional(),
+  document_excerpt: z.string().nullable().optional(),
+  reason: z.string()
+});
+
+export const ContentDocumentWorkspaceComparisonSchema = z.object({
+  status: z.enum(["available", "unavailable"]),
+  reason: z.string(),
+  items: z.array(ContentDocumentWorkspaceComparisonItemSchema).default([])
 });
 
 export const ContentDocumentWorkspaceSchema = z.object({
@@ -453,6 +487,7 @@ export const ContentDocumentWorkspaceSchema = z.object({
   service_label: z.string().nullable().optional(),
   source_snapshot: ContentDocumentWorkspaceSourceSnapshotSchema,
   canonical_document: ContentDocumentWorkspaceDocumentSchema,
+  comparison: ContentDocumentWorkspaceComparisonSchema,
   next_action: ContentDocumentWorkspaceNextActionSchema,
   secondary_disclosures: z.array(z.string()).default([])
 });
