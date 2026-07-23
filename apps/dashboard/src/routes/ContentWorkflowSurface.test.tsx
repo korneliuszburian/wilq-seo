@@ -15,6 +15,7 @@ import {
   getContentWorkItemDocumentWorkspace,
   getContentInventoryCatalog,
   getContentOperatorContext,
+  getContentServiceProfile,
   getContentWorkItemQueue,
   getKnowledgeSourceMaterialReadiness,
   getKnowledgeSourceMaterials,
@@ -103,6 +104,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemDocumentWorkspace: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
+    getContentServiceProfile: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getKnowledgeSourceMaterialReadiness: vi.fn(),
     getKnowledgeSourceMaterials: vi.fn(),
@@ -146,6 +148,7 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(contentDecisionContext());
     vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(contentDocumentWorkspace());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
+    vi.mocked(getContentServiceProfile).mockResolvedValue(serviceProfileContext() as never);
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue(knowledgeReadiness());
     vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue([]);
@@ -314,6 +317,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByRole("button", { name: "Otwórz warsztat strony" })).toBeInTheDocument();
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
 
+    vi.clearAllMocks();
     fireEvent.click(screen.getByRole("button", { name: "Otwórz warsztat strony" }));
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
@@ -324,6 +328,12 @@ describe("ContentWorkflowSurface", () => {
     fireEvent.click(screen.getByRole("button", { name: "Porównanie" }));
     expect(screen.getByText("Brak bezpośrednio rozpoznanego odpowiednika.")).toBeInTheDocument();
     expect(getContentWorkItemDocumentWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
+    expect(getContentWorkItemQueue).not.toHaveBeenCalled();
+    expect(getContentInventoryCatalog).not.toHaveBeenCalled();
+    expect(getContentServiceProfile).not.toHaveBeenCalled();
+    expect(getKnowledgeSourceMaterialReadiness).not.toHaveBeenCalled();
+    expect(getKnowledgeSourceMaterials).not.toHaveBeenCalled();
+    expect(getContentOperatorContext).not.toHaveBeenCalled();
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();

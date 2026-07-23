@@ -75,6 +75,12 @@ export function useContentWorkflowQueries(
   browseInventory = false
 ) {
   const queryClient = useQueryClient();
+  // Text is a direct, read-only document surface.  It does not need the
+  // selection catalogue or supporting panels just to identify the URL already
+  // present in the route.  Review deliberately keeps its richer exact-state
+  // reads below.
+  const directTextWorkspace = Boolean(selectedWorkItemId && textWorkspaceOpen && !reviewOpen);
+  const selectedWorkflowRead = Boolean(selectedWorkItemId && !directTextWorkspace);
   const entry = useQuery({
     queryKey: ["content-workflow", "entry"],
     queryFn: () => getContentWorkflowEntry(),
@@ -85,12 +91,12 @@ export function useContentWorkflowQueries(
     queryKey: ["content-workflow", "queue", "catalog"],
     queryFn: () => getContentWorkItemQueue(),
     staleTime: 30_000,
-    enabled: Boolean(selectedWorkItemId)
+    enabled: selectedWorkflowRead
   });
   const selectedQueue = useQuery({
     queryKey: ["content-workflow", "queue", "selected", selectedWorkItemId],
     queryFn: () => getContentWorkItemQueue(selectedWorkItemId ?? undefined),
-    enabled: Boolean(selectedWorkItemId),
+    enabled: selectedWorkflowRead,
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     // The selected response is intentionally lightweight. It opens the page
     // quickly while the catalog query fills the picker with every available
@@ -118,36 +124,38 @@ export function useContentWorkflowQueries(
     queryKey: ["content-workflow", "inventory-catalog"],
     queryFn: getContentInventoryCatalog,
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    enabled: Boolean(selectedWorkItemId || browseInventory)
+    enabled: Boolean(selectedWorkflowRead || browseInventory)
   });
   const serviceProfile = useQuery({
     queryKey: ["content-workflow", "service-profile"],
     queryFn: getContentServiceProfile,
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    enabled: Boolean(selectedWorkItemId)
+    enabled: selectedWorkflowRead
   });
   const knowledgeReadiness = useQuery({
     queryKey: ["content-workflow", "knowledge-source-material-readiness"],
     queryFn: getKnowledgeSourceMaterialReadiness,
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    enabled: Boolean(selectedWorkItemId)
+    enabled: selectedWorkflowRead
   });
   const knowledgeMaterials = useQuery({
     queryKey: ["content-workflow", "knowledge-source-materials"],
     queryFn: getKnowledgeSourceMaterials,
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    enabled: Boolean(selectedWorkItemId)
+    enabled: selectedWorkflowRead
   });
   const operatorContext = useQuery({
     queryKey: ["content-workflow", "operator-context"],
     queryFn: getContentOperatorContext,
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    enabled: Boolean(selectedWorkItemId)
+    enabled: selectedWorkflowRead
   });
   const requestedCandidate = mergedQueue.data?.candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
-  const activeWorkItemId = requestedCandidate?.work_item_id ?? null;
+  const activeWorkItemId = directTextWorkspace
+    ? selectedWorkItemId
+    : requestedCandidate?.work_item_id ?? null;
   const selectedCandidate =
     mergedQueue.data?.candidates.find((candidate) => candidate.work_item_id === activeWorkItemId) ?? null;
   const decisionContext = useQuery({

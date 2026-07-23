@@ -358,6 +358,15 @@ function ContentWorkflowRouteState({
       />
     );
   }
+  if (textWorkspaceOpen && !reviewOpen) {
+    return (
+      <ContentTextWorkspace
+        workItemId={selectedWorkItemId}
+        documentWorkspace={documentWorkspace}
+        onOpenReview={onOpenReview}
+      />
+    );
+  }
   if (queue.isLoading) {
     const selectedInventoryItem = selectedWorkItemId
       ? inventory.data?.items.find((item) => item.work_item_id === selectedWorkItemId)
