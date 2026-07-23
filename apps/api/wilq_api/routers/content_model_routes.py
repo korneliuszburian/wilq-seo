@@ -13,6 +13,9 @@ from apps.api.wilq_api.routers.content_decision_context import (
 from apps.api.wilq_api.routers.content_initial_draft import (
     register_content_initial_draft_route,
 )
+from apps.api.wilq_api.routers.content_revision_html_package import (
+    register_content_revision_html_package_route,
+)
 from apps.api.wilq_api.routers.content_planning_proposals import (
     register_content_planning_proposal_routes,
 )
@@ -32,6 +35,7 @@ def register_content_model_routes(
     register_content_decision_context_route(router)
     register_content_codex_proposal_route(router, snapshot_loader=snapshot_loader)
     register_content_initial_draft_route(router, snapshot_loader=snapshot_loader)
+    register_content_revision_html_package_route(router, snapshot_loader=snapshot_loader)
     register_content_planning_proposal_routes(router, snapshot_loader=snapshot_loader)
     register_content_semantic_review_routes(router, snapshot_loader=snapshot_loader)
 

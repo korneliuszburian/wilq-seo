@@ -525,6 +525,31 @@ class ContentDraftRevisionReviewResponse(BaseModel):
     workspace: ContentDraftRevisionWorkspace
 
 
+class ContentRevisionHtmlPackageManifest(BaseModel):
+    """Lineage carried with a read-only exact-revision HTML package."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    work_item_id: str = Field(min_length=1)
+    revision_id: str = Field(min_length=1)
+    content_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    final_canonical_url: str = Field(min_length=1)
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
+    section_count: int = Field(ge=1)
+
+
+class ContentRevisionHtmlPackageResponse(BaseModel):
+    """Read-only HTML export for the exact latest approved revision."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    manifest: ContentRevisionHtmlPackageManifest
+    file_name: str = Field(pattern=r"^wilq-exact-revision-[A-Za-z0-9_-]+\.html$")
+    html_document: str = Field(min_length=1)
+
+
 class ContentDraftRevisionConflictResponse(BaseModel):
     status: Literal["conflict"] = "conflict"
     code: ContentDraftRevisionPublicConflictCode

@@ -40,6 +40,7 @@ import {
 import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
 import { ContentDecisionContextPanel } from "./ContentDecisionContextPanel";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
+import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentPageWorkbench as ContentPageWorkbenchView } from "./ContentPageWorkbench";
 import { ContentWorkflowJourneyContext } from "./ContentWorkflowJourneyContext";
 import { ContentWorkflowTaskMap } from "./ContentWorkflowTaskMap";
@@ -673,6 +674,7 @@ function ReviewDecisionPanel({
         <p className="mt-1 text-sm text-slate-700">Rewizja: {savedReview.revision_id.slice(0, 12)} · {savedReview.revision_digest.slice(0, 12)}</p>
         <p className="mt-1 text-sm text-slate-700">Reviewer: {savedReview.reviewed_by}</p>
         {savedReview.notes ? <p className="mt-2 text-sm leading-6 text-slate-700">Notatka: {savedReview.notes}</p> : null}
+        {savedReview.decision === "approved" && savedReview.revision_id === revision.revision_id && savedReview.revision_digest === revision.content_digest ? <ContentApprovedHtmlPackage workItemId={revision.work_item_id} revisionId={revision.revision_id} revisionDigest={revision.content_digest} /> : null}
         <button type="button" className="mt-3 rounded-md border border-action/30 px-3 py-2 text-sm font-semibold text-action" onClick={onReturnToText}>Wróć do tekstu</button>
       </div>
     );

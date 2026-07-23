@@ -2313,6 +2313,23 @@ export const ContentDraftRevisionReviewResponseSchema = z.object({
   workspace: ContentDraftRevisionWorkspaceSchema
 });
 
+export const ContentRevisionHtmlPackageManifestSchema = z.object({
+  work_item_id: z.string().min(1),
+  revision_id: z.string().min(1),
+  content_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  final_canonical_url: z.string().min(1),
+  evidence_ids: z.array(z.string()).default([]),
+  source_material_ids: z.array(z.string()).default([]),
+  knowledge_card_ids: z.array(z.string()).default([]),
+  section_count: z.number().int().positive()
+});
+
+export const ContentRevisionHtmlPackageResponseSchema = z.object({
+  manifest: ContentRevisionHtmlPackageManifestSchema,
+  file_name: z.string().regex(/^wilq-exact-revision-[A-Za-z0-9_-]+\.html$/),
+  html_document: z.string().min(1)
+});
+
 export const ContentDraftRevisionConflictSchema = z.object({
   status: z.literal("conflict"),
   code: z.enum([
@@ -3597,6 +3614,12 @@ export type ContentDraftRevisionReviewRequest = z.input<
 >;
 export type ContentDraftRevisionReviewResponse = z.infer<
   typeof ContentDraftRevisionReviewResponseSchema
+>;
+export type ContentRevisionHtmlPackageManifest = z.infer<
+  typeof ContentRevisionHtmlPackageManifestSchema
+>;
+export type ContentRevisionHtmlPackageResponse = z.infer<
+  typeof ContentRevisionHtmlPackageResponseSchema
 >;
 export type ContentDraftRevisionConflict = z.infer<
   typeof ContentDraftRevisionConflictSchema

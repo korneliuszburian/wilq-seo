@@ -29,6 +29,7 @@ import {
   ContentDraftRevisionConflictSchema,
   ContentCodexSectionProposalRequestSchema,
   ContentDraftRevisionReviewRequestSchema,
+  ContentRevisionHtmlPackageResponseSchema,
   ContentDraftRevisionSaveRequestSchema,
   ContentDraftRevisionWorkspaceSchema,
   ContentInitialDraftRequestSchema,
@@ -311,6 +312,32 @@ describe("ContentInitialDraftResponseSchema", () => {
       ...blocked,
       status: "created",
       blockers: []
+    }).success).toBe(false);
+  });
+});
+
+describe("ContentRevisionHtmlPackageResponseSchema", () => {
+  it("keeps the downloaded document bound to one exact revision manifest", () => {
+    const response = {
+      manifest: {
+        work_item_id: "content_work_item_bdo",
+        revision_id: "content_revision_approved",
+        content_digest: "a".repeat(64),
+        final_canonical_url: "https://www.ekologus.pl/bdo/",
+        evidence_ids: ["ev_bdo"],
+        source_material_ids: ["material_bdo"],
+        knowledge_card_ids: ["knowledge_bdo"],
+        section_count: 6
+      },
+      file_name: "wilq-exact-revision-content_revision_approved.html",
+      html_document: "<!doctype html><html><body>BDO</body></html>"
+    };
+    expect(ContentRevisionHtmlPackageResponseSchema.parse(response).manifest.revision_id).toBe(
+      "content_revision_approved"
+    );
+    expect(ContentRevisionHtmlPackageResponseSchema.safeParse({
+      ...response,
+      file_name: "bdo.html"
     }).success).toBe(false);
   });
 });

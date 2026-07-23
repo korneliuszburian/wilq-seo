@@ -9,6 +9,7 @@ import {
   getConnectorRefreshRun,
   getContentWorkItemEnrichment,
   getContentWorkItemInitialDraft,
+  getContentWorkItemRevisionHtmlPackage,
   getContentWorkItemDecisionContext,
   getContentInventoryCatalog,
   getContentOperatorContext,
@@ -93,6 +94,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getConnectorRefreshRun: vi.fn(),
     getContentWorkItemEnrichment: vi.fn(),
     getContentWorkItemInitialDraft: vi.fn(),
+    getContentWorkItemRevisionHtmlPackage: vi.fn(),
     getContentWorkItemDecisionContext: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
@@ -204,6 +206,7 @@ describe("ContentWorkflowSurface", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("keeps GA4 metric grouping stable when source rows arrive in another order", () => {
@@ -374,6 +377,73 @@ describe("ContentWorkflowSurface", () => {
     ]);
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("downloads only the exact approved revision as a read-only HTML package", async () => {
+    const readyContext = contentDecisionContext();
+    readyContext.evidence_readiness = {
+      ...readyContext.evidence_readiness,
+      status: "ready",
+      label: "Dowody są aktualne",
+      reason: "Dowody są aktualne dla tej strony.",
+      blocker_codes: []
+    };
+    readyContext.next_safe_action = {
+      kind: "open_workspace",
+      label: "Otwórz warsztat strony",
+      reason: "Możesz przejść do read-only warsztatu tej samej strony.",
+      connector_id: null
+    };
+    const revision = savedFullDraftRevision();
+    const review = savedDraftRevisionReview(revision, "approved");
+    const workspace = {
+      ...savedRevisionWorkspace(revision as never),
+      latest_revision: revision,
+      latest_review: review,
+      status: "approved",
+      can_review: false,
+      editor_title: revision.title,
+      editor_sections: revision.sections
+    } as ContentWorkItemWorkflowSnapshotResponse["revision_workspace"];
+    vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(readyContext);
+    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot({ workspace }));
+    vi.mocked(getContentWorkItemRevisionHtmlPackage).mockResolvedValue({
+      manifest: {
+        work_item_id: revision.work_item_id,
+        revision_id: revision.revision_id,
+        content_digest: revision.content_digest,
+        final_canonical_url: revision.final_canonical_url,
+        evidence_ids: uniqueTestEvidence(revision),
+        source_material_ids: revision.source_material_ids,
+        knowledge_card_ids: revision.knowledge_card_ids,
+        section_count: revision.sections.length
+      },
+      file_name: `wilq-exact-revision-${revision.revision_id}.html`,
+      html_document: "<!doctype html><html><body>Dokument</body></html>"
+    });
+    const createObjectURL = vi.fn(() => "blob:approved-revision");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22&review=%221%22", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-approved-html-package")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pobierz paczkę HTML" }));
+
+    await waitFor(() => expect(getContentWorkItemRevisionHtmlPackage).toHaveBeenCalledWith(revision.work_item_id, revision.revision_id));
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:approved-revision");
+    expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+    anchorClick.mockRestore();
   });
 
   it("does not reinterpret inspect_object as opening the text workspace", async () => {
