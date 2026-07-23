@@ -81,7 +81,11 @@ def build_content_workflow_entry(*, search: str | None = None) -> ContentWorkflo
         recommendations=[
             _recommendation(candidate)
             for candidate in queue.candidates
-            if candidate.source_public_url and candidate.recommended_mode != "block"
+            if (
+                candidate.source_public_url
+                and candidate.recommended_mode != "block"
+                and candidate.reason.strip()
+            )
         ][:3],
         search_query=query or None,
         search_results=_search_existing_pages(query),
@@ -94,16 +98,17 @@ def _recommendation(candidate: ContentWorkItemQueueCandidate) -> ContentWorkflow
         work_item_id=candidate.work_item_id,
         title=_recommendation_title(candidate),
         url=candidate.source_public_url or candidate.final_canonical_url or "",
-        reason="Zobacz aktualną stronę i zdecyduj, czy potrzebuje nowej wersji.",
+        reason=candidate.reason.strip(),
         facts=_facts(candidate),
     )
 
 
 def _recommendation_title(candidate: ContentWorkItemQueueCandidate) -> str:
-    """Give the marketer a readable topic without claiming an unavailable H1."""
+    """Use the observed public page title, not a query or decision topic."""
 
-    if candidate.search_metrics.primary_query:
-        return candidate.search_metrics.primary_query.strip().capitalize()
+    source_title = candidate.page_inventory.title_or_h1
+    if source_title and source_title.strip():
+        return source_title.strip()
     url = candidate.source_public_url or candidate.final_canonical_url or ""
     path = urlparse(url).path.strip("/")
     if path:

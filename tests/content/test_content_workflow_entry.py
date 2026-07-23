@@ -5,14 +5,23 @@ from types import SimpleNamespace
 import wilq.content.workflow.entry as entry_module
 
 
-def _candidate(*, index: int, impressions: int | None = None) -> SimpleNamespace:
+def _candidate(
+    *,
+    index: int,
+    impressions: int | None = None,
+    title: str | None = None,
+    reason: str | None = None,
+) -> SimpleNamespace:
     return SimpleNamespace(
         work_item_id=f"content_work_item_{index}",
-        title=f"Strona {index}",
+        title=f"Strona {index}" if title is None else title,
         source_public_url=f"https://www.ekologus.pl/strona-{index}/",
         final_canonical_url=None,
         recommended_mode="refresh",
-        reason=f"Powód {index} pochodzi z danych strony.",
+        reason=f"Powód {index} pochodzi z danych strony." if reason is None else reason,
+        page_inventory=SimpleNamespace(
+            title_or_h1=f"Publiczna strona {index}" if title is None else title
+        ),
         search_metrics=SimpleNamespace(
             impressions=impressions,
             clicks=None,
@@ -50,13 +59,42 @@ def test_entry_limits_recommendations_and_does_not_read_inventory_without_search
         "content_work_item_3",
     ]
     assert response.recommendations[0].facts[0].value == "100"
-    assert response.recommendations[0].title == "Operat wodnoprawny"
-    assert response.recommendations[1].title == "Strona 2"
+    assert response.recommendations[0].title == "Publiczna strona 1"
+    assert response.recommendations[0].reason == "Powód 1 pochodzi z danych strony."
+    assert response.recommendations[0].facts[-1] == entry_module.ContentWorkflowEntryFact(
+        label="Główne zapytanie",
+        value="operat wodnoprawny",
+    )
+    assert response.recommendations[1].title == "Publiczna strona 2"
     assert response.recommendations[1].facts == [
         entry_module.ContentWorkflowEntryFact(
             label="Dane strony",
             value="Dane zapytań nie zostały wczytane.",
         )
+    ]
+
+
+def test_entry_keeps_a_page_title_and_reason_or_omits_the_recommendation(monkeypatch) -> None:
+    candidates = [
+        _candidate(index=1, title="", reason="Powód widoczny dla marketera."),
+        _candidate(index=2, reason="   "),
+    ]
+    monkeypatch.setattr(entry_module, "build_content_diagnostics_cached", lambda: object())
+    monkeypatch.setattr(
+        entry_module,
+        "build_content_work_item_queue_response",
+        lambda _diagnostics: SimpleNamespace(candidates=candidates),
+    )
+    monkeypatch.setattr(
+        entry_module,
+        "build_content_inventory_catalog_cached",
+        lambda: (_ for _ in ()).throw(AssertionError("inventory must stay unopened")),
+    )
+
+    response = entry_module.build_content_workflow_entry()
+
+    assert [(item.work_item_id, item.title, item.reason) for item in response.recommendations] == [
+        ("content_work_item_1", "Strona 1", "Powód widoczny dla marketera."),
     ]
 
 
