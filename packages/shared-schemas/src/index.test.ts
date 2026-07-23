@@ -1371,7 +1371,7 @@ describe("SocialHistoryInventorySchema", () => {
 describe("WordPressAuthoringProfileSchema", () => {
   it("keeps WordPress authoring draft-only", () => {
     const validProfile = {
-      profile_version: "wordpress_authoring_profile_v1",
+      profile_version: "wordpress_authoring_profile_v2",
       connector: "wordpress_ekologus",
       site_kind: "primary",
       authoring_target: "staging",
@@ -1407,8 +1407,8 @@ describe("WordPressAuthoringProfileSchema", () => {
         status: "available",
         source_method: "acf_rest",
         source_ref: "WORDPRESS_EKOLOGUS_URL wp-json/wp/v2/pages?context=edit",
-        page_count: 1,
-        pages: [
+        item_count: 1,
+        items: [
           {
             post_id: "2",
             slug: "bdo",

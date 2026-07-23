@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizedPath, selectDevPage } from "./contentWorkflowTarget";
+import { normalizedPath, selectDevContentObject } from "./contentWorkflowTarget";
 
 const profile = {
   dev_content: {
-    pages: [
+    items: [
       { link: "https://ekologus.dev.proudsite.pl/", title: "Strona główna", section_count: 9 },
       { link: "https://ekologus.dev.proudsite.pl/kontakt/", title: "Kontakt", section_count: 3 }
     ]
@@ -24,11 +24,11 @@ describe("content workflow dev target", () => {
   });
 
   it("honours an explicit dev target before inferred matching", () => {
-    expect(selectDevPage(profile, item, "https://ekologus.dev.proudsite.pl/kontakt/")?.title).toBe("Kontakt");
+    expect(selectDevContentObject(profile, item, "https://ekologus.dev.proudsite.pl/kontakt/")?.title).toBe("Kontakt");
   });
 
-  it("does not attach an unrelated dev page when the public path has no exact target", () => {
-    expect(selectDevPage(profile, {
+  it("does not attach unrelated dev content when the public path has no exact target", () => {
+    expect(selectDevContentObject(profile, {
       preview_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
       source_public_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
       final_canonical_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",

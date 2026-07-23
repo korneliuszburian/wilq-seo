@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.connectors.wordpress.authoring import (
-    WordPressAuthoringDevPage,
+    WordPressAuthoringDevContentObject,
     build_wordpress_authoring_profile,
 )
 from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
@@ -77,11 +77,11 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
                 "Brak adresu nie blokuje pracy nad dokumentem, ale blokuje rozpoznanie targetu."
             ],
         )
-    target_page = next(
-        (page for page in profile.dev_content.pages if _path(page.link) == _path(public_url)),
+    target_object = next(
+        (item for item in profile.dev_content.items if _path(item.link) == _path(public_url)),
         None,
     )
-    if target_page is None:
+    if target_object is None:
         return ContentTargetDiscovery(
             work_item_id=work_item_id,
             public_url=public_url,
@@ -103,7 +103,7 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
             "WILQ odczytał konkretną stronę na dev o tym samym adresie, ale sama zgodność "
             "adresu nie potwierdza jeszcze relacji ani prawa do zapisu."
         ),
-        target=_target(target_page),
+        target=_target(target_object),
         evidence_ids=evidence_ids,
         caveats=[
             "Szczegóły dotyczą odczytanego obiektu dev, nie mapowania zatwierdzonego dokumentu.",
@@ -112,27 +112,27 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
     )
 
 
-def _target(page: WordPressAuthoringDevPage) -> ContentTargetDiscoveryTarget:
-    surfaces = ["acf_flexible_content"] if page.acf_field_name else []
+def _target(item: WordPressAuthoringDevContentObject) -> ContentTargetDiscoveryTarget:
+    surfaces = ["acf_flexible_content"] if item.acf_field_name else []
     payload = {
-        "object_id": page.post_id,
-        "url": page.link,
-        "post_type": page.content_type,
-        "post_status": page.status,
-        "template": page.template or None,
+        "object_id": item.post_id,
+        "url": item.link,
+        "post_type": item.content_type,
+        "post_status": item.status,
+        "template": item.template or None,
         "observed_surfaces": surfaces,
-        "acf_field_name": page.acf_field_name,
+        "acf_field_name": item.acf_field_name,
         "sections": [
             {"layout_name": section.layout_name, "field_names": section.field_names}
-            for section in page.sections
+            for section in item.sections
         ],
     }
     return ContentTargetDiscoveryTarget(
-        object_id=page.post_id,
-        url=page.link,
-        post_type=page.content_type,
-        post_status=page.status,
-        template=page.template or None,
+        object_id=item.post_id,
+        url=item.link,
+        post_type=item.content_type,
+        post_status=item.status,
+        template=item.template or None,
         observed_surfaces=surfaces,
         target_contract_digest=sha256(
             json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()

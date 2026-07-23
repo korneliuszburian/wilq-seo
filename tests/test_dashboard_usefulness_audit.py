@@ -570,7 +570,7 @@ def test_markdown_report_shows_surface_progress_without_raw_json_dump() -> None:
 
 def safe_authoring_profile() -> dict[str, object]:
     return {
-        "profile_version": "wordpress_authoring_profile_v1",
+        "profile_version": "wordpress_authoring_profile_v2",
         "rest_api": {"status": "configured"},
         "wp_cli": {"status": "configured"},
         "acf": {
@@ -579,8 +579,8 @@ def safe_authoring_profile() -> dict[str, object]:
         },
         "dev_content": {
             "status": "available",
-            "page_count": 1,
-            "pages": [
+            "item_count": 1,
+            "items": [
                 {
                     "title": "BDO dla firm",
                     "section_count": 1,

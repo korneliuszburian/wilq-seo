@@ -1,17 +1,17 @@
 import type { ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
 import type { WordPressAuthoringProfile } from "../lib/api";
 
-export type WordPressAuthoringDevPage = WordPressAuthoringProfile["dev_content"]["pages"][number];
+export type WordPressAuthoringDevContentObject = WordPressAuthoringProfile["dev_content"]["items"][number];
 
-export function selectDevPage(
+export function selectDevContentObject(
   profile: WordPressAuthoringProfile | null,
   item: ContentWorkflowSnapshot["preflight"]["item"],
   selectedLink?: string | null
-): WordPressAuthoringDevPage | null {
-  const pages = profile?.dev_content.pages ?? [];
-  if (!pages.length) return null;
+): WordPressAuthoringDevContentObject | null {
+  const items = profile?.dev_content.items ?? [];
+  if (!items.length) return null;
   if (selectedLink) {
-    const explicitMatch = pages.find((page) => normalizedPath(page.link) === normalizedPath(selectedLink));
+    const explicitMatch = items.find((item) => normalizedPath(item.link) === normalizedPath(selectedLink));
     if (explicitMatch) return explicitMatch;
   }
   const candidatePaths = [
@@ -22,15 +22,15 @@ export function selectDevPage(
   ]
     .map((url) => normalizedPath(url ?? ""))
     .filter(Boolean);
-  const exactMatch = pages.find((page) => candidatePaths.includes(normalizedPath(page.link)));
+  const exactMatch = items.find((item) => candidatePaths.includes(normalizedPath(item.link)));
   if (exactMatch) return exactMatch;
   if (candidatePaths.includes("/")) {
-    const home = pages.find((page) => normalizedPath(page.link) === "/" && page.section_count > 0);
+    const home = items.find((item) => normalizedPath(item.link) === "/" && item.section_count > 0);
     if (home) return home;
   }
-  // Never attach an unrelated dev page to a public work item. A missing exact
+  // Never attach unrelated dev content to a public work item. A missing exact
   // path is a typed absence of target, not permission to display another
-  // page's ACF sections as if they belonged to this workflow.
+  // object's ACF sections as if they belonged to this workflow.
   return null;
 }
 

@@ -5,7 +5,7 @@ from typing import Literal
 
 import wilq.content.workflow.target_discovery as discovery_module
 from wilq.connectors.wordpress.authoring import (
-    WordPressAuthoringDevPage,
+    WordPressAuthoringDevContentObject,
     WordPressAuthoringDevSection,
 )
 
@@ -13,17 +13,17 @@ WORK_ITEM_ID = "content_work_item_bdo"
 PUBLIC_URL = "https://www.ekologus.pl/bdo/"
 
 
-def _profile(*pages: WordPressAuthoringDevPage) -> SimpleNamespace:
+def _profile(*items: WordPressAuthoringDevContentObject) -> SimpleNamespace:
     return SimpleNamespace(
         evidence_ids=["ev_wordpress_dev_read"],
-        dev_content=SimpleNamespace(pages=list(pages)),
+        dev_content=SimpleNamespace(items=list(items)),
     )
 
 
 def _page(
     url: str, *, content_type: Literal["page", "post"] = "page"
-) -> WordPressAuthoringDevPage:
-    return WordPressAuthoringDevPage(
+) -> WordPressAuthoringDevContentObject:
+    return WordPressAuthoringDevContentObject(
         post_id="346",
         content_type=content_type,
         slug="bdo",

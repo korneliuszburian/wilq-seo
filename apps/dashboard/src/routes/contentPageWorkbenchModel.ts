@@ -2,7 +2,7 @@ import type {
   ContentOpportunityEnrichment,
   ContentWorkItemQueueCandidate
 } from "../lib/api";
-import type { WordPressAuthoringDevPage } from "./contentWorkflowTarget";
+import type { WordPressAuthoringDevContentObject } from "./contentWorkflowTarget";
 import type { ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
 
 function unique(values: string[]) {
@@ -44,7 +44,7 @@ export function planningPageAssetsReady(
 
 export function contentMetricTilesForWorkbench(
   item: ContentWorkflowSnapshot["preflight"]["item"],
-  devPage: WordPressAuthoringDevPage | null
+  devPage: WordPressAuthoringDevContentObject | null
 ) {
   const wordpressSectionCount = item.wordpress_section_count ?? item.wordpress_section_headings.length;
   return [

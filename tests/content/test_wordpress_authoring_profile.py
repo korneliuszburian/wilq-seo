@@ -67,7 +67,7 @@ def test_wordpress_authoring_profile_is_rest_first_and_read_only(
 
     profile = build_wordpress_authoring_profile("wordpress_ekologus")
 
-    assert profile.profile_version == "wordpress_authoring_profile_v1"
+    assert profile.profile_version == "wordpress_authoring_profile_v2"
     assert profile.discovery_order == ["rest", "acf_rest", "wp_cli", "helper"]
     assert profile.rest_api.status == "configured"
     assert profile.rest_api.post_types == ["page", "post"]
@@ -173,8 +173,8 @@ def test_wordpress_authoring_profile_reads_generic_dev_acf_rest_sections(
 
     assert profile.dev_content.status == "available"
     assert profile.dev_content.source_method == "acf_rest"
-    assert profile.dev_content.page_count == 3
-    page = profile.dev_content.pages[0]
+    assert profile.dev_content.item_count == 3
+    page = profile.dev_content.items[0]
     assert page.content_type == "page"
     assert page.title == "Strona główna"
     assert page.acf_field_name == "sekcje_strony"
@@ -188,10 +188,10 @@ def test_wordpress_authoring_profile_reads_generic_dev_acf_rest_sections(
     assert "obrazek" in first_section.field_names
     assert any("naglowek_modulu" in path for path in first_section.text_field_paths)
     assert "hero" not in {section.layout_name for section in page.sections}
-    article = profile.dev_content.pages[1]
+    article = profile.dev_content.items[1]
     assert article.content_type == "post"
     assert article.slug == "bdo-co-musi-wiedziec-przedsiebiorca"
-    assert profile.dev_content.pages[2].slug == "kolejny-artykul"
+    assert profile.dev_content.items[2].slug == "kolejny-artykul"
 
 
 def test_wordpress_authoring_profile_derives_layouts_from_acf_groups(
@@ -481,7 +481,7 @@ def test_wordpress_authoring_profile_api_exposes_read_only_profile(
 
     assert response.status_code == 200
     data = response.json()
-    assert data["profile_version"] == "wordpress_authoring_profile_v1"
+    assert data["profile_version"] == "wordpress_authoring_profile_v2"
     assert data["acf"]["layouts"][0]["name"] == "content_section"
     assert data["dev_content"]["status"] == "unknown"
     assert data["write_boundary"]["direct_vendor_write_allowed"] is False

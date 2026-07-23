@@ -23,7 +23,7 @@ import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
 import { ContentWordPressDraftActionWizard } from "./ContentWordPressDraftActionWizard";
 import { planningPageAssetsReady } from "./contentPageWorkbenchModel";
 import type { ContentWorkflowSnapshot, WorkflowStepId } from "./contentWorkflowRuntime";
-import { selectDevPage } from "./contentWorkflowTarget";
+import { selectDevContentObject } from "./contentWorkflowTarget";
 import type {
   WordPressAuthoringProfileQuery,
   WordPressDraftActivationPacketQuery
@@ -128,7 +128,7 @@ export function ContentPageWorkbench({
   const wordpressHandoff = data.wordpressHandoff.handoff_result.handoff;
   const revisionBinding = wordpressHandoff?.revision_binding ?? null;
   const profile = authoringProfile.data ?? null;
-  const devPage = selectDevPage(profile, item, null);
+  const devPage = selectDevContentObject(profile, item, null);
   const draftReadback = draftActivationPacket.data?.draft_readback ?? null;
   const revisionWorkspace = data.revisionWorkspace;
   const [reviewDecision, setReviewDecision] = useState<ContentDraftRevisionDecision>(

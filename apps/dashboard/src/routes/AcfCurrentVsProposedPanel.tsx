@@ -1,5 +1,5 @@
 import type { ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
-import type { WordPressAuthoringDevPage } from "./contentWorkflowTarget";
+import type { WordPressAuthoringDevContentObject } from "./contentWorkflowTarget";
 
 type DraftPackage = ContentWorkflowSnapshot["draftPackage"]["draft_package_result"]["draft_package"];
 type DraftPackageSection = NonNullable<DraftPackage>["sections"][number];
@@ -8,7 +8,7 @@ export function AcfCurrentVsProposedPanel({
   devSections,
   draftSections
 }: {
-  devSections: WordPressAuthoringDevPage["sections"];
+  devSections: WordPressAuthoringDevContentObject["sections"];
   draftSections: DraftPackageSection[];
 }) {
   if (!devSections.length && !draftSections.length) return null;

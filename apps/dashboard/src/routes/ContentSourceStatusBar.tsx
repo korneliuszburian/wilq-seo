@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 
 import type { WordPressAuthoringProfile } from "../lib/api";
 import type { ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
-import type { WordPressAuthoringDevPage } from "./contentWorkflowTarget";
+import type { WordPressAuthoringDevContentObject } from "./contentWorkflowTarget";
 
 export function ContentSourceStatusBar({ data, devPage, profile }: {
   data: ContentWorkflowSnapshot;
-  devPage: WordPressAuthoringDevPage | null;
+  devPage: WordPressAuthoringDevContentObject | null;
   profile: WordPressAuthoringProfile | null;
 }) {
   const item = data.preflight.item;

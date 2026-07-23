@@ -4799,7 +4799,7 @@ function existingDraftUpdateReadiness(): ContentWordPressExistingDraftUpdateRead
 
 function wordpressAuthoringProfile(): WordPressAuthoringProfile {
   return {
-    profile_version: "wordpress_authoring_profile_v1",
+    profile_version: "wordpress_authoring_profile_v2",
     connector: "wordpress_ekologus",
     site_kind: "primary",
     authoring_target: "staging",
@@ -4833,8 +4833,8 @@ function wordpressAuthoringProfile(): WordPressAuthoringProfile {
       status: "available",
       source_method: "acf_rest",
       source_ref: "WORDPRESS_EKOLOGUS_URL wp-json/wp/v2/pages?context=edit",
-      page_count: 1,
-      pages: [
+      item_count: 1,
+      items: [
         {
           post_id: "2",
           content_type: "page",

@@ -42,7 +42,7 @@ const WordPressAuthoringDevSectionSchema = z.object({
   text_field_paths: z.array(z.string()).default([])
 });
 
-const WordPressAuthoringDevPageSchema = z.object({
+const WordPressAuthoringDevContentObjectSchema = z.object({
   post_id: z.string(),
   content_type: z.enum(["page", "post"]).default("page"),
   slug: z.string(),
@@ -59,7 +59,7 @@ const WordPressAuthoringDevPageSchema = z.object({
 });
 
 export const WordPressAuthoringProfileSchema = z.object({
-  profile_version: z.literal("wordpress_authoring_profile_v1"),
+  profile_version: z.literal("wordpress_authoring_profile_v2"),
   connector: z.string(),
   site_kind: z.string(),
   authoring_target: z.string(),
@@ -95,8 +95,8 @@ export const WordPressAuthoringProfileSchema = z.object({
     status: WordPressAuthoringReadinessSchema,
     source_method: WordPressAuthoringDiscoveryMethodSchema.nullable().optional(),
     source_ref: z.string(),
-    page_count: z.number(),
-    pages: z.array(WordPressAuthoringDevPageSchema).default([]),
+    item_count: z.number(),
+    items: z.array(WordPressAuthoringDevContentObjectSchema).default([]),
     blockers: z.array(WordPressAuthoringBlockerSchema).default([])
   }),
   wp_cli: z.object({

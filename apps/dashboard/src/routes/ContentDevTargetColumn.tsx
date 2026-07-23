@@ -2,12 +2,12 @@ import { Code2 } from "lucide-react";
 
 import type { WordPressAuthoringProfile } from "../lib/api";
 import { ContentMapColumn, ContentSectionRow } from "./ContentMapPrimitives";
-import type { WordPressAuthoringDevPage } from "./contentWorkflowTarget";
+import type { WordPressAuthoringDevContentObject } from "./contentWorkflowTarget";
 
 type ContentDevTargetColumnProps = {
   profile: WordPressAuthoringProfile | null;
-  devPage: WordPressAuthoringDevPage | null;
-  devSections: WordPressAuthoringDevPage["sections"];
+  devPage: WordPressAuthoringDevContentObject | null;
+  devSections: WordPressAuthoringDevContentObject["sections"];
   onSelectDevPage: (link: string | null) => void;
 };
 
@@ -23,7 +23,7 @@ export function ContentDevTargetColumn({
       title="Cel dev / ACF"
       subtitle={devPage ? `${devPage.section_count} sekcji odczytanych` : "brak exact celu dla tej strony"}
     >
-      {profile?.dev_content.pages.length ? (
+      {profile?.dev_content.items.length ? (
         <label className="mb-3 block">
           <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-slate-500">
             Cel dev do podglądu
@@ -34,7 +34,7 @@ export function ContentDevTargetColumn({
             onChange={(event) => onSelectDevPage(event.target.value || null)}
             aria-label="Cel dev do podglądu"
           >
-            {profile.dev_content.pages.map((page) => (
+            {profile.dev_content.items.map((page) => (
               <option key={page.link} value={page.link}>
                 {page.title || page.link} · {page.section_count} sekcji
               </option>

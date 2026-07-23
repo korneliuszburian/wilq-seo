@@ -763,7 +763,7 @@ def _wordpress_authoring_profile_check(
     )
     blockers = payload.get("blockers") if isinstance(payload.get("blockers"), list) else []
     layout_count = len(acf.get("layouts") or [])
-    if payload.get("profile_version") != "wordpress_authoring_profile_v1":
+    if payload.get("profile_version") != "wordpress_authoring_profile_v2":
         errors.append("wordpress authoring profile version mismatch")
     if rest_api.get("status") != "configured":
         errors.append("wordpress REST authoring is not configured")

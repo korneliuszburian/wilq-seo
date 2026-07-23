@@ -52,7 +52,7 @@ WORDPRESS_CONNECTORS = {
 }
 WORDPRESS_DEV_HOSTS = {"ekologus.dev.proudsite.pl"}
 
-WORDPRESS_AUTHORING_PAGE_FIELDS = (
+WORDPRESS_AUTHORING_CONTENT_FIELDS = (
     "id,slug,link,title,status,modified,modified_gmt,template,parent,acf"
 )
 WORDPRESS_AUTHORING_SECTION_LIMIT = 40
@@ -97,7 +97,7 @@ class WordPressAuthoringSectionReadback:
 
 
 @dataclass(frozen=True)
-class WordPressAuthoringPageReadback:
+class WordPressAuthoringContentReadback:
     post_id: str
     content_type: str
     slug: str
@@ -331,14 +331,14 @@ def read_wordpress_draft_post(
     return _draft_post_readback(response, normalized_post_id, credentials.base_url)
 
 
-def read_wordpress_authoring_pages(
+def read_wordpress_authoring_content(
     connector_id: str = "wordpress_ekologus",
     *,
     preferred_flexible_field_name: str | None = None,
     content_type: str = "pages",
     limit: int = WORDPRESS_CONTENT_PER_PAGE,
     http_client: httpx.Client | None = None,
-) -> list[WordPressAuthoringPageReadback]:
+) -> list[WordPressAuthoringContentReadback]:
     credentials = _wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressAuthoringReadError("WILQ nie zna tego connectora WordPress.")
@@ -362,7 +362,7 @@ def read_wordpress_authoring_pages(
                 "per_page": max(1, min(limit, WORDPRESS_CONTENT_PER_PAGE)),
                 "orderby": "modified",
                 "order": "desc",
-                "_fields": WORDPRESS_AUTHORING_PAGE_FIELDS,
+                "_fields": WORDPRESS_AUTHORING_CONTENT_FIELDS,
             }
             response = client.get(endpoint, auth=auth, params=params)
             response.raise_for_status()
@@ -389,9 +389,9 @@ def read_wordpress_authoring_pages(
             client.close()
 
     return [
-        page
+        item
         for payload in payloads
-        for page in _authoring_pages_from_response(
+        for item in _authoring_content_from_response(
             payload,
             content_type=normalized_type,
             preferred_flexible_field_name=preferred_flexible_field_name,
@@ -714,15 +714,15 @@ def _transport_failure_result(connector_id: str, exc: httpx.HTTPError) -> Vendor
     )
 
 
-def _authoring_pages_from_response(
+def _authoring_content_from_response(
     payload: Any,
     *,
     content_type: str,
     preferred_flexible_field_name: str | None,
-) -> list[WordPressAuthoringPageReadback]:
+) -> list[WordPressAuthoringContentReadback]:
     if not isinstance(payload, list):
         return []
-    pages: list[WordPressAuthoringPageReadback] = []
+    items: list[WordPressAuthoringContentReadback] = []
     for item in payload:
         if not isinstance(item, dict):
             continue
@@ -734,8 +734,8 @@ def _authoring_pages_from_response(
         post_id = item.get("id")
         parent = item.get("parent")
         slug_value = item.get("slug")
-        pages.append(
-            WordPressAuthoringPageReadback(
+        items.append(
+            WordPressAuthoringContentReadback(
                 post_id=str(post_id) if post_id is not None else "",
                 content_type=content_type,
                 slug=clean_metadata_text(slug_value if isinstance(slug_value, str) else ""),
@@ -751,7 +751,7 @@ def _authoring_pages_from_response(
                 sections=sections,
             )
         )
-    return pages
+    return items
 
 
 def _header_int(value: str | None) -> int:

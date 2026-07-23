@@ -9,10 +9,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.connectors.wordpress.client import (
     WORDPRESS_CONNECTORS,
-    WordPressAuthoringPageReadback,
+    WordPressAuthoringContentReadback,
     WordPressAuthoringReadError,
     WordPressAuthoringSectionReadback,
-    read_wordpress_authoring_pages,
+    read_wordpress_authoring_content,
 )
 from wilq.credentials.runtime import variable_value
 from wilq.evidence.registry import connector_evidence_id
@@ -124,7 +124,7 @@ class WordPressAuthoringDevSection(BaseModel):
     text_field_paths: list[str] = Field(default_factory=list)
 
 
-class WordPressAuthoringDevPage(BaseModel):
+class WordPressAuthoringDevContentObject(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     post_id: str
@@ -148,8 +148,8 @@ class WordPressAuthoringDevContentProfile(BaseModel):
     status: WordPressAuthoringReadiness = "unknown"
     source_method: WordPressAuthoringDiscoveryMethod | None = None
     source_ref: str = ""
-    page_count: int = 0
-    pages: list[WordPressAuthoringDevPage] = Field(default_factory=list)
+    item_count: int = 0
+    items: list[WordPressAuthoringDevContentObject] = Field(default_factory=list)
     blockers: list[WordPressAuthoringBlocker] = Field(default_factory=list)
 
 
@@ -171,8 +171,8 @@ class WordPressAuthoringWriteBoundary(BaseModel):
 class WordPressAuthoringProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    profile_version: Literal["wordpress_authoring_profile_v1"] = (
-        "wordpress_authoring_profile_v1"
+    profile_version: Literal["wordpress_authoring_profile_v2"] = (
+        "wordpress_authoring_profile_v2"
     )
     connector: str
     site_kind: str
@@ -377,10 +377,10 @@ def _dev_content_profile(
             ],
         )
     try:
-        pages = [
-            page
+        items = [
+            item
             for endpoint, content_type in (("pages", "page"), ("posts", "post"))
-            for page in read_wordpress_authoring_pages(
+            for item in read_wordpress_authoring_content(
                 connector_id,
                 preferred_flexible_field_name=acf.flexible_content_field_name,
                 content_type=endpoint,
@@ -403,16 +403,16 @@ def _dev_content_profile(
             ],
         )
 
-    dev_pages = [_dev_page_from_readback(page) for page in pages]
-    status: WordPressAuthoringReadiness = "available" if dev_pages else "missing"
+    dev_items = [_dev_object_from_readback(item) for item in items]
+    status: WordPressAuthoringReadiness = "available" if dev_items else "missing"
     blockers: list[WordPressAuthoringBlocker] = []
-    if not dev_pages:
+    if not dev_items:
         blockers.append(
             WordPressAuthoringBlocker(
-                code="wordpress_dev_pages_empty",
-                label="Brak stron dev do odczytu",
-                reason="WP REST działa, ale nie zwrócił stron authoringu z ACF.",
-                next_step="Sprawdź, czy strony dev są typu page i czy ACF jest widoczny w REST.",
+                code="wordpress_dev_content_empty",
+                label="Brak materiału dev do odczytu",
+                reason="WP REST działa, ale nie zwrócił stron ani artykułów dev z ACF.",
+                next_step="Sprawdź, czy strony i artykuły dev są dostępne przez REST.",
                 source_ref=source_ref,
             )
         )
@@ -420,27 +420,29 @@ def _dev_content_profile(
         status=status,
         source_method="acf_rest",
         source_ref=source_ref,
-        page_count=len(dev_pages),
-        pages=dev_pages,
+        item_count=len(dev_items),
+        items=dev_items,
         blockers=blockers,
     )
 
 
-def _dev_page_from_readback(page: WordPressAuthoringPageReadback) -> WordPressAuthoringDevPage:
-    return WordPressAuthoringDevPage(
-        post_id=page.post_id,
-        content_type="post" if page.content_type == "posts" else "page",
-        slug=page.slug,
-        title=page.title,
-        link=page.link,
-        status=page.status,
-        modified=page.modified,
-        modified_gmt=page.modified_gmt,
-        template=page.template,
-        parent=page.parent,
-        acf_field_name=page.acf_field_name,
-        section_count=page.section_count,
-        sections=[_dev_section_from_readback(section) for section in page.sections],
+def _dev_object_from_readback(
+    item: WordPressAuthoringContentReadback,
+) -> WordPressAuthoringDevContentObject:
+    return WordPressAuthoringDevContentObject(
+        post_id=item.post_id,
+        content_type="post" if item.content_type == "posts" else "page",
+        slug=item.slug,
+        title=item.title,
+        link=item.link,
+        status=item.status,
+        modified=item.modified,
+        modified_gmt=item.modified_gmt,
+        template=item.template,
+        parent=item.parent,
+        acf_field_name=item.acf_field_name,
+        section_count=item.section_count,
+        sections=[_dev_section_from_readback(section) for section in item.sections],
     )
 
 

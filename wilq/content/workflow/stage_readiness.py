@@ -20,9 +20,9 @@ def build_content_wordpress_existing_draft_update_readiness_response(
     source_path = urlparse(source_url).path or "/"
     target = next(
         (
-            page
-            for page in profile.dev_content.pages
-            if (urlparse(page.link).path or "/") == source_path
+            item
+            for item in profile.dev_content.items
+            if (urlparse(item.link).path or "/") == source_path
         ),
         None,
     )
