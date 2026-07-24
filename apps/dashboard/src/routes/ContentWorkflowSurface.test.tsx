@@ -11,6 +11,7 @@ import {
   getContentWorkItemInitialDraft,
   getContentWorkItemEditorialIntegrity,
   getContentWorkItemRevisionHtmlPackage,
+  getContentRevisionTargetMapping,
   getContentWorkItemDecisionContext,
   getContentWorkItemDocumentWorkspace,
   getContentInventoryCatalog,
@@ -52,6 +53,7 @@ import {
   type ContentDocumentWorkspace,
   type ContentInventoryCatalogResponse,
   type ContentPlanningProposalResponse,
+  type ContentTargetMappingPreview,
   type ContentSemanticReviewResponse,
   type ContentWorkItemQueueResponse,
   type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
@@ -100,6 +102,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemInitialDraft: vi.fn(),
     getContentWorkItemEditorialIntegrity: vi.fn(),
     getContentWorkItemRevisionHtmlPackage: vi.fn(),
+    getContentRevisionTargetMapping: vi.fn(),
     getContentWorkItemDecisionContext: vi.fn(),
     getContentWorkItemDocumentWorkspace: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
@@ -381,6 +384,66 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByText(/przygotowany dokument i uczciwe różnice/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
     expect(screen.getAllByText("Nowa wersja nie została jeszcze przygotowana")).toHaveLength(3);
+  });
+
+  it("shows exact observed target options without choosing a WordPress mapping", async () => {
+    const workspace = approvedDocumentWorkspace();
+    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
+    vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(
+      contentTargetMappingPreview()
+    );
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22",
+          defaultPendingMinMs: 0
+        })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Przypisanie dokumentu do dev", { exact: true }));
+
+    expect(await screen.findByText("Zaobserwowane możliwości układu")).toBeInTheDocument();
+    expect(screen.getByText("https://ekologus.dev.proudsite.pl/bdo/")).toBeInTheDocument();
+    expect(screen.getByText("Pole układu: content_sections")).toBeInTheDocument();
+    expect(screen.getByText("Dostępne układy: text_section")).toBeInTheDocument();
+    expect(screen.getByText(/nie decyzja, gdzie trafi element dokumentu/)).toBeInTheDocument();
+    expect(screen.queryByText(/Wybrany układ/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Zapisz przypisanie/ })).not.toBeInTheDocument();
+    expect(getContentRevisionTargetMapping).toHaveBeenCalledWith(
+      "content_work_item_bdo",
+      workspace.canonical_document.revision_id
+    );
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("names a page target as a page when its authoring surface is unknown", async () => {
+    const workspace = approvedDocumentWorkspace();
+    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
+    vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(
+      contentTargetMappingPreview({ postType: "page", status: "blocked" })
+    );
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22",
+          defaultPendingMinMs: 0
+        })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Przypisanie dokumentu do dev", { exact: true }));
+
+    expect(await screen.findByText("Znaleziono stronę na dev")).toBeInTheDocument();
+    expect(screen.queryByText("Znaleziono artykuł na dev")).not.toBeInTheDocument();
   });
 
   it("records human review for the exact Text revision without opening a content write path", async () => {
@@ -3279,6 +3342,90 @@ function contentDocumentWorkspace(): ContentDocumentWorkspace {
       reason: "Dokument istnieje i czeka na decyzję człowieka."
     },
     secondary_disclosures: []
+  };
+}
+
+function approvedDocumentWorkspace(): ContentDocumentWorkspace {
+  const workspace = contentDocumentWorkspace();
+  workspace.canonical_document = {
+    ...workspace.canonical_document,
+    status: "approved",
+    review_state: "approved",
+    label: "Dokument zatwierdzony",
+    reason: "Dokument został zatwierdzony dla dokładnej rewizji."
+  };
+  return workspace;
+}
+
+function contentTargetMappingPreview({
+  postType = "post",
+  status = "ready"
+}: {
+  postType?: string;
+  status?: "ready" | "blocked";
+} = {}): ContentTargetMappingPreview {
+  const ready = status === "ready";
+  return {
+    response_type: "content_target_mapping_preview",
+    contract_version: "content_target_mapping_preview_v1",
+    work_item_id: "content_work_item_bdo",
+    revision: {
+      revision_id: "content_revision_bdo",
+      content_digest: "a".repeat(64)
+    },
+    status: ready ? "ready_for_human_mapping" : "blocked",
+    target: {
+      target_contract: {
+        environment: "dev",
+        object_id: "1353",
+        url: "https://ekologus.dev.proudsite.pl/bdo/",
+        post_type: postType,
+        post_status: "publish",
+        modified: "2026-07-24T10:00:00",
+        template: null,
+        authority: "observation_only",
+        write_authorized: false,
+        authoring_surface: ready
+          ? {
+              kind: "acf_flexible_content",
+              root_field: "content_sections",
+              layouts: [{ name: "text_section", fields: ["title", "body"] }]
+            }
+          : null
+      },
+      target_contract_digest: "b".repeat(64),
+      observation_evidence: {
+        evidence_id: "ev_wordpress_target_bdo",
+        connector_id: "wordpress_ekologus",
+        object_id: "1353",
+        post_type: postType,
+        url: "https://ekologus.dev.proudsite.pl/bdo/",
+        post_status: "publish",
+        modified: "2026-07-24T10:00:00",
+        observed_at: "2026-07-24T10:00:01+00:00"
+      }
+    },
+    binding_digest: ready ? "c".repeat(64) : null,
+    components: [{
+      component_id: "section:section_bdo",
+      kind: "rich_text",
+      label: "Obowiązki BDO",
+      status: ready ? "human_only" : "blocked",
+      reason: ready
+        ? "Wymaga decyzji człowieka."
+        : "Nie rozpoznano układu treści na dev.",
+      target_root_field: ready ? "content_sections" : null,
+      available_layouts: ready ? ["text_section"] : []
+    }],
+    blockers: ready
+      ? []
+      : [{
+          code: "authoring_surface_unknown",
+          label: "Nie rozpoznano układu treści na dev",
+          reason: "Nie ma potwierdzonego układu targetu.",
+          next_step: "Odczytaj układ bez zgadywania pola lub layoutu."
+        }],
+    caveats: ["Nie przygotowano payloadu ani zapisu do WordPressa."]
   };
 }
 

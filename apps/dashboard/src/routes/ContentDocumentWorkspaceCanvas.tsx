@@ -125,17 +125,7 @@ function TargetMappingDetails({ preview }: { preview: ContentTargetMappingPrevie
     return (
       <>
         {preview.target ? (
-          <p className="mt-3 leading-6">
-            Znaleziono artykuł na dev: {" "}
-            <a
-              className="break-all font-medium text-action hover:underline"
-              href={preview.target.target_contract.url}
-              rel="noreferrer"
-              target="_blank"
-            >
-              {preview.target.target_contract.url}
-            </a>
-          </p>
+          <TargetMappingTargetSummary target={preview.target} />
         ) : null}
         {preview.blockers.map((blocker) => (
           <div key={blocker.code} className="mt-3 rounded-lg bg-wait/10 p-3">
@@ -158,6 +148,7 @@ function TargetMappingDetails({ preview }: { preview: ContentTargetMappingPrevie
   );
   return (
     <>
+      {preview.target ? <TargetMappingTargetSummary target={preview.target} /> : null}
       <p className="mt-3 font-semibold text-ink">
         Dokument jest gotowy do ręcznego przypisania
       </p>
@@ -185,6 +176,46 @@ function TargetMappingDetails({ preview }: { preview: ContentTargetMappingPrevie
         </p>
       </details>
     </>
+  );
+}
+
+function TargetMappingTargetSummary({
+  target
+}: {
+  target: NonNullable<ContentTargetMappingPreview["target"]>;
+}) {
+  const surface = target.target_contract.authoring_surface;
+  return (
+    <div className="mt-3 rounded-lg bg-slate-50 p-3">
+      <p className="font-semibold text-ink">
+        Znaleziono {wordpressObjectLabel(target.target_contract.post_type)} na dev
+      </p>
+      <a
+        className="mt-1 block break-all font-medium leading-6 text-action hover:underline"
+        href={target.target_contract.url}
+        rel="noreferrer"
+        target="_blank"
+      >
+        {target.target_contract.url}
+      </a>
+      <p className="mt-2 leading-6 text-slate-700">
+        Środowisko: {target.target_contract.environment}.
+      </p>
+      {surface ? (
+        <>
+          <p className="mt-3 font-semibold text-ink">Zaobserwowane możliwości układu</p>
+          <p className="mt-1 leading-6 text-slate-700">
+            Pole układu: {surface.root_field}
+          </p>
+          <p className="mt-1 leading-6 text-slate-700">
+            Dostępne układy: {surface.layouts.map((layout) => layout.name).join(", ")}
+          </p>
+          <p className="mt-2 leading-6 text-slate-600">
+            To są odczytane możliwości, a nie decyzja, gdzie trafi element dokumentu.
+          </p>
+        </>
+      ) : null}
+    </div>
   );
 }
 
@@ -251,6 +282,10 @@ function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscovery }) 
 
 function wordpressStatus(status: string) {
   return { publish: "opublikowany", draft: "szkic", pending: "oczekuje na przegląd" }[status] ?? status;
+}
+
+function wordpressObjectLabel(postType: string) {
+  return { post: "artykuł", page: "stronę" }[postType] ?? "obiekt";
 }
 
 function Tab({ active, children, onClick }: { active: boolean; children: string; onClick: () => void }) {
