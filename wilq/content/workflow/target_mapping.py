@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
 from wilq.content.workflow.target_discovery import (
     ContentTargetContract,
@@ -137,6 +138,71 @@ class ContentTargetMappingConfirmationResult(BaseModel):
     confirmation: ContentTargetMappingConfirmation
 
 
+class ContentTargetDraftPreviewField(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    target_field: str = Field(min_length=1)
+    source_field: str = Field(min_length=1)
+    value: str = Field(min_length=1)
+    value_kind: Literal["plain_text", "html", "url"]
+
+
+class ContentTargetDraftPreviewComponent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    component_id: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    layout_name: str = Field(min_length=1)
+    fields: list[ContentTargetDraftPreviewField] = Field(min_length=1)
+
+
+class ContentTargetDraftPreviewBlocker(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Literal["mapping_not_confirmed", "mapping_stale"]
+    label: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+    next_step: str = Field(min_length=1)
+
+
+class ContentTargetDraftPreview(BaseModel):
+    """Exact payload preview; it is not an ActionObject and never writes WordPress."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    response_type: Literal["content_target_draft_preview"] = "content_target_draft_preview"
+    contract_version: Literal["content_target_draft_preview_v1"] = (
+        "content_target_draft_preview_v1"
+    )
+    work_item_id: str = Field(min_length=1)
+    revision: ContentTargetMappingRevision
+    status: Literal["ready", "blocked"]
+    target: ContentTargetMappingTarget | None = None
+    confirmation: ContentTargetMappingConfirmation | None = None
+    root_field: str | None = None
+    components: list[ContentTargetDraftPreviewComponent] = Field(default_factory=list)
+    payload_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    blockers: list[ContentTargetDraftPreviewBlocker] = Field(default_factory=list)
+    caveats: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def require_exact_ready_payload(self) -> ContentTargetDraftPreview:
+        if self.status == "ready":
+            if (
+                self.target is None
+                or self.confirmation is None
+                or self.root_field is None
+                or self.payload_digest is None
+                or not self.components
+            ):
+                raise ValueError("Ready draft preview requires an exact confirmed payload.")
+            if self.blockers:
+                raise ValueError("Ready draft preview cannot expose blockers.")
+        elif self.payload_digest is not None:
+            raise ValueError("Blocked draft preview cannot expose a payload digest.")
+        return self
+
+
 class ContentTargetMappingBlocker(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -255,6 +321,18 @@ def build_content_target_mapping_preview(
                 ),
             ),
         )
+    return _ready_mapping_preview(work_item_id, identity, target, components)
+
+
+def _ready_mapping_preview(
+    work_item_id: str,
+    identity: ContentTargetMappingRevision,
+    target: ContentTargetMappingTarget,
+    components: list[ContentTargetMappingComponent],
+) -> ContentTargetMappingPreview:
+    surface = target.target_contract.authoring_surface
+    if surface is None:
+        raise RuntimeError("Ready mapping lost its observed authoring surface.")
     human_components = [
         component.model_copy(
             update={
@@ -476,6 +554,300 @@ def new_content_target_mapping_confirmation(
     )
 
 
+def build_content_target_draft_preview(
+    *,
+    work_item_id: str,
+    revision_id: str,
+    revisions: list[ContentDraftRevision],
+    mapping_preview: ContentTargetMappingPreview,
+    confirmation: ContentTargetMappingConfirmation | None,
+) -> ContentTargetDraftPreview:
+    """Project an exact confirmed mapping without creating an ActionObject or a draft.
+
+    This is deliberately a separate, read-only seam.  It lets a marketer inspect
+    what an eventual draft-only ActionObject would receive without granting the
+    dashboard an adapter or a WordPress write path.
+    """
+
+    revision = next(
+        (
+            candidate
+            for candidate in revisions
+            if candidate.work_item_id == work_item_id and candidate.revision_id == revision_id
+        ),
+        None,
+    )
+    if revision is None:
+        raise ValueError("Nie znaleziono wskazanej rewizji tego zadania.")
+    identity = ContentTargetMappingRevision(
+        revision_id=revision.revision_id,
+        content_digest=revision.content_digest,
+    )
+    context = _confirmed_draft_preview_context(
+        work_item_id, identity, mapping_preview, confirmation
+    )
+    if isinstance(context, ContentTargetDraftPreview):
+        return context
+    target, confirmation, root_field = context
+    components = {component.component_id: component for component in mapping_preview.components}
+    selections = {selection.component_id: selection for selection in confirmation.selections}
+    projected = [
+        ContentTargetDraftPreviewComponent(
+            component_id=component_id,
+            label=components[component_id].label,
+            layout_name=selection.layout_name,
+            fields=[
+                ContentTargetDraftPreviewField(
+                    target_field=binding.target_field,
+                    source_field=binding.source_field,
+                    value=_source_value(revision, component_id, binding.source_field)[0],
+                    value_kind=_source_value(revision, component_id, binding.source_field)[1],
+                )
+                for binding in selection.field_bindings
+            ],
+        )
+        for component_id, selection in selections.items()
+    ]
+    payload = {
+        "revision": identity.model_dump(mode="json"),
+        "target_contract_digest": target.target_contract_digest,
+        "confirmation_digest": confirmation.confirmation_digest,
+        "root_field": root_field,
+        "components": [component.model_dump(mode="json") for component in projected],
+    }
+    return ContentTargetDraftPreview(
+        work_item_id=work_item_id,
+        revision=identity,
+        status="ready",
+        target=target,
+        confirmation=confirmation,
+        root_field=root_field,
+        components=projected,
+        payload_digest=sha256(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest(),
+        caveats=[
+            "To jest podgląd danych do szkicu na dev, nie zapis do WordPressa.",
+            "Kolejny etap wymaga osobnej akcji, review, potwierdzenia i audytu.",
+        ],
+    )
+
+
+def _confirmed_draft_preview_context(
+    work_item_id: str,
+    identity: ContentTargetMappingRevision,
+    mapping_preview: ContentTargetMappingPreview,
+    confirmation: ContentTargetMappingConfirmation | None,
+) -> (
+    ContentTargetDraftPreview
+    | tuple[ContentTargetMappingTarget, ContentTargetMappingConfirmation, str]
+):
+    target = mapping_preview.target
+    if mapping_preview.status != "ready_for_human_mapping" or target is None:
+        return _draft_preview_blocked(
+            work_item_id=work_item_id,
+            revision=identity,
+            code="mapping_stale",
+            label="Odczyt targetu wymaga ponownego sprawdzenia",
+            reason="Nie ma aktualnego, gotowego podglądu przypisania do dokładnego targetu.",
+            next_step="Otwórz przypisanie dokumentu do dev i odczytaj je ponownie.",
+        )
+    if not _confirmation_matches(confirmation, work_item_id, identity, mapping_preview):
+        return _draft_preview_blocked(
+            work_item_id=work_item_id,
+            revision=identity,
+            target=target,
+            code="mapping_not_confirmed",
+            label="Brakuje potwierdzonego przypisania",
+            reason=(
+                "WILQ nie przygotuje danych do szkicu, dopóki człowiek nie potwierdzi "
+                "przypisania tej wersji do aktualnie odczytanego układu dev."
+            ),
+            next_step="Potwierdź przypisanie dokumentu do odczytanych layoutów i pól.",
+        )
+    surface = target.target_contract.authoring_surface
+    if surface is None:
+        return _draft_preview_blocked(
+            work_item_id=work_item_id,
+            revision=identity,
+            target=target,
+            code="mapping_stale",
+            label="Układ targetu nie jest już dostępny",
+            reason="Potwierdzone przypisanie nie ma aktualnie odczytanego pola układu.",
+            next_step="Odczytaj ponownie układ dev i potwierdź przypisanie od nowa.",
+        )
+    assert confirmation is not None
+    return target, confirmation, surface.root_field
+
+
+def _confirmation_matches(
+    confirmation: ContentTargetMappingConfirmation | None,
+    work_item_id: str,
+    identity: ContentTargetMappingRevision,
+    mapping_preview: ContentTargetMappingPreview,
+) -> bool:
+    target = mapping_preview.target
+    return bool(
+        confirmation
+        and target
+        and confirmation.work_item_id == work_item_id
+        and confirmation.revision == identity
+        and confirmation.target_contract_digest == target.target_contract_digest
+        and confirmation.binding_digest == mapping_preview.binding_digest
+    )
+
+
+def _draft_preview_blocked(
+    *,
+    work_item_id: str,
+    revision: ContentTargetMappingRevision,
+    code: Literal["mapping_not_confirmed", "mapping_stale"],
+    label: str,
+    reason: str,
+    next_step: str,
+    target: ContentTargetMappingTarget | None = None,
+) -> ContentTargetDraftPreview:
+    return ContentTargetDraftPreview(
+        work_item_id=work_item_id,
+        revision=revision,
+        status="blocked",
+        target=target,
+        blockers=[
+            ContentTargetDraftPreviewBlocker(
+                code=code,
+                label=label,
+                reason=reason,
+                next_step=next_step,
+            )
+        ],
+        caveats=["Nie przygotowano ActionObjectu, draftu ani zapisu do WordPressa."],
+    )
+
+
+def _source_value(
+    revision: ContentDraftRevision,
+    component_id: str,
+    source_field: str,
+) -> tuple[str, Literal["plain_text", "html", "url"]]:
+    if component_id == "document-title" and source_field == "wordpress_title":
+        return (
+            (
+                revision.page_assets.wordpress_title
+                if revision.page_assets is not None
+                else revision.title
+            ),
+            "plain_text",
+        )
+    if component_id == "page-assets" and revision.page_assets is not None:
+        return _page_asset_source_value(revision, source_field)
+    if component_id.startswith("section:"):
+        return _section_source_value(revision, component_id, source_field)
+    if component_id.startswith("faq:"):
+        return _faq_source_value(revision, component_id, source_field)
+    if component_id.startswith("cta:"):
+        return _cta_source_value(revision, component_id, source_field)
+    if component_id.startswith("link:"):
+        return _link_source_value(revision, component_id, source_field)
+    raise ValueError("Potwierdzone przypisanie nie pasuje do pól dokładnej rewizji.")
+
+
+def _page_asset_source_value(
+    revision: ContentDraftRevision,
+    source_field: str,
+) -> tuple[str, Literal["plain_text"]]:
+    assert revision.page_assets is not None
+    values = {
+        "meta_title": revision.page_assets.meta_title,
+        "meta_description": revision.page_assets.meta_description,
+        "h1": revision.page_assets.h1,
+        "lead": revision.page_assets.lead,
+    }
+    if source_field not in values:
+        raise ValueError("Potwierdzone przypisanie nie pasuje do pól strony.")
+    return values[source_field], "plain_text"
+
+
+def _section_source_value(
+    revision: ContentDraftRevision,
+    component_id: str,
+    source_field: str,
+) -> tuple[str, Literal["plain_text", "html"]]:
+    section_id = component_id.removeprefix("section:")
+    section = next(
+        (
+            candidate
+            for index, candidate in enumerate(revision.sections, start=1)
+            if (candidate.section_id or str(index)) == section_id
+        ),
+        None,
+    )
+    if section is None:
+        raise ValueError("Potwierdzone przypisanie nie pasuje do sekcji rewizji.")
+    if source_field == "heading":
+        return section.heading, "plain_text"
+    if source_field == "content_html":
+        return section.content_html or content_html_from_markdown(section.body_markdown), "html"
+    raise ValueError("Potwierdzone przypisanie nie pasuje do pól sekcji.")
+
+
+def _faq_source_value(
+    revision: ContentDraftRevision,
+    component_id: str,
+    source_field: str,
+) -> tuple[str, Literal["plain_text", "html"]]:
+    item = next(
+        (candidate for candidate in revision.faq if f"faq:{candidate.faq_id}" == component_id),
+        None,
+    )
+    if item is None:
+        raise ValueError("Potwierdzone przypisanie nie pasuje do pytania i odpowiedzi.")
+    if source_field == "question":
+        return item.question, "plain_text"
+    if source_field == "answer_markdown":
+        return content_html_from_markdown(item.answer_markdown), "html"
+    raise ValueError("Potwierdzone przypisanie nie pasuje do pól pytań i odpowiedzi.")
+
+
+def _cta_source_value(
+    revision: ContentDraftRevision,
+    component_id: str,
+    source_field: str,
+) -> tuple[str, Literal["html"]]:
+    item = next(
+        (
+            candidate
+            for candidate in revision.cta_blocks
+            if f"cta:{candidate.cta_id}" == component_id
+        ),
+        None,
+    )
+    if item is None or source_field != "body_markdown":
+        raise ValueError("Potwierdzone przypisanie nie pasuje do wezwania do działania.")
+    return content_html_from_markdown(item.body_markdown), "html"
+
+
+def _link_source_value(
+    revision: ContentDraftRevision,
+    component_id: str,
+    source_field: str,
+) -> tuple[str, Literal["plain_text", "url"]]:
+    item = next(
+        (
+            candidate
+            for candidate in revision.internal_links
+            if f"link:{candidate.link_id}" == component_id
+        ),
+        None,
+    )
+    if item is None:
+        raise ValueError("Potwierdzone przypisanie nie pasuje do linku wewnętrznego.")
+    if source_field == "anchor_text":
+        return item.anchor_text, "plain_text"
+    if source_field == "target_url":
+        return item.target_url, "url"
+    raise ValueError("Potwierdzone przypisanie nie pasuje do pól linku wewnętrznego.")
+
+
 def _blocked(
     *,
     work_item_id: str,
@@ -525,11 +897,13 @@ def _binding_digest(
 
 
 __all__ = [
+    "ContentTargetDraftPreview",
     "ContentTargetMappingConfirmation",
     "ContentTargetMappingConfirmationCommand",
     "ContentTargetMappingConfirmationResult",
     "ContentTargetMappingPreview",
     "build_content_target_mapping_preview",
+    "build_content_target_draft_preview",
     "new_content_target_mapping_confirmation",
     "validate_content_target_mapping_confirmation",
 ]

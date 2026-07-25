@@ -699,6 +699,42 @@ export const ContentTargetMappingConfirmationResultSchema = z.object({
   confirmation: ContentTargetMappingConfirmationSchema
 });
 
+export const ContentTargetDraftPreviewFieldSchema = z.object({
+  target_field: z.string().min(1),
+  source_field: z.string().min(1),
+  value: z.string().min(1),
+  value_kind: z.enum(["plain_text", "html", "url"])
+});
+
+export const ContentTargetDraftPreviewComponentSchema = z.object({
+  component_id: z.string().min(1),
+  label: z.string().min(1),
+  layout_name: z.string().min(1),
+  fields: z.array(ContentTargetDraftPreviewFieldSchema).min(1)
+});
+
+export const ContentTargetDraftPreviewBlockerSchema = z.object({
+  code: z.enum(["mapping_not_confirmed", "mapping_stale"]),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  next_step: z.string().min(1)
+});
+
+export const ContentTargetDraftPreviewSchema = z.object({
+  response_type: z.literal("content_target_draft_preview"),
+  contract_version: z.literal("content_target_draft_preview_v1"),
+  work_item_id: z.string().min(1),
+  revision: ContentTargetMappingRevisionSchema,
+  status: z.enum(["ready", "blocked"]),
+  target: ContentTargetMappingTargetSchema.nullable().optional(),
+  confirmation: ContentTargetMappingConfirmationSchema.nullable().optional(),
+  root_field: z.string().min(1).nullable().optional(),
+  components: z.array(ContentTargetDraftPreviewComponentSchema).default([]),
+  payload_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  blockers: z.array(ContentTargetDraftPreviewBlockerSchema).default([]),
+  caveats: z.array(z.string()).default([])
+});
+
 export const ContentTargetMappingComponentSchema = z.object({
   component_id: z.string().min(1),
   kind: z.enum(["document_title", "page_assets", "rich_text", "faq", "cta", "internal_link"]),
@@ -3899,6 +3935,7 @@ export type ContentTargetMappingConfirmationCommand = z.input<
 export type ContentTargetMappingConfirmationResult = z.infer<
   typeof ContentTargetMappingConfirmationResultSchema
 >;
+export type ContentTargetDraftPreview = z.infer<typeof ContentTargetDraftPreviewSchema>;
 export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
 export type ContentNewPageBriefInput = z.input<typeof ContentNewPageBriefInputSchema>;
 export type ContentNewPageBriefWorkspace = z.infer<typeof ContentNewPageBriefWorkspaceSchema>;

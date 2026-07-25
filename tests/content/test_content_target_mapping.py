@@ -23,6 +23,7 @@ from wilq.content.workflow.target_mapping import (
     ContentTargetMappingConfirmationCommand,
     ContentTargetMappingFieldBinding,
     ContentTargetMappingSelection,
+    build_content_target_draft_preview,
     build_content_target_mapping_preview,
     new_content_target_mapping_confirmation,
 )
@@ -278,6 +279,135 @@ def test_target_mapping_confirmation_binds_every_observed_component_and_field() 
     assert len(confirmation.selections) == 2
 
 
+def test_target_draft_preview_uses_only_the_exact_confirmed_mapping() -> None:
+    revision = _revision()
+    preview = build_content_target_mapping_preview(
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revisions=[revision],
+        human_review=_review(revision),
+        discovery=_discovery(
+            authoring_surface=ContentTargetAuthoringSurface(
+                kind="acf_flexible_content",
+                root_field="content_sections",
+                layouts=[
+                    ContentTargetAuthoringLayout(
+                        name="title_section", fields=["wordpress_title"]
+                    ),
+                    ContentTargetAuthoringLayout(
+                        name="text_section", fields=["heading", "content_html"]
+                    ),
+                ],
+            )
+        ),
+    )
+    assert preview.target is not None
+    assert preview.binding_digest is not None
+    confirmation = new_content_target_mapping_confirmation(
+        work_item_id=revision.work_item_id,
+        preview=preview,
+        command=ContentTargetMappingConfirmationCommand(
+            expected_revision_digest=revision.content_digest,
+            expected_target_contract_digest=preview.target.target_contract_digest,
+            expected_binding_digest=preview.binding_digest,
+            confirmed_by="Marta Kowalska",
+            selections=[
+                ContentTargetMappingSelection(
+                    component_id="document-title",
+                    layout_name="title_section",
+                    field_bindings=[
+                        ContentTargetMappingFieldBinding(
+                            source_field="wordpress_title",
+                            target_field="wordpress_title",
+                        )
+                    ],
+                ),
+                ContentTargetMappingSelection(
+                    component_id="section:section_bdo",
+                    layout_name="text_section",
+                    field_bindings=[
+                        ContentTargetMappingFieldBinding(
+                            source_field="heading", target_field="heading"
+                        ),
+                        ContentTargetMappingFieldBinding(
+                            source_field="content_html", target_field="content_html"
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        confirmation_number=1,
+        created_at="2026-07-25T10:00:00Z",
+    )
+
+    draft_preview = build_content_target_draft_preview(
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revisions=[revision],
+        mapping_preview=preview,
+        confirmation=confirmation,
+    )
+
+    assert draft_preview.status == "ready"
+    assert draft_preview.root_field == "content_sections"
+    assert draft_preview.payload_digest is not None
+    assert draft_preview.components[0].fields[0].value == revision.title
+    assert draft_preview.components[1].fields[1].value == "<p>Sprawdź działalność firmy.</p>"
+
+    blocked = build_content_target_draft_preview(
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revisions=[revision],
+        mapping_preview=preview,
+        confirmation=None,
+    )
+    assert blocked.status == "blocked"
+    assert blocked.blockers[0].code == "mapping_not_confirmed"
+
+
+def _confirmation_request(
+    revision: ContentDraftRevision,
+    review: ContentDraftRevisionReview,
+    discovery: ContentTargetDiscovery,
+) -> dict[str, object]:
+    preview = build_content_target_mapping_preview(
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revisions=[revision],
+        human_review=review,
+        discovery=discovery,
+    )
+    return {
+        "expected_revision_digest": revision.content_digest,
+        "expected_target_contract_digest": "d" * 64,
+        "expected_binding_digest": preview.binding_digest,
+        "confirmed_by": "Marta Kowalska",
+        "selections": [
+            {
+                "component_id": "document-title",
+                "layout_name": "title_section",
+                "field_bindings": [
+                    {
+                        "source_field": "wordpress_title",
+                        "target_field": "wordpress_title",
+                    }
+                ],
+            },
+            {
+                "component_id": "section:section_bdo",
+                "layout_name": "text_section",
+                "field_bindings": [
+                    {"source_field": "heading", "target_field": "heading"},
+                    {
+                        "source_field": "content_html",
+                        "target_field": "content_html",
+                    },
+                ],
+            },
+        ],
+    }
+
+
 def test_target_mapping_confirmation_endpoint_persists_only_the_exact_preview(
     monkeypatch,
     tmp_path,
@@ -338,41 +468,7 @@ def test_target_mapping_confirmation_endpoint_persists_only_the_exact_preview(
 
     response = TestClient(app).post(
         path,
-        json={
-            "expected_revision_digest": revision.content_digest,
-            "expected_target_contract_digest": "d" * 64,
-            "expected_binding_digest": build_content_target_mapping_preview(
-                work_item_id=revision.work_item_id,
-                revision_id=revision.revision_id,
-                revisions=[revision],
-                human_review=review,
-                discovery=discovery,
-            ).binding_digest,
-            "confirmed_by": "Marta Kowalska",
-            "selections": [
-                {
-                    "component_id": "document-title",
-                    "layout_name": "title_section",
-                    "field_bindings": [
-                        {
-                            "source_field": "wordpress_title",
-                            "target_field": "wordpress_title",
-                        }
-                    ],
-                },
-                {
-                    "component_id": "section:section_bdo",
-                    "layout_name": "text_section",
-                    "field_bindings": [
-                        {"source_field": "heading", "target_field": "heading"},
-                        {
-                            "source_field": "content_html",
-                            "target_field": "content_html",
-                        },
-                    ],
-                },
-            ],
-        },
+        json=_confirmation_request(revision, review, discovery),
     )
 
     assert response.status_code == 200
@@ -380,3 +476,18 @@ def test_target_mapping_confirmation_endpoint_persists_only_the_exact_preview(
     assert payload["status"] == "created"
     assert payload["confirmation"]["revision"]["revision_id"] == revision.revision_id
     assert payload["confirmation"]["target_contract_digest"] == "d" * 64
+
+    draft_preview = TestClient(app).get(
+        path.removesuffix("/confirmation") + "/draft-preview"
+    )
+
+    assert draft_preview.status_code == 200
+    draft_payload = draft_preview.json()
+    assert draft_payload["status"] == "ready"
+    assert draft_payload["root_field"] == "content_sections"
+    assert draft_payload["confirmation"]["confirmation_id"] == payload["confirmation"][
+        "confirmation_id"
+    ]
+    assert draft_payload["components"][1]["fields"][1]["value"] == (
+        "<p>Sprawdź działalność firmy.</p>"
+    )

@@ -4,11 +4,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   type ContentDocumentWorkspace,
   type ContentTargetDiscovery,
+  type ContentTargetDraftPreview,
   type ContentTargetMappingPreview,
   postContentRevisionTargetMappingConfirmation
 } from "../lib/api";
 import {
   useContentRevisionTargetMapping,
+  useContentRevisionTargetDraftPreview,
   useContentTargetDiscovery
 } from "./contentWorkflowQueries";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
@@ -26,11 +28,17 @@ export function ContentDocumentWorkspaceCanvas({
   const [view, setView] = useState<View>("source");
   const [devDetailsOpen, setDevDetailsOpen] = useState(false);
   const [mappingOpen, setMappingOpen] = useState(false);
+  const [draftPreviewOpen, setDraftPreviewOpen] = useState(false);
   const targetDiscovery = useContentTargetDiscovery(workspace.work_item_id, devDetailsOpen);
   const targetMapping = useContentRevisionTargetMapping(
     workspace.work_item_id,
     workspace.canonical_document.revision_id ?? null,
     mappingOpen && workspace.canonical_document.status === "approved"
+  );
+  const targetDraftPreview = useContentRevisionTargetDraftPreview(
+    workspace.work_item_id,
+    workspace.canonical_document.revision_id ?? null,
+    draftPreviewOpen && workspace.canonical_document.status === "approved"
   );
   const hasReviewAction = workspace.next_action.kind === "open_review";
 
@@ -124,10 +132,56 @@ export function ContentDocumentWorkspaceCanvas({
             {targetMapping.isError ? <p className="mt-3 leading-6">Nie udało się odczytać przypisania dokumentu. Spróbuj ponownie później.</p> : null}
             {targetMapping.data ? <TargetMappingDetails preview={targetMapping.data} /> : null}
           </details> : null}
+          {workspace.canonical_document.status === "approved" ? <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
+            if ((event.currentTarget as HTMLDetailsElement).open) setDraftPreviewOpen(true);
+          }}>
+            <summary className="cursor-pointer font-semibold text-ink">Podgląd danych do szkicu na dev</summary>
+            {!draftPreviewOpen ? <p className="mt-3 leading-6">Otwórz po potwierdzeniu przypisania, aby zobaczyć dane przygotowane z dokładnej wersji dokumentu. To nadal nie tworzy szkicu.</p> : null}
+            {targetDraftPreview.isPending ? <p className="mt-3 leading-6">Przygotowuję podgląd danych do szkicu…</p> : null}
+            {targetDraftPreview.isError ? <p className="mt-3 leading-6">Nie udało się przygotować podglądu danych. Spróbuj ponownie później.</p> : null}
+            {targetDraftPreview.data ? <TargetDraftPreviewDetails preview={targetDraftPreview.data} /> : null}
+          </details> : null}
         </aside>
       </section>
     </main>
   );
+}
+
+function TargetDraftPreviewDetails({ preview }: { preview: ContentTargetDraftPreview }) {
+  if (preview.status === "blocked") {
+    return <>
+      {preview.blockers.map((blocker) => <div key={blocker.code} className="mt-3 rounded-lg bg-wait/10 p-3">
+        <p className="font-semibold text-ink">{blocker.label}</p>
+        <p className="mt-2 leading-6">{blocker.reason}</p>
+        <p className="mt-2 leading-6 text-slate-600">{blocker.next_step}</p>
+      </div>)}
+      {preview.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
+    </>;
+  }
+  return <>
+    <p className="mt-3 font-semibold text-ink">Dane są gotowe do osobnego sprawdzenia</p>
+    <p className="mt-2 leading-6">Podgląd pokazuje, co wynika z zatwierdzonego dokumentu i potwierdzonego przypisania. Nie zapisuje zmian na dev.</p>
+    <p className="mt-3 text-sm leading-6 text-slate-600">Pole układu: {preview.root_field}. Elementów: {preview.components.length}.</p>
+    <details className="mt-3 rounded-lg bg-slate-50 p-3">
+      <summary className="cursor-pointer font-semibold text-ink">Pokaż przygotowane elementy</summary>
+      <ul className="mt-3 space-y-3">
+        {preview.components.map((component) => <li key={component.component_id} className="rounded-lg bg-white p-3">
+          <p className="font-semibold text-ink">{component.label}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">Układ: {component.layout_name}</p>
+          {component.fields.map((field) => <div key={`${component.component_id}-${field.target_field}`} className="mt-2 rounded-md border border-line p-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{field.target_field}</p>
+            {field.value_kind === "html" ? (
+              <div
+                className="mt-1 break-words leading-6 text-slate-700"
+                dangerouslySetInnerHTML={{ __html: field.value }}
+              />
+            ) : <p className="mt-1 break-words leading-6 text-slate-700">{field.value}</p>}
+          </div>)}
+        </li>)}
+      </ul>
+    </details>
+    <p className="mt-3 text-sm leading-6 text-slate-600">Następny etap będzie osobną akcją: podgląd, review, potwierdzenie i audyt przed ewentualnym utworzeniem draftu.</p>
+  </>;
 }
 
 function TargetMappingDetails({ preview }: { preview: ContentTargetMappingPreview }) {
