@@ -310,6 +310,10 @@ from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.content.knowledge.service_profile import content_service_profile_response
+from wilq.content.workflow.dev_draft_action import (
+    load_content_target_draft_action,
+    refresh_content_target_draft_action,
+)
 from wilq.content.workflow.store import content_workflow_store as action_content_workflow_store
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import (
@@ -489,10 +493,12 @@ def get_action(action_id: str) -> ActionObject | None:
     if action is not None:
         action = action.model_copy(deep=True)
     else:
-        action = _action_registry().get(action_id)
+        action = load_content_target_draft_action(action_id) or _action_registry().get(
+            action_id
+        )
     if action is None:
         return None
-    action = _with_persisted_validation_state(action)
+    action = refresh_content_target_draft_action(_with_persisted_validation_state(action))
     return _with_review_gate(
         action,
         _persisted_audit_events_for_action(action.id),

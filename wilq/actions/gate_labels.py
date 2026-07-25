@@ -16,6 +16,15 @@ ACTION_GATE_LABELS: dict[str, str] = {
     "evidence_ids_required": "wymagane dowody źródłowe",
     "impact_sanity_check_required": "wymagane sprawdzenie efektu",
     "vendor_mutation_adapter_required": "brak bezpiecznej ścieżki zapisu w zewnętrznym systemie",
+    "content_draft_action_binding_invalid": (
+        "akcja nie ma kompletnego powiązania z dokumentem i targetem"
+    ),
+    "content_draft_action_state_unavailable": (
+        "nie można teraz potwierdzić dokumentu, mapowania lub odczytu dev"
+    ),
+    "content_draft_action_stale": (
+        "dokument, mapowanie albo odczyt dev zmieniły się od przygotowania akcji"
+    ),
     "validate_action_object": "sprawdzenie akcji",
     "human_review_before_apply": "sprawdzenie przez człowieka przed zapisem",
     "human_confirm_before_apply": "potwierdzenie człowieka przed zapisem",

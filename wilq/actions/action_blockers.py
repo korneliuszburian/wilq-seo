@@ -34,6 +34,7 @@ def action_preview_blockers(
         blockers.append("payload_preview_missing")
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
+    blockers.extend(_runtime_blockers(action))
     blockers.extend(action.review_gate.apply_blockers)
     return unique_values(blockers)
 
@@ -73,6 +74,7 @@ def action_confirmation_blockers(
         blockers.append("dry_run_preview_required")
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
+    blockers.extend(_runtime_blockers(action))
     return unique_values(blockers)
 
 
@@ -100,6 +102,7 @@ def action_impact_check_blockers(
         blockers.append("evidence_ids_required")
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
+    blockers.extend(_runtime_blockers(action))
     return unique_values(blockers)
 
 
@@ -140,6 +143,7 @@ def action_apply_preflight_blockers(
         blockers.append("Zapisy zmian o wysokim i krytycznym ryzyku są zablokowane w Goal 001.")
     if action.payload.get("destructive") is True:
         blockers.append("Destrukcyjne zmiany nie są zaimplementowane w Goal 001.")
+    blockers.extend(_runtime_blockers(action))
     if not wordpress_capability_present and not payload_apply_allowed(action.payload):
         blockers.append("Payload akcji nie pozwala jeszcze na zapis zmian.")
     if not wordpress_capability_present and not payload_api_mutation_ready(action.payload):
@@ -169,6 +173,7 @@ def action_apply_blockers(
         blockers.append("payload_apply_allowed_false")
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
+    blockers.extend(_runtime_blockers(action))
     if requires_human_confirmation(required_checks) and not confirmation_satisfied:
         blockers.append("human_confirm_before_apply")
     if not impact_sanity_satisfied:
@@ -178,6 +183,13 @@ def action_apply_blockers(
     blocked_claims = string_list(action.payload.get("blocked_claims"))
     blockers.extend(f"blocked_claim:{claim}" for claim in blocked_claims[:8])
     return unique_values(blockers)
+
+
+def _runtime_blockers(action: ActionObject) -> list[str]:
+    values = action.payload.get("runtime_blockers")
+    if not isinstance(values, list):
+        return []
+    return [value for value in values if isinstance(value, str) and value]
 
 
 def action_confirmation_event_type(action: ActionObject, confirmed: bool) -> str:
@@ -262,11 +274,7 @@ def action_impact_check_summary(
         f"Porównanie po zmianie: {request.post_window_days} dni.",
         f"Metryki z dowodami: {metric_fact_count}.",
         "Źródła: "
-        + (
-            f"{', '.join(connector_labels(source_connectors))}."
-            if source_connectors
-            else "brak."
-        ),
+        + (f"{', '.join(connector_labels(source_connectors))}." if source_connectors else "brak."),
     ]
     if blockers:
         parts.append(f"Blokady: {', '.join(gate_labels(blockers))}.")

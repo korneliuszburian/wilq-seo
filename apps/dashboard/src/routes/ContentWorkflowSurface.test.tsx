@@ -12,6 +12,8 @@ import {
   getContentWorkItemEditorialIntegrity,
   getContentWorkItemRevisionHtmlPackage,
   getContentRevisionTargetMapping,
+  getContentRevisionTargetDraftPreview,
+  postContentRevisionTargetDraftAction,
   postContentRevisionTargetMappingConfirmation,
   getContentWorkItemDecisionContext,
   getContentWorkItemDocumentWorkspace,
@@ -55,6 +57,7 @@ import {
   type ContentInventoryCatalogResponse,
   type ContentPlanningProposalResponse,
   type ContentTargetMappingPreview,
+  type ContentTargetDraftPreview,
   type ContentSemanticReviewResponse,
   type ContentWorkItemQueueResponse,
   type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
@@ -104,7 +107,9 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemEditorialIntegrity: vi.fn(),
     getContentWorkItemRevisionHtmlPackage: vi.fn(),
     getContentRevisionTargetMapping: vi.fn(),
+    getContentRevisionTargetDraftPreview: vi.fn(),
     postContentRevisionTargetMappingConfirmation: vi.fn(),
+    postContentRevisionTargetDraftAction: vi.fn(),
     getContentWorkItemDecisionContext: vi.fn(),
     getContentWorkItemDocumentWorkspace: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
@@ -502,6 +507,50 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByTestId("content-approved-html-package")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pobierz paczkę dokumentu" })).toBeInTheDocument();
     expect(getContentWorkItemRevisionHtmlPackage).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("creates a separate exact dev-draft action without writing to WordPress", async () => {
+    const workspace = approvedDocumentWorkspace();
+    const preview = contentTargetDraftPreview();
+    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
+    vi.mocked(getContentRevisionTargetDraftPreview).mockResolvedValue(preview);
+    vi.mocked(postContentRevisionTargetDraftAction).mockResolvedValue({
+      ...wordpressDraftAction(),
+      id: "act_content_dev_draft_1"
+    });
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22",
+          defaultPendingMinMs: 0
+        })}
+        client={client}
+      />
+    );
+
+    fireEvent.click(await screen.findByText("Podgląd danych do szkicu na dev", { exact: true }));
+    await screen.findByText("Dane są gotowe do osobnego sprawdzenia");
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj akcję szkicu na dev" }));
+
+    await waitFor(() =>
+      expect(postContentRevisionTargetDraftAction).toHaveBeenCalledWith(
+        workspace.work_item_id,
+        preview.revision.revision_id,
+        expect.objectContaining({
+          expected_revision_digest: preview.revision.content_digest,
+          expected_target_contract_digest: preview.target?.target_contract_digest,
+          expected_confirmation_digest: preview.confirmation?.confirmation_digest,
+          expected_payload_digest: preview.payload_digest
+        })
+      )
+    );
+    expect(screen.getByRole("link", { name: "Otwórz akcję szkicu" })).toHaveAttribute(
+      "href",
+      "/actions/act_content_dev_draft_1"
+    );
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
@@ -3516,6 +3565,50 @@ function contentTargetMappingPreview({
           next_step: "Odczytaj układ bez zgadywania pola lub layoutu."
         }],
     caveats: ["Nie przygotowano payloadu ani zapisu do WordPressa."]
+  };
+}
+
+function contentTargetDraftPreview(): ContentTargetDraftPreview {
+  const mapping = contentTargetMappingPreview();
+  if (!mapping.target || !mapping.binding_digest) throw new Error("Missing target mapping fixture.");
+  return {
+    response_type: "content_target_draft_preview",
+    contract_version: "content_target_draft_preview_v1",
+    work_item_id: mapping.work_item_id,
+    revision: mapping.revision,
+    status: "ready",
+    target: mapping.target,
+    confirmation: {
+      confirmation_id: "content_target_mapping_confirmation_1",
+      confirmation_number: 1,
+      work_item_id: mapping.work_item_id,
+      revision: mapping.revision,
+      target_contract_digest: mapping.target.target_contract_digest,
+      binding_digest: mapping.binding_digest,
+      selections: [{
+        component_id: "section:section_bdo",
+        layout_name: "text_section",
+        field_bindings: [{ source_field: "content_html", target_field: "content_html" }]
+      }],
+      confirmed_by: "Marta Kowalska",
+      confirmation_digest: "d".repeat(64),
+      created_at: "2026-07-25T10:00:00Z"
+    },
+    root_field: "content_sections",
+    components: [{
+      component_id: "section:section_bdo",
+      label: "Obowiązki BDO",
+      layout_name: "text_section",
+      fields: [{
+        target_field: "content_html",
+        source_field: "content_html",
+        value: "<p>Sprawdź obowiązki BDO.</p>",
+        value_kind: "html"
+      }]
+    }],
+    payload_digest: "e".repeat(64),
+    blockers: [],
+    caveats: ["To nadal nie tworzy draftu ani nie zmienia WordPressa."]
   };
 }
 

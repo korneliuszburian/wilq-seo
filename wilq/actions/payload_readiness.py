@@ -227,6 +227,10 @@ def _raw_preview_row_label(key: str) -> str:
         "issue_type_label": "Problem",
         "mode_label": "Tryb",
         "operation_type_label": "Operacja",
+        "target_label": "Obiekt dev",
+        "revision_label": "Wersja dokumentu",
+        "mapping_label": "Przypisanie",
+        "component_count_label": "Zakres",
         "readiness_label": "Gotowość",
         "recommendation_type_label": "Rekomendacja",
         "reason_label": "Powód",
@@ -282,6 +286,7 @@ def preview_contract_label(value: str | None) -> str:
         "merchant_feed_issue_preview_v1": "przegląd problemów Merchant",
         "content_brief_preview_v1": "brief treści do sprawdzenia",
         "wordpress_draft_payload_preview_v1": "szkic WordPress do sprawdzenia",
+        "content_dev_draft_action_v1": "dane dokładnego szkicu na dev",
         "local_visibility_review_preview_v1": "widoczność lokalna do sprawdzenia",
         "ga4_tracking_quality_review_v1": "jakość pomiaru GA4 do sprawdzenia",
     }

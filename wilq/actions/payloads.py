@@ -34,6 +34,7 @@ from wilq.actions.localo.visibility import (
 )
 from wilq.actions.validation_copy import missing, wrong
 from wilq.connectors.registry import get_connector_status
+from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 
 INTERNAL_ACTION_TYPES = {
     "configure_connector",
@@ -44,9 +45,7 @@ INTERNAL_ACTION_TYPES = {
     KEYWORD_PLANNER_ACCESS_ACTION_TYPE,
 }
 
-SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE = (
-    "service_profile_knowledge_promotion_review"
-)
+SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE = "service_profile_knowledge_promotion_review"
 SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE = (
     "service_profile_private_proposal_promotion_review"
 )
@@ -133,7 +132,40 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         and action_type == SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE
     ):
         errors.extend(validate_service_profile_private_proposal_promotion_payload(payload))
+    if connector_id == "wordpress_ekologus" and action_type == CONTENT_DEV_DRAFT_ACTION_TYPE:
+        errors.extend(validate_content_dev_draft_action_payload(payload))
 
+    return errors
+
+
+def validate_content_dev_draft_action_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("mode") != "dev_draft_only":
+        errors.append(wrong("Szkic dev", "musi pozostać w trybie dev_draft_only"))
+    if payload.get("preview_contract") != "content_dev_draft_action_v1":
+        errors.append(missing("Szkic dev", "kontraktu dokładnego podglądu"))
+    if payload.get("apply_allowed") is not False or payload.get("api_mutation_ready") is not False:
+        errors.append(wrong("Szkic dev", "zapis WordPress musi pozostać zablokowany"))
+    binding = payload.get("content_target_draft_binding")
+    if not isinstance(binding, dict):
+        errors.append(missing("Szkic dev", "dokładnego powiązania dokumentu i targetu"))
+    else:
+        for key in (
+            "work_item_id",
+            "revision_id",
+            "revision_digest",
+            "target_contract_digest",
+            "confirmation_digest",
+            "payload_digest",
+            "root_field",
+        ):
+            if not isinstance(binding.get(key), str) or not binding[key]:
+                errors.append(missing("Szkic dev", f"pola {key}"))
+    if not isinstance(payload.get("draft_payload"), dict):
+        errors.append(missing("Szkic dev", "danych dokładnego szkicu"))
+    preview = payload.get("payload_preview")
+    if not isinstance(preview, list) or len(preview) != 1 or not isinstance(preview[0], dict):
+        errors.append(missing("Szkic dev", "jednej pozycji podglądu"))
     return errors
 
 

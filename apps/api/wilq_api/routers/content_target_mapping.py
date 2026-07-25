@@ -2,6 +2,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
+from wilq.actions.service import clear_action_list_cache
+from wilq.content.workflow.dev_draft_action import (
+    ContentTargetDraftActionCommand,
+    create_content_target_draft_action,
+    persist_content_target_draft_action,
+)
 from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.target_discovery import (
     ContentTargetDiscovery,
@@ -15,6 +21,7 @@ from wilq.content.workflow.target_mapping import (
     build_content_target_draft_preview,
     build_content_target_mapping_preview,
 )
+from wilq.schemas import ActionObject
 
 
 def register_content_target_mapping_route(router: APIRouter) -> None:
@@ -35,6 +42,12 @@ def register_content_target_mapping_route(router: APIRouter) -> None:
         confirm_content_target_mapping_endpoint,
         methods=["POST"],
         response_model=ContentTargetMappingConfirmationResult,
+    )
+    router.add_api_route(
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-action",
+        create_content_target_draft_action_endpoint,
+        methods=["POST"],
+        response_model=ActionObject,
     )
 
 
@@ -89,6 +102,21 @@ def confirm_content_target_mapping_endpoint(
         )
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+def create_content_target_draft_action_endpoint(
+    work_item_id: str,
+    revision_id: str,
+    command: ContentTargetDraftActionCommand,
+) -> ActionObject:
+    preview = content_target_draft_preview_endpoint(work_item_id, revision_id)
+    try:
+        action = create_content_target_draft_action(preview, command)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    persisted = persist_content_target_draft_action(action)
+    clear_action_list_cache()
+    return persisted
 
 
 def _mapping_preview(work_item_id: str, revision_id: str, store):

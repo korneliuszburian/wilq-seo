@@ -26,6 +26,7 @@ import {
   ContentTargetMappingConfirmationCommandSchema,
   ContentTargetMappingConfirmationResultSchema,
   ContentTargetDraftPreviewSchema,
+  ContentTargetDraftActionCommandSchema,
   ContentTargetMappingPreviewSchema,
   ContentWorkflowEntryResponseSchema,
   ContentNewPageBriefInputSchema,
@@ -134,6 +135,7 @@ import {
   type ContentTargetMappingConfirmationResult,
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
+  type ContentTargetDraftActionCommand,
   type ContentWorkflowEntryResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
@@ -555,6 +557,18 @@ export function getContentRevisionTargetDraftPreview(
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/target-mapping/draft-preview`,
     ContentTargetDraftPreviewSchema
+  );
+}
+
+export function postContentRevisionTargetDraftAction(
+  workItemId: string,
+  revisionId: string,
+  request: ContentTargetDraftActionCommand
+): Promise<ActionObject> {
+  return apiPost(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/target-mapping/draft-action`,
+    ActionObjectSchema,
+    ContentTargetDraftActionCommandSchema.parse(request)
   );
 }
 
@@ -1057,6 +1071,7 @@ export type {
   ContentTargetMappingConfirmationResult,
   ContentTargetMappingPreview,
   ContentTargetDraftPreview,
+  ContentTargetDraftActionCommand,
   ContentWorkflowEntryResponse,
   ContentNewPageBriefInput,
   ContentNewPageBriefWorkspace,

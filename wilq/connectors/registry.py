@@ -197,6 +197,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "wordpress_content_refresh",
             "wordpress_draft_update",
             "wordpress_draft_handoff",
+            "content_dev_draft_create",
             "service_profile_knowledge_promotion_review",
             "service_profile_private_proposal_promotion_review",
         ),
@@ -328,9 +329,7 @@ def _connector_error(missing: list[str]) -> str | None:
 
 def _connector_capability(definition: ConnectorDefinition) -> ConnectorCapability:
     if not definition.enabled:
-        action_scope: Literal["read_only", "review_only", "draft_only", "disabled"] = (
-            "disabled"
-        )
+        action_scope: Literal["read_only", "review_only", "draft_only", "disabled"] = "disabled"
     elif definition.mutation_adapter is not None:
         action_scope = "draft_only"
     elif definition.supported_actions:
@@ -467,6 +466,8 @@ def _codex_connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
         risk_notes=definition.risk_notes,
         health_check=definition.health_check,
     )
+
+
 def list_connector_statuses() -> list[ConnectorStatus]:
     return [connector_status(definition) for definition in CONNECTOR_DEFINITIONS]
 

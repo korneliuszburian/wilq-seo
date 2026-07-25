@@ -735,6 +735,14 @@ export const ContentTargetDraftPreviewSchema = z.object({
   caveats: z.array(z.string()).default([])
 });
 
+export const ContentTargetDraftActionCommandSchema = z.object({
+  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_target_contract_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_confirmation_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_payload_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  requested_by: z.string().min(1).max(200)
+});
+
 export const ContentTargetMappingComponentSchema = z.object({
   component_id: z.string().min(1),
   kind: z.enum(["document_title", "page_assets", "rich_text", "faq", "cta", "internal_link"]),
@@ -3936,6 +3944,7 @@ export type ContentTargetMappingConfirmationResult = z.infer<
   typeof ContentTargetMappingConfirmationResultSchema
 >;
 export type ContentTargetDraftPreview = z.infer<typeof ContentTargetDraftPreviewSchema>;
+export type ContentTargetDraftActionCommand = z.infer<typeof ContentTargetDraftActionCommandSchema>;
 export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
 export type ContentNewPageBriefInput = z.input<typeof ContentNewPageBriefInputSchema>;
 export type ContentNewPageBriefWorkspace = z.infer<typeof ContentNewPageBriefWorkspaceSchema>;
