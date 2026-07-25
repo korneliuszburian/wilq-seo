@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -39,6 +39,28 @@ class ContentTargetDraftActionCommand(BaseModel):
     expected_confirmation_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     expected_payload_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     requested_by: str = Field(min_length=1, max_length=200)
+
+
+class ContentDevDraftWritePayload(BaseModel):
+    """Strict WordPress create payload derived only from an exact ACF mapping.
+
+    This is an internal delivery projection.  Building it performs no vendor
+    operation; a later ActionObject-owned adapter may consume it only after its
+    own validation, preview, review, confirmation and apply gates.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    connector: Literal["wordpress_ekologus"]
+    endpoint: Literal["posts", "pages"]
+    post_status: Literal["draft"] = "draft"
+    create_only: Literal[True] = True
+    publish_allowed: Literal[False] = False
+    update_allowed: Literal[False] = False
+    delete_allowed: Literal[False] = False
+    title: str = Field(min_length=1)
+    acf: dict[str, list[dict[str, str]]] = Field(min_length=1)
+    binding: dict[str, str] = Field(min_length=1)
 
 
 def create_content_target_draft_action(
@@ -201,6 +223,55 @@ def refresh_content_target_draft_action(action: ActionObject) -> ActionObject:
     return action if exact else _blocked_action(action, "content_draft_action_stale")
 
 
+def build_content_dev_draft_write_payload(
+    action: ActionObject,
+    *,
+    preview: ContentTargetDraftPreview | None = None,
+) -> ContentDevDraftWritePayload:
+    """Build one create-only dev payload or fail closed before any adapter runs."""
+
+    refreshed = refresh_content_target_draft_action(action)
+    if refreshed.status == ActionStatus.blocked:
+        raise ValueError("Akcja szkicu dev nie jest już aktualna.")
+    binding = refreshed.payload.get("content_target_draft_binding")
+    if not isinstance(binding, dict):
+        raise ValueError("Akcja szkicu dev nie ma kompletnego powiązania.")
+    current = preview or current_content_target_draft_preview(
+        work_item_id=_required_binding_value(binding, "work_item_id"),
+        revision_id=_required_binding_value(binding, "revision_id"),
+    )
+    if current.status != "ready" or current.target is None or current.root_field is None:
+        raise ValueError("Nie można zbudować payloadu bez aktualnego mapowania do dev.")
+    if current.payload_digest != binding.get("payload_digest"):
+        raise ValueError("Podgląd danych do szkicu zmienił się przed przygotowaniem payloadu.")
+    if current.target.target_contract_digest != binding.get("target_contract_digest"):
+        raise ValueError("Odczyt obiektu dev zmienił się przed przygotowaniem payloadu.")
+
+    endpoint = _wordpress_endpoint(current.target.target_contract.post_type)
+    title = _document_title(current.components)
+    layouts = [_acf_layout(component) for component in current.components]
+    exact_binding = {
+        key: _required_binding_value(binding, key)
+        for key in (
+            "work_item_id",
+            "revision_id",
+            "revision_digest",
+            "target_contract_digest",
+            "confirmation_id",
+            "confirmation_digest",
+            "payload_digest",
+            "root_field",
+        )
+    }
+    return ContentDevDraftWritePayload(
+        connector="wordpress_ekologus",
+        endpoint=endpoint,
+        title=title,
+        acf={current.root_field: layouts},
+        binding=exact_binding,
+    )
+
+
 def current_content_target_draft_preview(
     *, work_item_id: str, revision_id: str
 ) -> ContentTargetDraftPreview:
@@ -259,6 +330,36 @@ def _draft_payload_identity(preview: ContentTargetDraftPreview) -> dict[str, Any
     }
 
 
+def _wordpress_endpoint(post_type: str) -> Literal["posts", "pages"]:
+    endpoints: dict[str, Literal["posts", "pages"]] = {"post": "posts", "page": "pages"}
+    endpoint = endpoints.get(post_type)
+    if endpoint is None:
+        raise ValueError("Odczytany typ obiektu dev nie obsługuje tworzenia szkicu.")
+    return endpoint
+
+
+def _document_title(components: list[Any]) -> str:
+    titles = [
+        field.value.strip()
+        for component in components
+        if component.component_id == "document-title"
+        for field in component.fields
+        if field.source_field == "wordpress_title"
+    ]
+    if len(titles) != 1 or not titles[0]:
+        raise ValueError("Mapowanie szkicu musi wskazywać dokładnie jeden tytuł dokumentu.")
+    return titles[0]
+
+
+def _acf_layout(component: Any) -> dict[str, str]:
+    fields: dict[str, str] = {"acf_fc_layout": component.layout_name}
+    for field in component.fields:
+        if field.target_field in fields:
+            raise ValueError("Mapowanie szkicu zawiera powtórzone pole targetu.")
+        fields[field.target_field] = field.value
+    return fields
+
+
 def _required_binding_value(binding: dict[str, Any], key: str) -> str:
     value = binding.get(key)
     if not isinstance(value, str) or not value:
@@ -290,7 +391,9 @@ __all__ = [
     "CONTENT_DEV_DRAFT_ACTION_CONTRACT",
     "CONTENT_DEV_DRAFT_ACTION_CREATED_EVENT",
     "CONTENT_DEV_DRAFT_ACTION_TYPE",
+    "ContentDevDraftWritePayload",
     "ContentTargetDraftActionCommand",
+    "build_content_dev_draft_write_payload",
     "create_content_target_draft_action",
     "current_content_target_draft_preview",
     "load_content_target_draft_action",

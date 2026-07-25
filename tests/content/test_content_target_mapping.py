@@ -480,6 +480,72 @@ def test_content_dev_draft_action_binds_the_exact_confirmed_preview_and_fails_cl
     assert loaded.payload["runtime_blockers"] == ["content_draft_action_stale"]
 
 
+def test_content_dev_draft_write_payload_is_create_only_and_requires_one_exact_title(
+    monkeypatch,
+) -> None:
+    revision, draft_preview = _ready_preview()
+    assert draft_preview.target is not None
+    assert draft_preview.confirmation is not None
+    assert draft_preview.payload_digest is not None
+    action = dev_draft_action.create_content_target_draft_action(
+        draft_preview,
+        dev_draft_action.ContentTargetDraftActionCommand(
+            expected_revision_digest=revision.content_digest,
+            expected_target_contract_digest=draft_preview.target.target_contract_digest,
+            expected_confirmation_digest=draft_preview.confirmation.confirmation_digest,
+            expected_payload_digest=draft_preview.payload_digest,
+            requested_by="Marta Kowalska",
+        ),
+    )
+    monkeypatch.setattr(
+        dev_draft_action,
+        "current_content_target_draft_preview",
+        lambda **_: draft_preview,
+    )
+
+    payload = dev_draft_action.build_content_dev_draft_write_payload(action)
+
+    assert payload.endpoint == "posts"
+    assert payload.post_status == "draft"
+    assert payload.create_only is True
+    assert payload.publish_allowed is False
+    assert payload.update_allowed is False
+    assert payload.delete_allowed is False
+    assert payload.title == revision.title
+    assert payload.acf == {
+        "content_sections": [
+            {"acf_fc_layout": "title_section", "wordpress_title": revision.title},
+            {
+                "acf_fc_layout": "text_section",
+                "heading": "Kiedy sprawdzić obowiązki BDO",
+                "content_html": "<p>Sprawdź działalność firmy.</p>",
+            },
+        ]
+    }
+
+    no_title = draft_preview.model_copy(
+        update={
+            "components": [
+                component
+                for component in draft_preview.components
+                if component.component_id != "document-title"
+            ]
+        }
+    )
+    monkeypatch.setattr(
+        dev_draft_action,
+        "current_content_target_draft_preview",
+        lambda **_: no_title,
+    )
+
+    try:
+        dev_draft_action.build_content_dev_draft_write_payload(action)
+    except ValueError as error:
+        assert "dokładnie jeden tytuł" in str(error)
+    else:
+        raise AssertionError("Payload bez jednoznacznego tytułu nie może powstać.")
+
+
 def test_content_dev_draft_action_endpoint_persists_only_the_exact_preview(
     monkeypatch,
     tmp_path,
