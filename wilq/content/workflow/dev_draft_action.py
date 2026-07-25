@@ -102,8 +102,8 @@ def create_content_target_draft_action(
         "mapping_label": "Ręczne przypisanie do odczytanego układu dev",
         "status_label": "wymaga osobnego review i potwierdzenia akcji",
         "component_count_label": f"{len(preview.components)} elementów dokumentu",
-        "apply_allowed": False,
-        "api_mutation_ready": False,
+        "apply_allowed": True,
+        "api_mutation_ready": True,
     }
     return ActionObject(
         id=f"act_content_dev_draft_{uuid4().hex}",
@@ -121,8 +121,8 @@ def create_content_target_draft_action(
         ),
         recommended_reason=(
             "Sprawdź dokładny zakres danych, zapisz osobne review i potwierdzenie akcji. "
-            "Zapis do WordPressa pozostaje zablokowany, dopóki nie istnieje osobna, "
-            "bezpieczna granica wykonania dev draft-only."
+            "Zapis do WordPressa może utworzyć wyłącznie jeden nowy szkic na dev po "
+            "kompletnym łańcuchu ActionObject i jawnym potwierdzeniu operatora."
         ),
         payload={
             "action_type": CONTENT_DEV_DRAFT_ACTION_TYPE,
@@ -155,8 +155,8 @@ def create_content_target_draft_action(
                 "bulk_delivery",
             ],
             "destructive": False,
-            "apply_allowed": False,
-            "api_mutation_ready": False,
+            "apply_allowed": True,
+            "api_mutation_ready": True,
         },
         validation_status="not_validated",
         created_by=command.requested_by,

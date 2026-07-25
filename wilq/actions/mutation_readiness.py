@@ -180,7 +180,9 @@ def mutation_readiness_next_step(
 def vendor_write_possible(action: ActionObject, mutation_adapter: str | None) -> bool:
     preview_items = payload_preview_items(action.payload)
     wordpress_env_ready = True
-    if getattr(action, "id", None) == "act_apply_wordpress_draft_handoff":
+    if getattr(action, "id", None) == "act_apply_wordpress_draft_handoff" or action.payload.get(
+        "action_type"
+    ) == "content_dev_draft_create":
         from wilq.actions.wordpress_mutation_requirements import wordpress_draft_writes_enabled
 
         wordpress_env_ready = wordpress_draft_writes_enabled()

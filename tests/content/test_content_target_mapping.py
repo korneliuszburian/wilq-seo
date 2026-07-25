@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from apps.api.wilq_api.routers import content_target_mapping
 from wilq.actions import audit_store as action_audit_store
 from wilq.actions import service as action_service
-from wilq.content.workflow import dev_draft_action
+from wilq.content.workflow import dev_draft_action, dev_draft_execution
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
@@ -449,8 +449,8 @@ def test_content_dev_draft_action_binds_the_exact_confirmed_preview_and_fails_cl
     )
 
     assert action.payload["action_type"] == dev_draft_action.CONTENT_DEV_DRAFT_ACTION_TYPE
-    assert action.payload["apply_allowed"] is False
-    assert action.payload["api_mutation_ready"] is False
+    assert action.payload["apply_allowed"] is True
+    assert action.payload["api_mutation_ready"] is True
     assert (
         action.payload["content_target_draft_binding"]["revision_digest"] == revision.content_digest
     )
@@ -544,6 +544,62 @@ def test_content_dev_draft_write_payload_is_create_only_and_requires_one_exact_t
         assert "dokładnie jeden tytuł" in str(error)
     else:
         raise AssertionError("Payload bez jednoznacznego tytułu nie może powstać.")
+
+
+def test_content_dev_draft_execution_uses_only_the_exact_acf_payload(monkeypatch) -> None:
+    revision, draft_preview = _ready_preview()
+    assert draft_preview.target is not None
+    assert draft_preview.confirmation is not None
+    assert draft_preview.payload_digest is not None
+    action = dev_draft_action.create_content_target_draft_action(
+        draft_preview,
+        dev_draft_action.ContentTargetDraftActionCommand(
+            expected_revision_digest=revision.content_digest,
+            expected_target_contract_digest=draft_preview.target.target_contract_digest,
+            expected_confirmation_digest=draft_preview.confirmation.confirmation_digest,
+            expected_payload_digest=draft_preview.payload_digest,
+            requested_by="Marta Kowalska",
+        ),
+    )
+    monkeypatch.setattr(
+        dev_draft_action,
+        "current_content_target_draft_preview",
+        lambda **_: draft_preview,
+    )
+    monkeypatch.setattr(dev_draft_execution, "_dev_draft_writes_enabled", lambda: True)
+    received: dict[str, object] = {}
+
+    def create(payload, **kwargs):
+        received["payload"] = payload
+        received["kwargs"] = kwargs
+        return "draft_417"
+
+    monkeypatch.setattr(dev_draft_execution, "create_wordpress_acf_draft", create)
+
+    result, errors = dev_draft_execution.execute_content_target_draft_action(action)
+
+    assert errors == []
+    assert result is not None
+    assert result["adapter"] == "content_dev_draft_execution_boundary"
+    assert result["created_draft_id"] == "draft_417"
+    assert result["endpoint"] == "posts"
+    assert result["post_status"] == "draft"
+    assert result["publish_allowed"] is False
+    assert received["kwargs"] == {
+        "connector_id": "wordpress_ekologus",
+        "action_apply_authorized": True,
+    }
+    payload = received["payload"]
+    assert payload.acf == {
+        "content_sections": [
+            {"acf_fc_layout": "title_section", "wordpress_title": revision.title},
+            {
+                "acf_fc_layout": "text_section",
+                "heading": "Kiedy sprawdzić obowiązki BDO",
+                "content_html": "<p>Sprawdź działalność firmy.</p>",
+            },
+        ]
+    }
 
 
 def test_content_dev_draft_action_endpoint_persists_only_the_exact_preview(

@@ -20,6 +20,7 @@ from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
 )
+from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.stage_write_readiness import (
@@ -422,6 +423,12 @@ def execute_supported_wordpress_mutation_adapter(
     mutation_adapter: str,
     wordpress_capability: WordPressDraftApplyCapability | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
+    if mutation_adapter == "content_dev_draft_execution_boundary":
+        from wilq.content.workflow.dev_draft_execution import (
+            execute_content_target_draft_action,
+        )
+
+        return execute_content_target_draft_action(action)
     if mutation_adapter != "wordpress_draft_execution_boundary":
         return None, [f"Adapter zapisu {mutation_adapter} nie ma implementacji wykonania."]
     if wordpress_capability is not None:
@@ -623,6 +630,16 @@ def wordpress_draft_write_readiness_requirements(
     *,
     wordpress_draft_readiness: ContentWordPressDraftWriteReadinessResponse | None = None,
 ) -> list[ActionMutationReadinessRequirement]:
+    if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE:
+        live_write_enabled = wordpress_draft_writes_enabled()
+        return [
+            _requirement(
+                code="wordpress_draft_live_write_env",
+                label="Env pozwala na utworzenie szkicu WordPress na dev",
+                satisfied=live_write_enabled,
+                evidence=str(live_write_enabled).lower(),
+            )
+        ]
     if action.id != "act_apply_wordpress_draft_handoff":
         return []
     readiness = wordpress_draft_readiness

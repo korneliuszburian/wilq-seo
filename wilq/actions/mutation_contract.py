@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.dev_draft_execution import CONTENT_DEV_DRAFT_MUTATION_ADAPTER
 from wilq.schemas import ActionMutationApplyContract, ActionObject
 
 
@@ -7,6 +9,36 @@ def mutation_apply_contract(
     action: ActionObject,
     mutation_adapter: str | None,
 ) -> ActionMutationApplyContract | None:
+    if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE:
+        return ActionMutationApplyContract(
+            action_id=action.id,
+            action_type=CONTENT_DEV_DRAFT_ACTION_TYPE,
+            connector=action.connector,
+            allowed_operation="create_wordpress_draft",
+            draft_only=True,
+            publication_allowed=False,
+            destructive_allowed=False,
+            adapter_status="implemented" if mutation_adapter is not None else "not_implemented",
+            required_env_flags=["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
+            required_input_contracts=["content_dev_draft_action_v1"],
+            required_audit_events=[
+                "action_preview_generated",
+                "human_review_*",
+                "action_apply_confirmed",
+                "action_impact_check_completed",
+            ],
+            blocked_outputs=[
+                "wordpress_publish",
+                "wordpress_update_existing_post",
+                "wordpress_delete_post",
+                "production_write",
+                "bulk_delivery",
+            ],
+            operator_summary=(
+                "Ta akcja może utworzyć wyłącznie jeden nowy szkic na dev z "
+                "potwierdzonego mapowania. Nie publikuje ani nie zmienia istniejącego obiektu."
+            ),
+        )
     if action.id not in {
         "act_apply_wordpress_draft_handoff",
         "act_prepare_wordpress_draft_handoff",
@@ -49,6 +81,11 @@ def mutation_apply_contract(
 
 
 def supported_mutation_adapter(action: ActionObject) -> str | None:
+    if (
+        action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE
+        and action.connector == "wordpress_ekologus"
+    ):
+        return CONTENT_DEV_DRAFT_MUTATION_ADAPTER
     if (
         action.id == "act_apply_wordpress_draft_handoff"
         and action.connector == "wordpress_ekologus"

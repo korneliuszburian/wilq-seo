@@ -284,6 +284,79 @@ def create_wordpress_draft_post(
     return _created_draft_post_id(response)
 
 
+def create_wordpress_acf_draft(
+    payload: object,
+    *,
+    connector_id: str = "wordpress_ekologus",
+    action_apply_authorized: bool = False,
+    http_client: httpx.Client | None = None,
+) -> str:
+    """Create one dev-only ACF draft after the ActionObject apply boundary."""
+
+    if action_apply_authorized is not True:
+        raise WordPressDraftWriteError(
+            "Utworzenie szkicu ACF wymaga autoryzacji ActionObject."
+        )
+    credentials = _wordpress_credentials(connector_id)
+    if credentials is None:
+        raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
+    if (urlparse(credentials.base_url or "").hostname or "").lower() not in WORDPRESS_DEV_HOSTS:
+        raise WordPressDraftWriteError(
+            "Adapter szkicu WordPress działa wyłącznie na zatwierdzonym hoście dev."
+        )
+    missing = _missing_credentials(connector_id, credentials)
+    if missing:
+        raise WordPressDraftWriteError(
+            "Brakuje konfiguracji WordPress wymaganej do utworzenia szkicu."
+        )
+    if getattr(payload, "connector", connector_id) != connector_id:
+        raise WordPressDraftWriteError("Payload szkicu nie pasuje do connectora WordPress.")
+    if getattr(payload, "post_status", None) != "draft" or getattr(
+        payload, "create_only", None
+    ) is not True:
+        raise WordPressDraftWriteError("Adapter może utworzyć wyłącznie nowy szkic WordPress.")
+    if any(
+        getattr(payload, field, True) is not False
+        for field in ("publish_allowed", "update_allowed", "delete_allowed")
+    ):
+        raise WordPressDraftWriteError(
+            "Adapter blokuje publikację, aktualizację i usunięcie obiektu WordPress."
+        )
+    endpoint = getattr(payload, "endpoint", None)
+    if endpoint not in {"posts", "pages"}:
+        raise WordPressDraftWriteError("Payload nie wskazuje obsługiwanego typu obiektu dev.")
+    title = getattr(payload, "title", None)
+    acf = getattr(payload, "acf", None)
+    if not isinstance(title, str) or not title.strip() or not isinstance(acf, dict) or not acf:
+        raise WordPressDraftWriteError("Payload szkicu ACF nie zawiera kompletnej treści.")
+
+    owns_client = http_client is None
+    client = http_client or httpx.Client(timeout=30)
+    auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
+    try:
+        try:
+            response = client.post(
+                urljoin(credentials.base_url or "", f"wp-json/wp/v2/{endpoint}"),
+                auth=auth,
+                params={"_fields": "id,status,link"},
+                json={"status": "draft", "title": title, "acf": acf},
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise WordPressDraftWriteError(
+                f"WordPress odrzucił utworzenie szkicu HTTP {exc.response.status_code}."
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise WordPressDraftWriteError(
+                f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
+            ) from exc
+    finally:
+        if owns_client:
+            client.close()
+
+    return _created_draft_post_id(response)
+
+
 def read_wordpress_draft_post(
     post_id: str,
     *,
