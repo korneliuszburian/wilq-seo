@@ -421,6 +421,13 @@ def operator_preview_summary_from_audit(summary: str) -> str:
 
 
 def operator_impact_summary_from_audit(summary: str) -> str:
+    if summary.startswith("Kontrola gotowości szkicu:"):
+        prefix = summary.split(".", 1)[0].strip()
+        return (
+            f"{prefix}. Sprawdzono warunki przed utworzeniem szkicu na dev; "
+            "nie jest to pomiar wyniku marketingowego. "
+            "Nie zapisano zmian w zewnętrznych systemach."
+        )
     prefix = (
         "Sprawdzenie efektu zablokowane."
         if "status=blocked" in summary or "zablok" in summary

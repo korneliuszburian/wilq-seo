@@ -31,6 +31,7 @@ from wilq.content.workflow.target_mapping import (
     build_content_target_mapping_preview,
     new_content_target_mapping_confirmation,
 )
+from wilq.schemas import ActionImpactCheckRequest, AuditEvent
 from wilq.storage.local_state import LocalStateStore
 
 
@@ -616,6 +617,47 @@ def test_content_dev_draft_execution_uses_only_the_exact_acf_payload(monkeypatch
             },
         ]
     }
+
+
+def test_content_dev_draft_prewrite_check_does_not_claim_public_measurement() -> None:
+    revision, draft_preview = _ready_preview()
+    assert draft_preview.target is not None
+    assert draft_preview.confirmation is not None
+    assert draft_preview.payload_digest is not None
+    action = dev_draft_action.create_content_target_draft_action(
+        draft_preview,
+        dev_draft_action.ContentTargetDraftActionCommand(
+            expected_revision_digest=revision.content_digest,
+            expected_target_contract_digest=draft_preview.target.target_contract_digest,
+            expected_confirmation_digest=draft_preview.confirmation.confirmation_digest,
+            expected_payload_digest=draft_preview.payload_digest,
+            requested_by="Marta Kowalska",
+        ),
+    )
+    action.audit_events = [
+        AuditEvent(
+            id="audit_confirmed",
+            action_id=action.id,
+            event_type="action_apply_confirmed",
+            actor="operator_local_dashboard",
+            summary="Potwierdzono podgląd.",
+        )
+    ]
+
+    result = action_service.impact_check_action(
+        action,
+        ActionImpactCheckRequest(
+            checked_by="Marta Kowalska",
+            notes="Sprawdzono gotowość przed utworzeniem szkicu.",
+        ),
+    )
+
+    assert result.status == "checked"
+    assert result.metric_fact_count == 0
+    assert result.audit_event.event_type == "action_impact_check_completed"
+    assert "Kontrola gotowości szkicu" in result.audit_event.summary
+    assert "wyniku marketingowego" in result.audit_event.summary
+    assert "Porównanie sprzed zmiany" not in result.audit_event.summary
 
 
 def test_content_dev_draft_action_endpoint_persists_only_the_exact_preview(

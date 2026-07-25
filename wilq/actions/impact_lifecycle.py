@@ -51,6 +51,7 @@ def impact_check_action(
         actor=request.checked_by,
         event_type=event_type,
         summary=action_impact_check_summary(
+            action=action,
             request=request,
             status=status,
             metric_fact_count=len(action.metrics),

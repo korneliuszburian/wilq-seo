@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from wilq.actions.metric_utils import unique_values
+from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.schemas import (
     ActionApplyRequest,
     ActionConfirmRequest,
@@ -96,7 +97,7 @@ def action_impact_check_blockers(
     blockers: list[str] = []
     if latest_confirmation is None:
         blockers.append("action_confirmation_required")
-    if not action.metrics:
+    if not action.metrics and action.payload.get("action_type") != CONTENT_DEV_DRAFT_ACTION_TYPE:
         blockers.append("metric_facts_required")
     if not action.evidence_ids:
         blockers.append("evidence_ids_required")
@@ -259,6 +260,7 @@ def ads_target_confirmation_summary(
 
 def action_impact_check_summary(
     *,
+    action: ActionObject,
     request: ActionImpactCheckRequest,
     status: Literal["checked", "blocked"],
     metric_fact_count: int,
@@ -268,6 +270,16 @@ def action_impact_check_summary(
     connector_labels: ConnectorLabels,
     gate_labels: GateLabels,
 ) -> str:
+    if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE:
+        parts = [
+            f"Kontrola gotowości szkicu: {status_label(status)}.",
+            "Sprawdza wyłącznie ślad akcji przed utworzeniem szkicu na dev; "
+            "nie mierzy wyniku marketingowego ani nie zapisuje zmian.",
+        ]
+        if blockers:
+            parts.append(f"Blokady: {', '.join(gate_labels(blockers))}.")
+        parts.append(f"Notatka: {request.notes}.")
+        return " ".join(parts)
     parts = [
         f"Sprawdzenie efektu: {status_label(status)}.",
         f"Porównanie sprzed zmiany: {request.pre_window_days} dni.",
