@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
+from fastapi import APIRouter, FastAPI
+from fastapi.testclient import TestClient
 
+from apps.api.wilq_api.routers import content_revision_html_package
 from wilq.content.handoff.html_package import build_content_revision_html_package
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -32,6 +36,7 @@ def test_html_package_carries_the_exact_approved_revision_and_its_lineage() -> N
     assert revision.content_digest in package.html_document
     assert "<h1>BDO</h1>" in package.html_document
     assert "Treść sekcji." in package.html_document
+    assert "Nie jest gotowym układem ani zapisem WordPress." in package.html_document
 
 
 def test_html_package_rejects_a_review_for_a_different_exact_revision() -> None:
@@ -40,6 +45,60 @@ def test_html_package_rejects_a_review_for_a_different_exact_revision() -> None:
 
     with pytest.raises(ValueError, match="exact revision and digest"):
         build_content_revision_html_package(revision, review)
+
+
+def test_html_package_endpoint_keeps_a_historical_approved_revision_exact(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    historical = _approved_revision()
+    current = historical.model_copy(
+        update={
+            "revision_id": "content_revision_current",
+            "revision_number": 2,
+            "content_digest": "c" * 64,
+            "title": "BDO — nowsza wersja",
+        }
+    )
+    reviews = {
+        historical.revision_id: _exact_review(historical),
+        current.revision_id: _exact_review(current),
+    }
+
+    class RevisionStore:
+        def list_draft_revisions(self, work_item_id: str) -> list[ContentDraftRevision]:
+            assert work_item_id == historical.work_item_id
+            return [historical, current]
+
+        def load_draft_revision_review(
+            self,
+            *,
+            work_item_id: str,
+            revision_id: str,
+        ) -> ContentDraftRevisionReview | None:
+            assert work_item_id == historical.work_item_id
+            return reviews.get(revision_id)
+
+    monkeypatch.setattr(
+        content_revision_html_package,
+        "content_workflow_store",
+        lambda: cast(object, RevisionStore()),
+    )
+    app = FastAPI()
+    router = APIRouter()
+    content_revision_html_package.register_content_revision_html_package_route(router)
+    app.include_router(router)
+
+    response = TestClient(app).get(
+        f"/api/content/work-items/{historical.work_item_id}/draft-revisions/"
+        f"{historical.revision_id}/html-package"
+    )
+
+    assert response.status_code == 200
+    package = response.json()
+    assert package["manifest"]["revision_id"] == historical.revision_id
+    assert package["manifest"]["content_digest"] == historical.content_digest
+    assert historical.content_digest in package["html_document"]
+    assert current.content_digest not in package["html_document"]
 
 
 def _approved_revision() -> ContentDraftRevision:

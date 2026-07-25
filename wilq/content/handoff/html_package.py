@@ -10,6 +10,11 @@ from wilq.content.workflow.contracts import (
 )
 from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
 
+_DELIVERY_CAVEAT = (
+    "To jest materiał do odbioru zatwierdzonej treści. "
+    "Nie jest gotowym układem ani zapisem WordPress."
+)
+
 
 def build_content_revision_html_package(
     revision: ContentDraftRevision,
@@ -52,6 +57,7 @@ def build_content_revision_html_package(
             "<main>",
             revision_document_html(revision).strip(),
             "</main>",
+            f"<footer><p>{escape(_DELIVERY_CAVEAT)}</p></footer>",
             "</body>",
             "</html>",
         )

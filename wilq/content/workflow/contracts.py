@@ -541,7 +541,7 @@ class ContentRevisionHtmlPackageManifest(BaseModel):
 
 
 class ContentRevisionHtmlPackageResponse(BaseModel):
-    """Read-only HTML export for the exact latest approved revision."""
+    """Read-only HTML export for one exact approved revision."""
 
     model_config = ConfigDict(extra="forbid")
 

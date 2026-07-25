@@ -1,22 +1,14 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-
 from fastapi import APIRouter, HTTPException
 
 from wilq.content.handoff.html_package import build_content_revision_html_package
-from wilq.content.workflow.contracts import (
-    ContentRevisionHtmlPackageResponse,
-    ContentWorkItemWorkflowSnapshotResponse,
-)
-
-ContentModelSnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]
+from wilq.content.workflow.contracts import ContentRevisionHtmlPackageResponse
+from wilq.content.workflow.store import content_workflow_store
 
 
 def register_content_revision_html_package_route(
     router: APIRouter,
-    *,
-    snapshot_loader: ContentModelSnapshotLoader,
 ) -> None:
     @router.get(
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/html-package",
@@ -26,20 +18,29 @@ def register_content_revision_html_package_route(
         work_item_id: str,
         revision_id: str,
     ) -> ContentRevisionHtmlPackageResponse:
-        snapshot = snapshot_loader(work_item_id)
-        workspace = snapshot.revision_workspace
-        revision = workspace.latest_revision
-        review = workspace.latest_review
-        if revision is None or revision.revision_id != revision_id:
+        store = content_workflow_store()
+        revision = next(
+            (
+                item
+                for item in store.list_draft_revisions(work_item_id)
+                if item.revision_id == revision_id
+            ),
+            None,
+        )
+        if revision is None:
             raise HTTPException(
-                status_code=409,
-                detail="Paczka HTML jest dostępna wyłącznie dla aktualnej rewizji.",
+                status_code=404,
+                detail="Nie znaleziono wskazanej rewizji dokumentu.",
             )
         if revision.page_assets is None:
             raise HTTPException(
                 status_code=409,
                 detail="Paczka HTML wymaga kompletnej rewizji dokumentu.",
             )
+        review = store.load_draft_revision_review(
+            work_item_id=work_item_id,
+            revision_id=revision_id,
+        )
         if (
             review is None
             or review.decision != "approved"
