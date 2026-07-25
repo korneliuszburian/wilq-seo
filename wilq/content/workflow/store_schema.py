@@ -140,6 +140,23 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_target_mapping_confirmations (
+      confirmation_id TEXT PRIMARY KEY,
+      work_item_id TEXT NOT NULL,
+      revision_id TEXT NOT NULL,
+      revision_digest TEXT NOT NULL,
+      target_contract_digest TEXT NOT NULL,
+      binding_digest TEXT NOT NULL,
+      confirmation_number INTEGER NOT NULL CHECK (confirmation_number >= 1),
+      confirmation_digest TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      UNIQUE (
+        work_item_id, revision_id, target_contract_digest, binding_digest, confirmation_number
+      )
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS social_reuse_proposals (
       proposal_id TEXT PRIMARY KEY,
       work_item_id TEXT NOT NULL,

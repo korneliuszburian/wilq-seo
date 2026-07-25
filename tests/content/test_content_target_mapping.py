@@ -1,10 +1,16 @@
 from datetime import UTC, datetime
+from typing import cast
 
+from fastapi import APIRouter, FastAPI
+from fastapi.testclient import TestClient
+
+from apps.api.wilq_api.routers import content_target_mapping
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,
 )
+from wilq.content.workflow.store import ContentWorkflowStore
 from wilq.content.workflow.target_discovery import (
     ContentTargetAuthoringLayout,
     ContentTargetAuthoringSurface,
@@ -13,7 +19,13 @@ from wilq.content.workflow.target_discovery import (
     ContentTargetDiscoveryTarget,
     ContentTargetObservationEvidence,
 )
-from wilq.content.workflow.target_mapping import build_content_target_mapping_preview
+from wilq.content.workflow.target_mapping import (
+    ContentTargetMappingConfirmationCommand,
+    ContentTargetMappingFieldBinding,
+    ContentTargetMappingSelection,
+    build_content_target_mapping_preview,
+    new_content_target_mapping_confirmation,
+)
 
 
 def _revision() -> ContentDraftRevision:
@@ -197,3 +209,174 @@ def test_target_mapping_requires_an_exact_approved_human_review() -> None:
     assert preview.status == "blocked"
     assert preview.target is None
     assert preview.blockers[0].code == "revision_not_approved"
+
+
+def test_target_mapping_confirmation_binds_every_observed_component_and_field() -> None:
+    revision = _revision()
+    preview = build_content_target_mapping_preview(
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revisions=[revision],
+        human_review=_review(revision),
+        discovery=_discovery(
+            authoring_surface=ContentTargetAuthoringSurface(
+                kind="acf_flexible_content",
+                root_field="content_sections",
+                layouts=[
+                    ContentTargetAuthoringLayout(
+                        name="title_section", fields=["wordpress_title"]
+                    ),
+                    ContentTargetAuthoringLayout(
+                        name="text_section", fields=["heading", "content_html"]
+                    ),
+                ],
+            )
+        ),
+    )
+    assert preview.target is not None
+    assert preview.binding_digest is not None
+
+    confirmation = new_content_target_mapping_confirmation(
+        work_item_id=revision.work_item_id,
+        preview=preview,
+        command=ContentTargetMappingConfirmationCommand(
+            expected_revision_digest=revision.content_digest,
+            expected_target_contract_digest=preview.target.target_contract_digest,
+            expected_binding_digest=preview.binding_digest,
+            confirmed_by="Marta Kowalska",
+            selections=[
+                ContentTargetMappingSelection(
+                    component_id="document-title",
+                    layout_name="title_section",
+                    field_bindings=[
+                        ContentTargetMappingFieldBinding(
+                            source_field="wordpress_title",
+                            target_field="wordpress_title",
+                        )
+                    ],
+                ),
+                ContentTargetMappingSelection(
+                    component_id="section:section_bdo",
+                    layout_name="text_section",
+                    field_bindings=[
+                        ContentTargetMappingFieldBinding(
+                            source_field="heading", target_field="heading"
+                        ),
+                        ContentTargetMappingFieldBinding(
+                            source_field="content_html", target_field="content_html"
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        confirmation_number=1,
+        created_at="2026-07-25T10:00:00Z",
+    )
+
+    assert confirmation.revision == preview.revision
+    assert confirmation.target_contract_digest == preview.target.target_contract_digest
+    assert len(confirmation.selections) == 2
+
+
+def test_target_mapping_confirmation_endpoint_persists_only_the_exact_preview(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    revision = _revision()
+    review = _review(revision)
+    discovery = _discovery(
+        authoring_surface=ContentTargetAuthoringSurface(
+            kind="acf_flexible_content",
+            root_field="content_sections",
+            layouts=[
+                ContentTargetAuthoringLayout(
+                    name="title_section", fields=["wordpress_title"]
+                ),
+                ContentTargetAuthoringLayout(
+                    name="text_section", fields=["heading", "content_html"]
+                ),
+            ],
+        )
+    )
+    backing_store = ContentWorkflowStore(tmp_path / "mapping.sqlite3")
+
+    class RouteStore:
+        def list_draft_revisions(self, work_item_id: str) -> list[ContentDraftRevision]:
+            assert work_item_id == revision.work_item_id
+            return [revision]
+
+        def load_draft_revision_review(
+            self, *, work_item_id: str, revision_id: str
+        ) -> ContentDraftRevisionReview | None:
+            assert work_item_id == revision.work_item_id
+            return review if revision_id == revision.revision_id else None
+
+        def record_target_mapping_confirmation(self, **kwargs):
+            return backing_store.record_target_mapping_confirmation(**kwargs)
+
+        def load_target_mapping_confirmation(self, **kwargs):
+            return backing_store.load_target_mapping_confirmation(**kwargs)
+
+    monkeypatch.setattr(
+        content_target_mapping,
+        "content_workflow_store",
+        lambda: cast(object, RouteStore()),
+    )
+    monkeypatch.setattr(
+        content_target_mapping,
+        "build_content_target_discovery",
+        lambda work_item_id: discovery,
+    )
+    app = FastAPI()
+    router = APIRouter()
+    content_target_mapping.register_content_target_mapping_route(router)
+    app.include_router(router)
+    path = (
+        f"/api/content/work-items/{revision.work_item_id}/draft-revisions/"
+        f"{revision.revision_id}/target-mapping/confirmation"
+    )
+
+    response = TestClient(app).post(
+        path,
+        json={
+            "expected_revision_digest": revision.content_digest,
+            "expected_target_contract_digest": "d" * 64,
+            "expected_binding_digest": build_content_target_mapping_preview(
+                work_item_id=revision.work_item_id,
+                revision_id=revision.revision_id,
+                revisions=[revision],
+                human_review=review,
+                discovery=discovery,
+            ).binding_digest,
+            "confirmed_by": "Marta Kowalska",
+            "selections": [
+                {
+                    "component_id": "document-title",
+                    "layout_name": "title_section",
+                    "field_bindings": [
+                        {
+                            "source_field": "wordpress_title",
+                            "target_field": "wordpress_title",
+                        }
+                    ],
+                },
+                {
+                    "component_id": "section:section_bdo",
+                    "layout_name": "text_section",
+                    "field_bindings": [
+                        {"source_field": "heading", "target_field": "heading"},
+                        {
+                            "source_field": "content_html",
+                            "target_field": "content_html",
+                        },
+                    ],
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "created"
+    assert payload["confirmation"]["revision"]["revision_id"] == revision.revision_id
+    assert payload["confirmation"]["target_contract_digest"] == "d" * 64

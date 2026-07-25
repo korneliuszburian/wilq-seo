@@ -657,6 +657,48 @@ export const ContentTargetMappingTargetSchema = z.object({
   observation_evidence: ContentTargetObservationEvidenceSchema
 });
 
+export const ContentTargetMappingSourceFieldSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1)
+});
+
+export const ContentTargetMappingFieldBindingSchema = z.object({
+  source_field: z.string().min(1),
+  target_field: z.string().min(1)
+});
+
+export const ContentTargetMappingSelectionSchema = z.object({
+  component_id: z.string().min(1),
+  layout_name: z.string().min(1),
+  field_bindings: z.array(ContentTargetMappingFieldBindingSchema).min(1)
+});
+
+export const ContentTargetMappingConfirmationCommandSchema = z.object({
+  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_target_contract_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_binding_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  confirmed_by: z.string().min(1),
+  selections: z.array(ContentTargetMappingSelectionSchema).min(1)
+});
+
+export const ContentTargetMappingConfirmationSchema = z.object({
+  confirmation_id: z.string().min(1),
+  confirmation_number: z.number().int().min(1),
+  work_item_id: z.string().min(1),
+  revision: ContentTargetMappingRevisionSchema,
+  target_contract_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  binding_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  selections: z.array(ContentTargetMappingSelectionSchema).min(1),
+  confirmed_by: z.string().min(1),
+  confirmation_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  created_at: z.string().min(1)
+});
+
+export const ContentTargetMappingConfirmationResultSchema = z.object({
+  status: z.enum(["created", "idempotent"]),
+  confirmation: ContentTargetMappingConfirmationSchema
+});
+
 export const ContentTargetMappingComponentSchema = z.object({
   component_id: z.string().min(1),
   kind: z.enum(["document_title", "page_assets", "rich_text", "faq", "cta", "internal_link"]),
@@ -664,7 +706,8 @@ export const ContentTargetMappingComponentSchema = z.object({
   status: z.enum(["mapped", "human_only", "blocked"]),
   reason: z.string().min(1),
   target_root_field: z.string().nullable().optional(),
-  available_layouts: z.array(z.string()).default([])
+  available_layouts: z.array(z.string()).default([]),
+  source_fields: z.array(ContentTargetMappingSourceFieldSchema).default([])
 });
 
 export const ContentTargetMappingBlockerSchema = z.object({
@@ -688,6 +731,7 @@ export const ContentTargetMappingPreviewSchema = z.object({
   target: ContentTargetMappingTargetSchema.nullable().optional(),
   binding_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   components: z.array(ContentTargetMappingComponentSchema).default([]),
+  confirmation: ContentTargetMappingConfirmationSchema.nullable().optional(),
   blockers: z.array(ContentTargetMappingBlockerSchema).default([]),
   caveats: z.array(z.string()).default([])
 });
@@ -3846,6 +3890,15 @@ export type ContentDecisionContext = z.infer<typeof ContentDecisionContextSchema
 export type ContentDocumentWorkspace = z.infer<typeof ContentDocumentWorkspaceSchema>;
 export type ContentTargetDiscovery = z.infer<typeof ContentTargetDiscoverySchema>;
 export type ContentTargetMappingPreview = z.infer<typeof ContentTargetMappingPreviewSchema>;
+export type ContentTargetMappingConfirmation = z.infer<
+  typeof ContentTargetMappingConfirmationSchema
+>;
+export type ContentTargetMappingConfirmationCommand = z.input<
+  typeof ContentTargetMappingConfirmationCommandSchema
+>;
+export type ContentTargetMappingConfirmationResult = z.infer<
+  typeof ContentTargetMappingConfirmationResultSchema
+>;
 export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
 export type ContentNewPageBriefInput = z.input<typeof ContentNewPageBriefInputSchema>;
 export type ContentNewPageBriefWorkspace = z.infer<typeof ContentNewPageBriefWorkspaceSchema>;

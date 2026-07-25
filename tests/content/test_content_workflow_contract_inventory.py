@@ -51,7 +51,10 @@ from wilq.content.workflow.new_page import ContentNewPageBriefWorkspace
 from wilq.content.workflow.planning import ContentPlanningReviewResponse
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 from wilq.content.workflow.target_discovery import ContentTargetDiscovery
-from wilq.content.workflow.target_mapping import ContentTargetMappingPreview
+from wilq.content.workflow.target_mapping import (
+    ContentTargetMappingConfirmationResult,
+    ContentTargetMappingPreview,
+)
 from wilq.schemas import MetricFact
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
@@ -73,6 +76,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping",
     ): ContentTargetMappingPreview,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/confirmation",
+    ): ContentTargetMappingConfirmationResult,
     ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
     ("GET", "/api/content/wordpress/authoring-profile"): WordPressAuthoringProfile,
     (

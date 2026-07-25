@@ -23,6 +23,8 @@ import {
   ContentDecisionContextSchema,
   ContentDocumentWorkspaceSchema,
   ContentTargetDiscoverySchema,
+  ContentTargetMappingConfirmationCommandSchema,
+  ContentTargetMappingConfirmationResultSchema,
   ContentTargetMappingPreviewSchema,
   ContentWorkflowEntryResponseSchema,
   ContentNewPageBriefInputSchema,
@@ -127,6 +129,8 @@ import {
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
   type ContentTargetDiscovery,
+  type ContentTargetMappingConfirmationCommand,
+  type ContentTargetMappingConfirmationResult,
   type ContentTargetMappingPreview,
   type ContentWorkflowEntryResponse,
   type ContentNewPageBriefInput,
@@ -527,6 +531,18 @@ export function getContentRevisionTargetMapping(
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/target-mapping`,
     ContentTargetMappingPreviewSchema
+  );
+}
+
+export function postContentRevisionTargetMappingConfirmation(
+  workItemId: string,
+  revisionId: string,
+  request: ContentTargetMappingConfirmationCommand
+): Promise<ContentTargetMappingConfirmationResult> {
+  return apiPost(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/target-mapping/confirmation`,
+    ContentTargetMappingConfirmationResultSchema,
+    ContentTargetMappingConfirmationCommandSchema.parse(request)
   );
 }
 
@@ -1025,6 +1041,8 @@ export type {
   ContentDecisionContext,
   ContentDocumentWorkspace,
   ContentTargetDiscovery,
+  ContentTargetMappingConfirmationCommand,
+  ContentTargetMappingConfirmationResult,
   ContentTargetMappingPreview,
   ContentWorkflowEntryResponse,
   ContentNewPageBriefInput,

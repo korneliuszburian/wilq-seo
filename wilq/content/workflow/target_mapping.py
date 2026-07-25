@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from hashlib import sha256
 from typing import Literal
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -52,6 +53,88 @@ class ContentTargetMappingComponent(BaseModel):
     reason: str = Field(min_length=1)
     target_root_field: str | None = None
     available_layouts: list[str] = Field(default_factory=list)
+    source_fields: list[ContentTargetMappingSourceField] = Field(default_factory=list)
+
+
+class ContentTargetMappingSourceField(BaseModel):
+    """One named value from the canonical document that a human may map."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    key: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+
+
+class ContentTargetMappingFieldBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_field: str = Field(min_length=1)
+    target_field: str = Field(min_length=1)
+
+
+class ContentTargetMappingSelection(BaseModel):
+    """A human choice for one component; it never contains WordPress payload data."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    component_id: str = Field(min_length=1)
+    layout_name: str = Field(min_length=1)
+    field_bindings: list[ContentTargetMappingFieldBinding] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_unique_fields(self) -> ContentTargetMappingSelection:
+        source_fields = [binding.source_field for binding in self.field_bindings]
+        target_fields = [binding.target_field for binding in self.field_bindings]
+        if len(source_fields) != len(set(source_fields)):
+            raise ValueError("A component mapping cannot bind one source field twice.")
+        if len(target_fields) != len(set(target_fields)):
+            raise ValueError("A component mapping cannot bind one target field twice.")
+        return self
+
+
+class ContentTargetMappingConfirmationCommand(BaseModel):
+    """Local human confirmation of an exact, observed mapping preview."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    expected_revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    expected_target_contract_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    expected_binding_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    confirmed_by: str = Field(min_length=1)
+    selections: list[ContentTargetMappingSelection] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_unique_components(self) -> ContentTargetMappingConfirmationCommand:
+        component_ids = [selection.component_id for selection in self.selections]
+        if len(component_ids) != len(set(component_ids)):
+            raise ValueError("A mapping confirmation cannot select one component twice.")
+        if not self.confirmed_by.strip():
+            raise ValueError("Mapping confirmation requires a visible operator.")
+        return self
+
+
+class ContentTargetMappingConfirmation(BaseModel):
+    """Immutable local decision that may later be referenced by a draft-only action."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    confirmation_id: str = Field(min_length=1)
+    confirmation_number: int = Field(ge=1)
+    work_item_id: str = Field(min_length=1)
+    revision: ContentTargetMappingRevision
+    target_contract_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    binding_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    selections: list[ContentTargetMappingSelection] = Field(min_length=1)
+    confirmed_by: str = Field(min_length=1)
+    confirmation_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    created_at: str = Field(min_length=1)
+
+
+class ContentTargetMappingConfirmationResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["created", "idempotent"]
+    confirmation: ContentTargetMappingConfirmation
 
 
 class ContentTargetMappingBlocker(BaseModel):
@@ -83,6 +166,7 @@ class ContentTargetMappingPreview(BaseModel):
     target: ContentTargetMappingTarget | None = None
     binding_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     components: list[ContentTargetMappingComponent] = Field(default_factory=list)
+    confirmation: ContentTargetMappingConfirmation | None = None
     blockers: list[ContentTargetMappingBlocker] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
 
@@ -181,6 +265,7 @@ def build_content_target_mapping_preview(
                 ),
                 "target_root_field": surface.root_field,
                 "available_layouts": [layout.name for layout in surface.layouts],
+                "source_fields": _source_fields(component.kind),
             }
         )
         for component in components
@@ -272,6 +357,125 @@ def _component(
     )
 
 
+def _source_fields(
+    kind: ContentTargetMappingComponentKind,
+) -> list[ContentTargetMappingSourceField]:
+    fields_by_kind: dict[
+        ContentTargetMappingComponentKind, list[ContentTargetMappingSourceField]
+    ] = {
+        "document_title": [
+            ContentTargetMappingSourceField(key="wordpress_title", label="Tytuł strony"),
+        ],
+        "page_assets": [
+            ContentTargetMappingSourceField(key="meta_title", label="Tytuł meta"),
+            ContentTargetMappingSourceField(
+                key="meta_description", label="Opis meta"
+            ),
+            ContentTargetMappingSourceField(key="h1", label="Nagłówek H1"),
+            ContentTargetMappingSourceField(key="lead", label="Lead strony"),
+        ],
+        "rich_text": [
+            ContentTargetMappingSourceField(key="heading", label="Nagłówek sekcji"),
+            ContentTargetMappingSourceField(key="content_html", label="Treść sekcji"),
+        ],
+        "faq": [
+            ContentTargetMappingSourceField(key="question", label="Pytanie"),
+            ContentTargetMappingSourceField(key="answer_markdown", label="Odpowiedź"),
+        ],
+        "cta": [
+            ContentTargetMappingSourceField(key="body_markdown", label="Treść CTA"),
+        ],
+        "internal_link": [
+            ContentTargetMappingSourceField(key="anchor_text", label="Tekst linku"),
+            ContentTargetMappingSourceField(key="target_url", label="Adres linku"),
+        ],
+    }
+    return fields_by_kind[kind]
+
+
+def validate_content_target_mapping_confirmation(
+    *,
+    command: ContentTargetMappingConfirmationCommand,
+    preview: ContentTargetMappingPreview,
+) -> None:
+    """Fail closed unless every selected field belongs to this exact preview."""
+
+    if preview.status != "ready_for_human_mapping" or preview.target is None:
+        raise ValueError("Nie można potwierdzić mapowania bez gotowego odczytu targetu.")
+    if preview.binding_digest is None:
+        raise ValueError("Gotowe mapowanie nie ma identyfikatora powiązania.")
+    if command.expected_revision_digest != preview.revision.content_digest:
+        raise ValueError("Rewizja dokumentu zmieniła się przed potwierdzeniem mapowania.")
+    if command.expected_target_contract_digest != preview.target.target_contract_digest:
+        raise ValueError("Kontrakt targetu zmienił się przed potwierdzeniem mapowania.")
+    if command.expected_binding_digest != preview.binding_digest:
+        raise ValueError("Podgląd mapowania zmienił się przed potwierdzeniem.")
+
+    components = {component.component_id: component for component in preview.components}
+    selections = {selection.component_id: selection for selection in command.selections}
+    if set(selections) != set(components):
+        raise ValueError("Potwierdzenie musi wskazać każdy element dokumentu dokładnie raz.")
+
+    surface = preview.target.target_contract.authoring_surface
+    if surface is None:
+        raise ValueError("Nie odczytano powierzchni authoringu dla targetu.")
+    layouts = {layout.name: set(layout.fields) for layout in surface.layouts}
+    for component_id, component in components.items():
+        selection = selections[component_id]
+        target_fields = layouts.get(selection.layout_name)
+        if target_fields is None:
+            raise ValueError("Wybrany layout nie należy do odczytanego układu targetu.")
+        expected_source_fields = {field.key for field in component.source_fields}
+        actual_source_fields = {
+            binding.source_field for binding in selection.field_bindings
+        }
+        if actual_source_fields != expected_source_fields:
+            raise ValueError("Mapowanie musi wskazać każde pole elementu dokumentu dokładnie raz.")
+        if any(binding.target_field not in target_fields for binding in selection.field_bindings):
+            raise ValueError("Wybrane pole nie należy do odczytanego layoutu targetu.")
+
+
+def new_content_target_mapping_confirmation(
+    *,
+    work_item_id: str,
+    preview: ContentTargetMappingPreview,
+    command: ContentTargetMappingConfirmationCommand,
+    confirmation_number: int,
+    created_at: str,
+) -> ContentTargetMappingConfirmation:
+    validate_content_target_mapping_confirmation(command=command, preview=preview)
+    if preview.target is None or preview.binding_digest is None:
+        raise RuntimeError("Validated mapping preview lost its exact target binding.")
+    digest_payload = {
+        "work_item_id": work_item_id,
+        "revision": preview.revision.model_dump(mode="json"),
+        "target_contract_digest": preview.target.target_contract_digest,
+        "binding_digest": preview.binding_digest,
+        "selections": [selection.model_dump(mode="json") for selection in command.selections],
+        "confirmed_by": command.confirmed_by,
+    }
+    confirmation_digest = sha256(
+        json.dumps(
+            digest_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    return ContentTargetMappingConfirmation(
+        confirmation_id=f"content_target_mapping_confirmation_{uuid4().hex}",
+        confirmation_number=confirmation_number,
+        work_item_id=work_item_id,
+        revision=preview.revision,
+        target_contract_digest=preview.target.target_contract_digest,
+        binding_digest=preview.binding_digest,
+        selections=command.selections,
+        confirmed_by=command.confirmed_by,
+        confirmation_digest=confirmation_digest,
+        created_at=created_at,
+    )
+
+
 def _blocked(
     *,
     work_item_id: str,
@@ -320,4 +524,12 @@ def _binding_digest(
     ).hexdigest()
 
 
-__all__ = ["ContentTargetMappingPreview", "build_content_target_mapping_preview"]
+__all__ = [
+    "ContentTargetMappingConfirmation",
+    "ContentTargetMappingConfirmationCommand",
+    "ContentTargetMappingConfirmationResult",
+    "ContentTargetMappingPreview",
+    "build_content_target_mapping_preview",
+    "new_content_target_mapping_confirmation",
+    "validate_content_target_mapping_confirmation",
+]

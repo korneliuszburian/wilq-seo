@@ -12,6 +12,7 @@ import {
   getContentWorkItemEditorialIntegrity,
   getContentWorkItemRevisionHtmlPackage,
   getContentRevisionTargetMapping,
+  postContentRevisionTargetMappingConfirmation,
   getContentWorkItemDecisionContext,
   getContentWorkItemDocumentWorkspace,
   getContentInventoryCatalog,
@@ -103,6 +104,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemEditorialIntegrity: vi.fn(),
     getContentWorkItemRevisionHtmlPackage: vi.fn(),
     getContentRevisionTargetMapping: vi.fn(),
+    postContentRevisionTargetMappingConfirmation: vi.fn(),
     getContentWorkItemDecisionContext: vi.fn(),
     getContentWorkItemDocumentWorkspace: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
@@ -386,7 +388,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getAllByText("Nowa wersja nie została jeszcze przygotowana")).toHaveLength(3);
   });
 
-  it("shows exact observed target options without choosing a WordPress mapping", async () => {
+  it("shows exact observed target options and requires an explicit mapping confirmation", async () => {
     const workspace = approvedDocumentWorkspace();
     vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
     vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(
@@ -412,12 +414,73 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Pole układu: content_sections")).toBeInTheDocument();
     expect(screen.getByText("Dostępne układy: text_section")).toBeInTheDocument();
     expect(screen.getByText(/nie decyzja, gdzie trafi element dokumentu/)).toBeInTheDocument();
-    expect(screen.queryByText(/Wybrany układ/)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Zapisz przypisanie/ })).not.toBeInTheDocument();
+    expect(screen.getByTestId("target-mapping-confirmation")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zapisz potwierdzenie przypisania" })).toBeDisabled();
+    expect(postContentRevisionTargetMappingConfirmation).not.toHaveBeenCalled();
     expect(getContentRevisionTargetMapping).toHaveBeenCalledWith(
       "content_work_item_bdo",
       workspace.canonical_document.revision_id
     );
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("stores a human mapping confirmation without creating a WordPress draft", async () => {
+    const workspace = approvedDocumentWorkspace();
+    const preview = contentTargetMappingPreview();
+    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
+    vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(preview);
+    vi.mocked(postContentRevisionTargetMappingConfirmation).mockResolvedValue({
+      status: "created",
+      confirmation: {
+        confirmation_id: "content_target_mapping_confirmation_1",
+        confirmation_number: 1,
+        work_item_id: workspace.work_item_id,
+        revision: preview.revision,
+        target_contract_digest: "b".repeat(64),
+        binding_digest: "c".repeat(64),
+        selections: [{
+          component_id: "section:section_bdo",
+          layout_name: "text_section",
+          field_bindings: [
+            { source_field: "heading", target_field: "heading" },
+            { source_field: "content_html", target_field: "content_html" }
+          ]
+        }],
+        confirmed_by: "Marta Kowalska",
+        confirmation_digest: "d".repeat(64),
+        created_at: "2026-07-25T10:00:00Z"
+      }
+    });
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22",
+          defaultPendingMinMs: 0
+        })}
+        client={client}
+      />
+    );
+
+    fireEvent.click(await screen.findByText("Przypisanie dokumentu do dev", { exact: true }));
+    await screen.findByTestId("target-mapping-confirmation");
+    fireEvent.change(screen.getByLabelText("Potwierdza"), { target: { value: "Marta Kowalska" } });
+    fireEvent.change(screen.getByLabelText("Layout"), { target: { value: "text_section" } });
+    fireEvent.change(screen.getByLabelText("Nagłówek sekcji"), { target: { value: "heading" } });
+    fireEvent.change(screen.getByLabelText("Treść sekcji"), { target: { value: "content_html" } });
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz potwierdzenie przypisania" }));
+
+    await waitFor(() => expect(postContentRevisionTargetMappingConfirmation).toHaveBeenCalledWith(
+      workspace.work_item_id,
+      preview.revision.revision_id,
+      expect.objectContaining({
+        confirmed_by: "Marta Kowalska",
+        expected_revision_digest: preview.revision.content_digest,
+        expected_target_contract_digest: "b".repeat(64),
+        expected_binding_digest: "c".repeat(64)
+      })
+    ));
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
@@ -3410,7 +3473,7 @@ function contentTargetMappingPreview({
           ? {
               kind: "acf_flexible_content",
               root_field: "content_sections",
-              layouts: [{ name: "text_section", fields: ["title", "body"] }]
+              layouts: [{ name: "text_section", fields: ["heading", "content_html"] }]
             }
           : null
       },
@@ -3436,7 +3499,13 @@ function contentTargetMappingPreview({
         ? "Wymaga decyzji człowieka."
         : "Nie rozpoznano układu treści na dev.",
       target_root_field: ready ? "content_sections" : null,
-      available_layouts: ready ? ["text_section"] : []
+      available_layouts: ready ? ["text_section"] : [],
+      source_fields: ready
+        ? [
+            { key: "heading", label: "Nagłówek sekcji" },
+            { key: "content_html", label: "Treść sekcji" }
+          ]
+        : []
     }],
     blockers: ready
       ? []

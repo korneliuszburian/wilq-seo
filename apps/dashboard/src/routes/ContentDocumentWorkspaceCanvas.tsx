@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   type ContentDocumentWorkspace,
   type ContentTargetDiscovery,
-  type ContentTargetMappingPreview
+  type ContentTargetMappingPreview,
+  postContentRevisionTargetMappingConfirmation
 } from "../lib/api";
 import {
   useContentRevisionTargetMapping,
@@ -168,6 +170,7 @@ function TargetMappingDetails({ preview }: { preview: ContentTargetMappingPrevie
         {humanOnly.length} elementów wymaga decyzji człowieka.
       </p>
       <ComponentMappingList components={preview.components} />
+      <TargetMappingConfirmationForm preview={preview} />
       {preview.caveats.map((caveat) => (
         <p key={caveat} className="mt-2 leading-6 text-slate-600">
           {caveat}
@@ -184,6 +187,134 @@ function TargetMappingDetails({ preview }: { preview: ContentTargetMappingPrevie
         </p>
       </details>
     </>
+  );
+}
+
+function TargetMappingConfirmationForm({
+  preview
+}: {
+  preview: ContentTargetMappingPreview;
+}) {
+  const queryClient = useQueryClient();
+  const [confirmedBy, setConfirmedBy] = useState("");
+  const [selections, setSelections] = useState<Record<string, { layoutName: string; fields: Record<string, string> }>>({});
+  const target = preview.target;
+  const layouts = target?.target_contract.authoring_surface?.layouts ?? [];
+  const confirmation = useMutation({
+    mutationFn: () => {
+      if (!target || !preview.binding_digest) throw new Error("Brakuje dokładnego odczytu targetu.");
+      return postContentRevisionTargetMappingConfirmation(
+        preview.work_item_id,
+        preview.revision.revision_id,
+        {
+          expected_revision_digest: preview.revision.content_digest,
+          expected_target_contract_digest: target.target_contract_digest,
+          expected_binding_digest: preview.binding_digest,
+          confirmed_by: confirmedBy,
+          selections: preview.components.map((component) => ({
+            component_id: component.component_id,
+            layout_name: selections[component.component_id]?.layoutName ?? "",
+            field_bindings: component.source_fields.map((sourceField) => ({
+              source_field: sourceField.key,
+              target_field: selections[component.component_id]?.fields[sourceField.key] ?? ""
+            }))
+          }))
+        }
+      );
+    },
+    onSuccess: () => void queryClient.invalidateQueries({
+      queryKey: ["content-workflow", "work-item", preview.work_item_id, "draft-revisions", preview.revision.revision_id, "target-mapping"]
+    })
+  });
+  const readyToConfirm = Boolean(
+    confirmedBy.trim() && preview.components.every((component) => {
+      const selection = selections[component.component_id];
+      return selection?.layoutName && component.source_fields.every((field) => selection.fields[field.key]);
+    })
+  );
+  const updateLayout = (componentId: string, layoutName: string) => {
+    setSelections((current) => ({
+      ...current,
+      [componentId]: { layoutName, fields: {} }
+    }));
+  };
+  const updateField = (componentId: string, sourceField: string, targetField: string) => {
+    setSelections((current) => ({
+      ...current,
+      [componentId]: {
+        layoutName: current[componentId]?.layoutName ?? "",
+        fields: { ...current[componentId]?.fields, [sourceField]: targetField }
+      }
+    }));
+  };
+
+  return (
+    <section className="mt-4 rounded-lg border border-action/25 bg-action/5 p-3" data-testid="target-mapping-confirmation">
+      <p className="font-semibold text-ink">Potwierdź przypisanie ręcznie</p>
+      <p className="mt-2 leading-6 text-slate-700">
+        Wybierasz wyłącznie odczytane layouty i pola. Ten zapis pozostaje w WILQ; nie tworzy draftu ani nie zmienia WordPressa.
+      </p>
+      {preview.confirmation ? (
+        <p className="mt-3 rounded-md bg-white p-3 text-sm leading-6 text-slate-700">
+          Ostatnie przypisanie zapisał(a) {preview.confirmation.confirmed_by}. Ponowne potwierdzenie utworzy kolejną decyzję dla tej samej wersji i tego samego odczytu targetu.
+        </p>
+      ) : null}
+      <label className="mt-4 block text-sm font-semibold text-ink">
+        Potwierdza
+        <input
+          className="mt-1 block w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-slate-800"
+          value={confirmedBy}
+          onChange={(event) => setConfirmedBy(event.target.value)}
+          placeholder="Imię i nazwisko"
+        />
+      </label>
+      <div className="mt-4 space-y-4">
+        {preview.components.map((component) => {
+          const selection = selections[component.component_id];
+          const layout = layouts.find((candidate) => candidate.name === selection?.layoutName);
+          return (
+            <fieldset key={component.component_id} className="rounded-lg border border-line bg-white p-3">
+              <legend className="px-1 text-sm font-semibold text-ink">{component.label}</legend>
+              <label className="mt-2 block text-sm font-medium text-slate-700">
+                Layout
+                <select
+                  className="mt-1 block w-full rounded-md border border-line bg-white px-3 py-2 text-slate-800"
+                  value={selection?.layoutName ?? ""}
+                  onChange={(event) => updateLayout(component.component_id, event.target.value)}
+                >
+                  <option value="">Wybierz odczytany layout</option>
+                  {layouts.map((candidate) => <option key={candidate.name} value={candidate.name}>{candidate.name}</option>)}
+                </select>
+              </label>
+              {component.source_fields.map((sourceField) => (
+                <label key={sourceField.key} className="mt-3 block text-sm font-medium text-slate-700">
+                  {sourceField.label}
+                  <select
+                    className="mt-1 block w-full rounded-md border border-line bg-white px-3 py-2 text-slate-800 disabled:bg-slate-50"
+                    disabled={!layout}
+                    value={selection?.fields[sourceField.key] ?? ""}
+                    onChange={(event) => updateField(component.component_id, sourceField.key, event.target.value)}
+                  >
+                    <option value="">Wybierz pole</option>
+                    {layout?.fields.map((field) => <option key={field} value={field}>{field}</option>)}
+                  </select>
+                </label>
+              ))}
+            </fieldset>
+          );
+        })}
+      </div>
+      <button
+        type="button"
+        className="mt-4 w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!readyToConfirm || confirmation.isPending}
+        onClick={() => confirmation.mutate()}
+      >
+        {confirmation.isPending ? "Zapisuję przypisanie…" : "Zapisz potwierdzenie przypisania"}
+      </button>
+      {confirmation.isError ? <p className="mt-3 text-sm font-semibold text-wait">{confirmation.error.message}</p> : null}
+      {confirmation.isSuccess ? <p className="mt-3 text-sm font-semibold text-action">Przypisanie zapisane w WILQ. Nadal nie utworzono draftu na dev.</p> : null}
+    </section>
   );
 }
 
