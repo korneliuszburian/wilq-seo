@@ -421,6 +421,27 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
+  it("offers the approved document package from Text without opening a WordPress path", async () => {
+    const workspace = approvedDocumentWorkspace();
+    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22",
+          defaultPendingMinMs: 0
+        })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-approved-html-package")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pobierz paczkę dokumentu" })).toBeInTheDocument();
+    expect(getContentWorkItemRevisionHtmlPackage).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
   it("names a page target as a page when its authoring surface is unknown", async () => {
     const workspace = approvedDocumentWorkspace();
     vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
@@ -565,7 +586,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-approved-html-package")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pobierz paczkę HTML" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pobierz paczkę dokumentu" }));
 
     await waitFor(() => expect(getContentWorkItemRevisionHtmlPackage).toHaveBeenCalledWith(revision.work_item_id, revision.revision_id));
     expect(createObjectURL).toHaveBeenCalledTimes(1);

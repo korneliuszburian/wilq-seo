@@ -43,12 +43,12 @@ export function ContentApprovedHtmlPackage({
 
   return (
     <div className="mt-4 rounded-xl border border-action/20 bg-action/5 p-4" data-testid="content-approved-html-package">
-      <p className="text-sm font-semibold text-ink">Paczka HTML do odbioru</p>
-      <p className="mt-1 text-sm leading-6 text-slate-700">Pobierasz zatwierdzoną rewizję wraz z identyfikatorem, digestem i lineage. To nie tworzy draftu WordPress.</p>
+      <p className="text-sm font-semibold text-ink">Paczka zatwierdzonego dokumentu</p>
+      <p className="mt-1 text-sm leading-6 text-slate-700">Pobierzesz dokładnie tę zatwierdzoną wersję wraz z jej pochodzeniem. Plik nie tworzy ani nie zmienia strony w WordPressie.</p>
       <button type="button" className="mt-3 rounded-md bg-action px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={isDownloading} onClick={() => void download()}>
-        {isDownloading ? "Przygotowuję paczkę HTML…" : "Pobierz paczkę HTML"}
+        {isDownloading ? "Przygotowuję paczkę dokumentu…" : "Pobierz paczkę dokumentu"}
       </button>
-      {downloaded ? <p className="mt-2 text-sm font-semibold text-action">Paczka HTML została pobrana.</p> : null}
+      {downloaded ? <p className="mt-2 text-sm font-semibold text-action">Paczka dokumentu została pobrana.</p> : null}
       {error ? <p className="mt-2 text-sm font-semibold text-wait">{error}</p> : null}
     </div>
   );

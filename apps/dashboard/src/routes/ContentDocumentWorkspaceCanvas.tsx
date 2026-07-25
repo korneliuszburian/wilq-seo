@@ -9,6 +9,7 @@ import {
   useContentRevisionTargetMapping,
   useContentTargetDiscovery
 } from "./contentWorkflowQueries";
+import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
 type View = "source" | "document" | "comparison";
@@ -91,6 +92,13 @@ export function ContentDocumentWorkspaceCanvas({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kontekst pracy</p>
           <StatusCard label="Materiał obecnej strony" value={sourceStatus(workspace.source_snapshot.status)} />
           <StatusCard label="Nowy dokument" value={documentStatus(workspace.canonical_document.status)} />
+          {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
+            <ContentApprovedHtmlPackage
+              workItemId={workspace.work_item_id}
+              revisionId={workspace.canonical_document.revision_id}
+              revisionDigest={workspace.canonical_document.content_digest}
+            />
+          ) : null}
           <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700">
             <summary className="cursor-pointer font-semibold text-ink">Źródła i ograniczenia</summary>
             <p className="mt-3 leading-6">{workspace.source_snapshot.reason}</p>
