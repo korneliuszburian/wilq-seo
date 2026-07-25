@@ -15,6 +15,8 @@ ACTION_GATE_LABELS: dict[str, str] = {
     "metric_facts_required": "wymagane metryki z dowodami",
     "evidence_ids_required": "wymagane dowody źródłowe",
     "impact_sanity_check_required": "wymagane sprawdzenie efektu",
+    "draft_prewrite_check_required": "wymagana kontrola gotowości szkicu",
+    "draft_action_review_required": "wymagany zatwierdzający review akcji szkicu",
     "vendor_mutation_adapter_required": "brak bezpiecznej ścieżki zapisu w zewnętrznym systemie",
     "content_draft_action_binding_invalid": (
         "akcja nie ma kompletnego powiązania z dokumentem i targetem"

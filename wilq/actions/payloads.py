@@ -144,8 +144,10 @@ def validate_content_dev_draft_action_payload(payload: dict[str, Any]) -> list[s
         errors.append(wrong("Szkic dev", "musi pozostać w trybie dev_draft_only"))
     if payload.get("preview_contract") != "content_dev_draft_action_v1":
         errors.append(missing("Szkic dev", "kontraktu dokładnego podglądu"))
-    if payload.get("apply_allowed") is not False or payload.get("api_mutation_ready") is not False:
-        errors.append(wrong("Szkic dev", "zapis WordPress musi pozostać zablokowany"))
+    if payload.get("apply_allowed") is not True or payload.get("api_mutation_ready") is not True:
+        errors.append(
+            wrong("Szkic dev", "wymaga jawnego kontraktu apply dopiero po wszystkich bramkach")
+        )
     binding = payload.get("content_target_draft_binding")
     if not isinstance(binding, dict):
         errors.append(missing("Szkic dev", "dokładnego powiązania dokumentu i targetu"))
@@ -155,6 +157,7 @@ def validate_content_dev_draft_action_payload(payload: dict[str, Any]) -> list[s
             "revision_id",
             "revision_digest",
             "target_contract_digest",
+            "confirmation_id",
             "confirmation_digest",
             "payload_digest",
             "root_field",

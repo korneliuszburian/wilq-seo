@@ -206,14 +206,9 @@ def refresh_content_target_draft_action(action: ActionObject) -> ActionObject:
         return _blocked_action(action, "content_draft_action_state_unavailable")
     if preview.status != "ready" or preview.target is None or preview.confirmation is None:
         return _blocked_action(action, "content_draft_action_state_unavailable")
-    exact = (
-        preview.revision.content_digest == binding.get("revision_digest")
-        and preview.target.target_contract_digest == binding.get("target_contract_digest")
-        and preview.confirmation.confirmation_digest == binding.get("confirmation_digest")
-        and preview.payload_digest == binding.get("payload_digest")
-        and preview.root_field == binding.get("root_field")
+    return action if _preview_matches_action_binding(preview, binding) else _blocked_action(
+        action, "content_draft_action_stale"
     )
-    return action if exact else _blocked_action(action, "content_draft_action_stale")
 
 
 def build_content_dev_draft_write_payload(
@@ -223,22 +218,20 @@ def build_content_dev_draft_write_payload(
 ) -> ContentDevDraftWritePayload:
     """Build one create-only dev payload or fail closed before any adapter runs."""
 
-    refreshed = refresh_content_target_draft_action(action)
-    if refreshed.status == ActionStatus.blocked:
-        raise ValueError("Akcja szkicu dev nie jest już aktualna.")
-    binding = refreshed.payload.get("content_target_draft_binding")
+    binding = action.payload.get("content_target_draft_binding")
     if not isinstance(binding, dict):
         raise ValueError("Akcja szkicu dev nie ma kompletnego powiązania.")
     current = preview or current_content_target_draft_preview(
         work_item_id=_required_binding_value(binding, "work_item_id"),
         revision_id=_required_binding_value(binding, "revision_id"),
     )
-    if current.status != "ready" or current.target is None or current.root_field is None:
+    if current.status != "ready" or current.target is None or current.confirmation is None:
         raise ValueError("Nie można zbudować payloadu bez aktualnego mapowania do dev.")
-    if current.payload_digest != binding.get("payload_digest"):
-        raise ValueError("Podgląd danych do szkicu zmienił się przed przygotowaniem payloadu.")
-    if current.target.target_contract_digest != binding.get("target_contract_digest"):
-        raise ValueError("Odczyt obiektu dev zmienił się przed przygotowaniem payloadu.")
+    if not _preview_matches_action_binding(current, binding):
+        raise ValueError(
+            "Dokładna rewizja, mapowanie albo odczyt dev zmieniły się przed "
+            "przygotowaniem payloadu."
+        )
 
     endpoint = _wordpress_endpoint(current.target.target_contract.post_type)
     title = _document_title(current.components)
@@ -358,6 +351,32 @@ def _required_binding_value(binding: dict[str, Any], key: str) -> str:
     if not isinstance(value, str) or not value:
         raise ValueError(f"Brakuje pola {key} w powiązaniu akcji.")
     return value
+
+
+def _preview_matches_action_binding(
+    preview: ContentTargetDraftPreview,
+    binding: dict[str, Any],
+) -> bool:
+    """Keep an ActionObject tied to the exact preview used for its payload."""
+
+    if (
+        preview.status != "ready"
+        or preview.target is None
+        or preview.confirmation is None
+        or preview.payload_digest is None
+        or preview.root_field is None
+    ):
+        return False
+    return (
+        preview.work_item_id == binding.get("work_item_id")
+        and preview.revision.revision_id == binding.get("revision_id")
+        and preview.revision.content_digest == binding.get("revision_digest")
+        and preview.target.target_contract_digest == binding.get("target_contract_digest")
+        and preview.confirmation.confirmation_id == binding.get("confirmation_id")
+        and preview.confirmation.confirmation_digest == binding.get("confirmation_digest")
+        and preview.payload_digest == binding.get("payload_digest")
+        and preview.root_field == binding.get("root_field")
+    )
 
 
 def _runtime_blocker_reason(code: str) -> str:

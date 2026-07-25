@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.schemas import (
     ActionMode,
     ActionMutationReadinessRequirement,
@@ -72,8 +73,16 @@ def base_mutation_readiness_requirements(
             evidence=latest_confirmation.id if latest_confirmation is not None else None,
         ),
         _requirement(
-            code="impact_check",
-            label="Sprawdzenie efektu zapisane",
+            code=(
+                "draft_prewrite_check"
+                if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE
+                else "impact_check"
+            ),
+            label=(
+                "Kontrola gotowości szkicu zakończona"
+                if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE
+                else "Sprawdzenie efektu zapisane"
+            ),
             satisfied=impact_status(latest_impact_check) == "checked",
             evidence=latest_impact_check.id if latest_impact_check is not None else None,
         ),

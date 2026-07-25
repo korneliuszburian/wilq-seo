@@ -142,7 +142,7 @@ def audit_event_with_operator_label(
 ) -> AuditEvent:
     return event.model_copy(
         update={
-            "event_type_label": event.event_type_label or audit_event_label(event.event_type),
+            "event_type_label": _operator_event_type_label(event),
             "summary": action_audit_summary_for_operator(event),
             "details": audit_details_for_operator(
                 event.details,
@@ -152,6 +152,18 @@ def audit_event_with_operator_label(
             ),
         }
     )
+
+
+def _operator_event_type_label(event: AuditEvent) -> str:
+    if event.event_type == "action_impact_check_completed" and event.summary.startswith(
+        "Kontrola gotowości szkicu:"
+    ):
+        return "Kontrola gotowości szkicu zakończona"
+    if event.event_type == "action_impact_check_blocked" and event.summary.startswith(
+        "Kontrola gotowości szkicu:"
+    ):
+        return "Kontrola gotowości szkicu zablokowana"
+    return event.event_type_label or audit_event_label(event.event_type)
 
 
 def action_mutation_audit_record(
@@ -425,7 +437,7 @@ def operator_impact_summary_from_audit(summary: str) -> str:
         prefix = summary.split(".", 1)[0].strip()
         return (
             f"{prefix}. Sprawdzono warunki przed utworzeniem szkicu na dev; "
-            "nie jest to pomiar wyniku marketingowego. "
+            "nie jest to ocena rezultatu marketingowego. "
             "Nie zapisano zmian w zewnętrznych systemach."
         )
     prefix = (

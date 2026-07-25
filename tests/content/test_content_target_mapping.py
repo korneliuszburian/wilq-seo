@@ -5,8 +5,9 @@ from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_target_mapping
+from wilq.actions import action_validation, mutation_contract
 from wilq.actions import audit_store as action_audit_store
-from wilq.actions import mutation_contract
+from wilq.actions import payloads as action_payloads
 from wilq.actions import service as action_service
 from wilq.content.workflow import dev_draft_action, dev_draft_execution
 from wilq.content.workflow.revisions import (
@@ -31,7 +32,14 @@ from wilq.content.workflow.target_mapping import (
     build_content_target_mapping_preview,
     new_content_target_mapping_confirmation,
 )
-from wilq.schemas import ActionImpactCheckRequest, AuditEvent
+from wilq.schemas import (
+    ActionApplyRequest,
+    ActionConfirmRequest,
+    ActionImpactCheckRequest,
+    ActionPreviewRequest,
+    ActionReviewRequest,
+    AuditEvent,
+)
 from wilq.storage.local_state import LocalStateStore
 
 
@@ -636,6 +644,13 @@ def test_content_dev_draft_prewrite_check_does_not_claim_public_measurement() ->
     )
     action.audit_events = [
         AuditEvent(
+            id="audit_reviewed",
+            action_id=action.id,
+            event_type="human_review_approved_for_prepare",
+            actor="operator_local_dashboard",
+            summary="Zatwierdzono akcję.",
+        ),
+        AuditEvent(
             id="audit_confirmed",
             action_id=action.id,
             event_type="action_apply_confirmed",
@@ -656,8 +671,147 @@ def test_content_dev_draft_prewrite_check_does_not_claim_public_measurement() ->
     assert result.metric_fact_count == 0
     assert result.audit_event.event_type == "action_impact_check_completed"
     assert "Kontrola gotowości szkicu" in result.audit_event.summary
-    assert "wyniku marketingowego" in result.audit_event.summary
+    assert "rezultatu marketingowego" in result.audit_event.summary
     assert "Porównanie sprzed zmiany" not in result.audit_event.summary
+    for forbidden in ("efekt", "pomiar", "okno przed", "okno po"):
+        assert forbidden not in result.audit_event.event_type_label.lower()
+        assert forbidden not in result.audit_event.summary.lower()
+
+
+def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_use(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    revision, draft_preview = _ready_preview()
+    assert draft_preview.target is not None
+    assert draft_preview.confirmation is not None
+    assert draft_preview.payload_digest is not None
+    action = dev_draft_action.create_content_target_draft_action(
+        draft_preview,
+        dev_draft_action.ContentTargetDraftActionCommand(
+            expected_revision_digest=revision.content_digest,
+            expected_target_contract_digest=draft_preview.target.target_contract_digest,
+            expected_confirmation_digest=draft_preview.confirmation.confirmation_digest,
+            expected_payload_digest=draft_preview.payload_digest,
+            requested_by="Marta Kowalska",
+        ),
+    )
+    state_store = LocalStateStore(tmp_path / "actions.sqlite3")
+    connector = type(
+        "ConfiguredWordPressConnector",
+        (),
+        {
+            "configured": True,
+            "supported_actions": [dev_draft_action.CONTENT_DEV_DRAFT_ACTION_TYPE],
+        },
+    )()
+    monkeypatch.setattr(action_validation, "local_state_store", lambda: state_store)
+    monkeypatch.setattr(action_validation, "get_connector_status", lambda _: connector)
+    monkeypatch.setattr(action_payloads, "get_connector_status", lambda _: connector)
+    monkeypatch.setattr(action_service, "get_connector_status", lambda _: connector)
+    current_preview = [draft_preview]
+    monkeypatch.setattr(
+        dev_draft_action,
+        "current_content_target_draft_preview",
+        lambda **_: current_preview[0],
+    )
+    draft_writes_enabled = [True]
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "_dev_draft_writes_enabled",
+        lambda: draft_writes_enabled[0],
+    )
+    created_drafts: list[object] = []
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "create_wordpress_acf_draft",
+        lambda payload, **_: created_drafts.append(payload) or "draft_417",
+    )
+
+    apply_request = ActionApplyRequest(confirm=True, confirmed_by="Marta Kowalska")
+    assert not action_service.apply_action(action, apply_request).applied
+    assert created_drafts == []
+
+    assert action_service.validate_action(action).valid
+    action_service.preview_action(action, ActionPreviewRequest(requested_by="Marta Kowalska"))
+    assert not action_service.apply_action(action, apply_request).applied
+    assert created_drafts == []
+
+    action_service.record_action_review(
+        action,
+        ActionReviewRequest(
+            outcome="approved_for_prepare",
+            reviewed_by="Marta Kowalska",
+            notes="Zatwierdzono dokładny szkic dev.",
+        ),
+    )
+    assert action_service.confirm_action(
+        action,
+        ActionConfirmRequest(
+            confirmed_by="Marta Kowalska",
+            notes="Potwierdzam utworzenie jednego szkicu na dev.",
+            preview_acknowledged=True,
+        ),
+    ).confirmed
+    assert not action_service.apply_action(action, apply_request).applied
+    assert created_drafts == []
+
+    preflight = action_service.impact_check_action(
+        action,
+        ActionImpactCheckRequest(
+            checked_by="Marta Kowalska",
+            notes="Sprawdzono gotowość do utworzenia szkicu.",
+        ),
+    )
+    assert preflight.status == "checked"
+
+    changed_confirmation = draft_preview.confirmation.model_copy(
+        update={"confirmation_digest": "f" * 64}
+    )
+    current_preview[0] = draft_preview.model_copy(update={"confirmation": changed_confirmation})
+    assert not action_service.apply_action(action, apply_request).applied
+    assert created_drafts == []
+
+    current_preview[0] = draft_preview
+    draft_writes_enabled[0] = False
+    assert not action_service.apply_action(action, apply_request).applied
+    assert created_drafts == []
+
+    draft_writes_enabled[0] = True
+    applied = action_service.apply_action(action, apply_request)
+    assert applied.applied
+    assert len(created_drafts) == 1
+
+    repeated = action_service.apply_action(action, apply_request)
+    assert not repeated.applied
+    assert len(created_drafts) == 1
+
+
+def test_content_dev_draft_payload_rechecks_the_confirmation_used_for_payload() -> None:
+    revision, first_preview = _ready_preview()
+    assert first_preview.target is not None
+    assert first_preview.confirmation is not None
+    assert first_preview.payload_digest is not None
+    action = dev_draft_action.create_content_target_draft_action(
+        first_preview,
+        dev_draft_action.ContentTargetDraftActionCommand(
+            expected_revision_digest=revision.content_digest,
+            expected_target_contract_digest=first_preview.target.target_contract_digest,
+            expected_confirmation_digest=first_preview.confirmation.confirmation_digest,
+            expected_payload_digest=first_preview.payload_digest,
+            requested_by="Marta Kowalska",
+        ),
+    )
+    changed_confirmation = first_preview.confirmation.model_copy(
+        update={"confirmation_digest": "f" * 64}
+    )
+    second_preview = first_preview.model_copy(update={"confirmation": changed_confirmation})
+    try:
+        dev_draft_action.build_content_dev_draft_write_payload(action, preview=second_preview)
+    except ValueError as error:
+        assert "Dokładna rewizja, mapowanie albo odczyt dev zmieniły się" in str(error)
+    else:
+        raise AssertionError("Payload nie może użyć nowszego potwierdzenia mapowania.")
 
 
 def test_content_dev_draft_action_endpoint_persists_only_the_exact_preview(

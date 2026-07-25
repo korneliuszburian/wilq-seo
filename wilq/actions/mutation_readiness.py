@@ -53,6 +53,11 @@ MUTATION_READINESS_BLOCKER_COPY: dict[str, tuple[str, str, str]] = {
         "Przed zapisem WILQ wymaga sanity checku wpływu/okna efektu.",
         "Uruchom impact-check lub dodaj odpowiedni kontrakt wpływu.",
     ),
+    "draft_prewrite_check": (
+        "Brakuje kontroli gotowości szkicu",
+        "Przed utworzeniem szkicu dev WILQ wymaga zapisanej kontroli gotowości akcji.",
+        "Po review i potwierdzeniu uruchom kontrolę gotowości szkicu.",
+    ),
     "risk_allowed": (
         "Ryzyko zapisu jest zbyt wysokie",
         "High/critical writes nie mają jeszcze obsługiwanej ścieżki bezpieczeństwa.",

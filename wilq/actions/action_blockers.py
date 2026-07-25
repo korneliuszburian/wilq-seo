@@ -73,6 +73,8 @@ def action_confirmation_blockers(
         blockers.append("preview_acknowledgement_required")
     if latest_preview is None:
         blockers.append("dry_run_preview_required")
+    if _is_content_dev_draft_action(action) and not _has_approved_action_review(action):
+        blockers.append("draft_action_review_required")
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
     blockers.extend(_runtime_blockers(action))
@@ -97,6 +99,8 @@ def action_impact_check_blockers(
     blockers: list[str] = []
     if latest_confirmation is None:
         blockers.append("action_confirmation_required")
+    if _is_content_dev_draft_action(action) and not _has_approved_action_review(action):
+        blockers.append("draft_action_review_required")
     if not action.metrics and action.payload.get("action_type") != CONTENT_DEV_DRAFT_ACTION_TYPE:
         blockers.append("metric_facts_required")
     if not action.evidence_ids:
@@ -131,7 +135,18 @@ def action_apply_preflight_blockers(
     if not confirmation_present:
         blockers.append("Przed zapisem zmian wymagany jest zapis audytu potwierdzenia.")
     if not impact_checked:
-        blockers.append("Przed zapisem zmian wymagane jest sprawdzenie efektu.")
+        blockers.append(
+            "Przed utworzeniem szkicu wymagana jest kontrola gotowości szkicu."
+            if _is_content_dev_draft_action(action)
+            else "Przed zapisem zmian wymagane jest sprawdzenie efektu."
+        )
+    if _is_content_dev_draft_action(action) and not _has_approved_action_review(action):
+        blockers.append("Przed utworzeniem szkicu wymagany jest zatwierdzający review akcji.")
+    if _is_content_dev_draft_action(action) and any(
+        event.event_type in {"apply_succeeded", "action_apply_completed"}
+        for event in action.audit_events
+    ):
+        blockers.append("Ta akcja utworzyła już szkic na dev i nie może zostać wykonana ponownie.")
     if action.validation_status != "valid":
         blockers.append("Akcja musi być sprawdzona w WILQ przed zapisem zmian.")
     if action.mode != ActionMode.apply:
@@ -178,7 +193,11 @@ def action_apply_blockers(
     if requires_human_confirmation(required_checks) and not confirmation_satisfied:
         blockers.append("human_confirm_before_apply")
     if not impact_sanity_satisfied:
-        blockers.append("impact_sanity_check_required")
+        blockers.append(
+            "draft_prewrite_check_required"
+            if _is_content_dev_draft_action(action)
+            else "impact_sanity_check_required"
+        )
     if action.mode == ActionMode.apply and supported_mutation_adapter(action) is None:
         blockers.append("vendor_mutation_adapter_required")
     blocked_claims = string_list(action.payload.get("blocked_claims"))
@@ -191,6 +210,16 @@ def _runtime_blockers(action: ActionObject) -> list[str]:
     if not isinstance(values, list):
         return []
     return [value for value in values if isinstance(value, str) and value]
+
+
+def _is_content_dev_draft_action(action: ActionObject) -> bool:
+    return action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE
+
+
+def _has_approved_action_review(action: ActionObject) -> bool:
+    return any(
+        event.event_type == "human_review_approved_for_prepare" for event in action.audit_events
+    )
 
 
 def action_confirmation_event_type(action: ActionObject, confirmed: bool) -> str:
@@ -274,7 +303,7 @@ def action_impact_check_summary(
         parts = [
             f"Kontrola gotowości szkicu: {status_label(status)}.",
             "Sprawdza wyłącznie ślad akcji przed utworzeniem szkicu na dev; "
-            "nie mierzy wyniku marketingowego ani nie zapisuje zmian.",
+            "nie ocenia rezultatu marketingowego ani nie zapisuje zmian.",
         ]
         if blockers:
             parts.append(f"Blokady: {', '.join(gate_labels(blockers))}.")
