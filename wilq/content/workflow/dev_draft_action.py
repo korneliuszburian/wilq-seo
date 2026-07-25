@@ -147,13 +147,6 @@ def create_content_target_draft_action(
                 "human_review_before_apply",
                 "human_confirm_before_wordpress_write",
             ],
-            "blocked_claims": [
-                "wordpress_publish",
-                "wordpress_update_existing_post",
-                "wordpress_delete_post",
-                "production_write",
-                "bulk_delivery",
-            ],
             "destructive": False,
             "apply_allowed": True,
             "api_mutation_ready": True,

@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_target_mapping
 from wilq.actions import audit_store as action_audit_store
+from wilq.actions import mutation_contract
 from wilq.actions import service as action_service
 from wilq.content.workflow import dev_draft_action, dev_draft_execution
 from wilq.content.workflow.revisions import (
@@ -453,6 +454,21 @@ def test_content_dev_draft_action_binds_the_exact_confirmed_preview_and_fails_cl
     assert action.payload["api_mutation_ready"] is True
     assert (
         action.payload["content_target_draft_binding"]["revision_digest"] == revision.content_digest
+    )
+    assert action_service._supported_mutation_adapter(action) == (
+        "content_dev_draft_execution_boundary"
+    )
+    apply_contract = mutation_contract.mutation_apply_contract(
+        action,
+        action_service._supported_mutation_adapter(action),
+    )
+    assert apply_contract is not None
+    assert apply_contract.allowed_operation == "create_wordpress_draft"
+    assert apply_contract.publication_allowed is False
+    assert apply_contract.destructive_allowed is False
+    assert not any(
+        blocker.startswith("blocked_claim:")
+        for blocker in action_service._action_review_gate(action).apply_blockers
     )
 
     stale_preview = draft_preview.model_copy(update={"payload_digest": "f" * 64})
