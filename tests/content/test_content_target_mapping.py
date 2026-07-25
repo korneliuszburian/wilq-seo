@@ -729,12 +729,29 @@ def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_us
     )
 
     apply_request = ActionApplyRequest(confirm=True, confirmed_by="Marta Kowalska")
-    assert not action_service.apply_action(action, apply_request).applied
+    without_validation = action_service.apply_action(action, apply_request)
+    assert not without_validation.applied
+    assert "Akcja musi być sprawdzona w WILQ przed zapisem zmian." in without_validation.errors
     assert created_drafts == []
 
     assert action_service.validate_action(action).valid
     action_service.preview_action(action, ActionPreviewRequest(requested_by="Marta Kowalska"))
-    assert not action_service.apply_action(action, apply_request).applied
+    confirmation_without_review = action_service.confirm_action(
+        action,
+        ActionConfirmRequest(
+            confirmed_by="Marta Kowalska",
+            notes="Próbuję potwierdzić szkic bez review.",
+            preview_acknowledged=True,
+        ),
+    )
+    assert not confirmation_without_review.confirmed
+    assert "draft_action_review_required" in confirmation_without_review.blockers
+
+    without_review = action_service.apply_action(action, apply_request)
+    assert not without_review.applied
+    assert "Przed utworzeniem szkicu wymagany jest zatwierdzający review akcji." in (
+        without_review.errors
+    )
     assert created_drafts == []
 
     action_service.record_action_review(
@@ -745,15 +762,27 @@ def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_us
             notes="Zatwierdzono dokładny szkic dev.",
         ),
     )
-    assert action_service.confirm_action(
+    without_confirmation = action_service.apply_action(action, apply_request)
+    assert not without_confirmation.applied
+    assert "Przed zapisem zmian wymagany jest zapis audytu potwierdzenia." in (
+        without_confirmation.errors
+    )
+    assert created_drafts == []
+
+    confirmation = action_service.confirm_action(
         action,
         ActionConfirmRequest(
             confirmed_by="Marta Kowalska",
             notes="Potwierdzam utworzenie jednego szkicu na dev.",
             preview_acknowledged=True,
         ),
-    ).confirmed
-    assert not action_service.apply_action(action, apply_request).applied
+    )
+    assert confirmation.confirmed
+    without_preflight = action_service.apply_action(action, apply_request)
+    assert not without_preflight.applied
+    assert "Przed utworzeniem szkicu wymagana jest kontrola gotowości szkicu." in (
+        without_preflight.errors
+    )
     assert created_drafts == []
 
     preflight = action_service.impact_check_action(
