@@ -3,15 +3,14 @@ from __future__ import annotations
 from datetime import date
 
 from wilq.content.measurement.evidence import (
-    build_publication_bound_measurement_window,
     load_content_measurement_facts,
     observed_metrics_from_store,
 )
 from wilq.content.measurement.learning import build_content_learning_proposal
 from wilq.content.measurement.outcome import interpret_content_measurement_outcome
 from wilq.content.measurement.window import (
+    ContentMeasurementWindowBlocker,
     ContentMeasurementWindowBuildResult,
-    apply_content_measurement_window_to_work_item,
     content_measurement_window_outcome_blockers,
     mark_content_measurement_window_ready,
 )
@@ -29,35 +28,20 @@ from wilq.content.workflow.store import content_workflow_store
 def build_content_work_item_measurement_window_response(
     request: ContentWorkItemMeasurementWindowRequest,
 ) -> ContentWorkItemMeasurementWindowResponse:
-    store = content_workflow_store()
-    existing = store.latest_measurement_window(request.item.id)
-    measurement_result = (
-        ContentMeasurementWindowBuildResult(window=existing)
-        if existing is not None
-        else build_publication_bound_measurement_window(
-            item=request.item,
-            handoff=request.handoff,
-            # Measurement may only bind to the exact handoff/revision supplied
-            # by the caller.  A legacy work-item-wide execution must never
-            # unlock a newer or otherwise unbound revision.
-            execution=(
-                store.latest_wordpress_draft_execution(
-                    request.item.id,
-                    handoff_id=request.handoff.id,
-                    revision_id=request.handoff.revision_binding.revision_id,
-                    revision_digest=request.handoff.revision_binding.content_digest,
-                )
-                if request.handoff is not None and request.handoff.revision_binding is not None
-                else None
-            ),
-            metric_facts=load_content_measurement_facts(request.item.final_canonical_url),
-        )
+    measurement_result = ContentMeasurementWindowBuildResult(
+        blockers=[
+            ContentMeasurementWindowBlocker(
+                code="missing_publication_event",
+                label="Brakuje potwierdzonego publicznego wdrożenia",
+                reason=("Snapshot nie wybiera dokładnej rewizji ani potwierdzenia wdrożenia."),
+                next_step=(
+                    "Potwierdź publiczne wdrożenie dokładnej rewizji, a następnie "
+                    "utwórz jej measurement window."
+                ),
+            )
+        ]
     )
-    updated_item = (
-        apply_content_measurement_window_to_work_item(request.item, measurement_result.window)
-        if measurement_result.window is not None
-        else request.item
-    )
+    updated_item = request.item
     return ContentWorkItemMeasurementWindowResponse(
         item=request.item,
         updated_item=updated_item,
@@ -74,9 +58,7 @@ def build_content_work_item_measurement_outcome_response(
     request: ContentWorkItemMeasurementOutcomeRequest,
 ) -> ContentWorkItemMeasurementOutcomeResponse:
     store = content_workflow_store()
-    window = store.measurement_window(
-        request.work_item_id, request.measurement_window_id
-    )
+    window = store.measurement_window(request.work_item_id, request.measurement_window_id)
     if window is None:
         raise LookupError("Persisted measurement window is missing")
     if not all(

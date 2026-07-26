@@ -19,6 +19,7 @@ from wilq.content.measurement.deployment import ContentPublicDeployment
 from wilq.content.measurement.evidence import (
     build_confirmed_deployment_measurement_window,
     build_publication_bound_measurement_window,
+    load_content_measurement_facts,
 )
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import ContentDateRange, ContentMeasurementWindow
@@ -285,7 +286,7 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
         ),
     )
 
-    activated = build_content_work_item_measurement_window_response(
+    legacy_attempt = build_content_work_item_measurement_window_response(
         ContentWorkItemMeasurementWindowRequest(
             item=item,
             handoff=ContentWordPressDraftHandoff(
@@ -308,7 +309,26 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
             ),
         )
     )
-    window = activated.measurement_window_result.window
+    assert legacy_attempt.measurement_window_result.window is None
+    assert legacy_attempt.measurement_window_result.blockers[0].code == "missing_publication_event"
+
+    activated = build_confirmed_deployment_measurement_window(
+        deployment=ContentPublicDeployment(
+            deployment_id="deployment_bdo",
+            work_item_id=work_item_id,
+            revision_id="revision_bdo",
+            revision_digest="a" * 64,
+            public_url=content_url,
+            wordpress_post_id="888",
+            publication_evidence_id="ev_refresh_wp_publish",
+            publication_source_connector="wordpress_ekologus",
+            observed_at=datetime(2026, 6, 1, 8, tzinfo=UTC),
+            confirmed_by="operator",
+            confirmed_at=datetime(2026, 6, 1, 9, tzinfo=UTC),
+        ),
+        metric_facts=load_content_measurement_facts(content_url),
+    )
+    window = activated.window
     assert window is not None
     assert window.wordpress_post_id == "888"
     assert window.publication_evidence_id == "ev_refresh_wp_publish"
@@ -321,15 +341,23 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
         "end": "2026-06-28",
     }
     assert window.allowed_metrics == ["gsc_clicks"]
-    content_workflow_store().save_measurement_window(window)
+    legacy_window = window.model_copy(
+        update={
+            "id": f"{window.id}_legacy",
+            "deployment_id": None,
+            "deployed_revision_id": None,
+            "deployed_revision_digest": None,
+        }
+    )
+    content_workflow_store().save_measurement_window(legacy_window)
     with pytest.raises(LookupError, match="potwierdzonym publicznym wdrożeniem"):
         build_content_work_item_measurement_outcome_response(
             ContentWorkItemMeasurementOutcomeRequest(
                 work_item_id=work_item_id,
-                measurement_window_id=window.id,
+                measurement_window_id=legacy_window.id,
             )
         )
-    assert content_workflow_store().measurement_outcome(work_item_id, window.id) is None
+    assert content_workflow_store().measurement_outcome(work_item_id, legacy_window.id) is None
 
     window = window.model_copy(
         update={
