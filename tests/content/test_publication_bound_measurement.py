@@ -276,7 +276,7 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     assert (
         client.post(
             "/api/content/work-items/learning-proposal",
-            json={"work_item_id": work_item_id},
+            json={"work_item_id": work_item_id, "measurement_window_id": "missing_window"},
         ).status_code
         == 409
     )
@@ -485,7 +485,7 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     assert (
         client.post(
             "/api/content/work-items/learning-proposal",
-            json={"work_item_id": work_item_id},
+            json={"work_item_id": work_item_id, "measurement_window_id": window.id},
         ).status_code
         == 409
     )
@@ -518,15 +518,33 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     assert content_workflow_store().latest_measurement_window(work_item_id) is not None
     assert content_workflow_store().latest_measurement_outcome(work_item_id) is not None
 
+    later_outcome = outcome.model_copy(
+        update={
+            "id": f"{outcome.id}_later",
+            "measurement_window_id": later_window.id,
+            "deployment_id": "deployment_b",
+            "deployed_revision_id": "revision_b",
+            "deployed_revision_digest": "b" * 64,
+        }
+    )
+    content_workflow_store().save_measurement_completion(
+        later_window.model_copy(update={"status": "closed"}),
+        later_outcome,
+    )
+
     caller_accepted = client.post(
         "/api/content/work-items/learning-proposal",
-        json={"work_item_id": work_item_id, "review_status": "approved"},
+        json={
+            "work_item_id": work_item_id,
+            "measurement_window_id": window.id,
+            "review_status": "approved",
+        },
     )
     assert caller_accepted.status_code == 422
 
     proposal_response = client.post(
         "/api/content/work-items/learning-proposal",
-        json={"work_item_id": work_item_id},
+        json={"work_item_id": work_item_id, "measurement_window_id": window.id},
     )
     assert proposal_response.status_code == 200
     proposal = proposal_response.json()["proposal"]
@@ -537,6 +555,7 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     assert proposal["queue_update_allowed"] is False
     assert proposal["success_claim_allowed"] is False
     assert proposal["measurement_outcome_id"] == outcome.id
+    assert proposal["measurement_window_id"] == window.id
     assert set(outcome.evidence_ids) <= set(proposal["evidence_ids"])
     assert proposal["source_connectors"] == [
         "google_search_console",

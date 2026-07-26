@@ -8,6 +8,8 @@ import {
   ContentWorkItemDraftPackageResponseSchema,
   ContentWorkItemHumanReviewResponseSchema,
   ContentWorkItemMeasurementOutcomeResponseSchema,
+  ContentWorkItemLearningProposalRequestSchema,
+  ContentWorkItemLearningProposalResponseSchema,
   ContentWorkItemMeasurementWindowResponseSchema,
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemSalesBriefResponseSchema,
@@ -63,6 +65,35 @@ import {
   WorkOrderSchema,
   WordPressAuthoringProfileSchema
 } from "./index";
+
+describe("ContentWorkItemLearningProposal schemas", () => {
+  it("keeps the exact measurement window binding in the public request and response", () => {
+    expect(
+      ContentWorkItemLearningProposalRequestSchema.safeParse({
+        work_item_id: "content_work_item_bdo"
+      }).success
+    ).toBe(false);
+
+    const response = ContentWorkItemLearningProposalResponseSchema.parse({
+      proposal: {
+        id: "learning_proposal_measurement_outcome_bdo",
+        work_item_id: "content_work_item_bdo",
+        measurement_window_id: "measurement_window_deployment_bdo",
+        measurement_outcome_id: "measurement_outcome_bdo",
+        verdict: "measured_success",
+        review_status: "review_required",
+        decision_summary: "Sygnał do sprawdzenia.",
+        proposed_learning: "Hipoteza do review.",
+        human_acceptance_required: true,
+        knowledge_update_allowed: false,
+        queue_update_allowed: false,
+        success_claim_allowed: false
+      }
+    });
+
+    expect(response.proposal.measurement_window_id).toBe("measurement_window_deployment_bdo");
+  });
+});
 
 describe("ContentDecisionContextSchema", () => {
   it("keeps an unverified dev target explicit instead of inventing its object identity", () => {

@@ -90,10 +90,26 @@ def build_content_work_item_learning_proposal_response(
     request: ContentWorkItemLearningProposalRequest,
 ) -> ContentWorkItemLearningProposalResponse:
     store = content_workflow_store()
-    window = store.latest_measurement_window(request.work_item_id)
-    outcome = store.latest_measurement_outcome(request.work_item_id)
+    window = store.measurement_window(request.work_item_id, request.measurement_window_id)
+    outcome = store.measurement_outcome(request.work_item_id, request.measurement_window_id)
     if window is None or outcome is None:
-        raise LookupError("Persisted measurement window and outcome are required")
+        raise LookupError("Wskazane measurement window i outcome są wymagane")
+    if not all(
+        [
+            window.deployment_id,
+            window.deployed_revision_id,
+            window.deployed_revision_digest,
+        ]
+    ):
+        raise LookupError(
+            "Wniosek z pomiaru wymaga okna powiązanego z potwierdzonym publicznym wdrożeniem."
+        )
+    if (
+        outcome.deployment_id != window.deployment_id
+        or outcome.deployed_revision_id != window.deployed_revision_id
+        or outcome.deployed_revision_digest != window.deployed_revision_digest
+    ):
+        raise LookupError("Outcome nie odpowiada wdrożeniu wskazanego measurement window.")
     proposal = build_content_learning_proposal(window=window, outcome=outcome)
     store.save_learning_proposal(proposal)
     return ContentWorkItemLearningProposalResponse(proposal=proposal)

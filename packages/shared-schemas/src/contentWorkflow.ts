@@ -2191,6 +2191,40 @@ export const ContentWorkItemMeasurementOutcomeResponseSchema = z.object({
   outcome: ContentMeasurementOutcomeInterpretationSchema
 });
 
+export const ContentLearningProposalSchema = z.object({
+  id: z.string(),
+  work_item_id: z.string(),
+  measurement_window_id: z.string(),
+  measurement_outcome_id: z.string(),
+  verdict: z.enum([
+    "noisy_inconclusive",
+    "directional_improvement",
+    "likely_underperformance",
+    "measured_success"
+  ]),
+  review_status: z.literal("review_required"),
+  decision_summary: z.string(),
+  proposed_learning: z.string(),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  metric_fact_ids: z.array(z.string()).default([]),
+  refresh_run_ids: z.array(z.string()).default([]),
+  limitations: z.array(z.string()).default([]),
+  human_acceptance_required: z.literal(true),
+  knowledge_update_allowed: z.literal(false),
+  queue_update_allowed: z.literal(false),
+  success_claim_allowed: z.literal(false)
+});
+
+export const ContentWorkItemLearningProposalRequestSchema = z.object({
+  work_item_id: z.string().min(1),
+  measurement_window_id: z.string().min(1)
+});
+
+export const ContentWorkItemLearningProposalResponseSchema = z.object({
+  proposal: ContentLearningProposalSchema
+});
+
 const CONTENT_WORKFLOW_OPERATOR_STEP_ORDER = [
   "scope",
   "section_map",
@@ -4079,6 +4113,13 @@ export type ContentWorkItemMeasurementOutcomeRequest = z.input<
 >;
 export type ContentWorkItemMeasurementOutcomeResponse = z.infer<
   typeof ContentWorkItemMeasurementOutcomeResponseSchema
+>;
+export type ContentLearningProposal = z.infer<typeof ContentLearningProposalSchema>;
+export type ContentWorkItemLearningProposalRequest = z.input<
+  typeof ContentWorkItemLearningProposalRequestSchema
+>;
+export type ContentWorkItemLearningProposalResponse = z.infer<
+  typeof ContentWorkItemLearningProposalResponseSchema
 >;
 export type ContentDraftRevisionSection = z.infer<typeof ContentDraftRevisionSectionSchema>;
 export type ContentDraftRevisionProposalSectionLineage = z.infer<
