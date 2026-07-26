@@ -863,10 +863,7 @@ def content_work_item_measurement_window(
         build_confirmed_deployment_measurement_window,
         load_content_measurement_facts,
     )
-    from wilq.content.measurement.window import (
-        apply_content_measurement_window_to_work_item,
-        content_measurement_window_outcome_blockers,
-    )
+    from wilq.content.measurement.window import content_measurement_window_outcome_blockers
     from wilq.content.workflow.store_public_deployment import public_deployment
 
     snapshot = _snapshot_for_work_item_or_404(request.work_item_id)
@@ -895,8 +892,11 @@ def content_work_item_measurement_window(
     response = ContentWorkItemMeasurementWindowResponse(
         item=snapshot.measurement_window.item,
         updated_item=(
-            apply_content_measurement_window_to_work_item(
-                snapshot.measurement_window.item, result.window
+            snapshot.measurement_window.item.model_copy(
+                update={
+                    "measurement_window_status": result.window.status,
+                    "measurement_window_id": result.window.id,
+                }
             )
             if result.window is not None
             else snapshot.measurement_window.item

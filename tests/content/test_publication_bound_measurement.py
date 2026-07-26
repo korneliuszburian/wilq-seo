@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from apps.api.wilq_api.routers import content_workflow as workflow_router
 from wilq.connectors.vendor import VendorMetricFact
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import (
@@ -23,16 +25,19 @@ from wilq.content.measurement.evidence import (
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import ContentDateRange, ContentMeasurementWindow
 from wilq.content.workflow.contracts import (
+    ContentWorkItemMeasurementCommand,
     ContentWorkItemMeasurementOutcomeRequest,
     ContentWorkItemMeasurementWindowRequest,
 )
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.content.workflow.stage_measurement import (
     build_content_work_item_measurement_outcome_response,
     build_content_work_item_measurement_window_response,
 )
 from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.store_public_deployment import save_public_deployment
 from wilq.schemas import (
     ConnectorRefreshMode,
     ConnectorRefreshRun,
@@ -99,6 +104,76 @@ def test_measurement_window_requires_exact_confirmed_public_deployment() -> None
     assert result.window.deployed_revision_id == deployment.revision_id
     assert result.window.deployed_revision_digest == deployment.revision_digest
     assert result.window.content_url == deployment.public_url
+
+
+def test_measurement_window_route_projects_only_the_confirmed_deployment_window(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "measurement-route.sqlite3"))
+    store = content_workflow_store()
+    item = ContentWorkItem(
+        id="content_work_item_route_bdo",
+        topic="BDO dla firm",
+        source_public_url="https://ekologus.pl/bdo/",
+        final_canonical_url="https://ekologus.pl/bdo/",
+        intended_final_url="https://ekologus.pl/bdo/",
+        inventory_status="resolved",
+        canonical_status="resolved",
+        duplicate_status="checked",
+    )
+    revision = ContentDraftRevision.model_construct(
+        revision_id="revision_route_bdo",
+        work_item_id=item.id,
+        content_digest="a" * 64,
+        final_canonical_url=item.final_canonical_url,
+    )
+    deployment = ContentPublicDeployment(
+        deployment_id="deployment_route_bdo",
+        work_item_id=item.id,
+        revision_id=revision.revision_id,
+        revision_digest=revision.content_digest,
+        public_url=item.final_canonical_url,
+        wordpress_post_id="1353",
+        publication_evidence_id="ev_public_bdo",
+        publication_source_connector="wordpress_ekologus",
+        observed_at=datetime(2026, 6, 1, 8, tzinfo=UTC),
+        confirmed_by="operator",
+        confirmed_at=datetime(2026, 6, 1, 9, tzinfo=UTC),
+    )
+    save_public_deployment(store, deployment)
+    monkeypatch.setattr(workflow_router, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(store, "list_draft_revisions", lambda *_: [revision])
+    monkeypatch.setattr(
+        workflow_router,
+        "_snapshot_for_work_item_or_404",
+        lambda _: SimpleNamespace(measurement_window=SimpleNamespace(item=item)),
+    )
+    monkeypatch.setattr(
+        "wilq.content.measurement.evidence.load_content_measurement_facts",
+        lambda _: [
+            MetricFact(
+                name="clicks",
+                value=100,
+                period="2026-05-04/2026-05-31",
+                source_connector="google_search_console",
+                evidence_id="ev_gsc_bdo",
+                dimensions={"page": item.final_canonical_url},
+                collected_at=datetime(2026, 6, 1, 10, tzinfo=UTC),
+            )
+        ],
+    )
+
+    response = workflow_router.content_work_item_measurement_window(
+        ContentWorkItemMeasurementCommand(
+            work_item_id=item.id,
+            revision_id=revision.revision_id,
+        )
+    )
+
+    assert response.measurement_window_result.window is not None
+    assert response.updated_item.measurement_window_id == "measurement_window_deployment_route_bdo"
+    assert response.updated_item.measurement_window_status == "planned"
 
 
 def test_wordpress_execution_history_is_exactly_revision_bound_and_keeps_v1_readback(
