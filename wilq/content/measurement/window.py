@@ -61,6 +61,9 @@ class ContentMeasurementWindow(BaseModel):
     publication_refresh_run_id: str | None = None
     publication_source_connector: str | None = None
     wordpress_post_id: str | None = None
+    deployment_id: str | None = None
+    deployed_revision_id: str | None = None
+    deployed_revision_digest: str | None = None
     success_claim_allowed: bool = False
 
 

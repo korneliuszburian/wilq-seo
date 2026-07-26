@@ -842,11 +842,8 @@ describe("content workflow API helpers", () => {
       mode: "dry_run"
     });
     await postContentWorkItemMeasurementWindow({
-      item: workItem(),
-      baseline_period: { start: "2026-05-01", end: "2026-05-31" },
-      observation_period: { start: "2026-07-01", end: "2026-07-31" },
-      allowed_metrics: ["gsc_clicks"],
-      source_connectors: ["google_search_console"]
+      work_item_id: "content_work_item_bdo",
+      revision_id: "revision_bdo"
     });
 
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([

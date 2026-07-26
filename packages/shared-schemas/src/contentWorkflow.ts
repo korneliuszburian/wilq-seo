@@ -2172,12 +2172,8 @@ export const ContentWorkItemMeasurementWindowResponseSchema = z.object({
 });
 
 export const ContentWorkItemMeasurementWindowRequestSchema = z.object({
-  item: ContentWorkItemSchema,
-  handoff: ContentWordPressDraftHandoffSchema.nullable().optional(),
-  baseline_period: ContentDateRangeSchema,
-  observation_period: ContentDateRangeSchema,
-  allowed_metrics: z.array(z.string()).default([]),
-  source_connectors: z.array(z.string()).default([])
+  work_item_id: z.string().min(1),
+  revision_id: z.string().min(1)
 });
 
 export const ContentWorkItemMeasurementOutcomeRequestSchema = z.object({

@@ -14,7 +14,11 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionResult,
     ContentWordPressDraftPayload,
 )
-from wilq.content.measurement.evidence import build_publication_bound_measurement_window
+from wilq.content.measurement.deployment import ContentPublicDeployment
+from wilq.content.measurement.evidence import (
+    build_confirmed_deployment_measurement_window,
+    build_publication_bound_measurement_window,
+)
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import ContentDateRange, ContentMeasurementWindow
 from wilq.content.workflow.contracts import (
@@ -53,6 +57,49 @@ def _execution_binding(
     )
 
 
+def test_measurement_window_requires_exact_confirmed_public_deployment() -> None:
+    missing = build_confirmed_deployment_measurement_window(
+        deployment=None,
+        metric_facts=[],
+    )
+    assert missing.window is None
+    assert [blocker.code for blocker in missing.blockers] == ["missing_publication_event"]
+
+    deployment = ContentPublicDeployment(
+        deployment_id="content_public_deployment_bdo",
+        work_item_id="content_work_item_bdo",
+        revision_id="revision_bdo",
+        revision_digest="a" * 64,
+        public_url="https://ekologus.pl/bdo/",
+        wordpress_post_id="1353",
+        publication_evidence_id="ev_public_bdo",
+        publication_source_connector="wordpress_ekologus",
+        observed_at=datetime(2026, 6, 1, 8, tzinfo=UTC),
+        confirmed_by="operator_local_dashboard",
+        confirmed_at=datetime(2026, 6, 1, 9, tzinfo=UTC),
+    )
+    result = build_confirmed_deployment_measurement_window(
+        deployment=deployment,
+        metric_facts=[
+            MetricFact(
+                name="clicks",
+                value=100,
+                period="2026-05-04/2026-05-31",
+                source_connector="google_search_console",
+                evidence_id="ev_gsc_bdo",
+                dimensions={"page": deployment.public_url},
+                collected_at=datetime(2026, 6, 1, 10, tzinfo=UTC),
+            )
+        ],
+    )
+
+    assert result.window is not None
+    assert result.window.deployment_id == deployment.deployment_id
+    assert result.window.deployed_revision_id == deployment.revision_id
+    assert result.window.deployed_revision_digest == deployment.revision_digest
+    assert result.window.content_url == deployment.public_url
+
+
 def test_wordpress_execution_history_is_exactly_revision_bound_and_keeps_v1_readback(
     monkeypatch: Any,
     tmp_path: Path,
@@ -89,34 +136,38 @@ def test_wordpress_execution_history_is_exactly_revision_bound_and_keeps_v1_read
     store.save_wordpress_draft_execution(first.revision_binding.work_item_id, first)
     store.save_wordpress_draft_execution(second.revision_binding.work_item_id, second)
 
-    assert store.latest_wordpress_draft_execution(
-        "content_work_item_bound_history",
-        handoff_id="handoff-1",
-        revision_id="revision-1",
-        revision_digest="1" * 64,
-    ).wordpress_post_id == "888"
-    assert store.latest_wordpress_draft_execution(
-        "content_work_item_bound_history",
-        handoff_id="handoff-2",
-        revision_id="revision-2",
-        revision_digest="2" * 64,
-    ).wordpress_post_id == "889"
-    assert store.latest_wordpress_draft_execution(
-        "content_work_item_bound_history",
-        handoff_id="handoff-1",
-        revision_id="revision-2",
-        revision_digest="2" * 64,
-    ) is None
-
-    legacy = ContentWordPressDraftExecutionResult(
-        **{**common, "wordpress_post_id": "777"}
-    )
-    store.save_wordpress_draft_execution("legacy-item", legacy)
-    assert store.latest_wordpress_draft_execution("legacy-item").wordpress_post_id == "777"
     assert (
-        store.latest_wordpress_draft_execution("legacy-item", handoff_id="new-handoff")
+        store.latest_wordpress_draft_execution(
+            "content_work_item_bound_history",
+            handoff_id="handoff-1",
+            revision_id="revision-1",
+            revision_digest="1" * 64,
+        ).wordpress_post_id
+        == "888"
+    )
+    assert (
+        store.latest_wordpress_draft_execution(
+            "content_work_item_bound_history",
+            handoff_id="handoff-2",
+            revision_id="revision-2",
+            revision_digest="2" * 64,
+        ).wordpress_post_id
+        == "889"
+    )
+    assert (
+        store.latest_wordpress_draft_execution(
+            "content_work_item_bound_history",
+            handoff_id="handoff-1",
+            revision_id="revision-2",
+            revision_digest="2" * 64,
+        )
         is None
     )
+
+    legacy = ContentWordPressDraftExecutionResult(**{**common, "wordpress_post_id": "777"})
+    store.save_wordpress_draft_execution("legacy-item", legacy)
+    assert store.latest_wordpress_draft_execution("legacy-item").wordpress_post_id == "777"
+    assert store.latest_wordpress_draft_execution("legacy-item", handoff_id="new-handoff") is None
 
 
 def test_measurement_uses_bound_publication_and_server_metrics_only(
@@ -145,13 +196,14 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
         ContentWorkItemMeasurementWindowRequest(item=item)
     )
     assert blocked.measurement_window_result.window is None
-    assert blocked.measurement_window_result.blockers[0].code == (
-        "missing_publication_event"
+    assert blocked.measurement_window_result.blockers[0].code == ("missing_publication_event")
+    assert (
+        client.post(
+            "/api/content/work-items/learning-proposal",
+            json={"work_item_id": work_item_id},
+        ).status_code
+        == 409
     )
-    assert client.post(
-        "/api/content/work-items/learning-proposal",
-        json={"work_item_id": work_item_id},
-    ).status_code == 409
     content_workflow_store().save_wordpress_draft_execution(
         work_item_id,
         ContentWordPressDraftExecutionResult(
@@ -293,10 +345,13 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
         ContentWorkItemMeasurementOutcomeRequest(work_item_id=work_item_id)
     )
     assert unbounded.outcome.status == "insufficient_data"
-    assert client.post(
-        "/api/content/work-items/learning-proposal",
-        json={"work_item_id": work_item_id},
-    ).status_code == 409
+    assert (
+        client.post(
+            "/api/content/work-items/learning-proposal",
+            json={"work_item_id": work_item_id},
+        ).status_code
+        == 409
+    )
 
     _save_fact(
         run_id="gsc_observation",
@@ -472,9 +527,7 @@ def test_measurement_rejects_functional_query_and_path_only_fallback() -> None:
                 name="clicks",
                 value=500,
                 evidence_id="ev_wrong_variant",
-                dimensions={
-                    "page": "https://www.ekologus.pl/oferta/?service=audyt"
-                },
+                dimensions={"page": "https://www.ekologus.pl/oferta/?service=audyt"},
             ),
             _direct_fact(
                 connector="google_analytics_4",
@@ -487,9 +540,7 @@ def test_measurement_rejects_functional_query_and_path_only_fallback() -> None:
     )
 
     assert unsafe_result.window is None
-    assert [blocker.code for blocker in unsafe_result.blockers] == [
-        "missing_metric_evidence"
-    ]
+    assert [blocker.code for blocker in unsafe_result.blockers] == ["missing_metric_evidence"]
 
     conflicting_dimensions = build_publication_bound_measurement_window(
         item=item,
@@ -616,6 +667,4 @@ def test_unbound_legacy_execution_cannot_unlock_measurement_window(
     )
 
     assert response.measurement_window_result.window is None
-    assert response.measurement_window_result.blockers[0].code == (
-        "missing_publication_event"
-    )
+    assert response.measurement_window_result.blockers[0].code == ("missing_publication_event")

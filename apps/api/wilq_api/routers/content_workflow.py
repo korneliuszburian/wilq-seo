@@ -253,8 +253,7 @@ def content_wordpress_existing_draft_update_readiness(
 
 def _latest_exact_wordpress_execution(
     snapshot: (
-        ContentWorkItemBrowserWorkflowSnapshotResponse
-        | ContentWorkItemWorkflowSnapshotResponse
+        ContentWorkItemBrowserWorkflowSnapshotResponse | ContentWorkItemWorkflowSnapshotResponse
     ),
 ) -> ContentWordPressDraftExecutionResult | None:
     handoff = snapshot.wordpress_handoff.handoff_result.handoff
@@ -263,9 +262,7 @@ def _latest_exact_wordpress_execution(
         return None
     if binding is None:
         # Legacy v1 handoffs have no revision binding; keep their history readable.
-        return content_workflow_store().latest_wordpress_draft_execution(
-            snapshot.preflight.item.id
-        )
+        return content_workflow_store().latest_wordpress_draft_execution(snapshot.preflight.item.id)
     return content_workflow_store().latest_wordpress_draft_execution(
         snapshot.preflight.item.id,
         handoff_id=handoff.id,
@@ -339,9 +336,7 @@ def content_workflow_entry(
     response_model=ContentWorkItemBrowserWorkflowSnapshotResponse,
 )
 def content_work_item_snapshot() -> ContentWorkItemBrowserWorkflowSnapshotResponse:
-    return project_content_work_item_browser_snapshot(
-        _snapshot_for_default_work_item_or_404()
-    )
+    return project_content_work_item_browser_snapshot(_snapshot_for_default_work_item_or_404())
 
 
 @router.get(
@@ -395,9 +390,7 @@ def content_work_item_planning_review(
     ):
         raise HTTPException(
             status_code=409,
-            detail=(
-                "Plan treści zmienił się. Odśwież element przed zapisaniem decyzji."
-            ),
+            detail=("Plan treści zmienił się. Odśwież element przed zapisaniem decyzji."),
         )
     try:
         selection = resolve_content_planning_service_selection(
@@ -454,9 +447,7 @@ def _planning_proposal_for_service_selection(
     transient_scope = ContentPlanningDecision(
         decision_id="content_planning_review_transient_service_selection",
         decision_number=(
-            1
-            if workspace.scope_decision is None
-            else workspace.scope_decision.decision_number + 1
+            1 if workspace.scope_decision is None else workspace.scope_decision.decision_number + 1
         ),
         work_item_id=work_item_id,
         stage="scope",
@@ -562,8 +553,7 @@ def content_work_item_draft_revision_save(
     planning = snapshot.planning_workspace
     latest_revision = workspace.latest_revision
     request_would_create_child = (
-        latest_revision is not None
-        and request.base_revision_id == latest_revision.revision_id
+        latest_revision is not None and request.base_revision_id == latest_revision.revision_id
     )
     if (
         draft_package is None
@@ -641,9 +631,7 @@ def content_work_item_draft_revision_review(
             revision_id=revision_id,
             revision_digest=request.expected_revision_digest,
             base_decision_id=(
-                None
-                if workspace.latest_review is None
-                else workspace.latest_review.decision_id
+                None if workspace.latest_review is None else workspace.latest_review.decision_id
             ),
             reviewed_by=request.reviewed_by,
             decision=request.decision,
@@ -806,9 +794,7 @@ def content_work_item_quality_review_for_selected_item(
                 "revision": snapshot.revision_workspace.latest_revision,
                 "claim_ledger": snapshot.claim_ledger,
                 "sales_brief": snapshot.sales_brief.sales_brief_result.brief,
-                "draft_package": (
-                    snapshot.draft_package.draft_package_result.draft_package
-                ),
+                "draft_package": (snapshot.draft_package.draft_package_result.draft_package),
             }
         )
     )
@@ -873,7 +859,55 @@ def content_work_item_wordpress_authoring_payload_preview(
 def content_work_item_measurement_window(
     request: ContentWorkItemMeasurementCommand,
 ) -> ContentWorkItemMeasurementWindowResponse:
-    response = _snapshot_for_work_item_or_404(request.work_item_id).measurement_window
+    from wilq.content.measurement.evidence import (
+        build_confirmed_deployment_measurement_window,
+        load_content_measurement_facts,
+    )
+    from wilq.content.measurement.window import (
+        apply_content_measurement_window_to_work_item,
+        content_measurement_window_outcome_blockers,
+    )
+    from wilq.content.workflow.store_public_deployment import public_deployment
+
+    snapshot = _snapshot_for_work_item_or_404(request.work_item_id)
+    store = content_workflow_store()
+    revision = next(
+        (
+            candidate
+            for candidate in store.list_draft_revisions(request.work_item_id)
+            if candidate.revision_id == request.revision_id
+        ),
+        None,
+    )
+    deployment = public_deployment(
+        store, work_item_id=request.work_item_id, revision_id=request.revision_id
+    )
+    if revision is None:
+        raise HTTPException(status_code=404, detail="Nie znaleziono wskazanej rewizji dokumentu.")
+    if deployment is not None and deployment.revision_digest != revision.content_digest:
+        deployment = None
+    result = build_confirmed_deployment_measurement_window(
+        deployment=deployment,
+        metric_facts=(
+            [] if deployment is None else load_content_measurement_facts(deployment.public_url)
+        ),
+    )
+    response = ContentWorkItemMeasurementWindowResponse(
+        item=snapshot.measurement_window.item,
+        updated_item=(
+            apply_content_measurement_window_to_work_item(
+                snapshot.measurement_window.item, result.window
+            )
+            if result.window is not None
+            else snapshot.measurement_window.item
+        ),
+        measurement_window_result=result,
+        outcome_blockers=(
+            content_measurement_window_outcome_blockers(result.window)
+            if result.window is not None
+            else []
+        ),
+    )
     window = response.measurement_window_result.window
     if window is not None:
         content_workflow_store().save_measurement_window(window)

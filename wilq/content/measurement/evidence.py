@@ -21,6 +21,7 @@ from wilq.content.measurement.aggregates import (
     MeasurementAggregateResult,
     aggregate_exact_page_metric_facts,
 )
+from wilq.content.measurement.deployment import ContentPublicDeployment
 from wilq.content.measurement.outcome import ContentMeasurementObservedMetric
 from wilq.content.measurement.window import (
     ContentDateRange,
@@ -157,8 +158,7 @@ def build_publication_bound_measurement_window(
     ]
     allowed_metrics = list(
         dict.fromkeys(
-            cast(ContentMeasurementMetric, _measurement_metric(fact))
-            for fact in measurement_facts
+            cast(ContentMeasurementMetric, _measurement_metric(fact)) for fact in measurement_facts
         )
     )
     if not allowed_metrics:
@@ -216,14 +216,91 @@ def build_publication_bound_measurement_window(
     )
 
 
+def build_confirmed_deployment_measurement_window(
+    *,
+    deployment: ContentPublicDeployment | None,
+    metric_facts: list[MetricFact],
+) -> ContentMeasurementWindowBuildResult:
+    """Build a window only from a persisted exact public-deployment confirmation."""
+
+    if deployment is None:
+        return ContentMeasurementWindowBuildResult(
+            blockers=[
+                _blocker(
+                    "missing_publication_event",
+                    "Brakuje potwierdzonego publicznego wdrożenia",
+                    "Samo zatwierdzenie dokumentu ani szkic dev nie rozpoczynają pomiaru.",
+                    "Potwierdź publiczne wdrożenie dokładnej rewizji "
+                    "na podstawie odczytu WordPressa.",
+                )
+            ]
+        )
+    measurement_facts = [
+        fact
+        for fact in metric_facts
+        if _measurement_metric(fact) is not None
+        and _fact_matches_url(fact, deployment.public_url)
+        and _fact_is_page_aggregate(fact)
+    ]
+    allowed_metrics = list(
+        dict.fromkeys(
+            cast(ContentMeasurementMetric, _measurement_metric(fact)) for fact in measurement_facts
+        )
+    )
+    if not allowed_metrics:
+        return ContentMeasurementWindowBuildResult(
+            blockers=[
+                _blocker(
+                    "missing_metric_evidence",
+                    "Brakuje metryk dla opublikowanego adresu",
+                    "WILQ zna publiczne wdrożenie, ale nie ma jednoznacznych danych GSC ani GA4.",
+                    "Odśwież GSC lub GA4 po publikacji i wróć do pomiaru.",
+                )
+            ]
+        )
+    publication_date = deployment.observed_at.date()
+    baseline_period = ContentDateRange(
+        start=publication_date - timedelta(days=28), end=publication_date - timedelta(days=1)
+    )
+    observation_period = ContentDateRange(
+        start=publication_date, end=publication_date + timedelta(days=27)
+    )
+    source_connectors = list(dict.fromkeys(fact.source_connector for fact in measurement_facts))
+    evidence_ids = list(
+        dict.fromkeys(
+            [
+                deployment.publication_evidence_id,
+                *(fact.evidence_id for fact in measurement_facts),
+            ]
+        )
+    )
+    return ContentMeasurementWindowBuildResult(
+        window=ContentMeasurementWindow(
+            id=f"measurement_window_{deployment.deployment_id}",
+            work_item_id=deployment.work_item_id,
+            content_url=deployment.public_url,
+            baseline_period=baseline_period,
+            observation_period=observation_period,
+            earliest_verdict_date=observation_period.end + timedelta(days=1),
+            allowed_metrics=allowed_metrics,
+            source_connectors=source_connectors,
+            evidence_ids=evidence_ids,
+            publication_evidence_id=deployment.publication_evidence_id,
+            publication_source_connector=deployment.publication_source_connector,
+            wordpress_post_id=deployment.wordpress_post_id,
+            deployment_id=deployment.deployment_id,
+            deployed_revision_id=deployment.revision_id,
+            deployed_revision_digest=deployment.revision_digest,
+        )
+    )
+
+
 def observed_metrics_from_store(
     window: ContentMeasurementWindow,
     metric_facts: list[MetricFact],
 ) -> list[ContentMeasurementObservedMetric]:
     observed: list[ContentMeasurementObservedMetric] = []
-    refresh_runs = {
-        run.id: run for run in local_state_store().list_connector_refresh_runs()
-    }
+    refresh_runs = {run.id: run for run in local_state_store().list_connector_refresh_runs()}
     for metric in window.allowed_metrics:
         candidates = [
             fact
@@ -252,18 +329,14 @@ def observed_metrics_from_store(
         if baseline is None or observation is None:
             available = [fact for fact in (baseline, observation) if fact is not None]
             evidence_ids = list(dict.fromkeys(fact.evidence_id for fact in available))
-            quality_state, settlement_state, caveats = _quality_metadata(
-                evidence_ids, refresh_runs
-            )
+            quality_state, settlement_state, caveats = _quality_metadata(evidence_ids, refresh_runs)
             observed.append(
                 ContentMeasurementObservedMetric(
                     metric=metric,
                     baseline_value=None if baseline is None else float(baseline.value),
                     observation_value=None if observation is None else float(observation.value),
                     source_connector=(
-                        available[0].source_connector
-                        if available
-                        else _metric_connector(metric)
+                        available[0].source_connector if available else _metric_connector(metric)
                     ),
                     evidence_ids=evidence_ids,
                     metric_fact_ids=[_metric_fact_locator(fact) for fact in available],
@@ -283,9 +356,7 @@ def observed_metrics_from_store(
             )
             continue
         evidence_ids = list(dict.fromkeys([baseline.evidence_id, observation.evidence_id]))
-        quality_state, settlement_state, caveats = _quality_metadata(
-            evidence_ids, refresh_runs
-        )
+        quality_state, settlement_state, caveats = _quality_metadata(evidence_ids, refresh_runs)
         observed.append(
             ContentMeasurementObservedMetric(
                 metric=metric,
@@ -342,9 +413,7 @@ def _quality_metadata(
     )
     caveats = list(
         dict.fromkeys(
-            caveat
-            for run in runs
-            for caveat in run.covered_window.interpretation_caveats
+            caveat for run in runs for caveat in run.covered_window.interpretation_caveats
         )
     )
     return quality_state, settlement_state, caveats

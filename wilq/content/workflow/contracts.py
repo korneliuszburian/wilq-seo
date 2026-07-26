@@ -210,9 +210,7 @@ class ContentWorkItemWordPressDraftExecutionRequest(BaseModel):
     draft_package: ContentDraftPackage | None = None
     mode: Literal["dry_run"] = "dry_run"
     write_authorization: ContentWordPressDraftWriteAuthorization | None = None
-    section_overrides: list[ContentWordPressDraftSectionOverride] = Field(
-        default_factory=list
-    )
+    section_overrides: list[ContentWordPressDraftSectionOverride] = Field(default_factory=list)
 
 
 class ContentWorkItemWordPressDraftExecutionResponse(BaseModel):
@@ -235,12 +233,8 @@ class ContentWordPressDraftWriteReadinessBlocker(BaseModel):
 
 
 class ContentWordPressDraftWriteReadinessResponse(BaseModel):
-    response_type: Literal["wordpress_draft_write_readiness"] = (
-        "wordpress_draft_write_readiness"
-    )
-    contract: Literal["wordpress_draft_write_readiness_v1"] = (
-        "wordpress_draft_write_readiness_v1"
-    )
+    response_type: Literal["wordpress_draft_write_readiness"] = "wordpress_draft_write_readiness"
+    contract: Literal["wordpress_draft_write_readiness_v1"] = "wordpress_draft_write_readiness_v1"
     connector: str = "wordpress_ekologus"
     action_id: str = "act_prepare_wordpress_draft_handoff"
     ready: bool = False
@@ -248,8 +242,8 @@ class ContentWordPressDraftWriteReadinessResponse(BaseModel):
     rest_adapter_configured: bool = False
     publish_allowed: Literal[False] = False
     destructive_update_allowed: Literal[False] = False
-    required_audit_events: list[ContentWordPressDraftWriteReadinessRequirement] = (
-        Field(default_factory=list)
+    required_audit_events: list[ContentWordPressDraftWriteReadinessRequirement] = Field(
+        default_factory=list
     )
     missing_audit_event_types: list[str] = Field(default_factory=list)
     write_authorization_status: Literal[
@@ -391,6 +385,7 @@ class ContentWorkItemMeasurementCommand(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     work_item_id: str = Field(min_length=1)
+    revision_id: str = Field(min_length=1)
 
 
 class ContentPublicDeploymentConfirmationResponse(BaseModel):
@@ -596,9 +591,7 @@ class ContentEditorialIntegrityScope(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     section_ids: list[str] = Field(default_factory=list)
-    fields: list[Literal["body", "title", "faq", "cta", "links"]] = Field(
-        default_factory=list
-    )
+    fields: list[Literal["body", "title", "faq", "cta", "links"]] = Field(default_factory=list)
 
 
 class ContentEditorialStructuralInvariants(BaseModel):
@@ -637,9 +630,7 @@ class ContentRepresentationAlignment(BaseModel):
     source_body_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     rendered_html_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     normalized_source_text_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    normalized_rendered_text_sha256: str | None = Field(
-        default=None, pattern=r"^[0-9a-f]{64}$"
-    )
+    normalized_rendered_text_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     status: ContentRepresentationAlignmentStatus
 
 
@@ -690,9 +681,7 @@ class ContentStructuredGenerationReadinessBlocker(BaseModel):
 class ContentStructuredGenerationReadiness(BaseModel):
     status: Literal["ready", "blocked"]
     editable_section_headings: list[str] = Field(default_factory=list)
-    blockers: list[ContentStructuredGenerationReadinessBlocker] = Field(
-        default_factory=list
-    )
+    blockers: list[ContentStructuredGenerationReadinessBlocker] = Field(default_factory=list)
     safe_next_step: str
     publish_ready: Literal[False] = False
 
@@ -705,13 +694,9 @@ class ContentStructuredGenerationReadiness(BaseModel):
             raise ValueError("Editable section headings must be unique.")
         if self.status == "ready":
             if not headings or self.blockers:
-                raise ValueError(
-                    "Ready structured generation requires headings and no blockers."
-                )
+                raise ValueError("Ready structured generation requires headings and no blockers.")
         elif headings or not self.blockers:
-            raise ValueError(
-                "Blocked structured generation requires blockers and no headings."
-            )
+            raise ValueError("Blocked structured generation requires blockers and no headings.")
         return self
 
 
