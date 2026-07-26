@@ -78,6 +78,28 @@ def test_public_deployment_requires_the_exact_observed_public_object(
             now=datetime(2026, 7, 26, 10, tzinfo=UTC),
         )
 
+    for dimensions in [
+        {**publication.dimensions, "status": "draft"},
+        {**publication.dimensions, "content_url": "https://ekologus.dev.proudsite.pl/bdo/"},
+    ]:
+        with pytest.raises(ValueError):
+            confirm_public_deployment(
+                revision=revision,
+                command=command,
+                publication_facts=[publication.model_copy(update={"dimensions": dimensions})],
+                now=datetime(2026, 7, 26, 10, tzinfo=UTC),
+            )
+
+    with pytest.raises(ValueError, match="bezpieczny publiczny adres"):
+        confirm_public_deployment(
+            revision=revision.model_copy(
+                update={"final_canonical_url": "https://ekologus.dev.proudsite.pl/bdo/"}
+            ),
+            command=command,
+            publication_facts=[publication],
+            now=datetime(2026, 7, 26, 10, tzinfo=UTC),
+        )
+
 
 def test_public_deployment_api_requires_an_approved_exact_revision_and_public_fact(
     monkeypatch: pytest.MonkeyPatch,
@@ -92,6 +114,7 @@ def test_public_deployment_api_requires_an_approved_exact_revision_and_public_fa
     )
     review = ContentDraftRevisionReview.model_construct(
         decision="approved",
+        work_item_id=revision.work_item_id,
         revision_id=revision.revision_id,
         revision_digest=revision.content_digest,
     )
@@ -117,19 +140,82 @@ def test_public_deployment_api_requires_an_approved_exact_revision_and_public_fa
             return [publication]
 
     monkeypatch.setattr(deployment_router, "metric_store", MetricStoreStub)
-
-    response = TestClient(app).post(
-        "/api/content/work-items/content_work_item_bdo/draft-revisions/revision_bdo/public-deployments",
-        json={
-            "expected_revision_digest": revision.content_digest,
-            "wordpress_post_id": "1353",
-            "publication_evidence_id": "ev_public_bdo",
-            "confirmed_by": "operator_local_dashboard",
-        },
+    path = (
+        "/api/content/work-items/content_work_item_bdo/draft-revisions/"
+        "revision_bdo/public-deployments"
     )
+    request = {
+        "expected_revision_digest": revision.content_digest,
+        "wordpress_post_id": "1353",
+        "publication_evidence_id": "ev_public_bdo",
+        "confirmed_by": "operator_local_dashboard",
+    }
+    client = TestClient(app)
+
+    monkeypatch.setattr(store, "list_draft_revisions", lambda *_: [])
+    assert client.post(path, json=request).status_code == 404
+    monkeypatch.setattr(store, "list_draft_revisions", lambda *_: [revision])
+    monkeypatch.setattr(
+        store,
+        "load_draft_revision_review",
+        lambda **_: review.model_copy(update={"revision_digest": "b" * 64}),
+    )
+    assert client.post(path, json=request).status_code == 409
+    monkeypatch.setattr(
+        store,
+        "load_draft_revision_review",
+        lambda **_: review.model_copy(update={"revision_id": "revision_other"}),
+    )
+    assert client.post(path, json=request).status_code == 409
+    monkeypatch.setattr(
+        store,
+        "load_draft_revision_review",
+        lambda **_: review.model_copy(update={"work_item_id": "other_work_item"}),
+    )
+    assert client.post(path, json=request).status_code == 409
+    monkeypatch.setattr(store, "load_draft_revision_review", lambda **_: review)
+
+    response = client.post(path, json=request)
 
     assert response.status_code == 200
     payload = response.json()["deployment"]
     assert payload["revision_digest"] == revision.content_digest
     assert payload["public_url"] == revision.final_canonical_url
     assert payload["publication_evidence_id"] == publication.evidence_id
+    assert not {
+        "baseline_period",
+        "observation_period",
+        "allowed_metrics",
+        "outcome",
+        "seo_score",
+    } & set(payload)
+
+    other = confirm_public_deployment(
+        revision=revision.model_copy(
+            update={"revision_id": "revision_bdo_other", "content_digest": "b" * 64}
+        ),
+        command=ContentPublicDeploymentConfirmationCommand(
+            expected_revision_digest="b" * 64,
+            wordpress_post_id="1354",
+            publication_evidence_id="ev_public_bdo_other",
+            confirmed_by="operator_local_dashboard",
+        ),
+        publication_facts=[
+            publication.model_copy(
+                update={
+                    "evidence_id": "ev_public_bdo_other",
+                    "dimensions": {**publication.dimensions, "object_id": "1354"},
+                }
+            )
+        ],
+        now=datetime(2026, 7, 26, 11, tzinfo=UTC),
+    )
+    save_public_deployment(store, other)
+    exact = client.get(
+        "/api/content/work-items/content_work_item_bdo/draft-revisions/revision_bdo/public-deployment"
+    )
+    missing = client.get(
+        "/api/content/work-items/other/draft-revisions/revision_bdo/public-deployment"
+    )
+    assert exact.json()["deployment"]["revision_id"] == revision.revision_id
+    assert missing.json()["deployment"] is None

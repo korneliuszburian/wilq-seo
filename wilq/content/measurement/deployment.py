@@ -6,6 +6,7 @@ from hashlib import sha256
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.canonical.landing_identity import LandingPageCandidate, match_landing_page
+from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.schemas import MetricFact
 
@@ -53,6 +54,8 @@ def confirm_public_deployment(
 
     if command.expected_revision_digest != revision.content_digest:
         raise ValueError("Potwierdzenie wskazuje inną wersję dokumentu.")
+    if not content_is_safe_public_url(revision.final_canonical_url):
+        raise ValueError("Wdrożenie musi wskazywać bezpieczny publiczny adres Ekologus.")
     fact = _publication_fact(
         revision=revision,
         wordpress_post_id=command.wordpress_post_id,

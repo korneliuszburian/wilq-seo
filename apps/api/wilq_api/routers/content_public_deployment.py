@@ -54,7 +54,13 @@ def confirm_content_public_deployment(
     )
     if revision is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono wskazanej rewizji dokumentu.")
-    if review is None or review.decision != "approved":
+    if (
+        review is None
+        or review.decision != "approved"
+        or review.work_item_id != revision.work_item_id
+        or review.revision_id != revision.revision_id
+        or review.revision_digest != revision.content_digest
+    ):
         raise HTTPException(
             status_code=409,
             detail="Publiczne wdrożenie można potwierdzić wyłącznie dla zatwierdzonej rewizji.",
