@@ -18,7 +18,6 @@ from wilq.content.handoff.wordpress_execution import (
 from wilq.content.measurement.deployment import ContentPublicDeployment
 from wilq.content.measurement.evidence import (
     build_confirmed_deployment_measurement_window,
-    build_publication_bound_measurement_window,
     load_content_measurement_facts,
 )
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
@@ -543,51 +542,22 @@ def test_measurement_history_is_idempotent_versioned_and_readable_by_window(
 
 def test_measurement_rejects_functional_query_and_path_only_fallback() -> None:
     content_url = "https://www.ekologus.pl/oferta/?service=outsourcing"
-    item = ContentWorkItem(
-        id="content_work_item_outsourcing",
-        topic="Outsourcing środowiskowy",
-        source_public_url=content_url,
-        final_canonical_url=content_url,
-        intended_final_url=content_url,
-        evidence_ids=["ev_revision"],
-        source_connectors=["wordpress_ekologus", "google_search_console"],
-        inventory_status="resolved",
-        canonical_status="resolved",
-        duplicate_status="checked",
-    )
-    execution = ContentWordPressDraftExecutionResult(
-        status="created",
-        mode="live",
-        boundary=ContentWordPressDraftExecutionBoundary(
-            live_write_enabled=True,
-            live_adapter_configured=True,
-        ),
-        payload=ContentWordPressDraftPayload(
-            title="Outsourcing środowiskowy",
-            content_markdown="Treść.",
-            final_canonical_url=content_url,
-            evidence_ids=["ev_revision"],
-        ),
+    deployment = ContentPublicDeployment(
+        deployment_id="deployment_outsourcing",
+        work_item_id="content_work_item_outsourcing",
+        revision_id="revision_outsourcing",
+        revision_digest="a" * 64,
+        public_url=content_url,
         wordpress_post_id="999",
-        external_write_attempted=True,
+        publication_evidence_id="ev_refresh_wp",
+        publication_source_connector="wordpress_ekologus",
+        observed_at=datetime(2026, 6, 1, 8, tzinfo=UTC),
+        confirmed_by="operator",
+        confirmed_at=datetime(2026, 6, 1, 9, tzinfo=UTC),
     )
-    publication = _direct_fact(
-        connector="wordpress_ekologus",
-        name="content_object_seen",
-        value=1,
-        evidence_id="ev_refresh_wp",
-        dimensions={
-            "object_id": "999",
-            "content_url": content_url,
-            "status": "publish",
-        },
-    )
-    unsafe_result = build_publication_bound_measurement_window(
-        item=item,
-        handoff=None,
-        execution=execution,
+    unsafe_result = build_confirmed_deployment_measurement_window(
+        deployment=deployment,
         metric_facts=[
-            publication,
             _direct_fact(
                 connector="google_search_console",
                 name="clicks",
@@ -608,12 +578,9 @@ def test_measurement_rejects_functional_query_and_path_only_fallback() -> None:
     assert unsafe_result.window is None
     assert [blocker.code for blocker in unsafe_result.blockers] == ["missing_metric_evidence"]
 
-    conflicting_dimensions = build_publication_bound_measurement_window(
-        item=item,
-        handoff=None,
-        execution=execution,
+    conflicting_dimensions = build_confirmed_deployment_measurement_window(
+        deployment=deployment,
         metric_facts=[
-            publication,
             _direct_fact(
                 connector="google_search_console",
                 name="clicks",
@@ -632,12 +599,9 @@ def test_measurement_rejects_functional_query_and_path_only_fallback() -> None:
         "missing_metric_evidence"
     ]
 
-    safe_result = build_publication_bound_measurement_window(
-        item=item,
-        handoff=None,
-        execution=execution,
+    safe_result = build_confirmed_deployment_measurement_window(
+        deployment=deployment,
         metric_facts=[
-            publication,
             _direct_fact(
                 connector="google_search_console",
                 name="clicks",

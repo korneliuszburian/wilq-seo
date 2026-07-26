@@ -6,17 +6,13 @@ from time import monotonic
 from typing import cast
 
 from wilq.content.canonical.landing_identity import (
-    LandingPageCandidate,
     landing_page_metric_lookup_path,
     landing_page_metric_lookup_urls,
-    match_landing_page,
 )
 from wilq.content.canonical.metric_dimensions import (
     METRIC_LANDING_URL_DIMENSIONS,
     metric_dimensions_match_landing,
 )
-from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
-from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
 from wilq.content.measurement.aggregates import (
     MeasurementAggregateResult,
     aggregate_exact_page_metric_facts,
@@ -30,7 +26,6 @@ from wilq.content.measurement.window import (
     ContentMeasurementWindowBlocker,
     ContentMeasurementWindowBuildResult,
 )
-from wilq.content.workflow.models import ContentWorkItem
 from wilq.schemas import (
     ConnectorQualityState,
     ConnectorRefreshRun,
@@ -126,93 +121,6 @@ def _measurement_refresh_identity() -> tuple[tuple[str, str, str, tuple[str, ...
         )
         for connector_id in MEASUREMENT_CONNECTORS
         if connector_id in latest_by_connector
-    )
-
-
-def build_publication_bound_measurement_window(
-    *,
-    item: ContentWorkItem,
-    handoff: ContentWordPressDraftHandoff | None,
-    execution: ContentWordPressDraftExecutionResult | None,
-    metric_facts: list[MetricFact],
-) -> ContentMeasurementWindowBuildResult:
-    publication_fact = _publication_fact(item, execution, metric_facts)
-    if publication_fact is None:
-        return ContentMeasurementWindowBuildResult(
-            blockers=[
-                _blocker(
-                    "missing_publication_event",
-                    "Brakuje potwierdzonej publikacji",
-                    "Szkic WordPress nie jest publikacją. WILQ musi zobaczyć ten sam wpis "
-                    "i adres jako opublikowany w odczycie WordPress.",
-                    "Opublikuj zatwierdzony szkic poza WILQ, odśwież WordPress i wróć do pomiaru.",
-                )
-            ]
-        )
-    measurement_facts = [
-        fact
-        for fact in metric_facts
-        if _measurement_metric(fact) is not None
-        and _fact_matches_url(fact, item.final_canonical_url)
-        and _fact_is_page_aggregate(fact)
-    ]
-    allowed_metrics = list(
-        dict.fromkeys(
-            cast(ContentMeasurementMetric, _measurement_metric(fact)) for fact in measurement_facts
-        )
-    )
-    if not allowed_metrics:
-        return ContentMeasurementWindowBuildResult(
-            blockers=[
-                _blocker(
-                    "missing_metric_evidence",
-                    "Brakuje metryk dla opublikowanego adresu",
-                    "WILQ potwierdził publikację, ale nie ma jednoznacznie dopasowanych "
-                    "danych GSC ani GA4.",
-                    "Odśwież GSC lub GA4 po publikacji i wróć do pomiaru.",
-                )
-            ]
-        )
-    observed_at = _required_collected_at(publication_fact)
-    if execution is None or execution.wordpress_post_id is None:
-        raise RuntimeError("Publication fact passed without a bound WordPress execution")
-    publication_date = observed_at.date()
-    baseline_period = ContentDateRange(
-        start=publication_date - timedelta(days=28),
-        end=publication_date - timedelta(days=1),
-    )
-    observation_period = ContentDateRange(
-        start=publication_date,
-        end=publication_date + timedelta(days=27),
-    )
-    return ContentMeasurementWindowBuildResult(
-        window=ContentMeasurementWindow(
-            id=f"measurement_window_{item.id}_{publication_fact.evidence_id}",
-            work_item_id=item.id,
-            content_url=cast(str, item.final_canonical_url),
-            baseline_period=baseline_period,
-            observation_period=observation_period,
-            earliest_verdict_date=observation_period.end + timedelta(days=1),
-            allowed_metrics=allowed_metrics,
-            source_connectors=list(
-                dict.fromkeys(fact.source_connector for fact in measurement_facts)
-            ),
-            evidence_ids=list(
-                dict.fromkeys(
-                    [
-                        *item.evidence_ids,
-                        *([] if handoff is None else handoff.evidence_ids),
-                        publication_fact.evidence_id,
-                        *(fact.evidence_id for fact in measurement_facts),
-                    ]
-                )
-            ),
-            handoff_id=None if handoff is None else handoff.id,
-            publication_evidence_id=publication_fact.evidence_id,
-            publication_refresh_run_id=_refresh_run_id(publication_fact.evidence_id),
-            publication_source_connector=publication_fact.source_connector,
-            wordpress_post_id=execution.wordpress_post_id,
-        )
     )
 
 
@@ -417,39 +325,6 @@ def _quality_metadata(
         )
     )
     return quality_state, settlement_state, caveats
-
-
-def _publication_fact(
-    item: ContentWorkItem,
-    execution: ContentWordPressDraftExecutionResult | None,
-    metric_facts: list[MetricFact],
-) -> MetricFact | None:
-    if (
-        execution is None
-        or execution.status != "created"
-        or execution.mode != "live"
-        or not execution.wordpress_post_id
-        or execution.payload is None
-        or not match_landing_page(
-            item.final_canonical_url,
-            LandingPageCandidate(
-                candidate_id="wordpress_execution_payload",
-                url=execution.payload.final_canonical_url,
-            ),
-        ).matched
-    ):
-        return None
-    matches = [
-        fact
-        for fact in metric_facts
-        if fact.source_connector == "wordpress_ekologus"
-        and fact.name == "content_object_seen"
-        and fact.dimensions.get("object_id") == execution.wordpress_post_id
-        and fact.dimensions.get("status") == "publish"
-        and _fact_matches_url(fact, item.final_canonical_url)
-        and fact.collected_at is not None
-    ]
-    return min(matches, key=lambda fact: _required_collected_at(fact), default=None)
 
 
 def _measurement_metric(fact: MetricFact) -> ContentMeasurementMetric | None:
