@@ -43,6 +43,18 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_public_deployments (
+      deployment_id TEXT PRIMARY KEY,
+      work_item_id TEXT NOT NULL,
+      revision_id TEXT NOT NULL,
+      revision_digest TEXT NOT NULL,
+      publication_evidence_id TEXT NOT NULL,
+      confirmed_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      UNIQUE (work_item_id, revision_id, revision_digest, publication_evidence_id)
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_measurement_windows (
       work_item_id TEXT PRIMARY KEY,
       window_id TEXT NOT NULL,

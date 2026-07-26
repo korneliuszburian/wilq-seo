@@ -2100,6 +2100,29 @@ export const ContentMeasurementWindowBuildResultSchema = z.object({
   blockers: z.array(ContentWorkflowBlockerSchema).default([])
 });
 
+export const ContentPublicDeploymentSchema = z.object({
+  deployment_id: z.string(),
+  work_item_id: z.string(),
+  revision_id: z.string(),
+  revision_digest: z.string(),
+  public_url: z.string(),
+  wordpress_post_id: z.string(),
+  publication_evidence_id: z.string(),
+  publication_source_connector: z.string(),
+  observed_at: z.string(),
+  confirmed_by: z.string(),
+  confirmed_at: z.string()
+});
+
+export const ContentPublicDeploymentConfirmationResponseSchema = z.object({
+  deployment: ContentPublicDeploymentSchema
+});
+
+export const ContentPublicDeploymentReadResponseSchema = z.object({
+  deployment: ContentPublicDeploymentSchema.nullable().optional(),
+  safe_next_step: z.string()
+});
+
 export const ContentMeasurementObservedMetricSchema = z.object({
   metric: z.string(),
   baseline_value: z.number().nullable().optional(),
@@ -4036,6 +4059,13 @@ export type ContentWordPressDraftActivationPacketResponse = z.infer<
 >;
 export type ContentWorkItemMeasurementWindowResponse = z.infer<
   typeof ContentWorkItemMeasurementWindowResponseSchema
+>;
+export type ContentPublicDeployment = z.infer<typeof ContentPublicDeploymentSchema>;
+export type ContentPublicDeploymentConfirmationResponse = z.infer<
+  typeof ContentPublicDeploymentConfirmationResponseSchema
+>;
+export type ContentPublicDeploymentReadResponse = z.infer<
+  typeof ContentPublicDeploymentReadResponseSchema
 >;
 export type ContentWorkItemMeasurementWindowRequest = z.input<
   typeof ContentWorkItemMeasurementWindowRequestSchema

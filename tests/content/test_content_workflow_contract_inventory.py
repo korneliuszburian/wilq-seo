@@ -39,6 +39,8 @@ from wilq.content.workflow.contracts import (
     ContentDraftRevisionReviewResponse,
     ContentDraftRevisionSaveResponse,
     ContentEditorialIntegrityReport,
+    ContentPublicDeploymentConfirmationResponse,
+    ContentPublicDeploymentReadResponse,
     ContentRevisionHtmlPackageResponse,
     ContentWorkItemBrowserSnapshotResponse,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
@@ -52,10 +54,11 @@ from wilq.content.workflow.planning import ContentPlanningReviewResponse
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 from wilq.content.workflow.target_discovery import ContentTargetDiscovery
 from wilq.content.workflow.target_mapping import (
+    ContentTargetDraftPreview,
     ContentTargetMappingConfirmationResult,
     ContentTargetMappingPreview,
 )
-from wilq.schemas import MetricFact
+from wilq.schemas import ActionObject, MetricFact
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ("POST", "/api/content/new-page-briefs"): ContentNewPageBriefWorkspace,
@@ -80,6 +83,14 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/confirmation",
     ): ContentTargetMappingConfirmationResult,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-preview",
+    ): ContentTargetDraftPreview,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-action",
+    ): ActionObject,
     ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
     ("GET", "/api/content/wordpress/authoring-profile"): WordPressAuthoringProfile,
     (
@@ -151,6 +162,14 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review",
     ): ContentDraftRevisionReviewResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/public-deployments",
+    ): ContentPublicDeploymentConfirmationResponse,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/public-deployment",
+    ): ContentPublicDeploymentReadResponse,
     (
         "POST",
         "/api/content/work-items/{work_item_id}/initial-draft",
