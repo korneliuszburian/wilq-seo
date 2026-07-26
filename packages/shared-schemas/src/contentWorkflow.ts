@@ -2092,6 +2092,9 @@ export const ContentMeasurementWindowSchema = z.object({
   evidence_ids: z.array(z.string()).default([]),
   status: z.string(),
   handoff_id: z.string().nullable().optional(),
+  deployment_id: z.string().nullable().optional(),
+  deployed_revision_id: z.string().nullable().optional(),
+  deployed_revision_digest: z.string().nullable().optional(),
   success_claim_allowed: z.boolean()
 });
 

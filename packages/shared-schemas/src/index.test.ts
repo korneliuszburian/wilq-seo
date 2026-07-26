@@ -3078,6 +3078,9 @@ describe("Content work item workflow schemas", () => {
       evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
       status: "planned",
       handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+      deployment_id: "content_public_deployment_bdo",
+      deployed_revision_id: "revision_bdo",
+      deployed_revision_digest: "a".repeat(64),
       success_claim_allowed: false
     };
     const claimLedger = {
@@ -3299,6 +3302,11 @@ describe("Content work item workflow schemas", () => {
     });
 
     expect(snapshot.service_profile_context.binding_status).toBe("not_evaluated");
+    expect(snapshot.measurement_window.measurement_window_result.window).toMatchObject({
+      deployment_id: "content_public_deployment_bdo",
+      deployed_revision_id: "revision_bdo",
+      deployed_revision_digest: "a".repeat(64)
+    });
     expect(snapshot.service_profile_context.decision_status).toBe("not_evaluated");
     expect(snapshot.service_profile_context.service_card_id).toBeUndefined();
     expect(snapshot.operator_steps.map((step) => step.id)).toEqual([
