@@ -408,6 +408,7 @@ class ContentWorkItemMeasurementOutcomeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     work_item_id: str = Field(min_length=1)
+    measurement_window_id: str = Field(min_length=1)
 
 
 class ContentWorkItemMeasurementOutcomeResponse(BaseModel):

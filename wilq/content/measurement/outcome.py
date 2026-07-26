@@ -46,6 +46,9 @@ class ContentMeasurementOutcomeInterpretation(BaseModel):
     id: str
     work_item_id: str
     measurement_window_id: str
+    deployment_id: str | None = None
+    deployed_revision_id: str | None = None
+    deployed_revision_digest: str | None = None
     status: ContentMeasurementOutcomeStatus
     status_label: str
     conclusion: str
@@ -299,6 +302,9 @@ def _interpretation(
         id=f"measurement_outcome_{window.id}",
         work_item_id=window.work_item_id,
         measurement_window_id=window.id,
+        deployment_id=window.deployment_id,
+        deployed_revision_id=window.deployed_revision_id,
+        deployed_revision_digest=window.deployed_revision_digest,
         status=status,
         status_label=status_label,
         conclusion=conclusion,

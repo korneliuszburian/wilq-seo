@@ -74,7 +74,9 @@ def build_content_work_item_measurement_outcome_response(
     request: ContentWorkItemMeasurementOutcomeRequest,
 ) -> ContentWorkItemMeasurementOutcomeResponse:
     store = content_workflow_store()
-    window = store.latest_measurement_window(request.work_item_id)
+    window = store.measurement_window(
+        request.work_item_id, request.measurement_window_id
+    )
     if window is None:
         raise LookupError("Persisted measurement window is missing")
     as_of = date.today()

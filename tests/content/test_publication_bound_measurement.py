@@ -321,6 +321,8 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     }
     assert window.allowed_metrics == ["gsc_clicks"]
     content_workflow_store().save_measurement_window(window)
+    later_window = window.model_copy(update={"id": f"{window.id}_later"})
+    content_workflow_store().save_measurement_window(later_window)
 
     caller_scheduled = client.post(
         "/api/content/work-items/measurement-window",
@@ -342,9 +344,13 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     assert caller_declared.status_code == 422
 
     unbounded = build_content_work_item_measurement_outcome_response(
-        ContentWorkItemMeasurementOutcomeRequest(work_item_id=work_item_id)
+        ContentWorkItemMeasurementOutcomeRequest(
+            work_item_id=work_item_id,
+            measurement_window_id=window.id,
+        )
     )
     assert unbounded.outcome.status == "insufficient_data"
+    assert unbounded.outcome.measurement_window_id == window.id
     assert (
         client.post(
             "/api/content/work-items/learning-proposal",
@@ -366,7 +372,10 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
         ),
     )
     measured = build_content_work_item_measurement_outcome_response(
-        ContentWorkItemMeasurementOutcomeRequest(work_item_id=work_item_id)
+        ContentWorkItemMeasurementOutcomeRequest(
+            work_item_id=work_item_id,
+            measurement_window_id=window.id,
+        )
     )
     outcome = measured.outcome
     assert outcome.status == "measured_success"

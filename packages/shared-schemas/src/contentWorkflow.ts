@@ -2146,6 +2146,9 @@ export const ContentMeasurementOutcomeInterpretationSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
   measurement_window_id: z.string(),
+  deployment_id: z.string().nullable().optional(),
+  deployed_revision_id: z.string().nullable().optional(),
+  deployed_revision_digest: z.string().nullable().optional(),
   status: z.enum([
     "not_ready",
     "insufficient_data",
@@ -2180,9 +2183,8 @@ export const ContentWorkItemMeasurementWindowRequestSchema = z.object({
 });
 
 export const ContentWorkItemMeasurementOutcomeRequestSchema = z.object({
-  window: ContentMeasurementWindowSchema,
-  observed_metrics: z.array(ContentMeasurementObservedMetricSchema).default([]),
-  as_of: z.string()
+  work_item_id: z.string().min(1),
+  measurement_window_id: z.string().min(1)
 });
 
 export const ContentWorkItemMeasurementOutcomeResponseSchema = z.object({
