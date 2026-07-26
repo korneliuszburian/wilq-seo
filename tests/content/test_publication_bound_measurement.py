@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
@@ -321,7 +322,32 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     }
     assert window.allowed_metrics == ["gsc_clicks"]
     content_workflow_store().save_measurement_window(window)
-    later_window = window.model_copy(update={"id": f"{window.id}_later"})
+    with pytest.raises(LookupError, match="potwierdzonym publicznym wdrożeniem"):
+        build_content_work_item_measurement_outcome_response(
+            ContentWorkItemMeasurementOutcomeRequest(
+                work_item_id=work_item_id,
+                measurement_window_id=window.id,
+            )
+        )
+    assert content_workflow_store().measurement_outcome(work_item_id, window.id) is None
+
+    window = window.model_copy(
+        update={
+            "id": f"{window.id}_deployment_a",
+            "deployment_id": "deployment_a",
+            "deployed_revision_id": "revision_a",
+            "deployed_revision_digest": "a" * 64,
+        }
+    )
+    content_workflow_store().save_measurement_window(window)
+    later_window = window.model_copy(
+        update={
+            "id": f"{window.id}_later",
+            "deployment_id": "deployment_b",
+            "deployed_revision_id": "revision_b",
+            "deployed_revision_digest": "b" * 64,
+        }
+    )
     content_workflow_store().save_measurement_window(later_window)
 
     caller_scheduled = client.post(
@@ -351,6 +377,9 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     )
     assert unbounded.outcome.status == "insufficient_data"
     assert unbounded.outcome.measurement_window_id == window.id
+    assert unbounded.outcome.deployment_id == "deployment_a"
+    assert unbounded.outcome.deployed_revision_id == "revision_a"
+    assert unbounded.outcome.deployed_revision_digest == "a" * 64
     assert (
         client.post(
             "/api/content/work-items/learning-proposal",

@@ -79,6 +79,16 @@ def build_content_work_item_measurement_outcome_response(
     )
     if window is None:
         raise LookupError("Persisted measurement window is missing")
+    if not all(
+        [
+            window.deployment_id,
+            window.deployed_revision_id,
+            window.deployed_revision_digest,
+        ]
+    ):
+        raise LookupError(
+            "Measurement outcome wymaga okna powiązanego z potwierdzonym publicznym wdrożeniem."
+        )
     as_of = date.today()
     window = mark_content_measurement_window_ready(window, as_of=as_of)
     metric_facts = load_content_measurement_facts(window.content_url)
