@@ -43,6 +43,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftOutput,
 )
 from wilq.content.quality.review import ContentQualityReview, build_content_quality_review
+from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.revisions import (
@@ -89,6 +90,7 @@ def propose_content_section_revision(
     workflow_store: ContentWorkflowStore,
     run_store: LocalStateStore,
     run_id: str | None = None,
+    semantic_review: ContentSemanticReview | None = None,
 ) -> ContentCodexSectionProposalResponse:
     selected_headings = _ordered_selected_headings(snapshot, request)
     selected_cta_ids = _ordered_selected_cta_ids(snapshot, request)
@@ -119,6 +121,7 @@ def propose_content_section_revision(
         client=client,
         run_store=run_store,
         run_id=run_id,
+        semantic_review=semantic_review,
     )
     if isinstance(runtime_call, ContentCodexSectionProposalResponse):
         return runtime_call
@@ -206,6 +209,7 @@ def _execute_runtime(
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
     run_id: str | None = None,
+    semantic_review: ContentSemanticReview | None = None,
 ) -> _RuntimeCall | ContentCodexSectionProposalResponse:
     run = _start_run(snapshot, inputs.base_revision, run_store, run_id=run_id)
     try:
@@ -215,6 +219,7 @@ def _execute_runtime(
                 selected_headings=inputs.selected_headings,
                 selected_cta_ids=inputs.selected_cta_ids,
                 base_revision=inputs.base_revision,
+                semantic_review=semantic_review,
             )
         )
     except Exception:

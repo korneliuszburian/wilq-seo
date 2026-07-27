@@ -36,6 +36,7 @@ from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentCodexSectionProposalRequest,
 )
 from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
+from wilq.content.drafts.codex_section_proposal_turn import _selected_findings
 from wilq.content.drafts.proposal_quality_input import (
     persisted_selected_sections_quality_input,
 )
@@ -315,6 +316,44 @@ def test_cta_proposal_is_exactly_scoped_to_one_persisted_cta() -> None:
             selected_cta_ids=["cta_contact"],
             requested_by="Wilku",
         )
+
+
+def test_component_proposal_exposes_only_exact_advisory_findings() -> None:
+    review = SimpleNamespace(
+        findings=[
+            SimpleNamespace(
+                finding_id="finding_section",
+                instruction="Doprecyzuj sekcję.",
+                reason="Brakuje konkretu.",
+                affected_targets=["section_05"],
+                evidence_ids=["ev_section"],
+            ),
+            SimpleNamespace(
+                finding_id="finding_cta",
+                instruction="Doprecyzuj CTA.",
+                reason="Krok jest niejasny.",
+                affected_targets=["cta_blocks"],
+                evidence_ids=["ev_cta"],
+            ),
+            SimpleNamespace(
+                finding_id="finding_other",
+                instruction="Nie wybieraj mnie.",
+                reason="Inny fragment.",
+                affected_targets=["section_04"],
+                evidence_ids=["ev_other"],
+            ),
+        ]
+    )
+
+    section_findings = _selected_findings(
+        review, selected_headings=["section_05"], selected_cta_ids=[]
+    )
+    cta_findings = _selected_findings(
+        review, selected_headings=[], selected_cta_ids=["cta_02"]
+    )
+
+    assert [finding["finding_id"] for finding in section_findings] == ["finding_section"]
+    assert [finding["finding_id"] for finding in cta_findings] == ["finding_cta"]
 
 
 def test_child_quality_item_merges_exact_persisted_revision_evidence() -> None:

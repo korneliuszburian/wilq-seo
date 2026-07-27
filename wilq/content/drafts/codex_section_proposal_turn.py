@@ -4,6 +4,7 @@ import json
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
+from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.revisions import ContentDraftRevision
 
@@ -30,6 +31,7 @@ def codex_turn_request(
     selected_headings: list[str],
     selected_cta_ids: list[str] | None = None,
     base_revision: ContentDraftRevision,
+    semantic_review: ContentSemanticReview | None = None,
 ) -> CodexAppServerStructuredTurnRequest:
     selected_cta_ids = selected_cta_ids or []
     contract = snapshot.structured_generation.structured_generation_result.contract
@@ -64,6 +66,11 @@ def codex_turn_request(
                 for cta in base_revision.cta_blocks
                 if cta.cta_id in selected_cta_ids
             },
+            "advisory_findings_for_selected_components": _selected_findings(
+                semantic_review,
+                selected_headings=selected_headings,
+                selected_cta_ids=selected_cta_ids,
+            ),
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -99,3 +106,27 @@ def codex_turn_request(
 
 
 __all__ = ["codex_turn_request"]
+
+
+def _selected_findings(
+    review: ContentSemanticReview | None,
+    *,
+    selected_headings: list[str],
+    selected_cta_ids: list[str],
+) -> list[dict[str, object]]:
+    if review is None:
+        return []
+    selected = set(selected_headings) | set(selected_cta_ids)
+    include_cta = bool(selected_cta_ids)
+    return [
+        {
+            "finding_id": finding.finding_id,
+            "instruction": finding.instruction,
+            "reason": finding.reason,
+            "affected_targets": finding.affected_targets,
+            "evidence_ids": finding.evidence_ids,
+        }
+        for finding in review.findings
+        if selected.intersection(finding.affected_targets)
+        or (include_cta and "cta_blocks" in finding.affected_targets)
+    ]
