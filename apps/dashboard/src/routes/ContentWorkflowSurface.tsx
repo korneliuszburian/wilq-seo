@@ -85,13 +85,13 @@ export function ContentWorkflowSurface() {
   const sourceRefresh = useContentSourceRefresh();
   const selectedWorkItemId = stringFromSearch(routeSearch, "work_item_id");
   const textWorkspaceOpen = useRouterState({
-    select: (state) => Reflect.get(state.location.search, "text") === "1"
+    select: (state) => Reflect.get(state.location.search, "text") === 1
   });
   const reviewOpen = useRouterState({
-    select: (state) => Reflect.get(state.location.search, "review") === "1"
+    select: (state) => Reflect.get(state.location.search, "review") === 1
   });
   const browseInventory = useRouterState({
-    select: (state) => Reflect.get(state.location.search, "browse") === "1"
+    select: (state) => Reflect.get(state.location.search, "browse") === 1
   });
   const newPageId = useRouterState({
     select: (state) => {
@@ -159,7 +159,7 @@ export function ContentWorkflowSurface() {
       onBrowseInventory={() => {
         void navigate({
           to: "/content-workflow",
-          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: "1", new_page: undefined })
+          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: 1, new_page: undefined })
         });
       }}
       onOpenNewPage={() => {
@@ -188,7 +188,7 @@ export function ContentWorkflowSurface() {
             section_heading: previous.section_heading,
             planning_digest: previous.planning_digest,
             workspace: undefined,
-            text: "1",
+            text: 1,
             review: undefined,
             browse: undefined,
             new_page: undefined
@@ -203,8 +203,8 @@ export function ContentWorkflowSurface() {
             section_heading: previous.section_heading,
             planning_digest: previous.planning_digest,
             workspace: undefined,
-            text: "1",
-            review: "1",
+            text: 1,
+            review: 1,
             browse: undefined,
             new_page: undefined
           })
@@ -218,7 +218,7 @@ export function ContentWorkflowSurface() {
             section_heading: previous.section_heading,
             planning_digest: previous.planning_digest,
             workspace: undefined,
-            text: "1",
+            text: 1,
             review: undefined,
             browse: undefined,
             new_page: undefined
@@ -239,9 +239,9 @@ function contentWorkflowSearch(previous: {
   section_heading?: string;
   planning_digest?: string;
   workspace?: string;
-  text?: string;
-  review?: string;
-  browse?: string;
+  text?: 1;
+  review?: 1;
+  browse?: 1;
   new_page?: string;
 }) {
   return {
