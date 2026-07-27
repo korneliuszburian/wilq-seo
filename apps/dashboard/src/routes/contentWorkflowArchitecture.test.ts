@@ -12,26 +12,26 @@ describe("ContentWorkflow architecture boundary", () => {
     expect(routeSource).toContain("useContentWorkflowQueries");
     expect(routeSource).not.toContain('queryKey: ["content-workflow", "queue"]');
     expect(querySource).toContain("useQuery");
-    expect(querySource).toContain("getContentWorkItemQueue");
-    expect(querySource).toContain('queryKey: ["content-workflow", "queue", "catalog"]');
-    expect(querySource).toContain('queryKey: ["content-workflow", "queue", "selected", selectedWorkItemId]');
+    expect(querySource).not.toContain("getContentWorkItemQueue");
+    expect(querySource).not.toContain('queryKey: ["content-workflow", "queue"');
     expect(querySource).toContain("useContentTargetDiscovery");
     expect(querySource).toContain("getContentWorkItemTargetDiscovery");
   });
 
   it("keeps the route's first responsibility as typed state selection", () => {
     expect(routeSource).toContain("<ContentWorkflowRouteState");
-    expect(routeSource).toContain("<ContentWorkflowQueueReady");
-    expect(routeSource).toContain("<ContentWorkflowLoaded");
+    expect(routeSource).toContain("<ContentTextWorkspace");
+    expect(routeSource).toContain("<ContentReviewRoute");
+    expect(routeSource).not.toContain("<ContentWorkflowQueueReady");
+    expect(routeSource).not.toContain("<ContentWorkflowLoaded");
   });
 
-  it("keeps intent-first entry and draft presentation in extracted owners", () => {
+  it("keeps intent-first entry and canonical document presentation in extracted owners", () => {
     expect(routeSource).toContain("<ContentWorkflowEntryPanel");
-    expect(routeSource).toContain("<ContentWorkflowJourneyContext");
-    expect(routeSource).toContain("<ContentWorkflowTaskMap");
-    expect(routeSource).toContain("<ContentPageWorkbenchView");
+    expect(routeSource).toContain("<ContentDocumentWorkspaceCanvas");
+    expect(routeSource).toContain("<ContentReviewWorkspace");
+    expect(routeSource).not.toContain("<ContentPageWorkbenchView");
     expect(routeSource).not.toContain("<WordPressDraftWorkPanelView");
-    expect(routeSource).toContain('viewMode === "marketer"');
     expect(routeSource).not.toContain("MobileContentTriage");
     expect(routeSource).not.toContain("Treści: praca nad stroną");
     expect(routeSource).not.toContain('<FactTile label="Publikacja"');

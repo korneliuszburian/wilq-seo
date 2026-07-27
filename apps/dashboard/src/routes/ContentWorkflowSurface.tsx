@@ -1,92 +1,34 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { LoadingBand } from "../components/OperatorPrimitives";
 import {
-  postContentWorkItemCodexSectionProposal,
-  getContentWorkItemInitialDraft,
-  postContentWorkItemInitialDraft,
-  postContentWorkItemSemanticReview,
-  postContentWorkItemWordPressAuthoringPayloadPreview,
-  postContentWorkItemWordPressDraftExecution,
-  getContentInventoryMaterial,
-  saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
-  saveContentWorkItemPlanningReview,
   type ContentDraftRevision,
   type ContentDraftRevisionDecision,
-  type ContentDraftRevisionReviewRequest,
-  type ContentDraftRevisionSaveRequest,
-  type ContentDraftRevisionSection,
-  type ContentInventoryCatalogResponse,
-  type ContentPlanningReviewRequest,
-  type ContentSemanticReviewResponse,
-  type ContentWorkItemQueueResponse,
-  type ContentWorkItemWordPressDraftExecutionRequest,
-  type ContentOpportunityEnrichment,
-  type WordPressAuthoringProfile,
-  type ContentInventoryMaterialResponse
+  type ContentDraftRevisionReviewRequest
 } from "../lib/api";
-import { marketerWorkflowStepTitle, type ContentWorkflowSnapshot, type WorkflowStepId } from "./contentWorkflowRuntime";
-import {
-  ContentWorkflowError,
-  ContentWorkflowSelectedLoading,
-  ContentWorkflowInventorySelectionLoading,
-  type ContentSourceRefreshControl
-} from "./ContentWorkflowBoundaryStates";
-import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
-import { ContentDecisionContextPanel } from "./ContentDecisionContextPanel";
+import { type ContentWorkflowSnapshot, type WorkflowStepId } from "./contentWorkflowRuntime";
 import { ContentDocumentWorkspaceCanvas } from "./ContentDocumentWorkspaceCanvas";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentEditorialIntegrityReport } from "./ContentEditorialIntegrityReport";
-import { ContentPageWorkbench as ContentPageWorkbenchView } from "./ContentPageWorkbench";
-import { ContentWorkflowJourneyContext } from "./ContentWorkflowJourneyContext";
-import { ContentWorkflowTaskMap } from "./ContentWorkflowTaskMap";
-import { ContentWorkflowSourcesView } from "./ContentWorkflowSourcesView";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 import {
-  acfPreviewResultFrom,
-  acfPreviewRequest,
-  executionResultFrom,
-  submitIfReady,
-  wordpressExecutionRequest
-} from "./contentWorkflowActionModel";
-import {
   useContentWorkflowQueries,
-  type ContentOpportunityEnrichmentQuery,
   type ContentDecisionContextQuery,
   type ContentDocumentWorkspaceQuery,
   type ContentWorkflowEntryQuery,
   type ContentInitialDraftQuery,
-  type ContentOperatorContextQuery,
-  type ContentWorkItemQueueQuery,
   type ContentInventoryCatalogQuery,
-  type ContentWorkflowSnapshotQuery,
-  type WordPressAuthoringProfileQuery,
-  type WordPressDraftActivationPacketQuery,
-  type ContentWorkItemQueueCandidate
+  type ContentWorkflowSnapshotQuery
 } from "./contentWorkflowQueries";
 
-type ContentWorkflowActions = ReturnType<typeof useContentWorkflowActions>;
-type ContentWorkflowMutations = ReturnType<typeof useContentWorkflowMutations>;
-type CodexProposalMutationInput = {
-  baseRevision: ContentDraftRevision;
-  selection: { sectionIds: string[] } | { sectionHeadings: string[] } | { ctaIds: string[] };
-};
-type InitialDraftMutationInput = NonNullable<
-  ContentWorkflowSnapshot["planningWorkspace"]
->["proposal"];
 export function ContentWorkflowSurface() {
   const navigate = useNavigate();
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
-  const sourceRefresh = useContentSourceRefresh();
   const selectedWorkItemId = stringFromSearch(routeSearch, "work_item_id");
-  const textWorkspaceOpen = useRouterState({
-    select: (state) => Reflect.get(state.location.search, "text") === 1
-  });
   const reviewOpen = useRouterState({
     select: (state) => Reflect.get(state.location.search, "review") === 1
   });
@@ -117,49 +59,33 @@ export function ContentWorkflowSurface() {
     });
   };
   const {
-    activeWorkItemId,
-    authoringProfile,
-    draftActivationPacket,
     decisionContext,
     documentWorkspace,
     entry,
-    enrichment,
     inventory,
     operatorContext,
-    queue,
-    selectedCandidate,
     workflow,
     initialDraft
   } = useContentWorkflowQueries(
     selectedWorkItemId,
-    textWorkspaceOpen,
     reviewOpen,
     browseInventory
   );
 
   return (
     <ContentWorkflowRouteState
-      activeWorkItemId={activeWorkItemId}
       selectedWorkItemId={selectedWorkItemId}
-      authoringProfile={authoringProfile}
-      draftActivationPacket={draftActivationPacket}
       decisionContext={decisionContext}
       documentWorkspace={documentWorkspace}
       entry={entry}
-      enrichment={enrichment}
       inventory={inventory}
       initialDraft={initialDraft}
-      operatorContext={operatorContext}
-      queue={queue}
-      selectedCandidate={selectedCandidate}
       workflow={workflow}
-      textWorkspaceOpen={textWorkspaceOpen}
       reviewOpen={reviewOpen}
       browseInventory={browseInventory}
       newPageOpen={newPageOpen}
       newPageId={newPageId}
       operatorLabel={operatorContext.data?.request_label ?? null}
-      sourceRefresh={sourceRefresh}
       onSelectWorkItem={selectWorkItem}
       onBrowseInventory={() => {
         void navigate({
@@ -183,21 +109,6 @@ export function ContentWorkflowSurface() {
         void navigate({
           to: "/content-workflow",
           search: (previous) => ({ ...contentWorkflowSearch(previous), browse: undefined, new_page: undefined })
-        });
-      }}
-      onOpenTextWorkspace={(workItemId) => {
-        void navigate({
-          to: "/content-workflow",
-          search: (previous) => ({
-            work_item_id: workItemId,
-            section_heading: previous.section_heading,
-            planning_digest: previous.planning_digest,
-            workspace: undefined,
-            text: 1,
-            review: undefined,
-            browse: undefined,
-            new_page: undefined
-          })
         });
       }}
       onOpenReview={(workItemId) => {
@@ -261,102 +172,44 @@ function contentWorkflowSearch(previous: {
   };
 }
 
-function useContentSourceRefresh(): ContentSourceRefreshControl {
-  const queryClient = useQueryClient();
-  const [status, setStatus] = useState<ContentSourceRefreshControl["status"]>("idle");
-  const [summary, setSummary] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const refreshMutation = useMutation({
-    mutationFn: (url: string) => getContentInventoryMaterial(url),
-    onMutate: () => {
-      setStatus("loading");
-      setSummary("");
-      setError(null);
-    },
-    onSuccess: (result: ContentInventoryMaterialResponse) => {
-      if (result.status === "ready") {
-        setStatus("success");
-        setSummary("Strona została odczytana ponownie.");
-      } else {
-        setStatus("error");
-        setError(result.blocker ?? "Nie udało się odczytać tej strony.");
-      }
-      void queryClient.invalidateQueries({ queryKey: ["content-workflow"] });
-    },
-    onError: (reason) => {
-      setStatus("error");
-      setError(reason instanceof Error ? reason.message : "Nie udało się odczytać tej strony.");
-    }
-  });
-  return {
-    active: refreshMutation.isPending,
-    status,
-    summary,
-    error,
-    onRefresh: (url) => {
-      if (!refreshMutation.isPending) refreshMutation.mutate(url);
-    }
-  };
-}
-
 function ContentWorkflowRouteState({
-  activeWorkItemId,
   selectedWorkItemId,
-  authoringProfile,
-  draftActivationPacket,
   decisionContext,
   documentWorkspace,
   entry,
-  enrichment,
   inventory,
   initialDraft,
-  operatorContext,
-  queue,
-  selectedCandidate,
   workflow,
-  textWorkspaceOpen,
   reviewOpen,
   browseInventory,
   newPageOpen,
   newPageId,
   operatorLabel,
-  sourceRefresh,
   onSelectWorkItem,
   onBrowseInventory,
   onOpenNewPage,
   onNewPageBriefSaved,
   onCloseEntrySecondaryView,
-  onOpenTextWorkspace,
   onOpenReview,
   onReturnToText
 }: {
-  activeWorkItemId: string | null;
   selectedWorkItemId: string | null;
-  authoringProfile: WordPressAuthoringProfileQuery;
-  draftActivationPacket: WordPressDraftActivationPacketQuery;
   decisionContext: ContentDecisionContextQuery;
   documentWorkspace: ContentDocumentWorkspaceQuery;
   entry: ContentWorkflowEntryQuery;
-  enrichment: ContentOpportunityEnrichmentQuery;
   inventory: ContentInventoryCatalogQuery;
   initialDraft: ContentInitialDraftQuery;
-  operatorContext: ContentOperatorContextQuery;
-  queue: ContentWorkItemQueueQuery;
-  selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
-  textWorkspaceOpen: boolean;
   reviewOpen: boolean;
   browseInventory: boolean;
   newPageOpen: boolean;
   newPageId: string | null;
   operatorLabel: string | null;
-  sourceRefresh: ContentSourceRefreshControl;
   onSelectWorkItem: (workItemId: string) => void;
   onBrowseInventory: () => void;
   onOpenNewPage: () => void;
   onNewPageBriefSaved: (briefId: string) => void;
   onCloseEntrySecondaryView: () => void;
-  onOpenTextWorkspace: (workItemId: string) => void;
   onOpenReview: (workItemId: string) => void;
   onReturnToText: (workItemId: string) => void;
 }) {
@@ -396,103 +249,6 @@ function ContentWorkflowRouteState({
     operatorLabel={operatorLabel}
     onReturnToText={onReturnToText}
   />;
-}
-
-function ContentWorkflowQueueReady({
-  activeWorkItemId,
-  authoringProfile,
-  draftActivationPacket,
-  decisionContext,
-  documentWorkspace,
-  enrichment,
-  inventory,
-  initialDraft,
-  operatorContext,
-  queue,
-  selectedCandidate,
-  workflow,
-  textWorkspaceOpen,
-  reviewOpen,
-  operatorLabel,
-  sourceRefresh,
-  onSelectWorkItem,
-  onOpenTextWorkspace,
-  onOpenReview,
-  onReturnToText
-}: {
-  activeWorkItemId: string | null;
-  authoringProfile: WordPressAuthoringProfileQuery;
-  draftActivationPacket: WordPressDraftActivationPacketQuery;
-  decisionContext: ContentDecisionContextQuery;
-  documentWorkspace: ContentDocumentWorkspaceQuery;
-  enrichment: ContentOpportunityEnrichmentQuery;
-  inventory: ContentInventoryCatalogQuery;
-  initialDraft: ContentInitialDraftQuery;
-  operatorContext: ContentOperatorContextQuery;
-  queue: ContentWorkItemQueueResponse;
-  selectedCandidate: ContentWorkItemQueueCandidate | null;
-  workflow: ContentWorkflowSnapshotQuery;
-  textWorkspaceOpen: boolean;
-  reviewOpen: boolean;
-  operatorLabel: string | null;
-  sourceRefresh: ContentSourceRefreshControl;
-  onSelectWorkItem: (workItemId: string) => void;
-  onOpenTextWorkspace: (workItemId: string) => void;
-  onOpenReview: (workItemId: string) => void;
-  onReturnToText: (workItemId: string) => void;
-}) {
-  if (textWorkspaceOpen && activeWorkItemId) {
-    if (!reviewOpen) {
-      return <ContentTextWorkspace workItemId={activeWorkItemId} documentWorkspace={documentWorkspace} onOpenReview={onOpenReview} />;
-    }
-    return decisionContext.data
-      ? <ContentReviewWorkspace
-          context={decisionContext.data}
-          initialDraft={initialDraft}
-          workflow={workflow}
-          operatorLabel={operatorLabel}
-          onReturnToText={onReturnToText}
-        />
-      : <DocumentWorkspacePending />;
-  }
-  if (decisionContext.data && selectedCandidate?.source_public_url) {
-    return <ContentDecisionContextPanel context={decisionContext.data} onOpenTextWorkspace={onOpenTextWorkspace} />;
-  }
-  if (selectedCandidate?.recommended_mode === "block" && selectedCandidate.source_public_url) {
-    if (decisionContext.isLoading) {
-      return <ContentWorkflowSelectedLoading candidate={selectedCandidate} />;
-    }
-    if (decisionContext.error || !decisionContext.data) {
-      return <ContentWorkflowSelectedLoading candidate={selectedCandidate} error />;
-    }
-    return <ContentDecisionContextPanel context={decisionContext.data} onOpenTextWorkspace={onOpenTextWorkspace} />;
-  }
-  if (!activeWorkItemId) return <ContentWorkflowError />;
-  if (selectedCandidate?.recommended_mode === "block") {
-    return (
-      <ContentWorkflowBlockedCandidate
-        queue={queue}
-        selectedCandidate={selectedCandidate}
-        selectedWorkItemId={activeWorkItemId}
-        onSelectWorkItem={onSelectWorkItem}
-        refresh={sourceRefresh}
-      />
-    );
-  }
-  return (
-      <ContentWorkflowSelectedReady
-      activeWorkItemId={activeWorkItemId}
-      authoringProfile={authoringProfile}
-      operatorLabel={operatorContext.data?.request_label ?? "operator_local_dashboard"}
-      draftActivationPacket={draftActivationPacket}
-      enrichment={enrichment}
-        queue={queue}
-        inventory={inventory.data ?? null}
-        selectedCandidate={selectedCandidate}
-        workflow={workflow}
-        onSelectWorkItem={onSelectWorkItem}
-    />
-  );
 }
 
 function ContentWorkflowEntryPending() {
@@ -793,316 +549,6 @@ function reviewDecisionLabel(decision: ContentDraftRevisionDecision) {
   return "Odrzucam";
 }
 
-function ContentWorkflowSelectedReady({
-  activeWorkItemId,
-  authoringProfile,
-  operatorLabel,
-  draftActivationPacket,
-  enrichment,
-  queue,
-  inventory,
-  selectedCandidate,
-  workflow,
-  onSelectWorkItem
-}: {
-  activeWorkItemId: string;
-  authoringProfile: WordPressAuthoringProfileQuery;
-  operatorLabel: string;
-  draftActivationPacket: WordPressDraftActivationPacketQuery;
-  enrichment: ContentOpportunityEnrichmentQuery;
-  queue: ContentWorkItemQueueResponse;
-  inventory: ContentInventoryCatalogResponse | null;
-  selectedCandidate: ContentWorkItemQueueCandidate | null;
-  workflow: ContentWorkflowSnapshotQuery;
-  onSelectWorkItem: (workItemId: string) => void;
-}) {
-  if (selectedCandidate === null) return <ContentWorkflowError />;
-  if (workflow.isLoading) {
-    return (
-      <ContentWorkflowSelectedLoading
-        candidate={selectedCandidate}
-      />
-    );
-  }
-  if (workflow.error || !workflow.data) {
-    return (
-      <ContentWorkflowSelectedLoading
-        candidate={selectedCandidate}
-        error
-      />
-    );
-  }
-  return (
-    <ContentWorkflowLoaded
-      key={activeWorkItemId}
-      data={workflow.data}
-      authoringProfile={authoringProfile}
-      operatorLabel={operatorLabel}
-      draftActivationPacket={draftActivationPacket}
-      enrichment={enrichment.data?.enrichment ?? null}
-      queue={queue}
-      inventory={inventory}
-      selectedWorkItemId={activeWorkItemId}
-      onSelectWorkItem={onSelectWorkItem}
-    />
-  );
-}
-
-function ContentWorkflowLoaded({
-  data,
-  authoringProfile,
-  operatorLabel,
-  draftActivationPacket,
-  enrichment,
-  queue,
-  inventory,
-  selectedWorkItemId,
-  onSelectWorkItem
-}: {
-  data: ContentWorkflowSnapshot;
-  authoringProfile: WordPressAuthoringProfileQuery;
-  operatorLabel: string;
-  draftActivationPacket: WordPressDraftActivationPacketQuery;
-  enrichment: ContentOpportunityEnrichment | null;
-  queue: ContentWorkItemQueueResponse;
-  inventory: ContentInventoryCatalogResponse | null;
-  selectedWorkItemId: string;
-  onSelectWorkItem: (workItemId: string) => void;
-}) {
-  const actions = useContentWorkflowActions(
-    data,
-    selectedWorkItemId,
-    authoringProfile.data ?? null,
-    operatorLabel
-  );
-  const [viewMode, setViewMode] = useState<"marketer" | "technical">("marketer");
-  return (
-    <main className="w-full px-4 py-3 sm:py-5 lg:px-7 2xl:px-8">
-      {viewMode === "technical" ? (
-        <ContentWorkflowWorkspaceHeader>
-          <span className="sr-only">Metryki, źródła i szczegóły do sprawdzenia przed przekazaniem.</span>
-          <div className="flex rounded-md border border-line bg-white p-1 shadow-sm" role="group" aria-label="Tryb widoku">
-            <button
-              type="button"
-              aria-label="Wróć do treści i SEO"
-              onClick={() => setViewMode("marketer")}
-              className="rounded px-3 py-2 text-sm font-semibold text-slate-600"
-            >
-              Wróć do treści i SEO
-            </button>
-          </div>
-        </ContentWorkflowWorkspaceHeader>
-      ) : (
-        <div className="hidden lg:block">
-          <ContentWorkflowWorkspaceHeader />
-        </div>
-      )}
-
-      {viewMode === "marketer" ? (
-          <ContentWorkflowMarketerJourney
-          key={`${selectedWorkItemId}:${data.currentStepId}`}
-          actions={actions}
-          authoringProfile={authoringProfile}
-          data={data}
-          draftActivationPacket={draftActivationPacket}
-          enrichment={enrichment}
-          queue={queue}
-          inventory={inventory}
-          selectedWorkItemId={selectedWorkItemId}
-          onSelectWorkItem={onSelectWorkItem}
-          onShowSources={() => setViewMode("technical")}
-        />
-      ) : (
-        <ContentWorkflowSourcesView data={data} />
-      )}
-    </main>
-  );
-}
-
-function ContentWorkflowMarketerJourney({
-  actions,
-  authoringProfile,
-  data,
-  draftActivationPacket,
-  enrichment,
-  queue,
-  inventory,
-  selectedWorkItemId,
-  onSelectWorkItem,
-  onShowSources
-}: {
-  actions: ContentWorkflowActions;
-  authoringProfile: WordPressAuthoringProfileQuery;
-  data: ContentWorkflowSnapshot;
-  draftActivationPacket: WordPressDraftActivationPacketQuery;
-  enrichment: ContentOpportunityEnrichment | null;
-  queue: ContentWorkItemQueueResponse;
-  inventory: ContentInventoryCatalogResponse | null;
-  selectedWorkItemId: string;
-  onSelectWorkItem: (workItemId: string) => void;
-  onShowSources: () => void;
-}) {
-  const sectionMapCurrent = data.planningWorkspace?.section_map_current ?? false;
-  const [selectedStepId, setSelectedStepId] = useState<WorkflowStepId>(
-    sectionMapCurrent
-      ? "draft"
-      : data.currentStepId === "section_map"
-        ? "scope"
-        : data.currentStepId
-  );
-  const visibleSelectedStepId = sectionMapCurrent && (selectedStepId === "scope" || selectedStepId === "section_map")
-    ? "draft"
-    : !sectionMapCurrent && data.currentStepId === "section_map" && selectedStepId === "draft"
-      ? "scope"
-      : selectedStepId;
-  const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
-  const initialSectionHeading = stringFromSearch(routeSearch, "section_heading");
-  const selectStep = (stepId: WorkflowStepId) => {
-    const marketerStepId = stepId === "section_map"
-      ? sectionMapCurrent
-        ? "draft"
-        : "scope"
-      : stepId;
-    if (data.operatorSteps.some((step) => step.id === marketerStepId && step.canOpen)) {
-      setSelectedStepId(marketerStepId);
-    }
-  };
-
-  return (
-    <div data-testid="content-workflow-marketer-journey">
-      <ContentSessionPicker
-        workflowStatusLabel={marketerWorkflowStatusLabel(data)}
-        queue={queue}
-        inventory={inventory}
-        selectedWorkItemId={selectedWorkItemId}
-        onSelectWorkItem={onSelectWorkItem}
-        serviceLabel={data.serviceProfileContext.service_label ?? "Nieprzypisana usługa"}
-        pageTitle={data.preflight.item.wordpress_title_or_h1 ?? data.candidate.title}
-        pageUrl={data.preflight.item.source_public_url ?? data.preflight.item.final_canonical_url ?? data.preflight.item.intended_final_url}
-      />
-      <ContentNextStepHero
-        step={data.operatorSteps.find((step) => step.id === visibleSelectedStepId) ?? data.operatorSteps[0]}
-        nextStep={data.operatorSteps[data.operatorSteps.findIndex((step) => step.id === visibleSelectedStepId) + 1]}
-        onAdvance={selectStep}
-        onFocusCurrentStep={() => focusWorkflowStep(visibleSelectedStepId)}
-        onFocusPlan={() => focusWorkflowStep("section_map")}
-        sectionMapCurrent={sectionMapCurrent}
-        planningCurrent={visibleSelectedStepId === "scope" ? data.planningWorkspace?.scope_current ?? true : visibleSelectedStepId === "section_map" ? sectionMapCurrent : true}
-        fullDraftReady={Boolean(data.revisionWorkspace.latest_revision?.page_assets)}
-      />
-      <div className="flex flex-col">
-        <div className="order-1">
-          <ContentWorkflowJourneyContext data={data} onShowSources={onShowSources} />
-        </div>
-        <div className="order-2">
-          <ContentWorkflowTaskMap
-            currentStepId={sectionMapCurrent ? "draft" : data.currentStepId}
-            selectedStepId={visibleSelectedStepId}
-            steps={data.operatorSteps}
-            sectionMapCurrent={sectionMapCurrent}
-            onSelectStep={selectStep}
-          />
-        </div>
-      </div>
-      <ContentPageWorkbenchView
-        actions={actions}
-        authoringProfile={authoringProfile}
-        data={data}
-        draftActivationPacket={draftActivationPacket}
-        enrichment={enrichment}
-        activeStepId={visibleSelectedStepId}
-        initialSectionHeading={initialSectionHeading ?? undefined}
-      />
-    </div>
-  );
-}
-
-function marketerWorkflowStatusLabel(data: ContentWorkflowSnapshot): string {
-  const current = data.operatorSteps.find((step) => step.id === data.currentStepId);
-  if (!current) return "wymaga sprawdzenia";
-  if (current.id === "dev_draft" && current.readiness === "ready") {
-    return "gotowy szkic na devie";
-  }
-  if (current.id === "review" && current.readiness === "ready") {
-    return "gotowa wersja do review";
-  }
-  if (current.id === "draft" && current.readiness === "ready") {
-    return "gotowy tekst do sprawdzenia";
-  }
-  return current.statusLabel;
-}
-
-function ContentNextStepHero({
-  step,
-  nextStep,
-  onAdvance,
-  onFocusCurrentStep,
-  onFocusPlan,
-  sectionMapCurrent,
-  planningCurrent,
-  fullDraftReady
-}: {
-  step: ContentWorkflowSnapshot["operatorSteps"][number] | undefined;
-  nextStep: ContentWorkflowSnapshot["operatorSteps"][number] | undefined;
-  onAdvance: (stepId: WorkflowStepId) => void;
-  onFocusCurrentStep: () => void;
-  onFocusPlan: () => void;
-  sectionMapCurrent: boolean;
-  planningCurrent: boolean;
-  fullDraftReady: boolean;
-}) {
-  if (!step) return null;
-  const generatedTextReady = sectionMapCurrent && (step.id === "scope" || step.id === "draft");
-  const effectivePlanningCurrent = planningCurrent || generatedTextReady;
-  const planNeedsRefresh = effectivePlanningCurrent && step.id === "scope" && nextStep?.id === "section_map" && !sectionMapCurrent;
-  const canAdvance = Boolean(nextStep?.canOpen) && !planNeedsRefresh;
-  const nextStepLabel = nextStep?.id === "section_map" || nextStep?.id === "draft" ? "Przejdź do tekstu" : nextStep?.id === "review" ? "Przejdź do review" : nextStep?.id === "dev_draft" ? "Przejdź do odbioru" : "Zobacz kolejny krok";
-  const currentStepLabel = workflowStepActionLabel(step.id, Boolean(step.blocker));
-  const actionLabel = planNeedsRefresh
-    ? "Otwórz kontekst planu"
-    : canAdvance
-      ? nextStepLabel
-      : !effectivePlanningCurrent
-        ? "Sprawdź aktualny zakres"
-        : step.id === "draft" && !fullDraftReady
-          ? "Sprawdź stan draftu"
-        : currentStepLabel;
-  const instruction = planNeedsRefresh
-    ? "Zakres jest zapisany. Zbuduj plan z aktualnych danych, aby otworzyć tekst."
-    : generatedTextReady
-    ? workflowStepInstruction("draft")
-    : !effectivePlanningCurrent
-    ? "Poprzednia decyzja jest nieaktualna, bo zmienił się plan lub dowody. Sprawdź zakres jeszcze raz i zapisz aktualną decyzję."
-    : step.id === "draft" && !fullDraftReady
-    ? "Pełna rewizja HTML nie jest jeszcze gotowa; sprawdź blokadę zamiast otwierać edytor."
-    : nextStep?.canOpen
-      ? step.safeNextStep
-    : workflowStepInstruction(step.id, step.blocker);
-  return (
-    <section className="wilq-enter wilq-enter-delay-1 mb-3 rounded-md border border-action/30 bg-action/5 px-3 py-3 shadow-sm sm:mb-4 sm:px-4" data-testid="content-next-step-hero">
-      <div className="grid gap-3 lg:grid-cols-[minmax(13rem,0.8fr)_minmax(0,1.5fr)_auto] lg:items-end">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-action">Wynik pracy</p>
-          <p className="mt-1 text-base font-semibold text-ink">Wersja robocza HTML do review</p>
-          <p className="mt-1 text-xs leading-5 text-slate-600">Powstanie po domknięciu aktualnego zakresu.</p>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-action">Aktualny krok</p>
-          <h2 className="mt-1 text-lg font-semibold text-ink">{marketerWorkflowStepTitle(step.id)}</h2>
-          <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-700">{instruction}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => (planNeedsRefresh ? onFocusPlan() : canAdvance && nextStep ? onAdvance(nextStep.id) : onFocusCurrentStep())}
-          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
-        >
-          {actionLabel}
-        </button>
-      </div>
-    </section>
-  );
-}
-
 export function workflowStepActionLabel(stepId: WorkflowStepId, blocked: boolean): string {
   if (blocked && stepId === "dev_draft") return "Sprawdź blokadę dev preview";
   if (blocked && stepId === "review") return "Sprawdź blokadę review";
@@ -1125,119 +571,6 @@ export function workflowStepInstruction(
   return "Sprawdź revision-bound dev preview i przygotuj draft-only handoff. Publikacja pozostaje wyłączona.";
 }
 
-function focusWorkflowStep(stepId: WorkflowStepId) {
-  const targetId = stepId === "scope" ? "planning-review-scope" : stepId === "section_map" ? "content-planning-generation" : stepId === "draft" ? "content-draft-workbench" : stepId === "review" ? "review-workspace-title" : "wordpress-draft-action-wizard";
-  document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function ContentSessionPicker({
-  workflowStatusLabel,
-  queue,
-  inventory,
-  selectedWorkItemId,
-  onSelectWorkItem,
-  serviceLabel,
-  pageTitle,
-  pageUrl
-}: {
-  workflowStatusLabel: string;
-  queue: ContentWorkItemQueueResponse;
-  inventory: ContentInventoryCatalogResponse | null;
-  selectedWorkItemId: string;
-  onSelectWorkItem: (workItemId: string) => void;
-  serviceLabel: string;
-  pageTitle: string;
-  pageUrl: string | null | undefined;
-}) {
-  const candidates = queue.candidates.filter(
-    (candidate) => candidate.recommended_mode !== "block"
-  );
-  const [pageSearch, setPageSearch] = useState("");
-  const allInventoryPageOptions = (inventory?.items ?? [])
-    .map((item) => ({
-      workItemId: item.work_item_id,
-      label: `${item.title || item.path} — ${item.path}`
-    }));
-  const pageOptions = [
-    ...candidates.map((candidate) => ({
-      workItemId: candidate.work_item_id,
-      label: `${candidate.title || candidate.topic} — ${contentCandidatePath(candidate.final_canonical_url)}`
-    })),
-    ...allInventoryPageOptions.filter(
-      (item) => !candidates.some((candidate) => candidate.work_item_id === item.workItemId)
-    )
-  ];
-  if (!pageOptions.some((item) => item.workItemId === selectedWorkItemId)) {
-    pageOptions.unshift({
-      workItemId: selectedWorkItemId,
-      label: `${pageTitle} — ${contentCandidatePath(pageUrl)}`
-    });
-  }
-  const filteredPageOptions = filterInventoryPageOptions(pageOptions, pageSearch);
-  const selectedPageOption = pageOptions.find((item) => item.workItemId === selectedWorkItemId);
-  const visiblePageOptions = selectedPageOption && !filteredPageOptions.some((item) => item.workItemId === selectedWorkItemId)
-    ? [selectedPageOption, ...filteredPageOptions.slice(0, 29)]
-    : filteredPageOptions;
-
-  return (
-    <section
-      aria-labelledby="content-session-picker-title"
-      className="wilq-enter mb-3 rounded-md border border-line bg-white px-3 py-3 shadow-sm sm:mb-4 sm:px-4"
-      data-testid="content-session-picker"
-    >
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,22rem)] lg:items-end">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Strona</p>
-          <h2 id="content-session-picker-title" className="mt-1 text-xl font-semibold text-ink">
-            {pageTitle}
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            {contentCandidatePath(pageUrl)}
-          </p>
-          <p className="mt-2 text-xs text-slate-500">WordPress · {workflowStatusLabel}</p>
-        </div>
-        <div className="text-sm font-semibold text-ink">
-          <label htmlFor="content-session-search">Szukaj strony</label>
-          <input
-            id="content-session-search"
-            data-testid="content-session-search"
-            type="search"
-            value={pageSearch}
-            onChange={(event) => setPageSearch(event.target.value)}
-            placeholder="Tytuł lub URL"
-            className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
-          />
-          <label className="mt-3 block" htmlFor="content-session-work-item">
-            Strona
-          </label>
-          <select
-            id="content-session-work-item"
-            data-testid="content-session-work-item"
-            className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
-            value={selectedWorkItemId}
-            onChange={(event) => onSelectWorkItem(event.target.value)}
-          >
-            {visiblePageOptions.map((item) => (
-              <option key={item.workItemId} value={item.workItemId}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          {inventory?.total_count ? (
-            <span className="mt-1 block text-xs font-normal text-slate-500">
-              {inventory.total_count.toLocaleString("pl-PL")} stron dostępnych · pokazano {visiblePageOptions.length}
-            </span>
-          ) : null}
-        </div>
-      </div>
-      <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-line pt-3 text-sm">
-        <p className="font-semibold text-slate-500">Usługa:</p>
-        <p className="font-semibold text-ink">{serviceLabel}</p>
-      </div>
-    </section>
-  );
-}
-
 export function filterInventoryPageOptions(
   options: Array<{ workItemId: string; label: string }>,
   search: string,
@@ -1248,336 +581,3 @@ export function filterInventoryPageOptions(
     .filter((item) => !normalizedSearch || item.label.toLocaleLowerCase("pl-PL").includes(normalizedSearch))
     .slice(0, Math.max(1, limit));
 }
-
-function contentCandidatePath(url: string | null | undefined) {
-  if (!url) return "adres do sprawdzenia";
-  try {
-    return new URL(url).pathname || "/";
-  } catch {
-    return "adres do sprawdzenia";
-  }
-}
-
-function useContentWorkflowActions(
-  data: ContentWorkflowSnapshot,
-  selectedWorkItemId: string,
-  authoringProfile: WordPressAuthoringProfile | null,
-  operatorLabel: string
-) {
-  const mutations = useContentWorkflowMutations(selectedWorkItemId, operatorLabel);
-  return contentWorkflowActions(data, mutations, authoringProfile, operatorLabel);
-}
-
-function useContentWorkflowMutations(selectedWorkItemId: string, operatorLabel: string) {
-  const queryClient = useQueryClient();
-  const refreshRevisionWorkspace = () =>
-    queryClient.invalidateQueries({
-      queryKey: ["content-workflow", "work-item", selectedWorkItemId]
-    });
-  const revisionSaveMutation = useMutation({
-    mutationFn: (request: ContentDraftRevisionSaveRequest) =>
-      saveContentWorkItemDraftRevision(request, selectedWorkItemId),
-    onSuccess: (result) => {
-      if (result.status !== "conflict") void refreshRevisionWorkspace();
-    }
-  });
-  const planningReviewMutation = useMutation({
-    mutationFn: (request: ContentPlanningReviewRequest) =>
-      saveContentWorkItemPlanningReview(request, selectedWorkItemId),
-    onSuccess: (result) => {
-      if (!("detail" in result)) {
-        void Promise.all([
-          refreshRevisionWorkspace(),
-          queryClient.invalidateQueries({
-            queryKey: [
-              "content-workflow",
-              "work-item",
-              selectedWorkItemId,
-              "planning-proposal"
-            ]
-          })
-        ]);
-      }
-    }
-  });
-  const revisionReviewMutation = useMutation({
-    mutationFn: ({
-      request,
-      revisionId
-    }: {
-      request: ContentDraftRevisionReviewRequest;
-      revisionId: string;
-    }) => saveContentWorkItemDraftRevisionReview(request, selectedWorkItemId, revisionId),
-    onSuccess: (result) => {
-      if (result.status !== "conflict") void refreshRevisionWorkspace();
-    }
-  });
-  const codexProposalMutation = useMutation({
-    mutationFn: ({
-      baseRevision,
-      selection
-    }: CodexProposalMutationInput) =>
-      postContentWorkItemCodexSectionProposal(
-        {
-          expected_base_digest: baseRevision.content_digest,
-          selected_section_headings:
-            "sectionHeadings" in selection ? selection.sectionHeadings : [],
-          selected_section_ids: "sectionIds" in selection ? selection.sectionIds : [],
-          selected_cta_ids: "ctaIds" in selection ? selection.ctaIds : [],
-          requested_by: operatorLabel
-        },
-        selectedWorkItemId,
-        baseRevision.revision_id
-      )
-  });
-  const initialDraftMutation = useMutation({
-    mutationFn: (proposal: InitialDraftMutationInput) => {
-      if (!proposal?.proposal_id || !proposal.planning_input_digest) {
-        throw new Error("Bieżący plan nie ma exact bindingu do pełnego tekstu.");
-      }
-      return postContentWorkItemInitialDraft(
-        {
-          expected_proposal_id: proposal.proposal_id,
-          expected_planning_digest: proposal.planning_digest,
-          expected_planning_input_digest: proposal.planning_input_digest,
-          requested_by: operatorLabel
-        },
-        selectedWorkItemId
-      );
-    },
-    onSuccess: (result) => {
-      queryClient.setQueryData(
-        ["content-workflow", "initial-draft", selectedWorkItemId],
-        result
-      );
-      if (result.status === "created") void refreshRevisionWorkspace();
-    }
-  });
-  const initialDraftStatusQuery = useQuery({
-    queryKey: ["content-workflow", "initial-draft", selectedWorkItemId],
-    queryFn: () => getContentWorkItemInitialDraft(selectedWorkItemId),
-    // Status is API-owned and must survive a browser reload.  The GET is
-    // read-only; only a generating response enables the 2-second poll.
-    enabled: Boolean(selectedWorkItemId),
-    refetchInterval: (query) =>
-      query.state.data?.status === "generating" ? 2000 : false
-  });
-  const initialDraftStatus = initialDraftStatusQuery.data;
-  useEffect(() => {
-    const result = initialDraftStatus;
-    if (result?.status !== "created" || !result.revision?.revision_id) return;
-    // The status poll has its own query key.  Refresh the canonical snapshot
-    // once the worker has persisted the revision so the page preview, editor,
-    // and review step switch from "generating" to the exact document without
-    // requiring a manual reload.
-    void queryClient.invalidateQueries({
-      queryKey: ["content-workflow", "work-item", selectedWorkItemId]
-    });
-  }, [initialDraftStatus, queryClient, selectedWorkItemId]);
-  const semanticReviewMutation = useMutation({
-    mutationFn: ({ revisionId, revisionDigest }: { revisionId: string; revisionDigest: string }) =>
-      postContentWorkItemSemanticReview(
-        {
-          expected_revision_digest: revisionDigest,
-          requested_by: operatorLabel
-        },
-        selectedWorkItemId,
-        revisionId
-      ),
-    onSuccess: (result: ContentSemanticReviewResponse) => {
-      if (result.revision_id) {
-        void queryClient.invalidateQueries({
-          queryKey: [
-            "content-workflow",
-            "semantic-review",
-            selectedWorkItemId,
-            result.revision_id
-          ]
-        });
-      }
-    }
-  });
-  const acfPreviewMutation = useMutation({
-    mutationFn: postContentWorkItemWordPressAuthoringPayloadPreview
-  });
-  const executionMutation = useMutation({ mutationFn: postContentWorkItemWordPressDraftExecution });
-  return {
-    planningReviewMutation,
-    revisionSaveMutation,
-    revisionReviewMutation,
-    codexProposalMutation,
-    initialDraftMutation,
-    initialDraftStatusQuery,
-    semanticReviewMutation,
-    acfPreviewMutation,
-    executionMutation,
-    refreshRevisionWorkspace
-  };
-}
-
-function contentWorkflowActions(
-  data: ContentWorkflowSnapshot,
-  mutations: ContentWorkflowMutations,
-  authoringProfile: WordPressAuthoringProfile | null,
-  operatorLabel: string
-) {
-  const latestRevision = data.revisionWorkspace.latest_revision;
-  const revisionEvidenceIds = latestRevision
-    ? [...new Set(latestRevision.sections.flatMap((section) => section.evidence_ids))]
-    : [];
-  return {
-    planningReviewPending: mutations.planningReviewMutation.isPending,
-    planningReviewConflict:
-      mutations.planningReviewMutation.data && "detail" in mutations.planningReviewMutation.data
-        ? mutations.planningReviewMutation.data
-        : null,
-    planningReviewError: mutations.planningReviewMutation.error,
-    refreshPlanningWorkspace: () => {
-      void mutations
-        .refreshRevisionWorkspace()
-        .finally(() => mutations.planningReviewMutation.reset());
-    },
-    savePlanningReview: (
-      stage: "scope" | "section_map",
-      decision: "approved" | "needs_changes",
-      notes: string,
-      checkedItems: string[],
-      serviceCardId?: string
-    ) => {
-      const planning = data.planningWorkspace;
-      if (!planning) return;
-      mutations.planningReviewMutation.mutate({
-        stage,
-        expected_planning_digest: planning.proposal.planning_digest,
-        service_card_id: stage === "scope" ? serviceCardId : undefined,
-        decision,
-        reviewed_by: operatorLabel,
-        checked_items: checkedItems,
-        notes
-      });
-    },
-    revisionSavePending: mutations.revisionSaveMutation.isPending,
-    revisionSaveConflict:
-      mutations.revisionSaveMutation.data?.status === "conflict"
-        ? mutations.revisionSaveMutation.data
-        : null,
-    revisionSaveError: mutations.revisionSaveMutation.error,
-    revisionReviewPending: mutations.revisionReviewMutation.isPending,
-    revisionReviewConflict:
-      mutations.revisionReviewMutation.data?.status === "conflict"
-        ? mutations.revisionReviewMutation.data
-        : null,
-    revisionReviewError: mutations.revisionReviewMutation.error,
-    codexProposalPending: mutations.codexProposalMutation.isPending,
-    codexProposalError: mutations.codexProposalMutation.error,
-    codexProposalResult: mutations.codexProposalMutation.data ?? null,
-    codexProposalBaseRevision:
-      mutations.codexProposalMutation.variables?.baseRevision ?? null,
-    initialDraftPending: mutations.initialDraftMutation.isPending,
-    initialDraftError: mutations.initialDraftMutation.error,
-    initialDraftResult:
-      mutations.initialDraftMutation.data ?? mutations.initialDraftStatusQuery.data ?? null,
-    generateInitialDraft: () => {
-      const proposal = data.planningWorkspace?.proposal;
-      if (proposal) mutations.initialDraftMutation.mutate(proposal);
-    },
-    semanticReviewPending: mutations.semanticReviewMutation.isPending,
-    semanticReviewError: mutations.semanticReviewMutation.error,
-    semanticReviewResult: mutations.semanticReviewMutation.data ?? null,
-    generateSemanticReview: () => {
-      if (!latestRevision) return;
-      mutations.semanticReviewMutation.mutate({
-        revisionId: latestRevision.revision_id,
-        revisionDigest: latestRevision.content_digest
-      });
-    },
-    acfPreviewPending: mutations.acfPreviewMutation.isPending,
-    executionPending: mutations.executionMutation.isPending,
-    authoringProfileReady: Boolean(authoringProfile),
-    acfPreviewResult: acfPreviewResultFrom(mutations.acfPreviewMutation.data),
-    executionResult: executionResultFrom(mutations.executionMutation.data),
-    executionError: mutations.executionMutation.error,
-    runCodexSectionProposal: (
-      selection: { sectionIds: string[] } | { sectionHeadings: string[] } | { ctaIds: string[] }
-    ) => {
-      const selectedCount =
-        "sectionIds" in selection
-          ? selection.sectionIds.length
-          : "sectionHeadings" in selection
-            ? selection.sectionHeadings.length
-            : selection.ctaIds.length;
-      if (!latestRevision || selectedCount === 0) return;
-      mutations.codexProposalMutation.mutate({
-        baseRevision: latestRevision,
-        selection
-      });
-    },
-    refreshCodexProposalWorkspace: () => {
-      void mutations
-        .refreshRevisionWorkspace()
-        .finally(() => mutations.codexProposalMutation.reset());
-    },
-    saveDraftRevision: (title: string, sections: ContentDraftRevisionSection[]) =>
-      mutations.revisionSaveMutation.mutate({
-        base_revision_id: latestRevision?.revision_id ?? null,
-        title,
-        sections,
-        created_by: operatorLabel
-      }),
-    saveRevisionReview: (
-      decision: ContentDraftRevisionDecision,
-      notes: string,
-      checkedItems: string[]
-    ) => {
-      if (
-        !latestRevision ||
-        (decision === "approved" &&
-          (revisionEvidenceIds.length === 0 || checkedItems.length < 2)) ||
-        (decision !== "approved" && notes.trim().length === 0)
-      ) {
-        return;
-      }
-      mutations.revisionReviewMutation.mutate({
-        revisionId: latestRevision.revision_id,
-        request: {
-          expected_revision_digest: latestRevision.content_digest,
-          reviewed_by: operatorLabel,
-          decision,
-          notes,
-          checked_items: checkedItems,
-          evidence_ids: revisionEvidenceIds
-        }
-      });
-    },
-    runAcfPreview: () =>
-      submitIfReady(
-        acfPreviewRequest(
-          data.draftPackage.draft_package_result.draft_package,
-          data.wordpressHandoff.handoff_result.handoff,
-          authoringProfile
-        ),
-        mutations.acfPreviewMutation.mutate
-      ),
-    runExecutionDryRun: () =>
-      submitIfReady(
-        wordpressExecutionRequest(
-          data.draftPackage.draft_package_result.draft_package,
-          data.wordpressHandoff.handoff_result.handoff
-        ),
-        mutations.executionMutation.mutate
-      ),
-    runExecutionDryRunWithSections: (sectionOverrides: WordPressDraftSectionOverride[]) =>
-      submitIfReady(
-        wordpressExecutionRequest(
-          data.draftPackage.draft_package_result.draft_package,
-          data.wordpressHandoff.handoff_result.handoff,
-          sectionOverrides
-        ),
-        mutations.executionMutation.mutate
-      )
-  };
-}
-
-type WordPressDraftSectionOverride = NonNullable<
-  ContentWorkItemWordPressDraftExecutionRequest["section_overrides"]
->[number];
