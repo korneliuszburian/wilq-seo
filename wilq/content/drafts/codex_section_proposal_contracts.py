@@ -22,6 +22,7 @@ ContentCodexSectionProposalBlockerCode = Literal[
     "stale_content_context",
     "missing_generation_contract",
     "unknown_selected_section",
+    "unknown_selected_cta",
     "ambiguous_claim_marker",
     "runtime_blocked",
     "runtime_failed",
@@ -39,24 +40,30 @@ class ContentCodexSectionProposalRequest(BaseModel):
     expected_base_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     selected_section_headings: list[str] = Field(default_factory=list)
     selected_section_ids: list[str] = Field(default_factory=list)
+    selected_cta_ids: list[str] = Field(default_factory=list)
     requested_by: str = Field(min_length=1)
 
     @model_validator(mode="after")
     def require_unambiguous_selection(self) -> ContentCodexSectionProposalRequest:
         headings = [heading.strip() for heading in self.selected_section_headings]
         section_ids = [section_id.strip() for section_id in self.selected_section_ids]
-        if bool(headings) == bool(section_ids):
-            raise ValueError("Select sections by stable IDs or legacy headings, never both.")
+        cta_ids = [cta_id.strip() for cta_id in self.selected_cta_ids]
+        selected_kinds = sum(bool(value) for value in (headings, section_ids, cta_ids))
+        if selected_kinds != 1:
+            raise ValueError("Select sections by stable IDs, legacy headings, or one CTA, never both.")
         if any(not heading for heading in headings) or any(
             not section_id for section_id in section_ids
         ):
             raise ValueError("Selected section references cannot be blank.")
         if len(headings) != len(set(headings)) or len(section_ids) != len(set(section_ids)):
             raise ValueError("Selected section references must be unique.")
+        if cta_ids and (len(cta_ids) != 1 or len(cta_ids) != len(set(cta_ids))):
+            raise ValueError("Select exactly one unique CTA.")
         if not self.requested_by.strip():
             raise ValueError("Content proposal requires a visible requester attribution.")
         self.selected_section_headings = headings
         self.selected_section_ids = section_ids
+        self.selected_cta_ids = cta_ids
         self.requested_by = self.requested_by.strip()
         return self
 
@@ -91,11 +98,13 @@ class ContentCodexSectionProposalResponse(BaseModel):
     work_item_id: str
     base_revision_id: str
     selected_section_headings: list[str]
+    selected_cta_ids: list[str] = Field(default_factory=list)
     revision: ContentDraftRevision | None = None
     quality_review: ContentQualityReview | None = None
-    quality_review_scope: Literal["persisted_selected_sections_and_declared_lineage"] = (
-        "persisted_selected_sections_and_declared_lineage"
-    )
+    quality_review_scope: Literal[
+        "persisted_selected_sections_and_declared_lineage",
+        "persisted_selected_components_and_declared_lineage",
+    ] = "persisted_selected_sections_and_declared_lineage"
     semantic_review_required: Literal[True] = True
     runtime: ContentCodexRuntimeTrace
     evidence_ids: list[str] = Field(default_factory=list)

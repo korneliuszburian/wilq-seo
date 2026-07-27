@@ -3,6 +3,7 @@ from __future__ import annotations
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionCtaBlock,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionSection,
 )
@@ -12,6 +13,7 @@ def build_child_draft_revision_command(
     base_revision: ContentDraftRevision,
     *,
     sections: list[ContentDraftRevisionSection],
+    cta_blocks: list[ContentDraftRevisionCtaBlock] | None = None,
     proposal_metadata: ContentDraftRevisionProposalMetadata,
     created_by: str,
 ) -> ContentDraftRevisionAppendCommand:
@@ -35,7 +37,7 @@ def build_child_draft_revision_command(
         page_assets=base_revision.page_assets,
         sections=sections,
         faq=base_revision.faq,
-        cta_blocks=base_revision.cta_blocks,
+        cta_blocks=base_revision.cta_blocks if cta_blocks is None else cta_blocks,
         internal_links=base_revision.internal_links,
         proposal_metadata=proposal_metadata,
         created_by=created_by,

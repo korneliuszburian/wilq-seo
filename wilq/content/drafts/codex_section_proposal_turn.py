@@ -28,19 +28,22 @@ def codex_turn_request(
     *,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     selected_headings: list[str],
+    selected_cta_ids: list[str] | None = None,
     base_revision: ContentDraftRevision,
 ) -> CodexAppServerStructuredTurnRequest:
+    selected_cta_ids = selected_cta_ids or []
     contract = snapshot.structured_generation.structured_generation_result.contract
     if contract is None:
         raise RuntimeError("Content proposal turn requires a structured generation contract.")
     application_context = json.dumps(
         {
-            "operation": "propose_section_revision",
+            "operation": "propose_content_component_revision",
             "work_item_id": base_revision.work_item_id,
             "base_revision_id": base_revision.revision_id,
             "base_revision_digest": base_revision.content_digest,
             "scope_rules": {
-                "return_only_selected_sections": True,
+                "return_only_selected_sections": bool(selected_headings),
+                "return_only_selected_cta": bool(selected_cta_ids),
                 "selected_section_count": len(selected_headings),
                 "preserve_exact_heading_and_evidence_mapping": True,
                 "do_not_change_title": True,
@@ -52,6 +55,14 @@ def codex_turn_request(
                 section.heading: list(section.evidence_ids)
                 for section in base_revision.sections
                 if section.heading in selected_headings
+            },
+            "selected_cta_requirements": {
+                cta.cta_id: {
+                    "placement": cta.placement,
+                    "evidence_ids": list(cta.evidence_ids),
+                }
+                for cta in base_revision.cta_blocks
+                if cta.cta_id in selected_cta_ids
             },
         },
         ensure_ascii=False,
@@ -68,6 +79,7 @@ def codex_turn_request(
                 else snapshot.revision_workspace.latest_review.model_dump(mode="json")
             ),
             "editable_section_headings": selected_headings,
+            "editable_cta_ids": selected_cta_ids,
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -81,6 +93,7 @@ def codex_turn_request(
             contract,
             base_revision=base_revision,
             selected_headings=selected_headings,
+            selected_cta_ids=selected_cta_ids,
         ),
     )
 

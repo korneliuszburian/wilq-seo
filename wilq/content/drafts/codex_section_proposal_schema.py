@@ -5,7 +5,11 @@ from copy import deepcopy
 from typing import cast
 
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
-from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionCtaBlock,
+    ContentDraftRevisionSection,
+)
 
 
 def proposal_output_schema(
@@ -13,6 +17,7 @@ def proposal_output_schema(
     *,
     base_revision: ContentDraftRevision,
     selected_headings: list[str],
+    selected_cta_ids: list[str] | None = None,
 ) -> dict[str, object]:
     """Constrain free-form lineage fields to API-owned literal values."""
 
@@ -22,6 +27,7 @@ def proposal_output_schema(
     section_schema = _mapping(definitions, "StructuredDraftOutputSection")
     section_properties = _mapping(section_schema, "properties")
     sections_schema = _mapping(properties, "sections")
+    selected_cta_ids = selected_cta_ids or []
     base_by_heading = {section.heading: section for section in base_revision.sections}
     evidence_ids = _unique(
         evidence_id
@@ -42,12 +48,16 @@ def proposal_output_schema(
     # A shared enum is insufficient for a multi-section proposal: it lets the
     # model place an otherwise allowed evidence id on the wrong section, which
     # the exact-revision guard must then reject after generation completes.
-    sections_schema["items"] = {
-        "anyOf": [
-            _section_schema_for_heading(section_schema, base_by_heading[heading])
-            for heading in selected_headings
-        ]
-    }
+    sections_schema["items"] = (
+        section_schema
+        if not selected_headings
+        else {
+            "anyOf": [
+                _section_schema_for_heading(section_schema, base_by_heading[heading])
+                for heading in selected_headings
+            ]
+        }
+    )
     _set_literals(section_properties, "claims_used", contract.model_input.claims_allowed)
     _set_literals(properties, "source_facts_used", evidence_ids)
     _set_literals(properties, "claims_needing_review", [])
@@ -56,6 +66,15 @@ def proposal_output_schema(
         "forbidden_claims_avoided",
         contract.model_input.claims_removed_or_blocked,
     )
+    if selected_cta_ids:
+        _bind_selected_cta(
+            properties,
+            selected_cta=next(
+                cta
+                for cta in getattr(base_revision, "cta_blocks", [])
+                if cta.cta_id == selected_cta_ids[0]
+            ),
+        )
     return schema
 
 
@@ -101,6 +120,23 @@ def _section_schema_for_heading(
     evidence_schema["minItems"] = len(evidence_ids)
     evidence_schema["maxItems"] = len(evidence_ids)
     return schema
+
+
+def _bind_selected_cta(
+    properties: dict[str, object],
+    *,
+    selected_cta: ContentDraftRevisionCtaBlock,
+) -> None:
+    """Keep the generic structured output safely scoped to one persisted CTA."""
+
+    _mapping(properties, "cta")["minLength"] = 1
+    _set_literals(properties, "source_facts_used", _unique(selected_cta.evidence_ids))
+    _mapping(properties, "source_facts_used")["minItems"] = len(selected_cta.evidence_ids)
+    _mapping(properties, "source_facts_used")["maxItems"] = len(selected_cta.evidence_ids)
+    for key in ("faq", "internal_links"):
+        field_schema = _mapping(properties, key)
+        field_schema["minItems"] = 0
+        field_schema["maxItems"] = 0
 
 
 def _unique(values: Iterable[object]) -> list[str]:

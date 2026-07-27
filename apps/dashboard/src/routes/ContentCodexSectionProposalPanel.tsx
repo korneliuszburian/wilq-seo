@@ -26,7 +26,9 @@ type ContentCodexSectionProposalPanelProps = {
   result: ContentCodexSectionProposalResponse | null;
   submittedBaseRevision: ContentDraftRevision | null;
   suggestedSectionIds: string[];
-  onSubmit: (selection: { sectionIds: string[] } | { sectionHeadings: string[] }) => void;
+  onSubmit: (
+    selection: { sectionIds: string[] } | { sectionHeadings: string[] } | { ctaIds: string[] }
+  ) => void;
   onRefresh: () => void;
 };
 
@@ -57,6 +59,7 @@ export function ContentCodexSectionProposalPanel({
         .filter((section) => generationReadiness.editable_section_headings.includes(section.heading))
     : [];
   const usesStableIds = availableSections.every((section) => Boolean(section.section_id));
+  const availableCtas = latestRevision?.cta_blocks ?? [];
   const createdResult = isCreatedResult(result) ? result : null;
 
   if (createdResult) {
@@ -88,7 +91,7 @@ export function ContentCodexSectionProposalPanel({
     );
   }
 
-  if (generationReadiness.status === "blocked" || availableSections.length === 0) {
+  if (generationReadiness.status === "blocked" || (availableSections.length === 0 && availableCtas.length === 0)) {
     const blocker = generationReadiness.blockers[0];
     return (
       <section className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3">
@@ -106,6 +109,10 @@ export function ContentCodexSectionProposalPanel({
   }
 
   const confirmedFailure = result && !isCreatedResult(result) ? result : null;
+  const selectedCtaIds = selectedKeys
+    .filter((key) => key.startsWith("cta:"))
+    .map((key) => key.slice("cta:".length));
+  const selectedSectionKeys = selectedKeys.filter((key) => !key.startsWith("cta:"));
   const submitBlocked = Boolean(
     pending ||
       error ||
@@ -139,7 +146,7 @@ export function ContentCodexSectionProposalPanel({
       </div>
 
       <fieldset className="mt-4" disabled={pending || Boolean(error || confirmedFailure)}>
-        <legend className="text-sm font-semibold text-ink">1. Wybierz sekcje do poprawy</legend>
+        <legend className="text-sm font-semibold text-ink">1. Wybierz jeden fragment do poprawy</legend>
         <div className="mt-2 grid min-w-0 gap-2 sm:grid-cols-2">
           {availableSections.map((section) => {
             const selectionKey = usesStableIds ? String(section.section_id) : section.heading;
@@ -160,8 +167,8 @@ export function ContentCodexSectionProposalPanel({
                     setSelectionState({
                       revisionId: latestRevision?.revision_id ?? null,
                       keys: checked
-                        ? selectedKeys.filter((selected) => selected !== selectionKey)
-                        : [...selectedKeys, selectionKey]
+                        ? selectedSectionKeys.filter((selected) => selected !== selectionKey)
+                        : [...selectedSectionKeys, selectionKey]
                     })
                   }
                 />
@@ -177,6 +184,40 @@ export function ContentCodexSectionProposalPanel({
             );
           })}
         </div>
+        {availableCtas.length ? (
+          <div className="mt-3">
+            <p className="text-sm font-semibold text-ink">Wezwanie do działania</p>
+            <div className="mt-2 grid min-w-0 gap-2">
+              {availableCtas.map((cta) => {
+                const selectionKey = `cta:${cta.cta_id}`;
+                const checked = selectedKeys.includes(selectionKey);
+                return (
+                  <label
+                    key={selectionKey}
+                    className="flex min-w-0 cursor-pointer items-start gap-2 rounded-md border border-line bg-white p-3 text-sm leading-5 text-slate-700"
+                  >
+                    <input
+                      type="radio"
+                      name="content-proposal-component"
+                      className="mt-1"
+                      checked={checked}
+                      onChange={() =>
+                        setSelectionState({
+                          revisionId: latestRevision?.revision_id ?? null,
+                          keys: [selectionKey]
+                        })
+                      }
+                    />
+                    <span className="min-w-0 break-words">
+                      <span className="font-semibold">{cta.placement}</span>
+                      <span className="mt-1 block text-xs text-slate-500">{cta.body_markdown}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
       </fieldset>
 
       {hasUnsavedChanges ? (
@@ -191,23 +232,26 @@ export function ContentCodexSectionProposalPanel({
         disabled={submitBlocked}
         onClick={() =>
           onSubmit(
-            usesStableIds
-              ? { sectionIds: selectedKeys }
-              : { sectionHeadings: selectedKeys }
+            selectedCtaIds.length
+              ? { ctaIds: selectedCtaIds }
+              : usesStableIds
+                ? { sectionIds: selectedSectionKeys }
+                : { sectionHeadings: selectedSectionKeys }
           )
         }
         className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
         {pending
-          ? "Codex poprawia sekcje..."
-          : `Popraw ${selectedKeys.length || 0} ${sectionCountLabel(selectedKeys.length)} z Codexem`}
+          ? "Codex poprawia wybrany fragment..."
+          : selectedCtaIds.length
+            ? "Popraw CTA z Codexem"
+            : `Popraw ${selectedSectionKeys.length || 0} ${sectionCountLabel(selectedSectionKeys.length)} z Codexem`}
         <ArrowRight aria-hidden="true" size={16} />
       </button>
 
       {pending ? (
         <p role="status" className="mt-3 text-sm leading-6 text-slate-700">
-          Codex poprawia {selectedKeys.length} {sectionCountLabel(selectedKeys.length)} i
-          sprawdza przypisane dowody. Może to potrwać do 2 minut.
+          Codex poprawia wybrany fragment i sprawdza przypisane dowody. Może to potrwać do 2 minut.
         </p>
       ) : null}
       {error ? <UncertainProposalError onRefresh={onRefresh} /> : null}

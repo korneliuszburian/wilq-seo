@@ -96,6 +96,16 @@ class ContentDraftRevisionProposalSectionLineage(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
 
 
+class ContentDraftRevisionProposalCtaLineage(BaseModel):
+    """Exact lineage for the one persisted CTA changed by a Codex proposal."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    cta_id: str = Field(min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
+    claim_ids: list[str] = Field(default_factory=list)
+
+
 class ContentDraftRevisionProposalMetadata(BaseModel):
     """Compact, durable provenance for an API-owned Codex child revision."""
 
@@ -103,8 +113,10 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
 
     source: Literal["codex_app_server"] = "codex_app_server"
     codex_run_id: str = Field(min_length=1)
-    selected_section_headings: list[str] = Field(min_length=1)
-    section_lineage: list[ContentDraftRevisionProposalSectionLineage] = Field(min_length=1)
+    selected_section_headings: list[str] = Field(default_factory=list)
+    section_lineage: list[ContentDraftRevisionProposalSectionLineage] = Field(default_factory=list)
+    selected_cta_ids: list[str] = Field(default_factory=list)
+    cta_lineage: list[ContentDraftRevisionProposalCtaLineage] = Field(default_factory=list)
     quality_verdict: Literal[
         "needs_changes",
         "reviewable",
@@ -113,6 +125,7 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
     quality_finding_codes: list[str] = Field(default_factory=list)
     review_scope: Literal[
         "persisted_selected_sections_and_declared_lineage",
+        "persisted_selected_components_and_declared_lineage",
         "persisted_full_document_and_declared_lineage",
     ] = (
         "persisted_selected_sections_and_declared_lineage"
@@ -123,9 +136,29 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
     def require_selected_lineage(self) -> ContentDraftRevisionProposalMetadata:
         headings = [heading.strip() for heading in self.selected_section_headings]
         lineage_headings = [lineage.heading.strip() for lineage in self.section_lineage]
-        if headings != lineage_headings or len(headings) != len(set(headings)):
+        cta_ids = [cta_id.strip() for cta_id in self.selected_cta_ids]
+        lineage_cta_ids = [lineage.cta_id.strip() for lineage in self.cta_lineage]
+        section_selection = bool(headings)
+        cta_selection = bool(cta_ids)
+        if section_selection == cta_selection:
+            raise ValueError("Proposal must select exactly one component kind.")
+        if section_selection and (
+            headings != lineage_headings
+            or len(headings) != len(set(headings))
+            or self.cta_lineage
+            or cta_ids
+        ):
             raise ValueError("Proposal lineage must match the unique selected headings.")
+        if cta_selection and (
+            cta_ids != lineage_cta_ids
+            or len(cta_ids) != 1
+            or self.section_lineage
+            or headings
+            or self.review_scope != "persisted_selected_components_and_declared_lineage"
+        ):
+            raise ValueError("CTA proposal lineage must match one selected CTA.")
         self.selected_section_headings = headings
+        self.selected_cta_ids = cta_ids
         return self
 
 

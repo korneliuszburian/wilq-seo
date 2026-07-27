@@ -25,6 +25,15 @@ export function ContentCodexSectionProposalResult({
           revision.sections.filter((section) => section.heading === heading).length === 1
       )
   );
+  const selectedCtaPresent = Boolean(
+    baseRevision &&
+      revision &&
+      result.selected_cta_ids.every(
+        (ctaId) =>
+          baseRevision.cta_blocks.filter((cta) => cta.cta_id === ctaId).length === 1 &&
+          revision.cta_blocks.filter((cta) => cta.cta_id === ctaId).length === 1
+      )
+  );
   const comparisonValid = Boolean(
     baseRevision &&
       revision &&
@@ -37,9 +46,10 @@ export function ContentCodexSectionProposalResult({
       metadata?.codex_run_id === result.run_id &&
       result.runtime.status === "completed" &&
       !result.runtime.external_call_attempted &&
-      selectedSectionsPresent &&
+      (result.selected_cta_ids.length ? selectedCtaPresent : selectedSectionsPresent) &&
       JSON.stringify(metadata?.selected_section_headings) ===
-        JSON.stringify(result.selected_section_headings)
+        JSON.stringify(result.selected_section_headings) &&
+      JSON.stringify(metadata?.selected_cta_ids) === JSON.stringify(result.selected_cta_ids)
   );
   if (!revision || !result.quality_review || !metadata || !comparisonValid || !baseRevision) {
     return (
@@ -54,8 +64,15 @@ export function ContentCodexSectionProposalResult({
   }
 
   const lineage = metadata.section_lineage;
-  const evidenceCount = new Set(lineage.flatMap((section) => section.evidence_ids)).size;
-  const claimCount = new Set(lineage.flatMap((section) => section.claim_ids)).size;
+  const ctaLineage = metadata.cta_lineage;
+  const evidenceCount = new Set([
+    ...lineage.flatMap((section) => section.evidence_ids),
+    ...ctaLineage.flatMap((cta) => cta.evidence_ids)
+  ]).size;
+  const claimCount = new Set([
+    ...lineage.flatMap((section) => section.claim_ids),
+    ...ctaLineage.flatMap((cta) => cta.claim_ids)
+  ]).size;
   const findings = result.quality_review.findings;
 
   return (
@@ -102,6 +119,22 @@ export function ContentCodexSectionProposalResult({
               <div className="mt-3 grid min-w-0 gap-3 lg:grid-cols-2">
                 <VersionText label="Baza" body={baseSection.body_markdown} />
                 <VersionText label="Propozycja Codexa" body={childSection.body_markdown} />
+              </div>
+            </article>
+          );
+        })}
+        {result.selected_cta_ids.map((ctaId) => {
+          const baseCta = baseRevision.cta_blocks.find((cta) => cta.cta_id === ctaId);
+          const childCta = revision.cta_blocks.find((cta) => cta.cta_id === ctaId);
+          if (!baseCta || !childCta) return null;
+          return (
+            <article key={ctaId} className="min-w-0 rounded-md border border-line bg-white p-3">
+              <h4 className="break-words text-sm font-semibold text-ink">
+                Wezwanie do działania · {baseCta.placement}
+              </h4>
+              <div className="mt-3 grid min-w-0 gap-3 lg:grid-cols-2">
+                <VersionText label="Baza" body={baseCta.body_markdown} />
+                <VersionText label="Propozycja Codexa" body={childCta.body_markdown} />
               </div>
             </article>
           );
@@ -159,6 +192,17 @@ export function ContentCodexSectionProposalResult({
               </p>
               <p className="mt-1 break-all">
                 Twierdzenia: {section.claim_ids.length ? section.claim_ids.join(", ") : "brak"}
+              </p>
+            </div>
+          ))}
+          {ctaLineage.map((cta) => (
+            <div key={cta.cta_id} className="mt-3">
+              <p className="font-semibold text-ink">CTA: {cta.cta_id}</p>
+              <p className="mt-1 break-all">
+                Dowody: {cta.evidence_ids.length ? cta.evidence_ids.join(", ") : "brak"}
+              </p>
+              <p className="mt-1 break-all">
+                Twierdzenia: {cta.claim_ids.length ? cta.claim_ids.join(", ") : "brak"}
               </p>
             </div>
           ))}

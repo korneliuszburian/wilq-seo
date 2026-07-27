@@ -74,7 +74,7 @@ type ContentWorkflowActions = ReturnType<typeof useContentWorkflowActions>;
 type ContentWorkflowMutations = ReturnType<typeof useContentWorkflowMutations>;
 type CodexProposalMutationInput = {
   baseRevision: ContentDraftRevision;
-  selection: { sectionIds: string[] } | { sectionHeadings: string[] };
+  selection: { sectionIds: string[] } | { sectionHeadings: string[] } | { ctaIds: string[] };
 };
 type InitialDraftMutationInput = NonNullable<
   ContentWorkflowSnapshot["planningWorkspace"]
@@ -1312,6 +1312,7 @@ function useContentWorkflowMutations(selectedWorkItemId: string, operatorLabel: 
           selected_section_headings:
             "sectionHeadings" in selection ? selection.sectionHeadings : [],
           selected_section_ids: "sectionIds" in selection ? selection.sectionIds : [],
+          selected_cta_ids: "ctaIds" in selection ? selection.ctaIds : [],
           requested_by: operatorLabel
         },
         selectedWorkItemId,
@@ -1486,10 +1487,14 @@ function contentWorkflowActions(
     executionResult: executionResultFrom(mutations.executionMutation.data),
     executionError: mutations.executionMutation.error,
     runCodexSectionProposal: (
-      selection: { sectionIds: string[] } | { sectionHeadings: string[] }
+      selection: { sectionIds: string[] } | { sectionHeadings: string[] } | { ctaIds: string[] }
     ) => {
       const selectedCount =
-        "sectionIds" in selection ? selection.sectionIds.length : selection.sectionHeadings.length;
+        "sectionIds" in selection
+          ? selection.sectionIds.length
+          : "sectionHeadings" in selection
+            ? selection.sectionHeadings.length
+            : selection.ctaIds.length;
       if (!latestRevision || selectedCount === 0) return;
       mutations.codexProposalMutation.mutate({
         baseRevision: latestRevision,

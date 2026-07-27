@@ -63,6 +63,46 @@ def persisted_selected_sections_quality_input(
     )
 
 
+def persisted_selected_cta_quality_input(
+    *,
+    output: StructuredDraftOutput,
+    base_revision: ContentDraftRevision,
+    selected_cta_ids: list[str],
+) -> StructuredDraftOutput:
+    """Score the exact persisted CTA delta while preserving the document baseline."""
+
+    selected = set(selected_cta_ids)
+    cta = "\n".join(
+        output.cta if block.cta_id in selected else block.body_markdown
+        for block in base_revision.cta_blocks
+        if (output.cta if block.cta_id in selected else block.body_markdown).strip()
+    )
+    evidence_ids = _unique(
+        evidence_id
+        for block in base_revision.cta_blocks
+        if block.cta_id in selected
+        for evidence_id in block.evidence_ids
+    )
+    return output.model_copy(
+        update={
+            "title": base_revision.title,
+            "h1": base_revision.title,
+            "meta_title": "",
+            "meta_description": "",
+            "sections": [],
+            "faq": [],
+            "cta": cta,
+            "internal_links": [
+                link.anchor_text
+                for link in base_revision.internal_links
+                if link.anchor_text.strip()
+            ],
+            "source_facts_used": evidence_ids,
+            "human_review_checklist": [],
+        }
+    )
+
+
 def proposal_duplicate_risk(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
 ) -> ContentInventoryDuplicateRisk:
@@ -133,6 +173,7 @@ def _unique(values: Iterable[object]) -> list[str]:
 
 __all__ = [
     "persisted_selected_sections_quality_input",
+    "persisted_selected_cta_quality_input",
     "proposal_duplicate_risk",
     "proposal_quality_ledger",
     "proposal_stage_quality_review",

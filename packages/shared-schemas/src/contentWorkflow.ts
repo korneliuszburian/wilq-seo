@@ -2241,18 +2241,27 @@ export const ContentDraftRevisionProposalSectionLineageSchema = z.object({
   knowledge_card_ids: z.array(z.string()).default([])
 });
 
+export const ContentDraftRevisionProposalCtaLineageSchema = z.object({
+  cta_id: z.string().refine((value) => value.trim().length > 0),
+  evidence_ids: z.array(z.string().refine((value) => value.trim().length > 0)).min(1),
+  claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
+});
+
 export const ContentDraftRevisionProposalMetadataSchema = z
   .object({
     source: z.literal("codex_app_server"),
     codex_run_id: z.string().refine((value) => value.trim().length > 0),
     selected_section_headings: z
       .array(z.string().refine((value) => value.trim().length > 0))
-      .min(1),
-    section_lineage: z.array(ContentDraftRevisionProposalSectionLineageSchema).min(1),
+      .default([]),
+    section_lineage: z.array(ContentDraftRevisionProposalSectionLineageSchema).default([]),
+    selected_cta_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
+    cta_lineage: z.array(ContentDraftRevisionProposalCtaLineageSchema).default([]),
     quality_verdict: z.enum(["needs_changes", "reviewable", "ready_for_human_review"]),
     quality_finding_codes: z.array(z.string()).default([]),
     review_scope: z.enum([
       "persisted_selected_sections_and_declared_lineage",
+      "persisted_selected_components_and_declared_lineage",
       "persisted_full_document_and_declared_lineage"
     ]),
     semantic_review_required: z.literal(true)
@@ -2260,15 +2269,28 @@ export const ContentDraftRevisionProposalMetadataSchema = z
   .superRefine((metadata, context) => {
     const headings = metadata.selected_section_headings;
     const lineageHeadings = metadata.section_lineage.map((lineage) => lineage.heading);
-    if (
-      new Set(headings).size !== headings.length ||
-      headings.length !== lineageHeadings.length ||
-      headings.some((heading, index) => heading !== lineageHeadings[index])
-    ) {
+    const ctaIds = metadata.selected_cta_ids;
+    const lineageCtaIds = metadata.cta_lineage.map((lineage) => lineage.cta_id);
+    const sectionSelection = headings.length > 0;
+    const ctaSelection = ctaIds.length > 0;
+    const validSections =
+      new Set(headings).size === headings.length &&
+      headings.length === lineageHeadings.length &&
+      headings.every((heading, index) => heading === lineageHeadings[index]) &&
+      metadata.cta_lineage.length === 0 &&
+      ctaIds.length === 0;
+    const validCta =
+      ctaIds.length === 1 &&
+      ctaIds[0] === lineageCtaIds[0] &&
+      lineageCtaIds.length === 1 &&
+      metadata.section_lineage.length === 0 &&
+      headings.length === 0 &&
+      metadata.review_scope === "persisted_selected_components_and_declared_lineage";
+    if (sectionSelection === ctaSelection || !(validSections || validCta)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["section_lineage"],
-        message: "proposal lineage must match unique selected headings in order"
+        path: ["selected_section_headings"],
+        message: "proposal lineage must match exactly one selected component kind"
       });
     }
   });
@@ -2854,15 +2876,21 @@ export const ContentCodexSectionProposalRequestSchema = z
     selected_section_ids: z
       .array(z.string().refine((value) => value.trim().length > 0))
       .default([]),
+    selected_cta_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
     requested_by: z.string().refine((value) => value.trim().length > 0)
   })
   .strict()
   .superRefine((request, context) => {
-    if ((request.selected_section_headings.length > 0) === (request.selected_section_ids.length > 0)) {
+    const selectedKinds = [
+      request.selected_section_headings.length > 0,
+      request.selected_section_ids.length > 0,
+      request.selected_cta_ids.length > 0
+    ].filter(Boolean).length;
+    if (selectedKinds !== 1) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["selected_section_ids"],
-        message: "select sections by stable IDs or legacy headings, never both"
+        path: ["selected_cta_ids"],
+        message: "select sections by stable IDs, legacy headings, or one CTA, never both"
       });
     }
     if (new Set(request.selected_section_headings).size !== request.selected_section_headings.length) {
@@ -2879,6 +2907,13 @@ export const ContentCodexSectionProposalRequestSchema = z
         message: "selected section IDs must be unique"
       });
     }
+    if (request.selected_cta_ids.length > 1 || new Set(request.selected_cta_ids).size !== request.selected_cta_ids.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selected_cta_ids"],
+        message: "select exactly one unique CTA"
+      });
+    }
   });
 
 export const ContentCodexSectionProposalBlockerCodeSchema = z.enum([
@@ -2889,6 +2924,7 @@ export const ContentCodexSectionProposalBlockerCodeSchema = z.enum([
   "stale_content_context",
   "missing_generation_contract",
   "unknown_selected_section",
+  "unknown_selected_cta",
   "ambiguous_claim_marker",
   "runtime_blocked",
   "runtime_failed",
@@ -2924,9 +2960,13 @@ export const ContentCodexSectionProposalResponseSchema = z
     work_item_id: z.string(),
     base_revision_id: z.string(),
     selected_section_headings: z.array(z.string()),
+    selected_cta_ids: z.array(z.string()).default([]),
     revision: ContentDraftRevisionSchema.nullable(),
     quality_review: ContentQualityReviewSchema.nullable(),
-    quality_review_scope: z.literal("persisted_selected_sections_and_declared_lineage"),
+    quality_review_scope: z.enum([
+      "persisted_selected_sections_and_declared_lineage",
+      "persisted_selected_components_and_declared_lineage"
+    ]),
     semantic_review_required: z.literal(true),
     runtime: ContentCodexRuntimeTraceSchema,
     evidence_ids: z.array(z.string()).default([]),
@@ -2960,7 +3000,8 @@ export const ContentCodexSectionProposalResponseSchema = z
         metadata.codex_run_id !== response.run_id ||
         response.revision?.base_revision_id !== response.base_revision_id ||
         JSON.stringify(metadata.selected_section_headings) !==
-          JSON.stringify(response.selected_section_headings))
+          JSON.stringify(response.selected_section_headings) ||
+        JSON.stringify(metadata.selected_cta_ids) !== JSON.stringify(response.selected_cta_ids))
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,

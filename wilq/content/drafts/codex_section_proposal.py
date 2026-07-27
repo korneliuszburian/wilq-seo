@@ -11,6 +11,16 @@ from wilq.codex.app_server import (
 )
 from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.claims.ledger import ContentClaimLedger
+from wilq.content.drafts.codex_component_proposal_support import (
+    component_scope_blocker,
+    contract_with_revision_lineage,
+    item_with_revision_lineage,
+    merge_selected_cta_blocks,
+    merge_selected_sections,
+    output_for_contract_validation,
+    proposal_evidence_ids,
+    proposal_source_connectors,
+)
 from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentCodexRuntimeTrace,
     ContentCodexSectionProposalBlocker,
@@ -22,6 +32,7 @@ from wilq.content.drafts.codex_section_proposal_turn import codex_turn_request
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.drafts.preview import structured_draft_preview_blockers
 from wilq.content.drafts.proposal_quality_input import (
+    persisted_selected_cta_quality_input,
     persisted_selected_sections_quality_input,
     proposal_duplicate_risk,
     proposal_quality_ledger,
@@ -30,18 +41,15 @@ from wilq.content.drafts.proposal_quality_input import (
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftOutput,
-    StructuredDraftSectionInput,
 )
 from wilq.content.quality.review import ContentQualityReview, build_content_quality_review
-from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
+    ContentDraftRevisionProposalCtaLineage,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionProposalSectionLineage,
-    ContentDraftRevisionSection,
 )
 from wilq.content.workflow.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
@@ -57,6 +65,7 @@ class _ProposalInputs:
     sales_brief: ContentSalesBrief
     claim_ledger: ContentClaimLedger
     selected_headings: list[str]
+    selected_cta_ids: list[str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +91,7 @@ def propose_content_section_revision(
     run_id: str | None = None,
 ) -> ContentCodexSectionProposalResponse:
     selected_headings = _ordered_selected_headings(snapshot, request)
+    selected_cta_ids = _ordered_selected_cta_ids(snapshot, request)
     blockers = _proposal_preflight_blockers(
         snapshot,
         base_revision_id=base_revision_id,
@@ -92,11 +102,16 @@ def propose_content_section_revision(
             snapshot=snapshot,
             base_revision_id=base_revision_id,
             selected_headings=selected_headings,
+            selected_cta_ids=selected_cta_ids,
             run=None,
             runtime=_not_started_trace(),
             blockers=blockers,
         )
-    inputs = _required_inputs(snapshot, selected_headings=selected_headings)
+    inputs = _required_inputs(
+        snapshot,
+        selected_headings=selected_headings,
+        selected_cta_ids=selected_cta_ids,
+    )
     runtime_call = _execute_runtime(
         snapshot=snapshot,
         inputs=inputs,
@@ -138,6 +153,7 @@ def _required_inputs(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     *,
     selected_headings: list[str],
+    selected_cta_ids: list[str] | None = None,
 ) -> _ProposalInputs:
     values = (
         snapshot.revision_workspace.latest_revision,
@@ -156,6 +172,7 @@ def _required_inputs(
         sales_brief=cast(ContentSalesBrief, sales_brief),
         claim_ledger=claim_ledger,
         selected_headings=selected_headings,
+        selected_cta_ids=selected_cta_ids,
     )
 
 
@@ -176,7 +193,7 @@ def _start_run(
             f"/api/content/work-items/{base_revision.work_item_id}/draft-revisions/"
             f"{base_revision.revision_id}/codex-proposal"
         ],
-        evidence_ids=_proposal_evidence_ids(snapshot),
+        evidence_ids=proposal_evidence_ids(snapshot),
     )
     return run_store.save_codex_run(run)
 
@@ -196,6 +213,7 @@ def _execute_runtime(
             codex_turn_request(
                 snapshot=snapshot,
                 selected_headings=inputs.selected_headings,
+                selected_cta_ids=inputs.selected_cta_ids,
                 base_revision=inputs.base_revision,
             )
         )
@@ -210,6 +228,7 @@ def _execute_runtime(
             snapshot=snapshot,
             base_revision_id=base_revision_id,
             selected_headings=inputs.selected_headings,
+            selected_cta_ids=inputs.selected_cta_ids,
             run=_finish_run(run_store, run, status="failed", error=blocker.code),
             runtime=ContentCodexRuntimeTrace(status="failed"),
             blockers=[blocker],
@@ -234,6 +253,7 @@ def _execute_runtime(
             snapshot=snapshot,
             base_revision_id=base_revision_id,
             selected_headings=inputs.selected_headings,
+            selected_cta_ids=inputs.selected_cta_ids,
             run=_finish_run(run_store, run, status=run_status, error=code),
             runtime=trace,
             blockers=[blocker],
@@ -265,30 +285,38 @@ def _validate_runtime_call(
             snapshot=snapshot,
             base_revision_id=inputs.base_revision.revision_id,
             selected_headings=inputs.selected_headings,
+            selected_cta_ids=inputs.selected_cta_ids,
             run=_finish_run(run_store, call.run, status="blocked", error=blocker.code),
             runtime=call.trace,
             blockers=[blocker],
         )
-    scope_blocker = _section_scope_blocker(
+    scope_blocker = component_scope_blocker(
         output,
         base_revision=inputs.base_revision,
         selected_headings=inputs.selected_headings,
+        selected_cta_ids=inputs.selected_cta_ids,
     )
     if scope_blocker is not None:
         return _blocked_response(
             snapshot=snapshot,
             base_revision_id=inputs.base_revision.revision_id,
             selected_headings=inputs.selected_headings,
+            selected_cta_ids=inputs.selected_cta_ids,
             run=_finish_run(run_store, call.run, status="blocked", error=scope_blocker.code),
             runtime=call.trace,
             blockers=[scope_blocker],
         )
     preview_blockers = structured_draft_preview_blockers(
-        output=output,
-        contract=_contract_with_revision_lineage(
+        output=output_for_contract_validation(
+            output,
+            base_revision=inputs.base_revision,
+            selected_cta_ids=inputs.selected_cta_ids,
+        ),
+        contract=contract_with_revision_lineage(
             inputs.contract,
             base_revision=inputs.base_revision,
             selected_headings=inputs.selected_headings,
+            selected_cta_ids=inputs.selected_cta_ids,
         ),
     )
     if preview_blockers:
@@ -306,6 +334,7 @@ def _validate_runtime_call(
             snapshot=snapshot,
             base_revision_id=inputs.base_revision.revision_id,
             selected_headings=inputs.selected_headings,
+            selected_cta_ids=inputs.selected_cta_ids,
             run=_finish_run(run_store, call.run, status="blocked", error=blocker.code),
             runtime=call.trace,
             blockers=[blocker],
@@ -318,68 +347,6 @@ def _validate_runtime_call(
     )
 
 
-def _contract_with_revision_lineage(
-    contract: StructuredDraftGenerationContract,
-    *,
-    base_revision: ContentDraftRevision,
-    selected_headings: list[str],
-) -> StructuredDraftGenerationContract:
-    """Allow preview to validate the exact persisted revision lineage.
-
-    The legacy structured-generation contract can predate the v2 revision's
-    generated headings.  The child revision is still authoritative for the
-    selected section and its evidence; merge that lineage into the preview
-    contract without widening claims or other model permissions.
-    """
-
-    base_by_heading = {section.heading: section for section in base_revision.sections}
-    sections = list(contract.model_input.sections)
-    positions = {section.heading: index for index, section in enumerate(sections)}
-    for heading in selected_headings:
-        base_section = base_by_heading.get(heading)
-        if base_section is None:
-            continue
-        revision_evidence = list(base_section.evidence_ids)
-        index = positions.get(heading)
-        if index is None:
-            sections.append(
-                StructuredDraftSectionInput(
-                    heading=heading,
-                    purpose="Selected persisted revision section.",
-                    evidence_ids=revision_evidence,
-                    section_id=str(base_section.section_id or ""),
-                )
-            )
-            positions[heading] = len(sections) - 1
-            continue
-        sections[index] = sections[index].model_copy(
-            update={
-                "evidence_ids": _unique(
-                    [*sections[index].evidence_ids, *revision_evidence]
-                )
-            }
-        )
-    model_input = contract.model_input.model_copy(update={"sections": sections})
-    return contract.model_copy(update={"model_input": model_input})
-
-
-def _item_with_revision_lineage(
-    item: ContentWorkItem,
-    *,
-    base_revision: ContentDraftRevision,
-    selected_headings: list[str],
-) -> ContentWorkItem:
-    revision_evidence = [
-        evidence_id
-        for section in base_revision.sections
-        if section.heading in selected_headings
-        for evidence_id in section.evidence_ids
-    ]
-    return item.model_copy(
-        update={"evidence_ids": _unique([*item.evidence_ids, *revision_evidence])}
-    )
-
-
 def _review_runtime_output(
     *,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
@@ -389,16 +356,25 @@ def _review_runtime_output(
 ) -> ContentQualityReview | ContentCodexSectionProposalResponse:
     quality_review = proposal_stage_quality_review(
         build_content_quality_review(
-            item=_item_with_revision_lineage(
+            item=item_with_revision_lineage(
                 snapshot.preflight.item,
                 base_revision=inputs.base_revision,
                 selected_headings=inputs.selected_headings,
+                selected_cta_ids=inputs.selected_cta_ids,
             ),
             draft_package=inputs.draft_package,
-            structured_output=persisted_selected_sections_quality_input(
-                output=runtime.output,
-                base_revision=inputs.base_revision,
-                selected_headings=inputs.selected_headings,
+            structured_output=(
+                persisted_selected_cta_quality_input(
+                    output=runtime.output,
+                    base_revision=inputs.base_revision,
+                    selected_cta_ids=inputs.selected_cta_ids,
+                )
+                if inputs.selected_cta_ids
+                else persisted_selected_sections_quality_input(
+                    output=runtime.output,
+                    base_revision=inputs.base_revision,
+                    selected_headings=inputs.selected_headings,
+                )
             ),
             claim_ledger=proposal_quality_ledger(inputs.claim_ledger, inputs.contract),
             sales_brief=inputs.sales_brief,
@@ -462,22 +438,29 @@ def _persist_proposal(
             blockers=[blocker],
             quality_review=quality_review,
         )
-    revision_sections = _merge_selected_sections(
+    revision_sections = merge_selected_sections(
         base_revision,
         runtime.output,
         inputs.selected_headings,
+    )
+    revision_cta_blocks = merge_selected_cta_blocks(
+        base_revision,
+        runtime.output,
+        inputs.selected_cta_ids,
     )
     completed_run = _terminal_run(runtime.run, status="completed")
     append_result = workflow_store.append_draft_revision(
         build_child_draft_revision_command(
             base_revision,
             sections=revision_sections,
+            cta_blocks=revision_cta_blocks,
             proposal_metadata=_proposal_metadata(
                 run=runtime.run,
                 output=runtime.output,
                 contract=inputs.contract,
                 quality_review=quality_review,
                 selected_headings=inputs.selected_headings,
+                selected_cta_ids=inputs.selected_cta_ids,
                 base_revision=base_revision,
             ),
             created_by=request.requested_by,
@@ -507,11 +490,17 @@ def _persist_proposal(
         work_item_id=base_revision.work_item_id,
         base_revision_id=base_revision.revision_id,
         selected_section_headings=inputs.selected_headings,
+        selected_cta_ids=inputs.selected_cta_ids,
+        quality_review_scope=(
+            "persisted_selected_components_and_declared_lineage"
+            if inputs.selected_cta_ids
+            else "persisted_selected_sections_and_declared_lineage"
+        ),
         revision=append_result.revision,
         quality_review=quality_review,
         runtime=runtime.trace,
-        evidence_ids=_proposal_evidence_ids(snapshot),
-        source_connectors=_proposal_source_connectors(snapshot),
+        evidence_ids=proposal_evidence_ids(snapshot),
+        source_connectors=proposal_source_connectors(snapshot),
         safe_next_step=(
             "Porównaj zmienione sekcje z wersją bazową i wykonaj semantyczny human review."
         ),
@@ -582,7 +571,7 @@ def _proposal_preflight_blockers(
                 "Uzupełnij blokady briefu i claimów przed użyciem Codexa.",
             )
         ]
-    selection_blockers = _selected_section_blockers(base_revision, contract, request)
+    selection_blockers = _selected_component_blockers(base_revision, contract, request)
     if selection_blockers:
         return selection_blockers
     claim_texts = [
@@ -600,11 +589,23 @@ def _proposal_preflight_blockers(
     return []
 
 
-def _selected_section_blockers(
+def _selected_component_blockers(
     base_revision: ContentDraftRevision,
     contract: StructuredDraftGenerationContract,
     request: ContentCodexSectionProposalRequest,
 ) -> list[ContentCodexSectionProposalBlocker]:
+    if request.selected_cta_ids:
+        known_cta_ids = {cta.cta_id for cta in base_revision.cta_blocks}
+        if request.selected_cta_ids[0] in known_cta_ids:
+            return []
+        return [
+            _blocker(
+                "unknown_selected_cta",
+                "Wybrane wezwanie do działania nie należy do aktualnej wersji",
+                "Codex może zmienić tylko CTA zapisane w dokładnej wersji bazowej.",
+                "Odśwież workspace i wybierz aktualne wezwanie do działania.",
+            )
+        ]
     base_headings = {section.heading for section in base_revision.sections}
     base_by_id = {
         str(section.section_id): section.heading
@@ -659,53 +660,15 @@ def _ordered_selected_headings(
     ]
 
 
-def _section_scope_blocker(
-    output: StructuredDraftOutput,
-    *,
-    base_revision: ContentDraftRevision,
-    selected_headings: list[str],
-) -> ContentCodexSectionProposalBlocker | None:
-    output_headings = [section.heading for section in output.sections]
-    base_by_heading = {section.heading: section for section in base_revision.sections}
-    evidence_mapping_matches = all(
-        section.evidence_ids == base_by_heading[section.heading].evidence_ids
-        for section in output.sections
-        if section.heading in base_by_heading
-    )
-    if (
-        output.title == base_revision.title
-        and output_headings == selected_headings
-        and evidence_mapping_matches
-    ):
-        return None
-    return _blocker(
-        "section_scope_mismatch",
-        "Codex wyszedł poza wybrane sekcje",
-        "Wynik musi zachować tytuł, wybrane nagłówki, ich kolejność i mapę dowodów.",
-        "Odrzuć wynik i uruchom nową propozycję dla aktualnego wyboru.",
-    )
-
-
-def _merge_selected_sections(
-    base_revision: ContentDraftRevision,
-    output: StructuredDraftOutput,
-    selected_headings: list[str],
-) -> list[ContentDraftRevisionSection]:
-    selected = set(selected_headings)
-    generated_by_heading = {section.heading: section for section in output.sections}
-    return [
-        base_section.model_copy(
-            update={
-                "body_markdown": generated_by_heading[base_section.heading].body_markdown,
-                "content_html": content_html_from_markdown(
-                    generated_by_heading[base_section.heading].body_markdown
-                ),
-            }
-        )
-        if base_section.heading in selected
-        else base_section
-        for base_section in base_revision.sections
-    ]
+def _ordered_selected_cta_ids(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    request: ContentCodexSectionProposalRequest,
+) -> list[str]:
+    base_revision = snapshot.revision_workspace.latest_revision
+    if base_revision is None:
+        return request.selected_cta_ids
+    selected = set(request.selected_cta_ids)
+    return [cta.cta_id for cta in base_revision.cta_blocks if cta.cta_id in selected]
 
 
 def _proposal_metadata(
@@ -715,6 +678,7 @@ def _proposal_metadata(
     contract: StructuredDraftGenerationContract,
     quality_review: ContentQualityReview,
     selected_headings: list[str],
+    selected_cta_ids: list[str],
     base_revision: ContentDraftRevision,
 ) -> ContentDraftRevisionProposalMetadata:
     if quality_review.verdict == "blocked":
@@ -724,6 +688,10 @@ def _proposal_metadata(
     }
     output_by_heading = {section.heading: section for section in output.sections}
     base_by_heading = {section.heading: section for section in base_revision.sections}
+    selected_cta = next(
+        (cta for cta in base_revision.cta_blocks if cta.cta_id in selected_cta_ids),
+        None,
+    )
     return ContentDraftRevisionProposalMetadata(
         codex_run_id=run.id,
         selected_section_headings=selected_headings,
@@ -739,8 +707,24 @@ def _proposal_metadata(
             )
             for heading in selected_headings
         ],
+        selected_cta_ids=selected_cta_ids,
+        cta_lineage=(
+            []
+            if selected_cta is None
+            else [
+                ContentDraftRevisionProposalCtaLineage(
+                    cta_id=selected_cta.cta_id,
+                    evidence_ids=selected_cta.evidence_ids,
+                )
+            ]
+        ),
         quality_verdict=quality_review.verdict,
         quality_finding_codes=_unique(finding.code for finding in quality_review.findings),
+        review_scope=(
+            "persisted_selected_components_and_declared_lineage"
+            if selected_cta_ids
+            else "persisted_selected_sections_and_declared_lineage"
+        ),
     )
 
 
@@ -764,6 +748,7 @@ def _blocked_response(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     base_revision_id: str,
     selected_headings: list[str],
+    selected_cta_ids: list[str] | None = None,
     run: CodexRun | None,
     runtime: ContentCodexRuntimeTrace,
     blockers: list[ContentCodexSectionProposalBlocker],
@@ -776,10 +761,16 @@ def _blocked_response(
         work_item_id=snapshot.preflight.item.id,
         base_revision_id=base_revision_id,
         selected_section_headings=selected_headings,
+        selected_cta_ids=selected_cta_ids or [],
+        quality_review_scope=(
+            "persisted_selected_components_and_declared_lineage"
+            if selected_cta_ids
+            else "persisted_selected_sections_and_declared_lineage"
+        ),
         quality_review=quality_review,
         runtime=runtime,
-        evidence_ids=_proposal_evidence_ids(snapshot),
-        source_connectors=_proposal_source_connectors(snapshot),
+        evidence_ids=proposal_evidence_ids(snapshot),
+        source_connectors=proposal_source_connectors(snapshot),
         blockers=blockers,
         safe_next_step=blockers[0].next_step,
     )
@@ -802,53 +793,6 @@ def _terminal_run(
     error: str | None = None,
 ) -> CodexRun:
     return run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
-
-
-def _proposal_evidence_ids(snapshot: ContentWorkItemWorkflowSnapshotResponse) -> list[str]:
-    contract = snapshot.structured_generation.structured_generation_result.contract
-    if contract is None:
-        return _unique(snapshot.preflight.item.evidence_ids)
-    return _unique(
-        [
-            *snapshot.preflight.item.evidence_ids,
-            *(fact.evidence_id for fact in contract.model_input.source_facts),
-            *(
-                evidence_id
-                for section in contract.model_input.sections
-                for evidence_id in section.evidence_ids
-            ),
-            *(
-                evidence_id
-                for marker in [
-                    *contract.model_input.claim_markers,
-                    *contract.model_input.removed_or_blocked_claim_markers,
-                ]
-                for evidence_id in marker.evidence_ids
-            ),
-        ]
-    )
-
-
-def _proposal_source_connectors(
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-) -> list[str]:
-    contract = snapshot.structured_generation.structured_generation_result.contract
-    if contract is None:
-        return _unique(snapshot.preflight.item.source_connectors)
-    return _unique(
-        [
-            *snapshot.preflight.item.source_connectors,
-            *(fact.source_connector for fact in contract.model_input.source_facts),
-            *(
-                connector
-                for marker in [
-                    *contract.model_input.claim_markers,
-                    *contract.model_input.removed_or_blocked_claim_markers,
-                ]
-                for connector in marker.source_connectors
-            ),
-        ]
-    )
 
 
 def _unique(values: Iterable[object]) -> list[str]:

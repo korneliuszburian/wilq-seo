@@ -4200,6 +4200,8 @@ function savedFullDraftRevision(): NonNullable<
         source_material_ids: [],
         knowledge_card_ids: []
       })),
+      selected_cta_ids: [],
+      cta_lineage: [],
       quality_verdict: "ready_for_human_review",
       quality_finding_codes: ["semantic_review_required"],
       review_scope: "persisted_full_document_and_declared_lineage",
@@ -4705,6 +4707,8 @@ function codexSectionProposalResponse(): ContentCodexSectionProposalResponse {
           knowledge_card_ids: []
         }
       ],
+      selected_cta_ids: [],
+      cta_lineage: [],
       quality_verdict: "needs_changes" as const,
       quality_finding_codes: ["weak_cta"],
       review_scope: "persisted_selected_sections_and_declared_lineage" as const,
@@ -4725,6 +4729,7 @@ function codexSectionProposalResponse(): ContentCodexSectionProposalResponse {
     work_item_id: base.work_item_id,
     base_revision_id: base.revision_id,
     selected_section_headings: [heading],
+    selected_cta_ids: [],
     revision: child,
     quality_review: {
       review_id: "quality_review_content_revision_bdo_2",

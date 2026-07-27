@@ -25,10 +25,15 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
 )
-from wilq.content.drafts.codex_section_proposal import (
-    _contract_with_revision_lineage,
-    _item_with_revision_lineage,
-    _merge_selected_sections,
+from wilq.content.drafts.codex_component_proposal_support import (
+    component_scope_blocker,
+    contract_with_revision_lineage,
+    item_with_revision_lineage,
+    merge_selected_cta_blocks,
+    merge_selected_sections,
+)
+from wilq.content.drafts.codex_section_proposal_contracts import (
+    ContentCodexSectionProposalRequest,
 )
 from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
 from wilq.content.drafts.proposal_quality_input import (
@@ -212,7 +217,7 @@ def test_child_preview_contract_merges_exact_persisted_revision_evidence() -> No
         ],
     )
 
-    merged = _contract_with_revision_lineage(
+    merged = contract_with_revision_lineage(
         contract,
         base_revision=revision,
         selected_headings=["Nowa sekcja"],
@@ -246,7 +251,7 @@ def test_child_section_proposal_refreshes_canonical_html_with_body_markdown() ->
         ]
     )
 
-    sections = _merge_selected_sections(
+    sections = merge_selected_sections(
         base_revision,
         output,
         ["Sekcja"],
@@ -254,6 +259,62 @@ def test_child_section_proposal_refreshes_canonical_html_with_body_markdown() ->
 
     assert sections[0].body_markdown == "Wersja po humanizacji."
     assert sections[0].content_html == "<p>Wersja po humanizacji.</p>"
+
+
+def test_cta_proposal_is_exactly_scoped_to_one_persisted_cta() -> None:
+    base_revision = ContentDraftRevision.model_construct(
+        title="Tytuł",
+        sections=[
+            ContentDraftRevisionSection.model_construct(
+                heading="Sekcja", body_markdown="Bez zmian.", evidence_ids=["ev_section"]
+            )
+        ],
+        cta_blocks=[
+            ContentDraftRevisionCtaBlock(
+                cta_id="cta_contact",
+                placement="Po treści",
+                body_markdown="Napisz do nas.",
+                evidence_ids=["ev_cta"],
+            ),
+            ContentDraftRevisionCtaBlock(
+                cta_id="cta_second",
+                placement="Na końcu",
+                body_markdown="Druga CTA.",
+                evidence_ids=["ev_second"],
+            ),
+        ],
+    )
+    request = ContentCodexSectionProposalRequest(
+        expected_base_digest="a" * 64,
+        selected_cta_ids=["cta_contact"],
+        requested_by="Wilku",
+    )
+    output = StructuredDraftOutput.model_construct(
+        title="Tytuł",
+        sections=[],
+        cta="Opisz swoją sytuację, a wspólnie ustalimy bezpieczny następny krok.",
+        source_facts_used=["ev_cta"],
+    )
+
+    assert request.selected_section_headings == []
+    assert component_scope_blocker(
+        output,
+        base_revision=base_revision,
+        selected_headings=[],
+        selected_cta_ids=request.selected_cta_ids,
+    ) is None
+    ctas = merge_selected_cta_blocks(base_revision, output, request.selected_cta_ids)
+    assert [cta.body_markdown for cta in ctas] == [
+        "Opisz swoją sytuację, a wspólnie ustalimy bezpieczny następny krok.",
+        "Druga CTA.",
+    ]
+    with pytest.raises(ValueError):
+        ContentCodexSectionProposalRequest(
+            expected_base_digest="a" * 64,
+            selected_section_ids=["section_1"],
+            selected_cta_ids=["cta_contact"],
+            requested_by="Wilku",
+        )
 
 
 def test_child_quality_item_merges_exact_persisted_revision_evidence() -> None:
@@ -271,7 +332,7 @@ def test_child_quality_item_merges_exact_persisted_revision_evidence() -> None:
         ]
     )
 
-    enriched = _item_with_revision_lineage(
+    enriched = item_with_revision_lineage(
         item,
         base_revision=revision,
         selected_headings=["Sekcja"],

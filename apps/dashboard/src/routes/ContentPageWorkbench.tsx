@@ -58,7 +58,7 @@ type ContentPageWorkbenchActions = {
   codexProposalResult: ContentCodexSectionProposalResponse | null;
   codexProposalBaseRevision: ContentDraftRevision | null;
   runCodexSectionProposal: (
-    selection: { sectionIds: string[] } | { sectionHeadings: string[] }
+    selection: { sectionIds: string[] } | { sectionHeadings: string[] } | { ctaIds: string[] }
   ) => void;
   refreshCodexProposalWorkspace: () => void;
   initialDraftPending: boolean;
