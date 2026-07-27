@@ -10,7 +10,6 @@ import {
   getContentWorkflowEntry,
   getContentInventoryCatalog,
   getContentOperatorContext,
-  type ContentWorkItemQueueCandidate,
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
   type ContentTargetDiscovery,
@@ -20,11 +19,6 @@ import {
   type ContentInitialDraftResponse,
   type ContentInventoryCatalogResponse,
   type ContentOperatorContext,
-  type ContentWordPressDraftActivationPacketResponse,
-  type ContentWordPressDraftWriteReadinessResponse,
-  type KnowledgeSourceMaterialReadiness,
-  type KnowledgeSourceMaterialView,
-  type WordPressAuthoringProfile
 } from "../lib/api";
 import { loadContentWorkflowSnapshot, type ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
 
@@ -40,26 +34,10 @@ export type ContentInitialDraftQuery = UseQueryResult<ContentInitialDraftRespons
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
 export type ContentOperatorContextQuery = UseQueryResult<ContentOperatorContext, Error>;
 export type ContentWorkflowSnapshotQuery = UseQueryResult<ContentWorkflowSnapshot, Error>;
-export type WordPressAuthoringProfileQuery = UseQueryResult<WordPressAuthoringProfile, Error>;
-export type WordPressDraftWriteReadinessQuery = UseQueryResult<
-  ContentWordPressDraftWriteReadinessResponse,
-  Error
->;
-export type WordPressDraftActivationPacketQuery = UseQueryResult<
-  ContentWordPressDraftActivationPacketResponse,
-  Error
->;
-export type KnowledgeSourceMaterialReadinessQuery = UseQueryResult<
-  KnowledgeSourceMaterialReadiness,
-  Error
->;
-export type KnowledgeSourceMaterialsQuery = UseQueryResult<KnowledgeSourceMaterialView[], Error>;
 
 export function contentDecisionContextQueryKey(workItemId: string | null) {
   return ["content-workflow", "work-item", workItemId, "decision-context"] as const;
 }
-
-export type { ContentWorkItemQueueCandidate };
 
 export function useContentTargetDiscovery(
   workItemId: string,
