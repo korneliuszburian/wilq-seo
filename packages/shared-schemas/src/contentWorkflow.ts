@@ -582,11 +582,50 @@ export const ContentNewPageOverlapGuardSchema = z.object({
   candidates: z.array(ContentNewPageOverlapCandidateSchema).default([])
 });
 
+export const ContentNewPageServiceOptionSchema = z.object({
+  service_card_id: z.string().min(1),
+  label: z.string().min(1),
+  summary: z.string().min(1),
+  evidence_ids: z.array(z.string()).default([])
+});
+
+export const ContentNewPageFoundationCommandSchema = z.object({
+  expected_brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_overlap_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  service_card_id: z.string().min(1),
+  confirmed_by: z.string().min(2).max(160)
+}).strict();
+
+export const ContentNewPagePlanningFoundationSchema = z.object({
+  foundation_id: z.string().min(1),
+  work_item_id: z.string().min(1),
+  brief_id: z.string().min(1),
+  brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  overlap_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  overlap_evidence_ids: z.array(z.string()).default([]),
+  service_card_id: z.string().min(1),
+  service_card_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  service_label: z.string().min(1),
+  service_evidence_ids: z.array(z.string()).default([]),
+  confirmed_by: z.string().min(2),
+  created_at: z.string()
+});
+
+export const ContentNewPageFoundationResultSchema = z.object({
+  status: z.enum(["created", "idempotent", "blocked", "conflict"]),
+  foundation: ContentNewPagePlanningFoundationSchema.nullable().optional(),
+  reason: z.string().min(1),
+  safe_next_step: z.string().min(1)
+});
+
 export const ContentNewPageBriefWorkspaceSchema = z.object({
   response_type: z.literal("content_new_page_brief_workspace"),
-  contract_version: z.literal("content_new_page_brief_workspace_v1"),
+  contract_version: z.literal("content_new_page_brief_workspace_v2"),
   brief: ContentNewPageBriefSchema,
   overlap_guard: ContentNewPageOverlapGuardSchema,
+  overlap_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  service_options: z.array(ContentNewPageServiceOptionSchema).default([]),
+  foundation: ContentNewPagePlanningFoundationSchema.nullable().optional(),
   review_status: z.literal("blocked"),
   review_reason: z.string().min(1),
   next_action_label: z.string().min(1)
@@ -4062,6 +4101,8 @@ export type ContentTargetDraftActionCommand = z.infer<typeof ContentTargetDraftA
 export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
 export type ContentNewPageBriefInput = z.input<typeof ContentNewPageBriefInputSchema>;
 export type ContentNewPageBriefWorkspace = z.infer<typeof ContentNewPageBriefWorkspaceSchema>;
+export type ContentNewPageFoundationCommand = z.input<typeof ContentNewPageFoundationCommandSchema>;
+export type ContentNewPageFoundationResult = z.infer<typeof ContentNewPageFoundationResultSchema>;
 export type ContentInventoryCatalogItem = z.infer<typeof ContentInventoryCatalogItemSchema>;
 export type ContentInventoryCatalogResponse = z.infer<typeof ContentInventoryCatalogResponseSchema>;
 export type ContentInventoryMaterialResponse = z.infer<typeof ContentInventoryMaterialResponseSchema>;

@@ -1,14 +1,14 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getContentNewPageBriefWorkspace, type ContentNewPageBriefWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageFoundation, getContentNewPageBriefWorkspace, type ContentNewPageBriefWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, getContentNewPageBriefWorkspace: vi.fn() };
+  return { ...actual, createContentNewPageFoundation: vi.fn(), getContentNewPageBriefWorkspace: vi.fn() };
 });
 
 const entry: ContentWorkflowEntryResponse = {
@@ -100,6 +100,30 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(screen.getByText("Dowody sprawdzonego katalogu: ev_wp_other")).toBeInTheDocument();
   });
 
+  it("binds an explicit service card to the exact brief and overlap read", async () => {
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace());
+    vi.mocked(createContentNewPageFoundation).mockResolvedValue({
+      status: "created",
+      foundation: null,
+      reason: "Podstawa zapisana.",
+      safe_next_step: "Przygotuj plan dokumentu w kolejnym etapie workflow."
+    });
+
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_no_conflict" });
+
+    await screen.findByText("Podstawa planowania");
+    fireEvent.change(screen.getByLabelText("Karta usługi"), { target: { value: "service_environment" } });
+    fireEvent.change(screen.getByLabelText("Potwierdza"), { target: { value: "Wilku" } });
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz podstawę planowania" }));
+
+    await waitFor(() => expect(createContentNewPageFoundation).toHaveBeenCalledWith("content_new_page_brief_test", {
+      expected_brief_digest: "a".repeat(64),
+      expected_overlap_digest: "b".repeat(64),
+      service_card_id: "service_environment",
+      confirmed_by: "Wilku"
+    }));
+  });
+
   it("shows the candidate, matching basis, and evidence when a person must decide", async () => {
     vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({
       disposition: "human_decision_required",
@@ -141,7 +165,7 @@ describe("ContentWorkflowEntryPanel", () => {
 function savedBriefWorkspace(overlap: Partial<ContentNewPageBriefWorkspace["overlap_guard"]> = {}): ContentNewPageBriefWorkspace {
   return {
     response_type: "content_new_page_brief_workspace",
-    contract_version: "content_new_page_brief_workspace_v1",
+    contract_version: "content_new_page_brief_workspace_v2",
     brief: {
       brief_id: "content_new_page_brief_test",
       brief_digest: "a".repeat(64),
@@ -163,6 +187,14 @@ function savedBriefWorkspace(overlap: Partial<ContentNewPageBriefWorkspace["over
       candidates: [],
       ...overlap
     },
+    overlap_digest: "b".repeat(64),
+    service_options: [{
+      service_card_id: "service_environment",
+      label: "Obsługa środowiskowa",
+      summary: "Zatwierdzona karta usługi.",
+      evidence_ids: ["ev_service"]
+    }],
+    foundation: null,
     review_status: "blocked",
     review_reason: "Brief nie jest jeszcze dokumentem do review.",
     next_action_label: "Przygotowanie dokumentu zostanie udostępnione w następnym etapie"

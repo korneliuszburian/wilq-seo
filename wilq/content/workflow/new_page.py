@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.content.knowledge.cards import ContentKnowledgeCard, ekologus_content_knowledge_cards
 from wilq.content.workflow.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
@@ -62,15 +63,64 @@ class ContentNewPageOverlapGuard(BaseModel):
     candidates: list[ContentNewPageOverlapCandidate] = Field(default_factory=list)
 
 
+class ContentNewPageServiceOption(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    service_card_id: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
+class ContentNewPageFoundationCommand(BaseModel):
+    """Explicit human choice that may seed later planning, never a document."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    expected_brief_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    expected_overlap_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    service_card_id: str = Field(min_length=1)
+    confirmed_by: str = Field(min_length=2, max_length=160)
+
+
+class ContentNewPagePlanningFoundation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    foundation_id: str = Field(min_length=1)
+    work_item_id: str = Field(min_length=1)
+    brief_id: str = Field(min_length=1)
+    brief_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    overlap_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    overlap_evidence_ids: list[str] = Field(default_factory=list)
+    service_card_id: str = Field(min_length=1)
+    service_card_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    service_label: str = Field(min_length=1)
+    service_evidence_ids: list[str] = Field(default_factory=list)
+    confirmed_by: str = Field(min_length=2)
+    created_at: datetime
+
+
+class ContentNewPageFoundationResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["created", "idempotent", "blocked", "conflict"]
+    foundation: ContentNewPagePlanningFoundation | None = None
+    reason: str
+    safe_next_step: str
+
+
 class ContentNewPageBriefWorkspace(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     response_type: Literal["content_new_page_brief_workspace"] = "content_new_page_brief_workspace"
-    contract_version: Literal["content_new_page_brief_workspace_v1"] = (
-        "content_new_page_brief_workspace_v1"
+    contract_version: Literal["content_new_page_brief_workspace_v2"] = (
+        "content_new_page_brief_workspace_v2"
     )
     brief: ContentNewPageBrief
     overlap_guard: ContentNewPageOverlapGuard
+    overlap_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    service_options: list[ContentNewPageServiceOption] = Field(default_factory=list)
+    foundation: ContentNewPagePlanningFoundation | None = None
     review_status: Literal["blocked"] = "blocked"
     review_reason: str
     next_action_label: str
@@ -93,6 +143,7 @@ def build_new_page_brief_workspace(
     brief: ContentNewPageBrief,
     *,
     catalog: ContentInventoryCatalogResponse | None = None,
+    foundation: ContentNewPagePlanningFoundation | None = None,
 ) -> ContentNewPageBriefWorkspace:
     guard = build_new_page_overlap_guard(
         brief,
@@ -101,11 +152,85 @@ def build_new_page_brief_workspace(
     return ContentNewPageBriefWorkspace(
         brief=brief,
         overlap_guard=guard,
+        overlap_digest=new_page_overlap_digest(guard),
+        service_options=new_page_service_options(),
+        foundation=foundation,
         review_reason=(
             "Brief opisuje nową stronę, ale nie jest jeszcze dokumentem do review. "
             "Kolejny etap przygotuje dokument bez zmiany istniejących stron."
         ),
-        next_action_label="Przygotowanie dokumentu zostanie udostępnione w następnym etapie",
+        next_action_label=(
+            "Podstawa planowania została zapisana dla tej dokładnej wersji briefu."
+            if foundation is not None
+            else "Po kontroli pokrycia wybierz zatwierdzoną kartę usługi."
+        ),
+    )
+
+
+def new_page_overlap_digest(guard: ContentNewPageOverlapGuard) -> str:
+    return _digest(guard.model_dump(mode="json"))
+
+
+def new_page_service_options() -> list[ContentNewPageServiceOption]:
+    """Expose only approved service knowledge; never auto-match free-form brief text."""
+
+    return [
+        ContentNewPageServiceOption(
+            service_card_id=card.id,
+            label=card.title,
+            summary=card.summary,
+            evidence_ids=card.evidence_ids,
+        )
+        for card in ekologus_content_knowledge_cards()
+        if card.card_type == "service" and card.lifecycle_status == "approved_current"
+    ]
+
+
+def new_page_service_card(service_card_id: str) -> ContentKnowledgeCard | None:
+    return next(
+        (
+            card
+            for card in ekologus_content_knowledge_cards()
+            if card.id == service_card_id
+            and card.card_type == "service"
+            and card.lifecycle_status == "approved_current"
+        ),
+        None,
+    )
+
+
+def build_new_page_planning_foundation(
+    *,
+    brief: ContentNewPageBrief,
+    guard: ContentNewPageOverlapGuard,
+    command: ContentNewPageFoundationCommand,
+    service_card: ContentKnowledgeCard,
+) -> ContentNewPagePlanningFoundation:
+    if command.expected_brief_digest != brief.brief_digest:
+        raise ValueError("Brief zmienił się przed zapisaniem podstawy planowania.")
+    if command.expected_overlap_digest != new_page_overlap_digest(guard):
+        raise ValueError("Kontrola pokrycia zmieniła się; odczytaj ją ponownie.")
+    if guard.disposition != "no_conflict":
+        raise ValueError("Kontrola pokrycia nie pozwala jeszcze rozpocząć nowej strony.")
+    if (
+        service_card.id != command.service_card_id
+        or service_card.lifecycle_status != "approved_current"
+    ):
+        raise ValueError("Wybrana karta usługi nie jest zatwierdzona do użycia.")
+    suffix = brief.brief_id.removeprefix("content_new_page_brief_")
+    return ContentNewPagePlanningFoundation(
+        foundation_id=f"content_new_page_foundation_{uuid4().hex}",
+        work_item_id=f"content_work_item_new_page_{suffix}",
+        brief_id=brief.brief_id,
+        brief_digest=brief.brief_digest,
+        overlap_digest=command.expected_overlap_digest,
+        overlap_evidence_ids=guard.evidence_ids,
+        service_card_id=service_card.id,
+        service_card_digest=_digest(service_card.model_dump(mode="json")),
+        service_label=service_card.title,
+        service_evidence_ids=service_card.evidence_ids,
+        confirmed_by=command.confirmed_by,
+        created_at=utc_now(),
     )
 
 
@@ -242,3 +367,9 @@ def _normalized(value: str) -> str:
     value = unicodedata.normalize("NFKD", value)
     value = "".join(character for character in value if not unicodedata.combining(character))
     return re.sub(r"\s+", " ", value.casefold()).strip()
+
+
+def _digest(payload: object) -> str:
+    return sha256(
+        json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+    ).hexdigest()
