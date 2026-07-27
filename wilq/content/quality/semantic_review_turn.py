@@ -20,7 +20,14 @@ _INSTRUCTION = (
     "widoczne w rewizji względem planu, odbiorcy, intencji, zapytań i dozwolonych faktów. "
     "Nie zatwierdzaj tekstu, nie przepisuj go, nie wymyślaj faktów ani targetów, nie twórz "
     "ActionObject i nie wykonuj write. Każdy finding ma być instrukcją dla człowieka i "
-    "wskazywać exact target z dozwolonej listy. Zwróć publish_ready=false, "
+    "wskazywać exact target z dozwolonej listy. W affected_targets używaj wyłącznie "
+    "literalnych wartości z application_context.allowed_targets; nie używaj nagłówków, "
+    "nazw pól, skrótów ani własnych aliasów. W evidence_ids używaj wyłącznie literalnych "
+    "wartości z application_context.allowed_evidence_ids albo pustej listy. Dla każdego "
+    "wymiaru ze statusem needs_changes zwróć dokładnie jeden finding o tym samym wymiarze; "
+    "nie zwracaj findingu dla wymiaru strong. Pole revision w wilq_untrusted_source "
+    "jest kompletnym dokumentem tej exact rewizji: nie zgłaszaj jego ucięcia ani "
+    "braku elementów, jeżeli są obecne w tej strukturze. Zwróć publish_ready=false, "
     "human_review_required=true oraz wyłącznie JSON zgodny ze schema."
 )
 
@@ -31,6 +38,8 @@ def semantic_review_turn_request(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
 ) -> CodexAppServerStructuredTurnRequest:
+    allowed_targets = _allowed_targets(revision)
+    allowed_evidence_ids = _revision_evidence_ids(revision)
     application_context = json.dumps(
         {
             "operation": "review_full_content_revision_semantics",
@@ -46,6 +55,8 @@ def semantic_review_turn_request(
                 "do_not_create_action": True,
                 "do_not_write_vendor": True,
             },
+            "allowed_targets": allowed_targets,
+            "allowed_evidence_ids": allowed_evidence_ids,
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -53,9 +64,14 @@ def semantic_review_turn_request(
     )
     untrusted_context = json.dumps(
         {
+            # The full immutable document is the subject of review. The plan
+            # and source input are a bounded review basis rather than a replay
+            # of connector bookkeeping; this keeps the exact document visible
+            # to the advisory turn without weakening any server-side digest or
+            # lineage checks.
             "revision": revision.model_dump(mode="json"),
-            "approved_planning_proposal": proposal.model_dump(mode="json"),
-            "planning_input": planning_input.model_dump(mode="json"),
+            "approved_planning_proposal": compact_semantic_review_proposal(proposal),
+            "planning_input": compact_semantic_review_planning_input(planning_input),
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -80,14 +96,7 @@ def semantic_review_output_schema(revision: ContentDraftRevision) -> dict[str, o
     definitions = _mapping(schema, "$defs")
     dimension = _properties(_mapping(definitions, "ContentSemanticDimensionAssessment"))
     finding = _properties(_mapping(definitions, "ContentSemanticFindingOutput"))
-    allowed_targets = [
-        "page_assets",
-        "faq",
-        "cta_blocks",
-        "internal_links",
-        "whole_document",
-        *(str(item.section_id) for item in revision.sections),
-    ]
+    allowed_targets = _allowed_targets(revision)
     _mapping(dimension, "dimension")["enum"] = list(CONTENT_SEMANTIC_DIMENSIONS)
     _restrict_array(dimension, "affected_targets", allowed_targets)
     _mapping(finding, "dimension")["enum"] = list(CONTENT_SEMANTIC_DIMENSIONS)
@@ -124,6 +133,76 @@ def _revision_evidence_ids(revision: ContentDraftRevision) -> list[str]:
             for evidence_id in values
         )
     )
+
+
+def _allowed_targets(revision: ContentDraftRevision) -> list[str]:
+    return [
+        "page_assets",
+        "faq",
+        "cta_blocks",
+        "internal_links",
+        "whole_document",
+        *(str(item.section_id) for item in revision.sections),
+    ]
+
+
+def compact_semantic_review_planning_input(
+    planning_input: ContentPlanningInput,
+) -> dict[str, object]:
+    """Project only the plan facts needed to assess one immutable document."""
+
+    payload = planning_input.model_dump(mode="json", exclude_none=True)
+    allowed = {
+        "planning_input_digest",
+        "work_item_id",
+        "final_canonical_url",
+        "service_label",
+        "target_reader",
+        "buyer_problem",
+        "buyer_trigger",
+        "search_intent",
+        "source_facts",
+        "query_portfolio",
+        "claim_ledger",
+        "baseline_cta_direction",
+        "evidence_ids",
+        "source_connectors",
+    }
+    return {key: value for key, value in payload.items() if key in allowed}
+
+
+def compact_semantic_review_proposal(
+    proposal: ContentPlanningProposal,
+) -> dict[str, object]:
+    """Keep the approved editorial contract, omit duplicated inventory telemetry."""
+
+    payload = proposal.model_dump(mode="json", exclude_none=True)
+    allowed = {
+        "work_item_id",
+        "planning_digest",
+        "proposal_id",
+        "planning_input_digest",
+        "final_canonical_url",
+        "service_card_id",
+        "service_label",
+        "target_reader",
+        "buyer_problem",
+        "buyer_trigger",
+        "search_intent",
+        "angle",
+        "value_proposition",
+        "cta_direction",
+        "sections",
+        "page_assets",
+        "faq",
+        "cta_blocks",
+        "internal_links",
+        "evidence_ids",
+        "source_connectors",
+        "source_material_ids",
+        "knowledge_card_ids",
+    }
+    return {key: value for key, value in payload.items() if key in allowed}
 
 
 def _properties(definition: dict[str, object]) -> dict[str, object]:

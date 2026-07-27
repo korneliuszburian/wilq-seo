@@ -21,10 +21,17 @@ from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts.initial_full_draft_turn import (
     compact_initial_draft_planning_input,
 )
-from wilq.content.planning.dynamic_input import build_content_planning_input
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInput,
+    build_content_planning_input,
+)
 from wilq.content.quality import semantic_review_store as semantic_review_store_module
-from wilq.content.quality.semantic_review_turn import semantic_review_output_schema
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.quality.semantic_review_turn import (
+    semantic_review_output_schema,
+    semantic_review_turn_request,
+)
+from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
 from wilq.storage.local_state import local_state_store
 
 pytest_plugins = ("tests.content.test_dynamic_planning_proposals_api",)
@@ -55,6 +62,42 @@ def test_semantic_output_schema_requires_defaulted_properties_for_codex() -> Non
         if not isinstance(definition, dict) or "properties" not in definition:
             continue
         assert set(definition["required"]) == set(definition["properties"])
+
+
+def test_semantic_turn_exposes_exact_allowed_targets_to_the_reviewer() -> None:
+    revision = ContentDraftRevision.model_construct(
+        work_item_id="content_work_item_exact",
+        revision_id="content_revision_exact",
+        content_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="section_exact_01",
+                heading="Zakres współpracy",
+                body_markdown="Zakres jest opisany konkretnie.",
+                evidence_ids=["ev_exact"],
+            )
+        ]
+    )
+
+    request = semantic_review_turn_request(
+        revision=revision,
+        planning_input=ContentPlanningInput.model_construct(),
+        proposal=ContentPlanningProposal.model_construct(),
+    )
+
+    context = json.loads(request.application_context)
+    assert context["allowed_targets"] == [
+        "page_assets",
+        "faq",
+        "cta_blocks",
+        "internal_links",
+        "whole_document",
+        "section_exact_01",
+    ]
+    assert context["allowed_evidence_ids"] == ["ev_exact"]
+    assert "literalnych wartości z application_context.allowed_targets" in request.instruction
+    assert "literalnych wartości z application_context.allowed_evidence_ids" in request.instruction
 
 
 def test_full_draft_model_envelope_is_compact_but_digest_bound(
