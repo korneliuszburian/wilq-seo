@@ -1,7 +1,11 @@
 from types import SimpleNamespace
 
 import wilq.connectors.refresh as refresh_module
-from wilq.connectors.refresh import _persist_refresh_result, _quality_contract
+from wilq.connectors.refresh import (
+    _persist_refresh_result,
+    _quality_contract,
+    run_connector_refresh,
+)
 from wilq.connectors.vendor import VendorReadResult
 from wilq.schemas import (
     ConnectorQualityState,
@@ -10,6 +14,7 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     ConnectorSettlementState,
+    ConnectorStatusValue,
 )
 
 
@@ -118,6 +123,50 @@ def test_async_persist_reuses_quality_contract_for_completed_vendor_read(monkeyp
     assert completed.quality_state == ConnectorQualityState.unverified
     assert saved[0].covered_window.date_start == "2026-06-19"
     assert completed.status_label == "odczyt zakończony"
+
+
+def test_sync_refresh_relabels_completed_run_after_metric_persistence(monkeypatch) -> None:
+    saved: list[ConnectorRefreshRun] = []
+
+    class FakeLocalState:
+        def save_connector_refresh_run(self, run: ConnectorRefreshRun) -> ConnectorRefreshRun:
+            saved.append(run)
+            return run
+
+    class FakeMetricStore:
+        def save_connector_refresh_metrics(self, *_args, **_kwargs) -> None:
+            return None
+
+    monkeypatch.setattr(refresh_module, "local_state_store", lambda: FakeLocalState())
+    monkeypatch.setattr(refresh_module, "metric_store", lambda: FakeMetricStore())
+    monkeypatch.setattr(
+        refresh_module,
+        "get_connector_status",
+        lambda _connector_id: SimpleNamespace(
+            status=ConnectorStatusValue.configured,
+            configured=True,
+            missing_credentials=[],
+            required_env=[],
+        ),
+    )
+    monkeypatch.setattr(
+        refresh_module,
+        "_refresh_result",
+        lambda **_kwargs: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="completed",
+        ),
+    )
+
+    completed = run_connector_refresh(
+        "google_search_console",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+    )
+
+    assert completed is not None
+    assert completed.metrics_persisted is True
+    assert completed.status_label == "odczyt zakończony"
+    assert saved[-1].status_label == "odczyt zakończony"
 
 
 def test_async_refresh_transitions_keep_api_owned_status_labels(monkeypatch) -> None:

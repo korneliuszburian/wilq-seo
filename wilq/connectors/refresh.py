@@ -198,7 +198,12 @@ def run_connector_refresh(
             }
         )
         return local_state_store().save_connector_refresh_run(failed_run)
-    saved_run = saved_run.model_copy(update={"metrics_persisted": True})
+    saved_run = saved_run.model_copy(
+        update={
+            "metrics_persisted": True,
+            "status_label": connector_refresh_status_label(saved_run.status),
+        }
+    )
     saved_run = local_state_store().save_connector_refresh_run(saved_run)
     return saved_run
 
@@ -311,7 +316,12 @@ def _persist_refresh_result(
         )
         return local_state_store().save_connector_refresh_run(failed_run)
     return local_state_store().save_connector_refresh_run(
-        saved_run.model_copy(update={"metrics_persisted": True})
+        saved_run.model_copy(
+            update={
+                "metrics_persisted": True,
+                "status_label": connector_refresh_status_label(saved_run.status),
+            }
+        )
     )
 
 
