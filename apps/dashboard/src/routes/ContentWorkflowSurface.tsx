@@ -130,7 +130,12 @@ export function ContentWorkflowSurface() {
     selectedCandidate,
     workflow,
     initialDraft
-  } = useContentWorkflowQueries(selectedWorkItemId, textWorkspaceOpen, reviewOpen, browseInventory);
+  } = useContentWorkflowQueries(
+    selectedWorkItemId,
+    textWorkspaceOpen,
+    reviewOpen,
+    browseInventory
+  );
 
   return (
     <ContentWorkflowRouteState
@@ -384,37 +389,13 @@ function ContentWorkflowRouteState({
       />
     );
   }
-  if (queue.isLoading) {
-    const selectedInventoryItem = selectedWorkItemId
-      ? inventory.data?.items.find((item) => item.work_item_id === selectedWorkItemId)
-      : undefined;
-    return selectedInventoryItem ? <ContentWorkflowInventorySelectionLoading item={selectedInventoryItem} /> : <LoadingBand />;
-  }
-  if (queue.error || !queue.data) return <ContentWorkflowError />;
-  return (
-    <ContentWorkflowQueueReady
-      activeWorkItemId={activeWorkItemId}
-      authoringProfile={authoringProfile}
-      draftActivationPacket={draftActivationPacket}
-      decisionContext={decisionContext}
-      documentWorkspace={documentWorkspace}
-      enrichment={enrichment}
-      inventory={inventory}
-      initialDraft={initialDraft}
-      operatorContext={operatorContext}
-      queue={queue.data}
-      selectedCandidate={selectedCandidate}
-      workflow={workflow}
-      textWorkspaceOpen={textWorkspaceOpen}
-      reviewOpen={reviewOpen}
-      operatorLabel={operatorLabel}
-      sourceRefresh={sourceRefresh}
-      onSelectWorkItem={onSelectWorkItem}
-      onOpenTextWorkspace={onOpenTextWorkspace}
-      onOpenReview={onOpenReview}
-      onReturnToText={onReturnToText}
-    />
-  );
+  return <ContentReviewRoute
+    decisionContext={decisionContext}
+    initialDraft={initialDraft}
+    workflow={workflow}
+    operatorLabel={operatorLabel}
+    onReturnToText={onReturnToText}
+  />;
 }
 
 function ContentWorkflowQueueReady({
@@ -670,6 +651,36 @@ function ContentReviewWorkspace({
       </details>
     </main>
   );
+}
+
+function ContentReviewRoute({
+  decisionContext,
+  initialDraft,
+  workflow,
+  operatorLabel,
+  onReturnToText
+}: {
+  decisionContext: ContentDecisionContextQuery;
+  initialDraft: ContentInitialDraftQuery;
+  workflow: ContentWorkflowSnapshotQuery;
+  operatorLabel: string | null;
+  onReturnToText: (workItemId: string) => void;
+}) {
+  if (decisionContext.isLoading || initialDraft.isLoading || workflow.isLoading) {
+    return <DocumentWorkspacePending />;
+  }
+  if (decisionContext.error || !decisionContext.data || initialDraft.error) {
+    return <DocumentWorkspaceError onRetry={() => {
+      void Promise.all([decisionContext.refetch(), initialDraft.refetch(), workflow.refetch()]);
+    }} />;
+  }
+  return <ContentReviewWorkspace
+    context={decisionContext.data}
+    initialDraft={initialDraft}
+    workflow={workflow}
+    operatorLabel={operatorLabel}
+    onReturnToText={onReturnToText}
+  />;
 }
 
 function ReviewDecisionPanel({

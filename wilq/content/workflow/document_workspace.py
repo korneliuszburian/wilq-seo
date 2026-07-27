@@ -412,6 +412,14 @@ def _comparison(
             status="unavailable",
             reason="Porównanie pojawi się po zapisaniu nowej wersji dokumentu.",
         )
+    if source.status != "available":
+        return ContentDocumentWorkspaceComparison(
+            status="unavailable",
+            reason=(
+                "Nie można jeszcze rzetelnie zestawić zmian: odczyt obecnej strony "
+                "nie potwierdził kompletnej struktury nagłówków."
+            ),
+        )
     source_by_heading: dict[str, list[tuple[int, ContentDocumentWorkspaceSourceSection]]] = {}
     for source_index, section in enumerate(source.ordered_sections):
         source_by_heading.setdefault(_heading_key(section.heading), []).append(
