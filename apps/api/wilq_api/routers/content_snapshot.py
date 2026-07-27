@@ -188,9 +188,11 @@ def snapshot_for_work_item_or_404(
             status_code=404,
             detail="Content work item is not available for the gated workflow.",
         )
-    # A persisted revision is an immutable fixed point. Prefer the proposal
-    # bound to its planning digest so a newer current inventory does not hide
-    # the reviewable draft behind a stale-input scope screen.
+    # A persisted, current revision is an immutable fixed point. Prefer the
+    # proposal bound to its planning digest only while that revision still
+    # matches the current source context. Once the context changes, expose the
+    # newest proposal so an operator can review it instead of being trapped on
+    # the superseded plan that cannot produce another draft.
     revision_bound_proposal = (
         proposal_store.latest_for_planning_digest(
             work_item_id,
@@ -204,7 +206,7 @@ def snapshot_for_work_item_or_404(
         else None
     )
     generated_planning_proposal: ContentPlanningProposal | None
-    if revision_bound_proposal is not None:
+    if revision_bound_proposal is not None and snapshot.revision_workspace.context_current:
         generated_planning_proposal = revision_bound_proposal
     elif not resolve_planning_proposal:
         # The first selected-page read is a context projection. Planning has
