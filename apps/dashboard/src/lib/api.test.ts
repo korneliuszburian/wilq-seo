@@ -4,6 +4,7 @@ import type { ContentWorkItem } from "@wilq/shared-schemas";
 import {
   actionApiPath,
   applyAction,
+  createContentNewPageFoundation,
   getActionMutationReadiness,
   getActionsMutationReadiness,
   getContentKnowledgeCards,
@@ -237,6 +238,57 @@ afterEach(() => {
 });
 
 describe("content workflow API helpers", () => {
+  it("posts an exact new-page foundation and preserves its typed lineage", async () => {
+    const foundation = {
+      foundation_id: "content_new_page_foundation_a",
+      work_item_id: "content_work_item_new_page_a",
+      brief_id: "content_new_page_brief_a",
+      brief_digest: "a".repeat(64),
+      overlap_digest: "b".repeat(64),
+      overlap_evidence_ids: ["ev_inventory_a"],
+      service_card_id: "knowledge_service_a",
+      service_card_digest: "c".repeat(64),
+      service_label: "Usługa A",
+      service_evidence_ids: ["ev_service_a"],
+      confirmed_by: "Wilku",
+      created_at: "2026-07-27T10:00:00Z"
+    };
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      expect(new URL(String(url)).pathname).toBe(
+        "/api/content/new-page-briefs/content_new_page_brief_a/planning-foundation"
+      );
+      expect(init?.method).toBe("POST");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        expected_brief_digest: foundation.brief_digest,
+        expected_overlap_digest: foundation.overlap_digest,
+        service_card_id: foundation.service_card_id,
+        confirmed_by: foundation.confirmed_by
+      });
+      return new Response(JSON.stringify({
+        status: "created",
+        foundation,
+        reason: "Podstawa planowania jest związana z dokładnym briefem.",
+        safe_next_step: "Przygotuj plan dokumentu w kolejnym etapie workflow."
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await createContentNewPageFoundation("content_new_page_brief_a", {
+      expected_brief_digest: foundation.brief_digest,
+      expected_overlap_digest: foundation.overlap_digest,
+      service_card_id: foundation.service_card_id,
+      confirmed_by: foundation.confirmed_by
+    });
+
+    expect(result.foundation).toMatchObject({
+      foundation_id: foundation.foundation_id,
+      work_item_id: foundation.work_item_id,
+      brief_digest: foundation.brief_digest,
+      overlap_digest: foundation.overlap_digest,
+      service_card_digest: foundation.service_card_digest
+    });
+  });
+
   it("encodes action IDs for every action helper path suffix", () => {
     const actionId = "act/unsafe?x=1";
 

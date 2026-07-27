@@ -31,6 +31,8 @@ import {
   ContentWorkflowEntryResponseSchema,
   ContentNewPageBriefInputSchema,
   ContentNewPageBriefWorkspaceSchema,
+  ContentNewPageFoundationCommandSchema,
+  ContentNewPageFoundationResultSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionReviewResponseSchema,
@@ -139,6 +141,8 @@ import {
   type ContentWorkflowEntryResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
+  type ContentNewPageFoundationCommand,
+  type ContentNewPageFoundationResult,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
   type ContentDraftRevisionConflict,
@@ -593,6 +597,17 @@ export function getContentNewPageBriefWorkspace(
   return apiGet(
     `/api/content/new-page-briefs/${encodeURIComponent(briefId)}`,
     ContentNewPageBriefWorkspaceSchema
+  );
+}
+
+export function createContentNewPageFoundation(
+  briefId: string,
+  request: ContentNewPageFoundationCommand
+): Promise<ContentNewPageFoundationResult> {
+  return apiPost(
+    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/planning-foundation`,
+    ContentNewPageFoundationResultSchema,
+    ContentNewPageFoundationCommandSchema.parse(request)
   );
 }
 
@@ -1075,6 +1090,8 @@ export type {
   ContentWorkflowEntryResponse,
   ContentNewPageBriefInput,
   ContentNewPageBriefWorkspace,
+  ContentNewPageFoundationCommand,
+  ContentNewPageFoundationResult,
   ContentCodexSectionProposalRequest,
   ContentCodexSectionProposalResponse,
   ContentInitialDraftRequest,

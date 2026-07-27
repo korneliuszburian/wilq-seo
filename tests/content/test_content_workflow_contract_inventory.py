@@ -49,7 +49,10 @@ from wilq.content.workflow.contracts import (
 from wilq.content.workflow.decision_context import ContentDecisionContext
 from wilq.content.workflow.document_workspace import ContentDocumentWorkspace
 from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.new_page import ContentNewPageBriefWorkspace
+from wilq.content.workflow.new_page import (
+    ContentNewPageBriefWorkspace,
+    ContentNewPageFoundationResult,
+)
 from wilq.content.workflow.planning import ContentPlanningReviewResponse
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 from wilq.content.workflow.target_discovery import ContentTargetDiscovery
@@ -66,6 +69,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/new-page-briefs/{brief_id}",
     ): ContentNewPageBriefWorkspace,
+    (
+        "POST",
+        "/api/content/new-page-briefs/{brief_id}/planning-foundation",
+    ): ContentNewPageFoundationResult,
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
     (
         "GET",

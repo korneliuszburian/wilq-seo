@@ -47,6 +47,9 @@ SAFE_IDENTIFIER_KEYS = {
     "revision_id",
     "revision_ids",
     "base_revision_id",
+    "brief_id",
+    "brief_digest",
+    "expected_brief_digest",
     "content_digest",
     "revision_digest",
     "target_contract_digest",
@@ -82,6 +85,10 @@ SAFE_IDENTIFIER_KEYS = {
     "knowledge_card_ids",
     "service_card_id",
     "service_card_ids",
+    "service_card_digest",
+    "overlap_digest",
+    "expected_overlap_digest",
+    "foundation_id",
     "recommended_service_card_id",
     "landing_page",
     "metric_name",
@@ -145,6 +152,8 @@ SAFE_SECRET_TELEMETRY_KEYS = {
 }
 SAFE_DIGEST_IDENTIFIER_KEYS = {
     "content_digest",
+    "brief_digest",
+    "expected_brief_digest",
     "draft_package_digest",
     "expected_planning_digest",
     "planning_digest",
@@ -159,6 +168,9 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "source_revision_digest",
     "duplicate_risk_inventory_digest",
     "proposal_digest",
+    "service_card_digest",
+    "overlap_digest",
+    "expected_overlap_digest",
 }
 CONTENT_TEXT_KEYS = {
     "body_markdown",

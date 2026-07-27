@@ -1,9 +1,10 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
 
 import {
   getContentWorkflowEntry,
   createContentNewPageBrief,
+  createContentNewPageFoundation,
   getContentNewPageBriefWorkspace,
   type ContentInventoryCatalogResponse,
   type ContentNewPageBriefInput,
@@ -212,8 +213,32 @@ function NewPageSaved({ workspace, onReturn }: { workspace: ContentNewPageBriefW
     <p className="mt-3 text-sm leading-7 text-slate-700">Brief jest zapisany. To nadal plan nowej strony, nie dokument do publikacji ani układ WordPressa.</p>
     <dl className="mt-6 grid gap-3 sm:grid-cols-2"><InfoTile label="Cel" value={workspace.brief.purpose} /><InfoTile label="Usługa" value={workspace.brief.service} /><InfoTile label="Odbiorca" value={workspace.brief.audience} /><InfoTile label="Intencja wyszukiwania" value={workspace.brief.search_intent} /><InfoTile label="Miejsce w serwisie" value={workspace.brief.proposed_ia_location} /></dl>
     <section className="mt-7 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800">Pokrycie istniejących treści</p><h2 className="mt-2 text-xl font-semibold text-ink">{guard.label}</h2><p className="mt-2 text-sm leading-6 text-slate-700">{guard.reason}</p><details className="mt-4 rounded-xl border border-emerald-200 bg-white px-3 py-2"><summary className="cursor-pointer text-sm font-semibold text-ink">Sprawdzone strony i dowody</summary>{guard.candidates.length ? <ul className="mt-3 space-y-3">{guard.candidates.map((candidate) => <li key={`${candidate.url}-${candidate.match_kind}`} className="border-t border-slate-100 pt-3 text-sm first:border-t-0 first:pt-0"><span className="font-semibold text-ink">{candidate.title}</span><span className="mt-1 block text-xs text-slate-600">{candidate.url}</span><span className="mt-2 block text-xs text-slate-700">{overlapMatchLabel(candidate.match_kind)}</span><EvidenceIds evidenceIds={candidate.evidence_ids} /></li>)}</ul> : <p className="mt-3 text-sm leading-6 text-slate-700">{overlapEmptyStateCopy(guard.disposition)}</p>}<EvidenceIds evidenceIds={guard.evidence_ids} label="Dowody sprawdzonego katalogu" /></details><p className="mt-4 text-xs leading-5 text-slate-600">{guard.caveat}</p></section>
-    <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Co dalej?</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-slate-700">{workspace.next_action_label}</p></section>
+    <NewPagePlanningFoundation workspace={workspace} />
   </NewPageShell>;
+}
+
+function NewPagePlanningFoundation({ workspace }: { workspace: ContentNewPageBriefWorkspace }) {
+  const queryClient = useQueryClient();
+  const [serviceCardId, setServiceCardId] = useState("");
+  const [confirmedBy, setConfirmedBy] = useState("");
+  const foundation = useMutation({
+    mutationFn: () => createContentNewPageFoundation(workspace.brief.brief_id, {
+      expected_brief_digest: workspace.brief.brief_digest,
+      expected_overlap_digest: workspace.overlap_digest,
+      service_card_id: serviceCardId,
+      confirmed_by: confirmedBy
+    }),
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: ["content-workflow", "new-page-brief", workspace.brief.brief_id]
+    })
+  });
+  if (workspace.foundation) {
+    return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Podstawa planowania</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-action">{workspace.next_action_label}</p><p className="mt-2 text-sm leading-6 text-slate-700">Wybrana karta usługi: {workspace.foundation.service_label}. To nie tworzy planu, dokumentu ani zmiany w WordPressie.</p></section>;
+  }
+  if (workspace.overlap_guard.disposition !== "no_conflict") {
+    return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Podstawa planowania</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-slate-700">{workspace.next_action_label}</p></section>;
+  }
+  return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Podstawa planowania</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><div className="mt-4 space-y-3"><p className="text-sm leading-6 text-slate-700">Wybierz świadomie zatwierdzoną kartę usługi. WILQ nie dopasowuje jej automatycznie do opisu briefu.</p>{workspace.service_options.length ? <><label className="block text-sm font-semibold text-ink">Karta usługi<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={serviceCardId} onChange={(event) => setServiceCardId(event.target.value)}><option value="">Wybierz kartę</option>{workspace.service_options.map((option) => <option key={option.service_card_id} value={option.service_card_id}>{option.label}</option>)}</select></label><label className="block text-sm font-semibold text-ink">Potwierdza<input className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={confirmedBy} onChange={(event) => setConfirmedBy(event.target.value)} placeholder="Imię i nazwisko" /></label><button type="button" disabled={!serviceCardId || confirmedBy.trim().length < 2 || foundation.isPending} className="rounded-xl bg-action px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" onClick={() => foundation.mutate()}>{foundation.isPending ? "Zapisuję podstawę…" : "Zapisz podstawę planowania"}</button>{foundation.data ? <p className="text-sm leading-6 text-action">{foundation.data.safe_next_step}</p> : null}{foundation.isError ? <p className="text-sm leading-6 text-wait">Nie udało się zapisać podstawy. Odśwież brief i sprawdź dane ponownie.</p> : null}</> : <p className="text-sm leading-6 text-wait">Nie ma obecnie zatwierdzonej karty usługi. WILQ nie utworzy podstawy planowania bez takiego źródła.</p>}</div></section>;
 }
 
 function NewPageShell({ onReturn, children }: { onReturn: () => void; children: ReactNode }) {
