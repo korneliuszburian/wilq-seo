@@ -375,7 +375,7 @@ function ContentWorkflowRouteState({
       />
     );
   }
-  if (textWorkspaceOpen && !reviewOpen) {
+  if (!reviewOpen) {
     return (
       <ContentTextWorkspace
         workItemId={selectedWorkItemId}

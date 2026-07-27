@@ -136,12 +136,12 @@ export function useContentWorkflowQueries(
   reviewOpen = false,
   browseInventory = false
 ) {
-  // Text is a direct, read-only document surface.  It does not need the
-  // selection catalogue or supporting panels just to identify the URL already
-  // present in the route.  Review deliberately keeps its richer exact-state
-  // reads below.
-  const directTextWorkspace = Boolean(selectedWorkItemId && textWorkspaceOpen && !reviewOpen);
-  const selectedWorkflowRead = Boolean(selectedWorkItemId && !directTextWorkspace);
+  // A selected route is a document workspace first. The route already owns
+  // its identity, so neither the default view nor Text needs a queue/catalog
+  // round-trip before showing source and canonical-document state. Review is
+  // the explicit substate that still needs richer exact-revision reads.
+  const directDocumentWorkspace = Boolean(selectedWorkItemId && !reviewOpen);
+  const selectedWorkflowRead = Boolean(selectedWorkItemId && !directDocumentWorkspace);
   const entry = useQuery({
     queryKey: ["content-workflow", "entry"],
     queryFn: () => getContentWorkflowEntry(),
@@ -208,7 +208,7 @@ export function useContentWorkflowQueries(
   const requestedCandidate = mergedQueue.data?.candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
-  const activeWorkItemId = directTextWorkspace
+  const activeWorkItemId = directDocumentWorkspace
     ? selectedWorkItemId
     : requestedCandidate?.work_item_id ?? null;
   const selectedCandidate =
@@ -227,7 +227,7 @@ export function useContentWorkflowQueries(
     queryKey: ["content-workflow", "work-item", activeWorkItemId, "document-workspace"],
     queryFn: () => getContentWorkItemDocumentWorkspace(activeWorkItemId ?? ""),
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    enabled: Boolean(activeWorkItemId && textWorkspaceOpen)
+    enabled: Boolean(activeWorkItemId && directDocumentWorkspace)
   });
   const workflow = useQuery({
     queryKey: ["content-workflow", "work-item", activeWorkItemId],

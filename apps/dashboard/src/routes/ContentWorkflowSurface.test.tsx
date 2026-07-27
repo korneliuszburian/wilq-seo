@@ -1501,20 +1501,7 @@ describe("ContentWorkflowSurface", () => {
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalledWith("missing_work_item");
   });
 
-  it("waits for the exact selected-item read when a warm catalog does not contain the deep link", async () => {
-    const catalog = contentQueueResponse();
-    catalog.candidates = catalog.candidates.filter(
-      (candidate) => candidate.work_item_id !== "content_work_item_bdo"
-    );
-    const selected = contentQueueResponse();
-    let resolveSelected!: (value: ContentWorkItemQueueResponse) => void;
-    const selectedPromise = new Promise<ContentWorkItemQueueResponse>((resolve) => {
-      resolveSelected = resolve;
-    });
-    vi.mocked(getContentWorkItemQueue).mockImplementation((workItemId?: string) =>
-      workItemId ? selectedPromise : Promise.resolve(catalog)
-    );
-
+  it("opens a selected page as one source-and-document workspace without legacy support reads", async () => {
     render(
       <App
         appRouter={createWilqRouter({
@@ -1525,17 +1512,15 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    await waitFor(() =>
-      expect(getContentWorkItemQueue).toHaveBeenCalledWith("content_work_item_bdo")
-    );
-    expect(screen.queryByText("Nie udało się odczytać workflow treści z WILQ.")).not.toBeInTheDocument();
-
-    resolveSelected(selected);
-
-    await waitFor(() =>
-      expect(getContentWorkItemDecisionContext).toHaveBeenCalledWith("content_work_item_bdo")
-    );
-    expect(screen.queryByText("Nie udało się odczytać workflow treści z WILQ.")).not.toBeInTheDocument();
+    expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(getContentWorkItemDocumentWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
+    expect(getContentWorkItemQueue).not.toHaveBeenCalled();
+    expect(getContentInventoryCatalog).not.toHaveBeenCalled();
+    expect(getContentServiceProfile).not.toHaveBeenCalled();
+    expect(getKnowledgeSourceMaterialReadiness).not.toHaveBeenCalled();
+    expect(getKnowledgeSourceMaterials).not.toHaveBeenCalled();
+    expect(getContentOperatorContext).not.toHaveBeenCalled();
+    expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
   });
 
   it("follows browser history after the route is already mounted", async () => {
