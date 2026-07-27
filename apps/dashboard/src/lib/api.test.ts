@@ -575,6 +575,7 @@ describe("content workflow API helpers", () => {
       work_item_id: "content/work item",
       base_revision_id: "revision/1?stale",
       selected_section_headings: ["Kogo dotyczy BDO"],
+      selected_cta_ids: [],
       revision: null,
       quality_review: null,
       quality_review_scope: "persisted_selected_sections_and_declared_lineage",
@@ -629,6 +630,7 @@ describe("content workflow API helpers", () => {
       expected_base_digest: "a".repeat(64),
       selected_section_headings: ["Kogo dotyczy BDO"],
       selected_section_ids: [],
+      selected_cta_ids: [],
       requested_by: "wilku"
     });
   });
