@@ -179,15 +179,19 @@ function contentWorkflowSearch(search: Record<string, unknown>) {
     section_heading: optionalSearchString(search.section_heading),
     planning_digest: optionalSearchString(search.planning_digest),
     workspace: optionalSearchString(search.workspace),
-    text: optionalSearchString(search.text),
-    review: optionalSearchString(search.review),
-    browse: optionalSearchString(search.browse),
+    text: optionalSearchFlag(search.text),
+    review: optionalSearchFlag(search.review),
+    browse: optionalSearchFlag(search.browse),
     new_page: optionalSearchString(search.new_page)
   };
 }
 
 function optionalSearchString(value: unknown) {
   return typeof value === "string" && value ? value : undefined;
+}
+
+function optionalSearchFlag(value: unknown): 1 | undefined {
+  return value === "1" || value === 1 ? 1 : undefined;
 }
 
 const rootRoute = createRootRoute({ component: Shell });

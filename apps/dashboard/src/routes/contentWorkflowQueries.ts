@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import {
   getContentWordPressDraftActivationPacket,
@@ -136,7 +136,6 @@ export function useContentWorkflowQueries(
   reviewOpen = false,
   browseInventory = false
 ) {
-  const queryClient = useQueryClient();
   // Text is a direct, read-only document surface.  It does not need the
   // selection catalogue or supporting panels just to identify the URL already
   // present in the route.  Review deliberately keeps its richer exact-state
@@ -159,16 +158,7 @@ export function useContentWorkflowQueries(
     queryKey: ["content-workflow", "queue", "selected", selectedWorkItemId],
     queryFn: () => getContentWorkItemQueue(selectedWorkItemId ?? undefined),
     enabled: selectedWorkflowRead,
-    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    // The selected response is intentionally lightweight. It opens the page
-    // quickly while the catalog query fills the picker with every available
-    // page instead of replacing the catalog with one selected candidate.
-    placeholderData: () =>
-      queryClient.getQueryData<ContentWorkItemQueueResponse>([
-        "content-workflow",
-        "queue",
-        "catalog"
-      ])
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS
   });
   const queueData = useMemo(
     () => mergeContentWorkItemQueueCatalog(queueCatalog.data, selectedQueue.data),
@@ -179,8 +169,11 @@ export function useContentWorkflowQueries(
     ...queue,
     data: queueData,
     error: queue.error ?? queueCatalog.error,
-    isLoading: queue.isLoading && !queueData,
-    isPending: queue.isPending && !queueData
+    // The route ID is an authority distinct from the optional catalog. A warm
+    // catalog that does not include a deep-linked item must not turn the
+    // selected-item resolution into an apparent "not found" error.
+    isLoading: Boolean(selectedWorkItemId && (selectedQueue.isLoading || selectedQueue.isPending)),
+    isPending: Boolean(selectedWorkItemId && (selectedQueue.isLoading || selectedQueue.isPending))
   } as ContentWorkItemQueueQuery;
   const inventory = useQuery({
     queryKey: ["content-workflow", "inventory-catalog"],

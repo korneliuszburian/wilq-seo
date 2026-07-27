@@ -381,7 +381,7 @@ describe("ContentWorkflowSurface", () => {
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -608,7 +608,7 @@ describe("ContentWorkflowSurface", () => {
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=%221%22&review=%221%22", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1&review=1", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1499,6 +1499,43 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByRole("combobox", { name: "Strona" })).not.toBeInTheDocument();
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalledWith("missing_work_item");
+  });
+
+  it("waits for the exact selected-item read when a warm catalog does not contain the deep link", async () => {
+    const catalog = contentQueueResponse();
+    catalog.candidates = catalog.candidates.filter(
+      (candidate) => candidate.work_item_id !== "content_work_item_bdo"
+    );
+    const selected = contentQueueResponse();
+    let resolveSelected!: (value: ContentWorkItemQueueResponse) => void;
+    const selectedPromise = new Promise<ContentWorkItemQueueResponse>((resolve) => {
+      resolveSelected = resolve;
+    });
+    vi.mocked(getContentWorkItemQueue).mockImplementation((workItemId?: string) =>
+      workItemId ? selectedPromise : Promise.resolve(catalog)
+    );
+
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo",
+          defaultPendingMinMs: 0
+        })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    await waitFor(() =>
+      expect(getContentWorkItemQueue).toHaveBeenCalledWith("content_work_item_bdo")
+    );
+    expect(screen.queryByText("Nie udało się odczytać workflow treści z WILQ.")).not.toBeInTheDocument();
+
+    resolveSelected(selected);
+
+    await waitFor(() =>
+      expect(getContentWorkItemDecisionContext).toHaveBeenCalledWith("content_work_item_bdo")
+    );
+    expect(screen.queryByText("Nie udało się odczytać workflow treści z WILQ.")).not.toBeInTheDocument();
   });
 
   it("follows browser history after the route is already mounted", async () => {
