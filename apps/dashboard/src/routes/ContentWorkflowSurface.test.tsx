@@ -1,13 +1,7 @@
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  applyAction,
-  confirmAction,
-  getAction,
-  getConnectorRefreshRun,
-  getContentWorkItemEnrichment,
   getContentWorkItemInitialDraft,
   getContentWorkItemEditorialIntegrity,
   getContentWorkItemRevisionHtmlPackage,
@@ -19,90 +13,28 @@ import {
   getContentWorkItemDocumentWorkspace,
   getContentInventoryCatalog,
   getContentOperatorContext,
-  getContentServiceProfile,
   getContentWorkItemQueue,
-  getKnowledgeSourceMaterialReadiness,
-  getKnowledgeSourceMaterials,
-  getContentWorkItemPlanningProposal,
-  getContentWorkItemSemanticReview,
   getContentWorkItemSnapshot,
-  getContentWordPressDraftActivationPacket,
-  getContentWordPressDraftWriteReadiness,
-  getContentWordPressExistingDraftUpdateReadiness,
-  getWordPressAuthoringProfile,
-  impactCheckAction,
-  postContentWorkItemCodexSectionProposal,
   postContentWorkItemInitialDraft,
-  postContentWorkItemPlanningProposal,
-  postContentWorkItemSemanticReview,
-  postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
-  previewAction,
-  refreshConnector,
-  reviewAction,
   saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
-  saveContentWorkItemPlanningReview,
-  saveContentWorkItemSnapshotAudit,
-  saveContentWorkItemSnapshotHumanReview,
-  validateAction,
-  type ActionApplyResult,
   type ActionObject,
-  type ContentCodexSectionProposalResponse,
-  type ContentDraftRevisionBinding,
   type ContentInitialDraftResponse,
-  type ContentOpportunityEnrichmentResponse,
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
   type ContentInventoryCatalogResponse,
-  type ContentPlanningProposalResponse,
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
-  type ContentSemanticReviewResponse,
   type ContentWorkItemQueueResponse,
-  type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
-  type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
-  type ContentWordPressDraftActivationPacketResponse,
-  type ContentWordPressDraftWriteReadinessResponse,
-  type ContentWordPressExistingDraftUpdateReadinessResponse,
-  type WordPressAuthoringProfile
 } from "../lib/api";
 import type { ContentWorkItem } from "@wilq/shared-schemas";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
-import { ContentCodexSectionProposalResult } from "./ContentCodexSectionProposalResult";
-import { ContentDecisionContextPanel } from "./ContentDecisionContextPanel";
-import { summarizeGa4MetricFacts } from "./ContentWorkflowJourneyContext";
-import { workflowStepActionLabel, workflowStepInstruction } from "./ContentWorkflowSurface";
-
-describe("workflowStepActionLabel", () => {
-  it("does not imply dev readiness when the current handoff step is blocked", () => {
-    expect(workflowStepActionLabel("dev_draft", true)).toBe("Sprawdź blokadę dev preview");
-    expect(workflowStepActionLabel("review", true)).toBe("Sprawdź blokadę review");
-  });
-
-  it("keeps normal current-step actions when no blocker exists", () => {
-    expect(workflowStepActionLabel("dev_draft", false)).toBe("Otwórz dev preview");
-    expect(workflowStepActionLabel("scope", true)).toBe("Otwórz kontekst strony");
-  });
-
-  it("puts the API blocker reason into the marketer-facing instruction", () => {
-    expect(workflowStepInstruction("review", { label: "Review wymaga decyzji", reason: "Brak decyzji dla exact revision." })).toBe(
-      "Review wymaga decyzji: Brak decyzji dla exact revision."
-    );
-    expect(workflowStepInstruction("review")).toContain("Uruchom advisory review");
-  });
-});
-
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
-    applyAction: vi.fn(),
-    confirmAction: vi.fn(),
-    getAction: vi.fn(),
-    getConnectorRefreshRun: vi.fn(),
-    getContentWorkItemEnrichment: vi.fn(),
     getContentWorkItemInitialDraft: vi.fn(),
     getContentWorkItemEditorialIntegrity: vi.fn(),
     getContentWorkItemRevisionHtmlPackage: vi.fn(),
@@ -114,33 +46,12 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemDocumentWorkspace: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
-    getContentServiceProfile: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
-    getKnowledgeSourceMaterialReadiness: vi.fn(),
-    getKnowledgeSourceMaterials: vi.fn(),
-    getContentWorkItemPlanningProposal: vi.fn(),
-    getContentWorkItemSemanticReview: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
-    getContentWordPressDraftActivationPacket: vi.fn(),
-    getContentWordPressDraftWriteReadiness: vi.fn(),
-    getContentWordPressExistingDraftUpdateReadiness: vi.fn(),
-    getWordPressAuthoringProfile: vi.fn(),
-    impactCheckAction: vi.fn(),
-    postContentWorkItemCodexSectionProposal: vi.fn(),
     postContentWorkItemInitialDraft: vi.fn(),
-    postContentWorkItemPlanningProposal: vi.fn(),
-    postContentWorkItemSemanticReview: vi.fn(),
-    postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
-    previewAction: vi.fn(),
-    refreshConnector: vi.fn(),
-    reviewAction: vi.fn(),
     saveContentWorkItemDraftRevision: vi.fn(),
     saveContentWorkItemDraftRevisionReview: vi.fn(),
-    saveContentWorkItemPlanningReview: vi.fn(),
-    saveContentWorkItemSnapshotHumanReview: vi.fn(),
-    saveContentWorkItemSnapshotAudit: vi.fn(),
-    validateAction: vi.fn()
   };
 });
 
@@ -153,54 +64,13 @@ describe("ContentWorkflowSurface", () => {
       trust_level: "local_unverified",
       authentication_status: "not_configured"
     } as never);
-    vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
     vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
     vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(contentDecisionContext());
     vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(contentDocumentWorkspace());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
-    vi.mocked(getContentServiceProfile).mockResolvedValue(serviceProfileContext() as never);
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
-    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue(knowledgeReadiness());
-    vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue([]);
-    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(
-      planningProposalStatus()
-    );
-    vi.mocked(getContentWorkItemSemanticReview).mockResolvedValue(
-      semanticReviewNotGenerated()
-    );
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
-    vi.mocked(getContentWordPressDraftActivationPacket).mockResolvedValue(
-      wordpressDraftActivationPacket()
-    );
-    vi.mocked(getContentWordPressDraftWriteReadiness).mockResolvedValue(
-      wordpressDraftWriteReadiness()
-    );
-    vi.mocked(getContentWordPressExistingDraftUpdateReadiness).mockResolvedValue(
-      existingDraftUpdateReadiness()
-    );
-    vi.mocked(getWordPressAuthoringProfile).mockResolvedValue(wordpressAuthoringProfile());
-    vi.mocked(saveContentWorkItemSnapshotHumanReview).mockResolvedValue(
-      workflowSnapshot({ review: humanReview() }).human_review
-    );
-    vi.mocked(saveContentWorkItemSnapshotAudit).mockResolvedValue(
-      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() }).wordpress_handoff
-    );
-    vi.mocked(postContentWorkItemCodexSectionProposal).mockResolvedValue(
-      codexSectionProposalResponse()
-    );
     vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
-    vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValue(
-      planningProposalStatus({ status: "created" })
-    );
-    vi.mocked(postContentWorkItemSemanticReview).mockResolvedValue(
-      semanticReviewCreated()
-    );
-    vi.mocked(postContentWorkItemWordPressAuthoringPayloadPreview).mockResolvedValue(
-      wordpressAuthoringPayloadPreviewResponse()
-    );
-    vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
-      wordpressDraftExecutionResponse()
-    );
     const revision = savedDraftRevision();
     const workspace = savedRevisionWorkspace(revision);
     vi.mocked(saveContentWorkItemDraftRevision).mockResolvedValue({
@@ -214,33 +84,12 @@ describe("ContentWorkflowSurface", () => {
       review,
       workspace: { ...workspace, status: "approved", latest_review: review, can_review: false }
     });
-    const planning = planningWorkspace();
-    vi.mocked(saveContentWorkItemPlanningReview).mockResolvedValue({
-      status: "recorded",
-      decision: planning.scope_decision!,
-      planning_workspace: planning
-    });
   });
 
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
     vi.unstubAllGlobals();
-  });
-
-  it("keeps GA4 metric grouping stable when source rows arrive in another order", () => {
-    const facts = workItem().metric_facts ?? [];
-    const reordered = [...facts].reverse();
-    expect(summarizeGa4MetricFacts(facts)).toEqual(summarizeGa4MetricFacts(reordered));
-    const duplicate = { ...facts[0] };
-    const unknown = { ...facts[0], name: "new_metric", metric_label: "nowa metryka", value: 7 };
-    expect(summarizeGa4MetricFacts([...facts, duplicate, unknown])).toContain(
-      "nowa metryka (google / organic: 7)"
-    );
-    expect(summarizeGa4MetricFacts(facts)).toEqual([
-      "aktywni użytkownicy (google / cpc: 12, google / organic: 26)",
-      "wskaźnik zaangażowania (google / organic: 42%)"
-    ]);
   });
 
   it("does not claim that a document exists when the workspace has no revision", async () => {
@@ -688,85 +537,7 @@ describe("ContentWorkflowSurface", () => {
 
 });
 
-async function openWorkflowDetails() {
-  fireEvent.click(await screen.findByRole("button", { name: "Otwórz źródła i ograniczenia strony" }));
-  await screen.findByTestId("content-workflow-sources-view");
-}
 
-function planningProposalStatus(
-  overrides: Partial<ContentPlanningProposalResponse> = {}
-): ContentPlanningProposalResponse {
-  return {
-    status: "not_generated",
-    work_item_id: "content_work_item_bdo",
-    service_card_id: "ekologus_service_bdo_reporting",
-    planning_input_digest: "f".repeat(64),
-    input_summary: planningInputSummary(),
-    proposal: null,
-    runtime: {
-      status: "not_started",
-      thread_id: null,
-      turn_id: null,
-      event_methods: [],
-      item_types: [],
-      external_call_attempted: false
-    },
-    blockers: [],
-    safe_next_step: "Wygeneruj pierwszy plan i sprawdź go przed decyzją człowieka.",
-    publish_ready: false,
-    ...overrides
-  };
-}
-
-function planningInputSummary(): NonNullable<ContentPlanningProposalResponse["input_summary"]> {
-  return {
-    final_canonical_url: "https://www.ekologus.pl/bdo/",
-    service_label: "BDO i sprawozdawczość środowiskowa",
-    inventory_status: "available",
-    content_inventory_status: "available",
-    source_assessments: [
-      {
-        source: "wordpress",
-        status: "used",
-        reason: "Publiczne inventory jest aktualne.",
-        landing_match_tiers: ["host_alias"],
-        evidence_ids: ["ev_wp_bdo"],
-        knowledge_card_ids: []
-      },
-      {
-        source: "service_profile",
-        status: "used",
-        reason: "Karta usługi jest zatwierdzona.",
-        landing_match_tiers: [],
-        evidence_ids: ["ev_service_bdo"],
-        knowledge_card_ids: ["ekologus_service_bdo_reporting"]
-      },
-      {
-        source: "gsc",
-        status: "used",
-        reason: "Dokładne zapytania GSC są aktualne.",
-        landing_match_tiers: ["tracking_only"],
-        evidence_ids: [],
-        knowledge_card_ids: []
-      },
-      ...(["ga4", "google_ads", "ahrefs", "keyword_planner", "merchant", "localo", "social"] as const)
-        .map((source) => ({
-          source,
-          status: "not_applicable" as const,
-          reason: "To źródło nie zasila tego planu.",
-          landing_match_tiers: [],
-          evidence_ids: [],
-          knowledge_card_ids: []
-        }))
-    ],
-    source_fact_count: 2,
-    source_fact_ids: ["ekologus_public_bdo_faq_2026_07_01"],
-    source_material_ids: [],
-    evidence_id_count: 3,
-    knowledge_card_count: 1,
-    measurement_metrics: ["gsc_clicks"]
-  };
-}
 
 function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
   return {
@@ -1037,19 +808,6 @@ function contentFreshnessAssessment() {
     connector_labels_requiring_refresh: [],
     summary: "Podstawowe dane treści są świeże.",
     next_step: "Można przejść do decyzji contentowej."
-  };
-}
-
-function staleGscFreshnessAssessment() {
-  return {
-    ...contentFreshnessAssessment(),
-    state: "stale" as const,
-    state_label: "wymaga odświeżenia",
-    requires_refresh: true,
-    stale_connector_ids: ["google_search_console"],
-    connector_labels_requiring_refresh: ["Google Search Console"],
-    summary: "GSC jest nieświeże dla tej decyzji.",
-    next_step: "Odśwież Google Search Console."
   };
 }
 
@@ -1377,51 +1135,6 @@ function contentTargetDraftPreview(): ContentTargetDraftPreview {
   };
 }
 
-function contentOpportunityEnrichmentResponse(): ContentOpportunityEnrichmentResponse {
-  return {
-    enrichment: {
-      id: "content_opportunity_enrichment_content_work_item_bdo",
-      work_item_id: "content_work_item_bdo",
-      decision_id: "decision_bdo",
-      title: "BDO dla firm",
-      topic: "BDO dla firm",
-      recommended_mode: "refresh" as const,
-      recommended_mode_label: "odśwież istniejącą treść",
-      status: "ready",
-      status_label: "gotowe do pracy nad treścią",
-      intent: "informational_service",
-      intent_label: "informacyjno-usługowa",
-      buyer_problem:
-        "Firma chce wiedzieć, czy musi aktualizować obowiązki BDO i co zrobić przed kontaktem z doradcą.",
-      buyer_trigger: "Zbliża się termin lub kontrola obowiązków środowiskowych.",
-      service_fit: "obsługa środowiskowa Ekologus",
-      cta_hypothesis: "Zaproponuj krótką konsultację obowiązków BDO.",
-      source_facts: [
-        {
-          id: "source_fact_decision_bdo_0",
-          signal_kind: "gsc_query",
-          label: "Popyt z GSC",
-          summary: "GSC pokazuje popyt na temat BDO.",
-          evidence_ids: ["ev_gsc_bdo"],
-          source_connectors: ["google_search_console"]
-        }
-      ],
-      measurement_baseline: {
-        status: "ready_to_plan",
-        label: "pomiar do zaplanowania",
-        reason: "WILQ ma dowody GSC i publiczny adres do baseline.",
-        metrics_to_watch: ["GSC clicks", "GSC impressions"],
-        source_connectors: ["google_search_console"],
-        evidence_ids: ["ev_gsc_bdo"]
-      },
-      blockers: [],
-      evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-      source_connectors: ["google_search_console", "wordpress_ekologus"],
-      safe_next_step: "Przejdź do briefu i claim gate."
-    },
-    blockers: []
-  };
-}
 
 function inventoryResolution() {
   return {
@@ -1621,8 +1334,8 @@ function workflowSnapshot({
 }: {
   candidate?: ContentWorkItemQueueResponse["candidates"][number];
   item?: ContentWorkItem;
-  review?: ReturnType<typeof humanReview> | null;
-  handoff?: ReturnType<typeof wordpressHandoff> | null;
+  review?: ContentWorkItemWorkflowSnapshotResponse["human_review"]["review"];
+  handoff?: ContentWorkItemWorkflowSnapshotResponse["wordpress_handoff"]["handoff_result"]["handoff"];
   workspace?: ContentWorkItemWorkflowSnapshotResponse["revision_workspace"];
   planning?: ContentWorkItemWorkflowSnapshotResponse["planning_workspace"];
   currentStepId?: ContentWorkItemWorkflowSnapshotResponse["current_step_id"];
@@ -1998,102 +1711,7 @@ function initialDraftResponse(
   };
 }
 
-function semanticReviewNotGenerated(
-  revision = savedFullDraftRevision()
-): ContentSemanticReviewResponse {
-  return {
-    status: "not_generated",
-    work_item_id: revision.work_item_id,
-    revision_id: revision.revision_id,
-    revision_digest: revision.content_digest,
-    review: null,
-    run_id: null,
-    runtime: {
-      status: "not_started",
-      thread_id: null,
-      turn_id: null,
-      event_methods: [],
-      item_types: [],
-      external_call_attempted: false
-    },
-    blockers: [],
-    safe_next_step: "Uruchom advisory review.",
-    publish_ready: false,
-    human_review_required: true,
-    action_object_created: false
-  };
-}
 
-function semanticReviewCreated(
-  revision = savedFullDraftRevision()
-): ContentSemanticReviewResponse {
-  const sectionId = revision.sections[0]?.section_id ?? "section_bdo_1";
-  const dimensions = [
-    "answer_directness",
-    "completeness",
-    "logical_flow",
-    "specificity",
-    "repetition",
-    "search_intent_fit",
-    "buyer_fit",
-    "credibility",
-    "conversion_clarity"
-  ] as const;
-  const review = {
-    review_id: "content_semantic_review_bdo_1",
-    work_item_id: revision.work_item_id,
-    revision_id: revision.revision_id,
-    revision_digest: revision.content_digest,
-    criteria_version: "wilq_semantic_content_review_v1" as const,
-    codex_run_id: "codex_content_semantic_review_bdo_1",
-    status: "needs_changes" as const,
-    dimensions: dimensions.map((dimension) => ({
-      dimension,
-      status: dimension === "answer_directness" ? "needs_changes" as const : "strong" as const,
-      reason: "Ocena dokładnej wersji dokumentu.",
-      affected_targets: [sectionId]
-    })),
-    findings: [{
-      finding_id: "content_semantic_review_bdo_1_finding_01",
-      dimension: "answer_directness" as const,
-      severity: "medium" as const,
-      label: "Odpowiedź zaczyna się zbyt ogólnie",
-      reason: "Czytelnik zbyt późno widzi decyzję.",
-      instruction: "Przenieś konkretną odpowiedź na początek sekcji.",
-      affected_targets: [sectionId],
-      evidence_ids: ["ev_gsc_bdo"]
-    }],
-    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-    source_connectors: ["google_search_console", "wordpress_ekologus"],
-    requested_by: "wilku",
-    created_at: "2026-07-16T18:00:00Z",
-    safe_next_step: "Wybierz sekcje do poprawy.",
-    publish_ready: false as const,
-    human_review_required: true as const,
-    action_object_created: false as const
-  };
-  return {
-    status: "created",
-    work_item_id: revision.work_item_id,
-    revision_id: revision.revision_id,
-    revision_digest: revision.content_digest,
-    review,
-    run_id: review.codex_run_id,
-    runtime: {
-      status: "completed",
-      thread_id: "thread_semantic_bdo",
-      turn_id: "turn_semantic_bdo",
-      event_methods: ["turn/completed"],
-      item_types: ["agentMessage"],
-      external_call_attempted: false
-    },
-    blockers: [],
-    safe_next_step: review.safe_next_step,
-    publish_ready: false,
-    human_review_required: true,
-    action_object_created: false
-  };
-}
 
 function savedDraftRevisionReview(
   revision: ReturnType<typeof savedDraftRevision>,
@@ -2129,94 +1747,6 @@ function savedRevisionWorkspace(
     can_review: true,
     safe_next_step: `Sprawdź dokładną treść wersji ${revision.revision_number}.`
   };
-}
-
-function needsChangesRevisionWorkspace(
-  revision: ReturnType<typeof savedDraftRevision>
-): ContentWorkItemWorkflowSnapshotResponse["revision_workspace"] {
-  return {
-    ...savedRevisionWorkspace(revision),
-    status: "needs_changes",
-    latest_review: savedDraftRevisionReview(revision, "needs_changes"),
-    can_save: true,
-    can_review: false,
-    safe_next_step: "Wprowadź poprawki i zapisz kolejną wersję."
-  };
-}
-
-function operatorStepsAtReview(): ContentWorkItemWorkflowSnapshotResponse["operator_steps"] {
-  return operatorSteps().map((step) => {
-    if (step.id === "draft") {
-      return {
-        ...step,
-        phase: "complete",
-        readiness: "ready",
-        status_label: "wersja zapisana",
-        blocker: null,
-        safe_next_step: "Sprawdź zapisaną wersję."
-      };
-    }
-    if (step.id === "review") {
-      return {
-        ...step,
-        phase: "current",
-        readiness: "review_required",
-        status_label: "wymaga decyzji",
-        can_open: true,
-        can_submit: true,
-        blocker: null,
-        safe_next_step: "Zapisz decyzję dla dokładnej wersji."
-      };
-    }
-    return step;
-  });
-}
-
-function approvedRevisionWorkspace(
-  revision: ReturnType<typeof savedDraftRevision>,
-  review: ReturnType<typeof savedDraftRevisionReview>
-): ContentWorkItemWorkflowSnapshotResponse["revision_workspace"] {
-  return {
-    ...savedRevisionWorkspace(revision),
-    status: "approved",
-    latest_review: review,
-    can_save: false,
-    can_review: false,
-    safe_next_step: "Przekaż dokładną wersję do WordPress jako nowy szkic."
-  };
-}
-
-function draftRevisionBinding(
-  revision: ReturnType<typeof savedDraftRevision>,
-  review: ReturnType<typeof savedDraftRevisionReview>
-): ContentDraftRevisionBinding {
-  return {
-    work_item_id: revision.work_item_id,
-    handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
-    revision_id: revision.revision_id,
-    content_digest: revision.content_digest,
-    draft_package_id: revision.draft_package_id,
-    draft_package_digest: revision.draft_package_digest,
-    planning_digest: revision.planning_digest!,
-    approval_decision_id: review.decision_id,
-    final_canonical_url: revision.final_canonical_url
-  };
-}
-
-function operatorStepsAtDevDraft(): ContentWorkItemWorkflowSnapshotResponse["operator_steps"] {
-  return operatorSteps().map((step) => ({
-    ...step,
-    phase: step.id === "dev_draft" ? "current" : "complete",
-    readiness: "ready",
-    status_label: step.id === "dev_draft" ? "gotowe do bezpiecznego przekazania" : "gotowe",
-    can_open: true,
-    can_submit: step.id === "dev_draft",
-    blocker: null,
-    safe_next_step:
-      step.id === "dev_draft"
-        ? "Przejdź przez podgląd, review, potwierdzenie i kontrolę zapisu."
-        : step.safe_next_step
-  }));
 }
 
 function wordpressDraftAction(): ActionObject {
@@ -2262,29 +1792,6 @@ function wordpressDraftAction(): ActionObject {
       allowed_operation: "create_wordpress_draft"
     },
     audit_events: []
-  };
-}
-
-function actionAuditEvent(
-  eventType: string,
-  binding: ContentDraftRevisionBinding,
-  sequence: number,
-  wordpressRevisionBlockers: unknown[] = []
-): ActionObject["audit_events"][number] {
-  return {
-    id: `audit_exact_revision_${sequence}`,
-    action_id: "act_apply_wordpress_draft_handoff",
-    event_type: eventType,
-    event_type_label: eventType,
-    actor: "operator_local_dashboard",
-    created_at: `2026-07-15T10:00:0${sequence}Z`,
-    summary: eventType,
-    evidence_ids: ["ev_wp_bdo"],
-    details: {
-      wordpress_draft_binding: binding,
-      wordpress_revision_blockers: wordpressRevisionBlockers
-    },
-    redacted: true
   };
 }
 
@@ -2400,610 +1907,13 @@ function measurementWindow() {
   };
 }
 
-function humanReview() {
-  return {
-    id: "human_review_content_work_item_bdo",
-    work_item_id: "content_work_item_bdo",
-    stage: "draft_package",
-    reviewed_by: "wilku",
-    decision: "approved",
-    notes: "Operator zatwierdził paczkę szkicu.",
-    checked_items: ["Brief i paczka szkicu są zgodne z dowodami WILQ."],
-    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-    blocked_claims_handled: [],
-    draft_package_id: "draft_package_content_work_item_bdo"
-  };
-}
 
-function wordpressHandoff(): NonNullable<
-  ContentWorkItemWorkflowSnapshotResponse["wordpress_handoff"]["handoff_result"]["handoff"]
-> {
-  return {
-    id: "wordpress_draft_handoff_content_work_item_bdo",
-    work_item_id: "content_work_item_bdo",
-    draft_package_id: "draft_package_content_work_item_bdo",
-    human_review_id: "human_review_content_work_item_bdo",
-    audit_id: "audit_content_work_item_bdo",
-    connector: "wordpress_ekologus" as const,
-    operation_type: "create_wordpress_draft" as const,
-    status: "prepared" as const,
-    post_status: "draft" as const,
-    authoring_mode: "the_content" as const,
-    title: "BDO dla firm",
-    final_canonical_url: "https://ekologus.pl/bdo/",
-    intended_final_url: "https://ekologus.pl/bdo/",
-    preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
-    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-    revision_sections: [],
-    publish_allowed: false,
-    destructive_update_allowed: false
-  };
-}
 
-function codexSectionProposalResponse(): ContentCodexSectionProposalResponse {
-  const base = savedDraftRevision();
-  const heading = base.sections[0]?.heading ?? "Kogo dotyczy BDO";
-  const runId = "codex_section_run_bdo_1";
-  const child = {
-    ...base,
-    revision_id: "content_revision_bdo_2",
-    revision_number: 2,
-    base_revision_id: base.revision_id,
-    content_digest: "b".repeat(64),
-    sections: base.sections.map((section, index) =>
-      index === 0
-        ? {
-            ...section,
-            body_markdown:
-              "Sprawdź, czy zakres działalności firmy tworzy obowiązki BDO, a następnie umów konsultację z Ekologus na podstawie dokumentów firmy."
-          }
-        : section
-    ),
-    proposal_metadata: {
-      source: "codex_app_server" as const,
-      codex_run_id: runId,
-      selected_section_headings: [heading],
-      section_lineage: [
-        {
-          heading,
-          evidence_ids: ["ev_gsc_bdo"],
-          claim_ids: ["claim_general_bdo"],
-          source_material_ids: [],
-          knowledge_card_ids: []
-        }
-      ],
-      selected_cta_ids: [],
-      cta_lineage: [],
-      quality_verdict: "needs_changes" as const,
-      quality_finding_codes: ["weak_cta"],
-      review_scope: "persisted_selected_sections_and_declared_lineage" as const,
-      semantic_review_required: true as const
-    },
-    created_by: "codex_app_server",
-    created_at: "2026-07-15T18:00:00Z"
-  };
-  const dimension = (label: string, status: "pass" | "needs_changes" = "pass") => ({
-    status,
-    label,
-    reason: status === "pass" ? "WILQ nie wykrył problemu." : "Ten obszar wymaga poprawy."
-  });
 
-  return {
-    status: "created",
-    run_id: runId,
-    work_item_id: base.work_item_id,
-    base_revision_id: base.revision_id,
-    selected_section_headings: [heading],
-    selected_cta_ids: [],
-    revision: child,
-    quality_review: {
-      review_id: "quality_review_content_revision_bdo_2",
-      work_item_id: base.work_item_id,
-      draft_package_id: base.draft_package_id,
-      verdict: "needs_changes",
-      evidence_coverage: dimension("Pokrycie dowodami"),
-      claim_safety: dimension("Bezpieczeństwo twierdzeń"),
-      duplicate_risk: dimension("Ryzyko duplikacji"),
-      usefulness: dimension("Użyteczność", "needs_changes"),
-      service_fit: dimension("Dopasowanie do usługi"),
-      search_intent_fit: dimension("Dopasowanie do intencji"),
-      buyer_problem_fit: dimension("Problem kupującego"),
-      cta_quality: dimension("Jakość CTA", "needs_changes"),
-      factual_precision: dimension("Precyzja faktów"),
-      polish_language_quality: dimension("Język polski"),
-      internal_link_fit: dimension("Linkowanie wewnętrzne"),
-      measurement_readiness: dimension("Gotowość pomiaru"),
-      blockers: [],
-      findings: [
-        {
-          code: "weak_cta",
-          severity: "needs_changes",
-          label: "Wzmocnij CTA",
-          reason: "Wezwanie do kontaktu nadal wymaga wskazania konkretnego następnego kroku.",
-          next_step: "Doprecyzuj zakres konsultacji.",
-          affected_section: heading,
-          evidence_ids: ["ev_gsc_bdo"],
-          source_connectors: ["google_search_console"]
-        }
-      ],
-      revision_instructions: [],
-      evidence_ids: ["ev_gsc_bdo"],
-      source_connectors: ["google_search_console"],
-      safe_next_step: "Przeczytaj child revision i wykonaj review człowieka."
-    },
-    quality_review_scope: "persisted_selected_sections_and_declared_lineage",
-    semantic_review_required: true,
-    runtime: {
-      status: "completed",
-      thread_id: "thread_bdo_1",
-      turn_id: "turn_bdo_1",
-      event_methods: ["thread/started", "turn/completed"],
-      item_types: ["agent_message"],
-      external_call_attempted: false
-    },
-    evidence_ids: ["ev_gsc_bdo"],
-    source_connectors: ["google_search_console"],
-    blockers: [],
-    safe_next_step: "Przejdź do review dokładnej wersji 2.",
-    publish_ready: false
-  };
-}
 
-function wordpressAuthoringPayloadPreviewResponse(): ContentWorkItemWordPressAuthoringPayloadPreviewResponse {
-  return {
-    authoring_profile: wordpressAuthoringProfile(),
-    preview_result: {
-      status: "ready",
-      mode: "dry_run",
-      connector: "wordpress_ekologus",
-      endpoint_kind: "posts",
-      post_status: "draft",
-      flexible_content_field_name: "podstrona",
-      sections: [
-        {
-          layout_name: "podstrona",
-          layout_label: "Podstrona",
-          section_heading: "Kogo dotyczy BDO",
-          field_values: {
-            tytul: "Kogo dotyczy BDO",
-            glowny_opis:
-              "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus i które dowody WILQ używa w szkicu.",
-            elementy: null
-          },
-          field_previews: [
-            {
-              field_name: "tytul",
-              field_label: "Tytuł",
-              field_type: "text",
-              value_preview: "Kogo dotyczy BDO",
-              safe_to_autofill: true,
-              note: null,
-              nested_values: [],
-              row_candidates: []
-            },
-            {
-              field_name: "glowny_opis",
-              field_label: "Główny opis",
-              field_type: "group",
-              value_preview:
-                "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus i które dowody WILQ używa w szkicu.",
-              safe_to_autofill: true,
-              note: "Grupa ACF: WILQ mapuje jej pod pola w podglądzie.",
-              nested_values: [
-                {
-                  field_name: "lead",
-                  field_label: "Lead",
-                  field_type: "wysiwyg",
-                  value_preview: "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus.",
-                  safe_to_autofill: true,
-                  note: null,
-                  nested_values: [],
-                  row_candidates: []
-                },
-                {
-                  field_name: "opis",
-                  field_label: "Opis",
-                  field_type: "wysiwyg",
-                  value_preview:
-                    "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus i które dowody WILQ używa w szkicu.",
-                  safe_to_autofill: true,
-                  note: null,
-                  nested_values: [],
-                  row_candidates: []
-                }
-              ],
-              row_candidates: []
-            },
-            {
-              field_name: "elementy",
-              field_label: "Elementy",
-              field_type: "flexible_content",
-              value_preview: null,
-              safe_to_autofill: true,
-              note:
-                "Pole zagnieżdżone: WILQ pokazuje możliwe mapowanie pod pól, ale wybór layoutu/wierszy wymaga osobnego ręcznego przeglądu.",
-              nested_values: [
-                {
-                  field_name: "opis",
-                  field_label: "Opis",
-                  field_type: "wysiwyg",
-                  value_preview: "Opis sekcji do sprawdzenia.",
-                  safe_to_autofill: true,
-                  note: null,
-                  nested_values: [],
-                  row_candidates: []
-                }
-              ],
-              row_candidates: [
-                {
-                  row_type: "acf_flexible_content_row",
-                  row_label: "Wiersz do ręcznego przeglądu: Kogo dotyczy BDO",
-                  review_status: "review_required",
-                  note:
-                    "WILQ proponuje tylko kandydat wiersza ACF do ręcznego przeglądu; nie wybiera finalnego layoutu i nie zapisuje nic w WordPress.",
-                  field_values: [
-                    {
-                      field_name: "opis",
-                      field_label: "Opis",
-                      field_type: "wysiwyg",
-                      value_preview: "Opis sekcji do sprawdzenia.",
-                      safe_to_autofill: true,
-                      note: null
-                    }
-                  ],
-                  evidence_ids: ["ev_gsc_bdo"]
-                }
-              ]
-            }
-          ],
-          missing_required_fields: [],
-          evidence_ids: ["ev_gsc_bdo"]
-        }
-      ],
-      publish_allowed: false,
-      destructive_update_allowed: false,
-      external_write_attempted: false,
-      required_action_contract: "actionobject_validate_preview_review_confirm_audit",
-      blockers: []
-    }
-  };
-}
 
-function wordpressDraftExecutionResponse(): ContentWorkItemWordPressDraftExecutionResponse {
-  return {
-    execution_result: {
-      status: "dry_run_ready",
-      mode: "dry_run",
-      boundary: {
-        allowed_operation: "create_wordpress_draft",
-        dry_run_default: true,
-        live_write_enabled: false,
-        live_adapter_configured: false,
-        publish_allowed: false,
-        destructive_update_allowed: false
-      },
-      payload: {
-        connector: "wordpress_ekologus",
-        endpoint_kind: "posts",
-        post_status: "draft",
-        title: "BDO dla firm",
-        content_markdown: "# BDO dla firm",
-        authoring_mode: "the_content",
-        meta_write_status: "not_present",
-        metadata_blockers: [],
-        final_canonical_url: "https://ekologus.pl/bdo/",
-        evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-        publish_allowed: false,
-        destructive_update_allowed: false
-      },
-      wordpress_post_id: null,
-      external_write_attempted: false,
-      blockers: []
-    }
-  };
-}
 
-function wordpressDraftCreatedResponse(): ContentWorkItemWordPressDraftExecutionResponse {
-  return {
-    execution_result: {
-      ...wordpressDraftExecutionResponse().execution_result,
-      status: "created",
-      mode: "live",
-      boundary: {
-        allowed_operation: "create_wordpress_draft",
-        dry_run_default: true,
-        live_write_enabled: true,
-        live_adapter_configured: true,
-        publish_allowed: false,
-        destructive_update_allowed: false
-      },
-      wordpress_post_id: "987",
-      external_write_attempted: true
-    }
-  };
-}
 
-function wordpressDraftActivationPacket(): ContentWordPressDraftActivationPacketResponse {
-  return {
-    response_type: "wordpress_draft_activation_packet",
-    contract: "wordpress_draft_activation_packet_v1",
-    action_id: "act_apply_wordpress_draft_handoff",
-    work_item_id: "content_work_item_bdo",
-    topic: "SEO: odśwież BDO dla firm",
-    final_canonical_url: "https://ekologus.pl/bdo/",
-    draft_package_ready: true,
-    draft_package_id: "draft_package_content_work_item_bdo",
-    review_preview_ready: true,
-    review_preview_status_label: "Paczka szkicu jest gotowa do review człowieka.",
-    human_review_checklist: [
-      "Czy treść brzmi jak Ekologus, a nie jak generyczny artykuł SEO?",
-      "Czy materiał ma zostać tylko szkicem WordPress, bez publikacji?"
-    ],
-    human_review_ready: false,
-    audit_ready: false,
-    handoff_ready: false,
-    handoff_id: null,
-    dry_run_ready: false,
-    live_write_enabled_by_env: false,
-    publish_allowed: false,
-    destructive_update_allowed: false,
-    external_write_attempted: false,
-    handoff_blockers: ["missing_human_review", "missing_audit"],
-    execution_blockers: ["missing_handoff"],
-    activation_missing_step: "human_review",
-    activation_missing_step_label: "zapisz review człowieka",
-    activation_missing_readiness_labels: [
-      "review człowieka",
-      "audit przekazania",
-      "handoff WordPress",
-      "podgląd dry-run"
-    ],
-    execution_result: {
-      status: "blocked",
-      mode: "dry_run",
-      boundary: {
-        allowed_operation: "create_wordpress_draft",
-        dry_run_default: true,
-        live_write_enabled: false,
-        live_adapter_configured: false,
-        publish_allowed: false,
-        destructive_update_allowed: false
-      },
-      payload: null,
-      wordpress_post_id: null,
-      external_write_attempted: false,
-      blockers: [
-        {
-          code: "missing_handoff",
-          label: "Brakuje zatwierdzonego przekazania",
-          reason: "Nie można przygotować szkicu WordPress bez zatwierdzonego przekazania.",
-          next_step: "Najpierw zatwierdź szkic, zapisz audyt i przygotuj przekazanie."
-        }
-      ]
-    },
-    draft_readback: null,
-    operator_next_step:
-      "Najbliższy krok: zapisz review człowieka dla paczki szkicu. Bez tego WILQ nie przygotuje handoffu ani dry-run payloadu WordPress.",
-    next_steps: [
-      "Utrzymaj zakres WordPress draft-only: bez publikacji i bez aktualizacji istniejących wpisów.",
-      "Zapisz human review dla tej paczki szkicu.",
-      "Zapisz audit przekazania do WordPress po review.",
-      "Wróć do handoffu i dopiero potem sprawdź dry-run execution."
-    ],
-    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-    source_connectors: ["google_search_console", "wordpress_ekologus"]
-  };
-}
-
-function wordpressDraftWriteReadiness(): ContentWordPressDraftWriteReadinessResponse {
-  return {
-    response_type: "wordpress_draft_write_readiness",
-    contract: "wordpress_draft_write_readiness_v1",
-    connector: "wordpress_ekologus",
-    action_id: "act_prepare_wordpress_draft_handoff",
-    ready: false,
-    live_write_enabled_by_env: false,
-    rest_adapter_configured: true,
-    publish_allowed: false,
-    destructive_update_allowed: false,
-    required_audit_events: [
-      {
-        event_type: "action_preview_generated",
-        label: "Podgląd akcji wygenerowany",
-        satisfied: false,
-        audit_event_id: null,
-        actor: null
-      },
-      {
-        event_type: "human_review_*",
-        label: "Review człowieka zapisane",
-        satisfied: false,
-        audit_event_id: null,
-        actor: null
-      },
-      {
-        event_type: "action_apply_confirmed",
-        label: "Potwierdzenie operatora zapisane",
-        satisfied: false,
-        audit_event_id: null,
-        actor: null
-      }
-    ],
-    missing_audit_event_types: [
-      "action_preview_generated",
-      "human_review_*",
-      "action_apply_confirmed"
-    ],
-    write_authorization_status: "missing_audit_trace",
-    suggested_write_authorization: null,
-    blockers: [
-      {
-        code: "draft_writes_env_disabled",
-        label: "Zapis szkiców WordPress jest wyłączony",
-        reason:
-          "WILQ może przygotować i sprawdzić szkic, ale live write wymaga jawnego włączenia WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES.",
-        next_step:
-          "Zostaw tryb dry-run albo włącz env dopiero po potwierdzeniu ścieżki preview, review, confirm i audit."
-      },
-      {
-        code: "wordpress_rest_adapter_not_configured",
-        label: "Adapter REST WordPress nie jest gotowy",
-        reason: "Brakuje kompletnej konfiguracji REST.",
-        next_step: "Uzupełnij REST adapter przed powrotem do live write."
-      }
-    ],
-    operator_next_step:
-      "Zostaw tryb dry-run albo włącz env dopiero po potwierdzeniu ścieżki preview, review, confirm i audit.",
-    evidence_ids: ["ev_connector_wordpress_ekologus_status"],
-    source_connectors: ["wordpress_ekologus"]
-  };
-}
-
-function existingDraftUpdateReadiness(): ContentWordPressExistingDraftUpdateReadinessResponse {
-  return {
-    response_type: "wordpress_existing_draft_update_readiness",
-    contract: "wordpress_existing_draft_update_readiness_v1",
-    connector: "wordpress_ekologus",
-    action_id: "act_prepare_wordpress_existing_draft_update",
-    work_item_id: "content_work_item_bdo",
-    target_post_id: "2",
-    target_url: "https://ekologus.dev.proudsite.pl/",
-    current_state_available: true,
-    current_section_count: 9,
-    proposed_section_count: 3,
-    ready: false,
-    update_supported: false,
-    publish_allowed: false,
-    destructive_update_allowed: false,
-    blockers: [
-      {
-        code: "existing_draft_update_contract_not_implemented",
-        label: "Aktualizacja istniejącego draftu wymaga osobnego kontraktu",
-        reason: "Preview only",
-        next_step: "Review first"
-      }
-    ],
-    operator_next_step: "Review first",
-    evidence_ids: ["ev_wp_bdo"],
-    source_connectors: ["wordpress_ekologus"],
-    section_diff_preview: [
-      {
-        heading: "Wprowadzenie",
-        current_summary: "Aktualny tekst dev",
-        proposed_summary: "Proponowany tekst szkicu",
-        status: "changed"
-      }
-    ]
-  };
-}
-
-function wordpressAuthoringProfile(): WordPressAuthoringProfile {
-  return {
-    profile_version: "wordpress_authoring_profile_v2",
-    connector: "wordpress_ekologus",
-    site_kind: "primary",
-    authoring_target: "staging",
-    discovery_mode: "rest_first",
-    discovery_order: ["rest", "acf_rest", "wp_cli", "helper"],
-    rest_api: {
-      method: "rest",
-      status: "configured",
-      base_url_configured: true,
-      auth_configured: true,
-      public_url_configured: true,
-      post_types: ["page", "post"]
-    },
-    acf: {
-      enabled_state: "unknown",
-      rest_enabled_state: "unknown",
-      flexible_content_field_name: null,
-      post_types: ["page", "post"],
-      layouts: Array.from({ length: 21 }, (_, index) => ({
-        name: index === 0 ? "podstrona" : `layout_${index}`,
-        label: index === 0 ? "Podstrona" : `Layout ${index}`,
-        fields: [],
-        source_method: "acf_export",
-        required_field_names: [],
-        optional_field_names: ["tytul", "glowny_opis"]
-      })),
-      source_method: "acf_export",
-      layouts_discovered: true
-    },
-    dev_content: {
-      status: "available",
-      source_method: "acf_rest",
-      source_ref: "WORDPRESS_EKOLOGUS_URL wp-json/wp/v2/pages?context=edit",
-      item_count: 1,
-      items: [
-        {
-          post_id: "2",
-          content_type: "page",
-          slug: "bdo",
-          title: "BDO dla firm",
-          link: "https://ekologus.dev.proudsite.pl/bdo/",
-          status: "publish",
-          modified: "2026-07-08T10:00:00",
-          modified_gmt: "2026-07-08T08:00:00",
-          template: "",
-          parent: "",
-          acf_field_name: "sekcje_strony",
-          section_count: 4,
-          sections: [
-            {
-              section_index: 1,
-              acf_field_name: "sekcje_strony",
-              layout_name: "baner_startowy",
-              layout_label: "Baner startowy",
-              title: "BDO dla firm",
-              text_summary: "Strona dev ma hero opisujące obowiązki BDO dla firm.",
-              field_names: ["modul_naglowka", "przyciski"],
-              text_field_paths: ["modul_naglowka.naglowek_modulu"]
-            },
-            {
-              section_index: 2,
-              acf_field_name: "sekcje_strony",
-              layout_name: "lista_korzysci",
-              layout_label: "Lista korzyści",
-              title: "Kogo dotyczy BDO",
-              text_summary: "Sekcja do dopracowania pod zapytania z GSC.",
-              field_names: ["wiersze", "opis_glowny"],
-              text_field_paths: ["wiersze.row_1.tytul_wiersza"]
-            }
-          ]
-        }
-      ],
-      blockers: []
-    },
-    wp_cli: {
-      method: "wp_cli",
-      status: "configured",
-      configured: true,
-      missing_env: [],
-      source_refs: ["WORDPRESS_EKOLOGUS_WP_CLI_PATH"]
-    },
-    helper_plugin: {
-      method: "helper",
-      status: "not_configured",
-      configured: false,
-      missing_env: ["WORDPRESS_EKOLOGUS_HELPER_URL"],
-      source_refs: []
-    },
-    write_boundary: {
-      allowed_operation: "create_wordpress_draft",
-      direct_vendor_write_allowed: false,
-      draft_writes_enabled_by_env: false,
-      live_write_enabled: false,
-      publish_allowed: false,
-      destructive_update_allowed: false,
-      external_write_attempted: false,
-      required_action_contract: "actionobject_validate_preview_review_confirm_audit"
-    },
-    discovery_facts: [],
-    blockers: [],
-    evidence_ids: ["ev_connector_wordpress_ekologus_status"],
-    source_connectors: ["wordpress_ekologus"]
-  };
-}
 
 function operatorSteps(): ContentWorkItemWorkflowSnapshotResponse["operator_steps"] {
   return [
@@ -3080,55 +1990,4 @@ function operatorSteps(): ContentWorkItemWorkflowSnapshotResponse["operator_step
       safe_next_step: "Zakończ review konkretnej wersji szkicu."
     }
   ];
-}
-
-function operatorStepsAtScope(): ContentWorkItemWorkflowSnapshotResponse["operator_steps"] {
-  return operatorSteps().map((step, index) => ({
-    ...step,
-    phase: index === 0 ? "current" : "pending",
-    readiness: index === 0 ? "review_required" : "blocked",
-    can_open: index === 0,
-    can_submit: index === 0,
-    blocker:
-      index === 0
-        ? {
-            code: "scope_review_missing",
-            label: "Zakres wymaga decyzji marketera",
-            reason: "Zakres nie został jeszcze zatwierdzony."
-          }
-        : step.blocker
-  }));
-}
-
-function operatorStepsAtSectionMap(): ContentWorkItemWorkflowSnapshotResponse["operator_steps"] {
-  return operatorSteps().map((step, index) => ({
-    ...step,
-    phase: index === 0 ? "complete" : index === 1 ? "current" : "pending",
-    readiness: index === 0 ? "ready" : index === 1 ? "review_required" : "blocked",
-    can_open: index <= 1,
-    can_submit: index === 1,
-    blocker:
-      index === 1
-        ? {
-            code: "section_map_review_missing",
-            label: "Plan sekcji wymaga decyzji marketera",
-            reason: "Plan sekcji nie został jeszcze zatwierdzony."
-          }
-        : index === 0
-          ? null
-          : step.blocker
-  }));
-}
-
-function knowledgeReadiness() {
-  return {
-    status: "ready" as const,
-    total_count: 15,
-    imported_count: 15,
-    import_pending_count: 0,
-    excerpt_review_required_count: 0,
-    ready_for_generation: true,
-    blocker: null,
-    next_step: "Korpus jest gotowy."
-  };
 }

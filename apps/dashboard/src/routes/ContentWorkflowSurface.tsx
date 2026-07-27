@@ -8,7 +8,7 @@ import {
   type ContentDraftRevisionDecision,
   type ContentDraftRevisionReviewRequest
 } from "../lib/api";
-import { type ContentWorkflowSnapshot, type WorkflowStepId } from "./contentWorkflowRuntime";
+import { type ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
 import { ContentDocumentWorkspaceCanvas } from "./ContentDocumentWorkspaceCanvas";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
@@ -547,37 +547,4 @@ function reviewDecisionLabel(decision: ContentDraftRevisionDecision) {
   if (decision === "approved") return "Zatwierdzam";
   if (decision === "needs_changes") return "Wymaga zmian";
   return "Odrzucam";
-}
-
-export function workflowStepActionLabel(stepId: WorkflowStepId, blocked: boolean): string {
-  if (blocked && stepId === "dev_draft") return "Sprawdź blokadę dev preview";
-  if (blocked && stepId === "review") return "Sprawdź blokadę review";
-  if (stepId === "scope") return "Otwórz kontekst strony";
-  if (stepId === "section_map") return "Otwórz tekst";
-  if (stepId === "draft") return "Otwórz pełny draft";
-  if (stepId === "review") return "Otwórz review wersji";
-  return "Otwórz dev preview";
-}
-
-export function workflowStepInstruction(
-  stepId: WorkflowStepId,
-  blocker?: { label: string; reason: string } | null
-) {
-  if (blocker) return `${blocker.label}: ${blocker.reason}`;
-  if (stepId === "scope") return "Sprawdź aktualny kontekst strony i zapisz jedną decyzję. WILQ sam zbuduje plan i otworzy tekst.";
-  if (stepId === "section_map") return "Plan powstaje automatycznie; po jego odświeżeniu przejdziesz bezpośrednio do tekstu.";
-  if (stepId === "draft") return "Przeczytaj pełny draft HTML. Edycja pozostaje w docelowym WordPressie; tutaj sprawdzasz wynik, źródła i gotowość do review.";
-  if (stepId === "review") return "Uruchom advisory review, przeczytaj findings i zapisz własną decyzję dla exact revision.";
-  return "Sprawdź revision-bound dev preview i przygotuj draft-only handoff. Publikacja pozostaje wyłączona.";
-}
-
-export function filterInventoryPageOptions(
-  options: Array<{ workItemId: string; label: string }>,
-  search: string,
-  limit = 30
-): Array<{ workItemId: string; label: string }> {
-  const normalizedSearch = search.trim().toLocaleLowerCase("pl-PL");
-  return options
-    .filter((item) => !normalizedSearch || item.label.toLocaleLowerCase("pl-PL").includes(normalizedSearch))
-    .slice(0, Math.max(1, limit));
 }
