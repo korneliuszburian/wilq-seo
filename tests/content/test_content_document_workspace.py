@@ -116,6 +116,8 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
         ],
         faq=[],
         cta_blocks=[],
+        source_material_ids=["ekologus_material_bdo"],
+        knowledge_card_ids=["ekologus_service_bdo"],
     )
     monkeypatch.setattr(
         workspace_module,
@@ -123,6 +125,17 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
         lambda work_item_id: context if work_item_id == WORK_ITEM_ID else None,
     )
     monkeypatch.setattr(workspace_module, "read_content_inventory_material", lambda _url: material)
+    monkeypatch.setattr(
+        workspace_module,
+        "ekologus_content_knowledge_cards",
+        lambda: (
+            SimpleNamespace(
+                id="ekologus_service_bdo",
+                title="BDO i sprawozdawczość środowiskowa",
+                summary="Karta przypisana do dokładnej rewizji.",
+            ),
+        ),
+    )
     monkeypatch.setattr(
         workspace_module,
         "content_workflow_store",
@@ -149,4 +162,9 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
         ("same_heading", "Ewidencja odpadów", "Ewidencja odpadów"),
         ("document_only", None, "Ryzyka formalne"),
         ("source_only", "Ewidencja odpadów", None),
+    ]
+    assert workspace.document_lineage.status == "available"
+    assert workspace.document_lineage.source_material_ids == ["ekologus_material_bdo"]
+    assert [card.title for card in workspace.document_lineage.knowledge_cards] == [
+        "BDO i sprawozdawczość środowiskowa"
     ]

@@ -457,6 +457,20 @@ export const ContentDocumentWorkspaceDocumentPreviewSchema = z.object({
   cta_count: z.number().int().nonnegative()
 });
 
+export const ContentDocumentWorkspaceKnowledgeCardSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  summary: z.string().min(1)
+});
+
+export const ContentDocumentWorkspaceDocumentLineageSchema = z.object({
+  status: z.enum(["available", "partial", "not_recorded"]),
+  source_material_ids: z.array(z.string()).default([]),
+  knowledge_cards: z.array(ContentDocumentWorkspaceKnowledgeCardSchema).default([]),
+  unresolved_knowledge_card_ids: z.array(z.string()).default([]),
+  reason: z.string()
+});
+
 export const ContentDocumentWorkspaceNextActionSchema = z.object({
   kind: z.enum(["open_review", "prepare_document", "none"]),
   label: z.string(),
@@ -481,12 +495,13 @@ export const ContentDocumentWorkspaceComparisonSchema = z.object({
 
 export const ContentDocumentWorkspaceSchema = z.object({
   response_type: z.literal("content_document_workspace").default("content_document_workspace"),
-  contract_version: z.literal("content_document_workspace_v1").default("content_document_workspace_v1"),
+  contract_version: z.literal("content_document_workspace_v2").default("content_document_workspace_v2"),
   work_item_id: z.string(),
   work_kind: z.literal("refresh_existing"),
   service_label: z.string().nullable().optional(),
   source_snapshot: ContentDocumentWorkspaceSourceSnapshotSchema,
   canonical_document: ContentDocumentWorkspaceDocumentSchema,
+  document_lineage: ContentDocumentWorkspaceDocumentLineageSchema,
   comparison: ContentDocumentWorkspaceComparisonSchema,
   next_action: ContentDocumentWorkspaceNextActionSchema,
   secondary_disclosures: z.array(z.string()).default([])

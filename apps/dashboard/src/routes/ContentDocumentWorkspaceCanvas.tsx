@@ -60,7 +60,7 @@ export function ContentDocumentWorkspaceCanvas({
             ) : null}
             <p className="mt-2 text-sm font-medium text-slate-700">Usługa: {workspace.service_label ?? "niepotwierdzona"}</p>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-700">
-              W jednym miejscu sprawdzisz obecną stronę, stan nowego dokumentu i dostępne porównanie. To nie zmienia WordPressa.
+              W jednym miejscu sprawdzisz obecną stronę, dokładny stan dokumentu i materiały zapisane przy tej rewizji. To nie zmienia WordPressa.
             </p>
           </div>
           <section className="min-w-64 rounded-xl border border-line bg-surface p-4" data-testid="content-document-state">
@@ -79,7 +79,7 @@ export function ContentDocumentWorkspaceCanvas({
       <nav className="mt-4 flex gap-1 border-b border-line" aria-label="Widok dokumentu">
         <Tab active={view === "source"} onClick={() => setView("source")}>Obecna strona</Tab>
         <Tab active={view === "document"} onClick={() => setView("document")}>Nowa wersja</Tab>
-        <Tab active={view === "comparison"} onClick={() => setView("comparison")}>Porównanie</Tab>
+        <Tab active={view === "comparison"} onClick={() => setView("comparison")}>Zmiany w treści</Tab>
       </nav>
 
       <section className="mt-4 grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_18rem]">
@@ -103,6 +103,7 @@ export function ContentDocumentWorkspaceCanvas({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kontekst pracy</p>
           <StatusCard label="Materiał obecnej strony" value={sourceStatus(workspace.source_snapshot.status)} />
           <StatusCard label="Nowy dokument" value={documentStatus(workspace.canonical_document.status)} />
+          <DocumentLineage workspace={workspace} />
           {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
             <ContentApprovedHtmlPackage
               workItemId={workspace.work_item_id}
@@ -534,7 +535,7 @@ function StatusCard({ label, value }: { label: string; value: string }) {
 }
 
 function outlineLead(view: View) {
-  return { source: "To, co jest dziś widoczne na publicznej stronie.", document: "Układ przygotowanej wersji dokumentu.", comparison: "Elementy dostępne do uczciwego zestawienia." }[view];
+  return { source: "To, co jest dziś widoczne na publicznej stronie.", document: "Układ przygotowanej wersji dokumentu.", comparison: "Zaobserwowane zmiany nagłówków i fragmentów, bez oceny wyglądu ani znaczenia." }[view];
 }
 
 function outline(view: View, workspace: ContentDocumentWorkspace): string[] {
@@ -578,12 +579,28 @@ function CanonicalDocument({ workspace }: { workspace: ContentDocumentWorkspace 
   </>;
 }
 
+function DocumentLineage({ workspace }: { workspace: ContentDocumentWorkspace }) {
+  const lineage = workspace.document_lineage;
+  return <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700">
+    <summary className="cursor-pointer font-semibold text-ink">Materiały użyte w dokumencie</summary>
+    <p className="mt-3 leading-6">{lineage.reason}</p>
+    {lineage.knowledge_cards.length ? <ul className="mt-3 space-y-3">
+      {lineage.knowledge_cards.map((card) => <li key={card.id} className="rounded-lg bg-slate-50 p-3">
+        <p className="font-semibold text-ink">{card.title}</p>
+        <p className="mt-1 leading-6">{card.summary}</p>
+      </li>)}
+    </ul> : null}
+    {lineage.source_material_ids.length ? <p className="mt-3 leading-6">Zapisane materiały źródłowe: {lineage.source_material_ids.length}.</p> : null}
+    {lineage.unresolved_knowledge_card_ids.length ? <p className="mt-3 leading-6 text-wait">Nie można obecnie odczytać {lineage.unresolved_knowledge_card_ids.length} przypisanych kart wiedzy.</p> : null}
+  </details>;
+}
+
 function Comparison({ workspace }: { workspace: ContentDocumentWorkspace }) {
-  if (workspace.comparison.status === "unavailable") return <><p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Porównanie</p><h2 className="mt-2 text-2xl font-semibold text-ink">Nie ma jeszcze czego porównać</h2><p className="mt-3 text-sm leading-6 text-slate-700">{workspace.comparison.reason}</p></>;
+  if (workspace.comparison.status === "unavailable") return <><p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Zmiany w treści</p><h2 className="mt-2 text-2xl font-semibold text-ink">Nie ma jeszcze czego zestawić</h2><p className="mt-3 text-sm leading-6 text-slate-700">{workspace.comparison.reason}</p></>;
   return <>
-    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Porównanie</p>
+    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Zmiany w treści</p>
     <h2 className="mt-2 text-2xl font-semibold text-ink">Co zmienia się między wersjami</h2>
-    <p className="mt-3 text-sm leading-6 text-slate-700">{workspace.comparison.reason}</p>
+    <p className="mt-3 text-sm leading-6 text-slate-700">{workspace.comparison.reason} WILQ zestawia tylko bezpośrednio zaobserwowane nagłówki i fragmenty — nie porównuje wyglądu strony ani znaczenia tekstu.</p>
     <div className="mt-6 space-y-4">{workspace.comparison.items.map((item, index) => <article key={`${item.status}-${item.source_heading ?? item.document_heading}-${index}`} className="rounded-xl border border-line p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{comparisonLabel(item.status)}</p><div className="mt-3 grid gap-4 lg:grid-cols-2"><ComparisonSide label="Obecna strona" heading={item.source_heading} excerpt={item.source_excerpt} empty="Brak bezpośrednio rozpoznanego elementu." /><ComparisonSide label="Nowa wersja" heading={item.document_heading} excerpt={item.document_excerpt} empty="Brak bezpośrednio rozpoznanego elementu." /></div><p className="mt-4 text-sm leading-6 text-slate-600">{item.reason}</p></article>)}</div>
   </>;
 }
