@@ -318,8 +318,9 @@ describe("ContentWorkflowSurface", () => {
   );
 
   it("keeps an exact missing review route separate from a warm catalogue entry", async () => {
-    vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemDecisionContext).mockRejectedValue(new Error("Nie znaleziono strony"));
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    client.setQueryData(["content-workflow", "queue", "catalog"], contentQueueResponse());
 
     render(
       <App
@@ -327,11 +328,12 @@ describe("ContentWorkflowSurface", () => {
           initialPath: "/content-workflow?work_item_id=content_work_item_bdo&review=1",
           defaultPendingMinMs: 0
         })}
-        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+        client={client}
       />
     );
 
     expect(await screen.findByTestId("content-document-workspace-error")).toBeInTheDocument();
+    expect(getContentWorkItemDecisionContext).toHaveBeenCalledWith("content_work_item_bdo");
     expect(getContentWorkItemQueue).not.toHaveBeenCalled();
     expect(screen.queryByTestId("content-review-workspace")).not.toBeInTheDocument();
   });
