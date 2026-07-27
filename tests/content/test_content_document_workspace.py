@@ -62,6 +62,8 @@ def test_document_workspace_keeps_public_source_visible_when_no_revision_exists(
         "Ewidencja odpadów",
     ]
     assert workspace.canonical_document.status == "not_created"
+    assert workspace.document_lineage.status == "not_recorded"
+    assert workspace.document_lineage.knowledge_cards == []
     assert workspace.next_action.kind == "prepare_document"
     assert workspace.next_action.label == "Przygotuj nową wersję"
 
@@ -163,8 +165,38 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
         ("document_only", None, "Ryzyka formalne"),
         ("source_only", "Ewidencja odpadów", None),
     ]
-    assert workspace.document_lineage.status == "available"
-    assert workspace.document_lineage.source_material_ids == ["ekologus_material_bdo"]
-    assert [card.title for card in workspace.document_lineage.knowledge_cards] == [
-        "BDO i sprawozdawczość środowiskowa"
-    ]
+
+
+def test_document_workspace_fails_closed_for_unrecorded_lineage_and_incomplete_source(
+    monkeypatch,
+) -> None:
+    revision = SimpleNamespace(
+        revision_id="content_revision_candidate",
+        content_digest="a" * 64,
+        sections=[
+            SimpleNamespace(
+                section_id="section_risk",
+                heading="Ryzyka formalne",
+                body_markdown="Nowy opis ryzyk.",
+            )
+        ],
+        source_material_ids=[],
+        knowledge_card_ids=[],
+    )
+    assert workspace_module._document_lineage(None).status == "not_recorded"
+    assert workspace_module._document_lineage(revision).status == "not_recorded"
+
+    revision.knowledge_card_ids = ["missing_card"]
+    monkeypatch.setattr(workspace_module, "ekologus_content_knowledge_cards", lambda: ())
+    lineage = workspace_module._document_lineage(revision)
+    assert lineage.status == "partial"
+    assert lineage.unresolved_knowledge_card_ids == ["missing_card"]
+
+    for status in ("unavailable", "partial"):
+        source = workspace_module.ContentDocumentWorkspaceSourceSnapshot(
+            status=status,
+            reason="Źródło nie ma kompletnej struktury.",
+        )
+        comparison = workspace_module._comparison(source, revision)
+        assert comparison.status == "unavailable"
+        assert comparison.items == []

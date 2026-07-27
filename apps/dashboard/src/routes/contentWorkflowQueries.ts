@@ -136,12 +136,10 @@ export function useContentWorkflowQueries(
   reviewOpen = false,
   browseInventory = false
 ) {
-  // A selected route is a document workspace first. The route already owns
-  // its identity, so neither the default view nor Text needs a queue/catalog
-  // round-trip before showing source and canonical-document state. Review is
-  // the explicit substate that still needs richer exact-revision reads.
+  // A selected route owns its identity. Navigation catalogues are never an
+  // authority for a deep-linked document or review state.
   const directDocumentWorkspace = Boolean(selectedWorkItemId && !reviewOpen);
-  const selectedWorkflowRead = Boolean(selectedWorkItemId && !directDocumentWorkspace);
+  const selectedWorkflowRead = false;
   const entry = useQuery({
     queryKey: ["content-workflow", "entry"],
     queryFn: () => getContentWorkflowEntry(),
@@ -203,14 +201,14 @@ export function useContentWorkflowQueries(
     queryKey: ["content-workflow", "operator-context"],
     queryFn: getContentOperatorContext,
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    enabled: selectedWorkflowRead
+    // Identity can be refreshed independently for a review save, but neither
+    // its latency nor failure may replace the exact review workspace.
+    enabled: Boolean(selectedWorkItemId && reviewOpen)
   });
   const requestedCandidate = mergedQueue.data?.candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
-  const activeWorkItemId = directDocumentWorkspace
-    ? selectedWorkItemId
-    : requestedCandidate?.work_item_id ?? null;
+  const activeWorkItemId = selectedWorkItemId ?? null;
   const selectedCandidate =
     mergedQueue.data?.candidates.find((candidate) => candidate.work_item_id === activeWorkItemId) ?? null;
   const decisionContext = useQuery({
@@ -219,8 +217,7 @@ export function useContentWorkflowQueries(
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     enabled: Boolean(
       activeWorkItemId &&
-      selectedCandidate?.source_public_url &&
-      (!textWorkspaceOpen || reviewOpen)
+      (reviewOpen || (selectedCandidate?.source_public_url && !textWorkspaceOpen))
     )
   });
   const documentWorkspace = useQuery({
