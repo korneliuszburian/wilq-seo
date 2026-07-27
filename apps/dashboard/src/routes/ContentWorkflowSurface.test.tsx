@@ -331,6 +331,8 @@ describe("ContentWorkflowSurface", () => {
     fireEvent.click(screen.getByRole("button", { name: "Otwórz warsztat strony" }));
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(screen.getByText("Materiały użyte w dokumencie")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zmiany w treści" })).toBeInTheDocument();
     expect(screen.getByTestId("content-source-snapshot")).toHaveTextContent("Aktualny materiał BDO");
     const canvas = screen.getByTestId("content-workspace-canvas");
     const outline = screen.getByLabelText("Struktura strony");
@@ -387,7 +389,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
-    expect(screen.getByText(/stan nowego dokumentu i dostępne porównanie/)).toBeInTheDocument();
+    expect(screen.getByText(/dokładny stan dokumentu i materiały zapisane przy tej rewizji/)).toBeInTheDocument();
     expect(screen.queryByText(/przygotowany dokument i uczciwe różnice/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
     expect(screen.getAllByText("Nowa wersja nie została jeszcze przygotowana")).toHaveLength(3);
@@ -3436,7 +3438,7 @@ function contentDocumentWorkspace(): ContentDocumentWorkspace {
   const revision = savedFullDraftRevision();
   return {
     response_type: "content_document_workspace",
-    contract_version: "content_document_workspace_v1",
+    contract_version: "content_document_workspace_v2",
     work_item_id: revision.work_item_id,
     work_kind: "refresh_existing",
     service_label: "BDO i sprawozdawczość środowiskowa",
@@ -3477,6 +3479,17 @@ function contentDocumentWorkspace(): ContentDocumentWorkspace {
         faq_count: revision.faq.length,
         cta_count: revision.cta_blocks.length
       }
+    },
+    document_lineage: {
+      status: "available",
+      source_material_ids: ["ekologus_material_bdo"],
+      knowledge_cards: [{
+        id: "ekologus_service_bdo_reporting",
+        title: "BDO i sprawozdawczość środowiskowa",
+        summary: "Zatwierdzona karta wiedzy dotycząca usługi BDO."
+      }],
+      unresolved_knowledge_card_ids: [],
+      reason: "To są materiały i karty wiedzy zapisane przy dokładnej rewizji dokumentu."
     },
     comparison: {
       status: "available",
