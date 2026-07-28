@@ -12,6 +12,24 @@ promptu, artykułu ani ścieżki WordPress.
 
 ## Kanoniczna sesja
 
+### Nowa strona — osobna ścieżka
+
+Nie używaj kolejki, snapshotu ani endpointów `work-items` dla nowej strony.
+Nowa strona nie ma publicznego URL-a, inventory ani historii do odświeżenia.
+Prowadź ją dokładnie w tej kolejności:
+
+1. `POST /api/content/new-page-briefs`, potem `GET` tego briefu;
+2. `POST .../planning-foundation` po jawnej decyzji człowieka o usłudze;
+3. `POST .../planning-proposal`, następnie `GET .../canonical-document`;
+4. `POST .../planning-review` dla exact proposal/digest;
+5. na jawne polecenie `POST .../initial-draft` z exact proposal i digestami;
+6. `POST .../draft-revisions/{revision_id}/review` dla exact digestu i evidence.
+
+Każdy konflikt wymaga ponownego odczytu tego samego briefu. Nie twórz URL-a,
+nie przechodź do WordPressa i nie wywołuj `/api/actions` dla tej ścieżki.
+Approval rewizji oznacza wyłącznie review dokumentu — nie publikację ani
+gotowość delivery.
+
 1. **Wybierz pracę.** Sprawdź `GET /api/health`, potem
    `GET /api/content/work-items/queue`. Wybierz podany `work_item_id` albo
    najwyższy wykonalny element; globalny blocker gęstości kolejki nie blokuje
@@ -133,6 +151,14 @@ promptu, artykułu ani ścieżki WordPress.
 
 - `GET /api/health`
 - `GET /api/content/work-items/queue`
+- `POST /api/content/new-page-briefs`
+- `GET /api/content/new-page-briefs/{brief_id}`
+- `POST /api/content/new-page-briefs/{brief_id}/planning-foundation`
+- `GET/POST /api/content/new-page-briefs/{brief_id}/planning-proposal`
+- `GET /api/content/new-page-briefs/{brief_id}/canonical-document`
+- `POST /api/content/new-page-briefs/{brief_id}/planning-review`
+- `POST /api/content/new-page-briefs/{brief_id}/initial-draft`
+- `POST /api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review`
 - `GET /api/content/work-items/{work_item_id}/snapshot`
 - `GET /api/content/work-items/{work_item_id}/enrichment`
 - `GET /api/content/knowledge-cards`

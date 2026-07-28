@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
-from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
+from wilq.codex.app_server import CodexAppServerTurnResult
+from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftModelOutput,
+    ContentInitialDraftRequest,
+)
 from wilq.content.workflow.contracts import ContentDraftRevisionReviewRequest
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.new_page import (
@@ -15,6 +21,7 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
 )
+from wilq.content.workflow.new_page_initial_draft import generate_new_page_initial_draft
 from wilq.content.workflow.new_page_revision import (
     append_new_page_initial_revision,
     review_new_page_revision,
@@ -257,7 +264,7 @@ def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
         expected_planning_input_digest=proposal.planning_input_digest or "",
         output=output, completed_run=completed_run, requested_by="Wilku", store=store,
     )
-    assert result.status == "created"
+    assert result.status == "created", repr(result)
     assert result.revision is not None
     assert result.revision.document_kind == "new_page"
     assert result.revision.final_canonical_url is None
@@ -323,3 +330,76 @@ def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
             ),
             store=store,
         )
+
+
+def test_new_page_generator_appends_only_the_exact_approved_plan(tmp_path) -> None:
+    brief, foundation, proposal, approved, output, _, _ = _new_page_append_context(tmp_path)
+    store = ContentWorkflowStore(tmp_path / "generator.sqlite3")
+    workspace = build_new_page_canonical_document_workspace(
+        brief=brief, foundation=foundation, proposal=proposal, decisions=[approved]
+    )
+    assert workspace is not None
+
+    class FakeClient:
+        def run_structured_turn(self, request):
+            assert "do_not_write_vendor" in request.application_context
+            return CodexAppServerTurnResult(
+                status="completed", output_text=json.dumps(output.model_dump(mode="json"))
+            )
+
+    result = generate_new_page_initial_draft(
+        brief=brief,
+        foundation=foundation,
+        proposal=proposal,
+        decisions=[approved],
+        workspace=workspace,
+        request=ContentInitialDraftRequest(
+            expected_proposal_id=proposal.proposal_id or "",
+            expected_planning_digest=proposal.planning_digest,
+            expected_planning_input_digest=proposal.planning_input_digest or "",
+            requested_by="Wilku",
+        ),
+        client=FakeClient(),
+        workflow_store=store,
+        run_store=LocalStateStore(tmp_path / "generator.sqlite3"),
+        endpoint_path="/api/content/new-page-briefs/content_new_page_brief_test/initial-draft",
+    )
+    assert result.status == "created"
+    assert result.revision is not None
+    assert result.revision.document_kind == "new_page"
+    assert result.revision.final_canonical_url is None
+    assert result.runtime.status == "completed"
+
+
+def test_new_page_generator_rejects_stale_plan_before_starting_codex(tmp_path) -> None:
+    brief, foundation, proposal, approved, _, _, _ = _new_page_append_context(tmp_path)
+    workspace = build_new_page_canonical_document_workspace(
+        brief=brief, foundation=foundation, proposal=proposal, decisions=[approved]
+    )
+    assert workspace is not None
+
+    class NoCallClient:
+        def run_structured_turn(self, request):
+            raise AssertionError("stale planning binding must not call Codex")
+
+    store = ContentWorkflowStore(tmp_path / "stale-generator.sqlite3")
+    result = generate_new_page_initial_draft(
+        brief=brief,
+        foundation=foundation,
+        proposal=proposal,
+        decisions=[approved],
+        workspace=workspace,
+        request=ContentInitialDraftRequest(
+            expected_proposal_id=proposal.proposal_id or "",
+            expected_planning_digest="e" * 64,
+            expected_planning_input_digest=proposal.planning_input_digest or "",
+            requested_by="Wilku",
+        ),
+        client=NoCallClient(),
+        workflow_store=store,
+        run_store=LocalStateStore(tmp_path / "stale-generator.sqlite3"),
+        endpoint_path="/api/content/new-page-briefs/content_new_page_brief_test/initial-draft",
+    )
+    assert result.status == "blocked"
+    assert result.blockers[0].code == "proposal_mismatch"
+    assert store.load_draft_revision_state(foundation.work_item_id).revision_count == 0

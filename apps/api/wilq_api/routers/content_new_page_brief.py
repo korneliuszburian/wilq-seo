@@ -6,6 +6,10 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
 from apps.api.wilq_api.routers.content_codex_proposal import content_codex_app_server_client
+from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftRequest,
+    ContentInitialDraftResponse,
+)
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputReadinessResponse,
     build_new_page_planning_input,
@@ -22,10 +26,12 @@ from wilq.content.planning.new_page_proposal import (
 from wilq.content.workflow.catalog import build_content_inventory_catalog_cached
 from wilq.content.workflow.contracts import ContentDraftRevisionReviewRequest
 from wilq.content.workflow.new_page import (
+    ContentNewPageBrief,
     ContentNewPageBriefInput,
     ContentNewPageBriefWorkspace,
     ContentNewPageFoundationCommand,
     ContentNewPageFoundationResult,
+    ContentNewPagePlanningFoundation,
     build_new_page_brief_workspace,
     build_new_page_overlap_guard,
     build_new_page_planning_foundation,
@@ -36,10 +42,12 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
 )
+from wilq.content.workflow.new_page_initial_draft import generate_new_page_initial_draft
 from wilq.content.workflow.new_page_revision import (
     ContentNewPageRevisionReviewResponse,
     review_new_page_revision,
 )
+from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.store_new_page import new_page_brief_store
 from wilq.storage.local_state import local_state_store
@@ -291,6 +299,27 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
             review=result.review,
         )
 
+    @router.post(
+        "/api/content/new-page-briefs/{brief_id}/initial-draft",
+        response_model=ContentInitialDraftResponse,
+    )
+    def create_new_page_initial_draft(
+        brief_id: str, request: ContentInitialDraftRequest
+    ) -> ContentInitialDraftResponse:
+        brief, foundation, proposal, workspace = _new_page_draft_inputs(brief_id)
+        return generate_new_page_initial_draft(
+            brief=brief,
+            foundation=foundation,
+            proposal=proposal,
+            decisions=content_workflow_store().load_planning_decisions(foundation.work_item_id),
+            workspace=workspace,
+            request=request,
+            client=content_codex_app_server_client(),
+            workflow_store=content_workflow_store(),
+            run_store=local_state_store(),
+            endpoint_path=f"/api/content/new-page-briefs/{brief_id}/initial-draft",
+        )
+
 
 def _new_page_planning_proposal_workspace(
     brief_id: str,
@@ -348,6 +377,25 @@ def _new_page_canonical_document_workspace(
             detail="Brakuje zapisanej podstawy planowania nowej strony.",
         )
     return workspace
+
+
+def _new_page_draft_inputs(
+    brief_id: str,
+) -> tuple[
+    ContentNewPageBrief,
+    ContentNewPagePlanningFoundation,
+    ContentPlanningProposal,
+    ContentNewPageCanonicalDocumentWorkspace,
+]:
+    store = new_page_brief_store()
+    brief = store.load_new_page_brief(brief_id)
+    foundation = store.load_new_page_foundation(brief_id)
+    workspace = _new_page_canonical_document_workspace(brief_id)
+    proposal_status = _new_page_planning_proposal_workspace(brief_id).proposal_status
+    proposal = None if proposal_status is None else proposal_status.proposal
+    if brief is None or foundation is None or proposal is None:
+        raise HTTPException(status_code=409, detail="Brakuje dokładnego planu nowej strony.")
+    return brief, foundation, proposal, workspace
 
 
 def _run_new_page_planning_generation(

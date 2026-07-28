@@ -212,6 +212,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/initial-draft",
     ): ContentInitialDraftResponse,
     (
+        "POST",
+        "/api/content/new-page-briefs/{brief_id}/initial-draft",
+    ): ContentInitialDraftResponse,
+    (
         "GET",
         "/api/content/work-items/{work_item_id}/initial-draft",
     ): ContentInitialDraftResponse,
@@ -320,6 +324,7 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
     assert model_paths == {
         "/api/content/work-items/{work_item_id}/planning-proposals",
         "/api/content/work-items/{work_item_id}/initial-draft",
+        "/api/content/new-page-briefs/{brief_id}/initial-draft",
         "/api/content/work-items/{work_item_id}/draft-revisions/"
         "{base_revision_id}/codex-proposal",
         "/api/content/work-items/{work_item_id}/draft-revisions/"

@@ -5,6 +5,7 @@ import {
   actionApiPath,
   applyAction,
   createContentNewPageFoundation,
+  createContentNewPageInitialDraft,
   getActionMutationReadiness,
   getActionsMutationReadiness,
   getContentKnowledgeCards,
@@ -287,6 +288,49 @@ describe("content workflow API helpers", () => {
       overlap_digest: foundation.overlap_digest,
       service_card_digest: foundation.service_card_digest
     });
+  });
+
+  it("posts an exact new-page initial-draft request without a public URL", async () => {
+    const request = {
+      expected_proposal_id: "content_planning_proposal_a",
+      expected_planning_digest: "a".repeat(64),
+      expected_planning_input_digest: "b".repeat(64),
+      requested_by: "Wilku"
+    };
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      expect(new URL(String(url)).pathname).toBe(
+        "/api/content/new-page-briefs/content_new_page_brief_a/initial-draft"
+      );
+      expect(init?.method).toBe("POST");
+      expect(JSON.parse(String(init?.body))).toEqual(request);
+      return new Response(JSON.stringify({
+        status: "blocked",
+        work_item_id: "content_work_item_new_page_a",
+        proposal_id: request.expected_proposal_id,
+        run_id: null,
+        revision: null,
+        runtime: {
+          status: "not_started",
+          thread_id: null,
+          turn_id: null,
+          external_call_attempted: false
+        },
+        blockers: [{
+          code: "planning_not_approved",
+          label: "Nie utworzono dokumentu nowej strony",
+          reason: "Plan wymaga review.",
+          next_step: "Zatwierdź plan."
+        }],
+        safe_next_step: "Zatwierdź plan.",
+        publish_ready: false
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await createContentNewPageInitialDraft("content_new_page_brief_a", request);
+
+    expect(result.status).toBe("blocked");
+    expect(result.blockers[0]?.code).toBe("planning_not_approved");
   });
 
   it("encodes action IDs for every action helper path suffix", () => {
