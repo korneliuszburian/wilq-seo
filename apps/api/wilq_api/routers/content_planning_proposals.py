@@ -16,11 +16,10 @@ from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRun
 from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputSummary,
-    build_content_planning_input,
     content_planning_input_summary,
 )
 from wilq.content.planning.generated_proposal import (
-    _snapshot_with_explicit_service_selection,
+    _prepare_generation,
     generate_content_planning_proposal,
     read_content_planning_proposal,
     with_current_planning_workspace,
@@ -141,14 +140,16 @@ def register_content_planning_proposal_routes(
                 safe_next_step="Odśwież stan planu i użyj aktualnego digestu.",
             )
             return JSONResponse(status_code=409, content=stale.model_dump(mode="json"))
+        snapshot: ContentWorkItemWorkflowSnapshotResponse | None = None
         existing = store.for_input(
             work_item_id,
             request.service_card_id,
             request.expected_planning_input_digest,
         )
         if existing is not None:
+            snapshot = snapshot_loader(work_item_id)
             current = read_content_planning_proposal(
-                snapshot=snapshot_loader(work_item_id),
+                snapshot=snapshot,
                 store=store,
             )
             stale_mapping = (
@@ -173,18 +174,35 @@ def register_content_planning_proposal_routes(
                     ),
                 )
             request = request.model_copy(update={"regenerate_stale_mapping": True})
+        if snapshot is None:
+            try:
+                snapshot = snapshot_loader(work_item_id)
+            except Exception as error:
+                return _planning_generation_failure_response(
+                    work_item_id=work_item_id,
+                    service_card_id=request.service_card_id,
+                    planning_input_digest=request.expected_planning_input_digest,
+                    input_summary=None,
+                    error=error,
+                )
+        planning_input, early_response = _prepare_generation(
+            snapshot=snapshot,
+            request=request,
+            store=store,
+        )
+        if early_response is not None:
+            return early_response
+        assert planning_input is not None
         # A changed digest is the normal re-plan path after fresh metrics,
-        # inventory or knowledge arrive.  The background generator validates
-        # the request against the rebuilt snapshot and returns typed stale_input
-        # when the operator supplied a digest that is not current.  The
-        # generator owns the idempotency decision after it has checked the
-        # current mapping contract; a router-level store shortcut would make
-        # stale proposals impossible to regenerate.
+        # inventory or knowledge arrive.  The command accepts only the exact
+        # snapshot validated above; once queued, the worker must not rebuild a
+        # potentially hanging prerequisite before it can begin or fail.
         result = ContentPlanningProposalResponse(
             status="generating",
-            work_item_id=work_item_id,
+            work_item_id=planning_input.work_item_id,
             service_card_id=request.service_card_id,
-            planning_input_digest=request.expected_planning_input_digest,
+            planning_input_digest=planning_input.planning_input_digest,
+            input_summary=content_planning_input_summary(planning_input),
             runtime=ContentCodexRuntimeTrace(
                 status="not_started",
                 run_id=f"planning_generation_{uuid4().hex}",
@@ -245,7 +263,7 @@ def register_content_planning_proposal_routes(
                     _run_queued_planning_generation,
                     work_item_id,
                     request,
-                    snapshot_loader,
+                    snapshot,
                 )
             except Exception as error:
                 _release_planning_job(
@@ -257,10 +275,11 @@ def register_content_planning_proposal_routes(
                     work_item_id=work_item_id,
                     service_card_id=request.service_card_id,
                     planning_input_digest=request.expected_planning_input_digest,
-                    input_summary=_planning_input_summary_for_failure(
-                        snapshot_loader=snapshot_loader,
+                    input_summary=_queued_input_summary(
+                        store=store,
                         work_item_id=work_item_id,
                         service_card_id=request.service_card_id,
+                        planning_input_digest=request.expected_planning_input_digest,
                     ),
                     error=error,
                 )
@@ -271,12 +290,12 @@ def register_content_planning_proposal_routes(
 def _run_queued_planning_generation(
     work_item_id: str,
     request: ContentPlanningProposalRequest,
-    snapshot_loader: ContentPlanningSnapshotLoader,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
 ) -> None:
     store = content_planning_proposal_store()
     try:
         result = generate_content_planning_proposal(
-            snapshot=snapshot_loader(work_item_id),
+            snapshot=snapshot,
             request=request,
             client=_planning_codex_client(),
             store=store,
@@ -287,10 +306,11 @@ def _run_queued_planning_generation(
             work_item_id=work_item_id,
             service_card_id=request.service_card_id,
             planning_input_digest=request.expected_planning_input_digest,
-            input_summary=_planning_input_summary_for_failure(
-                snapshot_loader=snapshot_loader,
+            input_summary=_queued_input_summary(
+                store=store,
                 work_item_id=work_item_id,
                 service_card_id=request.service_card_id,
+                planning_input_digest=request.expected_planning_input_digest,
             ),
             error=error,
         )
@@ -371,28 +391,21 @@ def _planning_generation_failure_response(
     )
 
 
-def _planning_input_summary_for_failure(
+def _queued_input_summary(
     *,
-    snapshot_loader: ContentPlanningSnapshotLoader,
+    store: ContentPlanningProposalStore,
     work_item_id: str,
     service_card_id: str,
+    planning_input_digest: str,
 ) -> ContentPlanningInputSummary | None:
-    """Preserve the exact input context when a queued run fails before Codex."""
+    """Keep the queued exact input visible without retrying a failed read."""
 
-    try:
-        snapshot = _snapshot_with_explicit_service_selection(
-            snapshot_loader(work_item_id),
-            service_card_id,
-        )
-        result = build_content_planning_input(
-            snapshot,
-            service_card_id=service_card_id,
-        )
-        if result.planning_input is None:
-            return None
-        return content_planning_input_summary(result.planning_input)
-    except Exception:
-        return None
+    queued = store.queued_response(
+        work_item_id,
+        service_card_id,
+        planning_input_digest,
+    )
+    return None if queued is None else queued.input_summary
 
 
 __all__ = ["register_content_planning_proposal_routes"]

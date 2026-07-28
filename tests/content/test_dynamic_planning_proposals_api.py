@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from typing import Any, Literal, cast
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_planning_proposals as planning_router
@@ -278,6 +279,10 @@ def test_existing_not_started_job_is_recovered_after_api_process_restart(
     assert second.status_code == 200
     assert second.json()["status"] == "generating"
     assert executor.calls == 2
+    # This test deliberately simulates a worker that never runs. Its
+    # in-memory claim is process-local and must not leak into the next
+    # isolated harness, where the same deterministic input digest is valid.
+    planning_router._PLANNING_ACTIVE_KEYS.clear()
 
 
 def test_planning_runtime_has_separate_bounded_timeout(
@@ -360,7 +365,55 @@ def test_planning_store_blocks_a_sibling_digest_while_generation_is_in_flight(
     assert active.runtime.run_id == "planning_generation_first"
 
 
-def test_planning_api_returns_typed_blocker_for_a_sibling_generation(
+def test_planning_snapshot_failure_does_not_create_a_generating_job(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
+    app = FastAPI()
+
+    class CaptureExecutor:
+        calls = 0
+
+        def submit(self, *_args: Any, **_kwargs: Any) -> None:
+            self.calls += 1
+
+    executor = CaptureExecutor()
+    monkeypatch.setattr(planning_router, "content_planning_proposal_store", lambda: store)
+    monkeypatch.setattr(
+        planning_router,
+        "ekologus_content_knowledge_cards",
+        lambda: (SimpleNamespace(id="service-card", card_type="service"),),
+    )
+    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
+    planning_router.register_content_planning_proposal_routes(
+        app,
+        snapshot_loader=lambda _work_item_id: (_ for _ in ()).throw(
+            RuntimeError("snapshot unavailable")
+        ),
+    )
+
+    response = TestClient(app).post(
+        "/api/content/work-items/work-item/planning-proposals",
+        json={
+            "service_card_id": "service-card",
+            "expected_planning_input_digest": "a" * 64,
+            "requested_by": "wilku",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "failed"
+    assert response.json()["blockers"][0]["code"] == "runtime_failed"
+    assert executor.calls == 0
+    assert store.queued_response(
+        "work-item",
+        "service-card",
+        "a" * 64,
+    ) is None
+
+
+def test_planning_api_rejects_a_stale_digest_before_sibling_queue_logic(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -388,9 +441,10 @@ def test_planning_api_returns_typed_blocker_for_a_sibling_generation(
         json=_generation_request(service_card_id, "b" * 64),
     )
     assert second.status_code == 200
-    assert second.json()["status"] == "blocked"
-    assert second.json()["blockers"][0]["code"] == "runtime_blocked"
-    assert second.json()["runtime"]["run_id"] == first.json()["runtime"]["run_id"]
+    assert second.json()["status"] == "stale"
+    assert second.json()["blockers"][0]["code"] == "stale_input"
+    assert second.json()["planning_input_digest"] == current["planning_input_digest"]
+    planning_router._PLANNING_ACTIVE_KEYS.clear()
 
 
 def test_planning_runtime_default_allows_full_structured_turn(
@@ -491,7 +545,7 @@ def test_planning_output_quality_gate_requires_query_to_section_assignment() -> 
     ]
 
 
-def test_changed_input_can_enqueue_replan_when_older_proposal_exists(
+def test_changed_input_digest_is_rejected_before_a_replan_is_queued(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -522,9 +576,9 @@ def test_changed_input_can_enqueue_replan_when_older_proposal_exists(
     )
 
     assert response.status_code == 200
-    assert response.json()["status"] == "generating"
-    assert response.json()["planning_input_digest"] == changed_digest
-    assert executor.submitted == 1
+    assert response.json()["status"] == "stale"
+    assert response.json()["planning_input_digest"] == proposal["planning_input_digest"]
+    assert executor.submitted == 0
 
 
 def test_dynamic_planning_rejects_an_unknown_document_placement(
