@@ -26,8 +26,7 @@ def as_list(value: Any, label: str) -> list[Any]:
     return value
 
 
-def read_entry(api_base: str) -> dict[str, Any]:
-    entry = as_dict(request_json(api_base, "GET", "/api/content/workflow-entry"), "workflow entry")
+def validate_entry(entry: dict[str, Any]) -> dict[str, Any]:
     if entry.get("response_type") != "content_workflow_entry":
         raise SystemExit("Workflow entry response_type mismatch")
     recommendations = [
@@ -43,12 +42,13 @@ def read_entry(api_base: str) -> dict[str, Any]:
     return selected
 
 
-def read_workspace(api_base: str, work_item_id: str) -> dict[str, Any]:
-    encoded = urllib.parse.quote(work_item_id, safe="")
-    workspace = as_dict(
-        request_json(api_base, "GET", f"/api/content/work-items/{encoded}/document-workspace"),
-        "document workspace",
+def read_entry(api_base: str) -> dict[str, Any]:
+    return validate_entry(
+        as_dict(request_json(api_base, "GET", "/api/content/workflow-entry"), "workflow entry")
     )
+
+
+def validate_workspace(workspace: dict[str, Any], work_item_id: str) -> dict[str, Any]:
     if workspace.get("response_type") != "content_document_workspace":
         raise SystemExit("Document workspace response_type mismatch")
     if (
@@ -80,16 +80,23 @@ def read_workspace(api_base: str, work_item_id: str) -> dict[str, Any]:
     return workspace
 
 
-def read_planning(api_base: str, work_item_id: str) -> dict[str, Any]:
+def read_workspace(api_base: str, work_item_id: str) -> dict[str, Any]:
     encoded = urllib.parse.quote(work_item_id, safe="")
-    status = as_dict(
-        request_json(api_base, "GET", f"/api/content/work-items/{encoded}/planning-proposals"),
-        "planning status",
+    return validate_workspace(
+        as_dict(
+            request_json(api_base, "GET", f"/api/content/work-items/{encoded}/document-workspace"),
+            "document workspace",
+        ),
+        work_item_id,
     )
+
+
+def validate_planning(status: dict[str, Any], work_item_id: str) -> dict[str, Any]:
     if status.get("work_item_id") != work_item_id:
         raise SystemExit("Planning status work_item_id mismatch")
     planning_statuses = {
         "not_generated",
+        "generating",
         "created",
         "idempotent",
         "ready",
@@ -115,6 +122,17 @@ def read_planning(api_base: str, work_item_id: str) -> dict[str, Any]:
         if proposal.get("planning_input_digest") != status.get("planning_input_digest"):
             raise SystemExit("Planning input digest mismatch")
     return status
+
+
+def read_planning(api_base: str, work_item_id: str) -> dict[str, Any]:
+    encoded = urllib.parse.quote(work_item_id, safe="")
+    return validate_planning(
+        as_dict(
+            request_json(api_base, "GET", f"/api/content/work-items/{encoded}/planning-proposals"),
+            "planning status",
+        ),
+        work_item_id,
+    )
 
 
 def main() -> int:

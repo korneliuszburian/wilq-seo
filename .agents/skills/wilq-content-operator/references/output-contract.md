@@ -3,6 +3,8 @@
 Czytaj tylko podczas evala albo debugowania formatu odpowiedzi. `SKILL.md`
 jest właścicielem normalnego przebiegu sesji.
 
+## Kształt odpowiedzi
+
 Widoczna odpowiedź po polsku zawiera kolejno:
 
 - `Jedna decyzja`;
@@ -10,7 +12,7 @@ Widoczna odpowiedź po polsku zawiera kolejno:
 - `Co już jest` — exact plan, rewizja lub review, jeśli istnieje;
 - `Co blokuje` — tylko rzeczywisty blocker;
 - `Następny bezpieczny krok` — jedna czynność;
-- `Ślad WILQ` — ID i dowody pod decyzją, nie nad nią.
+- `Ślad WILQ` — identyfikator i dowody pod decyzją, nie nad nią.
 
 ## Minimalny ślad
 

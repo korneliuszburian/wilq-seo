@@ -13,7 +13,7 @@ Prowadź **jedną pracę nad treścią naraz**. Marketer ma dostać prostą drog
 ```text
 wybór strony albo brief
   → wygeneruj plan
-  → sprawdź plan
+  → obejrzyj strukturę i źródła
   → przygotuj pełny tekst
   → sprawdź tekst
   → opcjonalny szkic na dev
@@ -41,11 +41,10 @@ identyfikatora operatora lub technicznych formularzy.
    odczyt. Odczytuj ten sam status, aż przestanie być `generating`.
 
 4. Gdy plan jest gotowy, pokaż jego intencję, strukturę i źródła. Jeżeli
-   marketer po zapoznaniu się z nim mówi „przygotuj pełny tekst”, zapisz
-   exact `scope` review (`approved`) z aktualnym `planning_digest`, a następnie
-   wywołaj `POST .../initial-draft` z exact proposal ID i digestami. To są dwa
-   techniczne zapisy jednej świadomej czynności marketera, nie dwa osobne
-   formularze do zaakceptowania.
+   marketer po zapoznaniu się z nim mówi „przygotuj pełny tekst”, wywołaj
+   `POST .../initial-draft` z exact proposal ID i digestami. Obejrzenie planu
+   nie jest osobnym review ani zapisem decyzji: jedynym kolejnym artefaktem
+   jest pełny tekst do późniejszego review człowieka.
 
 5. Pełny tekst jest immutable rewizją. Pokaż go przed dalszym krokiem. Po
    jawnym „zatwierdź tekst” zapisz `POST .../draft-revisions/{revision_id}/review`
@@ -63,14 +62,19 @@ identyfikatora operatora lub technicznych formularzy.
 
 Nowa strona nie ma starego URL-a, inventory ani porównania. Prowadź ją przez:
 
-1. `POST /api/content/new-page-briefs`, następnie odczyt briefu.
+1. Najpierw odczytaj `GET /api/content/new-page-topics`. Jeżeli marketer
+   wybierze kwalifikowany temat, użyj jego exact ID i digestu wyłącznie do
+   wypełnienia briefu; brak takiego tematu nie blokuje ręcznego briefu. Dopiero
+   po jawnym wyborze albo własnym briefie wywołaj `POST /api/content/new-page-briefs`,
+   następnie odczytaj brief.
 2. Pokaż guard pokrycia serwisu i pozwól wybrać zatwierdzoną usługę. Tylko ta
    realna decyzja tworzy `planning-foundation`; nie zgaduj usługi na podstawie
    tytułu briefu.
 3. Po jasnym „przygotuj plan” wywołaj `POST .../planning-proposal`, a następnie
    odczytuj jego status i canonical document.
-4. Po obejrzeniu planu „przygotuj pierwszą wersję” zapisuje exact planning
-   review i uruchamia exact initial draft jako jedną czynność marketera.
+4. Po obejrzeniu planu „przygotuj pierwszą wersję” uruchamia exact initial
+   draft z proposal ID i digestami. Nie zapisuj planning review — plan jest
+   wejściem do generowania, a review dotyczy dopiero powstałego tekstu.
 5. Review tekstu, delivery ActionObject, potwierdzenie publicznego wdrożenia i
    measurement mają te same granice jak dla istniejącej strony.
 
