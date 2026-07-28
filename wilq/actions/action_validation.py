@@ -4,6 +4,9 @@ from collections.abc import Callable
 
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.registry import get_connector_status
+from wilq.content.workflow.new_page_draft_action import (
+    CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
+)
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -29,7 +32,11 @@ def validate_action(
         errors.append("Akcja wymaga co najmniej jednego dowodu źródłowego.")
     if connector is None:
         errors.append(f"Nieznany łącznik danych: {action.connector}")
-    elif action.mode == ActionMode.apply and not connector.configured:
+    elif (
+        action.mode == ActionMode.apply
+        and not connector.configured
+        and action.payload.get("action_type") != CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
+    ):
         errors.append(f"Łącznik danych {action.connector} nie jest skonfigurowany.")
     errors.extend(validate_action_payload(action.connector, action.payload))
     if action.risk in {ActionRisk.high, ActionRisk.critical}:

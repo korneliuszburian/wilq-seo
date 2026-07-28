@@ -59,6 +59,7 @@ class ActionMutationAuditRecord(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     blockers: list[str] = Field(default_factory=list)
     wordpress_draft_binding: ContentDraftRevisionBinding | None = None
+    new_page_draft_binding: ContentNewPageDraftBinding | None = None
     wordpress_revision_blockers: list[ActionWordPressDraftApplyBlocker] = Field(
         default_factory=list
     )

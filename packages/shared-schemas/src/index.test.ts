@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ActionMutationReadinessResponseSchema,
+  ActionMutationAuditRecordSchema,
   ActionApplyRequestSchema,
   ActionObjectSchema,
   AuditEventSchema,
@@ -1362,6 +1363,41 @@ describe("ActionApplyRequestSchema", () => {
         }
       }).success
     ).toBe(false);
+  });
+});
+
+describe("ActionMutationAuditRecordSchema", () => {
+  it("preserves exact new-page lineage after an action apply", () => {
+    const parsed = ActionMutationAuditRecordSchema.parse({
+      id: "mutation_content_new_page_1",
+      action_id: "act_content_new_page_1",
+      connector: "wordpress_ekologus",
+      action_type: "content_new_page_dev_draft_create",
+      status: "applied",
+      mutation_attempted: true,
+      mutation_adapter: "content_new_page_draft_execution_boundary",
+      actor: "operator_local_dashboard",
+      created_at: "2026-07-28T18:00:00Z",
+      audit_event_id: "audit_content_new_page_1",
+      evidence_ids: ["ev_authoring_profile"],
+      blockers: [],
+      new_page_draft_binding: {
+        work_item_id: "content_work_item_new_page",
+        brief_id: "content_new_page_brief_1",
+        brief_digest: "a".repeat(64),
+        foundation_id: "content_new_page_foundation_1",
+        service_card_id: "service_environment",
+        service_card_digest: "b".repeat(64),
+        revision_id: "content_revision_new_page_1",
+        revision_digest: "c".repeat(64),
+        authoring_profile_digest: "d".repeat(64),
+        content_type: "page"
+      },
+      summary: "Mutation executed through adapter; vendor payload remains redacted.",
+      redacted: true
+    });
+
+    expect(parsed.new_page_draft_binding?.revision_id).toBe("content_revision_new_page_1");
   });
 });
 

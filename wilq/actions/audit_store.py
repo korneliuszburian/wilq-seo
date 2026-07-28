@@ -8,6 +8,7 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from wilq.actions.operator_labels import action_mutation_audit_status_label
+from wilq.content.workflow.new_page_revision_binding import ContentNewPageDraftBinding
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.operator_labels import impact_comparison_summary_label
 from wilq.schemas import (
@@ -175,6 +176,7 @@ def action_mutation_audit_record(
     mutation_adapter: str | None,
     adapter_result: dict[str, Any] | None,
     wordpress_draft_binding: ContentDraftRevisionBinding | None = None,
+    new_page_draft_binding: ContentNewPageDraftBinding | None = None,
     wordpress_revision_blockers: list[ActionWordPressDraftApplyBlocker] | None = None,
 ) -> ActionMutationAuditRecord:
     status: Literal["blocked", "applied"] = "blocked" if errors else "applied"
@@ -205,6 +207,7 @@ def action_mutation_audit_record(
         evidence_ids=action.evidence_ids,
         blockers=errors,
         wordpress_draft_binding=wordpress_draft_binding,
+        new_page_draft_binding=new_page_draft_binding,
         wordpress_revision_blockers=wordpress_revision_blockers or [],
         summary=mutation_audit_summary(
             errors,
@@ -262,6 +265,7 @@ def build_apply_audit_event(
     actor: str,
     errors: list[str],
     wordpress_draft_binding: ContentDraftRevisionBinding | None = None,
+    new_page_draft_binding: ContentNewPageDraftBinding | None = None,
 ) -> AuditEvent:
     """Build the redacted apply audit event with one canonical event-type map."""
     event_type = apply_audit_event_type(errors)
@@ -277,7 +281,10 @@ def build_apply_audit_event(
             else "Zmiany zapisane przez sprawdzoną ścieżkę API."
         ),
         evidence_ids=action.evidence_ids,
-        details=wordpress_draft_audit_details(wordpress_draft_binding),
+        details=wordpress_draft_audit_details(
+            wordpress_draft_binding,
+            new_page_draft_binding=new_page_draft_binding,
+        ),
     )
 
 
@@ -369,11 +376,16 @@ def build_impact_check_audit_event(
 def wordpress_draft_audit_details(
     binding: ContentDraftRevisionBinding | None,
     *,
+    new_page_draft_binding: ContentNewPageDraftBinding | None = None,
     details: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     audit_details = dict(details or {})
     if binding is not None:
         audit_details["wordpress_draft_binding"] = binding.model_dump(mode="json")
+    if new_page_draft_binding is not None:
+        audit_details["new_page_draft_binding"] = new_page_draft_binding.model_dump(
+            mode="json"
+        )
     return audit_details
 
 

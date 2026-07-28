@@ -79,8 +79,9 @@ def test_new_page_draft_action_binds_an_explicit_observed_type_without_vendor_wr
         "content_type": "page",
     }
     assert action.payload["destructive"] is False
-    assert action.payload["apply_allowed"] is False
-    assert action.payload["api_mutation_ready"] is False
+    assert action.payload["apply_allowed"] is True
+    assert action.payload["api_mutation_ready"] is True
+    assert action.mode.value == "apply"
     assert action.status.value == "needs_validation"
 
 
@@ -171,7 +172,7 @@ def test_new_page_action_records_local_review_gates_without_a_vendor_write() -> 
                 notes="Sprawdzono gotowość do przyszłego szkicu dev.",
             ),
         ).status
-        == "blocked"
+        == "checked"
     )
     assert action.status.value != "applied"
 
