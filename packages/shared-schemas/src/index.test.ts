@@ -17,6 +17,7 @@ import {
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
   ContentDecisionContextSchema,
+  ContentSelectedWorkspaceSchema,
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningInputReadinessResponseSchema,
   ContentPlanningProposalResponseSchema,
@@ -192,6 +193,79 @@ describe("ContentDecisionContextSchema", () => {
     expect(context.authoring_target.object_id).toBeNull();
     expect(context.source_target_relation.status).toBe("unverified");
     expect("target_id" in context).toBe(false);
+  });
+});
+
+describe("ContentSelectedWorkspaceSchema", () => {
+  const workspace = {
+    response_type: "content_document_workspace",
+    contract_version: "content_document_workspace_v2",
+    work_item_id: "content_work_item_bdo",
+    work_kind: "refresh_existing",
+    service_label: "BDO",
+    source_snapshot: {
+      status: "available",
+      title: "BDO",
+      url: "https://ekologus.pl/bdo/",
+      extraction_method: "wordpress_rest.content",
+      lead: null,
+      content_excerpt: null,
+      ordered_sections: [],
+      faq_status: "not_observed",
+      cta_status: "not_observed",
+      reason: "Źródło odczytane.",
+      caveats: [],
+      evidence_ids: ["ev_wp_bdo"]
+    },
+    canonical_document: {
+      status: "not_created",
+      revision_id: null,
+      content_digest: null,
+      review_state: "unreviewed",
+      label: "Brak dokumentu",
+      reason: "Brak rewizji.",
+      preview: null
+    },
+    document_lineage: {
+      status: "not_recorded",
+      source_material_ids: [],
+      knowledge_cards: [],
+      unresolved_knowledge_card_ids: [],
+      reason: "Brak rewizji."
+    },
+    comparison: { status: "unavailable", reason: "Brak rewizji.", items: [] },
+    next_action: { kind: "prepare_document", label: "Przygotuj dokument", reason: "Brak rewizji." },
+    secondary_disclosures: []
+  };
+
+  it("keeps ready and missing selection states exact", () => {
+    expect(
+      ContentSelectedWorkspaceSchema.safeParse({
+        status: "ready",
+        work_item_id: "content_work_item_bdo",
+        workspace,
+        reason: "Odczytano workspace.",
+        safe_next_step: "Przygotuj dokument"
+      }).success
+    ).toBe(true);
+    expect(
+      ContentSelectedWorkspaceSchema.safeParse({
+        status: "missing",
+        work_item_id: "content_work_item_missing",
+        workspace: null,
+        reason: "Nie znaleziono strony.",
+        safe_next_step: "Wróć do wyboru."
+      }).success
+    ).toBe(true);
+    expect(
+      ContentSelectedWorkspaceSchema.safeParse({
+        status: "ready",
+        work_item_id: "content_work_item_other",
+        workspace,
+        reason: "Odczytano workspace.",
+        safe_next_step: "Przygotuj dokument"
+      }).success
+    ).toBe(false);
   });
 });
 

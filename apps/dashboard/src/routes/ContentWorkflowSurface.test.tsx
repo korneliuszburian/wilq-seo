@@ -10,7 +10,7 @@ import {
   postContentRevisionTargetDraftAction,
   postContentRevisionTargetMappingConfirmation,
   getContentWorkItemDecisionContext,
-  getContentWorkItemDocumentWorkspace,
+  getContentSelectedWorkspace,
   getContentInventoryCatalog,
   getContentOperatorContext,
   getContentWorkItemQueue,
@@ -23,6 +23,7 @@ import {
   type ContentInitialDraftResponse,
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
+  type ContentSelectedWorkspace,
   type ContentInventoryCatalogResponse,
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
@@ -43,7 +44,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     postContentRevisionTargetMappingConfirmation: vi.fn(),
     postContentRevisionTargetDraftAction: vi.fn(),
     getContentWorkItemDecisionContext: vi.fn(),
-    getContentWorkItemDocumentWorkspace: vi.fn(),
+    getContentSelectedWorkspace: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
@@ -66,7 +67,7 @@ describe("ContentWorkflowSurface", () => {
     } as never);
     vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
     vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(contentDecisionContext());
-    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(contentDocumentWorkspace());
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
@@ -120,7 +121,7 @@ describe("ContentWorkflowSurface", () => {
       label: "Przygotuj nową wersję",
       reason: "Przygotowanie dokumentu jest kolejnym krokiem."
     };
-    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(noDocument);
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(noDocument));
 
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -168,7 +169,7 @@ describe("ContentWorkflowSurface", () => {
 
   it("opens and emits the canonical work-item path", async () => {
     const revision = savedFullDraftRevision();
-    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(contentDocumentWorkspace());
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace());
     vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
       workflowSnapshot({ workspace: savedRevisionWorkspace(revision as never) })
@@ -181,7 +182,7 @@ describe("ContentWorkflowSurface", () => {
     render(<App appRouter={appRouter} client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })} />);
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
-    expect(getContentWorkItemDocumentWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
+    expect(getContentSelectedWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
     fireEvent.click(screen.getByRole("button", { name: /przejdź do review/i }));
     await waitFor(() => expect(appRouter.state.location.pathname).toBe("/content-workflow/content_work_item_bdo"));
     expect(appRouter.state.location.search.view).toBe("review");
@@ -210,7 +211,7 @@ describe("ContentWorkflowSurface", () => {
 
   it("shows exact observed target options and requires an explicit mapping confirmation", async () => {
     const workspace = approvedDocumentWorkspace();
-    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
     vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(
       contentTargetMappingPreview()
     );
@@ -247,7 +248,7 @@ describe("ContentWorkflowSurface", () => {
   it("stores a human mapping confirmation without creating a WordPress draft", async () => {
     const workspace = approvedDocumentWorkspace();
     const preview = contentTargetMappingPreview();
-    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
     vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(preview);
     vi.mocked(postContentRevisionTargetMappingConfirmation).mockResolvedValue({
       status: "created",
@@ -306,7 +307,7 @@ describe("ContentWorkflowSurface", () => {
 
   it("offers the approved document package from Text without opening a WordPress path", async () => {
     const workspace = approvedDocumentWorkspace();
-    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
 
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -328,7 +329,7 @@ describe("ContentWorkflowSurface", () => {
   it("creates a separate exact dev-draft action without writing to WordPress", async () => {
     const workspace = approvedDocumentWorkspace();
     const preview = contentTargetDraftPreview();
-    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
     vi.mocked(getContentRevisionTargetDraftPreview).mockResolvedValue(preview);
     vi.mocked(postContentRevisionTargetDraftAction).mockResolvedValue({
       ...wordpressDraftAction(),
@@ -371,7 +372,7 @@ describe("ContentWorkflowSurface", () => {
 
   it("names a page target as a page when its authoring surface is unknown", async () => {
     const workspace = approvedDocumentWorkspace();
-    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(workspace);
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
     vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(
       contentTargetMappingPreview({ postType: "page", status: "blocked" })
     );
@@ -940,6 +941,20 @@ function contentDecisionContext(): ContentDecisionContext {
       summary: "WILQ nie aktualizuje istniejącej strony bez review."
     }],
     legacy_aliases: [{ kind: "requested_work_item", value: "content_work_item_bdo" }]
+  };
+}
+
+function selectedWorkspace(
+  workspace = contentDocumentWorkspace()
+): ContentSelectedWorkspace {
+  return {
+    response_type: "content_selected_workspace",
+    contract_version: "content_selected_workspace_v1",
+    status: "ready",
+    work_item_id: workspace.work_item_id,
+    workspace,
+    reason: "WILQ odczytał dokładny workspace wskazanej strony.",
+    safe_next_step: workspace.next_action.label
   };
 }
 
