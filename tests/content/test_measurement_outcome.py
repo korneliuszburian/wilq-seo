@@ -191,7 +191,9 @@ def test_measurement_outcome_classifies_noisy_directional_and_success_states() -
     success = interpret_content_measurement_outcome(
         window=_window(),
         observed_metrics=[
-            _metric("gsc_clicks", 100, 130),
+            _metric("gsc_clicks", 100, 130).model_copy(
+                update={"freshness_state": "stale"}
+            ),
             _metric("gsc_impressions", 1000, 1200),
         ],
         as_of=date(2026, 8, 1),
@@ -207,4 +209,7 @@ def test_measurement_outcome_classifies_noisy_directional_and_success_states() -
     assert success.queue_feedback_allowed is True
     assert success.metric_fact_ids == ["metric_fact_gsc_bdo_clicks"]
     assert success.refresh_run_ids == ["refresh_google_search_console_bdo"]
+    assert success.observed_metrics[0].content_url == "https://ekologus.pl/bdo/"
+    assert success.observed_metrics[0].freshness_state == "stale"
+    assert success.observed_metrics[0].evidence_ids == ["ev_gsc_bdo"]
     assert "nie pełny dowód przyczyny" in " ".join(success.limitations)

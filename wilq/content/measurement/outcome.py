@@ -37,6 +37,7 @@ class ContentMeasurementObservedMetric(BaseModel):
     content_url: str | None = None
     quality_state: ConnectorQualityState = ConnectorQualityState.unknown
     settlement_state: ConnectorSettlementState = ConnectorSettlementState.unknown
+    freshness_state: Literal["fresh", "stale", "unknown"] = "unknown"
     interpretation_caveats: list[str] = Field(default_factory=list)
 
 
@@ -58,6 +59,7 @@ class ContentMeasurementOutcomeInterpretation(BaseModel):
     metric_fact_ids: list[str] = Field(default_factory=list)
     refresh_run_ids: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
+    observed_metrics: list[ContentMeasurementObservedMetric] = Field(default_factory=list)
     success_claim_allowed: bool = False
     queue_feedback_allowed: bool = False
     safe_next_step: str
@@ -70,7 +72,7 @@ def interpret_content_measurement_outcome(
     as_of: date,
 ) -> ContentMeasurementOutcomeInterpretation:
     if not content_measurement_window_outcome_allowed(window, as_of=as_of):
-        return _interpretation(
+        result = _interpretation(
             window=window,
             status="not_ready",
             status_label="Za wcześnie na ocenę efektu",
@@ -82,38 +84,39 @@ def interpret_content_measurement_outcome(
             limitations=["Okno obserwacji nie jest jeszcze gotowe do oceny."],
             safe_next_step="Wróć do interpretacji po earliest_verdict_date.",
         )
-
-    metric_blockers = [
-        blocker
-        for metric in observed_metrics
-        for blocker in _metric_provenance_blockers(metric, window)
-    ]
-    usable_metrics = [
-        metric
-        for metric in observed_metrics
-        if not _metric_provenance_blockers(metric, window)
-    ]
-    if metric_blockers:
-        return _interpretation(
-            window=window,
-            status="insufficient_data",
-            status_label="Za mało danych",
-            conclusion=(
-                "Okno pomiaru jest gotowe, ale WILQ nie ma metryk z dowodami, "
-                "które pozwalają uczciwie ocenić wynik treści."
-            ),
-            confidence="low",
-            limitations=(
-                _unique(metric_blockers)
-                or [
-                    "Brakuje wartości bazowej, wartości po obserwacji albo "
-                    "proweniencji metryki."
-                ]
-            ),
-            safe_next_step="Odśwież źródła pomiaru i wróć do oceny.",
-        )
-
-    return _interpret_ready_outcome(window=window, usable_metrics=usable_metrics)
+    else:
+        metric_blockers = [
+            blocker
+            for metric in observed_metrics
+            for blocker in _metric_provenance_blockers(metric, window)
+        ]
+        usable_metrics = [
+            metric
+            for metric in observed_metrics
+            if not _metric_provenance_blockers(metric, window)
+        ]
+        if metric_blockers:
+            result = _interpretation(
+                window=window,
+                status="insufficient_data",
+                status_label="Za mało danych",
+                conclusion=(
+                    "Okno pomiaru jest gotowe, ale WILQ nie ma metryk z dowodami, "
+                    "które pozwalają uczciwie ocenić wynik treści."
+                ),
+                confidence="low",
+                limitations=(
+                    _unique(metric_blockers)
+                    or [
+                        "Brakuje wartości bazowej, wartości po obserwacji albo "
+                        "proweniencji metryki."
+                    ]
+                ),
+                safe_next_step="Odśwież źródła pomiaru i wróć do oceny.",
+            )
+        else:
+            result = _interpret_ready_outcome(window=window, usable_metrics=usable_metrics)
+    return result.model_copy(update={"observed_metrics": observed_metrics})
 
 
 def _interpret_ready_outcome(
@@ -125,16 +128,7 @@ def _interpret_ready_outcome(
     positive = sum(1 for delta in deltas if delta >= 0.1)
     negative = sum(1 for delta in deltas if delta <= -0.1)
     flat = len(deltas) - positive - negative
-    evidence_ids = _unique(
-        [evidence for metric in usable_metrics for evidence in metric.evidence_ids]
-    )
-    source_connectors = _unique([metric.source_connector for metric in usable_metrics])
-    metric_fact_ids = _unique(
-        [metric_fact for metric in usable_metrics for metric_fact in metric.metric_fact_ids]
-    )
-    refresh_run_ids = _unique(
-        [refresh_run for metric in usable_metrics for refresh_run in metric.refresh_run_ids]
-    )
+    provenance = _outcome_provenance(usable_metrics)
 
     if flat == len(deltas):
         return _interpretation(
@@ -146,10 +140,7 @@ def _interpret_ready_outcome(
                 "wniosek o sukcesie lub porażce treści."
             ),
             confidence="low",
-            evidence_ids=evidence_ids,
-            source_connectors=source_connectors,
-            metric_fact_ids=metric_fact_ids,
-            refresh_run_ids=refresh_run_ids,
+            **provenance,
             limitations=["Brak wyraźnego kierunku zmiany w obserwowanych metrykach."],
             safe_next_step="Zostaw treść w obserwacji albo sprawdź dodatkowe źródła.",
         )
@@ -164,10 +155,7 @@ def _interpret_ready_outcome(
                 "mówić o zmierzonym wyniku, ale bez udawania pełnej przyczynowości."
             ),
             confidence="high" if len(deltas) > 1 else "medium",
-            evidence_ids=evidence_ids,
-            source_connectors=source_connectors,
-            metric_fact_ids=metric_fact_ids,
-            refresh_run_ids=refresh_run_ids,
+            **provenance,
             limitations=[
                 "Interpretacja pokazuje zmianę w oknie pomiaru, nie pełny dowód przyczyny."
             ],
@@ -186,10 +174,7 @@ def _interpret_ready_outcome(
                 "na claim sukcesu."
             ),
             confidence="medium",
-            evidence_ids=evidence_ids,
-            source_connectors=source_connectors,
-            metric_fact_ids=metric_fact_ids,
-            refresh_run_ids=refresh_run_ids,
+            **provenance,
             limitations=["Nie wszystkie metryki potwierdzają tę samą zmianę."],
             queue_feedback_allowed=True,
             safe_next_step="Użyj tego jako sygnału do kolejki, nie jako publicznego claimu.",
@@ -205,10 +190,7 @@ def _interpret_ready_outcome(
                 "przeglądu albo kolejnej poprawki."
             ),
             confidence="medium",
-            evidence_ids=evidence_ids,
-            source_connectors=source_connectors,
-            metric_fact_ids=metric_fact_ids,
-            refresh_run_ids=refresh_run_ids,
+            **provenance,
             limitations=[
                 "To jest sygnał operacyjny, nie dowód, że sama treść była przyczyną spadku."
             ],
@@ -222,13 +204,27 @@ def _interpret_ready_outcome(
         status_label="Wynik mieszany",
         conclusion="Metryki pokazują mieszany obraz, więc WILQ nie powinien claimować efektu.",
         confidence="low",
-        evidence_ids=evidence_ids,
-        source_connectors=source_connectors,
-        metric_fact_ids=metric_fact_ids,
-        refresh_run_ids=refresh_run_ids,
+        **provenance,
         limitations=["Tyle samo sygnałów wspiera poprawę i pogorszenie."],
         safe_next_step="Sprawdź dodatkowe dane albo wydłuż obserwację.",
     )
+
+
+def _outcome_provenance(
+    metrics: list[ContentMeasurementObservedMetric],
+) -> dict[str, list[str]]:
+    return {
+        "evidence_ids": _unique(
+            [evidence_id for metric in metrics for evidence_id in metric.evidence_ids]
+        ),
+        "source_connectors": _unique([metric.source_connector for metric in metrics]),
+        "metric_fact_ids": _unique(
+            [fact_id for metric in metrics for fact_id in metric.metric_fact_ids]
+        ),
+        "refresh_run_ids": _unique(
+            [run_id for metric in metrics for run_id in metric.refresh_run_ids]
+        ),
+    }
 
 
 def _metric_provenance_blockers(
