@@ -1,6 +1,6 @@
 ---
 name: wilq-content-operator
-description: Prowadzi jedną sesję tworzenia lub poprawy treści Ekologus przez kanoniczny multi-step WILQ API: kolejka, reviewed scope, reviewed section map, exact revision, Codex proposal, human review i revision-bound ActionObject do WordPress draft-only. Użyj, gdy marketer chce wybrać temat, zatwierdzić plan, poprawić sekcję, sprawdzić tekst albo przygotować szkic na devie; nie używaj do ogólnej strategii tematów ani autonomicznej publikacji.
+description: Prowadzi jedną sesję tworzenia lub poprawy treści Ekologus przez kanoniczny multi-step WILQ API: kolejka, reviewed scope, API-owned mapa sekcji, exact revision, Codex proposal, human review i revision-bound ActionObject do WordPress draft-only. Użyj, gdy marketer chce wybrać temat, zatwierdzić zakres planu, poprawić sekcję, sprawdzić tekst albo przygotować szkic na devie; nie używaj do ogólnej strategii tematów ani autonomicznej publikacji.
 ---
 
 # WILQ Content Operator
@@ -43,7 +43,7 @@ gotowość delivery.
    `GET /api/content/work-items/{work_item_id}/snapshot`, a następnie model-free
    `GET /api/content/work-items/{work_item_id}/planning-proposals`. Snapshot jest
    źródłem prawdy dla pięciu kroków
-   `scope → section_map → draft → review → dev_draft`; status planera mówi
+   `scope → API-owned section map → draft → review → dev_draft`; status planera mówi
    `not_generated`, `ready`, `stale` albo `blocked` i nigdy sam nie uruchamia
    modelu. Enrichment lub knowledge cards pobieraj tylko wtedy, gdy operator
    prosi o ślad głębszy niż snapshot.
@@ -79,20 +79,23 @@ gotowość delivery.
    **Done when:** istnieje persisted proposal związany z exact inputem albo
    jawny blocker i model nie został zastąpiony inną ścieżką.
 
-5. **Zatwierdzaj wygenerowany plan etapami.** Jawne `approved` albo
+5. **Zatwierdzaj zakres wygenerowanego planu.** Jawne `approved` albo
    `needs_changes` zapisuj przez
-   `POST /api/content/work-items/{work_item_id}/planning-review` z `stage`,
-   exact `expected_planning_digest`, `decision`, `reviewed_by` oraz
-   `checked_items` dla approval albo `notes` dla zmian. Przy `scope` przekaż
-   wybrane `service_card_id`; potem osobno oceń `section_map`. Konflikt `409`
+   `POST /api/content/work-items/{work_item_id}/planning-review` wyłącznie z
+   `stage=scope`, exact `expected_planning_digest`, `decision`, `reviewed_by`
+   oraz `checked_items` dla approval albo `notes` dla zmian. Przy `scope`
+   przekaż wybrane `service_card_id`. Mapa sekcji jest API-owned częścią
+   wygenerowanej exact propozycji: pokaż ją, lecz nigdy nie wysyłaj
+   `stage=section_map`; router odrzuca ten historyczny zapis. Konflikt `409`
    wymaga odświeżenia; nie retry ze starym digestem i nie przenoś decyzji na
    inną propozycję.
 
-   **Done when:** oba current planning reviews odnoszą się do tej samej
-   wygenerowanej propozycji albo operator dostał dokładną instrukcję poprawy.
+   **Done when:** current scope review i API-owned mapa sekcji odnoszą się do
+   tej samej wygenerowanej propozycji albo operator dostał dokładną instrukcję
+   poprawy.
 
-6. **Twórz i oceniaj pełny dokument.** Po dwóch aktualnych approvals i wyłącznie
-   na jawne polecenie wywołaj
+6. **Twórz i oceniaj pełny dokument.** Po aktualnym scope approval oraz
+   aktualnej API-owned mapie sekcji i wyłącznie na jawne polecenie wywołaj
    `POST /api/content/work-items/{work_item_id}/initial-draft` z exact
    `expected_proposal_id`, `expected_planning_digest`,
    `expected_planning_input_digest` oraz `requested_by`. Wynik jest pełną

@@ -18,7 +18,7 @@ Zwykła sesja marketera ma działać z instrukcji w `SKILL.md` i wąskiego snaps
 queue
   -> selected snapshot
   -> scope planning-review
-  -> section_map planning-review
+  -> API-owned exact section map
   -> exact draft revision
   -> exact revision human review
   -> optional exact Codex child proposal
