@@ -66,7 +66,7 @@ def create_new_page_draft_action(
         title="Przygotuj nowy szkic na dev",
         domain=OpportunityDomain.content,
         connector="wordpress_ekologus",
-        mode=ActionMode.prepare,
+        mode=ActionMode.apply,
         risk=ActionRisk.medium,
         status=ActionStatus.needs_validation,
         evidence_ids=unique_values(readiness.evidence_ids),
@@ -75,8 +75,8 @@ def create_new_page_draft_action(
             "obserwowany typ nowego obiektu; WILQ nadal nie publikuje ani nie aktualizuje treści."
         ),
         recommended_reason=(
-            "Otwórz lokalną akcję w centrum działań. WILQ nie ma jeszcze prawa "
-            "utworzyć szkicu ani wykonać zapisu WordPress."
+            "Otwórz lokalną akcję w centrum działań i przejdź preview, review, "
+            "confirm oraz kontrolę gotowości przed jednym szkicem na dev."
         ),
         payload={
             "action_type": CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
@@ -89,8 +89,8 @@ def create_new_page_draft_action(
                     "preview_contract": CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_CONTRACT,
                     "operation_type_label": "Utworzenie nowego szkicu na dev",
                     "content_type": command.content_type,
-                    "apply_allowed": False,
-                    "api_mutation_ready": False,
+                    "apply_allowed": True,
+                    "api_mutation_ready": True,
                 }
             ],
             "required_validation": [
@@ -101,8 +101,8 @@ def create_new_page_draft_action(
                 "human_confirm_before_wordpress_write",
             ],
             "destructive": False,
-            "apply_allowed": False,
-            "api_mutation_ready": False,
+            "apply_allowed": True,
+            "api_mutation_ready": True,
         },
         validation_status="not_validated",
         created_by=command.requested_by,

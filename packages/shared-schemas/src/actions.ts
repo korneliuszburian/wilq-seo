@@ -243,6 +243,7 @@ export const ActionMutationAuditRecordSchema = z.object({
   evidence_ids: z.array(z.string()),
   blockers: z.array(z.string()),
   wordpress_draft_binding: ContentDraftRevisionBindingSchema.nullable().optional(),
+  new_page_draft_binding: ContentNewPageDraftBindingSchema.nullable().optional(),
   wordpress_revision_blockers: z.array(ActionWordPressDraftApplyBlockerSchema).default([]),
   summary: z.string(),
   redacted: z.boolean()

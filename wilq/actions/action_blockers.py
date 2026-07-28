@@ -102,7 +102,7 @@ def action_impact_check_blockers(
         blockers.append("action_confirmation_required")
     if _is_content_dev_draft_action(action) and not _has_approved_action_review(action):
         blockers.append("draft_action_review_required")
-    if not action.metrics and action.payload.get("action_type") != CONTENT_DEV_DRAFT_ACTION_TYPE:
+    if not action.metrics and not _is_content_dev_draft_action(action):
         blockers.append("metric_facts_required")
     if not action.evidence_ids:
         blockers.append("evidence_ids_required")
