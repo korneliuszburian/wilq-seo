@@ -367,7 +367,7 @@ function NewPageInitialDraft({ briefId, workspace, onChanged }: { briefId: strin
 
 function NewPageRevisionReview({ briefId, workspace, onChanged }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {
   const revision = workspace.canonical_revision!;
-  const [decision, setDecision] = useState<"approved" | "needs_changes" | "rejected" | "deferred">("approved");
+  const [decision, setDecision] = useState<"approved" | "needs_changes">("approved");
   const [notes, setNotes] = useState("");
   const evidenceIds = [...new Set(revision.sections.flatMap((section) => section.evidence_ids))];
   const review = useMutation({
@@ -394,7 +394,6 @@ function NewPageRevisionReview({ briefId, workspace, onChanged }: { briefId: str
 
 function NewPageDeliveryAction({ briefId, workspace }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace }) {
   const [contentType, setContentType] = useState<"page" | "post">("page");
-  const [requestedBy, setRequestedBy] = useState("");
   const readiness = useQuery({
     queryKey: ["content-workflow", "new-page-brief", briefId, "delivery-readiness"],
     queryFn: () => getContentNewPageDeliveryReadiness(briefId),
@@ -406,7 +405,7 @@ function NewPageDeliveryAction({ briefId, workspace }: { briefId: string; worksp
       expected_revision_digest: value.revision_digest ?? "",
       expected_authoring_profile_digest: value.authoring_profile_digest ?? "",
       content_type: contentType,
-      requested_by: requestedBy
+      requested_by: "wilku"
     })
   });
   if (workspace.status !== "document_approved") return null;
@@ -415,7 +414,7 @@ function NewPageDeliveryAction({ briefId, workspace }: { briefId: string; worksp
   if (readiness.data.status !== "ready_for_action") return <section className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-4 text-sm leading-6 text-ink" data-testid="new-page-delivery-blocked"><p className="font-semibold">Szkic na dev jest jeszcze zablokowany</p><p className="mt-1">{readiness.data.safe_next_step}</p></section>;
   const types = readiness.data.allowed_content_types;
   const selectedType = types.includes(contentType) ? contentType : types[0] ?? "page";
-  return <section className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4" data-testid="new-page-delivery-ready"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-indigo-700">Przygotowanie akcji dev</p><h4 className="mt-2 text-base font-semibold text-ink">Wybierz typ przyszłego szkicu</h4><p className="mt-1 text-sm leading-6 text-slate-700">WILQ odczytał dozwolone typy z profilu authoringu. Ten krok zapisuje wyłącznie lokalny ActionObject — nie tworzy szkicu i nie zapisuje do WordPressa.</p><div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold text-ink">Typ obiektu<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={selectedType} onChange={(event) => setContentType(event.target.value as "page" | "post")}>{types.map((type) => <option key={type} value={type}>{type === "page" ? "Strona" : "Wpis"}</option>)}</select></label><label className="text-sm font-semibold text-ink">Przygotowuje<input className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={requestedBy} onChange={(event) => setRequestedBy(event.target.value)} placeholder="Imię i nazwisko" /></label></div><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={requestedBy.trim().length < 1 || createAction.isPending} onClick={() => createAction.mutate(readiness.data)}>{createAction.isPending ? "Przygotowuję akcję…" : "Przygotuj ActionObject"}</button>{createAction.data ? <div className="mt-3 rounded-xl border border-indigo-200 bg-white p-3 text-sm leading-6 text-slate-700"><p>Akcja jest zapisana lokalnie. Przejdź przez podgląd, review, potwierdzenie i kontrolę gotowości przed jednym szkicem na dev.</p><a className="mt-2 inline-block font-semibold text-action underline-offset-2 hover:underline" href={`/actions/${encodeURIComponent(createAction.data.id)}`}>Otwórz akcję do sprawdzenia</a></div> : null}{createAction.isError ? <p className="mt-2 text-sm leading-6 text-wait">Akcja nie została przygotowana. Odśwież gotowość delivery i sprawdź dokładną rewizję.</p> : null}</section>;
+  return <section className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4" data-testid="new-page-delivery-ready"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-indigo-700">Przygotowanie akcji dev</p><h4 className="mt-2 text-base font-semibold text-ink">Wybierz typ przyszłego szkicu</h4><p className="mt-1 text-sm leading-6 text-slate-700">WILQ odczytał dozwolone typy z profilu authoringu. Ten krok zapisuje wyłącznie lokalny ActionObject — nie tworzy szkicu i nie zapisuje do WordPressa.</p><label className="mt-3 block text-sm font-semibold text-ink">Typ obiektu<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={selectedType} onChange={(event) => setContentType(event.target.value as "page" | "post")}>{types.map((type) => <option key={type} value={type}>{type === "page" ? "Strona" : "Wpis"}</option>)}</select></label><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={createAction.isPending} onClick={() => createAction.mutate(readiness.data)}>{createAction.isPending ? "Przygotowuję akcję…" : "Przygotuj ActionObject"}</button>{createAction.data ? <div className="mt-3 rounded-xl border border-indigo-200 bg-white p-3 text-sm leading-6 text-slate-700"><p>Akcja jest zapisana lokalnie. Przejdź przez podgląd, review, potwierdzenie i kontrolę gotowości przed jednym szkicem na dev.</p><a className="mt-2 inline-block font-semibold text-action underline-offset-2 hover:underline" href={`/actions/${encodeURIComponent(createAction.data.id)}`}>Otwórz akcję do sprawdzenia</a></div> : null}{createAction.isError ? <p className="mt-2 text-sm leading-6 text-wait">Akcja nie została przygotowana. Odśwież gotowość delivery i sprawdź dokładną rewizję.</p> : null}</section>;
 }
 
 function NewPagePublicDeployment({ workspace, onChanged }: { workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {
