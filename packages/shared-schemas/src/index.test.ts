@@ -281,7 +281,7 @@ describe("ContentDraftRevisionSchema", () => {
         brief_digest: "1".repeat(64),
         foundation_id: "content_new_page_foundation_consulting",
         service_card_id: parsed.service_card_id,
-        service_card_digest: "2".repeat(64),
+        service_card_digest: "e".repeat(64),
         proposed_ia_location: "Usługi → Doradztwo środowiskowe",
         public_source_status: "not_applicable" as const,
         public_source_url: null,
@@ -296,6 +296,21 @@ describe("ContentDraftRevisionSchema", () => {
       ContentDraftRevisionSchema.safeParse({
         ...newPage,
         service_card_id: "ekologus_service_other"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionSchema.safeParse({
+        ...newPage,
+        service_digest: "f".repeat(64)
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionSchema.safeParse({
+        ...newPage,
+        new_page_document_identity: {
+          ...newPage.new_page_document_identity,
+          service_card_digest: "f".repeat(64)
+        }
       }).success
     ).toBe(false);
     expect(ContentDraftRevisionSchema.safeParse({
