@@ -7,8 +7,10 @@ import {
   getContentWorkItemRevisionHtmlPackage,
   getContentRevisionTargetMapping,
   getContentRevisionTargetDraftPreview,
+  getContentRevisionPublicDeployment,
   postContentRevisionTargetDraftAction,
   postContentRevisionTargetMappingConfirmation,
+  postContentRevisionPublicDeployment,
   getContentWorkItemDecisionContext,
   getContentSelectedWorkspace,
   getContentInventoryCatalog,
@@ -41,8 +43,10 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemRevisionHtmlPackage: vi.fn(),
     getContentRevisionTargetMapping: vi.fn(),
     getContentRevisionTargetDraftPreview: vi.fn(),
+    getContentRevisionPublicDeployment: vi.fn(),
     postContentRevisionTargetMappingConfirmation: vi.fn(),
     postContentRevisionTargetDraftAction: vi.fn(),
+    postContentRevisionPublicDeployment: vi.fn(),
     getContentWorkItemDecisionContext: vi.fn(),
     getContentSelectedWorkspace: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
@@ -71,6 +75,11 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
+    vi.mocked(getContentRevisionPublicDeployment).mockResolvedValue({
+      deployment: null,
+      publication_observations: [],
+      safe_next_step: "Potwierdź publiczne wdrożenie na podstawie odczytu WordPressa."
+    } as never);
     vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
     const revision = savedDraftRevision();
     const workspace = savedRevisionWorkspace(revision);
@@ -296,6 +305,70 @@ describe("ContentWorkflowSurface", () => {
         expected_target_contract_digest: "b".repeat(64),
         expected_binding_digest: "c".repeat(64)
       })
+    ));
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("confirms only a selected local public observation without publishing", async () => {
+    const workspace = approvedDocumentWorkspace();
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
+    vi.mocked(getContentRevisionPublicDeployment).mockResolvedValue({
+      deployment: null,
+      publication_observations: [{
+        wordpress_post_id: "1353",
+        publication_evidence_id: "ev_public_bdo",
+        publication_source_connector: "wordpress_ekologus",
+        public_url: "https://www.ekologus.pl/bdo/",
+        observed_at: "2026-07-26T09:00:00Z"
+      }],
+      safe_next_step: "Potwierdź publiczne wdrożenie na podstawie odczytu WordPressa."
+    } as never);
+    vi.mocked(postContentRevisionPublicDeployment).mockResolvedValue({
+      deployment: {
+        deployment_id: "content_public_deployment_bdo",
+        work_item_id: workspace.work_item_id,
+        revision_id: workspace.canonical_document.revision_id,
+        revision_digest: workspace.canonical_document.content_digest,
+        public_url: "https://www.ekologus.pl/bdo/",
+        wordpress_post_id: "1353",
+        publication_evidence_id: "ev_public_bdo",
+        publication_source_connector: "wordpress_ekologus",
+        observed_at: "2026-07-26T09:00:00Z",
+        confirmed_by: "Marta Kowalska",
+        confirmed_at: "2026-07-26T10:00:00Z"
+      }
+    } as never);
+
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1",
+          defaultPendingMinMs: 0
+        })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    await screen.findByTestId("content-text-workspace");
+    fireEvent.click(screen.getByText("Potwierdzenie publicznego wdrożenia", { exact: true }));
+    expect(await screen.findByLabelText("Zaobserwowany publiczny obiekt")).toBeInTheDocument();
+    const submit = screen.getByRole("button", { name: "Zapisz potwierdzenie wdrożenia" });
+    expect(submit).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Zaobserwowany publiczny obiekt"), {
+      target: { value: "ev_public_bdo" }
+    });
+    fireEvent.change(screen.getByLabelText("Potwierdza"), { target: { value: "Marta Kowalska" } });
+    fireEvent.click(submit);
+
+    await waitFor(() => expect(postContentRevisionPublicDeployment).toHaveBeenCalledWith(
+      workspace.work_item_id,
+      workspace.canonical_document.revision_id,
+      {
+        expected_revision_digest: workspace.canonical_document.content_digest,
+        wordpress_post_id: "1353",
+        publication_evidence_id: "ev_public_bdo",
+        confirmed_by: "Marta Kowalska"
+      }
     ));
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });

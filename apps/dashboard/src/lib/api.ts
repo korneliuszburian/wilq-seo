@@ -29,6 +29,9 @@ import {
   ContentTargetDraftPreviewSchema,
   ContentTargetDraftActionCommandSchema,
   ContentTargetMappingPreviewSchema,
+  ContentPublicDeploymentConfirmationCommandSchema,
+  ContentPublicDeploymentConfirmationResponseSchema,
+  ContentPublicDeploymentReadResponseSchema,
   ContentWorkflowEntryResponseSchema,
   ContentNewPageBriefInputSchema,
   ContentNewPageBriefWorkspaceSchema,
@@ -144,6 +147,9 @@ import {
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
   type ContentTargetDraftActionCommand,
+  type ContentPublicDeploymentConfirmationCommand,
+  type ContentPublicDeploymentConfirmationResponse,
+  type ContentPublicDeploymentReadResponse,
   type ContentWorkflowEntryResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
@@ -593,6 +599,28 @@ export function postContentRevisionTargetDraftAction(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/target-mapping/draft-action`,
     ActionObjectSchema,
     ContentTargetDraftActionCommandSchema.parse(request)
+  );
+}
+
+export function getContentRevisionPublicDeployment(
+  workItemId: string,
+  revisionId: string
+): Promise<ContentPublicDeploymentReadResponse> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/public-deployment`,
+    ContentPublicDeploymentReadResponseSchema
+  );
+}
+
+export function postContentRevisionPublicDeployment(
+  workItemId: string,
+  revisionId: string,
+  request: ContentPublicDeploymentConfirmationCommand
+): Promise<ContentPublicDeploymentConfirmationResponse> {
+  return apiPost(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/public-deployments`,
+    ContentPublicDeploymentConfirmationResponseSchema,
+    ContentPublicDeploymentConfirmationCommandSchema.parse(request)
   );
 }
 
@@ -1157,6 +1185,9 @@ export type {
   ContentTargetMappingPreview,
   ContentTargetDraftPreview,
   ContentTargetDraftActionCommand,
+  ContentPublicDeploymentConfirmationCommand,
+  ContentPublicDeploymentConfirmationResponse,
+  ContentPublicDeploymentReadResponse,
   ContentWorkflowEntryResponse,
   ContentNewPageBriefInput,
   ContentNewPageBriefWorkspace,

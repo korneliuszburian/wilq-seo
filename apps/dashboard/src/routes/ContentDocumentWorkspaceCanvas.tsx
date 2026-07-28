@@ -16,6 +16,7 @@ import {
 } from "./contentWorkflowQueries";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentPlanningGenerationPanel } from "./ContentPlanningGenerationPanel";
+import { ContentPublicDeploymentPanel } from "./ContentPublicDeploymentPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
 type View = "source" | "document" | "comparison";
@@ -111,6 +112,13 @@ export function ContentDocumentWorkspaceCanvas({
           <DocumentLineage workspace={workspace} />
           {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
             <ContentApprovedHtmlPackage
+              workItemId={workspace.work_item_id}
+              revisionId={workspace.canonical_document.revision_id}
+              revisionDigest={workspace.canonical_document.content_digest}
+            />
+          ) : null}
+          {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
+            <ContentPublicDeploymentPanel
               workItemId={workspace.work_item_id}
               revisionId={workspace.canonical_document.revision_id}
               revisionDigest={workspace.canonical_document.content_digest}

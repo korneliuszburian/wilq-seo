@@ -2243,8 +2243,24 @@ export const ContentPublicDeploymentConfirmationResponseSchema = z.object({
   deployment: ContentPublicDeploymentSchema
 });
 
+export const ContentPublicDeploymentConfirmationCommandSchema = z.object({
+  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  wordpress_post_id: z.string().min(1),
+  publication_evidence_id: z.string().min(1),
+  confirmed_by: z.string().min(1).max(200)
+});
+
+export const ContentPublicDeploymentObservationSchema = z.object({
+  wordpress_post_id: z.string(),
+  publication_evidence_id: z.string(),
+  publication_source_connector: z.string(),
+  public_url: z.string(),
+  observed_at: z.string()
+});
+
 export const ContentPublicDeploymentReadResponseSchema = z.object({
   deployment: ContentPublicDeploymentSchema.nullable().optional(),
+  publication_observations: z.array(ContentPublicDeploymentObservationSchema).default([]),
   safe_next_step: z.string()
 });
 
@@ -4701,6 +4717,12 @@ export type ContentWorkItemMeasurementWindowResponse = z.infer<
 export type ContentPublicDeployment = z.infer<typeof ContentPublicDeploymentSchema>;
 export type ContentPublicDeploymentConfirmationResponse = z.infer<
   typeof ContentPublicDeploymentConfirmationResponseSchema
+>;
+export type ContentPublicDeploymentConfirmationCommand = z.input<
+  typeof ContentPublicDeploymentConfirmationCommandSchema
+>;
+export type ContentPublicDeploymentObservation = z.infer<
+  typeof ContentPublicDeploymentObservationSchema
 >;
 export type ContentPublicDeploymentReadResponse = z.infer<
   typeof ContentPublicDeploymentReadResponseSchema
