@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -1571,10 +1571,10 @@ const contentActionFixture: ActionObject = {
   }
 };
 
+let fetchMock: ReturnType<typeof vi.fn>;
+
 function mockFetch() {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn((input: RequestInfo | URL) => {
+  fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/api/actions/") && url.endsWith("/mutation-readiness")) {
         return Promise.resolve(Response.json(actionMutationReadinessFixture(url)));
@@ -1628,8 +1628,8 @@ function mockFetch() {
         return Promise.resolve(Response.json(contentActionFixture));
       }
       return Promise.resolve(Response.json({}));
-    })
-  );
+    });
+  vi.stubGlobal("fetch", fetchMock);
 }
 
 function actionMutationReadinessFixture(url: string) {
@@ -1793,7 +1793,19 @@ describe("Action detail route", () => {
     expect(await screen.findByTestId("new-page-draft-apply")).toBeInTheDocument();
     expect(screen.getByText(/exact rewizji c{12}/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Utwórz szkic na dev" })).toBeDisabled();
-    expect(screen.queryByTestId("new-page-draft-apply")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Potwierdza"), { target: { value: "Wilku" } });
+    fireEvent.click(screen.getByLabelText(/Potwierdzam podgląd, review, evidence/i));
+    fireEvent.click(screen.getByRole("button", { name: "Utwórz szkic na dev" }));
+
+    await waitFor(() => {
+      const applyCall = fetchMock.mock.calls.find(([input]) => String(input).endsWith("/apply"));
+      expect(applyCall).toBeDefined();
+      expect(JSON.parse(String(applyCall?.[1]?.body))).toEqual({
+        confirm: true,
+        confirmed_by: "Wilku",
+        new_page_draft: newPageDraftActionFixture.payload.new_page_draft_binding
+      });
+    });
   });
 
   it("renders mutation audit details from API labels", async () => {
