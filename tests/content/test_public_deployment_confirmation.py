@@ -103,6 +103,78 @@ def test_public_deployment_requires_the_exact_observed_public_object(
         )
 
 
+def test_new_page_public_deployment_derives_its_url_only_from_selected_public_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "new-page-public-deployment.sqlite3"))
+    revision = ContentDraftRevision.model_construct(
+        revision_id="revision_new_page",
+        work_item_id="content_work_item_new_page",
+        content_digest="a" * 64,
+        document_kind="new_page",
+        final_canonical_url=None,
+    )
+    command = ContentPublicDeploymentConfirmationCommand(
+        expected_revision_digest=revision.content_digest,
+        wordpress_post_id="2451",
+        publication_evidence_id="ev_public_new_page",
+        confirmed_by="Wilku",
+    )
+    public_fact = MetricFact(
+        name="content_object_seen",
+        value=1,
+        period="2026-07-28/2026-07-28",
+        source_connector="wordpress_ekologus",
+        evidence_id=command.publication_evidence_id,
+        dimensions={
+            "object_id": command.wordpress_post_id,
+            "status": "publish",
+            "content_url": "https://ekologus.pl/audyt-srodowiskowy-inwestycji/",
+        },
+        collected_at=datetime(2026, 7, 28, 9, tzinfo=UTC),
+    )
+
+    deployment = confirm_public_deployment(
+        revision=revision,
+        command=command,
+        publication_facts=[public_fact],
+        now=datetime(2026, 7, 28, 10, tzinfo=UTC),
+    )
+
+    assert deployment.public_url == public_fact.dimensions["content_url"]
+    assert deployment.publication_evidence_id == command.publication_evidence_id
+    with pytest.raises(ValueError, match="Nie znaleziono potwierdzonego odczytu"):
+        confirm_public_deployment(
+            revision=revision,
+            command=command,
+            publication_facts=[
+                public_fact.model_copy(
+                    update={
+                        "dimensions": {**public_fact.dimensions, "status": "draft"},
+                    }
+                )
+            ],
+            now=datetime(2026, 7, 28, 10, tzinfo=UTC),
+        )
+    with pytest.raises(ValueError, match="Nie znaleziono potwierdzonego odczytu"):
+        confirm_public_deployment(
+            revision=revision,
+            command=command,
+            publication_facts=[
+                public_fact.model_copy(
+                    update={
+                        "dimensions": {
+                            **public_fact.dimensions,
+                            "content_url": "https://ekologus.dev.proudsite.pl/audyt-srodowiskowy-inwestycji/",
+                        },
+                    }
+                )
+            ],
+            now=datetime(2026, 7, 28, 10, tzinfo=UTC),
+        )
+
+
 def test_public_deployment_api_requires_an_approved_exact_revision_and_public_fact(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -279,6 +351,75 @@ def test_public_deployment_read_projects_only_exact_public_observations(
     assert client.get(
         "/api/content/work-items/other/draft-revisions/revision_bdo/public-deployment"
     ).json()["deployment"] is None
+
+
+def test_new_page_deployment_read_projects_only_safe_public_observations(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "new-page-public-deployment-read.sqlite3"))
+    revision = ContentDraftRevision.model_construct(
+        revision_id="revision_new_page",
+        work_item_id="content_work_item_new_page",
+        content_digest="a" * 64,
+        document_kind="new_page",
+        final_canonical_url=None,
+    )
+    review = ContentDraftRevisionReview.model_construct(
+        decision="approved",
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revision_digest=revision.content_digest,
+    )
+    public_fact = MetricFact(
+        name="content_object_seen",
+        value=1,
+        period="2026-07-28/2026-07-28",
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_public_new_page",
+        dimensions={
+            "object_id": "2451",
+            "status": "publish",
+            "content_url": "https://ekologus.pl/audyt-srodowiskowy-inwestycji/",
+        },
+        collected_at=datetime(2026, 7, 28, 9, tzinfo=UTC),
+    )
+    store = content_workflow_store()
+    monkeypatch.setattr(deployment_router, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(store, "list_draft_revisions", lambda *_: [revision])
+    monkeypatch.setattr(store, "load_draft_revision_review", lambda **_: review)
+
+    class MetricStoreStub:
+        def list_metric_facts(self, *_: object, **__: object) -> list[MetricFact]:
+            return [
+                public_fact,
+                public_fact.model_copy(
+                    update={
+                        "evidence_id": "ev_dev_new_page",
+                        "dimensions": {
+                            **public_fact.dimensions,
+                            "content_url": "https://ekologus.dev.proudsite.pl/audyt-srodowiskowy-inwestycji/",
+                        },
+                    }
+                ),
+            ]
+
+    monkeypatch.setattr(deployment_router, "metric_store", MetricStoreStub)
+    response = TestClient(app).get(
+        "/api/content/work-items/content_work_item_new_page/draft-revisions/"
+        "revision_new_page/public-deployment"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["publication_observations"] == [
+        {
+            "wordpress_post_id": "2451",
+            "publication_evidence_id": "ev_public_new_page",
+            "publication_source_connector": "wordpress_ekologus",
+            "public_url": "https://ekologus.pl/audyt-srodowiskowy-inwestycji/",
+            "observed_at": "2026-07-28T09:00:00Z",
+        }
+    ]
 
 
 def test_public_deployment_read_hides_window_with_other_deployment_lineage(

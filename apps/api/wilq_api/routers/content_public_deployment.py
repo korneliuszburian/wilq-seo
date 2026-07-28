@@ -20,11 +20,13 @@ from wilq.content.workflow.contracts import (
     ContentPublicDeploymentConfirmationResponse,
     ContentPublicDeploymentReadResponse,
 )
+from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.store_public_deployment import (
     public_deployment,
     save_public_deployment,
 )
+from wilq.schemas import MetricFact
 from wilq.schemas.core import utc_now
 from wilq.storage.metric_store import metric_store
 
@@ -127,13 +129,9 @@ def read_content_public_deployment(
     observations = (
         public_deployment_observations(
             revision=revision,
-            facts=metric_store().list_metric_facts_for_content_url(
-                ["wordpress_ekologus"],
-                revision.final_canonical_url or "",
-                content_path=landing_page_metric_lookup_path(revision.final_canonical_url),
-            ),
+            facts=_publication_facts_for_revision(revision),
         )
-        if approved_exact_revision and revision is not None and revision.final_canonical_url
+        if approved_exact_revision and revision is not None
         else []
     )
     window = None
@@ -171,6 +169,18 @@ def read_content_public_deployment(
             if deployment is None
             else "Przygotuj okno pomiaru dla tego potwierdzonego wdrożenia."
         ),
+    )
+
+
+def _publication_facts_for_revision(revision: ContentDraftRevision) -> list[MetricFact]:
+    """Read eligible WordPress observations without inventing a new-page URL."""
+
+    if revision.document_kind == "new_page":
+        return metric_store().list_metric_facts("wordpress_ekologus", limit=1000)
+    return metric_store().list_metric_facts_for_content_url(
+        ["wordpress_ekologus"],
+        revision.final_canonical_url or "",
+        content_path=landing_page_metric_lookup_path(revision.final_canonical_url),
     )
 
 
