@@ -517,7 +517,7 @@ function NewPagePlanningReview({ briefId, proposal, onChanged }: { briefId: stri
       onChanged();
     }
   });
-  return <div className="mt-4 border-t border-emerald-200 pt-4" data-testid="new-page-planning-review">
+  return <div className="mt-4 border-t border-emerald-200 pt-4" data-testid="new-page-document-outline">
     <h4 className="font-semibold text-ink">Szkic struktury tekstu</h4>
     <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-700">{proposal.sections.map((section) => <li key={section.section_id || section.heading}><span className="font-medium">{section.heading}</span> — {section.purpose}</li>)}</ul>
     <div className="mt-4 flex flex-wrap items-center gap-3"><button type="button" className="rounded-xl bg-action px-4 py-2 font-semibold text-white disabled:opacity-50" disabled={!exactPlan || prepareDocument.isPending} onClick={() => prepareDocument.mutate()}>{prepareDocument.isPending ? "Przygotowuję pierwszą wersję…" : "Przygotuj pierwszą wersję"}</button></div>

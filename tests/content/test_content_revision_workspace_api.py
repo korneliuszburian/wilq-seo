@@ -2,21 +2,18 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from pathlib import Path
 from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
 
-from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import actions as actions_router
 from apps.api.wilq_api.routers import content_workflow as content_workflow_router
+from tests.content.dynamic_planning_test_support import configure_planning_harness
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.workflow.contracts import ContentWorkItemStructuredDraftGenerationRequest
-from wilq.content.workflow.planning import (
-    ContentPlanningWorkspace,
-    build_content_planning_workspace,
-)
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionReviewCommand,
@@ -35,97 +32,6 @@ from wilq.schemas import (
     MetricFact,
     OpportunityDomain,
 )
-
-_AUTO_SECTION_MAP_REJECTION = (
-    "Mapa sekcji jest wyliczana automatycznie z aktualnego inventory, usługi i "
-    "dowodów; nie zapisuj osobnej decyzji dla sekcji."
-)
-
-
-def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    client, work_item_id, snapshot = _planning_review_snapshot(monkeypatch, tmp_path)
-    planning = snapshot["planning_workspace"]
-    digest = planning["proposal"]["planning_digest"]
-
-    assert snapshot["current_step_id"] == "scope"
-    assert snapshot["revision_workspace"]["can_save"] is False
-    assert planning["scope_current"] is False
-    assert planning["section_map_current"] is False
-
-    premature_section_map = client.post(
-        _planning_review_path(work_item_id),
-        json=_planning_review_payload("section_map", digest),
-    )
-    assert premature_section_map.status_code == 409
-    assert premature_section_map.json()["detail"] == _AUTO_SECTION_MAP_REJECTION
-
-    scope_payload = _planning_review_payload("scope", digest)
-    scope_payload["reviewed_by"] = "authenticated_expert"
-    scope = client.post(_planning_review_path(work_item_id), json=scope_payload)
-    assert scope.status_code == 200
-    assert scope.json()["status"] == "recorded"
-    assert scope.json()["decision"]["principal_id"] == "local_operator"
-    assert scope.json()["decision"]["workspace_id"] == "ekologus_local_pilot"
-    assert scope.json()["decision"]["trust_level"] == "local_unverified"
-    assert scope.json()["decision"]["reviewed_by"] == "authenticated_expert"
-    assert scope.json()["planning_workspace"]["scope_current"] is True
-    after_scope = _selected_snapshot(client, work_item_id)
-    assert after_scope["current_step_id"] == "scope"
-    assert after_scope["revision_workspace"]["can_save"] is False
-
-    repeated = client.post(_planning_review_path(work_item_id), json=scope_payload)
-    assert repeated.status_code == 200
-    assert repeated.json()["status"] == "idempotent"
-    assert repeated.json()["decision"]["decision_id"] == scope.json()["decision"][
-        "decision_id"
-    ]
-
-    stale_digest = "0" * 64 if digest != "0" * 64 else "1" * 64
-    stale = client.post(
-        _planning_review_path(work_item_id),
-        json=_planning_review_payload("section_map", stale_digest),
-    )
-    assert stale.status_code == 409
-    assert stale.json()["detail"] == _AUTO_SECTION_MAP_REJECTION
-
-    section_map = client.post(
-        _planning_review_path(work_item_id),
-        json=_planning_review_payload("section_map", digest),
-    )
-    assert section_map.status_code == 409
-    assert section_map.json()["detail"] == _AUTO_SECTION_MAP_REJECTION
-
-    unlocked = _selected_snapshot(client, work_item_id)
-    assert unlocked["current_step_id"] == "scope"
-    assert unlocked["revision_workspace"]["can_save"] is False
-    assert next(
-        step for step in unlocked["operator_steps"] if step["id"] == "scope"
-    )["safe_next_step"] == (
-        "Uruchom generowanie planu — mapa sekcji zostanie wyliczona automatycznie."
-    )
-
-    current_planning = ContentPlanningWorkspace.model_validate(
-        unlocked["planning_workspace"]
-    )
-    changed_proposal = current_planning.proposal.model_copy(
-        update={"planning_digest": stale_digest}
-    )
-    changed_workspace = build_content_planning_workspace(
-        changed_proposal,
-        [
-            decision
-            for decision in (
-                current_planning.scope_decision,
-                current_planning.section_map_decision,
-            )
-            if decision is not None
-        ],
-    )
-    assert changed_workspace.scope_current is False
-    assert changed_workspace.section_map_current is False
 
 
 def test_snapshot_seeds_api_owned_editor_and_starts_at_draft(
@@ -398,51 +304,6 @@ def test_approved_revision_builds_the_exact_wordpress_handoff_without_legacy_rev
     assert blocked_handoff["handoff"] is None
     assert "revision_context_changed" in {
         blocker["code"] for blocker in blocked_handoff["blockers"]
-    }
-
-
-def test_planning_needs_changes_invalidates_approved_revision_handoff_without_deleting_history(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    client, work_item_id, snapshot = _revision_ready_snapshot(monkeypatch, tmp_path)
-    revision = client.post(_save_path(work_item_id), json=_save_payload(snapshot)).json()[
-        "revision"
-    ]
-    approval = client.post(
-        _review_path(work_item_id, revision["revision_id"]),
-        json=_review_payload(revision, "approved"),
-    )
-    assert approval.status_code == 200
-    ready = _selected_snapshot(client, work_item_id)
-    assert ready["current_step_id"] == "dev_draft"
-    assert ready["wordpress_handoff"]["handoff_result"]["handoff"] is not None
-
-    planning_digest = ready["planning_workspace"]["proposal"]["planning_digest"]
-    review = client.post(
-        _planning_review_path(work_item_id),
-        json={
-            "stage": "scope",
-            "expected_planning_digest": planning_digest,
-            "decision": "needs_changes",
-            "reviewed_by": "wilku",
-            "checked_items": [],
-            "notes": "CTA wymaga zmiany przed dalszym review.",
-        },
-    )
-    assert review.status_code == 200
-
-    invalidated = _selected_snapshot(client, work_item_id)
-    assert invalidated["current_step_id"] == "scope"
-    assert invalidated["planning_workspace"]["scope_current"] is False
-    assert invalidated["revision_workspace"]["context_current"] is False
-    assert invalidated["revision_workspace"]["latest_revision"]["revision_id"] == revision[
-        "revision_id"
-    ]
-    assert invalidated["wordpress_handoff"]["handoff_result"]["handoff"] is None
-    assert "revision_context_changed" in {
-        blocker["code"]
-        for blocker in invalidated["wordpress_handoff"]["handoff_result"]["blockers"]
     }
 
 
@@ -948,24 +809,16 @@ def _revision_ready_snapshot(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> tuple[TestClient, str, dict[str, Any]]:
-    client, work_item_id, snapshot = _planning_review_snapshot(monkeypatch, tmp_path)
-    digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
-    response = client.post(
-        _planning_review_path(work_item_id),
-        json=_planning_review_payload("scope", digest),
-    )
-    assert response.status_code == 200
-    snapshot = _selected_snapshot(client, work_item_id)
+    client, work_item_id, snapshot = _generated_plan_snapshot(monkeypatch, tmp_path)
     assert snapshot["revision_workspace"]["can_save"] is True
     return client, work_item_id, snapshot
 
 
-def _planning_review_snapshot(
+def _generated_plan_snapshot(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> tuple[TestClient, str, dict[str, Any]]:
-    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
+    client, _runtime = configure_planning_harness(monkeypatch, tmp_path)
     queue = client.get("/api/content/work-items/queue").json()
     for candidate in queue["candidates"]:
         response = client.get(
@@ -983,9 +836,33 @@ def _planning_review_snapshot(
             for section in workspace["editor_sections"]
             for evidence_id in section["evidence_ids"]
         }
-        if planning is not None and workspace["status"] == "empty" and evidence_ids:
-            return client, candidate["work_item_id"], snapshot
-    pytest.fail("Planning API proof requires one work item with a typed evidence plan.")
+        planning_input_digest = (
+            None if planning is None else planning["proposal"]["planning_input_digest"]
+        )
+        if (
+            planning is None
+            or workspace["status"] != "empty"
+            or not evidence_ids
+            or not planning_input_digest
+        ):
+            continue
+        generated = client.post(
+            f"/api/content/work-items/{candidate['work_item_id']}/planning-proposals",
+            json={
+                "service_card_id": planning["proposal"]["service_card_id"],
+                    "expected_planning_input_digest": planning_input_digest,
+                "requested_by": "wilku",
+            },
+        )
+        assert generated.status_code == 200, generated.json()
+        for _ in range(200):
+            refreshed = _selected_snapshot(client, candidate["work_item_id"])
+            current = refreshed.get("planning_workspace")
+            if current is not None and current["section_map_current"]:
+                assert refreshed["revision_workspace"]["can_save"] is True
+                return client, candidate["work_item_id"], refreshed
+            time.sleep(0.05)
+    pytest.fail("Revision API proof requires one work item with a generated evidence plan.")
 
 
 def _selected_snapshot(client: TestClient, work_item_id: str) -> dict[str, Any]:
@@ -1077,21 +954,6 @@ def _review_payload(revision: dict[str, Any], decision: str) -> dict[str, Any]:
 
 def _save_path(work_item_id: str) -> str:
     return f"/api/content/work-items/{work_item_id}/draft-revisions"
-
-
-def _planning_review_path(work_item_id: str) -> str:
-    return f"/api/content/work-items/{work_item_id}/planning-review"
-
-
-def _planning_review_payload(stage: str, digest: str) -> dict[str, Any]:
-    return {
-        "stage": stage,
-        "expected_planning_digest": digest,
-        "decision": "approved",
-        "reviewed_by": "wilku",
-        "checked_items": ["zakres", "dowody", "CTA"],
-        "notes": "Sprawdzono aktualną wersję planu.",
-    }
 
 
 def _review_path(work_item_id: str, revision_id: str) -> str:

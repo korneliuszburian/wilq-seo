@@ -373,7 +373,7 @@ def _gate_revision_workspace(
         )
     if workspace.latest_revision is not None or planning_workspace is None:
         return workspace
-    if planning_workspace.scope_current and planning_workspace.section_map_current:
+    if planning_workspace.section_map_current:
         return workspace
     return workspace.model_copy(
         update={

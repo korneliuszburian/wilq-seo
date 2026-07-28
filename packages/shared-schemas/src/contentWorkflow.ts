@@ -3682,35 +3682,6 @@ export const ContentPlanningWorkspaceSchema = z
     }
   });
 
-export const ContentPlanningReviewRequestSchema = z.object({
-  stage: z.enum(["scope", "section_map"]),
-  expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  service_card_id: z.string().nullable().optional(),
-  decision: z.enum(["approved", "needs_changes"]),
-  reviewed_by: z.string().min(1),
-  checked_items: z.array(z.string()),
-  notes: z.string()
-});
-
-export const ContentPlanningReviewResponseSchema = z.object({
-  status: z.enum(["recorded", "idempotent"]),
-  decision: ContentPlanningDecisionSchema,
-  planning_workspace: ContentPlanningWorkspaceSchema
-});
-
-export const ContentPlanningReviewConflictSchema = z.object({
-  code: z.enum([
-    "manual_section_map_unsupported",
-    "plan_not_generated",
-    "stale_plan",
-    "service_not_current",
-    "service_mismatch"
-  ]),
-  current_proposal_id: z.string().nullable(),
-  current_planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
-  safe_next_step: z.string().min(1)
-});
-
 export const ContentPlanningProposalRequestSchema = z.object({
   service_card_id: z.string().min(1),
   expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
@@ -4123,28 +4094,6 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
     context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace status must match the canonical document status." });
   }
 });
-
-export const ContentNewPagePlanningReviewCommandSchema = z.object({
-  expected_proposal_id: z.string().min(1),
-  expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  decision: z.enum(["approved", "needs_changes"]),
-  reviewed_by: z.string().trim().min(1).max(160),
-  checked_items: z.array(z.string()).default([]),
-  notes: z.string().max(2000).default("")
-}).superRefine((command, context) => {
-  if (command.decision === "approved" && command.checked_items.length === 0) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["checked_items"], message: "Planning approval requires checked items." });
-  }
-  if (command.decision === "needs_changes" && !command.notes.trim()) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["notes"], message: "Planning changes require an operator note." });
-  }
-});
-
-export const ContentNewPagePlanningReviewConflictSchema = z.union([
-  ContentNewPageCanonicalDocumentWorkspaceSchema,
-  ContentNewPageDocumentReviewPrerequisiteConflictSchema
-]);
 
 /** Typed 409 body for an exact new-page revision-review conflict. */
 export const ContentNewPageRevisionReviewConflictSchema = z.union([
@@ -4842,12 +4791,6 @@ export type ContentNewPageDocumentReviewPrerequisiteConflict = z.infer<
 export type ContentNewPagePlanningProposalWorkspace = z.infer<
   typeof ContentNewPagePlanningProposalWorkspaceSchema
 >;
-export type ContentNewPagePlanningReviewConflict = z.infer<
-  typeof ContentNewPagePlanningReviewConflictSchema
->;
-export type ContentNewPagePlanningReviewCommand = z.input<
-  typeof ContentNewPagePlanningReviewCommandSchema
->;
 export type ContentNewPageRevisionReviewConflict = z.infer<
   typeof ContentNewPageRevisionReviewConflictSchema
 >;
@@ -4865,9 +4808,6 @@ export type ContentInitialDraftResponse = z.infer<typeof ContentInitialDraftResp
 export type ContentSemanticReview = z.infer<typeof ContentSemanticReviewSchema>;
 export type ContentSemanticReviewRequest = z.input<typeof ContentSemanticReviewRequestSchema>;
 export type ContentSemanticReviewResponse = z.infer<typeof ContentSemanticReviewResponseSchema>;
-export type ContentPlanningReviewRequest = z.input<typeof ContentPlanningReviewRequestSchema>;
-export type ContentPlanningReviewResponse = z.infer<typeof ContentPlanningReviewResponseSchema>;
-export type ContentPlanningReviewConflict = z.infer<typeof ContentPlanningReviewConflictSchema>;
 export type ContentWorkItemServiceProfileContext = z.infer<
   typeof ContentWorkItemServiceProfileContextSchema
 >;

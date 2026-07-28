@@ -228,26 +228,6 @@ class ContentPlanningDecision(BaseModel):
     created_at: datetime
 
 
-class ContentPlanningReviewRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    stage: ContentPlanningStage
-    expected_planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
-    service_card_id: str | None = None
-    decision: ContentPlanningDecisionValue
-    reviewed_by: str = Field(min_length=1)
-    checked_items: list[str] = Field(default_factory=list)
-    notes: str = ""
-
-    @model_validator(mode="after")
-    def require_review_evidence(self) -> ContentPlanningReviewRequest:
-        if self.decision == "approved" and not self.checked_items:
-            raise ValueError("Planning approval requires at least one checked item.")
-        if self.decision == "needs_changes" and not self.notes.strip():
-            raise ValueError("Planning changes require an operator note.")
-        return self
-
-
 class ContentPlanningWorkspace(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -291,29 +271,6 @@ class ContentPlanningWorkspace(BaseModel):
         if self.section_map_current != expected_section_map_current:
             raise ValueError("section_map_current must reflect the exact generated proposal.")
         return self
-
-
-class ContentPlanningReviewResponse(BaseModel):
-    status: Literal["recorded", "idempotent"]
-    decision: ContentPlanningDecision
-    planning_workspace: ContentPlanningWorkspace
-
-
-class ContentPlanningReviewConflict(BaseModel):
-    """Fail-closed conflict for the exact generated-plan review command."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    code: Literal[
-        "manual_section_map_unsupported",
-        "plan_not_generated",
-        "stale_plan",
-        "service_not_current",
-        "service_mismatch",
-    ]
-    current_proposal_id: str | None = None
-    current_planning_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
-    safe_next_step: str = Field(min_length=1)
 
 
 def build_content_planning_proposal(

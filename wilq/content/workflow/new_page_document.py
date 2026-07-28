@@ -11,7 +11,6 @@ from wilq.content.workflow.new_page import (
 from wilq.content.workflow.planning import (
     ContentPlanningDecision,
     ContentPlanningProposal,
-    ContentPlanningReviewRequest,
 )
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -224,39 +223,6 @@ def _validate_workspace_revision_review(
     }[workspace.document_status]
     if workspace.status != expected_workspace_status:
         raise ValueError("Workspace status must match the canonical document status.")
-
-
-class ContentNewPagePlanningReviewCommand(BaseModel):
-    """Human scope approval tied to one generated new-page proposal."""
-
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-    expected_proposal_id: str = Field(min_length=1)
-    expected_planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
-    expected_planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
-    decision: Literal["approved", "needs_changes"]
-    reviewed_by: str = Field(min_length=1, max_length=160)
-    checked_items: list[str] = Field(default_factory=list)
-    notes: str = Field(default="", max_length=2_000)
-
-    @model_validator(mode="after")
-    def require_human_review_basis(self) -> ContentNewPagePlanningReviewCommand:
-        if self.decision == "approved" and not self.checked_items:
-            raise ValueError("Planning approval requires checked items.")
-        if self.decision == "needs_changes" and not self.notes:
-            raise ValueError("Planning changes require an operator note.")
-        return self
-
-    def as_planning_review_request(self, service_card_id: str) -> ContentPlanningReviewRequest:
-        return ContentPlanningReviewRequest(
-            stage="scope",
-            expected_planning_digest=self.expected_planning_digest,
-            service_card_id=service_card_id,
-            decision=self.decision,
-            reviewed_by=self.reviewed_by,
-            checked_items=self.checked_items,
-            notes=self.notes,
-        )
 
 
 def build_new_page_canonical_document_workspace(
@@ -547,7 +513,6 @@ __all__ = [
     "ContentNewPageDocumentReviewPrerequisiteConflict",
     "ContentNewPageDocumentOutlineSection",
     "ContentNewPageDeliveryReadiness",
-    "ContentNewPagePlanningReviewCommand",
     "build_new_page_delivery_readiness",
     "build_new_page_canonical_document_workspace",
 ]

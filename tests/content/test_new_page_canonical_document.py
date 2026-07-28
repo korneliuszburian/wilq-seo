@@ -20,7 +20,6 @@ from wilq.content.workflow.new_page import (
 from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     ContentNewPageDeliveryReadiness,
-    ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
     build_new_page_delivery_readiness,
 )
@@ -223,21 +222,6 @@ def test_new_page_canonical_document_rejects_mismatched_lineage_and_blank_approv
     assert blocked is not None
     assert blocked.status == "blocked"
     assert blocked.outline == []
-
-    try:
-        ContentNewPagePlanningReviewCommand(
-            expected_proposal_id=proposal.proposal_id or "",
-            expected_planning_digest=proposal.planning_digest,
-            expected_planning_input_digest=proposal.planning_input_digest or "",
-            decision="approved",
-            reviewed_by="Wilku",
-            checked_items=[],
-        )
-    except ValueError as error:
-        assert "checked items" in str(error)
-    else:
-        raise AssertionError("Blank planning approval must fail closed.")
-
 
 @pytest.mark.parametrize(
     "review_update",

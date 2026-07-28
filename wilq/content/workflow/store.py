@@ -18,11 +18,7 @@ from wilq.content.workflow.codex_revision_commit import (
     persist_codex_completion,
     prepare_codex_completion,
 )
-from wilq.content.workflow.planning import (
-    ContentPlanningDecision,
-    ContentPlanningReviewRequest,
-)
-from wilq.content.workflow.planning_persistence import record_content_planning_review
+from wilq.content.workflow.planning import ContentPlanningDecision
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.revision_persistence import (
     build_stored_draft_revision,
@@ -201,25 +197,6 @@ class _DraftRevisionStoreMixin(_StoreConnectionMixin):
             status="created",
             revision=redacted_revision,
         )
-
-    def record_planning_review(
-        self,
-        work_item_id: str,
-        request: ContentPlanningReviewRequest,
-        *,
-        planning_digest: str,
-        service_card_id: str | None,
-        human_override_review_required: bool,
-    ) -> tuple[Literal["created", "idempotent"], ContentPlanningDecision]:
-        with self._connect() as connection:
-            return record_content_planning_review(
-                connection,
-                work_item_id=work_item_id,
-                request=request,
-                planning_digest=planning_digest,
-                service_card_id=service_card_id,
-                human_override_review_required=human_override_review_required,
-            )
 
     def load_planning_decisions(self, work_item_id: str) -> list[ContentPlanningDecision]:
         with self._connect() as connection:

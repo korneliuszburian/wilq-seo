@@ -21,7 +21,6 @@ import {
   ContentSelectedWorkspaceSchema,
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningInputReadinessResponseSchema,
-  ContentPlanningReviewConflictSchema,
   ContentPlanningProposalResponseSchema,
   ContentPlanningWorkspaceSchema,
   ContentServiceProfileResponseSchema,
@@ -38,7 +37,6 @@ import {
   ContentNewPageDeliveryReadinessSchema,
   ContentNewPageDraftActionCommandSchema,
   ContentNewPageDocumentReviewPrerequisiteConflictSchema,
-  ContentNewPagePlanningReviewConflictSchema,
   ContentNewPageRevisionReviewConflictSchema,
   ContentCodexSectionProposalRequestSchema,
   ContentDraftRevisionReviewRequestSchema,
@@ -699,26 +697,6 @@ describe("ContentWorkItemServiceProfileContextSchema", () => {
         service_candidates: [
           { ...input.service_candidates[0], lifecycle_status: "guessed" }
         ]
-      }).success
-    ).toBe(false);
-  });
-});
-
-describe("ContentPlanningReviewConflictSchema", () => {
-  it("preserves the exact generated-plan identity for a stale review", () => {
-    expect(
-      ContentPlanningReviewConflictSchema.safeParse({
-        code: "stale_plan",
-        current_proposal_id: "content_planning_proposal_bdo",
-        current_planning_digest: "a".repeat(64),
-        safe_next_step: "Odśwież aktualny plan."
-      }).success
-    ).toBe(true);
-    expect(
-      ContentPlanningReviewConflictSchema.safeParse({
-        code: "stale_plan",
-        current_proposal_id: "content_planning_proposal_bdo",
-        current_planning_digest: "a".repeat(64)
       }).success
     ).toBe(false);
   });
@@ -4188,7 +4166,6 @@ describe("Content work item workflow schemas", () => {
       safe_next_step: "Zapisz podstawę planowania."
     };
     expect(ContentNewPageDocumentReviewPrerequisiteConflictSchema.safeParse(prerequisite).success).toBe(true);
-    expect(ContentNewPagePlanningReviewConflictSchema.safeParse(prerequisite).success).toBe(true);
     expect(ContentNewPageRevisionReviewConflictSchema.safeParse(prerequisite).success).toBe(true);
   });
 

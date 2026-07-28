@@ -121,7 +121,10 @@ def build_content_workflow_operator_journey(
     review-bound text revision. Only the revision workspace can advance the journey
     from ``draft`` to ``review`` and then to the blocked ``dev_draft`` boundary.
     """
-    scope_complete = facts.scope_review_current and _scope_readiness(facts) != "blocked"
+    # A generated plan is an API-owned working artefact, not a human approval
+    # gate. Human intervention remains required only when the brief's sources
+    # themselves are flagged for review.
+    scope_complete = _scope_readiness(facts) == "ready"
     section_map_complete = scope_complete and facts.section_map_present
     current_step_id: ContentWorkflowOperatorStepId
     if not scope_complete:
@@ -328,7 +331,7 @@ def _scope_readiness(
 ) -> ContentWorkflowOperatorStepReadiness:
     if not facts.sales_brief_present or facts.sales_brief_signal_status in {None, "thin"}:
         return "blocked"
-    if facts.sales_brief_signal_status == "review_required" or not facts.scope_review_current:
+    if facts.sales_brief_signal_status == "review_required":
         return "review_required"
     return "ready"
 
@@ -352,15 +355,6 @@ def _scope_blocker(
             label="Źródła briefu wymagają review",
             reason=facts.sales_brief_signal_reason
             or "Część wiedzy albo twierdzeń wymaga decyzji człowieka.",
-        )
-    if not facts.scope_review_current:
-        return ContentWorkflowOperatorBlocker(
-            code="scope_review_missing",
-            label="Zakres wymaga decyzji marketera",
-            reason=(
-                "Strona, usługa, intencja, odbiorca i CTA nie zostały jeszcze "
-                "zatwierdzone jako jedna wersja planu."
-            ),
         )
     if facts.sales_brief_signal_status == "thin":
         return ContentWorkflowOperatorBlocker(

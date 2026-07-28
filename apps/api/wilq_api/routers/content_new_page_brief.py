@@ -51,7 +51,6 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     ContentNewPageDeliveryReadiness,
     ContentNewPageDocumentReviewPrerequisiteConflict,
-    ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
     build_new_page_delivery_readiness,
 )
@@ -310,7 +309,7 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
             endpoint_path=f"/api/content/new-page-briefs/{brief_id}/initial-draft",
         )
 
-    register_content_new_page_document_review_routes(router)
+    register_content_new_page_revision_review_routes(router)
 
 
 def _new_page_delivery_readiness(brief_id: str) -> ContentNewPageDeliveryReadiness:
@@ -334,48 +333,8 @@ def _new_page_delivery_readiness(brief_id: str) -> ContentNewPageDeliveryReadine
         evidence_ids=profile.evidence_ids,
     )
 
-def register_content_new_page_document_review_routes(router: APIRouter) -> None:
-    @router.post(
-        "/api/content/new-page-briefs/{brief_id}/planning-review",
-        response_model=ContentNewPageCanonicalDocumentWorkspace,
-        responses={
-            409: {
-                "model": (
-                    ContentNewPageCanonicalDocumentWorkspace
-                    | ContentNewPageDocumentReviewPrerequisiteConflict
-                )
-            }
-        },
-    )
-    def review_new_page_content_plan(
-        brief_id: str,
-        request: ContentNewPagePlanningReviewCommand,
-    ) -> (
-        ContentNewPageCanonicalDocumentWorkspace
-        | ContentNewPageDocumentReviewPrerequisiteConflict
-        | JSONResponse
-    ):
-        prerequisite = _new_page_document_review_prerequisite(brief_id)
-        if prerequisite is not None:
-            return JSONResponse(status_code=409, content=prerequisite.model_dump(mode="json"))
-        workspace = _new_page_canonical_document_workspace(brief_id)
-        if (
-            workspace.status == "blocked"
-            or workspace.proposal_id != request.expected_proposal_id
-            or workspace.planning_digest != request.expected_planning_digest
-            or workspace.planning_input_digest != request.expected_planning_input_digest
-        ):
-            return JSONResponse(status_code=409, content=workspace.model_dump(mode="json"))
-        status, _ = content_workflow_store().record_planning_review(
-            workspace.work_item_id,
-            request.as_planning_review_request(workspace.service_card_id),
-            planning_digest=request.expected_planning_digest,
-            service_card_id=workspace.service_card_id,
-            human_override_review_required=False,
-        )
-        del status
-        return _new_page_canonical_document_workspace(brief_id)
 
+def register_content_new_page_revision_review_routes(router: APIRouter) -> None:
     @router.post(
         "/api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review",
         response_model=ContentNewPageRevisionReviewResponse,

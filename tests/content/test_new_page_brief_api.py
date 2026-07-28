@@ -32,7 +32,7 @@ from wilq.content.workflow.revisions import (
 
 def _review_workspace() -> ContentNewPageCanonicalDocumentWorkspace:
     return ContentNewPageCanonicalDocumentWorkspace(
-        status="review_required",
+        status="ready_for_document",
         work_item_id="content_work_item_new_page_review",
         brief_id="content_new_page_brief_review",
         brief_digest="a" * 64,
@@ -44,58 +44,8 @@ def _review_workspace() -> ContentNewPageCanonicalDocumentWorkspace:
         planning_input_digest="d" * 64,
         title="Dokumentacja środowiskowa inwestycji",
         proposed_ia_location="Usługi → Dokumentacja środowiskowa",
-        safe_next_step="Sprawdź plan nowej strony przed zapisem decyzji.",
+        safe_next_step="Przygotuj pierwszą wersję dokumentu z aktualnego planu.",
     )
-
-
-def test_new_page_plan_review_returns_the_current_typed_workspace_on_conflict(
-    monkeypatch,
-) -> None:
-    workspace = _review_workspace()
-    monkeypatch.setattr(
-        new_page_router_module,
-        "_new_page_canonical_document_workspace",
-        lambda brief_id: workspace,
-    )
-    monkeypatch.setattr(
-        new_page_router_module, "_new_page_document_review_prerequisite", lambda brief_id: None
-    )
-    monkeypatch.setattr(
-        new_page_router_module,
-        "content_workflow_store",
-        lambda: (_ for _ in ()).throw(AssertionError("Conflict must not record review state.")),
-    )
-    app = FastAPI()
-    app.include_router(router)
-
-    response = TestClient(app).post(
-        f"/api/content/new-page-briefs/{workspace.brief_id}/planning-review",
-        json={
-            "expected_proposal_id": workspace.proposal_id,
-            "expected_planning_digest": "e" * 64,
-            "expected_planning_input_digest": workspace.planning_input_digest,
-            "decision": "approved",
-            "reviewed_by": "Wilku",
-            "checked_items": ["Zakres planu"],
-        },
-    )
-
-    assert response.status_code == 409
-    assert "detail" not in response.json()
-    parsed = ContentNewPageCanonicalDocumentWorkspace.model_validate(response.json())
-    assert parsed.proposal_id == workspace.proposal_id
-    assert parsed.planning_digest == workspace.planning_digest
-    assert parsed.planning_input_digest == workspace.planning_input_digest
-    assert app.openapi()["paths"][
-        "/api/content/new-page-briefs/{brief_id}/planning-review"
-    ]["post"]["responses"]["409"]["content"]["application/json"]["schema"]["anyOf"] == [
-        {"$ref": "#/components/schemas/ContentNewPageCanonicalDocumentWorkspace"},
-        {
-            "$ref": (
-                "#/components/schemas/ContentNewPageDocumentReviewPrerequisiteConflict"
-            )
-        },
-    ]
 
 
 def test_new_page_delivery_readiness_is_typed_and_does_not_create_an_action(monkeypatch) -> None:
@@ -186,52 +136,6 @@ def test_new_page_delivery_action_requires_the_current_ready_binding_and_stays_l
     }
 
 
-def test_new_page_plan_review_records_only_an_exact_current_decision(monkeypatch) -> None:
-    workspace = _review_workspace()
-    recorded: list[tuple[object, object, object]] = []
-
-    class PlanningStore:
-        def record_planning_review(self, work_item_id, request, **kwargs):
-            recorded.append((work_item_id, request, kwargs))
-            return "created", None
-
-    monkeypatch.setattr(
-        new_page_router_module,
-        "_new_page_canonical_document_workspace",
-        lambda brief_id: workspace,
-    )
-    monkeypatch.setattr(
-        new_page_router_module, "_new_page_document_review_prerequisite", lambda brief_id: None
-    )
-    monkeypatch.setattr(new_page_router_module, "content_workflow_store", PlanningStore)
-    app = FastAPI()
-    app.include_router(router)
-
-    response = TestClient(app).post(
-        f"/api/content/new-page-briefs/{workspace.brief_id}/planning-review",
-        json={
-            "expected_proposal_id": workspace.proposal_id,
-            "expected_planning_digest": workspace.planning_digest,
-            "expected_planning_input_digest": workspace.planning_input_digest,
-            "decision": "approved",
-            "reviewed_by": "Wilku",
-            "checked_items": ["Zakres planu"],
-        },
-    )
-
-    assert response.status_code == 200
-    assert response.json()["proposal_id"] == workspace.proposal_id
-    assert len(recorded) == 1
-    work_item_id, recorded_request, record_kwargs = recorded[0]
-    assert work_item_id == workspace.work_item_id
-    assert recorded_request.expected_planning_digest == workspace.planning_digest
-    assert record_kwargs == {
-        "planning_digest": workspace.planning_digest,
-        "service_card_id": workspace.service_card_id,
-        "human_override_review_required": False,
-    }
-
-
 def test_new_page_revision_review_preserves_typed_current_revision_conflict(
     monkeypatch,
 ) -> None:
@@ -294,7 +198,7 @@ def test_new_page_revision_review_preserves_typed_current_revision_conflict(
     ]
 
 
-def test_new_page_review_routes_return_typed_prerequisite_conflicts_without_foundation(
+def test_new_page_revision_review_returns_a_typed_prerequisite_conflict_without_foundation(
     monkeypatch,
     tmp_path,
 ) -> None:
@@ -323,17 +227,6 @@ def test_new_page_review_routes_return_typed_prerequisite_conflicts_without_foun
     assert created.status_code == 200
     brief_id = created.json()["brief"]["brief_id"]
 
-    plan = client.post(
-        f"/api/content/new-page-briefs/{brief_id}/planning-review",
-        json={
-            "expected_proposal_id": "content_planning_proposal_missing",
-            "expected_planning_digest": "a" * 64,
-            "expected_planning_input_digest": "b" * 64,
-            "decision": "approved",
-            "reviewed_by": "Wilku",
-            "checked_items": ["Zakres planu"],
-        },
-    )
     revision = client.post(
         f"/api/content/new-page-briefs/{brief_id}/draft-revisions/content_revision_missing/review",
         json={
@@ -345,14 +238,11 @@ def test_new_page_review_routes_return_typed_prerequisite_conflicts_without_foun
         },
     )
 
-    for response in (plan, revision):
-        assert response.status_code == 409
-        assert "detail" not in response.json()
-        parsed = ContentNewPageDocumentReviewPrerequisiteConflict.model_validate(
-            response.json()
-        )
-        assert parsed.brief_id == brief_id
-        assert parsed.code == "missing_planning_foundation"
+    assert revision.status_code == 409
+    assert "detail" not in revision.json()
+    parsed = ContentNewPageDocumentReviewPrerequisiteConflict.model_validate(revision.json())
+    assert parsed.brief_id == brief_id
+    assert parsed.code == "missing_planning_foundation"
 
 
 def test_new_page_brief_persists_without_a_public_url_and_requires_human_overlap_decision(
