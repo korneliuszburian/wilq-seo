@@ -28,6 +28,8 @@ import {
   ContentTargetMappingConfirmationResultSchema,
   ContentTargetDraftPreviewSchema,
   ContentTargetDraftActionCommandSchema,
+  ContentNewPageDeliveryReadinessSchema,
+  ContentNewPageDraftActionCommandSchema,
   ContentTargetMappingPreviewSchema,
   ContentPublicDeploymentConfirmationCommandSchema,
   ContentPublicDeploymentConfirmationResponseSchema,
@@ -151,6 +153,8 @@ import {
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
   type ContentTargetDraftActionCommand,
+  type ContentNewPageDeliveryReadiness,
+  type ContentNewPageDraftActionCommand,
   type ContentPublicDeploymentConfirmationCommand,
   type ContentPublicDeploymentConfirmationResponse,
   type ContentPublicDeploymentReadResponse,
@@ -705,6 +709,26 @@ export function getContentNewPageCanonicalDocument(
   );
 }
 
+export function getContentNewPageDeliveryReadiness(
+  briefId: string
+): Promise<ContentNewPageDeliveryReadiness> {
+  return apiGet(
+    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/delivery-readiness`,
+    ContentNewPageDeliveryReadinessSchema
+  );
+}
+
+export function createContentNewPageDeliveryAction(
+  briefId: string,
+  request: ContentNewPageDraftActionCommand
+): Promise<ActionObject> {
+  return apiPost(
+    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/delivery-action`,
+    ActionObjectSchema,
+    ContentNewPageDraftActionCommandSchema.parse(request)
+  );
+}
+
 export function createContentNewPageInitialDraft(
   briefId: string,
   request: ContentInitialDraftRequest
@@ -1213,6 +1237,8 @@ export type {
   ContentTargetMappingPreview,
   ContentTargetDraftPreview,
   ContentTargetDraftActionCommand,
+  ContentNewPageDeliveryReadiness,
+  ContentNewPageDraftActionCommand,
   ContentPublicDeploymentConfirmationCommand,
   ContentPublicDeploymentConfirmationResponse,
   ContentPublicDeploymentReadResponse,

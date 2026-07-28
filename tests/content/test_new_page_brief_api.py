@@ -23,6 +23,7 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPageDeliveryReadiness,
     ContentNewPageDocumentReviewPrerequisiteConflict,
 )
+from wilq.content.workflow.new_page_draft_action import CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionConflict,
     ContentDraftRevisionReviewResult,
@@ -127,6 +128,51 @@ def test_new_page_delivery_readiness_is_typed_and_does_not_create_an_action(monk
     assert app.openapi()["paths"][
         "/api/content/new-page-briefs/{brief_id}/delivery-readiness"
     ]["get"]["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ContentNewPageDeliveryReadiness"
+    }
+
+
+def test_new_page_delivery_action_requires_the_current_ready_binding_and_stays_local(
+    monkeypatch,
+) -> None:
+    readiness = ContentNewPageDeliveryReadiness(
+        status="ready_for_action",
+        work_item_id="content_work_item_new_page_delivery",
+        revision_id="content_revision_new_page_delivery",
+        revision_digest="a" * 64,
+        allowed_content_types=["page"],
+        authoring_profile_digest="b" * 64,
+        evidence_ids=["ev_wordpress_profile"],
+        safe_next_step="Wybierz obserwowany typ nowego szkicu.",
+    )
+    monkeypatch.setattr(
+        new_page_router_module,
+        "_new_page_delivery_readiness",
+        lambda brief_id: readiness,
+    )
+    monkeypatch.setattr(
+        new_page_router_module, "persist_new_page_draft_action", lambda action: action
+    )
+    app = FastAPI()
+    app.include_router(router)
+
+    response = TestClient(app).post(
+        "/api/content/new-page-briefs/content_new_page_brief_delivery/delivery-action",
+        json={
+            "expected_revision_digest": "a" * 64,
+            "expected_authoring_profile_digest": "b" * 64,
+            "content_type": "page",
+            "requested_by": "Wilku",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["payload"]["action_type"] == CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
+    assert response.json()["payload"]["apply_allowed"] is False
+    assert response.json()["payload"]["api_mutation_ready"] is False
+    assert app.openapi()["paths"][
+        "/api/content/new-page-briefs/{brief_id}/delivery-action"
+    ]["post"]["responses"]["409"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/ContentNewPageDeliveryReadiness"
     }
 

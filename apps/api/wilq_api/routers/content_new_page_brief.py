@@ -55,6 +55,11 @@ from wilq.content.workflow.new_page_document import (
     build_new_page_canonical_document_workspace,
     build_new_page_delivery_readiness,
 )
+from wilq.content.workflow.new_page_draft_action import (
+    ContentNewPageDraftActionCommand,
+    create_new_page_draft_action,
+    persist_new_page_draft_action,
+)
 from wilq.content.workflow.new_page_initial_draft import generate_new_page_initial_draft
 from wilq.content.workflow.new_page_revision import (
     ContentNewPageRevisionReviewResponse,
@@ -63,6 +68,7 @@ from wilq.content.workflow.new_page_revision import (
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.store_new_page import new_page_brief_store
+from wilq.schemas import ActionObject
 from wilq.storage.local_state import local_state_store
 
 _NEW_PAGE_PLANNING_EXECUTOR = ThreadPoolExecutor(
@@ -263,27 +269,25 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
     def content_new_page_delivery_readiness(
         brief_id: str,
     ) -> ContentNewPageDeliveryReadiness:
-        workspace = _new_page_canonical_document_workspace(brief_id)
-        profile = build_wordpress_authoring_profile(
-            "wordpress_ekologus",
-            include_dev_content=False,
-        )
-        profile_digest = sha256(
-            json.dumps(
-                profile.model_dump(mode="json"),
-                sort_keys=True,
-                ensure_ascii=False,
-                separators=(",", ":"),
-            ).encode()
-        ).hexdigest()
-        return build_new_page_delivery_readiness(
-            workspace,
-            allowed_content_types=profile.rest_api.post_types,
-            authoring_profile_digest=profile_digest,
-            evidence_ids=profile.evidence_ids,
-        )
+        return _new_page_delivery_readiness(brief_id)
 
-    register_content_new_page_document_review_routes(router)
+    @router.post(
+        "/api/content/new-page-briefs/{brief_id}/delivery-action",
+        response_model=ActionObject,
+        responses={409: {"model": ContentNewPageDeliveryReadiness}},
+    )
+    def create_content_new_page_delivery_action(
+        brief_id: str,
+        request: ContentNewPageDraftActionCommand,
+    ) -> ActionObject | JSONResponse:
+        readiness = _new_page_delivery_readiness(brief_id)
+        if readiness.status != "ready_for_action":
+            return JSONResponse(status_code=409, content=readiness.model_dump(mode="json"))
+        try:
+            action = create_new_page_draft_action(readiness, request)
+        except ValueError:
+            return JSONResponse(status_code=409, content=readiness.model_dump(mode="json"))
+        return persist_new_page_draft_action(action)
 
     @router.post(
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
@@ -306,6 +310,29 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
             endpoint_path=f"/api/content/new-page-briefs/{brief_id}/initial-draft",
         )
 
+    register_content_new_page_document_review_routes(router)
+
+
+def _new_page_delivery_readiness(brief_id: str) -> ContentNewPageDeliveryReadiness:
+    workspace = _new_page_canonical_document_workspace(brief_id)
+    profile = build_wordpress_authoring_profile(
+        "wordpress_ekologus",
+        include_dev_content=False,
+    )
+    profile_digest = sha256(
+        json.dumps(
+            profile.model_dump(mode="json"),
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    return build_new_page_delivery_readiness(
+        workspace,
+        allowed_content_types=profile.rest_api.post_types,
+        authoring_profile_digest=profile_digest,
+        evidence_ids=profile.evidence_ids,
+    )
 
 def register_content_new_page_document_review_routes(router: APIRouter) -> None:
     @router.post(

@@ -865,6 +865,35 @@ export const ContentTargetDraftActionCommandSchema = z.object({
   requested_by: z.string().min(1).max(200)
 });
 
+export const ContentNewPageDeliveryReadinessSchema = z.object({
+  response_type: z.literal("content_new_page_delivery_readiness"),
+  contract_version: z.literal("content_new_page_delivery_readiness_v1"),
+  status: z.enum(["ready_for_action", "blocked"]),
+  work_item_id: z.string().min(1),
+  revision_id: z.string().min(1).nullable().optional(),
+  revision_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  allowed_content_types: z.array(z.enum(["page", "post"])).default([]),
+  authoring_profile_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  evidence_ids: z.array(z.string().min(1)).default([]),
+  blockers: z.array(z.string().min(1)).default([]),
+  safe_next_step: z.string().min(1)
+}).superRefine((readiness, context) => {
+  if (readiness.status === "ready_for_action") {
+    if (!readiness.revision_id || !readiness.revision_digest || !readiness.authoring_profile_digest || !readiness.allowed_content_types.length || !readiness.evidence_ids.length || readiness.blockers.length) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Ready new-page delivery requires exact revision and observed capability." });
+    }
+  } else if (readiness.revision_id != null || readiness.revision_digest != null) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Blocked new-page delivery cannot expose an action revision." });
+  }
+});
+
+export const ContentNewPageDraftActionCommandSchema = z.object({
+  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_authoring_profile_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  content_type: z.enum(["page", "post"]),
+  requested_by: z.string().min(1).max(200)
+});
+
 export const ContentTargetMappingComponentSchema = z.object({
   component_id: z.string().min(1),
   kind: z.enum(["document_title", "page_assets", "rich_text", "faq", "cta", "internal_link"]),
@@ -4626,6 +4655,8 @@ export type ContentTargetMappingConfirmationResult = z.infer<
 >;
 export type ContentTargetDraftPreview = z.infer<typeof ContentTargetDraftPreviewSchema>;
 export type ContentTargetDraftActionCommand = z.infer<typeof ContentTargetDraftActionCommandSchema>;
+export type ContentNewPageDeliveryReadiness = z.infer<typeof ContentNewPageDeliveryReadinessSchema>;
+export type ContentNewPageDraftActionCommand = z.input<typeof ContentNewPageDraftActionCommandSchema>;
 export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
 export type ContentNewPageBriefInput = z.input<typeof ContentNewPageBriefInputSchema>;
 export type ContentNewPageBriefWorkspace = z.infer<typeof ContentNewPageBriefWorkspaceSchema>;

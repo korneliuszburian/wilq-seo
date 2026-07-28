@@ -47,7 +47,8 @@ def test_new_page_draft_action_binds_an_explicit_observed_type_without_vendor_wr
         "content_type": "page",
     }
     assert action.payload["destructive"] is False
-    assert action.payload["apply_allowed"] is True
+    assert action.payload["apply_allowed"] is False
+    assert action.payload["api_mutation_ready"] is False
     assert action.status.value == "needs_validation"
 
 

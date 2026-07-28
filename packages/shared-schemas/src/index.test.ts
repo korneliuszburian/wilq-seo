@@ -33,6 +33,8 @@ import {
   ContentDraftRevisionSchema,
   ContentDraftRevisionConflictSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
+  ContentNewPageDeliveryReadinessSchema,
+  ContentNewPageDraftActionCommandSchema,
   ContentNewPageDocumentReviewPrerequisiteConflictSchema,
   ContentNewPagePlanningReviewConflictSchema,
   ContentNewPageRevisionReviewConflictSchema,
@@ -267,6 +269,41 @@ describe("ContentSelectedWorkspaceSchema", () => {
         safe_next_step: "Przygotuj dokument"
       }).success
     ).toBe(false);
+  });
+});
+
+describe("ContentNewPageDeliveryReadinessSchema", () => {
+  it("keeps the local delivery action exact and non-writing", () => {
+    const readiness = ContentNewPageDeliveryReadinessSchema.parse({
+      response_type: "content_new_page_delivery_readiness",
+      contract_version: "content_new_page_delivery_readiness_v1",
+      status: "ready_for_action",
+      work_item_id: "content_work_item_new_page",
+      revision_id: "content_revision_new_page",
+      revision_digest: "a".repeat(64),
+      allowed_content_types: ["page"],
+      authoring_profile_digest: "b".repeat(64),
+      evidence_ids: ["ev_wordpress_authoring_profile"],
+      blockers: [],
+      safe_next_step: "Wybierz typ nowego szkicu."
+    });
+    expect(readiness.status).toBe("ready_for_action");
+    expect(ContentNewPageDeliveryReadinessSchema.safeParse({
+      ...readiness,
+      revision_digest: null
+    }).success).toBe(false);
+    expect(ContentNewPageDraftActionCommandSchema.safeParse({
+      expected_revision_digest: "a".repeat(64),
+      expected_authoring_profile_digest: "b".repeat(64),
+      content_type: "page",
+      requested_by: "Wilku"
+    }).success).toBe(true);
+    expect(ContentNewPageDraftActionCommandSchema.safeParse({
+      expected_revision_digest: "a".repeat(64),
+      expected_authoring_profile_digest: "b".repeat(64),
+      content_type: "product",
+      requested_by: "Wilku"
+    }).success).toBe(false);
   });
 });
 
