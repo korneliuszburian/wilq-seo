@@ -141,7 +141,7 @@ def test_dynamic_planning_proposals_are_two_case_and_idempotent(
 ) -> None:
     client, runtime = planning_harness
     generated = {
-        work_item_id: _approve_and_generate(
+        work_item_id: _generate_and_approve_plan(
             client,
             runtime,
             work_item_id,
@@ -168,7 +168,7 @@ def test_dynamic_planning_proposals_are_two_case_and_idempotent(
     )
 
 
-def test_dynamic_planning_requires_saved_scope_before_model(
+def test_dynamic_planning_allows_an_exact_service_before_plan_review(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
@@ -177,6 +177,24 @@ def test_dynamic_planning_requires_saved_scope_before_model(
     before = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
     ).json()
+    premature_review = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-review",
+        json={
+            "stage": "scope",
+            "service_card_id": service_card_id,
+            "expected_planning_digest": before["planning_input_digest"],
+            "decision": "approved",
+            "reviewed_by": "wilku",
+            "checked_items": ["plan"],
+            "notes": "Nie ma jeszcze planu do review.",
+        },
+    )
+    assert premature_review.status_code == 409
+    conflict = premature_review.json()
+    assert conflict["code"] == "stale_plan"
+    assert conflict["current_proposal_id"] is None
+    assert conflict["current_planning_digest"] != before["planning_input_digest"]
+    assert conflict["safe_next_step"] == "Wygeneruj albo odśwież aktualny plan przed review."
 
     result = _post_planning(
         client,
@@ -185,35 +203,14 @@ def test_dynamic_planning_requires_saved_scope_before_model(
     )
 
     assert result.status_code == 200
-    assert result.json()["status"] == "blocked"
-    blocker = result.json()["blockers"][0]
-    assert blocker["code"] == "scope_not_current"
-    assert "aktualnej decyzji zakresu" in blocker["reason"]
-    assert runtime.calls == 0
-
-
-def test_explicit_plan_request_requires_current_scope(
-    planning_harness: tuple[TestClient, PlanningClient],
-) -> None:
-    client, runtime = planning_harness
-    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
-    assert snapshot["planning_workspace"]["scope_current"] is False
-    service_card_id = snapshot["service_profile_context"]["service_card_id"]
-    before = client.get(
+    assert result.json()["status"] in {"ready", "idempotent"}, result.json()
+    assert result.json()["proposal"]["service_card_id"] == service_card_id
+    assert runtime.calls == 1
+    current = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
-    )
-    assert before.json()["status"] == "not_generated", before.json()
-
-    generated = _post_planning(
-        client,
-        BDO_WORK_ITEM_ID,
-        _generation_request(service_card_id, before.json()["planning_input_digest"]),
-    )
-
-    assert generated.status_code == 200
-    assert generated.json()["status"] == "blocked", generated.json()
-    assert generated.json()["blockers"][0]["code"] == "scope_not_current"
-    assert runtime.calls == 0
+    ).json()
+    assert current["status"] == "ready"
+    assert current["planning_workspace"]["scope_current"] is False
 
 
 def test_executor_submission_failure_is_typed_and_retryable(
@@ -526,7 +523,7 @@ def test_changed_input_can_enqueue_replan_when_older_proposal_exists(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client, runtime = planning_harness
-    proposal = _approve_and_generate(
+    proposal = _generate_and_approve_plan(
         client,
         runtime,
         BDO_WORK_ITEM_ID,
@@ -675,7 +672,7 @@ def test_dynamic_planning_input_change_is_stale_and_runtime_fails_closed(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    generated = _approve_and_generate(
+    generated = _generate_and_approve_plan(
         client,
         runtime,
         BDO_WORK_ITEM_ID,
@@ -745,7 +742,7 @@ def test_initial_full_draft_uses_the_same_atomic_contract_for_both_services(
     revisions: dict[str, dict[str, Any]] = {}
     expected_calls = 0
     for work_item_id in (BDO_WORK_ITEM_ID, OUTSOURCING_WORK_ITEM_ID):
-        proposal = _approve_and_generate(
+        proposal = _generate_and_approve_plan(
             client,
             runtime,
             work_item_id,
@@ -813,7 +810,7 @@ def test_initial_full_draft_rejects_unstructured_or_unsafe_links(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
+    proposal = _generate_and_approve_plan(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
     _approve_generated_plan(client, BDO_WORK_ITEM_ID, proposal)
     malicious_outputs = (
         ("initial_link_anchor_text", "Kontakt](https://example.com/phish)[dalej"),
@@ -852,7 +849,7 @@ def test_initial_full_draft_runtime_failure_writes_no_partial_revision_and_get_i
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
+    proposal = _generate_and_approve_plan(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
     _approve_generated_plan(client, BDO_WORK_ITEM_ID, proposal)
     runtime.fail = True
     failed = client.post(
@@ -867,7 +864,7 @@ def test_initial_full_draft_runtime_failure_writes_no_partial_revision_and_get_i
     assert runtime.calls == calls_after_failure
 
 
-def _approve_and_generate(
+def _generate_and_approve_plan(
     client: TestClient,
     runtime: PlanningClient,
     work_item_id: str,
@@ -876,20 +873,6 @@ def _approve_and_generate(
 ) -> dict[str, Any]:
     snapshot = _snapshot(client, work_item_id)
     service_card_id = snapshot["service_profile_context"]["service_card_id"]
-    planning_digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
-    approved = client.post(
-        f"/api/content/work-items/{work_item_id}/planning-review",
-        json={
-            "stage": "scope",
-            "service_card_id": service_card_id,
-            "expected_planning_digest": planning_digest,
-            "decision": "approved",
-            "reviewed_by": "wilku",
-            "checked_items": ["strona", "usługa", "intencja", "CTA"],
-            "notes": "Syntetyczny proof zatwierdzonej karty.",
-        },
-    )
-    assert approved.status_code == 200
     before = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
     assert before.status_code == 200
     assert before.json()["status"] == "not_generated", before.json()["blockers"]
@@ -929,7 +912,7 @@ def _approve_and_generate(
         for blocker in created.json().get("blockers", [])
     ]
     assert created.json()["proposal"]["input_schema_version"] == (
-        "wilq_content_planning_input_v6"
+        "wilq_content_planning_input_v7"
     )
     repeated = client.post(
         f"/api/content/work-items/{work_item_id}/planning-proposals",
@@ -937,6 +920,11 @@ def _approve_and_generate(
     )
     assert repeated.json()["status"] == "idempotent"
     assert repeated.json()["proposal"]["proposal_id"] == created.json()["proposal"]["proposal_id"]
+    _approve_generated_plan(
+        client,
+        work_item_id,
+        cast(dict[str, Any], created.json()["proposal"]),
+    )
     ready = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
     assert ready.json()["status"] == "ready"
     assert ready.json()["proposal"] == created.json()["proposal"]

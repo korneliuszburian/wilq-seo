@@ -331,25 +331,6 @@ def _prepare_generation(
     request: ContentPlanningProposalRequest,
     store: ContentPlanningProposalStore,
 ) -> tuple[ContentPlanningInput | None, ContentPlanningProposalResponse | None]:
-    workspace = snapshot.planning_workspace
-    if (
-        workspace is None
-        or workspace.scope_decision is None
-        or workspace.scope_decision.decision != "approved"
-    ):
-        return None, _blocked_response(
-            snapshot.preflight.item.id,
-            service_card_id=request.service_card_id,
-            planning_input_digest=None,
-            blockers=[
-                _blocker(
-                    "scope_not_current",
-                    "Zakres wymaga aktualizacji",
-                    "Plan można wygenerować dopiero po zapisaniu aktualnej decyzji zakresu.",
-                    "Sprawdź i zapisz aktualny zakres strony.",
-                )
-            ],
-        )
     if request.service_card_id not in {
         candidate.service_card_id
         for candidate in snapshot.service_profile_context.service_candidates
@@ -433,11 +414,10 @@ def _snapshot_with_explicit_service_selection(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     service_card_id: str,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
-    """Treat the POST/preview card choice as a human service-selection action.
+    """Bind the exact request card to a generated, still-unreviewed plan.
 
-    It deliberately does not save planning scope approval. The generated plan
-    remains unreviewed and later stages still require the persisted scope and
-    section-map decisions.
+    It deliberately does not save a planning decision. The only human approval
+    belongs after the marketer can inspect the generated exact plan.
     """
 
     item = snapshot.preflight.item

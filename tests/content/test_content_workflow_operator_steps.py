@@ -175,6 +175,13 @@ def test_planning_workspace_rejects_a_decision_for_another_exact_plan() -> None:
 
     assert build_content_planning_workspace(proposal, [decision]).scope_current is True
 
+    stale_projection = build_content_planning_workspace(
+        proposal,
+        [decision.model_copy(update={"planning_digest": "b" * 64})],
+    )
+    assert stale_projection.scope_decision is None
+    assert stale_projection.scope_current is False
+
     with pytest.raises(ValidationError, match="exact proposal"):
         ContentPlanningWorkspace(
             proposal=proposal,

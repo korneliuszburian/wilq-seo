@@ -13,9 +13,6 @@ from apps.api.wilq_api.routers.content_decision_context import (
 from apps.api.wilq_api.routers.content_document_workspace import (
     register_content_document_workspace_route,
 )
-from apps.api.wilq_api.routers.content_selected_workspace import (
-    register_content_selected_workspace_route,
-)
 from apps.api.wilq_api.routers.content_editorial_integrity import (
     register_content_editorial_integrity_route,
 )
@@ -28,11 +25,17 @@ from apps.api.wilq_api.routers.content_new_page_brief import (
 from apps.api.wilq_api.routers.content_planning_proposals import (
     register_content_planning_proposal_routes,
 )
+from apps.api.wilq_api.routers.content_planning_review import (
+    register_content_planning_review_route,
+)
 from apps.api.wilq_api.routers.content_public_deployment import (
     register_content_public_deployment_routes,
 )
 from apps.api.wilq_api.routers.content_revision_html_package import (
     register_content_revision_html_package_route,
+)
+from apps.api.wilq_api.routers.content_selected_workspace import (
+    register_content_selected_workspace_route,
 )
 from apps.api.wilq_api.routers.content_semantic_review import (
     register_content_semantic_review_routes,
@@ -62,6 +65,7 @@ def register_content_model_routes(
     register_content_new_page_brief_routes(router)
     register_content_revision_html_package_route(router)
     register_content_planning_proposal_routes(router, snapshot_loader=snapshot_loader)
+    register_content_planning_review_route(router, snapshot_loader=snapshot_loader)
     register_content_public_deployment_routes(router)
     register_content_semantic_review_routes(router, snapshot_loader=snapshot_loader)
     register_content_target_discovery_route(router)

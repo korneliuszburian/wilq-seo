@@ -16,6 +16,7 @@ import {
 } from "./contentWorkflowQueries";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentPlanningGenerationPanel } from "./ContentPlanningGenerationPanel";
+import { ContentPlanningPlanReview } from "./ContentPlanningPlanReview";
 import { ContentPublicDeploymentPanel } from "./ContentPublicDeploymentPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
@@ -78,9 +79,12 @@ export function ContentDocumentWorkspaceCanvas({
         </div>
       </section>
 
-      <section className="mt-4">
-        <ContentPlanningGenerationPanel workItemId={workspace.work_item_id} />
-      </section>
+      {workspace.canonical_document.status !== "approved" ? (
+        <section className="mt-4 space-y-4">
+          <ContentPlanningGenerationPanel workItemId={workspace.work_item_id} />
+          <ContentPlanningPlanReview workItemId={workspace.work_item_id} />
+        </section>
+      ) : null}
 
       <nav className="mt-4 flex gap-1 border-b border-line" aria-label="Widok dokumentu">
         <Tab active={view === "source"} onClick={() => setView("source")}>Obecna strona</Tab>

@@ -124,7 +124,7 @@ describe("ContentPlanningGenerationPanel", () => {
 
     render(
       <QueryClientProvider client={client}>
-        <ContentPlanningGenerationPanel serviceCardId={null} workItemId="work_item" />
+        <ContentPlanningGenerationPanel workItemId="work_item" />
       </QueryClientProvider>
     );
 
@@ -177,7 +177,7 @@ describe("ContentPlanningGenerationPanel", () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={client}>
-        <ContentPlanningGenerationPanel serviceCardId={null} workItemId="work_item" />
+        <ContentPlanningGenerationPanel workItemId="work_item" />
       </QueryClientProvider>
     );
     const facts = await screen.findByTestId("content-planning-source-facts");
@@ -212,7 +212,7 @@ describe("ContentPlanningGenerationPanel", () => {
 
     render(
       <QueryClientProvider client={client}>
-        <ContentPlanningGenerationPanel serviceCardId={null} workItemId="work_item" />
+        <ContentPlanningGenerationPanel workItemId="work_item" />
       </QueryClientProvider>
     );
 
@@ -224,46 +224,13 @@ describe("ContentPlanningGenerationPanel", () => {
     expect(screen.getByText(/Czekają: Eko-Opieka/)).toBeInTheDocument();
   });
 
-  it("does not generate from a recommendation before the marketer confirms the service", async () => {
+  it("offers generation from an exact recommended service without a preliminary approval", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValueOnce({
       status: "not_generated",
       work_item_id: "work_item",
-      proposal: { service_selection_confirmed: false },
-      blockers: [],
-      safe_next_step: "Potwierdź usługę.",
-      publish_ready: false
-    } as never);
-    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValueOnce({
-      status: "ready",
-      total_count: 15,
-      imported_count: 15,
-      import_pending_count: 0,
-      excerpt_review_required_count: 0,
-      ready_for_generation: true,
-      blocker: null,
-      next_step: "Można planować."
-    });
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
-    render(
-      <QueryClientProvider client={client}>
-        <ContentPlanningGenerationPanel serviceCardId="service_card" workItemId="work_item" />
-      </QueryClientProvider>
-    );
-
-    expect(
-      await screen.findByTestId("content-planning-service-confirmation-gate")
-    ).toHaveTextContent("Najpierw potwierdź usługę");
-    expect(screen.queryByRole("button", { name: "Wygeneruj plan" })).not.toBeInTheDocument();
-  });
-
-  it("does not offer generation while the saved scope decision is stale", async () => {
-    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValueOnce({
-      status: "stale",
-      work_item_id: "work_item",
       service_card_id: "service_card",
       planning_input_digest: "a".repeat(64),
-      proposal: { service_selection_confirmed: true },
+      proposal: null,
       input_summary: {
         final_canonical_url: "https://ekologus.pl/bdo/",
         service_label: "BDO",
@@ -277,8 +244,8 @@ describe("ContentPlanningGenerationPanel", () => {
         knowledge_card_count: 0,
         measurement_metrics: []
       },
-      blockers: [{ code: "stale_input", label: "Wejście planu zmieniło się", reason: "", next_step: "" }],
-      safe_next_step: "Zapisz aktualny zakres.",
+      blockers: [],
+      safe_next_step: "Wygeneruj plan.",
       publish_ready: false
     } as never);
     vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValueOnce({
@@ -295,14 +262,11 @@ describe("ContentPlanningGenerationPanel", () => {
 
     render(
       <QueryClientProvider client={client}>
-        <ContentPlanningGenerationPanel serviceCardId="service_card" workItemId="work_item" scopeCurrent={false} />
+        <ContentPlanningGenerationPanel workItemId="work_item" />
       </QueryClientProvider>
     );
 
-    expect(await screen.findByTestId("content-planning-scope-confirmation-gate")).toHaveTextContent(
-      "Najpierw zapisz aktualną decyzję zakresu"
-    );
-    expect(screen.queryByRole("button", { name: "Wygeneruj aktualny plan" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Wygeneruj plan" })).toBeInTheDocument();
   });
 
   it("keeps retry available after a failed run with no persisted proposal", async () => {
@@ -367,7 +331,7 @@ describe("ContentPlanningGenerationPanel", () => {
 
     render(
       <QueryClientProvider client={client}>
-        <ContentPlanningGenerationPanel serviceCardId="service_card" workItemId="work_item" />
+        <ContentPlanningGenerationPanel workItemId="work_item" />
       </QueryClientProvider>
     );
 
@@ -426,7 +390,7 @@ describe("ContentPlanningGenerationPanel", () => {
 
     render(
       <QueryClientProvider client={client}>
-        <ContentPlanningGenerationPanel serviceCardId="service_card" workItemId="work_item" />
+        <ContentPlanningGenerationPanel workItemId="work_item" />
       </QueryClientProvider>
     );
 

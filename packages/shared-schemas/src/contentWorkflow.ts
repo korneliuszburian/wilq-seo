@@ -3699,7 +3699,16 @@ export const ContentPlanningReviewResponseSchema = z.object({
 });
 
 export const ContentPlanningReviewConflictSchema = z.object({
-  detail: z.string().min(1)
+  code: z.enum([
+    "manual_section_map_unsupported",
+    "plan_not_generated",
+    "stale_plan",
+    "service_not_current",
+    "service_mismatch"
+  ]),
+  current_proposal_id: z.string().nullable(),
+  current_planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
+  safe_next_step: z.string().min(1)
 });
 
 export const ContentPlanningProposalRequestSchema = z.object({

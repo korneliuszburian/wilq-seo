@@ -299,6 +299,23 @@ class ContentPlanningReviewResponse(BaseModel):
     planning_workspace: ContentPlanningWorkspace
 
 
+class ContentPlanningReviewConflict(BaseModel):
+    """Fail-closed conflict for the exact generated-plan review command."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: Literal[
+        "manual_section_map_unsupported",
+        "plan_not_generated",
+        "stale_plan",
+        "service_not_current",
+        "service_mismatch",
+    ]
+    current_proposal_id: str | None = None
+    current_planning_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    safe_next_step: str = Field(min_length=1)
+
+
 def build_content_planning_proposal(
     *,
     brief: ContentSalesBrief,
@@ -412,8 +429,25 @@ def build_content_planning_workspace(
     proposal: ContentPlanningProposal,
     decisions: list[ContentPlanningDecision],
 ) -> ContentPlanningWorkspace:
-    scope = next((item for item in decisions if item.stage == "scope"), None)
-    section_map = next((item for item in decisions if item.stage == "section_map"), None)
+    # Historical decisions may belong to an earlier generated plan while this
+    # projection still holds a baseline proposal. They are not this proposal's
+    # decision and must never enter its typed workspace as if they were.
+    scope = next(
+        (
+            item
+            for item in decisions
+            if item.stage == "scope" and item.planning_digest == proposal.planning_digest
+        ),
+        None,
+    )
+    section_map = next(
+        (
+            item
+            for item in decisions
+            if item.stage == "section_map" and item.planning_digest == proposal.planning_digest
+        ),
+        None,
+    )
     return ContentPlanningWorkspace(
         proposal=proposal,
         scope_decision=scope,
