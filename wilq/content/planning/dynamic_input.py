@@ -122,7 +122,7 @@ class ContentPlanningInput(BaseModel):
     def require_complete_source_assessments(self) -> ContentPlanningInput:
         validate_source_assessment_membership(self.source_assessments)
         if self.goal == "refresh_existing":
-            if not self.final_canonical_url:
+            if not self.final_canonical_url or not self.final_canonical_url.strip():
                 raise ValueError("Refresh planning requires final_canonical_url.")
             if self.new_page_foundation is not None:
                 raise ValueError("Refresh planning cannot carry a new-page foundation.")
@@ -131,7 +131,11 @@ class ContentPlanningInput(BaseModel):
         else:
             if self.final_canonical_url is not None:
                 raise ValueError("New-page planning cannot claim a public canonical URL.")
-            if self.new_page_foundation is None or not self.proposed_ia_location:
+            if (
+                self.new_page_foundation is None
+                or self.proposed_ia_location is None
+                or len(self.proposed_ia_location.strip()) < 3
+            ):
                 raise ValueError("New-page planning requires exact foundation and IA location.")
             if self.inventory.status != "not_applicable":
                 raise ValueError("New-page planning cannot carry existing-page inventory.")
@@ -168,7 +172,10 @@ class ContentPlanningInputSummary(BaseModel):
         if self.goal == "new_page":
             if self.final_canonical_url is not None:
                 raise ValueError("New-page planning cannot claim a public canonical URL.")
-            if not self.proposed_ia_location:
+            if (
+                self.proposed_ia_location is None
+                or len(self.proposed_ia_location.strip()) < 3
+            ):
                 raise ValueError("New-page planning requires an IA location.")
             if any(
                 status != "not_applicable"
@@ -181,7 +188,7 @@ class ContentPlanningInputSummary(BaseModel):
                 raise ValueError("New-page planning cannot carry existing-page inventory.")
             if self.metric_comparisons:
                 raise ValueError("New-page planning cannot carry page metric comparisons.")
-        elif not self.final_canonical_url:
+        elif not self.final_canonical_url or not self.final_canonical_url.strip():
             raise ValueError("Refresh planning requires final_canonical_url.")
         elif self.inventory_status == "not_applicable":
             raise ValueError("Refresh planning requires existing-page inventory.")
