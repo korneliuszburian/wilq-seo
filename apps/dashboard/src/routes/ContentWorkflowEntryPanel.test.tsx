@@ -244,7 +244,7 @@ describe("ContentWorkflowEntryPanel", () => {
     }));
   });
 
-  it("shows exact new-page readiness and generates a plan only after the marketer chooses the next step", async () => {
+  it("starts exact new-page preparation from one marketer-facing text action", async () => {
     vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, {
       foundation: {
         foundation_id: "content_new_page_foundation_test",
@@ -275,7 +275,7 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(getContentNewPageCanonicalDocument).toHaveBeenCalledWith("content_new_page_brief_test");
     expect(createContentNewPagePlanningProposal).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Przygotuj plan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj tekst" }));
 
     await waitFor(() => expect(createContentNewPagePlanningProposal).toHaveBeenCalledWith("content_new_page_brief_test", {
       expected_planning_input_digest: "d".repeat(64),
@@ -329,9 +329,7 @@ describe("ContentWorkflowEntryPanel", () => {
 
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
 
-    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj pierwszą wersję" }));
-
-    expect(screen.getByText("Nie zatwierdzasz tu planu. Nie publikuje to strony ani nie tworzy szkicu WordPressa.")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj tekst" }));
 
     await waitFor(() => expect(createContentNewPageInitialDraft).toHaveBeenCalledWith("content_new_page_brief_test", {
       expected_proposal_id: "content_planning_proposal_test",
@@ -340,51 +338,6 @@ describe("ContentWorkflowEntryPanel", () => {
       requested_by: "wilku"
     }));
     expect(screen.queryByLabelText("Reviewer")).not.toBeInTheDocument();
-  });
-
-  it("creates the first immutable new-page revision only from the exact reviewed plan", async () => {
-    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, {
-      foundation: {
-        foundation_id: "content_new_page_foundation_test",
-        work_item_id: "content_work_item_new_page_test",
-        brief_id: "content_new_page_brief_test",
-        brief_digest: "a".repeat(64),
-        overlap_digest: "b".repeat(64),
-        overlap_evidence_ids: ["ev_wp_other"],
-        service_card_id: "service_environment",
-        service_card_digest: "c".repeat(64),
-        service_label: "Obsługa środowiskowa",
-        service_evidence_ids: ["ev_service"],
-        confirmed_by: "Wilku",
-        created_at: "2026-07-28T00:00:00Z"
-      }
-    }));
-    vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue(newPagePlanningWorkspace());
-    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(canonicalDocumentWorkspace());
-    vi.mocked(createContentNewPageInitialDraft).mockResolvedValue({
-      status: "generating",
-      work_item_id: "content_work_item_new_page_test",
-      proposal_id: "content_planning_proposal_test",
-      run_id: "codex_content_initial_draft_test",
-      revision: null,
-      runtime: { status: "not_started", thread_id: null, turn_id: null, event_methods: [], item_types: [], external_call_attempted: false },
-      blockers: [],
-      safe_next_step: "Dokument jest przygotowywany.",
-      publish_ready: false
-    });
-
-    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
-
-    expect(await screen.findByTestId("new-page-initial-draft")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Zleca")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Przygotuj pierwszą wersję" }));
-
-    await waitFor(() => expect(createContentNewPageInitialDraft).toHaveBeenCalledWith("content_new_page_brief_test", {
-      expected_proposal_id: "content_planning_proposal_test",
-      expected_planning_digest: "b".repeat(64),
-      expected_planning_input_digest: "d".repeat(64),
-      requested_by: "wilku"
-    }));
   });
 
   it("approves the exact new-page revision without a reviewer form or checklist", async () => {

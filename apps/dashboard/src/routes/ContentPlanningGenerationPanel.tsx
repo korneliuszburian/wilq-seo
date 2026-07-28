@@ -1,13 +1,52 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { postContentWorkItemPlanningProposal } from "../lib/api";
+import {
+  getContentWorkItemInitialDraft,
+  postContentWorkItemInitialDraft,
+  postContentWorkItemPlanningProposal,
+  type ContentInitialDraftResponse,
+  type ContentPlanningProposalResponse
+} from "../lib/api";
 import { useContentPlanningProposal } from "./contentWorkflowQueries";
 
-/** Owns only the state before a proposal exists. The proposal itself is rendered once below. */
+type ExactPlanningProposal = NonNullable<ContentPlanningProposalResponse["proposal"]> & {
+  proposal_id: string;
+  planning_digest: string;
+};
+
+/** The plan is server-owned input, not a separate marketer decision. */
 export function ContentPlanningGenerationPanel({ workItemId }: { workItemId: string }) {
   const queryClient = useQueryClient();
   const queryKey = ["content-workflow", "work-item", workItemId, "planning-proposal"];
   const status = useContentPlanningProposal(workItemId);
+  const [requestedInputDigest, setRequestedInputDigest] = useState<string | null>(null);
+  const [initialDraft, setInitialDraft] = useState<ContentInitialDraftResponse | null>(null);
+  const startedProposalId = useRef<string | null>(null);
+  const initialDraftStatus = useQuery({
+    queryKey: ["content-workflow", "work-item", workItemId, "initial-draft"],
+    queryFn: () => getContentWorkItemInitialDraft(workItemId),
+    enabled: initialDraft?.status === "generating",
+    refetchInterval: (query) => query.state.data?.status === "generating" ? 1500 : false
+  });
+  const startDraft = useMutation({
+    mutationFn: ({ proposal, planningInputDigest }: {
+      proposal: ExactPlanningProposal;
+      planningInputDigest: string;
+    }) => postContentWorkItemInitialDraft({
+      expected_proposal_id: proposal.proposal_id,
+      expected_planning_digest: proposal.planning_digest,
+      expected_planning_input_digest: planningInputDigest,
+      requested_by: "wilku"
+    }, workItemId),
+    onSuccess: async (result) => {
+      setInitialDraft(result);
+      await queryClient.invalidateQueries({
+        queryKey: ["content-workflow", "work-item", workItemId, "selected-workspace"]
+      });
+    },
+    onError: () => setRequestedInputDigest(null)
+  });
   const generation = useMutation({
     mutationFn: () => {
       const planningInputDigest = status.data?.planning_input_digest;
@@ -20,6 +59,7 @@ export function ContentPlanningGenerationPanel({ workItemId }: { workItemId: str
         requested_by: "wilku"
       }, workItemId);
     },
+    onMutate: () => setRequestedInputDigest(status.data?.planning_input_digest ?? null),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey }),
@@ -28,13 +68,28 @@ export function ContentPlanningGenerationPanel({ workItemId }: { workItemId: str
     }
   });
 
+  const proposal = isExactPlanningProposal(status.data?.proposal) ? status.data.proposal : null;
+  const planningInputDigest = status.data?.planning_input_digest ?? null;
+  useEffect(() => {
+    if (
+      !requestedInputDigest ||
+      requestedInputDigest !== planningInputDigest ||
+      !proposal ||
+      !["created", "idempotent", "ready"].includes(status.data?.status ?? "") ||
+      startedProposalId.current === proposal.proposal_id ||
+      startDraft.isPending
+    ) return;
+    startedProposalId.current = proposal.proposal_id;
+    startDraft.mutate({ proposal, planningInputDigest: requestedInputDigest });
+  }, [planningInputDigest, proposal, requestedInputDigest, startDraft, status.data?.status]);
+
   if (status.isLoading) return <PlanningState>Sprawdzam, czy można przygotować strukturę…</PlanningState>;
   if (status.error || !status.data) return <PlanningState tone="error">Nie udało się odczytać gotowości planu. Odśwież widok przed kolejną próbą.</PlanningState>;
 
   const state = generation.data ?? status.data;
-  const hasProposal = ["created", "idempotent", "ready"].includes(state.status) && Boolean(state.proposal);
-  if (hasProposal) return null;
-
+  const readyProposal = isExactPlanningProposal(state.proposal) ? state.proposal : null;
+  const hasProposal = ["created", "idempotent", "ready"].includes(state.status) && Boolean(readyProposal);
+  const currentInitialDraft = initialDraftStatus.data ?? initialDraft;
   const blocker = state.blockers[0] ?? null;
   const input = state.input_summary;
   const inputReady = Boolean(
@@ -50,18 +105,34 @@ export function ContentPlanningGenerationPanel({ workItemId }: { workItemId: str
       (["not_generated", "failed"].includes(state.status) ||
         (state.status === "stale" && state.blockers.every((item) => item.code === "stale_input")))
   );
+  const preparingText = generation.isPending ||
+    state.status === "generating" ||
+    startDraft.isPending ||
+    currentInitialDraft?.status === "generating";
+  const canPrepareText = hasProposal || canGenerate;
+  const prepareText = () => {
+    if (hasProposal && readyProposal && state.planning_input_digest) {
+      setRequestedInputDigest(state.planning_input_digest);
+      if (startedProposalId.current !== readyProposal.proposal_id) {
+        startedProposalId.current = readyProposal.proposal_id;
+        startDraft.mutate({ proposal: readyProposal, planningInputDigest: state.planning_input_digest });
+      }
+      return;
+    }
+    generation.mutate();
+  };
 
   return <section aria-labelledby="content-planning-generation-title" className="rounded-md border border-line bg-white p-4 shadow-sm" data-testid="content-planning-generation">
     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Następny krok</p>
-    <h2 id="content-planning-generation-title" className="mt-1 text-lg font-semibold text-ink">{planningHeadline(state.status)}</h2>
-    <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">{blocker?.reason ?? "WILQ użyje aktualnej strony, wybranej usługi i zapisanych źródeł. Przygotowanie struktury nie zmienia WordPressa."}</p>
-    {canGenerate ? <button type="button" disabled={generation.isPending} onClick={() => generation.mutate()} className="mt-4 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
-      {generation.isPending ? "Przygotowuję strukturę…" : state.status === "failed" ? "Spróbuj ponownie" : state.status === "stale" ? "Przygotuj aktualną strukturę" : "Przygotuj strukturę"}
+    <h2 id="content-planning-generation-title" className="mt-1 text-lg font-semibold text-ink">{textHeadline(preparingText, state.status)}</h2>
+    <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">{blocker?.reason ?? "WILQ wykorzysta aktualną stronę, wybraną usługę i zapisane źródła, a potem przygotuje jeden tekst do Twojego review. Nie zmienia WordPressa."}</p>
+    {canPrepareText ? <button type="button" disabled={preparingText} onClick={prepareText} className="mt-4 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
+      {preparingText ? "Przygotowuję tekst…" : state.status === "failed" ? "Spróbuj ponownie" : "Przygotuj tekst"}
     </button> : null}
-    {state.status === "generating" ? <p aria-live="polite" className="mt-4 rounded-md border border-action/20 bg-action/5 p-3 text-sm text-slate-700">Struktura jest przygotowywana. Ten widok odświeży się po zakończeniu i nie uruchomi drugiej wersji dla tych samych danych.</p> : null}
+    {preparingText ? <p aria-live="polite" className="mt-4 rounded-md border border-action/20 bg-action/5 p-3 text-sm text-slate-700">Przygotowuję materiał roboczy i pierwszy tekst. Ten widok odświeży się po zakończeniu; nie uruchomi drugiej wersji dla tych samych danych.</p> : null}
     {blocker ? <p className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm text-slate-700"><span className="font-semibold text-wait">Co wymaga uwagi: </span>{blocker.label}. {blocker.next_step}</p> : null}
-    {generation.error ? <p role="alert" className="mt-3 text-sm text-danger">Nie udało się przygotować struktury. Nic nie zostało zmienione.</p> : null}
-    <p className="mt-3 text-xs leading-5 text-slate-500">Otwarcie tego widoku niczego nie generuje. Po utworzeniu struktury zobaczysz jeden szkic do sprawdzenia.</p>
+    {generation.error || startDraft.error ? <p role="alert" className="mt-3 text-sm text-danger">Nie udało się przygotować tekstu. Nic nie zostało zapisane w WordPressie.</p> : null}
+    <p className="mt-3 text-xs leading-5 text-slate-500">Otwarcie tego widoku niczego nie generuje. WILQ zachowuje exact dane robocze wewnątrz procesu; Twoją decyzją jest dopiero review gotowego tekstu.</p>
   </section>;
 }
 
@@ -69,10 +140,16 @@ function PlanningState({ children, tone = "normal" }: { children: string; tone?:
   return <section className={`rounded-md border p-4 shadow-sm ${tone === "error" ? "border-danger/30 bg-danger/5 text-danger" : "border-line bg-white text-slate-600"}`}><p className="text-sm">{children}</p></section>;
 }
 
-function planningHeadline(status: string) {
-  if (status === "generating") return "Przygotowuję strukturę tekstu";
-  if (status === "stale") return "Struktura wymaga odświeżenia";
-  if (status === "blocked") return "Nie można jeszcze przygotować struktury";
-  if (status === "failed") return "Nie udało się przygotować struktury";
-  return "Przygotuj strukturę tekstu";
+function textHeadline(preparingText: boolean, status: string) {
+  if (preparingText) return "Przygotowuję pierwszy tekst";
+  if (status === "stale") return "Dane do tekstu wymagają odświeżenia";
+  if (status === "blocked") return "Nie można jeszcze przygotować tekstu";
+  if (status === "failed") return "Nie udało się przygotować tekstu";
+  return "Przygotuj pierwszy tekst";
+}
+
+function isExactPlanningProposal(
+  proposal: ContentPlanningProposalResponse["proposal"] | null | undefined
+): proposal is ExactPlanningProposal {
+  return Boolean(proposal?.proposal_id && proposal.planning_digest);
 }

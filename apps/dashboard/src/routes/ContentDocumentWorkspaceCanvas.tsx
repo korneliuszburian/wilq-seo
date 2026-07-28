@@ -16,7 +16,6 @@ import {
 } from "./contentWorkflowQueries";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentPlanningGenerationPanel } from "./ContentPlanningGenerationPanel";
-import { ContentPlanningDraftStart } from "./ContentPlanningDraftStart";
 import { ContentPublicDeploymentPanel } from "./ContentPublicDeploymentPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
@@ -83,7 +82,6 @@ export function ContentDocumentWorkspaceCanvas({
       {needsPlanning ? (
         <section className="mt-4 space-y-4">
           <ContentPlanningGenerationPanel workItemId={workspace.work_item_id} />
-          <ContentPlanningDraftStart workItemId={workspace.work_item_id} />
         </section>
       ) : null}
 
