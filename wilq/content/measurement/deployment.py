@@ -43,6 +43,18 @@ class ContentPublicDeploymentConfirmationCommand(BaseModel):
     confirmed_by: str = Field(min_length=1, max_length=200)
 
 
+class ContentPublicDeploymentObservation(BaseModel):
+    """One locally observed public object eligible for human confirmation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    wordpress_post_id: str = Field(min_length=1)
+    publication_evidence_id: str = Field(min_length=1)
+    publication_source_connector: str = Field(min_length=1)
+    public_url: str = Field(min_length=1)
+    observed_at: datetime
+
+
 def confirm_public_deployment(
     *,
     revision: ContentDraftRevision,
@@ -88,6 +100,43 @@ def confirm_public_deployment(
     )
 
 
+def public_deployment_observations(
+    *, revision: ContentDraftRevision, facts: list[MetricFact]
+) -> list[ContentPublicDeploymentObservation]:
+    """Project only observations that can be selected by the confirmation command.
+
+    The operator never supplies a URL or invents an evidence binding.  This is a
+    local read projection over already persisted WordPress observations.
+    """
+
+    observations: dict[tuple[str, str], ContentPublicDeploymentObservation] = {}
+    for fact in facts:
+        if not _is_publication_fact(revision=revision, fact=fact):
+            continue
+        observed_at = _required_collected_at(fact)
+        object_id = str(fact.dimensions["object_id"])
+        observation = ContentPublicDeploymentObservation(
+            wordpress_post_id=object_id,
+            publication_evidence_id=fact.evidence_id,
+            publication_source_connector=fact.source_connector,
+            public_url=revision.final_canonical_url,
+            observed_at=observed_at,
+        )
+        key = (observation.wordpress_post_id, observation.publication_evidence_id)
+        previous = observations.get(key)
+        if previous is None or observation.observed_at > previous.observed_at:
+            observations[key] = observation
+    return sorted(
+        observations.values(),
+        key=lambda observation: (
+            observation.observed_at,
+            observation.wordpress_post_id,
+            observation.publication_evidence_id,
+        ),
+        reverse=True,
+    )
+
+
 def _publication_fact(
     *,
     revision: ContentDraftRevision,
@@ -98,21 +147,28 @@ def _publication_fact(
     for fact in facts:
         if (
             fact.evidence_id == publication_evidence_id
-            and fact.source_connector == "wordpress_ekologus"
-            and fact.name == "content_object_seen"
             and fact.dimensions.get("object_id") == wordpress_post_id
-            and fact.dimensions.get("status") == "publish"
-            and fact.collected_at is not None
-            and match_landing_page(
-                revision.final_canonical_url,
-                LandingPageCandidate(
-                    candidate_id="wordpress_publication_observation",
-                    url=str(fact.dimensions.get("content_url", "")),
-                ),
-            ).matched
+            and _is_publication_fact(revision=revision, fact=fact)
         ):
             return fact
     return None
+
+
+def _is_publication_fact(*, revision: ContentDraftRevision, fact: MetricFact) -> bool:
+    return (
+        fact.source_connector == "wordpress_ekologus"
+        and fact.name == "content_object_seen"
+        and bool(fact.dimensions.get("object_id"))
+        and fact.dimensions.get("status") == "publish"
+        and fact.collected_at is not None
+        and match_landing_page(
+            revision.final_canonical_url,
+            LandingPageCandidate(
+                candidate_id="wordpress_publication_observation",
+                url=str(fact.dimensions.get("content_url", "")),
+            ),
+        ).matched
+    )
 
 
 def _required_collected_at(fact: MetricFact) -> datetime:

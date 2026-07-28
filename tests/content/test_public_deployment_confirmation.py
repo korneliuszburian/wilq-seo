@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_public_deployment as deployment_router
 from wilq.content.measurement.deployment import (
+    ContentPublicDeployment,
     ContentPublicDeploymentConfirmationCommand,
     confirm_public_deployment,
 )
@@ -190,32 +191,90 @@ def test_public_deployment_api_requires_an_approved_exact_revision_and_public_fa
         "seo_score",
     } & set(payload)
 
-    other = confirm_public_deployment(
-        revision=revision.model_copy(
-            update={"revision_id": "revision_bdo_other", "content_digest": "b" * 64}
-        ),
-        command=ContentPublicDeploymentConfirmationCommand(
-            expected_revision_digest="b" * 64,
+
+
+def test_public_deployment_read_projects_only_exact_public_observations(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "public-deployment-read.sqlite3"))
+    revision = ContentDraftRevision.model_construct(
+        revision_id="revision_bdo",
+        work_item_id="content_work_item_bdo",
+        content_digest="a" * 64,
+        final_canonical_url="https://ekologus.pl/bdo/",
+    )
+    review = ContentDraftRevisionReview.model_construct(
+        decision="approved",
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revision_digest=revision.content_digest,
+    )
+    publication = MetricFact(
+        name="content_object_seen",
+        value=1,
+        period="2026-07-26/2026-07-26",
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_public_bdo",
+        dimensions={
+            "object_id": "1353",
+            "status": "publish",
+            "content_url": revision.final_canonical_url,
+        },
+        collected_at=datetime(2026, 7, 26, 9, tzinfo=UTC),
+    )
+    store = content_workflow_store()
+    monkeypatch.setattr(deployment_router, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(store, "list_draft_revisions", lambda *_: [revision])
+    monkeypatch.setattr(store, "load_draft_revision_review", lambda **_: review)
+
+    class MetricStoreStub:
+        def list_metric_facts_for_content_url(
+            self, *_: object, **__: object
+        ) -> list[MetricFact]:
+            return [
+                publication,
+                publication.model_copy(
+                    update={
+                        "evidence_id": "ev_draft_bdo",
+                        "dimensions": {**publication.dimensions, "status": "draft"},
+                    }
+                ),
+            ]
+
+    monkeypatch.setattr(deployment_router, "metric_store", MetricStoreStub)
+    save_public_deployment(
+        store,
+        ContentPublicDeployment.model_construct(
+            deployment_id="deployment_other",
+            work_item_id="content_work_item_bdo",
+            revision_id="revision_other",
+            revision_digest="b" * 64,
+            public_url="https://ekologus.pl/other/",
             wordpress_post_id="1354",
-            publication_evidence_id="ev_public_bdo_other",
-            confirmed_by="operator_local_dashboard",
+            publication_evidence_id="ev_other",
+            publication_source_connector="wordpress_ekologus",
+            observed_at=datetime(2026, 7, 26, 9, tzinfo=UTC),
+            confirmed_by="Wilku",
+            confirmed_at=datetime(2026, 7, 26, 10, tzinfo=UTC),
         ),
-        publication_facts=[
-            publication.model_copy(
-                update={
-                    "evidence_id": "ev_public_bdo_other",
-                    "dimensions": {**publication.dimensions, "object_id": "1354"},
-                }
-            )
-        ],
-        now=datetime(2026, 7, 26, 11, tzinfo=UTC),
     )
-    save_public_deployment(store, other)
-    exact = client.get(
-        "/api/content/work-items/content_work_item_bdo/draft-revisions/revision_bdo/public-deployment"
+    client = TestClient(app)
+    response = client.get(
+        "/api/content/work-items/content_work_item_bdo/draft-revisions/"
+        "revision_bdo/public-deployment"
     )
-    missing = client.get(
+
+    assert response.status_code == 200
+    assert response.json()["publication_observations"] == [
+        {
+            "wordpress_post_id": "1353",
+            "publication_evidence_id": publication.evidence_id,
+            "publication_source_connector": "wordpress_ekologus",
+            "public_url": revision.final_canonical_url,
+            "observed_at": "2026-07-26T09:00:00Z",
+        }
+    ]
+    assert client.get(
         "/api/content/work-items/other/draft-revisions/revision_bdo/public-deployment"
-    )
-    assert exact.json()["deployment"]["revision_id"] == revision.revision_id
-    assert missing.json()["deployment"] is None
+    ).json()["deployment"] is None

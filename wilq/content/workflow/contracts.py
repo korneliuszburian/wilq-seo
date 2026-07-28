@@ -41,6 +41,7 @@ from wilq.content.knowledge.work_item_service_profile import (
 )
 from wilq.content.measurement.deployment import (
     ContentPublicDeployment,
+    ContentPublicDeploymentObservation,
 )
 from wilq.content.measurement.learning import ContentLearningProposal
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
@@ -394,6 +395,9 @@ class ContentPublicDeploymentConfirmationResponse(BaseModel):
 
 class ContentPublicDeploymentReadResponse(BaseModel):
     deployment: ContentPublicDeployment | None = None
+    publication_observations: list[ContentPublicDeploymentObservation] = Field(
+        default_factory=list
+    )
     safe_next_step: str
 
 

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
+from wilq.content.canonical.landing_identity import landing_page_metric_lookup_path
 from wilq.content.measurement.deployment import (
     ContentPublicDeploymentConfirmationCommand,
     confirm_public_deployment,
+    public_deployment_observations,
 )
 from wilq.content.workflow.contracts import (
     ContentPublicDeploymentConfirmationResponse,
@@ -85,13 +87,50 @@ def read_content_public_deployment(
     work_item_id: str,
     revision_id: str,
 ) -> ContentPublicDeploymentReadResponse:
+    store = content_workflow_store()
     deployment = public_deployment(
-        content_workflow_store(),
+        store,
         work_item_id=work_item_id,
         revision_id=revision_id,
     )
+    revision = next(
+        (
+            candidate
+            for candidate in store.list_draft_revisions(work_item_id)
+            if candidate.revision_id == revision_id
+        ),
+        None,
+    )
+    review = (
+        None
+        if revision is None
+        else store.load_draft_revision_review(
+            work_item_id=work_item_id, revision_id=revision_id
+        )
+    )
+    approved_exact_revision = (
+        revision is not None
+        and review is not None
+        and review.decision == "approved"
+        and review.work_item_id == revision.work_item_id
+        and review.revision_id == revision.revision_id
+        and review.revision_digest == revision.content_digest
+    )
+    observations = (
+        public_deployment_observations(
+            revision=revision,
+            facts=metric_store().list_metric_facts_for_content_url(
+                ["wordpress_ekologus"],
+                revision.final_canonical_url or "",
+                content_path=landing_page_metric_lookup_path(revision.final_canonical_url),
+            ),
+        )
+        if approved_exact_revision and revision is not None and revision.final_canonical_url
+        else []
+    )
     return ContentPublicDeploymentReadResponse(
         deployment=deployment,
+        publication_observations=observations,
         safe_next_step=(
             "Potwierdź publiczne wdrożenie na podstawie odczytu WordPressa."
             if deployment is None
