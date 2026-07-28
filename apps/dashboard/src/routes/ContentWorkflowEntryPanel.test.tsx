@@ -168,22 +168,7 @@ describe("ContentWorkflowEntryPanel", () => {
   });
 
   it("shows every saved brief assumption and catalog evidence for no direct coverage", async () => {
-    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, {
-      foundation: {
-        foundation_id: "content_new_page_foundation_test",
-        work_item_id: "content_work_item_new_page_test",
-        brief_id: "content_new_page_brief_test",
-        brief_digest: "a".repeat(64),
-        overlap_digest: "b".repeat(64),
-        overlap_evidence_ids: ["ev_wp_other"],
-        service_card_id: "service_environment",
-        service_card_digest: "c".repeat(64),
-        service_label: "Obsługa środowiskowa",
-        service_evidence_ids: ["ev_service"],
-        confirmed_by: "Wilku",
-        created_at: "2026-07-28T00:00:00Z"
-      }
-    }));
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace());
 
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_no_conflict" });
 
@@ -371,22 +356,7 @@ describe("ContentWorkflowEntryPanel", () => {
 
   it("approves the exact new-page revision without a reviewer form or checklist", async () => {
     const workspace = reviewRequiredCanonicalDocumentWorkspace();
-    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, {
-      foundation: {
-        foundation_id: "content_new_page_foundation_test",
-        work_item_id: "content_work_item_new_page_test",
-        brief_id: "content_new_page_brief_test",
-        brief_digest: "a".repeat(64),
-        overlap_digest: "b".repeat(64),
-        overlap_evidence_ids: ["ev_wp_other"],
-        service_card_id: "service_environment",
-        service_card_digest: "c".repeat(64),
-        service_label: "Obsługa środowiskowa",
-        service_evidence_ids: ["ev_service"],
-        confirmed_by: "Wilku",
-        created_at: "2026-07-28T00:00:00Z"
-      }
-    }));
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
     vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(workspace);
     vi.mocked(reviewContentNewPageRevision).mockResolvedValue({ status: "reviewed" } as never);
 
