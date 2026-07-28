@@ -31,6 +31,9 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBlocker,
     build_content_planning_input,
 )
+from wilq.content.planning.generated_proposal import (
+    with_explicit_content_service_selection,
+)
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.store import ContentWorkflowStore
@@ -152,7 +155,14 @@ def _prepare_inputs(
     service_card_id = proposal.service_card_id
     if service_card_id is None:
         return _planning_not_generated(snapshot, proposal)
-    planning_result = build_content_planning_input(snapshot, service_card_id=service_card_id)
+    planning_snapshot = with_explicit_content_service_selection(
+        snapshot,
+        service_card_id,
+    )
+    planning_result = build_content_planning_input(
+        planning_snapshot,
+        service_card_id=service_card_id,
+    )
     # Planning may use a public rendered ``the_content`` read to produce a
     # reviewable strategy, but a full durable document is a stronger boundary.
     # Keep every readiness blocker here: review-required WordPress material,

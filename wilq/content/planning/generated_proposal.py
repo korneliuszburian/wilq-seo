@@ -72,7 +72,7 @@ def read_content_planning_proposal(
                 )
             ],
         )
-    planning_snapshot = _snapshot_with_explicit_service_selection(snapshot, service_card_id)
+    planning_snapshot = with_explicit_content_service_selection(snapshot, service_card_id)
     result = build_content_planning_input(
         planning_snapshot,
         service_card_id=service_card_id,
@@ -331,7 +331,7 @@ def _prepare_generation(
                 )
             ],
         )
-    planning_snapshot = _snapshot_with_explicit_service_selection(
+    planning_snapshot = with_explicit_content_service_selection(
         snapshot,
         request.service_card_id,
     )
@@ -393,14 +393,15 @@ def _prepare_generation(
     return planning_input, None
 
 
-def _snapshot_with_explicit_service_selection(
+def with_explicit_content_service_selection(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     service_card_id: str,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
-    """Bind the exact request card to a generated, still-unreviewed plan.
+    """Bind an exact service choice to one planning-derived command.
 
-    It deliberately does not save a planning decision. The only human approval
-    belongs after the marketer can inspect the generated exact plan.
+    This deliberately does not write a legacy planning decision. The only
+    human approval in the active content journey belongs to the immutable
+    document revision, after the full document is visible.
     """
 
     item = snapshot.preflight.item
