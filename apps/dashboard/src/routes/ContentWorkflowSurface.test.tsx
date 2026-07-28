@@ -1452,6 +1452,7 @@ function planningWorkspace({
   const proposal = {
     work_item_id: "content_work_item_bdo",
     planning_digest: "a".repeat(64),
+    goal: "refresh_existing" as const,
     proposal_id: generated ? "content_planning_proposal_bdo" : null,
     proposal_version: generated ? 1 : null,
     codex_run_id: generated ? "codex_content_planning_bdo" : null,

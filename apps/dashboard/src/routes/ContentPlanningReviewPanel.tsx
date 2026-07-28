@@ -208,7 +208,7 @@ export function ContentPlanningReviewPanel({
           <details className="mt-3 rounded-md border border-line bg-white p-3 text-sm">
             <summary className="cursor-pointer font-semibold text-action">Pokaż szczegóły zakresu i źródła</summary>
             <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-              <PlanningFact label="Strona" value={proposal.final_canonical_url} />
+              <PlanningFact label="Strona" value={proposal.final_canonical_url ?? "Brak potwierdzonego adresu publicznego"} />
               <PlanningFact label="Problem" value={proposal.buyer_problem} />
               <PlanningFact label="Moment decyzji" value={proposal.buyer_trigger} />
               <PlanningFact label="Linkowanie wewnętrzne" value={proposal.internal_link_directions.join(" · ") || "Brak kierunku linkowania"} />
