@@ -16,6 +16,11 @@ def _ready_readiness() -> ContentNewPageDeliveryReadiness:
     return ContentNewPageDeliveryReadiness(
         status="ready_for_action",
         work_item_id="content_work_item_new_page_test",
+        brief_id="content_new_page_brief_test",
+        brief_digest="c" * 64,
+        foundation_id="content_new_page_foundation_test",
+        service_card_id="service_environment",
+        service_card_digest="d" * 64,
         revision_id="content_revision_new_page_test",
         revision_digest="a" * 64,
         allowed_content_types=["page"],
@@ -43,6 +48,11 @@ def test_new_page_draft_action_binds_an_explicit_observed_type_without_vendor_wr
     assert action.payload["mode"] == "dev_draft_only"
     assert action.payload["new_page_draft_binding"] == {
         "work_item_id": "content_work_item_new_page_test",
+        "brief_id": "content_new_page_brief_test",
+        "brief_digest": "c" * 64,
+        "foundation_id": "content_new_page_foundation_test",
+        "service_card_id": "service_environment",
+        "service_card_digest": "d" * 64,
         "revision_id": "content_revision_new_page_test",
         "revision_digest": "a" * 64,
         "authoring_profile_digest": "b" * 64,

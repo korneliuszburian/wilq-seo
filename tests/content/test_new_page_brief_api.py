@@ -138,6 +138,11 @@ def test_new_page_delivery_action_requires_the_current_ready_binding_and_stays_l
     readiness = ContentNewPageDeliveryReadiness(
         status="ready_for_action",
         work_item_id="content_work_item_new_page_delivery",
+        brief_id="content_new_page_brief_delivery",
+        brief_digest="c" * 64,
+        foundation_id="content_new_page_foundation_delivery",
+        service_card_id="service_environment",
+        service_card_digest="d" * 64,
         revision_id="content_revision_new_page_delivery",
         revision_digest="a" * 64,
         allowed_content_types=["page"],

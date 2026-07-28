@@ -50,6 +50,11 @@ def create_new_page_draft_action(
         raise ValueError("Wybrany typ nie należy do obserwowanych capability WordPress.")
     binding = {
         "work_item_id": readiness.work_item_id,
+        "brief_id": readiness.brief_id,
+        "brief_digest": readiness.brief_digest,
+        "foundation_id": readiness.foundation_id,
+        "service_card_id": readiness.service_card_id,
+        "service_card_digest": readiness.service_card_digest,
         "revision_id": readiness.revision_id,
         "revision_digest": readiness.revision_digest,
         "authoring_profile_digest": readiness.authoring_profile_digest,
