@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { postContentRevisionPublicDeployment } from "../lib/api";
 import { useContentRevisionPublicDeployment } from "./contentWorkflowQueries";
+import { ContentMeasurementPanel } from "./ContentMeasurementPanel";
 
 export function ContentPublicDeploymentPanel({
   workItemId,
@@ -66,13 +67,20 @@ export function ContentPublicDeploymentPanel({
       {deployment.isPending ? <p className="mt-3 leading-6">Sprawdzam lokalny odczyt publicznej strony…</p> : null}
       {deployment.isError ? <p className="mt-3 leading-6">Nie udało się odczytać potwierdzenia wdrożenia. Spróbuj ponownie później.</p> : null}
       {deployment.data?.deployment ? (
-        <section className="mt-3 rounded-lg bg-emerald-50 p-3" data-testid="public-deployment-confirmed">
-          <p className="font-semibold text-ink">Publiczne wdrożenie jest potwierdzone</p>
-          <a className="mt-2 block break-all font-medium text-action hover:underline" href={deployment.data.deployment.public_url} target="_blank" rel="noreferrer">
-            {deployment.data.deployment.public_url}
-          </a>
-          <p className="mt-2 leading-6">{deployment.data.safe_next_step}</p>
-        </section>
+        <>
+          <section className="mt-3 rounded-lg bg-emerald-50 p-3" data-testid="public-deployment-confirmed">
+            <p className="font-semibold text-ink">Publiczne wdrożenie jest potwierdzone</p>
+            <a className="mt-2 block break-all font-medium text-action hover:underline" href={deployment.data.deployment.public_url} target="_blank" rel="noreferrer">
+              {deployment.data.deployment.public_url}
+            </a>
+            <p className="mt-2 leading-6">{deployment.data.safe_next_step}</p>
+          </section>
+          <ContentMeasurementPanel
+            workItemId={workItemId}
+            revisionId={revisionId}
+            state={deployment.data}
+          />
+        </>
       ) : null}
       {deployment.data && !deployment.data.deployment ? (
         <section className="mt-3 rounded-lg bg-slate-50 p-3">
