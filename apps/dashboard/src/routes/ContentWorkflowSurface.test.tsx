@@ -18,6 +18,7 @@ import {
   getContentOperatorContext,
   getContentWorkItemQueue,
   getContentWorkItemSnapshot,
+  getContentDiagnostics,
   postContentWorkItemInitialDraft,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemDraftRevision,
@@ -55,6 +56,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentOperatorContext: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
+    getContentDiagnostics: vi.fn(),
     postContentWorkItemInitialDraft: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
     saveContentWorkItemDraftRevision: vi.fn(),
@@ -77,6 +79,9 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
+    vi.mocked(getContentDiagnostics).mockResolvedValue({
+      marketer_decision: null
+    } as never);
     vi.mocked(getContentRevisionPublicDeployment).mockResolvedValue({
       deployment: null,
       publication_observations: [],
@@ -177,6 +182,7 @@ describe("ContentWorkflowSurface", () => {
       expect(getContentWorkItemDecisionContext).not.toHaveBeenCalled();
       expect(getContentWorkItemInitialDraft).not.toHaveBeenCalled();
       expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
+      expect(getContentDiagnostics).not.toHaveBeenCalled();
     }
   );
 
