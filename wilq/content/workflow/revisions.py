@@ -16,6 +16,7 @@ from pydantic import (
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY, LocalAuditTrustLevel
 from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.workflow.content_html import validate_content_html
+from wilq.content.workflow.new_page import ContentNewPageDocumentIdentity
 from wilq.content.workflow.revision_binding import (
     ContentDraftRevisionBinding as ContentDraftRevisionBinding,
 )
@@ -30,6 +31,7 @@ ContentDraftRevisionDecision = Literal[
     "deferred",
 ]
 ContentDraftRevisionCorrectionReason = Literal["canonical_html_alignment"]
+ContentDraftRevisionDocumentKind = Literal["refresh_existing", "new_page"]
 _UNSAFE_INTERNAL_LINK_ANCHOR_CHARACTERS = frozenset("[]<>\\\r\n\t")
 _INLINE_LINK_MARKERS = (
     "http://",
@@ -276,7 +278,9 @@ class ContentDraftRevision(BaseModel):
     inventory_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
-    final_canonical_url: str = Field(min_length=1)
+    document_kind: ContentDraftRevisionDocumentKind = "refresh_existing"
+    final_canonical_url: str | None = None
+    new_page_document_identity: ContentNewPageDocumentIdentity | None = None
     title: str
     page_assets: ContentDraftRevisionPageAssets | None = None
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)
@@ -345,7 +349,9 @@ class ContentDraftRevisionAppendCommand(BaseModel):
     inventory_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
-    final_canonical_url: str = Field(min_length=1)
+    document_kind: ContentDraftRevisionDocumentKind = "refresh_existing"
+    final_canonical_url: str | None = None
+    new_page_document_identity: ContentNewPageDocumentIdentity | None = None
     title: str
     page_assets: ContentDraftRevisionPageAssets | None = None
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)
@@ -482,6 +488,19 @@ def _validate_full_document(
 ) -> None:
     if document.schema_version == "wilq_content_draft_revision_v1":
         return
+    if document.document_kind == "refresh_existing":
+        if not document.final_canonical_url or document.new_page_document_identity is not None:
+            raise ValueError(
+                "Refresh revision requires a public canonical URL and no new-page identity."
+            )
+    elif (
+        document.final_canonical_url is not None
+        or document.new_page_document_identity is None
+        or document.new_page_document_identity.work_item_id != document.work_item_id
+    ):
+        raise ValueError(
+            "New-page revision requires exact pre-document identity and no public URL."
+        )
     required_bindings = (
         document.planning_input_digest,
         document.service_card_id,

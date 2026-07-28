@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+
+from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.new_page import (
     ContentNewPageBriefInput,
@@ -11,8 +14,12 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
 )
+from wilq.content.workflow.new_page_revision import append_new_page_initial_revision
 from wilq.content.workflow.planning import ContentPlanningDecision, ContentPlanningProposal
+from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
+from wilq.storage.local_state import LocalStateStore
 
 
 def _exact_inputs() -> tuple[ContentNewPagePlanningFoundation, ContentPlanningProposal]:
@@ -161,3 +168,80 @@ def test_new_page_canonical_document_rejects_mismatched_lineage_and_blank_approv
         assert "checked items" in str(error)
     else:
         raise AssertionError("Blank planning approval must fail closed.")
+
+
+def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path) -> None:
+    foundation, proposal = _exact_inputs()
+    brief = build_new_page_brief(
+        ContentNewPageBriefInput(
+            title="Dokumentacja środowiskowa inwestycji",
+            purpose="Pomóc inwestorowi przygotować dokumentację środowiskową.",
+            service="Dokumentacja środowiskowa",
+            audience="Inwestor przygotowujący przedsięwzięcie",
+            search_intent="dokumentacja środowiskowa inwestycji",
+            proposed_ia_location="Usługi → Dokumentacja środowiskowa",
+        )
+    ).model_copy(update={"brief_id": foundation.brief_id, "brief_digest": foundation.brief_digest})
+    approved = ContentPlanningDecision(
+        decision_id="content_planning_review_test",
+        decision_number=1,
+        work_item_id=foundation.work_item_id,
+        stage="scope",
+        planning_digest=proposal.planning_digest,
+        service_card_id=foundation.service_card_id,
+        decision="approved",
+        reviewed_by="Wilku",
+        checked_items=["zakres"],
+        created_at=utc_now(),
+    )
+    output = ContentInitialDraftModelOutput(
+        page_assets={
+            "wordpress_title": brief.title,
+            "meta_title": "Dokumentacja środowiskowa | Ekologus",
+            "meta_description": "Przygotuj dokumentację środowiskową inwestycji.",
+            "h1": brief.title,
+            "lead": "Sprawdź pierwszy krok przed rozpoczęciem inwestycji.",
+        },
+        sections=[
+            {
+                "section_id": "new_page_section_01",
+                "heading": "Jak przygotować dokumentację",
+                "body_markdown": "Zacznij od sprawdzenia zakresu inwestycji.",
+            }
+        ],
+    )
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    started_run = CodexRun(
+        id="codex_new_page_document",
+        skill="wilq-content-operator",
+        hook="content_new_page_initial_draft",
+        source="wilq_api",
+        status="started",
+        proposal_id=proposal.proposal_id,
+        planning_input_digest=proposal.planning_input_digest,
+    )
+    LocalStateStore(tmp_path / "wilq.sqlite3").save_codex_run(started_run)
+    completed_run = started_run.model_copy(
+        update={"status": "completed", "completed_at": utc_now()}
+    )
+    with pytest.raises(ValueError, match="stale or not approved"):
+        append_new_page_initial_revision(
+            brief=brief, foundation=foundation, proposal=proposal, decisions=[approved],
+            expected_proposal_id=proposal.proposal_id or "",
+            expected_planning_digest="e" * 64,
+            expected_planning_input_digest=proposal.planning_input_digest or "",
+            output=output, completed_run=completed_run, requested_by="Wilku", store=store,
+        )
+    assert store.load_draft_revision_state(foundation.work_item_id).revision_count == 0
+
+    result = append_new_page_initial_revision(
+        brief=brief, foundation=foundation, proposal=proposal, decisions=[approved],
+        expected_proposal_id=proposal.proposal_id or "",
+        expected_planning_digest=proposal.planning_digest,
+        expected_planning_input_digest=proposal.planning_input_digest or "",
+        output=output, completed_run=completed_run, requested_by="Wilku", store=store,
+    )
+    assert result.status == "created"
+    assert result.revision is not None
+    assert result.revision.document_kind == "new_page"
+    assert result.revision.final_canonical_url is None

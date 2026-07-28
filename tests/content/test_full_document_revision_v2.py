@@ -21,6 +21,7 @@ from wilq.content.handoff.wordpress_execution import (
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.new_page import ContentNewPageDocumentIdentity
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -128,6 +129,39 @@ def test_full_document_v2_round_trips_and_renders_without_losing_assets(
     changed_state = store.load_draft_revision_state(created.work_item_id)
     assert changed_state.status == "unreviewed"
     assert changed_state.latest_review is None
+
+
+def test_new_page_full_revision_is_append_only_without_a_public_url(tmp_path: Path) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    package = _draft_package()
+    command = _full_document_command(package, base_revision_id=None)
+    identity = ContentNewPageDocumentIdentity(
+        work_item_id=package.work_item_id,
+        brief_id="content_new_page_brief_test",
+        brief_digest="a" * 64,
+        foundation_id="content_new_page_foundation_test",
+        service_card_id=command.service_card_id or "",
+        service_card_digest="b" * 64,
+        proposed_ia_location="Usługi → Dokumentacja środowiskowa",
+    )
+    new_page = command.model_copy(
+        update={
+            "document_kind": "new_page",
+            "final_canonical_url": None,
+            "new_page_document_identity": identity,
+        }
+    )
+    created = store.append_draft_revision(new_page).revision
+    assert created is not None
+    assert created.document_kind == "new_page"
+    assert created.final_canonical_url is None
+    assert created.new_page_document_identity == identity
+
+    with pytest.raises(ValidationError, match="New-page revision requires exact"):
+        ContentDraftRevisionAppendCommand.model_validate(
+            new_page.model_dump(mode="python")
+            | {"final_canonical_url": "https://www.ekologus.pl/fikcyjna/"}
+        )
 
 
 def test_full_document_v2_handoff_allows_generated_section_map_to_rewrite_baseline(
