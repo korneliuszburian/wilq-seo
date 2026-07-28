@@ -3766,6 +3766,53 @@ export const ContentNewPagePlanningProposalWorkspaceSchema = z.object({
   proposal_status: ContentPlanningProposalResponseSchema.nullable().optional()
 });
 
+export const ContentNewPageDocumentOutlineSectionSchema = z.object({
+  section_id: z.string().min(1),
+  heading: z.string().min(1),
+  purpose: z.string().min(1)
+});
+
+export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
+  response_type: z.literal("content_new_page_canonical_document"),
+  contract_version: z.literal("content_new_page_canonical_document_v1"),
+  status: z.enum(["review_required", "ready_for_document", "blocked"]),
+  work_item_id: z.string().min(1),
+  brief_id: z.string().min(1),
+  brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  foundation_id: z.string().min(1),
+  service_card_id: z.string().min(1),
+  service_card_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  proposal_id: z.string().nullable().optional(),
+  planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  plan_review: ContentPlanningDecisionSchema.nullable().optional(),
+  title: z.string().min(1),
+  proposed_ia_location: z.string().trim().min(3),
+  outline: z.array(ContentNewPageDocumentOutlineSectionSchema).default([]),
+  document_status: z.literal("not_created"),
+  public_source_status: z.literal("not_applicable"),
+  public_source_url: z.null(),
+  public_deployment_status: z.literal("not_confirmed"),
+  safe_next_step: z.string().min(1)
+});
+
+export const ContentNewPagePlanningReviewCommandSchema = z.object({
+  expected_proposal_id: z.string().min(1),
+  expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  decision: z.enum(["approved", "needs_changes"]),
+  reviewed_by: z.string().trim().min(1).max(160),
+  checked_items: z.array(z.string()).default([]),
+  notes: z.string().max(2000).default("")
+}).superRefine((command, context) => {
+  if (command.decision === "approved" && command.checked_items.length === 0) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["checked_items"], message: "Planning approval requires checked items." });
+  }
+  if (command.decision === "needs_changes" && !command.notes.trim()) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["notes"], message: "Planning changes require an operator note." });
+  }
+});
+
 export const ContentInitialDraftRequestSchema = z.object({
   expected_proposal_id: z.string().min(1),
   expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),

@@ -30,6 +30,12 @@ from wilq.content.workflow.new_page import (
     build_new_page_planning_foundation,
     new_page_service_card,
 )
+from wilq.content.workflow.new_page_document import (
+    ContentNewPageCanonicalDocumentWorkspace,
+    ContentNewPagePlanningReviewCommand,
+    build_new_page_canonical_document_workspace,
+)
+from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.store_new_page import new_page_brief_store
 from wilq.storage.local_state import local_state_store
 
@@ -209,6 +215,45 @@ def register_content_new_page_planning_proposal_routes(router: APIRouter) -> Non
             )
         return queued
 
+    @router.get(
+        "/api/content/new-page-briefs/{brief_id}/canonical-document",
+        response_model=ContentNewPageCanonicalDocumentWorkspace,
+    )
+    def content_new_page_canonical_document(
+        brief_id: str,
+    ) -> ContentNewPageCanonicalDocumentWorkspace:
+        return _new_page_canonical_document_workspace(brief_id)
+
+    @router.post(
+        "/api/content/new-page-briefs/{brief_id}/planning-review",
+        response_model=ContentNewPageCanonicalDocumentWorkspace,
+        responses={409: {"model": ContentNewPageCanonicalDocumentWorkspace}},
+    )
+    def review_new_page_content_plan(
+        brief_id: str,
+        request: ContentNewPagePlanningReviewCommand,
+    ) -> ContentNewPageCanonicalDocumentWorkspace:
+        workspace = _new_page_canonical_document_workspace(brief_id)
+        if (
+            workspace.status == "blocked"
+            or workspace.proposal_id != request.expected_proposal_id
+            or workspace.planning_digest != request.expected_planning_digest
+            or workspace.planning_input_digest != request.expected_planning_input_digest
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Plan nowej strony zmienił się albo nie jest gotowy do review.",
+            )
+        status, _ = content_workflow_store().record_planning_review(
+            workspace.work_item_id,
+            request.as_planning_review_request(workspace.service_card_id),
+            planning_digest=request.expected_planning_digest,
+            service_card_id=workspace.service_card_id,
+            human_override_review_required=False,
+        )
+        del status
+        return _new_page_canonical_document_workspace(brief_id)
+
 
 def _new_page_planning_proposal_workspace(
     brief_id: str,
@@ -232,6 +277,35 @@ def _new_page_planning_proposal_workspace(
         service_card=service_card,
         store=content_planning_proposal_store(),
     )
+
+
+def _new_page_canonical_document_workspace(
+    brief_id: str,
+) -> ContentNewPageCanonicalDocumentWorkspace:
+    store = new_page_brief_store()
+    brief = store.load_new_page_brief(brief_id)
+    if brief is None:
+        raise HTTPException(status_code=404, detail="Nie znaleziono briefu nowej strony.")
+    foundation = store.load_new_page_foundation(brief_id)
+    proposal_workspace = _new_page_planning_proposal_workspace(brief_id)
+    proposal_status = proposal_workspace.proposal_status
+    proposal = None if proposal_status is None else proposal_status.proposal
+    workspace = build_new_page_canonical_document_workspace(
+        brief=brief,
+        foundation=foundation,
+        proposal=proposal,
+        decisions=(
+            []
+            if foundation is None
+            else content_workflow_store().load_planning_decisions(foundation.work_item_id)
+        ),
+    )
+    if workspace is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Brakuje zapisanej podstawy planowania nowej strony.",
+        )
+    return workspace
 
 
 def _run_new_page_planning_generation(
