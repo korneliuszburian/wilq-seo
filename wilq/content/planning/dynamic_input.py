@@ -126,6 +126,8 @@ class ContentPlanningInput(BaseModel):
                 raise ValueError("Refresh planning requires final_canonical_url.")
             if self.new_page_foundation is not None:
                 raise ValueError("Refresh planning cannot carry a new-page foundation.")
+            if self.inventory.status == "not_applicable":
+                raise ValueError("Refresh planning requires existing-page inventory.")
         else:
             if self.final_canonical_url is not None:
                 raise ValueError("New-page planning cannot claim a public canonical URL.")
@@ -163,6 +165,26 @@ class ContentPlanningInputSummary(BaseModel):
     @model_validator(mode="after")
     def require_complete_source_assessments(self) -> ContentPlanningInputSummary:
         validate_source_assessment_membership(self.source_assessments)
+        if self.goal == "new_page":
+            if self.final_canonical_url is not None:
+                raise ValueError("New-page planning cannot claim a public canonical URL.")
+            if not self.proposed_ia_location:
+                raise ValueError("New-page planning requires an IA location.")
+            if any(
+                status != "not_applicable"
+                for status in (
+                    self.inventory_status,
+                    self.content_inventory_status,
+                    self.acf_section_inventory_status,
+                )
+            ):
+                raise ValueError("New-page planning cannot carry existing-page inventory.")
+            if self.metric_comparisons:
+                raise ValueError("New-page planning cannot carry page metric comparisons.")
+        elif not self.final_canonical_url:
+            raise ValueError("Refresh planning requires final_canonical_url.")
+        elif self.inventory_status == "not_applicable":
+            raise ValueError("Refresh planning requires existing-page inventory.")
         return self
 
 
@@ -487,10 +509,20 @@ def _readiness_blockers(
     source_assessments: list[ContentPlanningSourceAssessment],
     existing_content_material_reviewed: bool,
 ) -> list[ContentPlanningInputBlocker]:
+    service_blockers = _service_readiness_blockers(service_profile, service_lifecycle)
+    inventory_blockers = _inventory_readiness_blockers(
+        inventory, existing_content_material_reviewed
+    )
     return [
-        *_service_readiness_blockers(service_profile, service_lifecycle),
-        *_inventory_readiness_blockers(inventory, existing_content_material_reviewed),
-        *_source_readiness_blockers(freshness, source_assessments),
+        *service_blockers,
+        *inventory_blockers,
+        *_source_readiness_blockers(
+            freshness,
+            source_assessments,
+            preceding_blocker_codes={
+                blocker.code for blocker in [*service_blockers, *inventory_blockers]
+            },
+        ),
     ]
 
 
@@ -584,6 +616,8 @@ def _inventory_readiness_blockers(
 def _source_readiness_blockers(
     freshness: ContentFreshnessAssessment,
     source_assessments: list[ContentPlanningSourceAssessment],
+    *,
+    preceding_blocker_codes: set[ContentPlanningInputBlockerCode],
 ) -> list[ContentPlanningInputBlocker]:
     blockers: list[ContentPlanningInputBlocker] = []
     stale_sources = [
@@ -606,9 +640,9 @@ def _source_readiness_blockers(
         for assessment in source_assessments
         if assessment.status == "blocked"
     ]
-    if blocked_sources and not any(
-        blocker.code in {"service_card_not_approved", "stale_planning_sources"}
-        for blocker in blockers
+    if blocked_sources and not (
+        {"service_card_not_approved", "stale_planning_sources"}
+        & {*preceding_blocker_codes, *(blocker.code for blocker in blockers)}
     ):
         blockers.append(
             _blocker(

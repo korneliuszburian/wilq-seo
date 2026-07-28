@@ -1,22 +1,39 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
+import pytest
+
 import wilq.content.planning.dynamic_input as planning_input_module
-from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
+from wilq.content.knowledge.cards import ContentKnowledgeCard, ekologus_content_knowledge_cards
 from wilq.content.knowledge.source_facts import ContentSourceFact
-from wilq.content.planning.dynamic_input import build_new_page_planning_input
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInput,
+    ContentPlanningInputSummary,
+    build_new_page_planning_input,
+    content_planning_input_summary,
+)
 from wilq.content.workflow.new_page import (
+    ContentNewPageBrief,
     ContentNewPageBriefInput,
     ContentNewPageFoundationCommand,
     ContentNewPageOverlapGuard,
+    ContentNewPagePlanningFoundation,
     build_new_page_brief,
     build_new_page_planning_foundation,
     new_page_overlap_digest,
 )
 
 
-def test_new_page_planning_input_requires_current_foundation_without_existing_page_facts(
+def _ready_new_page_input(
     monkeypatch,
-) -> None:
+) -> tuple[
+    ContentPlanningInput,
+    ContentNewPageBrief,
+    ContentNewPagePlanningFoundation,
+    ContentNewPageOverlapGuard,
+    ContentKnowledgeCard,
+]:
     brief = build_new_page_brief(
         ContentNewPageBriefInput(
             title="Audyt inwestycji liniowej",
@@ -84,13 +101,21 @@ def test_new_page_planning_input_requires_current_foundation_without_existing_pa
 
     assert result.blockers == []
     assert result.planning_input is not None
-    assert result.planning_input.goal == "new_page"
-    assert result.planning_input.final_canonical_url is None
-    assert result.planning_input.inventory.status == "not_applicable"
-    assert result.planning_input.metric_comparisons == []
-    assert result.planning_input.measurement_baseline_evidence_ids == []
-    assert result.planning_input.new_page_foundation == foundation
-    assert result.planning_input.confirmed_service_card_id == service_card.id
+    return result.planning_input, brief, foundation, guard, service_card
+
+
+def test_new_page_planning_input_requires_current_foundation_without_existing_page_facts(
+    monkeypatch,
+) -> None:
+    planning_input, brief, foundation, guard, service_card = _ready_new_page_input(monkeypatch)
+
+    assert planning_input.goal == "new_page"
+    assert planning_input.final_canonical_url is None
+    assert planning_input.inventory.status == "not_applicable"
+    assert planning_input.metric_comparisons == []
+    assert planning_input.measurement_baseline_evidence_ids == []
+    assert planning_input.new_page_foundation == foundation
+    assert planning_input.confirmed_service_card_id == "knowledge_service_new_page"
 
     stale = build_new_page_planning_input(
         brief=brief,
@@ -101,3 +126,80 @@ def test_new_page_planning_input_requires_current_foundation_without_existing_pa
 
     assert stale.planning_input is None
     assert [blocker.code for blocker in stale.blockers] == ["new_page_foundation_stale"]
+
+
+def test_new_page_planning_input_rejects_existing_page_identity_and_inventory(
+    monkeypatch,
+) -> None:
+    planning_input, *_ = _ready_new_page_input(monkeypatch)
+    payload = planning_input.model_dump(mode="json")
+
+    invalid_payloads = [
+        {**payload, "final_canonical_url": "https://www.ekologus.pl/istniejaca/"},
+        {
+            **payload,
+            "inventory": {
+                **payload["inventory"],
+                "content_status": "available",
+            },
+        },
+        {
+            **payload,
+            "inventory": {
+                **payload["inventory"],
+                "content_text": "Treść istniejącej strony.",
+            },
+        },
+        {
+            **payload,
+            "metric_comparisons": [
+                {
+                    "source_connector": "google_search_console",
+                    "status": "available",
+                    "reason": "Istniejące porównanie strony.",
+                }
+            ],
+        },
+    ]
+    refresh_payload = deepcopy(payload)
+    refresh_payload.update(
+        {
+            "goal": "refresh_existing",
+            "final_canonical_url": "https://www.ekologus.pl/istniejaca/",
+            "new_page_foundation": None,
+        }
+    )
+    invalid_payloads.append(refresh_payload)
+
+    for invalid_payload in invalid_payloads:
+        with pytest.raises(ValueError):
+            ContentPlanningInput.model_validate(invalid_payload)
+
+    summary = content_planning_input_summary(planning_input)
+    for update in (
+        {"final_canonical_url": "https://www.ekologus.pl/istniejaca/"},
+        {"proposed_ia_location": None},
+        {"inventory_status": "available"},
+        {
+            "metric_comparisons": [
+                {
+                    "source_connector": "google_search_console",
+                    "status": "available",
+                    "reason": "Istniejące porównanie strony.",
+                }
+            ]
+        },
+    ):
+        with pytest.raises(ValueError):
+            ContentPlanningInputSummary.model_validate(
+                summary.model_dump(mode="json") | update
+            )
+
+    with pytest.raises(ValueError):
+        ContentPlanningInputSummary.model_validate(
+            summary.model_dump(mode="json")
+            | {
+                "goal": "refresh_existing",
+                "final_canonical_url": "https://www.ekologus.pl/istniejaca/",
+            }
+        )

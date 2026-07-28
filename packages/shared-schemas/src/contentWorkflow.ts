@@ -3575,6 +3575,57 @@ export const ContentPlanningInputSummarySchema = z.object({
       message: "Every planning source must appear exactly once."
     });
   }
+  const goal = summary.goal ?? "refresh_existing";
+  const inventoryStatuses = [
+    summary.inventory_status,
+    summary.content_inventory_status,
+    summary.acf_section_inventory_status
+  ];
+  if (goal === "new_page") {
+    if (summary.final_canonical_url !== null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["final_canonical_url"],
+        message: "New-page planning cannot claim a public canonical URL."
+      });
+    }
+    if (!summary.proposed_ia_location?.trim()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["proposed_ia_location"],
+        message: "New-page planning requires an IA location."
+      });
+    }
+    if (inventoryStatuses.some((status) => status !== "not_applicable")) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["inventory_status"],
+        message: "New-page planning cannot carry existing-page inventory."
+      });
+    }
+    if ((summary.metric_comparisons ?? []).length > 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["metric_comparisons"],
+        message: "New-page planning cannot carry page metric comparisons."
+      });
+    }
+  } else {
+    if (!summary.final_canonical_url?.trim()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["final_canonical_url"],
+        message: "Refresh planning requires final_canonical_url."
+      });
+    }
+    if (summary.inventory_status === "not_applicable") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["inventory_status"],
+        message: "Refresh planning requires existing-page inventory."
+      });
+    }
+  }
 });
 
 export const ContentPlanningInputBlockerSchema = z.object({

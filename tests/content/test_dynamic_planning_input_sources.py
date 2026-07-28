@@ -347,6 +347,42 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
     assert ads_assessment.evidence_ids == ["ev_ads_blocked"]
 
 
+def test_refresh_suppresses_generic_blocked_source_when_service_review_is_required(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, resolution, _ = source_context
+    brief, service_profile, baseline = _planning_models(_demand())
+    unapproved_profile = service_profile.model_copy(
+        update={
+            "service_candidates": [
+                service_profile.service_candidates[0].model_copy(
+                    update={"lifecycle_status": "review_required"}
+                )
+            ]
+        }
+    )
+    blocked_demand = baseline.search_demand.model_copy(
+        update={
+            "optional_ads_status": "blocked",
+            "optional_ads_evidence_ids": ["ev_ads_blocked"],
+            "optional_ads_blockers": ["ads_search_term_landing_invalid"],
+        }
+    )
+    result = _build_result(
+        item,
+        resolution,
+        brief,
+        unapproved_profile,
+        baseline.model_copy(update={"search_demand": blocked_demand}),
+        _freshness([]),
+    )
+
+    assert [blocker.code for blocker in result.blockers] == [
+        "service_card_not_approved",
+        "wordpress_material_review_required",
+    ]
+
+
 def test_ads_source_assessment_explains_service_review_blocker(
     source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
 ) -> None:

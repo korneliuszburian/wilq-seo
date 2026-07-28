@@ -801,6 +801,75 @@ describe("ContentPlanningInputReadinessResponseSchema", () => {
     expect(parsed.input_summary?.final_canonical_url).toBeNull();
     expect(parsed.input_summary?.inventory_status).toBe("not_applicable");
   });
+
+  it("rejects contradictory current work kinds while preserving historical refresh summaries", () => {
+    const sourceAssessments = [
+      "wordpress", "service_profile", "gsc", "ga4", "google_ads",
+      "ahrefs", "keyword_planner", "merchant", "localo", "social"
+    ].map((source) => ({
+      source,
+      status: source === "service_profile" ? "used" : "not_applicable",
+      reason: "Jawna ocena źródła.",
+      evidence_ids: source === "service_profile" ? ["ev_service"] : [],
+      knowledge_card_ids: source === "service_profile" ? ["knowledge_service"] : []
+    }));
+    const newPageSummary = {
+      goal: "new_page" as const,
+      final_canonical_url: null,
+      proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
+      service_label: "Dokumentacja środowiskowa",
+      inventory_status: "not_applicable" as const,
+      content_inventory_status: "not_applicable" as const,
+      acf_section_inventory_status: "not_applicable" as const,
+      source_assessments: sourceAssessments,
+      source_fact_count: 1,
+      evidence_id_count: 1,
+      knowledge_card_count: 1,
+      measurement_metrics: [],
+      metric_comparisons: []
+    };
+    const readiness = (input_summary: object) => ({
+      status: "ready" as const,
+      work_item_id: "content_work_item_new_page_a",
+      planning_input_digest: "a".repeat(64),
+      input_summary,
+      blockers: [],
+      safe_next_step: "Przygotuj propozycję planu."
+    });
+
+    for (const invalidSummary of [
+      { ...newPageSummary, final_canonical_url: "https://www.ekologus.pl/istniejaca/" },
+      { ...newPageSummary, proposed_ia_location: null },
+      { ...newPageSummary, inventory_status: "available" },
+      {
+        ...newPageSummary,
+        metric_comparisons: [{
+          source_connector: "google_search_console",
+          status: "available",
+          reason: "Historyczne porównanie strony."
+        }]
+      },
+      {
+        ...newPageSummary,
+        goal: "refresh_existing" as const,
+        final_canonical_url: "https://www.ekologus.pl/istniejaca/"
+      }
+    ]) {
+      expect(
+        ContentPlanningInputReadinessResponseSchema.safeParse(readiness(invalidSummary)).success
+      ).toBe(false);
+    }
+
+    const { goal: _, ...historicalNewPageShape } = newPageSummary;
+    expect(ContentPlanningInputReadinessResponseSchema.safeParse(readiness({
+      ...historicalNewPageShape,
+      final_canonical_url: "https://www.ekologus.pl/istniejaca/",
+      proposed_ia_location: null,
+      inventory_status: "available",
+      content_inventory_status: "available",
+      acf_section_inventory_status: "missing"
+    })).success).toBe(true);
+  });
 });
 
 describe("AdsOperatorSummarySchema", () => {
