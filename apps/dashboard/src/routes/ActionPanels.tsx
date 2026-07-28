@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { ContentNewPageDraftBindingSchema } from "@wilq/shared-schemas";
+import type { z } from "zod";
 import { useState } from "react";
 import {
   CheckCircle2,
@@ -16,6 +18,7 @@ import {
   ActionPreviewResult,
   ActionReviewRequest,
   ActionValidationResult,
+  applyAction,
   confirmAction,
   impactCheckAction,
   previewAction,
@@ -374,6 +377,7 @@ export function ActionIdFocus({
 }
 
 type ActionReviewOutcome = ActionReviewRequest["outcome"];
+type ContentNewPageDraftBinding = z.infer<typeof ContentNewPageDraftBindingSchema>;
 
 const ACTION_REVIEW_OPTIONS: Array<{ value: ActionReviewOutcome; label: string }> = [
   { value: "approved_for_prepare", label: "zatwierdzone do przygotowania" },
@@ -625,8 +629,45 @@ export function ActionValidationControls({ action }: { action: ActionObject }) {
         />
       </div>
       <ActionImpactCheckControls action={action} />
+      <ActionNewPageDraftApplyControl action={action} />
     </div>
   );
+}
+
+function newPageDraftBinding(action: ActionObject): ContentNewPageDraftBinding | null {
+  if (action.payload.action_type !== "content_new_page_dev_draft_create") return null;
+  const parsed = ContentNewPageDraftBindingSchema.safeParse(action.payload.new_page_draft_binding);
+  return parsed.success ? parsed.data : null;
+}
+
+export function ActionNewPageDraftApplyControl({ action }: { action: ActionObject }) {
+  const binding = newPageDraftBinding(action);
+  const queryClient = useQueryClient();
+  const [confirmedBy, setConfirmedBy] = useState("");
+  const [acknowledged, setAcknowledged] = useState(false);
+  const applyMutation = useMutation({
+    mutationFn: () => applyAction(action.id, {
+      confirm: true,
+      confirmed_by: confirmedBy,
+      new_page_draft: binding!
+    }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
+    }
+  });
+  if (!binding) return null;
+  const canApply = action.review_gate.apply_allowed && acknowledged && confirmedBy.trim().length >= 2;
+  return <section className="mt-3 rounded-md border border-indigo-200 bg-indigo-50/60 p-3 text-xs" data-testid="new-page-draft-apply">
+    <div className="font-semibold uppercase tracking-normal text-indigo-800">Utwórz jeden szkic na dev</div>
+    <p className="mt-1 leading-5 text-slate-700">Ta czynność dotyczy exact rewizji {binding.revision_digest.slice(0, 12)}… i tworzy wyłącznie nowy szkic na dev. Nie publikuje, nie aktualizuje ani nie usuwa treści.</p>
+    <label className="mt-3 block font-medium text-slate-700">Potwierdza<input value={confirmedBy} onChange={(event) => setConfirmedBy(event.target.value)} placeholder="Imię i nazwisko" className="mt-1 block w-full rounded-md border border-line bg-white px-2 py-2 text-xs text-ink" /></label>
+    <label className="mt-3 flex items-start gap-2 leading-5 text-slate-700"><input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} className="mt-0.5" />Potwierdzam podgląd, review, evidence oraz fakt, że chcę utworzyć jeden szkic na dev.</label>
+    {!action.review_gate.apply_allowed ? <p className="mt-2 text-risk">Zapis pozostaje zablokowany przez bieżące bramki ActionObjectu.</p> : null}
+    <button type="button" onClick={() => applyMutation.mutate()} disabled={!canApply || applyMutation.isPending} className="mt-3 inline-flex min-h-9 items-center rounded-md bg-action px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-60">{applyMutation.isPending ? "Tworzę szkic…" : "Utwórz szkic na dev"}</button>
+    {applyMutation.data ? <p className="mt-2 leading-5 text-action">{applyMutation.data.applied ? "Szkic na dev został utworzony. WILQ nie opublikował strony." : applyMutation.data.errors.join(" ")}</p> : null}
+    {applyMutation.isError ? <p className="mt-2 leading-5 text-risk">Szkic nie został utworzony. Odśwież ActionObject i sprawdź jego exact bramki.</p> : null}
+  </section>;
 }
 
 function ActionValidationResultPanel({
