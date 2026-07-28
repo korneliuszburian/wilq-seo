@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -18,6 +20,7 @@ from wilq.content.workflow.new_page import (
 )
 from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
+    ContentNewPageDeliveryReadiness,
     ContentNewPageDocumentReviewPrerequisiteConflict,
 )
 from wilq.content.workflow.revisions import (
@@ -92,6 +95,40 @@ def test_new_page_plan_review_returns_the_current_typed_workspace_on_conflict(
             )
         },
     ]
+
+
+def test_new_page_delivery_readiness_is_typed_and_does_not_create_an_action(monkeypatch) -> None:
+    workspace = _review_workspace()
+    monkeypatch.setattr(
+        new_page_router_module,
+        "_new_page_canonical_document_workspace",
+        lambda brief_id: workspace,
+    )
+    monkeypatch.setattr(
+        new_page_router_module,
+        "build_wordpress_authoring_profile",
+        lambda connector, include_dev_content: SimpleNamespace(
+            rest_api=SimpleNamespace(post_types=["page", "post"]),
+            evidence_ids=["ev_wordpress_profile"],
+            model_dump=lambda mode: {"connector": connector, "content_types": ["page", "post"]},
+        ),
+    )
+    app = FastAPI()
+    app.include_router(router)
+
+    response = TestClient(app).get(
+        f"/api/content/new-page-briefs/{workspace.brief_id}/delivery-readiness"
+    )
+
+    assert response.status_code == 200
+    parsed = ContentNewPageDeliveryReadiness.model_validate(response.json())
+    assert parsed.status == "blocked"
+    assert parsed.work_item_id == workspace.work_item_id
+    assert app.openapi()["paths"][
+        "/api/content/new-page-briefs/{brief_id}/delivery-readiness"
+    ]["get"]["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ContentNewPageDeliveryReadiness"
+    }
 
 
 def test_new_page_plan_review_records_only_an_exact_current_decision(monkeypatch) -> None:
