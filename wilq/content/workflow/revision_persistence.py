@@ -57,6 +57,12 @@ def _full_document_digest_payload(
 ) -> dict[str, object]:
     return {
         "schema_version": command.schema_version,
+        "document_kind": command.document_kind,
+        "new_page_document_identity": (
+            None
+            if command.new_page_document_identity is None
+            else command.new_page_document_identity.model_dump(mode="json")
+        ),
         "planning_input_digest": command.planning_input_digest,
         "service_card_id": command.service_card_id,
         "service_digest": command.service_digest,

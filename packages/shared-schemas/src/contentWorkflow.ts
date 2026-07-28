@@ -2469,7 +2469,9 @@ export const ContentDraftRevisionSchema = z.object({
   inventory_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
-  final_canonical_url: z.string(),
+  document_kind: z.enum(["refresh_existing", "new_page"]).default("refresh_existing"),
+  final_canonical_url: z.string().nullable().optional(),
+  new_page_document_identity: ContentNewPageDocumentIdentitySchema.nullable().optional(),
   title: z.string().refine((value) => value.trim().length > 0),
   page_assets: ContentDraftRevisionPageAssetsSchema.nullable().optional(),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
@@ -2482,6 +2484,12 @@ export const ContentDraftRevisionSchema = z.object({
   created_by: z.string().refine((value) => value.trim().length > 0),
   created_at: z.string()
 }).superRefine((revision, context) => {
+  if (revision.document_kind === "refresh_existing" && (!revision.final_canonical_url?.trim() || revision.new_page_document_identity)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["final_canonical_url"], message: "Refresh revision requires a public canonical URL and no new-page identity." });
+  }
+  if (revision.document_kind === "new_page" && (revision.final_canonical_url !== null || !revision.new_page_document_identity || revision.new_page_document_identity.work_item_id !== revision.work_item_id)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["new_page_document_identity"], message: "New-page revision requires exact pre-document identity and no public URL." });
+  }
   if (revision.schema_version !== "wilq_content_draft_revision_v2") return;
   const requiredBindings = [
     revision.planning_input_digest,
