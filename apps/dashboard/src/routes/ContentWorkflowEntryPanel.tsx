@@ -546,7 +546,10 @@ function NewPagePlanningProposal({ briefId }: { briefId: string }) {
       requested_by: "wilku"
     }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId] }),
-    onError: () => setRequestedInputDigest(null)
+    onError: () => {
+      startedProposalId.current = null;
+      setRequestedInputDigest(null);
+    }
   });
   const readiness = workspace.data?.readiness ?? null;
   const proposal = workspace.data?.proposal_status ?? null;

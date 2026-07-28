@@ -45,7 +45,10 @@ export function ContentPlanningGenerationPanel({ workItemId }: { workItemId: str
         queryKey: ["content-workflow", "work-item", workItemId, "selected-workspace"]
       });
     },
-    onError: () => setRequestedInputDigest(null)
+    onError: () => {
+      startedProposalId.current = null;
+      setRequestedInputDigest(null);
+    }
   });
   const generation = useMutation({
     mutationFn: () => {

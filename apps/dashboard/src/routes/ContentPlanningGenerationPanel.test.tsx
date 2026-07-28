@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getContentWorkItemInitialDraft,
@@ -50,6 +50,9 @@ function readyToGenerate(status: "not_generated" | "failed" = "not_generated") {
 }
 
 describe("ContentPlanningGenerationPanel", () => {
+  beforeEach(() => vi.clearAllMocks());
+  afterEach(cleanup);
+
   it("starts one exact planning request from the ready state with one marketer-facing action", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyToGenerate() as never);
     vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValueOnce({ ...readyToGenerate(), status: "generating", safe_next_step: "Poczekaj na strukturę." } as never);
@@ -136,6 +139,39 @@ describe("ContentPlanningGenerationPanel", () => {
       requested_by: "wilku"
     }, "work_item"));
     expect(screen.queryByText("Szkic struktury tekstu")).not.toBeInTheDocument();
+  });
+
+  it("lets the marketer retry the same exact proposal after draft preparation fails", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyPlan() as never);
+    vi.mocked(postContentWorkItemInitialDraft)
+      .mockRejectedValueOnce(new Error("draft failed"))
+      .mockResolvedValueOnce({
+        status: "generating",
+        work_item_id: "work_item",
+        proposal_id: "proposal_1",
+        run_id: "run_1",
+        blockers: [],
+        safe_next_step: "Poczekaj.",
+        publish_ready: false,
+        runtime: { status: "started", thread_id: null, turn_id: null, external_call_attempted: false }
+      } as never);
+    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue({
+      status: "generating",
+      work_item_id: "work_item",
+      proposal_id: "proposal_1",
+      run_id: "run_1",
+      blockers: [],
+      safe_next_step: "Poczekaj.",
+      publish_ready: false,
+      runtime: { status: "started", thread_id: null, turn_id: null, external_call_attempted: false }
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj tekst" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Nie udało się przygotować tekstu.");
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj tekst" }));
+
+    await waitFor(() => expect(postContentWorkItemInitialDraft).toHaveBeenCalledTimes(2));
   });
 });
 
