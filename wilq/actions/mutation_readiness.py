@@ -5,6 +5,9 @@ from wilq.actions.payload_readiness import (
     payload_apply_allowed,
     payload_preview_items,
 )
+from wilq.content.workflow.new_page_draft_action import (
+    CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
+)
 from wilq.schemas import (
     ActionMode,
     ActionMutationReadinessBlocker,
@@ -187,7 +190,7 @@ def vendor_write_possible(action: ActionObject, mutation_adapter: str | None) ->
     wordpress_env_ready = True
     if getattr(action, "id", None) == "act_apply_wordpress_draft_handoff" or action.payload.get(
         "action_type"
-    ) == "content_dev_draft_create":
+    ) in {"content_dev_draft_create", CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE}:
         from wilq.actions.wordpress_mutation_requirements import wordpress_draft_writes_enabled
 
         wordpress_env_ready = wordpress_draft_writes_enabled()

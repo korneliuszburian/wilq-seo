@@ -3,6 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.new_page_draft_action import (
+    CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
+)
 from wilq.schemas import (
     ActionMode,
     ActionMutationReadinessRequirement,
@@ -75,12 +78,14 @@ def base_mutation_readiness_requirements(
         _requirement(
             code=(
                 "draft_prewrite_check"
-                if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE
+                if action.payload.get("action_type")
+                in {CONTENT_DEV_DRAFT_ACTION_TYPE, CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE}
                 else "impact_check"
             ),
             label=(
                 "Kontrola gotowości szkicu zakończona"
-                if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE
+                if action.payload.get("action_type")
+                in {CONTENT_DEV_DRAFT_ACTION_TYPE, CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE}
                 else "Sprawdzenie efektu zapisane"
             ),
             satisfied=impact_status(latest_impact_check) == "checked",

@@ -5,6 +5,10 @@ from types import SimpleNamespace
 import pytest
 
 from wilq.actions import service as action_service
+from wilq.actions.mutation_contract import (
+    mutation_apply_contract,
+    supported_mutation_adapter,
+)
 from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import get_action
 from wilq.content.workflow.new_page_apply_capability import new_page_apply_binding
@@ -119,6 +123,20 @@ def test_new_page_draft_action_payload_requires_exact_lineage() -> None:
     }
 
     assert validate_action_payload(action.connector, action.payload)
+
+
+def test_new_page_draft_action_has_an_isolated_dev_draft_adapter_contract() -> None:
+    action = create_new_page_draft_action(_ready_readiness(), _command())
+
+    adapter = supported_mutation_adapter(action)
+    contract = mutation_apply_contract(action, adapter)
+
+    assert adapter == "content_new_page_draft_execution_boundary"
+    assert contract is not None
+    assert contract.required_input_contracts == ["content_new_page_dev_draft_action_v1"]
+    assert contract.draft_only is True
+    assert contract.publication_allowed is False
+    assert contract.destructive_allowed is False
 
 
 def test_new_page_action_records_local_review_gates_without_a_vendor_write() -> None:
