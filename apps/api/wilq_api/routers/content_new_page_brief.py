@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import json
 from concurrent.futures import ThreadPoolExecutor
+from hashlib import sha256
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
 from apps.api.wilq_api.routers.content_codex_proposal import content_codex_app_server_client
 from apps.api.wilq_api.routers.content_workflow_http import revision_conflict_next_step
+from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
@@ -46,9 +49,11 @@ from wilq.content.workflow.new_page import (
 )
 from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
+    ContentNewPageDeliveryReadiness,
     ContentNewPageDocumentReviewPrerequisiteConflict,
     ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
+    build_new_page_delivery_readiness,
 )
 from wilq.content.workflow.new_page_initial_draft import generate_new_page_initial_draft
 from wilq.content.workflow.new_page_revision import (
@@ -250,6 +255,33 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
         brief_id: str,
     ) -> ContentNewPageCanonicalDocumentWorkspace:
         return _new_page_canonical_document_workspace(brief_id)
+
+    @router.get(
+        "/api/content/new-page-briefs/{brief_id}/delivery-readiness",
+        response_model=ContentNewPageDeliveryReadiness,
+    )
+    def content_new_page_delivery_readiness(
+        brief_id: str,
+    ) -> ContentNewPageDeliveryReadiness:
+        workspace = _new_page_canonical_document_workspace(brief_id)
+        profile = build_wordpress_authoring_profile(
+            "wordpress_ekologus",
+            include_dev_content=False,
+        )
+        profile_digest = sha256(
+            json.dumps(
+                profile.model_dump(mode="json"),
+                sort_keys=True,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+        return build_new_page_delivery_readiness(
+            workspace,
+            allowed_content_types=profile.rest_api.post_types,
+            authoring_profile_digest=profile_digest,
+            evidence_ids=profile.evidence_ids,
+        )
 
     register_content_new_page_document_review_routes(router)
 
