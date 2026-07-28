@@ -41,8 +41,6 @@ import {
   ContentNewPageFoundationResultSchema,
   ContentNewPagePlanningProposalRequestSchema,
   ContentNewPagePlanningProposalWorkspaceSchema,
-  ContentNewPagePlanningReviewCommandSchema,
-  ContentNewPagePlanningReviewConflictSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
   ContentNewPageRevisionReviewConflictSchema,
   ContentNewPageRevisionReviewResponseSchema,
@@ -57,9 +55,6 @@ import {
   ContentKnowledgeCardsResponseSchema,
   ContentPlanningProposalRequestSchema,
   ContentPlanningProposalResponseSchema,
-  ContentPlanningReviewConflictSchema,
-  ContentPlanningReviewRequestSchema,
-  ContentPlanningReviewResponseSchema,
   ContentServiceProfileResponseSchema,
   ContentPreflightResponseSchema,
   ContentOpportunityEnrichmentResponseSchema,
@@ -164,8 +159,6 @@ import {
   type ContentNewPageFoundationResult,
   type ContentNewPagePlanningProposalRequest,
   type ContentNewPagePlanningProposalWorkspace,
-  type ContentNewPagePlanningReviewCommand,
-  type ContentNewPagePlanningReviewConflict,
   type ContentNewPageCanonicalDocumentWorkspace,
   type ContentNewPageRevisionReviewConflict,
   type ContentNewPageRevisionReviewResponse,
@@ -188,9 +181,6 @@ import {
   type ContentPlanningProposalRequest,
   type ContentPlanningProposal,
   type ContentPlanningProposalResponse,
-  type ContentPlanningReviewConflict,
-  type ContentPlanningReviewRequest,
-  type ContentPlanningReviewResponse,
   type ContentPlanningWorkspace,
   type ContentServiceProfileResponse,
   type ContentPreflightResponse,
@@ -707,18 +697,6 @@ export function createContentNewPageInitialDraft(
   );
 }
 
-export function reviewContentNewPagePlanning(
-  briefId: string,
-  request: ContentNewPagePlanningReviewCommand
-): Promise<ContentNewPageCanonicalDocumentWorkspace | ContentNewPagePlanningReviewConflict> {
-  return apiPostWithConflict(
-    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/planning-review`,
-    ContentNewPageCanonicalDocumentWorkspaceSchema,
-    ContentNewPagePlanningReviewConflictSchema,
-    ContentNewPagePlanningReviewCommandSchema.parse(request)
-  );
-}
-
 export function reviewContentNewPageRevision(
   briefId: string,
   revisionId: string,
@@ -774,19 +752,6 @@ export function saveContentWorkItemDraftRevision(
     ContentDraftRevisionSaveResponseSchema,
     ContentDraftRevisionConflictSchema,
     ContentDraftRevisionSaveRequestSchema.parse(request)
-  );
-}
-
-export function saveContentWorkItemPlanningReview(
-  request: ContentPlanningReviewRequest,
-  workItemId: string
-): Promise<ContentPlanningReviewResponse | ContentPlanningReviewConflict> {
-  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/planning-review`;
-  return apiPostWithConflict(
-    path,
-    ContentPlanningReviewResponseSchema,
-    ContentPlanningReviewConflictSchema,
-    ContentPlanningReviewRequestSchema.parse(request)
   );
 }
 
@@ -1258,9 +1223,6 @@ export type {
   ContentPlanningProposalRequest,
   ContentPlanningProposal,
   ContentPlanningProposalResponse,
-  ContentPlanningReviewConflict,
-  ContentPlanningReviewRequest,
-  ContentPlanningReviewResponse,
   ContentPlanningWorkspace,
   ContentServiceProfileResponse,
   ContentPreflightResponse,

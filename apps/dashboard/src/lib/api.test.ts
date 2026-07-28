@@ -6,7 +6,6 @@ import {
   applyAction,
   createContentNewPageFoundation,
   createContentNewPageInitialDraft,
-  reviewContentNewPagePlanning,
   reviewContentNewPageRevision,
   getActionMutationReadiness,
   getActionsMutationReadiness,
@@ -333,37 +332,6 @@ describe("content workflow API helpers", () => {
 
     expect(result.status).toBe("blocked");
     expect(result.blockers[0]?.code).toBe("planning_not_approved");
-  });
-
-  it("keeps exact new-page plan review conflicts typed for the workspace", async () => {
-    const request = {
-      expected_proposal_id: "content_planning_proposal_a",
-      expected_planning_digest: "a".repeat(64),
-      expected_planning_input_digest: "b".repeat(64),
-      decision: "approved" as const,
-      reviewed_by: "Wilku",
-      checked_items: ["Sprawdzono plan."],
-      notes: ""
-    };
-    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
-      expect(new URL(String(url)).pathname).toBe(
-        "/api/content/new-page-briefs/content_new_page_brief_a/planning-review"
-      );
-      expect(JSON.parse(String(init?.body))).toEqual(request);
-      return new Response(JSON.stringify({
-        response_type: "content_new_page_document_review_prerequisite_conflict",
-        contract_version: "content_new_page_document_review_prerequisite_conflict_v1",
-        status: "blocked",
-        code: "missing_planning_foundation",
-        brief_id: "content_new_page_brief_a",
-        safe_next_step: "Zapisz podstawę planowania."
-      }), { status: 409, headers: { "Content-Type": "application/json" } });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const result = await reviewContentNewPagePlanning("content_new_page_brief_a", request);
-
-    expect(result).toMatchObject({ code: "missing_planning_foundation" });
   });
 
   it("posts exact new-page revision review with its current digest", async () => {
