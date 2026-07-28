@@ -3542,11 +3542,15 @@ const contentPlanningSourceNames = [
 ] as const;
 
 export const ContentPlanningInputSummarySchema = z.object({
-  final_canonical_url: z.string().min(1),
+  // Optional only for parsing historical proposal records. Every current API
+  // producer supplies this discriminator.
+  goal: z.enum(["refresh_existing", "new_page"]).optional(),
+  final_canonical_url: z.string().min(1).nullable().optional(),
+  proposed_ia_location: z.string().min(3).nullable().optional(),
   service_label: z.string().min(1),
-  inventory_status: z.enum(["available", "missing"]),
-  content_inventory_status: z.enum(["available", "missing"]).optional(),
-  acf_section_inventory_status: z.enum(["available", "missing"]).optional(),
+  inventory_status: z.enum(["available", "missing", "not_applicable"]),
+  content_inventory_status: z.enum(["available", "missing", "not_applicable"]).optional(),
+  acf_section_inventory_status: z.enum(["available", "missing", "not_applicable"]).optional(),
   source_assessments: z.array(ContentPlanningSourceAssessmentSchema).min(10),
   source_fact_count: z.number().int().nonnegative(),
   source_fact_ids: z.array(z.string()).default([]),
@@ -3569,6 +3573,35 @@ export const ContentPlanningInputSummarySchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["source_assessments"],
       message: "Every planning source must appear exactly once."
+    });
+  }
+});
+
+export const ContentPlanningInputBlockerSchema = z.object({
+  code: z.string().min(1),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  next_step: z.string().min(1)
+});
+
+export const ContentPlanningInputReadinessResponseSchema = z.object({
+  status: z.enum(["ready", "blocked"]),
+  work_item_id: z.string().min(1).nullable().optional(),
+  planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  input_summary: ContentPlanningInputSummarySchema.nullable().optional(),
+  blockers: z.array(ContentPlanningInputBlockerSchema).default([]),
+  safe_next_step: z.string().min(1)
+}).superRefine((response, context) => {
+  if (response.status === "ready" && (!response.work_item_id || !response.planning_input_digest || !response.input_summary)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Ready planning input requires exact identity and summary."
+    });
+  }
+  if (response.status === "blocked" && response.planning_input_digest) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Blocked planning input cannot expose a usable digest."
     });
   }
 });
@@ -4262,6 +4295,9 @@ export type ContentCodexSectionProposalResponse = z.infer<
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentPlanningWorkspace = z.infer<typeof ContentPlanningWorkspaceSchema>;
 export type ContentPlanningProposal = z.infer<typeof ContentPlanningProposalSchema>;
+export type ContentPlanningInputReadinessResponse = z.infer<
+  typeof ContentPlanningInputReadinessResponseSchema
+>;
 export type ContentPlanningProposalRequest = z.input<
   typeof ContentPlanningProposalRequestSchema
 >;

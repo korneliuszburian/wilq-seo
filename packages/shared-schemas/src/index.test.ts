@@ -18,6 +18,7 @@ import {
   ContentWorkItemSnapshotResponseSchema,
   ContentDecisionContextSchema,
   ContentWorkItemServiceProfileContextSchema,
+  ContentPlanningInputReadinessResponseSchema,
   ContentPlanningProposalResponseSchema,
   ContentServiceProfileResponseSchema,
   ContentServiceProfileCoverageGapSchema,
@@ -759,6 +760,46 @@ describe("ContentPlanningProposalResponseSchema", () => {
       safe_next_step: "Poczekaj na plan.",
       publish_ready: false
     }).success).toBe(true);
+  });
+});
+
+describe("ContentPlanningInputReadinessResponseSchema", () => {
+  it("preserves a new-page input without inventing an existing page identity", () => {
+    const parsed = ContentPlanningInputReadinessResponseSchema.parse({
+      status: "ready",
+      work_item_id: "content_work_item_new_page_a",
+      planning_input_digest: "a".repeat(64),
+      input_summary: {
+        goal: "new_page",
+        final_canonical_url: null,
+        proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
+        service_label: "Dokumentacja środowiskowa",
+        inventory_status: "not_applicable",
+        content_inventory_status: "not_applicable",
+        acf_section_inventory_status: "not_applicable",
+        source_assessments: [
+          "wordpress", "service_profile", "gsc", "ga4", "google_ads",
+          "ahrefs", "keyword_planner", "merchant", "localo", "social"
+        ].map((source) => ({
+          source,
+          status: source === "service_profile" ? "used" : "not_applicable",
+          reason: "Jawna ocena źródła.",
+          evidence_ids: source === "service_profile" ? ["ev_service"] : [],
+          knowledge_card_ids: source === "service_profile" ? ["knowledge_service"] : []
+        })),
+        source_fact_count: 1,
+        evidence_id_count: 1,
+        knowledge_card_count: 1,
+        measurement_metrics: [],
+        metric_comparisons: []
+      },
+      blockers: [],
+      safe_next_step: "Przygotuj propozycję planu."
+    });
+
+    expect(parsed.input_summary?.goal).toBe("new_page");
+    expect(parsed.input_summary?.final_canonical_url).toBeNull();
+    expect(parsed.input_summary?.inventory_status).toBe("not_applicable");
   });
 });
 
