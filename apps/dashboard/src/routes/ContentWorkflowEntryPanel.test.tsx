@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPagePlanningProposal, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPagePlanningProposal, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
@@ -41,6 +41,7 @@ function renderEntry(overrides: Partial<ComponentProps<typeof ContentWorkflowEnt
   const props: ComponentProps<typeof ContentWorkflowEntryPanel> = {
     entry,
     inventory: null,
+    diagnostics: null,
     browseInventory: false,
     newPageOpen: false,
     newPageId: null,
@@ -91,6 +92,25 @@ describe("ContentWorkflowEntryPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /zacznij od briefu/i }));
     expect(props.onOpenNewPage).toHaveBeenCalledOnce();
+  });
+
+  it("explains an empty recommendation list with the API-owned data blocker", () => {
+    const diagnostics = {
+      marketer_decision: {
+        status: "blocked",
+        decision: "Nie podejmuj decyzji contentowej bez odczytu.",
+        why_it_matters: "Brakuje GSC i inventory WordPress.",
+        safe_next_action: "Uruchom odczyt GSC i WordPress.",
+        source_connector_labels: ["Google Search Console", "WordPress ekologus.pl"],
+        evidence_ids: ["ev_gsc", "ev_wp"]
+      }
+    } as ContentDiagnosticsResponse;
+
+    renderEntry({ entry: { ...entry, recommendations: [] }, diagnostics });
+
+    expect(screen.getByTestId("content-workflow-data-blocker")).toHaveTextContent("Nie podejmuj decyzji contentowej bez odczytu.");
+    expect(screen.getByText(/Uruchom odczyt GSC i WordPress/)).toBeInTheDocument();
+    expect(screen.getByText(/ev_gsc, ev_wp/)).toBeInTheDocument();
   });
 
   it("shows every saved brief assumption and catalog evidence for no direct coverage", async () => {

@@ -19,6 +19,7 @@ import {
   postContentWorkItemMeasurementWindow,
   reviewContentNewPagePlanning,
   reviewContentNewPageRevision,
+  type ContentDiagnosticsResponse,
   type ContentNewPageCanonicalDocumentWorkspace,
   type ContentNewPageDeliveryReadiness,
   type ContentPublicDeploymentReadResponse,
@@ -32,6 +33,7 @@ import {
 export function ContentWorkflowEntryPanel({
   entry,
   inventory,
+  diagnostics,
   browseInventory,
   newPageOpen,
   newPageId,
@@ -43,6 +45,7 @@ export function ContentWorkflowEntryPanel({
 }: {
   entry: ContentWorkflowEntryResponse | null;
   inventory: ContentInventoryCatalogResponse | null;
+  diagnostics: ContentDiagnosticsResponse | null;
   browseInventory: boolean;
   newPageOpen: boolean;
   newPageId: string | null;
@@ -59,16 +62,18 @@ export function ContentWorkflowEntryPanel({
     return <ContentWorkflowInventoryBrowse inventory={inventory} onReturn={onCloseSecondaryView} onSelectWorkItem={onSelectWorkItem} />;
   }
   if (!entry) return null;
-  return <ContentWorkflowIntentStart entry={entry} onBrowseInventory={onBrowseInventory} onOpenNewPage={onOpenNewPage} onSelectWorkItem={onSelectWorkItem} />;
+  return <ContentWorkflowIntentStart entry={entry} diagnostics={diagnostics} onBrowseInventory={onBrowseInventory} onOpenNewPage={onOpenNewPage} onSelectWorkItem={onSelectWorkItem} />;
 }
 
 function ContentWorkflowIntentStart({
   entry,
+  diagnostics,
   onBrowseInventory,
   onOpenNewPage,
   onSelectWorkItem
 }: {
   entry: ContentWorkflowEntryResponse;
+  diagnostics: ContentDiagnosticsResponse | null;
   onBrowseInventory: () => void;
   onOpenNewPage: () => void;
   onSelectWorkItem: (workItemId: string) => void;
@@ -159,7 +164,7 @@ function ContentWorkflowIntentStart({
                 </article>
               ))}
             </div>
-          ) : <p className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">Nie ma teraz rekomendacji opartych na wystarczających danych. Możesz wyszukać stronę lub przejrzeć cały serwis.</p>}
+          ) : <ContentWorkflowEmptyRecommendations diagnostics={diagnostics} />}
         </section>
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-600">
@@ -168,6 +173,21 @@ function ContentWorkflowIntentStart({
       </div>
     </main>
   );
+}
+
+function ContentWorkflowEmptyRecommendations({ diagnostics }: { diagnostics: ContentDiagnosticsResponse | null }) {
+  const decision = diagnostics?.marketer_decision;
+  if (decision?.status !== "blocked") {
+    return <p className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">Nie ma teraz rekomendacji opartych na wystarczających danych. Możesz wyszukać stronę lub przejrzeć cały serwis.</p>;
+  }
+  return <section className="mt-4 rounded-2xl border border-wait/30 bg-wait/5 p-5 text-sm text-ink" data-testid="content-workflow-data-blocker">
+    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-wait">Blokada danych</p>
+    <h3 className="mt-2 text-lg font-semibold">{decision.decision}</h3>
+    <p className="mt-2 leading-6 text-slate-700">{decision.why_it_matters}</p>
+    <p className="mt-3 font-semibold leading-6 text-slate-800">Następny bezpieczny krok: {decision.safe_next_action}</p>
+    {decision.source_connector_labels.length ? <p className="mt-3 text-xs leading-5 text-slate-600">Źródła wymagające odczytu: {decision.source_connector_labels.join(", ")}</p> : null}
+    {decision.evidence_ids.length ? <p className="mt-2 break-words text-xs leading-5 text-slate-600">Dowody blokady: {decision.evidence_ids.join(", ")}</p> : null}
+  </section>;
 }
 
 function IntentCard({ eyebrow, title, description, action, tone, onClick }: { eyebrow: string; title: string; description: string; action: string; tone: "blue" | "green"; onClick: () => void }) {

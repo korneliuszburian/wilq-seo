@@ -64,11 +64,13 @@ export function ContentWorkflowSurface() {
     selectedWorkspace,
     entry,
     inventory,
+    diagnostics,
     operatorContext
   } = useContentWorkflowQueries(
     selectedWorkItemId,
     reviewOpen,
-    browseInventory
+    browseInventory,
+    !selectedWorkItemId && !newPageOpen && !browseInventory
   );
 
   return (
@@ -77,6 +79,7 @@ export function ContentWorkflowSurface() {
       selectedWorkspace={selectedWorkspace}
       entry={entry}
       inventory={inventory}
+      diagnostics={diagnostics}
       reviewOpen={reviewOpen}
       browseInventory={browseInventory}
       newPageOpen={newPageOpen}
@@ -179,6 +182,7 @@ function ContentWorkflowRouteState({
   selectedWorkspace,
   entry,
   inventory,
+  diagnostics,
   reviewOpen,
   browseInventory,
   newPageOpen,
@@ -196,6 +200,7 @@ function ContentWorkflowRouteState({
   selectedWorkspace: ContentSelectedWorkspaceQuery;
   entry: ContentWorkflowEntryQuery;
   inventory: ContentInventoryCatalogQuery;
+  diagnostics: ReturnType<typeof useContentWorkflowQueries>["diagnostics"];
   reviewOpen: boolean;
   browseInventory: boolean;
   newPageOpen: boolean;
@@ -215,6 +220,7 @@ function ContentWorkflowRouteState({
         <ContentWorkflowEntryPanel
           entry={entry.data ?? null}
           inventory={inventory.data ?? null}
+          diagnostics={null}
           browseInventory={browseInventory}
           newPageOpen={newPageOpen}
           newPageId={newPageId}
@@ -234,6 +240,7 @@ function ContentWorkflowRouteState({
       <ContentWorkflowEntryPanel
         entry={entry.data}
         inventory={inventory.data ?? null}
+        diagnostics={diagnostics.data ?? null}
         browseInventory={browseInventory}
         newPageOpen={newPageOpen}
         newPageId={newPageId}
