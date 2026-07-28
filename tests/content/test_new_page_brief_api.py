@@ -173,8 +173,12 @@ def test_new_page_delivery_action_requires_the_current_ready_binding_and_stays_l
 
     assert response.status_code == 200
     assert response.json()["payload"]["action_type"] == CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
-    assert response.json()["payload"]["apply_allowed"] is False
-    assert response.json()["payload"]["api_mutation_ready"] is False
+    # The payload may eventually be applied, but creating this route's local
+    # ActionObject never bypasses validation, preview, review, confirmation,
+    # impact checks, the exact binding claim, or the separate apply endpoint.
+    assert response.json()["payload"]["apply_allowed"] is True
+    assert response.json()["payload"]["api_mutation_ready"] is True
+    assert response.json()["status"] == "needs_validation"
     assert app.openapi()["paths"][
         "/api/content/new-page-briefs/{brief_id}/delivery-action"
     ]["post"]["responses"]["409"]["content"]["application/json"]["schema"] == {
