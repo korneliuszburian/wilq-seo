@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPagePlanningProposal, refreshConnector, reviewContentNewPagePlanning, reviewContentNewPageRevision, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageDeliveryAction, createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPageDeliveryReadiness, getContentNewPagePlanningProposal, refreshConnector, reviewContentNewPagePlanning, reviewContentNewPageRevision, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), refreshConnector: vi.fn(), reviewContentNewPagePlanning: vi.fn(), reviewContentNewPageRevision: vi.fn() };
+  return { ...actual, createContentNewPageDeliveryAction: vi.fn(), createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPageDeliveryReadiness: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), refreshConnector: vi.fn(), reviewContentNewPagePlanning: vi.fn(), reviewContentNewPageRevision: vi.fn() };
 });
 
 const entry: ContentWorkflowEntryResponse = {
@@ -168,22 +168,7 @@ describe("ContentWorkflowEntryPanel", () => {
   });
 
   it("shows every saved brief assumption and catalog evidence for no direct coverage", async () => {
-    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, {
-      foundation: {
-        foundation_id: "content_new_page_foundation_test",
-        work_item_id: "content_work_item_new_page_test",
-        brief_id: "content_new_page_brief_test",
-        brief_digest: "a".repeat(64),
-        overlap_digest: "b".repeat(64),
-        overlap_evidence_ids: ["ev_wp_other"],
-        service_card_id: "service_environment",
-        service_card_digest: "c".repeat(64),
-        service_label: "Obsługa środowiskowa",
-        service_evidence_ids: ["ev_service"],
-        confirmed_by: "Wilku",
-        created_at: "2026-07-28T00:00:00Z"
-      }
-    }));
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace());
 
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_no_conflict" });
 
@@ -371,22 +356,7 @@ describe("ContentWorkflowEntryPanel", () => {
 
   it("approves the exact new-page revision without a reviewer form or checklist", async () => {
     const workspace = reviewRequiredCanonicalDocumentWorkspace();
-    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, {
-      foundation: {
-        foundation_id: "content_new_page_foundation_test",
-        work_item_id: "content_work_item_new_page_test",
-        brief_id: "content_new_page_brief_test",
-        brief_digest: "a".repeat(64),
-        overlap_digest: "b".repeat(64),
-        overlap_evidence_ids: ["ev_wp_other"],
-        service_card_id: "service_environment",
-        service_card_digest: "c".repeat(64),
-        service_label: "Obsługa środowiskowa",
-        service_evidence_ids: ["ev_service"],
-        confirmed_by: "Wilku",
-        created_at: "2026-07-28T00:00:00Z"
-      }
-    }));
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
     vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(workspace);
     vi.mocked(reviewContentNewPageRevision).mockResolvedValue({ status: "reviewed" } as never);
 
@@ -404,6 +374,48 @@ describe("ContentWorkflowEntryPanel", () => {
       notes: "",
       checked_items: ["Tekst sprawdzony względem planu i przypisanych źródeł."],
       evidence_ids: ["ev_new_page_source"]
+    }));
+  });
+
+  it("prepares a delivery ActionObject without asking for a duplicate requester", async () => {
+    const workspace = {
+      ...reviewRequiredCanonicalDocumentWorkspace(),
+      status: "document_approved" as const,
+      document_status: "approved" as const
+    };
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
+    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(workspace);
+    vi.mocked(getContentNewPageDeliveryReadiness).mockResolvedValue({
+      response_type: "content_new_page_delivery_readiness",
+      contract_version: "content_new_page_delivery_readiness_v1",
+      status: "ready_for_action",
+      work_item_id: "content_work_item_new_page_test",
+      brief_id: "content_new_page_brief_test",
+      brief_digest: "a".repeat(64),
+      foundation_id: "content_new_page_foundation_test",
+      service_card_id: "service_environment",
+      service_card_digest: "c".repeat(64),
+      revision_id: "content_draft_revision_new_page_test",
+      revision_digest: "e".repeat(64),
+      authoring_profile_digest: "f".repeat(64),
+      allowed_content_types: ["page"],
+      evidence_ids: ["ev_new_page_source"],
+      blockers: [],
+      safe_next_step: "Przygotuj ActionObject."
+    });
+    vi.mocked(createContentNewPageDeliveryAction).mockResolvedValue({ id: "act_new_page_draft" } as never);
+
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
+
+    expect(await screen.findByTestId("new-page-delivery-ready")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Przygotowuje")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj ActionObject" }));
+
+    await waitFor(() => expect(createContentNewPageDeliveryAction).toHaveBeenCalledWith("content_new_page_brief_test", {
+      expected_revision_digest: "e".repeat(64),
+      expected_authoring_profile_digest: "f".repeat(64),
+      content_type: "page",
+      requested_by: "wilku"
     }));
   });
 
@@ -485,6 +497,23 @@ function reviewRequiredCanonicalDocumentWorkspace(): ContentNewPageCanonicalDocu
       content_digest: "e".repeat(64),
       sections: [{ evidence_ids: ["ev_new_page_source"] }]
     } as never
+  };
+}
+
+function foundationFixture() {
+  return {
+    foundation_id: "content_new_page_foundation_test",
+    work_item_id: "content_work_item_new_page_test",
+    brief_id: "content_new_page_brief_test",
+    brief_digest: "a".repeat(64),
+    overlap_digest: "b".repeat(64),
+    overlap_evidence_ids: ["ev_wp_other"],
+    service_card_id: "service_environment",
+    service_card_digest: "c".repeat(64),
+    service_label: "Obsługa środowiskowa",
+    service_evidence_ids: ["ev_service"],
+    confirmed_by: "Wilku",
+    created_at: "2026-07-28T00:00:00Z"
   };
 }
 

@@ -1,55 +1,30 @@
-# Content Operator — techniczny kontrakt odpowiedzi
+# Content Operator — kontrakt odpowiedzi
 
-Czytaj ten plik tylko podczas debugowania lub evala ustrukturyzowanego outputu.
-Zwykła sesja marketera ma działać z instrukcji w `SKILL.md` i wąskiego snapshotu.
+Czytaj tylko podczas evala albo debugowania formatu odpowiedzi. `SKILL.md`
+jest właścicielem normalnego przebiegu sesji.
 
-## Wymagany ślad
+Widoczna odpowiedź po polsku zawiera kolejno:
 
-- `work_item_id` wybranego elementu kolejki;
-- bieżący `current_step_id` oraz persisted planning/revision decision;
-- `planning_digest`, a po zapisie tekstu także exact `revision_id` i digest;
-- `source_connectors` i `evidence_ids` użyte w rekomendacji;
-- GSC query rows tylko z `planning_workspace.proposal.search_demand`;
-- `action_id` oraz revision binding, jeśli sesja dochodzi do `dev_draft`.
+- `Jedna decyzja`;
+- `Dlaczego` — źródło i maksymalnie kilka faktów, bez wymyślonych metryk;
+- `Co już jest` — exact plan, rewizja lub review, jeśli istnieje;
+- `Co blokuje` — tylko rzeczywisty blocker;
+- `Następny bezpieczny krok` — jedna czynność;
+- `Ślad WILQ` — ID i dowody pod decyzją, nie nad nią.
 
-## Dozwolone przejścia
+## Minimalny ślad
 
-```text
-queue
-  -> selected snapshot
-  -> scope planning-review
-  -> API-owned exact section map
-  -> exact draft revision
-  -> exact revision human review
-  -> optional exact Codex child proposal
-  -> optional exact target discovery/mapping confirmation
-  -> ActionObject validate/preview/review/confirm/impact-check/apply
-  -> WordPress draft-only readback
-```
-
-Każde `409` oznacza odświeżenie snapshotu i ponowną decyzję człowieka. Nie
-rekonstruuj digestu, bindingu ani payloadu z wcześniejszej odpowiedzi.
-
-## Kształt odpowiedzi
-
-Widoczne pola decyzyjne muszą po polsku odpowiedzieć na:
-
-- `Decyzja teraz`;
-- `Dlaczego`;
-- `Co już jest zapisane`;
-- `Co blokuje`;
-- `Następny bezpieczny krok`;
-- `Ślad WILQ`.
-
-Nie wystarczy lista endpointów. Wynik ma wskazać jedną czynność Wilka i
-zatrzymać się, jeśli brakuje jego approval, exact bindingu albo dowodu.
-Identyfikatory źródeł i dowodów pozostają w `Ślad WILQ`, poniżej decyzji.
+- istniejąca strona: `work_item_id`, planning input/proposal digest, a po
+  utworzeniu tekstu `revision_id` oraz revision digest;
+- nowa strona: `brief_id`, foundation, proposal/digest i revision identity;
+- delivery: action ID wyłącznie po utworzeniu ActionObjectu;
+- measurement: deployment ID i deployment-bound window tylko po potwierdzonym
+  publicznym wdrożeniu.
 
 ## Niedozwolone skróty
 
-- client-owned stage POST-y do preflight/brief/draft package;
-- legacy quality/revision apply poza exact revision workspace;
-- `wordpress-draft-execution` i synthetic authoring preview jako substytut
-  ActionObjectu;
-- caller-supplied measurement outcome;
-- direct OpenAI/WordPress oraz publish/update/delete.
+- brak `section_map`, legacy snapshotu i starego WordPress execution;
+- brak client-owned metryk, digestów, URL-i lub measurement outcome;
+- brak direct OpenAI/WordPress i brak publish/update/delete;
+- brak twierdzenia o sukcesie SEO, leadach lub publikacji bez właściwego
+  persisted dowodu.

@@ -1,233 +1,103 @@
 ---
 name: wilq-content-operator
-description: Prowadzi jedną sesję tworzenia lub poprawy treści Ekologus przez kanoniczny multi-step WILQ API: kolejka, reviewed scope, API-owned mapa sekcji, exact revision, Codex proposal, human review i revision-bound ActionObject do WordPress draft-only. Użyj, gdy marketer chce wybrać temat, zatwierdzić zakres planu, poprawić sekcję, sprawdzić tekst albo przygotować szkic na devie; nie używaj do ogólnej strategii tematów ani autonomicznej publikacji.
+description: "Prowadzi marketera przez jedną kanoniczną ścieżkę WILQ: wybór istniejącej strony albo brief nowej strony, plan, pełny tekst, exact review oraz oddzielne przygotowanie szkicu dev. Użyj, gdy trzeba realnie przygotować lub odświeżyć treść; nie używaj do strategii tematów ani publikacji."
 ---
 
 # WILQ Content Operator
 
-Myśl o tym jako o **jednej sesji na jednym work itemie**. WILQ API jest
-właścicielem planu, metryk, wersji, decyzji i akcji. Codex prowadzi operatora i
-może uruchomić tylko istniejący server-side proposal; nie tworzy równoległego
-promptu, artykułu ani ścieżki WordPress.
-
-## Kanoniczna sesja
-
-### Nowa strona — osobna ścieżka
-
-Nie używaj kolejki, snapshotu ani endpointów `work-items` dla nowej strony.
-Nowa strona nie ma publicznego URL-a, inventory ani historii do odświeżenia.
-Prowadź ją dokładnie w tej kolejności:
-
-1. `POST /api/content/new-page-briefs`, potem `GET` tego briefu;
-2. `POST .../planning-foundation` po jawnej decyzji człowieka o usłudze;
-3. `POST .../planning-proposal`, następnie odczytuj jego exact status aż przestanie być `generating`, a potem `GET .../canonical-document`;
-4. `POST .../planning-review` dla exact proposal/digest;
-5. na jawne polecenie `POST .../initial-draft` z exact proposal i digestami;
-6. `POST .../draft-revisions/{revision_id}/review` dla exact digestu i evidence;
-7. po approval rewizji: `GET .../delivery-readiness`, potem `POST .../delivery-action` i
-   istniejący lifecycle ActionObjectu `validate → preview → review → confirm → impact-check → apply`;
-8. po **zewnętrznym** publicznym wdrożeniu: `GET/POST` public deployment dla tej samej rewizji,
-   a dopiero później exact measurement window, outcome i learning proposal.
-
-Każdy konflikt wymaga ponownego odczytu tego samego briefu. Nie twórz URL-a ani
-nie przechodź bezpośrednio do WordPressa. ActionObject może utworzyć najwyżej
-jeden szkic na dev po wszystkich bramkach; approval rewizji nie jest publikacją.
-Public deployment potwierdza wyłącznie wcześniej zaobserwowany fakt WordPressa,
-nigdy nie wykonuje publikacji.
-
-1. **Wybierz pracę.** Sprawdź `GET /api/health`, potem
-   `GET /api/content/work-items/queue`. Wybierz podany `work_item_id` albo
-   najwyższy wykonalny element; globalny blocker gęstości kolejki nie blokuje
-   pracy nad istniejącym wykonalnym itemem. Brak itemu, dowodów lub źródeł
-   kończy sesję konkretną blokadą.
-
-   **Done when:** istnieje dokładnie jeden wybrany `work_item_id` albo jawny
-   powód, dlaczego nie można go wybrać.
-
-2. **Czytaj jeden snapshot i status planera.** Pobierz
-   `GET /api/content/work-items/{work_item_id}/snapshot`, a następnie model-free
-   `GET /api/content/work-items/{work_item_id}/planning-proposals`. Snapshot jest
-   źródłem prawdy dla pięciu kroków
-   `scope → API-owned section map → draft → review → dev_draft`; status planera mówi
-   `not_generated`, `ready`, `stale` albo `blocked` i nigdy sam nie uruchamia
-   modelu. Enrichment lub knowledge cards pobieraj tylko wtedy, gdy operator
-   prosi o ślad głębszy niż snapshot.
-
-   Dla `scope` pokaż stronę, usługę, intencję, odbiorcę, problem, CTA oraz
-   `planning_workspace.proposal.search_demand`: metryki GSC, okres, freshness,
-   dowody i sekcje. Puste Ads/Keyword Planner oznacza brak exact
-   term+page+service mappingu, nie zgodę na brainstorming.
-
-   **Done when:** odpowiedź nazywa bieżący krok, decyzję człowieka, dowody,
-   blocker i najmniejszy bezpieczny następny krok.
-
-3. **Zapisz wybór usługi przed modelem.** Dla świeżego itemu jawna decyzja
-   operatora najpierw zapisuje review bazowego `scope` przez
-   `POST /api/content/work-items/{work_item_id}/planning-review`: `stage=scope`,
-   exact `expected_planning_digest`, dozwolone `service_card_id`, `decision`,
-   `reviewed_by` oraz `checked_items` dla approval albo `notes` dla zmian.
-   Następnie odśwież snapshot i model-free GET planera. Karta bez
-   `approved_current` pozostaje zewnętrzną bramką ownera; skill nie zapisuje
-   jej review ani nie obchodzi lifecycle.
-
-   **Done when:** API utrwaliło human-confirmed service selection dla bieżącego
-   baseline digestu albo zwróciło typed konflikt/blokadę.
-
-4. **Generuj plan tylko na polecenie.** Gdy odświeżony GET zwraca aktualny
-   planning input i operator prosi o plan, wywołaj
-   `POST /api/content/work-items/{work_item_id}/planning-proposals` z exact
-   `service_card_id`, `expected_planning_input_digest`, krótkim opcjonalnym
-   `operator_hint` i atrybucją `requested_by`. Nie rekonstruuj inputu ani planu
-   w rozmowie. `409 stale_input`, unknown service, typed blocker albo błąd
-   runtime zatrzymuje sesję bez fallbacku.
-
-   **Done when:** istnieje persisted proposal związany z exact inputem albo
-   jawny blocker i model nie został zastąpiony inną ścieżką.
-
-5. **Zatwierdzaj zakres wygenerowanego planu.** Jawne `approved` albo
-   `needs_changes` zapisuj przez
-   `POST /api/content/work-items/{work_item_id}/planning-review` wyłącznie z
-   `stage=scope`, exact `expected_planning_digest`, `decision`, `reviewed_by`
-   oraz `checked_items` dla approval albo `notes` dla zmian. Przy `scope`
-   przekaż wybrane `service_card_id`. Mapa sekcji jest API-owned częścią
-   wygenerowanej exact propozycji: pokaż ją, lecz nigdy nie wysyłaj
-   `stage=section_map`; router odrzuca ten historyczny zapis. Konflikt `409`
-   wymaga odświeżenia; nie retry ze starym digestem i nie przenoś decyzji na
-   inną propozycję.
-
-   **Done when:** current scope review i API-owned mapa sekcji odnoszą się do
-   tej samej wygenerowanej propozycji albo operator dostał dokładną instrukcję
-   poprawy.
-
-6. **Twórz i oceniaj pełny dokument.** Po aktualnym scope approval oraz
-   aktualnej API-owned mapie sekcji i wyłącznie na jawne polecenie wywołaj
-   `POST /api/content/work-items/{work_item_id}/initial-draft` z exact
-   `expected_proposal_id`, `expected_planning_digest`,
-   `expected_planning_input_digest` oraz `requested_by`. Wynik jest pełną
-   rewizją v2 `unreviewed`, nigdy approvalem.
-
-   Dla tej rewizji najpierw czytaj model-free
-   `GET .../draft-revisions/{revision_id}/semantic-review`. Jawna prośba o
-   advisory review prowadzi do `POST` na ten sam endpoint z
-   `expected_revision_digest` i `requested_by`. Semantic review jest
-   exact-digest advisory: nie zapisuje human acceptance, ActionObjectu ani
-   `publish_ready=true`. Decyzję człowieka zapisuj osobno przez
-   `POST .../draft-revisions/{revision_id}/review` z
-   `expected_revision_digest`, `reviewed_by`, `decision` i: dla approval
-   `checked_items` oraz `evidence_ids`, a dla pozostałych decyzji `notes`.
-
-   **Done when:** pełny dokument, advisory findings i decyzja człowieka są
-   rozdzielone oraz związane z jednym exact revision digestem.
-
-7. **Poprawiaj tylko wybrane sekcje.** Gdy exact human review ma
-   `needs_changes` albo `rejected`, a readiness pozwala na poprawkę, operator
-   wskazuje stabilne `section_id`. Wywołaj
-   `POST .../draft-revisions/{base_revision_id}/codex-proposal` z exact
-   `expected_base_digest`, niepustym `selected_section_ids` i `requested_by`.
-   Nie wysyłaj równocześnie legacy headings. Wynik jest niezmienną `unreviewed`
-   child revision; ponownie przechodzi semantic review i osobną decyzję
-   człowieka.
-
-   **Done when:** odświeżony snapshot pokazuje child revision, diff i jej własny
-   status review; poprawka nie zmieniła niewybranych page assets.
-
-8. **Przygotuj delivery tylko dla approved exact revision.** Najpierw czytaj
-   `GET .../target-discovery`, potem exact `GET .../target-mapping`. Dev URL
-   jest wyłącznie kandydatem; nie wybieraj targetu na podstawie sluga. Operator
-   zapisuje osobne `POST .../target-mapping/confirmation` z exact digestami, a
-   dopiero wtedy `POST .../target-mapping/draft-action` może utworzyć
-   ActionObject. Żaden z tych endpointów nie zapisuje do WordPressa.
-
-   Jawna prośba o wykonanie prowadzi utworzony ActionObject przez
-   `validate → preview → review → confirm → impact-check → apply` na
-   `/api/actions/{action_id}/...`. Każdy etap używa bindingu z API. `apply` jest
-   dozwolone dopiero po osobnym potwierdzeniu operatora i pozostaje WordPress
-   `draft-only`; publish/update/delete nie należą do tej sesji. Nie używaj
-   legacy `draft-activation-packet`, `draft-write-readiness` ani
-   `wordpress-draft-execution` jako obejścia ActionObjectu.
-
-   **Done when:** istnieje auditowalny wynik dokładnej akcji albo typed blocker;
-   nie wykonano bezpośredniego requestu do WordPressa.
-
-9. **Zakończ na dowodzie, nie obietnicy.** Measurement opisuj tylko ze stanu
-   zwróconego przez snapshot. Dopóki nie ma publication-bound persisted window
-   i metric provenance, nie przyjmuj metryk ani sukcesu od użytkownika.
-
-   **Done when:** Wilku dostaje jedną decyzję i jeden następny krok, bez claimu
-   publikacji, efektu SEO, leadów, przychodu albo jakości 10/10.
-
-## Dozwolone endpointy
-
-<allowed_endpoints>
-
-- `GET /api/health`
-- `GET /api/content/work-items/queue`
-- `POST /api/content/new-page-briefs`
-- `GET /api/content/new-page-briefs/{brief_id}`
-- `POST /api/content/new-page-briefs/{brief_id}/planning-foundation`
-- `GET/POST /api/content/new-page-briefs/{brief_id}/planning-proposal`
-- `GET /api/content/new-page-briefs/{brief_id}/canonical-document`
-- `POST /api/content/new-page-briefs/{brief_id}/planning-review`
-- `POST /api/content/new-page-briefs/{brief_id}/initial-draft`
-- `POST /api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review`
-- `GET /api/content/new-page-briefs/{brief_id}/delivery-readiness`
-- `POST /api/content/new-page-briefs/{brief_id}/delivery-action`
-- `GET /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/public-deployment`
-- `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/public-deployments`
-- `POST /api/content/work-items/measurement-window`
-- `POST /api/content/work-items/measurement-outcome`
-- `POST /api/content/work-items/learning-proposal`
-- `GET /api/content/work-items/{work_item_id}/snapshot`
-- `GET /api/content/work-items/{work_item_id}/enrichment`
-- `GET /api/content/knowledge-cards`
-- `GET /api/content/service-profile`
-- `GET /api/content/work-items/{work_item_id}/planning-proposals`
-- `POST /api/content/work-items/{work_item_id}/planning-proposals`
-- `POST /api/content/work-items/{work_item_id}/planning-review`
-- `POST /api/content/work-items/{work_item_id}/initial-draft`
-- `GET /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review`
-- `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review`
-- `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review`
-- `POST /api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal`
-- `GET /api/content/work-items/{work_item_id}/target-discovery`
-- `GET /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping`
-- `GET /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-preview`
-- `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/confirmation`
-- `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-action`
-- `GET /api/actions/{action_id}`
-- `POST /api/actions/{action_id}/validate`
-- `POST /api/actions/{action_id}/preview`
-- `POST /api/actions/{action_id}/review`
-- `POST /api/actions/{action_id}/confirm`
-- `POST /api/actions/{action_id}/impact-check`
-- `POST /api/actions/{action_id}/apply`
-
-</allowed_endpoints>
-
-## Odpowiedź dla Wilka
-
-Zacznij od krótkiej karty, nie od architektury:
-
-- `Decyzja teraz`: zacznij wprost od zdania `Jedna decyzja: ...`, nazwij work
-  item, aktualny krok i czego potrzebujesz od Wilka.
-- `Dlaczego`: strona/usługa, źródła, freshness i 2-4 najważniejsze dowody lub
-  query rows bez wymyślonych fraz.
-- `Co już jest zapisane`: planning decision, revision i human review.
-- `Co blokuje`: jeden realny blocker i czego WILQ celowo nie claimuje.
-- `Następny bezpieczny krok`: dokładnie jedna czynność.
-- `Ślad WILQ`: work item, revision/planning/action ID, identyfikatory dowodów i source
-  connectors poniżej części decyzyjnej.
-
-Pisz po polsku z polskimi znakami. Endpointy, ID i enumy pozostaw bez zmian.
-
-## Twarde granice
-
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
 <!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
 
-- Brak dowodu lub źródła oznacza blocker, nie rekomendację.
-- Nie pisz finalnego artykułu poza exact Codex proposal i human review.
-- Nie używaj OpenAI API key, Agents SDK, Ollamy ani bezpośredniego WordPressa.
-- Nie ustawiaj ani nie akceptuj `publish_ready=true`.
-- Nie zapisuj review, rewizji ani akcji bez jawnej decyzji operatora.
-- Dev URL jest tylko preview; final canonical i pomiar należą do Ekologus.
+Prowadź **jedną pracę nad treścią naraz**. Marketer ma dostać prostą drogę:
+
+```text
+wybór strony albo brief
+  → wygeneruj plan
+  → sprawdź plan
+  → przygotuj pełny tekst
+  → sprawdź tekst
+  → opcjonalny szkic na dev
+```
+
+WILQ API przechowuje exact identyfikatory, digesty, dowody i audyt. Nie
+zastępuj ich własnym stanem ani nie każ marketerowi przepisywać decyzji,
+identyfikatora operatora lub technicznych formularzy.
+
+## Istniejąca strona
+
+1. Odczytaj `GET /api/health`, potem `GET /api/content/workflow-entry`.
+   Wybierz wskazany `work_item_id` albo pokaż blokadę danych. Nie zaczynaj od
+   kolejki, snapshotu ani katalogu WordPressa.
+
+2. Odczytaj `GET /api/content/work-items/{work_item_id}/document-workspace`
+   oraz `GET /api/content/work-items/{work_item_id}/planning-proposals`.
+   Pokaż publiczne źródło, stan dokumentu, faktycznie zapisane lineage i jedno
+   `next_action`. „Zmiany w treści” oznaczają wyłącznie obserwowane nagłówki i
+   fragmenty; nie są visual diffem ani oceną semantycznej równoważności.
+
+3. Jeśli plan nie istnieje, dopiero po jasnym poleceniu „wygeneruj plan” użyj
+   `POST /api/content/work-items/{work_item_id}/planning-proposals` z exact
+   `service_card_id` oraz `expected_planning_input_digest` zwróconymi przez
+   odczyt. Odczytuj ten sam status, aż przestanie być `generating`.
+
+4. Gdy plan jest gotowy, pokaż jego intencję, strukturę i źródła. Jeżeli
+   marketer po zapoznaniu się z nim mówi „przygotuj pełny tekst”, zapisz
+   exact `scope` review (`approved`) z aktualnym `planning_digest`, a następnie
+   wywołaj `POST .../initial-draft` z exact proposal ID i digestami. To są dwa
+   techniczne zapisy jednej świadomej czynności marketera, nie dwa osobne
+   formularze do zaakceptowania.
+
+5. Pełny tekst jest immutable rewizją. Pokaż go przed dalszym krokiem. Po
+   jawnym „zatwierdź tekst” zapisz `POST .../draft-revisions/{revision_id}/review`
+   z exact `expected_revision_digest` i evidence IDs rewizji. „Tekst wymaga
+   zmian” wymaga krótkiej notatki; poprawka powstaje wyłącznie przez exact
+   child revision, nigdy przez edycję istniejącej rewizji.
+
+6. Dopiero approved exact revision może wejść w delivery: read-only
+   `target-discovery` i `target-mapping`, osobne potwierdzenie mappingu,
+   utworzenie ActionObjectu i lifecycle `/api/actions`. ActionObject nie jest
+   WordPressem. `apply` wymaga osobnego polecenia człowieka i może utworzyć
+   najwyżej jeden szkic na dev; publish, update i delete są poza tą ścieżką.
+
+## Nowa strona
+
+Nowa strona nie ma starego URL-a, inventory ani porównania. Prowadź ją przez:
+
+1. `POST /api/content/new-page-briefs`, następnie odczyt briefu.
+2. Pokaż guard pokrycia serwisu i pozwól wybrać zatwierdzoną usługę. Tylko ta
+   realna decyzja tworzy `planning-foundation`; nie zgaduj usługi na podstawie
+   tytułu briefu.
+3. Po jasnym „przygotuj plan” wywołaj `POST .../planning-proposal`, a następnie
+   odczytuj jego status i canonical document.
+4. Po obejrzeniu planu „przygotuj pierwszą wersję” zapisuje exact planning
+   review i uruchamia exact initial draft jako jedną czynność marketera.
+5. Review tekstu, delivery ActionObject, potwierdzenie publicznego wdrożenia i
+   measurement mają te same granice jak dla istniejącej strony.
+
+## Konflikty i granice
+
+- `409` oznacza: odczytaj ponownie dokładnie ten sam workspace, pokaż aktualny
+  bezpieczny następny krok i nie retry ze starym digestem.
+- Brak albo nieświeże źródło/evidence to blocker, nie zaproszenie do zgadywania.
+- Nie używaj `section_map`, legacy snapshotu, `wordpress-draft-handoff`,
+  `wordpress-draft-execution`, `draft-activation-packet` ani direct WordPress.
+- Nie uruchamiaj generowania, review, ActionObjectu, apply, deploymentu ani
+  measurementu tylko dlatego, że ekran został otwarty. Każdy zapis wymaga
+  jasno wyrażonej czynności marketera.
+- Public deployment tylko potwierdza zaobserwowane publiczne wdrożenie; nie
+  publikuje. Measurement i learning dotyczą wyłącznie exact deploymentu.
+
+## Odpowiedź dla marketera
+
+Pisz po polsku, krótko i w tej kolejności:
+
+1. `Jedna decyzja:` co można teraz zrobić;
+2. `Dlaczego:` źródła i najważniejszy fakt;
+3. `Co już jest:` plan / rewizja / review, bez surowych payloadów;
+4. `Co blokuje:` tylko realna blokada, jeśli istnieje;
+5. `Następny bezpieczny krok:` dokładnie jedna czynność;
+6. `Ślad WILQ:` work item, revision/planning/action ID i evidence poniżej
+   części decyzyjnej.
+
+**Done when:** marketer widzi jedną zrozumiałą czynność albo konkretny,
+evidence-bound blocker; żadna czynność nie sugeruje publikacji ani wyniku SEO.

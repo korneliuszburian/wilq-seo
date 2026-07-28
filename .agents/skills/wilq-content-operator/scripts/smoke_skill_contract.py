@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Read-only smoke for the current marketer-facing content operator seams."""
 from __future__ import annotations
 
 import argparse
@@ -12,414 +13,134 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from scripts.skill_smoke_harness import request_json
 
-SKILL_NAME = "wilq-content-operator"
-DEV_HOST = "ekologus.dev.proudsite.pl"
 
-
-def require_dict(value: Any, label: str) -> dict[str, Any]:
+def as_dict(value: Any, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise SystemExit(f"{label} must be an object")
     return value
 
 
-def require_list(value: Any, label: str) -> list[Any]:
+def as_list(value: Any, label: str) -> list[Any]:
     if not isinstance(value, list):
         raise SystemExit(f"{label} must be a list")
     return value
 
 
-def assert_false_everywhere(value: Any, key: str) -> None:
-    if isinstance(value, dict):
-        if value.get(key) is True:
-            raise SystemExit(f"Content workflow must not expose {key}=true")
-        for child in value.values():
-            assert_false_everywhere(child, key)
-    elif isinstance(value, list):
-        for child in value:
-            assert_false_everywhere(child, key)
-
-
-def select_candidate(queue: dict[str, Any]) -> dict[str, Any]:
-    candidates = [
-        candidate
-        for candidate in require_list(queue.get("candidates"), "content queue candidates")
-        if isinstance(candidate, dict)
+def read_entry(api_base: str) -> dict[str, Any]:
+    entry = as_dict(request_json(api_base, "GET", "/api/content/workflow-entry"), "workflow entry")
+    if entry.get("response_type") != "content_workflow_entry":
+        raise SystemExit("Workflow entry response_type mismatch")
+    recommendations = [
+        item
+        for item in as_list(entry.get("recommendations"), "recommendations")
+        if isinstance(item, dict)
     ]
-    if queue.get("candidate_count") != len(candidates) or not candidates:
-        raise SystemExit("Content queue must expose at least one counted candidate")
-    selected = next(
-        (candidate for candidate in candidates if candidate.get("recommended_mode") != "block"),
-        candidates[0],
-    )
-    if not selected.get("work_item_id"):
-        raise SystemExit("Selected candidate must expose work_item_id")
-    if selected.get("recommended_mode") != "block" and (
-        not selected.get("evidence_ids") or not selected.get("source_connectors")
-    ):
-        raise SystemExit("Actionable candidate needs evidence IDs and source connectors")
-    final_url = selected.get("final_canonical_url") or selected.get("intended_final_url")
-    if final_url and DEV_HOST in str(final_url):
-        raise SystemExit("Dev URL cannot be final canonical")
+    if not recommendations:
+        raise SystemExit("No evidence-bound recommendation is available")
+    selected = recommendations[0]
+    if not selected.get("work_item_id") or not selected.get("url"):
+        raise SystemExit("Recommendation requires exact work_item_id and public URL")
     return selected
 
 
-def validate_queue_actions(api_base: str, selected: dict[str, Any]) -> list[str]:
-    if selected.get("recommended_mode") == "block":
-        return []
-    validated: list[str] = []
-    for raw_action_id in selected.get("action_ids") or []:
-        action_id = str(raw_action_id)
-        encoded = urllib.parse.quote(action_id, safe="")
-        result = require_dict(
-            request_json(api_base, "POST", f"/api/actions/{encoded}/validate"),
-            f"action validation {action_id}",
-        )
-        if result.get("valid") is not True:
-            raise SystemExit(f"Selected action {action_id} did not validate")
-        validated.append(action_id)
-    if not validated:
-        raise SystemExit("Actionable candidate needs a validated ActionObject")
-    return validated
-
-
-def validate_snapshot(snapshot: dict[str, Any], work_item_id: str) -> dict[str, Any]:
-    if snapshot.get("response_type") != "workflow_snapshot":
-        raise SystemExit("Selected work item must expose a workflow snapshot")
-    item = require_dict(snapshot.get("preflight", {}).get("item"), "preflight item")
-    if item.get("id") != work_item_id:
-        raise SystemExit("Selected snapshot work_item_id mismatch")
-
-    steps = require_list(snapshot.get("operator_steps"), "operator steps")
-    expected_steps = ["scope", "section_map", "draft", "review", "dev_draft"]
-    if [step.get("id") for step in steps if isinstance(step, dict)] != expected_steps:
-        raise SystemExit("Snapshot must expose the canonical five-step journey")
-    if snapshot.get("current_step_id") not in expected_steps:
-        raise SystemExit("Snapshot current_step_id is outside the canonical journey")
-
-    planning = require_dict(snapshot.get("planning_workspace"), "planning workspace")
-    proposal = require_dict(planning.get("proposal"), "planning proposal")
-    demand = require_dict(proposal.get("search_demand"), "search demand")
-    for row in demand.get("gsc_query_rows") or []:
-        validate_gsc_query_row(require_dict(row, "GSC query row"))
-    if (demand.get("ads_term_rows") or demand.get("keyword_planner_rows")) and demand.get(
-        "optional_ads_status"
-    ) != "exact_rows_available":
-        raise SystemExit("Ads/Planner rows require exact mapping status")
-
-    revision = require_dict(snapshot.get("revision_workspace"), "revision workspace")
-    latest_revision = revision.get("latest_revision")
-    handoff = snapshot.get("wordpress_handoff", {}).get("handoff_result", {}).get("handoff")
-    if handoff is not None:
-        binding = require_dict(handoff.get("revision_binding"), "revision binding")
-        if not latest_revision or binding.get("revision_id") != latest_revision.get("revision_id"):
-            raise SystemExit("WordPress handoff must bind the latest exact revision")
-
-    for key in ("publish_ready", "publish_allowed", "destructive_update_allowed"):
-        assert_false_everywhere(snapshot, key)
-    return {
-        "current_step_id": snapshot.get("current_step_id"),
-        "planning_digest": proposal.get("planning_digest"),
-        "planning_input_digest": proposal.get("planning_input_digest"),
-        "service_card_id": proposal.get("service_card_id"),
-        "scope_current": planning.get("scope_current"),
-        "section_map_current": planning.get("section_map_current"),
-        "gsc_query_rows": (demand.get("gsc_query_rows") or [])[:4],
-        "gsc_query_row_count": len(demand.get("gsc_query_rows") or []),
-        "ads_term_row_count": len(demand.get("ads_term_rows") or []),
-        "keyword_planner_row_count": len(demand.get("keyword_planner_rows") or []),
-        "revision_status": revision.get("status"),
-        "latest_revision_id": (
-            None if latest_revision is None else latest_revision.get("revision_id")
-        ),
-        "latest_revision_digest": (
-            None if latest_revision is None else latest_revision.get("content_digest")
-        ),
-        "handoff_revision_bound": handoff is not None,
-        "evidence_ids": item.get("evidence_ids") or [],
-        "source_connectors": item.get("source_connectors") or [],
-    }
-
-
-def validate_planning_generation_status(
-    response: dict[str, Any], work_item_id: str, service_card_id: str | None
-) -> dict[str, Any]:
-    status = response.get("status")
-    if response.get("work_item_id") != work_item_id:
-        raise SystemExit("Planning status work_item_id mismatch")
-    if status not in {
-        "not_generated",
-        "created",
-        "idempotent",
-        "ready",
-        "stale",
-        "blocked",
-        "failed",
-    }:
-        raise SystemExit("Planning status is outside the public contract")
-    if response.get("publish_ready") is not False:
-        raise SystemExit("Planning status cannot be publish-ready")
-    response_service_card_id = response.get("service_card_id")
-    if service_card_id and response_service_card_id != service_card_id:
-        raise SystemExit("Planning status service_card_id mismatch")
-    runtime = require_dict(response.get("runtime"), "planning runtime")
-    proposal = response.get("proposal")
-    blockers = require_list(response.get("blockers"), "planning blockers")
-    if status == "not_generated" and (
-        proposal is not None or blockers or runtime.get("status") != "not_started"
-    ):
-        raise SystemExit("Model-free planning GET must remain not started")
-    if status in {"created", "idempotent", "ready"}:
-        proposal = require_dict(proposal, "generated planning proposal")
-        input_digest = response.get("planning_input_digest")
-        if (
-            blockers
-            or not proposal.get("proposal_id")
-            or not input_digest
-            or proposal.get("work_item_id") != work_item_id
-            or proposal.get("service_card_id") != response_service_card_id
-            or proposal.get("planning_input_digest") != input_digest
-        ):
-            raise SystemExit("Ready planning status needs exact persisted bindings")
-    if status in {"stale", "blocked", "failed"} and not blockers:
-        raise SystemExit("Non-ready planning status needs typed blockers")
-    return {
-        "status": status,
-        "planning_input_digest": response.get("planning_input_digest"),
-        "proposal_id": (
-            proposal.get("proposal_id") if isinstance(proposal, dict) else None
-        ),
-        "runtime_status": runtime.get("status"),
-        "blocker_codes": [
-            blocker.get("code")
-            for blocker in blockers
-            if isinstance(blocker, dict) and blocker.get("code")
-        ],
-    }
-
-
-def validate_semantic_review_status(
-    response: dict[str, Any],
-    work_item_id: str,
-    revision_id: str,
-    revision_digest: str,
-) -> dict[str, Any]:
-    if response.get("work_item_id") != work_item_id:
-        raise SystemExit("Semantic review work_item_id mismatch")
-    if response.get("human_review_required") is not True:
-        raise SystemExit("Semantic review cannot replace human review")
-    if response.get("action_object_created") is not False:
-        raise SystemExit("Semantic review cannot create an ActionObject")
-    if response.get("publish_ready") is not False:
-        raise SystemExit("Semantic review cannot be publish-ready")
-    status = response.get("status")
-    if status not in {
-        "not_generated",
-        "created",
-        "idempotent",
-        "ready",
-        "stale",
-        "blocked",
-        "failed",
-        "conflict",
-    }:
-        raise SystemExit("Semantic review status is outside the public contract")
-    runtime = require_dict(response.get("runtime"), "semantic review runtime")
-    blockers = require_list(response.get("blockers"), "semantic review blockers")
-    review = response.get("review")
-    if status in {"not_generated", "created", "idempotent", "ready"} and (
-        response.get("revision_id") != revision_id
-        or response.get("revision_digest") != revision_digest
-    ):
-        raise SystemExit("Current semantic review binding mismatch")
-    if status == "not_generated" and (
-        review is not None or blockers or runtime.get("status") != "not_started"
-    ):
-        raise SystemExit("Model-free semantic GET must remain not started")
-    if status in {"created", "idempotent", "ready", "stale"}:
-        review = require_dict(review, "semantic review")
-        if (
-            blockers
-            or review.get("work_item_id") != work_item_id
-            or review.get("revision_id") != response.get("revision_id")
-            or review.get("revision_digest") != response.get("revision_digest")
-            or not response.get("run_id")
-            or review.get("codex_run_id") != response.get("run_id")
-        ):
-            raise SystemExit("Semantic review must bind the exact revision")
-    if status in {"blocked", "failed", "conflict"} and not blockers:
-        raise SystemExit("Non-ready semantic review needs typed blockers")
-    return {
-        "status": status,
-        "revision_digest": response.get("revision_digest"),
-        "runtime_status": runtime.get("status"),
-        "blocker_codes": [
-            blocker.get("code")
-            for blocker in blockers
-            if isinstance(blocker, dict) and blocker.get("code")
-        ],
-    }
-
-
-def validate_gsc_query_row(row: dict[str, Any]) -> None:
-    if (
-        row.get("source_connector") != "google_search_console"
-        or not row.get("evidence_ids")
-        or not row.get("period")
-        or not row.get("freshness")
-    ):
-        raise SystemExit("GSC row needs source, evidence, period and freshness")
-    mapping_status = row.get("section_mapping_status")
-    section_headings = row.get("section_headings")
-    if mapping_status == "lexical_relevance" and not section_headings:
-        raise SystemExit("Lexically mapped GSC row needs at least one section")
-    if mapping_status == "page_only" and section_headings:
-        raise SystemExit("Page-only GSC row cannot claim a section mapping")
-    if not section_headings and mapping_status != "page_only":
-        raise SystemExit("Unmapped GSC row must be explicitly page-only")
-
-
-def read_delivery_preparation(
-    api_base: str, work_item_id: str, revision_id: str
-) -> dict[str, Any]:
-    encoded_work_item_id = urllib.parse.quote(work_item_id, safe="")
-    encoded_revision_id = urllib.parse.quote(revision_id, safe="")
-    discovery = require_dict(
-        request_json(
-            api_base,
-            "GET",
-            f"/api/content/work-items/{encoded_work_item_id}/target-discovery",
-        ),
-        "target discovery",
-    )
-    mapping = require_dict(
-        request_json(
-            api_base,
-            "GET",
-            "/api/content/work-items/"
-            f"{encoded_work_item_id}/draft-revisions/{encoded_revision_id}/target-mapping",
-        ),
-        "target mapping preview",
-    )
-    for value in (discovery, mapping):
-        for key in ("publish_allowed", "destructive_update_allowed", "write_authorized"):
-            assert_false_everywhere(value, key)
-    return {
-        "discovery_status": discovery.get("status"),
-        "mapping_status": mapping.get("status"),
-        "mapping_revision_id": (mapping.get("revision") or {}).get("revision_id"),
-        "action_object_created": False,
-    }
-
-
-def read_planning_generation_status(
-    api_base: str,
-    work_item_id: str,
-    service_card_id: str | None,
-) -> dict[str, Any]:
+def read_workspace(api_base: str, work_item_id: str) -> dict[str, Any]:
     encoded = urllib.parse.quote(work_item_id, safe="")
-    response = require_dict(
-        request_json(
-            api_base,
-            "GET",
-            f"/api/content/work-items/{encoded}/planning-proposals",
-        ),
-        "planning generation status",
+    workspace = as_dict(
+        request_json(api_base, "GET", f"/api/content/work-items/{encoded}/document-workspace"),
+        "document workspace",
     )
-    return validate_planning_generation_status(response, work_item_id, service_card_id)
+    if workspace.get("response_type") != "content_document_workspace":
+        raise SystemExit("Document workspace response_type mismatch")
+    if (
+        workspace.get("work_item_id") != work_item_id
+        or workspace.get("work_kind") != "refresh_existing"
+    ):
+        raise SystemExit("Document workspace identity mismatch")
+    source = as_dict(workspace.get("source_snapshot"), "source snapshot")
+    if source.get("status") not in {"available", "partial", "unavailable"}:
+        raise SystemExit("Source snapshot has an unknown status")
+    if source.get("status") == "available" and not source.get("evidence_ids"):
+        raise SystemExit("Available source needs evidence IDs")
+    document = as_dict(workspace.get("canonical_document"), "canonical document")
+    document_statuses = {
+        "not_created",
+        "unreviewed",
+        "needs_changes",
+        "approved",
+        "rejected",
+        "deferred",
+    }
+    if document.get("status") not in document_statuses:
+        raise SystemExit("Canonical document has an unknown status")
+    if document.get("revision") is not None and (
+        document.get("revision_id") != document["revision"].get("revision_id")
+        or document.get("content_digest") != document["revision"].get("content_digest")
+    ):
+        raise SystemExit("Workspace revision is not exact-bound")
+    return workspace
 
 
-def read_semantic_review_status(
-    api_base: str,
-    work_item_id: str,
-    revision_id: str,
-    revision_digest: str,
-) -> dict[str, Any]:
-    encoded_work_item_id = urllib.parse.quote(work_item_id, safe="")
-    encoded_revision_id = urllib.parse.quote(revision_id, safe="")
-    response = require_dict(
-        request_json(
-            api_base,
-            "GET",
-            "/api/content/work-items/"
-            f"{encoded_work_item_id}/draft-revisions/"
-            f"{encoded_revision_id}/semantic-review",
-        ),
-        "semantic review status",
+def read_planning(api_base: str, work_item_id: str) -> dict[str, Any]:
+    encoded = urllib.parse.quote(work_item_id, safe="")
+    status = as_dict(
+        request_json(api_base, "GET", f"/api/content/work-items/{encoded}/planning-proposals"),
+        "planning status",
     )
-    return validate_semantic_review_status(
-        response,
-        work_item_id,
-        revision_id,
-        revision_digest,
-    )
+    if status.get("work_item_id") != work_item_id:
+        raise SystemExit("Planning status work_item_id mismatch")
+    planning_statuses = {
+        "not_generated",
+        "created",
+        "idempotent",
+        "ready",
+        "stale",
+        "blocked",
+        "failed",
+    }
+    if status.get("status") not in planning_statuses:
+        raise SystemExit("Unknown planning status")
+    if status.get("publish_ready") is not False:
+        raise SystemExit("Planning must never be publish-ready")
+    proposal = status.get("proposal")
+    if status.get("status") in {"created", "idempotent", "ready"}:
+        proposal = as_dict(proposal, "ready planning proposal")
+        if not all(
+            (
+                proposal.get("proposal_id"),
+                proposal.get("planning_digest"),
+                proposal.get("planning_input_digest"),
+            )
+        ):
+            raise SystemExit("Ready planning proposal lacks exact identity")
+        if proposal.get("planning_input_digest") != status.get("planning_input_digest"):
+            raise SystemExit("Planning input digest mismatch")
+    return status
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
+    parser = argparse.ArgumentParser(description="Smoke current WILQ Content Operator read seams")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
     args = parser.parse_args()
 
-    health = require_dict(request_json(args.api_base, "GET", "/api/health"), "health")
+    health = as_dict(request_json(args.api_base, "GET", "/api/health"), "health")
     if health.get("status") != "ok":
         raise SystemExit("WILQ API health is not ok")
-    queue = require_dict(
-        request_json(args.api_base, "GET", "/api/content/work-items/queue"),
-        "content queue",
-    )
-    selected = select_candidate(queue)
+    selected = read_entry(args.api_base)
     work_item_id = str(selected["work_item_id"])
-    validated_action_ids = validate_queue_actions(args.api_base, selected)
+    workspace = read_workspace(args.api_base, work_item_id)
+    planning = read_planning(args.api_base, work_item_id)
 
-    summary: dict[str, Any] = {
-        "skill": SKILL_NAME,
-        "queue_status": queue.get("queue_status"),
-        "candidate_count": queue.get("candidate_count"),
-        "selected_work_item_id": work_item_id,
-        "selected_mode": selected.get("recommended_mode"),
-        "selected_action_ids": selected.get("action_ids") or [],
-        "selected_validated_action_ids": validated_action_ids,
-    }
-    if selected.get("recommended_mode") == "block":
-        summary.update(
-            workflow_blocked=True,
-            safe_next_step=selected.get("safe_next_step"),
-            evidence_ids=selected.get("evidence_ids") or [],
-            source_connectors=selected.get("source_connectors") or [],
-        )
-    else:
-        snapshot = require_dict(
-            request_json(
-                args.api_base,
-                "GET",
-                f"/api/content/work-items/{urllib.parse.quote(work_item_id, safe='')}/snapshot",
-            ),
-            "content workflow snapshot",
-        )
-        snapshot_summary = validate_snapshot(snapshot, work_item_id)
-        summary.update(snapshot_summary)
-        summary["planning_generation"] = read_planning_generation_status(
-            args.api_base,
-            work_item_id,
-            snapshot_summary["service_card_id"],
-        )
-        latest_revision_id = snapshot_summary["latest_revision_id"]
-        latest_revision_digest = snapshot_summary["latest_revision_digest"]
-        if latest_revision_id and latest_revision_digest:
-            summary["semantic_review"] = read_semantic_review_status(
-                args.api_base,
-                work_item_id,
-                str(latest_revision_id),
-                str(latest_revision_digest),
-            )
-        if latest_revision_id:
-            summary["delivery_preparation"] = read_delivery_preparation(
-                args.api_base,
-                work_item_id,
-                str(latest_revision_id),
-            )
-        summary["workflow_blocked"] = snapshot.get("current_step_id") != "dev_draft"
-
-    print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
+    print(json.dumps({
+        "skill": "wilq-content-operator",
+        "mode": "read_only",
+        "work_item_id": work_item_id,
+        "source_status": workspace["source_snapshot"]["status"],
+        "document_status": workspace["canonical_document"]["status"],
+        "next_action": workspace["next_action"]["kind"],
+        "planning_status": planning["status"],
+        "proposal_id": (planning.get("proposal") or {}).get("proposal_id"),
+        "publish_ready": False,
+    }, ensure_ascii=False, sort_keys=True))
     return 0
 
 
