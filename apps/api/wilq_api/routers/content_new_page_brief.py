@@ -300,7 +300,6 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
             brief=brief,
             foundation=foundation,
             proposal=proposal,
-            decisions=content_workflow_store().load_planning_decisions(foundation.work_item_id),
             workspace=workspace,
             request=request,
             client=content_codex_app_server_client(),
@@ -467,11 +466,6 @@ def _new_page_canonical_document_workspace(
         brief=brief,
         foundation=foundation,
         proposal=proposal,
-        decisions=(
-            []
-            if foundation is None
-            else content_workflow_store().load_planning_decisions(foundation.work_item_id)
-        ),
         revision_state=(
             None
             if foundation is None

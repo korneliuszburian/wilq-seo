@@ -4046,7 +4046,7 @@ describe("Content work item workflow schemas", () => {
     ).toBe(false);
   });
 
-  it("discriminates new-page workspace status and optional historical plan-review lineage", () => {
+  it("discriminates new-page workspace status from the exact generated-plan identity", () => {
     const pending = {
       response_type: "content_new_page_canonical_document" as const,
       contract_version: "content_new_page_canonical_document_v2" as const,
@@ -4060,7 +4060,6 @@ describe("Content work item workflow schemas", () => {
       proposal_id: "content_planning_proposal_new_page",
       planning_digest: "c".repeat(64),
       planning_input_digest: "d".repeat(64),
-      plan_review: null,
       title: "Dokumentacja środowiskowa inwestycji",
       proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
       outline: [],
@@ -4074,20 +4073,6 @@ describe("Content work item workflow schemas", () => {
       public_deployment_status: "not_confirmed" as const,
       safe_next_step: "Przygotuj pierwszą wersję."
     };
-    const approvedPlanReview = {
-      decision_id: "content_planning_decision_new_page",
-      decision_number: 1,
-      work_item_id: pending.work_item_id,
-      stage: "scope" as const,
-      planning_digest: pending.planning_digest,
-      service_card_id: pending.service_card_id,
-      decision: "approved" as const,
-      reviewed_by: "Wilku",
-      checked_items: ["Zakres"],
-      notes: "",
-      created_at: "2026-07-28T10:00:00Z"
-    };
-
     expect(ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse(pending).success).toBe(true);
     for (const blankProposalId of ["", "   "]) {
       expect(
@@ -4129,7 +4114,7 @@ describe("Content work item workflow schemas", () => {
         }).success
       ).toBe(false);
     }
-    const ready = { ...pending, plan_review: approvedPlanReview };
+    const ready = pending;
     expect(ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse(ready).success).toBe(true);
     for (const blankProposalId of ["", "   "]) {
       expect(
@@ -4145,18 +4130,12 @@ describe("Content work item workflow schemas", () => {
         status: "review_required"
       }).success
     ).toBe(false);
-    for (const planReview of [
-      { ...approvedPlanReview, work_item_id: "content_work_item_other" },
-      { ...approvedPlanReview, planning_digest: "e".repeat(64) },
-      { ...approvedPlanReview, service_card_id: "knowledge_service_other" }
-    ]) {
-      expect(
-        ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
-          ...ready,
-          plan_review: planReview
-        }).success
-      ).toBe(false);
-    }
+    expect(
+      ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
+        ...ready,
+        plan_review: { decision_id: "legacy_plan_review" }
+      }).success
+    ).toBe(false);
     const prerequisite = {
       response_type: "content_new_page_document_review_prerequisite_conflict",
       contract_version: "content_new_page_document_review_prerequisite_conflict_v1",

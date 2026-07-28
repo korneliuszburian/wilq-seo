@@ -8,10 +8,7 @@ from wilq.content.workflow.new_page import (
     ContentNewPageBrief,
     ContentNewPagePlanningFoundation,
 )
-from wilq.content.workflow.planning import (
-    ContentPlanningDecision,
-    ContentPlanningProposal,
-)
+from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
@@ -20,7 +17,7 @@ from wilq.content.workflow.revisions import (
 
 
 class ContentNewPageDocumentOutlineSection(BaseModel):
-    """A reviewed plan section, not generated document text."""
+    """A generated-plan section, not generated document text."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -62,7 +59,6 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
         "content_new_page_canonical_document_v2"
     )
     status: Literal[
-        "review_required",
         "ready_for_document",
         "document_review_required",
         "document_approved",
@@ -80,7 +76,6 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
     proposal_id: str | None = Field(default=None, min_length=1)
     planning_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     planning_input_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
-    plan_review: ContentPlanningDecision | None = None
     title: str = Field(min_length=1)
     proposed_ia_location: str = Field(min_length=3)
     outline: list[ContentNewPageDocumentOutlineSection] = Field(default_factory=list)
@@ -98,7 +93,6 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
 
     @model_validator(mode="after")
     def require_exact_document_lineage(self) -> ContentNewPageCanonicalDocumentWorkspace:
-        _validate_plan_review(self)
         if self.canonical_revision is None:
             _validate_workspace_without_revision(self)
         else:
@@ -124,20 +118,6 @@ def _has_exact_plan_identity(workspace: ContentNewPageCanonicalDocumentWorkspace
     )
 
 
-def _validate_plan_review(workspace: ContentNewPageCanonicalDocumentWorkspace) -> None:
-    review = workspace.plan_review
-    if review is None:
-        return
-    if not (
-        _has_exact_plan_identity(workspace)
-        and review.work_item_id == workspace.work_item_id
-        and review.stage == "scope"
-        and review.planning_digest == workspace.planning_digest
-        and review.service_card_id == workspace.service_card_id
-    ):
-        raise ValueError("Plan review does not match the exact new-page workspace.")
-
-
 def _validate_workspace_without_revision(
     workspace: ContentNewPageCanonicalDocumentWorkspace,
 ) -> None:
@@ -148,7 +128,7 @@ def _validate_workspace_without_revision(
         or workspace.document_status != "not_created"
     ):
         raise ValueError("Missing new-page revision cannot carry document lineage.")
-    if workspace.status not in {"review_required", "ready_for_document", "blocked"}:
+    if workspace.status not in {"ready_for_document", "blocked"}:
         raise ValueError("Document workspace status requires a canonical revision.")
     has_exact_plan_identity = _has_exact_plan_identity(workspace)
     if workspace.status == "blocked":
@@ -156,7 +136,6 @@ def _validate_workspace_without_revision(
             workspace.proposal_id is not None
             or workspace.planning_digest is not None
             or workspace.planning_input_digest is not None
-            or workspace.plan_review is not None
         ):
             raise ValueError("Blocked new-page workspace cannot carry a current plan.")
         return
@@ -230,7 +209,6 @@ def build_new_page_canonical_document_workspace(
     brief: ContentNewPageBrief,
     foundation: ContentNewPagePlanningFoundation | None,
     proposal: ContentPlanningProposal | None,
-    decisions: list[ContentPlanningDecision],
     revision_state: ContentDraftRevisionState | None = None,
 ) -> ContentNewPageCanonicalDocumentWorkspace | None:
     """Project one exact plan; a missing or mismatched plan remains fail-closed."""
@@ -239,7 +217,6 @@ def build_new_page_canonical_document_workspace(
         return None
     if proposal is None or not _proposal_matches_new_page(brief, foundation, proposal):
         return _blocked_workspace(brief, foundation)
-    review = _scope_review_for(proposal, decisions)
     revision = _current_revision(revision_state, brief, foundation, proposal)
     if (
         revision_state is not None
@@ -259,7 +236,6 @@ def build_new_page_canonical_document_workspace(
         proposal_id=proposal.proposal_id,
         planning_digest=proposal.planning_digest,
         planning_input_digest=proposal.planning_input_digest,
-        plan_review=review,
         title=brief.title,
         proposed_ia_location=brief.proposed_ia_location,
         outline=[
@@ -321,22 +297,6 @@ def _proposal_matches_new_page(
         and identity.service_card_digest == foundation.service_card_digest
         and proposal.proposed_ia_location == brief.proposed_ia_location
         and identity.proposed_ia_location == brief.proposed_ia_location
-    )
-
-
-def _scope_review_for(
-    proposal: ContentPlanningProposal,
-    decisions: list[ContentPlanningDecision],
-) -> ContentPlanningDecision | None:
-    return next(
-        (
-            decision
-            for decision in decisions
-            if decision.stage == "scope"
-            and decision.planning_digest == proposal.planning_digest
-            and decision.service_card_id == proposal.service_card_id
-        ),
-        None,
     )
 
 

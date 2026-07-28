@@ -18,7 +18,7 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     build_new_page_canonical_document_workspace,
 )
-from wilq.content.workflow.planning import ContentPlanningDecision, ContentPlanningProposal
+from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
@@ -51,7 +51,6 @@ def append_new_page_initial_revision(
     brief: ContentNewPageBrief,
     foundation: ContentNewPagePlanningFoundation,
     proposal: ContentPlanningProposal,
-    decisions: list[ContentPlanningDecision],
     expected_proposal_id: str,
     expected_planning_digest: str,
     expected_planning_input_digest: str,
@@ -60,13 +59,12 @@ def append_new_page_initial_revision(
     requested_by: str,
     store: ContentWorkflowStore,
 ) -> ContentDraftRevisionWriteResult:
-    """Append only from the current approved new-page plan; never invent a URL."""
+    """Append only from the current exact generated new-page plan; never invent a URL."""
 
     workspace = build_new_page_canonical_document_workspace(
         brief=brief,
         foundation=foundation,
         proposal=proposal,
-        decisions=decisions,
     )
     if (
         workspace is None
@@ -75,7 +73,7 @@ def append_new_page_initial_revision(
         or workspace.planning_digest != expected_planning_digest
         or workspace.planning_input_digest != expected_planning_input_digest
     ):
-        raise ValueError("New-page plan identity is stale or not approved.")
+        raise ValueError("New-page generated-plan identity is stale or unavailable.")
     if completed_run.status != "completed" or completed_run.completed_at is None:
         raise ValueError("New-page revision requires a completed Codex run.")
     command = _revision_command(
@@ -102,7 +100,9 @@ def review_new_page_revision(
     revision = state.latest_revision
     if revision is not None and revision.revision_id == revision_id:
         if not _revision_matches_workspace(revision, workspace):
-            raise ValueError("New-page revision lineage no longer matches the approved plan.")
+            raise ValueError(
+                "New-page revision lineage no longer matches the exact generated plan."
+            )
         unknown_evidence = sorted(
             set(request.evidence_ids).difference(_revision_evidence_ids(revision))
         )
@@ -204,15 +204,15 @@ def _validate_output_matches_plan(
     if [(section.section_id, section.heading) for section in output.sections] != [
         (section.section_id, section.heading) for section in plan_sections
     ]:
-        raise ValueError("New-page output sections do not match the exact approved plan.")
+        raise ValueError("New-page output sections do not match the exact generated plan.")
     if [item.question for item in output.faq] != [item.question for item in proposal.faq]:
-        raise ValueError("New-page output FAQ does not match the exact approved plan.")
+        raise ValueError("New-page output FAQ does not match the exact generated plan.")
     if len(output.cta_blocks) != len(proposal.cta_blocks):
-        raise ValueError("New-page output CTA blocks do not match the exact approved plan.")
+        raise ValueError("New-page output CTA blocks do not match the exact generated plan.")
     if [item.target_url for item in output.internal_links] != [
         item.target_url for item in proposal.internal_links
     ]:
-        raise ValueError("New-page output links do not match the exact approved plan.")
+        raise ValueError("New-page output links do not match the exact generated plan.")
 
 
 def _revision_sections(

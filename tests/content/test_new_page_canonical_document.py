@@ -28,7 +28,7 @@ from wilq.content.workflow.new_page_revision import (
     append_new_page_initial_revision,
     review_new_page_revision,
 )
-from wilq.content.workflow.planning import ContentPlanningDecision, ContentPlanningProposal
+from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -114,7 +114,7 @@ def test_new_page_canonical_document_uses_exact_generated_plan() -> None:
         )
     ).model_copy(update={"brief_id": foundation.brief_id, "brief_digest": foundation.brief_digest})
     pending = build_new_page_canonical_document_workspace(
-        brief=brief, foundation=foundation, proposal=proposal, decisions=[]
+        brief=brief, foundation=foundation, proposal=proposal
     )
     assert pending is not None
     assert pending.status == "ready_for_document"
@@ -136,7 +136,7 @@ def test_new_page_delivery_readiness_fails_closed_before_exact_approval() -> Non
         )
     ).model_copy(update={"brief_id": foundation.brief_id, "brief_digest": foundation.brief_digest})
     workspace = build_new_page_canonical_document_workspace(
-        brief=brief, foundation=foundation, proposal=proposal, decisions=[]
+        brief=brief, foundation=foundation, proposal=proposal
     )
     assert workspace is not None
 
@@ -177,20 +177,8 @@ def test_new_page_delivery_readiness_fails_closed_before_exact_approval() -> Non
     )
     assert ready.status == "ready_for_action"
 
-    decision = ContentPlanningDecision(
-        decision_id="content_planning_review_test",
-        decision_number=1,
-        work_item_id=foundation.work_item_id,
-        stage="scope",
-        planning_digest=proposal.planning_digest,
-        service_card_id=foundation.service_card_id,
-        decision="approved",
-        reviewed_by="Wilku",
-        checked_items=["zakres"],
-        created_at=utc_now(),
-    )
     ready = build_new_page_canonical_document_workspace(
-        brief=brief, foundation=foundation, proposal=proposal, decisions=[decision]
+        brief=brief, foundation=foundation, proposal=proposal
     )
     assert ready is not None
     assert ready.status == "ready_for_document"
@@ -217,23 +205,13 @@ def test_new_page_canonical_document_rejects_mismatched_lineage_and_blank_approv
         update={"new_page_document_identity": mismatched_identity}
     )
     blocked = build_new_page_canonical_document_workspace(
-        brief=brief, foundation=foundation, proposal=mismatched, decisions=[]
+        brief=brief, foundation=foundation, proposal=mismatched
     )
     assert blocked is not None
     assert blocked.status == "blocked"
     assert blocked.outline == []
 
-@pytest.mark.parametrize(
-    "review_update",
-    [
-        {"work_item_id": "content_work_item_other"},
-        {"planning_digest": "e" * 64},
-        {"service_card_id": "service_other"},
-    ],
-)
-def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_state(
-    review_update,
-) -> None:
+def test_new_page_workspace_requires_exact_generated_plan_and_truthful_top_level_state() -> None:
     foundation, proposal = _exact_inputs()
     brief = build_new_page_brief(
         ContentNewPageBriefInput(
@@ -246,7 +224,7 @@ def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_st
         )
     ).model_copy(update={"brief_id": foundation.brief_id, "brief_digest": foundation.brief_digest})
     pending = build_new_page_canonical_document_workspace(
-        brief=brief, foundation=foundation, proposal=proposal, decisions=[]
+        brief=brief, foundation=foundation, proposal=proposal
     )
     assert pending is not None
     assert ContentNewPageCanonicalDocumentWorkspace.model_validate(
@@ -261,7 +239,7 @@ def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_st
         ContentNewPageCanonicalDocumentWorkspace.model_validate(
             pending.model_dump(mode="python") | {"status": "document_approved"}
         )
-    with pytest.raises(ValueError, match="Generated new-page plan"):
+    with pytest.raises(ValueError):
         ContentNewPageCanonicalDocumentWorkspace.model_validate(
             pending.model_dump(mode="python") | {"status": "review_required"}
         )
@@ -280,20 +258,8 @@ def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_st
         with pytest.raises(ValueError, match="Blocked new-page workspace"):
             ContentNewPageCanonicalDocumentWorkspace.model_validate(blocked | partial_identity)
 
-    approved = ContentPlanningDecision(
-        decision_id="content_planning_review_exact",
-        decision_number=1,
-        work_item_id=foundation.work_item_id,
-        stage="scope",
-        planning_digest=proposal.planning_digest,
-        service_card_id=foundation.service_card_id,
-        decision="approved",
-        reviewed_by="Wilku",
-        checked_items=["zakres"],
-        created_at=utc_now(),
-    )
     ready = build_new_page_canonical_document_workspace(
-        brief=brief, foundation=foundation, proposal=proposal, decisions=[approved]
+        brief=brief, foundation=foundation, proposal=proposal
     )
     assert ready is not None
     assert ContentNewPageCanonicalDocumentWorkspace.model_validate(
@@ -304,14 +270,14 @@ def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_st
             ContentNewPageCanonicalDocumentWorkspace.model_validate(
                 ready.model_dump(mode="python") | {"proposal_id": blank_proposal_id}
             )
-    with pytest.raises(ValueError, match="Generated new-page plan"):
+    with pytest.raises(ValueError):
         ContentNewPageCanonicalDocumentWorkspace.model_validate(
             ready.model_dump(mode="python") | {"status": "review_required"}
         )
-    with pytest.raises(ValueError, match="Plan review does not match"):
+    with pytest.raises(ValueError):
         ContentNewPageCanonicalDocumentWorkspace.model_validate(
             ready.model_dump(mode="python")
-            | {"plan_review": approved.model_copy(update=review_update).model_dump(mode="python")}
+            | {"plan_review": {"decision_id": "legacy_plan_review"}}
         )
 
 
@@ -327,18 +293,6 @@ def _new_page_append_context(tmp_path):
             proposed_ia_location="Usługi → Dokumentacja środowiskowa",
         )
     ).model_copy(update={"brief_id": foundation.brief_id, "brief_digest": foundation.brief_digest})
-    approved = ContentPlanningDecision(
-        decision_id="content_planning_review_test",
-        decision_number=1,
-        work_item_id=foundation.work_item_id,
-        stage="scope",
-        planning_digest=proposal.planning_digest,
-        service_card_id=foundation.service_card_id,
-        decision="approved",
-        reviewed_by="Wilku",
-        checked_items=["zakres"],
-        created_at=utc_now(),
-    )
     output = ContentInitialDraftModelOutput(
         page_assets={
             "wordpress_title": brief.title,
@@ -369,16 +323,16 @@ def _new_page_append_context(tmp_path):
     completed_run = started_run.model_copy(
         update={"status": "completed", "completed_at": utc_now()}
     )
-    return brief, foundation, proposal, approved, output, store, completed_run
+    return brief, foundation, proposal, output, store, completed_run
 
 
 def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path) -> None:
-    brief, foundation, proposal, approved, output, store, completed_run = _new_page_append_context(
+    brief, foundation, proposal, output, store, completed_run = _new_page_append_context(
         tmp_path
     )
-    with pytest.raises(ValueError, match="stale or not approved"):
+    with pytest.raises(ValueError, match="stale or unavailable"):
         append_new_page_initial_revision(
-            brief=brief, foundation=foundation, proposal=proposal, decisions=[approved],
+            brief=brief, foundation=foundation, proposal=proposal,
             expected_proposal_id=proposal.proposal_id or "",
             expected_planning_digest="e" * 64,
             expected_planning_input_digest=proposal.planning_input_digest or "",
@@ -388,11 +342,11 @@ def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path) -> None:
 
 
 def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
-    brief, foundation, proposal, approved, output, store, completed_run = _new_page_append_context(
+    brief, foundation, proposal, output, store, completed_run = _new_page_append_context(
         tmp_path
     )
     result = append_new_page_initial_revision(
-        brief=brief, foundation=foundation, proposal=proposal, decisions=[approved],
+        brief=brief, foundation=foundation, proposal=proposal,
         expected_proposal_id=proposal.proposal_id or "",
         expected_planning_digest=proposal.planning_digest,
         expected_planning_input_digest=proposal.planning_input_digest or "",
@@ -404,7 +358,7 @@ def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
     assert result.revision.final_canonical_url is None
 
     workspace = build_new_page_canonical_document_workspace(
-        brief=brief, foundation=foundation, proposal=proposal, decisions=[approved]
+        brief=brief, foundation=foundation, proposal=proposal
     )
     assert workspace is not None
     stale_review = review_new_page_revision(
@@ -442,7 +396,6 @@ def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
         brief=brief,
         foundation=foundation,
         proposal=proposal,
-        decisions=[approved],
         revision_state=store.load_draft_revision_state(foundation.work_item_id),
     )
     assert projected is not None
@@ -470,11 +423,11 @@ def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
         )
 
 
-def test_new_page_generator_appends_only_the_exact_approved_plan(tmp_path) -> None:
-    brief, foundation, proposal, approved, output, _, _ = _new_page_append_context(tmp_path)
+def test_new_page_generator_appends_only_the_exact_generated_plan(tmp_path) -> None:
+    brief, foundation, proposal, output, _, _ = _new_page_append_context(tmp_path)
     store = ContentWorkflowStore(tmp_path / "generator.sqlite3")
     workspace = build_new_page_canonical_document_workspace(
-        brief=brief, foundation=foundation, proposal=proposal, decisions=[approved]
+        brief=brief, foundation=foundation, proposal=proposal
     )
     assert workspace is not None
 
@@ -489,7 +442,6 @@ def test_new_page_generator_appends_only_the_exact_approved_plan(tmp_path) -> No
         brief=brief,
         foundation=foundation,
         proposal=proposal,
-        decisions=[approved],
         workspace=workspace,
         request=ContentInitialDraftRequest(
             expected_proposal_id=proposal.proposal_id or "",
@@ -510,9 +462,9 @@ def test_new_page_generator_appends_only_the_exact_approved_plan(tmp_path) -> No
 
 
 def test_new_page_generator_rejects_stale_plan_before_starting_codex(tmp_path) -> None:
-    brief, foundation, proposal, approved, _, _, _ = _new_page_append_context(tmp_path)
+    brief, foundation, proposal, _, _, _ = _new_page_append_context(tmp_path)
     workspace = build_new_page_canonical_document_workspace(
-        brief=brief, foundation=foundation, proposal=proposal, decisions=[approved]
+        brief=brief, foundation=foundation, proposal=proposal
     )
     assert workspace is not None
 
@@ -525,7 +477,6 @@ def test_new_page_generator_rejects_stale_plan_before_starting_codex(tmp_path) -
         brief=brief,
         foundation=foundation,
         proposal=proposal,
-        decisions=[approved],
         workspace=workspace,
         request=ContentInitialDraftRequest(
             expected_proposal_id=proposal.proposal_id or "",

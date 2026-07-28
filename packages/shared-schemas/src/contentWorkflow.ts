@@ -3958,7 +3958,6 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   response_type: z.literal("content_new_page_canonical_document"),
   contract_version: z.literal("content_new_page_canonical_document_v2"),
   status: z.enum([
-    "review_required",
     "ready_for_document",
     "document_review_required",
     "document_approved",
@@ -3976,7 +3975,6 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   proposal_id: z.string().trim().min(1).nullable().optional(),
   planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
-  plan_review: ContentPlanningDecisionSchema.nullable().optional(),
   title: z.string().min(1),
   proposed_ia_location: z.string().trim().min(3),
   outline: z.array(ContentNewPageDocumentOutlineSectionSchema).default([]),
@@ -3996,20 +3994,8 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   public_source_url: z.null(),
   public_deployment_status: z.literal("not_confirmed"),
   safe_next_step: z.string().min(1)
-}).superRefine((workspace, context) => {
+}).strict().superRefine((workspace, context) => {
   const revision = workspace.canonical_revision;
-  const planReview = workspace.plan_review;
-  if (planReview && (
-    !workspace.proposal_id ||
-    !workspace.planning_digest ||
-    !workspace.planning_input_digest ||
-    planReview.work_item_id !== workspace.work_item_id ||
-    planReview.stage !== "scope" ||
-    planReview.planning_digest !== workspace.planning_digest ||
-    planReview.service_card_id !== workspace.service_card_id
-  )) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Plan review does not match the exact new-page workspace." });
-  }
   if (!revision) {
     if (
       workspace.revision_review ||
@@ -4020,7 +4006,6 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
       context.addIssue({ code: z.ZodIssueCode.custom, message: "Missing new-page revision cannot carry document lineage." });
     }
     if (
-      workspace.status !== "review_required" &&
       workspace.status !== "ready_for_document" &&
       workspace.status !== "blocked"
     ) {
@@ -4033,8 +4018,7 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
       if (
         workspace.proposal_id !== null ||
         workspace.planning_digest !== null ||
-        workspace.planning_input_digest !== null ||
-        planReview
+        workspace.planning_input_digest !== null
       ) {
         context.addIssue({ code: z.ZodIssueCode.custom, message: "Blocked new-page workspace cannot carry a current plan." });
       }

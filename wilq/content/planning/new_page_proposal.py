@@ -192,7 +192,7 @@ def _read_proposal(
             service_card_id=planning_input.confirmed_service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=content_planning_input_summary(planning_input),
-            safe_next_step="Przygotuj pierwszy plan i sprawdź go przed decyzją człowieka.",
+            safe_next_step="Przygotuj pierwszy plan z dokładnego briefu i foundation.",
         )
     return ContentPlanningProposalResponse(
         status="ready",
@@ -201,7 +201,7 @@ def _read_proposal(
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=content_planning_input_summary(planning_input),
         proposal=proposal,
-        safe_next_step="Sprawdź plan; tylko człowiek może go zatwierdzić.",
+        safe_next_step="Sprawdź strukturę i przygotuj pełny tekst z tej dokładnej wersji planu.",
     )
 
 
@@ -309,7 +309,7 @@ def _generate_proposal(
         runtime=(trace or ContentCodexRuntimeTrace(status="completed")).model_copy(
             update={"run_id": run.id}
         ),
-        safe_next_step="Sprawdź plan; tylko człowiek może go zatwierdzić.",
+        safe_next_step="Sprawdź strukturę i przygotuj pełny tekst z tej dokładnej wersji planu.",
     )
 
 

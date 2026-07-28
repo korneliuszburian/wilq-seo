@@ -22,7 +22,7 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
 )
 from wilq.content.workflow.new_page_revision import append_new_page_initial_revision
-from wilq.content.workflow.planning import ContentPlanningDecision, ContentPlanningProposal
+from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -34,7 +34,6 @@ def generate_new_page_initial_draft(
     brief: ContentNewPageBrief,
     foundation: ContentNewPagePlanningFoundation,
     proposal: ContentPlanningProposal,
-    decisions: list[ContentPlanningDecision],
     workspace: ContentNewPageCanonicalDocumentWorkspace,
     request: ContentInitialDraftRequest,
     client: CodexAppServerClientProtocol,
@@ -69,7 +68,6 @@ def generate_new_page_initial_draft(
             brief=brief,
             foundation=foundation,
             proposal=proposal,
-            decisions=decisions,
             expected_proposal_id=request.expected_proposal_id,
             expected_planning_digest=request.expected_planning_digest,
             expected_planning_input_digest=request.expected_planning_input_digest,
@@ -226,7 +224,7 @@ def _turn_request(
         untrusted_context=json.dumps(
             {
                 "brief": brief.model_dump(mode="json"),
-                "approved_plan": proposal.model_dump(mode="json"),
+                "generated_plan": proposal.model_dump(mode="json"),
                 "document_scope": [
                     item.section_id for item in draftable_planning_sections(proposal.sections)
                 ],
