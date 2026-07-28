@@ -16,6 +16,170 @@ from wilq.content.workflow.new_page import (
     build_new_page_brief,
     build_new_page_overlap_guard,
 )
+from wilq.content.workflow.new_page_document import (
+    ContentNewPageCanonicalDocumentWorkspace,
+)
+from wilq.content.workflow.revisions import (
+    ContentDraftRevisionConflict,
+    ContentDraftRevisionReviewResult,
+)
+
+
+def _review_workspace() -> ContentNewPageCanonicalDocumentWorkspace:
+    return ContentNewPageCanonicalDocumentWorkspace(
+        status="review_required",
+        work_item_id="content_work_item_new_page_review",
+        brief_id="content_new_page_brief_review",
+        brief_digest="a" * 64,
+        foundation_id="content_new_page_foundation_review",
+        service_card_id="knowledge_service_environment",
+        service_card_digest="b" * 64,
+        proposal_id="content_planning_proposal_review",
+        planning_digest="c" * 64,
+        planning_input_digest="d" * 64,
+        title="Dokumentacja środowiskowa inwestycji",
+        proposed_ia_location="Usługi → Dokumentacja środowiskowa",
+        safe_next_step="Sprawdź plan nowej strony przed zapisem decyzji.",
+    )
+
+
+def test_new_page_plan_review_returns_the_current_typed_workspace_on_conflict(
+    monkeypatch,
+) -> None:
+    workspace = _review_workspace()
+    monkeypatch.setattr(
+        new_page_router_module,
+        "_new_page_canonical_document_workspace",
+        lambda brief_id: workspace,
+    )
+    monkeypatch.setattr(
+        new_page_router_module,
+        "content_workflow_store",
+        lambda: (_ for _ in ()).throw(AssertionError("Conflict must not record review state.")),
+    )
+    app = FastAPI()
+    app.include_router(router)
+
+    response = TestClient(app).post(
+        f"/api/content/new-page-briefs/{workspace.brief_id}/planning-review",
+        json={
+            "expected_proposal_id": workspace.proposal_id,
+            "expected_planning_digest": "e" * 64,
+            "expected_planning_input_digest": workspace.planning_input_digest,
+            "decision": "approved",
+            "reviewed_by": "Wilku",
+            "checked_items": ["Zakres planu"],
+        },
+    )
+
+    assert response.status_code == 409
+    assert "detail" not in response.json()
+    parsed = ContentNewPageCanonicalDocumentWorkspace.model_validate(response.json())
+    assert parsed.proposal_id == workspace.proposal_id
+    assert parsed.planning_digest == workspace.planning_digest
+    assert parsed.planning_input_digest == workspace.planning_input_digest
+    assert app.openapi()["paths"][
+        "/api/content/new-page-briefs/{brief_id}/planning-review"
+    ]["post"]["responses"]["409"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ContentNewPageCanonicalDocumentWorkspace"
+    }
+
+
+def test_new_page_plan_review_records_only_an_exact_current_decision(monkeypatch) -> None:
+    workspace = _review_workspace()
+    recorded: list[tuple[object, object, object]] = []
+
+    class PlanningStore:
+        def record_planning_review(self, work_item_id, request, **kwargs):
+            recorded.append((work_item_id, request, kwargs))
+            return "created", None
+
+    monkeypatch.setattr(
+        new_page_router_module,
+        "_new_page_canonical_document_workspace",
+        lambda brief_id: workspace,
+    )
+    monkeypatch.setattr(new_page_router_module, "content_workflow_store", PlanningStore)
+    app = FastAPI()
+    app.include_router(router)
+
+    response = TestClient(app).post(
+        f"/api/content/new-page-briefs/{workspace.brief_id}/planning-review",
+        json={
+            "expected_proposal_id": workspace.proposal_id,
+            "expected_planning_digest": workspace.planning_digest,
+            "expected_planning_input_digest": workspace.planning_input_digest,
+            "decision": "approved",
+            "reviewed_by": "Wilku",
+            "checked_items": ["Zakres planu"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["proposal_id"] == workspace.proposal_id
+    assert len(recorded) == 1
+    work_item_id, recorded_request, record_kwargs = recorded[0]
+    assert work_item_id == workspace.work_item_id
+    assert recorded_request.expected_planning_digest == workspace.planning_digest
+    assert record_kwargs == {
+        "planning_digest": workspace.planning_digest,
+        "service_card_id": workspace.service_card_id,
+        "human_override_review_required": False,
+    }
+
+
+def test_new_page_revision_review_preserves_typed_current_revision_conflict(
+    monkeypatch,
+) -> None:
+    workspace = _review_workspace()
+    monkeypatch.setattr(
+        new_page_router_module,
+        "_new_page_canonical_document_workspace",
+        lambda brief_id: workspace,
+    )
+    monkeypatch.setattr(
+        new_page_router_module,
+        "review_new_page_revision",
+        lambda **_: ContentDraftRevisionReviewResult(
+            status="conflict",
+            conflict=ContentDraftRevisionConflict(
+                code="stale_revision",
+                current_revision_id="content_revision_current",
+                current_revision_digest="f" * 64,
+            ),
+        ),
+    )
+    app = FastAPI()
+    app.include_router(router)
+
+    response = TestClient(app).post(
+        f"/api/content/new-page-briefs/{workspace.brief_id}/draft-revisions/content_revision_old/review",
+        json={
+            "expected_revision_digest": "e" * 64,
+            "reviewed_by": "Wilku",
+            "decision": "approved",
+            "checked_items": ["Dokument"],
+            "evidence_ids": ["ev_service"],
+        },
+    )
+
+    assert response.status_code == 409
+    assert "detail" not in response.json()
+    assert response.json() == {
+        "status": "conflict",
+        "code": "stale_revision",
+        "current_revision_id": "content_revision_current",
+        "current_digest": "f" * 64,
+        "safe_next_step": (
+            "Ta wersja nie jest już najnowsza. Odśwież snapshot i sprawdź aktualną "
+            "wersję bez przenoszenia starej decyzji."
+        ),
+    }
+    assert app.openapi()["paths"][
+        "/api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review"
+    ]["post"]["responses"]["409"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ContentDraftRevisionConflictResponse"
+    }
 
 
 def test_new_page_brief_persists_without_a_public_url_and_requires_human_overlap_decision(
