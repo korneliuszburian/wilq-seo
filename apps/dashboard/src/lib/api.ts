@@ -13,12 +13,8 @@ import {
   AdsDiagnosticsResponseSchema,
   AhrefsDiagnosticsResponseSchema,
   CommandCenterResponseSchema,
-  ContentCodexSectionProposalRequestSchema,
-  ContentCodexSectionProposalResponseSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
-  ContentSemanticReviewRequestSchema,
-  ContentSemanticReviewResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentDecisionContextSchema,
   ContentSelectedWorkspaceSchema,
@@ -55,9 +51,7 @@ import {
   ContentPlanningProposalRequestSchema,
   ContentPlanningProposalResponseSchema,
   ContentServiceProfileResponseSchema,
-  ContentOpportunityEnrichmentResponseSchema,
   ContentInventoryCatalogResponseSchema,
-  ContentInventoryMaterialResponseSchema,
   ContentOperatorContextSchema,
   ContentWorkItemMeasurementWindowRequestSchema,
   ContentWorkItemMeasurementWindowResponseSchema,
@@ -65,7 +59,6 @@ import {
   ContentWorkItemMeasurementOutcomeResponseSchema,
   ContentWorkItemLearningProposalRequestSchema,
   ContentWorkItemLearningProposalResponseSchema,
-  ContentWorkItemQueueResponseSchema,
   ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
@@ -110,13 +103,8 @@ import {
   type AdsDiagnosticsResponse,
   type AhrefsDiagnosticsResponse,
   type CommandCenterResponse,
-  type ContentCodexSectionProposalRequest,
-  type ContentCodexSectionProposalResponse,
   type ContentInitialDraftRequest,
   type ContentInitialDraftResponse,
-  type ContentSemanticReview,
-  type ContentSemanticReviewRequest,
-  type ContentSemanticReviewResponse,
   type ContentDiagnosticsResponse,
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
@@ -164,10 +152,7 @@ import {
   type ContentPlanningProposalResponse,
   type ContentPlanningWorkspace,
   type ContentServiceProfileResponse,
-  type ContentOpportunityEnrichment,
-  type ContentOpportunityEnrichmentResponse,
   type ContentInventoryCatalogResponse,
-  type ContentInventoryMaterialResponse,
   type ContentOperatorContext,
   type ContentWorkItemMeasurementWindowRequest,
   type ContentWorkItemMeasurementWindowResponse,
@@ -175,9 +160,6 @@ import {
   type ContentWorkItemMeasurementOutcomeResponse,
   type ContentWorkItemLearningProposalRequest,
   type ContentWorkItemLearningProposalResponse,
-  type ContentWorkItemQueueCandidate,
-  type ContentWorkItemQueueResponse,
-  type ContentWorkItemServiceCandidate,
   type ConnectorRefreshRun,
   type ConnectorStatus,
   type DemandGenReadinessContract,
@@ -443,11 +425,6 @@ export function getContentOperatorContext(): Promise<ContentOperatorContext> {
   return apiGet("/api/content/operator-context", ContentOperatorContextSchema);
 }
 
-export function getContentWorkItemQueue(workItemId?: string): Promise<ContentWorkItemQueueResponse> {
-  const query = workItemId ? `?work_item_id=${encodeURIComponent(workItemId)}` : "";
-  return apiGet(`/api/content/work-items/queue${query}`, ContentWorkItemQueueResponseSchema);
-}
-
 export function getContentWorkItemDecisionContext(
   workItemId: string
 ): Promise<ContentDecisionContext> {
@@ -660,13 +637,6 @@ export function getContentInventoryCatalog(): Promise<ContentInventoryCatalogRes
   return apiGet("/api/content/inventory/catalog", ContentInventoryCatalogResponseSchema);
 }
 
-export function getContentInventoryMaterial(url: string): Promise<ContentInventoryMaterialResponse> {
-  return apiGet(
-    `/api/content/inventory/material?url=${encodeURIComponent(url)}`,
-    ContentInventoryMaterialResponseSchema
-  );
-}
-
 export function saveContentWorkItemDraftRevision(
   request: ContentDraftRevisionSaveRequest,
   workItemId: string
@@ -736,22 +706,6 @@ export function getContentWorkItemEditorialIntegrity(
   );
 }
 
-export function postContentWorkItemCodexSectionProposal(
-  request: ContentCodexSectionProposalRequest,
-  workItemId: string,
-  baseRevisionId: string
-): Promise<ContentCodexSectionProposalResponse> {
-  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(baseRevisionId)}/codex-proposal`;
-  const parsedRequest = ContentCodexSectionProposalRequestSchema.parse(request);
-  return apiPostWithConflict(
-    path,
-    ContentCodexSectionProposalResponseSchema,
-    ContentCodexSectionProposalResponseSchema,
-    parsedRequest,
-    CODEX_PROPOSAL_TIMEOUT_MS
-  );
-}
-
 export function postContentWorkItemInitialDraft(
   request: ContentInitialDraftRequest,
   workItemId: string
@@ -772,40 +726,6 @@ export function getContentWorkItemInitialDraft(
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/initial-draft`,
     ContentInitialDraftResponseSchema
-  );
-}
-
-export function getContentWorkItemSemanticReview(
-  workItemId: string,
-  revisionId: string
-): Promise<ContentSemanticReviewResponse> {
-  return apiGet(
-    `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/semantic-review`,
-    ContentSemanticReviewResponseSchema
-  );
-}
-
-export function postContentWorkItemSemanticReview(
-  request: ContentSemanticReviewRequest,
-  workItemId: string,
-  revisionId: string
-): Promise<ContentSemanticReviewResponse> {
-  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/semantic-review`;
-  return apiPostWithConflict(
-    path,
-    ContentSemanticReviewResponseSchema,
-    ContentSemanticReviewResponseSchema,
-    ContentSemanticReviewRequestSchema.parse(request),
-    CODEX_PROPOSAL_TIMEOUT_MS
-  );
-}
-
-export function getContentWorkItemEnrichment(
-  workItemId: string
-): Promise<ContentOpportunityEnrichmentResponse> {
-  return apiGet(
-    `/api/content/work-items/${encodeURIComponent(workItemId)}/enrichment`,
-    ContentOpportunityEnrichmentResponseSchema
   );
 }
 
@@ -1019,13 +939,8 @@ export type {
   ContentNewPagePlanningProposalRequest,
   ContentNewPagePlanningProposalWorkspace,
   ContentNewPageCanonicalDocumentWorkspace,
-  ContentCodexSectionProposalRequest,
-  ContentCodexSectionProposalResponse,
   ContentInitialDraftRequest,
   ContentInitialDraftResponse,
-  ContentSemanticReview,
-  ContentSemanticReviewRequest,
-  ContentSemanticReviewResponse,
   ContentDraftRevision,
   ContentDraftRevisionBinding,
   ContentDraftRevisionConflict,
@@ -1046,10 +961,7 @@ export type {
   ContentPlanningProposalResponse,
   ContentPlanningWorkspace,
   ContentServiceProfileResponse,
-  ContentOpportunityEnrichment,
-  ContentOpportunityEnrichmentResponse,
   ContentInventoryCatalogResponse,
-  ContentInventoryMaterialResponse,
   ContentOperatorContext,
   ContentWorkItemMeasurementWindowRequest,
   ContentWorkItemMeasurementWindowResponse,
@@ -1057,9 +969,6 @@ export type {
   ContentWorkItemMeasurementOutcomeResponse,
   ContentWorkItemLearningProposalRequest,
   ContentWorkItemLearningProposalResponse,
-  ContentWorkItemQueueCandidate,
-  ContentWorkItemQueueResponse,
-  ContentWorkItemServiceCandidate,
   ConnectorRefreshRun,
   ConnectorStatus,
   DemandGenReadinessContract,

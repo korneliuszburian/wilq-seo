@@ -17,7 +17,6 @@ import {
   getContentSelectedWorkspace,
   getContentInventoryCatalog,
   getContentOperatorContext,
-  getContentWorkItemQueue,
   getContentDiagnostics,
   postContentWorkItemInitialDraft,
   saveContentWorkItemDraftRevision,
@@ -32,7 +31,6 @@ import {
   type ContentInventoryCatalogResponse,
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
-  type ContentWorkItemQueueResponse,
 } from "../lib/api";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
 vi.mock("../lib/api", async (importOriginal) => {
@@ -54,7 +52,6 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentSelectedWorkspace: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
-    getContentWorkItemQueue: vi.fn(),
     getContentDiagnostics: vi.fn(),
     postContentWorkItemInitialDraft: vi.fn(),
     saveContentWorkItemDraftRevision: vi.fn(),
@@ -83,7 +80,6 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(contentDecisionContext());
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
-    vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentDiagnostics).mockResolvedValue({
       marketer_decision: null
     } as never);
@@ -165,7 +161,6 @@ describe("ContentWorkflowSurface", () => {
   it.each(["review=1", "text=1&review=1"])(
     "opens the exact review route when navigation queue reads reject (%s)",
     async (reviewSearch) => {
-      vi.mocked(getContentWorkItemQueue).mockRejectedValue(new Error("Kolejka niedostępna"));
       const revision = savedFullDraftRevision();
       vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(contentDocumentWorkspace(revision)));
 
@@ -182,7 +177,6 @@ describe("ContentWorkflowSurface", () => {
       expect(await screen.findByTestId("content-review-workspace")).toBeInTheDocument();
       expect(screen.queryByText("Nie udało się odczytać aktualnego workflow.")).not.toBeInTheDocument();
       expect(getContentSelectedWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
-      expect(getContentWorkItemQueue).not.toHaveBeenCalled();
       expect(getContentWorkItemDecisionContext).not.toHaveBeenCalled();
       expect(getContentWorkItemInitialDraft).not.toHaveBeenCalled();
       expect(getContentDiagnostics).not.toHaveBeenCalled();
@@ -210,7 +204,9 @@ describe("ContentWorkflowSurface", () => {
   it("keeps an exact missing review route separate from a warm catalogue entry", async () => {
     vi.mocked(getContentSelectedWorkspace).mockRejectedValue(new Error("Nie znaleziono strony"));
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
-    client.setQueryData(["content-workflow", "queue", "catalog"], contentQueueResponse());
+    client.setQueryData(["content-workflow", "queue", "catalog"], {
+      candidates: [{ work_item_id: "content_work_item_bdo" }]
+    });
 
     render(
       <App
@@ -224,7 +220,6 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByTestId("content-document-workspace-error")).toBeInTheDocument();
     expect(getContentSelectedWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
-    expect(getContentWorkItemQueue).not.toHaveBeenCalled();
     expect(screen.queryByTestId("content-review-workspace")).not.toBeInTheDocument();
   });
 
@@ -673,155 +668,6 @@ function contentInventoryCatalog(): ContentInventoryCatalogResponse {
       public_sitemap_truncated: false,
       caveat: ""
     }
-  };
-}
-
-function contentQueueResponse(): ContentWorkItemQueueResponse {
-  return {
-    queue_status: "ready",
-    candidate_count: 3,
-    actionable_candidate_count: 2,
-    minimum_actionable_candidate_count: 3,
-    freshness_assessment: contentFreshnessAssessment(),
-    operator_summary:
-      "Gotowe do pracy: 2 z 3 tematów. Wybierz stronę z adresem, źródłami i następnym krokiem.",
-    candidates: [
-      {
-        work_item_id: "content_work_item_bdo",
-        decision_id: "decision_bdo",
-        title: "BDO dla firm",
-        topic: "BDO dla firm",
-        priority: 1,
-        recommended_mode: "refresh",
-        recommended_mode_label: "odśwież istniejącą treść",
-        status_label: "gotowe do planu",
-        reason: "Istniejący adres ma popyt z GSC i powinien zostać odświeżony.",
-        evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-        source_connectors: ["google_search_console", "wordpress_ekologus"],
-        source_connector_labels: ["Google Search Console", "WordPress Ekologus"],
-        action_ids: ["act_prepare_content_refresh_queue"],
-        action_summary_label: "1 akcja do sprawdzenia",
-        source_public_url: "https://ekologus.pl/bdo/",
-        final_canonical_url: "https://ekologus.pl/bdo/",
-        intended_final_url: "https://ekologus.pl/bdo/",
-        preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
-        preflight_status: "plan_allowed",
-        preflight_status_label: "można planować",
-        duplicate_canonical_risk_summary: "Brama adresu i duplikacji jest sprawdzona.",
-        measurement_readiness: {
-          status: "ready_to_plan",
-          label: "pomiar do zaplanowania",
-          reason: "WILQ może przygotować okno pomiaru po szkicu.",
-          source_connectors: ["google_search_console"]
-        },
-        page_inventory: {
-          title_or_h1: "BDO dla firm",
-          section_count: 2,
-          section_headings: ["Kogo dotyczy BDO", "Jak przygotować dokumenty"],
-          section_inventory_status: "available",
-          content_inventory_status: "available",
-          acf_section_inventory_status: "missing",
-          acf_section_headings: []
-        },
-        safe_next_step: "Przejdź do workflow wybranego tematu.",
-        freshness_assessment: contentFreshnessAssessment(),
-        blockers: []
-      },
-      {
-        work_item_id: "content_work_item_green_deal",
-        decision_id: "decision_green_deal",
-        title: "Zielony Ład dla firm",
-        topic: "Zielony Ład dla firm",
-        priority: 2,
-        recommended_mode: "merge",
-        recommended_mode_label: "scal z istniejącą treścią",
-        status_label: "gotowe do planu",
-        reason: "Temat ma powiązany stary URL i wymaga scalania zamiast duplikacji.",
-        evidence_ids: ["ev_gsc_green_deal", "ev_wp_green_deal"],
-        source_connectors: ["google_search_console", "wordpress_ekologus"],
-        source_connector_labels: ["Google Search Console", "WordPress Ekologus"],
-        action_ids: ["act_prepare_content_refresh_queue"],
-        action_summary_label: "1 akcja do sprawdzenia",
-        source_public_url: "https://ekologus.pl/zielony-lad/",
-        final_canonical_url: "https://ekologus.pl/zielony-lad/",
-        intended_final_url: "https://ekologus.pl/zielony-lad/",
-        preview_url: "https://ekologus.dev.proudsite.pl/zielony-lad/",
-        preflight_status: "plan_allowed",
-        preflight_status_label: "można planować",
-        duplicate_canonical_risk_summary: "Sprawdź podobną istniejącą treść przed szkicem.",
-        measurement_readiness: {
-          status: "ready_to_plan",
-          label: "pomiar do zaplanowania",
-          reason: "WILQ może przygotować okno pomiaru po szkicu.",
-          source_connectors: ["google_search_console"]
-        },
-        safe_next_step: "Przejdź do workflow wybranego tematu.",
-        freshness_assessment: contentFreshnessAssessment(),
-        blockers: []
-      },
-      {
-        work_item_id: "content_work_item_ahrefs_gap",
-        decision_id: "decision_ahrefs_gap",
-        title: "Luka Ahrefs bez finalnego adresu",
-        topic: "Luka Ahrefs bez finalnego adresu",
-        priority: 3,
-        recommended_mode: "block",
-        recommended_mode_label: "wstrzymaj — najpierw sprawdź",
-        status_label: "wymaga sprawdzenia przed pisaniem",
-        reason: "Nie można przygotować workflow bez finalnego adresu kanonicznego.",
-        evidence_ids: ["ev_ahrefs_gap"],
-        source_connectors: ["ahrefs"],
-        source_connector_labels: ["Ahrefs"],
-        action_ids: [],
-        action_summary_label: "brak akcji",
-        source_public_url: null,
-        final_canonical_url: null,
-        intended_final_url: null,
-        preview_url: "https://ekologus.dev.proudsite.pl/luka/",
-        preflight_status: "blocked",
-        preflight_status_label: "zablokowane",
-        duplicate_canonical_risk_summary:
-          "Brak publicznego adresu blokuje ocenę duplikacji i canonical.",
-        measurement_readiness: {
-          status: "blocked",
-          label: "pomiar zablokowany",
-          reason: "Brak publicznego finalnego adresu kanonicznego.",
-          source_connectors: []
-        },
-        safe_next_step: "Uzupełnij publiczny adres docelowy albo zostaw temat w review.",
-        freshness_assessment: contentFreshnessAssessment(),
-        blockers: [
-          {
-            code: "missing_final_canonical",
-            label: "Brakuje finalnego adresu",
-            reason: "Nie można przygotować workflow bez finalnego adresu kanonicznego.",
-            next_step: "Uzupełnij publiczny adres docelowy albo zostaw temat w review.",
-            decision_id: "decision_ahrefs_gap",
-            evidence_ids: ["ev_ahrefs_gap"],
-            source_connectors: ["ahrefs"]
-          }
-        ]
-      }
-    ],
-    blockers: [],
-    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo", "ev_gsc_green_deal", "ev_wp_green_deal"],
-    source_connectors: ["google_search_console", "wordpress_ekologus", "ahrefs"]
-  };
-}
-
-function contentFreshnessAssessment() {
-  return {
-    state: "fresh" as const,
-    state_label: "dane treści świeże",
-    checked_at: "2026-07-11T08:00:00Z",
-    stale_after_hours: 48,
-    requires_refresh: false,
-    missing_connector_ids: [],
-    blocked_connector_ids: [],
-    stale_connector_ids: [],
-    connector_labels_requiring_refresh: [],
-    summary: "Podstawowe dane treści są świeże.",
-    next_step: "Można przejść do decyzji contentowej."
   };
 }
 
