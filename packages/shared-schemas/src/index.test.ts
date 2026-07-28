@@ -3843,6 +3843,14 @@ describe("Content work item workflow schemas", () => {
     };
 
     expect(ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse(pending).success).toBe(true);
+    for (const blankProposalId of ["", "   "]) {
+      expect(
+        ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
+          ...pending,
+          proposal_id: blankProposalId
+        }).success
+      ).toBe(false);
+    }
     expect(
       ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
         ...pending,
@@ -3877,6 +3885,14 @@ describe("Content work item workflow schemas", () => {
     }
     const ready = { ...pending, status: "ready_for_document" as const, plan_review: approvedPlanReview };
     expect(ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse(ready).success).toBe(true);
+    for (const blankProposalId of ["", "   "]) {
+      expect(
+        ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
+          ...ready,
+          proposal_id: blankProposalId
+        }).success
+      ).toBe(false);
+    }
     expect(
       ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
         ...ready,
