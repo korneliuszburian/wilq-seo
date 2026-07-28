@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from wilq.actions import service as action_service
@@ -13,6 +15,9 @@ from wilq.content.workflow.new_page_draft_action import (
     create_new_page_draft_action,
     load_new_page_draft_action,
     persist_new_page_draft_action,
+)
+from wilq.content.workflow.new_page_draft_payload import (
+    build_new_page_dev_draft_write_payload,
 )
 from wilq.schemas import (
     ActionApplyRequest,
@@ -169,3 +174,42 @@ def test_new_page_apply_binding_must_match_the_persisted_action() -> None:
         ActionApplyRequest(confirm=True, confirmed_by="Wilku", new_page_draft=changed),
     )
     assert [blocker.code for blocker in blockers] == ["new_page_revision_binding_mismatch"]
+
+
+def test_new_page_draft_payload_is_exact_and_create_only() -> None:
+    action = create_new_page_draft_action(_ready_readiness(), _command())
+    binding = ActionApplyRequest(
+        new_page_draft=action.payload["new_page_draft_binding"]
+    ).new_page_draft
+    assert binding is not None
+    revision = SimpleNamespace(
+        document_kind="new_page",
+        revision_id=binding.revision_id,
+        content_digest=binding.revision_digest,
+        work_item_id=binding.work_item_id,
+        title="Dokumentacja środowiskowa",
+        new_page_document_identity=SimpleNamespace(
+            brief_id=binding.brief_id,
+            brief_digest=binding.brief_digest,
+            foundation_id=binding.foundation_id,
+            service_card_id=binding.service_card_id,
+            service_card_digest=binding.service_card_digest,
+        ),
+        page_assets=SimpleNamespace(h1="Dokumentacja", lead="Pomagamy inwestorom."),
+        sections=[
+            SimpleNamespace(heading="Zakres", body_markdown="Opis zakresu.", section_id="s1")
+        ],
+        faq=[],
+        cta_blocks=[],
+        internal_links=[],
+    )
+
+    payload = build_new_page_dev_draft_write_payload(revision, binding)
+    assert payload.endpoint == "pages"
+    assert payload.post_status == "draft"
+    assert payload.create_only is True
+    assert payload.publish_allowed is False
+    assert "<h1>Dokumentacja</h1>" in payload.content_html
+    revision.content_digest = "f" * 64
+    with pytest.raises(ValueError, match="nie pasuje"):
+        build_new_page_dev_draft_write_payload(revision, binding)
