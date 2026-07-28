@@ -13,6 +13,11 @@ from wilq.content.workflow.planning import (
     ContentPlanningProposal,
     ContentPlanningReviewRequest,
 )
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionReview,
+    ContentDraftRevisionState,
+)
 
 
 class ContentNewPageDocumentOutlineSection(BaseModel):
@@ -37,10 +42,19 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
     response_type: Literal["content_new_page_canonical_document"] = (
         "content_new_page_canonical_document"
     )
-    contract_version: Literal["content_new_page_canonical_document_v1"] = (
-        "content_new_page_canonical_document_v1"
+    contract_version: Literal["content_new_page_canonical_document_v2"] = (
+        "content_new_page_canonical_document_v2"
     )
-    status: Literal["review_required", "ready_for_document", "blocked"]
+    status: Literal[
+        "review_required",
+        "ready_for_document",
+        "document_review_required",
+        "document_approved",
+        "document_needs_changes",
+        "document_rejected",
+        "document_deferred",
+        "blocked",
+    ]
     work_item_id: str = Field(min_length=1)
     brief_id: str = Field(min_length=1)
     brief_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -54,7 +68,13 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
     title: str = Field(min_length=1)
     proposed_ia_location: str = Field(min_length=3)
     outline: list[ContentNewPageDocumentOutlineSection] = Field(default_factory=list)
-    document_status: Literal["not_created"] = "not_created"
+    document_status: Literal[
+        "not_created", "unreviewed", "approved", "needs_changes", "rejected", "deferred"
+    ] = "not_created"
+    canonical_revision: ContentDraftRevision | None = None
+    revision_review: ContentDraftRevisionReview | None = None
+    assigned_source_material_ids: list[str] = Field(default_factory=list)
+    assigned_knowledge_card_ids: list[str] = Field(default_factory=list)
     public_source_status: Literal["not_applicable"] = "not_applicable"
     public_source_url: None = None
     public_deployment_status: Literal["not_confirmed"] = "not_confirmed"
@@ -100,6 +120,7 @@ def build_new_page_canonical_document_workspace(
     foundation: ContentNewPagePlanningFoundation | None,
     proposal: ContentPlanningProposal | None,
     decisions: list[ContentPlanningDecision],
+    revision_state: ContentDraftRevisionState | None = None,
 ) -> ContentNewPageCanonicalDocumentWorkspace | None:
     """Project one exact plan; a missing or mismatched plan remains fail-closed."""
 
@@ -109,8 +130,16 @@ def build_new_page_canonical_document_workspace(
         return _blocked_workspace(brief, foundation)
     review = _scope_review_for(proposal, decisions)
     approved = review is not None and review.decision == "approved"
+    revision = _current_revision(revision_state, brief, foundation, proposal)
+    if (
+        revision_state is not None
+        and revision_state.latest_revision is not None
+        and revision is None
+    ):
+        return _blocked_workspace(brief, foundation)
+    document_status = "not_created" if revision is None else revision_state.status
     return ContentNewPageCanonicalDocumentWorkspace(
-        status="ready_for_document" if approved else "review_required",
+        status=_workspace_status(approved, document_status),
         work_item_id=foundation.work_item_id,
         brief_id=brief.brief_id,
         brief_digest=brief.brief_digest,
@@ -131,11 +160,12 @@ def build_new_page_canonical_document_workspace(
             )
             for section in proposal.sections
         ],
-        safe_next_step=(
-            "Przygotuj pierwszą immutable rewizję wyłącznie z tego zatwierdzonego planu."
-            if approved
-            else "Sprawdź plan i zapisz decyzję człowieka przed przygotowaniem dokumentu."
-        ),
+        document_status=document_status,
+        canonical_revision=revision,
+        revision_review=None if revision is None else revision_state.latest_review,
+        assigned_source_material_ids=([] if revision is None else revision.source_material_ids),
+        assigned_knowledge_card_ids=([] if revision is None else revision.knowledge_card_ids),
+        safe_next_step=_next_step(approved, document_status),
     )
 
 
@@ -198,6 +228,63 @@ def _scope_review_for(
         ),
         None,
     )
+
+
+def _current_revision(
+    state: ContentDraftRevisionState | None,
+    brief: ContentNewPageBrief,
+    foundation: ContentNewPagePlanningFoundation,
+    proposal: ContentPlanningProposal,
+) -> ContentDraftRevision | None:
+    revision = None if state is None else state.latest_revision
+    identity = None if revision is None else revision.new_page_document_identity
+    if revision is None:
+        return None
+    if not (
+        revision.document_kind == "new_page"
+        and revision.final_canonical_url is None
+        and identity is not None
+        and revision.planning_digest == proposal.planning_digest
+        and revision.planning_input_digest == proposal.planning_input_digest
+        and identity.work_item_id == foundation.work_item_id
+        and identity.brief_id == brief.brief_id
+        and identity.brief_digest == brief.brief_digest
+        and identity.foundation_id == foundation.foundation_id
+        and identity.service_card_id == foundation.service_card_id
+        and identity.service_card_digest == foundation.service_card_digest
+        and identity.proposed_ia_location == brief.proposed_ia_location
+    ):
+        return None
+    return revision
+
+
+def _workspace_status(
+    plan_approved: bool,
+    document_status: str,
+) -> str:
+    if document_status == "not_created":
+        return "ready_for_document" if plan_approved else "review_required"
+    return {
+        "unreviewed": "document_review_required",
+        "approved": "document_approved",
+        "needs_changes": "document_needs_changes",
+        "rejected": "document_rejected",
+        "deferred": "document_deferred",
+    }[document_status]
+
+
+def _next_step(plan_approved: bool, document_status: str) -> str:
+    if document_status == "not_created":
+        return (
+            "Przygotuj pierwszą immutable rewizję wyłącznie z tego zatwierdzonego planu."
+            if plan_approved
+            else "Sprawdź plan i zapisz decyzję człowieka przed przygotowaniem dokumentu."
+        )
+    if document_status == "unreviewed":
+        return "Sprawdź dokładną rewizję dokumentu i zapisz decyzję człowieka."
+    if document_status == "approved":
+        return "Dokument ma dokładne review; delivery pozostaje osobnym, nieuruchomionym etapem."
+    return "Sprawdź uwagi do rewizji przed przygotowaniem kolejnej immutable wersji."
 
 
 __all__ = [

@@ -296,6 +296,20 @@ def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
     assert review.status == "created"
     assert review.review is not None
     assert review.review.revision_id == result.revision.revision_id
+    projected = build_new_page_canonical_document_workspace(
+        brief=brief,
+        foundation=foundation,
+        proposal=proposal,
+        decisions=[approved],
+        revision_state=store.load_draft_revision_state(foundation.work_item_id),
+    )
+    assert projected is not None
+    assert projected.status == "document_approved"
+    assert projected.document_status == "approved"
+    assert projected.canonical_revision == result.revision
+    assert projected.revision_review == review.review
+    assert projected.public_source_status == "not_applicable"
+    assert projected.public_source_url is None
     with pytest.raises(ValueError, match="outside the exact"):
         review_new_page_revision(
             workspace=workspace,

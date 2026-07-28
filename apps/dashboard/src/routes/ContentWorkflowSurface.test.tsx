@@ -469,7 +469,7 @@ describe("ContentWorkflowSurface", () => {
         work_item_id: revision.work_item_id,
         revision_id: revision.revision_id,
         content_digest: revision.content_digest,
-        final_canonical_url: revision.final_canonical_url,
+        final_canonical_url: revision.final_canonical_url ?? "https://ekologus.pl/bdo/",
         evidence_ids: uniqueTestEvidence(revision),
         source_material_ids: revision.source_material_ids,
         knowledge_card_ids: revision.knowledge_card_ids,
@@ -1608,6 +1608,7 @@ function savedDraftRevision(): NonNullable<
     final_canonical_url: "https://ekologus.pl/bdo/",
     source_material_ids: [],
     knowledge_card_ids: [],
+    document_kind: "refresh_existing",
     title: workspace.editor_title,
     sections: workspace.editor_sections.map((section, index) => ({
       ...section,

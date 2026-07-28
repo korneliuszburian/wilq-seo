@@ -2470,7 +2470,7 @@ export const ContentDraftRevisionSchema = z.object({
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
   document_kind: z.enum(["refresh_existing", "new_page"]).default("refresh_existing"),
-  final_canonical_url: z.string().nullable().optional(),
+  final_canonical_url: z.string().nullable().default(null),
   new_page_document_identity: ContentNewPageDocumentIdentitySchema.nullable().optional(),
   title: z.string().refine((value) => value.trim().length > 0),
   page_assets: ContentDraftRevisionPageAssetsSchema.nullable().optional(),
@@ -3782,8 +3782,17 @@ export const ContentNewPageDocumentOutlineSectionSchema = z.object({
 
 export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   response_type: z.literal("content_new_page_canonical_document"),
-  contract_version: z.literal("content_new_page_canonical_document_v1"),
-  status: z.enum(["review_required", "ready_for_document", "blocked"]),
+  contract_version: z.literal("content_new_page_canonical_document_v2"),
+  status: z.enum([
+    "review_required",
+    "ready_for_document",
+    "document_review_required",
+    "document_approved",
+    "document_needs_changes",
+    "document_rejected",
+    "document_deferred",
+    "blocked"
+  ]),
   work_item_id: z.string().min(1),
   brief_id: z.string().min(1),
   brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
@@ -3797,7 +3806,18 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   title: z.string().min(1),
   proposed_ia_location: z.string().trim().min(3),
   outline: z.array(ContentNewPageDocumentOutlineSectionSchema).default([]),
-  document_status: z.literal("not_created"),
+  document_status: z.enum([
+    "not_created",
+    "unreviewed",
+    "approved",
+    "needs_changes",
+    "rejected",
+    "deferred"
+  ]),
+  canonical_revision: ContentDraftRevisionSchema.nullable().optional(),
+  revision_review: ContentDraftRevisionReviewSchema.nullable().optional(),
+  assigned_source_material_ids: z.array(z.string()).default([]),
+  assigned_knowledge_card_ids: z.array(z.string()).default([]),
   public_source_status: z.literal("not_applicable"),
   public_source_url: z.null(),
   public_deployment_status: z.literal("not_confirmed"),
@@ -4487,6 +4507,9 @@ export type ContentNewPageDocumentIdentity = z.infer<
 >;
 export type ContentNewPagePlanningProposalRequest = z.input<
   typeof ContentNewPagePlanningProposalRequestSchema
+>;
+export type ContentNewPageCanonicalDocumentWorkspace = z.infer<
+  typeof ContentNewPageCanonicalDocumentWorkspaceSchema
 >;
 export type ContentNewPagePlanningProposalWorkspace = z.infer<
   typeof ContentNewPagePlanningProposalWorkspaceSchema

@@ -336,6 +336,11 @@ def _new_page_canonical_document_workspace(
             if foundation is None
             else content_workflow_store().load_planning_decisions(foundation.work_item_id)
         ),
+        revision_state=(
+            None
+            if foundation is None
+            else content_workflow_store().load_draft_revision_state(foundation.work_item_id)
+        ),
     )
     if workspace is None:
         raise HTTPException(

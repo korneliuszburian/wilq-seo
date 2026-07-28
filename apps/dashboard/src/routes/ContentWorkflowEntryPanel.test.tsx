@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageFoundation, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPagePlanningProposal, type ContentNewPageBriefWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageFoundation, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPagePlanningProposal, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, createContentNewPageFoundation: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPagePlanningProposal: vi.fn() };
+  return { ...actual, createContentNewPageFoundation: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPagePlanningProposal: vi.fn() };
 });
 
 const entry: ContentWorkflowEntryResponse = {
@@ -142,6 +142,7 @@ describe("ContentWorkflowEntryPanel", () => {
       }
     }));
     vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue(newPagePlanningWorkspace());
+    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(canonicalDocumentWorkspace());
     vi.mocked(createContentNewPagePlanningProposal).mockResolvedValue(newPagePlanningWorkspace({ proposal_status: { ...newPagePlanningWorkspace().proposal_status!, status: "generating", safe_next_step: "Plan jest przygotowywany." } }));
 
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
@@ -149,6 +150,9 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(await screen.findByTestId("new-page-planning-ready")).toBeInTheDocument();
     expect(screen.getByText(/nie przypisuje tej nowej stronie starego URL-a/i)).toBeInTheDocument();
     expect(getContentNewPagePlanningProposal).toHaveBeenCalledWith("content_new_page_brief_test");
+    expect(await screen.findByTestId("new-page-canonical-document")).toBeInTheDocument();
+    expect(screen.getByText("Nie dotyczy — to nowa strona.")).toBeInTheDocument();
+    expect(getContentNewPageCanonicalDocument).toHaveBeenCalledWith("content_new_page_brief_test");
     expect(createContentNewPagePlanningProposal).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Przygotuj plan" }));
@@ -196,6 +200,36 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(screen.queryByText("Nie znaleziono strony z bezpośrednim pokryciem. Poniżej są dowody z katalogu sprawdzonego dla tego briefu.")).not.toBeInTheDocument();
   });
 });
+
+function canonicalDocumentWorkspace(): ContentNewPageCanonicalDocumentWorkspace {
+  return {
+    response_type: "content_new_page_canonical_document",
+    contract_version: "content_new_page_canonical_document_v2",
+    status: "ready_for_document",
+    work_item_id: "content_work_item_new_page_test",
+    brief_id: "content_new_page_brief_test",
+    brief_digest: "a".repeat(64),
+    foundation_id: "content_new_page_foundation_test",
+    service_card_id: "service_environment",
+    service_card_digest: "c".repeat(64),
+    proposal_id: "content_planning_proposal_test",
+    planning_digest: "b".repeat(64),
+    planning_input_digest: "d".repeat(64),
+    plan_review: null,
+    title: "Audyt środowiskowy dla inwestycji",
+    proposed_ia_location: "Usługi → Audyt środowiskowy",
+    outline: [],
+    document_status: "not_created",
+    canonical_revision: null,
+    revision_review: null,
+    assigned_source_material_ids: [],
+    assigned_knowledge_card_ids: [],
+    public_source_status: "not_applicable",
+    public_source_url: null,
+    public_deployment_status: "not_confirmed",
+    safe_next_step: "Przygotuj pierwszą immutable rewizję."
+  };
+}
 
 function savedBriefWorkspace(
   overlap: Partial<ContentNewPageBriefWorkspace["overlap_guard"]> = {},

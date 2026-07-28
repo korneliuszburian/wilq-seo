@@ -214,6 +214,22 @@ function ContentWorkflowRouteState({
   onReturnToText: (workItemId: string) => void;
 }) {
   if (!selectedWorkItemId) {
+    if (newPageOpen) {
+      return (
+        <ContentWorkflowEntryPanel
+          entry={entry.data ?? null}
+          inventory={inventory.data ?? null}
+          browseInventory={browseInventory}
+          newPageOpen={newPageOpen}
+          newPageId={newPageId}
+          onBrowseInventory={onBrowseInventory}
+          onCloseSecondaryView={onCloseEntrySecondaryView}
+          onOpenNewPage={onOpenNewPage}
+          onNewPageBriefSaved={onNewPageBriefSaved}
+          onSelectWorkItem={onSelectWorkItem}
+        />
+      );
+    }
     if (entry.isLoading) return <ContentWorkflowEntryPending />;
     if (entry.error || !entry.data) {
       return <ContentWorkflowEntryFailure onRetry={() => void entry.refetch()} />;
