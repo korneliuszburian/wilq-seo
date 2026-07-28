@@ -55,8 +55,8 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
     response_type: Literal["content_new_page_canonical_document"] = (
         "content_new_page_canonical_document"
     )
-    contract_version: Literal["content_new_page_canonical_document_v2"] = (
-        "content_new_page_canonical_document_v2"
+    contract_version: Literal["content_new_page_canonical_document_v3"] = (
+        "content_new_page_canonical_document_v3"
     )
     status: Literal[
         "ready_for_document",

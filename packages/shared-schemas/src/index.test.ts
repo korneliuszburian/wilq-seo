@@ -4049,7 +4049,7 @@ describe("Content work item workflow schemas", () => {
   it("discriminates new-page workspace status from the exact generated-plan identity", () => {
     const pending = {
       response_type: "content_new_page_canonical_document" as const,
-      contract_version: "content_new_page_canonical_document_v2" as const,
+      contract_version: "content_new_page_canonical_document_v3" as const,
       status: "ready_for_document" as const,
       work_item_id: "content_work_item_new_page",
       brief_id: "content_new_page_brief",

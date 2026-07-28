@@ -450,7 +450,7 @@ describe("ContentWorkflowEntryPanel", () => {
 function canonicalDocumentWorkspace(): ContentNewPageCanonicalDocumentWorkspace {
   return {
     response_type: "content_new_page_canonical_document",
-    contract_version: "content_new_page_canonical_document_v2",
+    contract_version: "content_new_page_canonical_document_v3",
     status: "ready_for_document",
     work_item_id: "content_work_item_new_page_test",
     brief_id: "content_new_page_brief_test",

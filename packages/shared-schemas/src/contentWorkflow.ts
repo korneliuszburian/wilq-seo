@@ -3956,7 +3956,7 @@ export const ContentNewPageDocumentReviewPrerequisiteConflictSchema = z.object({
 
 export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   response_type: z.literal("content_new_page_canonical_document"),
-  contract_version: z.literal("content_new_page_canonical_document_v2"),
+  contract_version: z.literal("content_new_page_canonical_document_v3"),
   status: z.enum([
     "ready_for_document",
     "document_review_required",
