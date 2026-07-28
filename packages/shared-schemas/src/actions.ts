@@ -16,6 +16,21 @@ export const ContentDraftRevisionBindingSchema = z
   })
   .strict();
 
+export const ContentNewPageDraftBindingSchema = z
+  .object({
+    work_item_id: z.string().min(1),
+    brief_id: z.string().min(1),
+    brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    foundation_id: z.string().min(1),
+    service_card_id: z.string().min(1),
+    service_card_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    revision_id: z.string().min(1),
+    revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    authoring_profile_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    content_type: z.enum(["page", "post"])
+  })
+  .strict();
+
 export const ActionWordPressDraftApplyBlockerSchema = z.object({
   code: z.string().min(1),
   label: z.string().min(1),
@@ -414,11 +429,22 @@ export const ActionImpactCheckResultSchema = z.object({
   review_gate: ActionReviewGateSchema
 });
 
-export const ActionApplyRequestSchema = z.object({
-  confirm: z.boolean(),
-  confirmed_by: z.string().min(1),
-  wordpress_draft: ActionWordPressDraftApplyInputSchema.optional()
-});
+export const ActionApplyRequestSchema = z
+  .object({
+    confirm: z.boolean(),
+    confirmed_by: z.string().min(1),
+    wordpress_draft: ActionWordPressDraftApplyInputSchema.optional(),
+    new_page_draft: ContentNewPageDraftBindingSchema.optional()
+  })
+  .superRefine((value, context) => {
+    if (value.wordpress_draft && value.new_page_draft) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Apply cannot mix legacy and new-page draft bindings.",
+        path: ["new_page_draft"]
+      });
+    }
+  });
 
 export type ActionPreviewCardViewModel = z.infer<typeof ActionPreviewCardViewModelSchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
