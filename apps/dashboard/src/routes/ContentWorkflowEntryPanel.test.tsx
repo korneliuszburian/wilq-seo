@@ -190,10 +190,10 @@ describe("ContentWorkflowEntryPanel", () => {
 
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_no_conflict" });
 
-    await screen.findByText("Wybierz usługę do planu");
+    await screen.findByText("Wybierz wiedzę dla tekstu");
     expect(screen.queryByLabelText("Potwierdza")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Usługa"), { target: { value: "service_environment" } });
-    fireEvent.click(screen.getByRole("button", { name: "Użyj tej usługi do planu" }));
+    fireEvent.change(screen.getByLabelText("Wiedza o usłudze"), { target: { value: "service_environment" } });
+    fireEvent.click(screen.getByRole("button", { name: "Użyj tej wiedzy do tekstu" }));
 
     await waitFor(() => expect(createContentNewPageFoundation).toHaveBeenCalledWith("content_new_page_brief_test", {
       expected_brief_digest: "a".repeat(64),
@@ -289,6 +289,8 @@ describe("ContentWorkflowEntryPanel", () => {
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
 
     fireEvent.click(await screen.findByRole("button", { name: "Przygotuj pierwszą wersję" }));
+
+    expect(screen.getByText("Nie zatwierdzasz tu planu. Nie publikuje to strony ani nie tworzy szkicu WordPressa.")).toBeInTheDocument();
 
     await waitFor(() => expect(createContentNewPageInitialDraft).toHaveBeenCalledWith("content_new_page_brief_test", {
       expected_proposal_id: "content_planning_proposal_test",
@@ -461,7 +463,6 @@ function canonicalDocumentWorkspace(): ContentNewPageCanonicalDocumentWorkspace 
     proposal_id: "content_planning_proposal_test",
     planning_digest: "b".repeat(64),
     planning_input_digest: "d".repeat(64),
-    plan_review: null,
     title: "Audyt środowiskowy dla inwestycji",
     proposed_ia_location: "Usługi → Audyt środowiskowy",
     outline: [],

@@ -7,7 +7,7 @@ import {
   getContentWorkItemPlanningProposal,
   postContentWorkItemInitialDraft
 } from "../lib/api";
-import { ContentPlanningPlanReview } from "./ContentPlanningPlanReview";
+import { ContentPlanningDraftStart } from "./ContentPlanningDraftStart";
 
 vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
@@ -16,7 +16,7 @@ vi.mock("../lib/api", async (importOriginal) => ({
   postContentWorkItemInitialDraft: vi.fn()
 }));
 
-describe("ContentPlanningPlanReview", () => {
+describe("ContentPlanningDraftStart", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -47,7 +47,7 @@ describe("ContentPlanningPlanReview", () => {
 
     render(
       <QueryClientProvider client={client}>
-        <ContentPlanningPlanReview workItemId="content_work_item_bdo" />
+        <ContentPlanningDraftStart workItemId="content_work_item_bdo" />
       </QueryClientProvider>
     );
 
@@ -68,14 +68,14 @@ describe("ContentPlanningPlanReview", () => {
     expect(screen.getByText("Pełny tekst jest przygotowywany. Ten widok odświeży się po zakończeniu.")).toBeInTheDocument();
   });
 
-  it("does not record a planning approval before creating the full text", async () => {
+  it("starts the full text without a separate plan decision", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyPlan());
     vi.mocked(postContentWorkItemInitialDraft).mockRejectedValue(new Error("stale plan"));
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
     render(
       <QueryClientProvider client={client}>
-        <ContentPlanningPlanReview workItemId="content_work_item_bdo" />
+        <ContentPlanningDraftStart workItemId="content_work_item_bdo" />
       </QueryClientProvider>
     );
 

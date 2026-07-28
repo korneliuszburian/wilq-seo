@@ -8,7 +8,7 @@ import {
 } from "../lib/api";
 import { useContentPlanningProposal } from "./contentWorkflowQueries";
 
-export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }) {
+export function ContentPlanningDraftStart({ workItemId }: { workItemId: string }) {
   const queryClient = useQueryClient();
   const planningStatus = useContentPlanningProposal(workItemId);
   const [initialDraft, setInitialDraft] = useState<ContentInitialDraftResponse | null>(null);
@@ -65,12 +65,12 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
   return (
     <>
       <section
-        aria-labelledby="generated-plan-review-title"
+        aria-labelledby="generated-plan-draft-start-title"
         className="rounded-md border border-line bg-white p-4 shadow-sm"
-        data-testid="generated-plan-review"
+        data-testid="generated-plan-draft-start"
       >
         <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Plan treści</p>
-        <h2 id="generated-plan-review-title" className="mt-1 text-lg font-semibold text-ink">
+        <h2 id="generated-plan-draft-start-title" className="mt-1 text-lg font-semibold text-ink">
           Szkic struktury tekstu
         </h2>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">
