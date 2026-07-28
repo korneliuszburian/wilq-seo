@@ -1,43 +1,36 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import {
-  getContentWorkItemDecisionContext,
   getContentSelectedWorkspace,
   getContentWorkItemTargetDiscovery,
   getContentRevisionTargetMapping,
   getContentRevisionTargetDraftPreview,
-  getContentWorkItemInitialDraft,
   getContentWorkflowEntry,
   getContentInventoryCatalog,
   getContentOperatorContext,
-  type ContentDecisionContext,
   type ContentSelectedWorkspace,
   type ContentTargetDiscovery,
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
   type ContentWorkflowEntryResponse,
-  type ContentInitialDraftResponse,
   type ContentInventoryCatalogResponse,
   type ContentOperatorContext,
 } from "../lib/api";
-import { loadContentWorkflowSnapshot, type ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
-
 const READ_ONLY_WORKFLOW_STALE_TIME_MS = 30_000;
 
-export type ContentDecisionContextQuery = UseQueryResult<ContentDecisionContext, Error>;
+// Retained for the inactive compatibility panel. Selected routes themselves
+// deliberately do not consume this read as an identity authority.
+export function contentDecisionContextQueryKey(workItemId: string) {
+  return ["content-workflow", "work-item", workItemId, "decision-context"] as const;
+}
+
 export type ContentSelectedWorkspaceQuery = UseQueryResult<ContentSelectedWorkspace, Error>;
 export type ContentTargetDiscoveryQuery = UseQueryResult<ContentTargetDiscovery, Error>;
 export type ContentTargetMappingPreviewQuery = UseQueryResult<ContentTargetMappingPreview, Error>;
 export type ContentTargetDraftPreviewQuery = UseQueryResult<ContentTargetDraftPreview, Error>;
 export type ContentWorkflowEntryQuery = UseQueryResult<ContentWorkflowEntryResponse, Error>;
-export type ContentInitialDraftQuery = UseQueryResult<ContentInitialDraftResponse, Error>;
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
 export type ContentOperatorContextQuery = UseQueryResult<ContentOperatorContext, Error>;
-export type ContentWorkflowSnapshotQuery = UseQueryResult<ContentWorkflowSnapshot, Error>;
-
-export function contentDecisionContextQueryKey(workItemId: string | null) {
-  return ["content-workflow", "work-item", workItemId, "decision-context"] as const;
-}
 
 export function useContentTargetDiscovery(
   workItemId: string,
@@ -94,12 +87,11 @@ export function useContentRevisionTargetDraftPreview(
 
 export function useContentWorkflowQueries(
   selectedWorkItemId: string | null,
-  reviewOpen = false,
+  _reviewOpen = false,
   browseInventory = false
 ) {
   // A selected route owns its identity. Navigation catalogues are never an
   // authority for a deep-linked document or review state.
-  const directDocumentWorkspace = Boolean(selectedWorkItemId && !reviewOpen);
   const entry = useQuery({
     queryKey: ["content-workflow", "entry"],
     queryFn: () => getContentWorkflowEntry(),
@@ -118,44 +110,19 @@ export function useContentWorkflowQueries(
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     // Identity can be refreshed independently for a review save, but neither
     // its latency nor failure may replace the exact review workspace.
-    enabled: Boolean(selectedWorkItemId && reviewOpen)
-  });
-  const decisionContext = useQuery({
-    queryKey: contentDecisionContextQueryKey(selectedWorkItemId),
-    queryFn: () => getContentWorkItemDecisionContext(selectedWorkItemId ?? ""),
-    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    enabled: Boolean(
-      selectedWorkItemId && reviewOpen
-    )
+    enabled: Boolean(selectedWorkItemId && _reviewOpen)
   });
   const selectedWorkspace = useQuery({
     queryKey: ["content-workflow", "work-item", selectedWorkItemId, "selected-workspace"],
     queryFn: () => getContentSelectedWorkspace(selectedWorkItemId ?? ""),
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    enabled: Boolean(selectedWorkItemId && directDocumentWorkspace)
-  });
-  const workflow = useQuery({
-    queryKey: ["content-workflow", "work-item", selectedWorkItemId],
-    queryFn: () => loadContentWorkflowSnapshot(selectedWorkItemId ?? undefined),
-    staleTime: 10_000,
-    // Review is the one Text substate that needs the persisted, exact
-    // revision-review binding after a reload. Text itself stays lean.
-    enabled: Boolean(selectedWorkItemId && reviewOpen)
-  });
-  const initialDraft = useQuery({
-    queryKey: ["content-workflow", "work-item", selectedWorkItemId, "initial-draft"],
-    queryFn: () => getContentWorkItemInitialDraft(selectedWorkItemId ?? ""),
-    staleTime: 10_000,
-    enabled: Boolean(selectedWorkItemId && reviewOpen)
+    enabled: Boolean(selectedWorkItemId)
   });
 
   return {
-    decisionContext,
     selectedWorkspace,
     entry,
     inventory,
-    initialDraft,
-    operatorContext,
-    workflow
+    operatorContext
   };
 }
