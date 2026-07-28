@@ -87,15 +87,10 @@ import {
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
-  ContentWorkItemWordPressAuthoringPayloadPreviewRequestSchema,
-  ContentWorkItemWordPressAuthoringPayloadPreviewResponseSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffRequestSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
-  ContentWordPressDraftActivationPacketResponseSchema,
-  ContentWordPressDraftWriteReadinessResponseSchema,
-  ContentWordPressExistingDraftUpdateReadinessResponseSchema,
   ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
@@ -227,15 +222,10 @@ import {
   type ContentWorkItemSnapshotHumanReviewRequest,
   type ContentWorkItemSnapshotResponse,
   type ContentWorkItemServiceCandidate,
-  type ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
-  type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWordPressDraftHandoffRequest,
   type ContentWorkItemWordPressDraftHandoffResponse,
-  type ContentWordPressDraftActivationPacketResponse,
-  type ContentWordPressDraftWriteReadinessResponse,
-  type ContentWordPressExistingDraftUpdateReadinessResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
   type ConnectorRefreshRun,
   type ConnectorStatus,
@@ -452,37 +442,6 @@ export function reviseSocialReuseProposal(
 
 export function getWordPressAuthoringProfile(): Promise<WordPressAuthoringProfile> {
   return apiGet("/api/content/wordpress/authoring-profile", WordPressAuthoringProfileSchema);
-}
-
-export function getContentWordPressDraftWriteReadiness(): Promise<
-  ContentWordPressDraftWriteReadinessResponse
-> {
-  return apiGet(
-    "/api/content/wordpress/draft-write-readiness",
-    ContentWordPressDraftWriteReadinessResponseSchema
-  );
-}
-
-export function getContentWordPressExistingDraftUpdateReadiness(
-  workItemId?: string | null
-): Promise<ContentWordPressExistingDraftUpdateReadinessResponse> {
-  const query = workItemId ? `?work_item_id=${encodeURIComponent(workItemId)}` : "";
-  return apiGet(
-    `/api/content/wordpress/existing-draft-update-readiness${query}`,
-    ContentWordPressExistingDraftUpdateReadinessResponseSchema
-  );
-}
-
-export function getContentWordPressDraftActivationPacket(
-  workItemId?: string | null
-): Promise<
-  ContentWordPressDraftActivationPacketResponse
-> {
-  const query = workItemId ? `?work_item_id=${encodeURIComponent(workItemId)}` : "";
-  return apiGet(
-    `/api/content/wordpress/draft-activation-packet${query}`,
-    ContentWordPressDraftActivationPacketResponseSchema
-  );
 }
 
 export function getActionMutationReadiness(
@@ -1065,16 +1024,6 @@ export function postContentWorkItemWordPressDraftExecution(
   );
 }
 
-export function postContentWorkItemWordPressAuthoringPayloadPreview(
-  request: ContentWorkItemWordPressAuthoringPayloadPreviewRequest
-): Promise<ContentWorkItemWordPressAuthoringPayloadPreviewResponse> {
-  return apiPost(
-    "/api/content/work-items/wordpress-authoring-payload-preview",
-    ContentWorkItemWordPressAuthoringPayloadPreviewResponseSchema,
-    ContentWorkItemWordPressAuthoringPayloadPreviewRequestSchema.parse(request)
-  );
-}
-
 export function postContentWorkItemMeasurementWindow(
   request: ContentWorkItemMeasurementWindowRequest
 ): Promise<ContentWorkItemMeasurementWindowResponse> {
@@ -1343,16 +1292,11 @@ export type {
   ContentWorkItemSnapshotHumanReviewRequest,
   ContentWorkItemSnapshotResponse,
   ContentWorkItemServiceCandidate,
-  ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
-  ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   ContentWorkItemWordPressDraftExecutionRequest,
   ContentWorkItemWordPressDraftExecutionResponse,
   ContentWorkItemWordPressDraftHandoffRequest,
   ContentWorkItemWordPressDraftHandoffResponse,
   ContentWorkItemWorkflowSnapshotResponse,
-  ContentWordPressDraftActivationPacketResponse,
-  ContentWordPressDraftWriteReadinessResponse,
-  ContentWordPressExistingDraftUpdateReadinessResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
   DemandGenReadinessContract,
