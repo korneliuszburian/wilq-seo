@@ -367,31 +367,27 @@ function NewPageInitialDraft({ briefId, workspace, onChanged }: { briefId: strin
 
 function NewPageRevisionReview({ briefId, workspace, onChanged }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {
   const revision = workspace.canonical_revision!;
-  const [reviewedBy, setReviewedBy] = useState("");
   const [decision, setDecision] = useState<"approved" | "needs_changes" | "rejected" | "deferred">("approved");
   const [notes, setNotes] = useState("");
-  const [checked, setChecked] = useState(false);
   const evidenceIds = [...new Set(revision.sections.flatMap((section) => section.evidence_ids))];
   const review = useMutation({
     mutationFn: () => reviewContentNewPageRevision(briefId, revision.revision_id, {
       expected_revision_digest: revision.content_digest,
-      reviewed_by: reviewedBy,
+      reviewed_by: "wilku",
       decision,
       notes,
-      checked_items: checked ? ["Sprawdzono dokument względem zatwierdzonego planu i źródeł."] : [],
+      checked_items: decision === "approved" ? ["Tekst sprawdzony względem planu i przypisanych źródeł."] : [],
       evidence_ids: decision === "approved" ? evidenceIds : []
     }),
     onSuccess: onChanged
   });
-  const approvalReady = decision !== "approved" || (checked && evidenceIds.length > 0);
+  const approvalReady = decision !== "approved" || evidenceIds.length > 0;
   return <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4" data-testid="new-page-revision-review">
     <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-800">Review dokumentu</p>
-    <h4 className="mt-2 text-base font-semibold text-ink">Podejmij decyzję dla exact rewizji</h4>
-    <p className="mt-1 text-sm leading-6 text-slate-700">Decyzja dotyczy rewizji {revision.content_digest.slice(0, 12)}… i nie może zatwierdzić późniejszej wersji.</p>
-    <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold text-ink">Reviewer<input className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={reviewedBy} onChange={(event) => setReviewedBy(event.target.value)} placeholder="Imię i nazwisko" /></label><label className="text-sm font-semibold text-ink">Decyzja<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={decision} onChange={(event) => setDecision(event.target.value as typeof decision)}><option value="approved">Zatwierdzam</option><option value="needs_changes">Wymaga zmian</option><option value="rejected">Odrzucam</option><option value="deferred">Odkładam</option></select></label></div>
-    <label className="mt-3 flex items-start gap-2 text-sm leading-6 text-slate-700"><input type="checkbox" checked={checked} onChange={(event) => setChecked(event.target.checked)} className="mt-1" />Sprawdziłem dokument względem zatwierdzonego planu i przypisanych dowodów.</label>
-    <label className="mt-3 block text-sm font-semibold text-ink">Notatka{decision === "approved" ? " (opcjonalna)" : ""}<textarea className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} /></label>
-    <button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={reviewedBy.trim().length < 2 || !approvalReady || (decision !== "approved" && !notes.trim()) || review.isPending} onClick={() => review.mutate()}>{review.isPending ? "Zapisuję review…" : "Zapisz decyzję review"}</button>
+    <h4 className="mt-2 text-base font-semibold text-ink">Sprawdź tekst</h4>
+    <p className="mt-1 text-sm leading-6 text-slate-700">Jeśli tekst odpowiada briefowi, planowi i źródłom, zatwierdź tę dokładną rewizję {revision.content_digest.slice(0, 12)}…</p>
+    {decision === "needs_changes" ? <label className="mt-3 block text-sm font-semibold text-ink">Co poprawić w tekście?<textarea className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} /></label> : <p className="mt-3 text-sm leading-6 text-slate-700">Nie musisz wpisywać osoby oceniającej ani zaznaczać checklisty — zatwierdzenie zapisze exact rewizję z jej dowodami.</p>}
+    <div className="mt-3 flex flex-wrap gap-3"><button type="button" className="rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={!approvalReady || (decision !== "approved" && !notes.trim()) || review.isPending} onClick={() => review.mutate()}>{review.isPending ? "Zapisuję review…" : decision === "approved" ? "Zatwierdź tekst" : "Zapisz uwagi"}</button>{decision === "approved" ? <button type="button" className="text-sm font-semibold text-action underline" disabled={review.isPending} onClick={() => setDecision("needs_changes")}>Tekst wymaga zmian</button> : <button type="button" className="text-sm font-semibold text-action underline" disabled={review.isPending} onClick={() => setDecision("approved")}>Wróć do zatwierdzania</button>}</div>
     {review.isError ? <p className="mt-2 text-sm leading-6 text-wait">Review nie został zapisany. Odśwież dokument — jego dokładna rewizja mogła się zmienić.</p> : null}
   </section>;
 }

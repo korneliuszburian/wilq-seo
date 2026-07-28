@@ -546,10 +546,7 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByTestId("content-review-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("content-full-page-preview")).toBeInTheDocument();
-    const save = screen.getByRole("button", { name: "Zapisz review" });
-    expect(save).toBeDisabled();
-    fireEvent.click(screen.getByRole("checkbox", { name: "Przeczytano dokładną treść tej wersji." }));
-    fireEvent.click(screen.getByRole("checkbox", { name: "Sprawdzono dowody przypisane do tej wersji." }));
+    const save = screen.getByRole("button", { name: "Zatwierdź tekst" });
     expect(save).toBeEnabled();
     fireEvent.click(save);
 
@@ -560,8 +557,8 @@ describe("ContentWorkflowSurface", () => {
         reviewed_by: "wilku",
         decision: "approved",
         checked_items: [
-          "Przeczytano dokładną treść tej wersji.",
-          "Sprawdzono dowody przypisane do tej wersji."
+          "Tekst sprawdzony przed zatwierdzeniem.",
+          "Dowody tej rewizji sprawdzone przed zatwierdzeniem."
         ],
         evidence_ids: uniqueTestEvidence(revision)
       }),
