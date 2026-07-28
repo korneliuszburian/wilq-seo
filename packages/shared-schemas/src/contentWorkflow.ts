@@ -438,7 +438,30 @@ export const ContentDocumentWorkspaceDocumentSchema = z.object({
   review_state: z.enum(["unreviewed", "needs_changes", "approved", "rejected", "deferred"]).default("unreviewed"),
   label: z.string(),
   reason: z.string(),
-  preview: z.lazy(() => ContentDocumentWorkspaceDocumentPreviewSchema).nullable().optional()
+  preview: z.lazy(() => ContentDocumentWorkspaceDocumentPreviewSchema).nullable().optional(),
+  revision: z.lazy(() => ContentDraftRevisionSchema).nullable().optional(),
+  review: z.lazy(() => ContentDraftRevisionReviewSchema).nullable().optional()
+}).superRefine((document, context) => {
+  if (!document.revision) {
+    if (document.review) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Document without a revision cannot carry review data." });
+    }
+    return;
+  }
+  if (
+    document.revision_id !== document.revision.revision_id ||
+    document.content_digest !== document.revision.content_digest
+  ) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical document identity must match its exact revision." });
+  }
+  if (
+    document.review &&
+    (document.review.work_item_id !== document.revision.work_item_id ||
+      document.review.revision_id !== document.revision.revision_id ||
+      document.review.revision_digest !== document.revision.content_digest)
+  ) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical document review must match its exact revision." });
+  }
 });
 
 export const ContentDocumentWorkspaceDocumentSectionSchema = z.object({
