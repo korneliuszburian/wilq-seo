@@ -2,6 +2,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import {
   getContentSelectedWorkspace,
+  getContentWorkItemPlanningProposal,
   getContentWorkItemTargetDiscovery,
   getContentRevisionTargetMapping,
   getContentRevisionTargetDraftPreview,
@@ -19,6 +20,7 @@ import {
   type ContentDiagnosticsResponse,
   type ContentInventoryCatalogResponse,
   type ContentOperatorContext,
+  type ContentPlanningProposalResponse,
 } from "../lib/api";
 const READ_ONLY_WORKFLOW_STALE_TIME_MS = 30_000;
 
@@ -37,6 +39,7 @@ export type ContentWorkflowEntryQuery = UseQueryResult<ContentWorkflowEntryRespo
 export type ContentDiagnosticsQuery = UseQueryResult<ContentDiagnosticsResponse, Error>;
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
 export type ContentOperatorContextQuery = UseQueryResult<ContentOperatorContext, Error>;
+export type ContentPlanningProposalQuery = UseQueryResult<ContentPlanningProposalResponse, Error>;
 
 export function useContentTargetDiscovery(
   workItemId: string,
@@ -108,6 +111,16 @@ export function useContentRevisionPublicDeployment(
     queryFn: () => getContentRevisionPublicDeployment(workItemId, revisionId ?? ""),
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     enabled: Boolean(enabled && revisionId)
+  });
+}
+
+export function useContentPlanningProposal(workItemId: string): ContentPlanningProposalQuery {
+  return useQuery({
+    queryKey: ["content-workflow", "work-item", workItemId, "planning-proposal"],
+    queryFn: () => getContentWorkItemPlanningProposal(workItemId),
+    staleTime: 5_000,
+    refetchInterval: (query) =>
+      query.state.data?.status === "generating" ? 1500 : false
   });
 }
 

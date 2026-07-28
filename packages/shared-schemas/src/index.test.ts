@@ -21,6 +21,7 @@ import {
   ContentSelectedWorkspaceSchema,
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningInputReadinessResponseSchema,
+  ContentPlanningReviewConflictSchema,
   ContentPlanningProposalResponseSchema,
   ContentPlanningWorkspaceSchema,
   ContentServiceProfileResponseSchema,
@@ -698,6 +699,26 @@ describe("ContentWorkItemServiceProfileContextSchema", () => {
         service_candidates: [
           { ...input.service_candidates[0], lifecycle_status: "guessed" }
         ]
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ContentPlanningReviewConflictSchema", () => {
+  it("preserves the exact generated-plan identity for a stale review", () => {
+    expect(
+      ContentPlanningReviewConflictSchema.safeParse({
+        code: "stale_plan",
+        current_proposal_id: "content_planning_proposal_bdo",
+        current_planning_digest: "a".repeat(64),
+        safe_next_step: "Odśwież aktualny plan."
+      }).success
+    ).toBe(true);
+    expect(
+      ContentPlanningReviewConflictSchema.safeParse({
+        code: "stale_plan",
+        current_proposal_id: "content_planning_proposal_bdo",
+        current_planning_digest: "a".repeat(64)
       }).success
     ).toBe(false);
   });

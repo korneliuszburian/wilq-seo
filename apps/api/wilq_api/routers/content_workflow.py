@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from typing import NoReturn
-
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
+from apps.api.wilq_api.routers.content_catalog_routes import register_content_catalog_routes
+from apps.api.wilq_api.routers.content_legacy_wordpress_read import (
+    register_content_legacy_wordpress_read_routes,
+)
 from apps.api.wilq_api.routers.content_model_routes import (
     register_content_model_routes,
 )
@@ -25,42 +27,18 @@ from wilq.briefing.content_diagnostics import (
     build_content_diagnostics_cached,
     build_content_freshness_assessment_fast,
 )
-from wilq.connectors.wordpress.authoring import (
-    WordPressAuthoringProfile,
-    build_wordpress_authoring_profile,
-)
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.enrichment.opportunity import (
     ContentOpportunityEnrichmentResponse,
     build_content_opportunity_enrichment_response,
 )
-from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
-from wilq.content.knowledge.cards import (
-    ContentKnowledgeCardsResponse,
-    content_knowledge_cards_response,
-)
-from wilq.content.knowledge.service_profile import (
-    ContentServiceProfileResponse,
-    content_service_profile_response,
-)
 from wilq.content.workflow.api import (
-    build_content_wordpress_draft_activation_packet_response,
-    build_content_wordpress_draft_write_readiness_response,
     build_content_work_item_diagnostics_snapshot_response,
     build_content_work_item_quality_review_response,
     build_content_work_item_snapshot_audit_response,
     build_content_work_item_snapshot_human_review_response,
     build_content_work_item_wordpress_authoring_payload_preview_response,
     build_content_work_item_wordpress_draft_execution_response,
-)
-from wilq.content.workflow.catalog import (
-    ContentInventoryBindingRequest,
-    ContentInventoryBindingResponse,
-    ContentInventoryCatalogResponse,
-    ContentInventoryMaterialResponse,
-    bind_content_inventory_item,
-    build_content_inventory_catalog_cached,
-    read_content_inventory_material,
 )
 from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import (
@@ -70,9 +48,6 @@ from wilq.content.workflow.contracts import (
     ContentDraftRevisionReviewResponse,
     ContentDraftRevisionSaveRequest,
     ContentDraftRevisionSaveResponse,
-    ContentWordPressDraftActivationPacketResponse,
-    ContentWordPressDraftWriteReadinessResponse,
-    ContentWordPressExistingDraftUpdateReadinessResponse,
     ContentWorkItemBlockedSnapshotResponse,
     ContentWorkItemBrowserSnapshotResponse,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
@@ -107,14 +82,7 @@ from wilq.content.workflow.entry import (
     build_content_workflow_entry,
 )
 from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
-from wilq.content.workflow.operator import ContentOperatorContext, content_operator_context
-from wilq.content.workflow.planning import (
-    ContentPlanningDecision,
-    ContentPlanningProposal,
-    ContentPlanningReviewRequest,
-    ContentPlanningReviewResponse,
-    ContentPlanningWorkspace,
-)
+from wilq.content.workflow.planning import ContentPlanningWorkspace
 from wilq.content.workflow.queue import (
     ContentWorkItemQueueResponse,
     build_content_work_item_queue_response,
@@ -127,11 +95,6 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionReviewCommand,
     content_draft_package_digest,
 )
-from wilq.content.workflow.service_selection import (
-    ContentPlanningServiceSelection,
-    ContentPlanningServiceSelectionError,
-    resolve_content_planning_service_selection,
-)
 from wilq.content.workflow.stage_drafts import (
     build_content_work_item_draft_package_response,
 )
@@ -143,152 +106,13 @@ from wilq.content.workflow.stage_preparation import (
     build_content_work_item_preflight_response,
     build_content_work_item_sales_brief_response,
 )
-from wilq.content.workflow.stage_readiness import (
-    build_content_wordpress_existing_draft_update_readiness_response,
-)
 from wilq.content.workflow.stage_review import (
     build_content_work_item_human_review_response,
     build_content_work_item_wordpress_draft_handoff_response,
 )
 from wilq.content.workflow.store import content_workflow_store
-from wilq.schemas.core import utc_now
 
 router = APIRouter()
-
-
-def _reject_manual_section_map_review() -> NoReturn:
-    raise HTTPException(
-        status_code=409,
-        detail=(
-            "Mapa sekcji jest wyliczana automatycznie z aktualnego inventory, usługi "
-            "i dowodów; nie zapisuj osobnej decyzji dla sekcji."
-        ),
-    )
-
-
-@router.get("/api/content/operator-context", response_model=ContentOperatorContext)
-def content_operator_context_route() -> ContentOperatorContext:
-    return content_operator_context()
-
-
-@router.get(
-    "/api/content/inventory/catalog",
-    response_model=ContentInventoryCatalogResponse,
-)
-def content_inventory_catalog() -> ContentInventoryCatalogResponse:
-    return build_content_inventory_catalog_cached()
-
-
-@router.get(
-    "/api/content/inventory/material",
-    response_model=ContentInventoryMaterialResponse,
-)
-def content_inventory_material(
-    url: str = Query(min_length=1),
-) -> ContentInventoryMaterialResponse:
-    return read_content_inventory_material(url)
-
-
-@router.post(
-    "/api/content/inventory/bind",
-    response_model=ContentInventoryBindingResponse,
-)
-def content_inventory_bind(
-    request: ContentInventoryBindingRequest,
-) -> ContentInventoryBindingResponse:
-    return bind_content_inventory_item(request.url)
-
-
-@router.get(
-    "/api/content/knowledge-cards",
-    response_model=ContentKnowledgeCardsResponse,
-)
-def content_knowledge_cards() -> ContentKnowledgeCardsResponse:
-    return content_knowledge_cards_response()
-
-
-@router.get(
-    "/api/content/service-profile",
-    response_model=ContentServiceProfileResponse,
-)
-def content_service_profile() -> ContentServiceProfileResponse:
-    return content_service_profile_response()
-
-
-@router.get(
-    "/api/content/wordpress/authoring-profile",
-    response_model=WordPressAuthoringProfile,
-)
-def content_wordpress_authoring_profile() -> WordPressAuthoringProfile:
-    return build_wordpress_authoring_profile(
-        "wordpress_ekologus",
-        include_dev_content=True,
-    )
-
-
-@router.get(
-    "/api/content/wordpress/draft-write-readiness",
-    response_model=ContentWordPressDraftWriteReadinessResponse,
-)
-def content_wordpress_draft_write_readiness(
-    action_id: str = "act_prepare_wordpress_draft_handoff",
-) -> ContentWordPressDraftWriteReadinessResponse:
-    return build_content_wordpress_draft_write_readiness_response(action_id=action_id)
-
-
-@router.get(
-    "/api/content/wordpress/existing-draft-update-readiness",
-    response_model=ContentWordPressExistingDraftUpdateReadinessResponse,
-)
-def content_wordpress_existing_draft_update_readiness(
-    work_item_id: str | None = None,
-) -> ContentWordPressExistingDraftUpdateReadinessResponse:
-    snapshot = (
-        _snapshot_for_work_item_or_404(work_item_id)
-        if work_item_id is not None
-        else _snapshot_for_default_work_item_or_404()
-    )
-    return build_content_wordpress_existing_draft_update_readiness_response(snapshot)
-
-
-def _latest_exact_wordpress_execution(
-    snapshot: (
-        ContentWorkItemBrowserWorkflowSnapshotResponse | ContentWorkItemWorkflowSnapshotResponse
-    ),
-) -> ContentWordPressDraftExecutionResult | None:
-    handoff = snapshot.wordpress_handoff.handoff_result.handoff
-    binding = handoff.revision_binding if handoff is not None else None
-    if handoff is None:
-        return None
-    if binding is None:
-        # Legacy v1 handoffs have no revision binding; keep their history readable.
-        return content_workflow_store().latest_wordpress_draft_execution(snapshot.preflight.item.id)
-    return content_workflow_store().latest_wordpress_draft_execution(
-        snapshot.preflight.item.id,
-        handoff_id=handoff.id,
-        revision_id=binding.revision_id,
-        revision_digest=binding.content_digest,
-    )
-
-
-@router.get(
-    "/api/content/wordpress/draft-activation-packet",
-    response_model=ContentWordPressDraftActivationPacketResponse,
-)
-def content_wordpress_draft_activation_packet(
-    work_item_id: str | None = None,
-) -> ContentWordPressDraftActivationPacketResponse:
-    if work_item_id is not None:
-        snapshot = _snapshot_for_work_item_or_404(work_item_id)
-        return build_content_wordpress_draft_activation_packet_response(
-            snapshot,
-            latest_execution_result=_latest_exact_wordpress_execution(snapshot),
-        )
-    snapshot = _snapshot_for_default_work_item_or_404()
-    return build_content_wordpress_draft_activation_packet_response(
-        snapshot,
-        latest_execution_result=_latest_exact_wordpress_execution(snapshot),
-    )
 
 
 @router.get(
@@ -368,108 +192,6 @@ def content_work_item_enrichment(
             selected_work_item_id=work_item_id,
         ),
     )
-
-
-@router.post(
-    "/api/content/work-items/{work_item_id}/planning-review",
-    response_model=ContentPlanningReviewResponse,
-)
-def content_work_item_planning_review(
-    work_item_id: str,
-    request: ContentPlanningReviewRequest,
-) -> ContentPlanningReviewResponse:
-    snapshot = _snapshot_for_work_item_or_404(work_item_id)
-    workspace = snapshot.planning_workspace
-    if request.stage == "section_map":
-        # Keep the historical decision field readable, but remove the old
-        # write authority. The generated proposal is the sole section-map
-        # projection and the human reviews scope and the resulting revision.
-        _reject_manual_section_map_review()
-    if workspace is None or (
-        request.expected_planning_digest != workspace.proposal.planning_digest
-    ):
-        raise HTTPException(
-            status_code=409,
-            detail=("Plan treści zmienił się. Odśwież element przed zapisaniem decyzji."),
-        )
-    try:
-        selection = resolve_content_planning_service_selection(
-            snapshot.service_profile_context,
-            request.service_card_id,
-        )
-    except ContentPlanningServiceSelectionError as error:
-        _raise_service_selection_http_error(error)
-    selected_proposal = _planning_proposal_for_service_selection(
-        work_item_id,
-        workspace,
-        request,
-        selection,
-    )
-    status, decision = content_workflow_store().record_planning_review(
-        work_item_id,
-        request,
-        planning_digest=selected_proposal.planning_digest,
-        service_card_id=selection.service_card_id,
-        human_override_review_required=selection.human_override_review_required,
-    )
-    refreshed = _snapshot_for_work_item_or_404(work_item_id)
-    if refreshed.planning_workspace is None:
-        raise RuntimeError("Planning review succeeded without a planning workspace.")
-    return ContentPlanningReviewResponse(
-        status="recorded" if status == "created" else "idempotent",
-        decision=decision,
-        planning_workspace=refreshed.planning_workspace,
-    )
-
-
-def _raise_service_selection_http_error(
-    error: ContentPlanningServiceSelectionError,
-) -> NoReturn:
-    if error.code == "candidate_not_allowed":
-        raise HTTPException(
-            status_code=422,
-            detail="Wybrana karta usługi nie jest dozwolona dla tego work itemu.",
-        ) from error
-    raise HTTPException(
-        status_code=409,
-        detail="Brakuje aktualnej rekomendacji usługi. Odśwież work item.",
-    ) from error
-
-
-def _planning_proposal_for_service_selection(
-    work_item_id: str,
-    workspace: ContentPlanningWorkspace,
-    request: ContentPlanningReviewRequest,
-    selection: ContentPlanningServiceSelection,
-) -> ContentPlanningProposal:
-    if request.stage != "scope":
-        return workspace.proposal
-    transient_scope = ContentPlanningDecision(
-        decision_id="content_planning_review_transient_service_selection",
-        decision_number=(
-            1 if workspace.scope_decision is None else workspace.scope_decision.decision_number + 1
-        ),
-        work_item_id=work_item_id,
-        stage="scope",
-        planning_digest=request.expected_planning_digest,
-        service_card_id=selection.service_card_id,
-        human_override_review_required=selection.human_override_review_required,
-        decision=request.decision,
-        reviewed_by=request.reviewed_by,
-        checked_items=request.checked_items,
-        notes=request.notes,
-        created_at=utc_now(),
-    )
-    transient_snapshot = _snapshot_for_work_item_or_404(
-        work_item_id,
-        planning_decisions_override=[transient_scope],
-    )
-    if transient_snapshot.planning_workspace is None:
-        raise HTTPException(
-            status_code=409,
-            detail="Nie udało się zbudować planu dla wybranej usługi.",
-        )
-    return transient_snapshot.planning_workspace.proposal
 
 
 def _build_editor_save_command(
@@ -1104,4 +826,10 @@ def _revision_conflict_response(conflict: ContentDraftRevisionConflict) -> JSONR
 register_content_model_routes(
     router,
     snapshot_loader=_snapshot_for_work_item_or_404,
+)
+register_content_catalog_routes(router)
+register_content_legacy_wordpress_read_routes(
+    router,
+    snapshot_loader=_snapshot_for_work_item_or_404,
+    default_snapshot_loader=_snapshot_for_default_work_item_or_404,
 )

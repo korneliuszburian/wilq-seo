@@ -2,29 +2,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   getKnowledgeSourceMaterialReadiness,
-  getContentWorkItemPlanningProposal,
   postContentWorkItemPlanningProposal
 } from "../lib/api";
 import type { ContentPlanningProposalResponse } from "../lib/api";
+import { useContentPlanningProposal } from "./contentWorkflowQueries";
 
 export function ContentPlanningGenerationPanel({
-  serviceCardId,
-  workItemId,
-  scopeCurrent = true
+  workItemId
 }: {
-  serviceCardId?: string | null;
   workItemId: string;
-  scopeCurrent?: boolean;
 }) {
   const queryClient = useQueryClient();
   const queryKey = ["content-workflow", "work-item", workItemId, "planning-proposal"];
-  const status = useQuery({
-    queryKey,
-    queryFn: () => getContentWorkItemPlanningProposal(workItemId),
-    staleTime: 5_000,
-    refetchInterval: (query) =>
-      query.state.data?.status === "generating" ? 1500 : false
-  });
+  const status = useContentPlanningProposal(workItemId);
   const materialReadiness = useQuery({
     queryKey: ["content-workflow", "knowledge-source-material-readiness"],
     queryFn: getKnowledgeSourceMaterialReadiness,
@@ -33,7 +23,7 @@ export function ContentPlanningGenerationPanel({
   const generation = useMutation({
     mutationFn: () => {
       const digest = status.data?.planning_input_digest;
-      const exactServiceCardId = status.data?.service_card_id ?? serviceCardId;
+      const exactServiceCardId = status.data?.service_card_id;
       if (!digest || !exactServiceCardId) throw new Error("Planning input is not ready.");
       return postContentWorkItemPlanningProposal(
         {
@@ -75,10 +65,7 @@ export function ContentPlanningGenerationPanel({
   }
 
   const state = generation.data ?? status.data;
-  const exactServiceCardId = state.service_card_id ?? serviceCardId;
-  // The API owns this gate. The prop is only a compatibility fallback for
-  // older fixtures while every current response carries the typed field.
-  const exactScopeCurrent = state.scope_review_current ?? scopeCurrent;
+  const exactServiceCardId = state.service_card_id;
   const proposal = state.proposal;
   const currentProposal = ["created", "idempotent", "ready"].includes(state.status)
     ? proposal
@@ -102,13 +89,8 @@ export function ContentPlanningGenerationPanel({
         (source) => source.status === "stale" || source.status === "blocked"
       )
   );
-  const serviceSelectionConfirmed =
-    state.proposal?.service_selection_confirmed === true ||
-    (state.status === "failed" && state.service_card_id === serviceCardId);
   const canGenerate = Boolean(
       exactServiceCardId &&
-      serviceSelectionConfirmed &&
-      exactScopeCurrent &&
       state.planning_input_digest &&
       inputReady &&
       (["not_generated", "failed"].includes(state.status) ||
@@ -250,25 +232,6 @@ export function ContentPlanningGenerationPanel({
         </button>
       ) : null}
 
-      {!serviceSelectionConfirmed && serviceCardId ? (
-        <p
-          className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700"
-          data-testid="content-planning-service-confirmation-gate"
-        >
-          Najpierw potwierdź usługę w kroku zakresu. Rekomendowane dopasowanie jest
-          wskazówką, nie zgodą na uruchomienie planu.
-        </p>
-      ) : null}
-
-      {serviceSelectionConfirmed && !scopeCurrent ? (
-        <p
-          className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700"
-          data-testid="content-planning-scope-confirmation-gate"
-        >
-          Najpierw zapisz aktualną decyzję zakresu. Dopiero potem uruchomimy plan
-          z tego samego, potwierdzonego kontekstu strony.
-        </p>
-      ) : null}
 
       {state.status === "generating" ? (
         <p

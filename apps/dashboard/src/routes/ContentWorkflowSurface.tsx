@@ -316,8 +316,6 @@ function ContentReviewWorkspace({
   const queryClient = useQueryClient();
   const [decision, setDecision] = useState<ContentDraftRevisionDecision>("approved");
   const [notes, setNotes] = useState("");
-  const [contentChecked, setContentChecked] = useState(false);
-  const [evidenceChecked, setEvidenceChecked] = useState(false);
   const revision = workspace.canonical_document.revision ?? null;
   const completeRevision = revision?.page_assets ? revision : null;
   const persistedReview = workspace.canonical_document.review ?? null;
@@ -342,7 +340,7 @@ function ContentReviewWorkspace({
       !matchingReview &&
       !reviewMutation.isPending &&
       (decision === "approved"
-        ? contentChecked && evidenceChecked && evidenceIds.length > 0
+        ? evidenceIds.length > 0
         : notes.trim().length > 0)
   );
   const submitReview = () => {
@@ -353,7 +351,7 @@ function ContentReviewWorkspace({
       decision,
       notes: notes.trim(),
       checked_items: decision === "approved"
-        ? ["Przeczytano dokładną treść tej wersji.", "Sprawdzono dowody przypisane do tej wersji."]
+        ? ["Tekst sprawdzony przed zatwierdzeniem.", "Dowody tej rewizji sprawdzone przed zatwierdzeniem."]
         : [],
       evidence_ids: decision === "approved" ? evidenceIds : []
     });
@@ -391,16 +389,12 @@ function ContentReviewWorkspace({
             hasOperatorIdentity={Boolean(operatorLabel)}
             decision={decision}
             notes={notes}
-            contentChecked={contentChecked}
-            evidenceChecked={evidenceChecked}
             canSubmit={canSubmit}
             isPending={reviewMutation.isPending}
             error={reviewMutation.error}
             result={reviewMutation.data}
             onDecisionChange={setDecision}
             onNotesChange={setNotes}
-            onContentCheckedChange={setContentChecked}
-            onEvidenceCheckedChange={setEvidenceChecked}
             onSubmit={submitReview}
             onReloadCurrent={() => {
               void queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workspace.work_item_id, "selected-workspace"] });
@@ -445,16 +439,12 @@ function ReviewDecisionPanel({
   hasOperatorIdentity,
   decision,
   notes,
-  contentChecked,
-  evidenceChecked,
   canSubmit,
   isPending,
   error,
   result,
   onDecisionChange,
   onNotesChange,
-  onContentCheckedChange,
-  onEvidenceCheckedChange,
   onSubmit,
   onReloadCurrent,
   onReturnToText
@@ -464,16 +454,12 @@ function ReviewDecisionPanel({
   hasOperatorIdentity: boolean;
   decision: ContentDraftRevisionDecision;
   notes: string;
-  contentChecked: boolean;
-  evidenceChecked: boolean;
   canSubmit: boolean;
   isPending: boolean;
   error: Error | null;
   result: Awaited<ReturnType<typeof saveContentWorkItemDraftRevisionReview>> | undefined;
   onDecisionChange: (decision: ContentDraftRevisionDecision) => void;
   onNotesChange: (notes: string) => void;
-  onContentCheckedChange: (checked: boolean) => void;
-  onEvidenceCheckedChange: (checked: boolean) => void;
   onSubmit: () => void;
   onReloadCurrent: () => void;
   onReturnToText: () => void;
@@ -503,27 +489,17 @@ function ReviewDecisionPanel({
   }
   return (
     <div className="mt-5 rounded-xl border border-line bg-slate-50 p-4" data-testid="content-review-decision-panel">
-      <p className="font-semibold text-ink">Decyzja człowieka</p>
-      <p className="mt-1 text-sm leading-6 text-slate-700">Rewizja: {revision.revision_id.slice(0, 12)} · digest: {revision.content_digest.slice(0, 12)}</p>
+      <p className="font-semibold text-ink">Sprawdź tekst</p>
+      <p className="mt-1 text-sm leading-6 text-slate-700">Jeśli tekst odpowiada planowi i źródłom, zatwierdź tę dokładną rewizję. Rewizja: {revision.revision_id.slice(0, 12)} · digest: {revision.content_digest.slice(0, 12)}</p>
       {!hasOperatorIdentity ? <p className="mt-2 text-sm font-semibold text-wait">Nie udało się potwierdzić tożsamości osoby oceniającej. Review nie zostanie zapisane.</p> : null}
-      <fieldset className="mt-4 flex flex-wrap gap-2" disabled={isPending || !hasOperatorIdentity}>
-        {(["approved", "needs_changes", "rejected"] as const).map((option) => (
-          <label key={option} className={`cursor-pointer rounded-md border px-3 py-2 text-sm font-semibold ${decision === option ? "border-action bg-action/10 text-action" : "border-line bg-white text-ink"}`}>
-            <input className="sr-only" type="radio" name="content-review-decision" value={option} checked={decision === option} onChange={() => onDecisionChange(option)} />
-            {reviewDecisionLabel(option)}
-          </label>
-        ))}
-      </fieldset>
-      {decision === "approved" ? (
-        <div className="mt-4 space-y-2 text-sm text-slate-700">
-          <label className="flex gap-2"><input type="checkbox" checked={contentChecked} onChange={(event) => onContentCheckedChange(event.target.checked)} />Przeczytano dokładną treść tej wersji.</label>
-          <label className="flex gap-2"><input type="checkbox" checked={evidenceChecked} onChange={(event) => onEvidenceCheckedChange(event.target.checked)} />Sprawdzono dowody przypisane do tej wersji.</label>
-        </div>
-      ) : (
+      {decision === "needs_changes" ? (
         <label className="mt-4 block text-sm font-semibold text-ink">Notatka<textarea className="mt-2 min-h-24 w-full rounded-md border border-line bg-white p-3 text-sm font-normal text-ink" value={notes} onChange={(event) => onNotesChange(event.target.value)} placeholder="Wyjaśnij, co wymaga zmiany lub dlaczego odrzucasz wersję." /></label>
-      )}
+      ) : <p className="mt-3 text-sm leading-6 text-slate-700">Nie musisz przepisywać decyzji ani zaznaczać checklisty — kliknięcie zapisze review dokładnie tej wersji z jej dowodami.</p>}
       {error ? <p className="mt-3 text-sm font-semibold text-wait">Nie udało się zapisać review: {error.message}</p> : null}
-      <button type="button" className="mt-4 rounded-md bg-action px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={!canSubmit} onClick={onSubmit}>{isPending ? "Zapisuję review…" : "Zapisz review"}</button>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button type="button" className="rounded-md bg-action px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={!canSubmit} onClick={onSubmit}>{isPending ? "Zapisuję review…" : decision === "approved" ? "Zatwierdź tekst" : "Zapisz uwagi"}</button>
+        {decision === "approved" ? <button type="button" className="text-sm font-semibold text-action underline" disabled={isPending} onClick={() => onDecisionChange("needs_changes")}>Tekst wymaga zmian</button> : <button type="button" className="text-sm font-semibold text-action underline" disabled={isPending} onClick={() => onDecisionChange("approved")}>Wróć do zatwierdzania</button>}
+      </div>
     </div>
   );
 }
