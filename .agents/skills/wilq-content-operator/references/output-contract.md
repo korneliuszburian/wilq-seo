@@ -22,7 +22,7 @@ queue
   -> exact draft revision
   -> exact revision human review
   -> optional exact Codex child proposal
-  -> revision-bound activation/readiness
+  -> optional exact target discovery/mapping confirmation
   -> ActionObject validate/preview/review/confirm/impact-check/apply
   -> WordPress draft-only readback
 ```

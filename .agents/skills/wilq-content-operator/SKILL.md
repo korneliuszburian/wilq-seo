@@ -126,17 +126,20 @@ gotowość delivery.
    **Done when:** odświeżony snapshot pokazuje child revision, diff i jej własny
    status review; poprawka nie zmieniła niewybranych page assets.
 
-8. **Przekaż tylko revision-bound draft.** Czytaj
-   `GET /api/content/wordpress/draft-activation-packet` i
-   `GET /api/content/wordpress/draft-write-readiness`. Brak exact approved
-   revision bindingu zatrzymuje zapis. Gdy operator prosi tylko o sprawdzenie,
-   pokaż readiness i action ID bez uruchamiania mutacji.
+8. **Przygotuj delivery tylko dla approved exact revision.** Najpierw czytaj
+   `GET .../target-discovery`, potem exact `GET .../target-mapping`. Dev URL
+   jest wyłącznie kandydatem; nie wybieraj targetu na podstawie sluga. Operator
+   zapisuje osobne `POST .../target-mapping/confirmation` z exact digestami, a
+   dopiero wtedy `POST .../target-mapping/draft-action` może utworzyć
+   ActionObject. Żaden z tych endpointów nie zapisuje do WordPressa.
 
-   Jawna prośba o wykonanie prowadzi jedną akcję przez
+   Jawna prośba o wykonanie prowadzi utworzony ActionObject przez
    `validate → preview → review → confirm → impact-check → apply` na
    `/api/actions/{action_id}/...`. Każdy etap używa bindingu z API. `apply` jest
    dozwolone dopiero po osobnym potwierdzeniu operatora i pozostaje WordPress
-   `draft-only`; publish/update/delete nie należą do tej sesji.
+   `draft-only`; publish/update/delete nie należą do tej sesji. Nie używaj
+   legacy `draft-activation-packet`, `draft-write-readiness` ani
+   `wordpress-draft-execution` jako obejścia ActionObjectu.
 
    **Done when:** istnieje auditowalny wynik dokładnej akcji albo typed blocker;
    nie wykonano bezpośredniego requestu do WordPressa.
@@ -174,8 +177,11 @@ gotowość delivery.
 - `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review`
 - `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review`
 - `POST /api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal`
-- `GET /api/content/wordpress/draft-activation-packet`
-- `GET /api/content/wordpress/draft-write-readiness`
+- `GET /api/content/work-items/{work_item_id}/target-discovery`
+- `GET /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping`
+- `GET /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-preview`
+- `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/confirmation`
+- `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-action`
 - `GET /api/actions/{action_id}`
 - `POST /api/actions/{action_id}/validate`
 - `POST /api/actions/{action_id}/preview`
