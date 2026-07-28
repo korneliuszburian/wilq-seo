@@ -35,6 +35,7 @@ import {
   ContentNewPageFoundationResultSchema,
   ContentNewPagePlanningProposalRequestSchema,
   ContentNewPagePlanningProposalWorkspaceSchema,
+  ContentNewPageCanonicalDocumentWorkspaceSchema,
   ContentPlanningInputReadinessResponseSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
@@ -148,6 +149,7 @@ import {
   type ContentNewPageFoundationResult,
   type ContentNewPagePlanningProposalRequest,
   type ContentNewPagePlanningProposalWorkspace,
+  type ContentNewPageCanonicalDocumentWorkspace,
   type ContentPlanningInputReadinessResponse,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
@@ -646,6 +648,15 @@ export function createContentNewPagePlanningProposal(
   );
 }
 
+export function getContentNewPageCanonicalDocument(
+  briefId: string
+): Promise<ContentNewPageCanonicalDocumentWorkspace> {
+  return apiGet(
+    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/canonical-document`,
+    ContentNewPageCanonicalDocumentWorkspaceSchema
+  );
+}
+
 export function getContentInventoryCatalog(): Promise<ContentInventoryCatalogResponse> {
   return apiGet("/api/content/inventory/catalog", ContentInventoryCatalogResponseSchema);
 }
@@ -1129,6 +1140,7 @@ export type {
   ContentNewPageFoundationResult,
   ContentNewPagePlanningProposalRequest,
   ContentNewPagePlanningProposalWorkspace,
+  ContentNewPageCanonicalDocumentWorkspace,
   ContentPlanningInputReadinessResponse,
   ContentCodexSectionProposalRequest,
   ContentCodexSectionProposalResponse,
