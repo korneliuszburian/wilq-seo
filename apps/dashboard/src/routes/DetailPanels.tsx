@@ -151,7 +151,10 @@ function ActionOperatorDecisionHero({
   mutationReadinessLoading: boolean;
   mutationReadinessError: unknown;
 }) {
-  const writeBlocked = !mutationReadiness?.vendor_write_possible;
+  // Adapter capability is a technical fact. The operator-facing state is
+  // ready only when this exact request has no remaining readiness blockers.
+  const requestReady = Boolean(mutationReadiness?.ready_to_request_apply);
+  const writeBlocked = !requestReady;
   const nextStep =
     actionOperatorNextStep(action, mutationReadiness?.operator_next_step) ||
     action.recommended_reason.trim() ||
@@ -235,7 +238,7 @@ function ActionOperatorDecisionHero({
                 ? "Zapis zablokowany"
                 : writeBlocked
                   ? "Zapis zablokowany"
-                  : "Zapis możliwy po potwierdzeniu"}
+                  : "Żądanie zapisu jest gotowe"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-700">
               {mutationReadinessLoading
@@ -243,8 +246,10 @@ function ActionOperatorDecisionHero({
                 : mutationReadinessError
                 ? "Nie udało się potwierdzić gotowości zapisu, więc WILQ nie powinien traktować tej akcji jako gotowej do zmian."
                 : writeBlocked
-                  ? "Możesz pracować na podglądzie i review, ale nie traktuj tej akcji jako zgody na zapis w zewnętrznym systemie."
-                  : "WILQ widzi ścieżkę zapisu, ale nadal wymagane są preview, review, potwierdzenie i audyt."}
+                  ? mutationReadiness?.vendor_write_possible
+                    ? "WILQ ma techniczną ścieżkę zapisu, ale to konkretne żądanie nadal blokują review, potwierdzenie lub audyt."
+                    : "Możesz pracować na podglądzie i review, ale nie traktuj tej akcji jako zgody na zapis w zewnętrznym systemie."
+                  : "WILQ potwierdził bramki tego exact żądania. Zapis nadal wymaga osobnego potwierdzenia w kanonicznym lifecycle."}
             </p>
             {blockerLabels.length > 0 ? (
               <div className="mt-3">
@@ -352,8 +357,8 @@ function ActionMutationReadinessPanel({
           </p>
         </div>
         <StatusBadge
-          value={readiness.vendor_write_possible ? "ready" : "blocked"}
-          label={readiness.vendor_write_possible ? "zapis możliwy po zgodzie" : "zapis zablokowany"}
+          value={readiness.ready_to_request_apply ? "ready" : "blocked"}
+          label={readiness.ready_to_request_apply ? "żądanie gotowe do apply" : "zapis zablokowany"}
         />
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -365,6 +370,10 @@ function ActionMutationReadinessPanel({
         <ReadinessTile
           label="Zapis w zewnętrznym systemie"
           value={readiness.would_attempt_vendor_write ? "możliwa po confirm" : "nie"}
+        />
+        <ReadinessTile
+          label="Techniczna ścieżka zapisu"
+          value={readiness.vendor_write_possible ? "adapter dostępny po bramkach" : "brak"}
         />
       </div>
       {readiness.write_authorization_status ? (

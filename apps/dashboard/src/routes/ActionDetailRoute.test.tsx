@@ -1582,6 +1582,9 @@ function mockFetch() {
       if (url.endsWith("/api/actions/act_1")) {
         return Promise.resolve(Response.json(actionFixture));
       }
+      if (url.endsWith("/api/actions/act_capable_but_blocked")) {
+        return Promise.resolve(Response.json({ ...actionFixture, id: "act_capable_but_blocked" }));
+      }
       if (url.endsWith("/api/actions/act_mutation_audit")) {
         return Promise.resolve(Response.json(actionWithMutationAuditFixture));
       }
@@ -1637,6 +1640,7 @@ function actionMutationReadinessFixture(url: string) {
     url.split("/api/actions/")[1]?.replace("/mutation-readiness", "") ?? "act_1"
   );
   const blockedOutsideApply = actionId === "act_content";
+  const capableButBlocked = actionId === "act_capable_but_blocked";
   return {
     response_type: "action_mutation_readiness",
     contract: "action_mutation_readiness_v1",
@@ -1651,9 +1655,9 @@ function actionMutationReadinessFixture(url: string) {
     validation_status: "valid",
     review_gate_status: "validated_prepare_only",
     ready_to_request_apply: false,
-    vendor_write_possible: false,
+    vendor_write_possible: capableButBlocked,
     would_attempt_vendor_write: false,
-    mutation_adapter: null,
+    mutation_adapter: capableButBlocked ? "wordpress_draft_execution_boundary" : null,
     write_authorization_status: blockedOutsideApply
       ? "blocked_outside_action_apply"
       : "missing_audit_trace",
@@ -1785,6 +1789,17 @@ describe("Action detail route", () => {
     expect(screen.queryByText("Kontrakt przyszłego apply")).not.toBeInTheDocument();
     expect(screen.queryByText("create_wordpress_draft")).not.toBeInTheDocument();
     expect(screen.getByText("Pokaż szczegóły przyszłego zapisu")).toBeInTheDocument();
+  });
+
+  it("keeps a capable adapter blocked until this exact apply request is ready", async () => {
+    renderActionDetail("act_capable_but_blocked");
+
+    expect(await screen.findByText("Stan zapisu")).toBeInTheDocument();
+    expect(screen.getAllByText("Zapis zablokowany").length).toBeGreaterThan(0);
+    expect(screen.getByText(/techniczną ścieżkę zapisu, ale to konkretne żądanie nadal blokują/i)).toBeInTheDocument();
+    expect(screen.getByText("Techniczna ścieżka zapisu")).toBeInTheDocument();
+    expect(screen.getByText("adapter dostępny po bramkach")).toBeInTheDocument();
+    expect(screen.queryByText("żądanie gotowe do apply")).not.toBeInTheDocument();
   });
 
   it("exposes the dev-draft apply control only for an exact new-page binding", async () => {
