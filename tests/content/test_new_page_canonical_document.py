@@ -154,11 +154,21 @@ def test_new_page_delivery_readiness_fails_closed_before_exact_approval() -> Non
         ContentNewPageDeliveryReadiness(
             status="ready_for_action",
             work_item_id=foundation.work_item_id,
+            brief_id=foundation.brief_id,
+            brief_digest=foundation.brief_digest,
+            foundation_id=foundation.foundation_id,
+            service_card_id=foundation.service_card_id,
+            service_card_digest=foundation.service_card_digest,
             safe_next_step="Nie powinno przejść.",
         )
     ready = ContentNewPageDeliveryReadiness(
         status="ready_for_action",
         work_item_id=foundation.work_item_id,
+        brief_id=foundation.brief_id,
+        brief_digest=foundation.brief_digest,
+        foundation_id=foundation.foundation_id,
+        service_card_id=foundation.service_card_id,
+        service_card_digest=foundation.service_card_digest,
         revision_id="revision_new_page_exact",
         revision_digest="b" * 64,
         allowed_content_types=["page"],

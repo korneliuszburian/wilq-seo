@@ -457,6 +457,11 @@ class ContentNewPageDeliveryReadiness(BaseModel):
     )
     status: Literal["ready_for_action", "blocked"]
     work_item_id: str = Field(min_length=1)
+    brief_id: str = Field(min_length=1)
+    brief_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    foundation_id: str = Field(min_length=1)
+    service_card_id: str = Field(min_length=1)
+    service_card_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     revision_id: str | None = None
     revision_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     allowed_content_types: list[Literal["page", "post"]] = Field(default_factory=list)
@@ -505,17 +510,22 @@ def build_new_page_delivery_readiness(
     types = sorted({value for value in allowed_content_types if value in {"page", "post"}})
     if not approved:
         return _blocked_delivery_readiness(
-            workspace.work_item_id,
+            workspace,
             "Dokument wymaga exact human review przed przygotowaniem ActionObjectu.",
         )
     if not types or authoring_profile_digest is None or not evidence_ids:
         return _blocked_delivery_readiness(
-            workspace.work_item_id,
+            workspace,
             "Brakuje obserwowanej capability WordPress potrzebnej do wyboru typu nowego draftu.",
         )
     return ContentNewPageDeliveryReadiness(
         status="ready_for_action",
         work_item_id=workspace.work_item_id,
+        brief_id=workspace.brief_id,
+        brief_digest=workspace.brief_digest,
+        foundation_id=workspace.foundation_id,
+        service_card_id=workspace.service_card_id,
+        service_card_digest=workspace.service_card_digest,
         revision_id=revision.revision_id,
         revision_digest=revision.content_digest,
         allowed_content_types=types,
@@ -529,11 +539,16 @@ def build_new_page_delivery_readiness(
 
 
 def _blocked_delivery_readiness(
-    work_item_id: str, reason: str
+    workspace: ContentNewPageCanonicalDocumentWorkspace, reason: str
 ) -> ContentNewPageDeliveryReadiness:
     return ContentNewPageDeliveryReadiness(
         status="blocked",
-        work_item_id=work_item_id,
+        work_item_id=workspace.work_item_id,
+        brief_id=workspace.brief_id,
+        brief_digest=workspace.brief_digest,
+        foundation_id=workspace.foundation_id,
+        service_card_id=workspace.service_card_id,
+        service_card_digest=workspace.service_card_digest,
         blockers=[reason],
         safe_next_step=(
             "Usuń blocker i odczytaj gotowość ponownie; "
