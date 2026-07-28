@@ -317,10 +317,10 @@ describe("content workflow API helpers", () => {
           external_call_attempted: false
         },
         blockers: [{
-          code: "planning_not_approved",
+          code: "planning_not_ready",
           label: "Nie utworzono dokumentu nowej strony",
-          reason: "Plan wymaga review.",
-          next_step: "Zatwierdź plan."
+          reason: "Plan nie jest gotowy do utworzenia dokumentu.",
+          next_step: "Wygeneruj aktualny plan."
         }],
         safe_next_step: "Zatwierdź plan.",
         publish_ready: false
@@ -331,7 +331,7 @@ describe("content workflow API helpers", () => {
     const result = await createContentNewPageInitialDraft("content_new_page_brief_a", request);
 
     expect(result.status).toBe("blocked");
-    expect(result.blockers[0]?.code).toBe("planning_not_approved");
+    expect(result.blockers[0]?.code).toBe("planning_not_ready");
   });
 
   it("posts exact new-page revision review with its current digest", async () => {

@@ -497,8 +497,8 @@ describe("ContentInitialDraftResponseSchema", () => {
         external_call_attempted: false
       },
       blockers: [{
-        code: "planning_not_approved",
-        label: "Plan wymaga decyzji",
+        code: "planning_not_ready",
+        label: "Plan nie jest jeszcze gotowy",
         reason: "Brakuje aktualnej mapy sekcji.",
         next_step: "Sprawdź plan.",
         source_codes: []

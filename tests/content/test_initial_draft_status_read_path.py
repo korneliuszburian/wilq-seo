@@ -55,7 +55,7 @@ def test_initial_draft_status_get_avoids_heavy_snapshot_loader(monkeypatch) -> N
 
     assert response.status_code == 200
     assert response.json()["status"] == "blocked"
-    assert response.json()["blockers"][0]["code"] == "planning_not_approved"
+    assert response.json()["blockers"][0]["code"] == "planning_not_ready"
     assert "Wygeneruj aktualny plan" in response.json()["safe_next_step"]
     assert snapshot_calls == 0
 
@@ -114,7 +114,52 @@ def test_initial_draft_status_ignores_failed_run_from_an_older_plan(monkeypatch)
 
     assert response.status_code == 200
     assert response.json()["status"] == "blocked"
-    assert response.json()["blockers"][0]["code"] == "planning_not_approved"
+    assert response.json()["blockers"][0]["code"] == "planning_not_ready"
+
+
+def test_initial_draft_status_marks_a_current_generated_plan_as_not_started(monkeypatch) -> None:
+    app = FastAPI()
+    endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
+
+    class LocalState:
+        def list_codex_runs(self):
+            return []
+
+    class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return SimpleNamespace(
+                proposal_id="current-proposal",
+                planning_input_digest="1" * 64,
+                generation_status="codex_generated",
+            )
+
+    class WorkflowStore:
+        def load_draft_revision_state(self, _work_item_id: str):
+            return SimpleNamespace(latest_revision=None)
+
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_planning_proposal_store",
+        lambda: ProposalStore(),
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_workflow_store",
+        lambda: WorkflowStore(),
+    )
+    content_initial_draft.register_content_initial_draft_route(
+        app,
+        snapshot_loader=lambda _work_item_id: (_ for _ in ()).throw(
+            AssertionError("status GET must remain snapshot-free")
+        ),
+    )
+
+    response = TestClient(app).get(endpoint)
+
+    assert response.status_code == 200
+    assert response.json()["blockers"][0]["code"] == "draft_not_started"
+    assert "Przygotuj pełny tekst" in response.json()["safe_next_step"]
 
 
 def test_initial_draft_status_does_not_expose_non_generated_latest_proposal(monkeypatch) -> None:
@@ -389,4 +434,4 @@ def test_initial_draft_status_ignores_newer_job_for_another_service(monkeypatch)
     response = TestClient(app).get(endpoint)
 
     assert response.status_code == 200
-    assert response.json()["blockers"][0]["code"] == "planning_not_approved"
+    assert response.json()["blockers"][0]["code"] == "draft_not_started"

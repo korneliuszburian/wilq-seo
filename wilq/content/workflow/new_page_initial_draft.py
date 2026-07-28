@@ -43,7 +43,7 @@ def generate_new_page_initial_draft(
     endpoint_path: str,
 ) -> ContentInitialDraftResponse:
     if workspace.status != "ready_for_document":
-        return _blocked(workspace, proposal, "planning_not_approved", workspace.safe_next_step)
+        return _blocked(workspace, proposal, "planning_not_ready", workspace.safe_next_step)
     if _request_mismatch(proposal, request):
         return _blocked(
             workspace, proposal, "proposal_mismatch", "Odśwież dokładny plan przed generowaniem."

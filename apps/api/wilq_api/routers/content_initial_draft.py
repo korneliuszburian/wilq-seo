@@ -41,7 +41,7 @@ _INITIAL_DRAFT_EXECUTOR = ThreadPoolExecutor(
 )
 
 _INITIAL_DRAFT_BLOCKER_CODES = {
-    "planning_not_approved",
+    "planning_not_ready",
     "planning_not_generated",
     "stale_planning_input",
     "proposal_mismatch",
@@ -241,13 +241,23 @@ def register_content_initial_draft_route(
                 blockers=[blocker],
                 safe_next_step=blocker.next_step,
             )
-        blocker = ContentInitialDraftBlocker(
-            code="planning_not_approved",
-            label="Pełny tekst czeka na aktualny plan",
-            reason="Nie ma zakończonego uruchomienia pełnego tekstu dla bieżącego planu.",
-            next_step=(
-                "Wygeneruj aktualny plan dla bieżącego kontekstu, a następnie uruchom pełny tekst."
-            ),
+        blocker = (
+            ContentInitialDraftBlocker(
+                code="draft_not_started",
+                label="Pełny tekst nie został jeszcze uruchomiony",
+                reason=(
+                    "Aktualny wygenerowany plan jest gotowy, ale nie ma jeszcze "
+                    "uruchomienia pełnego tekstu dla jego exact wejścia."
+                ),
+                next_step="Przygotuj pełny tekst z widocznego szkicu struktury.",
+            )
+            if proposal is not None
+            else ContentInitialDraftBlocker(
+                code="planning_not_ready",
+                label="Pełny tekst czeka na aktualny plan",
+                reason="Nie ma aktualnego wygenerowanego planu dla bieżącego kontekstu.",
+                next_step="Wygeneruj aktualny plan dla bieżącego kontekstu.",
+            )
         )
         return ContentInitialDraftResponse(
             status="blocked",

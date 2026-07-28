@@ -17,7 +17,8 @@ ContentInitialDraftStatus = Literal[
     "generating", "created", "blocked", "failed", "conflict"
 ]
 ContentInitialDraftBlockerCode = Literal[
-    "planning_not_approved",
+    "planning_not_ready",
+    "draft_not_started",
     "planning_not_generated",
     "stale_planning_input",
     "unknown_service_card",

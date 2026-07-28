@@ -114,7 +114,7 @@ def _prepare_inputs(
             status="blocked",
             blockers=[
                 _blocker(
-                    "planning_not_approved",
+                    "planning_not_ready",
                     "Brakuje aktualnego wygenerowanego planu",
                     (
                         "Pełny tekst wymaga dokładnego wygenerowanego planu "
