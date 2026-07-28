@@ -1325,6 +1325,44 @@ describe("ActionApplyRequestSchema", () => {
       }).success
     ).toBe(false);
   });
+
+  it("keeps new-page apply lineage separate from legacy handoff bindings", () => {
+    const newPage = {
+      work_item_id: "content_work_item_new_page",
+      brief_id: "content_new_page_brief_1",
+      brief_digest: "a".repeat(64),
+      foundation_id: "content_new_page_foundation_1",
+      service_card_id: "service_environment",
+      service_card_digest: "b".repeat(64),
+      revision_id: "content_revision_new_page_1",
+      revision_digest: "c".repeat(64),
+      authoring_profile_digest: "d".repeat(64),
+      content_type: "page" as const
+    };
+    const parsed = ActionApplyRequestSchema.parse({
+      confirm: true,
+      confirmed_by: "operator_local_dashboard",
+      new_page_draft: newPage
+    });
+
+    expect(parsed.new_page_draft?.foundation_id).toBe("content_new_page_foundation_1");
+    expect(
+      ActionApplyRequestSchema.safeParse({
+        ...parsed,
+        wordpress_draft: {
+          work_item_id: "content_work_item_bdo",
+          handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+          revision_id: "content_revision_bdo_1",
+          content_digest: "e".repeat(64),
+          draft_package_id: "draft_package_content_work_item_bdo",
+          draft_package_digest: "f".repeat(64),
+          planning_digest: "0".repeat(64),
+          approval_decision_id: "content_revision_decision_bdo_1",
+          final_canonical_url: "https://ekologus.pl/bdo/"
+        }
+      }).success
+    ).toBe(false);
+  });
 });
 
 describe("ActionMutationReadinessResponseSchema", () => {

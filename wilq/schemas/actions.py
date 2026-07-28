@@ -5,6 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from wilq.content.workflow.new_page_revision_binding import ContentNewPageDraftBinding
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.operator_labels import blocker_count_label, impact_comparison_summary_label
 
@@ -479,6 +480,13 @@ class ActionApplyRequest(BaseModel):
     confirm: bool = False
     confirmed_by: str | None = None
     wordpress_draft: ActionWordPressDraftApplyInput | None = None
+    new_page_draft: ContentNewPageDraftBinding | None = None
+
+    @model_validator(mode="after")
+    def require_one_apply_binding_kind(self) -> ActionApplyRequest:
+        if self.wordpress_draft is not None and self.new_page_draft is not None:
+            raise ValueError("Apply cannot mix legacy and new-page draft bindings.")
+        return self
 
 
 class CodexRun(BaseModel):
