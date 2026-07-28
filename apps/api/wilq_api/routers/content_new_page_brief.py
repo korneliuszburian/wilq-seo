@@ -20,6 +20,7 @@ from wilq.content.planning.new_page_proposal import (
     queue_new_page_planning_proposal,
 )
 from wilq.content.workflow.catalog import build_content_inventory_catalog_cached
+from wilq.content.workflow.contracts import ContentDraftRevisionReviewRequest
 from wilq.content.workflow.new_page import (
     ContentNewPageBriefInput,
     ContentNewPageBriefWorkspace,
@@ -34,6 +35,10 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
+)
+from wilq.content.workflow.new_page_revision import (
+    ContentNewPageRevisionReviewResponse,
+    review_new_page_revision,
 )
 from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.store_new_page import new_page_brief_store
@@ -108,6 +113,7 @@ def register_content_new_page_continuation_routes(router: APIRouter) -> None:
         )
 
     register_content_new_page_planning_proposal_routes(router)
+    register_content_new_page_document_routes(router)
 
     @router.post(
         "/api/content/new-page-briefs/{brief_id}/planning-foundation",
@@ -215,6 +221,8 @@ def register_content_new_page_planning_proposal_routes(router: APIRouter) -> Non
             )
         return queued
 
+
+def register_content_new_page_document_routes(router: APIRouter) -> None:
     @router.get(
         "/api/content/new-page-briefs/{brief_id}/canonical-document",
         response_model=ContentNewPageCanonicalDocumentWorkspace,
@@ -253,6 +261,35 @@ def register_content_new_page_planning_proposal_routes(router: APIRouter) -> Non
         )
         del status
         return _new_page_canonical_document_workspace(brief_id)
+
+    @router.post(
+        "/api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review",
+        response_model=ContentNewPageRevisionReviewResponse,
+    )
+    def review_new_page_draft_revision(
+        brief_id: str,
+        revision_id: str,
+        request: ContentDraftRevisionReviewRequest,
+    ) -> ContentNewPageRevisionReviewResponse:
+        workspace = _new_page_canonical_document_workspace(brief_id)
+        try:
+            result = review_new_page_revision(
+                workspace=workspace,
+                revision_id=revision_id,
+                request=request,
+                store=content_workflow_store(),
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        if result.status == "conflict" or result.review is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Wersja nowej strony zmieniła się przed zapisaniem review.",
+            )
+        return ContentNewPageRevisionReviewResponse(
+            status="recorded" if result.status == "created" else "idempotent",
+            review=result.review,
+        )
 
 
 def _new_page_planning_proposal_workspace(

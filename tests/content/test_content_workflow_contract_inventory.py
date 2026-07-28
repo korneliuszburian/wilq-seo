@@ -58,6 +58,7 @@ from wilq.content.workflow.new_page import (
 from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
 )
+from wilq.content.workflow.new_page_revision import ContentNewPageRevisionReviewResponse
 from wilq.content.workflow.planning import ContentPlanningReviewResponse
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 from wilq.content.workflow.target_discovery import ContentTargetDiscovery
@@ -98,6 +99,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/new-page-briefs/{brief_id}/planning-review",
     ): ContentNewPageCanonicalDocumentWorkspace,
+    (
+        "POST",
+        "/api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review",
+    ): ContentNewPageRevisionReviewResponse,
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
     (
         "GET",

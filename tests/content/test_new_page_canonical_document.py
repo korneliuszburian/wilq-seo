@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
+from wilq.content.workflow.contracts import ContentDraftRevisionReviewRequest
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.new_page import (
     ContentNewPageBriefInput,
@@ -14,7 +15,10 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
 )
-from wilq.content.workflow.new_page_revision import append_new_page_initial_revision
+from wilq.content.workflow.new_page_revision import (
+    append_new_page_initial_revision,
+    review_new_page_revision,
+)
 from wilq.content.workflow.planning import ContentPlanningDecision, ContentPlanningProposal
 from wilq.content.workflow.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
@@ -170,7 +174,7 @@ def test_new_page_canonical_document_rejects_mismatched_lineage_and_blank_approv
         raise AssertionError("Blank planning approval must fail closed.")
 
 
-def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path) -> None:
+def _new_page_append_context(tmp_path):
     foundation, proposal = _exact_inputs()
     brief = build_new_page_brief(
         ContentNewPageBriefInput(
@@ -224,6 +228,13 @@ def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path) -> None:
     completed_run = started_run.model_copy(
         update={"status": "completed", "completed_at": utc_now()}
     )
+    return brief, foundation, proposal, approved, output, store, completed_run
+
+
+def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path) -> None:
+    brief, foundation, proposal, approved, output, store, completed_run = _new_page_append_context(
+        tmp_path
+    )
     with pytest.raises(ValueError, match="stale or not approved"):
         append_new_page_initial_revision(
             brief=brief, foundation=foundation, proposal=proposal, decisions=[approved],
@@ -234,6 +245,11 @@ def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path) -> None:
         )
     assert store.load_draft_revision_state(foundation.work_item_id).revision_count == 0
 
+
+def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
+    brief, foundation, proposal, approved, output, store, completed_run = _new_page_append_context(
+        tmp_path
+    )
     result = append_new_page_initial_revision(
         brief=brief, foundation=foundation, proposal=proposal, decisions=[approved],
         expected_proposal_id=proposal.proposal_id or "",
@@ -245,3 +261,51 @@ def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path) -> None:
     assert result.revision is not None
     assert result.revision.document_kind == "new_page"
     assert result.revision.final_canonical_url is None
+
+    workspace = build_new_page_canonical_document_workspace(
+        brief=brief, foundation=foundation, proposal=proposal, decisions=[approved]
+    )
+    assert workspace is not None
+    stale_review = review_new_page_revision(
+        workspace=workspace,
+        revision_id=result.revision.revision_id,
+        request=ContentDraftRevisionReviewRequest(
+            expected_revision_digest="f" * 64,
+            reviewed_by="Wilku",
+            decision="approved",
+            checked_items=["dokument", "dowody"],
+            evidence_ids=["ev_service"],
+        ),
+        store=store,
+    )
+    assert stale_review.status == "conflict"
+    assert stale_review.conflict is not None
+    assert stale_review.conflict.code == "digest_mismatch"
+    review = review_new_page_revision(
+        workspace=workspace,
+        revision_id=result.revision.revision_id,
+        request=ContentDraftRevisionReviewRequest(
+            expected_revision_digest=result.revision.content_digest,
+            reviewed_by="Wilku",
+            decision="approved",
+            checked_items=["dokument", "dowody"],
+            evidence_ids=["ev_service"],
+        ),
+        store=store,
+    )
+    assert review.status == "created"
+    assert review.review is not None
+    assert review.review.revision_id == result.revision.revision_id
+    with pytest.raises(ValueError, match="outside the exact"):
+        review_new_page_revision(
+            workspace=workspace,
+            revision_id=result.revision.revision_id,
+            request=ContentDraftRevisionReviewRequest(
+                expected_revision_digest=result.revision.content_digest,
+                reviewed_by="Wilku",
+                decision="needs_changes",
+                notes="Brakuje uzasadnienia.",
+                evidence_ids=["ev_foreign"],
+            ),
+            store=store,
+        )

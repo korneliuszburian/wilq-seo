@@ -2,30 +2,48 @@ from __future__ import annotations
 
 import json
 from hashlib import sha256
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict
 
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.workflow.content_html import content_html_from_markdown
+from wilq.content.workflow.contracts import ContentDraftRevisionReviewRequest
 from wilq.content.workflow.new_page import (
     ContentNewPageBrief,
     ContentNewPagePlanningFoundation,
 )
 from wilq.content.workflow.new_page_document import (
+    ContentNewPageCanonicalDocumentWorkspace,
     build_new_page_canonical_document_workspace,
 )
 from wilq.content.workflow.planning import ContentPlanningDecision, ContentPlanningProposal
 from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionCtaBlock,
     ContentDraftRevisionFaqItem,
     ContentDraftRevisionInternalLink,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionProposalSectionLineage,
+    ContentDraftRevisionReview,
+    ContentDraftRevisionReviewCommand,
+    ContentDraftRevisionReviewResult,
     ContentDraftRevisionSection,
     ContentDraftRevisionWriteResult,
 )
 from wilq.content.workflow.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
+
+
+class ContentNewPageRevisionReviewResponse(BaseModel):
+    """Exact human decision for one immutable new-page document revision."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["recorded", "idempotent"]
+    review: ContentDraftRevisionReview
 
 
 def append_new_page_initial_revision(
@@ -69,6 +87,45 @@ def append_new_page_initial_revision(
         requested_by=requested_by,
     )
     return store.append_draft_revision(command, completed_codex_run=completed_run)
+
+
+def review_new_page_revision(
+    *,
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+    revision_id: str,
+    request: ContentDraftRevisionReviewRequest,
+    store: ContentWorkflowStore,
+) -> ContentDraftRevisionReviewResult:
+    """Record one exact review only for the current new-page document lineage."""
+
+    state = store.load_draft_revision_state(workspace.work_item_id)
+    revision = state.latest_revision
+    if revision is not None and revision.revision_id == revision_id:
+        if not _revision_matches_workspace(revision, workspace):
+            raise ValueError("New-page revision lineage no longer matches the approved plan.")
+        unknown_evidence = sorted(
+            set(request.evidence_ids).difference(_revision_evidence_ids(revision))
+        )
+        if unknown_evidence:
+            raise ValueError(
+                "Review contains evidence outside the exact new-page revision: "
+                + ", ".join(unknown_evidence)
+            )
+    return store.review_draft_revision(
+        ContentDraftRevisionReviewCommand(
+            work_item_id=workspace.work_item_id,
+            revision_id=revision_id,
+            revision_digest=request.expected_revision_digest,
+            base_decision_id=(
+                None if state.latest_review is None else state.latest_review.decision_id
+            ),
+            reviewed_by=request.reviewed_by,
+            decision=request.decision,
+            notes=request.notes,
+            checked_items=request.checked_items,
+            evidence_ids=request.evidence_ids,
+        )
+    )
 
 
 def _revision_command(
@@ -262,6 +319,40 @@ def _revision_placement(value: str, proposal: ContentPlanningProposal) -> str:
         if value == section.heading:
             return section.section_id
     raise ValueError("Approved plan contains an unknown document placement.")
+
+
+def _revision_matches_workspace(
+    revision: ContentDraftRevision,
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+) -> bool:
+    identity = getattr(revision, "new_page_document_identity", None)
+    return bool(
+        revision.document_kind == "new_page"
+        and revision.final_canonical_url is None
+        and identity is not None
+        and identity.work_item_id == workspace.work_item_id
+        and identity.brief_id == workspace.brief_id
+        and identity.brief_digest == workspace.brief_digest
+        and identity.foundation_id == workspace.foundation_id
+        and identity.service_card_id == workspace.service_card_id
+        and identity.service_card_digest == workspace.service_card_digest
+        and identity.proposed_ia_location == workspace.proposed_ia_location
+        and revision.planning_digest == workspace.planning_digest
+        and revision.planning_input_digest == workspace.planning_input_digest
+    )
+
+
+def _revision_evidence_ids(revision: ContentDraftRevision) -> set[str]:
+    return {
+        evidence_id
+        for evidence_ids in (
+            *(section.evidence_ids for section in revision.sections),
+            *(faq.evidence_ids for faq in revision.faq),
+            *(cta.evidence_ids for cta in revision.cta_blocks),
+            *(link.evidence_ids for link in revision.internal_links),
+        )
+        for evidence_id in evidence_ids
+    }
 
 
 __all__ = ["append_new_page_initial_revision"]
