@@ -257,6 +257,41 @@ class ContentPlanningWorkspace(BaseModel):
     scope_current: bool
     section_map_current: bool
 
+    @model_validator(mode="after")
+    def require_exact_decision_binding(self) -> ContentPlanningWorkspace:
+        for decision in (self.scope_decision, self.section_map_decision):
+            if decision is None:
+                continue
+            if (
+                decision.work_item_id != self.proposal.work_item_id
+                or decision.planning_digest != self.proposal.planning_digest
+                or (
+                    decision.service_card_id is not None
+                    and decision.service_card_id != self.proposal.service_card_id
+                )
+            ):
+                raise ValueError("Planning decision must bind to the exact proposal.")
+        expected_scope_current = bool(
+            self.scope_decision is not None
+            and self.scope_decision.decision == "approved"
+            and self.scope_decision.work_item_id == self.proposal.work_item_id
+            and self.scope_decision.planning_digest == self.proposal.planning_digest
+            and (
+                self.scope_decision.service_card_id is None
+                or self.scope_decision.service_card_id == self.proposal.service_card_id
+            )
+        )
+        if self.scope_current != expected_scope_current:
+            raise ValueError("scope_current must reflect the exact scope decision.")
+        expected_section_map_current = bool(
+            self.proposal.generation_status == "codex_generated"
+            and self.proposal.proposal_id
+            and self.proposal.sections
+        )
+        if self.section_map_current != expected_section_map_current:
+            raise ValueError("section_map_current must reflect the exact generated proposal.")
+        return self
+
 
 class ContentPlanningReviewResponse(BaseModel):
     status: Literal["recorded", "idempotent"]

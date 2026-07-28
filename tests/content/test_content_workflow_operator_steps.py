@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import replace
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -19,8 +20,10 @@ from wilq.content.workflow.operator_steps import (
     build_content_workflow_operator_journey,
 )
 from wilq.content.workflow.planning import (
+    ContentPlanningDecision,
     ContentPlanningProposal,
     ContentPlanningSection,
+    ContentPlanningWorkspace,
     build_content_planning_workspace,
 )
 
@@ -138,6 +141,48 @@ def test_baseline_sections_are_preview_until_generated_proposal_exists() -> None
         }
     )
     assert build_content_planning_workspace(generated, []).section_map_current is True
+
+
+def test_planning_workspace_rejects_a_decision_for_another_exact_plan() -> None:
+    proposal = ContentPlanningProposal(
+        work_item_id="content_work_item_bdo",
+        planning_digest="a" * 64,
+        service_card_id="service_bdo",
+        final_canonical_url="https://www.ekologus.pl/bdo/",
+        target_reader="firma",
+        buyer_problem="brak porządku",
+        buyer_trigger="zmiana wymagań",
+        search_intent="informational",
+        cta_direction="Skonsultuj sytuację.",
+        sections=[ContentPlanningSection(heading="Zakres", purpose="Porządkuje temat.")],
+        search_demand=ContentSearchDemandEvidence(
+            status="missing",
+            optional_ads_status="not_exactly_mapped",
+            safe_next_step="Brak dokładnych danych.",
+        ),
+    )
+    decision = ContentPlanningDecision(
+        decision_id="planning_decision_1",
+        decision_number=1,
+        work_item_id=proposal.work_item_id,
+        stage="scope",
+        planning_digest=proposal.planning_digest,
+        service_card_id=proposal.service_card_id,
+        decision="approved",
+        reviewed_by="wilku",
+        created_at=datetime.now(UTC),
+    )
+
+    assert build_content_planning_workspace(proposal, [decision]).scope_current is True
+
+    with pytest.raises(ValidationError, match="exact proposal"):
+        ContentPlanningWorkspace(
+            proposal=proposal,
+            scope_decision=decision.model_copy(update={"planning_digest": "b" * 64}),
+            section_map_decision=None,
+            scope_current=True,
+            section_map_current=False,
+        )
 
 
 @pytest.mark.parametrize(

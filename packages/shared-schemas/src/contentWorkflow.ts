@@ -3557,13 +3557,51 @@ export const ContentPlanningProposalSchema = z.object({
   });
 });
 
-export const ContentPlanningWorkspaceSchema = z.object({
-  proposal: ContentPlanningProposalSchema,
-  scope_decision: ContentPlanningDecisionSchema.nullable(),
-  section_map_decision: ContentPlanningDecisionSchema.nullable(),
-  scope_current: z.boolean(),
-  section_map_current: z.boolean()
-});
+export const ContentPlanningWorkspaceSchema = z
+  .object({
+    proposal: ContentPlanningProposalSchema,
+    scope_decision: ContentPlanningDecisionSchema.nullable(),
+    section_map_decision: ContentPlanningDecisionSchema.nullable(),
+    scope_current: z.boolean(),
+    section_map_current: z.boolean()
+  })
+  .superRefine((workspace, context) => {
+    for (const [field, decision] of [
+      ["scope_decision", workspace.scope_decision],
+      ["section_map_decision", workspace.section_map_decision]
+    ] as const) {
+      if (!decision) continue;
+      if (
+        decision.work_item_id !== workspace.proposal.work_item_id ||
+        decision.planning_digest !== workspace.proposal.planning_digest ||
+        (decision.service_card_id !== null && decision.service_card_id !== workspace.proposal.service_card_id)
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: "Planning decision must bind to the exact proposal."
+        });
+      }
+    }
+    const scopeCurrent = Boolean(
+      workspace.scope_decision?.decision === "approved" &&
+      workspace.scope_decision.work_item_id === workspace.proposal.work_item_id &&
+      workspace.scope_decision.planning_digest === workspace.proposal.planning_digest &&
+      (workspace.scope_decision.service_card_id === null ||
+        workspace.scope_decision.service_card_id === workspace.proposal.service_card_id)
+    );
+    if (workspace.scope_current !== scopeCurrent) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["scope_current"], message: "scope_current must reflect the exact scope decision." });
+    }
+    const sectionMapCurrent = Boolean(
+      workspace.proposal.generation_status === "codex_generated" &&
+      workspace.proposal.proposal_id &&
+      workspace.proposal.sections.length
+    );
+    if (workspace.section_map_current !== sectionMapCurrent) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["section_map_current"], message: "section_map_current must reflect the exact generated proposal." });
+    }
+  });
 
 export const ContentPlanningReviewRequestSchema = z.object({
   stage: z.enum(["scope", "section_map"]),
