@@ -278,30 +278,36 @@ def validate_gsc_query_row(row: dict[str, Any]) -> None:
         raise SystemExit("Unmapped GSC row must be explicitly page-only")
 
 
-def read_wordpress_boundary(api_base: str, work_item_id: str) -> dict[str, Any]:
-    query = urllib.parse.urlencode({"work_item_id": work_item_id})
-    activation = require_dict(
+def read_delivery_preparation(
+    api_base: str, work_item_id: str, revision_id: str
+) -> dict[str, Any]:
+    encoded_work_item_id = urllib.parse.quote(work_item_id, safe="")
+    encoded_revision_id = urllib.parse.quote(revision_id, safe="")
+    discovery = require_dict(
         request_json(
             api_base,
             "GET",
-            f"/api/content/wordpress/draft-activation-packet?{query}",
+            f"/api/content/work-items/{encoded_work_item_id}/target-discovery",
         ),
-        "WordPress activation packet",
+        "target discovery",
     )
-    readiness = require_dict(
-        request_json(api_base, "GET", "/api/content/wordpress/draft-write-readiness"),
-        "WordPress write readiness",
+    mapping = require_dict(
+        request_json(
+            api_base,
+            "GET",
+            "/api/content/work-items/"
+            f"{encoded_work_item_id}/draft-revisions/{encoded_revision_id}/target-mapping",
+        ),
+        "target mapping preview",
     )
-    for value in (activation, readiness):
-        for key in ("publish_allowed", "destructive_update_allowed"):
+    for value in (discovery, mapping):
+        for key in ("publish_allowed", "destructive_update_allowed", "write_authorized"):
             assert_false_everywhere(value, key)
     return {
-        "action_id": activation.get("action_id"),
-        "activation_missing_step": activation.get("activation_missing_step"),
-        "activation_next_step": activation.get("operator_next_step"),
-        "handoff_ready": activation.get("handoff_ready"),
-        "write_ready": readiness.get("ready"),
-        "write_authorization_status": readiness.get("write_authorization_status"),
+        "discovery_status": discovery.get("status"),
+        "mapping_status": mapping.get("status"),
+        "mapping_revision_id": (mapping.get("revision") or {}).get("revision_id"),
+        "action_object_created": False,
     }
 
 
@@ -405,7 +411,12 @@ def main() -> int:
                 str(latest_revision_id),
                 str(latest_revision_digest),
             )
-        summary["wordpress_boundary"] = read_wordpress_boundary(args.api_base, work_item_id)
+        if latest_revision_id:
+            summary["delivery_preparation"] = read_delivery_preparation(
+                args.api_base,
+                work_item_id,
+                str(latest_revision_id),
+            )
         summary["workflow_blocked"] = snapshot.get("current_step_id") != "dev_draft"
 
     print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
