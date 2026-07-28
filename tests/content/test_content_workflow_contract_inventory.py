@@ -20,6 +20,7 @@ from wilq.content.planning.dynamic_input import ContentPlanningInputReadinessRes
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
+from wilq.content.planning.new_page_proposal import ContentNewPagePlanningProposalWorkspace
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReviewResponse
 from wilq.content.workflow.api import (
     ContentWordPressDraftActivationPacketResponse,
@@ -78,6 +79,14 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/new-page-briefs/{brief_id}/planning-input",
     ): ContentPlanningInputReadinessResponse,
+    (
+        "GET",
+        "/api/content/new-page-briefs/{brief_id}/planning-proposal",
+    ): ContentNewPagePlanningProposalWorkspace,
+    (
+        "POST",
+        "/api/content/new-page-briefs/{brief_id}/planning-proposal",
+    ): ContentNewPagePlanningProposalWorkspace,
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
     (
         "GET",
