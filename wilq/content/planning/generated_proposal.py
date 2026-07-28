@@ -121,7 +121,7 @@ def read_content_planning_proposal(
             service_card_id=service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
-            safe_next_step="Wygeneruj pierwszy plan i sprawdź go przed decyzją człowieka.",
+            safe_next_step="Wygeneruj pierwszy plan z aktualnych źródeł.",
         )
     if (
         latest.service_card_id != service_card_id
@@ -189,7 +189,9 @@ def read_content_planning_proposal(
         input_summary=input_summary,
         proposal=latest,
         runtime=_persisted_runtime_trace(latest),
-        safe_next_step="Sprawdź strategię i mapę sekcji; tylko człowiek może je zatwierdzić.",
+        safe_next_step=(
+            "Sprawdź strukturę i przygotuj pełny tekst z tej dokładnej wersji planu."
+        ),
     )
 
 
