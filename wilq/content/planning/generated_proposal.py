@@ -222,6 +222,25 @@ def with_current_planning_workspace(
     )
 
 
+def with_current_scope_review(
+    response: ContentPlanningProposalResponse,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> ContentPlanningProposalResponse:
+    """Expose only the snapshot's current scope decision for this work item."""
+
+    workspace = snapshot.planning_workspace
+    if workspace is None or workspace.proposal.work_item_id != response.work_item_id:
+        return response.model_copy(
+            update={"scope_review_current": False, "scope_review": None}
+        )
+    return response.model_copy(
+        update={
+            "scope_review_current": workspace.scope_current,
+            "scope_review": workspace.scope_decision,
+        }
+    )
+
+
 def generate_content_planning_proposal(
     *,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,

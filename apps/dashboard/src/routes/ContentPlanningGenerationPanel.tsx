@@ -12,7 +12,7 @@ export function ContentPlanningGenerationPanel({
   workItemId,
   scopeCurrent = true
 }: {
-  serviceCardId: string | null | undefined;
+  serviceCardId?: string | null;
   workItemId: string;
   scopeCurrent?: boolean;
 }) {
@@ -33,10 +33,11 @@ export function ContentPlanningGenerationPanel({
   const generation = useMutation({
     mutationFn: () => {
       const digest = status.data?.planning_input_digest;
-      if (!digest || !serviceCardId) throw new Error("Planning input is not ready.");
+      const exactServiceCardId = status.data?.service_card_id ?? serviceCardId;
+      if (!digest || !exactServiceCardId) throw new Error("Planning input is not ready.");
       return postContentWorkItemPlanningProposal(
         {
-          service_card_id: serviceCardId,
+          service_card_id: exactServiceCardId,
           expected_planning_input_digest: digest,
           operator_hint: "",
           requested_by: "wilku"
@@ -74,6 +75,10 @@ export function ContentPlanningGenerationPanel({
   }
 
   const state = generation.data ?? status.data;
+  const exactServiceCardId = state.service_card_id ?? serviceCardId;
+  // The API owns this gate. The prop is only a compatibility fallback for
+  // older fixtures while every current response carries the typed field.
+  const exactScopeCurrent = state.scope_review_current ?? scopeCurrent;
   const proposal = state.proposal;
   const currentProposal = ["created", "idempotent", "ready"].includes(state.status)
     ? proposal
@@ -101,9 +106,9 @@ export function ContentPlanningGenerationPanel({
     state.proposal?.service_selection_confirmed === true ||
     (state.status === "failed" && state.service_card_id === serviceCardId);
   const canGenerate = Boolean(
-      serviceCardId &&
+      exactServiceCardId &&
       serviceSelectionConfirmed &&
-      scopeCurrent &&
+      exactScopeCurrent &&
       state.planning_input_digest &&
       inputReady &&
       (["not_generated", "failed"].includes(state.status) ||

@@ -29,6 +29,7 @@ from wilq.content.planning.generated_proposal import (
     generate_content_planning_proposal,
     read_content_planning_proposal,
     with_current_planning_workspace,
+    with_current_scope_review,
 )
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningCtaBlock,
@@ -52,6 +53,7 @@ from wilq.content.workflow.planning import (
     ContentPlanningDecision,
     ContentPlanningProposal,
     ContentPlanningSection,
+    build_content_planning_workspace,
 )
 from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.schemas import CodexRun
@@ -112,12 +114,18 @@ def test_ready_plan_projects_only_its_exact_review_decision() -> None:
     )
     stale = exact.model_copy(update={"planning_digest": "b" * 64})
 
-    projected = with_current_planning_workspace(response, [stale, exact])
+    scope_snapshot = SimpleNamespace(
+        planning_workspace=build_content_planning_workspace(proposal, [exact])
+    )
+    scoped = with_current_scope_review(response, scope_snapshot)
+    projected = with_current_planning_workspace(scoped, [stale, exact])
 
     assert projected.planning_workspace is not None
     assert projected.planning_workspace.proposal == proposal
     assert projected.planning_workspace.scope_decision == exact
     assert projected.planning_workspace.scope_current is True
+    assert projected.scope_review == exact
+    assert projected.scope_review_current is True
 
 
 @pytest.fixture
