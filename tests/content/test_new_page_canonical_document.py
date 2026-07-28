@@ -288,6 +288,7 @@ def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
     assert stale_review.status == "conflict"
     assert stale_review.conflict is not None
     assert stale_review.conflict.code == "digest_mismatch"
+    assert store.load_draft_revision_state(foundation.work_item_id).latest_review is None
     review = review_new_page_revision(
         workspace=workspace,
         revision_id=result.revision.revision_id,

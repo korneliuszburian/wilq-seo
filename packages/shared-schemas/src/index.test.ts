@@ -30,6 +30,7 @@ import {
   ContentDraftPackageSchema,
   ContentDraftRevisionSchema,
   ContentDraftRevisionConflictSchema,
+  ContentNewPageRevisionReviewConflictSchema,
   ContentCodexSectionProposalRequestSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentRevisionHtmlPackageResponseSchema,
@@ -3716,6 +3717,15 @@ describe("Content work item workflow schemas", () => {
         current_revision_id: "content_revision_bdo_2",
         current_digest: "a".repeat(64),
         safe_next_step: "Porównaj wersje."
+      }).success
+    ).toBe(true);
+    expect(
+      ContentNewPageRevisionReviewConflictSchema.safeParse({
+        status: "conflict",
+        code: "stale_revision",
+        current_revision_id: "content_revision_new_page_current",
+        current_digest: "a".repeat(64),
+        safe_next_step: "Odczytaj aktualną wersję nowej strony."
       }).success
     ).toBe(true);
     expect(

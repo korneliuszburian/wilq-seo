@@ -3907,6 +3907,9 @@ export const ContentNewPagePlanningReviewCommandSchema = z.object({
   }
 });
 
+/** Typed 409 body for an exact new-page revision-review conflict. */
+export const ContentNewPageRevisionReviewConflictSchema = ContentDraftRevisionConflictSchema;
+
 export const ContentInitialDraftRequestSchema = z.object({
   expected_proposal_id: z.string().min(1),
   expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
@@ -4579,6 +4582,9 @@ export type ContentNewPageCanonicalDocumentWorkspace = z.infer<
 >;
 export type ContentNewPagePlanningProposalWorkspace = z.infer<
   typeof ContentNewPagePlanningProposalWorkspaceSchema
+>;
+export type ContentNewPageRevisionReviewConflict = z.infer<
+  typeof ContentNewPageRevisionReviewConflictSchema
 >;
 export type ContentPlanningProposalRequest = z.input<
   typeof ContentPlanningProposalRequestSchema

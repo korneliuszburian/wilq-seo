@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
 from apps.api.wilq_api.routers.content_codex_proposal import content_codex_app_server_client
+from apps.api.wilq_api.routers.content_workflow_http import revision_conflict_next_step
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
@@ -26,7 +27,11 @@ from wilq.content.planning.new_page_proposal import (
     terminalize_new_page_planning_claim,
 )
 from wilq.content.workflow.catalog import build_content_inventory_catalog_cached
-from wilq.content.workflow.contracts import ContentDraftRevisionReviewRequest
+from wilq.content.workflow.contracts import (
+    ContentDraftRevisionConflictResponse,
+    ContentDraftRevisionPublicConflictCode,
+    ContentDraftRevisionReviewRequest,
+)
 from wilq.content.workflow.new_page import (
     ContentNewPageBrief,
     ContentNewPageBriefInput,
@@ -245,64 +250,7 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
     ) -> ContentNewPageCanonicalDocumentWorkspace:
         return _new_page_canonical_document_workspace(brief_id)
 
-    @router.post(
-        "/api/content/new-page-briefs/{brief_id}/planning-review",
-        response_model=ContentNewPageCanonicalDocumentWorkspace,
-        responses={409: {"model": ContentNewPageCanonicalDocumentWorkspace}},
-    )
-    def review_new_page_content_plan(
-        brief_id: str,
-        request: ContentNewPagePlanningReviewCommand,
-    ) -> ContentNewPageCanonicalDocumentWorkspace:
-        workspace = _new_page_canonical_document_workspace(brief_id)
-        if (
-            workspace.status == "blocked"
-            or workspace.proposal_id != request.expected_proposal_id
-            or workspace.planning_digest != request.expected_planning_digest
-            or workspace.planning_input_digest != request.expected_planning_input_digest
-        ):
-            raise HTTPException(
-                status_code=409,
-                detail="Plan nowej strony zmienił się albo nie jest gotowy do review.",
-            )
-        status, _ = content_workflow_store().record_planning_review(
-            workspace.work_item_id,
-            request.as_planning_review_request(workspace.service_card_id),
-            planning_digest=request.expected_planning_digest,
-            service_card_id=workspace.service_card_id,
-            human_override_review_required=False,
-        )
-        del status
-        return _new_page_canonical_document_workspace(brief_id)
-
-    @router.post(
-        "/api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review",
-        response_model=ContentNewPageRevisionReviewResponse,
-    )
-    def review_new_page_draft_revision(
-        brief_id: str,
-        revision_id: str,
-        request: ContentDraftRevisionReviewRequest,
-    ) -> ContentNewPageRevisionReviewResponse:
-        workspace = _new_page_canonical_document_workspace(brief_id)
-        try:
-            result = review_new_page_revision(
-                workspace=workspace,
-                revision_id=revision_id,
-                request=request,
-                store=content_workflow_store(),
-            )
-        except ValueError as error:
-            raise HTTPException(status_code=409, detail=str(error)) from error
-        if result.status == "conflict" or result.review is None:
-            raise HTTPException(
-                status_code=409,
-                detail="Wersja nowej strony zmieniła się przed zapisaniem review.",
-            )
-        return ContentNewPageRevisionReviewResponse(
-            status="recorded" if result.status == "created" else "idempotent",
-            review=result.review,
-        )
+    register_content_new_page_document_review_routes(router)
 
     @router.post(
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
@@ -324,6 +272,95 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
             run_store=local_state_store(),
             endpoint_path=f"/api/content/new-page-briefs/{brief_id}/initial-draft",
         )
+
+
+def register_content_new_page_document_review_routes(router: APIRouter) -> None:
+    @router.post(
+        "/api/content/new-page-briefs/{brief_id}/planning-review",
+        response_model=ContentNewPageCanonicalDocumentWorkspace,
+        responses={409: {"model": ContentNewPageCanonicalDocumentWorkspace}},
+    )
+    def review_new_page_content_plan(
+        brief_id: str,
+        request: ContentNewPagePlanningReviewCommand,
+    ) -> ContentNewPageCanonicalDocumentWorkspace | JSONResponse:
+        workspace = _new_page_canonical_document_workspace(brief_id)
+        if (
+            workspace.status == "blocked"
+            or workspace.proposal_id != request.expected_proposal_id
+            or workspace.planning_digest != request.expected_planning_digest
+            or workspace.planning_input_digest != request.expected_planning_input_digest
+        ):
+            return JSONResponse(status_code=409, content=workspace.model_dump(mode="json"))
+        status, _ = content_workflow_store().record_planning_review(
+            workspace.work_item_id,
+            request.as_planning_review_request(workspace.service_card_id),
+            planning_digest=request.expected_planning_digest,
+            service_card_id=workspace.service_card_id,
+            human_override_review_required=False,
+        )
+        del status
+        return _new_page_canonical_document_workspace(brief_id)
+
+    @router.post(
+        "/api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review",
+        response_model=ContentNewPageRevisionReviewResponse,
+        responses={409: {"model": ContentDraftRevisionConflictResponse}},
+    )
+    def review_new_page_draft_revision(
+        brief_id: str,
+        revision_id: str,
+        request: ContentDraftRevisionReviewRequest,
+    ) -> ContentNewPageRevisionReviewResponse | JSONResponse:
+        workspace = _new_page_canonical_document_workspace(brief_id)
+        try:
+            result = review_new_page_revision(
+                workspace=workspace,
+                revision_id=revision_id,
+                request=request,
+                store=content_workflow_store(),
+            )
+        except ValueError:
+            return _new_page_revision_conflict_response(
+                code="revision_not_reviewable",
+                workspace=workspace,
+                safe_next_step=(
+                    "Odśwież dokument nowej strony i sprawdź jego dokładne powiązanie "
+                    "z zatwierdzonym planem przed ponownym review."
+                ),
+            )
+        if result.status == "conflict" or result.review is None:
+            if result.conflict is None:
+                raise RuntimeError("New-page revision review conflict lacks details.")
+            return JSONResponse(
+                status_code=409,
+                content=ContentDraftRevisionConflictResponse(
+                    code=result.conflict.code,
+                    current_revision_id=result.conflict.current_revision_id,
+                    current_digest=result.conflict.current_revision_digest,
+                    safe_next_step=revision_conflict_next_step(result.conflict.code),
+                ).model_dump(mode="json"),
+            )
+        return ContentNewPageRevisionReviewResponse(
+            status="recorded" if result.status == "created" else "idempotent",
+            review=result.review,
+        )
+
+
+def _new_page_revision_conflict_response(
+    *,
+    code: ContentDraftRevisionPublicConflictCode,
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+    safe_next_step: str,
+) -> JSONResponse:
+    revision = workspace.canonical_revision
+    payload = ContentDraftRevisionConflictResponse(
+        code=code,
+        current_revision_id=None if revision is None else revision.revision_id,
+        current_digest=None if revision is None else revision.content_digest,
+        safe_next_step=safe_next_step,
+    )
+    return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
 
 
 def _new_page_planning_proposal_workspace(
