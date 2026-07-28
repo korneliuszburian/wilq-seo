@@ -67,6 +67,10 @@ import {
   ContentWorkItemHumanReviewResponseSchema,
   ContentWorkItemMeasurementWindowRequestSchema,
   ContentWorkItemMeasurementWindowResponseSchema,
+  ContentWorkItemMeasurementOutcomeRequestSchema,
+  ContentWorkItemMeasurementOutcomeResponseSchema,
+  ContentWorkItemLearningProposalRequestSchema,
+  ContentWorkItemLearningProposalResponseSchema,
   ContentWorkItemPreflightRequestSchema,
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemQualityReviewRequestSchema,
@@ -195,6 +199,10 @@ import {
   type ContentWorkItemHumanReviewResponse,
   type ContentWorkItemMeasurementWindowRequest,
   type ContentWorkItemMeasurementWindowResponse,
+  type ContentWorkItemMeasurementOutcomeRequest,
+  type ContentWorkItemMeasurementOutcomeResponse,
+  type ContentWorkItemLearningProposalRequest,
+  type ContentWorkItemLearningProposalResponse,
   type ContentWorkItemPreflightRequest,
   type ContentWorkItemPreflightResponse,
   type ContentWorkItemQualityReviewRequest,
@@ -1020,6 +1028,26 @@ export function postContentWorkItemMeasurementWindow(
   );
 }
 
+export function postContentWorkItemMeasurementOutcome(
+  request: ContentWorkItemMeasurementOutcomeRequest
+): Promise<ContentWorkItemMeasurementOutcomeResponse> {
+  return apiPost(
+    "/api/content/work-items/measurement-outcome",
+    ContentWorkItemMeasurementOutcomeResponseSchema,
+    ContentWorkItemMeasurementOutcomeRequestSchema.parse(request)
+  );
+}
+
+export function postContentWorkItemLearningProposal(
+  request: ContentWorkItemLearningProposalRequest
+): Promise<ContentWorkItemLearningProposalResponse> {
+  return apiPost(
+    "/api/content/work-items/learning-proposal",
+    ContentWorkItemLearningProposalResponseSchema,
+    ContentWorkItemLearningProposalRequestSchema.parse(request)
+  );
+}
+
 export function getGa4Diagnostics(): Promise<Ga4DiagnosticsResponse> {
   return apiGet("/api/ga4/diagnostics", Ga4DiagnosticsResponseSchema);
 }
@@ -1240,6 +1268,10 @@ export type {
   ContentWorkItemHumanReviewResponse,
   ContentWorkItemMeasurementWindowRequest,
   ContentWorkItemMeasurementWindowResponse,
+  ContentWorkItemMeasurementOutcomeRequest,
+  ContentWorkItemMeasurementOutcomeResponse,
+  ContentWorkItemLearningProposalRequest,
+  ContentWorkItemLearningProposalResponse,
   ContentWorkItemPreflightRequest,
   ContentWorkItemPreflightResponse,
   ContentWorkItemQualityReviewRequest,

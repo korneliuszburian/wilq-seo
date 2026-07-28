@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -278,3 +279,51 @@ def test_public_deployment_read_projects_only_exact_public_observations(
     assert client.get(
         "/api/content/work-items/other/draft-revisions/revision_bdo/public-deployment"
     ).json()["deployment"] is None
+
+
+def test_public_deployment_read_hides_window_with_other_deployment_lineage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    revision = ContentDraftRevision.model_construct(
+        revision_id="revision_bdo",
+        work_item_id="content_work_item_bdo",
+        content_digest="a" * 64,
+        final_canonical_url="https://ekologus.pl/bdo/",
+    )
+    deployment = ContentPublicDeployment.model_construct(
+        deployment_id="deployment_current",
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revision_digest=revision.content_digest,
+    )
+    store = SimpleNamespace(
+        list_draft_revisions=lambda _: [revision],
+        load_draft_revision_review=lambda **_: ContentDraftRevisionReview.model_construct(
+            decision="approved",
+            work_item_id=revision.work_item_id,
+            revision_id=revision.revision_id,
+            revision_digest=revision.content_digest,
+        ),
+        measurement_window=lambda *_: SimpleNamespace(
+            deployment_id="deployment_other",
+            deployed_revision_id=revision.revision_id,
+            deployed_revision_digest=revision.content_digest,
+        ),
+    )
+    monkeypatch.setattr(deployment_router, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        deployment_router, "public_deployment", lambda *_args, **_kwargs: deployment
+    )
+    monkeypatch.setattr(
+        deployment_router,
+        "metric_store",
+        lambda: SimpleNamespace(list_metric_facts_for_content_url=lambda *_args, **_kwargs: []),
+    )
+
+    response = deployment_router.read_content_public_deployment(
+        revision.work_item_id, revision.revision_id
+    )
+
+    assert response.measurement_window is None
+    assert response.measurement_outcome is None
+    assert response.learning_proposal is None

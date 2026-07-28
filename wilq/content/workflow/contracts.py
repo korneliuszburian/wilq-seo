@@ -46,6 +46,7 @@ from wilq.content.measurement.deployment import (
 from wilq.content.measurement.learning import ContentLearningProposal
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import (
+    ContentMeasurementWindow,
     ContentMeasurementWindowBlocker,
     ContentMeasurementWindowBuildResult,
 )
@@ -398,6 +399,10 @@ class ContentPublicDeploymentReadResponse(BaseModel):
     publication_observations: list[ContentPublicDeploymentObservation] = Field(
         default_factory=list
     )
+    measurement_window: ContentMeasurementWindow | None = None
+    measurement_outcome: ContentMeasurementOutcomeInterpretation | None = None
+    learning_proposal: ContentLearningProposal | None = None
+    outcome_allowed: bool = False
     safe_next_step: str
 
 

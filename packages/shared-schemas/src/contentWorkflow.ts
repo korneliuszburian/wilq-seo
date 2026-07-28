@@ -2261,6 +2261,10 @@ export const ContentPublicDeploymentObservationSchema = z.object({
 export const ContentPublicDeploymentReadResponseSchema = z.object({
   deployment: ContentPublicDeploymentSchema.nullable().optional(),
   publication_observations: z.array(ContentPublicDeploymentObservationSchema).default([]),
+  measurement_window: ContentMeasurementWindowSchema.nullable().optional(),
+  measurement_outcome: z.lazy(() => ContentMeasurementOutcomeInterpretationSchema).nullable().optional(),
+  learning_proposal: z.lazy(() => ContentLearningProposalSchema).nullable().optional(),
+  outcome_allowed: z.boolean().default(false),
   safe_next_step: z.string()
 });
 
