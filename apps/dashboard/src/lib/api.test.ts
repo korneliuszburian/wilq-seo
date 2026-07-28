@@ -6,6 +6,8 @@ import {
   applyAction,
   createContentNewPageFoundation,
   createContentNewPageInitialDraft,
+  reviewContentNewPagePlanning,
+  reviewContentNewPageRevision,
   getActionMutationReadiness,
   getActionsMutationReadiness,
   getContentKnowledgeCards,
@@ -331,6 +333,83 @@ describe("content workflow API helpers", () => {
 
     expect(result.status).toBe("blocked");
     expect(result.blockers[0]?.code).toBe("planning_not_approved");
+  });
+
+  it("keeps exact new-page plan review conflicts typed for the workspace", async () => {
+    const request = {
+      expected_proposal_id: "content_planning_proposal_a",
+      expected_planning_digest: "a".repeat(64),
+      expected_planning_input_digest: "b".repeat(64),
+      decision: "approved" as const,
+      reviewed_by: "Wilku",
+      checked_items: ["Sprawdzono plan."],
+      notes: ""
+    };
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      expect(new URL(String(url)).pathname).toBe(
+        "/api/content/new-page-briefs/content_new_page_brief_a/planning-review"
+      );
+      expect(JSON.parse(String(init?.body))).toEqual(request);
+      return new Response(JSON.stringify({
+        response_type: "content_new_page_document_review_prerequisite_conflict",
+        contract_version: "content_new_page_document_review_prerequisite_conflict_v1",
+        status: "blocked",
+        code: "missing_planning_foundation",
+        brief_id: "content_new_page_brief_a",
+        safe_next_step: "Zapisz podstawę planowania."
+      }), { status: 409, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await reviewContentNewPagePlanning("content_new_page_brief_a", request);
+
+    expect(result).toMatchObject({ code: "missing_planning_foundation" });
+  });
+
+  it("posts exact new-page revision review with its current digest", async () => {
+    const request = {
+      expected_revision_digest: "c".repeat(64),
+      reviewed_by: "Wilku",
+      decision: "approved" as const,
+      notes: "",
+      checked_items: ["Sprawdzono dokument."],
+      evidence_ids: ["ev_service"]
+    };
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      expect(new URL(String(url)).pathname).toBe(
+        "/api/content/new-page-briefs/content_new_page_brief_a/draft-revisions/content_revision_new_page_a/review"
+      );
+      expect(JSON.parse(String(init?.body))).toEqual(request);
+      return new Response(JSON.stringify({
+        status: "recorded",
+        review: {
+          decision_id: "content_revision_decision_new_page_a",
+          decision_number: 1,
+          work_item_id: "content_work_item_new_page_a",
+          revision_id: "content_revision_new_page_a",
+          revision_digest: request.expected_revision_digest,
+          reviewed_by: request.reviewed_by,
+          decision: request.decision,
+          notes: request.notes,
+          checked_items: request.checked_items,
+          evidence_ids: request.evidence_ids,
+          created_at: "2026-07-28T18:00:00Z"
+        }
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await reviewContentNewPageRevision(
+      "content_new_page_brief_a",
+      "content_revision_new_page_a",
+      request
+    );
+
+    expect(result.status).toBe("recorded");
+    if (result.status !== "recorded") {
+      throw new Error("Expected recorded new-page revision review response.");
+    }
+    expect(result.review.revision_digest).toBe(request.expected_revision_digest);
   });
 
   it("encodes action IDs for every action helper path suffix", () => {
