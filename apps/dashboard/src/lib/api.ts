@@ -59,30 +59,13 @@ import {
   ContentInventoryCatalogResponseSchema,
   ContentInventoryMaterialResponseSchema,
   ContentOperatorContextSchema,
-  ContentWorkItemDraftPackageRequestSchema,
-  ContentWorkItemDraftPackageResponseSchema,
-  ContentWorkItemHumanReviewRequestSchema,
-  ContentWorkItemHumanReviewResponseSchema,
   ContentWorkItemMeasurementWindowRequestSchema,
   ContentWorkItemMeasurementWindowResponseSchema,
   ContentWorkItemMeasurementOutcomeRequestSchema,
   ContentWorkItemMeasurementOutcomeResponseSchema,
   ContentWorkItemLearningProposalRequestSchema,
   ContentWorkItemLearningProposalResponseSchema,
-  ContentWorkItemPreflightRequestSchema,
-  ContentWorkItemPreflightResponseSchema,
-  ContentWorkItemQualityReviewRequestSchema,
-  ContentWorkItemQualityReviewResponseSchema,
   ContentWorkItemQueueResponseSchema,
-  ContentWorkItemSalesBriefRequestSchema,
-  ContentWorkItemSalesBriefResponseSchema,
-  ContentWorkItemSnapshotAuditRequestSchema,
-  ContentWorkItemSnapshotHumanReviewRequestSchema,
-  ContentWorkItemSnapshotResponseSchema,
-  ContentWorkItemWordPressDraftExecutionRequestSchema,
-  ContentWorkItemWordPressDraftExecutionResponseSchema,
-  ContentWorkItemWordPressDraftHandoffRequestSchema,
-  ContentWorkItemWordPressDraftHandoffResponseSchema,
   ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
@@ -186,33 +169,15 @@ import {
   type ContentInventoryCatalogResponse,
   type ContentInventoryMaterialResponse,
   type ContentOperatorContext,
-  type ContentWorkItemDraftPackageRequest,
-  type ContentWorkItemDraftPackageResponse,
-  type ContentWorkItemHumanReviewRequest,
-  type ContentWorkItemHumanReviewResponse,
   type ContentWorkItemMeasurementWindowRequest,
   type ContentWorkItemMeasurementWindowResponse,
   type ContentWorkItemMeasurementOutcomeRequest,
   type ContentWorkItemMeasurementOutcomeResponse,
   type ContentWorkItemLearningProposalRequest,
   type ContentWorkItemLearningProposalResponse,
-  type ContentWorkItemPreflightRequest,
-  type ContentWorkItemPreflightResponse,
-  type ContentWorkItemQualityReviewRequest,
-  type ContentWorkItemQualityReviewResponse,
   type ContentWorkItemQueueCandidate,
   type ContentWorkItemQueueResponse,
-  type ContentWorkItemSalesBriefRequest,
-  type ContentWorkItemSalesBriefResponse,
-  type ContentWorkItemSnapshotAuditRequest,
-  type ContentWorkItemSnapshotHumanReviewRequest,
-  type ContentWorkItemSnapshotResponse,
   type ContentWorkItemServiceCandidate,
-  type ContentWorkItemWordPressDraftExecutionRequest,
-  type ContentWorkItemWordPressDraftExecutionResponse,
-  type ContentWorkItemWordPressDraftHandoffRequest,
-  type ContentWorkItemWordPressDraftHandoffResponse,
-  type ContentWorkItemWorkflowSnapshotResponse,
   type ConnectorRefreshRun,
   type ConnectorStatus,
   type DemandGenReadinessContract,
@@ -702,19 +667,6 @@ export function getContentInventoryMaterial(url: string): Promise<ContentInvento
   );
 }
 
-export function getContentWorkItemSnapshot(
-  workItemId?: string
-): Promise<ContentWorkItemSnapshotResponse> {
-  const path =
-    workItemId === undefined
-      ? "/api/content/work-items/snapshot"
-      : `/api/content/work-items/${encodeURIComponent(workItemId)}/snapshot`;
-  return apiGet(
-    path,
-    ContentWorkItemSnapshotResponseSchema
-  );
-}
-
 export function saveContentWorkItemDraftRevision(
   request: ContentDraftRevisionSaveRequest,
   workItemId: string
@@ -854,111 +806,6 @@ export function getContentWorkItemEnrichment(
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/enrichment`,
     ContentOpportunityEnrichmentResponseSchema
-  );
-}
-
-export function postContentWorkItemPreflight(
-  request: ContentWorkItemPreflightRequest
-): Promise<ContentWorkItemPreflightResponse> {
-  return apiPost(
-    "/api/content/work-items/preflight",
-    ContentWorkItemPreflightResponseSchema,
-    ContentWorkItemPreflightRequestSchema.parse(request)
-  );
-}
-
-export function postContentWorkItemSalesBrief(
-  request: ContentWorkItemSalesBriefRequest
-): Promise<ContentWorkItemSalesBriefResponse> {
-  return apiPost(
-    "/api/content/work-items/sales-brief",
-    ContentWorkItemSalesBriefResponseSchema,
-    ContentWorkItemSalesBriefRequestSchema.parse(request)
-  );
-}
-
-export function postContentWorkItemDraftPackage(
-  request: ContentWorkItemDraftPackageRequest
-): Promise<ContentWorkItemDraftPackageResponse> {
-  return apiPost(
-    "/api/content/work-items/draft-package",
-    ContentWorkItemDraftPackageResponseSchema,
-    ContentWorkItemDraftPackageRequestSchema.parse(request)
-  );
-}
-
-export function postContentWorkItemQualityReview(
-  request: ContentWorkItemQualityReviewRequest,
-  workItemId?: string
-): Promise<ContentWorkItemQualityReviewResponse> {
-  const path =
-    workItemId === undefined
-      ? "/api/content/work-items/quality-review"
-      : `/api/content/work-items/${encodeURIComponent(workItemId)}/quality-review`;
-  return apiPost(
-    path,
-    ContentWorkItemQualityReviewResponseSchema,
-    ContentWorkItemQualityReviewRequestSchema.parse(request)
-  );
-}
-
-export function postContentWorkItemHumanReview(
-  request: ContentWorkItemHumanReviewRequest
-): Promise<ContentWorkItemHumanReviewResponse> {
-  return apiPost(
-    "/api/content/work-items/human-review",
-    ContentWorkItemHumanReviewResponseSchema,
-    ContentWorkItemHumanReviewRequestSchema.parse(request)
-  );
-}
-
-export function saveContentWorkItemSnapshotHumanReview(
-  request: ContentWorkItemSnapshotHumanReviewRequest,
-  workItemId?: string
-): Promise<ContentWorkItemHumanReviewResponse> {
-  const path =
-    workItemId === undefined
-      ? "/api/content/work-items/snapshot/human-review"
-      : `/api/content/work-items/${encodeURIComponent(workItemId)}/human-review`;
-  return apiPost(
-    path,
-    ContentWorkItemHumanReviewResponseSchema,
-    ContentWorkItemSnapshotHumanReviewRequestSchema.parse(request)
-  );
-}
-
-export function saveContentWorkItemSnapshotAudit(
-  request: ContentWorkItemSnapshotAuditRequest,
-  workItemId?: string
-): Promise<ContentWorkItemWordPressDraftHandoffResponse> {
-  const path =
-    workItemId === undefined
-      ? "/api/content/work-items/snapshot/audit"
-      : `/api/content/work-items/${encodeURIComponent(workItemId)}/audit`;
-  return apiPost(
-    path,
-    ContentWorkItemWordPressDraftHandoffResponseSchema,
-    ContentWorkItemSnapshotAuditRequestSchema.parse(request)
-  );
-}
-
-export function postContentWorkItemWordPressDraftHandoff(
-  request: ContentWorkItemWordPressDraftHandoffRequest
-): Promise<ContentWorkItemWordPressDraftHandoffResponse> {
-  return apiPost(
-    "/api/content/work-items/wordpress-draft-handoff",
-    ContentWorkItemWordPressDraftHandoffResponseSchema,
-    ContentWorkItemWordPressDraftHandoffRequestSchema.parse(request)
-  );
-}
-
-export function postContentWorkItemWordPressDraftExecution(
-  request: ContentWorkItemWordPressDraftExecutionRequest
-): Promise<ContentWorkItemWordPressDraftExecutionResponse> {
-  return apiPost(
-    "/api/content/work-items/wordpress-draft-execution",
-    ContentWorkItemWordPressDraftExecutionResponseSchema,
-    ContentWorkItemWordPressDraftExecutionRequestSchema.parse(request)
   );
 }
 
@@ -1204,33 +1051,15 @@ export type {
   ContentInventoryCatalogResponse,
   ContentInventoryMaterialResponse,
   ContentOperatorContext,
-  ContentWorkItemDraftPackageRequest,
-  ContentWorkItemDraftPackageResponse,
-  ContentWorkItemHumanReviewRequest,
-  ContentWorkItemHumanReviewResponse,
   ContentWorkItemMeasurementWindowRequest,
   ContentWorkItemMeasurementWindowResponse,
   ContentWorkItemMeasurementOutcomeRequest,
   ContentWorkItemMeasurementOutcomeResponse,
   ContentWorkItemLearningProposalRequest,
   ContentWorkItemLearningProposalResponse,
-  ContentWorkItemPreflightRequest,
-  ContentWorkItemPreflightResponse,
-  ContentWorkItemQualityReviewRequest,
-  ContentWorkItemQualityReviewResponse,
   ContentWorkItemQueueCandidate,
   ContentWorkItemQueueResponse,
-  ContentWorkItemSalesBriefRequest,
-  ContentWorkItemSalesBriefResponse,
-  ContentWorkItemSnapshotAuditRequest,
-  ContentWorkItemSnapshotHumanReviewRequest,
-  ContentWorkItemSnapshotResponse,
   ContentWorkItemServiceCandidate,
-  ContentWorkItemWordPressDraftExecutionRequest,
-  ContentWorkItemWordPressDraftExecutionResponse,
-  ContentWorkItemWordPressDraftHandoffRequest,
-  ContentWorkItemWordPressDraftHandoffResponse,
-  ContentWorkItemWorkflowSnapshotResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
   DemandGenReadinessContract,

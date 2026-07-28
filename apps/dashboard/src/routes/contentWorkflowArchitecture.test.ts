@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const routeSource = readFileSync(resolve(__dirname, "ContentWorkflowSurface.tsx"), "utf8");
 const querySource = readFileSync(resolve(__dirname, "contentWorkflowQueries.ts"), "utf8");
+const contentApiSource = readFileSync(resolve(__dirname, "../lib/api.ts"), "utf8");
 const actionRouteSource = readFileSync(resolve(__dirname, "DetailPanels.tsx"), "utf8");
 const actionQuerySource = readFileSync(resolve(__dirname, "actionDetailQueries.ts"), "utf8");
 
@@ -35,6 +36,23 @@ describe("ContentWorkflow architecture boundary", () => {
     expect(routeSource).not.toContain("MobileContentTriage");
     expect(routeSource).not.toContain("Treści: praca nad stroną");
     expect(routeSource).not.toContain('<FactTile label="Publikacja"');
+  });
+
+  it("does not expose retired snapshot, package-review, or direct WordPress helpers", () => {
+    for (const name of [
+      "getContentWorkItemSnapshot",
+      "postContentWorkItemPreflight",
+      "postContentWorkItemSalesBrief",
+      "postContentWorkItemDraftPackage",
+      "postContentWorkItemQualityReview",
+      "postContentWorkItemHumanReview",
+      "saveContentWorkItemSnapshotHumanReview",
+      "saveContentWorkItemSnapshotAudit",
+      "postContentWorkItemWordPressDraftHandoff",
+      "postContentWorkItemWordPressDraftExecution"
+    ]) {
+      expect(contentApiSource).not.toContain(`function ${name}`);
+    }
   });
 
   it("keeps ActionDetail remote queries behind its domain hook", () => {
