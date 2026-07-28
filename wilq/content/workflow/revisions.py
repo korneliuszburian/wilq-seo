@@ -487,6 +487,15 @@ def _validate_full_document(
     document: ContentDraftRevision | ContentDraftRevisionAppendCommand,
 ) -> None:
     if document.schema_version == "wilq_content_draft_revision_v1":
+        if (
+            document.document_kind != "refresh_existing"
+            or document.new_page_document_identity is not None
+            or not document.final_canonical_url
+            or not document.final_canonical_url.strip()
+        ):
+            raise ValueError(
+                "Historical v1 revision requires a refresh URL and cannot carry new-page identity."
+            )
         return
     if document.document_kind == "refresh_existing":
         if not document.final_canonical_url or document.new_page_document_identity is not None:

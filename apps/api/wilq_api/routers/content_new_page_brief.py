@@ -15,6 +15,7 @@ from wilq.content.planning.dynamic_input import (
     build_new_page_planning_input,
     content_planning_input_readiness,
 )
+from wilq.content.planning.generated_proposal_contracts import ContentPlanningProposalResponse
 from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
 from wilq.content.planning.new_page_proposal import (
     ContentNewPagePlanningProposalRequest,
@@ -22,6 +23,7 @@ from wilq.content.planning.new_page_proposal import (
     build_new_page_planning_proposal_workspace,
     generate_new_page_planning_proposal,
     queue_new_page_planning_proposal,
+    terminalize_new_page_planning_claim,
 )
 from wilq.content.workflow.catalog import build_content_inventory_catalog_cached
 from wilq.content.workflow.contracts import ContentDraftRevisionReviewRequest
@@ -225,7 +227,10 @@ def register_content_new_page_planning_proposal_routes(router: APIRouter) -> Non
         )
         if should_run:
             _NEW_PAGE_PLANNING_EXECUTOR.submit(
-                _run_new_page_planning_generation, brief_id, request
+                _run_new_page_planning_generation,
+                brief_id,
+                request,
+                queued.proposal_status,
             )
         return queued
 
@@ -401,34 +406,57 @@ def _new_page_draft_inputs(
 def _run_new_page_planning_generation(
     brief_id: str,
     request: ContentNewPagePlanningProposalRequest,
+    queued_response: ContentPlanningProposalResponse | None,
 ) -> None:
     """Rebuild current input inside the worker before it can call Codex."""
-
-    workspace = _new_page_planning_proposal_workspace(brief_id)
-    if workspace.readiness.status != "ready":
+    claim_store = content_planning_proposal_store()
+    if queued_response is None:
         return
-    store = new_page_brief_store()
-    brief = store.load_new_page_brief(brief_id)
-    foundation = store.load_new_page_foundation(brief_id)
-    if brief is None or foundation is None:
-        return
-    result = build_new_page_planning_input(
-        brief=brief,
-        foundation=foundation,
-        overlap_guard=build_new_page_overlap_guard(
-            brief,
-            catalog=build_content_inventory_catalog_cached(),
-        ),
-        service_card=new_page_service_card(foundation.service_card_id),
-    )
-    generated = generate_new_page_planning_proposal(
-        workspace=workspace,
-        build_result=result,
-        request=request,
-        client=content_codex_app_server_client(),
-        store=content_planning_proposal_store(),
-        run_store=local_state_store(),
-        endpoint_path=f"/api/content/new-page-briefs/{brief_id}/planning-proposal",
-    )
-    if generated.proposal_status is not None:
-        content_planning_proposal_store().save_terminal_response(generated.proposal_status)
+    try:
+        workspace = _new_page_planning_proposal_workspace(brief_id)
+        if workspace.readiness.status != "ready":
+            terminalize_new_page_planning_claim(
+                queued_response, claim_store, code="planning_input_blocked"
+            )
+            return
+        store = new_page_brief_store()
+        brief = store.load_new_page_brief(brief_id)
+        foundation = store.load_new_page_foundation(brief_id)
+        if brief is None or foundation is None:
+            terminalize_new_page_planning_claim(
+                queued_response, claim_store, code="planning_input_missing"
+            )
+            return
+        result = build_new_page_planning_input(
+            brief=brief,
+            foundation=foundation,
+            overlap_guard=build_new_page_overlap_guard(
+                brief,
+                catalog=build_content_inventory_catalog_cached(),
+            ),
+            service_card=new_page_service_card(foundation.service_card_id),
+        )
+        current = result.planning_input
+        if (
+            current is None
+            or current.planning_input_digest != queued_response.planning_input_digest
+        ):
+            terminalize_new_page_planning_claim(
+                queued_response, claim_store, code="stale_input"
+            )
+            return
+        generated = generate_new_page_planning_proposal(
+            workspace=workspace,
+            build_result=result,
+            request=request,
+            client=content_codex_app_server_client(),
+            store=claim_store,
+            run_store=local_state_store(),
+            endpoint_path=f"/api/content/new-page-briefs/{brief_id}/planning-proposal",
+        )
+        if generated.proposal_status is not None:
+            claim_store.save_terminal_response(generated.proposal_status)
+    except Exception:
+        terminalize_new_page_planning_claim(
+            queued_response, claim_store, code="runtime_failed"
+        )

@@ -80,6 +80,54 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
     public_deployment_status: Literal["not_confirmed"] = "not_confirmed"
     safe_next_step: str = Field(min_length=1)
 
+    @model_validator(mode="after")
+    def require_exact_document_lineage(self) -> ContentNewPageCanonicalDocumentWorkspace:
+        revision = self.canonical_revision
+        if revision is None:
+            if (
+                self.revision_review is not None
+                or self.assigned_source_material_ids
+                or self.assigned_knowledge_card_ids
+                or self.document_status != "not_created"
+            ):
+                raise ValueError("Missing new-page revision cannot carry document lineage.")
+            return self
+        identity = revision.new_page_document_identity
+        if not (
+            revision.document_kind == "new_page"
+            and revision.final_canonical_url is None
+            and identity is not None
+            and revision.work_item_id == self.work_item_id
+            and revision.planning_digest == self.planning_digest
+            and revision.planning_input_digest == self.planning_input_digest
+            and identity.brief_id == self.brief_id
+            and identity.brief_digest == self.brief_digest
+            and identity.foundation_id == self.foundation_id
+            and identity.service_card_id == self.service_card_id
+            and identity.service_card_digest == self.service_card_digest
+            and identity.proposed_ia_location == self.proposed_ia_location
+        ):
+            raise ValueError("Canonical revision does not match the exact new-page workspace.")
+        if (
+            self.assigned_source_material_ids != revision.source_material_ids
+            or self.assigned_knowledge_card_ids != revision.knowledge_card_ids
+        ):
+            raise ValueError("Workspace lineage must match the canonical new-page revision.")
+        review = self.revision_review
+        expected_status = "unreviewed" if review is None else review.decision
+        if (
+            self.document_status != expected_status
+            or (
+                review is not None
+                and (
+                    review.revision_id != revision.revision_id
+                    or review.revision_digest != revision.content_digest
+                )
+            )
+        ):
+            raise ValueError("Workspace review must match the canonical revision and status.")
+        return self
+
 
 class ContentNewPagePlanningReviewCommand(BaseModel):
     """Human scope approval tied to one generated new-page proposal."""

@@ -2484,13 +2484,22 @@ export const ContentDraftRevisionSchema = z.object({
   created_by: z.string().refine((value) => value.trim().length > 0),
   created_at: z.string()
 }).superRefine((revision, context) => {
+  if (revision.schema_version === "wilq_content_draft_revision_v1") {
+    if (
+      revision.document_kind !== "refresh_existing" ||
+      !revision.final_canonical_url?.trim() ||
+      revision.new_page_document_identity
+    ) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Historical v1 revision requires a refresh URL and cannot carry new-page identity." });
+    }
+    return;
+  }
   if (revision.document_kind === "refresh_existing" && (!revision.final_canonical_url?.trim() || revision.new_page_document_identity)) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["final_canonical_url"], message: "Refresh revision requires a public canonical URL and no new-page identity." });
   }
   if (revision.document_kind === "new_page" && (revision.final_canonical_url !== null || !revision.new_page_document_identity || revision.new_page_document_identity.work_item_id !== revision.work_item_id)) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["new_page_document_identity"], message: "New-page revision requires exact pre-document identity and no public URL." });
   }
-  if (revision.schema_version !== "wilq_content_draft_revision_v2") return;
   const requiredBindings = [
     revision.planning_input_digest,
     revision.service_card_id,
@@ -3505,6 +3514,19 @@ export const ContentPlanningProposalSchema = z.object({
   ) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "New-page proposal identity or inventory is contradictory." });
   }
+  proposal.sections.forEach((section, index) => {
+    if (
+      section.inventory_disposition !== "create" ||
+      section.inventory_section_id !== null ||
+      section.inventory_heading !== null
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sections", index],
+        message: "New-page proposal sections cannot reference existing-page inventory."
+      });
+    }
+  });
 });
 
 export const ContentPlanningWorkspaceSchema = z.object({
@@ -3822,6 +3844,50 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   public_source_url: z.null(),
   public_deployment_status: z.literal("not_confirmed"),
   safe_next_step: z.string().min(1)
+}).superRefine((workspace, context) => {
+  const revision = workspace.canonical_revision;
+  if (!revision) {
+    if (
+      workspace.revision_review ||
+      workspace.assigned_source_material_ids.length > 0 ||
+      workspace.assigned_knowledge_card_ids.length > 0 ||
+      workspace.document_status !== "not_created"
+    ) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Missing new-page revision cannot carry document lineage." });
+    }
+    return;
+  }
+  const identity = revision.new_page_document_identity;
+  if (
+    revision.document_kind !== "new_page" ||
+    revision.final_canonical_url !== null ||
+    !identity ||
+    revision.work_item_id !== workspace.work_item_id ||
+    revision.planning_digest !== workspace.planning_digest ||
+    revision.planning_input_digest !== workspace.planning_input_digest ||
+    identity.brief_id !== workspace.brief_id ||
+    identity.brief_digest !== workspace.brief_digest ||
+    identity.foundation_id !== workspace.foundation_id ||
+    identity.service_card_id !== workspace.service_card_id ||
+    identity.service_card_digest !== workspace.service_card_digest ||
+    identity.proposed_ia_location !== workspace.proposed_ia_location
+  ) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical revision does not match the exact new-page workspace." });
+  }
+  if (
+    JSON.stringify(workspace.assigned_source_material_ids) !== JSON.stringify(revision.source_material_ids) ||
+    JSON.stringify(workspace.assigned_knowledge_card_ids) !== JSON.stringify(revision.knowledge_card_ids)
+  ) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace lineage must match the canonical new-page revision." });
+  }
+  const review = workspace.revision_review;
+  const expectedStatus = review ? review.decision : "unreviewed";
+  if (
+    workspace.document_status !== expectedStatus ||
+    (review && (review.revision_id !== revision.revision_id || review.revision_digest !== revision.content_digest))
+  ) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace review must match the canonical revision and status." });
+  }
 });
 
 export const ContentNewPagePlanningReviewCommandSchema = z.object({

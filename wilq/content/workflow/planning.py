@@ -196,6 +196,15 @@ class ContentPlanningProposal(BaseModel):
                 raise ValueError("New-page proposal identity must match the IA location.")
             if self.inventory_mapping:
                 raise ValueError("New-page proposal cannot carry existing-page inventory mapping.")
+            if any(
+                section.inventory_disposition != "create"
+                or section.inventory_section_id is not None
+                or section.inventory_heading is not None
+                for section in self.sections
+            ):
+                raise ValueError(
+                    "New-page proposal sections must be created without existing-page inventory."
+                )
         return self
 
 

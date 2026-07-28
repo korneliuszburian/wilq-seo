@@ -309,6 +309,7 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
                 "codex-proposal",
                 "initial-draft",
                 "planning-proposals",
+                "planning-proposal",
                 "semantic-review",
             )
         )
@@ -323,6 +324,7 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
 
     assert model_paths == {
         "/api/content/work-items/{work_item_id}/planning-proposals",
+        "/api/content/new-page-briefs/{brief_id}/planning-proposal",
         "/api/content/work-items/{work_item_id}/initial-draft",
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
         "/api/content/work-items/{work_item_id}/draft-revisions/"
