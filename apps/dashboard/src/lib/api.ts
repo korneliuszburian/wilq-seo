@@ -21,7 +21,6 @@ import {
   ContentSemanticReviewResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentDecisionContextSchema,
-  ContentDocumentWorkspaceSchema,
   ContentSelectedWorkspaceSchema,
   ContentTargetDiscoverySchema,
   ContentTargetMappingConfirmationCommandSchema,
@@ -45,7 +44,6 @@ import {
   ContentNewPageCanonicalDocumentWorkspaceSchema,
   ContentNewPageRevisionReviewConflictSchema,
   ContentNewPageRevisionReviewResponseSchema,
-  ContentPlanningInputReadinessResponseSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionReviewResponseSchema,
@@ -57,11 +55,9 @@ import {
   ContentPlanningProposalRequestSchema,
   ContentPlanningProposalResponseSchema,
   ContentServiceProfileResponseSchema,
-  ContentPreflightResponseSchema,
   ContentOpportunityEnrichmentResponseSchema,
   ContentInventoryCatalogResponseSchema,
   ContentInventoryMaterialResponseSchema,
-  ContentInventoryBindingResponseSchema,
   ContentOperatorContextSchema,
   ContentWorkItemDraftPackageRequestSchema,
   ContentWorkItemDraftPackageResponseSchema,
@@ -165,7 +161,6 @@ import {
   type ContentNewPageCanonicalDocumentWorkspace,
   type ContentNewPageRevisionReviewConflict,
   type ContentNewPageRevisionReviewResponse,
-  type ContentPlanningInputReadinessResponse,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
   type ContentDraftRevisionConflict,
@@ -186,12 +181,10 @@ import {
   type ContentPlanningProposalResponse,
   type ContentPlanningWorkspace,
   type ContentServiceProfileResponse,
-  type ContentPreflightResponse,
   type ContentOpportunityEnrichment,
   type ContentOpportunityEnrichmentResponse,
   type ContentInventoryCatalogResponse,
   type ContentInventoryMaterialResponse,
-  type ContentInventoryBindingResponse,
   type ContentOperatorContext,
   type ContentWorkItemDraftPackageRequest,
   type ContentWorkItemDraftPackageResponse,
@@ -473,10 +466,6 @@ export function getContentDiagnostics(): Promise<ContentDiagnosticsResponse> {
   return apiGet("/api/content/diagnostics", ContentDiagnosticsResponseSchema);
 }
 
-export function getContentPreflight(): Promise<ContentPreflightResponse> {
-  return apiGet("/api/content/preflight", ContentPreflightResponseSchema);
-}
-
 export function getContentKnowledgeCards(): Promise<ContentKnowledgeCardsResponse> {
   return apiGet("/api/content/knowledge-cards", ContentKnowledgeCardsResponseSchema);
 }
@@ -500,15 +489,6 @@ export function getContentWorkItemDecisionContext(
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/decision-context`,
     ContentDecisionContextSchema
-  );
-}
-
-export function getContentWorkItemDocumentWorkspace(
-  workItemId: string
-): Promise<ContentDocumentWorkspace> {
-  return apiGet(
-    `/api/content/work-items/${encodeURIComponent(workItemId)}/document-workspace`,
-    ContentDocumentWorkspaceSchema
   );
 }
 
@@ -638,15 +618,6 @@ export function createContentNewPageFoundation(
   );
 }
 
-export function getContentNewPagePlanningInput(
-  briefId: string
-): Promise<ContentPlanningInputReadinessResponse> {
-  return apiGet(
-    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/planning-input`,
-    ContentPlanningInputReadinessResponseSchema
-  );
-}
-
 export function getContentNewPagePlanningProposal(
   briefId: string
 ): Promise<ContentNewPagePlanningProposalWorkspace> {
@@ -728,14 +699,6 @@ export function getContentInventoryMaterial(url: string): Promise<ContentInvento
   return apiGet(
     `/api/content/inventory/material?url=${encodeURIComponent(url)}`,
     ContentInventoryMaterialResponseSchema
-  );
-}
-
-export function postContentInventoryBinding(url: string): Promise<ContentInventoryBindingResponse> {
-  return apiPost(
-    "/api/content/inventory/bind",
-    ContentInventoryBindingResponseSchema,
-    { url }
   );
 }
 
@@ -1209,7 +1172,6 @@ export type {
   ContentNewPagePlanningProposalRequest,
   ContentNewPagePlanningProposalWorkspace,
   ContentNewPageCanonicalDocumentWorkspace,
-  ContentPlanningInputReadinessResponse,
   ContentCodexSectionProposalRequest,
   ContentCodexSectionProposalResponse,
   ContentInitialDraftRequest,
@@ -1237,12 +1199,10 @@ export type {
   ContentPlanningProposalResponse,
   ContentPlanningWorkspace,
   ContentServiceProfileResponse,
-  ContentPreflightResponse,
   ContentOpportunityEnrichment,
   ContentOpportunityEnrichmentResponse,
   ContentInventoryCatalogResponse,
   ContentInventoryMaterialResponse,
-  ContentInventoryBindingResponse,
   ContentOperatorContext,
   ContentWorkItemDraftPackageRequest,
   ContentWorkItemDraftPackageResponse,

@@ -454,8 +454,8 @@ def _new_page_document_review_prerequisite(
         return ContentNewPageDocumentReviewPrerequisiteConflict(
             brief_id=brief_id,
             safe_next_step=(
-                "Zapisz dokładną podstawę planowania nowej strony przed review planu "
-                "lub dokumentu."
+                "Zapisz dokładną podstawę planowania nowej strony przed "
+                "przygotowaniem lub review dokumentu."
             ),
         )
     return None
