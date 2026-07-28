@@ -57,10 +57,10 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
     }
   }, [currentInitialDraft?.status, queryClient, workItemId]);
 
-  const planning = planningStatus.data?.planning_workspace;
+  const proposal = planningStatus.data?.proposal;
   const planningInputDigest = planningStatus.data?.planning_input_digest;
-  const proposalId = planning?.proposal.proposal_id;
-  if (!planning || !planningInputDigest || !proposalId) return null;
+  const proposalId = proposal?.proposal_id;
+  if (!proposal || !planningInputDigest || !proposalId) return null;
 
   return (
     <>
@@ -77,12 +77,12 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
           WILQ przygotował strukturę z aktualnych źródeł i wybranej usługi. To roboczy szkic; pełny tekst powstanie z dokładnie tej wersji.
         </p>
         <div className="mt-4 grid gap-3 rounded-md border border-line bg-surface p-3 text-sm sm:grid-cols-3">
-          <PlanFact label="Intencja" value={planning.proposal.search_intent} />
-          <PlanFact label="Odbiorca" value={planning.proposal.target_reader} />
-          <PlanFact label="Następny krok" value={planning.proposal.cta_direction} />
+          <PlanFact label="Intencja" value={proposal.search_intent} />
+          <PlanFact label="Odbiorca" value={proposal.target_reader} />
+          <PlanFact label="Następny krok" value={proposal.cta_direction} />
         </div>
         <ol className="mt-4 space-y-2" aria-label="Sekcje wygenerowanego planu">
-          {planning.proposal.sections.map((section, index) => (
+          {proposal.sections.map((section, index) => (
             <li key={`${section.section_id ?? index}-${section.heading}`} className="rounded-md border border-line bg-surface p-3 text-sm">
               <p className="font-semibold text-ink">{index + 1}. {section.heading}</p>
               <p className="mt-1 leading-6 text-slate-700">{section.purpose}</p>
@@ -94,7 +94,7 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
             type="button"
             disabled={prepareText.isPending || currentInitialDraft?.status === "generating"}
             onClick={() => prepareText.mutate({
-              expectedPlanningDigest: planning.proposal.planning_digest,
+              expectedPlanningDigest: proposal.planning_digest,
               planningInputDigest,
               proposalId
             })}

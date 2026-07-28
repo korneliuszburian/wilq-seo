@@ -87,44 +87,39 @@ describe("ContentPlanningPlanReview", () => {
 });
 
 function readyPlan() {
+  const proposal = {
+    work_item_id: "content_work_item_bdo",
+    proposal_id: "proposal_bdo",
+    planning_digest: "a".repeat(64),
+    service_card_id: "ekologus_service_bdo_reporting",
+    service_selection_confirmed: true,
+    final_canonical_url: "https://www.ekologus.pl/bdo/",
+    search_intent: "informacyjna",
+    target_reader: "przedsiębiorca",
+    cta_direction: "Skonsultuj obowiązki.",
+    buyer_problem: "Nie wie, jak zacząć.",
+    buyer_trigger: "Nowy obowiązek.",
+    internal_link_directions: [],
+    evidence_ids: ["evidence_bdo"],
+    source_material_ids: [],
+    knowledge_card_ids: [],
+    source_connectors: ["wordpress_ekologus"],
+    sections: [],
+    generation_status: "codex_generated",
+    search_demand: {
+      gsc_query_rows: [],
+      ads_term_rows: [],
+      optional_ads_status: "not_available",
+      safe_next_step: ""
+    }
+  };
   return {
     status: "ready",
     work_item_id: "content_work_item_bdo",
     service_card_id: "ekologus_service_bdo_reporting",
     planning_input_digest: "b".repeat(64),
-    proposal: null,
-    planning_workspace: {
-      proposal: {
-        work_item_id: "content_work_item_bdo",
-        proposal_id: "proposal_bdo",
-        planning_digest: "a".repeat(64),
-        service_card_id: "ekologus_service_bdo_reporting",
-        service_selection_confirmed: true,
-        final_canonical_url: "https://www.ekologus.pl/bdo/",
-        search_intent: "informacyjna",
-        target_reader: "przedsiębiorca",
-        cta_direction: "Skonsultuj obowiązki.",
-        buyer_problem: "Nie wie, jak zacząć.",
-        buyer_trigger: "Nowy obowiązek.",
-        internal_link_directions: [],
-        evidence_ids: ["evidence_bdo"],
-        source_material_ids: [],
-        knowledge_card_ids: [],
-        source_connectors: ["wordpress_ekologus"],
-        sections: [],
-        generation_status: "codex_generated",
-        search_demand: {
-          gsc_query_rows: [],
-          ads_term_rows: [],
-          optional_ads_status: "not_available",
-          safe_next_step: ""
-        }
-      },
-      scope_decision: null,
-      section_map_decision: null,
-      scope_current: false,
-      section_map_current: false
-    },
+    proposal,
+    planning_workspace: null,
     runtime: { status: "completed", thread_id: null, turn_id: null, external_call_attempted: false },
     blockers: [],
     safe_next_step: "Sprawdź wygenerowany plan.",
