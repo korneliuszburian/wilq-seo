@@ -136,6 +136,8 @@ def test_new_page_planning_input_rejects_existing_page_identity_and_inventory(
 
     invalid_payloads = [
         {**payload, "final_canonical_url": "https://www.ekologus.pl/istniejaca/"},
+        {**payload, "proposed_ia_location": "   "},
+        {**payload, "proposed_ia_location": "x"},
         {
             **payload,
             "inventory": {
@@ -175,10 +177,36 @@ def test_new_page_planning_input_rejects_existing_page_identity_and_inventory(
         with pytest.raises(ValueError):
             ContentPlanningInput.model_validate(invalid_payload)
 
+    valid_refresh_payload = deepcopy(payload)
+    valid_refresh_payload.update(
+        {
+            "goal": "refresh_existing",
+            "final_canonical_url": "https://www.ekologus.pl/istniejaca/",
+            "new_page_foundation": None,
+            "inventory": {
+                "status": "missing",
+                "content_status": "missing",
+                "acf_section_status": "missing",
+            },
+        }
+    )
+    assert ContentPlanningInput.model_validate(valid_refresh_payload).goal == "refresh_existing"
+    with pytest.raises(ValueError):
+        ContentPlanningInput.model_validate(
+            valid_refresh_payload | {"final_canonical_url": "   "}
+        )
+
+
+def test_new_page_planning_input_summary_rejects_contradictory_work_kind(
+    monkeypatch,
+) -> None:
+    planning_input, *_ = _ready_new_page_input(monkeypatch)
     summary = content_planning_input_summary(planning_input)
     for update in (
         {"final_canonical_url": "https://www.ekologus.pl/istniejaca/"},
         {"proposed_ia_location": None},
+        {"proposed_ia_location": "   "},
+        {"proposed_ia_location": "x"},
         {"inventory_status": "available"},
         {
             "metric_comparisons": [
@@ -202,4 +230,23 @@ def test_new_page_planning_input_rejects_existing_page_identity_and_inventory(
                 "goal": "refresh_existing",
                 "final_canonical_url": "https://www.ekologus.pl/istniejaca/",
             }
+        )
+
+    historical_refresh_summary = summary.model_dump(mode="json")
+    historical_refresh_summary.pop("goal")
+    historical_refresh_summary.update(
+        {
+            "final_canonical_url": "https://www.ekologus.pl/istniejaca/",
+            "proposed_ia_location": None,
+            "inventory_status": "missing",
+            "content_inventory_status": "missing",
+            "acf_section_inventory_status": "missing",
+        }
+    )
+    assert ContentPlanningInputSummary.model_validate(
+        historical_refresh_summary
+    ).goal == "refresh_existing"
+    with pytest.raises(ValueError):
+        ContentPlanningInputSummary.model_validate(
+            historical_refresh_summary | {"final_canonical_url": "   "}
         )
