@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageDeliveryAction, createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPageDeliveryReadiness, getContentNewPagePlanningProposal, refreshConnector, reviewContentNewPageRevision, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageDeliveryAction, createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPageDeliveryReadiness, getContentNewPagePlanningProposal, getContentNewPageTopicRecommendations, refreshConnector, reviewContentNewPageRevision, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, createContentNewPageDeliveryAction: vi.fn(), createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPageDeliveryReadiness: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), refreshConnector: vi.fn(), reviewContentNewPageRevision: vi.fn() };
+  return { ...actual, createContentNewPageDeliveryAction: vi.fn(), createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPageDeliveryReadiness: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), getContentNewPageTopicRecommendations: vi.fn(), refreshConnector: vi.fn(), reviewContentNewPageRevision: vi.fn() };
 });
 
 const entry: ContentWorkflowEntryResponse = {
@@ -62,6 +62,17 @@ function renderEntry(overrides: Partial<ComponentProps<typeof ContentWorkflowEnt
 
 describe("ContentWorkflowEntryPanel", () => {
   beforeEach(() => {
+    vi.mocked(getContentNewPageTopicRecommendations).mockResolvedValue({
+      response_type: "content_new_page_topic_recommendations",
+      contract_version: "content_new_page_topic_recommendations_v1",
+      status: "no_qualified_topics",
+      title: "Brak bezpiecznej rekomendacji tematu",
+      reason: "Brak pełnego potwierdzenia.",
+      safe_next_step: "Opisz własny temat.",
+      candidates: [],
+      source_connectors: ["ahrefs"],
+      evidence_ids: ["ev_ahrefs"]
+    });
     vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue(newPagePlanningWorkspace());
     vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(canonicalDocumentWorkspace());
   });
@@ -92,6 +103,36 @@ describe("ContentWorkflowEntryPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /zacznij od briefu/i }));
     expect(props.onOpenNewPage).toHaveBeenCalledOnce();
+  });
+
+  it("prefills only an exact evidence-bound topic and preserves the manual brief path", async () => {
+    vi.mocked(getContentNewPageTopicRecommendations).mockResolvedValue({
+      response_type: "content_new_page_topic_recommendations",
+      contract_version: "content_new_page_topic_recommendations_v1",
+      status: "ready",
+      title: "Tematy potwierdzone przez dane",
+      reason: "Dane są zgodne.",
+      safe_next_step: "Uzupełnij brief.",
+      candidates: [{
+        candidate_id: "content_new_page_topic_operat",
+        candidate_digest: "a".repeat(64),
+        title: "Operat wodnoprawny",
+        topic: "operat wodnoprawny",
+        rationale: "Ahrefs i GSC są zgodne.",
+        source_connectors: ["ahrefs", "google_search_console"],
+        evidence_ids: ["ev_ahrefs", "ev_gsc"]
+      }],
+      source_connectors: ["ahrefs", "google_search_console"],
+      evidence_ids: ["ev_ahrefs", "ev_gsc"]
+    });
+
+    renderEntry({ newPageOpen: true, newPageId: null });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Użyj tego tematu" }));
+    expect(screen.getByLabelText("Roboczy tytuł strony")).toHaveValue("Operat wodnoprawny");
+    expect(screen.getByText("Dowody tematu: ev_ahrefs, ev_gsc")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Wpisz własny temat" }));
+    expect(screen.getByRole("button", { name: "Użyj tego tematu" })).toBeInTheDocument();
   });
 
   it("explains an empty recommendation list with the API-owned data blocker", () => {
@@ -525,7 +566,8 @@ function savedBriefWorkspace(
       service: "Audyt środowiskowy",
       audience: "Inwestor przygotowujący przedsięwzięcie",
       search_intent: "audyt środowiskowy dla inwestycji",
-      proposed_ia_location: "Usługi → Dokumentacja środowiskowa"
+      proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
+      topic_evidence_ids: []
     },
     overlap_guard: {
       disposition: "no_conflict",

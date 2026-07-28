@@ -34,6 +34,9 @@ import {
   ContentDraftRevisionSchema,
   ContentDraftRevisionConflictSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
+  ContentNewPageBriefInputSchema,
+  ContentNewPageBriefSchema,
+  ContentNewPageTopicRecommendationsSchema,
   ContentNewPageDeliveryReadinessSchema,
   ContentNewPageDraftActionCommandSchema,
   ContentNewPageDocumentReviewPrerequisiteConflictSchema,
@@ -4146,6 +4149,61 @@ describe("Content work item workflow schemas", () => {
     };
     expect(ContentNewPageDocumentReviewPrerequisiteConflictSchema.safeParse(prerequisite).success).toBe(true);
     expect(ContentNewPageRevisionReviewConflictSchema.safeParse(prerequisite).success).toBe(true);
+  });
+
+  it("keeps evidence-backed new-page topics exact and optional for manual briefs", () => {
+    const manual = {
+      title: "Operat wodnoprawny",
+      purpose: "Pomóc inwestorowi zrozumieć wymagania operatu.",
+      service: "Obsługa środowiskowa",
+      audience: "Inwestor realizujący przedsięwzięcie",
+      search_intent: "operat wodnoprawny wymagania",
+      proposed_ia_location: "Usługi → Gospodarka wodna"
+    };
+    expect(ContentNewPageBriefInputSchema.safeParse(manual).success).toBe(true);
+    expect(
+      ContentNewPageBriefInputSchema.safeParse({
+        ...manual,
+        topic_candidate_id: "content_new_page_topic_operat"
+      }).success
+    ).toBe(false);
+    const sourceBacked = {
+      ...manual,
+      topic_candidate_id: "content_new_page_topic_operat",
+      topic_candidate_digest: "a".repeat(64)
+    };
+    expect(ContentNewPageBriefInputSchema.safeParse(sourceBacked).success).toBe(true);
+    expect(
+      ContentNewPageBriefSchema.safeParse({
+        ...sourceBacked,
+        brief_id: "content_new_page_brief_operat",
+        brief_digest: "b".repeat(64),
+        created_at: "2026-07-29T00:00:00Z",
+        work_kind: "new_page",
+        topic_evidence_ids: []
+      }).success
+    ).toBe(false);
+    expect(
+      ContentNewPageTopicRecommendationsSchema.safeParse({
+        response_type: "content_new_page_topic_recommendations",
+        contract_version: "content_new_page_topic_recommendations_v1",
+        status: "ready",
+        title: "Tematy potwierdzone przez dane",
+        reason: "Dane są zgodne.",
+        safe_next_step: "Uzupełnij brief.",
+        candidates: [{
+          candidate_id: "content_new_page_topic_operat",
+          candidate_digest: "a".repeat(64),
+          title: "Operat wodnoprawny",
+          topic: "operat wodnoprawny",
+          rationale: "Ahrefs i GSC są zgodne.",
+          source_connectors: ["ahrefs", "google_search_console"],
+          evidence_ids: ["ev_ahrefs", "ev_gsc"]
+        }],
+        source_connectors: ["ahrefs", "google_search_console"],
+        evidence_ids: ["ev_ahrefs", "ev_gsc"]
+      }).success
+    ).toBe(true);
   });
 
   it("accepts a typed blocked content workflow snapshot", () => {

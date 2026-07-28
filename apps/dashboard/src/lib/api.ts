@@ -36,6 +36,7 @@ import {
   ContentPublicDeploymentReadResponseSchema,
   ContentWorkflowEntryResponseSchema,
   ContentNewPageBriefInputSchema,
+  ContentNewPageTopicRecommendationsSchema,
   ContentNewPageBriefWorkspaceSchema,
   ContentNewPageFoundationCommandSchema,
   ContentNewPageFoundationResultSchema,
@@ -154,6 +155,8 @@ import {
   type ContentPublicDeploymentReadResponse,
   type ContentWorkflowEntryResponse,
   type ContentNewPageBriefInput,
+  type ContentNewPageTopicCandidate,
+  type ContentNewPageTopicRecommendations,
   type ContentNewPageBriefWorkspace,
   type ContentNewPageFoundationCommand,
   type ContentNewPageFoundationResult,
@@ -605,6 +608,13 @@ export function createContentNewPageBrief(
     "/api/content/new-page-briefs",
     ContentNewPageBriefWorkspaceSchema,
     ContentNewPageBriefInputSchema.parse(request)
+  );
+}
+
+export function getContentNewPageTopicRecommendations(): Promise<ContentNewPageTopicRecommendations> {
+  return apiGet(
+    "/api/content/new-page-topics",
+    ContentNewPageTopicRecommendationsSchema
   );
 }
 
@@ -1191,6 +1201,8 @@ export type {
   ContentPublicDeploymentReadResponse,
   ContentWorkflowEntryResponse,
   ContentNewPageBriefInput,
+  ContentNewPageTopicCandidate,
+  ContentNewPageTopicRecommendations,
   ContentNewPageBriefWorkspace,
   ContentNewPageFoundationCommand,
   ContentNewPageFoundationResult,

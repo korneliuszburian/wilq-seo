@@ -64,6 +64,11 @@ from wilq.content.workflow.new_page_revision import (
     ContentNewPageRevisionReviewResponse,
     review_new_page_revision,
 )
+from wilq.content.workflow.new_page_topics import (
+    ContentNewPageTopicRecommendations,
+    build_new_page_topic_recommendations,
+    resolve_new_page_topic_candidate,
+)
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.store_new_page import new_page_brief_store
@@ -77,6 +82,15 @@ _NEW_PAGE_PLANNING_EXECUTOR = ThreadPoolExecutor(
 
 
 def register_content_new_page_brief_routes(router: APIRouter) -> None:
+    @router.get(
+        "/api/content/new-page-topics",
+        response_model=ContentNewPageTopicRecommendations,
+    )
+    def content_new_page_topic_recommendations() -> ContentNewPageTopicRecommendations:
+        """Read qualified topic seeds; never persist a brief or invoke Codex."""
+
+        return build_new_page_topic_recommendations()
+
     @router.post(
         "/api/content/new-page-briefs",
         response_model=ContentNewPageBriefWorkspace,
@@ -84,7 +98,27 @@ def register_content_new_page_brief_routes(router: APIRouter) -> None:
     def create_content_new_page_brief(
         request: ContentNewPageBriefInput,
     ) -> ContentNewPageBriefWorkspace:
-        brief = new_page_brief_store().create_new_page_brief(request)
+        candidate = None
+        if request.topic_candidate_id is not None:
+            candidate = resolve_new_page_topic_candidate(
+                candidate_id=request.topic_candidate_id,
+                candidate_digest=request.topic_candidate_digest or "",
+            )
+            if candidate is None:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "Wybrany temat zmienił się albo nie jest już potwierdzony; "
+                        "odczytaj aktualne rekomendacje przed zapisem briefu."
+                    ),
+                )
+        try:
+            brief = new_page_brief_store().create_new_page_brief(
+                request,
+                topic_candidate=candidate,
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
         return build_new_page_brief_workspace(brief)
 
     @router.get(

@@ -24,6 +24,7 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPageDocumentReviewPrerequisiteConflict,
 )
 from wilq.content.workflow.new_page_draft_action import CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.new_page_topics import ContentNewPageTopicRecommendations
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionConflict,
     ContentDraftRevisionReviewResult,
@@ -46,6 +47,34 @@ def _review_workspace() -> ContentNewPageCanonicalDocumentWorkspace:
         proposed_ia_location="Usługi → Dokumentacja środowiskowa",
         safe_next_step="Przygotuj pierwszą wersję dokumentu z aktualnego planu.",
     )
+
+
+def test_new_page_topic_read_is_typed_and_never_creates_a_brief(monkeypatch) -> None:
+    recommendations = ContentNewPageTopicRecommendations(
+        status="no_qualified_topics",
+        title="Brak bezpiecznej rekomendacji tematu",
+        reason="Brak zgodnego sygnału.",
+        safe_next_step="Opisz własny temat.",
+        source_connectors=["ahrefs", "google_search_console"],
+        evidence_ids=["ev_ahrefs", "ev_gsc"],
+    )
+    monkeypatch.setattr(
+        new_page_router_module,
+        "build_new_page_topic_recommendations",
+        lambda: recommendations,
+    )
+    app = FastAPI()
+    app.include_router(router)
+
+    response = TestClient(app).get("/api/content/new-page-topics")
+
+    assert response.status_code == 200
+    assert response.json() == recommendations.model_dump(mode="json")
+    assert app.openapi()["paths"]["/api/content/new-page-topics"]["get"]["responses"][
+        "200"
+    ]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ContentNewPageTopicRecommendations"
+    }
 
 
 def test_new_page_delivery_readiness_is_typed_and_does_not_create_an_action(monkeypatch) -> None:

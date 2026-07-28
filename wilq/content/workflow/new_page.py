@@ -5,7 +5,7 @@ import re
 import unicodedata
 from datetime import datetime
 from hashlib import sha256
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -17,6 +17,9 @@ from wilq.content.workflow.catalog import (
     build_content_inventory_catalog_cached,
 )
 from wilq.schemas.core import utc_now
+
+if TYPE_CHECKING:
+    from wilq.content.workflow.new_page_topics import ContentNewPageTopicCandidate
 
 
 class ContentNewPageBriefInput(BaseModel):
@@ -30,6 +33,18 @@ class ContentNewPageBriefInput(BaseModel):
     audience: str = Field(min_length=3, max_length=300)
     search_intent: str = Field(min_length=3, max_length=300)
     proposed_ia_location: str = Field(min_length=3, max_length=300)
+    topic_candidate_id: str | None = Field(default=None, min_length=1)
+    topic_candidate_digest: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+
+    @model_validator(mode="after")
+    def require_complete_topic_candidate_identity(self) -> ContentNewPageBriefInput:
+        if (self.topic_candidate_id is None) != (self.topic_candidate_digest is None):
+            raise ValueError(
+                "A source-backed topic needs both its candidate ID and exact digest."
+            )
+        return self
 
 
 class ContentNewPageBrief(ContentNewPageBriefInput):
@@ -39,6 +54,15 @@ class ContentNewPageBrief(ContentNewPageBriefInput):
     brief_digest: str = Field(min_length=64, max_length=64)
     created_at: datetime
     work_kind: Literal["new_page"] = "new_page"
+    topic_evidence_ids: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def require_topic_lineage_when_selected(self) -> ContentNewPageBrief:
+        if self.topic_candidate_id is None and self.topic_evidence_ids:
+            raise ValueError("A manual new-page brief cannot claim topic evidence.")
+        if self.topic_candidate_id is not None and not self.topic_evidence_ids:
+            raise ValueError("A selected topic candidate needs persisted evidence.")
+        return self
 
 
 class ContentNewPageOverlapCandidate(BaseModel):
@@ -160,7 +184,26 @@ class ContentNewPageBriefWorkspace(BaseModel):
     next_action_label: str
 
 
-def build_new_page_brief(input: ContentNewPageBriefInput) -> ContentNewPageBrief:
+def build_new_page_brief(
+    input: ContentNewPageBriefInput,
+    *,
+    topic_candidate: ContentNewPageTopicCandidate | None = None,
+) -> ContentNewPageBrief:
+    if input.topic_candidate_id is None:
+        if topic_candidate is not None:
+            raise ValueError("A manual brief cannot carry an unselected topic candidate.")
+        topic_evidence_ids: list[str] = []
+    else:
+        if (
+            topic_candidate is None
+            or topic_candidate.candidate_id != input.topic_candidate_id
+            or topic_candidate.candidate_digest != input.topic_candidate_digest
+            or topic_candidate.title != input.title
+        ):
+            raise ValueError(
+                "Wybrany temat zmienił się; odczytaj aktualne rekomendacje przed zapisem briefu."
+            )
+        topic_evidence_ids = list(topic_candidate.evidence_ids)
     payload = input.model_dump(mode="json")
     digest = sha256(
         json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
@@ -170,6 +213,7 @@ def build_new_page_brief(input: ContentNewPageBriefInput) -> ContentNewPageBrief
         brief_id=f"content_new_page_brief_{uuid4().hex}",
         brief_digest=digest,
         created_at=utc_now(),
+        topic_evidence_ids=topic_evidence_ids,
     )
 
 

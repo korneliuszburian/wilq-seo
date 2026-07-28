@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from wilq.content.workflow.new_page import (
     ContentNewPageBrief,
@@ -15,6 +15,9 @@ from wilq.content.workflow.store_schema import ensure_content_workflow_schema
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
+
+if TYPE_CHECKING:
+    from wilq.content.workflow.new_page_topics import ContentNewPageTopicCandidate
 
 
 def new_page_brief_store() -> NewPageBriefStore:
@@ -36,11 +39,16 @@ class NewPageBriefStore:
         ensure_content_workflow_schema(connection)
         return connection
 
-    def create_new_page_brief(self, input: ContentNewPageBriefInput) -> ContentNewPageBrief:
+    def create_new_page_brief(
+        self,
+        input: ContentNewPageBriefInput,
+        *,
+        topic_candidate: ContentNewPageTopicCandidate | None = None,
+    ) -> ContentNewPageBrief:
         redacted_input = ContentNewPageBriefInput.model_validate(
             redact_mapping(input.model_dump(mode="json"))
         )
-        brief = build_new_page_brief(redacted_input)
+        brief = build_new_page_brief(redacted_input, topic_candidate=topic_candidate)
         with self._connect() as connection:
             connection.execute(
                 """

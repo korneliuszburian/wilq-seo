@@ -55,6 +55,7 @@ from wilq.content.workflow.new_page import (
     ContentNewPageBriefWorkspace,
     ContentNewPageFoundationResult,
 )
+from wilq.content.workflow.new_page_topics import ContentNewPageTopicRecommendations
 from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     ContentNewPageDeliveryReadiness,
@@ -71,6 +72,7 @@ from wilq.content.workflow.target_mapping import (
 from wilq.schemas import ActionObject, MetricFact
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
+    ("GET", "/api/content/new-page-topics"): ContentNewPageTopicRecommendations,
     ("POST", "/api/content/new-page-briefs"): ContentNewPageBriefWorkspace,
     (
         "GET",
@@ -405,6 +407,7 @@ def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
                 "/api/content/knowledge-cards",
                 "/api/content/service-profile",
                 "/api/content/new-page-briefs",
+                "/api/content/new-page-topics",
                 "/api/content/wordpress",
             )
         ):

@@ -595,14 +595,59 @@ export const ContentNewPageBriefInputSchema = z.object({
   service: z.string().min(2).max(160),
   audience: z.string().min(3).max(300),
   search_intent: z.string().min(3).max(300),
-  proposed_ia_location: z.string().min(3).max(300)
+  proposed_ia_location: z.string().min(3).max(300),
+  topic_candidate_id: z.string().min(1).nullable().optional(),
+  topic_candidate_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional()
+}).strict().superRefine((brief, context) => {
+  const hasId = brief.topic_candidate_id != null;
+  const hasDigest = brief.topic_candidate_digest != null;
+  if (hasId !== hasDigest) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "A source-backed topic needs both its candidate ID and exact digest." });
+  }
 });
 
 export const ContentNewPageBriefSchema = ContentNewPageBriefInputSchema.extend({
   brief_id: z.string().min(1),
   brief_digest: z.string().length(64),
   created_at: z.string(),
-  work_kind: z.literal("new_page")
+  work_kind: z.literal("new_page"),
+  topic_evidence_ids: z.array(z.string()).default([])
+}).superRefine((brief, context) => {
+  if (brief.topic_candidate_id == null && brief.topic_evidence_ids.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "A manual new-page brief cannot claim topic evidence." });
+  }
+  if (brief.topic_candidate_id != null && !brief.topic_evidence_ids.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "A selected topic candidate needs persisted evidence." });
+  }
+});
+
+export const ContentNewPageTopicCandidateSchema = z.object({
+  candidate_id: z.string().min(1),
+  candidate_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  title: z.string().min(3).max(160),
+  topic: z.string().min(3).max(160),
+  rationale: z.string().min(1),
+  source_connectors: z.array(z.string()).min(2),
+  evidence_ids: z.array(z.string()).min(2)
+});
+
+export const ContentNewPageTopicRecommendationsSchema = z.object({
+  response_type: z.literal("content_new_page_topic_recommendations"),
+  contract_version: z.literal("content_new_page_topic_recommendations_v1"),
+  status: z.enum(["ready", "no_qualified_topics", "blocked"]),
+  title: z.string().min(1),
+  reason: z.string().min(1),
+  safe_next_step: z.string().min(1),
+  candidates: z.array(ContentNewPageTopicCandidateSchema).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([])
+}).superRefine((recommendations, context) => {
+  if (recommendations.status === "ready" && !recommendations.candidates.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Ready topic recommendations need at least one candidate." });
+  }
+  if (recommendations.status !== "ready" && recommendations.candidates.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "A non-ready topic recommendation response cannot expose candidates." });
+  }
 });
 
 export const ContentNewPageOverlapCandidateSchema = z.object({
@@ -4589,6 +4634,10 @@ export type ContentNewPageDeliveryReadiness = z.infer<typeof ContentNewPageDeliv
 export type ContentNewPageDraftActionCommand = z.input<typeof ContentNewPageDraftActionCommandSchema>;
 export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
 export type ContentNewPageBriefInput = z.input<typeof ContentNewPageBriefInputSchema>;
+export type ContentNewPageTopicCandidate = z.infer<typeof ContentNewPageTopicCandidateSchema>;
+export type ContentNewPageTopicRecommendations = z.infer<
+  typeof ContentNewPageTopicRecommendationsSchema
+>;
 export type ContentNewPageBriefWorkspace = z.infer<typeof ContentNewPageBriefWorkspaceSchema>;
 export type ContentNewPageFoundationCommand = z.input<typeof ContentNewPageFoundationCommandSchema>;
 export type ContentNewPageFoundationResult = z.infer<typeof ContentNewPageFoundationResultSchema>;
