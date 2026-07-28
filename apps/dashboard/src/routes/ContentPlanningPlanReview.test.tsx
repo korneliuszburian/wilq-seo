@@ -58,7 +58,7 @@ describe("ContentPlanningPlanReview", () => {
       </QueryClientProvider>
     );
 
-    expect(await screen.findByRole("heading", { name: "Sprawdź wygenerowany plan" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Szkic struktury tekstu" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Przygotuj pełny tekst" }));
 
     await waitFor(() => {

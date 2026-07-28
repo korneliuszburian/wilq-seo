@@ -140,10 +140,10 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
       >
         <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Plan treści</p>
         <h2 id="generated-plan-review-title" className="mt-1 text-lg font-semibold text-ink">
-          Sprawdź wygenerowany plan
+          Szkic struktury tekstu
         </h2>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">
-          WILQ wygenerował plan z aktualnych źródeł i wybranej usługi. Jeśli plan jest OK, od razu przygotuj pełny tekst.
+          WILQ przygotował strukturę z aktualnych źródeł i wybranej usługi. Przejrzyj ją, a gdy odpowiada celowi strony, przygotuj pełny tekst.
         </p>
         <div className="mt-4 grid gap-3 rounded-md border border-line bg-surface p-3 text-sm sm:grid-cols-3">
           <PlanFact label="Intencja" value={planning.proposal.search_intent} />
@@ -173,7 +173,7 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
             {prepareText.isPending ? "Przygotowuję tekst…" : currentInitialDraft?.status === "generating" ? "Tekst jest przygotowywany…" : "Przygotuj pełny tekst"}
           </button>
           <button type="button" className="text-sm font-semibold text-action underline" onClick={() => setShowChanges((value) => !value)}>
-            {showChanges ? "Anuluj uwagi" : "Plan wymaga zmian"}
+            {showChanges ? "Ukryj uwagi" : "Dodaj uwagi do struktury"}
           </button>
         </div>
         {showChanges ? <div className="mt-4 rounded-md border border-line bg-surface p-3">
