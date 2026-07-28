@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.actions.metric_utils import unique_values
 from wilq.content.workflow.new_page_document import ContentNewPageDeliveryReadiness
+from wilq.content.workflow.new_page_revision_binding import ContentNewPageDraftBinding
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -48,18 +49,18 @@ def create_new_page_draft_action(
         raise ValueError("Akcja wskazuje inny profil authoringu.")
     if command.content_type not in readiness.allowed_content_types:
         raise ValueError("Wybrany typ nie należy do obserwowanych capability WordPress.")
-    binding = {
-        "work_item_id": readiness.work_item_id,
-        "brief_id": readiness.brief_id,
-        "brief_digest": readiness.brief_digest,
-        "foundation_id": readiness.foundation_id,
-        "service_card_id": readiness.service_card_id,
-        "service_card_digest": readiness.service_card_digest,
-        "revision_id": readiness.revision_id,
-        "revision_digest": readiness.revision_digest,
-        "authoring_profile_digest": readiness.authoring_profile_digest,
-        "content_type": command.content_type,
-    }
+    binding = ContentNewPageDraftBinding(
+        work_item_id=readiness.work_item_id,
+        brief_id=readiness.brief_id,
+        brief_digest=readiness.brief_digest,
+        foundation_id=readiness.foundation_id,
+        service_card_id=readiness.service_card_id,
+        service_card_digest=readiness.service_card_digest,
+        revision_id=readiness.revision_id,
+        revision_digest=readiness.revision_digest,
+        authoring_profile_digest=command.expected_authoring_profile_digest,
+        content_type=command.content_type,
+    )
     return ActionObject(
         id=f"act_content_new_page_dev_draft_{uuid4().hex}",
         title="Przygotuj nowy szkic na dev",
@@ -82,7 +83,7 @@ def create_new_page_draft_action(
             "connector": "wordpress_ekologus",
             "preview_contract": CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_CONTRACT,
             "mode": "dev_draft_only",
-            "new_page_draft_binding": binding,
+            "new_page_draft_binding": binding.model_dump(mode="json"),
             "payload_preview": [
                 {
                     "preview_contract": CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_CONTRACT,
