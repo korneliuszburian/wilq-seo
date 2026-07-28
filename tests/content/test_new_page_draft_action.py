@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import get_action
 from wilq.content.workflow.new_page_document import ContentNewPageDeliveryReadiness
 from wilq.content.workflow.new_page_draft_action import (
@@ -93,3 +94,14 @@ def test_new_page_draft_action_persists_only_its_local_creation_event(
     assert persisted.id == action.id
     assert load_new_page_draft_action(action.id) == persisted
     assert get_action(action.id).id == action.id
+
+
+def test_new_page_draft_action_payload_requires_exact_lineage() -> None:
+    action = create_new_page_draft_action(_ready_readiness(), _command())
+
+    assert validate_action_payload(action.connector, action.payload) == []
+    action.payload["new_page_draft_binding"] = {
+        "revision_id": action.payload["new_page_draft_binding"]["revision_id"]
+    }
+
+    assert validate_action_payload(action.connector, action.payload)
