@@ -57,6 +57,14 @@ def test_document_workspace_keeps_public_source_visible_when_no_revision_exists(
     assert workspace is not None
     assert workspace.source_snapshot.status == "available"
     assert workspace.source_snapshot.lead == "Pierwszy akapit obecnej strony."
+    assert workspace.source_snapshot.evidence_ids == ["ev_wp_bdo"]
+    assert workspace.source_snapshot.caveats == [
+        (
+            "FAQ i CTA nie są tu rozpoznawane heurystycznie; ich brak w tym widoku "
+            "nie znaczy, że nie istnieją na stronie."
+        ),
+        "Odczyt źródła nie potwierdza miejsca authoringu ani mapowania dev.",
+    ]
     assert [section.heading for section in workspace.source_snapshot.ordered_sections] == [
         "Kto powinien sprawdzić obowiązek?",
         "Ewidencja odpadów",
