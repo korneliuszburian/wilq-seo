@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageFoundation, getContentNewPageBriefWorkspace, getContentNewPagePlanningInput, type ContentNewPageBriefWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageFoundation, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPagePlanningProposal, type ContentNewPageBriefWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, createContentNewPageFoundation: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPagePlanningInput: vi.fn() };
+  return { ...actual, createContentNewPageFoundation: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPagePlanningProposal: vi.fn() };
 });
 
 const entry: ContentWorkflowEntryResponse = {
@@ -124,7 +124,7 @@ describe("ContentWorkflowEntryPanel", () => {
     }));
   });
 
-  it("shows planning readiness without fabricating an existing-page URL or baseline", async () => {
+  it("shows exact new-page readiness and generates a plan only after the marketer chooses the next step", async () => {
     vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, {
       foundation: {
         foundation_id: "content_new_page_foundation_test",
@@ -141,36 +141,22 @@ describe("ContentWorkflowEntryPanel", () => {
         created_at: "2026-07-28T00:00:00Z"
       }
     }));
-    vi.mocked(getContentNewPagePlanningInput).mockResolvedValue({
-      status: "ready",
-      work_item_id: "content_work_item_new_page_test",
-      planning_input_digest: "d".repeat(64),
-      input_summary: {
-        goal: "new_page",
-        final_canonical_url: null,
-        proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
-        service_label: "Obsługa środowiskowa",
-        inventory_status: "not_applicable",
-        content_inventory_status: "not_applicable",
-        acf_section_inventory_status: "not_applicable",
-        source_assessments: [],
-        source_fact_count: 1,
-        source_fact_ids: ["fact_service"],
-        source_material_ids: [],
-        evidence_id_count: 1,
-        knowledge_card_count: 1,
-        measurement_metrics: [],
-        metric_comparisons: []
-      },
-      blockers: [],
-      safe_next_step: "Przygotuj propozycję planu."
-    });
+    vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue(newPagePlanningWorkspace());
+    vi.mocked(createContentNewPagePlanningProposal).mockResolvedValue(newPagePlanningWorkspace({ proposal_status: { ...newPagePlanningWorkspace().proposal_status!, status: "generating", safe_next_step: "Plan jest przygotowywany." } }));
 
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
 
-    expect(await screen.findByTestId("new-page-planning-input-ready")).toBeInTheDocument();
+    expect(await screen.findByTestId("new-page-planning-ready")).toBeInTheDocument();
     expect(screen.getByText(/nie przypisuje tej nowej stronie starego URL-a/i)).toBeInTheDocument();
-    expect(getContentNewPagePlanningInput).toHaveBeenCalledWith("content_new_page_brief_test");
+    expect(getContentNewPagePlanningProposal).toHaveBeenCalledWith("content_new_page_brief_test");
+    expect(createContentNewPagePlanningProposal).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj plan" }));
+
+    await waitFor(() => expect(createContentNewPagePlanningProposal).toHaveBeenCalledWith("content_new_page_brief_test", {
+      expected_planning_input_digest: "d".repeat(64),
+      requested_by: "Wilku"
+    }));
   });
 
   it("shows the candidate, matching basis, and evidence when a person must decide", async () => {
@@ -251,5 +237,86 @@ function savedBriefWorkspace(
     review_reason: "Brief nie jest jeszcze dokumentem do review.",
     next_action_label: "Przygotowanie dokumentu zostanie udostępnione w następnym etapie",
     ...workspaceOverrides
+  };
+}
+
+function newPagePlanningWorkspace(
+  overrides: Partial<ContentNewPagePlanningProposalWorkspace> = {}
+): ContentNewPagePlanningProposalWorkspace {
+  const sources = ["wordpress", "service_profile", "gsc", "ga4", "google_ads", "ahrefs", "keyword_planner", "merchant", "localo", "social"] as const;
+  return {
+    response_type: "content_new_page_planning_proposal_workspace",
+    contract_version: "content_new_page_planning_proposal_workspace_v1",
+    brief_id: "content_new_page_brief_test",
+    readiness: {
+      status: "ready",
+      work_item_id: "content_work_item_new_page_test",
+      planning_input_digest: "d".repeat(64),
+      new_page_document_identity: {
+        work_item_id: "content_work_item_new_page_test",
+        work_kind: "new_page",
+        brief_id: "content_new_page_brief_test",
+        brief_digest: "a".repeat(64),
+        foundation_id: "content_new_page_foundation_test",
+        service_card_id: "service_environment",
+        service_card_digest: "c".repeat(64),
+        proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
+        public_source_status: "not_applicable",
+        public_source_url: null,
+        public_source_evidence_ids: [],
+        document_status: "not_created",
+        public_deployment_status: "not_confirmed",
+        public_deployment_id: null
+      },
+      input_summary: {
+        goal: "new_page",
+        final_canonical_url: null,
+        proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
+        service_label: "Obsługa środowiskowa",
+        inventory_status: "not_applicable",
+        content_inventory_status: "not_applicable",
+        acf_section_inventory_status: "not_applicable",
+        source_assessments: sources.map((source) => ({ source, status: "not_applicable", reason: "Nie dotyczy nowej strony.", landing_match_tiers: [], evidence_ids: [], knowledge_card_ids: [] })),
+        source_fact_count: 1,
+        source_fact_ids: ["fact_service"],
+        source_material_ids: [],
+        evidence_id_count: 1,
+        knowledge_card_count: 1,
+        measurement_metrics: [],
+        metric_comparisons: []
+      },
+      blockers: [],
+      safe_next_step: "Przygotuj propozycję planu."
+    },
+    proposal_status: {
+      status: "not_generated",
+      work_item_id: "content_work_item_new_page_test",
+      service_card_id: "service_environment",
+      planning_input_digest: "d".repeat(64),
+      input_summary: {
+        goal: "new_page",
+        final_canonical_url: null,
+        proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
+        service_label: "Obsługa środowiskowa",
+        inventory_status: "not_applicable",
+        content_inventory_status: "not_applicable",
+        acf_section_inventory_status: "not_applicable",
+        source_assessments: sources.map((source) => ({ source, status: "not_applicable", reason: "Nie dotyczy nowej strony.", landing_match_tiers: [], evidence_ids: [], knowledge_card_ids: [] })),
+        source_fact_count: 1,
+        source_fact_ids: ["fact_service"],
+        source_material_ids: [],
+        evidence_id_count: 1,
+        knowledge_card_count: 1,
+        measurement_metrics: [],
+        metric_comparisons: []
+      },
+      retry_after_seconds: null,
+      proposal: null,
+      runtime: { status: "not_started", run_id: null, thread_id: null, turn_id: null, event_methods: [], item_types: [], external_call_attempted: false },
+      blockers: [],
+      safe_next_step: "Przygotuj propozycję planu.",
+      publish_ready: false
+    },
+    ...overrides
   };
 }

@@ -5,8 +5,9 @@ import {
   getContentWorkflowEntry,
   createContentNewPageBrief,
   createContentNewPageFoundation,
+  createContentNewPagePlanningProposal,
   getContentNewPageBriefWorkspace,
-  getContentNewPagePlanningInput,
+  getContentNewPagePlanningProposal,
   type ContentInventoryCatalogResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
@@ -234,7 +235,7 @@ function NewPagePlanningFoundation({ workspace }: { workspace: ContentNewPageBri
     })
   });
   if (workspace.foundation) {
-    return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Podstawa planowania</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-action">{workspace.next_action_label}</p><p className="mt-2 text-sm leading-6 text-slate-700">Wybrany zatwierdzony kontekst usługi: {workspace.foundation.service_label}. To nie tworzy planu, dokumentu ani zmiany w WordPressie.</p><NewPagePlanningReadiness briefId={workspace.brief.brief_id} /></section>;
+    return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Plan nowej strony</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-action">{workspace.next_action_label}</p><p className="mt-2 text-sm leading-6 text-slate-700">Wybrany zatwierdzony kontekst usługi: {workspace.foundation.service_label}. Nowa strona nie ma jeszcze publicznego URL-a, inventory ani danych historycznych.</p><NewPagePlanningProposal briefId={workspace.brief.brief_id} /></section>;
   }
   if (workspace.overlap_guard.disposition !== "no_conflict") {
     return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Podstawa planowania</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-slate-700">{workspace.next_action_label}</p></section>;
@@ -242,19 +243,30 @@ function NewPagePlanningFoundation({ workspace }: { workspace: ContentNewPageBri
   return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Podstawa planowania</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><div className="mt-4 space-y-3"><p className="text-sm leading-6 text-slate-700">Wybierz świadomie zatwierdzoną kartę usługi. WILQ nie dopasowuje jej automatycznie do opisu briefu.</p>{workspace.service_options.length ? <><label className="block text-sm font-semibold text-ink">Karta usługi<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={serviceCardId} onChange={(event) => setServiceCardId(event.target.value)}><option value="">Wybierz kartę</option>{workspace.service_options.map((option) => <option key={option.service_card_id} value={option.service_card_id}>{option.label}</option>)}</select></label><label className="block text-sm font-semibold text-ink">Potwierdza<input className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={confirmedBy} onChange={(event) => setConfirmedBy(event.target.value)} placeholder="Imię i nazwisko" /></label><button type="button" disabled={!serviceCardId || confirmedBy.trim().length < 2 || foundation.isPending} className="rounded-xl bg-action px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" onClick={() => foundation.mutate()}>{foundation.isPending ? "Zapisuję podstawę…" : "Zapisz podstawę planowania"}</button>{foundation.data ? <p className="text-sm leading-6 text-action">{foundation.data.safe_next_step}</p> : null}{foundation.isError ? <p className="text-sm leading-6 text-wait">Nie udało się zapisać podstawy. Odśwież brief i sprawdź dane ponownie.</p> : null}</> : <p className="text-sm leading-6 text-wait">Nie ma obecnie zatwierdzonej karty usługi. WILQ nie utworzy podstawy planowania bez takiego źródła.</p>}</div></section>;
 }
 
-function NewPagePlanningReadiness({ briefId }: { briefId: string }) {
-  const readiness = useQuery({
-    queryKey: ["content-workflow", "new-page-brief", briefId, "planning-input"],
-    queryFn: () => getContentNewPagePlanningInput(briefId),
+function NewPagePlanningProposal({ briefId }: { briefId: string }) {
+  const queryClient = useQueryClient();
+  const workspace = useQuery({
+    queryKey: ["content-workflow", "new-page-brief", briefId, "planning-proposal"],
+    queryFn: () => getContentNewPagePlanningProposal(briefId),
     staleTime: 15_000
   });
-  if (readiness.isLoading) return <p className="mt-4 text-sm leading-6 text-slate-600">Sprawdzam aktualną gotowość wejścia do planu…</p>;
-  if (readiness.error || !readiness.data) return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 px-3 py-2 text-sm leading-6 text-ink">Nie udało się potwierdzić gotowości do planu. Brief i podstawa pozostają zapisane; odśwież ten widok przed kolejnym krokiem.</p>;
-  if (readiness.data.status === "blocked") {
-    const blocker = readiness.data.blockers[0];
-    return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">{blocker?.label ?? "Plan jest jeszcze zablokowany"}</p><p className="mt-1">{blocker?.reason ?? readiness.data.safe_next_step}</p><p className="mt-2 text-slate-700">{readiness.data.safe_next_step}</p></div>;
+  const generate = useMutation({
+    mutationFn: (digest: string) => createContentNewPagePlanningProposal(briefId, { expected_planning_input_digest: digest, requested_by: "Wilku" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId, "planning-proposal"] })
+  });
+  if (workspace.isLoading) return <p className="mt-4 text-sm leading-6 text-slate-600">Sprawdzam aktualny plan nowej strony…</p>;
+  if (workspace.error || !workspace.data) return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 px-3 py-2 text-sm leading-6 text-ink">Nie udało się odczytać planu. Brief i podstawa pozostają zapisane; odśwież widok przed kolejnym krokiem.</p>;
+  const readiness = workspace.data.readiness;
+  if (readiness.status === "blocked") {
+    const blocker = readiness.blockers[0];
+    return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">{blocker?.label ?? "Plan jest jeszcze zablokowany"}</p><p className="mt-1">{blocker?.reason ?? readiness.safe_next_step}</p><p className="mt-2 text-slate-700">{readiness.safe_next_step}</p></div>;
   }
-  return <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-input-ready"><p className="font-semibold">Wejście do planu jest gotowe</p><p className="mt-1">WILQ użyje dokładnego briefu i wybranego kontekstu usługi. Nie przypisuje tej nowej stronie starego URL-a, inventory ani historycznych metryk.</p><p className="mt-2 text-slate-700">{readiness.data.safe_next_step}</p></div>;
+  const proposal = workspace.data.proposal_status;
+  if (proposal?.status === "ready" || proposal?.status === "created" || proposal?.status === "idempotent") return <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-ready"><p className="font-semibold">Plan jest gotowy do review</p><p className="mt-1">{proposal.safe_next_step}</p><p className="mt-2 text-slate-700">Nie publikuje to strony ani nie tworzy szkicu WordPressa.</p></div>;
+  if (proposal?.status === "generating") return <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-generating"><p className="font-semibold">Plan jest przygotowywany</p><p className="mt-1">{proposal.safe_next_step}</p></div>;
+  const planningInputDigest = readiness.planning_input_digest;
+  if (!planningInputDigest) return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">Nie można bezpiecznie zlecić planu</p><p className="mt-1">Brakuje dokładnego identyfikatora wejścia do planu. Odśwież brief przed kolejnym krokiem.</p></div>;
+  return <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-ready"><p className="font-semibold">Wejście do planu jest gotowe</p><p className="mt-1">WILQ użyje dokładnego briefu i wybranego kontekstu usługi. Nie przypisuje tej nowej stronie starego URL-a, inventory ani historycznych metryk.</p><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white" disabled={generate.isPending} onClick={() => generate.mutate(planningInputDigest)}>{generate.isPending ? "Uruchamiam plan…" : "Przygotuj plan"}</button>{generate.isError ? <p className="mt-2 text-wait">Nie udało się zlecić planu. Odśwież stan i spróbuj ponownie.</p> : null}</div>;
 }
 
 function NewPageShell({ onReturn, children }: { onReturn: () => void; children: ReactNode }) {

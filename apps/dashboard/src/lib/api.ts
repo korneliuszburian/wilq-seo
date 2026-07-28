@@ -33,6 +33,8 @@ import {
   ContentNewPageBriefWorkspaceSchema,
   ContentNewPageFoundationCommandSchema,
   ContentNewPageFoundationResultSchema,
+  ContentNewPagePlanningProposalRequestSchema,
+  ContentNewPagePlanningProposalWorkspaceSchema,
   ContentPlanningInputReadinessResponseSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
@@ -144,6 +146,8 @@ import {
   type ContentNewPageBriefWorkspace,
   type ContentNewPageFoundationCommand,
   type ContentNewPageFoundationResult,
+  type ContentNewPagePlanningProposalRequest,
+  type ContentNewPagePlanningProposalWorkspace,
   type ContentPlanningInputReadinessResponse,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
@@ -619,6 +623,26 @@ export function getContentNewPagePlanningInput(
   return apiGet(
     `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/planning-input`,
     ContentPlanningInputReadinessResponseSchema
+  );
+}
+
+export function getContentNewPagePlanningProposal(
+  briefId: string
+): Promise<ContentNewPagePlanningProposalWorkspace> {
+  return apiGet(
+    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/planning-proposal`,
+    ContentNewPagePlanningProposalWorkspaceSchema
+  );
+}
+
+export function createContentNewPagePlanningProposal(
+  briefId: string,
+  request: ContentNewPagePlanningProposalRequest
+): Promise<ContentNewPagePlanningProposalWorkspace> {
+  return apiPost(
+    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/planning-proposal`,
+    ContentNewPagePlanningProposalWorkspaceSchema,
+    ContentNewPagePlanningProposalRequestSchema.parse(request)
   );
 }
 
@@ -1103,6 +1127,8 @@ export type {
   ContentNewPageBriefWorkspace,
   ContentNewPageFoundationCommand,
   ContentNewPageFoundationResult,
+  ContentNewPagePlanningProposalRequest,
+  ContentNewPagePlanningProposalWorkspace,
   ContentPlanningInputReadinessResponse,
   ContentCodexSectionProposalRequest,
   ContentCodexSectionProposalResponse,
