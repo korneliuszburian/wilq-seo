@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  getContentWorkItemInitialDraft,
   postContentWorkItemInitialDraft,
   saveContentWorkItemPlanningReview,
   type ContentInitialDraftResponse,
@@ -16,6 +17,12 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
   const [showChanges, setShowChanges] = useState(false);
   const [notes, setNotes] = useState("");
   const [initialDraft, setInitialDraft] = useState<ContentInitialDraftResponse | null>(null);
+  const initialDraftStatus = useQuery({
+    queryKey: ["content-workflow", "work-item", workItemId, "initial-draft"],
+    queryFn: () => getContentWorkItemInitialDraft(workItemId),
+    enabled: initialDraft?.status === "generating",
+    refetchInterval: (query) => query.state.data?.status === "generating" ? 1500 : false
+  });
   const prepareText = useMutation({
     mutationFn: async ({
       expectedPlanningDigest,
@@ -91,6 +98,14 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
       await queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workItemId, "planning-proposal"] });
     }
   });
+  const currentInitialDraft = initialDraftStatus.data ?? initialDraft;
+  useEffect(() => {
+    if (currentInitialDraft?.status === "created") {
+      void queryClient.invalidateQueries({
+        queryKey: ["content-workflow", "work-item", workItemId, "selected-workspace"]
+      });
+    }
+  }, [currentInitialDraft?.status, queryClient, workItemId]);
 
   const planning = planningStatus.data?.planning_workspace;
   const planningInputDigest = planningStatus.data?.planning_input_digest;
@@ -146,7 +161,7 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             type="button"
-            disabled={prepareText.isPending || initialDraft?.status === "generating"}
+            disabled={prepareText.isPending || currentInitialDraft?.status === "generating"}
             onClick={() => prepareText.mutate({
               expectedPlanningDigest: planning.proposal.planning_digest,
               planningInputDigest,
@@ -155,7 +170,7 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
             })}
             className="inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {prepareText.isPending ? "Przygotowuję tekst…" : initialDraft?.status === "generating" ? "Tekst jest przygotowywany…" : "Przygotuj pełny tekst"}
+            {prepareText.isPending ? "Przygotowuję tekst…" : currentInitialDraft?.status === "generating" ? "Tekst jest przygotowywany…" : "Przygotuj pełny tekst"}
           </button>
           <button type="button" className="text-sm font-semibold text-action underline" onClick={() => setShowChanges((value) => !value)}>
             {showChanges ? "Anuluj uwagi" : "Plan wymaga zmian"}
@@ -169,8 +184,8 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
             {requestChanges.isPending ? "Zapisuję uwagi…" : "Zapisz uwagi do planu"}
           </button>
         </div> : null}
-        {initialDraft ? <p aria-live="polite" className="mt-3 rounded-md border border-action/20 bg-action/5 p-3 text-sm text-slate-700">
-          {initialDraft.status === "generating" ? "Pełny tekst jest przygotowywany. Ten widok odświeży się po zakończeniu." : initialDraft.safe_next_step}
+        {currentInitialDraft ? <p aria-live="polite" className="mt-3 rounded-md border border-action/20 bg-action/5 p-3 text-sm text-slate-700">
+          {currentInitialDraft.status === "generating" ? "Pełny tekst jest przygotowywany. Ten widok odświeży się po zakończeniu." : currentInitialDraft.safe_next_step}
         </p> : null}
         {prepareText.error || requestChanges.error ? <p role="alert" className="mt-3 text-sm text-danger">Nie udało się zapisać decyzji ani uruchomić tekstu. Plan pozostał bez zmian.</p> : null}
       </section>

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getContentWorkItemInitialDraft,
   getContentWorkItemPlanningProposal,
   postContentWorkItemInitialDraft,
   saveContentWorkItemPlanningReview
@@ -11,6 +12,7 @@ import { ContentPlanningPlanReview } from "./ContentPlanningPlanReview";
 
 vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
+  getContentWorkItemInitialDraft: vi.fn(),
   getContentWorkItemPlanningProposal: vi.fn(),
   postContentWorkItemInitialDraft: vi.fn(),
   saveContentWorkItemPlanningReview: vi.fn()
@@ -29,6 +31,16 @@ describe("ContentPlanningPlanReview", () => {
       planning_workspace: {}
     } as never);
     vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue({
+      status: "generating",
+      work_item_id: "content_work_item_bdo",
+      proposal_id: "proposal_bdo",
+      run_id: "codex_run_bdo",
+      blockers: [{ code: "generation_in_progress", label: "Trwa", reason: "Trwa", next_step: "Poczekaj." }],
+      safe_next_step: "Poczekaj.",
+      publish_ready: false,
+      runtime: { status: "started", thread_id: null, turn_id: null, external_call_attempted: false }
+    } as never);
+    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue({
       status: "generating",
       work_item_id: "content_work_item_bdo",
       proposal_id: "proposal_bdo",
