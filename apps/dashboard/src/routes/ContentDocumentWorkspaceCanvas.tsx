@@ -45,6 +45,7 @@ export function ContentDocumentWorkspaceCanvas({
     draftPreviewOpen && workspace.canonical_document.status === "approved"
   );
   const hasReviewAction = workspace.next_action.kind === "open_review";
+  const needsPlanning = workspace.canonical_document.status === "not_created";
 
   return (
     <main className="mx-auto max-w-[92rem] px-4 py-5 lg:px-8" data-testid="content-text-workspace">
@@ -79,7 +80,7 @@ export function ContentDocumentWorkspaceCanvas({
         </div>
       </section>
 
-      {workspace.canonical_document.status !== "approved" ? (
+      {needsPlanning ? (
         <section className="mt-4 space-y-4">
           <ContentPlanningGenerationPanel workItemId={workspace.work_item_id} />
           <ContentPlanningPlanReview workItemId={workspace.work_item_id} />

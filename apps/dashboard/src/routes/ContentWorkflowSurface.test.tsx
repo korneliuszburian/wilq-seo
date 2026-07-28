@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getContentWorkItemInitialDraft,
+  getContentWorkItemPlanningProposal,
   getContentWorkItemEditorialIntegrity,
   getContentWorkItemRevisionHtmlPackage,
   getContentRevisionTargetMapping,
@@ -41,6 +42,7 @@ vi.mock("../lib/api", async (importOriginal) => {
   return {
     ...actual,
     getContentWorkItemInitialDraft: vi.fn(),
+    getContentWorkItemPlanningProposal: vi.fn(),
     getContentWorkItemEditorialIntegrity: vi.fn(),
     getContentWorkItemRevisionHtmlPackage: vi.fn(),
     getContentRevisionTargetMapping: vi.fn(),
@@ -74,6 +76,14 @@ describe("ContentWorkflowSurface", () => {
       authentication_status: "not_configured"
     } as never);
     vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      status: "not_generated",
+      work_item_id: "content_work_item_bdo",
+      proposal: null,
+      blockers: [],
+      safe_next_step: "Przygotuj plan.",
+      publish_ready: false
+    } as never);
     vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(contentDecisionContext());
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
@@ -198,6 +208,7 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
     expect(getContentSelectedWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
+    expect(getContentWorkItemPlanningProposal).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /przejdź do review/i }));
     await waitFor(() => expect(appRouter.state.location.pathname).toBe("/content-workflow/content_work_item_bdo"));
     expect(appRouter.state.location.search.view).toBe("review");
