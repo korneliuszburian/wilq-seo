@@ -345,23 +345,21 @@ function NewPageDocumentCommands({ briefId, workspace, onChanged }: { briefId: s
 }
 
 function NewPageInitialDraft({ briefId, workspace, onChanged }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {
-  const [requestedBy, setRequestedBy] = useState("");
   const draft = useMutation({
     mutationFn: () => createContentNewPageInitialDraft(briefId, {
       expected_proposal_id: workspace.proposal_id ?? "",
       expected_planning_digest: workspace.planning_digest ?? "",
       expected_planning_input_digest: workspace.planning_input_digest ?? "",
-      requested_by: requestedBy
+      requested_by: "wilku"
     }),
     onSuccess: onChanged
   });
   const hasExactPlan = Boolean(workspace.proposal_id && workspace.planning_digest && workspace.planning_input_digest);
   return <section className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4" data-testid="new-page-initial-draft">
     <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-indigo-700">Dokument nowej strony</p>
-    <h4 className="mt-2 text-base font-semibold text-ink">Utwórz pierwszą rewizję</h4>
-    <p className="mt-1 text-sm leading-6 text-slate-700">WILQ użyje wyłącznie zaakceptowanego planu, przypisanych źródeł i kart wiedzy. Nie przypisze publicznego URL-a ani nie zapisze niczego w WordPressie.</p>
-    <label className="mt-3 block text-sm font-semibold text-ink">Zleca<input className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={requestedBy} onChange={(event) => setRequestedBy(event.target.value)} placeholder="Imię i nazwisko" /></label>
-    <button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={!hasExactPlan || requestedBy.trim().length < 2 || draft.isPending} onClick={() => draft.mutate()}>{draft.isPending ? "Przygotowuję dokument…" : "Przygotuj pierwszą rewizję"}</button>
+    <h4 className="mt-2 text-base font-semibold text-ink">Przygotuj pierwszą wersję</h4>
+    <p className="mt-1 text-sm leading-6 text-slate-700">WILQ użyje dokładnie tego planu, przypisanych źródeł i kart wiedzy. Nie przypisze publicznego URL-a ani nie zapisze niczego w WordPressie.</p>
+    <button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={!hasExactPlan || draft.isPending} onClick={() => draft.mutate()}>{draft.isPending ? "Przygotowuję dokument…" : "Przygotuj pierwszą wersję"}</button>
     {draft.data ? <p className="mt-2 text-sm leading-6 text-action">{draft.data.safe_next_step}</p> : null}
     {draft.isError ? <p className="mt-2 text-sm leading-6 text-wait">Nie udało się przygotować rewizji. Odśwież plan i sprawdź jego exact tożsamość.</p> : null}
   </section>;

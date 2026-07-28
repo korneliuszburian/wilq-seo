@@ -358,14 +358,14 @@ describe("ContentWorkflowEntryPanel", () => {
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
 
     expect(await screen.findByTestId("new-page-initial-draft")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Zleca"), { target: { value: "Wilku" } });
-    fireEvent.click(screen.getByRole("button", { name: "Przygotuj pierwszą rewizję" }));
+    expect(screen.queryByLabelText("Zleca")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj pierwszą wersję" }));
 
     await waitFor(() => expect(createContentNewPageInitialDraft).toHaveBeenCalledWith("content_new_page_brief_test", {
       expected_proposal_id: "content_planning_proposal_test",
       expected_planning_digest: "b".repeat(64),
       expected_planning_input_digest: "d".repeat(64),
-      requested_by: "Wilku"
+      requested_by: "wilku"
     }));
   });
 
