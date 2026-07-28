@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
+  postContentWorkItemInitialDraft,
   saveContentWorkItemPlanningReview,
+  type ContentInitialDraftResponse,
   type ContentPlanningReviewConflict
 } from "../lib/api";
 import { useContentPlanningProposal } from "./contentWorkflowQueries";
@@ -11,40 +13,54 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
   const queryClient = useQueryClient();
   const planningStatus = useContentPlanningProposal(workItemId);
   const [conflict, setConflict] = useState<ContentPlanningReviewConflict | null>(null);
-  const [decision, setDecision] = useState<"approved" | "needs_changes">("approved");
+  const [showChanges, setShowChanges] = useState(false);
   const [notes, setNotes] = useState("");
-  const review = useMutation({
-    mutationFn: ({
-      decision,
-      notes,
-      checkedItems,
+  const [initialDraft, setInitialDraft] = useState<ContentInitialDraftResponse | null>(null);
+  const prepareText = useMutation({
+    mutationFn: async ({
       expectedPlanningDigest,
+      planningInputDigest,
+      proposalId,
       serviceCardId
     }: {
-      decision: "approved" | "needs_changes";
-      notes: string;
-      checkedItems: string[];
       expectedPlanningDigest: string;
+      planningInputDigest: string;
+      proposalId: string;
       serviceCardId: string | null;
-    }) =>
-      saveContentWorkItemPlanningReview(
+    }) => {
+      const review = await saveContentWorkItemPlanningReview(
         {
           stage: "scope",
           expected_planning_digest: expectedPlanningDigest,
           service_card_id: serviceCardId,
-          decision,
+          decision: "approved",
           reviewed_by: "wilku",
-          checked_items: checkedItems,
-          notes
+          checked_items: ["plan, struktura i źródła"],
+          notes: ""
         },
         workItemId
-      ),
+      );
+      if ("code" in review) return { review, initialDraft: null };
+      return {
+        review,
+        initialDraft: await postContentWorkItemInitialDraft(
+          {
+            expected_proposal_id: proposalId,
+            expected_planning_digest: expectedPlanningDigest,
+            expected_planning_input_digest: planningInputDigest,
+            requested_by: "wilku"
+          },
+          workItemId
+        )
+      };
+    },
     onSuccess: async (result) => {
-      if ("code" in result) {
-        setConflict(result);
+      if ("code" in result.review) {
+        setConflict(result.review);
         return;
       }
       setConflict(null);
+      setInitialDraft(result.initialDraft);
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: ["content-workflow", "work-item", workItemId, "planning-proposal"]
@@ -55,9 +71,31 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
       ]);
     }
   });
+  const requestChanges = useMutation({
+    mutationFn: ({ expectedPlanningDigest, serviceCardId }: { expectedPlanningDigest: string; serviceCardId: string | null }) =>
+      saveContentWorkItemPlanningReview({
+        stage: "scope",
+        expected_planning_digest: expectedPlanningDigest,
+        service_card_id: serviceCardId,
+        decision: "needs_changes",
+        reviewed_by: "wilku",
+        checked_items: [],
+        notes: notes.trim()
+      }, workItemId),
+    onSuccess: async (result) => {
+      if ("code" in result) {
+        setConflict(result);
+        return;
+      }
+      setConflict(null);
+      await queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workItemId, "planning-proposal"] });
+    }
+  });
 
   const planning = planningStatus.data?.planning_workspace;
-  if (!planning) return null;
+  const planningInputDigest = planningStatus.data?.planning_input_digest;
+  const proposalId = planning?.proposal.proposal_id;
+  if (!planning || !planningInputDigest || !proposalId) return null;
 
   return (
     <>
@@ -90,7 +128,7 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
           Sprawdź wygenerowany plan
         </h2>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">
-          WILQ wygenerował plan z aktualnych źródeł i wybranej usługi. Dopiero ta decyzja otwiera przygotowanie pełnego tekstu.
+          WILQ wygenerował plan z aktualnych źródeł i wybranej usługi. Jeśli plan jest OK, od razu przygotuj pełny tekst.
         </p>
         <div className="mt-4 grid gap-3 rounded-md border border-line bg-surface p-3 text-sm sm:grid-cols-3">
           <PlanFact label="Intencja" value={planning.proposal.search_intent} />
@@ -105,34 +143,36 @@ export function ContentPlanningPlanReview({ workItemId }: { workItemId: string }
             </li>
           ))}
         </ol>
-        <div className="mt-5 grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
-          <label className="text-sm font-semibold text-ink">
-            Decyzja o planie
-            <select aria-label="Decyzja o planie" value={decision} onChange={(event) => setDecision(event.target.value as typeof decision)} className="mt-2 h-11 w-full rounded-md border border-line bg-white px-3 text-sm font-normal">
-              <option value="approved">Zatwierdzam plan</option>
-              <option value="needs_changes">Plan wymaga zmian</option>
-            </select>
-          </label>
-          <label className="text-sm font-semibold text-ink">
-            Notatka{decision === "approved" ? " (opcjonalna)" : ""}
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={prepareText.isPending || initialDraft?.status === "generating"}
+            onClick={() => prepareText.mutate({
+              expectedPlanningDigest: planning.proposal.planning_digest,
+              planningInputDigest,
+              proposalId,
+              serviceCardId: planning.proposal.service_card_id
+            })}
+            className="inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {prepareText.isPending ? "Przygotowuję tekst…" : initialDraft?.status === "generating" ? "Tekst jest przygotowywany…" : "Przygotuj pełny tekst"}
+          </button>
+          <button type="button" className="text-sm font-semibold text-action underline" onClick={() => setShowChanges((value) => !value)}>
+            {showChanges ? "Anuluj uwagi" : "Plan wymaga zmian"}
+          </button>
+        </div>
+        {showChanges ? <div className="mt-4 rounded-md border border-line bg-surface p-3">
+          <label className="block text-sm font-semibold text-ink">Co poprawić w planie?
             <textarea aria-label="Notatka do planu" value={notes} onChange={(event) => setNotes(event.target.value)} className="mt-2 min-h-20 w-full rounded-md border border-line bg-white p-3 text-sm font-normal leading-6" />
           </label>
-        </div>
-        <button
-          type="button"
-          disabled={review.isPending || (decision === "needs_changes" && !notes.trim())}
-          onClick={() => review.mutate({
-            decision,
-            notes,
-            checkedItems: ["plan, struktura i źródła"],
-            expectedPlanningDigest: planning.proposal.planning_digest,
-            serviceCardId: planning.proposal.service_card_id
-          })}
-          className="mt-4 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {review.isPending ? "Zapisuję decyzję..." : decision === "approved" ? "Zatwierdź plan do tekstu" : "Zapisz uwagi do poprawy"}
-        </button>
-        {review.error ? <p role="alert" className="mt-3 text-sm text-danger">Nie udało się zapisać decyzji. Plan nie został zmieniony.</p> : null}
+          <button type="button" disabled={requestChanges.isPending || !notes.trim()} onClick={() => requestChanges.mutate({ expectedPlanningDigest: planning.proposal.planning_digest, serviceCardId: planning.proposal.service_card_id })} className="mt-3 inline-flex h-10 items-center rounded-md border border-action/30 px-3 text-sm font-semibold text-action disabled:opacity-60">
+            {requestChanges.isPending ? "Zapisuję uwagi…" : "Zapisz uwagi do planu"}
+          </button>
+        </div> : null}
+        {initialDraft ? <p aria-live="polite" className="mt-3 rounded-md border border-action/20 bg-action/5 p-3 text-sm text-slate-700">
+          {initialDraft.status === "generating" ? "Pełny tekst jest przygotowywany. Ten widok odświeży się po zakończeniu." : initialDraft.safe_next_step}
+        </p> : null}
+        {prepareText.error || requestChanges.error ? <p role="alert" className="mt-3 text-sm text-danger">Nie udało się zapisać decyzji ani uruchomić tekstu. Plan pozostał bez zmian.</p> : null}
       </section>
     </>
   );
