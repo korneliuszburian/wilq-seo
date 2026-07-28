@@ -21,6 +21,7 @@ import {
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningInputReadinessResponseSchema,
   ContentPlanningProposalResponseSchema,
+  ContentPlanningWorkspaceSchema,
   ContentServiceProfileResponseSchema,
   ContentServiceProfileCoverageGapSchema,
   ContentWorkItemQualityReviewRequestSchema,
@@ -772,6 +773,34 @@ describe("ContentPlanningProposalResponseSchema", () => {
 
     const parsed = ContentPlanningProposalResponseSchema.parse(response);
     expect(parsed.input_summary?.metric_comparisons?.[0]?.comparison_values.clicks).toBe(19);
+    const scopeDecision = {
+      decision_id: "planning_decision_1",
+      decision_number: 1,
+      work_item_id: response.proposal.work_item_id,
+      stage: "scope" as const,
+      planning_digest: response.proposal.planning_digest,
+      service_card_id: response.proposal.service_card_id,
+      human_override_review_required: false,
+      decision: "approved" as const,
+      reviewed_by: "wilku",
+      checked_items: ["Sprawdzono zakres."],
+      notes: "",
+      created_at: "2026-07-16T12:00:00Z"
+    };
+    expect(ContentPlanningWorkspaceSchema.safeParse({
+      proposal: response.proposal,
+      scope_decision: scopeDecision,
+      section_map_decision: null,
+      scope_current: true,
+      section_map_current: true
+    }).success).toBe(true);
+    expect(ContentPlanningWorkspaceSchema.safeParse({
+      proposal: response.proposal,
+      scope_decision: { ...scopeDecision, planning_digest: "f".repeat(64) },
+      section_map_decision: null,
+      scope_current: true,
+      section_map_current: true
+    }).success).toBe(false);
     const staleAdsRow = {
       source_kind: "ads_search_term",
       source_connector: "google_ads",
