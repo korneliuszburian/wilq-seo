@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
 from wilq.content.workflow.catalog import read_content_inventory_material
 from wilq.content.workflow.decision_context import build_content_decision_context
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
 from wilq.content.workflow.store import content_workflow_store
 
 
@@ -51,6 +51,27 @@ class ContentDocumentWorkspaceDocument(BaseModel):
     label: str
     reason: str
     preview: ContentDocumentWorkspaceDocumentPreview | None = None
+    revision: ContentDraftRevision | None = None
+    review: ContentDraftRevisionReview | None = None
+
+    @model_validator(mode="after")
+    def require_exact_revision_state(self) -> ContentDocumentWorkspaceDocument:
+        if self.revision is None:
+            if self.review is not None:
+                raise ValueError("Document without a revision cannot carry review data.")
+            return self
+        if (
+            self.revision_id != self.revision.revision_id
+            or self.content_digest != self.revision.content_digest
+        ):
+            raise ValueError("Canonical document identity must match its exact revision.")
+        if self.review is not None and (
+            self.review.work_item_id != self.revision.work_item_id
+            or self.review.revision_id != self.revision.revision_id
+            or self.review.revision_digest != self.revision.content_digest
+        ):
+            raise ValueError("Canonical document review must match its exact revision.")
+        return self
 
 
 class ContentDocumentWorkspaceDocumentSection(BaseModel):
@@ -160,7 +181,11 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
     )
     source_snapshot = _source_snapshot(context, source)
     revision_state = content_workflow_store().load_draft_revision_state(work_item_id)
-    document = _canonical_document(revision_state.status, revision_state.latest_revision)
+    document = _canonical_document(
+        revision_state.status,
+        revision_state.latest_revision,
+            getattr(revision_state, "latest_review", None),
+    )
     return ContentDocumentWorkspace(
         work_item_id=work_item_id,
         work_kind="refresh_existing",
@@ -292,7 +317,11 @@ def _source_sections(text: str, headings: list[str]) -> list[tuple[str, str | No
     return sections
 
 
-def _canonical_document(status: str, revision) -> ContentDocumentWorkspaceDocument:
+def _canonical_document(
+    status: str,
+    revision: ContentDraftRevision | None,
+    review: ContentDraftRevisionReview | None,
+) -> ContentDocumentWorkspaceDocument:
     if revision is None:
         return ContentDocumentWorkspaceDocument(
             status="not_created",
@@ -329,6 +358,8 @@ def _canonical_document(status: str, revision) -> ContentDocumentWorkspaceDocume
         label=labels[normalized],
         reason=reasons[normalized],
         preview=_document_preview(revision),
+        revision=revision if isinstance(revision, ContentDraftRevision) else None,
+        review=review if isinstance(review, ContentDraftRevisionReview) else None,
     )
 
 

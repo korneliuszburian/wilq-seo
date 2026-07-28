@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import wilq.content.workflow.document_workspace as workspace_module
 from wilq.content.workflow.catalog import ContentInventoryMaterialResponse
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionReview,
+    ContentDraftRevisionSection,
+)
 
 WORK_ITEM_ID = "content_work_item_bdo"
 SOURCE_URL = "https://www.ekologus.pl/bdo/"
@@ -208,3 +214,42 @@ def test_document_workspace_fails_closed_for_unrecorded_lineage_and_incomplete_s
         comparison = workspace_module._comparison(source, revision)
         assert comparison.status == "unavailable"
         assert comparison.items == []
+
+
+def test_canonical_document_carries_only_review_bound_to_exact_revision() -> None:
+    revision = ContentDraftRevision(
+        revision_id="content_revision_bdo",
+        work_item_id=WORK_ITEM_ID,
+        revision_number=1,
+        content_digest="a" * 64,
+        draft_package_id="content_draft_bdo",
+        draft_package_digest="b" * 64,
+        final_canonical_url=SOURCE_URL,
+        title="BDO",
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="section_bdo",
+                heading="Zakres",
+                body_markdown="Sprawdź zakres obowiązków.",
+            )
+        ],
+        created_by="wilku",
+        created_at=datetime.now(UTC),
+    )
+    review = ContentDraftRevisionReview(
+        decision_id="content_revision_review_bdo",
+        decision_number=1,
+        work_item_id=WORK_ITEM_ID,
+        revision_id=revision.revision_id,
+        revision_digest=revision.content_digest,
+        decision="approved",
+        reviewed_by="wilku",
+        checked_items=["Sprawdzono dokument."],
+        evidence_ids=["ev_wp_bdo"],
+        created_at=datetime.now(UTC),
+    )
+
+    document = workspace_module._canonical_document("approved", revision, review)
+
+    assert document.revision is revision
+    assert document.review is review
