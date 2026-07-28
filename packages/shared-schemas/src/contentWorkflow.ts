@@ -2501,7 +2501,8 @@ export const ContentDraftRevisionSchema = z.object({
     revision.final_canonical_url !== null ||
     !revision.new_page_document_identity ||
     revision.new_page_document_identity.work_item_id !== revision.work_item_id ||
-    revision.service_card_id !== revision.new_page_document_identity.service_card_id
+    revision.service_card_id !== revision.new_page_document_identity.service_card_id ||
+    revision.service_digest !== revision.new_page_document_identity.service_card_digest
   )) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["new_page_document_identity"], message: "New-page revision requires exact pre-document identity and no public URL." });
   }

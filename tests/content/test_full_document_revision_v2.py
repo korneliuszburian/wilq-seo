@@ -141,7 +141,7 @@ def test_new_page_full_revision_is_append_only_without_a_public_url(tmp_path: Pa
         brief_digest="a" * 64,
         foundation_id="content_new_page_foundation_test",
         service_card_id=command.service_card_id or "",
-        service_card_digest="b" * 64,
+        service_card_digest=command.service_digest or "",
         proposed_ia_location="Usługi → Dokumentacja środowiskowa",
     )
     new_page = command.model_copy(
@@ -165,6 +165,14 @@ def test_new_page_full_revision_is_append_only_without_a_public_url(tmp_path: Pa
     with pytest.raises(ValidationError, match="New-page revision requires exact"):
         ContentDraftRevisionAppendCommand.model_validate(
             new_page.model_dump(mode="python") | {"service_card_id": "service_other"}
+        )
+    with pytest.raises(ValidationError, match="New-page revision requires exact"):
+        ContentDraftRevisionAppendCommand.model_validate(
+            new_page.model_dump(mode="python") | {"service_digest": "f" * 64}
+        )
+    with pytest.raises(ValidationError, match="New-page revision requires exact"):
+        ContentDraftRevision.model_validate(
+            created.model_dump(mode="python") | {"service_digest": "f" * 64}
         )
 
 
