@@ -227,6 +227,10 @@ def content_planning_output_schema(
         "inventory_section_id",
         inventory_section_ids,
     )
+    if planning_input.goal == "new_page":
+        _mapping(_properties(section), "inventory_disposition")["const"] = "create"
+        _mapping(_properties(section), "inventory_heading")["const"] = None
+        _mapping(_properties(section), "inventory_section_id")["const"] = None
     for definition in (faq, cta):
         _restrict_array(_properties(definition), "evidence_ids", evidence_ids)
         _restrict_array(_properties(definition), "claim_ids", claim_ids)

@@ -145,6 +145,31 @@ def queue_new_page_planning_proposal(
     return workspace.model_copy(update={"proposal_status": response}), outcome == "queued"
 
 
+def terminalize_new_page_planning_claim(
+    response: ContentPlanningProposalResponse,
+    store: ContentPlanningProposalStore,
+    *,
+    code: str,
+) -> None:
+    """Release the exact queued claim when its worker cannot safely start Codex."""
+
+    blocker = ContentPlanningProposalBlocker(
+        code=code,
+        label="Plan nowej strony nie został uruchomiony",
+        reason="Bieżące wejście zmieniło się albo przestało być gotowe przed uruchomieniem.",
+        next_step="Odśwież wejście i świadomie uruchom nowy plan.",
+    )
+    store.save_terminal_response(
+        response.model_copy(
+            update={
+                "status": "stale" if code == "stale_input" else "blocked",
+                "blockers": [blocker],
+                "safe_next_step": blocker.next_step,
+            }
+        )
+    )
+
+
 def _read_proposal(
     *, planning_input: ContentPlanningInput, store: ContentPlanningProposalStore
 ) -> ContentPlanningProposalResponse:
@@ -375,4 +400,5 @@ __all__ = [
     "build_new_page_planning_proposal_workspace",
     "generate_new_page_planning_proposal",
     "queue_new_page_planning_proposal",
+    "terminalize_new_page_planning_claim",
 ]
