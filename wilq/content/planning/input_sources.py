@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Literal, cast
 from urllib.parse import urljoin, urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.canonical.landing_identity import LandingPageCandidate, match_landing_page
@@ -98,6 +98,37 @@ class ContentPlanningInventory(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     landing_match_tiers: list[ContentAcceptedLandingMatchTier] = Field(default_factory=list)
     note: str = ""
+
+    @model_validator(mode="after")
+    def require_goal_safe_shape(self) -> ContentPlanningInventory:
+        if self.status == "not_applicable":
+            if (
+                self.content_status != "not_applicable"
+                or self.acf_section_status != "not_applicable"
+            ):
+                raise ValueError(
+                    "Not-applicable inventory requires not-applicable child statuses."
+                )
+            if any(
+                (
+                    self.acf_field_names,
+                    self.title_or_h1 is not None,
+                    self.content_summary is not None,
+                    self.content_text is not None,
+                    self.extraction_region is not None,
+                    self.material_confidence != "unknown",
+                    self.source_field_lineage,
+                    self.word_count is not None,
+                    self.sections,
+                    self.evidence_ids,
+                    self.source_connectors,
+                    self.landing_match_tiers,
+                )
+            ):
+                raise ValueError(
+                    "Not-applicable inventory cannot carry existing-page material or lineage."
+                )
+        return self
 
 
 class ContentPlanningSourceFact(BaseModel):
