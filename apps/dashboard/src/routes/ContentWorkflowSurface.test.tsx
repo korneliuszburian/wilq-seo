@@ -144,10 +144,7 @@ describe("ContentWorkflowSurface", () => {
     async (reviewSearch) => {
       vi.mocked(getContentWorkItemQueue).mockRejectedValue(new Error("Kolejka niedostępna"));
       const revision = savedFullDraftRevision();
-      vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
-      vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
-        workflowSnapshot({ workspace: savedRevisionWorkspace(revision as never) })
-      );
+      vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(contentDocumentWorkspace(revision)));
 
       render(
         <App
@@ -161,19 +158,17 @@ describe("ContentWorkflowSurface", () => {
 
       expect(await screen.findByTestId("content-review-workspace")).toBeInTheDocument();
       expect(screen.queryByText("Nie udało się odczytać aktualnego workflow.")).not.toBeInTheDocument();
-      expect(getContentWorkItemSnapshot).toHaveBeenCalledWith("content_work_item_bdo");
-      expect(getContentWorkItemInitialDraft).toHaveBeenCalledWith("content_work_item_bdo");
+      expect(getContentSelectedWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
       expect(getContentWorkItemQueue).not.toHaveBeenCalled();
+      expect(getContentWorkItemDecisionContext).not.toHaveBeenCalled();
+      expect(getContentWorkItemInitialDraft).not.toHaveBeenCalled();
+      expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
     }
   );
 
   it("opens and emits the canonical work-item path", async () => {
     const revision = savedFullDraftRevision();
-    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace());
-    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
-    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
-      workflowSnapshot({ workspace: savedRevisionWorkspace(revision as never) })
-    );
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(contentDocumentWorkspace(revision)));
     const appRouter = createWilqRouter({
       initialPath: "/content-workflow/content_work_item_bdo",
       defaultPendingMinMs: 0
@@ -189,7 +184,7 @@ describe("ContentWorkflowSurface", () => {
   });
 
   it("keeps an exact missing review route separate from a warm catalogue entry", async () => {
-    vi.mocked(getContentWorkItemDecisionContext).mockRejectedValue(new Error("Nie znaleziono strony"));
+    vi.mocked(getContentSelectedWorkspace).mockRejectedValue(new Error("Nie znaleziono strony"));
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     client.setQueryData(["content-workflow", "queue", "catalog"], contentQueueResponse());
 
@@ -204,7 +199,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-document-workspace-error")).toBeInTheDocument();
-    expect(getContentWorkItemDecisionContext).toHaveBeenCalledWith("content_work_item_bdo");
+    expect(getContentSelectedWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
     expect(getContentWorkItemQueue).not.toHaveBeenCalled();
     expect(screen.queryByTestId("content-review-workspace")).not.toBeInTheDocument();
   });
@@ -396,30 +391,8 @@ describe("ContentWorkflowSurface", () => {
   });
 
   it("records human review for the exact Text revision without opening a content write path", async () => {
-    const readyContext = contentDecisionContext();
-    readyContext.evidence_readiness = {
-      ...readyContext.evidence_readiness,
-      status: "ready",
-      label: "Dowody są aktualne",
-      reason: "Dowody są aktualne dla tej strony.",
-      blocker_codes: []
-    };
-    readyContext.next_safe_action = {
-      kind: "open_workspace",
-      label: "Otwórz warsztat strony",
-      reason: "Możesz przejść do read-only warsztatu tej samej strony.",
-      connector_id: null
-    };
     const revision = savedFullDraftRevision();
-    const workspace = {
-      ...savedRevisionWorkspace(revision as never),
-      latest_revision: revision,
-      editor_title: revision.title,
-      editor_sections: revision.sections
-    } as ContentWorkItemWorkflowSnapshotResponse["revision_workspace"];
-    vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(readyContext);
-    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
-    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot({ workspace }));
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(contentDocumentWorkspace(revision)));
 
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -458,34 +431,9 @@ describe("ContentWorkflowSurface", () => {
   });
 
   it("downloads only the exact approved revision as a read-only HTML package", async () => {
-    const readyContext = contentDecisionContext();
-    readyContext.evidence_readiness = {
-      ...readyContext.evidence_readiness,
-      status: "ready",
-      label: "Dowody są aktualne",
-      reason: "Dowody są aktualne dla tej strony.",
-      blocker_codes: []
-    };
-    readyContext.next_safe_action = {
-      kind: "open_workspace",
-      label: "Otwórz warsztat strony",
-      reason: "Możesz przejść do read-only warsztatu tej samej strony.",
-      connector_id: null
-    };
     const revision = savedFullDraftRevision();
     const review = savedDraftRevisionReview(revision, "approved");
-    const workspace = {
-      ...savedRevisionWorkspace(revision as never),
-      latest_revision: revision,
-      latest_review: review,
-      status: "approved",
-      can_review: false,
-      editor_title: revision.title,
-      editor_sections: revision.sections
-    } as ContentWorkItemWorkflowSnapshotResponse["revision_workspace"];
-    vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(readyContext);
-    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
-    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot({ workspace }));
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(contentDocumentWorkspace(revision, review)));
     vi.mocked(getContentWorkItemRevisionHtmlPackage).mockResolvedValue({
       manifest: {
         work_item_id: revision.work_item_id,
@@ -525,12 +473,8 @@ describe("ContentWorkflowSurface", () => {
   });
 
   it("reads editorial integrity for the exact revision without starting a revision or review mutation", async () => {
-    const readyContext = contentDecisionContext();
-    readyContext.evidence_readiness = { ...readyContext.evidence_readiness, status: "ready", label: "Dowody są aktualne", reason: "Dowody są aktualne dla tej strony.", blocker_codes: [] };
-    readyContext.next_safe_action = { kind: "open_workspace", label: "Otwórz warsztat strony", reason: "Możesz przejść do read-only warsztatu tej samej strony.", connector_id: null };
     const revision = { ...savedFullDraftRevision(), base_revision_id: "content_revision_base" };
-    vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(readyContext);
-    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(contentDocumentWorkspace(revision)));
     vi.mocked(getContentWorkItemEditorialIntegrity).mockResolvedValue({
       work_item_id: revision.work_item_id,
       baseline_revision: { revision_id: "content_revision_r8", content_digest: "b".repeat(64), revision_number: 8 },
@@ -958,8 +902,10 @@ function selectedWorkspace(
   };
 }
 
-function contentDocumentWorkspace(): ContentDocumentWorkspace {
-  const revision = savedFullDraftRevision();
+function contentDocumentWorkspace(
+  revision = savedFullDraftRevision(),
+  review: ReturnType<typeof savedDraftRevisionReview> | null = null
+): ContentDocumentWorkspace {
   return {
     response_type: "content_document_workspace",
     contract_version: "content_document_workspace_v2",
@@ -1002,7 +948,9 @@ function contentDocumentWorkspace(): ContentDocumentWorkspace {
         })),
         faq_count: revision.faq.length,
         cta_count: revision.cta_blocks.length
-      }
+      },
+      revision,
+      review
     },
     document_lineage: {
       status: "available",
@@ -1039,12 +987,14 @@ function contentDocumentWorkspace(): ContentDocumentWorkspace {
 
 function approvedDocumentWorkspace(): ContentDocumentWorkspace {
   const workspace = contentDocumentWorkspace();
+  const revision = workspace.canonical_document.revision!;
   workspace.canonical_document = {
     ...workspace.canonical_document,
     status: "approved",
     review_state: "approved",
     label: "Dokument zatwierdzony",
-    reason: "Dokument został zatwierdzony dla dokładnej rewizji."
+    reason: "Dokument został zatwierdzony dla dokładnej rewizji.",
+    review: savedDraftRevisionReview(revision, "approved")
   };
   return workspace;
 }

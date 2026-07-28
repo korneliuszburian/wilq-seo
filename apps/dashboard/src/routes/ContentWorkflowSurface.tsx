@@ -6,9 +6,9 @@ import {
   saveContentWorkItemDraftRevisionReview,
   type ContentDraftRevision,
   type ContentDraftRevisionDecision,
+  type ContentDraftRevisionReview,
   type ContentDraftRevisionReviewRequest
 } from "../lib/api";
-import { type ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
 import { ContentDocumentWorkspaceCanvas } from "./ContentDocumentWorkspaceCanvas";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
@@ -17,12 +17,9 @@ import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 import {
   useContentWorkflowQueries,
-  type ContentDecisionContextQuery,
   type ContentSelectedWorkspaceQuery,
   type ContentWorkflowEntryQuery,
-  type ContentInitialDraftQuery,
-  type ContentInventoryCatalogQuery,
-  type ContentWorkflowSnapshotQuery
+  type ContentInventoryCatalogQuery
 } from "./contentWorkflowQueries";
 
 export function ContentWorkflowSurface() {
@@ -64,13 +61,10 @@ export function ContentWorkflowSurface() {
     });
   };
   const {
-    decisionContext,
     selectedWorkspace,
     entry,
     inventory,
-    operatorContext,
-    workflow,
-    initialDraft
+    operatorContext
   } = useContentWorkflowQueries(
     selectedWorkItemId,
     reviewOpen,
@@ -80,12 +74,9 @@ export function ContentWorkflowSurface() {
   return (
     <ContentWorkflowRouteState
       selectedWorkItemId={selectedWorkItemId}
-      decisionContext={decisionContext}
       selectedWorkspace={selectedWorkspace}
       entry={entry}
       inventory={inventory}
-      initialDraft={initialDraft}
-      workflow={workflow}
       reviewOpen={reviewOpen}
       browseInventory={browseInventory}
       newPageOpen={newPageOpen}
@@ -185,12 +176,9 @@ function contentWorkflowSearch(previous: {
 
 function ContentWorkflowRouteState({
   selectedWorkItemId,
-  decisionContext,
   selectedWorkspace,
   entry,
   inventory,
-  initialDraft,
-  workflow,
   reviewOpen,
   browseInventory,
   newPageOpen,
@@ -205,12 +193,9 @@ function ContentWorkflowRouteState({
   onReturnToText
 }: {
   selectedWorkItemId: string | null;
-  decisionContext: ContentDecisionContextQuery;
   selectedWorkspace: ContentSelectedWorkspaceQuery;
   entry: ContentWorkflowEntryQuery;
   inventory: ContentInventoryCatalogQuery;
-  initialDraft: ContentInitialDraftQuery;
-  workflow: ContentWorkflowSnapshotQuery;
   reviewOpen: boolean;
   browseInventory: boolean;
   newPageOpen: boolean;
@@ -270,9 +255,7 @@ function ContentWorkflowRouteState({
     );
   }
   return <ContentReviewRoute
-    decisionContext={decisionContext}
-    initialDraft={initialDraft}
-    workflow={workflow}
+    selectedWorkspace={selectedWorkspace}
     operatorLabel={operatorLabel}
     onReturnToText={onReturnToText}
   />;
@@ -315,15 +298,11 @@ function DocumentWorkspaceError({ onRetry }: { onRetry: () => void }) {
 }
 
 function ContentReviewWorkspace({
-  context,
-  initialDraft,
-  workflow,
+  workspace,
   operatorLabel,
   onReturnToText
 }: {
-  context: NonNullable<ContentDecisionContextQuery["data"]>;
-  initialDraft: ContentInitialDraftQuery;
-  workflow: ContentWorkflowSnapshotQuery;
+  workspace: NonNullable<NonNullable<ContentSelectedWorkspaceQuery["data"]>["workspace"]>;
   operatorLabel: string | null;
   onReturnToText: (workItemId: string) => void;
 }) {
@@ -332,9 +311,9 @@ function ContentReviewWorkspace({
   const [notes, setNotes] = useState("");
   const [contentChecked, setContentChecked] = useState(false);
   const [evidenceChecked, setEvidenceChecked] = useState(false);
-  const revision = initialDraft.data?.status === "created" ? initialDraft.data.revision ?? null : null;
+  const revision = workspace.canonical_document.revision ?? null;
   const completeRevision = revision?.page_assets ? revision : null;
-  const persistedReview = workflow.data?.revisionWorkspace.latest_review;
+  const persistedReview = workspace.canonical_document.review ?? null;
   const matchingReview = persistedReview && completeRevision &&
     persistedReview.revision_id === completeRevision.revision_id &&
     persistedReview.revision_digest === completeRevision.content_digest
@@ -343,10 +322,10 @@ function ContentReviewWorkspace({
   const evidenceIds = completeRevision ? revisionEvidenceIds(completeRevision) : [];
   const reviewMutation = useMutation({
     mutationFn: (request: ContentDraftRevisionReviewRequest) =>
-      saveContentWorkItemDraftRevisionReview(request, context.work_item_id, completeRevision!.revision_id),
+      saveContentWorkItemDraftRevisionReview(request, workspace.work_item_id, completeRevision!.revision_id),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["content-workflow", "work-item", context.work_item_id]
+        queryKey: ["content-workflow", "work-item", workspace.work_item_id, "selected-workspace"]
       });
     }
   });
@@ -355,7 +334,6 @@ function ContentReviewWorkspace({
       operatorLabel &&
       !matchingReview &&
       !reviewMutation.isPending &&
-      !workflow.error &&
       (decision === "approved"
         ? contentChecked && evidenceChecked && evidenceIds.length > 0
         : notes.trim().length > 0)
@@ -380,10 +358,10 @@ function ContentReviewWorkspace({
       <section className="rounded-2xl border border-action/25 bg-white p-5 shadow-sm lg:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Review treści</p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink lg:text-3xl">
-          {context.source_public.title ?? "Wybrana strona"}
+          {workspace.source_snapshot.title ?? "Wybrana strona"}
         </h1>
-        {context.source_public.url ? <p className="mt-2 break-all text-sm text-action">{context.source_public.url}</p> : null}
-        <p className="mt-2 text-sm font-medium text-slate-700">Usługa: {context.service.label ?? "niepotwierdzona"}</p>
+        {workspace.source_snapshot.url ? <p className="mt-2 break-all text-sm text-action">{workspace.source_snapshot.url}</p> : null}
+        <p className="mt-2 text-sm font-medium text-slate-700">Usługa: {workspace.service_label ?? "niepotwierdzona"}</p>
         <p className="mt-3 text-sm leading-6 text-slate-700">Wynik pracy: pełna rewizja HTML do review.</p>
         <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-slate-600" aria-label="Stan pipeline’u">
           <li>Kontekst</li><li aria-hidden="true">→</li><li>Szkic</li><li aria-hidden="true">→</li><li className="text-action">Review</li><li aria-hidden="true">→</li><li>Odbiór opcjonalny</li>
@@ -395,7 +373,7 @@ function ContentReviewWorkspace({
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Stan review</p>
             <h2 className="mt-2 text-lg font-semibold text-ink">Pełna rewizja HTML — niegotowa do review</h2>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              {initialDraft.data?.blockers[0]?.reason ?? initialDraft.data?.safe_next_step ?? "Brakuje kompletnej exact revision."}
+              {workspace.canonical_document.reason}
             </p>
           </div>
         )}
@@ -403,8 +381,6 @@ function ContentReviewWorkspace({
           <><ReviewDecisionPanel
             revision={completeRevision}
             matchingReview={matchingReview}
-            isLoadingPersistedState={workflow.isLoading}
-            persistedStateError={workflow.error}
             hasOperatorIdentity={Boolean(operatorLabel)}
             decision={decision}
             notes={notes}
@@ -420,48 +396,37 @@ function ContentReviewWorkspace({
             onEvidenceCheckedChange={setEvidenceChecked}
             onSubmit={submitReview}
             onReloadCurrent={() => {
-              void Promise.all([
-                queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", context.work_item_id, "initial-draft"] }),
-                queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", context.work_item_id] })
-              ]);
+              void queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workspace.work_item_id, "selected-workspace"] });
             }}
-            onReturnToText={() => onReturnToText(context.work_item_id)}
-          />{completeRevision.base_revision_id ? <ContentEditorialIntegrityReport workItemId={context.work_item_id} revisionId={completeRevision.revision_id} /> : null}</>
+            onReturnToText={() => onReturnToText(workspace.work_item_id)}
+          />{completeRevision.base_revision_id ? <ContentEditorialIntegrityReport workItemId={workspace.work_item_id} revisionId={completeRevision.revision_id} /> : null}</>
         ) : null}
       </section>
       <details className="mt-4 rounded-xl border border-line bg-white p-4 text-sm text-slate-700">
         <summary className="cursor-pointer font-semibold text-ink">Szczegóły, źródła i ograniczenia</summary>
-        <p className="mt-3 leading-6">{context.delivery_capability.reason}</p>
+        <p className="mt-3 leading-6">{workspace.source_snapshot.reason}</p>
       </details>
     </main>
   );
 }
 
 function ContentReviewRoute({
-  decisionContext,
-  initialDraft,
-  workflow,
+  selectedWorkspace,
   operatorLabel,
   onReturnToText
 }: {
-  decisionContext: ContentDecisionContextQuery;
-  initialDraft: ContentInitialDraftQuery;
-  workflow: ContentWorkflowSnapshotQuery;
+  selectedWorkspace: ContentSelectedWorkspaceQuery;
   operatorLabel: string | null;
   onReturnToText: (workItemId: string) => void;
 }) {
-  if (decisionContext.isLoading || initialDraft.isLoading || workflow.isLoading) {
+  if (selectedWorkspace.isLoading) {
     return <DocumentWorkspacePending />;
   }
-  if (decisionContext.error || !decisionContext.data || initialDraft.error) {
-    return <DocumentWorkspaceError onRetry={() => {
-      void Promise.all([decisionContext.refetch(), initialDraft.refetch(), workflow.refetch()]);
-    }} />;
+  if (selectedWorkspace.error || !selectedWorkspace.data || selectedWorkspace.data.status === "missing" || !selectedWorkspace.data.workspace) {
+    return <DocumentWorkspaceError onRetry={() => void selectedWorkspace.refetch()} />;
   }
   return <ContentReviewWorkspace
-    context={decisionContext.data}
-    initialDraft={initialDraft}
-    workflow={workflow}
+    workspace={selectedWorkspace.data.workspace}
     operatorLabel={operatorLabel}
     onReturnToText={onReturnToText}
   />;
@@ -470,8 +435,6 @@ function ContentReviewRoute({
 function ReviewDecisionPanel({
   revision,
   matchingReview,
-  isLoadingPersistedState,
-  persistedStateError,
   hasOperatorIdentity,
   decision,
   notes,
@@ -490,9 +453,7 @@ function ReviewDecisionPanel({
   onReturnToText
 }: {
   revision: ContentDraftRevision;
-  matchingReview: ContentWorkflowSnapshot["revisionWorkspace"]["latest_review"];
-  isLoadingPersistedState: boolean;
-  persistedStateError: Error | null;
+  matchingReview: ContentDraftRevisionReview | null;
   hasOperatorIdentity: boolean;
   decision: ContentDraftRevisionDecision;
   notes: string;
@@ -537,10 +498,8 @@ function ReviewDecisionPanel({
     <div className="mt-5 rounded-xl border border-line bg-slate-50 p-4" data-testid="content-review-decision-panel">
       <p className="font-semibold text-ink">Decyzja człowieka</p>
       <p className="mt-1 text-sm leading-6 text-slate-700">Rewizja: {revision.revision_id.slice(0, 12)} · digest: {revision.content_digest.slice(0, 12)}</p>
-      {isLoadingPersistedState ? <p className="mt-2 text-sm text-slate-600">Sprawdzam zapisany stan review…</p> : null}
-      {persistedStateError ? <p className="mt-2 text-sm font-semibold text-wait">Nie udało się odczytać aktualnego stanu review. Odśwież stronę przed zapisem decyzji.</p> : null}
       {!hasOperatorIdentity ? <p className="mt-2 text-sm font-semibold text-wait">Nie udało się potwierdzić tożsamości osoby oceniającej. Review nie zostanie zapisane.</p> : null}
-      <fieldset className="mt-4 flex flex-wrap gap-2" disabled={isPending || isLoadingPersistedState || Boolean(persistedStateError) || !hasOperatorIdentity}>
+      <fieldset className="mt-4 flex flex-wrap gap-2" disabled={isPending || !hasOperatorIdentity}>
         {(["approved", "needs_changes", "rejected"] as const).map((option) => (
           <label key={option} className={`cursor-pointer rounded-md border px-3 py-2 text-sm font-semibold ${decision === option ? "border-action bg-action/10 text-action" : "border-line bg-white text-ink"}`}>
             <input className="sr-only" type="radio" name="content-review-decision" value={option} checked={decision === option} onChange={() => onDecisionChange(option)} />
