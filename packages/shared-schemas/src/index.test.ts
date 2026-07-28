@@ -787,13 +787,14 @@ describe("ContentPlanningProposalResponseSchema", () => {
       notes: "",
       created_at: "2026-07-16T12:00:00Z"
     };
-    expect(ContentPlanningWorkspaceSchema.safeParse({
+    const planningWorkspace = {
       proposal: response.proposal,
       scope_decision: scopeDecision,
       section_map_decision: null,
       scope_current: true,
       section_map_current: true
-    }).success).toBe(true);
+    };
+    expect(ContentPlanningWorkspaceSchema.safeParse(planningWorkspace).success).toBe(true);
     expect(ContentPlanningWorkspaceSchema.safeParse({
       proposal: response.proposal,
       scope_decision: { ...scopeDecision, planning_digest: "f".repeat(64) },
@@ -831,6 +832,18 @@ describe("ContentPlanningProposalResponseSchema", () => {
       ContentPlanningProposalResponseSchema.safeParse({
         ...response,
         publish_ready: true
+      }).success
+    ).toBe(false);
+    expect(
+      ContentPlanningProposalResponseSchema.safeParse({
+        ...response,
+        planning_workspace: planningWorkspace
+      }).success
+    ).toBe(true);
+    expect(
+      ContentPlanningProposalResponseSchema.safeParse({
+        ...response,
+        planning_workspace: { ...planningWorkspace, proposal: { ...response.proposal, planning_digest: "f".repeat(64) } }
       }).success
     ).toBe(false);
     expect(

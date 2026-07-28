@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Literal, cast
@@ -27,6 +28,7 @@ from wilq.content.planning.generated_proposal import (
     _planning_runtime_blocker,
     generate_content_planning_proposal,
     read_content_planning_proposal,
+    with_current_planning_workspace,
 )
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningCtaBlock,
@@ -45,7 +47,12 @@ from wilq.content.planning.runtime_contract import (
     planning_job_stale_after_seconds,
 )
 from wilq.content.workflow.catalog import inventory_work_item_id
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.planning import (
+    ContentPlanningDecision,
+    ContentPlanningProposal,
+    ContentPlanningSection,
+)
 from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import local_state_store
@@ -65,6 +72,52 @@ class _FailingPlanningStore(ContentPlanningProposalStore):
         completed_run: CodexRun,
     ) -> tuple[Literal["created", "idempotent"], ContentPlanningProposal]:
         raise RuntimeError("synthetic persistence failure")
+
+
+def test_ready_plan_projects_only_its_exact_review_decision() -> None:
+    proposal = ContentPlanningProposal(
+        work_item_id="content_work_item_bdo",
+        planning_digest="a" * 64,
+        service_card_id="service_bdo",
+        final_canonical_url="https://www.ekologus.pl/bdo/",
+        target_reader="firma",
+        buyer_problem="brak porządku",
+        buyer_trigger="zmiana wymagań",
+        search_intent="informational",
+        cta_direction="Skonsultuj sytuację.",
+        sections=[ContentPlanningSection(heading="Zakres", purpose="Porządkuje temat.")],
+        search_demand=ContentSearchDemandEvidence(
+            status="missing",
+            optional_ads_status="not_exactly_mapped",
+            safe_next_step="Brak dokładnych danych.",
+        ),
+    )
+    response = ContentPlanningProposalResponse(
+        status="ready",
+        work_item_id=proposal.work_item_id,
+        service_card_id=proposal.service_card_id,
+        proposal=proposal,
+        safe_next_step="Sprawdź plan.",
+    )
+    exact = ContentPlanningDecision(
+        decision_id="planning_decision_exact",
+        decision_number=1,
+        work_item_id=proposal.work_item_id,
+        stage="scope",
+        planning_digest=proposal.planning_digest,
+        service_card_id=proposal.service_card_id,
+        decision="approved",
+        reviewed_by="wilku",
+        created_at=datetime.now(UTC),
+    )
+    stale = exact.model_copy(update={"planning_digest": "b" * 64})
+
+    projected = with_current_planning_workspace(response, [stale, exact])
+
+    assert projected.planning_workspace is not None
+    assert projected.planning_workspace.proposal == proposal
+    assert projected.planning_workspace.scope_decision == exact
+    assert projected.planning_workspace.scope_current is True
 
 
 @pytest.fixture
@@ -879,6 +932,8 @@ def _approve_and_generate(
     ready = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
     assert ready.json()["status"] == "ready"
     assert ready.json()["proposal"] == created.json()["proposal"]
+    assert ready.json()["planning_workspace"]["proposal"] == created.json()["proposal"]
+    assert ready.json()["planning_workspace"]["scope_current"] is True
     assert ready.json()["input_summary"] == input_summary
     return cast(dict[str, Any], created.json()["proposal"])
 

@@ -23,6 +23,7 @@ from wilq.content.planning.generated_proposal import (
     _snapshot_with_explicit_service_selection,
     generate_content_planning_proposal,
     read_content_planning_proposal,
+    with_current_planning_workspace,
 )
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalBlocker,
@@ -35,6 +36,7 @@ from wilq.content.planning.generated_proposal_store import (
 )
 from wilq.content.planning.runtime_contract import planning_codex_timeout_seconds
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.store import content_workflow_store
 from wilq.storage.local_state import local_state_store
 
 ContentPlanningSnapshotLoader = Callable[
@@ -81,9 +83,13 @@ def register_content_planning_proposal_routes(
         pending = content_planning_proposal_store().latest_generation_response(work_item_id)
         if pending is not None:
             return pending
-        return read_content_planning_proposal(
+        response = read_content_planning_proposal(
             snapshot=snapshot_loader(work_item_id),
             store=content_planning_proposal_store(),
+        )
+        return with_current_planning_workspace(
+            response,
+            content_workflow_store().load_planning_decisions(work_item_id),
         )
 
     @router.post(
