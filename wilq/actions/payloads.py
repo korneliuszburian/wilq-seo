@@ -35,6 +35,10 @@ from wilq.actions.localo.visibility import (
 from wilq.actions.validation_copy import missing, wrong
 from wilq.connectors.registry import get_connector_status
 from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.new_page_draft_action import CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.new_page_draft_validation import (
+    validate_new_page_draft_action_payload,
+)
 
 INTERNAL_ACTION_TYPES = {
     "configure_connector",
@@ -104,38 +108,50 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
     if action_type not in connector.supported_actions:
         errors.append(wrong("Akcja", "ten typ działania nie jest wspierany dla źródła danych"))
 
-    if connector_id == "google_ads" and action_type == "custom_segment_candidate":
-        errors.extend(validate_custom_segment_payload(payload))
-    if connector_id == "google_ads" and action_type == "negative_keyword_candidate":
-        errors.extend(validate_negative_keyword_payload(payload))
-    if connector_id == "google_ads" and action_type == "campaign_change_review":
-        errors.extend(validate_campaign_review_payload(payload))
-    if connector_id == "google_ads" and action_type == "google_ads_recommendation_review":
-        errors.extend(validate_recommendation_review_payload(payload))
-    if connector_id == "google_ads" and action_type == "google_ads_change_history_impact_review":
-        errors.extend(validate_change_history_impact_payload(payload))
-    if connector_id == "google_ads" and action_type == "google_ads_search_term_ngram_review":
-        errors.extend(validate_search_term_ngram_payload(payload))
-    if connector_id == "google_ads" and action_type == DEMAND_GEN_READINESS_REVIEW_ACTION_TYPE:
-        errors.extend(validate_demand_gen_readiness_review_payload(payload))
-    if connector_id == "google_analytics_4" and action_type == GA4_TRACKING_QUALITY_ACTION_TYPE:
-        errors.extend(validate_ga4_tracking_quality_payload(payload))
-    if connector_id == "localo" and action_type == LOCALO_VISIBILITY_REVIEW_ACTION_TYPE:
-        errors.extend(validate_localo_visibility_review_payload(payload))
-    if (
-        connector_id == "wordpress_ekologus"
-        and action_type == SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE
-    ):
-        errors.extend(validate_service_profile_knowledge_promotion_payload(payload))
-    if (
-        connector_id == "wordpress_ekologus"
-        and action_type == SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE
-    ):
-        errors.extend(validate_service_profile_private_proposal_promotion_payload(payload))
-    if connector_id == "wordpress_ekologus" and action_type == CONTENT_DEV_DRAFT_ACTION_TYPE:
-        errors.extend(validate_content_dev_draft_action_payload(payload))
+    validator = _connector_payload_validator(connector_id, action_type)
+    if validator is not None:
+        errors.extend(validator(payload))
 
     return errors
+
+
+def _connector_payload_validator(connector_id: str, action_type: str):
+    return {
+        ("google_ads", "custom_segment_candidate"): validate_custom_segment_payload,
+        ("google_ads", "negative_keyword_candidate"): validate_negative_keyword_payload,
+        ("google_ads", "campaign_change_review"): validate_campaign_review_payload,
+        ("google_ads", "google_ads_recommendation_review"): validate_recommendation_review_payload,
+        (
+            "google_ads",
+            "google_ads_change_history_impact_review",
+        ): validate_change_history_impact_payload,
+        ("google_ads", "google_ads_search_term_ngram_review"): validate_search_term_ngram_payload,
+        (
+            "google_ads",
+            DEMAND_GEN_READINESS_REVIEW_ACTION_TYPE,
+        ): validate_demand_gen_readiness_review_payload,
+        (
+            "google_analytics_4",
+            GA4_TRACKING_QUALITY_ACTION_TYPE,
+        ): validate_ga4_tracking_quality_payload,
+        ("localo", LOCALO_VISIBILITY_REVIEW_ACTION_TYPE): validate_localo_visibility_review_payload,
+        (
+            "wordpress_ekologus",
+            SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE,
+        ): validate_service_profile_knowledge_promotion_payload,
+        (
+            "wordpress_ekologus",
+            SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE,
+        ): validate_service_profile_private_proposal_promotion_payload,
+        (
+            "wordpress_ekologus",
+            CONTENT_DEV_DRAFT_ACTION_TYPE,
+        ): validate_content_dev_draft_action_payload,
+        (
+            "wordpress_ekologus",
+            CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
+        ): validate_new_page_draft_action_payload,
+    }.get((connector_id, action_type))
 
 
 def validate_content_dev_draft_action_payload(payload: dict[str, Any]) -> list[str]:
