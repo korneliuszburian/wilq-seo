@@ -17,7 +17,6 @@ import {
   postContentWorkItemLearningProposal,
   postContentWorkItemMeasurementOutcome,
   postContentWorkItemMeasurementWindow,
-  reviewContentNewPagePlanning,
   reviewContentNewPageRevision,
   type ContentDiagnosticsResponse,
   type ContentNewPageCanonicalDocumentWorkspace,
@@ -504,48 +503,14 @@ function NewPagePlanningProposal({ briefId }: { briefId: string }) {
 }
 
 function NewPagePlanningReview({ briefId, proposal, onChanged }: { briefId: string; proposal: ContentPlanningProposal; onChanged: () => void }) {
-  const [showChanges, setShowChanges] = useState(false);
-  const [notes, setNotes] = useState("");
   const [safeNextStep, setSafeNextStep] = useState<string | null>(null);
   const exactPlan = Boolean(proposal.proposal_id && proposal.planning_input_digest);
   const prepareDocument = useMutation({
-    mutationFn: async () => {
-      const review = await reviewContentNewPagePlanning(briefId, {
-        expected_proposal_id: proposal.proposal_id ?? "",
-        expected_planning_digest: proposal.planning_digest,
-        expected_planning_input_digest: proposal.planning_input_digest ?? "",
-        decision: "approved",
-        reviewed_by: "wilku",
-        checked_items: ["plan, struktura, źródła i przypisanie do usługi"],
-        notes: ""
-      });
-      if (review.response_type === "content_new_page_document_review_prerequisite_conflict") {
-        return { safeNextStep: review.safe_next_step, draft: null };
-      }
-      return {
-        safeNextStep: null,
-        draft: await createContentNewPageInitialDraft(briefId, {
-          expected_proposal_id: proposal.proposal_id ?? "",
-          expected_planning_digest: proposal.planning_digest,
-          expected_planning_input_digest: proposal.planning_input_digest ?? "",
-          requested_by: "wilku"
-        })
-      };
-    },
-    onSuccess: (result) => {
-      setSafeNextStep(result.safeNextStep ?? result.draft?.safe_next_step ?? null);
-      onChanged();
-    }
-  });
-  const requestChanges = useMutation({
-    mutationFn: () => reviewContentNewPagePlanning(briefId, {
+    mutationFn: () => createContentNewPageInitialDraft(briefId, {
       expected_proposal_id: proposal.proposal_id ?? "",
       expected_planning_digest: proposal.planning_digest,
       expected_planning_input_digest: proposal.planning_input_digest ?? "",
-      decision: "needs_changes",
-      reviewed_by: "wilku",
-      checked_items: [],
-      notes: notes.trim()
+      requested_by: "wilku"
     }),
     onSuccess: (result) => {
       setSafeNextStep(result.safe_next_step);
@@ -555,10 +520,9 @@ function NewPagePlanningReview({ briefId, proposal, onChanged }: { briefId: stri
   return <div className="mt-4 border-t border-emerald-200 pt-4" data-testid="new-page-planning-review">
     <h4 className="font-semibold text-ink">Szkic struktury tekstu</h4>
     <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-700">{proposal.sections.map((section) => <li key={section.section_id || section.heading}><span className="font-medium">{section.heading}</span> — {section.purpose}</li>)}</ul>
-    <div className="mt-4 flex flex-wrap items-center gap-3"><button type="button" className="rounded-xl bg-action px-4 py-2 font-semibold text-white disabled:opacity-50" disabled={!exactPlan || prepareDocument.isPending} onClick={() => prepareDocument.mutate()}>{prepareDocument.isPending ? "Przygotowuję pierwszą wersję…" : "Przygotuj pierwszą wersję"}</button><button type="button" className="text-sm font-semibold text-action underline" onClick={() => setShowChanges((value) => !value)}>{showChanges ? "Ukryj uwagi" : "Dodaj uwagi do struktury"}</button></div>
-    {showChanges ? <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3"><label className="block font-semibold text-ink">Co poprawić w planie?<textarea className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} /></label><button type="button" className="mt-3 rounded-xl border border-action/30 px-4 py-2 text-sm font-semibold text-action disabled:opacity-50" disabled={!notes.trim() || requestChanges.isPending} onClick={() => requestChanges.mutate()}>{requestChanges.isPending ? "Zapisuję uwagi…" : "Zapisz uwagi do planu"}</button></div> : null}
+    <div className="mt-4 flex flex-wrap items-center gap-3"><button type="button" className="rounded-xl bg-action px-4 py-2 font-semibold text-white disabled:opacity-50" disabled={!exactPlan || prepareDocument.isPending} onClick={() => prepareDocument.mutate()}>{prepareDocument.isPending ? "Przygotowuję pierwszą wersję…" : "Przygotuj pierwszą wersję"}</button></div>
     {safeNextStep ? <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6 text-slate-700">{safeNextStep}</p> : null}
-    {prepareDocument.isError || requestChanges.isError ? <p className="mt-2 text-wait">Nie udało się zapisać decyzji ani przygotować dokumentu. Odśwież plan — jego exact tożsamość mogła się zmienić.</p> : null}
+    {prepareDocument.isError ? <p className="mt-2 text-wait">Nie udało się przygotować dokumentu. Odśwież szkic — jego exact tożsamość mogła się zmienić.</p> : null}
   </div>;
 }
 

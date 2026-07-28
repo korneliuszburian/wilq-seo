@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageDeliveryAction, createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPageDeliveryReadiness, getContentNewPagePlanningProposal, refreshConnector, reviewContentNewPagePlanning, reviewContentNewPageRevision, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageDeliveryAction, createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPageDeliveryReadiness, getContentNewPagePlanningProposal, refreshConnector, reviewContentNewPageRevision, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, createContentNewPageDeliveryAction: vi.fn(), createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPageDeliveryReadiness: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), refreshConnector: vi.fn(), reviewContentNewPagePlanning: vi.fn(), reviewContentNewPageRevision: vi.fn() };
+  return { ...actual, createContentNewPageDeliveryAction: vi.fn(), createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPageDeliveryReadiness: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), refreshConnector: vi.fn(), reviewContentNewPageRevision: vi.fn() };
 });
 
 const entry: ContentWorkflowEntryResponse = {
@@ -273,9 +273,8 @@ describe("ContentWorkflowEntryPanel", () => {
     vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue(readyPlan);
     vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue({
       ...canonicalDocumentWorkspace(),
-      status: "review_required"
+      status: "ready_for_document"
     });
-    vi.mocked(reviewContentNewPagePlanning).mockResolvedValue(canonicalDocumentWorkspace());
     vi.mocked(createContentNewPageInitialDraft).mockResolvedValue({
       status: "generating",
       work_item_id: "content_work_item_new_page_test",
@@ -291,15 +290,6 @@ describe("ContentWorkflowEntryPanel", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Przygotuj pierwszą wersję" }));
 
-    await waitFor(() => expect(reviewContentNewPagePlanning).toHaveBeenCalledWith("content_new_page_brief_test", {
-      expected_proposal_id: "content_planning_proposal_test",
-      expected_planning_digest: "b".repeat(64),
-      expected_planning_input_digest: "d".repeat(64),
-      decision: "approved",
-      reviewed_by: "wilku",
-      checked_items: ["plan, struktura, źródła i przypisanie do usługi"],
-      notes: ""
-    }));
     await waitFor(() => expect(createContentNewPageInitialDraft).toHaveBeenCalledWith("content_new_page_brief_test", {
       expected_proposal_id: "content_planning_proposal_test",
       expected_planning_digest: "b".repeat(64),
