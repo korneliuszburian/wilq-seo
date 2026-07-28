@@ -3929,8 +3929,6 @@ export const ContentPlanningProposalResponseSchema = z.object({
   retry_after_seconds: z.number().int().nonnegative().nullable().optional(),
   proposal: ContentPlanningProposalSchema.nullable().optional(),
   planning_workspace: ContentPlanningWorkspaceSchema.nullable().optional(),
-  scope_review_current: z.boolean().optional(),
-  scope_review: ContentPlanningDecisionSchema.nullable().optional(),
   runtime: ContentCodexRuntimeTraceSchema,
   blockers: z.array(ContentPlanningProposalBlockerSchema).default([]),
   safe_next_step: z.string().min(1),
@@ -3959,20 +3957,6 @@ export const ContentPlanningProposalResponseSchema = z.object({
         message: "Planning workspace must carry the response exact proposal."
       });
     }
-  }
-  if (response.scope_review && response.scope_review.work_item_id !== response.work_item_id) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["scope_review"],
-      message: "Scope review must match the response work item."
-    });
-  }
-  if (response.scope_review_current && response.scope_review?.decision !== "approved") {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["scope_review_current"],
-      message: "Current scope review requires an approved exact decision."
-    });
   }
 });
 

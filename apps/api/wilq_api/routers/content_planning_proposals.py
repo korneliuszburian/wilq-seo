@@ -24,7 +24,6 @@ from wilq.content.planning.generated_proposal import (
     generate_content_planning_proposal,
     read_content_planning_proposal,
     with_current_planning_workspace,
-    with_current_scope_review,
 )
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalBlocker,
@@ -89,7 +88,6 @@ def register_content_planning_proposal_routes(
             snapshot=snapshot,
             store=content_planning_proposal_store(),
         )
-        response = with_current_scope_review(response, snapshot)
         return with_current_planning_workspace(
             response,
             content_workflow_store().load_planning_decisions(work_item_id),

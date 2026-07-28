@@ -12,7 +12,6 @@ from wilq.content.planning.dynamic_input import (
 from wilq.content.workflow.planning import (
     ContentPlanningConditionalHypothesis,
     ContentPlanningCtaBlock,
-    ContentPlanningDecision,
     ContentPlanningFaqItem,
     ContentPlanningInternalLink,
     ContentPlanningInventoryDisposition,
@@ -167,8 +166,6 @@ class ContentPlanningProposalResponse(BaseModel):
     retry_after_seconds: int | None = Field(default=None, ge=0)
     proposal: ContentPlanningProposal | None = None
     planning_workspace: ContentPlanningWorkspace | None = None
-    scope_review_current: bool = False
-    scope_review: ContentPlanningDecision | None = None
     runtime: ContentCodexRuntimeTrace = Field(
         default_factory=lambda: ContentCodexRuntimeTrace(status="not_started")
     )
@@ -200,12 +197,6 @@ class ContentPlanningProposalResponse(BaseModel):
                 raise ValueError("Planning workspace is available only for a ready proposal.")
             if self.planning_workspace.proposal != self.proposal:
                 raise ValueError("Planning workspace must carry the response exact proposal.")
-        if self.scope_review is not None and self.scope_review.work_item_id != self.work_item_id:
-            raise ValueError("Scope review must match the response work item.")
-        if self.scope_review_current and (
-            self.scope_review is None or self.scope_review.decision != "approved"
-        ):
-            raise ValueError("Current scope review requires an approved exact decision.")
         return self
 
 
