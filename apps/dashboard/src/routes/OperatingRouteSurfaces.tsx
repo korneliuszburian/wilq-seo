@@ -661,7 +661,8 @@ function NearestSafeActionCard({
     candidate?.apply_contract?.draft_only ? "draft-only" : candidate?.mode_label ?? action?.mode_label ?? "prepare"
   );
   const reviewLabel = actionReviewRequirement(action);
-  const writeState = candidate?.vendor_write_possible ? "zapis możliwy po zgodzie" : "zapis zablokowany";
+  const requestReady = Boolean(candidate?.ready_to_request_apply);
+  const writeState = requestReady ? "żądanie gotowe do apply" : "zapis zablokowany";
   const operationLabel = marketerOperationLabel(
     candidate?.apply_contract?.allowed_operation ?? String(action?.payload?.action_type ?? action?.mode ?? "prepare")
   );
@@ -695,7 +696,7 @@ function NearestSafeActionCard({
           <StatusPill label={reviewLabel} tone="amber" />
           <StatusPill
             label={readinessLabel}
-            tone={readinessPending ? "amber" : candidate?.vendor_write_possible ? "green" : "red"}
+            tone={readinessPending ? "amber" : requestReady ? "green" : "red"}
           />
         </div>
 
