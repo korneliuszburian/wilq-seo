@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Iterable
-from dataclasses import dataclass
-from time import monotonic
 from typing import Any, Literal
 
+from wilq.actions import action_catalog
 from wilq.actions.action_blockers import (
     action_apply_blockers as _action_apply_blockers_impl,
 )
@@ -79,14 +77,9 @@ from wilq.actions.audit_store import (
     persisted_mutation_audits_for_action as _persisted_mutation_audits_for_action,
 )
 from wilq.actions.confirmation_lifecycle import confirm_action as confirm_action_lifecycle
-from wilq.actions.content_candidates import seed_metric_actions as seed_content_metric_actions
 from wilq.actions.content_refresh import (
     content_contract_label,
-    content_contract_labels,
     content_payload_with_reviewed_wordpress_draft_previews,
-    content_refresh_metric_candidate,
-    post_publication_measurement_plan,
-    post_publication_measurement_summary,
 )
 from wilq.actions.content_review_details import (
     content_url_review_details as _content_url_review_details_from_checked_items,
@@ -97,74 +90,25 @@ from wilq.actions.content_review_details import (
 from wilq.actions.content_review_details import (
     is_raw_content_review_audit_event as _is_raw_content_review_audit_event,
 )
-from wilq.actions.ga4.tracking_quality import ga4_tracking_quality_action_from_metric_facts
 from wilq.actions.gate_labels import (
     action_gate_label as _action_gate_label,
 )
 from wilq.actions.gate_labels import (
     action_gate_labels,
 )
-from wilq.actions.google_ads.action_candidates import (
-    seed_metric_actions as seed_google_ads_metric_actions,
-)
 from wilq.actions.google_ads.business_context import (
     ads_strategy_review_summary,
-    latest_google_ads_metric_facts,
-    latest_google_ads_vendor_read,
-    live_business_context_actions,
-)
-from wilq.actions.google_ads.business_context import (
-    connector_refresh_recency_key as ads_connector_refresh_recency_key,
 )
 from wilq.actions.google_ads.business_context import (
     micros_money_label as _micros_money_label,
 )
-from wilq.actions.google_ads.campaign_review import (
-    campaign_review_action_from_metric_facts,
-)
-from wilq.actions.google_ads.change_history import (
-    change_history_impact_action_from_metric_facts,
-)
-from wilq.actions.google_ads.custom_segments import (
-    custom_segment_action_from_metric_facts,
-)
 from wilq.actions.google_ads.demand_gen import (
     demand_gen_channel_label,
-    demand_gen_readiness_action_from_metric_facts,
-    latest_vendor_read_evidence_ids,
 )
 from wilq.actions.google_ads.demand_gen_preview import (
     demand_gen_readiness_preview_cards as build_demand_gen_readiness_preview_cards,
 )
-from wilq.actions.google_ads.keyword_planner import (
-    keyword_planner_access_action_from_vendor_read,
-)
-from wilq.actions.google_ads.negative_keywords import (
-    negative_keyword_action_from_metric_facts,
-)
-from wilq.actions.google_ads.recommendations import (
-    recommendation_review_action_from_metric_facts,
-)
-from wilq.actions.google_ads.search_term_ngrams import (
-    search_term_ngram_action_from_metric_facts,
-)
 from wilq.actions.impact_lifecycle import impact_check_action as impact_check_action_lifecycle
-from wilq.actions.localo.visibility import (
-    localo_action_metric_facts,
-    localo_visibility_review_action_from_metric_facts,
-    localo_visibility_review_payload_from_metric_facts,
-)
-from wilq.actions.merchant import (
-    MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
-    merchant_feed_issue_action_from_metric_facts,
-)
-from wilq.actions.metric_action_candidates import (
-    seed_non_ads_metric_actions,
-)
-from wilq.actions.metric_action_facts import load_action_metric_facts
-from wilq.actions.metric_utils import (
-    facts_by_connector as _facts_by_connector_impl,
-)
 from wilq.actions.metric_utils import (
     metric_fact_label,
     unique_values,
@@ -242,10 +186,6 @@ from wilq.actions.payload_readiness import (
     system_readiness_label as _system_readiness_label,
 )
 from wilq.actions.preview_lifecycle import preview_action as preview_action_lifecycle
-from wilq.actions.registry_assembly import (
-    assemble_action_registry,
-    seed_static_actions,
-)
 from wilq.actions.review_gate import (
     action_operator_checklist as build_action_operator_checklist,
 )
@@ -277,21 +217,6 @@ from wilq.actions.review_gate import (
     review_summary_item as build_review_summary_item,
 )
 from wilq.actions.review_lifecycle import record_action_review as record_action_review_lifecycle
-from wilq.actions.service_profile import (
-    service_profile_knowledge_promotion_action,
-    service_profile_private_proposal_promotion_action,
-)
-from wilq.actions.social import social_draft_actions
-from wilq.actions.wordpress_draft import (
-    draft_apply_action,
-    draft_handoff_action,
-)
-from wilq.actions.wordpress_handoff import (
-    build_draft_apply_action,
-    build_draft_apply_contract_payload,
-    build_draft_handoff_action,
-    build_draft_handoff_preview_item,
-)
 from wilq.actions.wordpress_mutation_requirements import (
     WordPressDraftApplyCapability,
     execute_supported_wordpress_mutation_adapter,
@@ -307,15 +232,11 @@ from wilq.actions.wordpress_preview import (
 )
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
-from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
-from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.workflow.dev_draft_action import (
-    load_content_target_draft_action,
     refresh_content_target_draft_action,
 )
 from wilq.content.workflow.store import content_workflow_store as action_content_workflow_store
-from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import (
     blocker_count_label,
     evidence_count_label,
@@ -343,159 +264,24 @@ from wilq.schemas import (
     ActionValidationResult,
     ActionWordPressDraftApplyBlocker,
     AuditEvent,
-    ConnectorRefreshRun,
-    ConnectorRefreshStatus,
-    MetricFact,
 )
 from wilq.storage.local_state import local_state_store
-from wilq.storage.metric_store import metric_store
-
-DEFAULT_ACTION_LIST_CACHE_SECONDS = 15.0
-
-
-@dataclass(frozen=True)
-class ActionListCacheEntry:
-    created_at: float
-    actions: list[ActionObject]
-    google_ads_registry_key: tuple[str, str, bool] | None = None
-
-
-_cached_action_list: ActionListCacheEntry | None = None
-
-
-def _service_profile_knowledge_promotion_action() -> ActionObject | None:
-    return service_profile_knowledge_promotion_action(profile=content_service_profile_response())
-
-
-def _service_profile_private_proposal_promotion_action() -> ActionObject | None:
-    return service_profile_private_proposal_promotion_action(
-        profile=content_service_profile_response()
-    )
-
-
-_STATIC_ACTIONS = seed_static_actions(
-    additional_actions=(
-        _service_profile_knowledge_promotion_action(),
-        _service_profile_private_proposal_promotion_action(),
-    )
-)
-ACTION_METRIC_CONNECTORS = (
-    "google_ads",
-    "google_merchant_center",
-    "google_analytics_4",
-    "google_search_console",
-    "wordpress_ekologus",
-    "ahrefs",
-    "localo",
-)
-ACTION_METRIC_FACT_LIMIT = 500
-ACTION_METRIC_FACT_LIMITS = {
-    "google_ads": ACTION_METRIC_FACT_LIMIT,
-    "google_analytics_4": ACTION_METRIC_FACT_LIMIT,
-    "google_merchant_center": ACTION_METRIC_FACT_LIMIT,
-    "google_search_console": ACTION_METRIC_FACT_LIMIT,
-    "wordpress_ekologus": ACTION_METRIC_FACT_LIMIT,
-    "ahrefs": ACTION_METRIC_FACT_LIMIT,
-    "localo": ACTION_METRIC_FACT_LIMIT,
-}
 
 
 def list_actions() -> list[ActionObject]:
-    return _with_persisted_review_gates(_action_registry().values())
+    return _with_persisted_review_gates(action_catalog.list_actions())
 
 
 def list_actions_cached() -> list[ActionObject]:
-    """Reuse one action registry build across the dashboard list reads."""
-    cached = _read_action_list_cache()
-    if cached is not None:
-        return cached
-    actions: list[ActionObject] = []
-    for _ in range(2):
-        registry_key = _google_ads_registry_cache_key()
-        actions = list_actions()
-        if registry_key == _google_ads_registry_cache_key():
-            _write_action_list_cache(actions, google_ads_registry_key=registry_key)
-            return actions
-    return actions
+    return action_catalog.list_actions_cached(_with_persisted_review_gates)
 
 
 def clear_action_list_cache() -> None:
-    global _cached_action_list
-    _cached_action_list = None
-
-
-def _read_action_list_cache() -> list[ActionObject] | None:
-    cache_seconds = _action_list_cache_seconds()
-    if cache_seconds <= 0 or _cached_action_list is None:
-        return None
-    if monotonic() - _cached_action_list.created_at > cache_seconds:
-        return None
-    if _cached_action_list.google_ads_registry_key != _google_ads_registry_cache_key():
-        return None
-    return _cached_action_list.actions
-
-
-def _write_action_list_cache(
-    actions: list[ActionObject],
-    *,
-    google_ads_registry_key: tuple[str, str, bool] | None,
-) -> None:
-    global _cached_action_list
-    if _action_list_cache_seconds() <= 0:
-        return
-    _cached_action_list = ActionListCacheEntry(
-        created_at=monotonic(),
-        actions=actions,
-        google_ads_registry_key=google_ads_registry_key,
-    )
-
-
-def _action_list_cache_seconds() -> float:
-    if os.getenv("PYTEST_CURRENT_TEST"):
-        return 0.0
-    configured = os.getenv("WILQ_ACTION_LIST_CACHE_SECONDS")
-    if configured is None:
-        return DEFAULT_ACTION_LIST_CACHE_SECONDS
-    try:
-        return max(0.0, float(configured))
-    except ValueError:
-        return DEFAULT_ACTION_LIST_CACHE_SECONDS
-
-
-def _action_registry() -> dict[str, ActionObject]:
-    latest_google_ads_run = _latest_google_ads_vendor_read()
-    return assemble_action_registry(
-        _STATIC_ACTIONS,
-        seed_metric_action_candidates(),
-        live_data_available=_google_ads_live_data_available(),
-        configure_action_id="act_configure_google_ads_env",
-        live_actions=(
-            *live_business_context_actions(
-                latest_google_ads_run,
-                evidence_ids=unique_values(
-                    [
-                        connector_evidence_id("google_ads"),
-                        *(latest_google_ads_run.evidence_ids if latest_google_ads_run else []),
-                    ]
-                ),
-            ),
-            keyword_planner_access_action_from_vendor_read(latest_google_ads_run),
-        ),
-    )
+    action_catalog.clear_action_list_cache()
 
 
 def get_action(action_id: str) -> ActionObject | None:
-    cached_actions = _read_action_list_cache()
-    action = next(
-        (cached_action for cached_action in cached_actions or [] if cached_action.id == action_id),
-        None,
-    )
-    if action is not None:
-        action = action.model_copy(deep=True)
-    else:
-        action = load_content_target_draft_action(action_id) or _action_registry().get(
-            action_id
-        )
+    action = action_catalog.get_action(action_id)
     if action is None:
         return None
     action = refresh_content_target_draft_action(_with_persisted_validation_state(action))
@@ -503,160 +289,6 @@ def get_action(action_id: str) -> ActionObject | None:
         action,
         _persisted_audit_events_for_action(action.id),
         _persisted_mutation_audits_for_action(action.id),
-    )
-
-
-def _google_ads_live_data_available() -> bool:
-    latest_run = _latest_google_ads_vendor_read()
-    if latest_run is None:
-        return False
-    return (
-        latest_run.status == ConnectorRefreshStatus.completed
-        and latest_run.vendor_data_collected is True
-    )
-
-
-def _google_ads_registry_cache_key() -> tuple[str, str, bool] | None:
-    latest_run = _latest_google_ads_vendor_read()
-    if latest_run is None:
-        return None
-    return (latest_run.id, latest_run.status.value, latest_run.vendor_data_collected)
-
-
-def _latest_google_ads_vendor_read() -> ConnectorRefreshRun | None:
-    return latest_google_ads_vendor_read(
-        list_connector_refresh_runs(connector_id="google_ads")
-    )
-
-
-def _connector_refresh_recency_key(run: ConnectorRefreshRun) -> tuple[str, str]:
-    return ads_connector_refresh_recency_key(run)
-
-
-def seed_metric_action_candidates() -> dict[str, ActionObject]:
-    facts = _action_metric_facts()
-    by_connector = _facts_by_connector_impl(facts)
-    actions: dict[str, ActionObject] = {}
-
-    actions.update(
-        seed_non_ads_metric_actions(
-            by_connector=by_connector,
-            merchant_action=lambda facts: merchant_feed_issue_action_from_metric_facts(
-                facts,
-                preview_contract=MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
-            ),
-            ga4_action=ga4_tracking_quality_action_from_metric_facts,
-            localo_facts=_localo_action_metric_facts,
-            localo_payload=localo_visibility_review_payload_from_metric_facts,
-            localo_action=localo_visibility_review_action_from_metric_facts,
-            social_action=social_draft_actions,
-        )
-    )
-    _seed_content_metric_actions(by_connector, actions)
-    _seed_google_ads_metric_actions(by_connector, actions)
-    return actions
-
-
-def _seed_content_metric_actions(
-    by_connector: dict[str, list[MetricFact]], actions: dict[str, ActionObject]
-) -> None:
-    content_facts = [
-        *by_connector.get("wordpress_ekologus", []),
-        *by_connector.get("google_search_console", []),
-        *by_connector.get("ahrefs", []),
-    ]
-    actions.update(
-        seed_content_metric_actions(
-            content_facts=content_facts,
-            candidate_builder=content_refresh_metric_candidate,
-            draft_handoff_builder=_wordpress_draft_handoff_action,
-            draft_apply_builder=_wordpress_draft_apply_action,
-        )
-    )
-
-
-def _seed_google_ads_metric_actions(
-    by_connector: dict[str, list[MetricFact]], actions: dict[str, ActionObject]
-) -> None:
-    google_ads_facts = by_connector.get("google_ads", [])
-    actions.update(
-        seed_google_ads_metric_actions(
-            google_ads_facts=google_ads_facts,
-            ga4_facts=by_connector.get("google_analytics_4", []),
-            latest_google_ads_evidence_ids=latest_vendor_read_evidence_ids("google_ads"),
-            latest_ga4_evidence_ids=latest_vendor_read_evidence_ids("google_analytics_4"),
-            demand_gen_action=demand_gen_readiness_action_from_metric_facts,
-            campaign_review_action=campaign_review_action_from_metric_facts,
-            recommendation_action=recommendation_review_action_from_metric_facts,
-            change_history_action=change_history_impact_action_from_metric_facts,
-            search_term_ngram_action=search_term_ngram_action_from_metric_facts,
-            custom_segment_action=custom_segment_action_from_metric_facts,
-            negative_keyword_action=negative_keyword_action_from_metric_facts,
-        )
-    )
-
-
-def _localo_action_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
-    return localo_action_metric_facts(
-        facts=facts,
-        refresh_runs=list_connector_refresh_runs(connector_id="localo"),
-        metric_facts_by_evidence_ids=metric_store().list_metric_facts_by_evidence_ids,
-        is_probe_only_fact=_is_probe_only_fact,
-    )
-
-
-def _action_metric_facts() -> list[MetricFact]:
-    return load_action_metric_facts(
-        store=metric_store(),
-        connector_ids=ACTION_METRIC_CONNECTORS,
-        limits=ACTION_METRIC_FACT_LIMITS,
-        latest_google_ads_facts=_latest_google_ads_metric_facts,
-        is_probe_only_fact=_is_probe_only_fact,
-    )
-
-
-def _latest_google_ads_metric_facts() -> list[MetricFact]:
-    return latest_google_ads_metric_facts(
-        _latest_google_ads_vendor_read(),
-        metric_facts_by_evidence_ids=metric_store().list_metric_facts_by_evidence_ids,
-    )
-
-
-def _wordpress_draft_handoff_action(
-    *,
-    content_payload: dict[str, Any] | None,
-    content_action_metrics: list[MetricFact],
-) -> ActionObject | None:
-    return build_draft_handoff_action(
-        content_payload=content_payload,
-        content_action_metrics=content_action_metrics,
-        preview_item=_wordpress_draft_handoff_preview_item,
-        handoff_builder=draft_handoff_action,
-        unique_values=unique_values,
-    )
-
-
-def _wordpress_draft_apply_action(*, handoff_action: ActionObject) -> ActionObject:
-    return build_draft_apply_action(
-        handoff_action=handoff_action,
-        apply_builder=draft_apply_action,
-        apply_contract_payload=_wordpress_draft_apply_contract_payload,
-    )
-
-
-def _wordpress_draft_apply_contract_payload(
-    handoff_action: ActionObject,
-) -> dict[str, Any]:
-    return build_draft_apply_contract_payload(handoff_action)
-
-
-def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any]:
-    return build_draft_handoff_preview_item(
-        item,
-        contract_label=content_contract_label,
-        contract_labels=content_contract_labels,
-        measurement_plan=post_publication_measurement_plan,
-        measurement_summary=post_publication_measurement_summary,
     )
 
 
@@ -674,21 +306,6 @@ def _plain_metric_value_label(
     if isinstance(value, str) and value:
         return value
     return missing_label
-
-
-def _is_probe_only_fact(fact: MetricFact) -> bool:
-    if (
-        fact.source_connector == "localo"
-        and fact.name == "api"
-        and fact.value == "localo_mcp_oauth_probe"
-    ):
-        return True
-    return fact.source_connector == "localo" and fact.name in {
-        "access_token_present",
-        "authorization_code_supported",
-        "pkce_s256_supported",
-        "mcp_initialize_status",
-    }
 
 
 def validate_action(action: ActionObject) -> ActionValidationResult:
@@ -812,9 +429,7 @@ def apply_action(
         if request is None
         else request
         if submitted_actor_label is None
-        else request.model_copy(
-            update={"confirmed_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id}
-        )
+        else request.model_copy(update={"confirmed_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id})
     )
     result = apply_action_lifecycle(
         action,
@@ -853,9 +468,7 @@ def _stamp_local_audit_identity(
 def _wordpress_draft_apply_capability(
     action: ActionObject,
     request: ActionApplyRequest | None,
-) -> tuple[
-    WordPressDraftApplyCapability | None, list[ActionWordPressDraftApplyBlocker]
-]:
+) -> tuple[WordPressDraftApplyCapability | None, list[ActionWordPressDraftApplyBlocker]]:
     """Compatibility seam for callers/tests while ownership lives in WordPress requirements."""
     return wordpress_draft_apply_capability(action, request)
 
@@ -1095,6 +708,7 @@ def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
         content_url_review_details=_content_url_review_details_from_checked_items,
         draft_readiness_review_details=_draft_readiness_review_details_from_checked_items,
     )
+
 
 def _preview_contract(payload: dict[str, Any], preview_items: list[dict[str, Any]]) -> str | None:
     return _payload_preview_contract_impl(payload, preview_items)
