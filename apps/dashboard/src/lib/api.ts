@@ -657,6 +657,17 @@ export function getContentNewPageCanonicalDocument(
   );
 }
 
+export function createContentNewPageInitialDraft(
+  briefId: string,
+  request: ContentInitialDraftRequest
+): Promise<ContentInitialDraftResponse> {
+  return apiPost(
+    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/initial-draft`,
+    ContentInitialDraftResponseSchema,
+    ContentInitialDraftRequestSchema.parse(request)
+  );
+}
+
 export function getContentInventoryCatalog(): Promise<ContentInventoryCatalogResponse> {
   return apiGet("/api/content/inventory/catalog", ContentInventoryCatalogResponseSchema);
 }
