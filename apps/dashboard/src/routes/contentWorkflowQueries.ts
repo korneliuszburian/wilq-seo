@@ -7,6 +7,7 @@ import {
   getContentRevisionTargetDraftPreview,
   getContentRevisionPublicDeployment,
   getContentWorkflowEntry,
+  getContentDiagnostics,
   getContentInventoryCatalog,
   getContentOperatorContext,
   type ContentSelectedWorkspace,
@@ -15,6 +16,7 @@ import {
   type ContentTargetDraftPreview,
   type ContentPublicDeploymentReadResponse,
   type ContentWorkflowEntryResponse,
+  type ContentDiagnosticsResponse,
   type ContentInventoryCatalogResponse,
   type ContentOperatorContext,
 } from "../lib/api";
@@ -32,6 +34,7 @@ export type ContentTargetMappingPreviewQuery = UseQueryResult<ContentTargetMappi
 export type ContentTargetDraftPreviewQuery = UseQueryResult<ContentTargetDraftPreview, Error>;
 export type ContentPublicDeploymentQuery = UseQueryResult<ContentPublicDeploymentReadResponse, Error>;
 export type ContentWorkflowEntryQuery = UseQueryResult<ContentWorkflowEntryResponse, Error>;
+export type ContentDiagnosticsQuery = UseQueryResult<ContentDiagnosticsResponse, Error>;
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
 export type ContentOperatorContextQuery = UseQueryResult<ContentOperatorContext, Error>;
 
@@ -111,7 +114,8 @@ export function useContentRevisionPublicDeployment(
 export function useContentWorkflowQueries(
   selectedWorkItemId: string | null,
   _reviewOpen = false,
-  browseInventory = false
+  browseInventory = false,
+  showEntryDiagnostics = false
 ) {
   // A selected route owns its identity. Navigation catalogues are never an
   // authority for a deep-linked document or review state.
@@ -126,6 +130,14 @@ export function useContentWorkflowQueries(
     queryFn: getContentInventoryCatalog,
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     enabled: browseInventory
+  });
+  const diagnostics = useQuery({
+    queryKey: ["content-workflow", "diagnostics"],
+    queryFn: getContentDiagnostics,
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    // This explains an empty entry queue. It is neither a route identity
+    // authority nor a condition for selected, review, browse, or new-page work.
+    enabled: showEntryDiagnostics
   });
   const operatorContext = useQuery({
     queryKey: ["content-workflow", "operator-context"],
@@ -146,6 +158,7 @@ export function useContentWorkflowQueries(
     selectedWorkspace,
     entry,
     inventory,
+    diagnostics,
     operatorContext
   };
 }
