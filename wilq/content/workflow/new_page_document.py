@@ -163,13 +163,8 @@ def _validate_workspace_without_revision(
         return
     if not has_exact_plan_identity:
         raise ValueError("New-page plan state requires exact proposal identity.")
-    expected_status = (
-        "ready_for_document"
-        if workspace.plan_review is not None and workspace.plan_review.decision == "approved"
-        else "review_required"
-    )
-    if workspace.status != expected_status:
-        raise ValueError("Workspace status must match the exact plan review state.")
+    if workspace.status != "ready_for_document":
+        raise ValueError("Generated new-page plan must be ready for its first document.")
 
 
 def _validate_workspace_with_revision(
@@ -199,8 +194,6 @@ def _validate_workspace_with_revision(
     ):
         raise ValueError("Workspace lineage must match the canonical new-page revision.")
     _validate_workspace_revision_review(workspace, revision)
-    if workspace.plan_review is None or workspace.plan_review.decision != "approved":
-        raise ValueError("Canonical new-page revision requires an approved exact plan review.")
 
 
 def _validate_workspace_revision_review(
@@ -281,7 +274,6 @@ def build_new_page_canonical_document_workspace(
     if proposal is None or not _proposal_matches_new_page(brief, foundation, proposal):
         return _blocked_workspace(brief, foundation)
     review = _scope_review_for(proposal, decisions)
-    approved = review is not None and review.decision == "approved"
     revision = _current_revision(revision_state, brief, foundation, proposal)
     if (
         revision_state is not None
@@ -291,7 +283,7 @@ def build_new_page_canonical_document_workspace(
         return _blocked_workspace(brief, foundation)
     document_status = "not_created" if revision is None else revision_state.status
     return ContentNewPageCanonicalDocumentWorkspace(
-        status=_workspace_status(approved, document_status),
+        status=_workspace_status(document_status),
         work_item_id=foundation.work_item_id,
         brief_id=brief.brief_id,
         brief_digest=brief.brief_digest,
@@ -317,7 +309,7 @@ def build_new_page_canonical_document_workspace(
         revision_review=None if revision is None else revision_state.latest_review,
         assigned_source_material_ids=([] if revision is None else revision.source_material_ids),
         assigned_knowledge_card_ids=([] if revision is None else revision.knowledge_card_ids),
-        safe_next_step=_next_step(approved, document_status),
+        safe_next_step=_next_step(document_status),
     )
 
 
@@ -410,12 +402,9 @@ def _current_revision(
     return revision
 
 
-def _workspace_status(
-    plan_approved: bool,
-    document_status: str,
-) -> str:
+def _workspace_status(document_status: str) -> str:
     if document_status == "not_created":
-        return "ready_for_document" if plan_approved else "review_required"
+        return "ready_for_document"
     return {
         "unreviewed": "document_review_required",
         "approved": "document_approved",
@@ -425,13 +414,9 @@ def _workspace_status(
     }[document_status]
 
 
-def _next_step(plan_approved: bool, document_status: str) -> str:
+def _next_step(document_status: str) -> str:
     if document_status == "not_created":
-        return (
-            "Przygotuj pierwszą immutable rewizję wyłącznie z tego zatwierdzonego planu."
-            if plan_approved
-            else "Sprawdź plan i zapisz decyzję człowieka przed przygotowaniem dokumentu."
-        )
+        return "Przygotuj pierwszą immutable rewizję wyłącznie z tego wygenerowanego planu."
     if document_status == "unreviewed":
         return "Sprawdź dokładną rewizję dokumentu i zapisz decyzję człowieka."
     if document_status == "approved":

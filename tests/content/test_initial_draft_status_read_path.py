@@ -56,7 +56,7 @@ def test_initial_draft_status_get_avoids_heavy_snapshot_loader(monkeypatch) -> N
     assert response.status_code == 200
     assert response.json()["status"] == "blocked"
     assert response.json()["blockers"][0]["code"] == "planning_not_approved"
-    assert "mapa sekcji jest wyliczana automatycznie" in response.json()["safe_next_step"]
+    assert "Wygeneruj aktualny plan" in response.json()["safe_next_step"]
     assert snapshot_calls == 0
 
 
@@ -117,7 +117,7 @@ def test_initial_draft_status_ignores_failed_run_from_an_older_plan(monkeypatch)
     assert response.json()["blockers"][0]["code"] == "planning_not_approved"
 
 
-def test_initial_draft_status_does_not_expose_unapproved_latest_proposal(monkeypatch) -> None:
+def test_initial_draft_status_does_not_expose_non_generated_latest_proposal(monkeypatch) -> None:
     app = FastAPI()
     endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
 
@@ -164,18 +164,15 @@ def test_initial_draft_status_does_not_expose_unapproved_latest_proposal(monkeyp
     assert response.json()["proposal_id"] is None
 
 
-def test_initial_draft_status_uses_proposal_bound_to_approved_plan(monkeypatch) -> None:
+def test_initial_draft_status_uses_latest_generated_plan(monkeypatch) -> None:
     app = FastAPI()
     endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
     current = SimpleNamespace(
         proposal_id="approved-plan-proposal",
         planning_input_digest="1" * 64,
+        generation_status="codex_generated",
+        service_card_id="service-bdo",
     )
-    stale = SimpleNamespace(
-        proposal_id="stale-newer-proposal",
-        planning_input_digest="2" * 64,
-    )
-
     class LocalState:
         def list_codex_runs(self):
             return []
@@ -185,7 +182,7 @@ def test_initial_draft_status_uses_proposal_bound_to_approved_plan(monkeypatch) 
             return current if planning_digest == "a" * 64 else None
 
         def latest(self, _work_item_id: str):
-            return stale
+            return current
 
     class WorkflowStore:
         def load_planning_decisions(self, _work_item_id: str):
@@ -226,6 +223,7 @@ def test_initial_draft_status_blocks_old_revision_when_newer_planning_job_exists
         proposal_id="approved-plan-proposal",
         planning_input_digest="1" * 64,
         service_card_id="service-bdo",
+        generation_status="codex_generated",
     )
     newer = SimpleNamespace(planning_input_digest="2" * 64)
 
@@ -234,6 +232,9 @@ def test_initial_draft_status_blocks_old_revision_when_newer_planning_job_exists
             return []
 
     class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return current
+
         def latest_for_planning_digest(self, _work_item_id: str, planning_digest: str):
             return current if planning_digest == "a" * 64 else None
 
@@ -284,6 +285,7 @@ def test_initial_draft_status_blocks_old_revision_when_newer_plan_is_ready(
         proposal_id="approved-plan-proposal",
         planning_input_digest="1" * 64,
         service_card_id="service-bdo",
+        generation_status="codex_generated",
     )
     newer = SimpleNamespace(
         proposal_id="new-ready-proposal",
@@ -295,6 +297,9 @@ def test_initial_draft_status_blocks_old_revision_when_newer_plan_is_ready(
             return []
 
     class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return current
+
         def latest_for_planning_digest(self, _work_item_id: str, planning_digest: str):
             return current if planning_digest == "a" * 64 else None
 
@@ -339,6 +344,7 @@ def test_initial_draft_status_ignores_newer_job_for_another_service(monkeypatch)
         proposal_id="approved-plan-proposal",
         planning_input_digest="1" * 64,
         service_card_id="service-bdo",
+        generation_status="codex_generated",
     )
     other_service = SimpleNamespace(planning_input_digest="2" * 64)
 
@@ -347,6 +353,9 @@ def test_initial_draft_status_ignores_newer_job_for_another_service(monkeypatch)
             return []
 
     class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return current
+
         def latest_for_planning_digest(self, _work_item_id: str, planning_digest: str):
             return current if planning_digest == "a" * 64 else None
 

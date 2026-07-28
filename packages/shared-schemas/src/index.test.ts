@@ -4068,11 +4068,11 @@ describe("Content work item workflow schemas", () => {
     ).toBe(false);
   });
 
-  it("discriminates new-page workspace status and exact plan review lineage", () => {
+  it("discriminates new-page workspace status and optional historical plan-review lineage", () => {
     const pending = {
       response_type: "content_new_page_canonical_document" as const,
       contract_version: "content_new_page_canonical_document_v2" as const,
-      status: "review_required" as const,
+      status: "ready_for_document" as const,
       work_item_id: "content_work_item_new_page",
       brief_id: "content_new_page_brief",
       brief_digest: "a".repeat(64),
@@ -4094,7 +4094,7 @@ describe("Content work item workflow schemas", () => {
       public_source_status: "not_applicable" as const,
       public_source_url: null,
       public_deployment_status: "not_confirmed" as const,
-      safe_next_step: "Sprawdź plan."
+      safe_next_step: "Przygotuj pierwszą wersję."
     };
     const approvedPlanReview = {
       decision_id: "content_planning_decision_new_page",
@@ -4128,7 +4128,7 @@ describe("Content work item workflow schemas", () => {
     expect(
       ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
         ...pending,
-        status: "ready_for_document"
+        status: "review_required"
       }).success
     ).toBe(false);
     const blocked = {
@@ -4151,7 +4151,7 @@ describe("Content work item workflow schemas", () => {
         }).success
       ).toBe(false);
     }
-    const ready = { ...pending, status: "ready_for_document" as const, plan_review: approvedPlanReview };
+    const ready = { ...pending, plan_review: approvedPlanReview };
     expect(ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse(ready).success).toBe(true);
     for (const blankProposalId of ["", "   "]) {
       expect(

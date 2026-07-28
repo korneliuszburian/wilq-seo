@@ -5,8 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getContentWorkItemInitialDraft,
   getContentWorkItemPlanningProposal,
-  postContentWorkItemInitialDraft,
-  saveContentWorkItemPlanningReview
+  postContentWorkItemInitialDraft
 } from "../lib/api";
 import { ContentPlanningPlanReview } from "./ContentPlanningPlanReview";
 
@@ -14,8 +13,7 @@ vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
   getContentWorkItemInitialDraft: vi.fn(),
   getContentWorkItemPlanningProposal: vi.fn(),
-  postContentWorkItemInitialDraft: vi.fn(),
-  saveContentWorkItemPlanningReview: vi.fn()
+  postContentWorkItemInitialDraft: vi.fn()
 }));
 
 describe("ContentPlanningPlanReview", () => {
@@ -25,11 +23,6 @@ describe("ContentPlanningPlanReview", () => {
 
   it("prepares the full text from one exact generated-plan action", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyPlan());
-    vi.mocked(saveContentWorkItemPlanningReview).mockResolvedValue({
-      status: "recorded",
-      decision: {},
-      planning_workspace: {}
-    } as never);
     vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue({
       status: "generating",
       work_item_id: "content_work_item_bdo",
@@ -62,17 +55,6 @@ describe("ContentPlanningPlanReview", () => {
     fireEvent.click(screen.getByRole("button", { name: "Przygotuj pełny tekst" }));
 
     await waitFor(() => {
-      expect(saveContentWorkItemPlanningReview).toHaveBeenCalledWith(
-        expect.objectContaining({
-          stage: "scope",
-          expected_planning_digest: "a".repeat(64),
-          service_card_id: "ekologus_service_bdo_reporting",
-          checked_items: ["plan, struktura i źródła"]
-        }),
-        "content_work_item_bdo"
-      );
-    });
-    await waitFor(() => {
       expect(postContentWorkItemInitialDraft).toHaveBeenCalledWith(
         {
           expected_proposal_id: "proposal_bdo",
@@ -86,14 +68,9 @@ describe("ContentPlanningPlanReview", () => {
     expect(screen.getByText("Pełny tekst jest przygotowywany. Ten widok odświeży się po zakończeniu.")).toBeInTheDocument();
   });
 
-  it("renders the typed stale-plan recovery instead of a generic API error", async () => {
+  it("does not record a planning approval before creating the full text", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyPlan());
-    vi.mocked(saveContentWorkItemPlanningReview).mockResolvedValue({
-      code: "stale_plan",
-      current_proposal_id: "content_planning_proposal_newer",
-      current_planning_digest: "c".repeat(64),
-      safe_next_step: "Odśwież aktualny plan."
-    } as never);
+    vi.mocked(postContentWorkItemInitialDraft).mockRejectedValue(new Error("stale plan"));
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
     render(
@@ -104,11 +81,8 @@ describe("ContentPlanningPlanReview", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Przygotuj pełny tekst" }));
 
-    await waitFor(() => {
-      expect(saveContentWorkItemPlanningReview).toHaveBeenCalledTimes(1);
-    });
-    expect(await screen.findByText("Odśwież aktualny plan.")).toBeInTheDocument();
-    expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
+    await waitFor(() => expect(postContentWorkItemInitialDraft).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Nie udało się uruchomić tekstu.");
   });
 });
 

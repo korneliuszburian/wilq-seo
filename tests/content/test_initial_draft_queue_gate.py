@@ -21,11 +21,11 @@ def _request() -> ContentInitialDraftRequest:
 
 
 def _snapshot(
-    *, latest_revision: object | None, context_current: bool = True
+    *, latest_revision: object | None, context_current: bool = True, scope_current: bool = True
 ) -> SimpleNamespace:
     return SimpleNamespace(
         planning_workspace=SimpleNamespace(
-            scope_current=True,
+            scope_current=scope_current,
             section_map_current=True,
             proposal=SimpleNamespace(
                 proposal_id="proposal-1",
@@ -50,6 +50,13 @@ def test_existing_revision_never_enters_async_initial_draft_queue() -> None:
 def test_currently_approved_plan_without_revision_can_enter_queue() -> None:
     assert _can_queue_initial_draft(
         _snapshot(latest_revision=None),
+        _request(),
+    ) is True
+
+
+def test_generated_plan_without_human_plan_approval_can_enter_queue() -> None:
+    assert _can_queue_initial_draft(
+        _snapshot(latest_revision=None, scope_current=False),
         _request(),
     ) is True
 

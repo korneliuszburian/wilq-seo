@@ -107,7 +107,7 @@ def _prepare_inputs(
                 )
             ],
         )
-    if planning is None or not planning.scope_current or not planning.section_map_current:
+    if planning is None or not planning.section_map_current:
         return _blocked_response(
             snapshot,
             proposal=None if planning is None else planning.proposal,
@@ -115,12 +115,12 @@ def _prepare_inputs(
             blockers=[
                 _blocker(
                     "planning_not_approved",
-                    "Zakres nie jest aktualnie zatwierdzony",
+                    "Brakuje aktualnego wygenerowanego planu",
                     (
-                        "Zakres musi być zatwierdzony dla dokładnej wersji planu; "
-                        "mapa sekcji jest generowana automatycznie."
+                        "Pełny tekst wymaga dokładnego wygenerowanego planu "
+                        "związanego z bieżącym wejściem."
                     ),
-                    "Sprawdź brief i zatwierdź zakres, a następnie uruchom pełny draft.",
+                    "Odśwież źródła lub wygeneruj aktualny plan, a następnie uruchom pełny tekst.",
                 )
             ],
         )
@@ -212,7 +212,7 @@ def _proposal_request_mismatch(
             "planning_not_generated",
             "Brakuje wygenerowanego planu",
             "Initial draft nie może powstać z preserve-first baseline bez planu modelowego.",
-            "Wygeneruj plan, sprawdź go i zapisz obie decyzje człowieka.",
+            "Wygeneruj aktualny plan i uruchom pełny tekst z widocznego szkicu.",
         )
     if (
         proposal.proposal_id != request.expected_proposal_id
@@ -241,7 +241,7 @@ def _planning_not_generated(
                 "planning_not_generated",
                 "Plan nie wskazuje zatwierdzonej usługi",
                 "Pełny tekst wymaga exact service bindingu z wygenerowanego planu.",
-                "Wygeneruj i zatwierdź aktualny plan dla wybranej usługi.",
+                "Wygeneruj aktualny plan dla wybranej usługi.",
             )
         ],
     )
@@ -629,7 +629,7 @@ def _stale_input_blocker() -> ContentInitialDraftBlocker:
         "stale_planning_input",
         "Metryki albo kontekst planu zmieniły się",
         "Bieżący planning_input_digest nie odpowiada zatwierdzonej wersji.",
-        "Wygeneruj i zatwierdź nowy plan przed tworzeniem tekstu.",
+        "Wygeneruj nowy plan przed tworzeniem tekstu.",
     )
 
 

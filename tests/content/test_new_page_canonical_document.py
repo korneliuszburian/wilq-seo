@@ -102,7 +102,7 @@ def _exact_inputs() -> tuple[ContentNewPagePlanningFoundation, ContentPlanningPr
     return foundation, proposal
 
 
-def test_new_page_canonical_document_requires_exact_approved_plan() -> None:
+def test_new_page_canonical_document_uses_exact_generated_plan() -> None:
     foundation, proposal = _exact_inputs()
     brief = build_new_page_brief(
         ContentNewPageBriefInput(
@@ -118,7 +118,7 @@ def test_new_page_canonical_document_requires_exact_approved_plan() -> None:
         brief=brief, foundation=foundation, proposal=proposal, decisions=[]
     )
     assert pending is not None
-    assert pending.status == "review_required"
+    assert pending.status == "ready_for_document"
     assert pending.document_status == "not_created"
     assert pending.public_source_status == "not_applicable"
     assert pending.public_deployment_status == "not_confirmed"
@@ -277,9 +277,9 @@ def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_st
         ContentNewPageCanonicalDocumentWorkspace.model_validate(
             pending.model_dump(mode="python") | {"status": "document_approved"}
         )
-    with pytest.raises(ValueError, match="exact plan review state"):
+    with pytest.raises(ValueError, match="Generated new-page plan"):
         ContentNewPageCanonicalDocumentWorkspace.model_validate(
-            pending.model_dump(mode="python") | {"status": "ready_for_document"}
+            pending.model_dump(mode="python") | {"status": "review_required"}
         )
     blocked = pending.model_dump(mode="python") | {
         "status": "blocked",
@@ -320,7 +320,7 @@ def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_st
             ContentNewPageCanonicalDocumentWorkspace.model_validate(
                 ready.model_dump(mode="python") | {"proposal_id": blank_proposal_id}
             )
-    with pytest.raises(ValueError, match="exact plan review state"):
+    with pytest.raises(ValueError, match="Generated new-page plan"):
         ContentNewPageCanonicalDocumentWorkspace.model_validate(
             ready.model_dump(mode="python") | {"status": "review_required"}
         )

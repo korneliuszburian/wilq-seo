@@ -4088,11 +4088,8 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
     if (!hasExactPlanIdentity) {
       context.addIssue({ code: z.ZodIssueCode.custom, message: "New-page plan state requires exact proposal identity." });
     }
-    const expectedWorkspaceStatus = planReview?.decision === "approved"
-      ? "ready_for_document"
-      : "review_required";
-    if (workspace.status !== expectedWorkspaceStatus) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace status must match the exact plan review state." });
+    if (workspace.status !== "ready_for_document") {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Generated new-page plan must be ready for its first document." });
     }
     return;
   }
@@ -4140,9 +4137,6 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   }[workspace.document_status];
   if (workspace.status !== expectedWorkspaceStatus) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace status must match the canonical document status." });
-  }
-  if (!planReview || planReview.decision !== "approved") {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical new-page revision requires an approved exact plan review." });
   }
 });
 

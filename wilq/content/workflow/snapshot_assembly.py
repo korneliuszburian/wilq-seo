@@ -18,6 +18,7 @@ from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
 from wilq.content.review.human import ContentHumanReview
+from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionWorkspace,
     ContentWorkItemDraftPackageResponse,
@@ -51,7 +52,6 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionState,
     content_draft_package_digest,
 )
-from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.schemas import ContentFreshnessAssessment, MetricFact
 
 
@@ -226,7 +226,7 @@ def _assemble_foundation(
     )
     approved_digest = (
         planning_workspace.proposal.planning_digest
-        if planning_workspace is not None and planning_workspace.scope_current
+        if planning_workspace is not None and planning_workspace.section_map_current
         else None
     )
     return _SnapshotFoundation(
@@ -379,10 +379,7 @@ def _gate_revision_workspace(
         update={
             "can_save": False,
             "safe_next_step": (
-                "Najpierw zatwierdź aktualny zakres i usługę; mapa sekcji jest "
-                "wyliczana automatycznie."
-                if not planning_workspace.scope_current
-                else "WILQ wylicza mapę sekcji z aktualnego inventory; odśwież plan."
+            "Wygeneruj aktualny plan związany z bieżącymi źródłami i usługą."
             ),
         }
     )

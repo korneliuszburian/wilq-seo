@@ -281,7 +281,6 @@ def content_work_item_draft_revision_save(
         draft_package is None
         or not final_canonical_url
         or planning is None
-        or not planning.scope_current
         or not planning.section_map_current
         or (latest_revision is None and not workspace.can_save)
         or (not workspace.can_save and request_would_create_child)

@@ -139,10 +139,7 @@ def register_content_initial_draft_route(
             )
         ]
         proposal_store = content_planning_proposal_store()
-        proposal = _proposal_bound_to_latest_approved_plan(
-            work_item_id,
-            proposal_store,
-        )
+        proposal = _latest_generated_proposal(work_item_id, proposal_store)
         newer_planning_response = None
         if proposal is not None:
             latest_for_service = getattr(
@@ -170,7 +167,7 @@ def register_content_initial_draft_route(
                     "Nowsze uruchomienie planowania ma inny planning_input_digest "
                     "niż zatwierdzona rewizja."
                 ),
-                next_step="Wygeneruj i zatwierdź nowy plan przed tworzeniem tekstu.",
+                next_step="Wygeneruj nowy plan przed tworzeniem tekstu.",
             )
             return ContentInitialDraftResponse(
                 status="blocked",
@@ -249,8 +246,7 @@ def register_content_initial_draft_route(
             label="Pełny tekst czeka na aktualny plan",
             reason="Nie ma zakończonego uruchomienia pełnego tekstu dla bieżącego planu.",
             next_step=(
-                "Zatwierdź aktualny zakres i usługę; mapa sekcji jest "
-                "wyliczana automatycznie."
+                "Wygeneruj aktualny plan dla bieżącego kontekstu, a następnie uruchom pełny tekst."
             ),
         )
         return ContentInitialDraftResponse(
@@ -262,20 +258,19 @@ def register_content_initial_draft_route(
         )
 
 
-def _proposal_bound_to_latest_approved_plan(
+def _latest_generated_proposal(
     work_item_id: str,
     proposal_store: ContentPlanningProposalStore,
 ) -> ContentPlanningProposal | None:
-    decisions = content_workflow_store().load_planning_decisions(work_item_id)
-    approved_digests = [
-        decision.planning_digest
-        for decision in decisions
-        if getattr(decision, "stage", "scope") == "scope"
-        and decision.decision == "approved"
-    ]
-    if not approved_digests:
+    proposal = proposal_store.latest(work_item_id)
+    if not (
+        proposal is not None
+        and getattr(proposal, "generation_status", None) == "codex_generated"
+        and getattr(proposal, "proposal_id", None)
+        and getattr(proposal, "planning_input_digest", None)
+    ):
         return None
-    return proposal_store.latest_for_planning_digest(work_item_id, approved_digests[0])
+    return proposal
 
 
 def _can_queue_initial_draft(
@@ -285,7 +280,6 @@ def _can_queue_initial_draft(
     planning = snapshot.planning_workspace
     if (
         planning is None
-        or not planning.scope_current
         or not planning.section_map_current
         or (
             snapshot.revision_workspace.latest_revision is not None
@@ -305,7 +299,10 @@ def _generation_in_progress_blocker() -> ContentInitialDraftBlocker:
     return ContentInitialDraftBlocker(
         code="generation_in_progress",
         label="Pełny tekst jest przygotowywany",
-        reason="WILQ pracuje na zatwierdzonym planie; wynik pojawi się w tym samym workflow.",
+        reason=(
+            "WILQ pracuje na dokładnym wygenerowanym planie; "
+            "wynik pojawi się w tym samym workflow."
+        ),
         next_step="Odśwież etap tekstu za chwilę. Nie uruchamiaj drugiego generowania.",
     )
 
