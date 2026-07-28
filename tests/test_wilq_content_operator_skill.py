@@ -24,7 +24,7 @@ def load_smoke_script() -> ModuleType:
     return module
 
 
-def test_content_operator_skill_uses_direct_plan_to_draft_flow() -> None:
+def test_content_operator_skill_uses_one_prepare_text_action() -> None:
     smoke = load_smoke_script()
     skill = CONTENT_OPERATOR_SKILL_PATH.read_text(encoding="utf-8")
     entry = {
@@ -62,6 +62,9 @@ def test_content_operator_skill_uses_direct_plan_to_draft_flow() -> None:
     assert smoke.validate_planning(planning, "content_work_item_bdo") is planning
     assert "zapisz\n   exact `scope` review" not in skill
     assert "zapisuje exact planning\n   review" not in skill
+    assert "→ przygotuj tekst" in skill
+    assert "po jasnym „przygotuj plan”" not in skill
+    assert "„przygotuj pierwszą wersję”" not in skill
     assert "POST .../initial-draft" in skill
     assert "GET /api/content/new-page-topics" in skill
 
