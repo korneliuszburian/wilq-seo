@@ -15,6 +15,7 @@ import {
   useContentTargetDiscovery
 } from "./contentWorkflowQueries";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
+import { ContentPlanningGenerationPanel } from "./ContentPlanningGenerationPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
 type View = "source" | "document" | "comparison";
@@ -74,6 +75,10 @@ export function ContentDocumentWorkspaceCanvas({
             ) : null}
           </section>
         </div>
+      </section>
+
+      <section className="mt-4">
+        <ContentPlanningGenerationPanel workItemId={workspace.work_item_id} />
       </section>
 
       <nav className="mt-4 flex gap-1 border-b border-line" aria-label="Widok dokumentu">
