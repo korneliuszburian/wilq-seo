@@ -249,6 +249,23 @@ _CONTENT_WORKFLOW_SCHEMA = (
     CREATE INDEX IF NOT EXISTS idx_content_wordpress_apply_claim_work_item_status
     ON content_wordpress_revision_apply_claims (work_item_id, status)
     """,
+    """
+    CREATE TABLE IF NOT EXISTS content_new_page_revision_apply_claims (
+      claim_key TEXT PRIMARY KEY,
+      work_item_id TEXT NOT NULL,
+      revision_id TEXT NOT NULL,
+      revision_digest TEXT NOT NULL,
+      action_id TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('claimed', 'applied', 'failed')),
+      claimed_by TEXT NOT NULL,
+      claimed_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_content_new_page_apply_claim_work_item_status
+    ON content_new_page_revision_apply_claims (work_item_id, status)
+    """,
 )
 
 
