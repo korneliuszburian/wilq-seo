@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPagePlanningProposal, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPagePlanningProposal, refreshConnector, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPagePlanningProposal: vi.fn() };
+  return { ...actual, createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), refreshConnector: vi.fn() };
 });
 
 const entry: ContentWorkflowEntryResponse = {
@@ -103,14 +103,68 @@ describe("ContentWorkflowEntryPanel", () => {
         safe_next_action: "Uruchom odczyt GSC i WordPress.",
         source_connector_labels: ["Google Search Console", "WordPress ekologus.pl"],
         evidence_ids: ["ev_gsc", "ev_wp"]
-      }
-    } as ContentDiagnosticsResponse;
+      },
+      freshness_assessment: {
+        missing_connector_ids: ["google_search_console", "wordpress_ekologus"],
+        stale_connector_ids: []
+      },
+      connectors: [
+        { id: "google_search_console", label: "Google Search Console" },
+        { id: "wordpress_ekologus", label: "WordPress ekologus.pl" }
+      ]
+    } as unknown as ContentDiagnosticsResponse;
 
     renderEntry({ entry: { ...entry, recommendations: [] }, diagnostics });
 
     expect(screen.getByTestId("content-workflow-data-blocker")).toHaveTextContent("Nie podejmuj decyzji contentowej bez odczytu.");
     expect(screen.getByText(/Uruchom odczyt GSC i WordPress/)).toBeInTheDocument();
     expect(screen.getByText(/ev_gsc, ev_wp/)).toBeInTheDocument();
+    expect(screen.getByTestId("content-required-source-refresh")).toHaveTextContent("Nie zmienia treści ani nie publikuje w WordPressie.");
+  });
+
+  it("starts only an API-owned read for a source the freshness assessment requires", async () => {
+    vi.mocked(refreshConnector).mockResolvedValue({
+      id: "refresh_gsc_test",
+      connector_id: "google_search_console",
+      connector_label: "Google Search Console",
+      mode: "vendor_read",
+      status: "completed",
+      status_label: "odczyt zakończony",
+      started_at: "2026-07-28T00:00:00Z",
+      completed_at: "2026-07-28T00:00:01Z",
+      evidence_ids: [],
+      evidence_summary_label: "",
+      missing_credentials: [],
+      checked_credentials: [],
+      external_call_attempted: true,
+      vendor_data_collected: true,
+      metrics_persisted: true,
+      metric_summary: {},
+      covered_window: undefined,
+      settlement_state: "unknown",
+      quality_state: "unknown",
+      summary: "Odczyt zakończony.",
+      errors: [],
+      redacted: true
+    });
+    const diagnostics = {
+      marketer_decision: {
+        status: "blocked",
+        decision: "Brakuje odczytu.",
+        why_it_matters: "Bez źródła brak rekomendacji.",
+        safe_next_action: "Odczytaj GSC.",
+        source_connector_labels: ["Google Search Console"],
+        evidence_ids: []
+      },
+      freshness_assessment: { missing_connector_ids: ["google_search_console"], stale_connector_ids: [] },
+      connectors: [{ id: "google_search_console", label: "Google Search Console" }]
+    } as unknown as ContentDiagnosticsResponse;
+
+    renderEntry({ entry: { ...entry, recommendations: [] }, diagnostics });
+    fireEvent.click(screen.getByRole("button", { name: "Odczytaj Google Search Console" }));
+
+    await waitFor(() => expect(refreshConnector).toHaveBeenCalledWith("google_search_console"));
+    expect(screen.getByRole("status")).toHaveTextContent("Odczyt zakończony.");
   });
 
   it("shows every saved brief assumption and catalog evidence for no direct coverage", async () => {

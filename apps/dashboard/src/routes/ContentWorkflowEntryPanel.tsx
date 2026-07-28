@@ -29,6 +29,7 @@ import {
   type ContentPlanningProposal,
   type ContentWorkflowEntryResponse
 } from "../lib/api";
+import { ContentRequiredSourceRefresh } from "./ContentRequiredSourceRefresh";
 
 export function ContentWorkflowEntryPanel({
   entry,
@@ -55,6 +56,11 @@ export function ContentWorkflowEntryPanel({
   onNewPageBriefSaved: (briefId: string) => void;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
+  const queryClient = useQueryClient();
+  const refreshEntry = () => {
+    void queryClient.invalidateQueries({ queryKey: ["content-workflow", "entry"] });
+    void queryClient.invalidateQueries({ queryKey: ["content-workflow", "diagnostics"] });
+  };
   if (newPageOpen) {
     return <ContentWorkflowNewPageBrief briefId={newPageId === "1" ? null : newPageId} onReturn={onCloseSecondaryView} onSaved={onNewPageBriefSaved} />;
   }
@@ -62,7 +68,7 @@ export function ContentWorkflowEntryPanel({
     return <ContentWorkflowInventoryBrowse inventory={inventory} onReturn={onCloseSecondaryView} onSelectWorkItem={onSelectWorkItem} />;
   }
   if (!entry) return null;
-  return <ContentWorkflowIntentStart entry={entry} diagnostics={diagnostics} onBrowseInventory={onBrowseInventory} onOpenNewPage={onOpenNewPage} onSelectWorkItem={onSelectWorkItem} />;
+  return <ContentWorkflowIntentStart entry={entry} diagnostics={diagnostics} onBrowseInventory={onBrowseInventory} onOpenNewPage={onOpenNewPage} onSelectWorkItem={onSelectWorkItem} onSourcesRefreshed={refreshEntry} />;
 }
 
 function ContentWorkflowIntentStart({
@@ -70,13 +76,15 @@ function ContentWorkflowIntentStart({
   diagnostics,
   onBrowseInventory,
   onOpenNewPage,
-  onSelectWorkItem
+  onSelectWorkItem,
+  onSourcesRefreshed
 }: {
   entry: ContentWorkflowEntryResponse;
   diagnostics: ContentDiagnosticsResponse | null;
   onBrowseInventory: () => void;
   onOpenNewPage: () => void;
   onSelectWorkItem: (workItemId: string) => void;
+  onSourcesRefreshed: () => void;
 }) {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search.trim());
@@ -164,7 +172,7 @@ function ContentWorkflowIntentStart({
                 </article>
               ))}
             </div>
-          ) : <ContentWorkflowEmptyRecommendations diagnostics={diagnostics} />}
+          ) : <ContentWorkflowEmptyRecommendations diagnostics={diagnostics} onSourcesRefreshed={onSourcesRefreshed} />}
         </section>
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-600">
@@ -175,11 +183,25 @@ function ContentWorkflowIntentStart({
   );
 }
 
-function ContentWorkflowEmptyRecommendations({ diagnostics }: { diagnostics: ContentDiagnosticsResponse | null }) {
+function ContentWorkflowEmptyRecommendations({
+  diagnostics,
+  onSourcesRefreshed
+}: {
+  diagnostics: ContentDiagnosticsResponse | null;
+  onSourcesRefreshed: () => void;
+}) {
   const decision = diagnostics?.marketer_decision;
   if (decision?.status !== "blocked") {
     return <p className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">Nie ma teraz rekomendacji opartych na wystarczających danych. Możesz wyszukać stronę lub przejrzeć cały serwis.</p>;
   }
+  if (!diagnostics) return null;
+  const connectorIds = [...new Set([
+    ...diagnostics.freshness_assessment.missing_connector_ids,
+    ...diagnostics.freshness_assessment.stale_connector_ids
+  ])];
+  const connectorLabels = Object.fromEntries(
+    diagnostics.connectors.map((connector) => [connector.id, connector.label])
+  );
   return <section className="mt-4 rounded-2xl border border-wait/30 bg-wait/5 p-5 text-sm text-ink" data-testid="content-workflow-data-blocker">
     <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-wait">Blokada danych</p>
     <h3 className="mt-2 text-lg font-semibold">{decision.decision}</h3>
@@ -187,6 +209,11 @@ function ContentWorkflowEmptyRecommendations({ diagnostics }: { diagnostics: Con
     <p className="mt-3 font-semibold leading-6 text-slate-800">Następny bezpieczny krok: {decision.safe_next_action}</p>
     {decision.source_connector_labels.length ? <p className="mt-3 text-xs leading-5 text-slate-600">Źródła wymagające odczytu: {decision.source_connector_labels.join(", ")}</p> : null}
     {decision.evidence_ids.length ? <p className="mt-2 break-words text-xs leading-5 text-slate-600">Dowody blokady: {decision.evidence_ids.join(", ")}</p> : null}
+    <ContentRequiredSourceRefresh
+      connectorIds={connectorIds}
+      connectorLabels={connectorLabels}
+      onCompleted={onSourcesRefreshed}
+    />
   </section>;
 }
 
