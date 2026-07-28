@@ -6,10 +6,19 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.actions.metric_utils import unique_values
 from wilq.content.workflow.new_page_document import ContentNewPageDeliveryReadiness
-from wilq.schemas import ActionMode, ActionObject, ActionRisk, ActionStatus, OpportunityDomain
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    AuditEvent,
+    OpportunityDomain,
+)
+from wilq.storage.local_state import local_state_store
 
 CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE = "content_new_page_dev_draft_create"
 CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_CONTRACT = "content_new_page_dev_draft_action_v1"
+CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_CREATED_EVENT = "content_new_page_dev_draft_action_created"
 
 
 class ContentNewPageDraftActionCommand(BaseModel):
@@ -51,7 +60,7 @@ def create_new_page_draft_action(
         title="Przygotuj nowy szkic na dev",
         domain=OpportunityDomain.content,
         connector="wordpress_ekologus",
-        mode=ActionMode.apply,
+        mode=ActionMode.prepare,
         risk=ActionRisk.medium,
         status=ActionStatus.needs_validation,
         evidence_ids=unique_values(readiness.evidence_ids),
@@ -60,8 +69,8 @@ def create_new_page_draft_action(
             "obserwowany typ nowego obiektu; WILQ nadal nie publikuje ani nie aktualizuje treści."
         ),
         recommended_reason=(
-            "Przejdź przez validate, preview, review, confirm i impact-check przed "
-            "ewentualnym utworzeniem jednego szkicu na dev."
+            "Otwórz lokalną akcję w centrum działań. WILQ nie ma jeszcze prawa "
+            "utworzyć szkicu ani wykonać zapisu WordPress."
         ),
         payload={
             "action_type": CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
@@ -74,8 +83,8 @@ def create_new_page_draft_action(
                     "preview_contract": CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_CONTRACT,
                     "operation_type_label": "Utworzenie nowego szkicu na dev",
                     "content_type": command.content_type,
-                    "apply_allowed": True,
-                    "api_mutation_ready": True,
+                    "apply_allowed": False,
+                    "api_mutation_ready": False,
                 }
             ],
             "required_validation": [
@@ -86,17 +95,59 @@ def create_new_page_draft_action(
                 "human_confirm_before_wordpress_write",
             ],
             "destructive": False,
-            "apply_allowed": True,
-            "api_mutation_ready": True,
+            "apply_allowed": False,
+            "api_mutation_ready": False,
         },
         validation_status="not_validated",
         created_by=command.requested_by,
     )
 
 
+def persist_new_page_draft_action(action: ActionObject) -> ActionObject:
+    """Persist only creation of this local, non-writing ActionObject."""
+
+    event = AuditEvent(
+        id=f"audit_{action.id}_created",
+        action_id=action.id,
+        event_type=CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_CREATED_EVENT,
+        event_type_label="Przygotowano akcję nowego szkicu na dev",
+        actor=action.created_by,
+        summary=(
+            "Przygotowano lokalną akcję dla zatwierdzonej nowej strony. "
+            "Nie utworzono szkicu ani nie zapisano niczego w WordPressie."
+        ),
+        evidence_ids=action.evidence_ids,
+        details={"content_new_page_draft_action": action.model_dump(mode="json")},
+    )
+    return _action_from_creation_event(local_state_store().save_audit_event(event))
+
+
+def load_new_page_draft_action(action_id: str) -> ActionObject | None:
+    """Load only the local creation event owned by this action type."""
+
+    for event in local_state_store().list_audit_events(action_id):
+        if event.event_type != CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_CREATED_EVENT:
+            continue
+        try:
+            return _action_from_creation_event(event)
+        except ValueError:
+            return None
+    return None
+
+
+def _action_from_creation_event(event: AuditEvent) -> ActionObject:
+    payload = event.details.get("content_new_page_draft_action")
+    if not isinstance(payload, dict):
+        raise ValueError("Brakuje zapisanego payloadu akcji nowego szkicu na dev.")
+    return ActionObject.model_validate(payload)
+
+
 __all__ = [
     "CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_CONTRACT",
+    "CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_CREATED_EVENT",
     "CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE",
     "ContentNewPageDraftActionCommand",
     "create_new_page_draft_action",
+    "load_new_page_draft_action",
+    "persist_new_page_draft_action",
 ]
