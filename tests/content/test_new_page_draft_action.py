@@ -5,6 +5,7 @@ import pytest
 from wilq.actions import service as action_service
 from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import get_action
+from wilq.content.workflow.new_page_apply_capability import new_page_apply_binding
 from wilq.content.workflow.new_page_document import ContentNewPageDeliveryReadiness
 from wilq.content.workflow.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
@@ -14,6 +15,7 @@ from wilq.content.workflow.new_page_draft_action import (
     persist_new_page_draft_action,
 )
 from wilq.schemas import (
+    ActionApplyRequest,
     ActionConfirmRequest,
     ActionImpactCheckRequest,
     ActionPreviewRequest,
@@ -149,3 +151,21 @@ def test_new_page_action_records_local_review_gates_without_a_vendor_write() -> 
         == "blocked"
     )
     assert action.status.value != "applied"
+
+
+def test_new_page_apply_binding_must_match_the_persisted_action() -> None:
+    action = create_new_page_draft_action(_ready_readiness(), _command())
+    binding = action.payload["new_page_draft_binding"]
+
+    accepted, blockers = new_page_apply_binding(
+        action,
+        ActionApplyRequest(confirm=True, confirmed_by="Wilku", new_page_draft=binding),
+    )
+    assert accepted is not None
+    assert blockers == []
+    changed = {**binding, "revision_digest": "f" * 64}
+    _, blockers = new_page_apply_binding(
+        action,
+        ActionApplyRequest(confirm=True, confirmed_by="Wilku", new_page_draft=changed),
+    )
+    assert [blocker.code for blocker in blockers] == ["new_page_revision_binding_mismatch"]
