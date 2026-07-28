@@ -256,6 +256,7 @@ def observed_metrics_from_store(
                     content_url=window.content_url,
                     quality_state=quality_state,
                     settlement_state=settlement_state,
+                    freshness_state=_freshness_state(available),
                     interpretation_caveats=[
                         *caveats,
                         "Brakuje jednego z dwóch okresów wymaganych przez pomiar.",
@@ -284,6 +285,7 @@ def observed_metrics_from_store(
                 content_url=window.content_url,
                 quality_state=quality_state,
                 settlement_state=settlement_state,
+                freshness_state=_freshness_state([baseline, observation]),
                 interpretation_caveats=caveats,
             )
         )
@@ -325,6 +327,15 @@ def _quality_metadata(
         )
     )
     return quality_state, settlement_state, caveats
+
+
+def _freshness_state(facts: list[MetricFact]) -> str:
+    states = {fact.freshness_state for fact in facts}
+    if "stale" in states:
+        return "stale"
+    if facts and states == {"fresh"}:
+        return "fresh"
+    return "unknown"
 
 
 def _measurement_metric(fact: MetricFact) -> ContentMeasurementMetric | None:

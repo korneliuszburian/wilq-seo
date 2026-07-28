@@ -104,6 +104,7 @@ export function ContentMeasurementPanel({
               <p className="font-semibold text-ink">{state.measurement_outcome.status_label}</p>
               <p className="mt-2 leading-6">{state.measurement_outcome.conclusion}</p>
               <p className="mt-2 leading-6 text-slate-600">{state.measurement_outcome.safe_next_step}</p>
+              <MeasurementEvidence outcome={state.measurement_outcome} />
               {outcomeReadyForLearning && !state.learning_proposal ? (
                 <button
                   type="button"
@@ -130,6 +131,52 @@ export function ContentMeasurementPanel({
       </p>
     </section>
   );
+}
+
+function MeasurementEvidence({
+  outcome
+}: {
+  outcome: NonNullable<ContentPublicDeploymentReadResponse["measurement_outcome"]>;
+}) {
+  if (outcome.observed_metrics.length === 0) return null;
+  return (
+    <details className="mt-3 rounded-md border border-line bg-white p-3 text-xs text-slate-700">
+      <summary className="cursor-pointer font-semibold text-ink">Źródła i ograniczenia pomiaru</summary>
+      <ul className="mt-3 space-y-3">
+        {outcome.observed_metrics.map((metric) => (
+          <li key={metric.metric}>
+            <p className="font-semibold text-ink">{metricLabel(metric.metric)}</p>
+            <p className="mt-1 leading-5">Adres: {metric.content_url ?? "niezapisany"}</p>
+            <p className="mt-1 leading-5">Źródło: {connectorLabel(metric.source_connector)} · świeżość: {freshnessLabel(metric.freshness_state ?? "unknown")}</p>
+            <p className="mt-1 leading-5 text-slate-600">Dowodów: {metric.evidence_ids.length}; faktów metrycznych: {metric.metric_fact_ids.length}.</p>
+            {metric.interpretation_caveats.map((caveat) => <p key={caveat} className="mt-1 leading-5 text-slate-600">{caveat}</p>)}
+          </li>
+        ))}
+      </ul>
+      {outcome.limitations.map((limitation) => <p key={limitation} className="mt-2 leading-5 text-slate-600">{limitation}</p>)}
+    </details>
+  );
+}
+
+function metricLabel(metric: string): string {
+  return {
+    gsc_clicks: "Kliknięcia z wyszukiwarki",
+    gsc_impressions: "Wyświetlenia w wyszukiwarce",
+    gsc_ctr: "CTR w wyszukiwarce",
+    gsc_average_position: "Średnia pozycja",
+    ga4_sessions: "Sesje",
+    ga4_engaged_sessions: "Zaangażowane sesje",
+    ga4_engagement_rate: "Współczynnik zaangażowania",
+    ga4_key_events: "Kluczowe zdarzenia"
+  }[metric] ?? metric;
+}
+
+function connectorLabel(connector: string): string {
+  return connector === "google_search_console" ? "Google Search Console" : connector === "google_analytics_4" ? "Google Analytics 4" : connector;
+}
+
+function freshnessLabel(value: "fresh" | "stale" | "unknown"): string {
+  return { fresh: "aktualna", stale: "nieaktualna", unknown: "nieznana" }[value];
 }
 
 function formatDate(value: string): string {

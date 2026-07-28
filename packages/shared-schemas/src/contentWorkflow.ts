@@ -2281,6 +2281,7 @@ export const ContentMeasurementObservedMetricSchema = z.object({
   content_url: z.string().nullable().optional(),
   quality_state: z.enum(["verified", "partial", "unverified", "unknown"]).optional(),
   settlement_state: z.enum(["settled", "settling", "not_applicable", "unknown"]).optional(),
+  freshness_state: z.enum(["fresh", "stale", "unknown"]).optional(),
   interpretation_caveats: z.array(z.string()).default([])
 });
 
@@ -2307,6 +2308,7 @@ export const ContentMeasurementOutcomeInterpretationSchema = z.object({
   metric_fact_ids: z.array(z.string()).default([]),
   refresh_run_ids: z.array(z.string()).default([]),
   limitations: z.array(z.string()).default([]),
+  observed_metrics: z.array(ContentMeasurementObservedMetricSchema).default([]),
   success_claim_allowed: z.boolean(),
   queue_feedback_allowed: z.boolean(),
   safe_next_step: z.string()
