@@ -22,6 +22,7 @@ import {
   ContentDiagnosticsResponseSchema,
   ContentDecisionContextSchema,
   ContentDocumentWorkspaceSchema,
+  ContentSelectedWorkspaceSchema,
   ContentTargetDiscoverySchema,
   ContentTargetMappingConfirmationCommandSchema,
   ContentTargetMappingConfirmationResultSchema,
@@ -136,6 +137,7 @@ import {
   type ContentDiagnosticsResponse,
   type ContentDecisionContext,
   type ContentDocumentWorkspace,
+  type ContentSelectedWorkspace,
   type ContentTargetDiscovery,
   type ContentTargetMappingConfirmationCommand,
   type ContentTargetMappingConfirmationResult,
@@ -528,6 +530,15 @@ export function getContentWorkItemDocumentWorkspace(
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/document-workspace`,
     ContentDocumentWorkspaceSchema
+  );
+}
+
+export function getContentSelectedWorkspace(
+  workItemId: string
+): Promise<ContentSelectedWorkspace> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/selected-workspace`,
+    ContentSelectedWorkspaceSchema
   );
 }
 
@@ -1138,6 +1149,7 @@ export type {
   ContentDiagnosticsResponse,
   ContentDecisionContext,
   ContentDocumentWorkspace,
+  ContentSelectedWorkspace,
   ContentTargetDiscovery,
   ContentTargetMappingConfirmationCommand,
   ContentTargetMappingConfirmationResult,

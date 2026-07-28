@@ -2,7 +2,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import {
   getContentWorkItemDecisionContext,
-  getContentWorkItemDocumentWorkspace,
+  getContentSelectedWorkspace,
   getContentWorkItemTargetDiscovery,
   getContentRevisionTargetMapping,
   getContentRevisionTargetDraftPreview,
@@ -11,7 +11,7 @@ import {
   getContentInventoryCatalog,
   getContentOperatorContext,
   type ContentDecisionContext,
-  type ContentDocumentWorkspace,
+  type ContentSelectedWorkspace,
   type ContentTargetDiscovery,
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
@@ -25,7 +25,7 @@ import { loadContentWorkflowSnapshot, type ContentWorkflowSnapshot } from "./con
 const READ_ONLY_WORKFLOW_STALE_TIME_MS = 30_000;
 
 export type ContentDecisionContextQuery = UseQueryResult<ContentDecisionContext, Error>;
-export type ContentDocumentWorkspaceQuery = UseQueryResult<ContentDocumentWorkspace, Error>;
+export type ContentSelectedWorkspaceQuery = UseQueryResult<ContentSelectedWorkspace, Error>;
 export type ContentTargetDiscoveryQuery = UseQueryResult<ContentTargetDiscovery, Error>;
 export type ContentTargetMappingPreviewQuery = UseQueryResult<ContentTargetMappingPreview, Error>;
 export type ContentTargetDraftPreviewQuery = UseQueryResult<ContentTargetDraftPreview, Error>;
@@ -128,9 +128,9 @@ export function useContentWorkflowQueries(
       selectedWorkItemId && reviewOpen
     )
   });
-  const documentWorkspace = useQuery({
-    queryKey: ["content-workflow", "work-item", selectedWorkItemId, "document-workspace"],
-    queryFn: () => getContentWorkItemDocumentWorkspace(selectedWorkItemId ?? ""),
+  const selectedWorkspace = useQuery({
+    queryKey: ["content-workflow", "work-item", selectedWorkItemId, "selected-workspace"],
+    queryFn: () => getContentSelectedWorkspace(selectedWorkItemId ?? ""),
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     enabled: Boolean(selectedWorkItemId && directDocumentWorkspace)
   });
@@ -151,7 +151,7 @@ export function useContentWorkflowQueries(
 
   return {
     decisionContext,
-    documentWorkspace,
+    selectedWorkspace,
     entry,
     inventory,
     initialDraft,

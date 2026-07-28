@@ -18,7 +18,7 @@ import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader
 import {
   useContentWorkflowQueries,
   type ContentDecisionContextQuery,
-  type ContentDocumentWorkspaceQuery,
+  type ContentSelectedWorkspaceQuery,
   type ContentWorkflowEntryQuery,
   type ContentInitialDraftQuery,
   type ContentInventoryCatalogQuery,
@@ -65,7 +65,7 @@ export function ContentWorkflowSurface() {
   };
   const {
     decisionContext,
-    documentWorkspace,
+    selectedWorkspace,
     entry,
     inventory,
     operatorContext,
@@ -81,7 +81,7 @@ export function ContentWorkflowSurface() {
     <ContentWorkflowRouteState
       selectedWorkItemId={selectedWorkItemId}
       decisionContext={decisionContext}
-      documentWorkspace={documentWorkspace}
+      selectedWorkspace={selectedWorkspace}
       entry={entry}
       inventory={inventory}
       initialDraft={initialDraft}
@@ -186,7 +186,7 @@ function contentWorkflowSearch(previous: {
 function ContentWorkflowRouteState({
   selectedWorkItemId,
   decisionContext,
-  documentWorkspace,
+  selectedWorkspace,
   entry,
   inventory,
   initialDraft,
@@ -206,7 +206,7 @@ function ContentWorkflowRouteState({
 }: {
   selectedWorkItemId: string | null;
   decisionContext: ContentDecisionContextQuery;
-  documentWorkspace: ContentDocumentWorkspaceQuery;
+  selectedWorkspace: ContentSelectedWorkspaceQuery;
   entry: ContentWorkflowEntryQuery;
   inventory: ContentInventoryCatalogQuery;
   initialDraft: ContentInitialDraftQuery;
@@ -264,7 +264,7 @@ function ContentWorkflowRouteState({
     return (
       <ContentTextWorkspace
         workItemId={selectedWorkItemId}
-        documentWorkspace={documentWorkspace}
+        selectedWorkspace={selectedWorkspace}
         onOpenReview={onOpenReview}
       />
     );
@@ -288,20 +288,21 @@ function ContentWorkflowEntryFailure({ onRetry }: { onRetry: () => void }) {
 
 function ContentTextWorkspace({
   workItemId,
-  documentWorkspace,
+  selectedWorkspace,
   onOpenReview
 }: {
   workItemId: string;
-  documentWorkspace: ContentDocumentWorkspaceQuery;
+  selectedWorkspace: ContentSelectedWorkspaceQuery;
   onOpenReview: (workItemId: string) => void;
 }) {
-  if (documentWorkspace.isLoading) {
+  if (selectedWorkspace.isLoading) {
     return <DocumentWorkspacePending />;
   }
-  if (documentWorkspace.error || !documentWorkspace.data) {
-    return <DocumentWorkspaceError onRetry={() => void documentWorkspace.refetch()} />;
+  if (selectedWorkspace.error || !selectedWorkspace.data || selectedWorkspace.data.status === "missing") {
+    return <DocumentWorkspaceError onRetry={() => void selectedWorkspace.refetch()} />;
   }
-  const workspace = documentWorkspace.data;
+  const workspace = selectedWorkspace.data.workspace;
+  if (!workspace) return <DocumentWorkspaceError onRetry={() => void selectedWorkspace.refetch()} />;
   return <ContentDocumentWorkspaceCanvas workspace={workspace} onOpenReview={() => onOpenReview(workItemId)} />;
 }
 
