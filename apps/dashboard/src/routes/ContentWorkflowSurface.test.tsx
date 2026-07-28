@@ -166,6 +166,27 @@ describe("ContentWorkflowSurface", () => {
     }
   );
 
+  it("opens and emits the canonical work-item path", async () => {
+    const revision = savedFullDraftRevision();
+    vi.mocked(getContentWorkItemDocumentWorkspace).mockResolvedValue(contentDocumentWorkspace());
+    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse(revision));
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ workspace: savedRevisionWorkspace(revision as never) })
+    );
+    const appRouter = createWilqRouter({
+      initialPath: "/content-workflow/content_work_item_bdo",
+      defaultPendingMinMs: 0
+    });
+
+    render(<App appRouter={appRouter} client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })} />);
+
+    expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(getContentWorkItemDocumentWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
+    fireEvent.click(screen.getByRole("button", { name: /przejdź do review/i }));
+    await waitFor(() => expect(appRouter.state.location.pathname).toBe("/content-workflow/content_work_item_bdo"));
+    expect(appRouter.state.location.search.view).toBe("review");
+  });
+
   it("keeps an exact missing review route separate from a warm catalogue entry", async () => {
     vi.mocked(getContentWorkItemDecisionContext).mockRejectedValue(new Error("Nie znaleziono strony"));
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });

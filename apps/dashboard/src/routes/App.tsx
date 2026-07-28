@@ -182,7 +182,8 @@ function contentWorkflowSearch(search: Record<string, unknown>) {
     text: optionalSearchFlag(search.text),
     review: optionalSearchFlag(search.review),
     browse: optionalSearchFlag(search.browse),
-    new_page: optionalSearchString(search.new_page)
+    new_page: optionalSearchString(search.new_page),
+    view: optionalContentWorkflowView(search.view)
   };
 }
 
@@ -192,6 +193,10 @@ function optionalSearchString(value: unknown) {
 
 function optionalSearchFlag(value: unknown): 1 | undefined {
   return value === "1" || value === 1 ? 1 : undefined;
+}
+
+function optionalContentWorkflowView(value: unknown): "review" | "browse" | "new" | undefined {
+  return value === "review" || value === "browse" || value === "new" ? value : undefined;
 }
 
 const rootRoute = createRootRoute({ component: Shell });
@@ -240,6 +245,12 @@ const evidenceDetailRoute = createRoute({
   path: "/evidence/$evidenceId",
   component: () => <DetailSurface kind="evidence" />
 });
+const contentWorkflowItemRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/content-workflow/$workItemId",
+  component: () => renderGeneratedRoute("/content-workflow"),
+  validateSearch: contentWorkflowSearch
+});
 
 const generatedRoutes = [...generatedSurfaceRoutes]
   .sort((left, right) => right.path.length - left.path.length)
@@ -262,6 +273,7 @@ const routeTree = rootRoute.addChildren([
   actionDetailRoute,
   workflowDetailRoute,
   evidenceDetailRoute,
+  contentWorkflowItemRoute,
   ...generatedRoutes
 ]);
 
