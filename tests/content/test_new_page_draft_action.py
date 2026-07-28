@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from wilq.actions.service import get_action
 from wilq.content.workflow.new_page_document import ContentNewPageDeliveryReadiness
 from wilq.content.workflow.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
@@ -91,3 +92,4 @@ def test_new_page_draft_action_persists_only_its_local_creation_event(
 
     assert persisted.id == action.id
     assert load_new_page_draft_action(action.id) == persisted
+    assert get_action(action.id).id == action.id
