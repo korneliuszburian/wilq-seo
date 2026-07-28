@@ -20,15 +20,20 @@ Prowadź ją dokładnie w tej kolejności:
 
 1. `POST /api/content/new-page-briefs`, potem `GET` tego briefu;
 2. `POST .../planning-foundation` po jawnej decyzji człowieka o usłudze;
-3. `POST .../planning-proposal`, następnie `GET .../canonical-document`;
+3. `POST .../planning-proposal`, następnie odczytuj jego exact status aż przestanie być `generating`, a potem `GET .../canonical-document`;
 4. `POST .../planning-review` dla exact proposal/digest;
 5. na jawne polecenie `POST .../initial-draft` z exact proposal i digestami;
-6. `POST .../draft-revisions/{revision_id}/review` dla exact digestu i evidence.
+6. `POST .../draft-revisions/{revision_id}/review` dla exact digestu i evidence;
+7. po approval rewizji: `GET .../delivery-readiness`, potem `POST .../delivery-action` i
+   istniejący lifecycle ActionObjectu `validate → preview → review → confirm → impact-check → apply`;
+8. po **zewnętrznym** publicznym wdrożeniu: `GET/POST` public deployment dla tej samej rewizji,
+   a dopiero później exact measurement window, outcome i learning proposal.
 
-Każdy konflikt wymaga ponownego odczytu tego samego briefu. Nie twórz URL-a,
-nie przechodź do WordPressa i nie wywołuj `/api/actions` dla tej ścieżki.
-Approval rewizji oznacza wyłącznie review dokumentu — nie publikację ani
-gotowość delivery.
+Każdy konflikt wymaga ponownego odczytu tego samego briefu. Nie twórz URL-a ani
+nie przechodź bezpośrednio do WordPressa. ActionObject może utworzyć najwyżej
+jeden szkic na dev po wszystkich bramkach; approval rewizji nie jest publikacją.
+Public deployment potwierdza wyłącznie wcześniej zaobserwowany fakt WordPressa,
+nigdy nie wykonuje publikacji.
 
 1. **Wybierz pracę.** Sprawdź `GET /api/health`, potem
    `GET /api/content/work-items/queue`. Wybierz podany `work_item_id` albo
@@ -165,6 +170,13 @@ gotowość delivery.
 - `POST /api/content/new-page-briefs/{brief_id}/planning-review`
 - `POST /api/content/new-page-briefs/{brief_id}/initial-draft`
 - `POST /api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review`
+- `GET /api/content/new-page-briefs/{brief_id}/delivery-readiness`
+- `POST /api/content/new-page-briefs/{brief_id}/delivery-action`
+- `GET /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/public-deployment`
+- `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/public-deployments`
+- `POST /api/content/work-items/measurement-window`
+- `POST /api/content/work-items/measurement-outcome`
+- `POST /api/content/work-items/learning-proposal`
 - `GET /api/content/work-items/{work_item_id}/snapshot`
 - `GET /api/content/work-items/{work_item_id}/enrichment`
 - `GET /api/content/knowledge-cards`
