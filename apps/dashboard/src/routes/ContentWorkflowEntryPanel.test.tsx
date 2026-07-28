@@ -205,16 +205,16 @@ describe("ContentWorkflowEntryPanel", () => {
 
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_no_conflict" });
 
-    await screen.findByText("Podstawa planowania");
-    fireEvent.change(screen.getByLabelText("Karta usługi"), { target: { value: "service_environment" } });
-    fireEvent.change(screen.getByLabelText("Potwierdza"), { target: { value: "Wilku" } });
-    fireEvent.click(screen.getByRole("button", { name: "Zapisz podstawę planowania" }));
+    await screen.findByText("Wybierz usługę do planu");
+    expect(screen.queryByLabelText("Potwierdza")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Usługa"), { target: { value: "service_environment" } });
+    fireEvent.click(screen.getByRole("button", { name: "Użyj tej usługi do planu" }));
 
     await waitFor(() => expect(createContentNewPageFoundation).toHaveBeenCalledWith("content_new_page_brief_test", {
       expected_brief_digest: "a".repeat(64),
       expected_overlap_digest: "b".repeat(64),
       service_card_id: "service_environment",
-      confirmed_by: "Wilku"
+      confirmed_by: "wilku"
     }));
   });
 
