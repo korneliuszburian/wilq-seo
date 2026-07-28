@@ -384,7 +384,9 @@ function NewPagePlanningProposal({ briefId }: { briefId: string }) {
   const workspace = useQuery({
     queryKey: ["content-workflow", "new-page-brief", briefId, "planning-proposal"],
     queryFn: () => getContentNewPagePlanningProposal(briefId),
-    staleTime: 15_000
+    staleTime: 15_000,
+    refetchInterval: (query) =>
+      query.state.data?.proposal_status?.status === "generating" ? 3_000 : false
   });
   const generate = useMutation({
     mutationFn: (digest: string) => createContentNewPagePlanningProposal(briefId, { expected_planning_input_digest: digest, requested_by: "Wilku" }),
@@ -399,7 +401,7 @@ function NewPagePlanningProposal({ briefId }: { briefId: string }) {
   }
   const proposal = workspace.data.proposal_status;
   if (proposal?.status === "ready" || proposal?.status === "created" || proposal?.status === "idempotent") return <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm leading-6 text-ink" data-testid="new-page-planning-ready"><p className="font-semibold">Plan jest gotowy do review</p><p className="mt-1">{proposal.safe_next_step}</p><p className="mt-2 text-slate-700">Nie publikuje to strony ani nie tworzy szkicu WordPressa.</p>{proposal.proposal ? <NewPagePlanningReview briefId={briefId} proposal={proposal.proposal} onChanged={() => { void queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId] }); }} /> : <p className="mt-3 text-wait">Brakuje exact propozycji planu; odśwież stan przed review.</p>}</section>;
-  if (proposal?.status === "generating") return <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-generating"><p className="font-semibold">Plan jest przygotowywany</p><p className="mt-1">{proposal.safe_next_step}</p></div>;
+  if (proposal?.status === "generating") return <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-generating"><p className="font-semibold">Plan jest przygotowywany</p><p className="mt-1">{proposal.safe_next_step}</p><p className="mt-2 text-xs text-slate-600">WILQ sprawdza ten exact plan ponownie co kilka sekund — nie uruchamia drugiej generacji.</p></div>;
   const planningInputDigest = readiness.planning_input_digest;
   if (!planningInputDigest) return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">Nie można bezpiecznie zlecić planu</p><p className="mt-1">Brakuje dokładnego identyfikatora wejścia do planu. Odśwież brief przed kolejnym krokiem.</p></div>;
   return <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-ready"><p className="font-semibold">Wejście do planu jest gotowe</p><p className="mt-1">WILQ użyje dokładnego briefu i wybranego kontekstu usługi. Nie przypisuje tej nowej stronie starego URL-a, inventory ani historycznych metryk.</p><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white" disabled={generate.isPending} onClick={() => generate.mutate(planningInputDigest)}>{generate.isPending ? "Uruchamiam plan…" : "Przygotuj plan"}</button>{generate.isError ? <p className="mt-2 text-wait">Nie udało się zlecić planu. Odśwież stan i spróbuj ponownie.</p> : null}</div>;
