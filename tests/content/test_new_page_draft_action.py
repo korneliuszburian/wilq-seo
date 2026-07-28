@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from wilq.actions import service as action_service
 from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import get_action
 from wilq.content.workflow.new_page_document import ContentNewPageDeliveryReadiness
@@ -11,6 +12,12 @@ from wilq.content.workflow.new_page_draft_action import (
     create_new_page_draft_action,
     load_new_page_draft_action,
     persist_new_page_draft_action,
+)
+from wilq.schemas import (
+    ActionConfirmRequest,
+    ActionImpactCheckRequest,
+    ActionPreviewRequest,
+    ActionReviewRequest,
 )
 
 
@@ -105,3 +112,40 @@ def test_new_page_draft_action_payload_requires_exact_lineage() -> None:
     }
 
     assert validate_action_payload(action.connector, action.payload)
+
+
+def test_new_page_action_records_local_review_gates_without_a_vendor_write() -> None:
+    action = create_new_page_draft_action(_ready_readiness(), _command())
+
+    assert action_service.validate_action(action).valid
+    assert (
+        action_service.preview_action(action, ActionPreviewRequest(requested_by="Wilku")).status
+        == "blocked"
+    )
+    action_service.record_action_review(
+        action,
+        ActionReviewRequest(
+            outcome="approved_for_prepare",
+            reviewed_by="Wilku",
+            notes="Zatwierdzono przygotowanie nowego szkicu.",
+        ),
+    )
+    assert action_service.confirm_action(
+        action,
+        ActionConfirmRequest(
+            confirmed_by="Wilku",
+            notes="Potwierdzam lokalny łańcuch akcji.",
+            preview_acknowledged=True,
+        ),
+    ).confirmed
+    assert (
+        action_service.impact_check_action(
+            action,
+            ActionImpactCheckRequest(
+                checked_by="Wilku",
+                notes="Sprawdzono gotowość do przyszłego szkicu dev.",
+            ),
+        ).status
+        == "blocked"
+    )
+    assert action.status.value != "applied"

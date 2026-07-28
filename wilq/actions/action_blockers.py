@@ -5,6 +5,7 @@ from typing import Any, Literal
 
 from wilq.actions.metric_utils import unique_values
 from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.new_page_draft_action import CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
 from wilq.schemas import (
     ActionApplyRequest,
     ActionConfirmRequest,
@@ -213,7 +214,10 @@ def _runtime_blockers(action: ActionObject) -> list[str]:
 
 
 def _is_content_dev_draft_action(action: ActionObject) -> bool:
-    return action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE
+    return action.payload.get("action_type") in {
+        CONTENT_DEV_DRAFT_ACTION_TYPE,
+        CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
+    }
 
 
 def _has_approved_action_review(action: ActionObject) -> bool:
