@@ -211,6 +211,11 @@ def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_st
     assert ContentNewPageCanonicalDocumentWorkspace.model_validate(
         pending.model_dump(mode="python")
     ) == pending
+    for blank_proposal_id in ("", "   "):
+        with pytest.raises(ValueError):
+            ContentNewPageCanonicalDocumentWorkspace.model_validate(
+                pending.model_dump(mode="python") | {"proposal_id": blank_proposal_id}
+            )
     with pytest.raises(ValueError, match="requires a canonical revision"):
         ContentNewPageCanonicalDocumentWorkspace.model_validate(
             pending.model_dump(mode="python") | {"status": "document_approved"}
@@ -253,6 +258,11 @@ def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_st
     assert ContentNewPageCanonicalDocumentWorkspace.model_validate(
         ready.model_dump(mode="python")
     ) == ready
+    for blank_proposal_id in ("", "   "):
+        with pytest.raises(ValueError):
+            ContentNewPageCanonicalDocumentWorkspace.model_validate(
+                ready.model_dump(mode="python") | {"proposal_id": blank_proposal_id}
+            )
     with pytest.raises(ValueError, match="exact plan review state"):
         ContentNewPageCanonicalDocumentWorkspace.model_validate(
             ready.model_dump(mode="python") | {"status": "review_required"}

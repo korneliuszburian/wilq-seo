@@ -3835,7 +3835,7 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   foundation_id: z.string().min(1),
   service_card_id: z.string().min(1),
   service_card_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  proposal_id: z.string().nullable().optional(),
+  proposal_id: z.string().trim().min(1).nullable().optional(),
   planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   plan_review: ContentPlanningDecisionSchema.nullable().optional(),

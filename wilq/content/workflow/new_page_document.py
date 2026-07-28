@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from wilq.content.workflow.new_page import (
     ContentNewPageBrief,
@@ -78,7 +78,7 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
     foundation_id: str = Field(min_length=1)
     service_card_id: str = Field(min_length=1)
     service_card_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
-    proposal_id: str | None = None
+    proposal_id: str | None = Field(default=None, min_length=1)
     planning_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     planning_input_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     plan_review: ContentPlanningDecision | None = None
@@ -106,15 +106,31 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
             _validate_workspace_with_revision(self)
         return self
 
+    @field_validator("proposal_id")
+    @classmethod
+    def require_nonblank_proposal_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        proposal_id = value.strip()
+        if not proposal_id:
+            raise ValueError("Proposal ID must not be blank.")
+        return proposal_id
+
+
+def _has_exact_plan_identity(workspace: ContentNewPageCanonicalDocumentWorkspace) -> bool:
+    return bool(
+        workspace.proposal_id
+        and workspace.planning_digest
+        and workspace.planning_input_digest
+    )
+
 
 def _validate_plan_review(workspace: ContentNewPageCanonicalDocumentWorkspace) -> None:
     review = workspace.plan_review
     if review is None:
         return
     if not (
-        workspace.proposal_id is not None
-        and workspace.planning_digest is not None
-        and workspace.planning_input_digest is not None
+        _has_exact_plan_identity(workspace)
         and review.work_item_id == workspace.work_item_id
         and review.stage == "scope"
         and review.planning_digest == workspace.planning_digest
@@ -135,14 +151,7 @@ def _validate_workspace_without_revision(
         raise ValueError("Missing new-page revision cannot carry document lineage.")
     if workspace.status not in {"review_required", "ready_for_document", "blocked"}:
         raise ValueError("Document workspace status requires a canonical revision.")
-    has_exact_plan_identity = all(
-        value is not None
-        for value in (
-            workspace.proposal_id,
-            workspace.planning_digest,
-            workspace.planning_input_digest,
-        )
-    )
+    has_exact_plan_identity = _has_exact_plan_identity(workspace)
     if workspace.status == "blocked":
         if (
             workspace.proposal_id is not None
