@@ -611,6 +611,23 @@ export const ContentNewPagePlanningFoundationSchema = z.object({
   created_at: z.string()
 });
 
+export const ContentNewPageDocumentIdentitySchema = z.object({
+  work_item_id: z.string().min(1),
+  work_kind: z.literal("new_page"),
+  brief_id: z.string().min(1),
+  brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  foundation_id: z.string().min(1),
+  service_card_id: z.string().min(1),
+  service_card_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  proposed_ia_location: z.string().trim().min(3),
+  public_source_status: z.literal("not_applicable"),
+  public_source_url: z.null(),
+  public_source_evidence_ids: z.array(z.string()).length(0),
+  document_status: z.literal("not_created"),
+  public_deployment_status: z.literal("not_confirmed"),
+  public_deployment_id: z.null()
+});
+
 export const ContentNewPageFoundationResultSchema = z.object({
   status: z.enum(["created", "idempotent", "blocked", "conflict"]),
   foundation: ContentNewPagePlanningFoundationSchema.nullable().optional(),
@@ -3640,6 +3657,7 @@ export const ContentPlanningInputReadinessResponseSchema = z.object({
   work_item_id: z.string().min(1).nullable().optional(),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   input_summary: ContentPlanningInputSummarySchema.nullable().optional(),
+  new_page_document_identity: ContentNewPageDocumentIdentitySchema.nullable().optional(),
   blockers: z.array(ContentPlanningInputBlockerSchema).default([]),
   safe_next_step: z.string().min(1)
 }).superRefine((response, context) => {
@@ -3653,6 +3671,28 @@ export const ContentPlanningInputReadinessResponseSchema = z.object({
     context.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Blocked planning input cannot expose a usable digest."
+    });
+  }
+  if (response.input_summary?.goal === "new_page") {
+    const identity = response.new_page_document_identity;
+    if (response.status !== "ready" || !identity) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Ready new-page planning input requires its exact document identity."
+      });
+    } else if (
+      identity.work_item_id !== response.work_item_id ||
+      identity.proposed_ia_location !== response.input_summary.proposed_ia_location
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "New-page document identity must match the ready planning input."
+      });
+    }
+  } else if (response.new_page_document_identity) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Refresh planning cannot carry a new-page document identity."
     });
   }
 });
@@ -4348,6 +4388,9 @@ export type ContentPlanningWorkspace = z.infer<typeof ContentPlanningWorkspaceSc
 export type ContentPlanningProposal = z.infer<typeof ContentPlanningProposalSchema>;
 export type ContentPlanningInputReadinessResponse = z.infer<
   typeof ContentPlanningInputReadinessResponseSchema
+>;
+export type ContentNewPageDocumentIdentity = z.infer<
+  typeof ContentNewPageDocumentIdentitySchema
 >;
 export type ContentPlanningProposalRequest = z.input<
   typeof ContentPlanningProposalRequestSchema

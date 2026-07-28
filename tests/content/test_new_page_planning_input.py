@@ -117,6 +117,16 @@ def test_new_page_planning_input_requires_current_foundation_without_existing_pa
     assert planning_input.new_page_foundation == foundation
     assert planning_input.confirmed_service_card_id == "knowledge_service_new_page"
 
+    readiness = planning_input_module.content_planning_input_readiness(
+        planning_input_module.ContentPlanningInputBuildResult(planning_input=planning_input)
+    )
+    assert readiness.new_page_document_identity is not None
+    assert readiness.new_page_document_identity.work_item_id == foundation.work_item_id
+    assert readiness.new_page_document_identity.public_source_status == "not_applicable"
+    assert readiness.new_page_document_identity.public_source_url is None
+    assert readiness.new_page_document_identity.public_source_evidence_ids == []
+    assert readiness.new_page_document_identity.public_deployment_status == "not_confirmed"
+
     stale = build_new_page_planning_input(
         brief=brief,
         foundation=foundation,
@@ -250,3 +260,23 @@ def test_new_page_planning_input_summary_rejects_contradictory_work_kind(
         ContentPlanningInputSummary.model_validate(
             historical_refresh_summary | {"final_canonical_url": "   "}
         )
+
+
+def test_new_page_document_identity_rejects_public_source_or_deployment_claims(
+    monkeypatch,
+) -> None:
+    planning_input, *_ = _ready_new_page_input(monkeypatch)
+    readiness = planning_input_module.content_planning_input_readiness(
+        planning_input_module.ContentPlanningInputBuildResult(planning_input=planning_input)
+    )
+    identity = readiness.new_page_document_identity
+    assert identity is not None
+
+    for update in (
+        {"public_source_evidence_ids": ["ev_public"]},
+        {"public_source_url": "https://www.ekologus.pl/nowa-strona/"},
+        {"public_deployment_id": "deployment_1"},
+        {"document_status": "approved"},
+    ):
+        with pytest.raises(ValueError):
+            type(identity).model_validate(identity.model_dump(mode="json") | update)

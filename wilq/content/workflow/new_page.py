@@ -8,7 +8,7 @@ from hashlib import sha256
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.knowledge.cards import ContentKnowledgeCard, ekologus_content_knowledge_cards
 from wilq.content.workflow.catalog import (
@@ -98,6 +98,40 @@ class ContentNewPagePlanningFoundation(BaseModel):
     service_evidence_ids: list[str] = Field(default_factory=list)
     confirmed_by: str = Field(min_length=2)
     created_at: datetime
+
+
+class ContentNewPageDocumentIdentity(BaseModel):
+    """The identity a new page has before any public document exists.
+
+    This is intentionally not a source snapshot or a delivery record.  It
+    makes the absence of a public page explicit while carrying the exact brief
+    and foundation that future plan, document and review commands must bind.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    work_item_id: str = Field(min_length=1)
+    work_kind: Literal["new_page"] = "new_page"
+    brief_id: str = Field(min_length=1)
+    brief_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    foundation_id: str = Field(min_length=1)
+    service_card_id: str = Field(min_length=1)
+    service_card_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    proposed_ia_location: str = Field(min_length=3)
+    public_source_status: Literal["not_applicable"] = "not_applicable"
+    public_source_url: None = None
+    public_source_evidence_ids: list[str] = Field(default_factory=list)
+    document_status: Literal["not_created"] = "not_created"
+    public_deployment_status: Literal["not_confirmed"] = "not_confirmed"
+    public_deployment_id: None = None
+
+    @model_validator(mode="after")
+    def require_absent_public_identity(self) -> ContentNewPageDocumentIdentity:
+        if not self.proposed_ia_location.strip():
+            raise ValueError("New-page IA location cannot be blank.")
+        if self.public_source_evidence_ids:
+            raise ValueError("A new page cannot carry public-source evidence before deployment.")
+        return self
 
 
 class ContentNewPageFoundationResult(BaseModel):
@@ -231,6 +265,24 @@ def build_new_page_planning_foundation(
         service_evidence_ids=service_card.evidence_ids,
         confirmed_by=command.confirmed_by,
         created_at=utc_now(),
+    )
+
+
+def build_new_page_document_identity(
+    *,
+    foundation: ContentNewPagePlanningFoundation,
+    proposed_ia_location: str,
+) -> ContentNewPageDocumentIdentity:
+    """Build the pre-document identity without fabricating a public source."""
+
+    return ContentNewPageDocumentIdentity(
+        work_item_id=foundation.work_item_id,
+        brief_id=foundation.brief_id,
+        brief_digest=foundation.brief_digest,
+        foundation_id=foundation.foundation_id,
+        service_card_id=foundation.service_card_id,
+        service_card_digest=foundation.service_card_digest,
+        proposed_ia_location=proposed_ia_location,
     )
 
 
