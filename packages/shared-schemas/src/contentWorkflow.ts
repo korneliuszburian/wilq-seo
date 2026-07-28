@@ -4165,6 +4165,11 @@ export const ContentNewPageRevisionReviewConflictSchema = z.union([
   ContentNewPageDocumentReviewPrerequisiteConflictSchema
 ]);
 
+export const ContentNewPageRevisionReviewResponseSchema = z.object({
+  status: z.enum(["recorded", "idempotent"]),
+  review: ContentDraftRevisionReviewSchema
+});
+
 export const ContentInitialDraftRequestSchema = z.object({
   expected_proposal_id: z.string().min(1),
   expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
@@ -4853,8 +4858,14 @@ export type ContentNewPagePlanningProposalWorkspace = z.infer<
 export type ContentNewPagePlanningReviewConflict = z.infer<
   typeof ContentNewPagePlanningReviewConflictSchema
 >;
+export type ContentNewPagePlanningReviewCommand = z.input<
+  typeof ContentNewPagePlanningReviewCommandSchema
+>;
 export type ContentNewPageRevisionReviewConflict = z.infer<
   typeof ContentNewPageRevisionReviewConflictSchema
+>;
+export type ContentNewPageRevisionReviewResponse = z.infer<
+  typeof ContentNewPageRevisionReviewResponseSchema
 >;
 export type ContentPlanningProposalRequest = z.input<
   typeof ContentPlanningProposalRequestSchema

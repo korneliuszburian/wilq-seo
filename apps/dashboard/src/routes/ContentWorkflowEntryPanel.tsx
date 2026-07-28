@@ -6,16 +6,20 @@ import {
   createContentNewPageBrief,
   createContentNewPageFoundation,
   createContentNewPagePlanningProposal,
+  createContentNewPageInitialDraft,
   createContentNewPageDeliveryAction,
   getContentNewPageBriefWorkspace,
   getContentNewPageCanonicalDocument,
   getContentNewPageDeliveryReadiness,
   getContentNewPagePlanningProposal,
+  reviewContentNewPagePlanning,
+  reviewContentNewPageRevision,
   type ContentNewPageCanonicalDocumentWorkspace,
   type ContentNewPageDeliveryReadiness,
   type ContentInventoryCatalogResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
+  type ContentPlanningProposal,
   type ContentWorkflowEntryResponse
 } from "../lib/api";
 
@@ -250,6 +254,7 @@ function NewPagePlanningFoundation({ workspace }: { workspace: ContentNewPageBri
 }
 
 function NewPageCanonicalDocument({ briefId }: { briefId: string }) {
+  const queryClient = useQueryClient();
   const document = useQuery({
     queryKey: ["content-workflow", "new-page-brief", briefId, "canonical-document"],
     queryFn: () => getContentNewPageCanonicalDocument(briefId),
@@ -257,7 +262,16 @@ function NewPageCanonicalDocument({ briefId }: { briefId: string }) {
   });
   if (document.isLoading) return <p className="mt-4 text-sm text-slate-600">Sprawdzam stan dokumentu…</p>;
   if (document.error || !document.data) return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm text-ink">Nie udało się odczytać kanonicznego dokumentu. Plan i brief nie zostały przez to zmienione.</p>;
-  return <><NewPageDocumentState workspace={document.data} /><NewPageDeliveryAction briefId={briefId} workspace={document.data} /></>;
+  const refreshDocument = () => {
+    void queryClient.invalidateQueries({
+      queryKey: ["content-workflow", "new-page-brief", briefId]
+    });
+  };
+  return <>
+    <NewPageDocumentState workspace={document.data} />
+    <NewPageDocumentCommands briefId={briefId} workspace={document.data} onChanged={refreshDocument} />
+    <NewPageDeliveryAction briefId={briefId} workspace={document.data} />
+  </>;
 }
 
 function NewPageDocumentState({ workspace }: { workspace: ContentNewPageCanonicalDocumentWorkspace }) {
@@ -265,6 +279,70 @@ function NewPageDocumentState({ workspace }: { workspace: ContentNewPageCanonica
   const materialCount = workspace.assigned_source_material_ids.length;
   const cardCount = workspace.assigned_knowledge_card_ids.length;
   return <section className="mt-5 rounded-2xl border border-sky-200 bg-sky-50/50 p-4" data-testid="new-page-canonical-document"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-action">Kanoniczny dokument</p><h3 className="mt-2 text-lg font-semibold text-ink">{workspace.title}</h3><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.safe_next_step}</p><dl className="mt-4 grid gap-3 sm:grid-cols-2"><InfoTile label="Stan dokumentu" value={documentStatusLabel(workspace.document_status)} /><InfoTile label="Źródło publiczne" value="Nie dotyczy — to nowa strona." /><InfoTile label="Rewizja" value={revision ? `${revision.revision_id} · ${revision.content_digest.slice(0, 12)}…` : "Nie utworzono"} /><InfoTile label="Review" value={workspace.revision_review ? reviewLabel(workspace.revision_review.decision) : "Nie zapisano"} /><InfoTile label="Przypisane materiały" value={materialCount ? `${materialCount} zapisanych materiałów` : "Nie zapisano w rewizji"} /><InfoTile label="Karty wiedzy" value={cardCount ? `${cardCount} zapisanych kart` : "Nie zapisano w rewizji"} /></dl><p className="mt-4 text-xs leading-5 text-slate-600">To nie jest porównanie z obecną stroną ani potwierdzenie publikacji. WILQ nie tworzy tu szkicu WordPressa.</p></section>;
+}
+
+function NewPageDocumentCommands({ briefId, workspace, onChanged }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {
+  if (workspace.status === "ready_for_document") {
+    return <NewPageInitialDraft briefId={briefId} workspace={workspace} onChanged={onChanged} />;
+  }
+  if (workspace.status === "document_review_required" && workspace.canonical_revision) {
+    return <NewPageRevisionReview briefId={briefId} workspace={workspace} onChanged={onChanged} />;
+  }
+  return null;
+}
+
+function NewPageInitialDraft({ briefId, workspace, onChanged }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {
+  const [requestedBy, setRequestedBy] = useState("");
+  const draft = useMutation({
+    mutationFn: () => createContentNewPageInitialDraft(briefId, {
+      expected_proposal_id: workspace.proposal_id ?? "",
+      expected_planning_digest: workspace.planning_digest ?? "",
+      expected_planning_input_digest: workspace.planning_input_digest ?? "",
+      requested_by: requestedBy
+    }),
+    onSuccess: onChanged
+  });
+  const hasExactPlan = Boolean(workspace.proposal_id && workspace.planning_digest && workspace.planning_input_digest);
+  return <section className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4" data-testid="new-page-initial-draft">
+    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-indigo-700">Dokument nowej strony</p>
+    <h4 className="mt-2 text-base font-semibold text-ink">Utwórz pierwszą rewizję</h4>
+    <p className="mt-1 text-sm leading-6 text-slate-700">WILQ użyje wyłącznie zaakceptowanego planu, przypisanych źródeł i kart wiedzy. Nie przypisze publicznego URL-a ani nie zapisze niczego w WordPressie.</p>
+    <label className="mt-3 block text-sm font-semibold text-ink">Zleca<input className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={requestedBy} onChange={(event) => setRequestedBy(event.target.value)} placeholder="Imię i nazwisko" /></label>
+    <button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={!hasExactPlan || requestedBy.trim().length < 2 || draft.isPending} onClick={() => draft.mutate()}>{draft.isPending ? "Przygotowuję dokument…" : "Przygotuj pierwszą rewizję"}</button>
+    {draft.data ? <p className="mt-2 text-sm leading-6 text-action">{draft.data.safe_next_step}</p> : null}
+    {draft.isError ? <p className="mt-2 text-sm leading-6 text-wait">Nie udało się przygotować rewizji. Odśwież plan i sprawdź jego exact tożsamość.</p> : null}
+  </section>;
+}
+
+function NewPageRevisionReview({ briefId, workspace, onChanged }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {
+  const revision = workspace.canonical_revision!;
+  const [reviewedBy, setReviewedBy] = useState("");
+  const [decision, setDecision] = useState<"approved" | "needs_changes" | "rejected" | "deferred">("approved");
+  const [notes, setNotes] = useState("");
+  const [checked, setChecked] = useState(false);
+  const evidenceIds = [...new Set(revision.sections.flatMap((section) => section.evidence_ids))];
+  const review = useMutation({
+    mutationFn: () => reviewContentNewPageRevision(briefId, revision.revision_id, {
+      expected_revision_digest: revision.content_digest,
+      reviewed_by: reviewedBy,
+      decision,
+      notes,
+      checked_items: checked ? ["Sprawdzono dokument względem zatwierdzonego planu i źródeł."] : [],
+      evidence_ids: decision === "approved" ? evidenceIds : []
+    }),
+    onSuccess: onChanged
+  });
+  const approvalReady = decision !== "approved" || (checked && evidenceIds.length > 0);
+  return <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4" data-testid="new-page-revision-review">
+    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-800">Review dokumentu</p>
+    <h4 className="mt-2 text-base font-semibold text-ink">Podejmij decyzję dla exact rewizji</h4>
+    <p className="mt-1 text-sm leading-6 text-slate-700">Decyzja dotyczy rewizji {revision.content_digest.slice(0, 12)}… i nie może zatwierdzić późniejszej wersji.</p>
+    <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold text-ink">Reviewer<input className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={reviewedBy} onChange={(event) => setReviewedBy(event.target.value)} placeholder="Imię i nazwisko" /></label><label className="text-sm font-semibold text-ink">Decyzja<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={decision} onChange={(event) => setDecision(event.target.value as typeof decision)}><option value="approved">Zatwierdzam</option><option value="needs_changes">Wymaga zmian</option><option value="rejected">Odrzucam</option><option value="deferred">Odkładam</option></select></label></div>
+    <label className="mt-3 flex items-start gap-2 text-sm leading-6 text-slate-700"><input type="checkbox" checked={checked} onChange={(event) => setChecked(event.target.checked)} className="mt-1" />Sprawdziłem dokument względem zatwierdzonego planu i przypisanych dowodów.</label>
+    <label className="mt-3 block text-sm font-semibold text-ink">Notatka{decision === "approved" ? " (opcjonalna)" : ""}<textarea className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} /></label>
+    <button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={reviewedBy.trim().length < 2 || !approvalReady || (decision !== "approved" && !notes.trim()) || review.isPending} onClick={() => review.mutate()}>{review.isPending ? "Zapisuję review…" : "Zapisz decyzję review"}</button>
+    {review.isError ? <p className="mt-2 text-sm leading-6 text-wait">Review nie został zapisany. Odśwież dokument — jego dokładna rewizja mogła się zmienić.</p> : null}
+  </section>;
 }
 
 function NewPageDeliveryAction({ briefId, workspace }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace }) {
@@ -310,7 +388,7 @@ function NewPagePlanningProposal({ briefId }: { briefId: string }) {
   });
   const generate = useMutation({
     mutationFn: (digest: string) => createContentNewPagePlanningProposal(briefId, { expected_planning_input_digest: digest, requested_by: "Wilku" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId, "planning-proposal"] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId] })
   });
   if (workspace.isLoading) return <p className="mt-4 text-sm leading-6 text-slate-600">Sprawdzam aktualny plan nowej strony…</p>;
   if (workspace.error || !workspace.data) return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 px-3 py-2 text-sm leading-6 text-ink">Nie udało się odczytać planu. Brief i podstawa pozostają zapisane; odśwież widok przed kolejnym krokiem.</p>;
@@ -320,11 +398,40 @@ function NewPagePlanningProposal({ briefId }: { briefId: string }) {
     return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">{blocker?.label ?? "Plan jest jeszcze zablokowany"}</p><p className="mt-1">{blocker?.reason ?? readiness.safe_next_step}</p><p className="mt-2 text-slate-700">{readiness.safe_next_step}</p></div>;
   }
   const proposal = workspace.data.proposal_status;
-  if (proposal?.status === "ready" || proposal?.status === "created" || proposal?.status === "idempotent") return <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-ready"><p className="font-semibold">Plan jest gotowy do review</p><p className="mt-1">{proposal.safe_next_step}</p><p className="mt-2 text-slate-700">Nie publikuje to strony ani nie tworzy szkicu WordPressa.</p></div>;
+  if (proposal?.status === "ready" || proposal?.status === "created" || proposal?.status === "idempotent") return <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm leading-6 text-ink" data-testid="new-page-planning-ready"><p className="font-semibold">Plan jest gotowy do review</p><p className="mt-1">{proposal.safe_next_step}</p><p className="mt-2 text-slate-700">Nie publikuje to strony ani nie tworzy szkicu WordPressa.</p>{proposal.proposal ? <NewPagePlanningReview briefId={briefId} proposal={proposal.proposal} onChanged={() => { void queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId] }); }} /> : <p className="mt-3 text-wait">Brakuje exact propozycji planu; odśwież stan przed review.</p>}</section>;
   if (proposal?.status === "generating") return <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-generating"><p className="font-semibold">Plan jest przygotowywany</p><p className="mt-1">{proposal.safe_next_step}</p></div>;
   const planningInputDigest = readiness.planning_input_digest;
   if (!planningInputDigest) return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">Nie można bezpiecznie zlecić planu</p><p className="mt-1">Brakuje dokładnego identyfikatora wejścia do planu. Odśwież brief przed kolejnym krokiem.</p></div>;
   return <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-ready"><p className="font-semibold">Wejście do planu jest gotowe</p><p className="mt-1">WILQ użyje dokładnego briefu i wybranego kontekstu usługi. Nie przypisuje tej nowej stronie starego URL-a, inventory ani historycznych metryk.</p><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white" disabled={generate.isPending} onClick={() => generate.mutate(planningInputDigest)}>{generate.isPending ? "Uruchamiam plan…" : "Przygotuj plan"}</button>{generate.isError ? <p className="mt-2 text-wait">Nie udało się zlecić planu. Odśwież stan i spróbuj ponownie.</p> : null}</div>;
+}
+
+function NewPagePlanningReview({ briefId, proposal, onChanged }: { briefId: string; proposal: ContentPlanningProposal; onChanged: () => void }) {
+  const [reviewedBy, setReviewedBy] = useState("");
+  const [decision, setDecision] = useState<"approved" | "needs_changes">("approved");
+  const [checked, setChecked] = useState(false);
+  const [notes, setNotes] = useState("");
+  const review = useMutation({
+    mutationFn: () => reviewContentNewPagePlanning(briefId, {
+      expected_proposal_id: proposal.proposal_id ?? "",
+      expected_planning_digest: proposal.planning_digest,
+      expected_planning_input_digest: proposal.planning_input_digest ?? "",
+      decision,
+      reviewed_by: reviewedBy,
+      checked_items: checked ? ["Sprawdzono cel, strukturę, źródła i przypisanie do usługi."] : [],
+      notes
+    }),
+    onSuccess: onChanged
+  });
+  const exactPlan = Boolean(proposal.proposal_id && proposal.planning_input_digest);
+  return <div className="mt-4 border-t border-emerald-200 pt-4" data-testid="new-page-planning-review">
+    <h4 className="font-semibold text-ink">Review planu</h4>
+    <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-700">{proposal.sections.map((section) => <li key={section.section_id || section.heading}><span className="font-medium">{section.heading}</span> — {section.purpose}</li>)}</ul>
+    <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="font-semibold text-ink">Reviewer<input className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={reviewedBy} onChange={(event) => setReviewedBy(event.target.value)} placeholder="Imię i nazwisko" /></label><label className="font-semibold text-ink">Decyzja<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={decision} onChange={(event) => setDecision(event.target.value as typeof decision)}><option value="approved">Zatwierdzam plan</option><option value="needs_changes">Plan wymaga zmian</option></select></label></div>
+    <label className="mt-3 flex items-start gap-2 text-slate-700"><input type="checkbox" checked={checked} onChange={(event) => setChecked(event.target.checked)} className="mt-1" />Sprawdziłem cel, strukturę, źródła i dopasowanie do usługi.</label>
+    <label className="mt-3 block font-semibold text-ink">Notatka{decision === "approved" ? " (opcjonalna)" : ""}<textarea className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} /></label>
+    <button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 font-semibold text-white disabled:opacity-50" disabled={!exactPlan || reviewedBy.trim().length < 2 || (decision === "approved" && !checked) || (decision === "needs_changes" && !notes.trim()) || review.isPending} onClick={() => review.mutate()}>{review.isPending ? "Zapisuję review…" : "Zapisz review planu"}</button>
+    {review.isError ? <p className="mt-2 text-wait">Nie udało się zapisać review. Odśwież plan — jego exact tożsamość mogła się zmienić.</p> : null}
+  </div>;
 }
 
 function NewPageShell({ onReturn, children }: { onReturn: () => void; children: ReactNode }) {

@@ -41,7 +41,11 @@ import {
   ContentNewPageFoundationResultSchema,
   ContentNewPagePlanningProposalRequestSchema,
   ContentNewPagePlanningProposalWorkspaceSchema,
+  ContentNewPagePlanningReviewCommandSchema,
+  ContentNewPagePlanningReviewConflictSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
+  ContentNewPageRevisionReviewConflictSchema,
+  ContentNewPageRevisionReviewResponseSchema,
   ContentPlanningInputReadinessResponseSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
@@ -165,7 +169,11 @@ import {
   type ContentNewPageFoundationResult,
   type ContentNewPagePlanningProposalRequest,
   type ContentNewPagePlanningProposalWorkspace,
+  type ContentNewPagePlanningReviewCommand,
+  type ContentNewPagePlanningReviewConflict,
   type ContentNewPageCanonicalDocumentWorkspace,
+  type ContentNewPageRevisionReviewConflict,
+  type ContentNewPageRevisionReviewResponse,
   type ContentPlanningInputReadinessResponse,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
@@ -737,6 +745,31 @@ export function createContentNewPageInitialDraft(
     `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/initial-draft`,
     ContentInitialDraftResponseSchema,
     ContentInitialDraftRequestSchema.parse(request)
+  );
+}
+
+export function reviewContentNewPagePlanning(
+  briefId: string,
+  request: ContentNewPagePlanningReviewCommand
+): Promise<ContentNewPageCanonicalDocumentWorkspace | ContentNewPagePlanningReviewConflict> {
+  return apiPostWithConflict(
+    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/planning-review`,
+    ContentNewPageCanonicalDocumentWorkspaceSchema,
+    ContentNewPagePlanningReviewConflictSchema,
+    ContentNewPagePlanningReviewCommandSchema.parse(request)
+  );
+}
+
+export function reviewContentNewPageRevision(
+  briefId: string,
+  revisionId: string,
+  request: ContentDraftRevisionReviewRequest
+): Promise<ContentNewPageRevisionReviewResponse | ContentNewPageRevisionReviewConflict> {
+  return apiPostWithConflict(
+    `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/draft-revisions/${encodeURIComponent(revisionId)}/review`,
+    ContentNewPageRevisionReviewResponseSchema,
+    ContentNewPageRevisionReviewConflictSchema,
+    ContentDraftRevisionReviewRequestSchema.parse(request)
   );
 }
 
