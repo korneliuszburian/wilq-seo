@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageFoundation, getContentNewPageBriefWorkspace, type ContentNewPageBriefWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageFoundation, getContentNewPageBriefWorkspace, getContentNewPagePlanningInput, type ContentNewPageBriefWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, createContentNewPageFoundation: vi.fn(), getContentNewPageBriefWorkspace: vi.fn() };
+  return { ...actual, createContentNewPageFoundation: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPagePlanningInput: vi.fn() };
 });
 
 const entry: ContentWorkflowEntryResponse = {
@@ -124,6 +124,55 @@ describe("ContentWorkflowEntryPanel", () => {
     }));
   });
 
+  it("shows planning readiness without fabricating an existing-page URL or baseline", async () => {
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, {
+      foundation: {
+        foundation_id: "content_new_page_foundation_test",
+        work_item_id: "content_work_item_new_page_test",
+        brief_id: "content_new_page_brief_test",
+        brief_digest: "a".repeat(64),
+        overlap_digest: "b".repeat(64),
+        overlap_evidence_ids: ["ev_wp_other"],
+        service_card_id: "service_environment",
+        service_card_digest: "c".repeat(64),
+        service_label: "Obsługa środowiskowa",
+        service_evidence_ids: ["ev_service"],
+        confirmed_by: "Wilku",
+        created_at: "2026-07-28T00:00:00Z"
+      }
+    }));
+    vi.mocked(getContentNewPagePlanningInput).mockResolvedValue({
+      status: "ready",
+      work_item_id: "content_work_item_new_page_test",
+      planning_input_digest: "d".repeat(64),
+      input_summary: {
+        goal: "new_page",
+        final_canonical_url: null,
+        proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
+        service_label: "Obsługa środowiskowa",
+        inventory_status: "not_applicable",
+        content_inventory_status: "not_applicable",
+        acf_section_inventory_status: "not_applicable",
+        source_assessments: [],
+        source_fact_count: 1,
+        source_fact_ids: ["fact_service"],
+        source_material_ids: [],
+        evidence_id_count: 1,
+        knowledge_card_count: 1,
+        measurement_metrics: [],
+        metric_comparisons: []
+      },
+      blockers: [],
+      safe_next_step: "Przygotuj propozycję planu."
+    });
+
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
+
+    expect(await screen.findByTestId("new-page-planning-input-ready")).toBeInTheDocument();
+    expect(screen.getByText(/nie przypisuje tej nowej stronie starego URL-a/i)).toBeInTheDocument();
+    expect(getContentNewPagePlanningInput).toHaveBeenCalledWith("content_new_page_brief_test");
+  });
+
   it("shows the candidate, matching basis, and evidence when a person must decide", async () => {
     vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({
       disposition: "human_decision_required",
@@ -162,7 +211,10 @@ describe("ContentWorkflowEntryPanel", () => {
   });
 });
 
-function savedBriefWorkspace(overlap: Partial<ContentNewPageBriefWorkspace["overlap_guard"]> = {}): ContentNewPageBriefWorkspace {
+function savedBriefWorkspace(
+  overlap: Partial<ContentNewPageBriefWorkspace["overlap_guard"]> = {},
+  workspaceOverrides: Partial<ContentNewPageBriefWorkspace> = {}
+): ContentNewPageBriefWorkspace {
   return {
     response_type: "content_new_page_brief_workspace",
     contract_version: "content_new_page_brief_workspace_v2",
@@ -197,6 +249,7 @@ function savedBriefWorkspace(overlap: Partial<ContentNewPageBriefWorkspace["over
     foundation: null,
     review_status: "blocked",
     review_reason: "Brief nie jest jeszcze dokumentem do review.",
-    next_action_label: "Przygotowanie dokumentu zostanie udostępnione w następnym etapie"
+    next_action_label: "Przygotowanie dokumentu zostanie udostępnione w następnym etapie",
+    ...workspaceOverrides
   };
 }

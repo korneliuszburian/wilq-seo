@@ -3,6 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInputReadinessResponse,
+    build_new_page_planning_input,
+    content_planning_input_readiness,
+)
 from wilq.content.workflow.catalog import build_content_inventory_catalog_cached
 from wilq.content.workflow.new_page import (
     ContentNewPageBriefInput,
@@ -39,6 +44,44 @@ def register_content_new_page_brief_routes(router: APIRouter) -> None:
         return build_new_page_brief_workspace(
             brief,
             foundation=new_page_brief_store().load_new_page_foundation(brief_id),
+        )
+
+    register_content_new_page_continuation_routes(router)
+
+
+def register_content_new_page_continuation_routes(router: APIRouter) -> None:
+    @router.get(
+        "/api/content/new-page-briefs/{brief_id}/planning-input",
+        response_model=ContentPlanningInputReadinessResponse,
+    )
+    def content_new_page_planning_input_readiness(
+        brief_id: str,
+    ) -> ContentPlanningInputReadinessResponse:
+        """Read the current, exact input to planning without generating a plan."""
+
+        store = new_page_brief_store()
+        brief = store.load_new_page_brief(brief_id)
+        if brief is None:
+            raise HTTPException(status_code=404, detail="Nie znaleziono briefu nowej strony.")
+        foundation = store.load_new_page_foundation(brief_id)
+        guard = build_new_page_overlap_guard(
+            brief,
+            catalog=build_content_inventory_catalog_cached(),
+        )
+        service_card = (
+            new_page_service_card(foundation.service_card_id)
+            if foundation is not None
+            else None
+        )
+        result = build_new_page_planning_input(
+            brief=brief,
+            foundation=foundation,
+            overlap_guard=guard,
+            service_card=service_card,
+        )
+        return content_planning_input_readiness(
+            result,
+            work_item_id=foundation.work_item_id if foundation is not None else None,
         )
 
     @router.post(

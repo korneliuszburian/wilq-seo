@@ -79,9 +79,9 @@ class ContentPlanningInventorySection(BaseModel):
 class ContentPlanningInventory(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    status: Literal["available", "missing"]
-    content_status: Literal["available", "missing"] = "missing"
-    acf_section_status: Literal["available", "missing"] = "missing"
+    status: Literal["available", "missing", "not_applicable"]
+    content_status: Literal["available", "missing", "not_applicable"] = "missing"
+    acf_section_status: Literal["available", "missing", "not_applicable"] = "missing"
     acf_field_names: list[str] = Field(default_factory=list)
     title_or_h1: str | None = None
     content_summary: str | None = None

@@ -16,6 +16,7 @@ from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraft
 from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResponse
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
+from wilq.content.planning.dynamic_input import ContentPlanningInputReadinessResponse
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
@@ -73,6 +74,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/new-page-briefs/{brief_id}/planning-foundation",
     ): ContentNewPageFoundationResult,
+    (
+        "GET",
+        "/api/content/new-page-briefs/{brief_id}/planning-input",
+    ): ContentPlanningInputReadinessResponse,
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
     (
         "GET",
