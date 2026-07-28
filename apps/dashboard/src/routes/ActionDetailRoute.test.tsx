@@ -155,6 +155,42 @@ const actionWithMutationAuditFixture: ActionObject = {
   }
 };
 
+const newPageDraftActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_content_new_page",
+  title: "Przygotuj nowy szkic na dev",
+  domain: "content",
+  connector: "wordpress_ekologus",
+  connector_label: "WordPress ekologus.pl",
+  mode: "apply",
+  mode_label: "zapis szkicu na dev",
+  status: "ready",
+  status_label: "gotowa do wykonania",
+  payload: {
+    action_type: "content_new_page_dev_draft_create",
+    new_page_draft_binding: {
+      work_item_id: "content_work_item_new_page",
+      brief_id: "content_new_page_brief_a",
+      brief_digest: "a".repeat(64),
+      foundation_id: "content_new_page_foundation_a",
+      service_card_id: "service_environment",
+      service_card_digest: "b".repeat(64),
+      revision_id: "content_revision_new_page_a",
+      revision_digest: "c".repeat(64),
+      authoring_profile_digest: "d".repeat(64),
+      content_type: "page"
+    }
+  },
+  review_gate: {
+    ...actionFixture.review_gate,
+    status: "ready_to_apply",
+    apply_allowed: true,
+    apply_blockers: [],
+    apply_blocker_labels: [],
+    apply_blocker_summary_label: ""
+  }
+};
+
 const adsActionFixture: ActionObject = {
   ...actionFixture,
   preview_cards: [
@@ -1549,6 +1585,9 @@ function mockFetch() {
       if (url.endsWith("/api/actions/act_mutation_audit")) {
         return Promise.resolve(Response.json(actionWithMutationAuditFixture));
       }
+      if (url.endsWith("/api/actions/act_content_new_page")) {
+        return Promise.resolve(Response.json(newPageDraftActionFixture));
+      }
       if (url.endsWith("/api/actions/act_ads")) {
         return Promise.resolve(Response.json(adsActionFixture));
       }
@@ -1746,6 +1785,15 @@ describe("Action detail route", () => {
     expect(screen.queryByText("Kontrakt przyszłego apply")).not.toBeInTheDocument();
     expect(screen.queryByText("create_wordpress_draft")).not.toBeInTheDocument();
     expect(screen.getByText("Pokaż szczegóły przyszłego zapisu")).toBeInTheDocument();
+  });
+
+  it("exposes the dev-draft apply control only for an exact new-page binding", async () => {
+    renderActionDetail("act_content_new_page");
+
+    expect(await screen.findByTestId("new-page-draft-apply")).toBeInTheDocument();
+    expect(screen.getByText(/exact rewizji c{12}/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Utwórz szkic na dev" })).toBeDisabled();
+    expect(screen.queryByTestId("new-page-draft-apply")).toBeInTheDocument();
   });
 
   it("renders mutation audit details from API labels", async () => {
