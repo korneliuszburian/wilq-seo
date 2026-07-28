@@ -270,6 +270,34 @@ describe("ContentDraftRevisionSchema", () => {
     expect(parsed.faq[0].answer_markdown).toBe("Od sprawdzenia sytuacji firmy.");
     expect(parsed.cta_blocks[0].placement).toBe("after_content");
     expect(parsed.internal_links[0].target_url).toBe("https://www.ekologus.pl/kontakt/");
+    const newPage = {
+      ...parsed,
+      document_kind: "new_page" as const,
+      final_canonical_url: null,
+      new_page_document_identity: {
+        work_item_id: parsed.work_item_id,
+        work_kind: "new_page" as const,
+        brief_id: "content_new_page_brief_consulting",
+        brief_digest: "1".repeat(64),
+        foundation_id: "content_new_page_foundation_consulting",
+        service_card_id: parsed.service_card_id,
+        service_card_digest: "2".repeat(64),
+        proposed_ia_location: "Usługi → Doradztwo środowiskowe",
+        public_source_status: "not_applicable" as const,
+        public_source_url: null,
+        public_source_evidence_ids: [],
+        document_status: "not_created" as const,
+        public_deployment_status: "not_confirmed" as const,
+        public_deployment_id: null
+      }
+    };
+    expect(ContentDraftRevisionSchema.safeParse(newPage).success).toBe(true);
+    expect(
+      ContentDraftRevisionSchema.safeParse({
+        ...newPage,
+        service_card_id: "ekologus_service_other"
+      }).success
+    ).toBe(false);
     expect(ContentDraftRevisionSchema.safeParse({
       ...parsed,
       internal_links: [
@@ -3827,6 +3855,26 @@ describe("Content work item workflow schemas", () => {
         status: "ready_for_document"
       }).success
     ).toBe(false);
+    const blocked = {
+      ...pending,
+      status: "blocked" as const,
+      proposal_id: null,
+      planning_digest: null,
+      planning_input_digest: null
+    };
+    expect(ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse(blocked).success).toBe(true);
+    for (const partialIdentity of [
+      { proposal_id: "content_planning_proposal_partial" },
+      { planning_digest: "e".repeat(64) },
+      { proposal_id: "content_planning_proposal_partial", planning_input_digest: "f".repeat(64) }
+    ]) {
+      expect(
+        ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
+          ...blocked,
+          ...partialIdentity
+        }).success
+      ).toBe(false);
+    }
     const ready = { ...pending, status: "ready_for_document" as const, plan_review: approvedPlanReview };
     expect(ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse(ready).success).toBe(true);
     expect(

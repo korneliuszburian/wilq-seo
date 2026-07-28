@@ -144,7 +144,12 @@ def _validate_workspace_without_revision(
         )
     )
     if workspace.status == "blocked":
-        if has_exact_plan_identity or workspace.plan_review is not None:
+        if (
+            workspace.proposal_id is not None
+            or workspace.planning_digest is not None
+            or workspace.planning_input_digest is not None
+            or workspace.plan_review is not None
+        ):
             raise ValueError("Blocked new-page workspace cannot carry a current plan.")
         return
     if not has_exact_plan_identity:

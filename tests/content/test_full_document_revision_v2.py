@@ -162,6 +162,10 @@ def test_new_page_full_revision_is_append_only_without_a_public_url(tmp_path: Pa
             new_page.model_dump(mode="python")
             | {"final_canonical_url": "https://www.ekologus.pl/fikcyjna/"}
         )
+    with pytest.raises(ValidationError, match="New-page revision requires exact"):
+        ContentDraftRevisionAppendCommand.model_validate(
+            new_page.model_dump(mode="python") | {"service_card_id": "service_other"}
+        )
 
 
 def test_full_document_v2_handoff_allows_generated_section_map_to_rewrite_baseline(
