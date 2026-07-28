@@ -506,6 +506,7 @@ def _validate_full_document(
         document.final_canonical_url is not None
         or document.new_page_document_identity is None
         or document.new_page_document_identity.work_item_id != document.work_item_id
+        or document.service_card_id != document.new_page_document_identity.service_card_id
     ):
         raise ValueError(
             "New-page revision requires exact pre-document identity and no public URL."

@@ -219,6 +219,20 @@ def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_st
         ContentNewPageCanonicalDocumentWorkspace.model_validate(
             pending.model_dump(mode="python") | {"status": "ready_for_document"}
         )
+    blocked = pending.model_dump(mode="python") | {
+        "status": "blocked",
+        "proposal_id": None,
+        "planning_digest": None,
+        "planning_input_digest": None,
+    }
+    assert ContentNewPageCanonicalDocumentWorkspace.model_validate(blocked).status == "blocked"
+    for partial_identity in (
+        {"proposal_id": "content_planning_proposal_partial"},
+        {"planning_digest": "e" * 64},
+        {"proposal_id": "content_planning_proposal_partial", "planning_input_digest": "f" * 64},
+    ):
+        with pytest.raises(ValueError, match="Blocked new-page workspace"):
+            ContentNewPageCanonicalDocumentWorkspace.model_validate(blocked | partial_identity)
 
     approved = ContentPlanningDecision(
         decision_id="content_planning_review_exact",

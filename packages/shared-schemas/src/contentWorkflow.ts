@@ -2497,7 +2497,12 @@ export const ContentDraftRevisionSchema = z.object({
   if (revision.document_kind === "refresh_existing" && (!revision.final_canonical_url?.trim() || revision.new_page_document_identity)) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["final_canonical_url"], message: "Refresh revision requires a public canonical URL and no new-page identity." });
   }
-  if (revision.document_kind === "new_page" && (revision.final_canonical_url !== null || !revision.new_page_document_identity || revision.new_page_document_identity.work_item_id !== revision.work_item_id)) {
+  if (revision.document_kind === "new_page" && (
+    revision.final_canonical_url !== null ||
+    !revision.new_page_document_identity ||
+    revision.new_page_document_identity.work_item_id !== revision.work_item_id ||
+    revision.service_card_id !== revision.new_page_document_identity.service_card_id
+  )) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["new_page_document_identity"], message: "New-page revision requires exact pre-document identity and no public URL." });
   }
   const requiredBindings = [
@@ -3887,7 +3892,12 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
       workspace.proposal_id && workspace.planning_digest && workspace.planning_input_digest
     );
     if (workspace.status === "blocked") {
-      if (hasExactPlanIdentity || planReview) {
+      if (
+        workspace.proposal_id !== null ||
+        workspace.planning_digest !== null ||
+        workspace.planning_input_digest !== null ||
+        planReview
+      ) {
         context.addIssue({ code: z.ZodIssueCode.custom, message: "Blocked new-page workspace cannot carry a current plan." });
       }
       return;
