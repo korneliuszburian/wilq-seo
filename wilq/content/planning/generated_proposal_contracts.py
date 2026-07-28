@@ -18,6 +18,7 @@ from wilq.content.workflow.planning import (
     ContentPlanningMeasurementPlan,
     ContentPlanningPageAssets,
     ContentPlanningProposal,
+    ContentPlanningWorkspace,
 )
 
 ContentPlanningProposalStatus = Literal[
@@ -164,6 +165,7 @@ class ContentPlanningProposalResponse(BaseModel):
     input_summary: ContentPlanningInputSummary | None = None
     retry_after_seconds: int | None = Field(default=None, ge=0)
     proposal: ContentPlanningProposal | None = None
+    planning_workspace: ContentPlanningWorkspace | None = None
     runtime: ContentCodexRuntimeTrace = Field(
         default_factory=lambda: ContentCodexRuntimeTrace(status="not_started")
     )
@@ -190,6 +192,11 @@ class ContentPlanningProposalResponse(BaseModel):
                 raise ValueError("Generating response cannot expose proposal or blockers.")
         elif not self.blockers:
             raise ValueError("Non-ready planning response requires typed blockers.")
+        if self.planning_workspace is not None:
+            if self.status != "ready" or self.proposal is None:
+                raise ValueError("Planning workspace is available only for a ready proposal.")
+            if self.planning_workspace.proposal != self.proposal:
+                raise ValueError("Planning workspace must carry the response exact proposal.")
         return self
 
 

@@ -41,9 +41,11 @@ from wilq.content.planning.section_mapping import (
 )
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import (
+    ContentPlanningDecision,
     ContentPlanningInventoryMapping,
     ContentPlanningProposal,
     ContentPlanningSection,
+    build_content_planning_workspace,
 )
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -188,6 +190,35 @@ def read_content_planning_proposal(
         proposal=latest,
         runtime=_persisted_runtime_trace(latest),
         safe_next_step="Sprawdź strategię i mapę sekcji; tylko człowiek może je zatwierdzić.",
+    )
+
+
+def with_current_planning_workspace(
+    response: ContentPlanningProposalResponse,
+    decisions: list[ContentPlanningDecision],
+) -> ContentPlanningProposalResponse:
+    """Project review only when it binds to the response's exact ready plan."""
+
+    if response.status != "ready" or response.proposal is None:
+        return response.model_copy(update={"planning_workspace": None})
+    proposal = response.proposal
+    exact_decisions = [
+        decision
+        for decision in decisions
+        if decision.work_item_id == proposal.work_item_id
+        and decision.planning_digest == proposal.planning_digest
+        and (
+            decision.service_card_id is None
+            or decision.service_card_id == proposal.service_card_id
+        )
+    ]
+    return response.model_copy(
+        update={
+            "planning_workspace": build_content_planning_workspace(
+                proposal,
+                exact_decisions,
+            )
+        }
     )
 
 

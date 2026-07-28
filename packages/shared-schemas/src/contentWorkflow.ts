@@ -3840,6 +3840,7 @@ export const ContentPlanningProposalResponseSchema = z.object({
   input_summary: ContentPlanningInputSummarySchema.nullable().optional(),
   retry_after_seconds: z.number().int().nonnegative().nullable().optional(),
   proposal: ContentPlanningProposalSchema.nullable().optional(),
+  planning_workspace: ContentPlanningWorkspaceSchema.nullable().optional(),
   runtime: ContentCodexRuntimeTraceSchema,
   blockers: z.array(ContentPlanningProposalBlockerSchema).default([]),
   safe_next_step: z.string().min(1),
@@ -3851,6 +3852,23 @@ export const ContentPlanningProposalResponseSchema = z.object({
       path: ["input_summary"],
       message: "Planning input digest requires its exact input summary."
     });
+  }
+  if (response.planning_workspace) {
+    if (response.status !== "ready" || !response.proposal) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["planning_workspace"],
+        message: "Planning workspace is available only for a ready proposal."
+      });
+    } else if (
+      JSON.stringify(response.planning_workspace.proposal) !== JSON.stringify(response.proposal)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["planning_workspace"],
+        message: "Planning workspace must carry the response exact proposal."
+      });
+    }
   }
 });
 
