@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPagePlanningProposal, refreshConnector, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPagePlanningProposal, refreshConnector, reviewContentNewPagePlanning, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), refreshConnector: vi.fn() };
+  return { ...actual, createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), refreshConnector: vi.fn(), reviewContentNewPagePlanning: vi.fn() };
 });
 
 const entry: ContentWorkflowEntryResponse = {
@@ -255,6 +255,73 @@ describe("ContentWorkflowEntryPanel", () => {
       expected_planning_input_digest: "d".repeat(64),
       requested_by: "Wilku"
     }));
+  });
+
+  it("prepares the first new-page version from one exact generated-plan action", async () => {
+    const readyPlan = newPagePlanningWorkspace();
+    readyPlan.proposal_status = {
+      ...readyPlan.proposal_status!,
+      status: "ready",
+      proposal: {
+        proposal_id: "content_planning_proposal_test",
+        planning_digest: "b".repeat(64),
+        planning_input_digest: "d".repeat(64),
+        sections: [{ section_id: "section_intro", heading: "Wprowadzenie", purpose: "Wyjaśnij temat." }]
+      } as never
+    };
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, {
+      foundation: {
+        foundation_id: "content_new_page_foundation_test",
+        work_item_id: "content_work_item_new_page_test",
+        brief_id: "content_new_page_brief_test",
+        brief_digest: "a".repeat(64),
+        overlap_digest: "b".repeat(64),
+        overlap_evidence_ids: ["ev_wp_other"],
+        service_card_id: "service_environment",
+        service_card_digest: "c".repeat(64),
+        service_label: "Obsługa środowiskowa",
+        service_evidence_ids: ["ev_service"],
+        confirmed_by: "Wilku",
+        created_at: "2026-07-28T00:00:00Z"
+      }
+    }));
+    vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue(readyPlan);
+    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue({
+      ...canonicalDocumentWorkspace(),
+      status: "review_required"
+    });
+    vi.mocked(reviewContentNewPagePlanning).mockResolvedValue(canonicalDocumentWorkspace());
+    vi.mocked(createContentNewPageInitialDraft).mockResolvedValue({
+      status: "generating",
+      work_item_id: "content_work_item_new_page_test",
+      proposal_id: "content_planning_proposal_test",
+      run_id: "codex_content_initial_draft_test",
+      blockers: [{ code: "generation_in_progress", label: "Trwa", reason: "Trwa", next_step: "Poczekaj." }],
+      safe_next_step: "Dokument jest przygotowywany.",
+      publish_ready: false,
+      runtime: { status: "started", thread_id: null, turn_id: null, event_methods: [], item_types: [], external_call_attempted: false }
+    } as never);
+
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj pierwszą wersję" }));
+
+    await waitFor(() => expect(reviewContentNewPagePlanning).toHaveBeenCalledWith("content_new_page_brief_test", {
+      expected_proposal_id: "content_planning_proposal_test",
+      expected_planning_digest: "b".repeat(64),
+      expected_planning_input_digest: "d".repeat(64),
+      decision: "approved",
+      reviewed_by: "wilku",
+      checked_items: ["plan, struktura, źródła i przypisanie do usługi"],
+      notes: ""
+    }));
+    await waitFor(() => expect(createContentNewPageInitialDraft).toHaveBeenCalledWith("content_new_page_brief_test", {
+      expected_proposal_id: "content_planning_proposal_test",
+      expected_planning_digest: "b".repeat(64),
+      expected_planning_input_digest: "d".repeat(64),
+      requested_by: "wilku"
+    }));
+    expect(screen.queryByLabelText("Reviewer")).not.toBeInTheDocument();
   });
 
   it("creates the first immutable new-page revision only from the exact reviewed plan", async () => {
