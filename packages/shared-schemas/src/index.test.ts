@@ -793,6 +793,22 @@ describe("ContentPlanningInputReadinessResponseSchema", () => {
         measurement_metrics: [],
         metric_comparisons: []
       },
+      new_page_document_identity: {
+        work_item_id: "content_work_item_new_page_a",
+        work_kind: "new_page",
+        brief_id: "content_new_page_brief_a",
+        brief_digest: "b".repeat(64),
+        foundation_id: "content_new_page_foundation_a",
+        service_card_id: "knowledge_service",
+        service_card_digest: "c".repeat(64),
+        proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
+        public_source_status: "not_applicable",
+        public_source_url: null,
+        public_source_evidence_ids: [],
+        document_status: "not_created",
+        public_deployment_status: "not_confirmed",
+        public_deployment_id: null
+      },
       blockers: [],
       safe_next_step: "Przygotuj propozycję planu."
     });
@@ -828,11 +844,29 @@ describe("ContentPlanningInputReadinessResponseSchema", () => {
       measurement_metrics: [],
       metric_comparisons: []
     };
-    const readiness = (input_summary: object) => ({
+    const readiness = (input_summary: Record<string, unknown>) => ({
       status: "ready" as const,
       work_item_id: "content_work_item_new_page_a",
       planning_input_digest: "a".repeat(64),
       input_summary,
+      ...(input_summary.goal === "new_page" ? {
+        new_page_document_identity: {
+          work_item_id: "content_work_item_new_page_a",
+          work_kind: "new_page",
+          brief_id: "content_new_page_brief_a",
+          brief_digest: "b".repeat(64),
+          foundation_id: "content_new_page_foundation_a",
+          service_card_id: "knowledge_service",
+          service_card_digest: "c".repeat(64),
+          proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
+          public_source_status: "not_applicable",
+          public_source_url: null,
+          public_source_evidence_ids: [],
+          document_status: "not_created",
+          public_deployment_status: "not_confirmed",
+          public_deployment_id: null
+        }
+      } : {}),
       blockers: [],
       safe_next_step: "Przygotuj propozycję planu."
     });
@@ -869,6 +903,14 @@ describe("ContentPlanningInputReadinessResponseSchema", () => {
       content_inventory_status: "available",
       acf_section_inventory_status: "missing"
     })).success).toBe(true);
+
+    expect(ContentPlanningInputReadinessResponseSchema.safeParse({
+      ...readiness(newPageSummary),
+      new_page_document_identity: {
+        ...readiness(newPageSummary).new_page_document_identity,
+        public_source_url: "https://www.ekologus.pl/nowa-strona/"
+      }
+    }).success).toBe(false);
   });
 });
 

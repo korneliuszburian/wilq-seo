@@ -43,8 +43,10 @@ from wilq.content.workflow.demand_evidence import (
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.new_page import (
     ContentNewPageBrief,
+    ContentNewPageDocumentIdentity,
     ContentNewPageOverlapGuard,
     ContentNewPagePlanningFoundation,
+    build_new_page_document_identity,
 )
 from wilq.content.workflow.planning import (
     ContentPlanningProposal,
@@ -216,6 +218,7 @@ class ContentPlanningInputReadinessResponse(BaseModel):
     work_item_id: str | None = None
     planning_input_digest: str | None = None
     input_summary: ContentPlanningInputSummary | None = None
+    new_page_document_identity: ContentNewPageDocumentIdentity | None = None
     blockers: list[ContentPlanningInputBlocker] = Field(default_factory=list)
     safe_next_step: str = Field(min_length=1)
 
@@ -229,6 +232,20 @@ class ContentPlanningInputReadinessResponse(BaseModel):
             raise ValueError("Ready planning input requires its exact identity and summary.")
         if self.status == "blocked" and self.planning_input_digest is not None:
             raise ValueError("Blocked planning input cannot expose a usable digest.")
+        if self.input_summary is not None and self.input_summary.goal == "new_page":
+            if self.status != "ready" or self.new_page_document_identity is None:
+                raise ValueError(
+                    "Ready new-page planning input requires its exact document identity."
+                )
+            if self.new_page_document_identity.work_item_id != self.work_item_id:
+                raise ValueError("New-page document identity must match the planning work item.")
+            if (
+                self.new_page_document_identity.proposed_ia_location
+                != self.input_summary.proposed_ia_location
+            ):
+                raise ValueError("New-page document identity must match the planning IA location.")
+        elif self.new_page_document_identity is not None:
+            raise ValueError("Refresh planning cannot carry a new-page document identity.")
         return self
 
 
@@ -254,6 +271,16 @@ def content_planning_input_readiness(
         work_item_id=planning_input.work_item_id,
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=content_planning_input_summary(planning_input),
+        new_page_document_identity=(
+            build_new_page_document_identity(
+                foundation=planning_input.new_page_foundation,
+                proposed_ia_location=planning_input.proposed_ia_location,
+            )
+            if planning_input.goal == "new_page"
+            and planning_input.new_page_foundation is not None
+            and planning_input.proposed_ia_location is not None
+            else None
+        ),
         blockers=result.blockers,
         safe_next_step=(
             "Wejście do planu jest gotowe. W kolejnym kroku można przygotować "
