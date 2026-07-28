@@ -3802,6 +3802,15 @@ export const ContentNewPageDocumentOutlineSectionSchema = z.object({
   purpose: z.string().min(1)
 });
 
+export const ContentNewPageDocumentReviewPrerequisiteConflictSchema = z.object({
+  response_type: z.literal("content_new_page_document_review_prerequisite_conflict"),
+  contract_version: z.literal("content_new_page_document_review_prerequisite_conflict_v1"),
+  status: z.literal("blocked"),
+  code: z.literal("missing_planning_foundation"),
+  brief_id: z.string().min(1),
+  safe_next_step: z.string().min(1)
+});
+
 export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   response_type: z.literal("content_new_page_canonical_document"),
   contract_version: z.literal("content_new_page_canonical_document_v2"),
@@ -3846,6 +3855,18 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   safe_next_step: z.string().min(1)
 }).superRefine((workspace, context) => {
   const revision = workspace.canonical_revision;
+  const planReview = workspace.plan_review;
+  if (planReview && (
+    !workspace.proposal_id ||
+    !workspace.planning_digest ||
+    !workspace.planning_input_digest ||
+    planReview.work_item_id !== workspace.work_item_id ||
+    planReview.stage !== "scope" ||
+    planReview.planning_digest !== workspace.planning_digest ||
+    planReview.service_card_id !== workspace.service_card_id
+  )) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Plan review does not match the exact new-page workspace." });
+  }
   if (!revision) {
     if (
       workspace.revision_review ||
@@ -3854,6 +3875,31 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
       workspace.document_status !== "not_created"
     ) {
       context.addIssue({ code: z.ZodIssueCode.custom, message: "Missing new-page revision cannot carry document lineage." });
+    }
+    if (
+      workspace.status !== "review_required" &&
+      workspace.status !== "ready_for_document" &&
+      workspace.status !== "blocked"
+    ) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Document workspace status requires a canonical revision." });
+    }
+    const hasExactPlanIdentity = Boolean(
+      workspace.proposal_id && workspace.planning_digest && workspace.planning_input_digest
+    );
+    if (workspace.status === "blocked") {
+      if (hasExactPlanIdentity || planReview) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: "Blocked new-page workspace cannot carry a current plan." });
+      }
+      return;
+    }
+    if (!hasExactPlanIdentity) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "New-page plan state requires exact proposal identity." });
+    }
+    const expectedWorkspaceStatus = planReview?.decision === "approved"
+      ? "ready_for_document"
+      : "review_required";
+    if (workspace.status !== expectedWorkspaceStatus) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace status must match the exact plan review state." });
     }
     return;
   }
@@ -3888,6 +3934,23 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   ) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace review must match the canonical revision and status." });
   }
+  if (workspace.document_status === "not_created") {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical new-page revision requires a document status." });
+    return;
+  }
+  const expectedWorkspaceStatus = {
+    unreviewed: "document_review_required",
+    approved: "document_approved",
+    needs_changes: "document_needs_changes",
+    rejected: "document_rejected",
+    deferred: "document_deferred"
+  }[workspace.document_status];
+  if (workspace.status !== expectedWorkspaceStatus) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace status must match the canonical document status." });
+  }
+  if (!planReview || planReview.decision !== "approved") {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical new-page revision requires an approved exact plan review." });
+  }
 });
 
 export const ContentNewPagePlanningReviewCommandSchema = z.object({
@@ -3907,8 +3970,16 @@ export const ContentNewPagePlanningReviewCommandSchema = z.object({
   }
 });
 
+export const ContentNewPagePlanningReviewConflictSchema = z.union([
+  ContentNewPageCanonicalDocumentWorkspaceSchema,
+  ContentNewPageDocumentReviewPrerequisiteConflictSchema
+]);
+
 /** Typed 409 body for an exact new-page revision-review conflict. */
-export const ContentNewPageRevisionReviewConflictSchema = ContentDraftRevisionConflictSchema;
+export const ContentNewPageRevisionReviewConflictSchema = z.union([
+  ContentDraftRevisionConflictSchema,
+  ContentNewPageDocumentReviewPrerequisiteConflictSchema
+]);
 
 export const ContentInitialDraftRequestSchema = z.object({
   expected_proposal_id: z.string().min(1),
@@ -4580,8 +4651,14 @@ export type ContentNewPagePlanningProposalRequest = z.input<
 export type ContentNewPageCanonicalDocumentWorkspace = z.infer<
   typeof ContentNewPageCanonicalDocumentWorkspaceSchema
 >;
+export type ContentNewPageDocumentReviewPrerequisiteConflict = z.infer<
+  typeof ContentNewPageDocumentReviewPrerequisiteConflictSchema
+>;
 export type ContentNewPagePlanningProposalWorkspace = z.infer<
   typeof ContentNewPagePlanningProposalWorkspaceSchema
+>;
+export type ContentNewPagePlanningReviewConflict = z.infer<
+  typeof ContentNewPagePlanningReviewConflictSchema
 >;
 export type ContentNewPageRevisionReviewConflict = z.infer<
   typeof ContentNewPageRevisionReviewConflictSchema

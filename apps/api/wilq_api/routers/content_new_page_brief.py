@@ -46,6 +46,7 @@ from wilq.content.workflow.new_page import (
 )
 from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
+    ContentNewPageDocumentReviewPrerequisiteConflict,
     ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
 )
@@ -278,12 +279,26 @@ def register_content_new_page_document_review_routes(router: APIRouter) -> None:
     @router.post(
         "/api/content/new-page-briefs/{brief_id}/planning-review",
         response_model=ContentNewPageCanonicalDocumentWorkspace,
-        responses={409: {"model": ContentNewPageCanonicalDocumentWorkspace}},
+        responses={
+            409: {
+                "model": (
+                    ContentNewPageCanonicalDocumentWorkspace
+                    | ContentNewPageDocumentReviewPrerequisiteConflict
+                )
+            }
+        },
     )
     def review_new_page_content_plan(
         brief_id: str,
         request: ContentNewPagePlanningReviewCommand,
-    ) -> ContentNewPageCanonicalDocumentWorkspace | JSONResponse:
+    ) -> (
+        ContentNewPageCanonicalDocumentWorkspace
+        | ContentNewPageDocumentReviewPrerequisiteConflict
+        | JSONResponse
+    ):
+        prerequisite = _new_page_document_review_prerequisite(brief_id)
+        if prerequisite is not None:
+            return JSONResponse(status_code=409, content=prerequisite.model_dump(mode="json"))
         workspace = _new_page_canonical_document_workspace(brief_id)
         if (
             workspace.status == "blocked"
@@ -305,13 +320,27 @@ def register_content_new_page_document_review_routes(router: APIRouter) -> None:
     @router.post(
         "/api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review",
         response_model=ContentNewPageRevisionReviewResponse,
-        responses={409: {"model": ContentDraftRevisionConflictResponse}},
+        responses={
+            409: {
+                "model": (
+                    ContentDraftRevisionConflictResponse
+                    | ContentNewPageDocumentReviewPrerequisiteConflict
+                )
+            }
+        },
     )
     def review_new_page_draft_revision(
         brief_id: str,
         revision_id: str,
         request: ContentDraftRevisionReviewRequest,
-    ) -> ContentNewPageRevisionReviewResponse | JSONResponse:
+    ) -> (
+        ContentNewPageRevisionReviewResponse
+        | ContentNewPageDocumentReviewPrerequisiteConflict
+        | JSONResponse
+    ):
+        prerequisite = _new_page_document_review_prerequisite(brief_id)
+        if prerequisite is not None:
+            return JSONResponse(status_code=409, content=prerequisite.model_dump(mode="json"))
         workspace = _new_page_canonical_document_workspace(brief_id)
         try:
             result = review_new_page_revision(
@@ -361,6 +390,24 @@ def _new_page_revision_conflict_response(
         safe_next_step=safe_next_step,
     )
     return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
+
+
+def _new_page_document_review_prerequisite(
+    brief_id: str,
+) -> ContentNewPageDocumentReviewPrerequisiteConflict | None:
+    store = new_page_brief_store()
+    brief = store.load_new_page_brief(brief_id)
+    if brief is None:
+        raise HTTPException(status_code=404, detail="Nie znaleziono briefu nowej strony.")
+    if store.load_new_page_foundation(brief_id) is None:
+        return ContentNewPageDocumentReviewPrerequisiteConflict(
+            brief_id=brief_id,
+            safe_next_step=(
+                "Zapisz dokładną podstawę planowania nowej strony przed review planu "
+                "lub dokumentu."
+            ),
+        )
+    return None
 
 
 def _new_page_planning_proposal_workspace(

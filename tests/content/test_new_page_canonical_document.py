@@ -18,6 +18,7 @@ from wilq.content.workflow.new_page import (
     build_new_page_document_identity,
 )
 from wilq.content.workflow.new_page_document import (
+    ContentNewPageCanonicalDocumentWorkspace,
     ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
 )
@@ -181,6 +182,74 @@ def test_new_page_canonical_document_rejects_mismatched_lineage_and_blank_approv
         raise AssertionError("Blank planning approval must fail closed.")
 
 
+@pytest.mark.parametrize(
+    "review_update",
+    [
+        {"work_item_id": "content_work_item_other"},
+        {"planning_digest": "e" * 64},
+        {"service_card_id": "service_other"},
+    ],
+)
+def test_new_page_workspace_requires_exact_plan_review_and_truthful_top_level_state(
+    review_update,
+) -> None:
+    foundation, proposal = _exact_inputs()
+    brief = build_new_page_brief(
+        ContentNewPageBriefInput(
+            title="Dokumentacja środowiskowa inwestycji",
+            purpose="Pomóc inwestorowi przygotować dokumentację środowiskową.",
+            service="Dokumentacja środowiskowa",
+            audience="Inwestor przygotowujący przedsięwzięcie",
+            search_intent="dokumentacja środowiskowa inwestycji",
+            proposed_ia_location="Usługi → Dokumentacja środowiskowa",
+        )
+    ).model_copy(update={"brief_id": foundation.brief_id, "brief_digest": foundation.brief_digest})
+    pending = build_new_page_canonical_document_workspace(
+        brief=brief, foundation=foundation, proposal=proposal, decisions=[]
+    )
+    assert pending is not None
+    assert ContentNewPageCanonicalDocumentWorkspace.model_validate(
+        pending.model_dump(mode="python")
+    ) == pending
+    with pytest.raises(ValueError, match="requires a canonical revision"):
+        ContentNewPageCanonicalDocumentWorkspace.model_validate(
+            pending.model_dump(mode="python") | {"status": "document_approved"}
+        )
+    with pytest.raises(ValueError, match="exact plan review state"):
+        ContentNewPageCanonicalDocumentWorkspace.model_validate(
+            pending.model_dump(mode="python") | {"status": "ready_for_document"}
+        )
+
+    approved = ContentPlanningDecision(
+        decision_id="content_planning_review_exact",
+        decision_number=1,
+        work_item_id=foundation.work_item_id,
+        stage="scope",
+        planning_digest=proposal.planning_digest,
+        service_card_id=foundation.service_card_id,
+        decision="approved",
+        reviewed_by="Wilku",
+        checked_items=["zakres"],
+        created_at=utc_now(),
+    )
+    ready = build_new_page_canonical_document_workspace(
+        brief=brief, foundation=foundation, proposal=proposal, decisions=[approved]
+    )
+    assert ready is not None
+    assert ContentNewPageCanonicalDocumentWorkspace.model_validate(
+        ready.model_dump(mode="python")
+    ) == ready
+    with pytest.raises(ValueError, match="exact plan review state"):
+        ContentNewPageCanonicalDocumentWorkspace.model_validate(
+            ready.model_dump(mode="python") | {"status": "review_required"}
+        )
+    with pytest.raises(ValueError, match="Plan review does not match"):
+        ContentNewPageCanonicalDocumentWorkspace.model_validate(
+            ready.model_dump(mode="python")
+            | {"plan_review": approved.model_copy(update=review_update).model_dump(mode="python")}
+        )
+
+
 def _new_page_append_context(tmp_path):
     foundation, proposal = _exact_inputs()
     brief = build_new_page_brief(
@@ -318,6 +387,9 @@ def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
     assert projected.revision_review == review.review
     assert projected.public_source_status == "not_applicable"
     assert projected.public_source_url is None
+    assert ContentNewPageCanonicalDocumentWorkspace.model_validate(
+        projected.model_dump(mode="python")
+    ) == projected
     with pytest.raises(ValueError, match="outside the exact"):
         review_new_page_revision(
             workspace=workspace,

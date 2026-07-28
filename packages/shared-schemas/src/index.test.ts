@@ -30,6 +30,9 @@ import {
   ContentDraftPackageSchema,
   ContentDraftRevisionSchema,
   ContentDraftRevisionConflictSchema,
+  ContentNewPageCanonicalDocumentWorkspaceSchema,
+  ContentNewPageDocumentReviewPrerequisiteConflictSchema,
+  ContentNewPagePlanningReviewConflictSchema,
   ContentNewPageRevisionReviewConflictSchema,
   ContentCodexSectionProposalRequestSchema,
   ContentDraftRevisionReviewRequestSchema,
@@ -3767,6 +3770,94 @@ describe("Content work item workflow schemas", () => {
         system_prompt: "Nie wolno wysyłać promptu z przeglądarki."
       }).success
     ).toBe(false);
+  });
+
+  it("discriminates new-page workspace status and exact plan review lineage", () => {
+    const pending = {
+      response_type: "content_new_page_canonical_document" as const,
+      contract_version: "content_new_page_canonical_document_v2" as const,
+      status: "review_required" as const,
+      work_item_id: "content_work_item_new_page",
+      brief_id: "content_new_page_brief",
+      brief_digest: "a".repeat(64),
+      foundation_id: "content_new_page_foundation",
+      service_card_id: "knowledge_service_environment",
+      service_card_digest: "b".repeat(64),
+      proposal_id: "content_planning_proposal_new_page",
+      planning_digest: "c".repeat(64),
+      planning_input_digest: "d".repeat(64),
+      plan_review: null,
+      title: "Dokumentacja środowiskowa inwestycji",
+      proposed_ia_location: "Usługi → Dokumentacja środowiskowa",
+      outline: [],
+      document_status: "not_created" as const,
+      canonical_revision: null,
+      revision_review: null,
+      assigned_source_material_ids: [],
+      assigned_knowledge_card_ids: [],
+      public_source_status: "not_applicable" as const,
+      public_source_url: null,
+      public_deployment_status: "not_confirmed" as const,
+      safe_next_step: "Sprawdź plan."
+    };
+    const approvedPlanReview = {
+      decision_id: "content_planning_decision_new_page",
+      decision_number: 1,
+      work_item_id: pending.work_item_id,
+      stage: "scope" as const,
+      planning_digest: pending.planning_digest,
+      service_card_id: pending.service_card_id,
+      decision: "approved" as const,
+      reviewed_by: "Wilku",
+      checked_items: ["Zakres"],
+      notes: "",
+      created_at: "2026-07-28T10:00:00Z"
+    };
+
+    expect(ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse(pending).success).toBe(true);
+    expect(
+      ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
+        ...pending,
+        status: "document_approved"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
+        ...pending,
+        status: "ready_for_document"
+      }).success
+    ).toBe(false);
+    const ready = { ...pending, status: "ready_for_document" as const, plan_review: approvedPlanReview };
+    expect(ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse(ready).success).toBe(true);
+    expect(
+      ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
+        ...ready,
+        status: "review_required"
+      }).success
+    ).toBe(false);
+    for (const planReview of [
+      { ...approvedPlanReview, work_item_id: "content_work_item_other" },
+      { ...approvedPlanReview, planning_digest: "e".repeat(64) },
+      { ...approvedPlanReview, service_card_id: "knowledge_service_other" }
+    ]) {
+      expect(
+        ContentNewPageCanonicalDocumentWorkspaceSchema.safeParse({
+          ...ready,
+          plan_review: planReview
+        }).success
+      ).toBe(false);
+    }
+    const prerequisite = {
+      response_type: "content_new_page_document_review_prerequisite_conflict",
+      contract_version: "content_new_page_document_review_prerequisite_conflict_v1",
+      status: "blocked",
+      code: "missing_planning_foundation",
+      brief_id: pending.brief_id,
+      safe_next_step: "Zapisz podstawę planowania."
+    };
+    expect(ContentNewPageDocumentReviewPrerequisiteConflictSchema.safeParse(prerequisite).success).toBe(true);
+    expect(ContentNewPagePlanningReviewConflictSchema.safeParse(prerequisite).success).toBe(true);
+    expect(ContentNewPageRevisionReviewConflictSchema.safeParse(prerequisite).success).toBe(true);
   });
 
   it("accepts a typed blocked content workflow snapshot", () => {

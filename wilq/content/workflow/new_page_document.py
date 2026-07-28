@@ -30,6 +30,23 @@ class ContentNewPageDocumentOutlineSection(BaseModel):
     purpose: str = Field(min_length=1)
 
 
+class ContentNewPageDocumentReviewPrerequisiteConflict(BaseModel):
+    """Typed blocker when a review route cannot resolve a document workspace yet."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    response_type: Literal["content_new_page_document_review_prerequisite_conflict"] = (
+        "content_new_page_document_review_prerequisite_conflict"
+    )
+    contract_version: Literal["content_new_page_document_review_prerequisite_conflict_v1"] = (
+        "content_new_page_document_review_prerequisite_conflict_v1"
+    )
+    status: Literal["blocked"] = "blocked"
+    code: Literal["missing_planning_foundation"] = "missing_planning_foundation"
+    brief_id: str = Field(min_length=1)
+    safe_next_step: str = Field(min_length=1)
+
+
 class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
     """Read-only bridge from one exact new-page plan to its future revision.
 
@@ -82,51 +99,124 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
 
     @model_validator(mode="after")
     def require_exact_document_lineage(self) -> ContentNewPageCanonicalDocumentWorkspace:
-        revision = self.canonical_revision
-        if revision is None:
-            if (
-                self.revision_review is not None
-                or self.assigned_source_material_ids
-                or self.assigned_knowledge_card_ids
-                or self.document_status != "not_created"
-            ):
-                raise ValueError("Missing new-page revision cannot carry document lineage.")
-            return self
-        identity = revision.new_page_document_identity
-        if not (
-            revision.document_kind == "new_page"
-            and revision.final_canonical_url is None
-            and identity is not None
-            and revision.work_item_id == self.work_item_id
-            and revision.planning_digest == self.planning_digest
-            and revision.planning_input_digest == self.planning_input_digest
-            and identity.brief_id == self.brief_id
-            and identity.brief_digest == self.brief_digest
-            and identity.foundation_id == self.foundation_id
-            and identity.service_card_id == self.service_card_id
-            and identity.service_card_digest == self.service_card_digest
-            and identity.proposed_ia_location == self.proposed_ia_location
-        ):
-            raise ValueError("Canonical revision does not match the exact new-page workspace.")
-        if (
-            self.assigned_source_material_ids != revision.source_material_ids
-            or self.assigned_knowledge_card_ids != revision.knowledge_card_ids
-        ):
-            raise ValueError("Workspace lineage must match the canonical new-page revision.")
-        review = self.revision_review
-        expected_status = "unreviewed" if review is None else review.decision
-        if (
-            self.document_status != expected_status
-            or (
-                review is not None
-                and (
-                    review.revision_id != revision.revision_id
-                    or review.revision_digest != revision.content_digest
-                )
-            )
-        ):
-            raise ValueError("Workspace review must match the canonical revision and status.")
+        _validate_plan_review(self)
+        if self.canonical_revision is None:
+            _validate_workspace_without_revision(self)
+        else:
+            _validate_workspace_with_revision(self)
         return self
+
+
+def _validate_plan_review(workspace: ContentNewPageCanonicalDocumentWorkspace) -> None:
+    review = workspace.plan_review
+    if review is None:
+        return
+    if not (
+        workspace.proposal_id is not None
+        and workspace.planning_digest is not None
+        and workspace.planning_input_digest is not None
+        and review.work_item_id == workspace.work_item_id
+        and review.stage == "scope"
+        and review.planning_digest == workspace.planning_digest
+        and review.service_card_id == workspace.service_card_id
+    ):
+        raise ValueError("Plan review does not match the exact new-page workspace.")
+
+
+def _validate_workspace_without_revision(
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+) -> None:
+    if (
+        workspace.revision_review is not None
+        or workspace.assigned_source_material_ids
+        or workspace.assigned_knowledge_card_ids
+        or workspace.document_status != "not_created"
+    ):
+        raise ValueError("Missing new-page revision cannot carry document lineage.")
+    if workspace.status not in {"review_required", "ready_for_document", "blocked"}:
+        raise ValueError("Document workspace status requires a canonical revision.")
+    has_exact_plan_identity = all(
+        value is not None
+        for value in (
+            workspace.proposal_id,
+            workspace.planning_digest,
+            workspace.planning_input_digest,
+        )
+    )
+    if workspace.status == "blocked":
+        if has_exact_plan_identity or workspace.plan_review is not None:
+            raise ValueError("Blocked new-page workspace cannot carry a current plan.")
+        return
+    if not has_exact_plan_identity:
+        raise ValueError("New-page plan state requires exact proposal identity.")
+    expected_status = (
+        "ready_for_document"
+        if workspace.plan_review is not None and workspace.plan_review.decision == "approved"
+        else "review_required"
+    )
+    if workspace.status != expected_status:
+        raise ValueError("Workspace status must match the exact plan review state.")
+
+
+def _validate_workspace_with_revision(
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+) -> None:
+    revision = workspace.canonical_revision
+    assert revision is not None
+    identity = revision.new_page_document_identity
+    if not (
+        revision.document_kind == "new_page"
+        and revision.final_canonical_url is None
+        and identity is not None
+        and revision.work_item_id == workspace.work_item_id
+        and revision.planning_digest == workspace.planning_digest
+        and revision.planning_input_digest == workspace.planning_input_digest
+        and identity.brief_id == workspace.brief_id
+        and identity.brief_digest == workspace.brief_digest
+        and identity.foundation_id == workspace.foundation_id
+        and identity.service_card_id == workspace.service_card_id
+        and identity.service_card_digest == workspace.service_card_digest
+        and identity.proposed_ia_location == workspace.proposed_ia_location
+    ):
+        raise ValueError("Canonical revision does not match the exact new-page workspace.")
+    if (
+        workspace.assigned_source_material_ids != revision.source_material_ids
+        or workspace.assigned_knowledge_card_ids != revision.knowledge_card_ids
+    ):
+        raise ValueError("Workspace lineage must match the canonical new-page revision.")
+    _validate_workspace_revision_review(workspace, revision)
+    if workspace.plan_review is None or workspace.plan_review.decision != "approved":
+        raise ValueError("Canonical new-page revision requires an approved exact plan review.")
+
+
+def _validate_workspace_revision_review(
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+    revision: ContentDraftRevision,
+) -> None:
+    review = workspace.revision_review
+    expected_document_status = "unreviewed" if review is None else review.decision
+    if (
+        workspace.document_status != expected_document_status
+        or (
+            review is not None
+            and (
+                review.revision_id != revision.revision_id
+                or review.revision_digest != revision.content_digest
+            )
+        )
+    ):
+        raise ValueError("Workspace review must match the canonical revision and status.")
+    if workspace.document_status == "not_created":
+        raise ValueError("Canonical new-page revision requires a document status.")
+    expected_workspace_status = {
+        "unreviewed": "document_review_required",
+        "approved": "document_approved",
+        "needs_changes": "document_needs_changes",
+        "rejected": "document_rejected",
+        "deferred": "document_deferred",
+    }[workspace.document_status]
+    if workspace.status != expected_workspace_status:
+        raise ValueError("Workspace status must match the canonical document status.")
 
 
 class ContentNewPagePlanningReviewCommand(BaseModel):
@@ -337,6 +427,7 @@ def _next_step(plan_approved: bool, document_status: str) -> str:
 
 __all__ = [
     "ContentNewPageCanonicalDocumentWorkspace",
+    "ContentNewPageDocumentReviewPrerequisiteConflict",
     "ContentNewPageDocumentOutlineSection",
     "ContentNewPagePlanningReviewCommand",
     "build_new_page_canonical_document_workspace",

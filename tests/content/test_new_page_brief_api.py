@@ -18,6 +18,7 @@ from wilq.content.workflow.new_page import (
 )
 from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
+    ContentNewPageDocumentReviewPrerequisiteConflict,
 )
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionConflict,
@@ -53,6 +54,9 @@ def test_new_page_plan_review_returns_the_current_typed_workspace_on_conflict(
         lambda brief_id: workspace,
     )
     monkeypatch.setattr(
+        new_page_router_module, "_new_page_document_review_prerequisite", lambda brief_id: None
+    )
+    monkeypatch.setattr(
         new_page_router_module,
         "content_workflow_store",
         lambda: (_ for _ in ()).throw(AssertionError("Conflict must not record review state.")),
@@ -80,9 +84,14 @@ def test_new_page_plan_review_returns_the_current_typed_workspace_on_conflict(
     assert parsed.planning_input_digest == workspace.planning_input_digest
     assert app.openapi()["paths"][
         "/api/content/new-page-briefs/{brief_id}/planning-review"
-    ]["post"]["responses"]["409"]["content"]["application/json"]["schema"] == {
-        "$ref": "#/components/schemas/ContentNewPageCanonicalDocumentWorkspace"
-    }
+    ]["post"]["responses"]["409"]["content"]["application/json"]["schema"]["anyOf"] == [
+        {"$ref": "#/components/schemas/ContentNewPageCanonicalDocumentWorkspace"},
+        {
+            "$ref": (
+                "#/components/schemas/ContentNewPageDocumentReviewPrerequisiteConflict"
+            )
+        },
+    ]
 
 
 def test_new_page_plan_review_records_only_an_exact_current_decision(monkeypatch) -> None:
@@ -98,6 +107,9 @@ def test_new_page_plan_review_records_only_an_exact_current_decision(monkeypatch
         new_page_router_module,
         "_new_page_canonical_document_workspace",
         lambda brief_id: workspace,
+    )
+    monkeypatch.setattr(
+        new_page_router_module, "_new_page_document_review_prerequisite", lambda brief_id: None
     )
     monkeypatch.setattr(new_page_router_module, "content_workflow_store", PlanningStore)
     app = FastAPI()
@@ -136,6 +148,9 @@ def test_new_page_revision_review_preserves_typed_current_revision_conflict(
         new_page_router_module,
         "_new_page_canonical_document_workspace",
         lambda brief_id: workspace,
+    )
+    monkeypatch.setattr(
+        new_page_router_module, "_new_page_document_review_prerequisite", lambda brief_id: None
     )
     monkeypatch.setattr(
         new_page_router_module,
@@ -177,9 +192,75 @@ def test_new_page_revision_review_preserves_typed_current_revision_conflict(
     }
     assert app.openapi()["paths"][
         "/api/content/new-page-briefs/{brief_id}/draft-revisions/{revision_id}/review"
-    ]["post"]["responses"]["409"]["content"]["application/json"]["schema"] == {
-        "$ref": "#/components/schemas/ContentDraftRevisionConflictResponse"
-    }
+    ]["post"]["responses"]["409"]["content"]["application/json"]["schema"]["anyOf"] == [
+        {"$ref": "#/components/schemas/ContentDraftRevisionConflictResponse"},
+        {
+            "$ref": (
+                "#/components/schemas/ContentNewPageDocumentReviewPrerequisiteConflict"
+            )
+        },
+    ]
+
+
+def test_new_page_review_routes_return_typed_prerequisite_conflicts_without_foundation(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "new-page-review-prerequisite.sqlite3"))
+    monkeypatch.setattr(
+        new_page_router_module,
+        "content_workflow_store",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("Missing foundation must not persist review.")
+        ),
+    )
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app)
+    created = client.post(
+        "/api/content/new-page-briefs",
+        json={
+            "title": "Dokumentacja środowiskowa inwestycji",
+            "purpose": "Pomóc inwestorowi przygotować dokumentację środowiskową.",
+            "service": "Dokumentacja środowiskowa",
+            "audience": "Inwestor przygotowujący przedsięwzięcie",
+            "search_intent": "dokumentacja środowiskowa inwestycji",
+            "proposed_ia_location": "Usługi → Dokumentacja środowiskowa",
+        },
+    )
+    assert created.status_code == 200
+    brief_id = created.json()["brief"]["brief_id"]
+
+    plan = client.post(
+        f"/api/content/new-page-briefs/{brief_id}/planning-review",
+        json={
+            "expected_proposal_id": "content_planning_proposal_missing",
+            "expected_planning_digest": "a" * 64,
+            "expected_planning_input_digest": "b" * 64,
+            "decision": "approved",
+            "reviewed_by": "Wilku",
+            "checked_items": ["Zakres planu"],
+        },
+    )
+    revision = client.post(
+        f"/api/content/new-page-briefs/{brief_id}/draft-revisions/content_revision_missing/review",
+        json={
+            "expected_revision_digest": "c" * 64,
+            "reviewed_by": "Wilku",
+            "decision": "approved",
+            "checked_items": ["Dokument"],
+            "evidence_ids": ["ev_service"],
+        },
+    )
+
+    for response in (plan, revision):
+        assert response.status_code == 409
+        assert "detail" not in response.json()
+        parsed = ContentNewPageDocumentReviewPrerequisiteConflict.model_validate(
+            response.json()
+        )
+        assert parsed.brief_id == brief_id
+        assert parsed.code == "missing_planning_foundation"
 
 
 def test_new_page_brief_persists_without_a_public_url_and_requires_human_overlap_decision(
