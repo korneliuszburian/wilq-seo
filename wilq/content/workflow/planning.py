@@ -15,6 +15,7 @@ from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.new_page import ContentNewPageDocumentIdentity
 
 ContentPlanningStage = Literal["scope", "section_map"]
 ContentPlanningDecisionValue = Literal["approved", "needs_changes"]
@@ -133,7 +134,10 @@ class ContentPlanningProposal(BaseModel):
         default=None,
         pattern=r"^[0-9a-f]{64}$",
     )
-    final_canonical_url: str = Field(min_length=1)
+    goal: Literal["refresh_existing", "new_page"] = "refresh_existing"
+    final_canonical_url: str | None = None
+    proposed_ia_location: str | None = None
+    new_page_document_identity: ContentNewPageDocumentIdentity | None = None
     service_card_id: str | None = None
     service_label: str | None = None
     service_selection_confirmed: bool = False
@@ -166,6 +170,33 @@ class ContentPlanningProposal(BaseModel):
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
     created_at: datetime | None = None
+
+    @model_validator(mode="after")
+    def require_goal_identity(self) -> ContentPlanningProposal:
+        if self.goal == "refresh_existing":
+            if not self.final_canonical_url or not self.final_canonical_url.strip():
+                raise ValueError("Refresh proposal requires final_canonical_url.")
+            if self.proposed_ia_location is not None or self.new_page_document_identity is not None:
+                raise ValueError("Refresh proposal cannot carry new-page identity.")
+        else:
+            if self.final_canonical_url is not None:
+                raise ValueError("New-page proposal cannot claim a public canonical URL.")
+            if (
+                self.proposed_ia_location is None
+                or len(self.proposed_ia_location.strip()) < 3
+                or self.new_page_document_identity is None
+            ):
+                raise ValueError("New-page proposal requires exact IA and document identity.")
+            if self.new_page_document_identity.work_item_id != self.work_item_id:
+                raise ValueError("New-page proposal identity must match the work item.")
+            if (
+                self.new_page_document_identity.proposed_ia_location
+                != self.proposed_ia_location
+            ):
+                raise ValueError("New-page proposal identity must match the IA location.")
+            if self.inventory_mapping:
+                raise ValueError("New-page proposal cannot carry existing-page inventory mapping.")
+        return self
 
 
 class ContentPlanningDecision(BaseModel):

@@ -628,6 +628,12 @@ export const ContentNewPageDocumentIdentitySchema = z.object({
   public_deployment_id: z.null()
 });
 
+export const ContentNewPagePlanningProposalRequestSchema = z.object({
+  expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  requested_by: z.string().trim().min(1).max(160),
+  operator_hint: z.string().max(500).default("")
+}).strict();
+
 export const ContentNewPageFoundationResultSchema = z.object({
   status: z.enum(["created", "idempotent", "blocked", "conflict"]),
   foundation: ContentNewPagePlanningFoundationSchema.nullable().optional(),
@@ -3407,7 +3413,10 @@ export const ContentPlanningProposalSchema = z.object({
   input_schema_version: z.string().default("wilq_content_planning_input_v1"),
   criteria_version: z.string().default("wilq_people_first_planning_v5"),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
-  final_canonical_url: z.string().min(1),
+  goal: z.enum(["refresh_existing", "new_page"]).default("refresh_existing"),
+  final_canonical_url: z.string().min(1).nullable().optional(),
+  proposed_ia_location: z.string().trim().min(3).nullable().optional(),
+  new_page_document_identity: ContentNewPageDocumentIdentitySchema.nullable().optional(),
   service_card_id: z.string().nullable(),
   service_label: z.string().nullable(),
   service_selection_confirmed: z.boolean().default(false),
@@ -3467,6 +3476,27 @@ export const ContentPlanningProposalSchema = z.object({
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
   created_at: z.string().nullable().optional()
+}).superRefine((proposal, context) => {
+  if (proposal.goal === "refresh_existing") {
+    if (!proposal.final_canonical_url?.trim()) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["final_canonical_url"], message: "Refresh proposal requires final_canonical_url." });
+    }
+    if (proposal.proposed_ia_location || proposal.new_page_document_identity) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Refresh proposal cannot carry new-page identity." });
+    }
+    return;
+  }
+  if (proposal.final_canonical_url !== null || !proposal.proposed_ia_location?.trim() || !proposal.new_page_document_identity) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "New-page proposal requires exact IA and document identity without a public URL." });
+    return;
+  }
+  if (
+    proposal.new_page_document_identity.work_item_id !== proposal.work_item_id ||
+    proposal.new_page_document_identity.proposed_ia_location !== proposal.proposed_ia_location ||
+    (proposal.inventory_mapping?.length ?? 0) > 0
+  ) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "New-page proposal identity or inventory is contradictory." });
+  }
 });
 
 export const ContentPlanningWorkspaceSchema = z.object({
@@ -3726,6 +3756,14 @@ export const ContentPlanningProposalResponseSchema = z.object({
       message: "Planning input digest requires its exact input summary."
     });
   }
+});
+
+export const ContentNewPagePlanningProposalWorkspaceSchema = z.object({
+  response_type: z.literal("content_new_page_planning_proposal_workspace"),
+  contract_version: z.literal("content_new_page_planning_proposal_workspace_v1"),
+  brief_id: z.string().min(1),
+  readiness: ContentPlanningInputReadinessResponseSchema,
+  proposal_status: ContentPlanningProposalResponseSchema.nullable().optional()
 });
 
 export const ContentInitialDraftRequestSchema = z.object({
@@ -4391,6 +4429,12 @@ export type ContentPlanningInputReadinessResponse = z.infer<
 >;
 export type ContentNewPageDocumentIdentity = z.infer<
   typeof ContentNewPageDocumentIdentitySchema
+>;
+export type ContentNewPagePlanningProposalRequest = z.input<
+  typeof ContentNewPagePlanningProposalRequestSchema
+>;
+export type ContentNewPagePlanningProposalWorkspace = z.infer<
+  typeof ContentNewPagePlanningProposalWorkspaceSchema
 >;
 export type ContentPlanningProposalRequest = z.input<
   typeof ContentPlanningProposalRequestSchema

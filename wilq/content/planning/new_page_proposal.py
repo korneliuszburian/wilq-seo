@@ -1,0 +1,378 @@
+from __future__ import annotations
+
+import json
+from hashlib import sha256
+from typing import Literal
+from uuid import uuid4
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from wilq.codex.app_server import CodexAppServerClientProtocol
+from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.knowledge.cards import ContentKnowledgeCard
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInput,
+    ContentPlanningInputBuildResult,
+    ContentPlanningInputReadinessResponse,
+    build_new_page_planning_input,
+    content_planning_input_readiness,
+    content_planning_input_summary,
+)
+from wilq.content.planning.generated_proposal import _run_planning_turn
+from wilq.content.planning.generated_proposal_contracts import (
+    ContentPlanningModelOutput,
+    ContentPlanningProposalBlocker,
+    ContentPlanningProposalResponse,
+)
+from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
+from wilq.content.workflow.new_page import (
+    ContentNewPageBrief,
+    ContentNewPageOverlapGuard,
+    ContentNewPagePlanningFoundation,
+    build_new_page_document_identity,
+)
+from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
+from wilq.schemas import CodexRun
+from wilq.schemas.core import utc_now
+from wilq.storage.local_state import LocalStateStore
+
+
+class ContentNewPagePlanningProposalRequest(BaseModel):
+    """A command tied to the ready input; it cannot select another service."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    expected_planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    requested_by: str = Field(min_length=1, max_length=160)
+    operator_hint: str = Field(default="", max_length=500)
+
+    @model_validator(mode="after")
+    def require_visible_requester(self) -> ContentNewPagePlanningProposalRequest:
+        self.requested_by = self.requested_by.strip()
+        self.operator_hint = self.operator_hint.strip()
+        if not self.requested_by:
+            raise ValueError("Planning generation requires requester attribution.")
+        return self
+
+
+class ContentNewPagePlanningProposalWorkspace(BaseModel):
+    """Read model for one brief's plan, never a refresh-workflow snapshot."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    response_type: Literal["content_new_page_planning_proposal_workspace"] = (
+        "content_new_page_planning_proposal_workspace"
+    )
+    contract_version: Literal["content_new_page_planning_proposal_workspace_v1"] = (
+        "content_new_page_planning_proposal_workspace_v1"
+    )
+    brief_id: str = Field(min_length=1)
+    readiness: ContentPlanningInputReadinessResponse
+    proposal_status: ContentPlanningProposalResponse | None = None
+
+
+def build_new_page_planning_proposal_workspace(
+    *,
+    brief: ContentNewPageBrief,
+    foundation: ContentNewPagePlanningFoundation | None,
+    overlap_guard: ContentNewPageOverlapGuard,
+    service_card: ContentKnowledgeCard | None,
+    store: ContentPlanningProposalStore,
+) -> ContentNewPagePlanningProposalWorkspace:
+    result = build_new_page_planning_input(
+        brief=brief,
+        foundation=foundation,
+        overlap_guard=overlap_guard,
+        service_card=service_card,
+    )
+    readiness = content_planning_input_readiness(
+        result,
+        work_item_id=foundation.work_item_id if foundation is not None else None,
+    )
+    return ContentNewPagePlanningProposalWorkspace(
+        brief_id=brief.brief_id,
+        readiness=readiness,
+        proposal_status=(
+            _read_proposal(
+                planning_input=result.planning_input,
+                store=store,
+            )
+            if result.planning_input is not None
+            else None
+        ),
+    )
+
+
+def generate_new_page_planning_proposal(
+    *,
+    workspace: ContentNewPagePlanningProposalWorkspace,
+    build_result: ContentPlanningInputBuildResult,
+    request: ContentNewPagePlanningProposalRequest,
+    client: CodexAppServerClientProtocol,
+    store: ContentPlanningProposalStore,
+    run_store: LocalStateStore,
+    endpoint_path: str,
+) -> ContentNewPagePlanningProposalWorkspace:
+    """Run only after the workspace has rebuilt the exact current input."""
+
+    if build_result.planning_input is None:
+        return workspace
+    planning_input = build_result.planning_input
+    response = _generate_proposal(
+        planning_input,
+        request,
+        client=client,
+        store=store,
+        run_store=run_store,
+        endpoint_path=endpoint_path,
+    )
+    return workspace.model_copy(update={"proposal_status": response})
+
+
+def queue_new_page_planning_proposal(
+    *,
+    workspace: ContentNewPagePlanningProposalWorkspace,
+    build_result: ContentPlanningInputBuildResult,
+    request: ContentNewPagePlanningProposalRequest,
+    store: ContentPlanningProposalStore,
+) -> tuple[ContentNewPagePlanningProposalWorkspace, bool]:
+    """Atomically queue at most one model turn for one exact new-page input."""
+
+    if build_result.planning_input is None:
+        return workspace, False
+    planning_input = build_result.planning_input
+    response, outcome = _queue_proposal(planning_input, request, store)
+    return workspace.model_copy(update={"proposal_status": response}), outcome == "queued"
+
+
+def _read_proposal(
+    *, planning_input: ContentPlanningInput, store: ContentPlanningProposalStore
+) -> ContentPlanningProposalResponse:
+    queued = store.queued_response(
+        planning_input.work_item_id,
+        planning_input.confirmed_service_card_id,
+        planning_input.planning_input_digest,
+    )
+    if queued is not None:
+        return queued
+    proposal = store.for_input(
+        planning_input.work_item_id,
+        planning_input.confirmed_service_card_id,
+        planning_input.planning_input_digest,
+    )
+    if proposal is None:
+        return ContentPlanningProposalResponse(
+            status="not_generated",
+            work_item_id=planning_input.work_item_id,
+            service_card_id=planning_input.confirmed_service_card_id,
+            planning_input_digest=planning_input.planning_input_digest,
+            input_summary=content_planning_input_summary(planning_input),
+            safe_next_step="Przygotuj pierwszy plan i sprawdź go przed decyzją człowieka.",
+        )
+    return ContentPlanningProposalResponse(
+        status="ready",
+        work_item_id=planning_input.work_item_id,
+        service_card_id=planning_input.confirmed_service_card_id,
+        planning_input_digest=planning_input.planning_input_digest,
+        input_summary=content_planning_input_summary(planning_input),
+        proposal=proposal,
+        safe_next_step="Sprawdź plan; tylko człowiek może go zatwierdzić.",
+    )
+
+
+def _queue_proposal(
+    planning_input: ContentPlanningInput,
+    request: ContentNewPagePlanningProposalRequest,
+    store: ContentPlanningProposalStore,
+) -> tuple[ContentPlanningProposalResponse, str]:
+    summary = content_planning_input_summary(planning_input)
+    if request.expected_planning_input_digest != planning_input.planning_input_digest:
+        return _stale_response(planning_input), "stale"
+    existing = store.for_input(
+        planning_input.work_item_id,
+        planning_input.confirmed_service_card_id,
+        planning_input.planning_input_digest,
+    )
+    if existing is not None:
+        return ContentPlanningProposalResponse(
+            status="idempotent",
+            work_item_id=planning_input.work_item_id,
+            service_card_id=planning_input.confirmed_service_card_id,
+            planning_input_digest=planning_input.planning_input_digest,
+            input_summary=summary,
+            proposal=existing,
+            safe_next_step=(
+                "Plan już istnieje dla tego exact wejścia; "
+                "model nie został uruchomiony ponownie."
+            ),
+        ), "idempotent"
+    queued = ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id=planning_input.work_item_id,
+        service_card_id=planning_input.confirmed_service_card_id,
+        planning_input_digest=planning_input.planning_input_digest,
+        input_summary=summary,
+        safe_next_step="Plan jest przygotowywany; odśwież ten widok po zakończeniu.",
+    )
+    return queued, store.enqueue(queued)
+
+
+def _generate_proposal(
+    planning_input: ContentPlanningInput,
+    request: ContentNewPagePlanningProposalRequest,
+    *,
+    client: CodexAppServerClientProtocol,
+    store: ContentPlanningProposalStore,
+    run_store: LocalStateStore,
+    endpoint_path: str,
+) -> ContentPlanningProposalResponse:
+    if request.expected_planning_input_digest != planning_input.planning_input_digest:
+        return _stale_response(planning_input)
+    existing = store.for_input(
+        planning_input.work_item_id,
+        planning_input.confirmed_service_card_id,
+        planning_input.planning_input_digest,
+    )
+    if existing is not None:
+        return _queue_proposal(planning_input, request, store)[0]
+    run = run_store.save_codex_run(
+        CodexRun(
+            id=f"codex_content_planning_{uuid4().hex}",
+            skill="wilq-content-operator",
+            hook="content_planning_proposal",
+            source="wilq_api",
+            status="started",
+            used_endpoints=[endpoint_path],
+            evidence_ids=planning_input.evidence_ids,
+            planning_input_digest=planning_input.planning_input_digest,
+        )
+    )
+    output, trace, blocker, status = _run_planning_turn(
+        planning_input=planning_input, operator_hint=request.operator_hint, client=client
+    )
+    if blocker is not None:
+        run_store.save_codex_run(
+            run.model_copy(
+                update={"status": status, "completed_at": utc_now(), "error": blocker.code}
+            )
+        )
+        return ContentPlanningProposalResponse(
+            status=status,
+            work_item_id=planning_input.work_item_id,
+            service_card_id=planning_input.confirmed_service_card_id,
+            planning_input_digest=planning_input.planning_input_digest,
+            input_summary=content_planning_input_summary(planning_input),
+            runtime=(trace or ContentCodexRuntimeTrace(status=status)).model_copy(
+                update={"run_id": run.id}
+            ),
+            blockers=[blocker],
+            safe_next_step=blocker.next_step,
+        )
+    assert output is not None
+    completed = run.model_copy(
+        update={"status": "completed", "completed_at": utc_now(), "error": None}
+    )
+    proposal = _proposal_from_output(planning_input, output, completed)
+    saved_status, saved = store.save_generated(proposal, completed)
+    return ContentPlanningProposalResponse(
+        status="created" if saved_status == "created" else "idempotent",
+        work_item_id=planning_input.work_item_id,
+        service_card_id=planning_input.confirmed_service_card_id,
+        planning_input_digest=planning_input.planning_input_digest,
+        input_summary=content_planning_input_summary(planning_input),
+        proposal=saved,
+        runtime=(trace or ContentCodexRuntimeTrace(status="completed")).model_copy(
+            update={"run_id": run.id}
+        ),
+        safe_next_step="Sprawdź plan; tylko człowiek może go zatwierdzić.",
+    )
+
+
+def _stale_response(planning_input: ContentPlanningInput) -> ContentPlanningProposalResponse:
+    blocker = ContentPlanningProposalBlocker(
+        code="stale_input",
+        label="Wejście planu zmieniło się",
+        reason="Polecenie nie wskazuje bieżącego exact digestu wejścia.",
+        next_step="Odśwież wejście i uruchom świadomie nową wersję planu.",
+    )
+    return ContentPlanningProposalResponse(
+        status="stale",
+        work_item_id=planning_input.work_item_id,
+        service_card_id=planning_input.confirmed_service_card_id,
+        planning_input_digest=planning_input.planning_input_digest,
+        input_summary=content_planning_input_summary(planning_input),
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
+
+
+def _proposal_from_output(
+    planning_input: ContentPlanningInput, output: ContentPlanningModelOutput, run: CodexRun
+) -> ContentPlanningProposal:
+    foundation = planning_input.new_page_foundation
+    assert foundation is not None and planning_input.proposed_ia_location is not None
+    proposal_id = f"content_planning_proposal_{uuid4().hex}"
+    proposal = ContentPlanningProposal(
+        work_item_id=planning_input.work_item_id,
+        planning_digest="0" * 64,
+        proposal_id=proposal_id,
+        codex_run_id=run.id,
+        generation_status="codex_generated",
+        input_schema_version=planning_input.schema_name,
+        criteria_version=planning_input.criteria_version,
+        planning_input_digest=planning_input.planning_input_digest,
+        goal="new_page",
+        final_canonical_url=None,
+        proposed_ia_location=planning_input.proposed_ia_location,
+        new_page_document_identity=build_new_page_document_identity(
+            foundation=foundation,
+            proposed_ia_location=planning_input.proposed_ia_location,
+        ),
+        service_card_id=planning_input.confirmed_service_card_id,
+        service_label=planning_input.service_label,
+        service_selection_confirmed=True,
+        target_reader=output.target_reader,
+        buyer_problem=output.buyer_problem,
+        buyer_trigger=output.buyer_trigger,
+        search_intent=output.search_intent,
+        angle=output.angle,
+        value_proposition=output.value_proposition,
+        cta_direction=output.cta_blocks[0].copy_direction,
+        sections=[
+            ContentPlanningSection(
+                section_id=f"{proposal_id}_section_{index:02d}", **section.model_dump()
+            )
+            for index, section in enumerate(output.sections, start=1)
+        ],
+        inventory_mapping=[],
+        search_demand=planning_input.query_portfolio,
+        page_assets=output.page_assets,
+        faq=output.faq,
+        cta_blocks=output.cta_blocks,
+        internal_links=output.internal_links,
+        conditional_hypotheses=output.conditional_hypotheses,
+        measurement_plan=output.measurement_plan,
+        evidence_ids=planning_input.evidence_ids,
+        source_connectors=planning_input.source_connectors,
+        source_material_ids=sorted(
+            {item for fact in planning_input.source_facts for item in fact.source_material_ids}
+        ),
+        knowledge_card_ids=planning_input.knowledge_card_ids,
+        created_at=run.completed_at,
+    )
+    payload = proposal.model_dump(
+        mode="json", exclude={"planning_digest", "proposal_version", "created_at"}
+    )
+    digest = sha256(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    return proposal.model_copy(update={"planning_digest": digest})
+
+
+__all__ = [
+    "ContentNewPagePlanningProposalRequest",
+    "ContentNewPagePlanningProposalWorkspace",
+    "build_new_page_planning_proposal_workspace",
+    "generate_new_page_planning_proposal",
+    "queue_new_page_planning_proposal",
+]
