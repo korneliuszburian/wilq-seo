@@ -19,8 +19,10 @@ from wilq.content.workflow.new_page import (
 )
 from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
+    ContentNewPageDeliveryReadiness,
     ContentNewPagePlanningReviewCommand,
     build_new_page_canonical_document_workspace,
+    build_new_page_delivery_readiness,
 )
 from wilq.content.workflow.new_page_initial_draft import generate_new_page_initial_draft
 from wilq.content.workflow.new_page_revision import (
@@ -120,6 +122,51 @@ def test_new_page_canonical_document_requires_exact_approved_plan() -> None:
     assert pending.document_status == "not_created"
     assert pending.public_source_status == "not_applicable"
     assert pending.public_deployment_status == "not_confirmed"
+
+
+def test_new_page_delivery_readiness_fails_closed_before_exact_approval() -> None:
+    foundation, proposal = _exact_inputs()
+    brief = build_new_page_brief(
+        ContentNewPageBriefInput(
+            title="Dokumentacja środowiskowa inwestycji",
+            purpose="Pomóc inwestorowi przygotować dokumentację środowiskową.",
+            service="Dokumentacja środowiskowa",
+            audience="Inwestor przygotowujący przedsięwzięcie",
+            search_intent="dokumentacja środowiskowa inwestycji",
+            proposed_ia_location="Usługi → Dokumentacja środowiskowa",
+        )
+    ).model_copy(update={"brief_id": foundation.brief_id, "brief_digest": foundation.brief_digest})
+    workspace = build_new_page_canonical_document_workspace(
+        brief=brief, foundation=foundation, proposal=proposal, decisions=[]
+    )
+    assert workspace is not None
+
+    blocked = build_new_page_delivery_readiness(
+        workspace,
+        allowed_content_types=["page", "post"],
+        authoring_profile_digest="a" * 64,
+        evidence_ids=["ev_wordpress_profile"],
+    )
+
+    assert blocked.status == "blocked"
+    assert blocked.revision_id is None
+    with pytest.raises(ValueError, match="Ready new-page delivery"):
+        ContentNewPageDeliveryReadiness(
+            status="ready_for_action",
+            work_item_id=foundation.work_item_id,
+            safe_next_step="Nie powinno przejść.",
+        )
+    ready = ContentNewPageDeliveryReadiness(
+        status="ready_for_action",
+        work_item_id=foundation.work_item_id,
+        revision_id="revision_new_page_exact",
+        revision_digest="b" * 64,
+        allowed_content_types=["page"],
+        authoring_profile_digest="c" * 64,
+        evidence_ids=["ev_wordpress_profile"],
+        safe_next_step="Wybierz typ nowego draftu.",
+    )
+    assert ready.status == "ready_for_action"
 
     decision = ContentPlanningDecision(
         decision_id="content_planning_review_test",

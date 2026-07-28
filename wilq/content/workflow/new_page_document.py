@@ -439,10 +439,115 @@ def _next_step(plan_approved: bool, document_status: str) -> str:
     return "Sprawdź uwagi do rewizji przed przygotowaniem kolejnej immutable wersji."
 
 
+class ContentNewPageDeliveryReadiness(BaseModel):
+    """Read-only gate before a new-page ActionObject can be created.
+
+    The gate deliberately records only observed authoring capabilities and the
+    exact approved revision. It neither selects a content type nor touches a
+    WordPress adapter.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    response_type: Literal["content_new_page_delivery_readiness"] = (
+        "content_new_page_delivery_readiness"
+    )
+    contract_version: Literal["content_new_page_delivery_readiness_v1"] = (
+        "content_new_page_delivery_readiness_v1"
+    )
+    status: Literal["ready_for_action", "blocked"]
+    work_item_id: str = Field(min_length=1)
+    revision_id: str | None = None
+    revision_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    allowed_content_types: list[Literal["page", "post"]] = Field(default_factory=list)
+    authoring_profile_digest: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    evidence_ids: list[str] = Field(default_factory=list)
+    blockers: list[str] = Field(default_factory=list)
+    safe_next_step: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_exact_ready_action(self) -> ContentNewPageDeliveryReadiness:
+        if self.status == "ready_for_action":
+            if not (
+                self.revision_id
+                and self.revision_digest
+                and self.allowed_content_types
+                and self.authoring_profile_digest
+                and self.evidence_ids
+            ):
+                raise ValueError("Ready new-page delivery requires exact revision and capability.")
+            if self.blockers:
+                raise ValueError("Ready new-page delivery cannot carry blockers.")
+        elif self.revision_id is not None or self.revision_digest is not None:
+            raise ValueError("Blocked new-page delivery cannot expose an action revision.")
+        return self
+
+
+def build_new_page_delivery_readiness(
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+    *,
+    allowed_content_types: list[str],
+    authoring_profile_digest: str | None,
+    evidence_ids: list[str],
+) -> ContentNewPageDeliveryReadiness:
+    """Expose only a deterministic, non-writing delivery precondition."""
+
+    revision = workspace.canonical_revision
+    approved = (
+        workspace.status == "document_approved"
+        and workspace.document_status == "approved"
+        and revision is not None
+        and workspace.revision_review is not None
+        and workspace.revision_review.decision == "approved"
+    )
+    types = sorted({value for value in allowed_content_types if value in {"page", "post"}})
+    if not approved:
+        return _blocked_delivery_readiness(
+            workspace.work_item_id,
+            "Dokument wymaga exact human review przed przygotowaniem ActionObjectu.",
+        )
+    if not types or authoring_profile_digest is None or not evidence_ids:
+        return _blocked_delivery_readiness(
+            workspace.work_item_id,
+            "Brakuje obserwowanej capability WordPress potrzebnej do wyboru typu nowego draftu.",
+        )
+    return ContentNewPageDeliveryReadiness(
+        status="ready_for_action",
+        work_item_id=workspace.work_item_id,
+        revision_id=revision.revision_id,
+        revision_digest=revision.content_digest,
+        allowed_content_types=types,
+        authoring_profile_digest=authoring_profile_digest,
+        evidence_ids=sorted(set(evidence_ids)),
+        safe_next_step=(
+            "Wybierz jawnie page albo post z obserwowanych capability przed utworzeniem "
+            "lokalnego ActionObjectu."
+        ),
+    )
+
+
+def _blocked_delivery_readiness(
+    work_item_id: str, reason: str
+) -> ContentNewPageDeliveryReadiness:
+    return ContentNewPageDeliveryReadiness(
+        status="blocked",
+        work_item_id=work_item_id,
+        blockers=[reason],
+        safe_next_step=(
+            "Usuń blocker i odczytaj gotowość ponownie; "
+            "WILQ nie wybiera typu draftu samodzielnie."
+        ),
+    )
+
+
 __all__ = [
     "ContentNewPageCanonicalDocumentWorkspace",
     "ContentNewPageDocumentReviewPrerequisiteConflict",
     "ContentNewPageDocumentOutlineSection",
+    "ContentNewPageDeliveryReadiness",
     "ContentNewPagePlanningReviewCommand",
+    "build_new_page_delivery_readiness",
     "build_new_page_canonical_document_workspace",
 ]
