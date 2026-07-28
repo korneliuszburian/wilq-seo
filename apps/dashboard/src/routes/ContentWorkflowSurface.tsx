@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useNavigate, useParams, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 
 import {
@@ -28,12 +28,16 @@ import {
 export function ContentWorkflowSurface() {
   const navigate = useNavigate();
   const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
-  const selectedWorkItemId = stringFromSearch(routeSearch, "work_item_id");
+  const routeParams = useParams({ strict: false }) as { workItemId?: string };
+  const selectedWorkItemId = routeParams.workItemId ?? stringFromSearch(routeSearch, "work_item_id");
+  const contentView = useRouterState({
+    select: (state) => Reflect.get(state.location.search, "view")
+  });
   const reviewOpen = useRouterState({
-    select: (state) => Reflect.get(state.location.search, "review") === 1
+    select: (state) => Reflect.get(state.location.search, "view") === "review" || Reflect.get(state.location.search, "review") === 1
   });
   const browseInventory = useRouterState({
-    select: (state) => Reflect.get(state.location.search, "browse") === 1
+    select: (state) => Reflect.get(state.location.search, "view") === "browse" || Reflect.get(state.location.search, "browse") === 1
   });
   const newPageId = useRouterState({
     select: (state) => {
@@ -41,13 +45,14 @@ export function ContentWorkflowSurface() {
       return typeof value === "string" && value ? value : null;
     }
   });
-  const newPageOpen = Boolean(newPageId);
+  const newPageOpen = contentView === "new" || Boolean(newPageId);
   const selectWorkItem = (workItemId: string) => {
     void navigate({
-      to: "/content-workflow",
+      to: "/content-workflow/$workItemId",
+      params: { workItemId },
       search: (previous) => ({
-        ...previous,
-        work_item_id: workItemId,
+        ...contentWorkflowSearch(previous),
+        work_item_id: undefined,
         section_heading: undefined,
         planning_digest: undefined,
         workspace: undefined,
@@ -90,54 +95,58 @@ export function ContentWorkflowSurface() {
       onBrowseInventory={() => {
         void navigate({
           to: "/content-workflow",
-          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: 1, new_page: undefined })
+          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: undefined, new_page: undefined, view: "browse" })
         });
       }}
       onOpenNewPage={() => {
         void navigate({
           to: "/content-workflow",
-          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: undefined, new_page: "1" })
+          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: undefined, new_page: undefined, view: "new" })
         });
       }}
       onNewPageBriefSaved={(briefId) => {
         void navigate({
           to: "/content-workflow",
-          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: undefined, new_page: briefId })
+          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: undefined, new_page: briefId, view: "new" })
         });
       }}
       onCloseEntrySecondaryView={() => {
         void navigate({
           to: "/content-workflow",
-          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: undefined, new_page: undefined })
+          search: (previous) => ({ ...contentWorkflowSearch(previous), browse: undefined, new_page: undefined, view: undefined })
         });
       }}
       onOpenReview={(workItemId) => {
         void navigate({
-          to: "/content-workflow",
+          to: "/content-workflow/$workItemId",
+          params: { workItemId },
           search: (previous) => ({
-            work_item_id: workItemId,
+            work_item_id: undefined,
             section_heading: previous.section_heading,
             planning_digest: previous.planning_digest,
             workspace: undefined,
-            text: 1,
-            review: 1,
+            text: undefined,
+            review: undefined,
             browse: undefined,
-            new_page: undefined
+            new_page: undefined,
+            view: "review"
           })
         });
       }}
       onReturnToText={(workItemId) => {
         void navigate({
-          to: "/content-workflow",
+          to: "/content-workflow/$workItemId",
+          params: { workItemId },
           search: (previous) => ({
-            work_item_id: workItemId,
+            work_item_id: undefined,
             section_heading: previous.section_heading,
             planning_digest: previous.planning_digest,
             workspace: undefined,
-            text: 1,
+            text: undefined,
             review: undefined,
             browse: undefined,
-            new_page: undefined
+            new_page: undefined,
+            view: undefined
           })
         });
       }}
@@ -159,6 +168,7 @@ function contentWorkflowSearch(previous: {
   review?: 1;
   browse?: 1;
   new_page?: string;
+  view?: "review" | "browse" | "new";
 }) {
   return {
     work_item_id: previous.work_item_id,
@@ -168,7 +178,8 @@ function contentWorkflowSearch(previous: {
     text: previous.text,
     review: previous.review,
     browse: previous.browse,
-    new_page: previous.new_page
+    new_page: previous.new_page,
+    view: previous.view
   };
 }
 
