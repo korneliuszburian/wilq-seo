@@ -66,7 +66,9 @@ def confirm_public_deployment(
 
     if command.expected_revision_digest != revision.content_digest:
         raise ValueError("Potwierdzenie wskazuje inną wersję dokumentu.")
-    if not content_is_safe_public_url(revision.final_canonical_url):
+    if revision.document_kind != "new_page" and not content_is_safe_public_url(
+        revision.final_canonical_url
+    ):
         raise ValueError("Wdrożenie musi wskazywać bezpieczny publiczny adres Ekologus.")
     fact = _publication_fact(
         revision=revision,
@@ -90,7 +92,7 @@ def confirm_public_deployment(
         work_item_id=revision.work_item_id,
         revision_id=revision.revision_id,
         revision_digest=revision.content_digest,
-        public_url=revision.final_canonical_url,
+        public_url=_public_url_for_fact(revision, fact),
         wordpress_post_id=command.wordpress_post_id,
         publication_evidence_id=fact.evidence_id,
         publication_source_connector=fact.source_connector,
@@ -119,7 +121,7 @@ def public_deployment_observations(
             wordpress_post_id=object_id,
             publication_evidence_id=fact.evidence_id,
             publication_source_connector=fact.source_connector,
-            public_url=revision.final_canonical_url,
+            public_url=_public_url_for_fact(revision, fact),
             observed_at=observed_at,
         )
         key = (observation.wordpress_post_id, observation.publication_evidence_id)
@@ -155,20 +157,39 @@ def _publication_fact(
 
 
 def _is_publication_fact(*, revision: ContentDraftRevision, fact: MetricFact) -> bool:
-    return (
+    if not (
         fact.source_connector == "wordpress_ekologus"
         and fact.name == "content_object_seen"
         and bool(fact.dimensions.get("object_id"))
         and fact.dimensions.get("status") == "publish"
         and fact.collected_at is not None
-        and match_landing_page(
-            revision.final_canonical_url,
-            LandingPageCandidate(
-                candidate_id="wordpress_publication_observation",
-                url=str(fact.dimensions.get("content_url", "")),
-            ),
-        ).matched
-    )
+    ):
+        return False
+    public_url = str(fact.dimensions.get("content_url", ""))
+    if revision.document_kind == "new_page":
+        return revision.final_canonical_url is None and content_is_safe_public_url(public_url)
+    return match_landing_page(
+        revision.final_canonical_url,
+        LandingPageCandidate(
+            candidate_id="wordpress_publication_observation",
+            url=public_url,
+        ),
+    ).matched
+
+
+def _public_url_for_fact(revision: ContentDraftRevision, fact: MetricFact) -> str:
+    """Return only the URL already observed in the exact public fact.
+
+    Refreshes remain bound to their canonical URL. A new page has no canonical
+    public URL before an external publisher creates it, so the selected public
+    WordPress observation becomes the deployment URL rather than a caller-supplied
+    field.
+    """
+
+    if revision.document_kind == "new_page":
+        return str(fact.dimensions["content_url"])
+    assert revision.final_canonical_url is not None
+    return revision.final_canonical_url
 
 
 def _required_collected_at(fact: MetricFact) -> datetime:
