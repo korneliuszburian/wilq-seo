@@ -7,6 +7,8 @@ from wilq.content.workflow.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
     ContentNewPageDraftActionCommand,
     create_new_page_draft_action,
+    load_new_page_draft_action,
+    persist_new_page_draft_action,
 )
 
 
@@ -66,3 +68,16 @@ def test_new_page_draft_action_fails_closed_when_the_ready_binding_changes(
 ) -> None:
     with pytest.raises(ValueError, match=error):
         create_new_page_draft_action(_ready_readiness(), command)
+
+
+def test_new_page_draft_action_persists_only_its_local_creation_event(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "new-page-action.sqlite3"))
+    action = create_new_page_draft_action(_ready_readiness(), _command())
+
+    persisted = persist_new_page_draft_action(action)
+
+    assert persisted.id == action.id
+    assert load_new_page_draft_action(action.id) == persisted
