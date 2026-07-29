@@ -4319,6 +4319,7 @@ export const ContentSemanticReviewBlockerCodeSchema = z.enum([
   "legacy_revision",
   "stale_content_context",
   "missing_planning_input",
+  "source_material_review_required",
   "storage_activation_required",
   "runtime_blocked",
   "runtime_failed",

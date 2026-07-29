@@ -619,10 +619,17 @@ def _build_content_work_item_snapshot_response(
         ),
         None,
     )
+    proposal_confirms_service = _generated_proposal_confirms_service_selection(
+        item, generated_planning_proposal
+    )
     selected_service_card_id = (
-        None
-        if scope_planning_decision is None
-        else scope_planning_decision.service_card_id
+        scope_planning_decision.service_card_id
+        if scope_planning_decision is not None
+        else (
+            generated_planning_proposal.service_card_id
+            if proposal_confirms_service and generated_planning_proposal is not None
+            else None
+        )
     )
     if selected_service_card_id is not None:
         knowledge_match = select_content_knowledge_service_card(
@@ -633,7 +640,9 @@ def _build_content_work_item_snapshot_response(
         item,
         knowledge_match=knowledge_match,
         service_selection_confirmed=bool(
-            selected_service_card_id and knowledge_match.service_card is not None
+            selected_service_card_id
+            and knowledge_match.service_card is not None
+            and (scope_planning_decision is not None or proposal_confirms_service)
         ),
         human_override_review_required=bool(
             scope_planning_decision
@@ -682,6 +691,25 @@ def _build_content_work_item_snapshot_response(
         generated_planning_proposal=generated_planning_proposal,
         demand_metric_facts=demand_metric_facts,
         demand_source_page=demand_source_page,
+    )
+
+
+def _generated_proposal_confirms_service_selection(
+    item: ContentWorkItem,
+    proposal: ContentPlanningProposal | None,
+) -> bool:
+    """A current generated proposal can carry the chosen service without legacy scope review."""
+
+    return bool(
+        proposal
+        and proposal.work_item_id == item.id
+        and proposal.generation_status == "codex_generated"
+        and proposal.proposal_id
+        and proposal.planning_input_digest
+        and proposal.service_selection_confirmed
+        and proposal.service_card_id
+        and proposal.final_canonical_url
+        == (item.final_canonical_url or item.intended_final_url)
     )
 
 

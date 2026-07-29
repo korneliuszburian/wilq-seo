@@ -12,8 +12,7 @@ from tests.content.dynamic_planning_test_support import PlanningClient
 from tests.content.test_dynamic_planning_proposals_api import (
     BDO_WORK_ITEM_ID,
     OUTSOURCING_WORK_ITEM_ID,
-    _approve_and_generate,
-    _approve_generated_plan,
+    _generate_plan,
     _initial_draft_request,
     _snapshot,
 )
@@ -104,7 +103,7 @@ def test_full_draft_model_envelope_is_compact_but_digest_bound(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
+    proposal = _generate_plan(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
     del client, runtime, proposal
     snapshot = content_snapshot_router.snapshot_for_work_item_or_404(BDO_WORK_ITEM_ID)
     service_card_id = snapshot.service_profile_context.service_card_id
@@ -126,11 +125,10 @@ def test_semantic_review_is_exact_persisted_advisory_for_both_services(
     client, runtime = planning_harness
     expected_calls = 0
     for work_item_id in (BDO_WORK_ITEM_ID, OUTSOURCING_WORK_ITEM_ID):
-        proposal = _approve_and_generate(
+        proposal = _generate_plan(
             client, runtime, work_item_id, expected_calls=expected_calls
         )
         expected_calls += 1
-        _approve_generated_plan(client, work_item_id, proposal)
         initial = client.post(
             f"/api/content/work-items/{work_item_id}/initial-draft",
             json=_initial_draft_request(proposal),
@@ -191,8 +189,7 @@ def test_semantic_review_runtime_failure_leaves_no_partial_review(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
-    _approve_generated_plan(client, BDO_WORK_ITEM_ID, proposal)
+    proposal = _generate_plan(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
     revision = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/initial-draft",
         json=_initial_draft_request(proposal),
@@ -220,8 +217,7 @@ def test_semantic_review_rejects_external_attempt_without_partial_review(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
-    _approve_generated_plan(client, BDO_WORK_ITEM_ID, proposal)
+    proposal = _generate_plan(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
     revision = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/initial-draft",
         json=_initial_draft_request(proposal),
@@ -250,8 +246,7 @@ def test_semantic_review_real_store_requires_maintenance_before_model(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client, runtime = planning_harness
-    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
-    _approve_generated_plan(client, BDO_WORK_ITEM_ID, proposal)
+    proposal = _generate_plan(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
     revision = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/initial-draft",
         json=_initial_draft_request(proposal),
@@ -288,8 +283,7 @@ def test_semantic_finding_section_id_drives_only_a_human_selected_child_revision
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
-    _approve_generated_plan(client, BDO_WORK_ITEM_ID, proposal)
+    proposal = _generate_plan(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
     base_revision = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/initial-draft",
         json=_initial_draft_request(proposal),

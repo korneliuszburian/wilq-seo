@@ -44,6 +44,7 @@ import {
   ContentDraftRevisionReviewResponseSchema,
   ContentEditorialIntegrityReportSchema,
   ContentRevisionHtmlPackageResponseSchema,
+  ContentSemanticReviewResponseSchema,
   ContentPlanningProposalRequestSchema,
   ContentPlanningProposalResponseSchema,
   ContentServiceProfileResponseSchema,
@@ -136,6 +137,7 @@ import {
   type ContentDraftRevisionReviewResponse,
   type ContentEditorialIntegrityReport,
   type ContentRevisionHtmlPackageResponse,
+  type ContentSemanticReviewResponse,
   type ContentDraftRevisionSection,
   type ContentFreshnessAssessment,
   type ContentClaimLedger,
@@ -672,6 +674,16 @@ export function getContentWorkItemEditorialIntegrity(
   );
 }
 
+export function getContentWorkItemSemanticReview(
+  workItemId: string,
+  revisionId: string
+): Promise<ContentSemanticReviewResponse> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/semantic-review`,
+    ContentSemanticReviewResponseSchema
+  );
+}
+
 export function postContentWorkItemInitialDraft(
   request: ContentInitialDraftRequest,
   workItemId: string
@@ -915,6 +927,7 @@ export type {
   ContentDraftRevisionReviewResponse,
   ContentEditorialIntegrityReport,
   ContentRevisionHtmlPackageResponse,
+  ContentSemanticReviewResponse,
   ContentDraftRevisionSection,
   ContentFreshnessAssessment,
   ContentClaimLedger,

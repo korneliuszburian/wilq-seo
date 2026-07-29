@@ -7,6 +7,7 @@ import {
   reviewContentNewPageRevision,
   getActionMutationReadiness,
   getActionsMutationReadiness,
+  getContentWorkItemSemanticReview,
   postContentWorkItemInitialDraft,
   previewAction
 } from "./api";
@@ -461,6 +462,55 @@ describe("content workflow API helpers", () => {
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/api/actions/mutation-readiness"
     ]);
+  });
+
+  it("reads a typed semantic-review blocker for one exact revision", async () => {
+    const response = {
+      status: "blocked",
+      work_item_id: "content_work_item_bdo",
+      revision_id: "content_revision_bdo",
+      revision_digest: "a".repeat(64),
+      review: null,
+      run_id: null,
+      runtime: {
+        status: "blocked",
+        run_id: null,
+        thread_id: null,
+        turn_id: null,
+        event_methods: [],
+        item_types: [],
+        external_call_attempted: false
+      },
+      blockers: [{
+        code: "source_material_review_required",
+        label: "Materiał wymaga kontroli",
+        reason: "Źródłowy materiał nie został jeszcze zatwierdzony.",
+        next_step: "Sprawdź materiał.",
+        source_codes: ["wordpress_material_review_required"]
+      }],
+      safe_next_step: "Sprawdź materiał.",
+      publish_ready: false,
+      human_review_required: true,
+      action_object_created: false
+    } as const;
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      expect(new URL(String(url)).pathname).toBe(
+        "/api/content/work-items/content_work_item_bdo/draft-revisions/content_revision_bdo/semantic-review"
+      );
+      return new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getContentWorkItemSemanticReview(
+      "content_work_item_bdo",
+      "content_revision_bdo"
+    );
+
+    expect(result.blockers[0]?.code).toBe("source_material_review_required");
+    expect(result.publish_ready).toBe(false);
   });
 
 

@@ -663,6 +663,17 @@ describe("ContentSemanticReviewResponseSchema", () => {
         source_codes: []
       }]
     }).success).toBe(false);
+    expect(ContentSemanticReviewResponseSchema.safeParse({
+      ...notGenerated,
+      status: "blocked",
+      blockers: [{
+        code: "source_material_review_required",
+        label: "Materiał wymaga kontroli",
+        reason: "Źródłowy materiał nie został jeszcze zatwierdzony.",
+        next_step: "Sprawdź materiał.",
+        source_codes: ["wordpress_material_review_required"]
+      }]
+    }).success).toBe(true);
   });
 });
 

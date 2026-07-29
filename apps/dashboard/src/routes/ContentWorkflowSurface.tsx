@@ -13,6 +13,7 @@ import { ContentDocumentLineageDisclosure, ContentDocumentWorkspaceCanvas } from
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentEditorialIntegrityReport } from "./ContentEditorialIntegrityReport";
+import { ContentSemanticReviewPanel } from "./ContentSemanticReviewPanel";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 import {
@@ -380,7 +381,10 @@ function ContentReviewWorkspace({
           </div>
         )}
         {completeRevision ? (
-          <><ContentDocumentLineageDisclosure workspace={workspace} /><ReviewDecisionPanel
+          <><ContentDocumentLineageDisclosure workspace={workspace} /><ContentSemanticReviewPanel
+            workItemId={workspace.work_item_id}
+            revisionId={completeRevision.revision_id}
+          /><ReviewDecisionPanel
             revision={completeRevision}
             matchingReview={matchingReview}
             hasOperatorIdentity={Boolean(operatorLabel)}

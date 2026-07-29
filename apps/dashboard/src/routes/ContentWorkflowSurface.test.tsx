@@ -5,6 +5,7 @@ import {
   getContentWorkItemInitialDraft,
   getContentWorkItemPlanningProposal,
   getContentWorkItemEditorialIntegrity,
+  getContentWorkItemSemanticReview,
   getContentWorkItemRevisionHtmlPackage,
   getContentRevisionTargetMapping,
   getContentRevisionTargetDraftPreview,
@@ -37,6 +38,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemInitialDraft: vi.fn(),
     getContentWorkItemPlanningProposal: vi.fn(),
     getContentWorkItemEditorialIntegrity: vi.fn(),
+    getContentWorkItemSemanticReview: vi.fn(),
     getContentWorkItemRevisionHtmlPackage: vi.fn(),
     getContentRevisionTargetMapping: vi.fn(),
     getContentRevisionTargetDraftPreview: vi.fn(),
@@ -612,6 +614,61 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByText("Twarda integralność zachowana")).toBeInTheDocument();
     expect(screen.getByText(/Porównanie: R8 → R10 → R11/)).toBeInTheDocument();
     expect(screen.getByText(/Human review tej rewizji: zatwierdzone/)).toBeInTheDocument();
+    expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
+    expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
+  });
+
+  it("reads advisory semantic guidance for the exact revision without changing the text or human review", async () => {
+    const revision = savedFullDraftRevision();
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(contentDocumentWorkspace(revision)));
+    vi.mocked(getContentWorkItemSemanticReview).mockResolvedValue({
+      status: "ready",
+      work_item_id: revision.work_item_id,
+      revision_id: revision.revision_id,
+      revision_digest: revision.content_digest,
+      run_id: "codex_semantic_review_1",
+      runtime: {
+        status: "completed",
+        run_id: "codex_semantic_review_1",
+        thread_id: null,
+        turn_id: null,
+        event_methods: [],
+        item_types: [],
+        external_call_attempted: false
+      },
+      review: {
+        review_id: "content_semantic_review_1",
+        work_item_id: revision.work_item_id,
+        revision_id: revision.revision_id,
+        revision_digest: revision.content_digest,
+        criteria_version: "wilq_semantic_content_review_v1",
+        codex_run_id: "codex_semantic_review_1",
+        status: "needs_changes",
+        dimensions: [],
+        findings: [{ finding_id: "finding_1", dimension: "conversion_clarity", severity: "medium", label: "Kolejny krok wymaga doprecyzowania", reason: "Czytelnik nie dostaje jasnego następnego kroku.", instruction: "Dodaj konkretne wezwanie do kontaktu.", affected_targets: ["section_1"], evidence_ids: [] }],
+        evidence_ids: [],
+        source_connectors: [],
+        requested_by: "wilku",
+        created_at: "2026-07-29T08:00:00Z",
+        safe_next_step: "Sprawdź wskazówkę przed podjęciem decyzji.",
+        publish_ready: false,
+        human_review_required: true,
+        action_object_created: false
+      },
+      blockers: [],
+      safe_next_step: "Sprawdź wskazówkę przed podjęciem decyzji.",
+      publish_ready: false,
+      human_review_required: true,
+      action_object_created: false
+    } as never);
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1&review=1", defaultPendingMinMs: 0 })} client={client} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Pokaż wskazówki jakości" }));
+    await waitFor(() => expect(getContentWorkItemSemanticReview).toHaveBeenCalledWith(revision.work_item_id, revision.revision_id));
+    expect(await screen.findByText("Kolejny krok wymaga doprecyzowania")).toBeInTheDocument();
+    expect(screen.getByText(/Dodaj konkretne wezwanie do kontaktu/)).toBeInTheDocument();
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
   });
