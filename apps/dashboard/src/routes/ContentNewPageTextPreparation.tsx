@@ -118,7 +118,7 @@ export function ContentNewPageTextPreparation({
   }
   if (readiness.status === "blocked") {
     const blocker = readiness.blockers[0];
-    return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">{blocker?.label ?? "Tekst jest jeszcze zablokowany"}</p><p className="mt-1">{blocker?.reason ?? readiness.safe_next_step}</p><p className="mt-2 text-slate-700">{textPreparationRecovery(blocker?.code)}</p></div>;
+    return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">{blocker?.label ?? "Tekst jest jeszcze zablokowany"}</p><p className="mt-2 text-slate-700">{textPreparationRecovery(blocker?.code)}</p></div>;
   }
 
   const preparingText = generate.isPending || proposal?.status === "generating" || prepareDocument.isPending;

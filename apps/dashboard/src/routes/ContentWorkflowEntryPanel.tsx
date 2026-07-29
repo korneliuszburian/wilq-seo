@@ -430,7 +430,7 @@ function NewPageDocumentState({ workspace }: { workspace: ContentNewPageCanonica
   return <section className="mt-5 rounded-2xl border border-sky-200 bg-sky-50/50 p-4" data-testid="new-page-canonical-document">
     <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-action">Kanoniczny dokument</p>
     <h3 className="mt-2 text-lg font-semibold text-ink">{workspace.title}</h3>
-    <p className="mt-2 text-sm leading-6 text-slate-700">{workspace.safe_next_step}</p>
+    <p className="mt-2 text-sm leading-6 text-slate-700">{documentStateCopy(workspace)}</p>
     <dl className="mt-4 grid gap-3 sm:grid-cols-2">
       <InfoTile label="Stan dokumentu" value={documentStatusLabel(workspace.document_status)} />
       <InfoTile label="Źródło publiczne" value="Nie dotyczy — to nowa strona." />
@@ -446,6 +446,19 @@ function NewPageDocumentState({ workspace }: { workspace: ContentNewPageCanonica
     </details>
     <p className="mt-4 text-xs leading-5 text-slate-600">To nie jest porównanie z obecną stroną ani potwierdzenie publikacji. WILQ nie tworzy tu szkicu WordPressa.</p>
   </section>;
+}
+
+function documentStateCopy(workspace: ContentNewPageCanonicalDocumentWorkspace) {
+  if (!workspace.canonical_revision) {
+    return "Po przygotowaniu tekst pojawi się tutaj w całości. WILQ nie tworzy jeszcze szkicu ani nie zmienia WordPressa.";
+  }
+  if (workspace.document_status === "unreviewed") {
+    return "Przeczytaj przygotowany tekst i materiały, na których go oparto. Dopiero potem możesz zdecydować, czy ta wersja jest gotowa.";
+  }
+  if (workspace.document_status === "approved") {
+    return "Ta wersja tekstu została sprawdzona. Dalsze przygotowanie szkicu na dev pozostaje osobnym, bezpiecznym działaniem.";
+  }
+  return "WILQ pokazuje dokładny stan tej wersji tekstu i zapisane przy niej materiały.";
 }
 
 function NewPageDocumentCommands({ briefId, workspace, onChanged }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {

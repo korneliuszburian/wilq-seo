@@ -293,6 +293,8 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(getContentNewPagePlanningProposal).toHaveBeenCalledWith("content_new_page_brief_test");
     expect(await screen.findByTestId("new-page-canonical-document")).toBeInTheDocument();
     expect(screen.getByText("Nie dotyczy — to nowa strona.")).toBeInTheDocument();
+    expect(screen.queryByText("Przygotuj pierwszą immutable rewizję.")).not.toBeInTheDocument();
+    expect(screen.getByText(/po przygotowaniu tekst pojawi się tutaj w całości/i)).toBeInTheDocument();
     expect(getContentNewPageCanonicalDocument).toHaveBeenCalledWith("content_new_page_brief_test");
     expect(createContentNewPagePlanningProposal).not.toHaveBeenCalled();
 
