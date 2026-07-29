@@ -49,7 +49,8 @@ describe("ContentWorkflow architecture boundary", () => {
       "saveContentWorkItemSnapshotHumanReview",
       "saveContentWorkItemSnapshotAudit",
       "postContentWorkItemWordPressDraftHandoff",
-      "postContentWorkItemWordPressDraftExecution"
+      "postContentWorkItemWordPressDraftExecution",
+      "getWordPressAuthoringProfile"
     ]) {
       expect(contentApiSource).not.toContain(`function ${name}`);
     }
