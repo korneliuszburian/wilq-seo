@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal, cast
 from uuid import uuid4
 
 from wilq.actions.action_blockers import action_apply_preflight_blockers
@@ -231,12 +231,12 @@ def _claim_exact_apply(
         if result == "acquired" and binding is not None:
             return _ApplyClaim(new_page_binding=binding), None
         return _ApplyClaim(), _new_page_apply_claim_blocker(result)
-    binding = request.wordpress_draft if request is not None else None
-    if binding is None:
+    wordpress_binding = request.wordpress_draft if request is not None else None
+    if wordpress_binding is None:
         return _ApplyClaim(), _wordpress_apply_claim_blocker("not_current")
-    result = wordpress_apply_claim(binding, action_id=action.id, claimed_by=actor)
+    result = wordpress_apply_claim(wordpress_binding, action_id=action.id, claimed_by=actor)
     if result == "acquired":
-        return _ApplyClaim(wordpress_binding=binding), None
+        return _ApplyClaim(wordpress_binding=wordpress_binding), None
     return _ApplyClaim(), _wordpress_apply_claim_blocker(result)
 
 
@@ -273,9 +273,11 @@ def _finish_apply_claim(
     if claim.new_page_binding is not None:
         if status is None:
             raise RuntimeError("New-page apply claim reached audit without an adapter outcome.")
+        if status not in {"applied", "failed"}:
+            raise RuntimeError("New-page apply claim received an unsupported adapter outcome.")
         new_page_apply_claim_store().finish_new_page_revision_apply_claim(
             claim.new_page_binding,
-            status=status,
+            status=cast(Literal["applied", "failed"], status),
         )
 
 
