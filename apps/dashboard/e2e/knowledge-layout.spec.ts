@@ -28,7 +28,7 @@ test.describe("WILQ knowledge layout proof", () => {
     await expect(page.getByRole("heading", { name: "Kolejka review materiałów źródłowych" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Sprawdź kartę" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Pokaż kartę" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Zobacz pełną kolejkę" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Pokaż pełną kolejkę/ })).toBeVisible();
     await expect(page.getByText("Knowledge Cards")).toHaveCount(0);
     await expect(page.getByText("Machine-Readable Playbooks")).toHaveCount(0);
 
@@ -36,7 +36,7 @@ test.describe("WILQ knowledge layout proof", () => {
       .getByRole("heading", { name: "Najbliższy krok źródłowy" })
       .boundingBox();
     const fullMapBox = await page
-      .getByRole("button", { name: "Zobacz pełną kolejkę" })
+      .getByRole("button", { name: /Pokaż pełną kolejkę/ })
       .boundingBox();
 
     expect(primaryDecisionBox?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(

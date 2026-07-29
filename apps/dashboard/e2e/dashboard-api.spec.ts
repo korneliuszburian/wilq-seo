@@ -276,7 +276,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await operatingMapResponse;
 
     await expectApiBackedRouteHeading(page, "Źródła i wiedza", { exact: true });
-    await expect(page.getByRole("heading", { name: "Najbliższa wiedza do sprawdzenia" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Najbliższy krok źródłowy" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co blokuje produkcję treści" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Kolejka review materiałów źródłowych" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż kartę" }).click();
