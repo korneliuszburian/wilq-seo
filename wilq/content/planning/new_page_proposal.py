@@ -277,7 +277,8 @@ def _generate_proposal(
         planning_input=planning_input, operator_hint=request.operator_hint, client=client
     )
     if blocker is not None:
-        assert status is not None
+        if status is None:
+            raise RuntimeError("Blocked planning turn returned no terminal status.")
         run_store.save_codex_run(
             run.model_copy(
                 update={"status": status, "completed_at": utc_now(), "error": blocker.code}
@@ -295,7 +296,8 @@ def _generate_proposal(
             blockers=[blocker],
             safe_next_step=blocker.next_step,
         )
-    assert output is not None
+    if output is None:
+        raise RuntimeError("Completed planning turn returned no model output.")
     completed = run.model_copy(
         update={"status": "completed", "completed_at": utc_now(), "error": None}
     )
@@ -337,7 +339,8 @@ def _proposal_from_output(
     planning_input: ContentPlanningInput, output: ContentPlanningModelOutput, run: CodexRun
 ) -> ContentPlanningProposal:
     foundation = planning_input.new_page_foundation
-    assert foundation is not None and planning_input.proposed_ia_location is not None
+    if foundation is None or planning_input.proposed_ia_location is None:
+        raise ValueError("New-page proposal requires exact foundation and IA location.")
     proposal_id = f"content_planning_proposal_{uuid4().hex}"
     proposal = ContentPlanningProposal(
         work_item_id=planning_input.work_item_id,

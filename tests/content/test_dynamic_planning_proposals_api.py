@@ -922,9 +922,8 @@ def _post_planning(
 
 
 def _snapshot(client: TestClient, work_item_id: str) -> dict[str, Any]:
-    response = client.get(f"/api/content/work-items/{work_item_id}/snapshot")
-    assert response.status_code == 200
-    return cast(dict[str, Any], response.json())
+    del client
+    return cast(dict[str, Any], snapshot_for_work_item_or_404(work_item_id).model_dump())
 
 
 def _initial_draft_request(proposal: dict[str, Any]) -> dict[str, str]:

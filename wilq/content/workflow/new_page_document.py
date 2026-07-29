@@ -160,7 +160,8 @@ def _validate_workspace_with_revision(
     workspace: ContentNewPageCanonicalDocumentWorkspace,
 ) -> None:
     revision = workspace.canonical_revision
-    assert revision is not None
+    if revision is None:
+        raise ValueError("Canonical new-page workspace requires a revision.")
     identity = revision.new_page_document_identity
     if not (
         revision.document_kind == "new_page"

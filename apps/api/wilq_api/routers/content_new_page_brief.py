@@ -260,7 +260,11 @@ def register_content_new_page_planning_proposal_routes(router: APIRouter) -> Non
         store = new_page_brief_store()
         brief = store.load_new_page_brief(brief_id)
         foundation = store.load_new_page_foundation(brief_id)
-        assert brief is not None and foundation is not None
+        if brief is None or foundation is None:
+            # The readiness read and this command are separate requests. A
+            # deleted or superseded prerequisite must return the refreshed
+            # typed workspace, never proceed with a partial plan input.
+            return _new_page_planning_proposal_workspace(brief_id)
         result = build_new_page_planning_input(
             brief=brief,
             foundation=foundation,

@@ -43,8 +43,20 @@ def build_new_page_planning_input(
     blocker = _current_foundation_blocker(brief, foundation, overlap_guard, service_card)
     if blocker is not None:
         return ContentPlanningInputBuildResult(blockers=[blocker])
-    assert foundation is not None
-    assert service_card is not None
+    if foundation is None:
+        return ContentPlanningInputBuildResult(blockers=[_blocker(
+            "missing_planning_foundation",
+            "Brakuje zapisanej podstawy planowania",
+            "Nowa strona wymaga exact briefu, kontroli pokrycia i ręcznego wyboru usługi.",
+            "Zapisz podstawę planowania po sprawdzeniu pokrycia serwisu.",
+        )])
+    if service_card is None:
+        return ContentPlanningInputBuildResult(blockers=[_blocker(
+            "service_card_not_approved",
+            "Karta usługi nie jest zatwierdzona",
+            "Wybrana usługa nie ma bieżącej, zatwierdzonej karty wiedzy.",
+            "Wybierz zatwierdzoną kartę usługi i odśwież podstawę planowania.",
+        )])
     source_facts = _source_facts(service_card, source_facts_loader())
     if not source_facts:
         return ContentPlanningInputBuildResult(blockers=[_blocker(

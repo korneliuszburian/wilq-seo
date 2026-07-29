@@ -192,7 +192,14 @@ def register_content_planning_proposal_routes(
         )
         if early_response is not None:
             return early_response
-        assert planning_input is not None
+        if planning_input is None:
+            return _planning_generation_failure_response(
+                work_item_id=work_item_id,
+                service_card_id=request.service_card_id,
+                planning_input_digest=request.expected_planning_input_digest,
+                input_summary=None,
+                error=RuntimeError("Planning preparation returned no input or blocker."),
+            )
         # A changed digest is the normal re-plan path after fresh metrics,
         # inventory or knowledge arrive.  The command accepts only the exact
         # snapshot validated above; once queued, the worker must not rebuild a
