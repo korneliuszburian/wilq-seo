@@ -560,6 +560,12 @@ def _patch_synthetic_inventory_material(monkeypatch: pytest.MonkeyPatch) -> None
             None,
         )
         headings = [] if item is None else (item.acf_section_headings or [])
+        # The harness models a source-bound material read. Some real catalog
+        # entries have no extracted ACF headings, but the synthetic material
+        # still needs one observed content section for the planning fake to
+        # exercise the existing-page mapping contract.
+        if item is not None and not headings:
+            headings = [f"Zakres strony: {item.title}"]
         return ContentInventoryMaterialResponse(
             status="ready",
             url=url,
