@@ -437,9 +437,9 @@ def _item(**overrides: object) -> ContentWorkItem:
     payload: dict[str, object] = {
         "id": "content_work_item_bdo",
         "topic": "BDO dla firm",
-        "source_public_url": "https://ekologus.pl/bdo/",
-        "final_canonical_url": "https://ekologus.pl/bdo/",
-        "intended_final_url": "https://ekologus.pl/bdo/",
+        "source_public_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        "final_canonical_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        "intended_final_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
         "preview_url": "https://ekologus.dev.proudsite.pl/bdo/",
         "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
         "source_connectors": ["google_search_console", "wordpress_ekologus"],
@@ -464,9 +464,9 @@ def _item(**overrides: object) -> ContentWorkItem:
 def _inventory() -> ContentInventoryRecord:
     return ContentInventoryRecord(
         id="inventory_bdo",
-        url="https://ekologus.pl/bdo/",
-        final_canonical_url="https://ekologus.pl/bdo/",
-        intended_final_url="https://ekologus.pl/bdo/",
+        url="https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        final_canonical_url="https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        intended_final_url="https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
         preview_url="https://ekologus.dev.proudsite.pl/bdo/",
         content_status="published",
         source_connectors=["wordpress_ekologus"],
