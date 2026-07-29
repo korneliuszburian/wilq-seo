@@ -11,6 +11,7 @@ from wilq.codex.app_server import (
 )
 from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftBlockerCode,
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
@@ -140,7 +141,7 @@ def _execute_turn(
     except Exception:
         turn = None
     if turn is None or turn.status != "completed" or turn.output_text is None:
-        code = (
+        code: Literal["runtime_blocked", "runtime_failed"] = (
             "runtime_blocked"
             if turn is not None and turn.status == "blocked"
             else "runtime_failed"
@@ -249,7 +250,7 @@ def _request_mismatch(
 def _blocked(
     workspace: ContentNewPageCanonicalDocumentWorkspace,
     proposal: ContentPlanningProposal,
-    code: str,
+    code: ContentInitialDraftBlockerCode,
     next_step: str,
     run_id: str | None = None,
     runtime: ContentCodexRuntimeTrace | None = None,

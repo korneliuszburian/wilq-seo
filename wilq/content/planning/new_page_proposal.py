@@ -22,6 +22,7 @@ from wilq.content.planning.generated_proposal import _run_planning_turn
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
     ContentPlanningProposalBlocker,
+    ContentPlanningProposalBlockerCode,
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
@@ -149,7 +150,7 @@ def terminalize_new_page_planning_claim(
     response: ContentPlanningProposalResponse,
     store: ContentPlanningProposalStore,
     *,
-    code: str,
+    code: ContentPlanningProposalBlockerCode,
 ) -> None:
     """Release the exact queued claim when its worker cannot safely start Codex."""
 
@@ -276,6 +277,7 @@ def _generate_proposal(
         planning_input=planning_input, operator_hint=request.operator_hint, client=client
     )
     if blocker is not None:
+        assert status is not None
         run_store.save_codex_run(
             run.model_copy(
                 update={"status": status, "completed_at": utc_now(), "error": blocker.code}

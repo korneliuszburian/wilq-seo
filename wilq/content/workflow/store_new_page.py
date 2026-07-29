@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 from wilq.content.workflow.new_page import (
     ContentNewPageBrief,
@@ -72,7 +72,7 @@ class NewPageBriefStore:
     def save_new_page_foundation(
         self,
         foundation: ContentNewPagePlanningFoundation,
-    ) -> tuple[str, ContentNewPagePlanningFoundation]:
+    ) -> tuple[Literal["created", "idempotent"], ContentNewPagePlanningFoundation]:
         stored = ContentNewPagePlanningFoundation.model_validate(
             redact_mapping(foundation.model_dump(mode="json"))
         )

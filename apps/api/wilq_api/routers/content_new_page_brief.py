@@ -546,7 +546,7 @@ def _run_new_page_planning_generation(
         workspace = _new_page_planning_proposal_workspace(brief_id)
         if workspace.readiness.status != "ready":
             terminalize_new_page_planning_claim(
-                queued_response, claim_store, code="planning_input_blocked"
+                queued_response, claim_store, code="stale_input"
             )
             return
         store = new_page_brief_store()
@@ -554,7 +554,7 @@ def _run_new_page_planning_generation(
         foundation = store.load_new_page_foundation(brief_id)
         if brief is None or foundation is None:
             terminalize_new_page_planning_claim(
-                queued_response, claim_store, code="planning_input_missing"
+                queued_response, claim_store, code="stale_input"
             )
             return
         result = build_new_page_planning_input(
