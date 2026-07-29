@@ -711,7 +711,11 @@ def _persist_generated_proposal(
     run_store: LocalStateStore,
 ) -> ContentPlanningProposalResponse:
     try:
-        store_status, stored = store.save_generated(proposal, completed_run)
+        store_status, stored = store.save_generated(
+            proposal,
+            completed_run,
+            replace_existing_exact_input=request.regenerate_stale_mapping,
+        )
     except Exception:
         blocker = _blocker(
             "persistence_failed",
@@ -728,7 +732,7 @@ def _persist_generated_proposal(
             run_id=started_run.id,
         )
     return ContentPlanningProposalResponse(
-        status="created" if store_status == "created" else "idempotent",
+        status="idempotent" if store_status == "idempotent" else "created",
         work_item_id=planning_input.work_item_id,
         service_card_id=request.service_card_id,
         planning_input_digest=planning_input.planning_input_digest,

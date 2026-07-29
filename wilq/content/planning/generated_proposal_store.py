@@ -21,6 +21,7 @@ from wilq.storage.schema_versions import (
 )
 
 PlanningEnqueueOutcome = Literal["queued", "existing", "in_flight"]
+GeneratedProposalSaveOutcome = Literal["created", "idempotent", "replaced"]
 
 
 def content_planning_proposal_store() -> ContentPlanningProposalStore:
@@ -43,28 +44,7 @@ class ContentPlanningProposalStore:
             with connection:
                 if not _table_exists(connection, "content_planning_proposals"):
                     return None
-                if service_card_id is None:
-                    row = connection.execute(
-                        """
-                        SELECT payload_json
-                        FROM content_planning_proposals
-                        WHERE work_item_id = ?
-                        ORDER BY proposal_version DESC
-                        LIMIT 1
-                        """,
-                        (work_item_id,),
-                    ).fetchone()
-                else:
-                    row = connection.execute(
-                        """
-                        SELECT payload_json
-                        FROM content_planning_proposals
-                        WHERE work_item_id = ? AND service_card_id = ?
-                        ORDER BY proposal_version DESC
-                        LIMIT 1
-                        """,
-                        (work_item_id, service_card_id),
-                    ).fetchone()
+                row = _latest_proposal_row(connection, work_item_id, service_card_id)
         finally:
             connection.close()
         return _proposal_from_row(row)
@@ -105,17 +85,9 @@ class ContentPlanningProposalStore:
             with connection:
                 if not _table_exists(connection, "content_planning_proposals"):
                     return None
-                row = connection.execute(
-                    """
-                    SELECT payload_json
-                    FROM content_planning_proposals
-                    WHERE work_item_id = ?
-                      AND json_extract(payload_json, '$.planning_digest') = ?
-                    ORDER BY proposal_version DESC
-                    LIMIT 1
-                    """,
-                    (work_item_id, planning_digest),
-                ).fetchone()
+                row = _proposal_row_for_planning_digest(
+                    connection, work_item_id, planning_digest
+                )
         finally:
             connection.close()
         return _proposal_from_row(row)
@@ -384,7 +356,9 @@ class ContentPlanningProposalStore:
         self,
         proposal: ContentPlanningProposal,
         completed_run: CodexRun,
-    ) -> tuple[Literal["created", "idempotent"], ContentPlanningProposal]:
+        *,
+        replace_existing_exact_input: bool = False,
+    ) -> tuple[GeneratedProposalSaveOutcome, ContentPlanningProposal]:
         _validate_generated_proposal(proposal, completed_run)
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
@@ -398,14 +372,22 @@ class ContentPlanningProposalStore:
                 existing = _proposal_from_row(existing_row)
                 if existing is None:
                     raise RuntimeError("Planning proposal row disappeared during save.")
-                return "idempotent", existing
+                if not replace_existing_exact_input:
+                    return "idempotent", existing
+            else:
+                existing = None
             row = connection.execute(
                 """
                 SELECT COALESCE(MAX(proposal_version), 0) AS latest_version
-                FROM content_planning_proposals
-                WHERE work_item_id = ?
+                FROM (
+                  SELECT proposal_version FROM content_planning_proposals WHERE work_item_id = ?
+                  UNION ALL
+                  SELECT proposal_version
+                  FROM content_planning_proposal_repairs
+                  WHERE work_item_id = ?
+                )
                 """,
-                (proposal.work_item_id,),
+                (proposal.work_item_id, proposal.work_item_id),
             ).fetchone()
             version = 1 if row is None else int(row["latest_version"]) + 1
             versioned = proposal.model_copy(update={"proposal_version": version})
@@ -432,24 +414,30 @@ class ContentPlanningProposalStore:
                     safe_run.model_dump_json(),
                 ),
             )
-            connection.execute(
-                """
-                INSERT INTO content_planning_proposals (
-                  proposal_id, work_item_id, proposal_version, service_card_id,
-                  planning_input_digest, created_at, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    safe_proposal.proposal_id,
-                    safe_proposal.work_item_id,
-                    safe_proposal.proposal_version,
-                    safe_proposal.service_card_id,
-                    safe_proposal.planning_input_digest,
-                    created_at.isoformat(),
-                    safe_proposal.model_dump_json(),
-                ),
-            )
-        return "created", safe_proposal
+            if existing is None:
+                connection.execute(
+                    """
+                    INSERT INTO content_planning_proposals (
+                      proposal_id, work_item_id, proposal_version, service_card_id,
+                      planning_input_digest, created_at, payload_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    _proposal_insert_values(safe_proposal, created_at),
+                )
+                outcome: GeneratedProposalSaveOutcome = "created"
+            else:
+                values = _proposal_insert_values(safe_proposal, created_at)
+                connection.execute(
+                    """
+                    INSERT INTO content_planning_proposal_repairs (
+                      proposal_id, work_item_id, proposal_version, service_card_id,
+                      planning_input_digest, supersedes_proposal_id, created_at, payload_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (*values[:5], existing.proposal_id, *values[5:]),
+                )
+                outcome = "replaced"
+        return outcome, safe_proposal
 
     def _connect(self) -> sqlite3.Connection:
         prepare_private_store_path(
@@ -472,6 +460,21 @@ class ContentPlanningProposalStore:
               payload_json TEXT NOT NULL,
               UNIQUE (work_item_id, proposal_version),
               UNIQUE (work_item_id, service_card_id, planning_input_digest)
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS content_planning_proposal_repairs (
+              proposal_id TEXT PRIMARY KEY,
+              work_item_id TEXT NOT NULL,
+              proposal_version INTEGER NOT NULL CHECK (proposal_version >= 1),
+              service_card_id TEXT NOT NULL,
+              planning_input_digest TEXT NOT NULL,
+              supersedes_proposal_id TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              payload_json TEXT NOT NULL,
+              UNIQUE (work_item_id, proposal_version)
             )
             """
         )
@@ -515,18 +518,95 @@ def _proposal_row_for_input(
     service_card_id: str,
     planning_input_digest: str,
 ) -> sqlite3.Row | None:
-    row = connection.execute(
-        """
-        SELECT payload_json
-        FROM content_planning_proposals
+    tables = _proposal_tables(connection)
+    query = " UNION ALL ".join(
+        f"""
+        SELECT payload_json, proposal_version
+        FROM {table}
         WHERE work_item_id = ?
           AND service_card_id = ?
           AND planning_input_digest = ?
-        LIMIT 1
-        """,
-        (work_item_id, service_card_id, planning_input_digest),
+        """
+        for table in tables
+    )
+    row = connection.execute(
+        f"SELECT payload_json FROM ({query}) ORDER BY proposal_version DESC LIMIT 1",
+        (work_item_id, service_card_id, planning_input_digest) * len(tables),
     ).fetchone()
     return cast(sqlite3.Row | None, row)
+
+
+def _latest_proposal_row(
+    connection: sqlite3.Connection,
+    work_item_id: str,
+    service_card_id: str | None,
+) -> sqlite3.Row | None:
+    tables = _proposal_tables(connection)
+    where = (
+        "work_item_id = ?"
+        if service_card_id is None
+        else "work_item_id = ? AND service_card_id = ?"
+    )
+    query = " UNION ALL ".join(
+        f"SELECT payload_json, proposal_version FROM {table} WHERE {where}" for table in tables
+    )
+    base_params = (
+        (work_item_id,)
+        if service_card_id is None
+        else (work_item_id, service_card_id)
+    )
+    params = base_params * len(tables)
+    return cast(
+        sqlite3.Row | None,
+        connection.execute(
+            f"SELECT payload_json FROM ({query}) ORDER BY proposal_version DESC LIMIT 1",
+            params,
+        ).fetchone(),
+    )
+
+
+def _proposal_row_for_planning_digest(
+    connection: sqlite3.Connection,
+    work_item_id: str,
+    planning_digest: str,
+) -> sqlite3.Row | None:
+    tables = _proposal_tables(connection)
+    query = " UNION ALL ".join(
+        f"""
+        SELECT payload_json, proposal_version FROM {table}
+        WHERE work_item_id = ?
+          AND json_extract(payload_json, '$.planning_digest') = ?
+        """
+        for table in tables
+    )
+    return cast(
+        sqlite3.Row | None,
+        connection.execute(
+            f"SELECT payload_json FROM ({query}) ORDER BY proposal_version DESC LIMIT 1",
+            (work_item_id, planning_digest) * len(tables),
+        ).fetchone(),
+    )
+
+
+def _proposal_tables(connection: sqlite3.Connection) -> tuple[str, ...]:
+    tables = ["content_planning_proposals"]
+    if _table_exists(connection, "content_planning_proposal_repairs"):
+        tables.append("content_planning_proposal_repairs")
+    return tuple(tables)
+
+
+def _proposal_insert_values(
+    proposal: ContentPlanningProposal, created_at: datetime
+) -> tuple[str | int, ...]:
+    return (
+        str(proposal.proposal_id),
+        proposal.work_item_id,
+        int(proposal.proposal_version or 0),
+        str(proposal.service_card_id),
+        str(proposal.planning_input_digest),
+        created_at.isoformat(),
+        proposal.model_dump_json(),
+    )
 
 
 def _table_exists(connection: sqlite3.Connection, name: str) -> bool:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sqlite3
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -17,6 +19,7 @@ from wilq.content.planning.generated_proposal_store import ContentPlanningPropos
 from wilq.content.planning.input_sources import ContentPlanningSourceAssessment
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
+from wilq.schemas import CodexRun
 
 
 def _planning_summary() -> ContentPlanningInputSummary:
@@ -291,3 +294,47 @@ def test_planning_post_regenerates_an_exact_stale_inventory_mapping_without_clie
     assert response.status_code == 200
     assert response.json()["status"] == "generating"
     assert preparation_flags == [True]
+
+
+def test_planning_store_replaces_current_exact_input_without_mutating_history(
+    tmp_path: Path,
+) -> None:
+    store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
+    completed_at = datetime.now(UTC)
+    proposal_a = _proposal(digest="a" * 64, service_card_id="service-a").model_copy(
+        update={
+            "proposal_id": "proposal-a",
+            "codex_run_id": "run-a",
+            "generation_status": "codex_generated",
+            "created_at": completed_at,
+        }
+    )
+    run_a = CodexRun(
+        id="run-a",
+        status="completed",
+        started_at=completed_at,
+        completed_at=completed_at,
+    )
+    proposal_b = proposal_a.model_copy(
+        update={"proposal_id": "proposal-b", "codex_run_id": "run-b"}
+    )
+    run_b = run_a.model_copy(update={"id": "run-b"})
+
+    assert store.save_generated(proposal_a, run_a)[0] == "created"
+    outcome, stored_b = store.save_generated(
+        proposal_b,
+        run_b,
+        replace_existing_exact_input=True,
+    )
+
+    assert outcome == "replaced"
+    assert stored_b.proposal_id == "proposal-b"
+    assert store.for_input("work-item", "service-a", "a" * 64).proposal_id == "proposal-b"
+    assert store.latest("work-item", "service-a").proposal_id == "proposal-b"
+    with sqlite3.connect(store.path) as connection:
+        assert connection.execute(
+            "SELECT proposal_id FROM content_planning_proposals"
+        ).fetchall() == [("proposal-a",)]
+        assert connection.execute(
+            "SELECT proposal_id, supersedes_proposal_id FROM content_planning_proposal_repairs"
+        ).fetchall() == [("proposal-b", "proposal-a")]
