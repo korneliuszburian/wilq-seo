@@ -47,6 +47,7 @@ def build_revision_bound_wordpress_draft_handoff(
         or approval is None
         or draft_package is None
         or revision.planning_digest is None
+        or revision.final_canonical_url is None
     ):
         raise RuntimeError("Approved revision handoff passed blockers without exact inputs.")
 
