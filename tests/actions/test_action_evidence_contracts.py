@@ -9,6 +9,7 @@ from tests._contract_support.action_candidate_seed import seed_action_candidate_
 from tests._contract_support.action_safety_factory import synthetic_apply_ready_action
 from tests._contract_support.api_client import client
 from tests._contract_support.env import GOOGLE_ADS_TEST_ENV
+from wilq.actions import action_catalog
 from wilq.actions.service import apply_action
 from wilq.schemas import (
     ActionApplyRequest,
@@ -23,7 +24,7 @@ from wilq.schemas import (
 def test_google_ads_oauth_repair_action_is_explicit_and_redacted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(action_service, "_google_ads_live_data_available", lambda: False)
+    monkeypatch.setattr(action_catalog, "_google_ads_live_data_available", lambda: False)
     actions_response = client.get("/api/actions")
     assert actions_response.status_code == 200
     assert "act_configure_google_ads_env" in {

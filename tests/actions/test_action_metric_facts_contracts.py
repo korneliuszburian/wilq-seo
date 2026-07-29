@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-import wilq.actions.service as action_service
+from wilq.actions import action_catalog
 from wilq.schemas import MetricFact
 
 
@@ -46,13 +46,13 @@ def test_action_metric_facts_use_latest_batch_read_for_speed(
         ) -> list[MetricFact]:
             return []
 
-    monkeypatch.setattr(action_service, "metric_store", lambda: FastMetricStore())
+    monkeypatch.setattr(action_catalog, "metric_store", lambda: FastMetricStore())
 
-    facts = action_service._action_metric_facts()
+    facts = action_catalog._action_metric_facts()
 
     assert facts == [fact]
-    assert seen["connector_limits"]["google_ads"] == action_service.ACTION_METRIC_FACT_LIMIT
+    assert seen["connector_limits"]["google_ads"] == action_catalog.ACTION_METRIC_FACT_LIMIT
     assert (
         seen["connector_limits"]["google_search_console"]
-        == action_service.ACTION_METRIC_FACT_LIMIT
+        == action_catalog.ACTION_METRIC_FACT_LIMIT
     )

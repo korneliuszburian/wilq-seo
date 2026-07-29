@@ -630,7 +630,8 @@ def wordpress_draft_write_readiness_requirements(
     *,
     wordpress_draft_readiness: ContentWordPressDraftWriteReadinessResponse | None = None,
 ) -> list[ActionMutationReadinessRequirement]:
-    if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE:
+    payload = getattr(action, "payload", {})
+    if payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE:
         live_write_enabled = wordpress_draft_writes_enabled()
         return [
             _requirement(
