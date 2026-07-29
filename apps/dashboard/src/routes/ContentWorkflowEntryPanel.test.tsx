@@ -220,27 +220,48 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(screen.getByText("Dowody sprawdzonego katalogu: ev_wp_other")).toBeInTheDocument();
   });
 
-  it("binds an explicit service card to the exact brief and overlap read", async () => {
-    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace());
+  it("uses one marketer action to bind the source of knowledge before preparing text", async () => {
+    vi.mocked(getContentNewPageBriefWorkspace)
+      .mockResolvedValueOnce(savedBriefWorkspace())
+      .mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
     vi.mocked(createContentNewPageFoundation).mockResolvedValue({
       status: "created",
       foundation: null,
       reason: "Podstawa zapisana.",
       safe_next_step: "Przygotuj plan dokumentu w kolejnym etapie workflow."
     });
+    const readyPlan = newPagePlanningWorkspace();
+    readyPlan.proposal_status = {
+      ...readyPlan.proposal_status!,
+      status: "ready",
+      proposal: {
+        proposal_id: "content_planning_proposal_test",
+        planning_digest: "b".repeat(64),
+        planning_input_digest: "d".repeat(64),
+        sections: [{ section_id: "section_intro", heading: "Wprowadzenie", purpose: "Wyjaśnij temat." }]
+      } as never
+    };
+    vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue(readyPlan);
+    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(canonicalDocumentWorkspace());
 
-    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_no_conflict" });
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
 
-    await screen.findByText("Wybierz wiedzę dla tekstu");
+    await screen.findByText("Na czym oprzeć tekst?");
     expect(screen.queryByLabelText("Potwierdza")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Wiedza o usłudze"), { target: { value: "service_environment" } });
-    fireEvent.click(screen.getByRole("button", { name: "Użyj tej wiedzy do tekstu" }));
+    fireEvent.change(screen.getByLabelText("Źródło wiedzy"), { target: { value: "service_environment" } });
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj tekst na tej podstawie" }));
 
     await waitFor(() => expect(createContentNewPageFoundation).toHaveBeenCalledWith("content_new_page_brief_test", {
       expected_brief_digest: "a".repeat(64),
       expected_overlap_digest: "b".repeat(64),
       service_card_id: "service_environment",
       confirmed_by: "wilku"
+    }));
+    await waitFor(() => expect(createContentNewPageInitialDraft).toHaveBeenCalledWith("content_new_page_brief_test", {
+      expected_proposal_id: "content_planning_proposal_test",
+      expected_planning_digest: "b".repeat(64),
+      expected_planning_input_digest: "d".repeat(64),
+      requested_by: "wilku"
     }));
   });
 

@@ -353,6 +353,7 @@ function NewPageSaved({ workspace, onReturn }: { workspace: ContentNewPageBriefW
 function NewPagePlanningFoundation({ workspace }: { workspace: ContentNewPageBriefWorkspace }) {
   const queryClient = useQueryClient();
   const [serviceCardId, setServiceCardId] = useState("");
+  const [prepareTextAfterFoundation, setPrepareTextAfterFoundation] = useState(false);
   const foundation = useMutation({
     mutationFn: () => createContentNewPageFoundation(workspace.brief.brief_id, {
       expected_brief_digest: workspace.brief.brief_digest,
@@ -360,17 +361,22 @@ function NewPagePlanningFoundation({ workspace }: { workspace: ContentNewPageBri
       service_card_id: serviceCardId,
       confirmed_by: "wilku"
     }),
-    onSuccess: () => queryClient.invalidateQueries({
-      queryKey: ["content-workflow", "new-page-brief", workspace.brief.brief_id]
-    })
+    onSuccess: async () => {
+      await queryClient.refetchQueries({
+        queryKey: ["content-workflow", "new-page-brief", workspace.brief.brief_id]
+      });
+    },
+    onError: () => {
+      setPrepareTextAfterFoundation(false);
+    }
   });
   if (workspace.foundation) {
-    return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Struktura i tekst nowej strony</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-action">{workspace.next_action_label}</p><p className="mt-2 text-sm leading-6 text-slate-700">Tekst oprze się na wiedzy o usłudze: {workspace.foundation.service_label}. Nowa strona nie ma jeszcze publicznego URL-a, inventory ani danych historycznych.</p><NewPagePlanningProposal briefId={workspace.brief.brief_id} /><NewPageCanonicalDocument briefId={workspace.brief.brief_id} /></section>;
+    return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Tekst nowej strony</h2><p className="mt-2 text-sm leading-6 text-slate-700">Tekst oprze się na wiedzy o usłudze: {workspace.foundation.service_label}. Nowa strona nie ma jeszcze publicznego URL-a, inventory ani danych historycznych.</p><NewPagePlanningProposal briefId={workspace.brief.brief_id} autoStart={prepareTextAfterFoundation} /><NewPageCanonicalDocument briefId={workspace.brief.brief_id} /></section>;
   }
   if (workspace.overlap_guard.disposition !== "no_conflict") {
     return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Zakres źródeł do tekstu</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-slate-700">{workspace.next_action_label}</p></section>;
   }
-  return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Wybierz wiedzę dla tekstu</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><div className="mt-4 space-y-3"><p className="text-sm leading-6 text-slate-700">Wskaż usługę, której zatwierdzona wiedza ma zasilić tekst. WILQ potrzebuje jednoznacznego zakresu, żeby nie zgadywać na podstawie briefu.</p>{workspace.service_options.length ? <><label className="block text-sm font-semibold text-ink">Wiedza o usłudze<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={serviceCardId} onChange={(event) => setServiceCardId(event.target.value)}><option value="">Wybierz zakres wiedzy</option>{workspace.service_options.map((option) => <option key={option.service_card_id} value={option.service_card_id}>{option.label}</option>)}</select></label><button type="button" disabled={!serviceCardId || foundation.isPending} className="rounded-xl bg-action px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" onClick={() => foundation.mutate()}>{foundation.isPending ? "Ustawiam zakres…" : "Użyj tej wiedzy do tekstu"}</button>{foundation.data ? <p className="text-sm leading-6 text-action">{foundation.data.safe_next_step}</p> : null}{foundation.isError ? <p className="text-sm leading-6 text-wait">Nie udało się ustawić zakresu wiedzy. Odśwież brief i sprawdź dane ponownie.</p> : null}</> : <p className="text-sm leading-6 text-wait">Nie ma obecnie zatwierdzonej wiedzy o usłudze, na której można bezpiecznie oprzeć tekst.</p>}</div></section>;
+  return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Na czym oprzeć tekst?</h2><p className="mt-2 text-sm leading-6 text-slate-700">Wybierz zatwierdzoną wiedzę o usłudze. WILQ użyje jej jako podstawy tekstu i sam przejdzie przez techniczne sprawdzenia w tle.</p><div className="mt-4 space-y-3">{workspace.service_options.length ? <><label className="block text-sm font-semibold text-ink">Źródło wiedzy<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={serviceCardId} onChange={(event) => setServiceCardId(event.target.value)}><option value="">Wybierz źródło wiedzy</option>{workspace.service_options.map((option) => <option key={option.service_card_id} value={option.service_card_id}>{option.label}</option>)}</select></label><button type="button" disabled={!serviceCardId || foundation.isPending} className="rounded-xl bg-action px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" onClick={() => { setPrepareTextAfterFoundation(true); foundation.mutate(); }}>{foundation.isPending ? "Przygotowuję tekst…" : "Przygotuj tekst na tej podstawie"}</button>{foundation.isError ? <p className="text-sm leading-6 text-wait">Nie udało się przygotować tekstu na tej podstawie. Odśwież brief i spróbuj ponownie.</p> : null}</> : <p className="text-sm leading-6 text-wait">Nie ma obecnie zatwierdzonej wiedzy o usłudze, na której można bezpiecznie oprzeć tekst.</p>}</div></section>;
 }
 
 function NewPageCanonicalDocument({ briefId }: { briefId: string }) {
@@ -488,10 +494,11 @@ function reviewLabel(decision: NonNullable<ContentNewPageCanonicalDocumentWorksp
   return { approved: "Zatwierdzone", needs_changes: "Wymaga zmian", rejected: "Odrzucone", deferred: "Odłożone" }[decision];
 }
 
-function NewPagePlanningProposal({ briefId }: { briefId: string }) {
+function NewPagePlanningProposal({ briefId, autoStart = false }: { briefId: string; autoStart?: boolean }) {
   const queryClient = useQueryClient();
   const [requestedInputDigest, setRequestedInputDigest] = useState<string | null>(null);
   const startedProposalId = useRef<string | null>(null);
+  const consumedAutoStart = useRef(false);
   const workspace = useQuery({
     queryKey: ["content-workflow", "new-page-brief", briefId, "planning-proposal"],
     queryFn: () => getContentNewPagePlanningProposal(briefId),
@@ -537,6 +544,23 @@ function NewPagePlanningProposal({ briefId }: { briefId: string }) {
       planningInputDigest: exactProposal.planning_input_digest
     });
   }, [exactProposal, prepareDocument, proposalReady, requestedInputDigest]);
+  useEffect(() => {
+    if (!autoStart || consumedAutoStart.current || workspace.isLoading || !readiness) return;
+    consumedAutoStart.current = true;
+    if (readiness.status !== "ready") return;
+    if (proposalReady && exactProposal) {
+      if (startedProposalId.current !== exactProposal.proposal_id) {
+        startedProposalId.current = exactProposal.proposal_id;
+        prepareDocument.mutate({
+          proposalId: exactProposal.proposal_id,
+          planningDigest: exactProposal.planning_digest,
+          planningInputDigest: exactProposal.planning_input_digest
+        });
+      }
+      return;
+    }
+    if (readiness.planning_input_digest) generate.mutate(readiness.planning_input_digest);
+  }, [autoStart, exactProposal, generate, prepareDocument, proposalReady, readiness, workspace.isLoading]);
   if (workspace.isLoading) return <p className="mt-4 text-sm leading-6 text-slate-600">Sprawdzam dane do przygotowania tekstu…</p>;
   if (workspace.error || !workspace.data || !readiness) return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 px-3 py-2 text-sm leading-6 text-ink">Nie udało się odczytać danych do przygotowania tekstu. Brief i wybrana wiedza pozostają zapisane; odśwież widok przed kolejnym krokiem.</p>;
   if (readiness.status === "blocked") {
