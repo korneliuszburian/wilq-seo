@@ -13,7 +13,11 @@ from tests.content.structured_generation_fixtures import (
     _sales_brief,
     _structured_output,
 )
-from wilq.content.workflow.contracts import ContentWorkItemHumanReviewRequest
+from wilq.content.workflow.api import build_content_work_item_quality_review_response
+from wilq.content.workflow.contracts import (
+    ContentWorkItemHumanReviewRequest,
+    ContentWorkItemQualityReviewRequest,
+)
 from wilq.content.workflow.stage_review import build_content_work_item_human_review_response
 
 
@@ -32,10 +36,9 @@ def test_adversarial_quality_review_blocks_forbidden_guarantee_claim() -> None:
     )
     payload["structured_output"]["sections"][0]["claims_used"].append(forbidden_claim)
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = build_content_work_item_quality_review_response(
+        ContentWorkItemQualityReviewRequest.model_validate(payload)
+    ).quality_review.model_dump(mode="json")
     assert review["verdict"] == "blocked"
     assert {"claim_ledger_blocks_quality", "forbidden_claim_used"} <= _blocker_codes(review)
 
@@ -46,10 +49,9 @@ def test_adversarial_quality_review_blocks_claim_outside_ledger() -> None:
         "Ekologus przejmie pełną odpowiedzialność za wszystkie obowiązki BDO."
     )
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = build_content_work_item_quality_review_response(
+        ContentWorkItemQualityReviewRequest.model_validate(payload)
+    ).quality_review.model_dump(mode="json")
     assert review["verdict"] == "blocked"
     assert review["claim_safety"]["status"] == "blocked"
     assert "unsupported_claim_used" in _blocker_codes(review)
