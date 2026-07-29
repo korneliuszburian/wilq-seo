@@ -14,7 +14,8 @@ export function ContentHtmlPreview({
   return (
     <iframe
       title={title}
-      sandbox=""
+      sandbox="allow-same-origin"
+      referrerPolicy="no-referrer"
       srcDoc={previewDocument(contentHtml)}
       data-testid={testId}
       className={`block ${minHeightClass} w-full rounded-md border border-line bg-white ${className}`}
@@ -23,7 +24,7 @@ export function ContentHtmlPreview({
 }
 
 function previewDocument(contentHtml: string) {
-  return `<!doctype html><html lang="pl"><head><meta charset="utf-8"><style>
+  return `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:"><style>
     html { color: #1f2937; font: 16px/1.75 ui-sans-serif, system-ui, sans-serif; }
     body { margin: 0; padding: 1.25rem; overflow-wrap: anywhere; }
     h3, h4, h5, h6 { color: #172033; line-height: 1.3; }

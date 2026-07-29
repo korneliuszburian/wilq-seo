@@ -517,9 +517,11 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByTestId("content-review-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("content-full-page-preview")).toBeInTheDocument();
     expect(screen.getByText("Szczegóły tej wersji")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Szczegóły, źródła i ograniczenia"));
     expect(screen.getByText("Materiały użyte w dokumencie")).toBeInTheDocument();
     expect(screen.getByText("BDO i sprawozdawczość środowiskowa")).toBeInTheDocument();
+    expect(screen.getByText("Sprawdź nową wersję")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Stan pipeline’u")).not.toBeInTheDocument();
+    expect(screen.queryByText(/zatwierdź plan/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/0 dokładnie dopasowanych sygnałów zapytań/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Wróć do edytora/)).not.toBeInTheDocument();
     const save = screen.getByRole("button", { name: "Zatwierdź tekst" });

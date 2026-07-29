@@ -361,16 +361,13 @@ function ContentReviewWorkspace({
     <main className="mx-auto max-w-7xl px-4 py-5 lg:px-8" data-testid="content-review-workspace">
       <ContentWorkflowWorkspaceHeader />
       <section className="rounded-2xl border border-action/25 bg-white p-5 shadow-sm lg:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Review treści</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Sprawdź nową wersję</p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink lg:text-3xl">
           {workspace.source_snapshot.title ?? "Wybrana strona"}
         </h1>
         {workspace.source_snapshot.url ? <p className="mt-2 break-all text-sm text-action">{workspace.source_snapshot.url}</p> : null}
         <p className="mt-2 text-sm font-medium text-slate-700">Usługa: {workspace.service_label ?? "niepotwierdzona"}</p>
-        <p className="mt-3 text-sm leading-6 text-slate-700">Wynik pracy: pełna rewizja HTML do review.</p>
-        <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-slate-600" aria-label="Stan pipeline’u">
-          <li>Kontekst</li><li aria-hidden="true">→</li><li>Tekst</li><li aria-hidden="true">→</li><li className="text-action">Review</li><li aria-hidden="true">→</li><li>Szkic na dev (opcjonalnie)</li>
-        </ol>
+        <p className="mt-3 text-sm leading-6 text-slate-700">Przeczytaj przygotowany tekst i sprawdź materiały, na których go oparto. Zatwierdzenie dotyczy wyłącznie tej wersji tekstu — nie publikuje niczego.</p>
       </section>
       <section className="mt-4 rounded-2xl border border-line bg-white p-4 shadow-sm lg:p-5">
         {completeRevision ? <ContentFullPagePreview revision={completeRevision} /> : (
@@ -383,7 +380,7 @@ function ContentReviewWorkspace({
           </div>
         )}
         {completeRevision ? (
-          <><ReviewDecisionPanel
+          <><ContentDocumentLineageDisclosure workspace={workspace} /><ReviewDecisionPanel
             revision={completeRevision}
             matchingReview={matchingReview}
             hasOperatorIdentity={Boolean(operatorLabel)}
@@ -406,7 +403,6 @@ function ContentReviewWorkspace({
       <details className="mt-4 rounded-xl border border-line bg-white p-4 text-sm text-slate-700">
         <summary className="cursor-pointer font-semibold text-ink">Szczegóły, źródła i ograniczenia</summary>
         <p className="mt-3 leading-6">{workspace.source_snapshot.reason}</p>
-        <ContentDocumentLineageDisclosure workspace={workspace} />
       </details>
     </main>
   );
