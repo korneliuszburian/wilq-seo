@@ -177,6 +177,37 @@ describe("ContentTextPreparationPanel", () => {
     expect(screen.queryByText("Zatwierdź plan.")).not.toBeInTheDocument();
   });
 
+  it("shows only exact planning evidence and GSC queries used by the ready plan", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyPlan(),
+      input_summary: {
+        ...readyToGenerate().input_summary,
+        source_material_ids: ["material_1", "material_2"],
+        knowledge_card_count: 3,
+        evidence_id_count: 4,
+        source_assessments: [
+          { source: "wordpress", status: "used", reason: "Dokładny materiał.", evidence_ids: [] },
+          { source: "gsc", status: "used", reason: "Dokładne zapytania.", evidence_ids: [] },
+          { source: "ahrefs", status: "missing", reason: "Brak powiązania.", evidence_ids: [] }
+        ]
+      },
+      proposal: {
+        ...readyPlan().proposal,
+        search_demand: {
+          gsc_query_rows: [{ term: "bdo dla firm", period: "2026-07", impressions: 181, clicks: 4 }]
+        }
+      }
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+
+    expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Materiały źródłowe");
+    expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Google Search Console");
+    expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("bdo dla firm · 181 wyświetleń · 4 kliknięć");
+    expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Ahrefs");
+  });
+
   it("lets the marketer retry the same exact proposal after draft preparation fails", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyPlan() as never);
     vi.mocked(postContentWorkItemInitialDraft)

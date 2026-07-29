@@ -159,6 +159,7 @@ export function ContentTextPreparationPanel({ workItemId }: { workItemId: string
   return <section aria-labelledby="content-text-preparation-title" className="rounded-md border border-line bg-white p-4 shadow-sm" data-testid="content-text-preparation">
     <h2 id="content-text-preparation-title" className="text-lg font-semibold text-ink">{textHeadline(preparingText, state.status)}</h2>
     <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">{blocker?.reason ?? "WILQ wykorzysta aktualną stronę, wybraną usługę i zapisane źródła, a potem przygotuje jeden tekst do Twojego review. Nie zmienia WordPressa."}</p>
+    {input ? <PlanningEvidenceDetails input={input} proposal={state.proposal} /> : null}
     {canPrepareText ? <button type="button" disabled={preparingText} onClick={prepareText} className="mt-4 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
       {preparingText ? "Przygotowuję tekst…" : state.status === "failed" ? "Spróbuj ponownie" : "Przygotuj tekst"}
     </button> : null}
@@ -167,6 +168,50 @@ export function ContentTextPreparationPanel({ workItemId }: { workItemId: string
     {generation.error || startDraft.error ? <p role="alert" className="mt-3 text-sm text-danger">Nie udało się przygotować tekstu. Nic nie zostało zapisane w WordPressie.</p> : null}
     <p className="mt-3 text-xs leading-5 text-slate-500">Otwarcie tego widoku niczego nie generuje. WILQ zachowuje exact dane robocze wewnątrz procesu; Twoją decyzją jest dopiero review gotowego tekstu.</p>
   </section>;
+}
+
+function PlanningEvidenceDetails({
+  input,
+  proposal
+}: {
+  input: NonNullable<ContentPlanningProposalResponse["input_summary"]>;
+  proposal: ContentPlanningProposalResponse["proposal"];
+}) {
+  const usedSources = input.source_assessments.filter((source) => source.status === "used");
+  const unavailableSources = input.source_assessments.filter((source) => source.status !== "used");
+  const queries = proposal?.search_demand?.gsc_query_rows ?? [];
+
+  return <details className="mt-4 rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-700" data-testid="content-planning-evidence">
+    <summary className="cursor-pointer font-semibold text-ink">Na jakich danych oprze się tekst</summary>
+    <p className="mt-2 leading-6">WILQ użyje tylko źródeł dokładnie przypisanych do tej strony i tego planu. Brakujące dane nie są zastępowane domysłami.</p>
+    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+      <EvidenceCount label="Materiały źródłowe" value={input.source_material_ids.length} />
+      <EvidenceCount label="Karty wiedzy" value={input.knowledge_card_count} />
+      <EvidenceCount label="Dowody" value={input.evidence_id_count} />
+    </div>
+    {usedSources.length ? <p className="mt-3 leading-6"><span className="font-semibold text-ink">Wykorzystane źródła: </span>{usedSources.map((source) => planningSourceLabel(source.source)).join(", ")}.</p> : null}
+    {queries.length ? <div className="mt-3"><p className="font-semibold text-ink">Zapytania GSC przypisane do tej strony</p><ul className="mt-2 space-y-1">{queries.slice(0, 6).map((query) => <li key={`${query.term}-${query.period}`} className="rounded bg-white px-2 py-1">{query.term}{query.impressions !== null ? ` · ${query.impressions} wyświetleń` : ""}{query.clicks !== null ? ` · ${query.clicks} kliknięć` : ""}</li>)}</ul></div> : <p className="mt-3 leading-6">Brak exact zapytań GSC w aktualnym planie — WILQ nie pokazuje zastępczej listy słów kluczowych.</p>}
+    {unavailableSources.length ? <p className="mt-3 leading-6 text-slate-600">Poza planem pozostają: {unavailableSources.map((source) => planningSourceLabel(source.source)).join(", ")}. Ich dane nie były wystarczająco dokładne lub świeże.</p> : null}
+  </details>;
+}
+
+function EvidenceCount({ label, value }: { label: string; value: number }) {
+  return <div className="rounded bg-white px-3 py-2"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 font-semibold text-ink">{value}</p></div>;
+}
+
+function planningSourceLabel(source: string) {
+  return {
+    wordpress: "materiał strony",
+    service_profile: "kontekst usługi",
+    gsc: "Google Search Console",
+    ga4: "Google Analytics 4",
+    google_ads: "Google Ads",
+    ahrefs: "Ahrefs",
+    keyword_planner: "Keyword Planner",
+    merchant: "Merchant Center",
+    localo: "Localo",
+    knowledge: "baza wiedzy"
+  }[source] ?? source;
 }
 
 function PlanningState({ children, tone = "normal" }: { children: string; tone?: "normal" | "error" }) {
