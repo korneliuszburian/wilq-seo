@@ -4,10 +4,6 @@ from collections.abc import Callable
 
 from fastapi import APIRouter
 
-from wilq.connectors.wordpress.authoring import (
-    WordPressAuthoringProfile,
-    build_wordpress_authoring_profile,
-)
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
 from wilq.content.workflow.api import (
     build_content_wordpress_draft_activation_packet_response,
@@ -39,13 +35,6 @@ def register_content_legacy_wordpress_read_routes(
     default_snapshot_loader: ContentDefaultSnapshotLoader,
 ) -> None:
     """Keep compatibility reads separate from the document-first content journey."""
-
-    @router.get(
-        "/api/content/wordpress/authoring-profile",
-        response_model=WordPressAuthoringProfile,
-    )
-    def content_wordpress_authoring_profile() -> WordPressAuthoringProfile:
-        return build_wordpress_authoring_profile("wordpress_ekologus", include_dev_content=True)
 
     @router.get(
         "/api/content/wordpress/draft-write-readiness",

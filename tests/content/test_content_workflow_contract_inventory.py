@@ -8,7 +8,6 @@ from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_workflow as content_workflow_module
 from apps.api.wilq_api.routers.content_workflow import router
 from apps.api.wilq_api.routers.content_workflow_http import _browser_item
-from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
 from wilq.content.drafts.codex_section_proposal import (
     ContentCodexSectionProposalResponse,
 )
@@ -55,12 +54,12 @@ from wilq.content.workflow.new_page import (
     ContentNewPageBriefWorkspace,
     ContentNewPageFoundationResult,
 )
-from wilq.content.workflow.new_page_topics import ContentNewPageTopicRecommendations
 from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     ContentNewPageDeliveryReadiness,
 )
 from wilq.content.workflow.new_page_revision import ContentNewPageRevisionReviewResponse
+from wilq.content.workflow.new_page_topics import ContentNewPageTopicRecommendations
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 from wilq.content.workflow.selected_workspace import ContentSelectedWorkspace
 from wilq.content.workflow.target_discovery import ContentTargetDiscovery
@@ -140,7 +139,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-action",
     ): ActionObject,
     ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
-    ("GET", "/api/content/wordpress/authoring-profile"): WordPressAuthoringProfile,
     (
         "GET",
         "/api/content/wordpress/draft-activation-packet",
@@ -394,6 +392,13 @@ def test_selected_snapshot_handler_uses_browser_projection(monkeypatch) -> None:
     )
 
     assert result == ("internal-snapshot", sentinel)
+
+
+def test_retired_global_authoring_profile_is_not_a_public_content_route() -> None:
+    path = "/api/content/wordpress/authoring-profile"
+
+    assert ("GET", path) not in _content_workflow_routes()
+    assert path not in app.openapi()["paths"]
 
 
 def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:

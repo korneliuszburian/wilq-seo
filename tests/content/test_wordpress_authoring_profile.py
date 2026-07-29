@@ -458,36 +458,6 @@ def test_wordpress_authoring_payload_preview_blocks_without_acf_contract() -> No
     }.issubset({blocker.code for blocker in result.blockers})
 
 
-def test_wordpress_authoring_profile_api_exposes_read_only_profile(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    _configure_rest(monkeypatch)
-    export_path = _write_acf_export(tmp_path)
-    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ACF_FIELD_GROUPS_EXPORT_PATH", str(export_path))
-    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ACF_FLEX_FIELD_NAME", "sections")
-    from apps.api.wilq_api.routers import content_workflow
-
-    monkeypatch.setattr(
-        content_workflow,
-        "build_wordpress_authoring_profile",
-        lambda connector_id, include_dev_content=False: build_wordpress_authoring_profile(
-            connector_id,
-            include_dev_content=False,
-        ),
-    )
-
-    response = TestClient(app).get("/api/content/wordpress/authoring-profile")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["profile_version"] == "wordpress_authoring_profile_v2"
-    assert data["acf"]["layouts"][0]["name"] == "content_section"
-    assert data["dev_content"]["status"] == "unknown"
-    assert data["write_boundary"]["direct_vendor_write_allowed"] is False
-    assert data["write_boundary"]["external_write_attempted"] is False
-
-
 def test_wordpress_authoring_payload_preview_api_is_dry_run(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
