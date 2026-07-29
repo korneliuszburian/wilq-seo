@@ -143,13 +143,13 @@ def read_content_public_deployment(
             work_item_id,
             f"measurement_window_{deployment.deployment_id}",
         )
-        if _matches_deployment(candidate_window, deployment):
+        if candidate_window is not None and _matches_deployment(candidate_window, deployment):
             window = candidate_window
             outcome_allowed = content_measurement_window_outcome_allowed(
                 window, as_of=date.today()
             )
             candidate_outcome = store.measurement_outcome(work_item_id, window.id)
-            if _matches_window_outcome(candidate_outcome, window):
+            if candidate_outcome is not None and _matches_window_outcome(candidate_outcome, window):
                 outcome = candidate_outcome
                 candidate_learning = store.learning_proposal(work_item_id, window.id)
                 if (
