@@ -621,6 +621,12 @@ def _facts_for_known_refresh_runs(
     latest_refresh: ConnectorRefreshRun | None = None,
 ) -> list[MetricFact]:
     selected_runs = [latest_refresh] if latest_refresh is not None else refresh_runs
+    # Authority-only refreshes are useful for the current domain context, but
+    # must not erase the latest persisted gap read.  A gap claim remains tied
+    # to the exact evidence from the refresh that produced it.
+    latest_gap_refresh = _latest_gap_refresh(refresh_runs)
+    if latest_gap_refresh is not None and latest_gap_refresh not in selected_runs:
+        selected_runs.append(latest_gap_refresh)
     known_evidence_ids = {
         evidence_id
         for run in selected_runs
@@ -631,6 +637,20 @@ def _facts_for_known_refresh_runs(
     if not known_evidence_ids:
         return metric_facts
     return [fact for fact in metric_facts if fact.evidence_id in known_evidence_ids]
+
+
+def _latest_gap_refresh(
+    refresh_runs: list[ConnectorRefreshRun],
+) -> ConnectorRefreshRun | None:
+    def recency_key(run: ConnectorRefreshRun) -> datetime:
+        return run.completed_at or run.started_at
+
+    gap_runs = [
+        run
+        for run in refresh_runs
+        if any(metric_name in AHREFS_GAP_FACT_NAMES for metric_name in run.metric_summary)
+    ]
+    return max(gap_runs, key=recency_key) if gap_runs else None
 
 
 def _ahrefs_gap_read_contract(
