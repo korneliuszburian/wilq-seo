@@ -10,9 +10,6 @@ from apps.api.wilq_api.routers.content_codex_proposal import (
 from apps.api.wilq_api.routers.content_decision_context import (
     register_content_decision_context_route,
 )
-from apps.api.wilq_api.routers.content_document_workspace import (
-    register_content_document_workspace_route,
-)
 from apps.api.wilq_api.routers.content_editorial_integrity import (
     register_content_editorial_integrity_route,
 )
@@ -54,7 +51,6 @@ def register_content_model_routes(
     snapshot_loader: ContentModelSnapshotLoader,
 ) -> None:
     register_content_decision_context_route(router)
-    register_content_document_workspace_route(router)
     register_content_selected_workspace_route(router)
     register_content_editorial_integrity_route(router)
     register_content_codex_proposal_route(router, snapshot_loader=snapshot_loader)

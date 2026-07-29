@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Read-only smoke for the current marketer-facing content operator seams."""
+
 from __future__ import annotations
 
 import argparse
@@ -80,12 +81,23 @@ def validate_workspace(workspace: dict[str, Any], work_item_id: str) -> dict[str
     return workspace
 
 
+def validate_selected_workspace(response: dict[str, Any], work_item_id: str) -> dict[str, Any]:
+    if response.get("response_type") != "content_selected_workspace":
+        raise SystemExit("Selected workspace response_type mismatch")
+    if response.get("work_item_id") != work_item_id:
+        raise SystemExit("Selected workspace identity mismatch")
+    if response.get("status") != "ready":
+        raise SystemExit("Selected workspace is not ready for the exact work item")
+    workspace = as_dict(response.get("workspace"), "selected workspace")
+    return validate_workspace(workspace, work_item_id)
+
+
 def read_workspace(api_base: str, work_item_id: str) -> dict[str, Any]:
     encoded = urllib.parse.quote(work_item_id, safe="")
-    return validate_workspace(
+    return validate_selected_workspace(
         as_dict(
-            request_json(api_base, "GET", f"/api/content/work-items/{encoded}/document-workspace"),
-            "document workspace",
+            request_json(api_base, "GET", f"/api/content/work-items/{encoded}/selected-workspace"),
+            "selected workspace",
         ),
         work_item_id,
     )
@@ -148,17 +160,23 @@ def main() -> int:
     workspace = read_workspace(args.api_base, work_item_id)
     planning = read_planning(args.api_base, work_item_id)
 
-    print(json.dumps({
-        "skill": "wilq-content-operator",
-        "mode": "read_only",
-        "work_item_id": work_item_id,
-        "source_status": workspace["source_snapshot"]["status"],
-        "document_status": workspace["canonical_document"]["status"],
-        "next_action": workspace["next_action"]["kind"],
-        "planning_status": planning["status"],
-        "proposal_id": (planning.get("proposal") or {}).get("proposal_id"),
-        "publish_ready": False,
-    }, ensure_ascii=False, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "skill": "wilq-content-operator",
+                "mode": "read_only",
+                "work_item_id": work_item_id,
+                "source_status": workspace["source_snapshot"]["status"],
+                "document_status": workspace["canonical_document"]["status"],
+                "next_action": workspace["next_action"]["kind"],
+                "planning_status": planning["status"],
+                "proposal_id": (planning.get("proposal") or {}).get("proposal_id"),
+                "publish_ready": False,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
     return 0
 
 

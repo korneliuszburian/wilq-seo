@@ -33,7 +33,7 @@ def test_content_operator_skill_uses_one_prepare_text_action() -> None:
             {"work_item_id": "content_work_item_bdo", "url": "https://www.ekologus.pl/bdo/"}
         ],
     }
-    workspace = {
+    document_workspace = {
         "response_type": "content_document_workspace",
         "work_item_id": "content_work_item_bdo",
         "work_kind": "refresh_existing",
@@ -44,6 +44,12 @@ def test_content_operator_skill_uses_one_prepare_text_action() -> None:
             "content_digest": "b" * 64,
             "revision": {"revision_id": "revision_bdo", "content_digest": "b" * 64},
         },
+    }
+    selected_workspace = {
+        "response_type": "content_selected_workspace",
+        "status": "ready",
+        "work_item_id": "content_work_item_bdo",
+        "workspace": document_workspace,
     }
     planning = {
         "status": "ready",
@@ -58,7 +64,10 @@ def test_content_operator_skill_uses_one_prepare_text_action() -> None:
     }
 
     assert smoke.validate_entry(entry)["work_item_id"] == "content_work_item_bdo"
-    assert smoke.validate_workspace(workspace, "content_work_item_bdo") is workspace
+    assert (
+        smoke.validate_selected_workspace(selected_workspace, "content_work_item_bdo")
+        is document_workspace
+    )
     assert smoke.validate_planning(planning, "content_work_item_bdo") is planning
     assert "zapisz\n   exact `scope` review" not in skill
     assert "zapisuje exact planning\n   review" not in skill

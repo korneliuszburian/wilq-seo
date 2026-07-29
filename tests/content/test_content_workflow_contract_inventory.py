@@ -33,7 +33,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemLearningProposalResponse,
 )
 from wilq.content.workflow.decision_context import ContentDecisionContext
-from wilq.content.workflow.document_workspace import ContentDocumentWorkspace
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.new_page import (
     ContentNewPageBriefWorkspace,
@@ -94,10 +93,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/new-page-briefs/{brief_id}/delivery-action",
     ): ActionObject,
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
-    (
-        "GET",
-        "/api/content/work-items/{work_item_id}/document-workspace",
-    ): ContentDocumentWorkspace,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/selected-workspace",
@@ -299,6 +294,7 @@ def test_legacy_workflow_routes_are_not_public_content_routes() -> None:
     for method, path in (
         ("GET", "/api/content/work-items/queue"),
         ("GET", "/api/content/work-items/{work_item_id}/enrichment"),
+        ("GET", "/api/content/work-items/{work_item_id}/document-workspace"),
         ("GET", "/api/content/work-items/snapshot"),
         ("GET", "/api/content/work-items/{work_item_id}/snapshot"),
         ("POST", "/api/content/work-items/snapshot/human-review"),
