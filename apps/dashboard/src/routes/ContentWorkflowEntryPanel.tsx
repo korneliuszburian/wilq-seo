@@ -1,18 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
 
 import {
   getContentWorkflowEntry,
   createContentNewPageBrief,
   createContentNewPageFoundation,
-  createContentNewPagePlanningProposal,
-  createContentNewPageInitialDraft,
   createContentNewPageDeliveryAction,
   getContentNewPageTopicRecommendations,
   getContentNewPageBriefWorkspace,
   getContentNewPageCanonicalDocument,
   getContentNewPageDeliveryReadiness,
-  getContentNewPagePlanningProposal,
   reviewContentNewPageRevision,
   type ContentDiagnosticsResponse,
   type ContentDraftRevision,
@@ -23,13 +20,12 @@ import {
   type ContentNewPageTopicCandidate,
   type ContentNewPageTopicRecommendations,
   type ContentNewPageBriefWorkspace,
-  type ContentNewPagePlanningProposalWorkspace,
   type ContentWorkflowEntryResponse
 } from "../lib/api";
 import { ContentRequiredSourceRefresh } from "./ContentRequiredSourceRefresh";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentPublicDeploymentPanel } from "./ContentPublicDeploymentPanel";
-import { textPreparationRecovery } from "./contentTextPreparationCopy";
+import { ContentNewPageTextPreparation } from "./ContentNewPageTextPreparation";
 
 export function ContentWorkflowEntryPanel({
   entry,
@@ -376,7 +372,7 @@ function NewPagePlanningFoundation({ workspace }: { workspace: ContentNewPageBri
     }
   });
   if (workspace.foundation) {
-    return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Tekst nowej strony</h2><p className="mt-2 text-sm leading-6 text-slate-700">Tekst oprze się na wiedzy o usłudze: {workspace.foundation.service_label}. Nowa strona nie ma jeszcze publicznego URL-a, inventory ani danych historycznych.</p><NewPageCanonicalDocument document={canonicalDocument} onChanged={() => { void queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", workspace.brief.brief_id] }); }} />{canonicalDocument.data && !canonicalDocument.data.canonical_revision ? <NewPagePlanningProposal briefId={workspace.brief.brief_id} autoStart={prepareTextAfterFoundation} /> : null}</section>;
+    return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Tekst nowej strony</h2><p className="mt-2 text-sm leading-6 text-slate-700">Tekst oprze się na wiedzy o usłudze: {workspace.foundation.service_label}. Nowa strona nie ma jeszcze publicznego URL-a, inventory ani danych historycznych.</p><NewPageCanonicalDocument document={canonicalDocument} onChanged={() => { void queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", workspace.brief.brief_id] }); }} />{canonicalDocument.data && !canonicalDocument.data.canonical_revision ? <ContentNewPageTextPreparation briefId={workspace.brief.brief_id} autoStart={prepareTextAfterFoundation} /> : null}</section>;
   }
   if (workspace.overlap_guard.disposition !== "no_conflict") {
     return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Zakres źródeł do tekstu</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-slate-700">{workspace.next_action_label}</p></section>;
@@ -520,118 +516,8 @@ function reviewLabel(decision: NonNullable<ContentNewPageCanonicalDocumentWorksp
   return { approved: "Zatwierdzone", needs_changes: "Wymaga zmian", rejected: "Odrzucone", deferred: "Odłożone" }[decision];
 }
 
-function NewPagePlanningProposal({ briefId, autoStart = false }: { briefId: string; autoStart?: boolean }) {
-  const queryClient = useQueryClient();
-  const [requestedInputDigest, setRequestedInputDigest] = useState<string | null>(null);
-  const startedProposalId = useRef<string | null>(null);
-  const consumedAutoStart = useRef(false);
-  const workspace = useQuery({
-    queryKey: ["content-workflow", "new-page-brief", briefId, "planning-proposal"],
-    queryFn: () => getContentNewPagePlanningProposal(briefId),
-    staleTime: 15_000,
-    refetchInterval: (query) =>
-      query.state.data?.proposal_status?.status === "generating" ? 3_000 : false
-  });
-  const generate = useMutation({
-    mutationFn: (digest: string) => createContentNewPagePlanningProposal(briefId, { expected_planning_input_digest: digest, requested_by: "Wilku" }),
-    onMutate: (digest) => setRequestedInputDigest(digest),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId] })
-  });
-  const prepareDocument = useMutation({
-    mutationFn: ({ proposalId, planningDigest, planningInputDigest }: { proposalId: string; planningDigest: string; planningInputDigest: string }) => createContentNewPageInitialDraft(briefId, {
-      expected_proposal_id: proposalId,
-      expected_planning_digest: planningDigest,
-      expected_planning_input_digest: planningInputDigest,
-      requested_by: "wilku"
-    }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId] }),
-    onError: () => {
-      startedProposalId.current = null;
-      setRequestedInputDigest(null);
-    }
-  });
-  const readiness = workspace.data?.readiness ?? null;
-  const proposal = workspace.data?.proposal_status ?? null;
-  const exactProposal = exactNewPageProposal(proposal?.proposal);
-  const proposalReady = Boolean(exactProposal && ["ready", "created", "idempotent"].includes(proposal?.status ?? ""));
-  useEffect(() => {
-    if (
-      !requestedInputDigest ||
-      !exactProposal ||
-      requestedInputDigest !== exactProposal.planning_input_digest ||
-      !proposalReady ||
-      startedProposalId.current === exactProposal.proposal_id ||
-      prepareDocument.isPending
-    ) return;
-    startedProposalId.current = exactProposal.proposal_id;
-    prepareDocument.mutate({
-      proposalId: exactProposal.proposal_id,
-      planningDigest: exactProposal.planning_digest,
-      planningInputDigest: exactProposal.planning_input_digest
-    });
-  }, [exactProposal, prepareDocument, proposalReady, requestedInputDigest]);
-  useEffect(() => {
-    if (!autoStart || consumedAutoStart.current || workspace.isLoading || !readiness) return;
-    consumedAutoStart.current = true;
-    if (readiness.status !== "ready") return;
-    if (proposalReady && exactProposal) {
-      if (startedProposalId.current !== exactProposal.proposal_id) {
-        startedProposalId.current = exactProposal.proposal_id;
-        prepareDocument.mutate({
-          proposalId: exactProposal.proposal_id,
-          planningDigest: exactProposal.planning_digest,
-          planningInputDigest: exactProposal.planning_input_digest
-        });
-      }
-      return;
-    }
-    if (readiness.planning_input_digest) generate.mutate(readiness.planning_input_digest);
-  }, [autoStart, exactProposal, generate, prepareDocument, proposalReady, readiness, workspace.isLoading]);
-  if (workspace.isLoading) return <p className="mt-4 text-sm leading-6 text-slate-600">Sprawdzam dane do przygotowania tekstu…</p>;
-  if (workspace.error || !workspace.data || !readiness) return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 px-3 py-2 text-sm leading-6 text-ink">Nie udało się odczytać danych do przygotowania tekstu. Brief i wybrana wiedza pozostają zapisane; odśwież widok przed kolejnym krokiem.</p>;
-  if (readiness.status === "blocked") {
-    const blocker = readiness.blockers[0];
-    return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">{blocker?.label ?? "Tekst jest jeszcze zablokowany"}</p><p className="mt-1">{blocker?.reason ?? readiness.safe_next_step}</p><p className="mt-2 text-slate-700">{textPreparationRecovery(blocker?.code)}</p></div>;
-  }
-  const preparingText = generate.isPending || proposal?.status === "generating" || prepareDocument.isPending;
-  const prepareText = () => {
-    if (proposalReady && exactProposal) {
-      setRequestedInputDigest(exactProposal.planning_input_digest);
-      if (startedProposalId.current !== exactProposal.proposal_id) {
-        startedProposalId.current = exactProposal.proposal_id;
-        prepareDocument.mutate({
-          proposalId: exactProposal.proposal_id,
-          planningDigest: exactProposal.planning_digest,
-          planningInputDigest: exactProposal.planning_input_digest
-        });
-      }
-      return;
-    }
-    const planningInputDigest = readiness.planning_input_digest;
-    if (planningInputDigest) generate.mutate(planningInputDigest);
-  };
-  if (preparingText) return <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-generating"><p className="font-semibold">Przygotowuję pierwszy tekst</p><p className="mt-1">WILQ sprawdza exact dane robocze i przygotowuje pierwszy tekst; nie uruchomi drugiej wersji dla tych samych danych.</p></div>;
-  const planningInputDigest = readiness.planning_input_digest;
-  if (!planningInputDigest) return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">Nie można jeszcze przygotować tekstu</p><p className="mt-1">Brakuje dokładnych danych roboczych. Odśwież brief przed kolejnym krokiem.</p></div>;
-  return <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-ready"><p className="font-semibold">Tekst nowej strony jest gotowy do przygotowania</p><p className="mt-1">WILQ użyje dokładnego briefu i wybranego kontekstu usługi. Nie przypisuje tej nowej stronie starego URL-a, inventory ani historycznych metryk.</p><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white" onClick={prepareText}>Przygotuj tekst</button>{generate.isError || prepareDocument.isError ? <p className="mt-2 text-wait">Nie udało się przygotować tekstu. Odśwież stan i spróbuj ponownie.</p> : null}</div>;
-}
-
 function NewPageShell({ onReturn, children }: { onReturn: () => void; children: ReactNode }) {
   return <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#e7f8ee,_transparent_32%),linear-gradient(180deg,_#fbfdff_0%,_#ffffff_58%)] px-4 py-5 lg:px-7 lg:py-8" data-testid="content-workflow-new-page-brief"><div className="mx-auto max-w-4xl"><button type="button" className="text-sm font-semibold text-action" onClick={onReturn}>← Wróć do wyboru pracy</button><section className="mt-6 rounded-2xl border border-emerald-200 bg-white p-6 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] lg:p-9">{children}</section></div></main>;
-}
-
-type NewPageProposal = NonNullable<NonNullable<ContentNewPagePlanningProposalWorkspace["proposal_status"]>["proposal"]>;
-
-type ExactNewPageProposal = NewPageProposal & {
-  proposal_id: string;
-  planning_digest: string;
-  planning_input_digest: string;
-};
-
-function exactNewPageProposal(proposal: NewPageProposal | null | undefined): ExactNewPageProposal | null {
-  return proposal?.proposal_id && proposal.planning_digest && proposal.planning_input_digest
-    ? proposal as ExactNewPageProposal
-    : null;
 }
 
 function BriefField({ label, value, onChange, placeholder, multiline = false }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; multiline?: boolean }) {

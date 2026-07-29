@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const routeSource = readFileSync(resolve(__dirname, "ContentWorkflowSurface.tsx"), "utf8");
 const querySource = readFileSync(resolve(__dirname, "contentWorkflowQueries.ts"), "utf8");
+const entrySource = readFileSync(resolve(__dirname, "ContentWorkflowEntryPanel.tsx"), "utf8");
 const contentApiSource = readFileSync(resolve(__dirname, "../lib/api.ts"), "utf8");
 const actionRouteSource = readFileSync(resolve(__dirname, "DetailPanels.tsx"), "utf8");
 const actionQuerySource = readFileSync(resolve(__dirname, "actionDetailQueries.ts"), "utf8");
@@ -36,6 +37,13 @@ describe("ContentWorkflow architecture boundary", () => {
     expect(routeSource).not.toContain("MobileContentTriage");
     expect(routeSource).not.toContain("Treści: praca nad stroną");
     expect(routeSource).not.toContain('<FactTile label="Publikacja"');
+  });
+
+  it("keeps new-page text preparation behind its dedicated owner", () => {
+    expect(entrySource).toContain("<ContentNewPageTextPreparation");
+    expect(entrySource).not.toContain("createContentNewPagePlanningProposal");
+    expect(entrySource).not.toContain("createContentNewPageInitialDraft");
+    expect(entrySource).not.toContain("getContentNewPagePlanningProposal");
   });
 
   it("does not expose retired snapshot, package-review, or direct WordPress helpers", () => {
