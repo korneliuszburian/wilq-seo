@@ -1189,10 +1189,14 @@ def test_localo_vendor_read_collects_read_only_aggregate_facts(
     assert result.metric_summary["localo_favorite_competitor_count"] == 2
     assert result.metric_summary["localo_competitor_change_count"] == 6
     fact_by_name = {fact.name: fact for fact in result.metric_facts}
-    assert fact_by_name["localo_active_place_count"].dimensions == {
+    assert {
+        key: fact_by_name["localo_active_place_count"].dimensions[key]
+        for key in ("contract", "scope")
+    } == {
         "contract": "place_inventory",
         "scope": "active_places",
     }
+    assert fact_by_name["localo_active_place_count"].dimensions["covered_place_count"] == "2"
     assert fact_by_name["localo_avg_visibility_current"].dimensions["contract"] == (
         "local_rankings"
     )
