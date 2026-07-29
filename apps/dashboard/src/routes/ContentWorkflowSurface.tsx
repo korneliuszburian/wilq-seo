@@ -490,7 +490,7 @@ function ReviewDecisionPanel({
   return (
     <div className="mt-5 rounded-xl border border-line bg-slate-50 p-4" data-testid="content-review-decision-panel">
       <p className="font-semibold text-ink">Sprawdź tekst</p>
-      <p className="mt-1 text-sm leading-6 text-slate-700">Jeśli tekst odpowiada planowi i źródłom, zatwierdź tę dokładną rewizję. Rewizja: {revision.revision_id.slice(0, 12)} · digest: {revision.content_digest.slice(0, 12)}</p>
+      <p className="mt-1 text-sm leading-6 text-slate-700">Jeśli tekst odpowiada materiałom i źródłom, zatwierdź tę dokładną rewizję. Rewizja: {revision.revision_id.slice(0, 12)} · digest: {revision.content_digest.slice(0, 12)}</p>
       {!hasOperatorIdentity ? <p className="mt-2 text-sm font-semibold text-wait">Nie udało się potwierdzić tożsamości osoby oceniającej. Review nie zostanie zapisane.</p> : null}
       {decision === "needs_changes" ? (
         <label className="mt-4 block text-sm font-semibold text-ink">Notatka<textarea className="mt-2 min-h-24 w-full rounded-md border border-line bg-white p-3 text-sm font-normal text-ink" value={notes} onChange={(event) => onNotesChange(event.target.value)} placeholder="Wyjaśnij, co wymaga zmiany lub dlaczego odrzucasz wersję." /></label>

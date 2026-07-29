@@ -358,7 +358,7 @@ describe("ContentWorkflowEntryPanel", () => {
       reviewed_by: "wilku",
       decision: "approved",
       notes: "",
-      checked_items: ["Tekst sprawdzony względem planu i przypisanych źródeł."],
+      checked_items: ["Tekst sprawdzony względem briefu, wybranej wiedzy i przypisanych źródeł."],
       evidence_ids: ["ev_new_page_source"]
     }));
   });
