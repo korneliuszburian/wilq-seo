@@ -421,9 +421,26 @@ function NewPageDocumentPreview({ revision }: { revision: ContentDraftRevision |
 
 function NewPageDocumentState({ workspace }: { workspace: ContentNewPageCanonicalDocumentWorkspace }) {
   const revision = workspace.canonical_revision;
-  const materialCount = workspace.assigned_source_material_ids.length;
-  const cardCount = workspace.assigned_knowledge_card_ids.length;
-  return <section className="mt-5 rounded-2xl border border-sky-200 bg-sky-50/50 p-4" data-testid="new-page-canonical-document"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-action">Kanoniczny dokument</p><h3 className="mt-2 text-lg font-semibold text-ink">{workspace.title}</h3><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.safe_next_step}</p><dl className="mt-4 grid gap-3 sm:grid-cols-2"><InfoTile label="Stan dokumentu" value={documentStatusLabel(workspace.document_status)} /><InfoTile label="Źródło publiczne" value="Nie dotyczy — to nowa strona." /><InfoTile label="Rewizja" value={revision ? `${revision.revision_id} · ${revision.content_digest.slice(0, 12)}…` : "Nie utworzono"} /><InfoTile label="Review" value={workspace.revision_review ? reviewLabel(workspace.revision_review.decision) : "Nie zapisano"} /><InfoTile label="Przypisane materiały" value={materialCount ? `${materialCount} zapisanych materiałów` : "Nie zapisano w rewizji"} /><InfoTile label="Karty wiedzy" value={cardCount ? `${cardCount} zapisanych kart` : "Nie zapisano w rewizji"} /></dl><p className="mt-4 text-xs leading-5 text-slate-600">To nie jest porównanie z obecną stroną ani potwierdzenie publikacji. WILQ nie tworzy tu szkicu WordPressa.</p></section>;
+  const lineage = workspace.document_lineage;
+  return <section className="mt-5 rounded-2xl border border-sky-200 bg-sky-50/50 p-4" data-testid="new-page-canonical-document">
+    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-action">Kanoniczny dokument</p>
+    <h3 className="mt-2 text-lg font-semibold text-ink">{workspace.title}</h3>
+    <p className="mt-2 text-sm leading-6 text-slate-700">{workspace.safe_next_step}</p>
+    <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+      <InfoTile label="Stan dokumentu" value={documentStatusLabel(workspace.document_status)} />
+      <InfoTile label="Źródło publiczne" value="Nie dotyczy — to nowa strona." />
+      <InfoTile label="Rewizja" value={revision ? `${revision.revision_id} · ${revision.content_digest.slice(0, 12)}…` : "Nie utworzono"} />
+      <InfoTile label="Review" value={workspace.revision_review ? reviewLabel(workspace.revision_review.decision) : "Nie zapisano"} />
+    </dl>
+    <details className="mt-4 rounded-xl border border-sky-200 bg-white px-3 py-2" data-testid="new-page-document-lineage">
+      <summary className="cursor-pointer text-sm font-semibold text-ink">Materiały i wiedza użyte w tej wersji</summary>
+      <p className="mt-2 text-sm leading-6 text-slate-700">{lineage.reason}</p>
+      {lineage.knowledge_cards.length ? <ul className="mt-3 space-y-2">{lineage.knowledge_cards.map((card) => <li key={card.id} className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-sm font-semibold text-ink">{card.title}</p><p className="mt-1 text-xs leading-5 text-slate-600">{card.summary}</p></li>)}</ul> : null}
+      {lineage.source_material_ids.length ? <p className="mt-3 text-xs leading-5 text-slate-600">Zapisane materiały: {lineage.source_material_ids.join(", ")}</p> : null}
+      {lineage.unresolved_knowledge_card_ids.length ? <p className="mt-3 text-xs leading-5 text-wait">Nie można już odczytać części zapisanych kart: {lineage.unresolved_knowledge_card_ids.join(", ")}. WILQ nie zastępuje ich globalnym katalogiem.</p> : null}
+    </details>
+    <p className="mt-4 text-xs leading-5 text-slate-600">To nie jest porównanie z obecną stroną ani potwierdzenie publikacji. WILQ nie tworzy tu szkicu WordPressa.</p>
+  </section>;
 }
 
 function NewPageDocumentCommands({ briefId, workspace, onChanged }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {

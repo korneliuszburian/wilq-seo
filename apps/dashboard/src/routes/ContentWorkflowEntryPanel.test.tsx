@@ -371,6 +371,9 @@ describe("ContentWorkflowEntryPanel", () => {
 
     expect(await screen.findByTestId("new-page-document-preview")).toBeInTheDocument();
     expect(screen.getByText("Tekst strony · wersja robocza")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Materiały i wiedza użyte w tej wersji"));
+    expect(screen.getByText("Obsługa środowiskowa i zgodność obowiązków")).toBeInTheDocument();
+    expect(screen.getByText(/Zapisane materiały: fact_service_environment/)).toBeInTheDocument();
     expect(await screen.findByTestId("new-page-revision-review")).toBeInTheDocument();
     expect(screen.queryByLabelText("Reviewer")).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
@@ -527,6 +530,13 @@ function canonicalDocumentWorkspace(): ContentNewPageCanonicalDocumentWorkspace 
     revision_review: null,
     assigned_source_material_ids: [],
     assigned_knowledge_card_ids: [],
+    document_lineage: {
+      status: "not_recorded",
+      source_material_ids: [],
+      knowledge_cards: [],
+      unresolved_knowledge_card_ids: [],
+      reason: "Nie ma jeszcze zapisanej rewizji, więc WILQ nie może wskazać materiałów przypisanych do dokumentu."
+    },
     public_source_status: "not_applicable",
     public_source_url: null,
     public_deployment_status: "not_confirmed",
@@ -539,6 +549,19 @@ function reviewRequiredCanonicalDocumentWorkspace(): ContentNewPageCanonicalDocu
     ...canonicalDocumentWorkspace(),
     status: "document_review_required",
     document_status: "unreviewed",
+    assigned_source_material_ids: ["fact_service_environment"],
+    assigned_knowledge_card_ids: ["ekologus_service_environmental_compliance"],
+    document_lineage: {
+      status: "available",
+      source_material_ids: ["fact_service_environment"],
+      knowledge_cards: [{
+        id: "ekologus_service_environmental_compliance",
+        title: "Obsługa środowiskowa i zgodność obowiązków",
+        summary: "Zatwierdzona wiedza o usłudze."
+      }],
+      unresolved_knowledge_card_ids: [],
+      reason: "To są materiały i karty wiedzy zapisane przy dokładnej rewizji dokumentu."
+    },
     canonical_revision: {
       work_item_id: "content_work_item_new_page_test",
       revision_id: "content_draft_revision_new_page_test",
@@ -553,6 +576,8 @@ function reviewRequiredCanonicalDocumentWorkspace(): ContentNewPageCanonicalDocu
       faq: [],
       cta_blocks: [],
       internal_links: [],
+      source_material_ids: ["fact_service_environment"],
+      knowledge_card_ids: ["ekologus_service_environmental_compliance"],
       page_assets: {
         meta_title: "Audyt środowiskowy dla inwestycji | Ekologus",
         meta_description: "Pomoc przy dokumentacji środowiskowej inwestycji.",

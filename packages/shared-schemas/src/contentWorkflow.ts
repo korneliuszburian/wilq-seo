@@ -4035,6 +4035,13 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
   revision_review: ContentDraftRevisionReviewSchema.nullable().optional(),
   assigned_source_material_ids: z.array(z.string()).default([]),
   assigned_knowledge_card_ids: z.array(z.string()).default([]),
+  document_lineage: ContentDocumentWorkspaceDocumentLineageSchema.default({
+    status: "not_recorded",
+    source_material_ids: [],
+    knowledge_cards: [],
+    unresolved_knowledge_card_ids: [],
+    reason: "Nie ma jeszcze zapisanej rewizji, więc WILQ nie może wskazać materiałów przypisanych do dokumentu."
+  }),
   public_source_status: z.literal("not_applicable"),
   public_source_url: z.null(),
   public_deployment_status: z.literal("not_confirmed"),
@@ -4046,7 +4053,11 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
       workspace.revision_review ||
       workspace.assigned_source_material_ids.length > 0 ||
       workspace.assigned_knowledge_card_ids.length > 0 ||
-      workspace.document_status !== "not_created"
+      workspace.document_status !== "not_created" ||
+      workspace.document_lineage.status !== "not_recorded" ||
+      workspace.document_lineage.source_material_ids.length > 0 ||
+      workspace.document_lineage.knowledge_cards.length > 0 ||
+      workspace.document_lineage.unresolved_knowledge_card_ids.length > 0
     ) {
       context.addIssue({ code: z.ZodIssueCode.custom, message: "Missing new-page revision cannot carry document lineage." });
     }
@@ -4099,6 +4110,27 @@ export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
     JSON.stringify(workspace.assigned_knowledge_card_ids) !== JSON.stringify(revision.knowledge_card_ids)
   ) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace lineage must match the canonical new-page revision." });
+  }
+  const expectedSourceMaterialIds = [...new Set(revision.source_material_ids)];
+  const expectedKnowledgeCardIds = [...new Set(revision.knowledge_card_ids)];
+  const lineageKnowledgeCardIds = workspace.document_lineage.knowledge_cards.map((card) => card.id);
+  if (
+    JSON.stringify(workspace.document_lineage.source_material_ids) !== JSON.stringify(expectedSourceMaterialIds) ||
+    new Set([...lineageKnowledgeCardIds, ...workspace.document_lineage.unresolved_knowledge_card_ids]).size !== expectedKnowledgeCardIds.length ||
+    !expectedKnowledgeCardIds.every((id) =>
+      lineageKnowledgeCardIds.includes(id) || workspace.document_lineage.unresolved_knowledge_card_ids.includes(id)
+    ) ||
+    new Set(lineageKnowledgeCardIds).size !== lineageKnowledgeCardIds.length
+  ) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Document lineage must match the canonical new-page revision." });
+  }
+  const expectedLineageStatus = expectedSourceMaterialIds.length === 0 && expectedKnowledgeCardIds.length === 0
+    ? "not_recorded"
+    : workspace.document_lineage.unresolved_knowledge_card_ids.length > 0
+      ? "partial"
+      : "available";
+  if (workspace.document_lineage.status !== expectedLineageStatus) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Document lineage status must match the canonical revision." });
   }
   const review = workspace.revision_review;
   const expectedStatus = review ? review.decision : "unreviewed";

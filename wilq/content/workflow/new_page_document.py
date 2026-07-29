@@ -4,6 +4,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from wilq.content.workflow.document_lineage import (
+    ContentDocumentWorkspaceDocumentLineage,
+    build_content_document_lineage,
+)
 from wilq.content.workflow.new_page import (
     ContentNewPageBrief,
     ContentNewPagePlanningFoundation,
@@ -86,6 +90,9 @@ class ContentNewPageCanonicalDocumentWorkspace(BaseModel):
     revision_review: ContentDraftRevisionReview | None = None
     assigned_source_material_ids: list[str] = Field(default_factory=list)
     assigned_knowledge_card_ids: list[str] = Field(default_factory=list)
+    document_lineage: ContentDocumentWorkspaceDocumentLineage = Field(
+        default_factory=lambda: build_content_document_lineage(None)
+    )
     public_source_status: Literal["not_applicable"] = "not_applicable"
     public_source_url: None = None
     public_deployment_status: Literal["not_confirmed"] = "not_confirmed"
@@ -126,6 +133,10 @@ def _validate_workspace_without_revision(
         or workspace.assigned_source_material_ids
         or workspace.assigned_knowledge_card_ids
         or workspace.document_status != "not_created"
+        or workspace.document_lineage.status != "not_recorded"
+        or workspace.document_lineage.source_material_ids
+        or workspace.document_lineage.knowledge_cards
+        or workspace.document_lineage.unresolved_knowledge_card_ids
     ):
         raise ValueError("Missing new-page revision cannot carry document lineage.")
     if workspace.status not in {"ready_for_document", "blocked"}:
@@ -171,7 +182,18 @@ def _validate_workspace_with_revision(
         or workspace.assigned_knowledge_card_ids != revision.knowledge_card_ids
     ):
         raise ValueError("Workspace lineage must match the canonical new-page revision.")
+    _validate_workspace_document_lineage(workspace, revision)
     _validate_workspace_revision_review(workspace, revision)
+
+
+def _validate_workspace_document_lineage(
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+    revision: ContentDraftRevision,
+) -> None:
+    lineage = workspace.document_lineage
+    expected_lineage = build_content_document_lineage(revision)
+    if lineage != expected_lineage:
+        raise ValueError("Document lineage must match the canonical revision.")
 
 
 def _validate_workspace_revision_review(
@@ -251,6 +273,7 @@ def build_new_page_canonical_document_workspace(
         revision_review=None if revision is None else revision_state.latest_review,
         assigned_source_material_ids=([] if revision is None else revision.source_material_ids),
         assigned_knowledge_card_ids=([] if revision is None else revision.knowledge_card_ids),
+        document_lineage=build_content_document_lineage(revision),
         safe_next_step=_next_step(document_status),
     )
 

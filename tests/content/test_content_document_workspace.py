@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
+import wilq.content.workflow.document_lineage as lineage_module
 import wilq.content.workflow.document_workspace as workspace_module
 from wilq.content.workflow.catalog import ContentInventoryMaterialResponse
 from wilq.content.workflow.revisions import (
@@ -142,7 +143,7 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
     )
     monkeypatch.setattr(workspace_module, "read_content_inventory_material", lambda _url: material)
     monkeypatch.setattr(
-        workspace_module,
+        lineage_module,
         "ekologus_content_knowledge_cards",
         lambda: (
             SimpleNamespace(
@@ -197,12 +198,12 @@ def test_document_workspace_fails_closed_for_unrecorded_lineage_and_incomplete_s
         source_material_ids=[],
         knowledge_card_ids=[],
     )
-    assert workspace_module._document_lineage(None).status == "not_recorded"
-    assert workspace_module._document_lineage(revision).status == "not_recorded"
+    assert lineage_module.build_content_document_lineage(None).status == "not_recorded"
+    assert lineage_module.build_content_document_lineage(revision).status == "not_recorded"
 
     revision.knowledge_card_ids = ["missing_card"]
-    monkeypatch.setattr(workspace_module, "ekologus_content_knowledge_cards", lambda: ())
-    lineage = workspace_module._document_lineage(revision)
+    monkeypatch.setattr(lineage_module, "ekologus_content_knowledge_cards", lambda: ())
+    lineage = lineage_module.build_content_document_lineage(revision)
     assert lineage.status == "partial"
     assert lineage.unresolved_knowledge_card_ids == ["missing_card"]
 

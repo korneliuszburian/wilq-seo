@@ -405,9 +405,18 @@ def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
     assert projected.revision_review == review.review
     assert projected.public_source_status == "not_applicable"
     assert projected.public_source_url is None
+    assert projected.document_lineage.source_material_ids == result.revision.source_material_ids
+    assert {
+        *[card.id for card in projected.document_lineage.knowledge_cards],
+        *projected.document_lineage.unresolved_knowledge_card_ids,
+    } == set(result.revision.knowledge_card_ids)
     assert ContentNewPageCanonicalDocumentWorkspace.model_validate(
         projected.model_dump(mode="python")
     ) == projected
+    mismatched_lineage = projected.model_dump(mode="python")
+    mismatched_lineage["document_lineage"]["source_material_ids"] = ["foreign_material"]
+    with pytest.raises(ValueError, match="Document lineage must match"):
+        ContentNewPageCanonicalDocumentWorkspace.model_validate(mismatched_lineage)
     with pytest.raises(ValueError, match="outside the exact"):
         review_new_page_revision(
             workspace=workspace,
