@@ -1633,7 +1633,9 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         ensure_ascii=False,
     )
     assert "mapowanie" not in active_content_copy
-    assert "mapping" not in active_content_copy
+    # Ahrefs evidence carries its own neutral ``mapping_key`` lineage. The
+    # active Content surface must exclude only retired target-mapping state.
+    assert "target_mapping" not in active_content_copy
     assert first_decision["normalized_page_path"] == ("/europejski-zielony-lad-co-to-takiego")
     assert first_decision["evidence_ids"]
     assert first_decision["evidence_summary_label"]
