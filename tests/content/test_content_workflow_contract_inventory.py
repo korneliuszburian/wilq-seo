@@ -310,6 +310,13 @@ def test_retired_global_authoring_profile_is_not_a_public_content_route() -> Non
     assert path not in app.openapi()["paths"]
 
 
+def test_retired_inventory_mutation_and_material_reads_are_not_public_routes() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "/api/content/inventory/bind" not in paths
+    assert "/api/content/inventory/material" not in paths
+
+
 def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
     routes: dict[tuple[str, str], APIRoute] = {}
     for route in router.routes:
