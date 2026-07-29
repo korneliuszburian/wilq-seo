@@ -25,7 +25,6 @@ from wilq.content.workflow.api import (
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
-    ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionResponse,
     ContentWorkItemWordPressDraftHandoffResponse,
 )
@@ -230,10 +229,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/wordpress-draft-execution",
     ): ContentWorkItemWordPressDraftExecutionResponse,
-    (
-        "POST",
-        "/api/content/work-items/wordpress-authoring-payload-preview",
-    ): ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     (
         "POST",
         "/api/content/work-items/measurement-window",

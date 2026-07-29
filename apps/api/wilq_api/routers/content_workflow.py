@@ -33,7 +33,6 @@ from wilq.content.workflow.api import (
     build_content_work_item_diagnostics_snapshot_response,
     build_content_work_item_snapshot_audit_response,
     build_content_work_item_snapshot_human_review_response,
-    build_content_work_item_wordpress_authoring_payload_preview_response,
     build_content_work_item_wordpress_draft_execution_response,
 )
 from wilq.content.workflow.content_html import content_html_from_markdown
@@ -57,8 +56,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
-    ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
-    ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionRequest,
     ContentWorkItemWordPressDraftExecutionResponse,
     ContentWorkItemWordPressDraftHandoffRequest,
@@ -469,16 +466,6 @@ def content_work_item_wordpress_draft_execution(
             response.execution_result,
         )
     return response
-
-
-@router.post(
-    "/api/content/work-items/wordpress-authoring-payload-preview",
-    response_model=ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
-)
-def content_work_item_wordpress_authoring_payload_preview(
-    request: ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
-) -> ContentWorkItemWordPressAuthoringPayloadPreviewResponse:
-    return build_content_work_item_wordpress_authoring_payload_preview_response(request)
 
 
 @router.post(

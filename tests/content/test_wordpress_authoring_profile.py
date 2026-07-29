@@ -6,14 +6,18 @@ from pathlib import Path
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
 
-from apps.api.wilq_api.main import app
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_authoring import (
     build_content_wordpress_authoring_payload_preview,
+)
+from wilq.content.workflow.api import (
+    build_content_work_item_wordpress_authoring_payload_preview_response,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
 )
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -468,21 +472,18 @@ def test_wordpress_authoring_payload_preview_api_is_dry_run(
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ACF_FLEX_FIELD_NAME", "sections")
     profile = build_wordpress_authoring_profile("wordpress_ekologus")
 
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-authoring-payload-preview",
-        json={
-            "handoff": _handoff().model_dump(mode="json"),
-            "draft_package": _draft_package().model_dump(mode="json"),
-            "authoring_profile": profile.model_dump(mode="json"),
-        },
+    response = build_content_work_item_wordpress_authoring_payload_preview_response(
+        ContentWorkItemWordPressAuthoringPayloadPreviewRequest(
+            handoff=_handoff(),
+            draft_package=_draft_package(),
+            authoring_profile=profile,
+        )
     )
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["preview_result"]["status"] == "ready"
-    assert data["preview_result"]["mode"] == "dry_run"
-    assert data["preview_result"]["external_write_attempted"] is False
-    assert data["preview_result"]["sections"][0]["layout_name"] == "content_section"
+    assert response.preview_result.status == "ready"
+    assert response.preview_result.mode == "dry_run"
+    assert response.preview_result.external_write_attempted is False
+    assert response.preview_result.sections[0].layout_name == "content_section"
 
 
 def _configure_rest(monkeypatch: pytest.MonkeyPatch) -> None:
