@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentCodexSectionProposalBlocker,
+    ContentCodexSectionProposalBlockerCode,
 )
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
@@ -202,7 +203,7 @@ def merge_selected_cta_blocks(
 
 
 def blocker(
-    code: str, label: str, reason: str, next_step: str
+    code: ContentCodexSectionProposalBlockerCode, label: str, reason: str, next_step: str
 ) -> ContentCodexSectionProposalBlocker:
     return ContentCodexSectionProposalBlocker(
         code=code, label=label, reason=reason, next_step=next_step
