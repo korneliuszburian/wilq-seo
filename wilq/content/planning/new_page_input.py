@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Iterable
 from hashlib import sha256
+from typing import cast
 
 from wilq.content.knowledge.cards import ContentKnowledgeCard
 from wilq.content.knowledge.source_facts import ContentSourceFact
@@ -10,6 +11,7 @@ from wilq.content.knowledge.work_item_service_profile import ContentWorkItemServ
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
+    ContentPlanningInputBlockerCode,
     ContentPlanningInputBuildResult,
 )
 from wilq.content.planning.input_sources import (
@@ -17,6 +19,7 @@ from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningSourceAssessment,
     ContentPlanningSourceFact,
+    ContentPlanningSourceName,
 )
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.new_page import (
@@ -209,7 +212,7 @@ def _source_assessments(
     ])
     return [
         ContentPlanningSourceAssessment(
-            source=source,
+            source=cast(ContentPlanningSourceName, source),
             status="used" if source == "service_profile" else "not_applicable",
             reason=(
                 "Zatwierdzony kontekst usługi jest źródłem planu nowej strony."
@@ -227,7 +230,7 @@ def _source_assessments(
 
 
 def _blocker(
-    code: str,
+    code: ContentPlanningInputBlockerCode,
     label: str,
     reason: str,
     next_step: str,
