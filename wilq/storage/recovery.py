@@ -17,6 +17,16 @@ class StorageProof(TypedDict):
     metric_fact_count: int
 
 
+_SQLITE_PROOF_TABLES = frozenset(
+    {
+        "content_draft_revisions",
+        "audit_events",
+        "content_workflow_audits",
+        "action_mutation_audits",
+    }
+)
+
+
 def copy_sqlite_store(source: Path, destination: Path) -> None:
     _require_distinct_new_destination(source, destination)
     prepare_private_store_path(destination, normalize_existing_parent=False)
@@ -122,13 +132,16 @@ def _require_distinct_new_destination(source: Path, destination: Path) -> None:
 
 
 def _sqlite_table_count(connection: sqlite3.Connection, table: str) -> int:
+    if table not in _SQLITE_PROOF_TABLES:
+        raise ValueError("Storage proof table is not allowlisted")
     exists = connection.execute(
         "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
         (table,),
     ).fetchone()
     if exists is None:
         return 0
-    return int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
+    # The table is constrained to the fixed proof-table allowlist above.
+    return int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])  # nosec B608
 
 
 def _sql_string(value: str) -> str:
