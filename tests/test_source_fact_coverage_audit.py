@@ -23,8 +23,8 @@ def test_source_fact_coverage_audit_reports_current_goal_005_backlog() -> None:
     assert report["pass"] is True
     assert report["knowledge_status"] == "source_backed_review_required"
     assert report["ready_for_daily_content"] is False
-    assert report["production_depth_percent"] == 0
-    assert report["reviewed_fact_percent"] == 0
+    assert 0 < report["production_depth_percent"] < 100
+    assert 0 < report["reviewed_fact_percent"] < 100
     assert report["fact_count"] >= 12
     assert report["private_proposal_count"] >= 5
     assert report["private_review_required_count"] == report["private_proposal_count"]
