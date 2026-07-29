@@ -112,7 +112,7 @@ def propose_content_section_revision(
     inputs = _required_inputs(
         snapshot,
         selected_headings=selected_headings,
-        selected_cta_ids=selected_cta_ids,
+        selected_cta_ids=selected_cta_ids or [],
     )
     runtime_call = _execute_runtime(
         snapshot=snapshot,
@@ -175,7 +175,7 @@ def _required_inputs(
         sales_brief=cast(ContentSalesBrief, sales_brief),
         claim_ledger=claim_ledger,
         selected_headings=selected_headings,
-        selected_cta_ids=selected_cta_ids,
+        selected_cta_ids=selected_cta_ids or [],
     )
 
 

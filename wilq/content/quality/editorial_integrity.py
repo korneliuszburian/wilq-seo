@@ -4,6 +4,7 @@ import re
 from collections.abc import Iterable
 from hashlib import sha256
 from html.parser import HTMLParser
+from typing import Literal
 
 from wilq.content.workflow.contracts import (
     ContentEditorialIntegrityHumanReview,
@@ -202,7 +203,7 @@ def _lineage(revision: ContentDraftRevision) -> list[tuple[object, ...]]:
 def _observed_scope(
     parent: ContentDraftRevision, child: ContentDraftRevision
 ) -> ContentEditorialIntegrityScope:
-    fields: list[str] = []
+    fields: list[Literal["body", "title", "faq", "cta", "links"]] = []
     changed_sections = [
         section.section_id
         for parent_section, section in zip(parent.sections, child.sections, strict=False)
@@ -255,7 +256,9 @@ def _protected_units(
                 anchors, _sentences(candidate.body_markdown) if candidate else []
             )
             coverage = _coverage(anchors, matched)
-            status = "preserved" if coverage >= 0.7 else "changed"
+            status: Literal["preserved", "changed", "removed"] = (
+                "preserved" if coverage >= 0.7 else "changed"
+            )
             if coverage < 0.35:
                 status = "removed"
             units.append(
@@ -328,7 +331,7 @@ def _lint_signals(revision: ContentDraftRevision) -> list[ContentEditorialLintSi
 def _result(
     invariants: ContentEditorialStructuralInvariants,
     alignment: list[ContentRepresentationAlignment],
-) -> str:
+) -> Literal["integrity_ok", "invalid_representation", "structural_change_observed"]:
     if any(item.status == "mismatch" for item in alignment):
         return "invalid_representation"
     if not all(invariants.model_dump().values()):
