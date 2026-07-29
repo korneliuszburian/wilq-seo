@@ -149,6 +149,30 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getAllByText("Nowa wersja nie została jeszcze przygotowana")).toHaveLength(3);
   });
 
+  it("opens an existing prepared text before the source so the marketer can review the actual deliverable", async () => {
+    const revision = savedFullDraftRevision();
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(
+      selectedWorkspace(contentDocumentWorkspace(revision))
+    );
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1",
+          defaultPendingMinMs: 0
+        })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByText("Pełna odpowiedź sekcji 1 oparta na planie i dowodach.")).toBeInTheDocument();
+    expect(screen.queryByTestId("content-source-snapshot")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Obecna strona" }));
+    expect(await screen.findByTestId("content-source-snapshot")).toBeInTheDocument();
+  });
+
   it.each(["review=1", "text=1&review=1"])(
     "opens the exact review route when navigation queue reads reject (%s)",
     async (reviewSearch) => {

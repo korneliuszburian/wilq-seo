@@ -28,7 +28,9 @@ export function ContentDocumentWorkspaceCanvas({
   workspace: ContentDocumentWorkspace;
   onOpenReview: () => void;
 }) {
-  const [view, setView] = useState<View>("source");
+  const [view, setView] = useState<View>(() =>
+    workspace.canonical_document.preview ? "document" : "source"
+  );
   const [devDetailsOpen, setDevDetailsOpen] = useState(false);
   const [mappingOpen, setMappingOpen] = useState(false);
   const [draftPreviewOpen, setDraftPreviewOpen] = useState(false);
@@ -584,7 +586,7 @@ function CanonicalDocument({ workspace }: { workspace: ContentDocumentWorkspace 
     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Nowa wersja</p>
     <h2 className="mt-2 text-2xl font-semibold text-ink">{workspace.canonical_document.label}</h2>
     <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-700">{workspace.canonical_document.reason}</p>
-    <div className="mt-6 rounded-xl border border-wait/25 bg-wait/5 p-4 text-sm leading-6 text-slate-700"><p className="font-semibold text-ink">Następny krok</p><p className="mt-1">{workspace.next_action.reason}</p></div>
+    <div className="mt-6 rounded-xl border border-wait/25 bg-wait/5 p-4 text-sm leading-6 text-slate-700"><p className="font-semibold text-ink">Co jest potrzebne do tekstu</p><p className="mt-1">{workspace.next_action.reason}</p></div>
   </>;
   return <>
     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Nowa wersja</p>
