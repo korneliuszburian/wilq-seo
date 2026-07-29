@@ -145,6 +145,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText(/dokładny stan dokumentu i materiały zapisane przy tej rewizji/)).toBeInTheDocument();
     expect(screen.queryByText(/przygotowany dokument i uczciwe różnice/)).not.toBeInTheDocument();
     expect(screen.getByText(/Nie ma jeszcze zapisanej rewizji/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Zmiany w treści" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
     expect(screen.getAllByText("Nowa wersja nie została jeszcze przygotowana")).toHaveLength(3);
   });
@@ -168,6 +169,7 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByText("Pełna odpowiedź sekcji 1 oparta na planie i dowodach.")).toBeInTheDocument();
     expect(screen.queryByTestId("content-source-snapshot")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zmiany w treści" })).toBeInTheDocument();
     expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("Na czym oparto tekst");
     expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("BDO i sprawozdawczość środowiskowa");
 
