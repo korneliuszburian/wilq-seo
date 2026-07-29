@@ -7,13 +7,17 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import actions as actions_router
 from apps.api.wilq_api.routers import content_workflow as content_workflow_router
+from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
 from tests.content.dynamic_planning_test_support import configure_planning_harness
+from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.workflow.contracts import ContentWorkItemStructuredDraftGenerationRequest
+from wilq.content.workflow.queue import build_content_work_item_queue_response
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionReviewCommand,
@@ -80,16 +84,17 @@ def test_revision_save_is_reloadable_idempotent_and_returns_raw_stale_conflict(
     revision = created_body["revision"]
     assert revision["revision_number"] == 1
     assert revision["base_revision_id"] is None
-    assert revision["draft_package_id"] == snapshot["draft_package"][
-        "draft_package_result"
-    ]["draft_package"]["id"]
+    assert (
+        revision["draft_package_id"]
+        == snapshot["draft_package"]["draft_package_result"]["draft_package"]["id"]
+    )
     package = ContentDraftPackage.model_validate(
         snapshot["draft_package"]["draft_package_result"]["draft_package"]
     )
     assert revision["draft_package_digest"] == content_draft_package_digest(package)
-    assert revision["planning_digest"] == snapshot["planning_workspace"]["proposal"][
-        "planning_digest"
-    ]
+    assert (
+        revision["planning_digest"] == snapshot["planning_workspace"]["proposal"]["planning_digest"]
+    )
     assert content_draft_package_digest(
         package.model_copy(update={"title": f"{package.title} — zmieniony plan"})
     ) != content_draft_package_digest(package)
@@ -216,9 +221,7 @@ def test_approved_revision_builds_the_exact_wordpress_handoff_without_legacy_rev
         }
         for index, section in enumerate(save_payload["sections"])
     ]
-    revision = client.post(_save_path(work_item_id), json=save_payload).json()[
-        "revision"
-    ]
+    revision = client.post(_save_path(work_item_id), json=save_payload).json()["revision"]
 
     approval_response = client.post(
         _review_path(work_item_id, revision["revision_id"]),
@@ -330,15 +333,12 @@ def test_legacy_revision_without_planning_digest_remains_readable_but_blocked(
         )
 
     legacy = _selected_snapshot(client, work_item_id)
-    assert legacy["revision_workspace"]["latest_revision"]["revision_id"] == revision[
-        "revision_id"
-    ]
+    assert legacy["revision_workspace"]["latest_revision"]["revision_id"] == revision["revision_id"]
     assert legacy["revision_workspace"]["latest_revision"]["planning_digest"] is None
     assert legacy["revision_workspace"]["context_current"] is False
     assert legacy["wordpress_handoff"]["handoff_result"]["handoff"] is None
     assert "missing_planning_binding" in {
-        blocker["code"]
-        for blocker in legacy["wordpress_handoff"]["handoff_result"]["blockers"]
+        blocker["code"] for blocker in legacy["wordpress_handoff"]["handoff_result"]["blockers"]
     }
 
 
@@ -357,9 +357,7 @@ def test_action_apply_sends_only_the_exact_approved_revision_and_blocks_replay(
         }
         for index, section in enumerate(save_payload["sections"])
     ]
-    revision = client.post(_save_path(work_item_id), json=save_payload).json()[
-        "revision"
-    ]
+    revision = client.post(_save_path(work_item_id), json=save_payload).json()["revision"]
     approval_response = client.post(
         _review_path(work_item_id, revision["revision_id"]),
         json=_review_payload(revision, "approved"),
@@ -408,9 +406,7 @@ def test_action_apply_sends_only_the_exact_approved_revision_and_blocks_replay(
     )
     monkeypatch.setattr(
         "wilq.actions.service.get_connector_status",
-        lambda _connector_id: type(
-            "Connector", (), {"configured": True, "label": "WordPress"}
-        )(),
+        lambda _connector_id: type("Connector", (), {"configured": True, "label": "WordPress"})(),
     )
     adapter_payloads: list[Any] = []
 
@@ -466,9 +462,7 @@ def test_action_apply_sends_only_the_exact_approved_revision_and_blocks_replay(
             json=payload,
         )
         assert response.status_code == 200, response.text
-        assert response.json()["audit_event"]["details"][
-            "wordpress_draft_binding"
-        ] == binding
+        assert response.json()["audit_event"]["details"]["wordpress_draft_binding"] == binding
 
     apply_payload = {
         "confirm": True,
@@ -584,9 +578,7 @@ def test_action_apply_sends_only_the_exact_approved_revision_and_blocks_replay(
     )
     assert stale_response.status_code == 409
     stale_detail = stale_response.json()["detail"]
-    assert stale_detail["wordpress_revision_blockers"][0]["code"] == (
-        "revision_not_approved"
-    )
+    assert stale_detail["wordpress_revision_blockers"][0]["code"] == ("revision_not_approved")
     assert stale_detail["mutation_audit"]["adapter_reached"] is False
     assert stale_detail["mutation_audit"]["external_write_attempted"] is False
     assert len(adapter_payloads) == 1
@@ -639,16 +631,9 @@ def test_approval_of_v1_never_approves_a_new_v2(
         external_calls.append("unexpected")
         raise AssertionError("Revision save/review crossed an external execution seam.")
 
-    monkeypatch.setattr(
-        content_workflow_router,
-        "build_content_work_item_wordpress_draft_execution_response",
-        reject_external_call,
-    )
     monkeypatch.setattr(actions_router, "apply_action", reject_external_call)
     client, work_item_id, snapshot = _revision_ready_snapshot(monkeypatch, tmp_path)
-    v1 = client.post(_save_path(work_item_id), json=_save_payload(snapshot)).json()[
-        "revision"
-    ]
+    v1 = client.post(_save_path(work_item_id), json=_save_payload(snapshot)).json()["revision"]
     approved = client.post(
         _review_path(work_item_id, v1["revision_id"]),
         json=_review_payload(v1, "approved"),
@@ -693,9 +678,7 @@ def test_approval_of_v1_never_approves_a_new_v2(
         section["evidence_ids"] for section in current_package["sections"]
     ]
     assert snapshot_v2["current_step_id"] == "draft"
-    assert snapshot_v2["operator_steps"][2]["blocker"]["code"] == (
-        "revision_context_changed"
-    )
+    assert snapshot_v2["operator_steps"][2]["blocker"]["code"] == ("revision_context_changed")
     assert snapshot_v2["operator_steps"][4]["can_submit"] is False
 
     rebound = client.post(
@@ -744,9 +727,7 @@ def test_revision_endpoints_reject_sections_or_evidence_outside_draft_package(
         },
     )
     assert unknown_evidence.status_code == 422
-    assert content_workflow_store().load_draft_revision_state(work_item_id).status == (
-        "empty"
-    )
+    assert content_workflow_store().load_draft_revision_state(work_item_id).status == ("empty")
 
 
 @pytest.mark.parametrize("field", ["title", "created_by"])
@@ -763,9 +744,7 @@ def test_revision_save_rejects_blank_metadata_without_persisting(
     )
 
     assert response.status_code == 422
-    assert content_workflow_store().load_draft_revision_state(work_item_id).status == (
-        "empty"
-    )
+    assert content_workflow_store().load_draft_revision_state(work_item_id).status == ("empty")
 
 
 def test_first_revision_respects_a_workspace_save_blocker(
@@ -800,9 +779,7 @@ def test_first_revision_respects_a_workspace_save_blocker(
         "current_digest": None,
         "safe_next_step": "Najpierw domknij aktualny kontrakt szkicu.",
     }
-    assert content_workflow_store().load_draft_revision_state(work_item_id).status == (
-        "empty"
-    )
+    assert content_workflow_store().load_draft_revision_state(work_item_id).status == ("empty")
 
 
 def _revision_ready_snapshot(
@@ -819,15 +796,13 @@ def _generated_plan_snapshot(
     tmp_path: Path,
 ) -> tuple[TestClient, str, dict[str, Any]]:
     client, _runtime = configure_planning_harness(monkeypatch, tmp_path)
-    queue = client.get("/api/content/work-items/queue").json()
-    for candidate in queue["candidates"]:
-        response = client.get(
-            f"/api/content/work-items/{candidate['work_item_id']}/snapshot"
-        )
-        if response.status_code != 200:
-            continue
-        snapshot = cast(dict[str, Any], response.json())
-        if snapshot.get("response_type") != "workflow_snapshot":
+    queue = build_content_work_item_queue_response(build_content_diagnostics_cached())
+    for candidate in queue.candidates:
+        work_item_id = candidate.work_item_id
+        try:
+            snapshot = _selected_snapshot(client, work_item_id)
+        except HTTPException as error:
+            assert error.status_code == 404
             continue
         planning = snapshot.get("planning_workspace")
         workspace = snapshot["revision_workspace"]
@@ -847,28 +822,30 @@ def _generated_plan_snapshot(
         ):
             continue
         generated = client.post(
-            f"/api/content/work-items/{candidate['work_item_id']}/planning-proposals",
+            f"/api/content/work-items/{work_item_id}/planning-proposals",
             json={
                 "service_card_id": planning["proposal"]["service_card_id"],
-                    "expected_planning_input_digest": planning_input_digest,
+                "expected_planning_input_digest": planning_input_digest,
                 "requested_by": "wilku",
             },
         )
         assert generated.status_code == 200, generated.json()
         for _ in range(200):
-            refreshed = _selected_snapshot(client, candidate["work_item_id"])
+            refreshed = _selected_snapshot(client, work_item_id)
             current = refreshed.get("planning_workspace")
             if current is not None and current["section_map_current"]:
                 assert refreshed["revision_workspace"]["can_save"] is True
-                return client, candidate["work_item_id"], refreshed
+                return client, work_item_id, refreshed
             time.sleep(0.05)
     pytest.fail("Revision API proof requires one work item with a generated evidence plan.")
 
 
 def _selected_snapshot(client: TestClient, work_item_id: str) -> dict[str, Any]:
-    response = client.get(f"/api/content/work-items/{work_item_id}/snapshot")
-    assert response.status_code == 200
-    return cast(dict[str, Any], response.json())
+    del client
+    return cast(
+        dict[str, Any],
+        snapshot_for_work_item_or_404(work_item_id).model_dump(mode="json"),
+    )
 
 
 def _save_payload(snapshot: dict[str, Any]) -> dict[str, Any]:
@@ -888,12 +865,10 @@ def _structured_generation_from_snapshot(
     response = build_content_work_item_structured_draft_generation_response(
         ContentWorkItemStructuredDraftGenerationRequest.model_validate(
             {
-            "item": snapshot["human_review"]["item"],
-            "sales_brief": snapshot["sales_brief"]["sales_brief_result"]["brief"],
-            "claim_ledger": snapshot["claim_ledger"],
-            "draft_package": snapshot["draft_package"]["draft_package_result"][
-                "draft_package"
-            ],
+                "item": snapshot["human_review"]["item"],
+                "sales_brief": snapshot["sales_brief"]["sales_brief_result"]["brief"],
+                "claim_ledger": snapshot["claim_ledger"],
+                "draft_package": snapshot["draft_package"]["draft_package_result"]["draft_package"],
             }
         )
     )
@@ -957,7 +932,4 @@ def _save_path(work_item_id: str) -> str:
 
 
 def _review_path(work_item_id: str, revision_id: str) -> str:
-    return (
-        f"/api/content/work-items/{work_item_id}/draft-revisions/"
-        f"{revision_id}/review"
-    )
+    return f"/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review"

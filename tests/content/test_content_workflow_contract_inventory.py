@@ -11,7 +11,6 @@ from wilq.content.drafts.codex_section_proposal import (
     ContentCodexSectionProposalResponse,
 )
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftResponse
-from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResponse
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
 from wilq.content.planning.dynamic_input import ContentPlanningInputReadinessResponse
@@ -46,7 +45,6 @@ from wilq.content.workflow.new_page_document import (
 )
 from wilq.content.workflow.new_page_revision import ContentNewPageRevisionReviewResponse
 from wilq.content.workflow.new_page_topics import ContentNewPageTopicRecommendations
-from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 from wilq.content.workflow.selected_workspace import ContentSelectedWorkspace
 from wilq.content.workflow.target_discovery import ContentTargetDiscovery
 from wilq.content.workflow.target_mapping import (
@@ -125,15 +123,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-action",
     ): ActionObject,
     ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
-    ("GET", "/api/content/work-items/queue"): ContentWorkItemQueueResponse,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/decision-context",
     ): ContentDecisionContext,
-    (
-        "GET",
-        "/api/content/work-items/{work_item_id}/enrichment",
-    ): ContentOpportunityEnrichmentResponse,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/planning-proposals",
@@ -302,8 +295,10 @@ def test_browser_item_does_not_duplicate_full_wordpress_material() -> None:
     assert projected.metric_facts == item.metric_facts[:12]
 
 
-def test_legacy_snapshot_routes_are_not_public_content_routes() -> None:
+def test_legacy_workflow_routes_are_not_public_content_routes() -> None:
     for method, path in (
+        ("GET", "/api/content/work-items/queue"),
+        ("GET", "/api/content/work-items/{work_item_id}/enrichment"),
         ("GET", "/api/content/work-items/snapshot"),
         ("GET", "/api/content/work-items/{work_item_id}/snapshot"),
         ("POST", "/api/content/work-items/snapshot/human-review"),

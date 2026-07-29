@@ -1,44 +1,7 @@
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
-
-from apps.api.wilq_api.main import app
 from wilq.content.enrichment.opportunity import build_content_opportunity_enrichment
-from wilq.content.workflow.catalog import inventory_work_item_id
 from wilq.schemas import ContentDecisionItem
-
-
-def test_content_work_item_enrichment_exposes_evidence_bound_operating_context() -> None:
-    client = TestClient(app)
-    queue = client.get("/api/content/work-items/queue").json()
-    candidate = next(item for item in queue["candidates"] if item["source_public_url"])
-
-    response = client.get(f"/api/content/work-items/{candidate['work_item_id']}/enrichment")
-
-    assert response.status_code == 200
-    data = response.json()
-    enrichment = data["enrichment"]
-    assert enrichment["work_item_id"] == candidate["work_item_id"]
-    assert enrichment["decision_id"] == candidate["decision_id"]
-    expected_status = "blocked" if candidate["recommended_mode"] == "block" else "ready"
-    assert enrichment["status"] == expected_status
-    assert enrichment["recommended_mode"] == candidate["recommended_mode"]
-    assert enrichment["intent_label"]
-    assert enrichment["buyer_problem"]
-    assert enrichment["buyer_trigger"]
-    assert enrichment["service_fit"]
-    assert enrichment["cta_hypothesis"]
-    assert enrichment["source_facts"]
-    assert enrichment["evidence_ids"]
-    assert enrichment["source_connectors"]
-    assert enrichment["measurement_baseline"]["metrics_to_watch"]
-    assert enrichment["measurement_baseline"]["source_connectors"]
-    if candidate["recommended_mode"] == "block":
-        assert "content_sources_require_refresh" in {
-            blocker["code"] for blocker in enrichment["blockers"]
-        }
-    assert "score" not in enrichment
-    assert "ekologus.dev.proudsite.pl" not in str(enrichment.get("final_canonical_url"))
 
 
 def test_content_opportunity_enrichment_keeps_source_fact_lineage_per_connector() -> None:
@@ -71,31 +34,6 @@ def test_content_opportunity_enrichment_keeps_source_fact_lineage_per_connector(
             assert fact.evidence_ids == ["ev_refresh_refresh_google_search_console_abc"]
         if fact.source_connectors == ["wordpress_ekologus"]:
             assert fact.evidence_ids == ["ev_refresh_refresh_wordpress_ekologus_def"]
-
-
-def test_content_work_item_enrichment_returns_typed_blocker_for_unknown_item() -> None:
-    response = TestClient(app).get("/api/content/work-items/content_work_item_missing/enrichment")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["enrichment"] is None
-    assert [blocker["code"] for blocker in data["blockers"]] == ["missing_work_item"]
-
-
-def test_content_work_item_enrichment_resolves_inventory_alias() -> None:
-    client = TestClient(app)
-    queue = client.get("/api/content/work-items/queue").json()
-    candidate = next(item for item in queue["candidates"] if item["source_public_url"])
-    inventory_id = inventory_work_item_id(candidate["source_public_url"])
-
-    response = client.get(f"/api/content/work-items/{inventory_id}/enrichment")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["enrichment"] is not None
-    assert data["enrichment"]["work_item_id"] == inventory_id
-    assert data["enrichment"]["decision_id"].startswith("inventory_")
-    assert all(blocker["code"] != "missing_work_item" for blocker in data["blockers"])
 
 
 def test_content_opportunity_enrichment_blocks_without_evidence_or_source_connector() -> None:

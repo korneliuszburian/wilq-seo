@@ -13,15 +13,7 @@ from apps.api.wilq_api.routers.content_snapshot import (
 from apps.api.wilq_api.routers.content_workflow_http import (
     revision_conflict_next_step,
 )
-from wilq.briefing.content_diagnostics import (
-    build_content_diagnostics_cached,
-    build_content_freshness_assessment_fast,
-)
 from wilq.content.drafts.package import ContentDraftPackage
-from wilq.content.enrichment.opportunity import (
-    ContentOpportunityEnrichmentResponse,
-    build_content_opportunity_enrichment_response,
-)
 from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionConflictResponse,
@@ -42,13 +34,7 @@ from wilq.content.workflow.entry import (
     ContentWorkflowEntryResponse,
     build_content_workflow_entry,
 )
-from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
 from wilq.content.workflow.planning import ContentPlanningWorkspace
-from wilq.content.workflow.queue import (
-    ContentWorkItemQueueResponse,
-    build_content_work_item_queue_response,
-    build_selected_content_work_item_queue_response,
-)
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
@@ -66,36 +52,6 @@ router = APIRouter()
 
 
 @router.get(
-    "/api/content/work-items/queue",
-    response_model=ContentWorkItemQueueResponse,
-)
-def content_work_item_queue(
-    work_item_id: str | None = Query(default=None),
-) -> ContentWorkItemQueueResponse:
-    if work_item_id is not None:
-        inventory_decision = inventory_decision_for_work_item(
-            work_item_id,
-            # A selected inventory item is the operator's explicit request to
-            # open the workflow.  Keep this first read limited to the catalog;
-            # the heavier WordPress material read belongs to the snapshot and
-            # must not make the decision screen look like a stalled refresh.
-            read_material=False,
-            allow_material_pending=True,
-        )
-        if inventory_decision is not None:
-            return build_selected_content_work_item_queue_response(
-                inventory_decision,
-                build_content_freshness_assessment_fast(
-                    relevant_connector_ids=inventory_decision.source_connectors,
-                ),
-            )
-    return build_content_work_item_queue_response(
-        build_content_diagnostics_cached(),
-        selected_work_item_id=work_item_id,
-    )
-
-
-@router.get(
     "/api/content/workflow-entry",
     response_model=ContentWorkflowEntryResponse,
 )
@@ -103,24 +59,6 @@ def content_workflow_entry(
     search: str | None = Query(default=None, max_length=120),
 ) -> ContentWorkflowEntryResponse:
     return build_content_workflow_entry(search=search)
-
-
-@router.get(
-    "/api/content/work-items/{work_item_id}/enrichment",
-    response_model=ContentOpportunityEnrichmentResponse,
-)
-def content_work_item_enrichment(
-    work_item_id: str,
-) -> ContentOpportunityEnrichmentResponse:
-    diagnostics = build_content_diagnostics_cached()
-    return build_content_opportunity_enrichment_response(
-        diagnostics,
-        work_item_id,
-        queue=build_content_work_item_queue_response(
-            diagnostics,
-            selected_work_item_id=work_item_id,
-        ),
-    )
 
 
 def _build_editor_save_command(
