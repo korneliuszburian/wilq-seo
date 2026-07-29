@@ -8,7 +8,7 @@ import {
   postContentWorkItemInitialDraft,
   postContentWorkItemPlanningProposal
 } from "../lib/api";
-import { ContentPlanningGenerationPanel } from "./ContentPlanningGenerationPanel";
+import { ContentTextPreparationPanel } from "./ContentTextPreparationPanel";
 
 vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
@@ -20,7 +20,7 @@ vi.mock("../lib/api", async (importOriginal) => ({
 
 function renderPanel() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={client}><ContentPlanningGenerationPanel workItemId="work_item" /></QueryClientProvider>);
+  return render(<QueryClientProvider client={client}><ContentTextPreparationPanel workItemId="work_item" /></QueryClientProvider>);
 }
 
 function readyToGenerate(status: "not_generated" | "failed" = "not_generated") {
@@ -49,7 +49,7 @@ function readyToGenerate(status: "not_generated" | "failed" = "not_generated") {
   };
 }
 
-describe("ContentPlanningGenerationPanel", () => {
+describe("ContentTextPreparationPanel", () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(cleanup);
 
@@ -65,6 +65,8 @@ describe("ContentPlanningGenerationPanel", () => {
       operator_hint: "",
       requested_by: "wilku"
     }, "work_item"));
+    expect(screen.queryByText("Następny krok")).not.toBeInTheDocument();
+    expect(screen.queryByText(/zatwierdź plan/i)).not.toBeInTheDocument();
   });
 
   it("continues one requested text flow from a generated structure to the exact first draft", async () => {
@@ -139,6 +141,25 @@ describe("ContentPlanningGenerationPanel", () => {
       requested_by: "wilku"
     }, "work_item"));
     expect(screen.queryByText("Szkic struktury tekstu")).not.toBeInTheDocument();
+  });
+
+  it("does not leak an internal plan-approval instruction into the marketer recovery action", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyToGenerate(),
+      status: "blocked",
+      blockers: [{
+        code: "service_card_not_approved",
+        label: "Brakuje zatwierdzonego źródła",
+        reason: "Nie można jeszcze oprzeć tekstu na wybranej wiedzy.",
+        next_step: "Zatwierdź plan."
+      }]
+    } as never);
+    renderPanel();
+
+    const recovery = (await screen.findByText(/Co wymaga uwagi:/)).parentElement;
+    expect(recovery).toHaveTextContent("Brakuje zatwierdzonego źródła");
+    expect(recovery).toHaveTextContent("Wybierz zatwierdzone źródło wiedzy, na którym ma oprzeć się tekst.");
+    expect(screen.queryByText("Zatwierdź plan.")).not.toBeInTheDocument();
   });
 
   it("lets the marketer retry the same exact proposal after draft preparation fails", async () => {

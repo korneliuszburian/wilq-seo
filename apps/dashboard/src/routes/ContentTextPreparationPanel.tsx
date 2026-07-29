@@ -9,14 +9,15 @@ import {
   type ContentPlanningProposalResponse
 } from "../lib/api";
 import { useContentPlanningProposal } from "./contentWorkflowQueries";
+import { textPreparationRecovery } from "./contentTextPreparationCopy";
 
 type ExactPlanningProposal = NonNullable<ContentPlanningProposalResponse["proposal"]> & {
   proposal_id: string;
   planning_digest: string;
 };
 
-/** The plan is server-owned input, not a separate marketer decision. */
-export function ContentPlanningGenerationPanel({ workItemId }: { workItemId: string }) {
+/** Planning stays internal; this is the one marketer-facing text action. */
+export function ContentTextPreparationPanel({ workItemId }: { workItemId: string }) {
   const queryClient = useQueryClient();
   const queryKey = ["content-workflow", "work-item", workItemId, "planning-proposal"];
   const status = useContentPlanningProposal(workItemId);
@@ -125,15 +126,14 @@ export function ContentPlanningGenerationPanel({ workItemId }: { workItemId: str
     generation.mutate();
   };
 
-  return <section aria-labelledby="content-planning-generation-title" className="rounded-md border border-line bg-white p-4 shadow-sm" data-testid="content-planning-generation">
-    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Następny krok</p>
-    <h2 id="content-planning-generation-title" className="mt-1 text-lg font-semibold text-ink">{textHeadline(preparingText, state.status)}</h2>
+  return <section aria-labelledby="content-text-preparation-title" className="rounded-md border border-line bg-white p-4 shadow-sm" data-testid="content-text-preparation">
+    <h2 id="content-text-preparation-title" className="text-lg font-semibold text-ink">{textHeadline(preparingText, state.status)}</h2>
     <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">{blocker?.reason ?? "WILQ wykorzysta aktualną stronę, wybraną usługę i zapisane źródła, a potem przygotuje jeden tekst do Twojego review. Nie zmienia WordPressa."}</p>
     {canPrepareText ? <button type="button" disabled={preparingText} onClick={prepareText} className="mt-4 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
       {preparingText ? "Przygotowuję tekst…" : state.status === "failed" ? "Spróbuj ponownie" : "Przygotuj tekst"}
     </button> : null}
     {preparingText ? <p aria-live="polite" className="mt-4 rounded-md border border-action/20 bg-action/5 p-3 text-sm text-slate-700">Przygotowuję materiał roboczy i pierwszy tekst. Ten widok odświeży się po zakończeniu; nie uruchomi drugiej wersji dla tych samych danych.</p> : null}
-    {blocker ? <p className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm text-slate-700"><span className="font-semibold text-wait">Co wymaga uwagi: </span>{blocker.label}. {blocker.next_step}</p> : null}
+    {blocker ? <p className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm text-slate-700"><span className="font-semibold text-wait">Co wymaga uwagi: </span>{blocker.label}. {textPreparationRecovery(blocker.code)}</p> : null}
     {generation.error || startDraft.error ? <p role="alert" className="mt-3 text-sm text-danger">Nie udało się przygotować tekstu. Nic nie zostało zapisane w WordPressie.</p> : null}
     <p className="mt-3 text-xs leading-5 text-slate-500">Otwarcie tego widoku niczego nie generuje. WILQ zachowuje exact dane robocze wewnątrz procesu; Twoją decyzją jest dopiero review gotowego tekstu.</p>
   </section>;
