@@ -31,7 +31,6 @@ from wilq.content.enrichment.opportunity import (
 )
 from wilq.content.workflow.api import (
     build_content_work_item_diagnostics_snapshot_response,
-    build_content_work_item_quality_review_response,
     build_content_work_item_snapshot_audit_response,
     build_content_work_item_snapshot_human_review_response,
     build_content_work_item_wordpress_authoring_payload_preview_response,
@@ -56,8 +55,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemMeasurementOutcomeRequest,
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
-    ContentWorkItemQualityReviewRequest,
-    ContentWorkItemQualityReviewResponse,
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
     ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
@@ -431,49 +428,6 @@ def content_work_item_audit_for_selected_item(
     ).wordpress_handoff
     if response.handoff_result.handoff is not None:
         content_workflow_store().save_audit(request.audit)
-    return response
-
-
-@router.post(
-    "/api/content/work-items/quality-review",
-    response_model=ContentWorkItemQualityReviewResponse,
-)
-def content_work_item_quality_review(
-    request: ContentWorkItemQualityReviewRequest,
-) -> ContentWorkItemQualityReviewResponse:
-    return build_content_work_item_quality_review_response(request)
-
-
-@router.post(
-    "/api/content/work-items/{work_item_id}/quality-review",
-    response_model=ContentWorkItemQualityReviewResponse,
-)
-def content_work_item_quality_review_for_selected_item(
-    work_item_id: str,
-    request: ContentWorkItemQualityReviewRequest,
-) -> ContentWorkItemQualityReviewResponse:
-    snapshot = _snapshot_for_work_item_or_404(work_item_id)
-    if request.item.id != work_item_id:
-        raise HTTPException(
-            status_code=400,
-            detail="Content quality review item does not match the selected work item.",
-        )
-    response = build_content_work_item_quality_review_response(
-        request.model_copy(
-            update={
-                # The queue candidate is intentionally a compact browser
-                # projection.  Never let it replace the server-owned item
-                # used by quality gates: inventory, duplicate state, metric
-                # baseline and freshness must come from the exact snapshot.
-                "item": snapshot.sales_brief.item,
-                "revision": snapshot.revision_workspace.latest_revision,
-                "claim_ledger": snapshot.claim_ledger,
-                "sales_brief": snapshot.sales_brief.sales_brief_result.brief,
-                "draft_package": (snapshot.draft_package.draft_package_result.draft_package),
-            }
-        )
-    )
-    content_workflow_store().save_quality_review(response.quality_review)
     return response
 
 

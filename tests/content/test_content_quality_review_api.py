@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
-from apps.api.wilq_api.routers import content_workflow as content_workflow_router
 from tests.content.test_content_work_item_brief_draft_api import (
     _post_draft_package,
     _post_sales_brief,
@@ -19,12 +17,12 @@ from tests.content.test_work_item_preflight_api import (
     _item,
     _sales_brief_seed,
 )
-from wilq.content.quality.review import ContentQualityReview, _draft_package_findings
+from wilq.content.quality.review import _draft_package_findings
+from wilq.content.workflow.api import build_content_work_item_quality_review_response
 from wilq.content.workflow.contracts import (
-    ContentWorkItemQualityReviewResponse,
+    ContentWorkItemQualityReviewRequest,
     ContentWorkItemStructuredDraftGenerationRequest,
 )
-from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.stage_drafts import (
     build_content_work_item_structured_draft_generation_response,
 )
@@ -33,10 +31,7 @@ from wilq.content.workflow.stage_drafts import (
 def test_content_quality_review_accepts_evidence_bound_draft() -> None:
     payload = _quality_payload()
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = _quality_review(payload)
     assert review["verdict"] == "ready_for_human_review"
     assert review["blockers"] == []
     assert review["evidence_coverage"]["status"] == "pass"
@@ -62,85 +57,21 @@ def test_v2_revision_quality_does_not_require_legacy_draft_package() -> None:
     assert findings == []
 
 
-def test_selected_quality_review_uses_server_owned_item_not_browser_candidate(
-    monkeypatch: Any,
-) -> None:
-    server_item = ContentWorkItem.model_validate(
-        _item(
-            duplicate_status="checked",
-            inventory_status="resolved",
-            canonical_status="resolved",
-            preflight_status="draft_allowed",
-        )
+def test_retired_legacy_quality_routes_return_404() -> None:
+    client = TestClient(app)
+    assert client.post("/api/content/work-items/quality-review", json={}).status_code == 404
+    response = client.post(
+        "/api/content/work-items/content_work_item_bdo/quality-review",
+        json={},
     )
-    snapshot = SimpleNamespace(
-        sales_brief=SimpleNamespace(
-            item=server_item,
-            sales_brief_result=SimpleNamespace(brief=None),
-        ),
-        claim_ledger=None,
-        draft_package=SimpleNamespace(draft_package_result=SimpleNamespace(draft_package=None)),
-        revision_workspace=SimpleNamespace(latest_revision=None),
-    )
-    captured: dict[str, Any] = {}
-
-    def fake_quality_review(request: Any) -> Any:
-        captured["item"] = request.item
-        dimension = {"status": "pass", "label": "", "reason": ""}
-        review = ContentQualityReview(
-            review_id="quality_review_test",
-            work_item_id=request.item.id,
-            verdict="ready_for_human_review",
-            evidence_coverage=dimension,
-            claim_safety=dimension,
-            duplicate_risk=dimension,
-            usefulness=dimension,
-            service_fit=dimension,
-            search_intent_fit=dimension,
-            buyer_problem_fit=dimension,
-            cta_quality=dimension,
-            factual_precision=dimension,
-            polish_language_quality=dimension,
-            internal_link_fit=dimension,
-            measurement_readiness=dimension,
-            safe_next_step="review",
-        )
-        return ContentWorkItemQualityReviewResponse(item=request.item, quality_review=review)
-
-    monkeypatch.setattr(
-        content_workflow_router,
-        "_snapshot_for_work_item_or_404",
-        lambda work_item_id, **_: snapshot,
-    )
-    monkeypatch.setattr(
-        content_workflow_router,
-        "build_content_work_item_quality_review_response",
-        fake_quality_review,
-    )
-    compact_candidate = {
-        "id": server_item.id,
-        "topic": server_item.topic,
-        "duplicate_status": "missing",
-    }
-
-    response = TestClient(app).post(
-        f"/api/content/work-items/{server_item.id}/quality-review",
-        json={"item": compact_candidate},
-    )
-
-    assert response.status_code == 200
-    assert captured["item"].duplicate_status == "checked"
-    assert captured["item"].inventory_status == "resolved"
+    assert response.status_code == 404
 
 
 def test_content_quality_review_blocks_missing_section_evidence() -> None:
     payload = _quality_payload()
     payload["structured_output"]["sections"][0]["evidence_ids"] = []
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = _quality_review(payload)
     assert review["verdict"] == "blocked"
     assert "section_missing_evidence" in _blocker_codes(review)
     assert review["evidence_coverage"]["status"] == "blocked"
@@ -151,10 +82,7 @@ def test_content_quality_review_blocks_claim_without_required_section_evidence()
     payload["structured_output"]["sections"][0]["evidence_ids"] = ["ev_gsc_bdo"]
     payload["structured_output"]["source_facts_used"] = ["ev_gsc_bdo", "ev_wp_bdo"]
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = _quality_review(payload)
     assert review["verdict"] == "blocked"
     assert "claim_missing_required_evidence" in _blocker_codes(review)
     assert review["claim_safety"]["status"] == "blocked"
@@ -173,10 +101,7 @@ def test_content_quality_review_blocks_missing_required_claim() -> None:
     required_claim = payload["claim_ledger"]["entries"][0]["claim_text"]
     payload["structured_output"]["sections"][0]["claims_used"] = []
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = _quality_review(payload)
     assert review["verdict"] == "blocked"
     assert "required_claim_missing" in _blocker_codes(review)
     assert review["claim_safety"]["status"] == "blocked"
@@ -192,10 +117,7 @@ def test_content_quality_review_blocks_missing_forbidden_claim_acknowledgement()
     payload["draft_package"]["claims_removed_or_blocked"] = [blocked_claim]
     payload["structured_output"]["forbidden_claims_avoided"] = []
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = _quality_review(payload)
     assert review["verdict"] == "blocked"
     assert "missing_forbidden_claim_acknowledgement" in _blocker_codes(review)
     assert review["claim_safety"]["status"] == "blocked"
@@ -223,10 +145,7 @@ def test_content_quality_review_blocks_forbidden_claims_and_publish_ready_packag
     payload["structured_output"]["sections"][0]["claims_used"].append(forbidden_claim)
     payload["draft_package"]["publish_ready"] = True
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = _quality_review(payload)
     assert review["verdict"] == "blocked"
     assert {
         "claim_ledger_blocks_quality",
@@ -243,10 +162,7 @@ def test_content_quality_review_blocks_duplicate_and_missing_measurement() -> No
     payload["item"]["measurement_window_status"] = "missing"
     payload["item"]["measurement_window_id"] = None
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = _quality_review(payload)
     assert review["verdict"] == "blocked"
     assert {"duplicate_risk_not_clear", "missing_measurement_window"}.issubset(
         _blocker_codes(review)
@@ -265,10 +181,7 @@ def test_content_quality_review_flags_review_required_sales_brief_signal() -> No
         "safe_next_step": "Pokaż brief Wilkowi i zbierz decyzję źródłową.",
     }
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = _quality_review(payload)
     assert review["verdict"] == "needs_changes"
     assert "sales_brief_signal_review_required" in [
         finding["code"] for finding in review["findings"]
@@ -290,10 +203,7 @@ def test_content_quality_review_blocks_thin_sales_brief_signal() -> None:
         "safe_next_step": "Uzupełnij dowody i źródła przed szkicem.",
     }
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = _quality_review(payload)
     assert review["verdict"] == "blocked"
     assert "sales_brief_signal_thin" in _blocker_codes(review)
     assert review["evidence_coverage"]["status"] == "blocked"
@@ -305,10 +215,7 @@ def test_content_quality_review_returns_revision_instruction_for_weak_cta() -> N
     payload = _quality_payload()
     payload["structured_output"]["cta"] = "kliknij tutaj"
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = _quality_review(payload)
     assert review["verdict"] == "needs_changes"
     assert "weak_cta" in [finding["code"] for finding in review["findings"]]
     assert review["cta_quality"]["status"] == "needs_changes"
@@ -390,10 +297,10 @@ def _quality_payload() -> dict[str, Any]:
 
 
 def _quality_review(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-    assert response.status_code == 200
-    data = cast(dict[str, Any], response.json())
-    return cast(dict[str, Any], data["quality_review"])
+    response = build_content_work_item_quality_review_response(
+        ContentWorkItemQualityReviewRequest.model_validate(payload)
+    )
+    return response.quality_review.model_dump(mode="json")
 
 
 def _claim_ledger(item: dict[str, Any]) -> dict[str, Any]:

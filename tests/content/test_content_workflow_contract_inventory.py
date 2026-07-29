@@ -25,7 +25,6 @@ from wilq.content.workflow.api import (
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
-    ContentWorkItemQualityReviewResponse,
     ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionResponse,
     ContentWorkItemWordPressDraftHandoffResponse,
@@ -222,11 +221,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/{work_item_id}/audit",
     ): ContentWorkItemWordPressDraftHandoffResponse,
-    ("POST", "/api/content/work-items/quality-review"): ContentWorkItemQualityReviewResponse,
-    (
-        "POST",
-        "/api/content/work-items/{work_item_id}/quality-review",
-    ): ContentWorkItemQualityReviewResponse,
     ("POST", "/api/content/work-items/human-review"): ContentWorkItemHumanReviewResponse,
     (
         "POST",
@@ -270,7 +264,6 @@ def test_content_workflow_stateful_routes_have_selected_work_item_variants() -> 
         "snapshot",
         "human-review",
         "audit",
-        "quality-review",
     ]:
         assert any(
             path == f"/api/content/work-items/{{work_item_id}}/{suffix}"
