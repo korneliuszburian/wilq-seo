@@ -146,3 +146,25 @@ def test_localo_smoke_uses_diagnostics_without_refresh_by_default(
 
     assert module.main() == 0
     assert ("POST", "/api/connectors/localo/refresh") not in calls
+
+
+def test_localo_smoke_accepts_missing_refresh_when_access_is_blocked() -> None:
+    module = load_localo_smoke()
+    pack = localo_context_pack()
+    diagnostics = pack["localo_diagnostics"]
+    diagnostics["access_probe"] = {"status": "access_blocked"}
+    diagnostics.pop("latest_refresh")
+    diagnostics["decision_queue"].append(
+        {"id": "localo_fix_access_before_visibility_review", "metric_facts": []}
+    )
+    pack["connector_refresh_runs"] = []
+
+    result = module.validate_localo_refresh_contract(
+        pack,
+        diagnostics,
+        diagnostics["access_probe"],
+        {decision["id"] for decision in diagnostics["decision_queue"]},
+        pack["active_action_objects"],
+    )
+
+    assert result[1:3] == ("clean_runtime_without_refresh", "missing")
