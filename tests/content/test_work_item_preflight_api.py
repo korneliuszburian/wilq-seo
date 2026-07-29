@@ -6,6 +6,14 @@ from typing import Any
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from wilq.content.knowledge.cards import (
+    ContentKnowledgeCardMatch,
+    ekologus_seed_content_knowledge_cards,
+)
+from wilq.content.workflow.contracts import ContentWorkItemPreflightRequest
+from wilq.content.workflow.stage_preparation import (
+    build_content_work_item_preflight_response,
+)
 
 
 def _item(**overrides: object) -> dict[str, object]:
@@ -159,6 +167,31 @@ def _enrichment(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def _knowledge_match() -> ContentKnowledgeCardMatch:
+    cards = ekologus_seed_content_knowledge_cards()
+    service_card = next(card for card in cards if card.card_type == "service")
+    return ContentKnowledgeCardMatch(
+        work_item_id="content_work_item_bdo",
+        service_card=service_card,
+        recommended_service_card_id=service_card.id,
+        buyer_problem_cards=[service_card],
+        cta_cards=[card for card in cards if card.card_type == "cta_pattern"],
+        claim_policy_cards=[
+            card
+            for card in cards
+            if card.claims_needing_review
+            or card.forbidden_claims
+            or card.measurement_sensitive_claims
+        ],
+        evidence_requirement_cards=[
+            card for card in cards if card.card_type == "evidence_requirement"
+        ],
+        measurement_sensitive_cards=[
+            card for card in cards if card.measurement_sensitive_claims
+        ],
+    )
+
+
 def _draft_package(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
         "id": "draft_package_content_work_item_bdo",
@@ -244,9 +277,9 @@ def _wordpress_handoff(**overrides: object) -> dict[str, object]:
 
 
 def _post_preflight(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post("/api/content/work-items/preflight", json=payload)
-    assert response.status_code == 200
-    data = response.json()
+    data = build_content_work_item_preflight_response(
+        ContentWorkItemPreflightRequest.model_validate(payload)
+    ).model_dump(mode="json")
     assert sorted(data) == ["inventory_resolution", "item", "preflight_verdict"]
     return data
 
@@ -317,6 +350,10 @@ def test_content_work_item_preflight_api_preserves_evidence_for_valid_item() -> 
         "wordpress_ekologus",
     ]
     assert "https://ekologus.pl/bdo/" in data["preflight_verdict"]["similar_existing_urls"]
+
+
+def test_retired_legacy_preflight_route_returns_404() -> None:
+    assert TestClient(app).post("/api/content/work-items/preflight", json={}).status_code == 404
 
 
 def test_existing_content_preflight_endpoint_shape_stays_unchanged() -> None:

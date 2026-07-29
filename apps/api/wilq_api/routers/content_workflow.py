@@ -48,8 +48,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemBlockedSnapshotResponse,
     ContentWorkItemBrowserSnapshotResponse,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
-    ContentWorkItemDraftPackageRequest,
-    ContentWorkItemDraftPackageResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemLearningProposalRequest,
@@ -58,12 +56,8 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemMeasurementOutcomeRequest,
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
-    ContentWorkItemPreflightRequest,
-    ContentWorkItemPreflightResponse,
     ContentWorkItemQualityReviewRequest,
     ContentWorkItemQualityReviewResponse,
-    ContentWorkItemSalesBriefRequest,
-    ContentWorkItemSalesBriefResponse,
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
     ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
@@ -92,16 +86,9 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionReviewCommand,
     content_draft_package_digest,
 )
-from wilq.content.workflow.stage_drafts import (
-    build_content_work_item_draft_package_response,
-)
 from wilq.content.workflow.stage_measurement import (
     build_content_work_item_learning_proposal_response,
     build_content_work_item_measurement_outcome_response,
-)
-from wilq.content.workflow.stage_preparation import (
-    build_content_work_item_preflight_response,
-    build_content_work_item_sales_brief_response,
 )
 from wilq.content.workflow.stage_review import (
     build_content_work_item_human_review_response,
@@ -445,36 +432,6 @@ def content_work_item_audit_for_selected_item(
     if response.handoff_result.handoff is not None:
         content_workflow_store().save_audit(request.audit)
     return response
-
-
-@router.post(
-    "/api/content/work-items/preflight",
-    response_model=ContentWorkItemPreflightResponse,
-)
-def content_work_item_preflight(
-    request: ContentWorkItemPreflightRequest,
-) -> ContentWorkItemPreflightResponse:
-    return build_content_work_item_preflight_response(request)
-
-
-@router.post(
-    "/api/content/work-items/sales-brief",
-    response_model=ContentWorkItemSalesBriefResponse,
-)
-def content_work_item_sales_brief(
-    request: ContentWorkItemSalesBriefRequest,
-) -> ContentWorkItemSalesBriefResponse:
-    return build_content_work_item_sales_brief_response(request)
-
-
-@router.post(
-    "/api/content/work-items/draft-package",
-    response_model=ContentWorkItemDraftPackageResponse,
-)
-def content_work_item_draft_package(
-    request: ContentWorkItemDraftPackageRequest,
-) -> ContentWorkItemDraftPackageResponse:
-    return build_content_work_item_draft_package_response(request)
 
 
 @router.post(
