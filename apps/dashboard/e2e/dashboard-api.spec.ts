@@ -185,26 +185,20 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expectNoForbiddenVisibleCopy(page);
   });
 
-  test("seo and content routes expose dedicated Content Workflow", async ({ page }) => {
+  test("content route exposes the marketer-first entry", async ({ page }) => {
+    const workflowEntryResponse = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname === "/api/content/workflow-entry" && response.status() === 200;
+    });
     await page.goto("/content-workflow");
+    await workflowEntryResponse;
 
-    await expectApiBackedRouteHeading(page, "Od decyzji do szkicu na devie", { exact: true });
-    await expect(page.getByLabel("Kontekst zadania treściowego")).toBeVisible();
-    const taskMap = page.getByTestId("content-workflow-task-map");
-    await expect(taskMap.getByRole("button")).toHaveCount(5);
-    await expect(taskMap.locator('[aria-current="step"]')).toHaveCount(1);
-    await expect(taskMap.getByRole("button", { name: /Szkic treści/ })).toHaveAttribute(
-      "aria-current",
-      "step"
-    );
-    await expect(page.getByRole("heading", { name: "Tekst sekcji do szkicu" })).toBeVisible();
-    await expect(page.getByText("Szkic nie ma jeszcze zapisanej wersji")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Podgląd na devie", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Źródła i twierdzenia" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Aktualna strona" })).toHaveCount(0);
+    await expectApiBackedRouteHeading(page, "Tworzenie i odświeżanie treści", { exact: true });
+    await expect(page.getByRole("button", { name: /Wybierz stronę/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Zacznij od briefu/ })).toBeVisible();
+    await expect(page.getByText("Do pracy teraz")).toBeVisible();
+    await expect(page.getByTestId("content-workflow-task-map")).toHaveCount(0);
     await expect(page.getByTestId("content-workflow-technical-audit")).toHaveCount(0);
-    await expect(page.getByText("GSC: query/page matrix")).toHaveCount(0);
-    await expect(page.getByText("WordPress: inventory protection")).toHaveCount(0);
     await expectNoForbiddenVisibleCopy(page);
   });
 

@@ -72,38 +72,16 @@ test.describe("WILQ dashboard marketer demo proof", () => {
       fullPage: true,
     });
 
-    await gotoAndWaitForApi(page, "/content-workflow", "/api/content/work-items/queue");
-    await expect(
-      page.getByRole("heading", { name: "Od decyzji do szkicu na devie", exact: true })
-    ).toBeVisible();
-    await expect(page.getByLabel("Kontekst zadania treściowego")).toBeVisible();
-    const contentTaskMap = page.getByTestId("content-workflow-task-map");
-    await expect(contentTaskMap.getByRole("button")).toHaveCount(5);
-    await expect(contentTaskMap.getByRole("button", { name: /Szkic treści/ })).toHaveAttribute(
-      "aria-current",
-      "step"
-    );
-    await expect(page.getByRole("heading", { name: "Tekst sekcji do szkicu" })).toBeVisible();
-    await expect(page.getByText("Szkic nie ma jeszcze zapisanej wersji")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Podgląd na devie", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Źródła i twierdzenia" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Aktualna strona" })).toHaveCount(0);
+    await gotoAndWaitForApi(page, "/content-workflow", "/api/content/workflow-entry");
+    await expect(page.getByRole("heading", { name: "Tworzenie i odświeżanie treści", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Wybierz stronę/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Zacznij od briefu/ })).toBeVisible();
+    await expect(page.getByText("Do pracy teraz")).toBeVisible();
+    await expect(page.getByTestId("content-workflow-task-map")).toHaveCount(0);
     await expect(page.getByTestId("content-workflow-technical-audit")).toHaveCount(0);
-    const previewButton = page.getByRole("button", { name: "Przygotuj podgląd draftu" });
-    const previewButtonBox = await previewButton.boundingBox();
-    const evidenceBox = await page
-      .getByRole("heading", { name: "Źródła i twierdzenia" })
-      .boundingBox();
-    expect(previewButtonBox?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(
-      evidenceBox?.y ?? Number.POSITIVE_INFINITY
-    );
-    await expect(previewButton).toBeVisible();
-    await expect(
-      page.getByText("Ten krok przygotowuje wyłącznie podgląd. Zapis wymaga osobnego zatwierdzenia.")
-    ).toBeVisible();
     await expectNoVisibleTechnicalIds(page);
     await page.screenshot({
-      path: path.join(runDir, "03-content-workflow-workbench.png"),
+      path: path.join(runDir, "03-content-workflow-entry.png"),
       fullPage: true,
     });
 
@@ -163,7 +141,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
         "",
         "- 01-command-center-action-plan.png",
         "- 02-merchant-feed-issues.png",
-        "- 03-content-workflow-workbench.png",
+        "- 03-content-workflow-entry.png",
         "- 04-ga4-landing-quality.png",
         "- 05-ads-live-campaign-metrics.png",
         "- 06-localo-access-status.png",
