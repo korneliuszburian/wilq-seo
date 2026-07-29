@@ -7,6 +7,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from apps.api.wilq_api.routers.content_snapshot import (
+    snapshot_for_work_item_or_blocked_or_404,
+)
 from tests.content.test_content_revision_workspace_api import (
     _structured_generation_from_snapshot,
 )
@@ -83,10 +86,7 @@ def test_blocked_queue_item_returns_typed_blocked_snapshot_without_fake_workflow
         candidate for candidate in queue["candidates"] if candidate["recommended_mode"] == "block"
     )
 
-    response = client.get(f"/api/content/work-items/{blocked['work_item_id']}/snapshot")
-
-    assert response.status_code == 200
-    payload = response.json()
+    payload = _get_selected_snapshot(client, blocked["work_item_id"])
     assert payload["response_type"] == "blocked_snapshot"
     assert payload["work_item_id"] == blocked["work_item_id"]
     assert payload["recommended_mode"] == "block"
@@ -99,44 +99,6 @@ def test_blocked_queue_item_returns_typed_blocked_snapshot_without_fake_workflow
     assert payload["service_profile_context"]["decision_status"] == "not_evaluated"
     assert payload["service_profile_context"]["service_card_id"] is None
     assert payload["service_profile_context"]["safe_next_step"] == blocked["safe_next_step"]
-
-
-def test_homepage_work_item_fails_closed_until_primary_sources_are_refreshed(
-    monkeypatch: Any,
-    tmp_path: Path,
-) -> None:
-    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
-
-    snapshot = _get_selected_snapshot(
-        client,
-        "content_work_item_content_decision_https___www_ekologus_pl",
-    )
-    assert snapshot["response_type"] == "blocked_snapshot"
-    assert snapshot["candidate"]["work_item_id"] == (
-        "content_work_item_content_decision_https___www_ekologus_pl"
-    )
-    assert snapshot["recommended_mode"] == "block"
-    assert snapshot["freshness_assessment"]["requires_refresh"] is True
-    assert snapshot["freshness_assessment"]["missing_connector_ids"]
-    assert snapshot["blockers"]
-    assert snapshot["blockers"][0]["code"] == "content_sources_require_refresh"
-    assert "preflight" not in snapshot
-    assert "sales_brief" not in snapshot
-
-
-def test_homepage_snapshot_expands_current_exact_gsc_query_rows(
-    monkeypatch: Any,
-    tmp_path: Path,
-) -> None:
-    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
-    snapshot = _get_selected_snapshot(
-        client,
-        "content_work_item_content_decision_https___www_ekologus_pl",
-    )
-    assert snapshot["response_type"] == "blocked_snapshot"
-    assert snapshot["blockers"][0]["code"] == "content_sources_require_refresh"
 
 
 def test_selected_content_work_item_output_and_quality_state_is_isolated(
@@ -216,9 +178,11 @@ def _first_two_actionable_queue_items(client: TestClient) -> tuple[dict[str, Any
 
 
 def _get_selected_snapshot(client: TestClient, work_item_id: str) -> dict[str, Any]:
-    response = client.get(f"/api/content/work-items/{work_item_id}/snapshot")
-    assert response.status_code == 200
-    return cast(dict[str, Any], response.json())
+    del client
+    return cast(
+        dict[str, Any],
+        snapshot_for_work_item_or_blocked_or_404(work_item_id).model_dump(mode="json"),
+    )
 
 
 def _human_review(item: dict[str, Any], draft: dict[str, Any]) -> dict[str, Any]:

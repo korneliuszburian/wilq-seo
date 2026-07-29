@@ -8,16 +8,9 @@ from apps.api.wilq_api.routers.content_model_routes import (
     register_content_model_routes,
 )
 from apps.api.wilq_api.routers.content_snapshot import (
-    snapshot_for_default_work_item_or_404 as _snapshot_for_default_work_item_or_404,
-)
-from apps.api.wilq_api.routers.content_snapshot import (
     snapshot_for_work_item_or_404 as _snapshot_for_work_item_or_404,
 )
-from apps.api.wilq_api.routers.content_snapshot import (
-    snapshot_for_work_item_or_blocked_or_404 as _snapshot_for_work_item_or_blocked_or_404,
-)
 from apps.api.wilq_api.routers.content_workflow_http import (
-    project_content_work_item_browser_snapshot,
     revision_conflict_next_step,
 )
 from wilq.briefing.content_diagnostics import (
@@ -43,9 +36,6 @@ from wilq.content.workflow.contracts import (
     ContentDraftRevisionReviewResponse,
     ContentDraftRevisionSaveRequest,
     ContentDraftRevisionSaveResponse,
-    ContentWorkItemBlockedSnapshotResponse,
-    ContentWorkItemBrowserSnapshotResponse,
-    ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemLearningProposalRequest,
     ContentWorkItemLearningProposalResponse,
@@ -125,27 +115,6 @@ def content_workflow_entry(
     search: str | None = Query(default=None, max_length=120),
 ) -> ContentWorkflowEntryResponse:
     return build_content_workflow_entry(search=search)
-
-
-@router.get(
-    "/api/content/work-items/snapshot",
-    response_model=ContentWorkItemBrowserWorkflowSnapshotResponse,
-)
-def content_work_item_snapshot() -> ContentWorkItemBrowserWorkflowSnapshotResponse:
-    return project_content_work_item_browser_snapshot(_snapshot_for_default_work_item_or_404())
-
-
-@router.get(
-    "/api/content/work-items/{work_item_id}/snapshot",
-    response_model=ContentWorkItemBrowserSnapshotResponse,
-)
-def content_work_item_snapshot_for_selected_item(
-    work_item_id: str,
-) -> ContentWorkItemBrowserSnapshotResponse:
-    snapshot = _snapshot_for_work_item_or_blocked_or_404(work_item_id)
-    if isinstance(snapshot, ContentWorkItemBlockedSnapshotResponse):
-        return snapshot
-    return project_content_work_item_browser_snapshot(snapshot)
 
 
 @router.get(

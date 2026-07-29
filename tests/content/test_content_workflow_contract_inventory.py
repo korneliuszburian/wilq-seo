@@ -5,7 +5,6 @@ import json
 from fastapi.routing import APIRoute
 
 from apps.api.wilq_api.main import app
-from apps.api.wilq_api.routers import content_workflow as content_workflow_module
 from apps.api.wilq_api.routers.content_workflow import router
 from apps.api.wilq_api.routers.content_workflow_http import _browser_item
 from wilq.content.drafts.codex_section_proposal import (
@@ -35,8 +34,6 @@ from wilq.content.workflow.contracts import (
     ContentPublicDeploymentConfirmationResponse,
     ContentPublicDeploymentReadResponse,
     ContentRevisionHtmlPackageResponse,
-    ContentWorkItemBrowserSnapshotResponse,
-    ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemLearningProposalResponse,
 )
 from wilq.content.workflow.decision_context import ContentDecisionContext
@@ -136,14 +133,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/work-items/{work_item_id}/decision-context",
     ): ContentDecisionContext,
-    (
-        "GET",
-        "/api/content/work-items/snapshot",
-    ): ContentWorkItemBrowserWorkflowSnapshotResponse,
-    (
-        "GET",
-        "/api/content/work-items/{work_item_id}/snapshot",
-    ): ContentWorkItemBrowserSnapshotResponse,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/enrichment",
@@ -247,18 +236,22 @@ def test_content_workflow_routes_have_frozen_response_models() -> None:
         assert routes[key].response_model is expected_response_model
 
 
-def test_content_workflow_stateful_routes_have_selected_work_item_variants() -> None:
+def test_content_workflow_stateful_routes_include_active_selected_work_item_reads() -> None:
     routes = set(_content_workflow_routes())
 
     for suffix in [
-        "snapshot",
-        "human-review",
-        "audit",
+        "selected-workspace",
+        "target-discovery",
     ]:
         assert any(
             path == f"/api/content/work-items/{{work_item_id}}/{suffix}"
             for _method, path in routes
         )
+
+    assert not any(
+        path == "/api/content/work-items/{work_item_id}/snapshot"
+        for _method, path in routes
+    )
 
 
 def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> None:
@@ -336,24 +329,13 @@ def test_browser_item_does_not_duplicate_full_wordpress_material() -> None:
     assert projected.metric_facts == item.metric_facts[:12]
 
 
-def test_selected_snapshot_handler_uses_browser_projection(monkeypatch) -> None:
-    sentinel = object()
-    monkeypatch.setattr(
-        content_workflow_module,
-        "_snapshot_for_work_item_or_blocked_or_404",
-        lambda _work_item_id: "internal-snapshot",
-    )
-    monkeypatch.setattr(
-        content_workflow_module,
-        "project_content_work_item_browser_snapshot",
-        lambda snapshot: (snapshot, sentinel),
-    )
-
-    result = content_workflow_module.content_work_item_snapshot_for_selected_item(
-        "content_work_item_test"
-    )
-
-    assert result == ("internal-snapshot", sentinel)
+def test_legacy_snapshot_routes_are_not_public_content_routes() -> None:
+    for path in (
+        "/api/content/work-items/snapshot",
+        "/api/content/work-items/{work_item_id}/snapshot",
+    ):
+        assert ("GET", path) not in _content_workflow_routes()
+        assert path not in app.openapi()["paths"]
 
 
 def test_retired_global_authoring_profile_is_not_a_public_content_route() -> None:

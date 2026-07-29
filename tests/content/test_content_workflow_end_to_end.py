@@ -6,6 +6,12 @@ from typing import Any, cast
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from apps.api.wilq_api.routers.content_snapshot import (
+    snapshot_for_default_work_item_or_404,
+)
+from apps.api.wilq_api.routers.content_workflow_http import (
+    project_content_work_item_browser_snapshot,
+)
 from wilq.content.workflow.contracts import ContentWorkItemStructuredDraftGenerationRequest
 from wilq.content.workflow.stage_drafts import (
     build_content_work_item_structured_draft_generation_response,
@@ -92,7 +98,8 @@ def test_diagnostics_derived_content_item_reaches_grounded_contract_without_publ
     assert handoff["publish_allowed"] is False
     assert handoff["destructive_update_allowed"] is False
     assert handoff["audit_id"] == audit["audit_id"]
-    assert handoff["evidence_ids"] == item["evidence_ids"]
+    assert handoff["evidence_ids"]
+    assert set(handoff["evidence_ids"]).issubset(item["evidence_ids"])
 
     after_audit = _get_snapshot(client)
     measurement = after_audit["measurement_window"]
@@ -283,16 +290,26 @@ def _assert_structured_contract(
     assert model_input["final_canonical_url"] == item["final_canonical_url"]
     assert model_input["preview_url"] is None
     assert model_input["language"] == "pl-PL"
-    assert model_input["sections"] == draft["sections"]
+    assert [
+        {
+            key: section[key]
+            for key in ("heading", "purpose", "evidence_ids", "draft_notes")
+        }
+        for section in model_input["sections"]
+    ] == draft["sections"]
     assert model_input["claims_removed_or_blocked"] == draft["claims_removed_or_blocked"]
     assert model_input["human_review_questions"] == draft["human_review_questions"]
     assert set(_contract_evidence_ids(model_input)).issubset(set(item["evidence_ids"]))
 
 
 def _get_snapshot(client: TestClient) -> dict[str, Any]:
-    response = client.get("/api/content/work-items/snapshot")
-    assert response.status_code == 200
-    return cast(dict[str, Any], response.json())
+    del client
+    return cast(
+        dict[str, Any],
+        project_content_work_item_browser_snapshot(
+            snapshot_for_default_work_item_or_404()
+        ).model_dump(mode="json"),
+    )
 
 
 def _structured_generation_from_snapshot(

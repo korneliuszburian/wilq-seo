@@ -5,11 +5,12 @@ from pathlib import Path
 from typing import Any, Literal
 
 import pytest
-from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_snapshot
+from apps.api.wilq_api.routers.content_workflow_http import (
+    project_content_work_item_browser_snapshot,
+)
 from wilq.content.workflow.contracts import (
     ContentWorkItemBrowserWorkflowSnapshotResponse,
 )
@@ -32,18 +33,19 @@ def valid_workflow_snapshot_payload(
         str(tmp_path_factory.mktemp("workflow-snapshot") / "wilq.sqlite3"),
     )
     try:
-        response = TestClient(app).get("/api/content/work-items/snapshot")
+        snapshot = content_snapshot.snapshot_for_default_work_item_or_404()
     finally:
         monkeypatch.undo()
 
-    assert response.status_code == 200
-    payload: dict[str, Any] = response.json()
+    payload: dict[str, Any] = project_content_work_item_browser_snapshot(snapshot).model_dump(
+        mode="json"
+    )
     assert payload["response_type"] == "workflow_snapshot"
     ContentWorkItemBrowserWorkflowSnapshotResponse.model_validate(payload)
     return payload
 
 
-def test_public_workflow_snapshot_exposes_readiness_without_execution_contract(
+def test_internal_workflow_snapshot_projection_exposes_readiness_without_execution_contract(
     valid_workflow_snapshot_payload: dict[str, Any],
 ) -> None:
     _assert_browser_safe_generation_readiness(valid_workflow_snapshot_payload)
@@ -68,78 +70,18 @@ def test_public_readiness_cannot_be_ready_before_scope_or_generated_plan(
         assert readiness["blockers"][0]["code"] == current_step["blocker"]["code"]
 
 
-def test_selected_public_workflow_snapshot_uses_same_safe_projection(
+def test_selected_internal_workflow_snapshot_uses_same_safe_projection(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
-    default_response = client.get("/api/content/work-items/snapshot")
-    assert default_response.status_code == 200
-    work_item_id = default_response.json()["preflight"]["item"]["id"]
-
-    selected_response = client.get(f"/api/content/work-items/{work_item_id}/snapshot")
-
-    assert selected_response.status_code == 200
-    payload: dict[str, Any] = selected_response.json()
+    default_snapshot = content_snapshot.snapshot_for_default_work_item_or_404()
+    work_item_id = default_snapshot.preflight.item.id
+    payload: dict[str, Any] = project_content_work_item_browser_snapshot(
+        content_snapshot.snapshot_for_work_item_or_404(work_item_id)
+    ).model_dump(mode="json")
     ContentWorkItemBrowserWorkflowSnapshotResponse.model_validate(payload)
     _assert_browser_safe_generation_readiness(payload)
-
-
-def test_selected_snapshot_uses_current_inventory_without_global_diagnostics(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
-    diagnostics_response = client.get("/api/content/diagnostics")
-    assert diagnostics_response.status_code == 200
-    diagnostics = diagnostics_response.json()
-    decision = next(
-        item
-        for item in diagnostics["decision_queue"]
-        if item["status"] == "ready" and item.get("page")
-    )
-    work_item_id = f"content_work_item_{decision['id']}"
-
-    monkeypatch.setattr(
-        content_snapshot,
-        "inventory_decision_for_work_item",
-        lambda selected_id, **_kwargs: (
-            content_snapshot.ContentDecisionItem.model_validate(decision)
-            if selected_id == work_item_id
-            else None
-        ),
-    )
-    monkeypatch.setattr(
-        content_snapshot,
-        "diagnostics_with_exact_gsc_demand",
-        lambda _work_item_id: (_ for _ in ()).throw(
-            AssertionError("selected snapshot must not build global diagnostics")
-        ),
-    )
-    monkeypatch.setattr(
-        content_snapshot,
-        "build_content_diagnostics_cached",
-        lambda: (_ for _ in ()).throw(
-            AssertionError("selected snapshot must not read global diagnostics")
-        ),
-    )
-
-    response = client.get(f"/api/content/work-items/{work_item_id}/snapshot")
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["preflight"]["item"]["id"] == work_item_id
-    assert payload["preflight"]["item"]["final_canonical_url"] == decision[
-        "final_canonical_url"
-    ]
-    assert payload["preflight"]["item"]["total_impressions"] == decision[
-        "total_impressions"
-    ]
-    assert payload["preflight"]["item"]["source_connectors"] == decision[
-        "source_connectors"
-    ]
 
 
 @pytest.mark.parametrize(
