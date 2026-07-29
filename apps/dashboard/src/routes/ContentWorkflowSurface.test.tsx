@@ -175,6 +175,42 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByTestId("content-source-snapshot")).toBeInTheDocument();
   });
 
+  it("opens a newly saved exact revision instead of leaving the marketer on the old source", async () => {
+    const withoutDocument = contentDocumentWorkspace();
+    withoutDocument.canonical_document = {
+      status: "not_created",
+      revision_id: null,
+      content_digest: null,
+      review_state: "unreviewed",
+      label: "Nowa wersja nie została jeszcze przygotowana",
+      reason: "Nie ma jeszcze zapisanej wersji dokumentu.",
+      preview: null
+    };
+    const revision = savedFullDraftRevision();
+    vi.mocked(getContentSelectedWorkspace)
+      .mockResolvedValueOnce(selectedWorkspace(withoutDocument))
+      .mockResolvedValueOnce(selectedWorkspace(contentDocumentWorkspace(revision)));
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1",
+          defaultPendingMinMs: 0
+        })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-source-snapshot")).toBeInTheDocument();
+    await client.refetchQueries({
+      queryKey: ["content-workflow", "work-item", "content_work_item_bdo", "selected-workspace"]
+    });
+
+    expect(await screen.findByText("Pełna odpowiedź sekcji 1 oparta na planie i dowodach.")).toBeInTheDocument();
+    expect(screen.queryByTestId("content-source-snapshot")).not.toBeInTheDocument();
+  });
+
   it.each(["review=1", "text=1&review=1"])(
     "opens the exact review route when navigation queue reads reject (%s)",
     async (reviewSearch) => {

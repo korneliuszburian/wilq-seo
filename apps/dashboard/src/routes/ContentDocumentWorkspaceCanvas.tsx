@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -31,6 +31,14 @@ export function ContentDocumentWorkspaceCanvas({
   const [view, setView] = useState<View>(() =>
     workspace.canonical_document.preview ? "document" : "source"
   );
+  const previousRevisionId = useRef(workspace.canonical_document.revision_id);
+  useEffect(() => {
+    const revisionId = workspace.canonical_document.revision_id;
+    if (revisionId !== previousRevisionId.current && workspace.canonical_document.preview) {
+      setView("document");
+    }
+    previousRevisionId.current = revisionId;
+  }, [workspace.canonical_document.preview, workspace.canonical_document.revision_id]);
   const [devDetailsOpen, setDevDetailsOpen] = useState(false);
   const [mappingOpen, setMappingOpen] = useState(false);
   const [draftPreviewOpen, setDraftPreviewOpen] = useState(false);
