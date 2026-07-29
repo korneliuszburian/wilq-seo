@@ -24,7 +24,6 @@ from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
 from wilq.content.workflow.api import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
-    ContentWordPressExistingDraftUpdateReadinessResponse,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementOutcomeResponse,
@@ -147,10 +146,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/wordpress/draft-write-readiness",
     ): ContentWordPressDraftWriteReadinessResponse,
-    (
-        "GET",
-        "/api/content/wordpress/existing-draft-update-readiness",
-    ): ContentWordPressExistingDraftUpdateReadinessResponse,
     ("GET", "/api/content/work-items/queue"): ContentWorkItemQueueResponse,
     (
         "GET",

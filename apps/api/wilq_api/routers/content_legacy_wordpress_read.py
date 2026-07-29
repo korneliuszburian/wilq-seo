@@ -12,12 +12,8 @@ from wilq.content.workflow.api import (
 from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
-    ContentWordPressExistingDraftUpdateReadinessResponse,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemWorkflowSnapshotResponse,
-)
-from wilq.content.workflow.stage_readiness import (
-    build_content_wordpress_existing_draft_update_readiness_response,
 )
 from wilq.content.workflow.store import content_workflow_store
 
@@ -44,16 +40,6 @@ def register_content_legacy_wordpress_read_routes(
         action_id: str = "act_prepare_wordpress_draft_handoff",
     ) -> ContentWordPressDraftWriteReadinessResponse:
         return build_content_wordpress_draft_write_readiness_response(action_id=action_id)
-
-    @router.get(
-        "/api/content/wordpress/existing-draft-update-readiness",
-        response_model=ContentWordPressExistingDraftUpdateReadinessResponse,
-    )
-    def content_wordpress_existing_draft_update_readiness(
-        work_item_id: str | None = None,
-    ) -> ContentWordPressExistingDraftUpdateReadinessResponse:
-        snapshot = snapshot_loader(work_item_id) if work_item_id else default_snapshot_loader()
-        return build_content_wordpress_existing_draft_update_readiness_response(snapshot)
 
     @router.get(
         "/api/content/wordpress/draft-activation-packet",
