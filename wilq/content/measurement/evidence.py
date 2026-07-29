@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from threading import RLock
 from time import monotonic
-from typing import cast
+from typing import Literal, cast
 
 from wilq.content.canonical.landing_identity import (
     landing_page_metric_lookup_path,
@@ -329,7 +329,7 @@ def _quality_metadata(
     return quality_state, settlement_state, caveats
 
 
-def _freshness_state(facts: list[MetricFact]) -> str:
+def _freshness_state(facts: list[MetricFact]) -> Literal["fresh", "stale", "unknown"]:
     states = {fact.freshness_state for fact in facts}
     if "stale" in states:
         return "stale"
