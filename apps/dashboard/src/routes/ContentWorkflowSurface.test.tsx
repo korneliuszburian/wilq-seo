@@ -13,19 +13,16 @@ import {
   postContentRevisionTargetMappingConfirmation,
   postContentRevisionPublicDeployment,
   postContentWorkItemMeasurementWindow,
-  getContentWorkItemDecisionContext,
   getContentSelectedWorkspace,
   getContentInventoryCatalog,
   getContentOperatorContext,
   getContentDiagnostics,
   postContentWorkItemInitialDraft,
-  saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
   type ActionObject,
   type ContentDraftRevision,
   type ContentDraftRevisionReview,
   type ContentInitialDraftResponse,
-  type ContentDecisionContext,
   type ContentDocumentWorkspace,
   type ContentSelectedWorkspace,
   type ContentInventoryCatalogResponse,
@@ -48,13 +45,11 @@ vi.mock("../lib/api", async (importOriginal) => {
     postContentRevisionTargetDraftAction: vi.fn(),
     postContentRevisionPublicDeployment: vi.fn(),
     postContentWorkItemMeasurementWindow: vi.fn(),
-    getContentWorkItemDecisionContext: vi.fn(),
     getContentSelectedWorkspace: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
     getContentDiagnostics: vi.fn(),
     postContentWorkItemInitialDraft: vi.fn(),
-    saveContentWorkItemDraftRevision: vi.fn(),
     saveContentWorkItemDraftRevisionReview: vi.fn(),
   };
 });
@@ -77,7 +72,6 @@ describe("ContentWorkflowSurface", () => {
       safe_next_step: "Przygotuj plan.",
       publish_ready: false
     } as never);
-    vi.mocked(getContentWorkItemDecisionContext).mockResolvedValue(contentDecisionContext());
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
     vi.mocked(getContentDiagnostics).mockResolvedValue({
@@ -93,11 +87,6 @@ describe("ContentWorkflowSurface", () => {
     } as never);
     vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
     const revision = savedDraftRevision();
-    vi.mocked(saveContentWorkItemDraftRevision).mockResolvedValue({
-      status: "created",
-      revision,
-      workspace: {} as never
-    } as never);
     const review = savedDraftRevisionReview(revision);
     vi.mocked(saveContentWorkItemDraftRevisionReview).mockResolvedValue({
       status: "recorded",
@@ -177,7 +166,6 @@ describe("ContentWorkflowSurface", () => {
       expect(await screen.findByTestId("content-review-workspace")).toBeInTheDocument();
       expect(screen.queryByText("Nie udało się odczytać aktualnego workflow.")).not.toBeInTheDocument();
       expect(getContentSelectedWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
-      expect(getContentWorkItemDecisionContext).not.toHaveBeenCalled();
       expect(getContentWorkItemInitialDraft).not.toHaveBeenCalled();
       expect(getContentDiagnostics).not.toHaveBeenCalled();
     }
@@ -671,117 +659,6 @@ function contentInventoryCatalog(): ContentInventoryCatalogResponse {
       public_sitemap_truncated: false,
       caveat: ""
     }
-  };
-}
-
-function contentDecisionContext(): ContentDecisionContext {
-  return {
-    response_type: "content_decision_context",
-    contract_version: "content_decision_context_v1",
-    work_item_id: "content_work_item_bdo",
-    work_kind: "refresh_existing",
-    source_public: {
-      identity_status: "partial",
-      object_id: null,
-      url: "https://ekologus.pl/bdo/",
-      title: "BDO dla firm",
-      post_type: null,
-      post_status: null,
-      template: null,
-      material: {
-        status: "available",
-        source_kind: "wordpress_rest",
-        observed_surfaces: ["wordpress_rest_content"],
-        word_count: 120,
-        section_count: 2,
-        evidence_ids: ["ev_wp_bdo"],
-        caveats: ["Odczyt materiału nie jest mapą targetu dev."]
-      },
-      label: "Adres i materiał rozpoznane częściowo",
-      reason: "WILQ widzi publiczny adres i materiał, ale nie potwierdził jeszcze konkretnego obiektu WordPress ani miejsca przygotowania zmiany.",
-      technical_reason: "WILQ zna adres i materiał, ale obecny kontrakt inventory nie zachowuje exact tożsamości obiektu WordPress."
-    },
-    authoring_target: {
-      mapping_status: "unverified",
-      environment: "staging",
-      object_id: null,
-      post_type: null,
-      post_status: null,
-      template: null,
-      authoring_surfaces: [],
-      allowed_operation: "create_wordpress_draft",
-      label: "Target dev niepotwierdzony",
-      reason: "Brakuje potwierdzonego celu dev dla tej strony.",
-      technical_reason: "Globalny profil WordPress nie mapuje tej strony do obiektu dev."
-    },
-    source_target_relation: {
-      status: "unverified",
-      relation_type: "unknown",
-      label: "Relacja source → target niepotwierdzona",
-      reason: "Brakuje potwierdzenia, że strona publiczna i cel dev dotyczą tego samego elementu.",
-      technical_reason: "Brakuje evidence-bound relacji source do targetu."
-    },
-    object_readiness: {
-      status: "review_required",
-      label: "Obiekt częściowo rozpoznany",
-      reason: "Brakuje potwierdzonego obiektu WordPress i celu dev, w którym można przygotować zmianę.",
-      technical_reason: "Brakuje dokładnego obiektu i targetu dev.",
-      blocker_codes: ["object_identity_unverified"]
-    },
-    decision_disposition: {
-      status: "proposed",
-      proposed_disposition: "refresh_or_merge",
-      label: "Odśwież lub scal istniejącą stronę",
-      reason: "To rekomendowany kierunek; ostateczną decyzję podejmuje człowiek.",
-      technical_reason: "To istniejący publiczny adres."
-    },
-    service: {
-      label: "BDO i sprawozdawczość środowiskowa",
-      reason: "Usługa pochodzi z dopasowanej karty Service Profile."
-    },
-    evidence_readiness: {
-      status: "refresh_required",
-      label: "Dowody wymagają odświeżenia",
-      reason: "GSC jest nieświeże dla tej decyzji.",
-      technical_reason: "GSC jest nieświeże dla tej decyzji.",
-      blocker_codes: ["connector:google_search_console"]
-    },
-    delivery_capability: {
-      capability: "create_draft_only",
-      request_status: "blocked",
-      label: "Szkic dev wymaga potwierdzenia targetu",
-      reason: "Przekazanie szkicu pozostaje zablokowane, dopóki nie potwierdzimy celu dev i nie przejdziemy wymaganych kontroli.",
-      technical_reason: "Brakuje targetu; ActionObject i accepted revision pozostają zablokowane."
-    },
-    measurement_target: {
-      status: "review_required",
-      label: "Pomiar wymaga sprawdzenia",
-      public_url: "https://ekologus.pl/bdo/",
-      reason: "Brakuje exact measurement bindingu.",
-      technical_reason: "Brakuje exact measurement bindingu.",
-      source_connectors: ["google_search_console"]
-    },
-    applicable_signals: [
-      {
-        source_connector: "google_search_console",
-        label: "Wyświetlenia GSC",
-        value: 181,
-        freshness_state: "stale",
-        evidence_ids: ["ev_gsc_bdo"]
-      }
-    ],
-    next_safe_action: {
-      kind: "refresh_connector",
-      label: "Odśwież GSC",
-      reason: "GSC jest nieświeże dla tej decyzji.",
-      connector_id: "google_search_console"
-    },
-    secondary_disclosures: [{
-      id: "delivery-boundary",
-      label: "Granica delivery",
-      summary: "WILQ nie aktualizuje istniejącej strony bez review."
-    }],
-    legacy_aliases: [{ kind: "requested_work_item", value: "content_work_item_bdo" }]
   };
 }
 

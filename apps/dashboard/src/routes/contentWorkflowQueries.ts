@@ -24,12 +24,6 @@ import {
 } from "../lib/api";
 const READ_ONLY_WORKFLOW_STALE_TIME_MS = 30_000;
 
-// Retained for the inactive compatibility panel. Selected routes themselves
-// deliberately do not consume this read as an identity authority.
-export function contentDecisionContextQueryKey(workItemId: string) {
-  return ["content-workflow", "work-item", workItemId, "decision-context"] as const;
-}
-
 export type ContentSelectedWorkspaceQuery = UseQueryResult<ContentSelectedWorkspace, Error>;
 export type ContentTargetDiscoveryQuery = UseQueryResult<ContentTargetDiscovery, Error>;
 export type ContentTargetMappingPreviewQuery = UseQueryResult<ContentTargetMappingPreview, Error>;

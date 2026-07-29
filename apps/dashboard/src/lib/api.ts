@@ -16,7 +16,6 @@ import {
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
   ContentDiagnosticsResponseSchema,
-  ContentDecisionContextSchema,
   ContentSelectedWorkspaceSchema,
   ContentTargetDiscoverySchema,
   ContentTargetMappingConfirmationCommandSchema,
@@ -45,9 +44,6 @@ import {
   ContentDraftRevisionReviewResponseSchema,
   ContentEditorialIntegrityReportSchema,
   ContentRevisionHtmlPackageResponseSchema,
-  ContentDraftRevisionSaveRequestSchema,
-  ContentDraftRevisionSaveResponseSchema,
-  ContentKnowledgeCardsResponseSchema,
   ContentPlanningProposalRequestSchema,
   ContentPlanningProposalResponseSchema,
   ContentServiceProfileResponseSchema,
@@ -106,7 +102,6 @@ import {
   type ContentInitialDraftRequest,
   type ContentInitialDraftResponse,
   type ContentDiagnosticsResponse,
-  type ContentDecisionContext,
   type ContentDocumentWorkspace,
   type ContentSelectedWorkspace,
   type ContentTargetDiscovery,
@@ -141,12 +136,9 @@ import {
   type ContentDraftRevisionReviewResponse,
   type ContentEditorialIntegrityReport,
   type ContentRevisionHtmlPackageResponse,
-  type ContentDraftRevisionSaveRequest,
-  type ContentDraftRevisionSaveResponse,
   type ContentDraftRevisionSection,
   type ContentFreshnessAssessment,
   type ContentClaimLedger,
-  type ContentKnowledgeCardsResponse,
   type ContentPlanningProposalRequest,
   type ContentPlanningProposal,
   type ContentPlanningProposalResponse,
@@ -413,25 +405,12 @@ export function getContentDiagnostics(): Promise<ContentDiagnosticsResponse> {
   return apiGet("/api/content/diagnostics", ContentDiagnosticsResponseSchema);
 }
 
-export function getContentKnowledgeCards(): Promise<ContentKnowledgeCardsResponse> {
-  return apiGet("/api/content/knowledge-cards", ContentKnowledgeCardsResponseSchema);
-}
-
 export function getContentServiceProfile(): Promise<ContentServiceProfileResponse> {
   return apiGet("/api/content/service-profile", ContentServiceProfileResponseSchema);
 }
 
 export function getContentOperatorContext(): Promise<ContentOperatorContext> {
   return apiGet("/api/content/operator-context", ContentOperatorContextSchema);
-}
-
-export function getContentWorkItemDecisionContext(
-  workItemId: string
-): Promise<ContentDecisionContext> {
-  return apiGet(
-    `/api/content/work-items/${encodeURIComponent(workItemId)}/decision-context`,
-    ContentDecisionContextSchema
-  );
 }
 
 export function getContentSelectedWorkspace(
@@ -635,19 +614,6 @@ export function reviewContentNewPageRevision(
 
 export function getContentInventoryCatalog(): Promise<ContentInventoryCatalogResponse> {
   return apiGet("/api/content/inventory/catalog", ContentInventoryCatalogResponseSchema);
-}
-
-export function saveContentWorkItemDraftRevision(
-  request: ContentDraftRevisionSaveRequest,
-  workItemId: string
-): Promise<ContentDraftRevisionSaveResponse | ContentDraftRevisionConflict> {
-  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions`;
-  return apiPostWithConflict(
-    path,
-    ContentDraftRevisionSaveResponseSchema,
-    ContentDraftRevisionConflictSchema,
-    ContentDraftRevisionSaveRequestSchema.parse(request)
-  );
 }
 
 export function getContentWorkItemPlanningProposal(
@@ -915,7 +881,6 @@ export type {
   AhrefsDiagnosticsResponse,
   CommandCenterResponse,
   ContentDiagnosticsResponse,
-  ContentDecisionContext,
   ContentDocumentWorkspace,
   ContentSelectedWorkspace,
   ContentTargetDiscovery,
@@ -950,12 +915,9 @@ export type {
   ContentDraftRevisionReviewResponse,
   ContentEditorialIntegrityReport,
   ContentRevisionHtmlPackageResponse,
-  ContentDraftRevisionSaveRequest,
-  ContentDraftRevisionSaveResponse,
   ContentDraftRevisionSection,
   ContentFreshnessAssessment,
   ContentClaimLedger,
-  ContentKnowledgeCardsResponse,
   ContentPlanningProposalRequest,
   ContentPlanningProposal,
   ContentPlanningProposalResponse,
