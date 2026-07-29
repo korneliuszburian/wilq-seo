@@ -599,9 +599,9 @@ function CanonicalDocument({ workspace }: { workspace: ContentDocumentWorkspace 
 
 export function ContentDocumentLineageDisclosure({ workspace }: { workspace: ContentDocumentWorkspace }) {
   const lineage = workspace.document_lineage;
-  return <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700">
-    <summary className="cursor-pointer font-semibold text-ink">Materiały użyte w dokumencie</summary>
-    <p className="mt-3 leading-6">{lineage.reason}</p>
+  return <section className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" data-testid="content-document-lineage">
+    <p className="font-semibold text-ink">Na czym oparto tekst</p>
+    <p className="mt-2 leading-6">{lineage.reason}</p>
     {lineage.knowledge_cards.length ? <ul className="mt-3 space-y-3">
       {lineage.knowledge_cards.map((card) => <li key={card.id} className="rounded-lg bg-slate-50 p-3">
         <p className="font-semibold text-ink">{card.title}</p>
@@ -610,7 +610,7 @@ export function ContentDocumentLineageDisclosure({ workspace }: { workspace: Con
     </ul> : null}
     {lineage.source_material_ids.length ? <p className="mt-3 leading-6">Zapisane materiały źródłowe: {lineage.source_material_ids.length}.</p> : null}
     {lineage.unresolved_knowledge_card_ids.length ? <p className="mt-3 leading-6 text-wait">Nie można obecnie odczytać {lineage.unresolved_knowledge_card_ids.length} przypisanych kart wiedzy.</p> : null}
-  </details>;
+  </section>;
 }
 
 function Comparison({ workspace }: { workspace: ContentDocumentWorkspace }) {

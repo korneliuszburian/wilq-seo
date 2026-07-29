@@ -168,6 +168,8 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByText("Pełna odpowiedź sekcji 1 oparta na planie i dowodach.")).toBeInTheDocument();
     expect(screen.queryByTestId("content-source-snapshot")).not.toBeInTheDocument();
+    expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("Na czym oparto tekst");
+    expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("BDO i sprawozdawczość środowiskowa");
 
     fireEvent.click(screen.getByRole("button", { name: "Obecna strona" }));
     expect(await screen.findByTestId("content-source-snapshot")).toBeInTheDocument();
@@ -543,7 +545,7 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByTestId("content-review-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("content-full-page-preview")).toBeInTheDocument();
     expect(screen.getByText("Szczegóły tej wersji")).toBeInTheDocument();
-    expect(screen.getByText("Materiały użyte w dokumencie")).toBeInTheDocument();
+    expect(screen.getByText("Na czym oparto tekst")).toBeInTheDocument();
     expect(screen.getByText("BDO i sprawozdawczość środowiskowa")).toBeInTheDocument();
     expect(screen.getByText("Sprawdź nową wersję")).toBeInTheDocument();
     expect(screen.queryByLabelText("Stan pipeline’u")).not.toBeInTheDocument();
