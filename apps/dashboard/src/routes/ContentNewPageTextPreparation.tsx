@@ -114,7 +114,7 @@ export function ContentNewPageTextPreparation({
     return <p className="mt-4 text-sm leading-6 text-slate-600">Sprawdzam dane do przygotowania tekstu…</p>;
   }
   if (workspace.error || !workspace.data || !readiness) {
-    return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 px-3 py-2 text-sm leading-6 text-ink">Nie udało się odczytać danych do przygotowania tekstu. Brief i wybrana wiedza pozostają zapisane; odśwież widok przed kolejnym krokiem.</p>;
+    return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 px-3 py-2 text-sm leading-6 text-ink">Nie udało się odczytać danych do przygotowania tekstu. Brief i wybrana wiedza pozostają zapisane; odśwież widok i spróbuj ponownie.</p>;
   }
   if (readiness.status === "blocked") {
     const blocker = readiness.blockers[0];
@@ -141,7 +141,7 @@ export function ContentNewPageTextPreparation({
     return <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-generating"><p className="font-semibold">Przygotowuję pierwszy tekst</p><p className="mt-1">WILQ sprawdza exact dane robocze i przygotowuje pierwszy tekst; nie uruchomi drugiej wersji dla tych samych danych.</p></div>;
   }
   if (!readiness.planning_input_digest) {
-    return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">Nie można jeszcze przygotować tekstu</p><p className="mt-1">Brakuje dokładnych danych roboczych. Odśwież brief przed kolejnym krokiem.</p></div>;
+    return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">Nie można jeszcze przygotować tekstu</p><p className="mt-1">Brakuje dokładnych danych roboczych. Odśwież brief i spróbuj ponownie.</p></div>;
   }
   return <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-ready"><p className="font-semibold">Tekst nowej strony jest gotowy do przygotowania</p><p className="mt-1">WILQ użyje dokładnego briefu i wybranego kontekstu usługi. Nie przypisuje tej nowej stronie starego URL-a, inventory ani historycznych metryk.</p><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white" onClick={prepareText}>Przygotuj tekst</button>{generate.isError || prepareDocument.isError ? <p className="mt-2 text-wait">Nie udało się przygotować tekstu. Odśwież stan i spróbuj ponownie.</p> : null}</div>;
 }
