@@ -18,14 +18,14 @@ export function ContentFullPagePreview({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="font-semibold text-ink">Tekst strony · wersja robocza</p>
-            <p className="mt-1">Niepublikowany podgląd exact revision. WordPress pozostaje bez zmian.</p>
+            <p className="mt-1">To jest roboczy podgląd tekstu. Nie zmienia obecnej strony.</p>
           </div>
           <span className="rounded-full border border-action/20 bg-action/5 px-2.5 py-1 text-[11px] font-semibold text-action">
             {revision.sections.length} sekcji · {revision.faq.length} FAQ
           </span>
         </div>
-        <p className="mt-3">Meta: {assets.meta_title}</p>
-        <p className="mt-1">{assets.meta_description}</p>
+        <p className="mt-3">Tytuł SEO: {assets.meta_title}</p>
+        <p className="mt-1">Opis SEO: {assets.meta_description}</p>
       </div>
       <div className="grid lg:grid-cols-[minmax(0,1fr)_220px]">
       <div className="min-w-0 px-5 py-7 sm:px-8 sm:py-9">
