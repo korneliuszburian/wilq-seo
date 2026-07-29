@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Content Operator"
   short_description: "Prowadzi content workflow przez WILQ API"
-  default_prompt: "Użyj $wilq-content-operator: pomóż mi wybrać stronę albo stworzyć brief, przygotować plan i pełny tekst w WILQ."
+  default_prompt: "Użyj $wilq-content-operator: pomóż mi wybrać stronę albo stworzyć brief i przygotować tekst w WILQ."

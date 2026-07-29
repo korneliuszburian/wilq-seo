@@ -86,8 +86,8 @@ export function ContentPlanningGenerationPanel({ workItemId }: { workItemId: str
     startDraft.mutate({ proposal, planningInputDigest: requestedInputDigest });
   }, [planningInputDigest, proposal, requestedInputDigest, startDraft, status.data?.status]);
 
-  if (status.isLoading) return <PlanningState>Sprawdzam, czy można przygotować strukturę…</PlanningState>;
-  if (status.error || !status.data) return <PlanningState tone="error">Nie udało się odczytać gotowości planu. Odśwież widok przed kolejną próbą.</PlanningState>;
+  if (status.isLoading) return <PlanningState>Sprawdzam dane potrzebne do przygotowania tekstu…</PlanningState>;
+  if (status.error || !status.data) return <PlanningState tone="error">Nie udało się odczytać danych potrzebnych do przygotowania tekstu. Odśwież widok przed kolejną próbą.</PlanningState>;
 
   const state = generation.data ?? status.data;
   const readyProposal = isExactPlanningProposal(state.proposal) ? state.proposal : null;
