@@ -149,29 +149,37 @@ def register_content_planning_proposal_routes(
                 snapshot=snapshot,
                 store=store,
             )
-            stale_mapping = (
-                request.regenerate_stale_mapping
-                or (
-                    current.status == "stale"
-                    and any(
-                        blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
-                        for blocker in current.blockers
-                    )
-                )
+            current_is_exact_input = (
+                current.work_item_id == work_item_id
+                and current.service_card_id == request.service_card_id
+                and current.planning_input_digest == request.expected_planning_input_digest
             )
-            if not stale_mapping:
-                return ContentPlanningProposalResponse(
-                    status="idempotent",
-                    work_item_id=work_item_id,
-                    service_card_id=request.service_card_id,
-                    planning_input_digest=current.planning_input_digest,
-                    input_summary=current.input_summary,
-                    proposal=existing,
-                    safe_next_step=(
-                        "Plan już istnieje dla tego exact wejścia; odczytano wersję "
-                        "bez ponownego uruchamiania Codexa."
-                    ),
+            current_has_existing_proposal = (
+                current.proposal is not None
+                and current.proposal.proposal_id == existing.proposal_id
+                and current.proposal.planning_digest == existing.planning_digest
+                and current.proposal.planning_input_digest == existing.planning_input_digest
+            )
+            current_is_exact_existing = current_is_exact_input and current_has_existing_proposal
+            stale_mapping = current_is_exact_existing and current.status == "stale" and any(
+                blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
+                for blocker in current.blockers
+            )
+            if current_is_exact_existing and current.status in {"created", "idempotent", "ready"}:
+                return current.model_copy(
+                    update={
+                        "status": "idempotent",
+                        "safe_next_step": (
+                            "Plan już istnieje dla tego exact wejścia; odczytano wersję "
+                            "bez ponownego uruchamiania Codexa."
+                        ),
+                    }
                 )
+            if not (request.regenerate_stale_mapping and stale_mapping):
+                # Never promote a historical proposal over the current typed
+                # state: stale and quality-blocked reads are already the safe
+                # response for this command.
+                return current
             request = request.model_copy(update={"regenerate_stale_mapping": True})
         if snapshot is None:
             try:

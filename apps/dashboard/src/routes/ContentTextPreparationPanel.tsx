@@ -20,12 +20,13 @@ type ExactPlanningProposal = NonNullable<ContentPlanningProposalResponse["propos
 export function ContentTextPreparationPanel({ workItemId }: { workItemId: string }) {
   const queryClient = useQueryClient();
   const queryKey = ["content-workflow", "work-item", workItemId, "planning-proposal"];
+  const initialDraftQueryKey = ["content-workflow", "work-item", workItemId, "initial-draft"];
   const status = useContentPlanningProposal(workItemId);
   const [requestedInputDigest, setRequestedInputDigest] = useState<string | null>(null);
   const [initialDraft, setInitialDraft] = useState<ContentInitialDraftResponse | null>(null);
   const startedProposalId = useRef<string | null>(null);
   const initialDraftStatus = useQuery({
-    queryKey: ["content-workflow", "work-item", workItemId, "initial-draft"],
+    queryKey: initialDraftQueryKey,
     queryFn: () => getContentWorkItemInitialDraft(workItemId),
     enabled: initialDraft?.status === "generating",
     refetchInterval: (query) => query.state.data?.status === "generating" ? 1500 : false
@@ -42,6 +43,14 @@ export function ContentTextPreparationPanel({ workItemId }: { workItemId: string
     }, workItemId),
     onSuccess: async (result) => {
       setInitialDraft(result);
+      // The next run must replace a terminal response from an earlier run in
+      // the exact polling query. Otherwise React Query keeps that old terminal
+      // value and never starts polling the newly accepted run.
+      queryClient.setQueryData(initialDraftQueryKey, result);
+      if (["failed", "blocked", "conflict"].includes(result.status)) {
+        startedProposalId.current = null;
+        setRequestedInputDigest(null);
+      }
       await queryClient.invalidateQueries({
         queryKey: ["content-workflow", "work-item", workItemId, "selected-workspace"]
       });

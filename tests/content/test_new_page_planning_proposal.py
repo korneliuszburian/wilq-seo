@@ -365,3 +365,58 @@ def test_new_page_plan_queue_claims_one_exact_run_before_the_worker_starts(
     )
     assert reread.proposal_status is not None
     assert reread.proposal_status.status == "ready"
+
+
+def test_new_page_plan_rejects_a_build_result_for_another_ready_workspace(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    brief_a, foundation_a, guard_a, service_card_a = _ready_context(monkeypatch)
+    store = ContentPlanningProposalStore(tmp_path / "new-page-plans.sqlite3")
+    workspace_a = build_new_page_planning_proposal_workspace(
+        brief=brief_a,
+        foundation=foundation_a,
+        overlap_guard=guard_a,
+        service_card=service_card_a,
+        store=store,
+    )
+    brief_b, foundation_b, guard_b, service_card_b = _ready_context(monkeypatch)
+    input_b = planning_input_module.build_new_page_planning_input(
+        brief=brief_b,
+        foundation=foundation_b,
+        overlap_guard=guard_b,
+        service_card=service_card_b,
+    )
+    request_b = ContentNewPagePlanningProposalRequest(
+        expected_planning_input_digest=input_b.planning_input.planning_input_digest,
+        requested_by="Wilku",
+    )
+    runtime = _PlanningClient()
+
+    with pytest.raises(ValueError, match="exact workspace readiness"):
+        queue_new_page_planning_proposal(
+            workspace=workspace_a,
+            build_result=input_b,
+            request=request_b,
+            store=store,
+        )
+    with pytest.raises(ValueError, match="exact workspace readiness"):
+        generate_new_page_planning_proposal(
+            workspace=workspace_a,
+            build_result=input_b,
+            request=request_b,
+            client=runtime,
+            store=store,
+            run_store=LocalStateStore(tmp_path / "new-page-runs.sqlite3"),
+            endpoint_path="/api/content/new-page-briefs/test/planning-proposal",
+        )
+
+    assert runtime.calls == 0
+    assert (
+        store.for_input(
+            foundation_b.work_item_id,
+            foundation_b.service_card_id,
+            input_b.planning_input.planning_input_digest,
+        )
+        is None
+    )

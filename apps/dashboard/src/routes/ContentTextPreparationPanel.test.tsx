@@ -226,12 +226,34 @@ describe("ContentTextPreparationPanel", () => {
     await waitFor(() => expect(selectedWorkspaceRead).toHaveBeenCalledTimes(3));
   });
 
-  it("releases the exact draft guard after an asynchronous terminal failure", async () => {
+  it("polls a retried exact draft through its terminal workspace refresh", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyPlan() as never);
     vi.mocked(postContentWorkItemInitialDraft)
       .mockResolvedValueOnce(initialDraft("generating") as never)
       .mockResolvedValueOnce(initialDraft("generating") as never);
-    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValueOnce(initialDraft("failed") as never);
+    vi.mocked(getContentWorkItemInitialDraft)
+      .mockResolvedValueOnce(initialDraft("failed") as never)
+      .mockResolvedValueOnce(initialDraft("generating") as never)
+      .mockResolvedValueOnce(initialDraft("created") as never);
+    const selectedWorkspaceRead = vi.fn().mockResolvedValue({ canonical_document: { status: "created" } });
+    const { client } = renderPanel(selectedWorkspaceRead);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj tekst" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Przygotuj tekst" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj tekst" }));
+
+    await waitFor(() => expect(postContentWorkItemInitialDraft).toHaveBeenCalledTimes(2));
+    await client.refetchQueries({ queryKey: ["content-workflow", "work-item", "work_item", "initial-draft"] });
+    await client.refetchQueries({ queryKey: ["content-workflow", "work-item", "work_item", "initial-draft"] });
+    await waitFor(() => expect(getContentWorkItemInitialDraft).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(selectedWorkspaceRead).toHaveBeenCalledTimes(4));
+  });
+
+  it("releases the exact draft guard when POST returns a typed terminal failure", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyPlan() as never);
+    vi.mocked(postContentWorkItemInitialDraft)
+      .mockResolvedValueOnce(initialDraft("failed") as never)
+      .mockResolvedValueOnce(initialDraft("generating") as never);
     renderPanel();
 
     fireEvent.click(await screen.findByRole("button", { name: "Przygotuj tekst" }));

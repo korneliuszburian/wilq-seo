@@ -148,6 +148,7 @@ def generate_new_page_planning_proposal(
     if build_result.planning_input is None:
         return workspace
     planning_input = build_result.planning_input
+    _require_workspace_matches_planning_input(workspace, planning_input)
     response = _generate_proposal(
         planning_input,
         request,
@@ -156,7 +157,7 @@ def generate_new_page_planning_proposal(
         run_store=run_store,
         endpoint_path=endpoint_path,
     )
-    return workspace.model_copy(update={"proposal_status": response})
+    return _workspace_with_proposal_status(workspace, response)
 
 
 def queue_new_page_planning_proposal(
@@ -171,8 +172,47 @@ def queue_new_page_planning_proposal(
     if build_result.planning_input is None:
         return workspace, False
     planning_input = build_result.planning_input
+    _require_workspace_matches_planning_input(workspace, planning_input)
     response, outcome = _queue_proposal(planning_input, request, store)
-    return workspace.model_copy(update={"proposal_status": response}), outcome == "queued"
+    return _workspace_with_proposal_status(workspace, response), outcome == "queued"
+
+
+def _require_workspace_matches_planning_input(
+    workspace: ContentNewPagePlanningProposalWorkspace,
+    planning_input: ContentPlanningInput,
+) -> None:
+    """Reject a rebuilt input before it can claim a different brief workspace."""
+
+    identity = workspace.readiness.new_page_document_identity
+    if (
+        planning_input.new_page_foundation is None
+        or planning_input.proposed_ia_location is None
+    ):
+        raise ValueError("New-page planning input requires exact document identity.")
+    expected_identity = build_new_page_document_identity(
+        foundation=planning_input.new_page_foundation,
+        proposed_ia_location=planning_input.proposed_ia_location,
+    )
+    if (
+        workspace.readiness.status != "ready"
+        or workspace.readiness.work_item_id != planning_input.work_item_id
+        or workspace.readiness.planning_input_digest != planning_input.planning_input_digest
+        or identity != expected_identity
+        or workspace.brief_id != expected_identity.brief_id
+    ):
+        raise ValueError("New-page planning input must match the exact workspace readiness.")
+
+
+def _workspace_with_proposal_status(
+    workspace: ContentNewPagePlanningProposalWorkspace,
+    response: ContentPlanningProposalResponse,
+) -> ContentNewPagePlanningProposalWorkspace:
+    """Revalidate derived workspaces; model_copy(update=...) skips validators."""
+
+    return ContentNewPagePlanningProposalWorkspace.model_validate(
+        workspace.model_dump(mode="python")
+        | {"proposal_status": response.model_dump(mode="python")}
+    )
 
 
 def terminalize_new_page_planning_claim(
