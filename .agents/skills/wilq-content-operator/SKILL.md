@@ -49,7 +49,7 @@ lineage, ale nie jest osobnym ekranem akceptacji ani zadaniem dla marketera.
 
 4. Pełny tekst jest immutable rewizją. Pokaż go przed dalszym krokiem. Po
    jawnym „zatwierdź tekst” zapisz `POST .../draft-revisions/{revision_id}/review`
-   z exact `expected_revision_digest` i evidence IDs rewizji. „Tekst wymaga
+   z exact `expected_revision_digest` i identyfikatorami dowodów rewizji. „Tekst wymaga
    zmian” wymaga krótkiej notatki; poprawka powstaje wyłącznie przez exact
    child revision, nigdy przez edycję istniejącej rewizji.
 

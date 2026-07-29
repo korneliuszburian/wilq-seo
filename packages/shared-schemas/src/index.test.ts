@@ -1113,7 +1113,9 @@ describe("ContentPlanningInputReadinessResponseSchema", () => {
       ).toBe(false);
     }
 
-    const { goal: _, ...historicalNewPageShape } = newPageSummary;
+    const historicalNewPageShape = Object.fromEntries(
+      Object.entries(newPageSummary).filter(([key]) => key !== "goal")
+    );
     expect(ContentPlanningInputReadinessResponseSchema.safeParse(readiness({
       ...historicalNewPageShape,
       final_canonical_url: "https://www.ekologus.pl/istniejaca/",
