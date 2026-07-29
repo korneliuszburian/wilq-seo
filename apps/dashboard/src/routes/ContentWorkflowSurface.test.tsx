@@ -528,6 +528,9 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByTestId("content-review-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("content-full-page-preview")).toBeInTheDocument();
+    expect(screen.getByText("Szczegóły tej wersji")).toBeInTheDocument();
+    expect(screen.queryByText(/0 dokładnie dopasowanych sygnałów zapytań/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Wróć do edytora/)).not.toBeInTheDocument();
     const save = screen.getByRole("button", { name: "Zatwierdź tekst" });
     expect(save).toBeEnabled();
     fireEvent.click(save);

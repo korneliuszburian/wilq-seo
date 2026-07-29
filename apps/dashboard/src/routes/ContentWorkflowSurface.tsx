@@ -373,7 +373,7 @@ function ContentReviewWorkspace({
         </ol>
       </section>
       <section className="mt-4 rounded-2xl border border-line bg-white p-4 shadow-sm lg:p-5">
-        {completeRevision ? <ContentFullPagePreview revision={completeRevision} proposal={null} /> : (
+        {completeRevision ? <ContentFullPagePreview revision={completeRevision} /> : (
           <div data-testid="content-review-blocker">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Stan review</p>
             <h2 className="mt-2 text-lg font-semibold text-ink">Pełna rewizja HTML — niegotowa do review</h2>

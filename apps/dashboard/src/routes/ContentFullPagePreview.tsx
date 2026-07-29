@@ -1,20 +1,13 @@
-import type { ContentDraftRevision, ContentPlanningProposal } from "../lib/api";
+import type { ContentDraftRevision } from "../lib/api";
 import { ContentHtmlPreview } from "./ContentHtmlPreview";
 
 export function ContentFullPagePreview({
-  revision,
-  proposal
+  revision
 }: {
   revision: ContentDraftRevision;
-  proposal: ContentPlanningProposal | null;
 }) {
   const assets = revision.page_assets;
   if (!assets) return null;
-  const queryCount = proposal
-    ? proposal.search_demand.gsc_query_rows.length +
-      proposal.search_demand.ads_term_rows.length +
-      proposal.search_demand.keyword_planner_rows.length
-    : 0;
 
   return (
     <article
@@ -112,25 +105,21 @@ export function ContentFullPagePreview({
           </ol>
         </nav>
         <p className="mt-5 border-t border-line pt-4 text-xs leading-5 text-slate-600">
-          Wybierz sekcję z nawigacji albo wróć do edytora, aby poprawić tylko wybrany fragment.
+          Wybierz sekcję z nawigacji, aby sprawdzić jej treść w tym podglądzie.
         </p>
       </aside>
       </div>
       <details className="border-t border-line bg-surface px-4 py-3">
         <summary className="cursor-pointer text-sm font-semibold text-action">
-          Dlaczego ten tekst i jak go mierzymy
+          Szczegóły tej wersji
         </summary>
-        <div className="mt-3 grid gap-3 text-xs leading-5 text-slate-600 sm:grid-cols-2">
+        <div className="mt-3 text-xs leading-5 text-slate-600">
           <p>
-            {queryCount} dokładnie dopasowanych sygnałów zapytań · {revision.sections.length}
-            {" "}sekcji · {revision.faq.length} pytań FAQ.
+            To jest nieopublikowany podgląd zapisanej rewizji. Wyników po publikacji
+            nie pokazujemy przed potwierdzonym wdrożeniem.
           </p>
-          <p>
-            Metryki po publikacji: {proposal?.measurement_plan.metrics_to_watch.join(", ") ||
-              "brak wymyślonych targetów; obowiązuje istniejący measurement loop"}.
-          </p>
-          <p className="break-all sm:col-span-2">
-            Rewizja {revision.revision_id} · digest {revision.content_digest} · plan {revision.planning_digest}
+          <p className="mt-2 break-all">
+            Rewizja {revision.revision_id} · digest {revision.content_digest}
           </p>
         </div>
       </details>
