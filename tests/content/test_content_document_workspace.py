@@ -148,6 +148,7 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
         lambda: (
             SimpleNamespace(
                 id="ekologus_service_bdo",
+                card_type="service",
                 title="BDO i sprawozdawczość środowiskowa",
                 summary="Karta przypisana do dokładnej rewizji.",
             ),
@@ -180,6 +181,7 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
         ("document_only", None, "Ryzyka formalne"),
         ("source_only", "Ewidencja odpadów", None),
     ]
+    assert workspace.document_lineage.knowledge_cards[0].card_type == "service"
 
 
 def test_document_workspace_fails_closed_for_unrecorded_lineage_and_incomplete_source(

@@ -173,6 +173,8 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByRole("button", { name: "Zmiany w treści" })).toBeInTheDocument();
     expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("Na czym oparto tekst");
     expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("BDO i sprawozdawczość środowiskowa");
+    expect(screen.queryByText("Live evidence i source connector są wymagane")).not.toBeInTheDocument();
+    expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("kontrolę źródeł i zasad tekstu");
 
     fireEvent.click(screen.getByRole("button", { name: "Obecna strona" }));
     expect(await screen.findByTestId("content-source-snapshot")).toBeInTheDocument();
@@ -858,8 +860,14 @@ function contentDocumentWorkspace(
       source_material_ids: ["ekologus_material_bdo"],
       knowledge_cards: [{
         id: "ekologus_service_bdo_reporting",
+        card_type: "service",
         title: "BDO i sprawozdawczość środowiskowa",
         summary: "Zatwierdzona karta wiedzy dotycząca usługi BDO."
+      }, {
+        id: "ekologus_evidence_live_connector_requirement",
+        card_type: "evidence_requirement",
+        title: "Live evidence i source connector są wymagane",
+        summary: "Techniczna kontrola źródeł."
       }],
       unresolved_knowledge_card_ids: [],
       reason: "To są materiały i karty wiedzy zapisane przy dokładnej rewizji dokumentu."

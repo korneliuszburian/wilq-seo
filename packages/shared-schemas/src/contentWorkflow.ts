@@ -482,6 +482,7 @@ export const ContentDocumentWorkspaceDocumentPreviewSchema = z.object({
 
 export const ContentDocumentWorkspaceKnowledgeCardSchema = z.object({
   id: z.string().min(1),
+  card_type: z.enum(["service", "buyer_problem", "buyer_trigger", "cta_pattern", "claim_policy", "evidence_requirement", "measurement_sensitive_claim"]).optional(),
   title: z.string().min(1),
   summary: z.string().min(1)
 });

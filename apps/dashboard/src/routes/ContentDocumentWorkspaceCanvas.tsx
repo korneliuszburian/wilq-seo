@@ -610,16 +610,19 @@ function CanonicalDocument({ workspace }: { workspace: ContentDocumentWorkspace 
 
 export function ContentDocumentLineageDisclosure({ workspace }: { workspace: ContentDocumentWorkspace }) {
   const lineage = workspace.document_lineage;
+  const contentCards = lineage.knowledge_cards.filter((card) => card.card_type !== "evidence_requirement");
+  const safetyCardCount = lineage.knowledge_cards.length - contentCards.length;
   return <section className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" data-testid="content-document-lineage">
     <p className="font-semibold text-ink">Na czym oparto tekst</p>
     <p className="mt-2 leading-6">{lineage.reason}</p>
-    {lineage.knowledge_cards.length ? <ul className="mt-3 space-y-3">
-      {lineage.knowledge_cards.map((card) => <li key={card.id} className="rounded-lg bg-slate-50 p-3">
+    {contentCards.length ? <ul className="mt-3 space-y-3">
+      {contentCards.map((card) => <li key={card.id} className="rounded-lg bg-slate-50 p-3">
         <p className="font-semibold text-ink">{card.title}</p>
         <p className="mt-1 leading-6">{card.summary}</p>
       </li>)}
     </ul> : null}
     {lineage.source_material_ids.length ? <p className="mt-3 leading-6">Zapisane materiały źródłowe: {lineage.source_material_ids.length}.</p> : null}
+    {safetyCardCount ? <p className="mt-3 leading-6 text-slate-600">WILQ zastosował też {safetyCardCount === 1 ? "kontrolę" : `${safetyCardCount} kontrole`} źródeł i zasad tekstu.</p> : null}
     {lineage.unresolved_knowledge_card_ids.length ? <p className="mt-3 leading-6 text-wait">Nie można obecnie odczytać {lineage.unresolved_knowledge_card_ids.length} przypisanych kart wiedzy.</p> : null}
   </section>;
 }
