@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,9 +18,24 @@ vi.mock("../lib/api", async (importOriginal) => ({
   postContentWorkItemPlanningProposal: vi.fn()
 }));
 
-function renderPanel() {
+function renderPanel(onSelectedWorkspaceRead?: () => Promise<unknown>) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={client}><ContentTextPreparationPanel workItemId="work_item" /></QueryClientProvider>);
+  return {
+    client,
+    ...render(<QueryClientProvider client={client}>
+      {onSelectedWorkspaceRead ? <SelectedWorkspaceObserver read={onSelectedWorkspaceRead} /> : null}
+      <ContentTextPreparationPanel workItemId="work_item" />
+    </QueryClientProvider>)
+  };
+}
+
+function SelectedWorkspaceObserver({ read }: { read: () => Promise<unknown> }) {
+  useQuery({
+    queryKey: ["content-workflow", "work-item", "work_item", "selected-workspace"],
+    queryFn: read,
+    staleTime: Infinity
+  });
+  return null;
 }
 
 function readyToGenerate(status: "not_generated" | "failed" = "not_generated") {
@@ -194,6 +209,37 @@ describe("ContentTextPreparationPanel", () => {
 
     await waitFor(() => expect(postContentWorkItemInitialDraft).toHaveBeenCalledTimes(2));
   });
+
+  it("refreshes the exact workspace when asynchronous draft preparation finishes", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyPlan() as never);
+    vi.mocked(postContentWorkItemInitialDraft).mockResolvedValueOnce(initialDraft("generating") as never);
+    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValueOnce(initialDraft("created") as never);
+    const selectedWorkspaceRead = vi.fn().mockResolvedValue({ canonical_document: { status: "created" } });
+    const { client } = renderPanel(selectedWorkspaceRead);
+    const invalidateQueries = vi.spyOn(client, "invalidateQueries");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj tekst" }));
+
+    await waitFor(() => expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["content-workflow", "work-item", "work_item", "selected-workspace"]
+    }));
+    await waitFor(() => expect(selectedWorkspaceRead).toHaveBeenCalledTimes(3));
+  });
+
+  it("releases the exact draft guard after an asynchronous terminal failure", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyPlan() as never);
+    vi.mocked(postContentWorkItemInitialDraft)
+      .mockResolvedValueOnce(initialDraft("generating") as never)
+      .mockResolvedValueOnce(initialDraft("generating") as never);
+    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValueOnce(initialDraft("failed") as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj tekst" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Przygotuj tekst" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj tekst" }));
+
+    await waitFor(() => expect(postContentWorkItemInitialDraft).toHaveBeenCalledTimes(2));
+  });
 });
 
 function readyPlan() {
@@ -204,5 +250,23 @@ function readyPlan() {
       proposal_id: "proposal_1",
       planning_digest: "c".repeat(64)
     }
+  };
+}
+
+function initialDraft(status: "generating" | "created" | "failed") {
+  return {
+    status,
+    work_item_id: "work_item",
+    proposal_id: "proposal_1",
+    run_id: "run_1",
+    blockers: status === "failed" ? [{
+      code: "runtime_failed",
+      label: "Nie udało się przygotować tekstu",
+      reason: "Worker zakończył się błędem.",
+      next_step: "Spróbuj ponownie."
+    }] : [],
+    safe_next_step: status === "created" ? "Otwórz tekst." : "Poczekaj.",
+    publish_ready: false,
+    runtime: { status: status === "failed" ? "failed" : "started", thread_id: null, turn_id: null, external_call_attempted: false }
   };
 }

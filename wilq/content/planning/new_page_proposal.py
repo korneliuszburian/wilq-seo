@@ -71,6 +71,35 @@ class ContentNewPagePlanningProposalWorkspace(BaseModel):
     readiness: ContentPlanningInputReadinessResponse
     proposal_status: ContentPlanningProposalResponse | None = None
 
+    @model_validator(mode="after")
+    def require_one_exact_new_page_input(self) -> ContentNewPagePlanningProposalWorkspace:
+        response = self.proposal_status
+        if response is None:
+            return self
+        identity = self.readiness.new_page_document_identity
+        if (
+            self.readiness.status != "ready"
+            or self.readiness.work_item_id is None
+            or self.readiness.planning_input_digest is None
+            or identity is None
+            or self.brief_id != identity.brief_id
+            or response.work_item_id != self.readiness.work_item_id
+            or response.service_card_id != identity.service_card_id
+            or response.planning_input_digest != self.readiness.planning_input_digest
+        ):
+            raise ValueError("New-page proposal workspace must keep one exact ready input.")
+        proposal = response.proposal
+        if proposal is not None:
+            proposal_identity = proposal.new_page_document_identity
+            if (
+                proposal.goal != "new_page"
+                or proposal.planning_input_digest != self.readiness.planning_input_digest
+                or proposal_identity is None
+                or proposal_identity != identity
+            ):
+                raise ValueError("New-page proposal must match the workspace document identity.")
+        return self
+
 
 def build_new_page_planning_proposal_workspace(
     *,

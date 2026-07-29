@@ -14,6 +14,7 @@ from apps.api.wilq_api.routers.content_workflow_http import (
     revision_conflict_next_step,
 )
 from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.measurement.deployment import ContentPublicDeployment
 from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionConflictResponse,
@@ -34,6 +35,7 @@ from wilq.content.workflow.entry import (
     ContentWorkflowEntryResponse,
     build_content_workflow_entry,
 )
+from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.planning import ContentPlanningWorkspace
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -257,7 +259,6 @@ def content_work_item_measurement_window(
     from wilq.content.measurement.window import content_measurement_window_outcome_blockers
     from wilq.content.workflow.store_public_deployment import public_deployment
 
-    snapshot = _snapshot_for_work_item_or_404(request.work_item_id)
     store = content_workflow_store()
     revision = next(
         (
@@ -280,17 +281,18 @@ def content_work_item_measurement_window(
             [] if deployment is None else load_content_measurement_facts(deployment.public_url)
         ),
     )
+    item = _measurement_item_for_revision(revision, deployment)
     response = ContentWorkItemMeasurementWindowResponse(
-        item=snapshot.measurement_window.item,
+        item=item,
         updated_item=(
-            snapshot.measurement_window.item.model_copy(
+            item.model_copy(
                 update={
                     "measurement_window_status": result.window.status,
                     "measurement_window_id": result.window.id,
                 }
             )
             if result.window is not None
-            else snapshot.measurement_window.item
+            else item
         ),
         measurement_window_result=result,
         outcome_blockers=(
@@ -303,6 +305,39 @@ def content_work_item_measurement_window(
     if window is not None:
         content_workflow_store().save_measurement_window(window)
     return response
+
+
+def _measurement_item_for_revision(
+    revision: ContentDraftRevision,
+    deployment: ContentPublicDeployment | None,
+) -> ContentWorkItem:
+    """Project only persisted revision/deployment facts for measurement.
+
+    Measurement begins after a confirmed public deployment, so it must not
+    require the transient diagnostics queue that first introduced an existing
+    page.  The compatibility response still carries a ``ContentWorkItem``, but
+    this narrow projection is derived solely from the exact revision and its
+    exact deployment.
+    """
+
+    public_url = getattr(deployment, "public_url", None)
+    publication_evidence_id = getattr(deployment, "publication_evidence_id", None)
+    publication_source_connector = getattr(
+        deployment, "publication_source_connector", None
+    )
+    return ContentWorkItem(
+        id=revision.work_item_id,
+        topic=getattr(revision, "title", "Zmierzony dokument"),
+        source_public_url=public_url,
+        final_canonical_url=public_url,
+        intended_final_url=public_url,
+        wordpress_title_or_h1=getattr(revision, "title", None),
+        evidence_ids=[] if publication_evidence_id is None else [publication_evidence_id],
+        source_connectors=(
+            [] if publication_source_connector is None else [publication_source_connector]
+        ),
+        wordpress_post_id=getattr(deployment, "wordpress_post_id", None),
+    )
 
 
 @router.post(

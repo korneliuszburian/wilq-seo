@@ -3817,6 +3817,17 @@ export const ContentPlanningProposalResponseSchema = z.object({
       message: "Planning input digest requires its exact input summary."
     });
   }
+  if (response.proposal && (
+    response.proposal.work_item_id !== response.work_item_id ||
+    response.proposal.service_card_id !== response.service_card_id ||
+    response.proposal.planning_input_digest !== response.planning_input_digest
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["proposal"],
+      message: "Planning response must match the nested exact proposal."
+    });
+  }
   if (response.planning_workspace) {
     if (response.status !== "ready" || !response.proposal) {
       context.addIssue({
@@ -3842,6 +3853,46 @@ export const ContentNewPagePlanningProposalWorkspaceSchema = z.object({
   brief_id: z.string().min(1),
   readiness: ContentPlanningInputReadinessResponseSchema,
   proposal_status: ContentPlanningProposalResponseSchema.nullable().optional()
+}).superRefine((workspace, context) => {
+  const response = workspace.proposal_status;
+  if (!response) return;
+  const identity = workspace.readiness.new_page_document_identity;
+  if (
+    workspace.readiness.status !== "ready" ||
+    !workspace.readiness.work_item_id ||
+    !workspace.readiness.planning_input_digest ||
+    !identity ||
+    workspace.brief_id !== identity.brief_id ||
+    response.work_item_id !== workspace.readiness.work_item_id ||
+    response.service_card_id !== identity.service_card_id ||
+    response.planning_input_digest !== workspace.readiness.planning_input_digest
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "New-page proposal workspace must keep one exact ready input."
+    });
+    return;
+  }
+  const proposal = response.proposal;
+  const proposalIdentity = proposal?.new_page_document_identity;
+  if (proposal && (
+    proposal.goal !== "new_page" ||
+    proposal.planning_input_digest !== workspace.readiness.planning_input_digest ||
+    !proposalIdentity ||
+    proposalIdentity.work_item_id !== identity.work_item_id ||
+    proposalIdentity.brief_id !== identity.brief_id ||
+    proposalIdentity.brief_digest !== identity.brief_digest ||
+    proposalIdentity.foundation_id !== identity.foundation_id ||
+    proposalIdentity.service_card_id !== identity.service_card_id ||
+    proposalIdentity.service_card_digest !== identity.service_card_digest ||
+    proposalIdentity.proposed_ia_location !== identity.proposed_ia_location
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["proposal_status", "proposal"],
+      message: "New-page proposal must match the workspace document identity."
+    });
+  }
 });
 
 export const ContentNewPageDocumentOutlineSectionSchema = z.object({

@@ -133,7 +133,6 @@ def read_content_planning_proposal(
             service_card_id=service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
-            proposal=latest,
             blockers=[_stale_input_blocker()],
             safe_next_step="Wygeneruj nową wersję planu z aktualnego wejścia.",
         )

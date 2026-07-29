@@ -51,6 +51,19 @@ export function ContentTextPreparationPanel({ workItemId }: { workItemId: string
       setRequestedInputDigest(null);
     }
   });
+  useEffect(() => {
+    const terminalDraft = initialDraftStatus.data;
+    if (!terminalDraft || terminalDraft.status === "generating") return;
+    if (terminalDraft.status === "created") {
+      void queryClient.invalidateQueries({
+        queryKey: ["content-workflow", "work-item", workItemId, "selected-workspace"]
+      });
+      return;
+    }
+    if (["failed", "blocked", "conflict"].includes(terminalDraft.status)) {
+      startedProposalId.current = null;
+    }
+  }, [initialDraftStatus.data, queryClient, workItemId]);
   const generation = useMutation({
     mutationFn: () => {
       const planningInputDigest = status.data?.planning_input_digest;
@@ -80,12 +93,20 @@ export function ContentTextPreparationPanel({ workItemId }: { workItemId: string
       requestedInputDigest !== planningInputDigest ||
       !proposal ||
       !["created", "idempotent", "ready"].includes(status.data?.status ?? "") ||
+      ["failed", "blocked", "conflict"].includes(initialDraftStatus.data?.status ?? "") ||
       startedProposalId.current === proposal.proposal_id ||
       startDraft.isPending
     ) return;
     startedProposalId.current = proposal.proposal_id;
     startDraft.mutate({ proposal, planningInputDigest: requestedInputDigest });
-  }, [planningInputDigest, proposal, requestedInputDigest, startDraft, status.data?.status]);
+  }, [
+    initialDraftStatus.data?.status,
+    planningInputDigest,
+    proposal,
+    requestedInputDigest,
+    startDraft,
+    status.data?.status
+  ]);
 
   if (status.isLoading) return <PlanningState>Sprawdzam dane potrzebne do przygotowania tekstu…</PlanningState>;
   if (status.error || !status.data) return <PlanningState tone="error">Nie udało się odczytać danych potrzebnych do przygotowania tekstu. Odśwież widok przed kolejną próbą.</PlanningState>;

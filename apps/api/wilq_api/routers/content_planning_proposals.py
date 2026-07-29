@@ -79,9 +79,6 @@ def register_content_planning_proposal_routes(
     def content_work_item_planning_proposal_status(
         work_item_id: str,
     ) -> ContentPlanningProposalResponse:
-        pending = content_planning_proposal_store().latest_generation_response(work_item_id)
-        if pending is not None:
-            return pending
         snapshot = snapshot_loader(work_item_id)
         response = read_content_planning_proposal(
             snapshot=snapshot,
@@ -167,6 +164,8 @@ def register_content_planning_proposal_routes(
                     status="idempotent",
                     work_item_id=work_item_id,
                     service_card_id=request.service_card_id,
+                    planning_input_digest=current.planning_input_digest,
+                    input_summary=current.input_summary,
                     proposal=existing,
                     safe_next_step=(
                         "Plan już istnieje dla tego exact wejścia; odczytano wersję "

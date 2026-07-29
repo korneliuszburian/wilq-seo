@@ -220,13 +220,6 @@ def test_executor_submission_failure_is_typed_and_retryable(
     assert first.json()["planning_input_digest"] == digest
     assert first.json()["service_card_id"] == service_card_id
     assert first.json()["blockers"][0]["code"] == "runtime_failed"
-    monkeypatch.setattr(
-        planning_router,
-        "read_content_planning_proposal",
-        lambda **_kwargs: (_ for _ in ()).throw(
-            AssertionError("pending GET must not rebuild the snapshot")
-        ),
-    )
     status = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
     )

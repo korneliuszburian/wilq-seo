@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 import wilq.content.planning.dynamic_input as planning_input_module
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.knowledge.cards import ContentKnowledgeCard, ekologus_content_knowledge_cards
@@ -10,6 +13,7 @@ from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.new_page_proposal import (
     ContentNewPagePlanningProposalRequest,
+    ContentNewPagePlanningProposalWorkspace,
     build_new_page_planning_proposal_workspace,
     generate_new_page_planning_proposal,
     queue_new_page_planning_proposal,
@@ -213,6 +217,19 @@ def test_new_page_plan_uses_exact_input_without_refresh_snapshot_or_public_url(
     assert proposal.inventory_mapping == []
     assert proposal.new_page_document_identity is not None
     assert proposal.new_page_document_identity.foundation_id == foundation.foundation_id
+
+    response_payload = generated.proposal_status.model_dump(mode="python")
+    for mismatch in (
+        {"work_item_id": "another-work-item"},
+        {"service_card_id": "another-service"},
+        {"planning_input_digest": "f" * 64},
+    ):
+        with pytest.raises(ValidationError, match="nested exact proposal"):
+            type(generated.proposal_status).model_validate(response_payload | mismatch)
+    with pytest.raises(ValidationError, match="one exact ready input"):
+        ContentNewPagePlanningProposalWorkspace.model_validate(
+            generated.model_dump(mode="python") | {"brief_id": "another-brief"}
+        )
 
     replay = generate_new_page_planning_proposal(
         workspace=workspace,
