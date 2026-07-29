@@ -46,7 +46,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemBlockedSnapshotResponse,
     ContentWorkItemBrowserSnapshotResponse,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
-    ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemLearningProposalRequest,
     ContentWorkItemLearningProposalResponse,
@@ -58,7 +57,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemSnapshotHumanReviewRequest,
     ContentWorkItemWordPressDraftExecutionRequest,
     ContentWorkItemWordPressDraftExecutionResponse,
-    ContentWorkItemWordPressDraftHandoffRequest,
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
@@ -83,10 +81,6 @@ from wilq.content.workflow.revisions import (
 from wilq.content.workflow.stage_measurement import (
     build_content_work_item_learning_proposal_response,
     build_content_work_item_measurement_outcome_response,
-)
-from wilq.content.workflow.stage_review import (
-    build_content_work_item_human_review_response,
-    build_content_work_item_wordpress_draft_handoff_response,
 )
 from wilq.content.workflow.store import content_workflow_store
 
@@ -426,26 +420,6 @@ def content_work_item_audit_for_selected_item(
     if response.handoff_result.handoff is not None:
         content_workflow_store().save_audit(request.audit)
     return response
-
-
-@router.post(
-    "/api/content/work-items/human-review",
-    response_model=ContentWorkItemHumanReviewResponse,
-)
-def content_work_item_human_review(
-    request: ContentWorkItemHumanReviewRequest,
-) -> ContentWorkItemHumanReviewResponse:
-    return build_content_work_item_human_review_response(request)
-
-
-@router.post(
-    "/api/content/work-items/wordpress-draft-handoff",
-    response_model=ContentWorkItemWordPressDraftHandoffResponse,
-)
-def content_work_item_wordpress_draft_handoff(
-    request: ContentWorkItemWordPressDraftHandoffRequest,
-) -> ContentWorkItemWordPressDraftHandoffResponse:
-    return build_content_work_item_wordpress_draft_handoff_response(request)
 
 
 @router.post(

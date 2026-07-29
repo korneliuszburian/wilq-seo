@@ -13,6 +13,8 @@ from tests.content.structured_generation_fixtures import (
     _sales_brief,
     _structured_output,
 )
+from wilq.content.workflow.contracts import ContentWorkItemHumanReviewRequest
+from wilq.content.workflow.stage_review import build_content_work_item_human_review_response
 
 
 def test_adversarial_quality_review_blocks_forbidden_guarantee_claim() -> None:
@@ -98,18 +100,16 @@ def test_adversarial_wrong_item_review_cannot_unlock_handoff() -> None:
         draft_package_id="draft_package_content_work_item_zielony_lad",
     )
 
-    response = TestClient(app).post(
-        "/api/content/work-items/human-review",
-        json={
+    response = build_content_work_item_human_review_response(
+        ContentWorkItemHumanReviewRequest.model_validate({
             "item": other_item,
             "review": _human_review(),
             "draft_package": _draft_package(),
             "claim_ledger": _claim_ledger(),
-        },
+        })
     )
 
-    assert response.status_code == 200
-    data = response.json()
+    data = response.model_dump(mode="json")
     assert data["wordpress_handoff_allowed"] is False
     assert {"wrong_work_item", "draft_package_mismatch"} <= _blocker_codes(data)
 

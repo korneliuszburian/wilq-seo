@@ -10,9 +10,17 @@ from wilq.content.knowledge.cards import (
     ContentKnowledgeCardMatch,
     ekologus_seed_content_knowledge_cards,
 )
-from wilq.content.workflow.contracts import ContentWorkItemPreflightRequest
+from wilq.content.workflow.contracts import (
+    ContentWorkItemHumanReviewRequest,
+    ContentWorkItemPreflightRequest,
+    ContentWorkItemWordPressDraftHandoffRequest,
+)
 from wilq.content.workflow.stage_preparation import (
     build_content_work_item_preflight_response,
+)
+from wilq.content.workflow.stage_review import (
+    build_content_work_item_human_review_response,
+    build_content_work_item_wordpress_draft_handoff_response,
 )
 
 
@@ -285,9 +293,9 @@ def _post_preflight(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _post_human_review(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post("/api/content/work-items/human-review", json=payload)
-    assert response.status_code == 200
-    data = response.json()
+    data = build_content_work_item_human_review_response(
+        ContentWorkItemHumanReviewRequest.model_validate(payload)
+    ).model_dump(mode="json")
     assert sorted(data) == [
         "blockers",
         "item",
@@ -301,12 +309,9 @@ def _post_human_review(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _post_wordpress_handoff(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-handoff",
-        json=payload,
-    )
-    assert response.status_code == 200
-    data = response.json()
+    data = build_content_work_item_wordpress_draft_handoff_response(
+        ContentWorkItemWordPressDraftHandoffRequest.model_validate(payload)
+    ).model_dump(mode="json")
     assert sorted(data) == ["handoff_result", "item"]
     return data
 

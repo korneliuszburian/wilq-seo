@@ -220,11 +220,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/{work_item_id}/audit",
     ): ContentWorkItemWordPressDraftHandoffResponse,
-    ("POST", "/api/content/work-items/human-review"): ContentWorkItemHumanReviewResponse,
-    (
-        "POST",
-        "/api/content/work-items/wordpress-draft-handoff",
-    ): ContentWorkItemWordPressDraftHandoffResponse,
     (
         "POST",
         "/api/content/work-items/wordpress-draft-execution",
