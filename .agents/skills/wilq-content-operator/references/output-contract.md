@@ -9,7 +9,7 @@ Widoczna odpowiedź po polsku zawiera kolejno:
 
 - `Jedna decyzja`;
 - `Dlaczego` — źródło i maksymalnie kilka faktów, bez wymyślonych metryk;
-- `Co już jest` — exact plan, rewizja lub review, jeśli istnieje;
+- `Co już jest` — stan przygotowania tekstu, rewizja lub review, jeśli istnieje;
 - `Co blokuje` — tylko rzeczywisty blocker;
 - `Następny bezpieczny krok` — jedna czynność;
 - `Ślad WILQ` — identyfikator i dowody pod decyzją, nie nad nią.

@@ -65,6 +65,8 @@ def test_content_operator_skill_uses_one_prepare_text_action() -> None:
     assert "→ przygotuj tekst" in skill
     assert "po jasnym „przygotuj plan”" not in skill
     assert "„przygotuj pierwszą wersję”" not in skill
+    assert "Co już jest:` plan" not in skill
+    assert "stan przygotowania tekstu / rewizja / review" in skill
     assert "POST .../initial-draft" in skill
     assert "GET /api/content/new-page-topics" in skill
 

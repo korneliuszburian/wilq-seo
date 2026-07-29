@@ -97,7 +97,7 @@ Pisz po polsku, krótko i w tej kolejności:
 
 1. `Jedna decyzja:` co można teraz zrobić;
 2. `Dlaczego:` źródła i najważniejszy fakt;
-3. `Co już jest:` plan / rewizja / review, bez surowych payloadów;
+3. `Co już jest:` stan przygotowania tekstu / rewizja / review, bez surowych payloadów;
 4. `Co blokuje:` tylko realna blokada, jeśli istnieje;
 5. `Następny bezpieczny krok:` dokładnie jedna czynność;
 6. `Ślad WILQ:` work item, revision/planning/action ID i evidence poniżej
