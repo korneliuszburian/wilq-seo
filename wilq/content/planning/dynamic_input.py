@@ -441,7 +441,8 @@ def build_content_planning_input_from_components(
         return ContentPlanningInputBuildResult(blockers=[blocker])
     if brief is None or draft is None or baseline_proposal is None:
         return ContentPlanningInputBuildResult(blockers=[_foundation_blocker()])
-    assert candidate is not None
+    if candidate is None:
+        return ContentPlanningInputBuildResult(blockers=[_foundation_blocker()])
     inventory = build_planning_inventory(item, inventory_resolution)
     source_assessments = build_source_assessments(
         item=item,

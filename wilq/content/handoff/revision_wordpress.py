@@ -197,7 +197,8 @@ def _revision_context_is_current(
     )
     if not baseline_current:
         return baseline_current
-    assert draft_package is not None
+    if draft_package is None:
+        return False
     if revision.schema_version == "wilq_content_draft_revision_v1":
         return (
             [
