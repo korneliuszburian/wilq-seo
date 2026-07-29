@@ -22,8 +22,6 @@ from wilq.content.planning.generated_proposal_contracts import (
 from wilq.content.planning.new_page_proposal import ContentNewPagePlanningProposalWorkspace
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReviewResponse
 from wilq.content.workflow.api import (
-    ContentWordPressDraftActivationPacketResponse,
-    ContentWordPressDraftWriteReadinessResponse,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementOutcomeResponse,
@@ -138,14 +136,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-action",
     ): ActionObject,
     ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
-    (
-        "GET",
-        "/api/content/wordpress/draft-activation-packet",
-    ): ContentWordPressDraftActivationPacketResponse,
-    (
-        "GET",
-        "/api/content/wordpress/draft-write-readiness",
-    ): ContentWordPressDraftWriteReadinessResponse,
     ("GET", "/api/content/work-items/queue"): ContentWorkItemQueueResponse,
     (
         "GET",

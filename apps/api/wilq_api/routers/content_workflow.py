@@ -4,9 +4,6 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from apps.api.wilq_api.routers.content_catalog_routes import register_content_catalog_routes
-from apps.api.wilq_api.routers.content_legacy_wordpress_read import (
-    register_content_legacy_wordpress_read_routes,
-)
 from apps.api.wilq_api.routers.content_model_routes import (
     register_content_model_routes,
 )
@@ -827,8 +824,3 @@ register_content_model_routes(
     snapshot_loader=_snapshot_for_work_item_or_404,
 )
 register_content_catalog_routes(router)
-register_content_legacy_wordpress_read_routes(
-    router,
-    snapshot_loader=_snapshot_for_work_item_or_404,
-    default_snapshot_loader=_snapshot_for_default_work_item_or_404,
-)

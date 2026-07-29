@@ -5,6 +5,10 @@ from typing import Any, cast
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from apps.api.wilq_api.routers.content_snapshot import (
+    snapshot_for_default_work_item_or_404,
+    snapshot_for_work_item_or_404,
+)
 from wilq.connectors.wordpress.client import (
     WordPressDraftPostReadback,
     WordPressDraftReadError,
@@ -14,6 +18,10 @@ from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftWriteAuthorization,
     execute_content_wordpress_draft_handoff,
+)
+from wilq.content.workflow.api import (
+    build_content_wordpress_draft_activation_packet_response,
+    build_content_wordpress_draft_write_readiness_response,
 )
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import AuditEvent
@@ -82,24 +90,45 @@ def _post_wordpress_execution(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _get_wordpress_write_readiness(action_id: str | None = None) -> dict[str, Any]:
-    response = TestClient(app).get(
-        "/api/content/wordpress/draft-write-readiness",
-        params={"action_id": action_id} if action_id is not None else None,
+    data = cast(
+        dict[str, Any],
+        build_content_wordpress_draft_write_readiness_response(
+            action_id=action_id or "act_prepare_wordpress_draft_handoff"
+        ).model_dump(mode="json"),
     )
-    assert response.status_code == 200
-    data = cast(dict[str, Any], response.json())
     assert data["response_type"] == "wordpress_draft_write_readiness"
     return data
 
 
 def _get_wordpress_activation_packet(work_item_id: str | None = None) -> dict[str, Any]:
-    params = {"work_item_id": work_item_id} if work_item_id is not None else None
-    response = TestClient(app).get(
-        "/api/content/wordpress/draft-activation-packet",
-        params=params,
+    snapshot = (
+        snapshot_for_work_item_or_404(work_item_id)
+        if work_item_id is not None
+        else snapshot_for_default_work_item_or_404()
     )
-    assert response.status_code == 200
-    data = cast(dict[str, Any], response.json())
+    handoff = snapshot.wordpress_handoff.handoff_result.handoff
+    binding = handoff.revision_binding if handoff is not None else None
+    latest_execution = None
+    if handoff is not None:
+        latest_execution = (
+            content_workflow_store().latest_wordpress_draft_execution(
+                snapshot.preflight.item.id
+            )
+            if binding is None
+            else content_workflow_store().latest_wordpress_draft_execution(
+                snapshot.preflight.item.id,
+                handoff_id=handoff.id,
+                revision_id=binding.revision_id,
+                revision_digest=binding.content_digest,
+            )
+        )
+    data = cast(
+        dict[str, Any],
+        build_content_wordpress_draft_activation_packet_response(
+            snapshot,
+            latest_execution_result=latest_execution,
+        ).model_dump(mode="json"),
+    )
     assert data["response_type"] == "wordpress_draft_activation_packet"
     return data
 
@@ -295,7 +324,7 @@ def test_wordpress_activation_packet_can_scope_to_selected_work_item(
     assert selected_packet["external_write_attempted"] is False
 
 
-def test_wordpress_activation_packet_returns_404_for_unavailable_work_item(
+def test_retired_wordpress_activation_packet_route_returns_404(
     monkeypatch,
     tmp_path,
 ) -> None:
@@ -304,12 +333,13 @@ def test_wordpress_activation_packet_returns_404_for_unavailable_work_item(
         str(tmp_path / "activation_packet_missing.sqlite3"),
     )
 
-    response = TestClient(app).get(
-        "/api/content/wordpress/draft-activation-packet",
-        params={"work_item_id": "content_work_item_missing"},
-    )
+    response = TestClient(app).get("/api/content/wordpress/draft-activation-packet")
 
     assert response.status_code == 404
+    assert (
+        TestClient(app).get("/api/content/wordpress/draft-write-readiness").status_code
+        == 404
+    )
 
 
 def test_wordpress_execution_api_returns_draft_only_dry_run(
