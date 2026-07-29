@@ -8,13 +8,19 @@ from pathlib import Path
 
 import pytest
 
+from apps.api.wilq_api import context_skill
 from tests._contract_support.action_candidate_seed import seed_action_candidate_metric_facts
 from tests._contract_support.api_client import client
 from tests._contract_support.assertions import assert_operator_context_strings_clean
 from tests._contract_support.env import clear_google_service_env, clear_wordpress_env
+from wilq.actions.service_profile import (
+    knowledge_promotion_action,
+    private_proposal_promotion_action,
+)
 from wilq.briefing.content_diagnostics import build_content_diagnostics, build_content_preflight
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.schemas import (
+    ActionPreviewCardViewModel,
     ActionRisk,
     AuditEvent,
     ConnectorRefreshMode,
@@ -2149,7 +2155,71 @@ def test_codex_context_pack_scopes_gsc_content_doctor_without_ahrefs_decisions()
     assert content["context_pack_compaction"]["ahrefs_decisions_removed"] is True
 
 
-def test_content_operator_context_pack_exposes_service_profile_review_actions() -> None:
+def test_content_operator_context_pack_exposes_service_profile_review_actions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    public_action = knowledge_promotion_action(
+        source_fact_count=1,
+        rows=[
+            {
+                "id": "knowledge_promotion_card_bdo",
+                "target_card_id": "card_bdo",
+                "target_card_title": "BDO",
+                "source_fact_ids": ["fact_bdo"],
+                "source_connector_labels": ["public_site"],
+                "source_lineage_labels": ["strona publiczna"],
+                "review_action_id": "review_card_bdo",
+                "required_human_role": "owner wiedzy",
+            }
+        ],
+    )
+    private_action = private_proposal_promotion_action(
+        proposal_count=1,
+        rows=[
+            {
+                "id": "private_proposal_bdo",
+                "title": "BDO",
+                "source_type": "private_source",
+                "source_path": "redacted",
+                "source_fact_ids": [],
+                "source_lineage_labels": [],
+                "required_human_role": "owner wiedzy",
+                "freshness_status": "review_required",
+                "audience": "wewnętrzny review",
+            }
+        ],
+    )
+    public_action = public_action.model_copy(
+        update={
+            "preview_cards": [
+                ActionPreviewCardViewModel(
+                    id="service_profile_public_preview",
+                    kind="service_profile_knowledge_promotion_review",
+                    title_label="Publiczny review",
+                )
+            ]
+        }
+    )
+    private_action = private_action.model_copy(
+        update={
+            "preview_cards": [
+                ActionPreviewCardViewModel(
+                    id="service_profile_private_preview",
+                    kind="service_profile_private_proposal_promotion_review",
+                    title_label="Prywatny review",
+                )
+            ]
+        }
+    )
+    monkeypatch.setattr(
+        "apps.api.wilq_api.context_actions.full_context_actions_for_skill",
+        lambda _skill: [public_action, private_action],
+    )
+    monkeypatch.setitem(
+        context_skill.SKILL_CONNECTOR_SCOPES,
+        "wilq-content-operator",
+        {"wordpress_ekologus"},
+    )
     response = client.post(
         "/api/codex/context-pack",
         json={"skill": "wilq-content-operator"},
