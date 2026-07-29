@@ -165,7 +165,12 @@ def register_content_planning_proposal_routes(
                 blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
                 for blocker in current.blockers
             )
-            if current_is_exact_existing and current.status in {"created", "idempotent", "ready"}:
+            if stale_mapping:
+                # The server has already proved that this is the same exact
+                # proposal and input; refreshing its deterministic inventory
+                # map must not depend on an optional browser flag.
+                request = request.model_copy(update={"regenerate_stale_mapping": True})
+            elif current_is_exact_existing and current.status in {"created", "idempotent", "ready"}:
                 return current.model_copy(
                     update={
                         "status": "idempotent",
@@ -175,12 +180,15 @@ def register_content_planning_proposal_routes(
                         ),
                     }
                 )
-            if not (request.regenerate_stale_mapping and stale_mapping):
+            elif not current_is_exact_existing:
                 # Never promote a historical proposal over the current typed
                 # state: stale and quality-blocked reads are already the safe
                 # response for this command.
                 return current
-            request = request.model_copy(update={"regenerate_stale_mapping": True})
+            else:
+                # A current quality blocker is actionable only after an
+                # explicit new generation path, never through idempotency.
+                return current
         if snapshot is None:
             try:
                 snapshot = snapshot_loader(work_item_id)
