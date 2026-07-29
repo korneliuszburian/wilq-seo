@@ -8,7 +8,7 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.codex.app_server import CodexAppServerClientProtocol
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.knowledge.cards import ContentKnowledgeCard
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,

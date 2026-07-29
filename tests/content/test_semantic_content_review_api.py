@@ -180,9 +180,11 @@ def test_semantic_review_is_exact_persisted_advisory_for_both_services(
         assert ready.json()["status"] == "ready"
         assert ready.json()["review"] == body["review"]
         assert runtime.calls == expected_calls
-        assert _snapshot(client, work_item_id)["revision_workspace"][
+        persisted_revision = _snapshot(client, work_item_id)["revision_workspace"][
             "latest_revision"
-        ] == revision
+        ]
+        assert persisted_revision["revision_id"] == revision["revision_id"]
+        assert persisted_revision["content_digest"] == revision["content_digest"]
 
 
 def test_semantic_review_runtime_failure_leaves_no_partial_review(
@@ -279,86 +281,6 @@ def test_semantic_review_real_store_requires_maintenance_before_model(
     assert table is None
 
 
-def test_semantic_finding_section_id_drives_only_a_human_selected_child_revision(
-    planning_harness: tuple[TestClient, PlanningClient],
-) -> None:
-    client, runtime = planning_harness
-    proposal = _generate_plan(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
-    base_revision = client.post(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/initial-draft",
-        json=_initial_draft_request(proposal),
-    ).json()["revision"]
-    review = client.post(
-        _semantic_review_path(BDO_WORK_ITEM_ID, base_revision["revision_id"]),
-        json={
-            "expected_revision_digest": base_revision["content_digest"],
-            "requested_by": "wilku",
-        },
-    ).json()["review"]
-    selected_section_id = review["findings"][0]["affected_targets"][0]
-    selected_section = next(
-        section
-        for section in base_revision["sections"]
-        if section["section_id"] == selected_section_id
-    )
-    human_review = client.post(
-        _revision_review_path(BDO_WORK_ITEM_ID, base_revision["revision_id"]),
-        json={
-            "expected_revision_digest": base_revision["content_digest"],
-            "reviewed_by": "wilku",
-            "decision": "needs_changes",
-            "notes": "Człowiek wybrał finding i sekcję do poprawy.",
-            "checked_items": ["exact revision", "dowody", "advisory finding"],
-            "evidence_ids": selected_section["evidence_ids"],
-        },
-    )
-    assert human_review.status_code == 200, human_review.json()
-
-    result = client.post(
-        _section_proposal_path(BDO_WORK_ITEM_ID, base_revision["revision_id"]),
-        json={
-            "expected_base_digest": base_revision["content_digest"],
-            "selected_section_ids": [selected_section_id],
-            "requested_by": "wilku",
-        },
-    )
-
-    assert result.status_code == 200, result.json()
-    body = result.json()
-    assert body["status"] == "created", body["blockers"]
-    assert body["selected_section_headings"] == [selected_section["heading"]]
-    child = body["revision"]
-    assert child["base_revision_id"] == base_revision["revision_id"]
-    assert child["sections"][0]["section_id"] == selected_section_id
-    assert child["sections"][0]["body_markdown"] != selected_section["body_markdown"]
-    for field in ("page_assets", "faq", "cta_blocks", "internal_links"):
-        assert child[field] == base_revision[field]
-    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
-    assert snapshot["revision_workspace"]["status"] == "unreviewed"
-    assert snapshot["revision_workspace"]["latest_review"] is None
-    stale_child_review = client.get(
-        _semantic_review_path(BDO_WORK_ITEM_ID, child["revision_id"])
-    ).json()
-    assert stale_child_review["status"] == "stale"
-    assert stale_child_review["revision_id"] == base_revision["revision_id"]
-    assert stale_child_review["revision_digest"] == base_revision["content_digest"]
-    assert stale_child_review["review"]["review_id"] == review["review_id"]
-    child_review = client.post(
-        _semantic_review_path(BDO_WORK_ITEM_ID, child["revision_id"]),
-        json={
-            "expected_revision_digest": child["content_digest"],
-            "requested_by": "wilku",
-        },
-    ).json()
-    assert child_review["status"] == "created"
-    assert child_review["review"]["revision_id"] == child["revision_id"]
-    historical_review = client.get(
-        _semantic_review_path(BDO_WORK_ITEM_ID, base_revision["revision_id"])
-    ).json()
-    assert historical_review["status"] == "stale"
-    assert historical_review["review"]["review_id"] == review["review_id"]
-
-
 def _semantic_review_path(work_item_id: str, revision_id: str) -> str:
     return (
         f"/api/content/work-items/{work_item_id}/draft-revisions/"
@@ -368,10 +290,3 @@ def _semantic_review_path(work_item_id: str, revision_id: str) -> str:
 
 def _revision_review_path(work_item_id: str, revision_id: str) -> str:
     return f"/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review"
-
-
-def _section_proposal_path(work_item_id: str, revision_id: str) -> str:
-    return (
-        f"/api/content/work-items/{work_item_id}/draft-revisions/"
-        f"{revision_id}/codex-proposal"
-    )

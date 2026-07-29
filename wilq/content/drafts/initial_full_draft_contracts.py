@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from wilq.content.canonical.urls import content_is_safe_public_url
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionPageAssets,

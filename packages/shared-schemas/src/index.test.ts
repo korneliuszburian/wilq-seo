@@ -41,7 +41,6 @@ import {
   ContentNewPageDraftActionCommandSchema,
   ContentNewPageDocumentReviewPrerequisiteConflictSchema,
   ContentNewPageRevisionReviewConflictSchema,
-  ContentCodexSectionProposalRequestSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentRevisionHtmlPackageResponseSchema,
   ContentEditorialIntegrityReportSchema,
@@ -4028,36 +4027,6 @@ describe("Content work item workflow schemas", () => {
         current_revision_id: "content_revision_bdo_2",
         current_digest: "a".repeat(64),
         safe_next_step: "Porównaj wersje."
-      }).success
-    ).toBe(false);
-    expect(
-      ContentCodexSectionProposalRequestSchema.safeParse({
-        expected_base_digest: "a".repeat(64),
-        selected_section_headings: ["Kogo dotyczy BDO", "Kogo dotyczy BDO"],
-        requested_by: "wilku"
-      }).success
-    ).toBe(false);
-    expect(
-      ContentCodexSectionProposalRequestSchema.safeParse({
-        expected_base_digest: "a".repeat(64),
-        selected_section_ids: ["section_bdo_scope"],
-        requested_by: "wilku"
-      }).success
-    ).toBe(true);
-    expect(
-      ContentCodexSectionProposalRequestSchema.safeParse({
-        expected_base_digest: "a".repeat(64),
-        selected_section_ids: ["section_bdo_scope"],
-        selected_section_headings: ["Kogo dotyczy BDO"],
-        requested_by: "wilku"
-      }).success
-    ).toBe(false);
-    expect(
-      ContentCodexSectionProposalRequestSchema.safeParse({
-        expected_base_digest: "a".repeat(64),
-        selected_section_headings: ["Kogo dotyczy BDO"],
-        requested_by: "wilku",
-        system_prompt: "Nie wolno wysyłać promptu z przeglądarki."
       }).success
     ).toBe(false);
   });

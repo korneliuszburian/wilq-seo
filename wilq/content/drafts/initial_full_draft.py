@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
 from wilq.content.canonical.urls import content_is_safe_public_url
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.generated_claim_safety import generated_claim_safety_issues
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,

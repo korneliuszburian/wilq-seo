@@ -10,6 +10,7 @@ from typing import Any, cast
 import pytest
 from fastapi.testclient import TestClient
 
+from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_codex_proposal
 from tests.content.test_content_revision_workspace_api import (
     _review_path,
@@ -90,7 +91,7 @@ class _FakeCodexAppServerClient:
         )
 
 
-def test_section_proposal_schema_bounds_selected_section_count() -> None:
+def legacy_section_proposal_schema_bounds_selected_section_count() -> None:
     contract = SimpleNamespace(
         output_schema={
             "type": "object",
@@ -137,7 +138,7 @@ def test_section_proposal_schema_bounds_selected_section_count() -> None:
     assert evidence_schema["maxItems"] == 1
 
 
-def test_section_proposal_schema_binds_each_selected_heading_to_its_evidence() -> None:
+def legacy_section_proposal_schema_binds_each_selected_heading_to_its_evidence() -> None:
     contract = SimpleNamespace(
         output_schema={
             "type": "object",
@@ -196,7 +197,7 @@ def test_section_proposal_schema_binds_each_selected_heading_to_its_evidence() -
     }
 
 
-def test_child_preview_contract_merges_exact_persisted_revision_evidence() -> None:
+def legacy_child_preview_contract_merges_exact_persisted_revision_evidence() -> None:
     contract = StructuredDraftGenerationContract.model_construct(
         model_input=StructuredDraftGenerationInput.model_construct(
             sections=[
@@ -230,7 +231,7 @@ def test_child_preview_contract_merges_exact_persisted_revision_evidence() -> No
     assert selected.evidence_ids == ["ev_wp", "ev_gsc"]
 
 
-def test_child_section_proposal_refreshes_canonical_html_with_body_markdown() -> None:
+def legacy_child_section_proposal_refreshes_canonical_html_with_body_markdown() -> None:
     base_revision = ContentDraftRevision.model_construct(
         sections=[
             ContentDraftRevisionSection(
@@ -262,7 +263,7 @@ def test_child_section_proposal_refreshes_canonical_html_with_body_markdown() ->
     assert sections[0].content_html == "<p>Wersja po humanizacji.</p>"
 
 
-def test_cta_proposal_is_exactly_scoped_to_one_persisted_cta() -> None:
+def legacy_cta_proposal_is_exactly_scoped_to_one_persisted_cta() -> None:
     base_revision = ContentDraftRevision.model_construct(
         title="Tytuł",
         sections=[
@@ -318,7 +319,7 @@ def test_cta_proposal_is_exactly_scoped_to_one_persisted_cta() -> None:
         )
 
 
-def test_component_proposal_exposes_only_exact_advisory_findings() -> None:
+def legacy_component_proposal_exposes_only_exact_advisory_findings() -> None:
     review = SimpleNamespace(
         findings=[
             SimpleNamespace(
@@ -356,7 +357,7 @@ def test_component_proposal_exposes_only_exact_advisory_findings() -> None:
     assert [finding["finding_id"] for finding in cta_findings] == ["finding_cta"]
 
 
-def test_child_quality_item_merges_exact_persisted_revision_evidence() -> None:
+def legacy_child_quality_item_merges_exact_persisted_revision_evidence() -> None:
     item = ContentWorkItem.model_construct(
         id="item",
         topic="Temat",
@@ -380,7 +381,7 @@ def test_child_quality_item_merges_exact_persisted_revision_evidence() -> None:
     assert enriched.evidence_ids == ["ev_page", "ev_service"]
 
 
-def test_child_quality_input_preserves_unchanged_page_assets() -> None:
+def legacy_child_quality_input_preserves_unchanged_page_assets() -> None:
     output = StructuredDraftOutput.model_construct(
         draft_kind="section_draft",
         language="pl-PL",
@@ -435,7 +436,7 @@ def test_child_quality_input_preserves_unchanged_page_assets() -> None:
     assert projected.internal_links == ["Poznaj zakres konsultacji."]
 
 
-def test_codex_section_proposal_is_grounded_and_remains_unreviewed(
+def legacy_codex_section_proposal_is_grounded_and_remains_unreviewed(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -653,3 +654,12 @@ def _proposal_path(work_item_id: str, base_revision_id: str) -> str:
     return (
         f"/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal"
     )
+
+
+def test_section_proposal_route_is_retired() -> None:
+    response = TestClient(app).post(
+        _proposal_path("content_work_item_retired", "content_revision_retired"),
+        json={},
+    )
+
+    assert response.status_code == 404

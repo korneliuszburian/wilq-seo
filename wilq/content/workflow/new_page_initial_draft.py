@@ -9,7 +9,7 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
 )
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlockerCode,
     ContentInitialDraftModelOutput,

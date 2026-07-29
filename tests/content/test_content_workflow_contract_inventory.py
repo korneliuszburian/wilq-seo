@@ -7,9 +7,6 @@ from fastapi.routing import APIRoute
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers.content_workflow import router
 from apps.api.wilq_api.routers.content_workflow_http import _browser_item
-from wilq.content.drafts.codex_section_proposal import (
-    ContentCodexSectionProposalResponse,
-)
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftResponse
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
@@ -130,10 +127,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/draft-revisions",
     ): ContentDraftRevisionSaveResponse,
     (
-        "POST",
-        "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal",
-    ): ContentCodexSectionProposalResponse,
-    (
         "GET",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
     ): ContentSemanticReviewResponse,
@@ -238,6 +231,7 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
         "/api/content/work-items/structured-draft-preview",
         "/api/content/work-items/{work_item_id}/structured-draft-preview",
         "/api/content/work-items/draft-variants",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal",
     }
 
     assert model_paths == {
@@ -245,7 +239,6 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
         "/api/content/new-page-briefs/{brief_id}/planning-proposal",
         "/api/content/work-items/{work_item_id}/initial-draft",
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
-        "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
     }
     assert forbidden_paths.isdisjoint(content_paths)

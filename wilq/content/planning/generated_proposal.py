@@ -10,7 +10,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.knowledge.cards import (
     match_content_knowledge_cards,
     select_content_knowledge_service_card,

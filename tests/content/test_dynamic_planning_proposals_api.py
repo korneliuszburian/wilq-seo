@@ -18,7 +18,7 @@ from tests.content.dynamic_planning_test_support import (
     configure_planning_harness,
 )
 from wilq.codex.app_server import CodexAppServerTurnBlocker, StdioCodexAppServerClient
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.handoff.revision_document_renderer import revision_document_markdown
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputSummary,

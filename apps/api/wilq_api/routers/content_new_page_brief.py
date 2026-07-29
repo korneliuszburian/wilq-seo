@@ -7,7 +7,7 @@ from hashlib import sha256
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-from apps.api.wilq_api.routers.content_codex_proposal import content_codex_app_server_client
+from apps.api.wilq_api.routers.content_codex_runtime import content_codex_app_server_client
 from apps.api.wilq_api.routers.content_workflow_http import revision_conflict_next_step
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.content.drafts.initial_full_draft_contracts import (
