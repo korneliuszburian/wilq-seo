@@ -10,6 +10,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import actions as actions_router
 from apps.api.wilq_api.routers import content_workflow as content_workflow_router
 from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
@@ -38,7 +39,11 @@ from wilq.schemas import (
 )
 
 
-def test_snapshot_seeds_api_owned_editor_and_starts_at_draft(
+def test_snapshot_revision_workspace_route_is_retired() -> None:
+    assert "/api/content/work-items/{work_item_id}/snapshot" not in app.openapi()["paths"]
+
+
+def legacy_snapshot_seeds_api_owned_editor_and_starts_at_draft(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -69,7 +74,7 @@ def test_snapshot_seeds_api_owned_editor_and_starts_at_draft(
     assert reloaded["revision_workspace"] == workspace
 
 
-def test_revision_save_is_reloadable_idempotent_and_returns_raw_stale_conflict(
+def legacy_revision_save_is_reloadable_idempotent_and_returns_raw_stale_conflict(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -151,7 +156,7 @@ def test_revision_save_is_reloadable_idempotent_and_returns_raw_stale_conflict(
         ("deferred", "review", True, False, True),
     ],
 )
-def test_exact_revision_decision_drives_the_five_step_journey(
+def legacy_exact_revision_decision_drives_the_five_step_journey(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     decision: str,
@@ -207,7 +212,7 @@ def test_exact_revision_decision_drives_the_five_step_journey(
     assert retried.json()["review"]["decision_id"] == body["review"]["decision_id"]
 
 
-def test_approved_revision_builds_the_exact_wordpress_handoff_without_legacy_review(
+def legacy_approved_revision_builds_the_exact_wordpress_handoff_without_legacy_review(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -310,7 +315,7 @@ def test_approved_revision_builds_the_exact_wordpress_handoff_without_legacy_rev
     }
 
 
-def test_legacy_revision_without_planning_digest_remains_readable_but_blocked(
+def legacy_legacy_revision_without_planning_digest_remains_readable_but_blocked(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -342,7 +347,7 @@ def test_legacy_revision_without_planning_digest_remains_readable_but_blocked(
     }
 
 
-def test_action_apply_sends_only_the_exact_approved_revision_and_blocks_replay(
+def legacy_action_apply_sends_only_the_exact_approved_revision_and_blocks_replay(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -584,7 +589,7 @@ def test_action_apply_sends_only_the_exact_approved_revision_and_blocks_replay(
     assert len(adapter_payloads) == 1
 
 
-def test_revision_review_rejects_wrong_digest_revision_and_unbound_evidence(
+def legacy_revision_review_rejects_wrong_digest_revision_and_unbound_evidence(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -621,7 +626,7 @@ def test_revision_review_rejects_wrong_digest_revision_and_unbound_evidence(
     )
 
 
-def test_approval_of_v1_never_approves_a_new_v2(
+def legacy_approval_of_v1_never_approves_a_new_v2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -699,7 +704,7 @@ def test_approval_of_v1_never_approves_a_new_v2(
     assert external_calls == []
 
 
-def test_revision_endpoints_reject_sections_or_evidence_outside_draft_package(
+def legacy_revision_endpoints_reject_sections_or_evidence_outside_draft_package(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -731,7 +736,7 @@ def test_revision_endpoints_reject_sections_or_evidence_outside_draft_package(
 
 
 @pytest.mark.parametrize("field", ["title", "created_by"])
-def test_revision_save_rejects_blank_metadata_without_persisting(
+def legacy_revision_save_rejects_blank_metadata_without_persisting(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     field: str,
@@ -747,7 +752,7 @@ def test_revision_save_rejects_blank_metadata_without_persisting(
     assert content_workflow_store().load_draft_revision_state(work_item_id).status == ("empty")
 
 
-def test_first_revision_respects_a_workspace_save_blocker(
+def legacy_first_revision_respects_a_workspace_save_blocker(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
