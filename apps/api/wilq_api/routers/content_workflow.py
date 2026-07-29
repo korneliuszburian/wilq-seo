@@ -22,12 +22,6 @@ from wilq.content.enrichment.opportunity import (
     ContentOpportunityEnrichmentResponse,
     build_content_opportunity_enrichment_response,
 )
-from wilq.content.workflow.api import (
-    build_content_work_item_diagnostics_snapshot_response,
-    build_content_work_item_snapshot_audit_response,
-    build_content_work_item_snapshot_human_review_response,
-    build_content_work_item_wordpress_draft_execution_response,
-)
 from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionConflictResponse,
@@ -36,18 +30,12 @@ from wilq.content.workflow.contracts import (
     ContentDraftRevisionReviewResponse,
     ContentDraftRevisionSaveRequest,
     ContentDraftRevisionSaveResponse,
-    ContentWorkItemHumanReviewResponse,
     ContentWorkItemLearningProposalRequest,
     ContentWorkItemLearningProposalResponse,
     ContentWorkItemMeasurementCommand,
     ContentWorkItemMeasurementOutcomeRequest,
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
-    ContentWorkItemSnapshotAuditRequest,
-    ContentWorkItemSnapshotHumanReviewRequest,
-    ContentWorkItemWordPressDraftExecutionRequest,
-    ContentWorkItemWordPressDraftExecutionResponse,
-    ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.entry import (
@@ -315,100 +303,6 @@ def content_work_item_draft_revision_review(
         review=result.review,
         workspace=refreshed.revision_workspace,
     )
-
-
-@router.post(
-    "/api/content/work-items/snapshot/human-review",
-    response_model=ContentWorkItemHumanReviewResponse,
-)
-def content_work_item_snapshot_human_review(
-    request: ContentWorkItemSnapshotHumanReviewRequest,
-) -> ContentWorkItemHumanReviewResponse:
-    response = build_content_work_item_snapshot_human_review_response(
-        build_content_diagnostics_cached(),
-        request,
-    )
-    if response.review_recordable and response.review is not None:
-        content_workflow_store().save_human_review(response.review)
-        return response.model_copy(update={"review_recorded": True})
-    return response
-
-
-@router.post(
-    "/api/content/work-items/{work_item_id}/human-review",
-    response_model=ContentWorkItemHumanReviewResponse,
-)
-def content_work_item_human_review_for_selected_item(
-    work_item_id: str,
-    request: ContentWorkItemSnapshotHumanReviewRequest,
-) -> ContentWorkItemHumanReviewResponse:
-    response = _snapshot_for_work_item_or_404(
-        work_item_id,
-        human_review=request.review,
-    ).human_review
-    if response.review_recordable and response.review is not None:
-        content_workflow_store().save_human_review(response.review)
-        return response.model_copy(update={"review_recorded": True})
-    return response
-
-
-@router.post(
-    "/api/content/work-items/snapshot/audit",
-    response_model=ContentWorkItemWordPressDraftHandoffResponse,
-)
-def content_work_item_snapshot_audit(
-    request: ContentWorkItemSnapshotAuditRequest,
-) -> ContentWorkItemWordPressDraftHandoffResponse:
-    diagnostics = build_content_diagnostics_cached()
-    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
-    review = content_workflow_store().latest_human_review(snapshot.preflight.item.id)
-    response = build_content_work_item_snapshot_audit_response(
-        diagnostics,
-        request,
-        human_review=review,
-    )
-    if response.handoff_result.handoff is not None:
-        content_workflow_store().save_audit(request.audit)
-    return response
-
-
-@router.post(
-    "/api/content/work-items/{work_item_id}/audit",
-    response_model=ContentWorkItemWordPressDraftHandoffResponse,
-)
-def content_work_item_audit_for_selected_item(
-    work_item_id: str,
-    request: ContentWorkItemSnapshotAuditRequest,
-) -> ContentWorkItemWordPressDraftHandoffResponse:
-    review = content_workflow_store().latest_human_review(work_item_id)
-    response = _snapshot_for_work_item_or_404(
-        work_item_id,
-        human_review=review,
-        audit=request.audit,
-    ).wordpress_handoff
-    if response.handoff_result.handoff is not None:
-        content_workflow_store().save_audit(request.audit)
-    return response
-
-
-@router.post(
-    "/api/content/work-items/wordpress-draft-execution",
-    response_model=ContentWorkItemWordPressDraftExecutionResponse,
-)
-def content_work_item_wordpress_draft_execution(
-    request: ContentWorkItemWordPressDraftExecutionRequest,
-) -> ContentWorkItemWordPressDraftExecutionResponse:
-    response = build_content_work_item_wordpress_draft_execution_response(request)
-    if (
-        request.handoff is not None
-        and response.execution_result.status == "created"
-        and response.execution_result.wordpress_post_id
-    ):
-        content_workflow_store().save_wordpress_draft_execution(
-            request.handoff.work_item_id,
-            response.execution_result,
-        )
-    return response
 
 
 @router.post(

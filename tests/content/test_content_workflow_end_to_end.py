@@ -57,69 +57,6 @@ def test_diagnostics_derived_content_item_reaches_grounded_contract_without_publ
     assert structured_output["source_facts_used"]
     assert structured_output["human_review_checklist"]
 
-    initial_handoff = snapshot["wordpress_handoff"]["handoff_result"]
-    assert initial_handoff["handoff"] is None
-    assert {blocker["code"] for blocker in initial_handoff["blockers"]} == {
-        "missing_human_review",
-        "missing_audit",
-    }
-
-    review = _human_review_from_snapshot(item=item, draft=draft)
-    review_response = _post_json(
-        client,
-        "/api/content/work-items/snapshot/human-review",
-        {"review": review},
-    )
-    assert review_response["wordpress_handoff_allowed"] is True
-    assert review_response["review"]["id"] == review["id"]
-
-    after_review = _get_snapshot(client)
-    assert after_review["human_review"]["reviewed_item"]["human_review_status"] == "approved"
-    after_review_handoff_blockers = after_review["wordpress_handoff"]["handoff_result"][
-        "blockers"
-    ]
-    assert [blocker["code"] for blocker in after_review_handoff_blockers] == ["missing_audit"]
-
-    audit = {
-        "audit_id": f"audit_{item['id']}",
-        "actor": "wilku",
-        "reason": "Operator zatwierdził wyłącznie przygotowanie szkicu WordPress.",
-        "evidence_ids": item["evidence_ids"],
-        "human_review_id": review["id"],
-    }
-    handoff_response = _post_json(
-        client,
-        "/api/content/work-items/snapshot/audit",
-        {"audit": audit},
-    )
-    handoff = handoff_response["handoff_result"]["handoff"]
-    assert handoff_response["handoff_result"]["blockers"] == []
-    assert handoff["post_status"] == "draft"
-    assert handoff["publish_allowed"] is False
-    assert handoff["destructive_update_allowed"] is False
-    assert handoff["audit_id"] == audit["audit_id"]
-    assert handoff["evidence_ids"]
-    assert set(handoff["evidence_ids"]).issubset(item["evidence_ids"])
-
-    after_audit = _get_snapshot(client)
-    measurement = after_audit["measurement_window"]
-    assert measurement["measurement_window_result"]["window"] is None
-    assert measurement["measurement_window_result"]["blockers"][0]["code"] == (
-        "missing_publication_event"
-    )
-
-    execution = _post_json(
-        client,
-        "/api/content/work-items/wordpress-draft-execution",
-        {"handoff": handoff, "draft_package": draft, "mode": "dry_run"},
-    )["execution_result"]
-    assert execution["status"] == "dry_run_ready"
-    assert execution["external_write_attempted"] is False
-    assert execution["wordpress_post_id"] is None
-    assert execution["payload"]["post_status"] == "draft"
-    assert execution["payload"]["publish_allowed"] is False
-    assert execution["payload"]["destructive_update_allowed"] is False
-
 
 def _assert_initial_content_gates(
     *,
@@ -245,9 +182,9 @@ def _assert_sales_brief(*, brief: dict[str, Any], item: dict[str, Any]) -> None:
     assert set(brief["evidence_ids"]) == set(item["evidence_ids"])
     assert set(brief["source_connectors"]) == set(item["source_connectors"])
     assert brief["source_facts"]
-    assert {
-        source_fact["evidence_id"] for source_fact in brief["source_facts"]
-    } == set(item["evidence_ids"])
+    assert {source_fact["evidence_id"] for source_fact in brief["source_facts"]} == set(
+        item["evidence_ids"]
+    )
     assert brief["human_review_required"] is True
     assert brief["draft_allowed"] is False
     assert brief["measurement_plan"]["success_claim_rule"]
@@ -272,8 +209,7 @@ def _assert_draft_package(
     assert any("poprawi pozycje SEO" in claim for claim in draft["claims_removed_or_blocked"])
     assert any("zwiększy liczbę leadów" in claim for claim in draft["claims_removed_or_blocked"])
     assert any(
-        "gwarantuje wzrost widoczności" in claim
-        for claim in draft["claims_removed_or_blocked"]
+        "gwarantuje wzrost widoczności" in claim for claim in draft["claims_removed_or_blocked"]
     )
 
 
@@ -291,10 +227,7 @@ def _assert_structured_contract(
     assert model_input["preview_url"] is None
     assert model_input["language"] == "pl-PL"
     assert [
-        {
-            key: section[key]
-            for key in ("heading", "purpose", "evidence_ids", "draft_notes")
-        }
+        {key: section[key] for key in ("heading", "purpose", "evidence_ids", "draft_notes")}
         for section in model_input["sections"]
     ] == draft["sections"]
     assert model_input["claims_removed_or_blocked"] == draft["claims_removed_or_blocked"]
@@ -319,12 +252,10 @@ def _structured_generation_from_snapshot(
     response = build_content_work_item_structured_draft_generation_response(
         ContentWorkItemStructuredDraftGenerationRequest.model_validate(
             {
-            "item": snapshot["human_review"]["item"],
-            "sales_brief": snapshot["sales_brief"]["sales_brief_result"]["brief"],
-            "claim_ledger": snapshot["claim_ledger"],
-            "draft_package": snapshot["draft_package"]["draft_package_result"][
-                "draft_package"
-            ],
+                "item": snapshot["human_review"]["item"],
+                "sales_brief": snapshot["sales_brief"]["sales_brief_result"]["brief"],
+                "claim_ledger": snapshot["claim_ledger"],
+                "draft_package": snapshot["draft_package"]["draft_package_result"]["draft_package"],
             }
         )
     )
@@ -332,31 +263,6 @@ def _structured_generation_from_snapshot(
         dict[str, Any],
         response.structured_generation_result.model_dump(mode="json"),
     )
-
-
-def _post_json(client: TestClient, path: str, payload: dict[str, Any]) -> dict[str, Any]:
-    response = client.post(path, json=payload)
-    assert response.status_code == 200
-    return cast(dict[str, Any], response.json())
-
-
-def _human_review_from_snapshot(*, item: dict[str, Any], draft: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "id": f"human_review_{item['id']}",
-        "work_item_id": item["id"],
-        "stage": "draft_package",
-        "reviewed_by": "wilku",
-        "decision": "approved",
-        "notes": "Operator zatwierdził plan, twierdzenia i szkic do trybu draft.",
-        "checked_items": [
-            "Szkic wynika z dowodów WILQ.",
-            "Ryzykowne twierdzenia zostały obsłużone.",
-            "WordPress może dostać wyłącznie szkic.",
-        ],
-        "evidence_ids": item["evidence_ids"],
-        "blocked_claims_handled": draft["claims_removed_or_blocked"],
-        "draft_package_id": draft["id"],
-    }
 
 
 def _structured_output_from_contract(contract: dict[str, Any]) -> dict[str, Any]:

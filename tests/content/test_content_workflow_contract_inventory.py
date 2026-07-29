@@ -21,11 +21,8 @@ from wilq.content.planning.generated_proposal_contracts import (
 from wilq.content.planning.new_page_proposal import ContentNewPagePlanningProposalWorkspace
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReviewResponse
 from wilq.content.workflow.api import (
-    ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
-    ContentWorkItemWordPressDraftExecutionResponse,
-    ContentWorkItemWordPressDraftHandoffResponse,
 )
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionReviewResponse,
@@ -195,26 +192,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ): ContentInitialDraftResponse,
     (
         "POST",
-        "/api/content/work-items/snapshot/human-review",
-    ): ContentWorkItemHumanReviewResponse,
-    (
-        "POST",
-        "/api/content/work-items/{work_item_id}/human-review",
-    ): ContentWorkItemHumanReviewResponse,
-    (
-        "POST",
-        "/api/content/work-items/snapshot/audit",
-    ): ContentWorkItemWordPressDraftHandoffResponse,
-    (
-        "POST",
-        "/api/content/work-items/{work_item_id}/audit",
-    ): ContentWorkItemWordPressDraftHandoffResponse,
-    (
-        "POST",
-        "/api/content/work-items/wordpress-draft-execution",
-    ): ContentWorkItemWordPressDraftExecutionResponse,
-    (
-        "POST",
         "/api/content/work-items/measurement-window",
     ): ContentWorkItemMeasurementWindowResponse,
     (
@@ -244,13 +221,11 @@ def test_content_workflow_stateful_routes_include_active_selected_work_item_read
         "target-discovery",
     ]:
         assert any(
-            path == f"/api/content/work-items/{{work_item_id}}/{suffix}"
-            for _method, path in routes
+            path == f"/api/content/work-items/{{work_item_id}}/{suffix}" for _method, path in routes
         )
 
     assert not any(
-        path == "/api/content/work-items/{work_item_id}/snapshot"
-        for _method, path in routes
+        path == "/api/content/work-items/{work_item_id}/snapshot" for _method, path in routes
     )
 
 
@@ -287,10 +262,8 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
         "/api/content/new-page-briefs/{brief_id}/planning-proposal",
         "/api/content/work-items/{work_item_id}/initial-draft",
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
-        "/api/content/work-items/{work_item_id}/draft-revisions/"
-        "{base_revision_id}/codex-proposal",
-        "/api/content/work-items/{work_item_id}/draft-revisions/"
-        "{revision_id}/semantic-review",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
     }
     assert forbidden_paths.isdisjoint(content_paths)
     serialized_contract = json.dumps(content_paths, sort_keys=True)
@@ -330,11 +303,16 @@ def test_browser_item_does_not_duplicate_full_wordpress_material() -> None:
 
 
 def test_legacy_snapshot_routes_are_not_public_content_routes() -> None:
-    for path in (
-        "/api/content/work-items/snapshot",
-        "/api/content/work-items/{work_item_id}/snapshot",
+    for method, path in (
+        ("GET", "/api/content/work-items/snapshot"),
+        ("GET", "/api/content/work-items/{work_item_id}/snapshot"),
+        ("POST", "/api/content/work-items/snapshot/human-review"),
+        ("POST", "/api/content/work-items/{work_item_id}/human-review"),
+        ("POST", "/api/content/work-items/snapshot/audit"),
+        ("POST", "/api/content/work-items/{work_item_id}/audit"),
+        ("POST", "/api/content/work-items/wordpress-draft-execution"),
     ):
-        assert ("GET", path) not in _content_workflow_routes()
+        assert (method, path) not in _content_workflow_routes()
         assert path not in app.openapi()["paths"]
 
 

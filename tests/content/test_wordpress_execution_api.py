@@ -2,16 +2,14 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers.content_snapshot import (
     snapshot_for_default_work_item_or_404,
     snapshot_for_work_item_or_404,
-)
-from wilq.connectors.wordpress.client import (
-    WordPressDraftPostReadback,
-    WordPressDraftReadError,
 )
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
@@ -22,7 +20,9 @@ from wilq.content.handoff.wordpress_execution import (
 from wilq.content.workflow.api import (
     build_content_wordpress_draft_activation_packet_response,
     build_content_wordpress_draft_write_readiness_response,
+    build_content_work_item_wordpress_draft_execution_response,
 )
+from wilq.content.workflow.contracts import ContentWorkItemWordPressDraftExecutionRequest
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import AuditEvent
 from wilq.storage.local_state import local_state_store
@@ -79,12 +79,12 @@ def _wordpress_handoff(**overrides: object) -> dict[str, object]:
 
 
 def _post_wordpress_execution(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json=payload,
+    data = cast(
+        dict[str, Any],
+        build_content_work_item_wordpress_draft_execution_response(
+            ContentWorkItemWordPressDraftExecutionRequest.model_validate(payload)
+        ).model_dump(mode="json"),
     )
-    assert response.status_code == 200
-    data = cast(dict[str, Any], response.json())
     assert sorted(data) == ["execution_result"]
     return data
 
@@ -111,9 +111,7 @@ def _get_wordpress_activation_packet(work_item_id: str | None = None) -> dict[st
     latest_execution = None
     if handoff is not None:
         latest_execution = (
-            content_workflow_store().latest_wordpress_draft_execution(
-                snapshot.preflight.item.id
-            )
+            content_workflow_store().latest_wordpress_draft_execution(snapshot.preflight.item.id)
             if binding is None
             else content_workflow_store().latest_wordpress_draft_execution(
                 snapshot.preflight.item.id,
@@ -199,10 +197,7 @@ def test_wordpress_activation_packet_shows_next_draft_only_blockers(
     assert data["draft_package_ready"] is True
     assert data["draft_package_id"]
     assert data["review_preview_ready"] is True
-    assert (
-        data["review_preview_status_label"]
-        == "Paczka szkicu jest gotowa do review człowieka."
-    )
+    assert data["review_preview_status_label"] == "Paczka szkicu jest gotowa do review człowieka."
     assert "generyczny artykuł SEO" in " ".join(data["human_review_checklist"])
     assert data["human_review_ready"] is False
     assert data["audit_ready"] is False
@@ -228,83 +223,6 @@ def test_wordpress_activation_packet_shows_next_draft_only_blockers(
     assert any("human review" in step for step in data["next_steps"])
     assert data["evidence_ids"]
     assert "wordpress_ekologus" in data["source_connectors"]
-
-
-def test_wordpress_activation_packet_follows_saved_review_and_audit(
-    monkeypatch,
-    tmp_path,
-) -> None:
-    monkeypatch.setenv(
-        "WILQ_STATE_DB",
-        str(tmp_path / "activation_packet_transition.sqlite3"),
-    )
-    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "false")
-    client = TestClient(app)
-
-    initial_packet = _get_wordpress_activation_packet()
-    work_item_id = initial_packet["work_item_id"]
-    snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
-    item = snapshot["preflight"]["item"]
-    draft = snapshot["draft_package"]["draft_package_result"]["draft_package"]
-    assert draft is not None
-
-    review = _human_review_from_snapshot(item, draft)
-    review_response = client.post(
-        f"/api/content/work-items/{work_item_id}/human-review",
-        json={"review": review},
-    )
-    assert review_response.status_code == 200
-    assert review_response.json()["wordpress_handoff_allowed"] is True
-
-    after_review = _get_wordpress_activation_packet(work_item_id)
-    assert after_review["human_review_ready"] is True
-    assert after_review["audit_ready"] is False
-    assert after_review["handoff_ready"] is False
-    assert after_review["dry_run_ready"] is False
-    assert after_review["external_write_attempted"] is False
-    assert after_review["handoff_blockers"] == ["missing_audit"]
-    assert after_review["execution_blockers"] == ["missing_handoff"]
-    assert after_review["activation_missing_step"] == "audit"
-    assert (
-        after_review["activation_missing_step_label"]
-        == "zapisz audit przekazania do WordPress"
-    )
-    assert after_review["activation_missing_readiness_labels"] == [
-        "audit przekazania",
-        "handoff WordPress",
-        "podgląd dry-run",
-    ]
-    assert after_review["human_review_checklist"] == [
-        "Review człowieka jest zapisane; teraz sprawdź audyt i handoff WordPress."
-    ]
-
-    audit_response = client.post(
-        f"/api/content/work-items/{work_item_id}/audit",
-        json={"audit": _audit_from_review(item, review)},
-    )
-    assert audit_response.status_code == 200
-    assert audit_response.json()["handoff_result"]["blockers"] == []
-
-    after_audit = _get_wordpress_activation_packet(work_item_id)
-    assert after_audit["human_review_ready"] is True
-    assert after_audit["audit_ready"] is True
-    assert after_audit["handoff_ready"] is True
-    assert after_audit["dry_run_ready"] is True
-    assert after_audit["live_write_enabled_by_env"] is False
-    assert after_audit["publish_allowed"] is False
-    assert after_audit["destructive_update_allowed"] is False
-    assert after_audit["external_write_attempted"] is False
-    assert after_audit["handoff_blockers"] == []
-    assert after_audit["execution_blockers"] == []
-    assert after_audit["activation_missing_step"] == "ready"
-    assert (
-        after_audit["activation_missing_step_label"]
-        == "podgląd draft-only jest gotowy do review"
-    )
-    assert after_audit["activation_missing_readiness_labels"] == []
-    assert after_audit["execution_result"]["status"] == "dry_run_ready"
-    assert after_audit["execution_result"]["payload"]["post_status"] == "draft"
-    assert after_audit["execution_result"]["external_write_attempted"] is False
 
 
 def test_wordpress_activation_packet_can_scope_to_selected_work_item(
@@ -336,10 +254,7 @@ def test_retired_wordpress_activation_packet_route_returns_404(
     response = TestClient(app).get("/api/content/wordpress/draft-activation-packet")
 
     assert response.status_code == 404
-    assert (
-        TestClient(app).get("/api/content/wordpress/draft-write-readiness").status_code
-        == 404
-    )
+    assert TestClient(app).get("/api/content/wordpress/draft-write-readiness").status_code == 404
 
 
 def test_wordpress_execution_api_returns_draft_only_dry_run(
@@ -378,9 +293,7 @@ def test_wordpress_execution_api_returns_draft_only_dry_run(
     assert payload["publish_allowed"] is False
     assert payload["destructive_update_allowed"] is False
     assert payload["final_canonical_url"] == "https://ekologus.pl/bdo/"
-    assert "# BDO dla firm: co trzeba sprawdzić przed działaniem" in payload[
-        "content_markdown"
-    ]
+    assert "# BDO dla firm: co trzeba sprawdzić przed działaniem" in payload["content_markdown"]
 
 
 def test_wordpress_execution_api_uses_section_overrides_in_draft_payload(
@@ -425,15 +338,14 @@ def test_wordpress_execution_api_blocks_live_write(
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_live_blocked.sqlite3"))
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "false")
 
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
-            "handoff": _wordpress_handoff(),
-            "draft_package": _draft_package(),
-            "mode": "live",
-        },
-    )
-    assert response.status_code == 422
+    with pytest.raises(ValidationError):
+        ContentWorkItemWordPressDraftExecutionRequest.model_validate(
+            {
+                "handoff": _wordpress_handoff(),
+                "draft_package": _draft_package(),
+                "mode": "live",
+            }
+        )
 
 
 def test_wordpress_execution_api_live_write_requires_write_authorization(
@@ -441,15 +353,14 @@ def test_wordpress_execution_api_live_write_requires_write_authorization(
 ) -> None:
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
 
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
-            "handoff": _wordpress_handoff(),
-            "draft_package": _draft_package(),
-            "mode": "live",
-        },
-    )
-    assert response.status_code == 422
+    with pytest.raises(ValidationError):
+        ContentWorkItemWordPressDraftExecutionRequest.model_validate(
+            {
+                "handoff": _wordpress_handoff(),
+                "draft_package": _draft_package(),
+                "mode": "live",
+            }
+        )
 
 
 def test_wordpress_execution_api_live_write_rejects_unpersisted_authorization(
@@ -457,16 +368,15 @@ def test_wordpress_execution_api_live_write_rejects_unpersisted_authorization(
 ) -> None:
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
 
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
-            "handoff": _wordpress_handoff(),
-            "draft_package": _draft_package(),
-            "mode": "live",
-            "write_authorization": _write_authorization(),
-        },
-    )
-    assert response.status_code == 422
+    with pytest.raises(ValidationError):
+        ContentWorkItemWordPressDraftExecutionRequest.model_validate(
+            {
+                "handoff": _wordpress_handoff(),
+                "draft_package": _draft_package(),
+                "mode": "live",
+                "write_authorization": _write_authorization(),
+            }
+        )
 
 
 def test_wordpress_execution_api_rejects_persisted_prepare_authorization(
@@ -488,192 +398,16 @@ def test_wordpress_execution_api_rejects_persisted_prepare_authorization(
     )
     _persist_write_authorization_events()
 
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
-            "handoff": _wordpress_handoff(),
-            "draft_package": _draft_package(),
-            "mode": "live",
-            "write_authorization": _write_authorization(),
-        },
-    )
-    assert response.status_code == 422
-    assert execution_arguments == {}
-
-
-def test_wordpress_activation_packet_remembers_created_dev_draft(
-    monkeypatch,
-    tmp_path,
-) -> None:
-    created_titles: list[str] = []
-
-    def create_draft(payload) -> str:  # type: ignore[no-untyped-def]
-        created_titles.append(payload.title)
-        return "888"
-
-    def read_draft(post_id: str) -> WordPressDraftPostReadback:
-        assert post_id == "888"
-        return WordPressDraftPostReadback(
-            post_id=post_id,
-            status="draft",
-            title="BDO dla firm - szkic dev",
-            link="https://ekologus.dev.proudsite.pl/?p=888",
-            edit_link="https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=888&action=edit",
-            modified_gmt="2026-07-07T10:00:00",
-            content_summary="Szkic opisuje obowiązki BDO i CTA do konsultacji.",
-            content_word_count=86,
-            acf_field_count=2,
-            acf_field_names=["glowny_opis", "elementy"],
+    with pytest.raises(ValidationError):
+        ContentWorkItemWordPressDraftExecutionRequest.model_validate(
+            {
+                "handoff": _wordpress_handoff(),
+                "draft_package": _draft_package(),
+                "mode": "live",
+                "write_authorization": _write_authorization(),
+            }
         )
-
-    monkeypatch.setenv(
-        "WILQ_STATE_DB",
-        str(tmp_path / "activation_packet_created_draft.sqlite3"),
-    )
-    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
-    monkeypatch.setattr(
-        "wilq.content.workflow.stage_activation.read_wordpress_draft_post",
-        read_draft,
-    )
-    _persist_write_authorization_events()
-    client = TestClient(app)
-
-    initial_packet = _get_wordpress_activation_packet()
-    work_item_id = initial_packet["work_item_id"]
-    snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
-    item = snapshot["preflight"]["item"]
-    draft = snapshot["draft_package"]["draft_package_result"]["draft_package"]
-    assert draft is not None
-
-    review = _human_review_from_snapshot(item, draft)
-    review_response = client.post(
-        f"/api/content/work-items/{work_item_id}/human-review",
-        json={"review": review},
-    )
-    assert review_response.status_code == 200
-    audit_response = client.post(
-        f"/api/content/work-items/{work_item_id}/audit",
-        json={"audit": _audit_from_review(item, review)},
-    )
-    assert audit_response.status_code == 200
-
-    ready_snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
-    handoff = ready_snapshot["wordpress_handoff"]["handoff_result"]["handoff"]
-    execution_result = execute_content_wordpress_draft_handoff(
-        handoff=ContentWordPressDraftHandoff.model_validate(handoff),
-        draft_package=ContentDraftPackage.model_validate(draft),
-        mode="live",
-        live_write_enabled=True,
-        create_draft=create_draft,
-        action_apply_authorized=True,
-        write_authorization=ContentWordPressDraftWriteAuthorization.model_validate(
-            _write_authorization()
-        ),
-        write_authorization_verified=True,
-    )
-    assert execution_result.status == "created"
-    content_workflow_store().save_wordpress_draft_execution(
-        work_item_id,
-        execution_result,
-    )
-
-    refreshed_packet = _get_wordpress_activation_packet(work_item_id)
-
-    assert refreshed_packet["execution_result"]["status"] == "created"
-    assert refreshed_packet["execution_result"]["mode"] == "live"
-    assert refreshed_packet["execution_result"]["wordpress_post_id"] == "888"
-    assert refreshed_packet["dry_run_ready"] is True
-    assert refreshed_packet["live_write_enabled_by_env"] is True
-    assert refreshed_packet["activation_missing_step"] == "ready"
-    assert refreshed_packet["activation_missing_readiness_labels"] == []
-    assert refreshed_packet["execution_result"]["boundary"]["publish_allowed"] is False
-    assert refreshed_packet["execution_result"]["boundary"]["destructive_update_allowed"] is False
-    assert refreshed_packet["execution_result"]["external_write_attempted"] is True
-    assert refreshed_packet["draft_readback"]["status"] == "available"
-    assert refreshed_packet["draft_readback"]["wordpress_post_id"] == "888"
-    assert refreshed_packet["draft_readback"]["post_status"] == "draft"
-    assert refreshed_packet["draft_readback"]["title"] == "BDO dla firm - szkic dev"
-    assert refreshed_packet["draft_readback"]["edit_link"] == (
-        "https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=888&action=edit"
-    )
-    assert refreshed_packet["draft_readback"]["content_word_count"] == 86
-    assert refreshed_packet["draft_readback"]["acf_field_names"] == [
-        "glowny_opis",
-        "elementy",
-    ]
-    assert created_titles == [draft["title"]]
-
-
-def test_wordpress_activation_packet_keeps_created_result_when_readback_fails(
-    monkeypatch,
-    tmp_path,
-) -> None:
-    def create_draft(_payload) -> str:  # type: ignore[no-untyped-def]
-        return "889"
-
-    def read_draft(_post_id: str) -> WordPressDraftPostReadback:
-        raise WordPressDraftReadError("WordPress REST nie zwrócił szkicu.")
-
-    monkeypatch.setenv(
-        "WILQ_STATE_DB",
-        str(tmp_path / "activation_packet_readback_failure.sqlite3"),
-    )
-    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
-    monkeypatch.setattr(
-        "wilq.content.workflow.stage_activation.read_wordpress_draft_post",
-        read_draft,
-    )
-    _persist_write_authorization_events()
-    client = TestClient(app)
-
-    initial_packet = _get_wordpress_activation_packet()
-    work_item_id = initial_packet["work_item_id"]
-    snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
-    item = snapshot["preflight"]["item"]
-    draft = snapshot["draft_package"]["draft_package_result"]["draft_package"]
-    assert draft is not None
-
-    review = _human_review_from_snapshot(item, draft)
-    assert client.post(
-        f"/api/content/work-items/{work_item_id}/human-review",
-        json={"review": review},
-    ).status_code == 200
-    assert client.post(
-        f"/api/content/work-items/{work_item_id}/audit",
-        json={"audit": _audit_from_review(item, review)},
-    ).status_code == 200
-
-    ready_snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
-    handoff = ready_snapshot["wordpress_handoff"]["handoff_result"]["handoff"]
-    execution_result = execute_content_wordpress_draft_handoff(
-        handoff=ContentWordPressDraftHandoff.model_validate(handoff),
-        draft_package=ContentDraftPackage.model_validate(draft),
-        mode="live",
-        live_write_enabled=True,
-        create_draft=create_draft,
-        action_apply_authorized=True,
-        write_authorization=ContentWordPressDraftWriteAuthorization.model_validate(
-            _write_authorization()
-        ),
-        write_authorization_verified=True,
-    )
-    assert execution_result.status == "created"
-    content_workflow_store().save_wordpress_draft_execution(
-        work_item_id,
-        execution_result,
-    )
-
-    refreshed_packet = _get_wordpress_activation_packet(work_item_id)
-
-    assert refreshed_packet["execution_result"]["status"] == "created"
-    assert refreshed_packet["execution_result"]["wordpress_post_id"] == "889"
-    assert refreshed_packet["dry_run_ready"] is True
-    assert refreshed_packet["activation_missing_step"] == "ready"
-    assert refreshed_packet["draft_readback"]["status"] == "blocked"
-    assert refreshed_packet["draft_readback"]["wordpress_post_id"] == "889"
-    assert refreshed_packet["draft_readback"]["blockers"][0]["code"] == (
-        "wordpress_draft_read_failed"
-    )
+    assert execution_arguments == {}
 
 
 def test_wordpress_execution_adapter_failure_is_sanitized_after_action_apply(
