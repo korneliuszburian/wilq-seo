@@ -1,16 +1,26 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from wilq.content.workflow.catalog import read_content_inventory_material
-from wilq.content.workflow.decision_context import build_content_decision_context
+from wilq.content.workflow.catalog import (
+    ContentInventoryMaterialResponse,
+    read_content_inventory_material,
+)
+from wilq.content.workflow.decision_context import (
+    ContentDecisionContext,
+    build_content_decision_context,
+)
 from wilq.content.workflow.document_lineage import (
     ContentDocumentWorkspaceDocumentLineage,
     build_content_document_lineage,
 )
-from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionReview,
+    ContentDraftRevisionStateStatus,
+)
 from wilq.content.workflow.store import content_workflow_store
 
 
@@ -185,7 +195,10 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
     )
 
 
-def _source_snapshot(context, material) -> ContentDocumentWorkspaceSourceSnapshot:
+def _source_snapshot(
+    context: ContentDecisionContext,
+    material: ContentInventoryMaterialResponse | None,
+) -> ContentDocumentWorkspaceSourceSnapshot:
     if material is None or material.status != "ready":
         return ContentDocumentWorkspaceSourceSnapshot(
             status="unavailable",
@@ -295,7 +308,7 @@ def _source_sections(text: str, headings: list[str]) -> list[tuple[str, str | No
 
 
 def _canonical_document(
-    status: str,
+    status: ContentDraftRevisionStateStatus,
     revision: ContentDraftRevision | None,
     review: ContentDraftRevisionReview | None,
 ) -> ContentDocumentWorkspaceDocument:
@@ -306,7 +319,7 @@ def _canonical_document(
             reason="WILQ ma materiał źródłowy, ale nie ma jeszcze zapisanej rewizji dokumentu.",
         )
     normalized = (
-        status
+        cast(Literal["unreviewed", "needs_changes", "approved", "rejected", "deferred"], status)
         if status in {"unreviewed", "needs_changes", "approved", "rejected", "deferred"}
         else "unreviewed"
     )
@@ -378,9 +391,9 @@ def _comparison(
             ),
         )
     source_by_heading: dict[str, list[tuple[int, ContentDocumentWorkspaceSourceSection]]] = {}
-    for source_index, section in enumerate(source.ordered_sections):
-        source_by_heading.setdefault(_heading_key(section.heading), []).append(
-            (source_index, section)
+    for source_index, source_section in enumerate(source.ordered_sections):
+        source_by_heading.setdefault(_heading_key(source_section.heading), []).append(
+            (source_index, source_section)
         )
     items: list[ContentDocumentWorkspaceComparisonItem] = []
     matched_source_indices: set[int] = set()
