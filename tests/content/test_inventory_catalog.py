@@ -581,6 +581,7 @@ def test_dynamic_material_extracts_the_content_headings_from_rest(monkeypatch):
 
 
 def test_inventory_binding_is_stable_and_evidence_bound(monkeypatch):
+    monkeypatch.setattr(catalog_module, "_inventory_catalog_cache", None)
     row = SimpleNamespace(
         name="content_object_seen",
         dimensions={"content_url": "https://www.ekologus.pl/news/"},
