@@ -112,7 +112,7 @@ export function ContentDocumentWorkspaceCanvas({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kontekst pracy</p>
           <StatusCard label="Materiał obecnej strony" value={sourceStatus(workspace.source_snapshot.status)} />
           <StatusCard label="Nowy dokument" value={documentStatus(workspace.canonical_document.status)} />
-          <DocumentLineage workspace={workspace} />
+          <ContentDocumentLineageDisclosure workspace={workspace} />
           {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
             <ContentApprovedHtmlPackage
               workItemId={workspace.work_item_id}
@@ -595,7 +595,7 @@ function CanonicalDocument({ workspace }: { workspace: ContentDocumentWorkspace 
   </>;
 }
 
-function DocumentLineage({ workspace }: { workspace: ContentDocumentWorkspace }) {
+export function ContentDocumentLineageDisclosure({ workspace }: { workspace: ContentDocumentWorkspace }) {
   const lineage = workspace.document_lineage;
   return <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700">
     <summary className="cursor-pointer font-semibold text-ink">Materiały użyte w dokumencie</summary>

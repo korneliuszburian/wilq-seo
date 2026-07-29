@@ -9,7 +9,7 @@ import {
   type ContentDraftRevisionReview,
   type ContentDraftRevisionReviewRequest
 } from "../lib/api";
-import { ContentDocumentWorkspaceCanvas } from "./ContentDocumentWorkspaceCanvas";
+import { ContentDocumentLineageDisclosure, ContentDocumentWorkspaceCanvas } from "./ContentDocumentWorkspaceCanvas";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentEditorialIntegrityReport } from "./ContentEditorialIntegrityReport";
@@ -369,7 +369,7 @@ function ContentReviewWorkspace({
         <p className="mt-2 text-sm font-medium text-slate-700">Usługa: {workspace.service_label ?? "niepotwierdzona"}</p>
         <p className="mt-3 text-sm leading-6 text-slate-700">Wynik pracy: pełna rewizja HTML do review.</p>
         <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-slate-600" aria-label="Stan pipeline’u">
-          <li>Kontekst</li><li aria-hidden="true">→</li><li>Szkic</li><li aria-hidden="true">→</li><li className="text-action">Review</li><li aria-hidden="true">→</li><li>Odbiór opcjonalny</li>
+          <li>Kontekst</li><li aria-hidden="true">→</li><li>Tekst</li><li aria-hidden="true">→</li><li className="text-action">Review</li><li aria-hidden="true">→</li><li>Szkic na dev (opcjonalnie)</li>
         </ol>
       </section>
       <section className="mt-4 rounded-2xl border border-line bg-white p-4 shadow-sm lg:p-5">
@@ -406,6 +406,7 @@ function ContentReviewWorkspace({
       <details className="mt-4 rounded-xl border border-line bg-white p-4 text-sm text-slate-700">
         <summary className="cursor-pointer font-semibold text-ink">Szczegóły, źródła i ograniczenia</summary>
         <p className="mt-3 leading-6">{workspace.source_snapshot.reason}</p>
+        <ContentDocumentLineageDisclosure workspace={workspace} />
       </details>
     </main>
   );
@@ -470,9 +471,9 @@ function ReviewDecisionPanel({
     return (
       <div className="mt-5 rounded-xl border border-action/20 bg-action/5 p-4" data-testid="content-review-saved">
         <p className="text-sm font-semibold text-ink">Review: {reviewDecisionLabel(savedReview.decision)}</p>
-        <p className="mt-1 text-sm text-slate-700">Rewizja: {savedReview.revision_id.slice(0, 12)} · {savedReview.revision_digest.slice(0, 12)}</p>
         <p className="mt-1 text-sm text-slate-700">Reviewer: {savedReview.reviewed_by}</p>
         {savedReview.notes ? <p className="mt-2 text-sm leading-6 text-slate-700">Notatka: {savedReview.notes}</p> : null}
+        <details className="mt-3 text-xs leading-5 text-slate-600"><summary className="cursor-pointer font-semibold text-slate-700">Dokładna wersja</summary><p className="mt-2 break-all">Rewizja: {savedReview.revision_id} · digest: {savedReview.revision_digest}</p></details>
         {savedReview.decision === "approved" && savedReview.revision_id === revision.revision_id && savedReview.revision_digest === revision.content_digest ? <ContentApprovedHtmlPackage workItemId={revision.work_item_id} revisionId={revision.revision_id} revisionDigest={revision.content_digest} /> : null}
         <button type="button" className="mt-3 rounded-md border border-action/30 px-3 py-2 text-sm font-semibold text-action" onClick={onReturnToText}>Wróć do tekstu</button>
       </div>
@@ -490,7 +491,7 @@ function ReviewDecisionPanel({
   return (
     <div className="mt-5 rounded-xl border border-line bg-slate-50 p-4" data-testid="content-review-decision-panel">
       <p className="font-semibold text-ink">Sprawdź tekst</p>
-      <p className="mt-1 text-sm leading-6 text-slate-700">Jeśli tekst odpowiada materiałom i źródłom, zatwierdź tę dokładną rewizję. Rewizja: {revision.revision_id.slice(0, 12)} · digest: {revision.content_digest.slice(0, 12)}</p>
+      <p className="mt-1 text-sm leading-6 text-slate-700">Jeśli tekst odpowiada materiałom i źródłom, zatwierdź tę wersję.</p>
       {!hasOperatorIdentity ? <p className="mt-2 text-sm font-semibold text-wait">Nie udało się potwierdzić tożsamości osoby oceniającej. Review nie zostanie zapisane.</p> : null}
       {decision === "needs_changes" ? (
         <label className="mt-4 block text-sm font-semibold text-ink">Notatka<textarea className="mt-2 min-h-24 w-full rounded-md border border-line bg-white p-3 text-sm font-normal text-ink" value={notes} onChange={(event) => onNotesChange(event.target.value)} placeholder="Wyjaśnij, co wymaga zmiany lub dlaczego odrzucasz wersję." /></label>
@@ -500,6 +501,7 @@ function ReviewDecisionPanel({
         <button type="button" className="rounded-md bg-action px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={!canSubmit} onClick={onSubmit}>{isPending ? "Zapisuję review…" : decision === "approved" ? "Zatwierdź tekst" : "Zapisz uwagi"}</button>
         {decision === "approved" ? <button type="button" className="text-sm font-semibold text-action underline" disabled={isPending} onClick={() => onDecisionChange("needs_changes")}>Tekst wymaga zmian</button> : <button type="button" className="text-sm font-semibold text-action underline" disabled={isPending} onClick={() => onDecisionChange("approved")}>Wróć do zatwierdzania</button>}
       </div>
+      <details className="mt-3 text-xs leading-5 text-slate-600"><summary className="cursor-pointer font-semibold text-slate-700">Dokładna wersja</summary><p className="mt-2 break-all">Rewizja: {revision.revision_id} · digest: {revision.content_digest}</p></details>
     </div>
   );
 }
