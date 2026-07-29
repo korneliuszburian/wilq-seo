@@ -32,7 +32,6 @@ from wilq.content.workflow.contracts import (
     ContentRevisionHtmlPackageResponse,
     ContentWorkItemLearningProposalResponse,
 )
-from wilq.content.workflow.decision_context import ContentDecisionContext
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.new_page import (
     ContentNewPageBriefWorkspace,
@@ -118,10 +117,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-action",
     ): ActionObject,
     ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
-    (
-        "GET",
-        "/api/content/work-items/{work_item_id}/decision-context",
-    ): ContentDecisionContext,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/planning-proposals",
@@ -295,6 +290,7 @@ def test_legacy_workflow_routes_are_not_public_content_routes() -> None:
         ("GET", "/api/content/work-items/queue"),
         ("GET", "/api/content/work-items/{work_item_id}/enrichment"),
         ("GET", "/api/content/work-items/{work_item_id}/document-workspace"),
+        ("GET", "/api/content/work-items/{work_item_id}/decision-context"),
         ("GET", "/api/content/work-items/snapshot"),
         ("GET", "/api/content/work-items/{work_item_id}/snapshot"),
         ("POST", "/api/content/work-items/snapshot/human-review"),
