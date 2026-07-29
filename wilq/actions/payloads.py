@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from wilq.actions.ga4.tracking_quality import (
@@ -115,7 +116,10 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
     return errors
 
 
-def _connector_payload_validator(connector_id: str, action_type: str):
+def _connector_payload_validator(
+    connector_id: str,
+    action_type: str,
+) -> Callable[[dict[str, Any]], list[str]] | None:
     return {
         ("google_ads", "custom_segment_candidate"): validate_custom_segment_payload,
         ("google_ads", "negative_keyword_candidate"): validate_negative_keyword_payload,
