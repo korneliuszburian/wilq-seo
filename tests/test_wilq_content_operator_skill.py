@@ -80,6 +80,15 @@ def test_content_operator_skill_uses_one_prepare_text_action() -> None:
     assert "GET /api/content/new-page-topics" in skill
 
 
+def test_content_operator_smoke_allows_an_empty_entry_only_when_requested() -> None:
+    smoke = load_smoke_script()
+    empty_entry = {"response_type": "content_workflow_entry", "recommendations": []}
+
+    with pytest.raises(SystemExit, match="No evidence-bound recommendation is available"):
+        smoke.validate_entry(empty_entry)
+    assert smoke.validate_entry(empty_entry, allow_empty=True) is None
+
+
 def test_content_operator_smoke_rejects_mismatched_exact_read_models() -> None:
     smoke = load_smoke_script()
     planning = {
