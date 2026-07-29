@@ -2333,11 +2333,29 @@ def test_localo_diagnostics_blocks_visibility_when_access_is_missing(
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
     clear_localo_env(monkeypatch)
     metric_store().status()
+    local_state_store().save_connector_refresh_run(
+        ConnectorRefreshRun(
+            id="refresh_localo_raw_configuration_error",
+            connector_id="localo",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.blocked,
+            evidence_ids=["ev_refresh_localo_raw_configuration_error"],
+            external_call_attempted=True,
+            vendor_data_collected=False,
+            missing_credentials=["LOCALO_ACCESS_TOKEN"],
+            checked_credentials=["LOCALO_API_TOKEN", "LOCALO_ORGANIZATION_ID"],
+            summary="Missing LOCALO_ACCESS_TOKEN.",
+            errors=["Localo OAuth authorization is incomplete: missing LOCALO_ACCESS_TOKEN."],
+        )
+    )
 
     response = client.get("/api/localo/diagnostics")
 
     assert response.status_code == 200
     payload = response.json()
+    assert "LOCALO_ACCESS_TOKEN" not in json.dumps(payload)
+    assert "LOCALO_ORGANIZATION_ID" not in json.dumps(payload)
+    assert "LOCALO_API_TOKEN" not in json.dumps(payload)
     assert payload["access_probe"]["status"] == "access_blocked"
     assert payload["live_data_available"] is False
     assert payload["visibility_fact_count"] == 0

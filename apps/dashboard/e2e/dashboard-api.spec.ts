@@ -275,10 +275,10 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/knowledge");
     await operatingMapResponse;
 
-    await expectApiBackedRouteHeading(page, "Wiedza", { exact: true });
+    await expectApiBackedRouteHeading(page, "Źródła i wiedza", { exact: true });
     await expect(page.getByRole("heading", { name: "Najbliższa wiedza do sprawdzenia" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co blokuje produkcję treści" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kolejka sprawdzania wiedzy" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kolejka review materiałów źródłowych" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż kartę" }).click();
     await expect(page.getByRole("heading", { name: "Karty wiedzy" })).toBeVisible();
     await page.getByRole("button", { name: "Zobacz pełne zasady pracy" }).first().click();
