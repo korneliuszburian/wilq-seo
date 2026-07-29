@@ -23,6 +23,43 @@ from wilq.storage.schema_versions import (
 PlanningEnqueueOutcome = Literal["queued", "existing", "in_flight"]
 GeneratedProposalSaveOutcome = Literal["created", "idempotent", "replaced"]
 
+_PROPOSAL_INPUT_SELECTS = {
+    "content_planning_proposals": """
+        SELECT payload_json, proposal_version
+        FROM content_planning_proposals
+        WHERE work_item_id = ?
+          AND service_card_id = ?
+          AND planning_input_digest = ?
+    """,
+    "content_planning_proposal_repairs": """
+        SELECT payload_json, proposal_version
+        FROM content_planning_proposal_repairs
+        WHERE work_item_id = ?
+          AND service_card_id = ?
+          AND planning_input_digest = ?
+    """,
+}
+_PROPOSAL_LATEST_SELECTS = {
+    "content_planning_proposals": (
+        "SELECT payload_json, proposal_version FROM content_planning_proposals WHERE "
+    ),
+    "content_planning_proposal_repairs": (
+        "SELECT payload_json, proposal_version FROM content_planning_proposal_repairs WHERE "
+    ),
+}
+_PROPOSAL_PLANNING_DIGEST_SELECTS = {
+    "content_planning_proposals": """
+        SELECT payload_json, proposal_version FROM content_planning_proposals
+        WHERE work_item_id = ?
+          AND json_extract(payload_json, '$.planning_digest') = ?
+    """,
+    "content_planning_proposal_repairs": """
+        SELECT payload_json, proposal_version FROM content_planning_proposal_repairs
+        WHERE work_item_id = ?
+          AND json_extract(payload_json, '$.planning_digest') = ?
+    """,
+}
+
 
 def content_planning_proposal_store() -> ContentPlanningProposalStore:
     return ContentPlanningProposalStore(state_db_path())
@@ -519,18 +556,10 @@ def _proposal_row_for_input(
     planning_input_digest: str,
 ) -> sqlite3.Row | None:
     tables = _proposal_tables(connection)
-    query = " UNION ALL ".join(
-        f"""
-        SELECT payload_json, proposal_version
-        FROM {table}
-        WHERE work_item_id = ?
-          AND service_card_id = ?
-          AND planning_input_digest = ?
-        """
-        for table in tables
-    )
+    query = " UNION ALL ".join(_PROPOSAL_INPUT_SELECTS[table] for table in tables)
+    # Table fragments are fixed above; every caller value remains a bound parameter.
     row = connection.execute(
-        f"SELECT payload_json FROM ({query}) ORDER BY proposal_version DESC LIMIT 1",
+        "SELECT payload_json FROM (" + query + ") ORDER BY proposal_version DESC LIMIT 1",  # nosec B608
         (work_item_id, service_card_id, planning_input_digest) * len(tables),
     ).fetchone()
     return cast(sqlite3.Row | None, row)
@@ -548,7 +577,7 @@ def _latest_proposal_row(
         else "work_item_id = ? AND service_card_id = ?"
     )
     query = " UNION ALL ".join(
-        f"SELECT payload_json, proposal_version FROM {table} WHERE {where}" for table in tables
+        _PROPOSAL_LATEST_SELECTS[table] + where for table in tables
     )
     base_params = (
         (work_item_id,)
@@ -556,10 +585,13 @@ def _latest_proposal_row(
         else (work_item_id, service_card_id)
     )
     params = base_params * len(tables)
+    # Table fragments are fixed above; every caller value remains a bound parameter.
     return cast(
         sqlite3.Row | None,
         connection.execute(
-            f"SELECT payload_json FROM ({query}) ORDER BY proposal_version DESC LIMIT 1",
+            "SELECT payload_json FROM ("  # nosec B608
+            + query
+            + ") ORDER BY proposal_version DESC LIMIT 1",
             params,
         ).fetchone(),
     )
@@ -572,17 +604,15 @@ def _proposal_row_for_planning_digest(
 ) -> sqlite3.Row | None:
     tables = _proposal_tables(connection)
     query = " UNION ALL ".join(
-        f"""
-        SELECT payload_json, proposal_version FROM {table}
-        WHERE work_item_id = ?
-          AND json_extract(payload_json, '$.planning_digest') = ?
-        """
-        for table in tables
+        _PROPOSAL_PLANNING_DIGEST_SELECTS[table] for table in tables
     )
+    # Table fragments are fixed above; every caller value remains a bound parameter.
     return cast(
         sqlite3.Row | None,
         connection.execute(
-            f"SELECT payload_json FROM ({query}) ORDER BY proposal_version DESC LIMIT 1",
+            "SELECT payload_json FROM ("  # nosec B608
+            + query
+            + ") ORDER BY proposal_version DESC LIMIT 1",
             (work_item_id, planning_digest) * len(tables),
         ).fetchone(),
     )
