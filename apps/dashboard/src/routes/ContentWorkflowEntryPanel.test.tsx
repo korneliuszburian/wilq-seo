@@ -371,6 +371,8 @@ describe("ContentWorkflowEntryPanel", () => {
 
     expect(await screen.findByTestId("new-page-document-preview")).toBeInTheDocument();
     expect(screen.getByText("Tekst strony · wersja robocza")).toBeInTheDocument();
+    expect(screen.queryByTestId("new-page-planning-ready")).not.toBeInTheDocument();
+    expect(getContentNewPagePlanningProposal).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Materiały i wiedza użyte w tej wersji"));
     expect(screen.getByText("Obsługa środowiskowa i zgodność obowiązków")).toBeInTheDocument();
     expect(screen.getByText(/Zapisane materiały: fact_service_environment/)).toBeInTheDocument();

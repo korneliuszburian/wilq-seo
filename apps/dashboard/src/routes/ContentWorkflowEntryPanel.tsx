@@ -355,6 +355,10 @@ function NewPagePlanningFoundation({ workspace }: { workspace: ContentNewPageBri
   const queryClient = useQueryClient();
   const [serviceCardId, setServiceCardId] = useState("");
   const [prepareTextAfterFoundation, setPrepareTextAfterFoundation] = useState(false);
+  const canonicalDocument = useNewPageCanonicalDocument(
+    workspace.brief.brief_id,
+    Boolean(workspace.foundation)
+  );
   const foundation = useMutation({
     mutationFn: () => createContentNewPageFoundation(workspace.brief.brief_id, {
       expected_brief_digest: workspace.brief.brief_digest,
@@ -372,7 +376,7 @@ function NewPagePlanningFoundation({ workspace }: { workspace: ContentNewPageBri
     }
   });
   if (workspace.foundation) {
-    return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Tekst nowej strony</h2><p className="mt-2 text-sm leading-6 text-slate-700">Tekst oprze się na wiedzy o usłudze: {workspace.foundation.service_label}. Nowa strona nie ma jeszcze publicznego URL-a, inventory ani danych historycznych.</p><NewPagePlanningProposal briefId={workspace.brief.brief_id} autoStart={prepareTextAfterFoundation} /><NewPageCanonicalDocument briefId={workspace.brief.brief_id} /></section>;
+    return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Tekst nowej strony</h2><p className="mt-2 text-sm leading-6 text-slate-700">Tekst oprze się na wiedzy o usłudze: {workspace.foundation.service_label}. Nowa strona nie ma jeszcze publicznego URL-a, inventory ani danych historycznych.</p><NewPageCanonicalDocument document={canonicalDocument} onChanged={() => { void queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", workspace.brief.brief_id] }); }} />{canonicalDocument.data && !canonicalDocument.data.canonical_revision ? <NewPagePlanningProposal briefId={workspace.brief.brief_id} autoStart={prepareTextAfterFoundation} /> : null}</section>;
   }
   if (workspace.overlap_guard.disposition !== "no_conflict") {
     return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Zakres źródeł do tekstu</h2><p className="mt-2 text-sm leading-6 text-slate-700">{workspace.review_reason}</p><p className="mt-3 text-sm font-semibold text-slate-700">{workspace.next_action_label}</p></section>;
@@ -380,25 +384,29 @@ function NewPagePlanningFoundation({ workspace }: { workspace: ContentNewPageBri
   return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Na czym oprzeć tekst?</h2><p className="mt-2 text-sm leading-6 text-slate-700">Wybierz zatwierdzoną wiedzę o usłudze. WILQ użyje jej jako podstawy tekstu i sam przejdzie przez techniczne sprawdzenia w tle.</p><div className="mt-4 space-y-3">{workspace.service_options.length ? <><label className="block text-sm font-semibold text-ink">Źródło wiedzy<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={serviceCardId} onChange={(event) => setServiceCardId(event.target.value)}><option value="">Wybierz źródło wiedzy</option>{workspace.service_options.map((option) => <option key={option.service_card_id} value={option.service_card_id}>{option.label}</option>)}</select></label><button type="button" disabled={!serviceCardId || foundation.isPending} className="rounded-xl bg-action px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" onClick={() => { setPrepareTextAfterFoundation(true); foundation.mutate(); }}>{foundation.isPending ? "Przygotowuję tekst…" : "Przygotuj tekst na tej podstawie"}</button>{foundation.isError ? <p className="text-sm leading-6 text-wait">Nie udało się przygotować tekstu na tej podstawie. Odśwież brief i spróbuj ponownie.</p> : null}</> : <p className="text-sm leading-6 text-wait">Nie ma obecnie zatwierdzonej wiedzy o usłudze, na której można bezpiecznie oprzeć tekst.</p>}</div></section>;
 }
 
-function NewPageCanonicalDocument({ briefId }: { briefId: string }) {
-  const queryClient = useQueryClient();
-  const document = useQuery({
+function useNewPageCanonicalDocument(briefId: string, enabled: boolean) {
+  return useQuery({
     queryKey: ["content-workflow", "new-page-brief", briefId, "canonical-document"],
     queryFn: () => getContentNewPageCanonicalDocument(briefId),
+    enabled,
     staleTime: 15_000
   });
+}
+
+function NewPageCanonicalDocument({
+  document,
+  onChanged
+}: {
+  document: ReturnType<typeof useNewPageCanonicalDocument>;
+  onChanged: () => void;
+}) {
   if (document.isLoading) return <p className="mt-4 text-sm text-slate-600">Sprawdzam stan dokumentu…</p>;
   if (document.error || !document.data) return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm text-ink">Nie udało się odczytać kanonicznego dokumentu. Plan i brief nie zostały przez to zmienione.</p>;
-  const refreshDocument = () => {
-    void queryClient.invalidateQueries({
-      queryKey: ["content-workflow", "new-page-brief", briefId]
-    });
-  };
   return <>
     <NewPageDocumentState workspace={document.data} />
     <NewPageDocumentPreview revision={document.data.canonical_revision} />
-    <NewPageDocumentCommands briefId={briefId} workspace={document.data} onChanged={refreshDocument} />
-    <NewPageDeliveryAction briefId={briefId} workspace={document.data} />
+    <NewPageDocumentCommands briefId={document.data.brief_id} workspace={document.data} onChanged={onChanged} />
+    <NewPageDeliveryAction briefId={document.data.brief_id} workspace={document.data} />
     {document.data.status === "document_approved" && document.data.canonical_revision ? <ContentPublicDeploymentPanel
       workItemId={document.data.canonical_revision.work_item_id}
       revisionId={document.data.canonical_revision.revision_id}
