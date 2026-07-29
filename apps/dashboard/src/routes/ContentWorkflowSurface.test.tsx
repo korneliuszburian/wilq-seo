@@ -280,7 +280,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByTestId("content-review-workspace")).not.toBeInTheDocument();
   });
 
-  it("shows exact observed target options and requires an explicit mapping confirmation", async () => {
+  it("keeps target mapping outside the text workspace", async () => {
     const workspace = approvedDocumentWorkspace();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
     vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(
@@ -299,23 +299,12 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Przypisanie dokumentu do dev", { exact: true }));
-
-    expect(await screen.findByText("Zaobserwowane możliwości układu")).toBeInTheDocument();
-    expect(screen.getByText("https://ekologus.dev.proudsite.pl/bdo/")).toBeInTheDocument();
-    expect(screen.getByText("Pole układu: content_sections")).toBeInTheDocument();
-    expect(screen.getByText("Dostępne układy: text_section")).toBeInTheDocument();
-    expect(screen.getByText(/nie decyzja, gdzie trafi element dokumentu/)).toBeInTheDocument();
-    expect(screen.getByTestId("target-mapping-confirmation")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Zapisz potwierdzenie przypisania" })).toBeDisabled();
+    expect(screen.queryByText("Przypisanie dokumentu do dev", { exact: true })).not.toBeInTheDocument();
     expect(postContentRevisionTargetMappingConfirmation).not.toHaveBeenCalled();
-    expect(getContentRevisionTargetMapping).toHaveBeenCalledWith(
-      "content_work_item_bdo",
-      workspace.canonical_document.revision_id
-    );
+    expect(getContentRevisionTargetMapping).not.toHaveBeenCalled();
   });
 
-  it("stores a human mapping confirmation without creating a WordPress draft", async () => {
+  it("does not offer a mapping confirmation from the text workspace", async () => {
     const workspace = approvedDocumentWorkspace();
     const preview = contentTargetMappingPreview();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
@@ -354,27 +343,12 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    fireEvent.click(await screen.findByText("Przypisanie dokumentu do dev", { exact: true }));
-    await screen.findByTestId("target-mapping-confirmation");
-    fireEvent.change(screen.getByLabelText("Potwierdza"), { target: { value: "Marta Kowalska" } });
-    fireEvent.change(screen.getByLabelText("Layout"), { target: { value: "text_section" } });
-    fireEvent.change(screen.getByLabelText("Nagłówek sekcji"), { target: { value: "heading" } });
-    fireEvent.change(screen.getByLabelText("Treść sekcji"), { target: { value: "content_html" } });
-    fireEvent.click(screen.getByRole("button", { name: "Zapisz potwierdzenie przypisania" }));
-
-    await waitFor(() => expect(postContentRevisionTargetMappingConfirmation).toHaveBeenCalledWith(
-      workspace.work_item_id,
-      preview.revision.revision_id,
-      expect.objectContaining({
-        confirmed_by: "Marta Kowalska",
-        expected_revision_digest: preview.revision.content_digest,
-        expected_target_contract_digest: "b".repeat(64),
-        expected_binding_digest: "c".repeat(64)
-      })
-    ));
+    expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(screen.queryByTestId("target-mapping-confirmation")).not.toBeInTheDocument();
+    expect(postContentRevisionTargetMappingConfirmation).not.toHaveBeenCalled();
   });
 
-  it("confirms only a selected local public observation without publishing", async () => {
+  it("keeps public-deployment confirmation out of the text workspace", async () => {
     const workspace = approvedDocumentWorkspace();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
     vi.mocked(getContentRevisionPublicDeployment).mockResolvedValue({
@@ -415,29 +389,11 @@ describe("ContentWorkflowSurface", () => {
     );
 
     await screen.findByTestId("content-text-workspace");
-    fireEvent.click(screen.getByText("Potwierdzenie publicznego wdrożenia", { exact: true }));
-    expect(await screen.findByLabelText("Zaobserwowany publiczny obiekt")).toBeInTheDocument();
-    const submit = screen.getByRole("button", { name: "Zapisz potwierdzenie wdrożenia" });
-    expect(submit).toBeDisabled();
-    fireEvent.change(screen.getByLabelText("Zaobserwowany publiczny obiekt"), {
-      target: { value: "ev_public_bdo" }
-    });
-    fireEvent.change(screen.getByLabelText("Potwierdza"), { target: { value: "Marta Kowalska" } });
-    fireEvent.click(submit);
-
-    await waitFor(() => expect(postContentRevisionPublicDeployment).toHaveBeenCalledWith(
-      workspace.work_item_id,
-      workspace.canonical_document.revision_id,
-      {
-        expected_revision_digest: workspace.canonical_document.content_digest,
-        wordpress_post_id: "1353",
-        publication_evidence_id: "ev_public_bdo",
-        confirmed_by: "Marta Kowalska"
-      }
-    ));
+    expect(screen.queryByText("Potwierdzenie publicznego wdrożenia", { exact: true })).not.toBeInTheDocument();
+    expect(postContentRevisionPublicDeployment).not.toHaveBeenCalled();
   });
 
-  it("starts a local measurement window only after an exact deployment confirmation", async () => {
+  it("keeps deployment measurement out of the text workspace", async () => {
     const workspace = approvedDocumentWorkspace();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
     vi.mocked(getContentRevisionPublicDeployment).mockResolvedValue({
@@ -473,17 +429,11 @@ describe("ContentWorkflowSurface", () => {
     );
 
     await screen.findByTestId("content-text-workspace");
-    fireEvent.click(screen.getByText("Potwierdzenie publicznego wdrożenia", { exact: true }));
-    expect(await screen.findByTestId("content-measurement-panel")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Utwórz okno pomiaru" }));
-
-    await waitFor(() => expect(postContentWorkItemMeasurementWindow).toHaveBeenCalledWith({
-      work_item_id: workspace.work_item_id,
-      revision_id: workspace.canonical_document.revision_id
-    }));
+    expect(screen.queryByText("Potwierdzenie publicznego wdrożenia", { exact: true })).not.toBeInTheDocument();
+    expect(postContentWorkItemMeasurementWindow).not.toHaveBeenCalled();
   });
 
-  it("offers the approved document package from Text without opening a WordPress path", async () => {
+  it("keeps the approved document package out of the text workspace", async () => {
     const workspace = approvedDocumentWorkspace();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
 
@@ -498,12 +448,12 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    expect(await screen.findByTestId("content-approved-html-package")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pobierz paczkę dokumentu" })).toBeInTheDocument();
+    expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(screen.queryByTestId("content-approved-html-package")).not.toBeInTheDocument();
     expect(getContentWorkItemRevisionHtmlPackage).not.toHaveBeenCalled();
   });
 
-  it("creates a separate exact dev-draft action without writing to WordPress", async () => {
+  it("does not offer a dev-draft action from the text workspace", async () => {
     const workspace = approvedDocumentWorkspace();
     const preview = contentTargetDraftPreview();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
@@ -524,29 +474,12 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    fireEvent.click(await screen.findByText("Podgląd danych do szkicu na dev", { exact: true }));
-    await screen.findByText("Dane są gotowe do osobnego sprawdzenia");
-    fireEvent.click(screen.getByRole("button", { name: "Przygotuj akcję szkicu na dev" }));
-
-    await waitFor(() =>
-      expect(postContentRevisionTargetDraftAction).toHaveBeenCalledWith(
-        workspace.work_item_id,
-        preview.revision.revision_id,
-        expect.objectContaining({
-          expected_revision_digest: preview.revision.content_digest,
-          expected_target_contract_digest: preview.target?.target_contract_digest,
-          expected_confirmation_digest: preview.confirmation?.confirmation_digest,
-          expected_payload_digest: preview.payload_digest
-        })
-      )
-    );
-    expect(screen.getByRole("link", { name: "Otwórz akcję szkicu" })).toHaveAttribute(
-      "href",
-      "/actions/act_content_dev_draft_1"
-    );
+    expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(screen.queryByText("Podgląd danych do szkicu na dev", { exact: true })).not.toBeInTheDocument();
+    expect(postContentRevisionTargetDraftAction).not.toHaveBeenCalled();
   });
 
-  it("names a page target as a page when its authoring surface is unknown", async () => {
+  it("does not load target details for an approved text", async () => {
     const workspace = approvedDocumentWorkspace();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
     vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(
@@ -565,10 +498,8 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Przypisanie dokumentu do dev", { exact: true }));
-
-    expect(await screen.findByText("Znaleziono stronę na dev")).toBeInTheDocument();
-    expect(screen.queryByText("Znaleziono artykuł na dev")).not.toBeInTheDocument();
+    expect(screen.queryByText("Przypisanie dokumentu do dev", { exact: true })).not.toBeInTheDocument();
+    expect(getContentRevisionTargetMapping).not.toHaveBeenCalled();
   });
 
   it("records human review for the exact Text revision without opening a content write path", async () => {

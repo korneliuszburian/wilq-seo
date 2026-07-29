@@ -406,7 +406,7 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(screen.queryByRole("button", { name: "Zatwierdź tekst" })).not.toBeInTheDocument();
   });
 
-  it("prepares a delivery ActionObject without asking for a duplicate requester", async () => {
+  it("keeps delivery and deployment controls out of the text-creation view", async () => {
     const workspace = {
       ...reviewRequiredCanonicalDocumentWorkspace(),
       status: "document_approved" as const,
@@ -414,64 +414,14 @@ describe("ContentWorkflowEntryPanel", () => {
     };
     vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
     vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(workspace);
-    vi.mocked(getContentNewPageDeliveryReadiness).mockResolvedValue({
-      response_type: "content_new_page_delivery_readiness",
-      contract_version: "content_new_page_delivery_readiness_v1",
-      status: "ready_for_action",
-      work_item_id: "content_work_item_new_page_test",
-      brief_id: "content_new_page_brief_test",
-      brief_digest: "a".repeat(64),
-      foundation_id: "content_new_page_foundation_test",
-      service_card_id: "service_environment",
-      service_card_digest: "c".repeat(64),
-      revision_id: "content_draft_revision_new_page_test",
-      revision_digest: "e".repeat(64),
-      authoring_profile_digest: "f".repeat(64),
-      allowed_content_types: ["page"],
-      evidence_ids: ["ev_new_page_source"],
-      blockers: [],
-      safe_next_step: "Przygotuj ActionObject."
-    });
-    vi.mocked(createContentNewPageDeliveryAction).mockResolvedValue({ id: "act_new_page_draft" } as never);
-
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
 
-    expect(await screen.findByTestId("new-page-delivery-ready")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Przygotowuje")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Przygotuj ActionObject" }));
-
-    await waitFor(() => expect(createContentNewPageDeliveryAction).toHaveBeenCalledWith("content_new_page_brief_test", {
-      expected_revision_digest: "e".repeat(64),
-      expected_authoring_profile_digest: "f".repeat(64),
-      content_type: "page",
-      requested_by: "wilku"
-    }));
-  });
-
-  it("uses the shared exact public-deployment panel for an approved new-page revision", async () => {
-    const workspace = {
-      ...reviewRequiredCanonicalDocumentWorkspace(),
-      status: "document_approved" as const,
-      document_status: "approved" as const
-    };
-    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
-    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(workspace);
-    vi.mocked(getContentNewPageDeliveryReadiness).mockResolvedValue({ status: "blocked", safe_next_step: "Nie twórz jeszcze akcji." } as never);
-    vi.mocked(getContentRevisionPublicDeployment).mockResolvedValue({
-      deployment: null,
-      publication_observations: [],
-      safe_next_step: "Potwierdź wdrożenie wyłącznie na podstawie obserwacji."
-    } as never);
-
-    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
-
-    expect(await screen.findByTestId("public-deployment-panel")).toBeInTheDocument();
+    expect(await screen.findByTestId("new-page-document-preview")).toBeInTheDocument();
+    expect(screen.queryByText("Przygotowanie akcji dev")).not.toBeInTheDocument();
+    expect(screen.queryByText("Potwierdzenie publicznego wdrożenia")).not.toBeInTheDocument();
+    expect(getContentNewPageDeliveryReadiness).not.toHaveBeenCalled();
+    expect(createContentNewPageDeliveryAction).not.toHaveBeenCalled();
     expect(getContentRevisionPublicDeployment).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByText("Potwierdzenie publicznego wdrożenia", { exact: true }));
-    await waitFor(() => expect(getContentRevisionPublicDeployment).toHaveBeenCalledWith(
-      "content_work_item_new_page_test",
-      "content_draft_revision_new_page_test"
-    ));
   });
 
   it("shows the candidate, matching basis, and evidence when a person must decide", async () => {

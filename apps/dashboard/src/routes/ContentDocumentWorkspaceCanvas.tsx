@@ -39,20 +39,6 @@ export function ContentDocumentWorkspaceCanvas({
     }
     previousRevisionId.current = revisionId;
   }, [workspace.canonical_document.preview, workspace.canonical_document.revision_id]);
-  const [devDetailsOpen, setDevDetailsOpen] = useState(false);
-  const [mappingOpen, setMappingOpen] = useState(false);
-  const [draftPreviewOpen, setDraftPreviewOpen] = useState(false);
-  const targetDiscovery = useContentTargetDiscovery(workspace.work_item_id, devDetailsOpen);
-  const targetMapping = useContentRevisionTargetMapping(
-    workspace.work_item_id,
-    workspace.canonical_document.revision_id ?? null,
-    mappingOpen && workspace.canonical_document.status === "approved"
-  );
-  const targetDraftPreview = useContentRevisionTargetDraftPreview(
-    workspace.work_item_id,
-    workspace.canonical_document.revision_id ?? null,
-    draftPreviewOpen && workspace.canonical_document.status === "approved"
-  );
   const hasReviewAction = workspace.next_action.kind === "open_review";
   const needsPlanning = workspace.canonical_document.status === "not_created";
   const canCompare = workspace.comparison.status === "available";
@@ -126,52 +112,11 @@ export function ContentDocumentWorkspaceCanvas({
           <StatusCard label="Materiał obecnej strony" value={sourceStatus(workspace.source_snapshot.status)} />
           <StatusCard label="Nowy dokument" value={documentStatus(workspace.canonical_document.status)} />
           <ContentDocumentLineageDisclosure workspace={workspace} />
-          {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
-            <ContentApprovedHtmlPackage
-              workItemId={workspace.work_item_id}
-              revisionId={workspace.canonical_document.revision_id}
-              revisionDigest={workspace.canonical_document.content_digest}
-            />
-          ) : null}
-          {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
-            <ContentPublicDeploymentPanel
-              workItemId={workspace.work_item_id}
-              revisionId={workspace.canonical_document.revision_id}
-              revisionDigest={workspace.canonical_document.content_digest}
-            />
-          ) : null}
           <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700">
             <summary className="cursor-pointer font-semibold text-ink">Źródła i ograniczenia</summary>
             <p className="mt-3 leading-6">{workspace.source_snapshot.reason}</p>
             {workspace.secondary_disclosures.map((detail) => <p key={detail} className="mt-3 leading-6">{detail}</p>)}
           </details>
-          <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
-            if ((event.currentTarget as HTMLDetailsElement).open) setDevDetailsOpen(true);
-          }}>
-            <summary className="cursor-pointer font-semibold text-ink">Strona robocza na dev</summary>
-            {!devDetailsOpen ? <p className="mt-3 leading-6">Otwórz, aby sprawdzić, co WILQ odczytał na dev. To nie zmienia strony ani nie uruchamia WordPressa.</p> : null}
-            {targetDiscovery.isPending ? <p className="mt-3 leading-6">Wczytuję odczyt strony roboczej na dev…</p> : null}
-            {targetDiscovery.isError ? <p className="mt-3 leading-6">Nie udało się odczytać strony roboczej na dev. Spróbuj ponownie później.</p> : null}
-            {targetDiscovery.data ? <DevTargetDetails discovery={targetDiscovery.data} /> : null}
-          </details>
-          {workspace.canonical_document.status === "approved" ? <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
-            if ((event.currentTarget as HTMLDetailsElement).open) setMappingOpen(true);
-          }}>
-            <summary className="cursor-pointer font-semibold text-ink">Przypisanie dokumentu do dev</summary>
-            {!mappingOpen ? <p className="mt-3 leading-6">Otwórz, aby sprawdzić, które elementy zatwierdzonego dokumentu wymagają jeszcze potwierdzenia w układzie dev.</p> : null}
-            {targetMapping.isPending ? <p className="mt-3 leading-6">Sprawdzam przypisanie zatwierdzonego dokumentu…</p> : null}
-            {targetMapping.isError ? <p className="mt-3 leading-6">Nie udało się odczytać przypisania dokumentu. Spróbuj ponownie później.</p> : null}
-            {targetMapping.data ? <TargetMappingDetails preview={targetMapping.data} /> : null}
-          </details> : null}
-          {workspace.canonical_document.status === "approved" ? <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
-            if ((event.currentTarget as HTMLDetailsElement).open) setDraftPreviewOpen(true);
-          }}>
-            <summary className="cursor-pointer font-semibold text-ink">Podgląd danych do szkicu na dev</summary>
-            {!draftPreviewOpen ? <p className="mt-3 leading-6">Otwórz po potwierdzeniu przypisania, aby zobaczyć dane przygotowane z dokładnej wersji dokumentu. To nadal nie tworzy szkicu.</p> : null}
-            {targetDraftPreview.isPending ? <p className="mt-3 leading-6">Przygotowuję podgląd danych do szkicu…</p> : null}
-            {targetDraftPreview.isError ? <p className="mt-3 leading-6">Nie udało się przygotować podglądu danych. Spróbuj ponownie później.</p> : null}
-            {targetDraftPreview.data ? <TargetDraftPreviewDetails preview={targetDraftPreview.data} /> : null}
-          </details> : null}
         </aside>
       </section>
     </main>

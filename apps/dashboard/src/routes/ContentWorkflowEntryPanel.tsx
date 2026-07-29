@@ -5,16 +5,13 @@ import {
   getContentWorkflowEntry,
   createContentNewPageBrief,
   createContentNewPageFoundation,
-  createContentNewPageDeliveryAction,
   getContentNewPageTopicRecommendations,
   getContentNewPageBriefWorkspace,
   getContentNewPageCanonicalDocument,
-  getContentNewPageDeliveryReadiness,
   reviewContentNewPageRevision,
   type ContentDiagnosticsResponse,
   type ContentDraftRevision,
   type ContentNewPageCanonicalDocumentWorkspace,
-  type ContentNewPageDeliveryReadiness,
   type ContentInventoryCatalogResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageTopicCandidate,
@@ -24,7 +21,6 @@ import {
 } from "../lib/api";
 import { ContentRequiredSourceRefresh } from "./ContentRequiredSourceRefresh";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
-import { ContentPublicDeploymentPanel } from "./ContentPublicDeploymentPanel";
 import { ContentNewPageTextPreparation } from "./ContentNewPageTextPreparation";
 
 export function ContentWorkflowEntryPanel({
@@ -402,12 +398,6 @@ function NewPageCanonicalDocument({
     <NewPageDocumentState workspace={document.data} />
     <NewPageDocumentPreview revision={document.data.canonical_revision} />
     <NewPageDocumentCommands briefId={document.data.brief_id} workspace={document.data} onChanged={onChanged} />
-    <NewPageDeliveryAction briefId={document.data.brief_id} workspace={document.data} />
-    {document.data.status === "document_approved" && document.data.canonical_revision ? <ContentPublicDeploymentPanel
-      workItemId={document.data.canonical_revision.work_item_id}
-      revisionId={document.data.canonical_revision.revision_id}
-      revisionDigest={document.data.canonical_revision.content_digest}
-    /> : null}
   </>;
 }
 
@@ -494,31 +484,6 @@ function NewPageRevisionReview({ briefId, workspace, onChanged }: { briefId: str
     <div className="mt-3 flex flex-wrap gap-3"><button type="button" className="rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={!approvalReady || (decision !== "approved" && !notes.trim()) || review.isPending} onClick={() => review.mutate()}>{review.isPending ? "Zapisuję review…" : decision === "approved" ? "Zatwierdź tekst" : "Zapisz uwagi"}</button>{decision === "approved" ? <button type="button" className="text-sm font-semibold text-action underline" disabled={review.isPending} onClick={() => setDecision("needs_changes")}>Tekst wymaga zmian</button> : <button type="button" className="text-sm font-semibold text-action underline" disabled={review.isPending} onClick={() => setDecision("approved")}>Wróć do zatwierdzania</button>}</div>
     {review.isError ? <p className="mt-2 text-sm leading-6 text-wait">Review nie został zapisany. Odśwież dokument — jego dokładna rewizja mogła się zmienić.</p> : null}
   </section>;
-}
-
-function NewPageDeliveryAction({ briefId, workspace }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace }) {
-  const [contentType, setContentType] = useState<"page" | "post">("page");
-  const readiness = useQuery({
-    queryKey: ["content-workflow", "new-page-brief", briefId, "delivery-readiness"],
-    queryFn: () => getContentNewPageDeliveryReadiness(briefId),
-    enabled: workspace.status === "document_approved",
-    staleTime: 15_000
-  });
-  const createAction = useMutation({
-    mutationFn: (value: ContentNewPageDeliveryReadiness) => createContentNewPageDeliveryAction(briefId, {
-      expected_revision_digest: value.revision_digest ?? "",
-      expected_authoring_profile_digest: value.authoring_profile_digest ?? "",
-      content_type: contentType,
-      requested_by: "wilku"
-    })
-  });
-  if (workspace.status !== "document_approved") return null;
-  if (readiness.isLoading) return <p className="mt-4 text-sm text-slate-600">Sprawdzam obserwowane capability szkicu na dev…</p>;
-  if (readiness.error || !readiness.data) return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm text-ink">Nie udało się odczytać gotowości delivery. Dokument pozostaje zatwierdzony; nic nie zostało zapisane w WordPressie.</p>;
-  if (readiness.data.status !== "ready_for_action") return <section className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-4 text-sm leading-6 text-ink" data-testid="new-page-delivery-blocked"><p className="font-semibold">Szkic na dev jest jeszcze zablokowany</p><p className="mt-1">{readiness.data.safe_next_step}</p></section>;
-  const types = readiness.data.allowed_content_types;
-  const selectedType = types.includes(contentType) ? contentType : types[0] ?? "page";
-  return <section className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4" data-testid="new-page-delivery-ready"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-indigo-700">Przygotowanie akcji dev</p><h4 className="mt-2 text-base font-semibold text-ink">Wybierz typ przyszłego szkicu</h4><p className="mt-1 text-sm leading-6 text-slate-700">WILQ odczytał dozwolone typy z profilu authoringu. Ten krok zapisuje wyłącznie lokalny ActionObject — nie tworzy szkicu i nie zapisuje do WordPressa.</p><label className="mt-3 block text-sm font-semibold text-ink">Typ obiektu<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={selectedType} onChange={(event) => setContentType(event.target.value as "page" | "post")}>{types.map((type) => <option key={type} value={type}>{type === "page" ? "Strona" : "Wpis"}</option>)}</select></label><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={createAction.isPending} onClick={() => createAction.mutate(readiness.data)}>{createAction.isPending ? "Przygotowuję akcję…" : "Przygotuj ActionObject"}</button>{createAction.data ? <div className="mt-3 rounded-xl border border-indigo-200 bg-white p-3 text-sm leading-6 text-slate-700"><p>Akcja jest zapisana lokalnie. Przejdź przez podgląd, review, potwierdzenie i kontrolę gotowości przed jednym szkicem na dev.</p><a className="mt-2 inline-block font-semibold text-action underline-offset-2 hover:underline" href={`/actions/${encodeURIComponent(createAction.data.id)}`}>Otwórz akcję do sprawdzenia</a></div> : null}{createAction.isError ? <p className="mt-2 text-sm leading-6 text-wait">Akcja nie została przygotowana. Odśwież gotowość delivery i sprawdź dokładną rewizję.</p> : null}</section>;
 }
 
 function documentStatusLabel(status: ContentNewPageCanonicalDocumentWorkspace["document_status"]) {
