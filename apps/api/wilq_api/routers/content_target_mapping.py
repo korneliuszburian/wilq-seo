@@ -8,13 +8,15 @@ from wilq.content.workflow.dev_draft_action import (
     create_content_target_draft_action,
     persist_content_target_draft_action,
 )
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.store import ContentWorkflowStore, content_workflow_store
 from wilq.content.workflow.target_discovery import (
     ContentTargetDiscovery,
     build_content_target_discovery,
 )
 from wilq.content.workflow.target_mapping import (
     ContentTargetDraftPreview,
+    ContentTargetMappingConfirmation,
     ContentTargetMappingConfirmationCommand,
     ContentTargetMappingConfirmationResult,
     ContentTargetMappingPreview,
@@ -119,7 +121,11 @@ def create_content_target_draft_action_endpoint(
     return persisted
 
 
-def _mapping_preview(work_item_id: str, revision_id: str, store):
+def _mapping_preview(
+    work_item_id: str,
+    revision_id: str,
+    store: ContentWorkflowStore,
+) -> tuple[ContentTargetMappingPreview, list[ContentDraftRevision]]:
     discovery = _discovery_or_404(work_item_id)
     revisions = store.list_draft_revisions(work_item_id)
     try:
@@ -140,7 +146,12 @@ def _mapping_preview(work_item_id: str, revision_id: str, store):
         raise HTTPException(status_code=409, detail=str(error)) from error
 
 
-def _mapping_confirmation(store, work_item_id: str, revision_id: str, mapping):
+def _mapping_confirmation(
+    store: ContentWorkflowStore,
+    work_item_id: str,
+    revision_id: str,
+    mapping: ContentTargetMappingPreview,
+) -> ContentTargetMappingConfirmation | None:
     if mapping.target is None or mapping.binding_digest is None:
         return None
     return store.load_target_mapping_confirmation(
