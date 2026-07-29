@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageDeliveryAction, createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPageDeliveryReadiness, getContentNewPagePlanningProposal, getContentNewPageTopicRecommendations, refreshConnector, reviewContentNewPageRevision, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageDeliveryAction, createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPageDeliveryReadiness, getContentNewPagePlanningProposal, getContentNewPageTopicRecommendations, getContentRevisionPublicDeployment, refreshConnector, reviewContentNewPageRevision, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, createContentNewPageDeliveryAction: vi.fn(), createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPageDeliveryReadiness: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), getContentNewPageTopicRecommendations: vi.fn(), refreshConnector: vi.fn(), reviewContentNewPageRevision: vi.fn() };
+  return { ...actual, createContentNewPageDeliveryAction: vi.fn(), createContentNewPageFoundation: vi.fn(), createContentNewPageInitialDraft: vi.fn(), createContentNewPagePlanningProposal: vi.fn(), getContentNewPageBriefWorkspace: vi.fn(), getContentNewPageCanonicalDocument: vi.fn(), getContentNewPageDeliveryReadiness: vi.fn(), getContentNewPagePlanningProposal: vi.fn(), getContentNewPageTopicRecommendations: vi.fn(), getContentRevisionPublicDeployment: vi.fn(), refreshConnector: vi.fn(), reviewContentNewPageRevision: vi.fn() };
 });
 
 const entry: ContentWorkflowEntryResponse = {
@@ -405,6 +405,32 @@ describe("ContentWorkflowEntryPanel", () => {
     }));
   });
 
+  it("uses the shared exact public-deployment panel for an approved new-page revision", async () => {
+    const workspace = {
+      ...reviewRequiredCanonicalDocumentWorkspace(),
+      status: "document_approved" as const,
+      document_status: "approved" as const
+    };
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
+    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(workspace);
+    vi.mocked(getContentNewPageDeliveryReadiness).mockResolvedValue({ status: "blocked", safe_next_step: "Nie twórz jeszcze akcji." } as never);
+    vi.mocked(getContentRevisionPublicDeployment).mockResolvedValue({
+      deployment: null,
+      publication_observations: [],
+      safe_next_step: "Potwierdź wdrożenie wyłącznie na podstawie obserwacji."
+    } as never);
+
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
+
+    expect(await screen.findByTestId("public-deployment-panel")).toBeInTheDocument();
+    expect(getContentRevisionPublicDeployment).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Potwierdzenie publicznego wdrożenia", { exact: true }));
+    await waitFor(() => expect(getContentRevisionPublicDeployment).toHaveBeenCalledWith(
+      "content_work_item_new_page_test",
+      "content_draft_revision_new_page_test"
+    ));
+  });
+
   it("shows the candidate, matching basis, and evidence when a person must decide", async () => {
     vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({
       disposition: "human_decision_required",
@@ -478,6 +504,7 @@ function reviewRequiredCanonicalDocumentWorkspace(): ContentNewPageCanonicalDocu
     status: "document_review_required",
     document_status: "unreviewed",
     canonical_revision: {
+      work_item_id: "content_work_item_new_page_test",
       revision_id: "content_draft_revision_new_page_test",
       content_digest: "e".repeat(64),
       sections: [{ evidence_ids: ["ev_new_page_source"] }]

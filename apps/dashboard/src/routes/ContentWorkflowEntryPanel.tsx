@@ -13,16 +13,10 @@ import {
   getContentNewPageCanonicalDocument,
   getContentNewPageDeliveryReadiness,
   getContentNewPagePlanningProposal,
-  getContentRevisionPublicDeployment,
-  postContentRevisionPublicDeployment,
-  postContentWorkItemLearningProposal,
-  postContentWorkItemMeasurementOutcome,
-  postContentWorkItemMeasurementWindow,
   reviewContentNewPageRevision,
   type ContentDiagnosticsResponse,
   type ContentNewPageCanonicalDocumentWorkspace,
   type ContentNewPageDeliveryReadiness,
-  type ContentPublicDeploymentReadResponse,
   type ContentInventoryCatalogResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageTopicCandidate,
@@ -32,6 +26,7 @@ import {
   type ContentWorkflowEntryResponse
 } from "../lib/api";
 import { ContentRequiredSourceRefresh } from "./ContentRequiredSourceRefresh";
+import { ContentPublicDeploymentPanel } from "./ContentPublicDeploymentPanel";
 
 export function ContentWorkflowEntryPanel({
   entry,
@@ -394,7 +389,11 @@ function NewPageCanonicalDocument({ briefId }: { briefId: string }) {
     <NewPageDocumentState workspace={document.data} />
     <NewPageDocumentCommands briefId={briefId} workspace={document.data} onChanged={refreshDocument} />
     <NewPageDeliveryAction briefId={briefId} workspace={document.data} />
-    {document.data.status === "document_approved" && document.data.canonical_revision ? <NewPagePublicDeployment workspace={document.data} onChanged={refreshDocument} /> : null}
+    {document.data.status === "document_approved" && document.data.canonical_revision ? <ContentPublicDeploymentPanel
+      workItemId={document.data.canonical_revision.work_item_id}
+      revisionId={document.data.canonical_revision.revision_id}
+      revisionDigest={document.data.canonical_revision.content_digest}
+    /> : null}
   </>;
 }
 
@@ -462,56 +461,6 @@ function NewPageDeliveryAction({ briefId, workspace }: { briefId: string; worksp
   const types = readiness.data.allowed_content_types;
   const selectedType = types.includes(contentType) ? contentType : types[0] ?? "page";
   return <section className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4" data-testid="new-page-delivery-ready"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-indigo-700">Przygotowanie akcji dev</p><h4 className="mt-2 text-base font-semibold text-ink">Wybierz typ przyszłego szkicu</h4><p className="mt-1 text-sm leading-6 text-slate-700">WILQ odczytał dozwolone typy z profilu authoringu. Ten krok zapisuje wyłącznie lokalny ActionObject — nie tworzy szkicu i nie zapisuje do WordPressa.</p><label className="mt-3 block text-sm font-semibold text-ink">Typ obiektu<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={selectedType} onChange={(event) => setContentType(event.target.value as "page" | "post")}>{types.map((type) => <option key={type} value={type}>{type === "page" ? "Strona" : "Wpis"}</option>)}</select></label><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={createAction.isPending} onClick={() => createAction.mutate(readiness.data)}>{createAction.isPending ? "Przygotowuję akcję…" : "Przygotuj ActionObject"}</button>{createAction.data ? <div className="mt-3 rounded-xl border border-indigo-200 bg-white p-3 text-sm leading-6 text-slate-700"><p>Akcja jest zapisana lokalnie. Przejdź przez podgląd, review, potwierdzenie i kontrolę gotowości przed jednym szkicem na dev.</p><a className="mt-2 inline-block font-semibold text-action underline-offset-2 hover:underline" href={`/actions/${encodeURIComponent(createAction.data.id)}`}>Otwórz akcję do sprawdzenia</a></div> : null}{createAction.isError ? <p className="mt-2 text-sm leading-6 text-wait">Akcja nie została przygotowana. Odśwież gotowość delivery i sprawdź dokładną rewizję.</p> : null}</section>;
-}
-
-function NewPagePublicDeployment({ workspace, onChanged }: { workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {
-  const revision = workspace.canonical_revision!;
-  const [observationId, setObservationId] = useState("");
-  const [confirmedBy, setConfirmedBy] = useState("");
-  const deployment = useQuery({
-    queryKey: ["content-workflow", "public-deployment", revision.work_item_id, revision.revision_id],
-    queryFn: () => getContentRevisionPublicDeployment(revision.work_item_id, revision.revision_id),
-    staleTime: 15_000
-  });
-  const confirm = useMutation({
-    mutationFn: (value: ContentPublicDeploymentReadResponse["publication_observations"][number]) => postContentRevisionPublicDeployment(revision.work_item_id, revision.revision_id, {
-      expected_revision_digest: revision.content_digest,
-      wordpress_post_id: value.wordpress_post_id,
-      publication_evidence_id: value.publication_evidence_id,
-      confirmed_by: confirmedBy
-    }),
-    onSuccess: () => {
-      void deployment.refetch();
-      onChanged();
-    }
-  });
-  if (deployment.isLoading) return <p className="mt-4 text-sm text-slate-600">Sprawdzam potwierdzenie publicznego wdrożenia…</p>;
-  if (deployment.error || !deployment.data) return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm text-ink">Nie udało się odczytać potwierdzenia wdrożenia. WILQ nie zakłada, że dokument jest publiczny.</p>;
-  if (deployment.data.deployment) return <><section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4" data-testid="new-page-public-deployment"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800">Potwierdzone wdrożenie publiczne</p><h4 className="mt-2 text-base font-semibold text-ink">WILQ odczytał publiczną stronę</h4><p className="mt-1 break-words text-sm leading-6 text-slate-700">{deployment.data.deployment.public_url}</p><p className="mt-2 text-sm leading-6 text-slate-700">Potwierdzenie wiąże exact rewizję z obserwacją WordPressa. Nie oznacza, że WILQ opublikował tę stronę.</p></section><NewPageMeasurement workspace={workspace} deployment={deployment.data} onChanged={onChanged} /></>;
-  const observations = deployment.data.publication_observations;
-  const selected = observations.find((item) => item.publication_evidence_id === observationId);
-  return <section className="mt-4 rounded-xl border border-sky-200 bg-sky-50/50 p-4" data-testid="new-page-public-deployment-confirmation"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-800">Potwierdzenie wdrożenia publicznego</p><h4 className="mt-2 text-base font-semibold text-ink">Powiąż rewizję z odczytaną stroną</h4><p className="mt-1 text-sm leading-6 text-slate-700">Najpierw strona musi zostać opublikowana poza WILQ. Ten formularz nie publikuje — zapisuje lokalne potwierdzenie wyłącznie dla jednej obserwacji WordPressa.</p>{observations.length === 0 ? <p className="mt-3 rounded-xl border border-wait/30 bg-white p-3 text-sm leading-6 text-slate-700">Nie ma jeszcze bezpiecznej publicznej obserwacji do wyboru. Odśwież inventory WordPressa po zewnętrznym wdrożeniu; nie wpisuj URL-a ręcznie.</p> : <><label className="mt-3 block text-sm font-semibold text-ink">Zaobserwowana strona<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={observationId} onChange={(event) => setObservationId(event.target.value)}><option value="">Wybierz publiczną obserwację</option>{observations.map((item) => <option key={item.publication_evidence_id} value={item.publication_evidence_id}>{item.public_url} · obiekt {item.wordpress_post_id}</option>)}</select></label><label className="mt-3 block text-sm font-semibold text-ink">Potwierdza<input className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={confirmedBy} onChange={(event) => setConfirmedBy(event.target.value)} placeholder="Imię i nazwisko" /></label><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={!selected || confirmedBy.trim().length < 2 || confirm.isPending} onClick={() => selected && confirm.mutate(selected)}>{confirm.isPending ? "Zapisuję potwierdzenie…" : "Potwierdź obserwowane wdrożenie"}</button>{confirm.isError ? <p className="mt-2 text-sm leading-6 text-wait">Potwierdzenie nie zostało zapisane. Odśwież exact rewizję i obserwacje WordPressa.</p> : null}</>}</section>;
-}
-
-function NewPageMeasurement({ workspace, deployment, onChanged }: { workspace: ContentNewPageCanonicalDocumentWorkspace; deployment: ContentPublicDeploymentReadResponse; onChanged: () => void }) {
-  const revision = workspace.canonical_revision!;
-  const createWindow = useMutation({
-    mutationFn: () => postContentWorkItemMeasurementWindow({ work_item_id: revision.work_item_id, revision_id: revision.revision_id }),
-    onSuccess: onChanged
-  });
-  const recordOutcome = useMutation({
-    mutationFn: (measurementWindowId: string) => postContentWorkItemMeasurementOutcome({ work_item_id: revision.work_item_id, measurement_window_id: measurementWindowId }),
-    onSuccess: onChanged
-  });
-  const createLearning = useMutation({
-    mutationFn: (measurementWindowId: string) => postContentWorkItemLearningProposal({ work_item_id: revision.work_item_id, measurement_window_id: measurementWindowId }),
-    onSuccess: onChanged
-  });
-  if (!deployment.measurement_window) return <section className="mt-4 rounded-xl border border-sky-200 bg-sky-50/50 p-4" data-testid="new-page-measurement-window"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-800">Pomiar po wdrożeniu</p><h4 className="mt-2 text-base font-semibold text-ink">Utwórz okno obserwacji</h4><p className="mt-1 text-sm leading-6 text-slate-700">Okno będzie związane wyłącznie z potwierdzonym wdrożeniem tej rewizji. Nie ocenia jeszcze wyniku SEO.</p><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={createWindow.isPending} onClick={() => createWindow.mutate()}>{createWindow.isPending ? "Tworzę okno…" : "Utwórz okno pomiaru"}</button>{createWindow.isError ? <p className="mt-2 text-sm text-wait">Nie udało się utworzyć okna. WILQ nie zastępuje go innym wdrożeniem.</p> : null}</section>;
-  const window = deployment.measurement_window;
-  if (!deployment.measurement_outcome) return <section className="mt-4 rounded-xl border border-sky-200 bg-sky-50/50 p-4" data-testid="new-page-measurement-outcome"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-800">Okno pomiaru</p><h4 className="mt-2 text-base font-semibold text-ink">Czekaj na wystarczającą obserwację</h4><p className="mt-1 text-sm leading-6 text-slate-700">Najwcześniejsza data oceny: {window.earliest_verdict_date}. WILQ nie wyprowadza wyniku z braku danych.</p>{deployment.outcome_allowed ? <button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={recordOutcome.isPending} onClick={() => recordOutcome.mutate(window.id)}>{recordOutcome.isPending ? "Sprawdzam wynik…" : "Oceń outcome"}</button> : null}{recordOutcome.isError ? <p className="mt-2 text-sm text-wait">Outcome nie został zapisany. Sprawdź dokładne okno i dostępne facts.</p> : null}</section>;
-  if (!deployment.learning_proposal) return <section className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4" data-testid="new-page-learning-proposal"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-indigo-800">Wniosek do review</p><h4 className="mt-2 text-base font-semibold text-ink">Przygotuj proposal learning</h4><p className="mt-1 text-sm leading-6 text-slate-700">To propozycja dla człowieka, nie automatyczna zmiana wiedzy, kolejki ani deklaracja sukcesu.</p><button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={createLearning.isPending} onClick={() => createLearning.mutate(window.id)}>{createLearning.isPending ? "Przygotowuję wniosek…" : "Przygotuj wniosek do review"}</button>{createLearning.isError ? <p className="mt-2 text-sm text-wait">Nie udało się przygotować wniosku; WILQ nie dopisuje wiedzy automatycznie.</p> : null}</section>;
-  return <section className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4" data-testid="new-page-learning-record"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-indigo-800">Wniosek gotowy do review</p><h4 className="mt-2 text-base font-semibold text-ink">{deployment.learning_proposal.decision_summary}</h4><p className="mt-1 text-sm leading-6 text-slate-700">{deployment.learning_proposal.proposed_learning}</p><p className="mt-2 text-xs leading-5 text-slate-600">Wymaga akceptacji człowieka; nie aktualizuje wiedzy ani kolejki automatycznie.</p></section>;
 }
 
 function documentStatusLabel(status: ContentNewPageCanonicalDocumentWorkspace["document_status"]) {
