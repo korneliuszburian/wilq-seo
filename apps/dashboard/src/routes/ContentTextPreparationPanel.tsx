@@ -170,7 +170,7 @@ export function ContentTextPreparationPanel({ workItemId }: { workItemId: string
   </section>;
 }
 
-function PlanningEvidenceDetails({
+export function PlanningEvidenceDetails({
   input,
   proposal
 }: {
