@@ -348,6 +348,8 @@ describe("ContentWorkflowEntryPanel", () => {
 
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
 
+    expect(await screen.findByTestId("new-page-document-preview")).toBeInTheDocument();
+    expect(screen.getByText("Tekst strony · wersja robocza")).toBeInTheDocument();
     expect(await screen.findByTestId("new-page-revision-review")).toBeInTheDocument();
     expect(screen.queryByLabelText("Reviewer")).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
@@ -361,6 +363,19 @@ describe("ContentWorkflowEntryPanel", () => {
       checked_items: ["Tekst sprawdzony względem briefu, wybranej wiedzy i przypisanych źródeł."],
       evidence_ids: ["ev_new_page_source"]
     }));
+  });
+
+  it("does not offer review of a new page whose full text cannot be rendered", async () => {
+    const workspace = reviewRequiredCanonicalDocumentWorkspace();
+    (workspace.canonical_revision as { page_assets?: unknown }).page_assets = undefined;
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
+    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(workspace);
+
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
+
+    expect(await screen.findByTestId("new-page-document-preview-blocker")).toBeInTheDocument();
+    expect(screen.queryByTestId("new-page-revision-review")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Zatwierdź tekst" })).not.toBeInTheDocument();
   });
 
   it("prepares a delivery ActionObject without asking for a duplicate requester", async () => {
@@ -507,7 +522,22 @@ function reviewRequiredCanonicalDocumentWorkspace(): ContentNewPageCanonicalDocu
       work_item_id: "content_work_item_new_page_test",
       revision_id: "content_draft_revision_new_page_test",
       content_digest: "e".repeat(64),
-      sections: [{ evidence_ids: ["ev_new_page_source"] }]
+      title: "Audyt środowiskowy dla inwestycji",
+      sections: [{
+        section_id: "new_page_section_01",
+        heading: "Jak przygotować dokumentację",
+        body_markdown: "Treść nowej strony.",
+        evidence_ids: ["ev_new_page_source"]
+      }],
+      faq: [],
+      cta_blocks: [],
+      internal_links: [],
+      page_assets: {
+        meta_title: "Audyt środowiskowy dla inwestycji | Ekologus",
+        meta_description: "Pomoc przy dokumentacji środowiskowej inwestycji.",
+        h1: "Audyt środowiskowy dla inwestycji",
+        lead: "Dowiedz się, jak przygotować dokumentację."
+      }
     } as never
   };
 }

@@ -15,6 +15,7 @@ import {
   getContentNewPagePlanningProposal,
   reviewContentNewPageRevision,
   type ContentDiagnosticsResponse,
+  type ContentDraftRevision,
   type ContentNewPageCanonicalDocumentWorkspace,
   type ContentNewPageDeliveryReadiness,
   type ContentInventoryCatalogResponse,
@@ -26,6 +27,7 @@ import {
   type ContentWorkflowEntryResponse
 } from "../lib/api";
 import { ContentRequiredSourceRefresh } from "./ContentRequiredSourceRefresh";
+import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentPublicDeploymentPanel } from "./ContentPublicDeploymentPanel";
 
 export function ContentWorkflowEntryPanel({
@@ -387,6 +389,7 @@ function NewPageCanonicalDocument({ briefId }: { briefId: string }) {
   };
   return <>
     <NewPageDocumentState workspace={document.data} />
+    <NewPageDocumentPreview revision={document.data.canonical_revision} />
     <NewPageDocumentCommands briefId={briefId} workspace={document.data} onChanged={refreshDocument} />
     <NewPageDeliveryAction briefId={briefId} workspace={document.data} />
     {document.data.status === "document_approved" && document.data.canonical_revision ? <ContentPublicDeploymentPanel
@@ -395,6 +398,19 @@ function NewPageCanonicalDocument({ briefId }: { briefId: string }) {
       revisionDigest={document.data.canonical_revision.content_digest}
     /> : null}
   </>;
+}
+
+function NewPageDocumentPreview({ revision }: { revision: ContentDraftRevision | null | undefined }) {
+  if (!revision) return null;
+  if (!revision.page_assets) {
+    return <section className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-4 text-sm leading-6 text-ink" data-testid="new-page-document-preview-blocker">
+      <p className="font-semibold">Nie można jeszcze pokazać pełnej wersji tekstu</p>
+      <p className="mt-1">Brakuje renderowalnych elementów strony dla tej rewizji. WILQ nie udostępni review, dopóki tekst nie będzie można przeczytać w całości.</p>
+    </section>;
+  }
+  return <section className="mt-4" data-testid="new-page-document-preview">
+    <ContentFullPagePreview revision={revision} />
+  </section>;
 }
 
 function NewPageDocumentState({ workspace }: { workspace: ContentNewPageCanonicalDocumentWorkspace }) {
@@ -406,6 +422,7 @@ function NewPageDocumentState({ workspace }: { workspace: ContentNewPageCanonica
 
 function NewPageDocumentCommands({ briefId, workspace, onChanged }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {
   if (workspace.status === "document_review_required" && workspace.canonical_revision) {
+    if (!workspace.canonical_revision.page_assets) return null;
     return <NewPageRevisionReview briefId={briefId} workspace={workspace} onChanged={onChanged} />;
   }
   return null;
