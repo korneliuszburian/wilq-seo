@@ -294,7 +294,18 @@ def build_content_target_mapping_preview(
             components=components,
             blocker=target_blocker,
         )
-    assert target is not None
+    if target is None:
+        return _blocked(
+            work_item_id=work_item_id,
+            revision=identity,
+            components=components,
+            blocker=ContentTargetMappingBlocker(
+                code="target_unavailable",
+                label="Brakuje potwierdzonego odczytu obiektu dev",
+                reason="WILQ nie otrzymał kompletnego targetu do przygotowania mapowania.",
+                next_step="Odczytaj ponownie dokładny obiekt dev przed mapowaniem.",
+            ),
+        )
     surface = target.target_contract.authoring_surface
     if surface is None or not surface.layouts:
         surface_reason = (
@@ -676,7 +687,16 @@ def _confirmed_draft_preview_context(
             reason="Potwierdzone przypisanie nie ma aktualnie odczytanego pola układu.",
             next_step="Odczytaj ponownie układ dev i potwierdź przypisanie od nowa.",
         )
-    assert confirmation is not None
+    if confirmation is None:
+        return _draft_preview_blocked(
+            work_item_id=work_item_id,
+            revision=identity,
+            target=target,
+            code="mapping_not_confirmed",
+            label="Brakuje potwierdzonego przypisania",
+            reason="WILQ nie otrzymał kompletnego potwierdzenia dla tego targetu.",
+            next_step="Potwierdź przypisanie dokumentu do odczytanych layoutów i pól.",
+        )
     return target, confirmation, surface.root_field
 
 
@@ -755,7 +775,8 @@ def _page_asset_source_value(
     revision: ContentDraftRevision,
     source_field: str,
 ) -> tuple[str, Literal["plain_text"]]:
-    assert revision.page_assets is not None
+    if revision.page_assets is None:
+        raise ValueError("Potwierdzone przypisanie wymaga dostępnych pól strony.")
     values = {
         "meta_title": revision.page_assets.meta_title,
         "meta_description": revision.page_assets.meta_description,
