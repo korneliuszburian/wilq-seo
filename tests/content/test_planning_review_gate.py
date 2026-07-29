@@ -1,11 +1,9 @@
-import pytest
-from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
-from apps.api.wilq_api.routers.content_workflow import _reject_manual_section_map_review
+from apps.api.wilq_api.main import app
 
 
 def test_section_map_review_is_always_api_owned() -> None:
-    with pytest.raises(HTTPException, match="wyliczana automatycznie") as error:
-        _reject_manual_section_map_review()
+    paths = TestClient(app).get("/openapi.json").json()["paths"]
 
-    assert error.value.status_code == 409
+    assert not any("section-map" in path for path in paths)
