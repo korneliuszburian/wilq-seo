@@ -144,10 +144,11 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
     expect(screen.getByText(/dokładny stan dokumentu i materiały zapisane przy tej rewizji/)).toBeInTheDocument();
     expect(screen.queryByText(/przygotowany dokument i uczciwe różnice/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("content-document-state")).not.toBeInTheDocument();
     expect(screen.getByText(/Nie ma jeszcze zapisanej rewizji/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Zmiany w treści" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
-    expect(screen.getAllByText("Nowa wersja nie została jeszcze przygotowana")).toHaveLength(3);
+    expect(screen.getAllByText("Nowa wersja nie została jeszcze przygotowana")).toHaveLength(2);
   });
 
   it("opens an existing prepared text before the source so the marketer can review the actual deliverable", async () => {

@@ -77,16 +77,18 @@ export function ContentDocumentWorkspaceCanvas({
               W jednym miejscu sprawdzisz obecną stronę, dokładny stan dokumentu i materiały zapisane przy tej rewizji. To nie zmienia WordPressa.
             </p>
           </div>
-          <section className="min-w-64 rounded-xl border border-line bg-surface p-4" data-testid="content-document-state">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Stan nowej wersji</p>
-            <p className="mt-2 text-base font-semibold text-ink">{workspace.canonical_document.label}</p>
-            <p className="mt-1 text-sm leading-5 text-slate-700">{workspace.canonical_document.reason}</p>
-            {hasReviewAction ? (
-              <button type="button" className="mt-3 w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-white" onClick={onOpenReview}>
-                {workspace.next_action.label}
-              </button>
-            ) : null}
-          </section>
+          {!needsPlanning ? (
+            <section className="min-w-64 rounded-xl border border-line bg-surface p-4" data-testid="content-document-state">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Stan tekstu</p>
+              <p className="mt-2 text-base font-semibold text-ink">{workspace.canonical_document.label}</p>
+              <p className="mt-1 text-sm leading-5 text-slate-700">{workspace.canonical_document.reason}</p>
+              {hasReviewAction ? (
+                <button type="button" className="mt-3 w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-white" onClick={onOpenReview}>
+                  {workspace.next_action.label}
+                </button>
+              ) : null}
+            </section>
+          ) : null}
         </div>
       </section>
 
