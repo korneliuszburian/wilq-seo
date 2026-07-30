@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ConnectorRefreshRunSchema, ConnectorStatusSchema, MetricFactSchema } from "./connectors";
+import { ConnectorRefreshRunSchema, ConnectorStatusSchema, DiagnosticDataReadinessSchema, MetricFactSchema } from "./connectors";
 import { TacticalQueueItemSchema } from "./marketing";
 
 export const Ga4DiagnosticSectionSchema = z.object({
@@ -135,6 +135,7 @@ export const Ga4DiagnosticsResponseSchema = z.object({
   latest_refresh_status_label: z.string().default(""),
   live_data_available: z.boolean(),
   live_data_status_label: z.string().default(""),
+  data_readiness: DiagnosticDataReadinessSchema,
   landing_group_count: z.number(),
   low_engagement_count: z.number(),
   wordpress_match_count: z.number(),

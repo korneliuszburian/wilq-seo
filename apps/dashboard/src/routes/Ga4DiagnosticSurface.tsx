@@ -11,6 +11,7 @@ import {
 } from "../lib/api";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { DiagnosticPage } from "../components/DiagnosticSurfaceShell";
+import { DiagnosticDataReadinessGate } from "../components/DiagnosticDataReadinessPanel";
 import { BlockerNotice, LoadingBand, MetricTile, PlainChipRow } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
@@ -35,14 +36,16 @@ export function Ga4DiagnosticSurface() {
       title="GA4"
       description="Dedykowany widok GA4 z WILQ. Pokazuje jakość ruchu ze stron wejścia, dopasowanie WordPress i problemy pomiaru bez udawania konwersji, zwrot z reklam albo przychód."
       unavailableMessage="Nie udało się odczytać danych GA4. Ten widok nie może udawać jakości ruchu ani konwersji bez WILQ."
-      metrics={(data) => (
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Grupy ruchu" value={data.landing_group_count} />
-          <MetricTile label="Problemy pomiaru" value={data.operator_summary.measurement_issue_count} />
-          <MetricTile label="Brak WP" value={data.operator_summary.wordpress_missing_count} />
-          <MetricTile label="Blokady decyzji" value={data.decision_blocker_count} />
-        </div>
-      )}
+      metrics={(data) =>
+        data.data_readiness.state === "ready" ? (
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <MetricTile label="Grupy ruchu" value={data.landing_group_count} />
+            <MetricTile label="Problemy pomiaru" value={data.operator_summary.measurement_issue_count} />
+            <MetricTile label="Brak WP" value={data.operator_summary.wordpress_missing_count} />
+            <MetricTile label="Blokady decyzji" value={data.decision_blocker_count} />
+          </div>
+        ) : undefined
+      }
     >
       {(data) => <Ga4DiagnosticBody data={data} actions={actions} />}
     </DiagnosticPage>
@@ -68,7 +71,7 @@ function Ga4DiagnosticBody({
   const latestRefresh = data.latest_refresh;
 
   return (
-    <>
+    <DiagnosticDataReadinessGate readiness={data.data_readiness}>
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -114,7 +117,7 @@ function Ga4DiagnosticBody({
           />
         </div>
       ) : null}
-    </>
+    </DiagnosticDataReadinessGate>
   );
 }
 

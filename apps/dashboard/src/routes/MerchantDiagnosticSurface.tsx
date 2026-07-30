@@ -24,6 +24,7 @@ import {
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
+import { DiagnosticDataReadinessPanel } from "../components/DiagnosticDataReadinessPanel";
 import { ActionFocus } from "./ActionPanels";
 import { tacticalContextPairs } from "./TacticalQueuePanel";
 
@@ -41,7 +42,7 @@ export function MerchantDiagnosticSurface() {
     queryFn: getActions
   });
 
-  if (diagnostics.isLoading || actions.isLoading) return <LoadingBand />;
+  if (diagnostics.isLoading) return <LoadingBand />;
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -49,6 +50,21 @@ export function MerchantDiagnosticSurface() {
       </main>
     );
   }
+  const data = diagnostics.data;
+  if (data.data_readiness.state !== "ready") {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <h1 className="text-2xl font-semibold tracking-normal text-ink">Produkty</h1>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+          Merchant Center, plik produktowy i bezpieczna kolejka problemów produktów.
+        </p>
+        <div className="mt-6">
+          <DiagnosticDataReadinessPanel readiness={data.data_readiness} />
+        </div>
+      </main>
+    );
+  }
+  if (actions.isLoading) return <LoadingBand />;
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -56,8 +72,6 @@ export function MerchantDiagnosticSurface() {
       </main>
     );
   }
-
-  const data = diagnostics.data;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
 
   return (

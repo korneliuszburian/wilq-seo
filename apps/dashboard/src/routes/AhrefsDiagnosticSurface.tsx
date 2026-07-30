@@ -7,6 +7,7 @@ import {
   DiagnosticSurfaceShell,
   DiagnosticSurfaceUnavailable
 } from "../components/DiagnosticSurfaceShell";
+import { DiagnosticDataReadinessGate } from "../components/DiagnosticDataReadinessPanel";
 import {
   BlockerNotice,
   LoadingBand,
@@ -40,15 +41,17 @@ export function AhrefsDiagnosticSurface() {
       title="Ahrefs"
       description="Dedykowany widok Ahrefs z WILQ. Oddziela kontekst autorytetu od konkretnych luk treści, linków zwrotnych i konkurencji, żeby marketer nie dostał generycznej rekomendacji SEO z samej oceny domeny."
       metrics={
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Autorytet" value={data.authority_fact_count} />
-          <MetricTile label="Luki SEO" value={data.gap_fact_count} />
-          <MetricTile label="Blokady" value={data.blocker_count} />
-        </div>
+        data.data_readiness.state === "ready" ? (
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <MetricTile label="Autorytet" value={data.authority_fact_count} />
+            <MetricTile label="Luki SEO" value={data.gap_fact_count} />
+            <MetricTile label="Blokady" value={data.blocker_count} />
+          </div>
+        ) : undefined
       }
     >
-
-      <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <DiagnosticDataReadinessGate readiness={data.data_readiness}>
+        <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
@@ -101,10 +104,11 @@ export function AhrefsDiagnosticSurface() {
         ) : null}
       </section>
 
-      <AhrefsCrossCheckPriority data={data} />
-      <AhrefsOperatorSummary data={data} />
-      <AhrefsGapContractPanel data={data} />
-      <AhrefsDiagnosticProof data={data} />
+        <AhrefsCrossCheckPriority data={data} />
+        <AhrefsOperatorSummary data={data} />
+        <AhrefsGapContractPanel data={data} />
+        <AhrefsDiagnosticProof data={data} />
+      </DiagnosticDataReadinessGate>
     </DiagnosticSurfaceShell>
   );
 }

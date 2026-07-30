@@ -4,6 +4,7 @@ import { ActionPreviewCardViewModelSchema } from "./actions";
 import {
   ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
+  DiagnosticDataReadinessSchema,
   MetricFactSchema
 } from "./connectors";
 import { TacticalQueueItemSchema } from "./marketing";
@@ -285,6 +286,7 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   latest_refresh_status_label: z.string().nullable().optional(),
   live_data_available: z.boolean(),
   live_data_status_label: z.string().default(""),
+  data_readiness: DiagnosticDataReadinessSchema,
   product_count: z.number().nullable().optional(),
   issue_count: z.number().nullable().optional(),
   freshness_assessment: MerchantFreshnessAssessmentSchema,
@@ -303,5 +305,4 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   action_summary_label: z.string().default(""),
   blocker_count: z.number()
 });
-
 

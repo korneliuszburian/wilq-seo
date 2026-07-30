@@ -13,7 +13,9 @@ describe("MetricFactChips", () => {
             metric_label: "Zmiany konkurencji",
             value: 0,
             period: "localo_mcp_read",
+            period_label: "ostatni odczyt Localo",
             source_connector: "localo",
+            source_connector_label: "Localo",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {
               contract: "competitor_visibility",
@@ -41,6 +43,12 @@ describe("MetricFactChips", () => {
     expect(screen.getByText(/obszar: widoczność konkurencji/)).toBeInTheDocument();
     expect(screen.getByText(/zakres: aktywne miejsca/)).toBeInTheDocument();
     expect(screen.getByText("Dane: odświeżone 1h temu")).toBeInTheDocument();
+    expect(screen.getByText("Źródło: Localo")).toBeInTheDocument();
+    expect(screen.getByText("Okres: ostatni odczyt Localo")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Dowód źródłowy" })).toHaveAttribute(
+      "href",
+      "/evidence/ev_refresh_localo_test"
+    );
     expect(screen.queryByText(/ \/ obszar:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ \/ odświeżone/)).not.toBeInTheDocument();
     expect(screen.queryByText(/metryka WILQ/)).not.toBeInTheDocument();
@@ -49,7 +57,7 @@ describe("MetricFactChips", () => {
     expect(screen.queryByText(/active_places/)).not.toBeInTheDocument();
   });
 
-  it("does not translate metric names in React when API label is missing", () => {
+  it("does not present a metric when API omits required marketer context", () => {
     render(
       <MetricFactChips
         facts={[
@@ -58,7 +66,9 @@ describe("MetricFactChips", () => {
             metric_label: "",
             value: 69420,
             period: "localo_mcp_read",
+            period_label: "",
             source_connector: "localo",
+            source_connector_label: "",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {},
             dimension_labels: {},
@@ -73,7 +83,7 @@ describe("MetricFactChips", () => {
       />
     );
 
-    expect(screen.getByText(/Metryka bez etykiety/)).toBeInTheDocument();
+    expect(screen.getByText(/nie podał pełnego kontekstu/)).toBeInTheDocument();
     expect(screen.queryByText(/Łączny wolumen fraz/)).not.toBeInTheDocument();
     expect(screen.queryByText(/localo_total_keyword_volume/)).not.toBeInTheDocument();
   });
@@ -87,7 +97,9 @@ describe("MetricFactChips", () => {
             metric_label: "Zmiany konkurencji",
             value: 0,
             period: "localo_mcp_read",
+            period_label: "ostatni odczyt Localo",
             source_connector: "localo",
+            source_connector_label: "Localo",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {
               contract: "competitor_visibility"
@@ -118,7 +130,9 @@ describe("MetricFactChips", () => {
             metric_label: "średnia pozycja w siatce",
             value: 3,
             period: "localo_mcp_read",
+            period_label: "ostatni odczyt Localo",
             source_connector: "localo",
+            source_connector_label: "Localo",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {
               contract: "local_rankings",
@@ -161,7 +175,9 @@ describe("MetricFactChips", () => {
             metric_label: "średnia widoczność",
             value: 52.8261,
             period: "localo_mcp_read",
+            period_label: "ostatni odczyt Localo",
             source_connector: "localo",
+            source_connector_label: "Localo",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {},
             dimension_labels: {},
@@ -189,12 +205,17 @@ describe("MetricFactChips", () => {
             metric_label: "sesje z zaangażowaniem",
             value: 14,
             period: "last_28d",
+            period_label: "ostatnie 28 dni",
             source_connector: "google_analytics_4",
+            source_connector_label: "GA4",
             evidence_id: "ev_refresh_ga4_test",
             dimensions: {},
             dimension_labels: {},
             dimension_value_labels: {},
             unit: null,
+            previous_evidence_id: "ev_refresh_ga4_previous",
+            previous_period: "last_28d",
+            previous_period_label: "poprzednie 28 dni",
             delta: 3,
             delta_percent: null,
             trend: "unknown",

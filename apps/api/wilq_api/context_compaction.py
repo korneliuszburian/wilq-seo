@@ -171,7 +171,8 @@ def without_metric_facts(value: Any) -> Any:
         return {
             key: without_metric_facts(item)
             for key, item in value.items()
-            if key != "metric_facts" and not key.endswith("_metric_facts")
+            if key not in {"metric_facts", "factual_metrics"}
+            and not key.endswith("_metric_facts")
         }
     if isinstance(value, list):
         return [without_metric_facts(item) for item in value]

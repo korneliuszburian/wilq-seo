@@ -8,7 +8,15 @@ from pydantic import BaseModel, Field, model_validator
 from wilq.operator_labels import reported_issue_occurrence_count_label
 
 from .actions import ActionPreviewCardViewModel
-from .core import ActionRisk, ConnectorRefreshRun, ConnectorStatus, MetricFact, utc_now
+from .core import (
+    ActionRisk,
+    ConnectorRefreshRun,
+    ConnectorStatus,
+    DiagnosticDataReadiness,
+    MetricFact,
+    utc_now,
+)
+from .diagnostic_readiness import build_diagnostic_data_readiness
 from .marketing import TacticalQueueItem, _marketing_priority_label
 
 
@@ -314,6 +322,7 @@ class MerchantDiagnosticsResponse(BaseModel):
     latest_refresh_status_label: str | None = None
     live_data_available: bool
     live_data_status_label: str = ""
+    data_readiness: DiagnosticDataReadiness | None = None
     product_count: int | None = None
     issue_count: int | None = None
     freshness_assessment: MerchantFreshnessAssessment
@@ -331,3 +340,23 @@ class MerchantDiagnosticsResponse(BaseModel):
     action_ids: list[str] = Field(default_factory=list)
     action_summary_label: str = ""
     blocker_count: int = 0
+
+    @model_validator(mode="after")
+    def build_data_readiness(self) -> MerchantDiagnosticsResponse:
+        if self.data_readiness is None:
+            facts = [fact for section in self.sections for fact in section.metric_facts]
+            self.data_readiness = build_diagnostic_data_readiness(
+                connector=self.connector,
+                latest_refresh=self.latest_refresh,
+                factual_metrics=facts[:12] if self.live_data_available else [],
+                factual_metric_count=len(facts) if self.live_data_available else 0,
+                evidence_ids=self.evidence_ids,
+                partial=bool(
+                    self.latest_refresh and self.latest_refresh.quality_state.value == "partial"
+                ),
+                stale=self.freshness_assessment.requires_refresh,
+                partial_coverage_label=(
+                    "Pokazane metryki obejmują tylko potwierdzony zakres odczytu Merchant Center."
+                ),
+            )
+        return self

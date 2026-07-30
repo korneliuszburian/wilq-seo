@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ConnectorRefreshRunSchema, ConnectorStatusSchema, MetricFactSchema } from "./connectors";
+import { ConnectorRefreshRunSchema, ConnectorStatusSchema, DiagnosticDataReadinessSchema, MetricFactSchema } from "./connectors";
 import { ContentAhrefsCandidateRowSchema } from "./content_diagnostics";
 
 export const AhrefsRequestBudgetSchema = z.object({
@@ -189,6 +189,7 @@ export const AhrefsDiagnosticsResponseSchema = z.object({
   request_budget: AhrefsRequestBudgetSchema.optional(),
   live_data_status_label: z.string().default(""),
   live_data_available: z.boolean(),
+  data_readiness: DiagnosticDataReadinessSchema,
   authority_fact_count: z.number(),
   gap_fact_count: z.number(),
   gap_read_contract: AhrefsGapReadContractSchema,

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { merchantDiagnostics } from "./merchantDiagnostic.fixture";
@@ -42,7 +42,7 @@ vi.mock("../lib/api", async (importOriginal) => {
 });
 
 describe("MerchantDiagnosticSurface", () => {
-  it("gives the marketer a safe Merchant decision before technical details", async () => {
+  it("does not present stale Merchant counts as a current decision", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={queryClient}>
@@ -51,15 +51,11 @@ describe("MerchantDiagnosticSurface", () => {
     );
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Produkty" })).toBeInTheDocument());
-    expect(screen.getByText("Najważniejsza praca teraz")).toBeInTheDocument();
-    expect(screen.getByText("Co blokuje decyzję")).toBeInTheDocument();
-    expect(screen.getByText("Kolejka problemów produktów")).toBeInTheDocument();
-    expect(screen.getAllByText(/dane do odświeżenia/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/automatyczna zmiana pliku produktowego/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Dane wymagają odświeżenia")).toBeInTheDocument();
+    expect(screen.getByText(/nie używa go jako bieżącej podstawy decyzji/)).toBeInTheDocument();
+    expect(screen.queryByText("Najważniejsza praca teraz")).not.toBeInTheDocument();
+    expect(screen.queryByText("10 900")).not.toBeInTheDocument();
     expect(screen.queryByText("act_review_merchant_feed_issues")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }));
-    expect(screen.getByText("Pełny przegląd Merchant")).toBeInTheDocument();
   });
 
   it("keeps the Merchant operator contract typed and disclosure-safe", () => {

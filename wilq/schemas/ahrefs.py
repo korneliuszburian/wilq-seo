@@ -13,7 +13,15 @@ from wilq.operator_labels import (
 )
 
 from .content import ContentAhrefsCandidateRow
-from .core import ActionRisk, ConnectorRefreshRun, ConnectorStatus, MetricFact, utc_now
+from .core import (
+    ActionRisk,
+    ConnectorRefreshRun,
+    ConnectorStatus,
+    DiagnosticDataReadiness,
+    MetricFact,
+    utc_now,
+)
+from .diagnostic_readiness import build_diagnostic_data_readiness
 
 
 class AhrefsDiagnosticSection(BaseModel):
@@ -244,6 +252,7 @@ class AhrefsDiagnosticsResponse(BaseModel):
     request_budget: AhrefsRequestBudget = Field(default_factory=AhrefsRequestBudget)
     live_data_status_label: str = ""
     live_data_available: bool
+    data_readiness: DiagnosticDataReadiness | None = None
     authority_fact_count: int = 0
     gap_fact_count: int = 0
     gap_read_contract: AhrefsGapReadContract
@@ -263,4 +272,22 @@ class AhrefsDiagnosticsResponse(BaseModel):
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
             self.action_summary_label = action_count_label(self.action_ids)
+        return self
+
+    @model_validator(mode="after")
+    def build_data_readiness(self) -> AhrefsDiagnosticsResponse:
+        if self.data_readiness is None:
+            facts = [fact for section in self.sections for fact in section.metric_facts]
+            self.data_readiness = build_diagnostic_data_readiness(
+                connector=self.connector,
+                latest_refresh=self.latest_refresh,
+                factual_metrics=facts[:12] if self.live_data_available else [],
+                factual_metric_count=len(facts) if self.live_data_available else 0,
+                evidence_ids=self.evidence_ids,
+                partial=self.request_budget.partial,
+                stale=self.connector.freshness.state == "stale",
+                partial_coverage_label=(
+                    "Pokazane fakty obejmują tylko zakończone etapy odczytu Ahrefs."
+                ),
+            )
         return self

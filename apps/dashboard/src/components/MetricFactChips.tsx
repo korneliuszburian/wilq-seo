@@ -1,9 +1,19 @@
 import type { MetricFact } from "../lib/api";
 
 export function MetricFactChips({ facts }: { facts: MetricFact[] }) {
+  const readableFacts = facts.filter(isMarketerReadableMetricFact);
+
+  if (facts.length > 0 && readableFacts.length === 0) {
+    return (
+      <p className="mt-3 text-xs leading-5 text-slate-600">
+        WILQ nie podał pełnego kontekstu źródła, okresu i dowodu dla tych metryk.
+      </p>
+    );
+  }
+
   return (
     <div className="mt-3 flex flex-wrap gap-2">
-      {facts.map((fact, index) => {
+      {readableFacts.map((fact, index) => {
         const dimensionChips = metricDimensionChips(fact);
         return (
           <span
@@ -21,7 +31,7 @@ export function MetricFactChips({ facts }: { facts: MetricFact[] }) {
                 </span>{" "}
               </span>
             ))}
-            {fact.delta !== null && fact.delta !== undefined ? (
+            {hasExactComparison(fact) ? (
               <span>
                 <span className="rounded bg-white px-1.5 py-0.5 text-slate-600">
                   {formatMetricDelta(fact)}
@@ -35,6 +45,22 @@ export function MetricFactChips({ facts }: { facts: MetricFact[] }) {
                 </span>{" "}
               </span>
             ) : null}
+            <span>
+              <span className="rounded bg-white px-1.5 py-0.5 text-slate-600">
+                Źródło: {fact.source_connector_label}
+              </span>{" "}
+            </span>
+            <span>
+              <span className="rounded bg-white px-1.5 py-0.5 text-slate-600">
+                Okres: {fact.period_label}
+              </span>{" "}
+            </span>
+            <a
+              className="rounded bg-white px-1.5 py-0.5 text-action underline-offset-2 hover:underline"
+              href={`/evidence/${encodeURIComponent(fact.evidence_id)}`}
+            >
+              Dowód źródłowy
+            </a>
           </span>
         );
       })}
@@ -58,7 +84,7 @@ function metricFactKey(fact: MetricFact, index: number) {
 }
 
 function metricFactLabel(fact: MetricFact) {
-  return fact.metric_label || "Metryka bez etykiety";
+  return fact.metric_label;
 }
 
 function formatMetricFactValue(fact: MetricFact) {
@@ -83,6 +109,24 @@ function formatMetricDelta(fact: MetricFact) {
       ? ""
       : ` (${sign}${fact.delta_percent.toFixed(1)}%)`;
   return `zmiana: ${sign}${fact.delta}${percent}`;
+}
+
+function hasExactComparison(fact: MetricFact) {
+  return Boolean(
+    fact.delta !== null &&
+      fact.delta !== undefined &&
+      fact.previous_evidence_id &&
+      fact.previous_period_label
+  );
+}
+
+function isMarketerReadableMetricFact(fact: MetricFact) {
+  return Boolean(
+    fact.metric_label.trim() &&
+      fact.source_connector_label.trim() &&
+      fact.period_label.trim() &&
+      fact.evidence_id.trim()
+  );
 }
 
 function metricDimensionChips(fact: MetricFact) {

@@ -15,7 +15,6 @@ from wilq.schemas import (
     AdsDecisionItem,
     AdsDerivedKpiReadContract,
     AdsDiagnosticSection,
-    AdsDiagnosticsResponse,
     AdsFreshnessAssessment,
     AdsImpressionShareReadContract,
     AdsKeywordMatchContextReadContract,
@@ -31,6 +30,7 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorStatus,
 )
+from wilq.schemas.ads_diagnostics_response import AdsDiagnosticsResponse
 
 
 def build_diagnostics_response(

@@ -99,7 +99,9 @@ export const MetricFactSchema = z.object({
   metric_label: z.string().default(""),
   value: z.union([z.string(), z.number()]),
   period: z.string(),
+  period_label: z.string().default(""),
   source_connector: z.string(),
+  source_connector_label: z.string().default(""),
   evidence_id: z.string(),
   dimensions: z.record(z.string(), z.string()).optional().default({}),
   dimension_labels: z.record(z.string(), z.string()).optional().default({}),
@@ -107,11 +109,61 @@ export const MetricFactSchema = z.object({
   unit: z.string().nullable().optional(),
   collected_at: z.string().nullable().optional(),
   previous_value: z.union([z.string(), z.number()]).nullable().optional(),
+  previous_evidence_id: z.string().nullable().optional(),
+  previous_collected_at: z.string().nullable().optional(),
+  previous_period: z.string().nullable().optional(),
+  previous_period_label: z.string().nullable().optional(),
   delta: z.number().nullable().optional(),
   delta_percent: z.number().nullable().optional(),
   trend: z.enum(["up", "down", "flat", "unknown"]).optional(),
   freshness_state: z.enum(["fresh", "stale", "unknown"]).optional(),
   freshness_label: z.string().nullable().optional()
+});
+
+export const DiagnosticDataReadinessSchema = z.object({
+  state: z.enum([
+    "ready",
+    "refresh_available",
+    "refresh_running",
+    "partial",
+    "blocked",
+    "failed",
+    "unavailable"
+  ]),
+  state_label: z.string(),
+  reason: z.string(),
+  safe_next_step: z.string(),
+  connector_id: z.string(),
+  connector_label: z.string(),
+  latest_refresh_id: z.string().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  factual_metric_count: z.number().int().nonnegative(),
+  factual_metrics: z.array(MetricFactSchema),
+  coverage_label: z.string(),
+  refresh_allowed: z.boolean()
+}).superRefine((value, context) => {
+  const factualState = value.state === "ready" || value.state === "partial";
+  if (factualState && value.factual_metrics.length === 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Stan z metrykami wymaga co najmniej jednego zaobserwowanego faktu.",
+      path: ["factual_metrics"]
+    });
+  }
+  if (!factualState && value.factual_metrics.length > 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Niegotowy stan diagnostyczny nie może prezentować metryk jako faktów.",
+      path: ["factual_metrics"]
+    });
+  }
+  if (value.factual_metric_count < value.factual_metrics.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Liczba metryk nie może być mniejsza niż pokazany zakres faktów.",
+      path: ["factual_metric_count"]
+    });
+  }
 });
 
 export const EvidenceSchema = z.object({
@@ -178,6 +230,7 @@ export const ConnectorSummarySchema = z.object({
 
 export type ConnectorStatus = z.infer<typeof ConnectorStatusSchema>;
 export type MetricFact = z.infer<typeof MetricFactSchema>;
+export type DiagnosticDataReadiness = z.infer<typeof DiagnosticDataReadinessSchema>;
 export type MetricStoreStatus = z.infer<typeof MetricStoreStatusSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
 export type ConnectorRefreshRun = z.infer<typeof ConnectorRefreshRunSchema>;

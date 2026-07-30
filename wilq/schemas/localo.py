@@ -7,7 +7,15 @@ from pydantic import BaseModel, Field, model_validator
 
 from wilq.operator_labels import missing_contract_count_label
 
-from .core import ActionRisk, ConnectorRefreshRun, ConnectorStatus, MetricFact, utc_now
+from .core import (
+    ActionRisk,
+    ConnectorRefreshRun,
+    ConnectorStatus,
+    DiagnosticDataReadiness,
+    MetricFact,
+    utc_now,
+)
+from .diagnostic_readiness import build_diagnostic_data_readiness
 
 
 class LocaloAccessProbe(BaseModel):
@@ -155,6 +163,7 @@ class LocaloDiagnosticsResponse(BaseModel):
     latest_refresh_status_label: str | None = None
     access_probe: LocaloAccessProbe
     live_data_available: bool
+    data_readiness: DiagnosticDataReadiness | None = None
     visibility_fact_count: int = 0
     read_contract_statuses: list[LocaloReadContractStatus] = Field(default_factory=list)
     operator_summary: LocaloOperatorSummary
@@ -163,3 +172,22 @@ class LocaloDiagnosticsResponse(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocker_count: int = 0
+
+    @model_validator(mode="after")
+    def build_data_readiness(self) -> LocaloDiagnosticsResponse:
+        if self.data_readiness is None:
+            facts = [fact for section in self.sections for fact in section.metric_facts]
+            self.data_readiness = build_diagnostic_data_readiness(
+                connector=self.connector,
+                latest_refresh=self.latest_refresh,
+                factual_metrics=facts[:12] if self.live_data_available else [],
+                factual_metric_count=len(facts) if self.live_data_available else 0,
+                evidence_ids=self.evidence_ids,
+                partial=bool(
+                    self.live_data_available
+                    and any(item.status == "missing" for item in self.read_contract_statuses)
+                ),
+                stale=self.connector.freshness.state == "stale",
+                partial_coverage_label="Pokazane metryki obejmują tylko odczytane obszary Localo.",
+            )
+        return self

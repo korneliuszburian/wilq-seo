@@ -2914,6 +2914,31 @@ describe("MerchantDiagnosticsResponseSchema", () => {
         redacted: true
       },
       live_data_available: true,
+      data_readiness: {
+        state: "ready",
+        state_label: "Dane gotowe do użycia",
+        reason: "WILQ ma utrwalony odczyt Merchant Center.",
+        safe_next_step: "Przejrzyj potwierdzone fakty.",
+        connector_id: "google_merchant_center",
+        connector_label: "Merchant Center",
+        latest_refresh_id: "refresh_google_merchant_center_live",
+        evidence_ids: ["ev_refresh_merchant_feed"],
+        factual_metric_count: 1,
+        factual_metrics: [
+          {
+            name: "total_products",
+            metric_label: "produkty",
+            value: 10776,
+            period: "connector_refresh",
+            period_label: "ostatni odczyt źródła",
+            source_connector: "google_merchant_center",
+            source_connector_label: "Merchant Center",
+            evidence_id: "ev_refresh_merchant_feed"
+          }
+        ],
+        coverage_label: "Pokazane metryki są potwierdzone przez WILQ.",
+        refresh_allowed: false
+      },
       product_count: 10776,
       issue_count: 19,
       freshness_assessment: {

@@ -26,6 +26,7 @@ import {
   getGa4Diagnostics
 } from "../lib/api";
 import { BlockerNotice } from "../components/OperatorPrimitives";
+import { DiagnosticDataReadinessPanel } from "../components/DiagnosticDataReadinessPanel";
 import {
   CompactStatTile,
   DashboardToolbar,
@@ -70,6 +71,18 @@ export function AdsDoctorSurface() {
   }
 
   const data = diagnostics.data;
+  if (data.data_readiness.state !== "ready") {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <DashboardToolbar
+          title="Reklamy i pomiar"
+          description="WILQ nie pokaże liczników ani rekomendacji Ads bez potwierdzonych danych źródłowych."
+          dateLabel={dateLabel(data.generated_at)}
+        />
+        <DiagnosticDataReadinessPanel readiness={data.data_readiness} />
+      </main>
+    );
+  }
   const summary = data.operator_summary;
   const actionsPending = actions.isLoading;
   const routeActions = (actions.data ?? []).filter((action) => data.action_ids.includes(action.id));

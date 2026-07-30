@@ -339,6 +339,40 @@ def source_connector_label(connector_id: str) -> str:
     return labels.get(connector_id, UNKNOWN_SOURCE_CONNECTOR_LABEL)
 
 
+def metric_period_label(period: str) -> str:
+    """Return a safe, marketer-readable description of a metric window.
+
+    ``period`` remains the exact machine value for lineage.  This label is the
+    only form intended for the operator surface, so unknown period identifiers
+    deliberately do not leak as a pseudo-explanation.
+    """
+
+    normalized = period.strip()
+    labels = {
+        "30d": "ostatnie 30 dni",
+        "last_7_days": "ostatnie 7 dni",
+        "last_28d": "ostatnie 28 dni",
+        "last_28_days": "ostatnie 28 dni",
+        "last_30_days": "ostatnie 30 dni",
+        "connector_refresh": "ostatni odczyt źródła",
+        "localo_mcp_read": "ostatni odczyt Localo",
+        "wordpress_inventory": "aktualny spis treści",
+        "ahrefs_gap": "odczyt luk Ahrefs",
+        "ahrefs_site_explorer": "odczyt domeny Ahrefs",
+        "shopping_product_state": "ostatni odczyt statusów produktów",
+        "search_term_safety_90d": "ostatnie 90 dni",
+    }
+    if normalized in labels:
+        return labels[normalized]
+    if "/" in normalized:
+        start, end = normalized.split("/", maxsplit=1)
+        if start and end:
+            return f"{start}–{end}"
+    if len(normalized) == 7 and normalized[4] == "-":
+        return f"miesiąc {normalized}"
+    return "okres odczytu źródła"
+
+
 def source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
     seen: set[str] = set()
     values: list[str] = []

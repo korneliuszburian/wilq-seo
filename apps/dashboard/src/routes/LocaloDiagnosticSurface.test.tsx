@@ -13,7 +13,7 @@ vi.mock("../lib/api", async (importOriginal) => {
 });
 
 describe("LocaloDiagnosticSurface", () => {
-  it("shows access state and blocks local recommendations without ranking proof", async () => {
+  it("shows the missing Localo read instead of local recommendations", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={queryClient}>
@@ -22,9 +22,9 @@ describe("LocaloDiagnosticSurface", () => {
     );
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Localo" })).toBeInTheDocument());
-    expect(screen.getByText("Status Localo i widoczność lokalna")).toBeInTheDocument();
-    expect(screen.getByText(/Brak danych Localo o rankingach/)).toBeInTheDocument();
-    expect(screen.getByText(/nie obiecuje poprawy widoczności/)).toBeInTheDocument();
+    expect(screen.getByText("Wymagany odczyt danych")).toBeInTheDocument();
+    expect(screen.getByText(/Dostęp Localo nie potwierdza jeszcze metryk widoczności/)).toBeInTheDocument();
+    expect(screen.queryByText("Aktualny odczyt lokalnej widoczności")).not.toBeInTheDocument();
     expect(screen.queryByText("localo")).not.toBeInTheDocument();
   });
 

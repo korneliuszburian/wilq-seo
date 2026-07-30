@@ -66,6 +66,20 @@ export const localoDiagnostics = {
       "Localo potwierdził dostęp do odczytu danych. To nadal nie jest dowód rankingów, profilu firmy w Google ani konkurencji."
   },
   live_data_available: false,
+  data_readiness: {
+    state: "refresh_available",
+    state_label: "Wymagany odczyt danych",
+    reason: "Dostęp Localo nie potwierdza jeszcze metryk widoczności.",
+    safe_next_step: "Uruchom odczyt Localo przed oceną widoczności.",
+    connector_id: "localo",
+    connector_label: "Localo",
+    latest_refresh_id: "refresh_localo_access_ready_test",
+    evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+    factual_metric_count: 0,
+    factual_metrics: [],
+    coverage_label: "Brak potwierdzonych metryk do pokazania.",
+    refresh_allowed: true
+  },
   visibility_fact_count: 0,
   operator_summary: {
     id: "localo_operator_summary",

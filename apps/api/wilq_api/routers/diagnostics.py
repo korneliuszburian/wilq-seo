@@ -22,7 +22,6 @@ from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics_cached
 from wilq.briefing.recommendation_log import save_recommendation_log
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.schemas import (
-    AdsDiagnosticsResponse,
     AhrefsDiagnosticsResponse,
     CommandCenterResponse,
     ContentDiagnosticsResponse,
@@ -35,6 +34,7 @@ from wilq.schemas import (
     RecommendationLogRecord,
     TacticalQueueResponse,
 )
+from wilq.schemas.ads_diagnostics_response import AdsDiagnosticsResponse
 
 router = APIRouter()
 

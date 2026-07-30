@@ -12,6 +12,7 @@ from wilq.operator_labels import (
     credential_source_count_label,
     evidence_count_label,
     metric_fact_label,
+    metric_period_label,
     source_connector_label,
 )
 
@@ -85,6 +86,18 @@ class ConnectorQualityState(StrEnum):
     partial = "partial"
     unverified = "unverified"
     unknown = "unknown"
+
+
+class DiagnosticDataReadinessState(StrEnum):
+    """Whether a diagnostic response may support marketer-facing metrics."""
+
+    ready = "ready"
+    refresh_available = "refresh_available"
+    refresh_running = "refresh_running"
+    partial = "partial"
+    blocked = "blocked"
+    failed = "failed"
+    unavailable = "unavailable"
 
 
 class ConnectorCoveredWindow(BaseModel):
@@ -260,6 +273,44 @@ class ConnectorStatus(BaseModel):
         return self
 
 
+class DiagnosticDataReadiness(BaseModel):
+    """API-owned availability and recovery contract for a diagnostic surface.
+
+    A dashboard must not infer factual readiness from connector configuration,
+    incidental counters, or the presence of a decision queue.
+    """
+
+    state: DiagnosticDataReadinessState = DiagnosticDataReadinessState.unavailable
+    state_label: str = "Dane wymagają sprawdzenia"
+    reason: str = "WILQ nie potwierdził jeszcze danych potrzebnych do tej decyzji."
+    safe_next_step: str = "Sprawdź źródło danych przed użyciem metryk w decyzji."
+    connector_id: str
+    connector_label: str = ""
+    latest_refresh_id: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    factual_metric_count: int = Field(default=0, ge=0)
+    factual_metrics: list[MetricFact] = Field(default_factory=list)
+    coverage_label: str = "Brak potwierdzonych metryk do pokazania."
+    refresh_allowed: bool = False
+
+    @model_validator(mode="after")
+    def hydrate_labels_and_facts(self) -> DiagnosticDataReadiness:
+        if not self.connector_label:
+            self.connector_label = source_connector_label(self.connector_id)
+        if self.factual_metric_count < len(self.factual_metrics):
+            raise ValueError("Liczba metryk nie może być mniejsza niż pokazany zakres faktów.")
+        if self.state not in {
+            DiagnosticDataReadinessState.ready,
+            DiagnosticDataReadinessState.partial,
+        } and self.factual_metrics:
+            raise ValueError("Niegotowy stan diagnostyczny nie może zwracać metryk jako faktów.")
+        if self.state == DiagnosticDataReadinessState.ready and not self.factual_metrics:
+            raise ValueError("Gotowy stan diagnostyczny wymaga co najmniej jednej metryki.")
+        if self.state == DiagnosticDataReadinessState.partial and not self.factual_metrics:
+            raise ValueError("Częściowy stan diagnostyczny wymaga zaobserwowanych metryk.")
+        return self
+
+
 def connector_status_label(status: ConnectorStatusValue | str) -> str:
     labels = {
         ConnectorStatusValue.configured: "dostęp skonfigurowany",
@@ -356,7 +407,9 @@ class MetricFact(BaseModel):
     metric_label: str = ""
     value: float | int | str
     period: str
+    period_label: str = ""
     source_connector: str
+    source_connector_label: str = ""
     evidence_id: str
     dimensions: dict[str, str] = Field(default_factory=dict)
     dimension_labels: dict[str, str] = Field(default_factory=dict)
@@ -366,6 +419,8 @@ class MetricFact(BaseModel):
     previous_value: float | int | str | None = None
     previous_evidence_id: str | None = None
     previous_collected_at: datetime | None = None
+    previous_period: str | None = None
+    previous_period_label: str | None = None
     delta: float | int | None = None
     delta_percent: float | None = None
     trend: Literal["up", "down", "flat", "unknown"] = "unknown"
@@ -376,6 +431,12 @@ class MetricFact(BaseModel):
     def fill_dimension_labels(self) -> MetricFact:
         if not self.metric_label:
             self.metric_label = metric_fact_label(self.name, self.source_connector)
+        if not self.source_connector_label:
+            self.source_connector_label = source_connector_label(self.source_connector)
+        if not self.period_label:
+            self.period_label = metric_period_label(self.period)
+        if self.previous_period and not self.previous_period_label:
+            self.previous_period_label = metric_period_label(self.previous_period)
         if not self.dimension_labels:
             self.dimension_labels = {key: _metric_dimension_label(key) for key in self.dimensions}
         if not self.dimension_value_labels:

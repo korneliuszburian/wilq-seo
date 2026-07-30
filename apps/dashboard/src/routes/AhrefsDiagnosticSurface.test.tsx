@@ -13,7 +13,7 @@ vi.mock("../lib/api", async (importOriginal) => {
 });
 
 describe("AhrefsDiagnosticSurface", () => {
-  it("keeps authority context separate from blocked SEO gap claims", async () => {
+  it("shows only confirmed Ahrefs facts when the read is partial", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={queryClient}>
@@ -22,14 +22,11 @@ describe("AhrefsDiagnosticSurface", () => {
     );
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Ahrefs" })).toBeInTheDocument());
-    expect(screen.getByText("Status Ahrefs i dowody SEO")).toBeInTheDocument();
-    expect(screen.getByText("sprawdzenie GSC i WordPress ma dopasowania z API")).toBeInTheDocument();
-    expect(screen.getByText(/Status danych Ahrefs/)).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Etapy odczytu Ahrefs" })).toBeInTheDocument();
-    expect(screen.getByText("Luki treści")).toBeInTheDocument();
-    expect(screen.getByText("zakończony")).toBeInTheDocument();
-    expect(screen.getByText("błąd odczytu")).toBeInTheDocument();
-    expect(screen.getByText("Luki SEO z Ahrefs")).toBeInTheDocument();
+    expect(screen.getByText("Dane częściowe")).toBeInTheDocument();
+    expect(screen.getByText("autorytet domeny: 90")).toBeInTheDocument();
+    expect(screen.getByText(/obejmują tylko zakończone etapy/)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Etapy odczytu Ahrefs" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Luki SEO z Ahrefs")).not.toBeInTheDocument();
     expect(screen.queryByText("ahrefs")).not.toBeInTheDocument();
   });
 

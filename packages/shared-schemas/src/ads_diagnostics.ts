@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ConnectorRefreshRunSchema, ConnectorStatusSchema } from "./connectors";
+import { ConnectorRefreshRunSchema, ConnectorStatusSchema, DiagnosticDataReadinessSchema } from "./connectors";
 import {
   AdsAccountCurrencyReadContractSchema,
   AdsBlockedHandoffSchema,
@@ -74,6 +74,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   latest_refresh_status_label: z.string().nullable().optional(),
   live_data_status_label: z.string().default(""),
   live_data_available: z.boolean(),
+  data_readiness: DiagnosticDataReadinessSchema,
   freshness_assessment: AdsFreshnessAssessmentSchema,
   aggregation_contract: AdsAggregationContractSchema,
   campaign_read_contract: AdsCampaignReadContractSchema,
