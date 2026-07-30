@@ -2,7 +2,6 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   primarySurfaceRoutes,
-  secondarySurfaceRoutes,
   type SurfaceRoute
 } from "../routes/surfaceRegistry";
 
@@ -26,11 +25,6 @@ export function Shell() {
         </div>
         <nav className="space-y-4 p-3">
           <SurfaceNavSection routes={primarySurfaceRoutes} />
-          <SurfaceNavSection
-            label="System"
-            routes={secondarySurfaceRoutes}
-            linkClassName="text-xs text-slate-500 hover:bg-slate-50 [&.active]:bg-slate-100 [&.active]:text-slate-900"
-          />
         </nav>
       </aside>
       <div className={isContentWorkspace ? "lg:pl-52" : "lg:pl-64"}>
@@ -60,7 +54,7 @@ export function Shell() {
               </div>
               {mobileMenuOpen ? (
                 <nav className="wilq-mobile-menu mt-3 grid gap-1 border-t border-line pt-3" aria-label="Menu WILQ">
-                  {[...primarySurfaceRoutes, ...secondarySurfaceRoutes].map((route) => (
+                  {primarySurfaceRoutes.map((route) => (
                     <Link
                       key={route.path}
                       to={route.path}
@@ -77,7 +71,7 @@ export function Shell() {
             <>
               <div className="text-base font-semibold">WILQ</div>
               <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                {[...primarySurfaceRoutes, ...secondarySurfaceRoutes].map((route) => (
+                {primarySurfaceRoutes.map((route) => (
                   <Link
                     key={route.path}
                     to={route.path}

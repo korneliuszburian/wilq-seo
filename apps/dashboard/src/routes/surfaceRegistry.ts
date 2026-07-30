@@ -1,6 +1,5 @@
 import {
   Activity,
-  AlertTriangle,
   BarChart3,
   Boxes,
   ClipboardList,
@@ -61,15 +60,14 @@ export const surfaceRoutes = [
   },
   {
     path: "/opportunities",
-    label: "Kolejka",
+    label: "Dawna kolejka",
     family: "registry",
-    status: "production",
-    mode: "marketer",
-    navGroup: "primary",
+    status: "technical",
+    mode: "technical",
+    navGroup: "hidden",
     generated: false,
-    ownerPersona: "marketer",
-    firstScreenIntent: "Zebrać decyzje, szanse i akcje w jedną operacyjną kolejkę z filtrami.",
-    icon: AlertTriangle
+    ownerPersona: "developer_audit",
+    firstScreenIntent: "Przekierowanie do Dzisiaj."
   },
   {
     path: "/content-workflow",
@@ -137,7 +135,7 @@ export const surfaceRoutes = [
     family: "workflow",
     status: "production",
     mode: "admin",
-    navGroup: "secondary",
+    navGroup: "hidden",
     generated: false,
     ownerPersona: "developer_audit",
     firstScreenIntent: "Audytować procesy WILQ i ich ostatnie uruchomienia, nie prowadzić codziennej pracy.",
@@ -149,7 +147,7 @@ export const surfaceRoutes = [
     family: "diagnostic",
     status: "production",
     mode: "admin",
-    navGroup: "secondary",
+    navGroup: "hidden",
     generated: true,
     ownerPersona: "ads_analytics",
     firstScreenIntent: "Drilldown pomiaru GA4; primary marketer route to Reklamy i pomiar.",
@@ -161,7 +159,7 @@ export const surfaceRoutes = [
     family: "knowledge",
     status: "production",
     mode: "admin",
-    navGroup: "secondary",
+    navGroup: "hidden",
     generated: true,
     ownerPersona: "owner_review",
     firstScreenIntent: "Review wiedzy, twierdzeń i profilu usług; nie codzienny cockpit marketera.",
@@ -173,7 +171,7 @@ export const surfaceRoutes = [
     family: "settings",
     status: "technical",
     mode: "admin",
-    navGroup: "secondary",
+    navGroup: "hidden",
     generated: true,
     ownerPersona: "developer_audit",
     firstScreenIntent: "Pokazać zdrowie źródeł, świeżość, braki dostępu i wpływ braków na decyzje.",
@@ -185,7 +183,7 @@ export const surfaceRoutes = [
     family: "technical",
     status: "technical",
     mode: "technical",
-    navGroup: "secondary",
+    navGroup: "hidden",
     generated: true,
     ownerPersona: "developer_audit",
     firstScreenIntent: "Audytować procesy, uruchomienia Codex, reguły bezpieczeństwa i eksperymentalne obszary poza marketer mode.",
@@ -340,6 +338,4 @@ export const generatedSurfaceRoutes = surfaceRoutes.filter((route) => route.gene
 export const primarySurfaceRoutes = surfaceRoutes.filter(
   (route) => route.navGroup === "primary"
 );
-export const secondarySurfaceRoutes = surfaceRoutes.filter(
-  (route) => route.navGroup === "secondary"
-);
+export const secondarySurfaceRoutes = [] as const satisfies readonly SurfaceRoute[];

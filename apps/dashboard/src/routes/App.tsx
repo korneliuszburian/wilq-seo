@@ -7,6 +7,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  redirect,
   RouterProvider,
   useParams
 } from "@tanstack/react-router";
@@ -21,13 +22,11 @@ import {
 import { CommandCenter } from "./CommandCenterRoute";
 import {
   ActionDetailSurface,
-  EvidenceDetailSurface,
-  OpportunityDetailSurface
+  EvidenceDetailSurface
 } from "./DetailPanels";
 import { GenericSurface } from "./GenericSurface";
 import {
   ActionsSurface,
-  OpportunitiesSurface,
   WorkflowsSurface
 } from "./OperatingRouteSurfaces";
 import { generatedSurfaceRoutes } from "./surfaceRegistry";
@@ -134,12 +133,11 @@ const dedicatedRouteRenderers: Record<string, () => ReactNode> = {
   )
 };
 
-function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflows" | "evidence" }) {
+function DetailSurface({ kind }: { kind: "actions" | "workflows" | "evidence" }) {
   const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const id = params.actionId ?? params.opportunityId ?? params.workflowId ?? params.evidenceId ?? "";
   if (kind === "evidence") return <EvidenceDetailSurface evidenceId={id} />;
   if (kind === "actions") return <ActionDetailSurface actionId={id} />;
-  if (kind === "opportunities") return <OpportunityDetailSurface opportunityId={id} />;
   return <GenericSurface routeName={`/${kind}/${id}`} />;
 }
 
@@ -213,12 +211,16 @@ const commandCenterRoute = createRoute({
 const opportunitiesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/opportunities",
-  component: OpportunitiesSurface
+  beforeLoad: () => {
+    throw redirect({ to: "/command-center", replace: true });
+  }
 });
 const opportunityDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/opportunities/$opportunityId",
-  component: () => <DetailSurface kind="opportunities" />
+  beforeLoad: () => {
+    throw redirect({ to: "/command-center", replace: true });
+  }
 });
 const actionsRoute = createRoute({
   getParentRoute: () => rootRoute,

@@ -27,7 +27,6 @@ describe("surface registry", () => {
     expect(generatedSurfaceRoutes.map((route) => route.path)).toContain("/social-publisher");
     expect(primarySurfaceRoutes.map((route) => route.path)).toEqual([
       "/command-center",
-      "/opportunities",
       "/content-workflow",
       "/ads-doctor",
       "/merchant",
@@ -36,29 +35,15 @@ describe("surface registry", () => {
     ]);
     expect(primarySurfaceRoutes.map((route) => route.label)).toEqual([
       "Dzisiaj",
-      "Kolejka",
       "Treści i SEO",
       "Reklamy i pomiar",
       "Produkty",
       "Lokalnie",
       "Akcje"
     ]);
-    expect(secondarySurfaceRoutes.map((route) => route.path)).toEqual([
-      "/workflows",
-      "/ga4",
-      "/knowledge",
-      "/settings",
-      "/system"
-    ]);
-    expect(secondarySurfaceRoutes.map((route) => route.label)).toEqual([
-      "Procesy",
-      "GA4",
-      "Wiedza",
-      "Źródła",
-      "System"
-    ]);
+    expect(secondarySurfaceRoutes).toEqual([]);
 
-    for (const route of [...primarySurfaceRoutes, ...secondarySurfaceRoutes]) {
+    for (const route of primarySurfaceRoutes) {
       expect(route.icon).toBeDefined();
     }
   });
@@ -141,7 +126,7 @@ describe("surface registry", () => {
     expect(appSource).toContain("generatedSurfaceRoutes");
     expect(appSource).not.toContain("const operatingRoutes =");
     expect(shellSource).toContain("primarySurfaceRoutes");
-    expect(shellSource).toContain("secondarySurfaceRoutes");
+    expect(shellSource).not.toContain("secondarySurfaceRoutes");
     expect(shellSource).not.toContain("const primaryRoutes =");
   });
 });
