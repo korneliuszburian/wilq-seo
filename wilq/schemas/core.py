@@ -429,6 +429,23 @@ class MetricFact(BaseModel):
 
     @model_validator(mode="after")
     def fill_dimension_labels(self) -> MetricFact:
+        explicit_context = {
+            "metric_label": "etykieta metryki",
+            "period_label": "etykieta okresu",
+            "source_connector_label": "etykieta źródła",
+            "evidence_id": "identyfikator dowodu",
+        }
+        explicit_blanks = [
+            label
+            for field, label in explicit_context.items()
+            if field in self.model_fields_set and not getattr(self, field).strip()
+        ]
+        if explicit_blanks:
+            raise ValueError(
+                "Fakt metryczny nie może zawierać pustego kontekstu marketera: "
+                + ", ".join(explicit_blanks)
+                + "."
+            )
         if not self.metric_label:
             self.metric_label = metric_fact_label(self.name, self.source_connector)
         if not self.source_connector_label:

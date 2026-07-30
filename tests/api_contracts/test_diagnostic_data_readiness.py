@@ -81,7 +81,8 @@ def test_metric_fact_rejects_blank_marketer_context(field: str) -> None:
         "source_connector_label": "Localo",
         "evidence_id": "ev_localo_observed_zero",
     }
-    payload[field] = "   "
+    for blank_value in ["", "   "]:
+        payload[field] = blank_value
 
-    with pytest.raises(ValueError, match="pełnego kontekstu marketera"):
-        MetricFact(**payload)
+        with pytest.raises(ValueError, match="pustego kontekstu marketera"):
+            MetricFact(**payload)
