@@ -139,10 +139,11 @@ export function ContentTextPreparationPanel({ workItemId }: { workItemId: string
       (["not_generated", "failed"].includes(state.status) ||
         (state.status === "stale" && state.blockers.every((item) => item.code === "stale_input")))
   );
-  const preparingText = generation.isPending ||
+  const terminalPlanningState = ["blocked", "failed", "stale"].includes(state.status);
+  const preparingText = !terminalPlanningState && (generation.isPending ||
     state.status === "generating" ||
     startDraft.isPending ||
-    currentInitialDraft?.status === "generating";
+    currentInitialDraft?.status === "generating");
   const canPrepareText = hasProposal || canGenerate;
   const prepareText = () => {
     if (hasProposal && readyProposal && state.planning_input_digest) {

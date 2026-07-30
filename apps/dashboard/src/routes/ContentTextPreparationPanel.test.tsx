@@ -247,10 +247,14 @@ describe("ContentTextPreparationPanel", () => {
     const queryKey = ["content-workflow", "work-item", "work_item", "planning-proposal"];
     await client.refetchQueries({ queryKey });
     await waitFor(() => expect(screen.getByText("Stan B.")).toBeInTheDocument());
+    expect(screen.queryByText("Przygotowuję pierwszy tekst")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Przygotowuję materiał roboczy/)).not.toBeInTheDocument();
     resolvePost({ ...readyToGenerate(), status: "generating" });
     await waitFor(() => expect(getContentWorkItemPlanningProposal).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(client.getQueryData(queryKey)).toMatchObject({ status: "blocked" }));
     expect(screen.getByText("Stan B.")).toBeInTheDocument();
+    expect(screen.queryByText("Przygotowuję pierwszy tekst")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Przygotowuję materiał roboczy/)).not.toBeInTheDocument();
     resolveInvalidationGet(terminalB);
   });
 
