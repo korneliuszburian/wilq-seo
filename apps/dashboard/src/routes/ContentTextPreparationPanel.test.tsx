@@ -194,7 +194,11 @@ describe("ContentTextPreparationPanel", () => {
       proposal: {
         ...readyPlan().proposal,
         search_demand: {
-          gsc_query_rows: [{ term: "bdo dla firm", period: "2026-07", impressions: 181, clicks: 4 }]
+          gsc_query_rows: [
+            { term: "bdo dla firm", period: "2026-07", impressions: 181, clicks: 4 },
+            { term: "bdo dla firm", period: "2026-06", impressions: 150, clicks: 3 },
+            ...Array.from({ length: 5 }, (_, index) => ({ term: `zapytanie ${index}`, period: "2026-07", impressions: index, clicks: null }))
+          ]
         }
       }
     } as never);
@@ -204,8 +208,26 @@ describe("ContentTextPreparationPanel", () => {
 
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Materiały źródłowe");
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Google Search Console");
-    expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("bdo dla firm · 181 wyświetleń · 4 kliknięć");
+    expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("bdo dla firm · okres: 2026-07 · 181 wyświetleń · 4 kliknięć");
+    expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("bdo dla firm · okres: 2026-06 · 150 wyświetleń · 3 kliknięć");
+    expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Pokazano 6 z 7 exact zapytań GSC.");
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Ahrefs");
+  });
+
+  it("replaces a POST planning state with fresher exact query evidence", async () => {
+    const inputA = { ...readyToGenerate().input_summary, source_material_ids: ["material_a"], evidence_id_count: 1 };
+    const inputB = { ...readyToGenerate().input_summary, source_material_ids: ["material_b", "material_c"], evidence_id_count: 2 };
+    vi.mocked(getContentWorkItemPlanningProposal)
+      .mockResolvedValueOnce({ ...readyToGenerate(), input_summary: inputA } as never)
+      .mockResolvedValue({ ...readyToGenerate(), status: "blocked", input_summary: inputB, blockers: [{ code: "stale_input", label: "Nowe dane", reason: "B", next_step: "Odśwież." }] } as never);
+    vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValueOnce({ ...readyToGenerate(), status: "generating", input_summary: inputA } as never);
+    const { client } = renderPanel();
+    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj tekst" }));
+    await client.refetchQueries({ queryKey: ["content-workflow", "work-item", "work_item", "planning-proposal"] });
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+    await waitFor(() => expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("2"));
+    expect(screen.getByTestId("content-planning-evidence")).not.toHaveTextContent("material_a");
+    expect(screen.queryByText("Przygotowuję pierwszy tekst")).not.toBeInTheDocument();
   });
 
   it("lets the marketer retry the same exact proposal after draft preparation fails", async () => {

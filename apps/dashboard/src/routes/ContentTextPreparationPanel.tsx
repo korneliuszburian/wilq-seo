@@ -86,7 +86,10 @@ export function ContentTextPreparationPanel({ workItemId }: { workItemId: string
       }, workItemId);
     },
     onMutate: () => setRequestedInputDigest(status.data?.planning_input_digest ?? null),
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      // The exact query remains the sole read model. Seed it only until its
+      // invalidation resolves; a fresher GET can then replace this response.
+      queryClient.setQueryData(queryKey, result);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey }),
         queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workItemId], exact: true })
@@ -120,7 +123,7 @@ export function ContentTextPreparationPanel({ workItemId }: { workItemId: string
   if (status.isLoading) return <PlanningState>Sprawdzam dane potrzebne do przygotowania tekstu…</PlanningState>;
   if (status.error || !status.data) return <PlanningState tone="error">Nie udało się odczytać danych potrzebnych do przygotowania tekstu. Odśwież widok przed kolejną próbą.</PlanningState>;
 
-  const state = generation.data ?? status.data;
+  const state = status.data;
   const readyProposal = isExactPlanningProposal(state.proposal) ? state.proposal : null;
   const hasProposal = ["created", "idempotent", "ready"].includes(state.status) && Boolean(readyProposal);
   const currentInitialDraft = initialDraftStatus.data ?? initialDraft;
@@ -178,21 +181,30 @@ export function PlanningEvidenceDetails({
   proposal: ContentPlanningProposalResponse["proposal"];
 }) {
   const usedSources = input.source_assessments.filter((source) => source.status === "used");
-  const unavailableSources = input.source_assessments.filter((source) => source.status !== "used");
+  const nonUsedSources = input.source_assessments.filter((source) => source.status !== "used");
   const queries = proposal?.search_demand?.gsc_query_rows ?? [];
+  const hasPlan = Boolean(proposal);
 
   return <details className="mt-4 rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-700" data-testid="content-planning-evidence">
     <summary className="cursor-pointer font-semibold text-ink">Na jakich danych oprze się tekst</summary>
-    <p className="mt-2 leading-6">WILQ użyje tylko źródeł dokładnie przypisanych do tej strony i tego planu. Brakujące dane nie są zastępowane domysłami.</p>
+    <p className="mt-2 leading-6">WILQ użyje tylko źródeł dokładnie przypisanych do {hasPlan ? "tego planu" : "tych danych wejściowych"}. Brakujące dane nie są zastępowane domysłami.</p>
     <div className="mt-3 grid gap-3 sm:grid-cols-3">
       <EvidenceCount label="Materiały źródłowe" value={input.source_material_ids.length} />
       <EvidenceCount label="Karty wiedzy" value={input.knowledge_card_count} />
       <EvidenceCount label="Dowody" value={input.evidence_id_count} />
     </div>
     {usedSources.length ? <p className="mt-3 leading-6"><span className="font-semibold text-ink">Wykorzystane źródła: </span>{usedSources.map((source) => planningSourceLabel(source.source)).join(", ")}.</p> : null}
-    {queries.length ? <div className="mt-3"><p className="font-semibold text-ink">Zapytania GSC przypisane do tej strony</p><ul className="mt-2 space-y-1">{queries.slice(0, 6).map((query) => <li key={`${query.term}-${query.period}`} className="rounded bg-white px-2 py-1">{query.term}{query.impressions !== null ? ` · ${query.impressions} wyświetleń` : ""}{query.clicks !== null ? ` · ${query.clicks} kliknięć` : ""}</li>)}</ul></div> : <p className="mt-3 leading-6">Brak exact zapytań GSC w aktualnym planie — WILQ nie pokazuje zastępczej listy słów kluczowych.</p>}
-    {unavailableSources.length ? <p className="mt-3 leading-6 text-slate-600">Poza planem pozostają: {unavailableSources.map((source) => planningSourceLabel(source.source)).join(", ")}. Ich dane nie były wystarczająco dokładne lub świeże.</p> : null}
+    {queries.length ? <div className="mt-3"><p className="font-semibold text-ink">Zapytania GSC przypisane do tej strony</p><ul className="mt-2 space-y-1">{queries.slice(0, 6).map((query) => <li key={`${query.term}-${query.period}`} className="rounded bg-white px-2 py-1">{query.term} · okres: {query.period}{query.impressions !== null ? ` · ${query.impressions} wyświetleń` : ""}{query.clicks !== null ? ` · ${query.clicks} kliknięć` : ""}</li>)}</ul>{queries.length > 6 ? <p className="mt-2 text-xs text-slate-600">Pokazano 6 z {queries.length} exact zapytań GSC.</p> : null}</div> : <p className="mt-3 leading-6">Brak exact zapytań GSC {hasPlan ? "w aktualnym planie" : "w danych wejściowych"} — WILQ nie pokazuje zastępczej listy słów kluczowych.</p>}
+    {nonUsedSources.length ? <ul className="mt-3 space-y-2 text-slate-600">{nonUsedSources.map((source) => <li key={source.source}><span className="font-semibold text-ink">{planningSourceLabel(source.source)}: </span>{planningSourceStatusCopy(source.status)}{source.reason ? ` ${source.reason}` : ""}</li>)}</ul> : null}
   </details>;
+}
+
+function planningSourceStatusCopy(status: string) {
+  if (status === "missing") return "Brak danych.";
+  if (status === "stale") return "Dane wymagają odświeżenia.";
+  if (status === "blocked") return "Źródło jest zablokowane.";
+  if (status === "not_applicable") return "To źródło nie dotyczy tej pracy.";
+  return "Źródło nie zostało użyte.";
 }
 
 function EvidenceCount({ label, value }: { label: string; value: number }) {
