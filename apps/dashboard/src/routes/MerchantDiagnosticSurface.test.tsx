@@ -2,10 +2,10 @@ import { readFileSync } from "node:fs";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { merchantDiagnostics } from "./merchantDiagnostic.fixture";
-import type { ActionObject } from "../lib/api";
+import { getActions, getMerchantDiagnostics, type ActionObject } from "../lib/api";
 import { MerchantDiagnosticSurface } from "./MerchantDiagnosticSurface";
 
 const merchantAction = vi.hoisted(() => ({
@@ -36,12 +36,19 @@ vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
-    getMerchantDiagnostics: vi.fn().mockResolvedValue(merchantDiagnostics),
-    getActions: vi.fn().mockResolvedValue([merchantAction])
+    getMerchantDiagnostics: vi.fn(),
+    getActions: vi.fn()
   };
 });
 
 describe("MerchantDiagnosticSurface", () => {
+  beforeEach(() => {
+    vi.mocked(getMerchantDiagnostics).mockReset();
+    vi.mocked(getActions).mockReset();
+    vi.mocked(getMerchantDiagnostics).mockResolvedValue(merchantDiagnostics as never);
+    vi.mocked(getActions).mockResolvedValue([merchantAction]);
+  });
+
   it("does not present stale Merchant counts as a current decision", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -82,5 +89,76 @@ describe("MerchantDiagnosticSurface", () => {
     expect(routeSource).not.toContain("function formatPolishCount");
     expect(routeSource).not.toContain("cluster.product_count,");
     expect(routeSource).not.toContain("{item.intent_label} / {item.priority_label}");
+  });
+
+  it("does not turn an unknown product count into zero when another Merchant fact is ready", async () => {
+    const readyWithoutProductCount = structuredClone(merchantDiagnostics) as Record<string, unknown>;
+    readyWithoutProductCount.product_count = null;
+    readyWithoutProductCount.data_readiness = {
+      ...merchantDiagnostics.data_readiness,
+      state: "ready",
+      factual_metric_count: 1,
+      factual_metrics: [
+        {
+          name: "issue_product_count",
+          metric_label: "Zgłoszenia problemów",
+          value: 23,
+          period: "connector_refresh",
+          period_label: "ostatni odczyt źródła",
+          source_connector: "google_merchant_center",
+          source_connector_label: "Merchant Center",
+          evidence_id: "ev_ready_issue_count"
+        }
+      ],
+      coverage_label: "Potwierdzona jest tylko liczba zgłoszeń.",
+      refresh_allowed: false
+    };
+    vi.mocked(getMerchantDiagnostics).mockResolvedValue(readyWithoutProductCount as never);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MerchantDiagnosticSurface />
+      </QueryClientProvider>
+    );
+
+    await screen.findByRole("heading", { name: "Produkty" });
+    expect(screen.queryByText("produktów w ostatnim odczycie")).not.toBeInTheDocument();
+  });
+
+  it("shows an observed zero product count only through its exact Merchant fact", async () => {
+    const readyWithObservedZero = structuredClone(merchantDiagnostics) as Record<string, unknown>;
+    readyWithObservedZero.product_count = 0;
+    readyWithObservedZero.data_readiness = {
+      ...merchantDiagnostics.data_readiness,
+      state: "ready",
+      factual_metric_count: 1,
+      factual_metrics: [
+        {
+          name: "total_products",
+          metric_label: "produkty w pliku produktowym",
+          value: 0,
+          period: "connector_refresh",
+          period_label: "ostatni odczyt źródła",
+          source_connector: "google_merchant_center",
+          source_connector_label: "Merchant Center",
+          evidence_id: "ev_observed_zero_products"
+        }
+      ],
+      coverage_label: "Potwierdzona liczba produktów.",
+      refresh_allowed: false
+    };
+    vi.mocked(getMerchantDiagnostics).mockResolvedValue(readyWithObservedZero as never);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MerchantDiagnosticSurface />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText("produktów w ostatnim odczycie")).toBeInTheDocument();
+    expect(screen.getAllByText(/Źródło: Merchant Center/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Okres: ostatni odczyt źródła/).length).toBeGreaterThan(0);
   });
 });

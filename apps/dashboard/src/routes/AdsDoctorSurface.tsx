@@ -40,6 +40,12 @@ import {
 
 type AdsDecision = AdsDiagnosticsResponse["decision_queue"][number];
 
+export function readyGa4Diagnostics<T extends { data_readiness: { state: string } }>(
+  response: T | null
+): T | null {
+  return response?.data_readiness.state === "ready" ? response : null;
+}
+
 export function AdsDoctorSurface() {
   const diagnostics = useQuery({
     queryKey: ["ads-diagnostics", "summary"],
@@ -86,15 +92,14 @@ export function AdsDoctorSurface() {
   const summary = data.operator_summary;
   const actionsPending = actions.isLoading;
   const routeActions = (actions.data ?? []).filter((action) => data.action_ids.includes(action.id));
-  const ga4Data = ga4.isLoading || ga4.error ? null : ga4.data ?? null;
+  const ga4Response = ga4.isLoading || ga4.error ? null : ga4.data ?? null;
+  const ga4Data = readyGa4Diagnostics(ga4Response);
+  const ga4Readiness = ga4Response?.data_readiness ?? null;
   const demandGenData = demandGen.isLoading || demandGen.error ? null : demandGen.data ?? null;
   const primaryDecision = pickPrimaryDecision(data);
   const blockedDecisionCount = data.decision_queue.filter(
     (decision) => decision.status === "blocked"
   ).length;
-  const measurementBlockers =
-    (ga4Data?.operator_summary.measurement_issue_count ?? 0) +
-    (ga4Data?.decision_blocker_count ?? 0);
   const blockedClaims = uniqueLabels([
     ...summary.top_blocked_claim_labels,
     ...summary.blocked_claim_labels,
@@ -107,7 +112,7 @@ export function AdsDoctorSurface() {
       <DashboardToolbar
         title="Reklamy i pomiar"
         description="Tu sprawdzasz Ads, GA4 i Demand Gen bez skracania bramek pomiaru. WILQ pokazuje tylko to, co wynika z aktualnych dowodów."
-        dateLabel={dateLabel(data.generated_at ?? ga4Data?.generated_at)}
+        dateLabel={dateLabel(data.generated_at)}
       />
 
       <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -118,13 +123,21 @@ export function AdsDoctorSurface() {
           tone="blue"
           icon={<Megaphone aria-hidden="true" size={22} />}
         />
-        <CompactStatTile
-          value={measurementBlockers}
-          label="blokady pomiaru"
-          actionLabel={ga4Data?.conversion_readiness_contract.status_label ?? "GA4 do sprawdzenia"}
-          tone={measurementBlockers > 0 ? "red" : "green"}
-          icon={<Gauge aria-hidden="true" size={22} />}
-        />
+        {ga4Data ? (
+          <CompactStatTile
+            value={
+              ga4Data.operator_summary.measurement_issue_count + ga4Data.decision_blocker_count
+            }
+            label="blokady pomiaru"
+            actionLabel={ga4Data.conversion_readiness_contract.status_label}
+            tone={
+              ga4Data.operator_summary.measurement_issue_count + ga4Data.decision_blocker_count > 0
+                ? "red"
+                : "green"
+            }
+            icon={<Gauge aria-hidden="true" size={22} />}
+          />
+        ) : null}
         <CompactStatTile
           value={actionsPending ? "…" : routeActions.length}
           label="bezpieczne akcje"
@@ -151,8 +164,12 @@ export function AdsDoctorSurface() {
           },
           {
             label: "GA4",
-            detail: ga4Data?.freshness_assessment.state_label ?? "nieodczytane",
-            tone: ga4Data ? (ga4Data.freshness_assessment.requires_refresh ? "amber" : "green") : "red",
+            detail: ga4Data?.freshness_assessment.state_label ?? ga4Readiness?.state_label ?? "nieodczytane",
+            tone: ga4Data
+              ? (ga4Data.freshness_assessment.requires_refresh ? "amber" : "green")
+              : ga4Readiness?.state === "partial"
+                ? "amber"
+                : "red",
             icon: <LineChart aria-hidden="true" size={16} />
           },
           {
@@ -169,6 +186,8 @@ export function AdsDoctorSurface() {
           }
         ]}
       />
+
+      {ga4Readiness && !ga4Data ? <DiagnosticDataReadinessPanel readiness={ga4Readiness} /> : null}
 
       <MeasurementFirstBanner
         data={data}
@@ -254,22 +273,21 @@ export function AdsDoctorSurface() {
           nextStep={summary.next_step}
           tone="blue"
         />
-        <CompactDiagnosticCard
-          icon={<LineChart aria-hidden="true" size={18} />}
-          title="GA4"
-          statusLabel={ga4Data?.conversion_readiness_contract.status_label ?? "brak odczytu GA4"}
-          summary={
-            ga4Data?.operator_summary.summary ??
-            "WILQ nie może dołożyć warstwy pomiaru GA4 do tego widoku, dopóki endpoint GA4 nie odpowie."
-          }
-          facts={[
-            `${ga4Data?.operator_summary.measurement_issue_count ?? 0} problemy pomiaru`,
-            ga4Data?.evidence_summary_label ?? "brak dowodów GA4",
-            ga4Data?.action_summary_label ?? "brak akcji GA4"
-          ]}
-          nextStep={ga4Data?.operator_summary.next_step ?? "Sprawdź /ga4 albo status WILQ przed wnioskiem o konwersjach."}
-          tone="red"
-        />
+        {ga4Data ? (
+          <CompactDiagnosticCard
+            icon={<LineChart aria-hidden="true" size={18} />}
+            title="GA4"
+            statusLabel={ga4Data.conversion_readiness_contract.status_label}
+            summary={ga4Data.operator_summary.summary}
+            facts={[
+              `${ga4Data.operator_summary.measurement_issue_count} problemy pomiaru`,
+              ga4Data.evidence_summary_label,
+              ga4Data.action_summary_label
+            ]}
+            nextStep={ga4Data.operator_summary.next_step}
+            tone="red"
+          />
+        ) : null}
         <CompactDiagnosticCard
           icon={<Sparkles aria-hidden="true" size={18} />}
           title="Demand Gen"

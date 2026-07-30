@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from wilq.briefing.diagnostic_readiness import build_diagnostic_data_readiness
 from wilq.schemas import (
     ConnectorCapability,
@@ -62,3 +64,24 @@ def test_observed_zero_is_ready_factual_metric_with_trace() -> None:
     assert fact.source_connector_label == "Localo"
     assert fact.period_label == "ostatni odczyt Localo"
     assert readiness.evidence_ids == ["ev_localo_observed_zero"]
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["evidence_id", "metric_label", "period_label", "source_connector_label"],
+)
+def test_metric_fact_rejects_blank_marketer_context(field: str) -> None:
+    payload = {
+        "name": "localo_competitor_change_count",
+        "metric_label": "Zmiany konkurencji",
+        "value": 0,
+        "period": "localo_mcp_read",
+        "period_label": "ostatni odczyt Localo",
+        "source_connector": "localo",
+        "source_connector_label": "Localo",
+        "evidence_id": "ev_localo_observed_zero",
+    }
+    payload[field] = "   "
+
+    with pytest.raises(ValueError, match="pełnego kontekstu marketera"):
+        MetricFact(**payload)

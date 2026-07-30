@@ -59,6 +59,20 @@ function Ga4DiagnosticBody({
   data: Ga4DiagnosticsResponse;
   actions: UseQueryResult<ActionObject[]>;
 }) {
+  return (
+    <DiagnosticDataReadinessGate readiness={data.data_readiness}>
+      <Ga4ReadyDiagnosticBody data={data} actions={actions} />
+    </DiagnosticDataReadinessGate>
+  );
+}
+
+function Ga4ReadyDiagnosticBody({
+  data,
+  actions
+}: {
+  data: Ga4DiagnosticsResponse;
+  actions: UseQueryResult<ActionObject[]>;
+}) {
   if (actions.isLoading) return <LoadingBand />;
   if (actions.error || !actions.data) {
     return (
@@ -71,7 +85,7 @@ function Ga4DiagnosticBody({
   const latestRefresh = data.latest_refresh;
 
   return (
-    <DiagnosticDataReadinessGate readiness={data.data_readiness}>
+    <>
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -117,7 +131,7 @@ function Ga4DiagnosticBody({
           />
         </div>
       ) : null}
-    </DiagnosticDataReadinessGate>
+    </>
   );
 }
 

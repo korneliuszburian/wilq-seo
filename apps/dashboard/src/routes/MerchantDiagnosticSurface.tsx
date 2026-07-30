@@ -25,6 +25,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { DiagnosticDataReadinessPanel } from "../components/DiagnosticDataReadinessPanel";
+import { MetricFactChips } from "../components/MetricFactChips";
 import { ActionFocus } from "./ActionPanels";
 import { tacticalContextPairs } from "./TacticalQueuePanel";
 
@@ -94,6 +95,7 @@ export function MerchantDiagnosticSurface() {
 
 function MerchantOperatingViewport({ data }: { data: MerchantDiagnosticsResponse }) {
   const primaryDecision = primaryMerchantDecision(data);
+  const productFact = merchantProductCountFact(data);
   const stale = data.freshness_assessment.requires_refresh;
   const criticalBlockedClaims = uniqueValues([
     ...data.operator_summary.blocked_claim_labels,
@@ -114,13 +116,16 @@ function MerchantOperatingViewport({ data }: { data: MerchantDiagnosticsResponse
       <MerchantMobileDecisionCard data={data} primaryDecision={primaryDecision} />
 
       <section className="mb-4 hidden gap-4 sm:grid md:grid-cols-2 xl:grid-cols-4">
-        <MerchantStatCard
-          icon={<ShoppingCart aria-hidden="true" size={22} />}
-          value={data.product_count ?? 0}
-          label="produktów w ostatnim odczycie"
-          cta="Zobacz kolejkę"
-          tone="blue"
-        />
+        {productFact ? (
+          <MerchantStatCard
+            icon={<ShoppingCart aria-hidden="true" size={22} />}
+            value={productFact.value}
+            label="produktów w ostatnim odczycie"
+            cta="Zobacz kolejkę"
+            tone="blue"
+            details={<MetricFactChips facts={[productFact]} />}
+          />
+        ) : null}
         <MerchantStatCard
           icon={<AlertTriangle aria-hidden="true" size={22} />}
           value={data.operator_summary.reported_issue_occurrences}
@@ -351,13 +356,15 @@ function MerchantStatCard({
   value,
   label,
   cta,
-  tone
+  tone,
+  details
 }: {
   icon: React.ReactNode;
   value: number | string;
   label: string;
   cta: string;
   tone: "blue" | "green" | "amber" | "red" | "purple";
+  details?: React.ReactNode;
 }) {
   const toneClass = {
     blue: "bg-blue-100 text-action",
@@ -376,6 +383,7 @@ function MerchantStatCard({
         </div>
       </div>
       <div className="mt-3 text-sm font-medium text-action">{cta}</div>
+      {details ? <div className="mt-2">{details}</div> : null}
     </article>
   );
 }
@@ -659,6 +667,7 @@ function MerchantFeedSafetyPanel({ data }: { data: MerchantDiagnosticsResponse }
 
 function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }) {
   const summary = data.operator_summary;
+  const productFact = merchantProductCountFact(data);
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
   const clustersById = new Map(data.issue_clusters.map((cluster) => [cluster.id, cluster]));
   const itemsById = new Map(
@@ -694,11 +703,12 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Produkty" value={data.product_count ?? 0} />
+          {productFact ? <MetricTile label="Produkty" value={productFact.value} /> : null}
           <MetricTile label="Decyzje" value={data.decision_queue.length} />
           <MetricTile label="Zgłoszenia" value={summary.reported_issue_occurrences} />
         </div>
       </div>
+      {productFact ? <MetricFactChips facts={[productFact]} /> : null}
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-3">
@@ -829,6 +839,10 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
       </div>
     </section>
   );
+}
+
+function merchantProductCountFact(data: MerchantDiagnosticsResponse) {
+  return data.data_readiness.factual_metrics.find((fact) => fact.name === "total_products");
 }
 
 function MerchantUnknowns({ data }: { data: MerchantDiagnosticsResponse }) {

@@ -96,13 +96,13 @@ export const MetricStoreStatusSchema = z.object({
 
 export const MetricFactSchema = z.object({
   name: z.string(),
-  metric_label: z.string().default(""),
+  metric_label: z.string().trim().min(1),
   value: z.union([z.string(), z.number()]),
   period: z.string(),
-  period_label: z.string().default(""),
+  period_label: z.string().trim().min(1),
   source_connector: z.string(),
-  source_connector_label: z.string().default(""),
-  evidence_id: z.string(),
+  source_connector_label: z.string().trim().min(1),
+  evidence_id: z.string().trim().min(1),
   dimensions: z.record(z.string(), z.string()).optional().default({}),
   dimension_labels: z.record(z.string(), z.string()).optional().default({}),
   dimension_value_labels: z.record(z.string(), z.string()).optional().default({}),

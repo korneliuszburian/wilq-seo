@@ -444,6 +444,19 @@ class MetricFact(BaseModel):
                 key: _metric_dimension_value_label(key, value)
                 for key, value in self.dimensions.items()
             }
+        required_context = {
+            "etykieta metryki": self.metric_label,
+            "etykieta źródła": self.source_connector_label,
+            "etykieta okresu": self.period_label,
+            "identyfikator dowodu": self.evidence_id,
+        }
+        missing_context = [label for label, value in required_context.items() if not value.strip()]
+        if missing_context:
+            raise ValueError(
+                "Fakt metryczny wymaga pełnego kontekstu marketera: "
+                + ", ".join(missing_context)
+                + "."
+            )
         return self
 
 

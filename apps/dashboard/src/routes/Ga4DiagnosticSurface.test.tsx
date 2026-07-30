@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ActionObject } from "../lib/api";
+import { getActions, getGa4Diagnostics, type ActionObject } from "../lib/api";
 import { ga4Diagnostics } from "./ga4Diagnostics.fixture";
 import { Ga4DiagnosticSurface } from "./Ga4DiagnosticSurface";
 
@@ -36,12 +36,21 @@ vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
-    getGa4Diagnostics: vi.fn().mockResolvedValue(ga4Diagnostics),
-    getActions: vi.fn().mockResolvedValue([ga4Action])
+    getGa4Diagnostics: vi.fn(),
+    getActions: vi.fn()
   };
 });
 
 describe("Ga4DiagnosticSurface", () => {
+  afterEach(() => cleanup());
+
+  beforeEach(() => {
+    vi.mocked(getGa4Diagnostics).mockReset();
+    vi.mocked(getActions).mockReset();
+    vi.mocked(getGa4Diagnostics).mockResolvedValue(ga4Diagnostics as never);
+    vi.mocked(getActions).mockResolvedValue([ga4Action]);
+  });
+
   it("gives the marketer a safe measurement decision before technical details", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -78,5 +87,33 @@ describe("Ga4DiagnosticSurface", () => {
     expect(routeSource).not.toContain("action.payload.payload_preview");
     expect(routeSource).not.toContain("function formatGa4EvidenceCount");
     expect(routeSource).not.toContain("function formatGa4ActionCount");
+  });
+
+  it("keeps GA4 readiness authoritative when the secondary actions read is pending", async () => {
+    const blockedDiagnostics = structuredClone(ga4Diagnostics);
+    blockedDiagnostics.data_readiness = {
+      ...blockedDiagnostics.data_readiness,
+      state: "blocked",
+      state_label: "Odczyt GA4 zablokowany",
+      reason: "Dokładny powód GA4 z API.",
+      safe_next_step: "Dokładny bezpieczny krok GA4 z API.",
+      factual_metric_count: 0,
+      factual_metrics: [],
+      coverage_label: "Brak potwierdzonych metryk GA4."
+    };
+    vi.mocked(getGa4Diagnostics).mockResolvedValue(blockedDiagnostics as never);
+    vi.mocked(getActions).mockImplementation(() => new Promise(() => {}));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Ga4DiagnosticSurface />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText("Dokładny powód GA4 z API.")).toBeInTheDocument();
+    expect(screen.getByText("Dokładny bezpieczny krok GA4 z API.")).toBeInTheDocument();
+    expect(screen.queryByText("Nie udało się pobrać akcji do sprawdzenia.")).not.toBeInTheDocument();
+    expect(screen.queryByText("GA4: co dziś zrobić")).not.toBeInTheDocument();
   });
 });

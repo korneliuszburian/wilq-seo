@@ -1,8 +1,148 @@
 import { readFileSync } from "node:fs";
 
-import { describe, expect, it } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  getActions,
+  getAdsDiagnosticsSummary,
+  getDemandGenDiagnostics,
+  getGa4Diagnostics
+} from "../lib/api";
+import { AdsDoctorSurface, readyGa4Diagnostics } from "./AdsDoctorSurface";
+
+vi.mock("../lib/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/api")>();
+  return {
+    ...actual,
+    getActions: vi.fn(),
+    getAdsDiagnosticsSummary: vi.fn(),
+    getDemandGenDiagnostics: vi.fn(),
+    getGa4Diagnostics: vi.fn()
+  };
+});
+
+const observedAdsFact = {
+  name: "campaign_count",
+  metric_label: "Kampanie Ads",
+  value: 2,
+  period: "connector_refresh",
+  period_label: "ostatni odczyt źródła",
+  source_connector: "google_ads",
+  source_connector_label: "Google Ads",
+  evidence_id: "ev_ads_ready"
+};
+
+const adsReady = {
+  generated_at: "2026-07-30T10:00:00Z",
+  strict_instruction: "Wnioski o konwersjach wymagają gotowego GA4.",
+  data_readiness: {
+    state: "ready",
+    state_label: "Ads gotowe",
+    reason: "Ads mają potwierdzone fakty.",
+    safe_next_step: "Przejrzyj Ads.",
+    connector_id: "google_ads",
+    connector_label: "Google Ads",
+    evidence_ids: ["ev_ads_ready"],
+    factual_metric_count: 1,
+    factual_metrics: [observedAdsFact],
+    coverage_label: "Potwierdzone Ads.",
+    refresh_allowed: false
+  },
+  operator_summary: {
+    action_summary_label: "bezpieczne sprawdzenie Ads",
+    top_blocked_claim_labels: [],
+    blocked_claim_labels: [],
+    top_decision_ids: [],
+    missing_read_contract_labels: [],
+    campaign_count: 2,
+    search_term_count: 3,
+    total_cost_micros: 1000000,
+    ready_area_count: 1,
+    blocked_area_count: 0,
+    operator_review_gate_summary_label: "review"
+  },
+  action_ids: [],
+  decision_queue: [],
+  evidence_summary_label: "1 dowód Ads",
+  live_data_status_label: "metryki Ads dostępne",
+  freshness_assessment: { state_label: "dane świeże", requires_refresh: false },
+  account_currency_read_contract: { currency_code: "PLN" }
+};
+
+const ga4Blocked = {
+  generated_at: "2026-07-30T10:00:00Z",
+  data_readiness: {
+    state: "blocked",
+    state_label: "GA4 zablokowane",
+    reason: "Dokładny powód GA4 z API.",
+    safe_next_step: "Dokładny bezpieczny krok GA4 z API.",
+    connector_id: "google_analytics_4",
+    connector_label: "GA4",
+    evidence_ids: [],
+    factual_metric_count: 0,
+    factual_metrics: [],
+    coverage_label: "Brak potwierdzonych metryk GA4.",
+    refresh_allowed: true
+  },
+  operator_summary: {
+    measurement_issue_count: 999,
+    blocked_claim_labels: ["Nie używaj sentinela GA4."],
+    summary: "Sentinelowy opis GA4 nie może być widoczny.",
+    next_step: "Sentinelowy krok GA4 nie może być widoczny."
+  },
+  decision_blocker_count: 999,
+  conversion_readiness_contract: { status_label: "Sentinelowy status GA4", summary: "Sentinelowa konwersja." },
+  freshness_assessment: { state_label: "Sentinelowa świeżość", requires_refresh: false },
+  evidence_summary_label: "Sentinelowy dowód GA4",
+  action_summary_label: "Sentinelowa akcja GA4"
+};
 
 describe("AdsDoctorSurface", () => {
+  beforeEach(() => {
+    vi.mocked(getAdsDiagnosticsSummary).mockReset();
+    vi.mocked(getGa4Diagnostics).mockReset();
+    vi.mocked(getActions).mockReset();
+    vi.mocked(getDemandGenDiagnostics).mockReset();
+    vi.mocked(getAdsDiagnosticsSummary).mockResolvedValue(adsReady as never);
+    vi.mocked(getGa4Diagnostics).mockResolvedValue(ga4Blocked as never);
+    vi.mocked(getActions).mockResolvedValue([]);
+    vi.mocked(getDemandGenDiagnostics).mockResolvedValue(null as never);
+  });
+
+  it("does not promote a non-ready GA4 response into Ads measurement facts", () => {
+    const blockedGa4 = {
+      data_readiness: {
+        state: "blocked"
+      }
+    };
+    const readyGa4 = {
+      data_readiness: {
+        state: "ready"
+      }
+    };
+
+    expect(readyGa4Diagnostics(blockedGa4)).toBeNull();
+    expect(readyGa4Diagnostics(readyGa4)).toBe(readyGa4);
+  });
+
+  it("shows GA4's typed readiness instead of a zero or recommendation when Ads is ready", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AdsDoctorSurface />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText("Dokładny powód GA4 z API.")).toBeInTheDocument();
+    expect(screen.getByText("Brak potwierdzonych metryk GA4.")).toBeInTheDocument();
+    expect(screen.getByText("Dokładny bezpieczny krok GA4 z API.")).toBeInTheDocument();
+    expect(screen.queryByText("999 problemy pomiaru")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sentinelowy opis GA4 nie może być widoczny.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sentinelowy krok GA4 nie może być widoczny.")).not.toBeInTheDocument();
+  });
+
   it("ads doctor route renders live metric-backed diagnostics", () => {
     const routeSource = readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8");
     expect(routeSource).toContain('title="Reklamy i pomiar"');
@@ -20,7 +160,7 @@ describe("AdsDoctorSurface", () => {
     expect(routeSource).toContain("summary.total_cost_micros");
     expect(routeSource).toContain("summary.campaign_count");
     expect(routeSource).toContain("summary.search_term_count");
-    expect(routeSource).toContain("ga4Data?.conversion_readiness_contract.status_label");
+    expect(routeSource).toContain("ga4Data.conversion_readiness_contract.status_label");
     expect(routeSource).toContain("demandGenData?.summary");
     expect(routeSource).not.toContain("werdykt przepalonego budżetu");
     const campaignPanelsSource = readFileSync(
@@ -63,6 +203,9 @@ describe("AdsDoctorSurface", () => {
     expect(routeSource).toContain("summary.action_summary_label");
     expect(routeSource).toContain("getGa4Diagnostics");
     expect(routeSource).toContain("getDemandGenDiagnostics");
+    expect(routeSource).toContain("readyGa4Diagnostics(ga4Response)");
+    expect(routeSource).toContain("<DiagnosticDataReadinessPanel readiness={ga4Readiness} />");
+    expect(routeSource).not.toContain("ga4Response?.operator_summary.measurement_issue_count ?? 0");
     expect(routeSource).toContain("ForbiddenClaimsStrip");
     expect(overviewPanelsSource).toContain("primaryDecision?.action_summary_label");
     expect(overviewPanelsSource).toContain("summary.missing_read_contract_summary_label");

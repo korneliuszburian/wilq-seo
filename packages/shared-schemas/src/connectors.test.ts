@@ -50,4 +50,25 @@ describe("DiagnosticDataReadinessSchema", () => {
       }).success
     ).toBe(false);
   });
+
+  it("rejects a ready fact without evidence lineage or marketer labels", () => {
+    for (const field of ["evidence_id", "metric_label", "period_label", "source_connector_label"] as const) {
+      const invalidFact = { ...observedZero, [field]: "   " };
+      expect(
+        DiagnosticDataReadinessSchema.safeParse({
+          state: "ready",
+          state_label: "Dane gotowe do użycia",
+          reason: "WILQ potwierdził fakt.",
+          safe_next_step: "Przejrzyj fakt.",
+          connector_id: "localo",
+          connector_label: "Localo",
+          evidence_ids: ["ev_localo_observed_zero"],
+          factual_metric_count: 1,
+          factual_metrics: [invalidFact],
+          coverage_label: "Pokazane metryki są potwierdzone przez WILQ.",
+          refresh_allowed: false
+        }).success
+      ).toBe(false);
+    }
+  });
 });
