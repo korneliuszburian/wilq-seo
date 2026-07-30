@@ -69,10 +69,7 @@ describe("ContentTextPreparationPanel", () => {
   afterEach(cleanup);
 
   it("starts one exact planning request from the ready state with one marketer-facing action", async () => {
-    let resolveGet!: (value: unknown) => void;
-    vi.mocked(getContentWorkItemPlanningProposal)
-      .mockResolvedValueOnce(readyToGenerate() as never)
-      .mockImplementationOnce(() => new Promise((resolve) => { resolveGet = resolve; }) as never);
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyToGenerate() as never);
     vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValueOnce({ ...readyToGenerate(), status: "generating", safe_next_step: "Poczekaj na strukturę." } as never);
     renderPanel();
 
@@ -236,17 +233,25 @@ describe("ContentTextPreparationPanel", () => {
   });
 
   it("does not let a delayed planning POST overwrite a newer exact query", async () => {
-    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyToGenerate() as never);
+    const terminalB = { ...readyToGenerate(), status: "blocked", blockers: [{ code: "stale_input", label: "Nowe dane", reason: "Stan B.", next_step: "Odśwież." }] };
+    let resolveInvalidationGet!: (value: unknown) => void;
+    vi.mocked(getContentWorkItemPlanningProposal)
+      .mockResolvedValueOnce(readyToGenerate() as never)
+      .mockResolvedValueOnce(terminalB as never)
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveInvalidationGet = resolve; }) as never);
     let resolvePost!: (value: unknown) => void;
     vi.mocked(postContentWorkItemPlanningProposal).mockImplementationOnce(() => new Promise((resolve) => { resolvePost = resolve; }) as never);
     const { client } = renderPanel();
     fireEvent.click(await screen.findByRole("button", { name: "Przygotuj tekst" }));
     await waitFor(() => expect(postContentWorkItemPlanningProposal).toHaveBeenCalledTimes(1));
     const queryKey = ["content-workflow", "work-item", "work_item", "planning-proposal"];
-    client.setQueryData(queryKey, { ...readyToGenerate(), status: "blocked", blockers: [{ code: "stale_input", label: "Nowe dane", reason: "Stan B.", next_step: "Odśwież." }] });
-    await waitFor(() => expect(client.getQueryData(queryKey)).toMatchObject({ status: "blocked" }));
+    await client.refetchQueries({ queryKey });
+    await waitFor(() => expect(screen.getByText("Stan B.")).toBeInTheDocument());
     resolvePost({ ...readyToGenerate(), status: "generating" });
+    await waitFor(() => expect(getContentWorkItemPlanningProposal).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(client.getQueryData(queryKey)).toMatchObject({ status: "blocked" }));
+    expect(screen.getByText("Stan B.")).toBeInTheDocument();
+    resolveInvalidationGet(terminalB);
   });
 
   it("lets the marketer retry the same exact proposal after draft preparation fails", async () => {
