@@ -46,7 +46,13 @@ describe("ContentNewPageTextPreparation", () => {
         blockers: [],
         safe_next_step: "Przygotuj tekst."
       },
-      proposal_status: null
+      proposal_status: {
+        proposal: {
+          search_demand: {
+            gsc_query_rows: [{ term: "historyczne zapytanie", period: "2026-07", impressions: 181, clicks: 4 }]
+          }
+        }
+      }
     } as never);
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={client}><ContentNewPageTextPreparation briefId="brief_1" /></QueryClientProvider>);
@@ -59,7 +65,9 @@ describe("ContentNewPageTextPreparation", () => {
     expect(evidence).toHaveTextContent("To źródło nie dotyczy tej pracy. Brak istniejącej strony.");
     expect(evidence).toHaveTextContent("Brak danych. Nowa strona nie ma historii.");
     expect(evidence).toHaveTextContent("Źródło jest zablokowane. Pomiar zacznie się po wdrożeniu.");
-    expect(evidence).toHaveTextContent("Brak exact zapytań GSC w danych wejściowych");
+    expect(evidence).toHaveTextContent("Nowa strona nie ma własnej historii GSC");
+    expect(evidence).not.toHaveTextContent("historyczne zapytanie");
+    expect(evidence).not.toHaveTextContent("181 wyświetleń");
     expect(evidence).not.toHaveTextContent("niewystarczająco dokładne lub świeże");
   });
 });
