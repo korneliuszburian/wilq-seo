@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -7,10 +7,8 @@ import {
   ConnectorRefreshRun,
   ConnectorStatus,
   Evidence,
-  ExpertRule,
-  Opportunity
+  ExpertRule
 } from "../lib/api";
-import { BlockerNotice, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 
 export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] }) {
@@ -72,53 +70,6 @@ function connectorCapabilityLabel(connector: ConnectorStatus) {
       : "Akcje: przygotowanie i review z danych WILQ; brak odczytu i publikacji w tym kanale.";
   }
   return "Zakres: wyłącznie odczyt danych.";
-}
-
-export function OpportunityList({ opportunities }: { opportunities: Opportunity[] }) {
-  if (opportunities.length === 0) {
-    return (
-      <BlockerNotice message="Brak decyzji w WILQ. Dashboard nie generuje rekomendacji bez dowodów." />
-    );
-  }
-
-  return (
-    <div className="grid gap-3 xl:grid-cols-2">
-      {opportunities.map((opportunity) => (
-        <article key={opportunity.id} className="rounded-md border border-line bg-white p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold">{opportunity.title}</h3>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Decyzja z dowodami i bezpiecznym następnym krokiem.
-              </p>
-            </div>
-            <StatusBadge value={opportunity.risk} label={opportunity.risk_label} />
-          </div>
-          <p className="mt-3 text-sm leading-6 text-slate-700">{opportunity.human_diagnosis}</p>
-          {Object.keys(opportunity.metric_tiles).length > 0 ? (
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-700 sm:grid-cols-3">
-              {Object.entries(opportunity.metric_tiles).map(([label, value]) => (
-                <MetricTile key={`${opportunity.id}-${label}`} label={label} value={value} />
-              ))}
-            </div>
-          ) : null}
-          <p className="mt-3 text-sm font-medium text-ink">{opportunity.recommended_action}</p>
-          <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Dowody: {opportunity.evidence_summary_label}</div>
-            <div>Źródła danych: {opportunity.source_connector_labels.join(", ")}</div>
-            <div>Akcje do sprawdzenia: {opportunity.action_summary_label}</div>
-            <div>Użyta wiedza: {opportunity.knowledge_summary_label}</div>
-          </div>
-          {opportunity.is_fixture ? (
-            <div className="mt-3 flex items-center gap-2 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">
-              <AlertCircle aria-hidden="true" size={15} />
-              Dane testowe, nie realne wyniki Ekologus
-            </div>
-          ) : null}
-        </article>
-      ))}
-    </div>
-  );
 }
 
 export function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {

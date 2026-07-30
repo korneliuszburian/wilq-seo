@@ -46,7 +46,6 @@ describe("operator safety copy guards", () => {
   it("keeps secondary diagnostic empty states tied to safe action limits", () => {
     const source = readSources([
       "src/routes/Ga4DiagnosticSurface.tsx",
-      "src/routes/BriefWorkflowSurface.tsx",
       "src/routes/LocaloDiagnosticSurface.tsx",
       "src/routes/AhrefsDiagnosticSurface.tsx",
       "src/routes/CustomSegmentsDiagnosticSurface.tsx",
