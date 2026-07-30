@@ -86,10 +86,7 @@ export function ContentTextPreparationPanel({ workItemId }: { workItemId: string
       }, workItemId);
     },
     onMutate: () => setRequestedInputDigest(status.data?.planning_input_digest ?? null),
-    onSuccess: async (result) => {
-      // The exact query remains the sole read model. Seed it only until its
-      // invalidation resolves; a fresher GET can then replace this response.
-      queryClient.setQueryData(queryKey, result);
+    onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey }),
         queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workItemId], exact: true })
@@ -180,8 +177,6 @@ export function PlanningEvidenceDetails({
   input: NonNullable<ContentPlanningProposalResponse["input_summary"]>;
   proposal: ContentPlanningProposalResponse["proposal"];
 }) {
-  const usedSources = input.source_assessments.filter((source) => source.status === "used");
-  const nonUsedSources = input.source_assessments.filter((source) => source.status !== "used");
   const queries = proposal?.search_demand?.gsc_query_rows ?? [];
   const hasPlan = Boolean(proposal);
   const isNewPage = input.goal === "new_page";
@@ -194,13 +189,13 @@ export function PlanningEvidenceDetails({
       <EvidenceCount label="Karty wiedzy" value={input.knowledge_card_count} />
       <EvidenceCount label="Dowody" value={input.evidence_id_count} />
     </div>
-    {usedSources.length ? <p className="mt-3 leading-6"><span className="font-semibold text-ink">Wykorzystane źródła: </span>{usedSources.map((source) => planningSourceLabel(source.source)).join(", ")}.</p> : null}
+    {input.source_assessments.length ? <ul className="mt-3 space-y-2 text-slate-600">{input.source_assessments.map((source) => <li key={source.source}><span className="font-semibold text-ink">{planningSourceLabel(source.source)}: </span>{planningSourceStatusCopy(source.status)}{source.reason ? ` ${source.reason}` : ""}</li>)}</ul> : null}
     {isNewPage ? <p className="mt-3 leading-6">Nowa strona nie ma własnej historii GSC. WILQ nie pokazuje tu historycznych zapytań ani metryk.</p> : queries.length ? <div className="mt-3"><p className="font-semibold text-ink">Zapytania GSC przypisane do tej strony</p><ul className="mt-2 space-y-1">{queries.slice(0, 6).map((query) => <li key={`${query.term}-${query.period}`} className="rounded bg-white px-2 py-1">{query.term} · okres: {query.period}{query.impressions !== null ? ` · ${query.impressions} wyświetleń` : ""}{query.clicks !== null ? ` · ${query.clicks} kliknięć` : ""}</li>)}</ul>{queries.length > 6 ? <p className="mt-2 text-xs text-slate-600">Pokazano 6 z {queries.length} exact zapytań GSC.</p> : null}</div> : <p className="mt-3 leading-6">Brak exact zapytań GSC {hasPlan ? "w aktualnym planie" : "w danych wejściowych"} — WILQ nie pokazuje zastępczej listy słów kluczowych.</p>}
-    {nonUsedSources.length ? <ul className="mt-3 space-y-2 text-slate-600">{nonUsedSources.map((source) => <li key={source.source}><span className="font-semibold text-ink">{planningSourceLabel(source.source)}: </span>{planningSourceStatusCopy(source.status)}{source.reason ? ` ${source.reason}` : ""}</li>)}</ul> : null}
   </details>;
 }
 
 function planningSourceStatusCopy(status: string) {
+  if (status === "used") return "Wykorzystane.";
   if (status === "missing") return "Brak danych.";
   if (status === "stale") return "Dane wymagają odświeżenia.";
   if (status === "blocked") return "Źródło jest zablokowane.";
@@ -223,6 +218,7 @@ function planningSourceLabel(source: string) {
     keyword_planner: "Keyword Planner",
     merchant: "Merchant Center",
     localo: "Localo",
+    social: "media społecznościowe",
     knowledge: "baza wiedzy"
   }[source] ?? source;
 }

@@ -69,7 +69,10 @@ describe("ContentTextPreparationPanel", () => {
   afterEach(cleanup);
 
   it("starts one exact planning request from the ready state with one marketer-facing action", async () => {
-    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyToGenerate() as never);
+    let resolveGet!: (value: unknown) => void;
+    vi.mocked(getContentWorkItemPlanningProposal)
+      .mockResolvedValueOnce(readyToGenerate() as never)
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveGet = resolve; }) as never);
     vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValueOnce({ ...readyToGenerate(), status: "generating", safe_next_step: "Poczekaj na strukturę." } as never);
     renderPanel();
 
@@ -208,6 +211,8 @@ describe("ContentTextPreparationPanel", () => {
 
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Materiały źródłowe");
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Google Search Console");
+    expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Wykorzystane. Dokładny materiał.");
+    expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Wykorzystane. Dokładne zapytania.");
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("bdo dla firm · okres: 2026-07 · 181 wyświetleń · 4 kliknięć");
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("bdo dla firm · okres: 2026-06 · 150 wyświetleń · 3 kliknięć");
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Pokazano 6 z 7 exact zapytań GSC.");
@@ -228,6 +233,20 @@ describe("ContentTextPreparationPanel", () => {
     await waitFor(() => expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("2"));
     expect(screen.getByTestId("content-planning-evidence")).not.toHaveTextContent("material_a");
     expect(screen.queryByText("Przygotowuję pierwszy tekst")).not.toBeInTheDocument();
+  });
+
+  it("does not let a delayed planning POST overwrite a newer exact query", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(readyToGenerate() as never);
+    let resolvePost!: (value: unknown) => void;
+    vi.mocked(postContentWorkItemPlanningProposal).mockImplementationOnce(() => new Promise((resolve) => { resolvePost = resolve; }) as never);
+    const { client } = renderPanel();
+    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj tekst" }));
+    await waitFor(() => expect(postContentWorkItemPlanningProposal).toHaveBeenCalledTimes(1));
+    const queryKey = ["content-workflow", "work-item", "work_item", "planning-proposal"];
+    client.setQueryData(queryKey, { ...readyToGenerate(), status: "blocked", blockers: [{ code: "stale_input", label: "Nowe dane", reason: "Stan B.", next_step: "Odśwież." }] });
+    await waitFor(() => expect(client.getQueryData(queryKey)).toMatchObject({ status: "blocked" }));
+    resolvePost({ ...readyToGenerate(), status: "generating" });
+    await waitFor(() => expect(client.getQueryData(queryKey)).toMatchObject({ status: "blocked" }));
   });
 
   it("lets the marketer retry the same exact proposal after draft preparation fails", async () => {

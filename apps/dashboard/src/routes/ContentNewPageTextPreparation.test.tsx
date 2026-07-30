@@ -24,7 +24,7 @@ describe("ContentNewPageTextPreparation", () => {
     } as const;
     const assessments = ["wordpress", "service_profile", "gsc", "ga4", "google_ads", "ahrefs", "keyword_planner", "merchant", "localo", "social"].map((source) => ({
       source, status: source === "service_profile" ? "used" : source === "wordpress" ? "not_applicable" : source === "gsc" ? "missing" : source === "ga4" ? "blocked" : "not_applicable",
-      reason: source === "wordpress" ? "Brak istniejącej strony." : source === "gsc" ? "Nowa strona nie ma historii." : source === "ga4" ? "Pomiar zacznie się po wdrożeniu." : "Jawna ocena źródła.", evidence_ids: []
+      reason: source === "service_profile" ? "Zatwierdzona karta usługi." : source === "wordpress" ? "Brak istniejącej strony." : source === "gsc" ? "Nowa strona nie ma historii." : source === "ga4" ? "Pomiar zacznie się po wdrożeniu." : source === "social" ? "To źródło nie dotyczy tej pracy." : "Jawna ocena źródła.", evidence_ids: []
     }));
     const fixture = ContentNewPagePlanningProposalWorkspaceSchema.parse({
       response_type: "content_new_page_planning_proposal_workspace", contract_version: "content_new_page_planning_proposal_workspace_v1", brief_id: "brief_1",
@@ -72,6 +72,10 @@ describe("ContentNewPageTextPreparation", () => {
 
     const evidence = screen.getByTestId("content-planning-evidence");
     expect(evidence).toHaveTextContent("kontekst usługi");
+    expect(evidence).toHaveTextContent("Wykorzystane. Zatwierdzona karta usługi.");
+    expect(evidence).toHaveTextContent("media społecznościowe");
+    expect(evidence).toHaveTextContent("To źródło nie dotyczy tej pracy.");
+    expect(evidence).not.toHaveTextContent("social:");
     expect(evidence).toHaveTextContent("To źródło nie dotyczy tej pracy. Brak istniejącej strony.");
     expect(evidence).toHaveTextContent("Brak danych. Nowa strona nie ma historii.");
     expect(evidence).toHaveTextContent("Źródło jest zablokowane. Pomiar zacznie się po wdrożeniu.");
