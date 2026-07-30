@@ -4,42 +4,17 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from apps.api.wilq_api.routers.content_catalog_routes import register_content_catalog_routes
-from apps.api.wilq_api.routers.content_legacy_wordpress_read import (
-    register_content_legacy_wordpress_read_routes,
-)
 from apps.api.wilq_api.routers.content_model_routes import (
     register_content_model_routes,
 )
 from apps.api.wilq_api.routers.content_snapshot import (
-    snapshot_for_default_work_item_or_404 as _snapshot_for_default_work_item_or_404,
-)
-from apps.api.wilq_api.routers.content_snapshot import (
     snapshot_for_work_item_or_404 as _snapshot_for_work_item_or_404,
 )
-from apps.api.wilq_api.routers.content_snapshot import (
-    snapshot_for_work_item_or_blocked_or_404 as _snapshot_for_work_item_or_blocked_or_404,
-)
 from apps.api.wilq_api.routers.content_workflow_http import (
-    project_content_work_item_browser_snapshot,
     revision_conflict_next_step,
 )
-from wilq.briefing.content_diagnostics import (
-    build_content_diagnostics_cached,
-    build_content_freshness_assessment_fast,
-)
 from wilq.content.drafts.package import ContentDraftPackage
-from wilq.content.enrichment.opportunity import (
-    ContentOpportunityEnrichmentResponse,
-    build_content_opportunity_enrichment_response,
-)
-from wilq.content.workflow.api import (
-    build_content_work_item_diagnostics_snapshot_response,
-    build_content_work_item_quality_review_response,
-    build_content_work_item_snapshot_audit_response,
-    build_content_work_item_snapshot_human_review_response,
-    build_content_work_item_wordpress_authoring_payload_preview_response,
-    build_content_work_item_wordpress_draft_execution_response,
-)
+from wilq.content.measurement.deployment import ContentPublicDeployment
 from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionConflictResponse,
@@ -48,46 +23,20 @@ from wilq.content.workflow.contracts import (
     ContentDraftRevisionReviewResponse,
     ContentDraftRevisionSaveRequest,
     ContentDraftRevisionSaveResponse,
-    ContentWorkItemBlockedSnapshotResponse,
-    ContentWorkItemBrowserSnapshotResponse,
-    ContentWorkItemBrowserWorkflowSnapshotResponse,
-    ContentWorkItemDraftPackageRequest,
-    ContentWorkItemDraftPackageResponse,
-    ContentWorkItemHumanReviewRequest,
-    ContentWorkItemHumanReviewResponse,
     ContentWorkItemLearningProposalRequest,
     ContentWorkItemLearningProposalResponse,
     ContentWorkItemMeasurementCommand,
     ContentWorkItemMeasurementOutcomeRequest,
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
-    ContentWorkItemPreflightRequest,
-    ContentWorkItemPreflightResponse,
-    ContentWorkItemQualityReviewRequest,
-    ContentWorkItemQualityReviewResponse,
-    ContentWorkItemSalesBriefRequest,
-    ContentWorkItemSalesBriefResponse,
-    ContentWorkItemSnapshotAuditRequest,
-    ContentWorkItemSnapshotHumanReviewRequest,
-    ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
-    ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
-    ContentWorkItemWordPressDraftExecutionRequest,
-    ContentWorkItemWordPressDraftExecutionResponse,
-    ContentWorkItemWordPressDraftHandoffRequest,
-    ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.entry import (
     ContentWorkflowEntryResponse,
     build_content_workflow_entry,
 )
-from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
+from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.planning import ContentPlanningWorkspace
-from wilq.content.workflow.queue import (
-    ContentWorkItemQueueResponse,
-    build_content_work_item_queue_response,
-    build_selected_content_work_item_queue_response,
-)
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
@@ -95,54 +44,13 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionReviewCommand,
     content_draft_package_digest,
 )
-from wilq.content.workflow.stage_drafts import (
-    build_content_work_item_draft_package_response,
-)
 from wilq.content.workflow.stage_measurement import (
     build_content_work_item_learning_proposal_response,
     build_content_work_item_measurement_outcome_response,
 )
-from wilq.content.workflow.stage_preparation import (
-    build_content_work_item_preflight_response,
-    build_content_work_item_sales_brief_response,
-)
-from wilq.content.workflow.stage_review import (
-    build_content_work_item_human_review_response,
-    build_content_work_item_wordpress_draft_handoff_response,
-)
 from wilq.content.workflow.store import content_workflow_store
 
 router = APIRouter()
-
-
-@router.get(
-    "/api/content/work-items/queue",
-    response_model=ContentWorkItemQueueResponse,
-)
-def content_work_item_queue(
-    work_item_id: str | None = Query(default=None),
-) -> ContentWorkItemQueueResponse:
-    if work_item_id is not None:
-        inventory_decision = inventory_decision_for_work_item(
-            work_item_id,
-            # A selected inventory item is the operator's explicit request to
-            # open the workflow.  Keep this first read limited to the catalog;
-            # the heavier WordPress material read belongs to the snapshot and
-            # must not make the decision screen look like a stalled refresh.
-            read_material=False,
-            allow_material_pending=True,
-        )
-        if inventory_decision is not None:
-            return build_selected_content_work_item_queue_response(
-                inventory_decision,
-                build_content_freshness_assessment_fast(
-                    relevant_connector_ids=inventory_decision.source_connectors,
-                ),
-            )
-    return build_content_work_item_queue_response(
-        build_content_diagnostics_cached(),
-        selected_work_item_id=work_item_id,
-    )
 
 
 @router.get(
@@ -153,45 +61,6 @@ def content_workflow_entry(
     search: str | None = Query(default=None, max_length=120),
 ) -> ContentWorkflowEntryResponse:
     return build_content_workflow_entry(search=search)
-
-
-@router.get(
-    "/api/content/work-items/snapshot",
-    response_model=ContentWorkItemBrowserWorkflowSnapshotResponse,
-)
-def content_work_item_snapshot() -> ContentWorkItemBrowserWorkflowSnapshotResponse:
-    return project_content_work_item_browser_snapshot(_snapshot_for_default_work_item_or_404())
-
-
-@router.get(
-    "/api/content/work-items/{work_item_id}/snapshot",
-    response_model=ContentWorkItemBrowserSnapshotResponse,
-)
-def content_work_item_snapshot_for_selected_item(
-    work_item_id: str,
-) -> ContentWorkItemBrowserSnapshotResponse:
-    snapshot = _snapshot_for_work_item_or_blocked_or_404(work_item_id)
-    if isinstance(snapshot, ContentWorkItemBlockedSnapshotResponse):
-        return snapshot
-    return project_content_work_item_browser_snapshot(snapshot)
-
-
-@router.get(
-    "/api/content/work-items/{work_item_id}/enrichment",
-    response_model=ContentOpportunityEnrichmentResponse,
-)
-def content_work_item_enrichment(
-    work_item_id: str,
-) -> ContentOpportunityEnrichmentResponse:
-    diagnostics = build_content_diagnostics_cached()
-    return build_content_opportunity_enrichment_response(
-        diagnostics,
-        work_item_id,
-        queue=build_content_work_item_queue_response(
-            diagnostics,
-            selected_work_item_id=work_item_id,
-        ),
-    )
 
 
 def _build_editor_save_command(
@@ -377,203 +246,6 @@ def content_work_item_draft_revision_review(
 
 
 @router.post(
-    "/api/content/work-items/snapshot/human-review",
-    response_model=ContentWorkItemHumanReviewResponse,
-)
-def content_work_item_snapshot_human_review(
-    request: ContentWorkItemSnapshotHumanReviewRequest,
-) -> ContentWorkItemHumanReviewResponse:
-    response = build_content_work_item_snapshot_human_review_response(
-        build_content_diagnostics_cached(),
-        request,
-    )
-    if response.review_recordable and response.review is not None:
-        content_workflow_store().save_human_review(response.review)
-        return response.model_copy(update={"review_recorded": True})
-    return response
-
-
-@router.post(
-    "/api/content/work-items/{work_item_id}/human-review",
-    response_model=ContentWorkItemHumanReviewResponse,
-)
-def content_work_item_human_review_for_selected_item(
-    work_item_id: str,
-    request: ContentWorkItemSnapshotHumanReviewRequest,
-) -> ContentWorkItemHumanReviewResponse:
-    response = _snapshot_for_work_item_or_404(
-        work_item_id,
-        human_review=request.review,
-    ).human_review
-    if response.review_recordable and response.review is not None:
-        content_workflow_store().save_human_review(response.review)
-        return response.model_copy(update={"review_recorded": True})
-    return response
-
-
-@router.post(
-    "/api/content/work-items/snapshot/audit",
-    response_model=ContentWorkItemWordPressDraftHandoffResponse,
-)
-def content_work_item_snapshot_audit(
-    request: ContentWorkItemSnapshotAuditRequest,
-) -> ContentWorkItemWordPressDraftHandoffResponse:
-    diagnostics = build_content_diagnostics_cached()
-    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
-    review = content_workflow_store().latest_human_review(snapshot.preflight.item.id)
-    response = build_content_work_item_snapshot_audit_response(
-        diagnostics,
-        request,
-        human_review=review,
-    )
-    if response.handoff_result.handoff is not None:
-        content_workflow_store().save_audit(request.audit)
-    return response
-
-
-@router.post(
-    "/api/content/work-items/{work_item_id}/audit",
-    response_model=ContentWorkItemWordPressDraftHandoffResponse,
-)
-def content_work_item_audit_for_selected_item(
-    work_item_id: str,
-    request: ContentWorkItemSnapshotAuditRequest,
-) -> ContentWorkItemWordPressDraftHandoffResponse:
-    review = content_workflow_store().latest_human_review(work_item_id)
-    response = _snapshot_for_work_item_or_404(
-        work_item_id,
-        human_review=review,
-        audit=request.audit,
-    ).wordpress_handoff
-    if response.handoff_result.handoff is not None:
-        content_workflow_store().save_audit(request.audit)
-    return response
-
-
-@router.post(
-    "/api/content/work-items/preflight",
-    response_model=ContentWorkItemPreflightResponse,
-)
-def content_work_item_preflight(
-    request: ContentWorkItemPreflightRequest,
-) -> ContentWorkItemPreflightResponse:
-    return build_content_work_item_preflight_response(request)
-
-
-@router.post(
-    "/api/content/work-items/sales-brief",
-    response_model=ContentWorkItemSalesBriefResponse,
-)
-def content_work_item_sales_brief(
-    request: ContentWorkItemSalesBriefRequest,
-) -> ContentWorkItemSalesBriefResponse:
-    return build_content_work_item_sales_brief_response(request)
-
-
-@router.post(
-    "/api/content/work-items/draft-package",
-    response_model=ContentWorkItemDraftPackageResponse,
-)
-def content_work_item_draft_package(
-    request: ContentWorkItemDraftPackageRequest,
-) -> ContentWorkItemDraftPackageResponse:
-    return build_content_work_item_draft_package_response(request)
-
-
-@router.post(
-    "/api/content/work-items/quality-review",
-    response_model=ContentWorkItemQualityReviewResponse,
-)
-def content_work_item_quality_review(
-    request: ContentWorkItemQualityReviewRequest,
-) -> ContentWorkItemQualityReviewResponse:
-    return build_content_work_item_quality_review_response(request)
-
-
-@router.post(
-    "/api/content/work-items/{work_item_id}/quality-review",
-    response_model=ContentWorkItemQualityReviewResponse,
-)
-def content_work_item_quality_review_for_selected_item(
-    work_item_id: str,
-    request: ContentWorkItemQualityReviewRequest,
-) -> ContentWorkItemQualityReviewResponse:
-    snapshot = _snapshot_for_work_item_or_404(work_item_id)
-    if request.item.id != work_item_id:
-        raise HTTPException(
-            status_code=400,
-            detail="Content quality review item does not match the selected work item.",
-        )
-    response = build_content_work_item_quality_review_response(
-        request.model_copy(
-            update={
-                # The queue candidate is intentionally a compact browser
-                # projection.  Never let it replace the server-owned item
-                # used by quality gates: inventory, duplicate state, metric
-                # baseline and freshness must come from the exact snapshot.
-                "item": snapshot.sales_brief.item,
-                "revision": snapshot.revision_workspace.latest_revision,
-                "claim_ledger": snapshot.claim_ledger,
-                "sales_brief": snapshot.sales_brief.sales_brief_result.brief,
-                "draft_package": (snapshot.draft_package.draft_package_result.draft_package),
-            }
-        )
-    )
-    content_workflow_store().save_quality_review(response.quality_review)
-    return response
-
-
-@router.post(
-    "/api/content/work-items/human-review",
-    response_model=ContentWorkItemHumanReviewResponse,
-)
-def content_work_item_human_review(
-    request: ContentWorkItemHumanReviewRequest,
-) -> ContentWorkItemHumanReviewResponse:
-    return build_content_work_item_human_review_response(request)
-
-
-@router.post(
-    "/api/content/work-items/wordpress-draft-handoff",
-    response_model=ContentWorkItemWordPressDraftHandoffResponse,
-)
-def content_work_item_wordpress_draft_handoff(
-    request: ContentWorkItemWordPressDraftHandoffRequest,
-) -> ContentWorkItemWordPressDraftHandoffResponse:
-    return build_content_work_item_wordpress_draft_handoff_response(request)
-
-
-@router.post(
-    "/api/content/work-items/wordpress-draft-execution",
-    response_model=ContentWorkItemWordPressDraftExecutionResponse,
-)
-def content_work_item_wordpress_draft_execution(
-    request: ContentWorkItemWordPressDraftExecutionRequest,
-) -> ContentWorkItemWordPressDraftExecutionResponse:
-    response = build_content_work_item_wordpress_draft_execution_response(request)
-    if (
-        request.handoff is not None
-        and response.execution_result.status == "created"
-        and response.execution_result.wordpress_post_id
-    ):
-        content_workflow_store().save_wordpress_draft_execution(
-            request.handoff.work_item_id,
-            response.execution_result,
-        )
-    return response
-
-
-@router.post(
-    "/api/content/work-items/wordpress-authoring-payload-preview",
-    response_model=ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
-)
-def content_work_item_wordpress_authoring_payload_preview(
-    request: ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
-) -> ContentWorkItemWordPressAuthoringPayloadPreviewResponse:
-    return build_content_work_item_wordpress_authoring_payload_preview_response(request)
-
-
-@router.post(
     "/api/content/work-items/measurement-window",
     response_model=ContentWorkItemMeasurementWindowResponse,
 )
@@ -587,7 +259,6 @@ def content_work_item_measurement_window(
     from wilq.content.measurement.window import content_measurement_window_outcome_blockers
     from wilq.content.workflow.store_public_deployment import public_deployment
 
-    snapshot = _snapshot_for_work_item_or_404(request.work_item_id)
     store = content_workflow_store()
     revision = next(
         (
@@ -610,17 +281,18 @@ def content_work_item_measurement_window(
             [] if deployment is None else load_content_measurement_facts(deployment.public_url)
         ),
     )
+    item = _measurement_item_for_revision(revision, deployment)
     response = ContentWorkItemMeasurementWindowResponse(
-        item=snapshot.measurement_window.item,
+        item=item,
         updated_item=(
-            snapshot.measurement_window.item.model_copy(
+            item.model_copy(
                 update={
                     "measurement_window_status": result.window.status,
                     "measurement_window_id": result.window.id,
                 }
             )
             if result.window is not None
-            else snapshot.measurement_window.item
+            else item
         ),
         measurement_window_result=result,
         outcome_blockers=(
@@ -633,6 +305,39 @@ def content_work_item_measurement_window(
     if window is not None:
         content_workflow_store().save_measurement_window(window)
     return response
+
+
+def _measurement_item_for_revision(
+    revision: ContentDraftRevision,
+    deployment: ContentPublicDeployment | None,
+) -> ContentWorkItem:
+    """Project only persisted revision/deployment facts for measurement.
+
+    Measurement begins after a confirmed public deployment, so it must not
+    require the transient diagnostics queue that first introduced an existing
+    page.  The compatibility response still carries a ``ContentWorkItem``, but
+    this narrow projection is derived solely from the exact revision and its
+    exact deployment.
+    """
+
+    public_url = getattr(deployment, "public_url", None)
+    publication_evidence_id = getattr(deployment, "publication_evidence_id", None)
+    publication_source_connector = getattr(
+        deployment, "publication_source_connector", None
+    )
+    return ContentWorkItem(
+        id=revision.work_item_id,
+        topic=getattr(revision, "title", "Zmierzony dokument"),
+        source_public_url=public_url,
+        final_canonical_url=public_url,
+        intended_final_url=public_url,
+        wordpress_title_or_h1=getattr(revision, "title", None),
+        evidence_ids=[] if publication_evidence_id is None else [publication_evidence_id],
+        source_connectors=(
+            [] if publication_source_connector is None else [publication_source_connector]
+        ),
+        wordpress_post_id=getattr(deployment, "wordpress_post_id", None),
+    )
 
 
 @router.post(
@@ -827,8 +532,3 @@ register_content_model_routes(
     snapshot_loader=_snapshot_for_work_item_or_404,
 )
 register_content_catalog_routes(router)
-register_content_legacy_wordpress_read_routes(
-    router,
-    snapshot_loader=_snapshot_for_work_item_or_404,
-    default_snapshot_loader=_snapshot_for_default_work_item_or_404,
-)

@@ -50,7 +50,9 @@ class ContentCodexSectionProposalRequest(BaseModel):
         cta_ids = [cta_id.strip() for cta_id in self.selected_cta_ids]
         selected_kinds = sum(bool(value) for value in (headings, section_ids, cta_ids))
         if selected_kinds != 1:
-            raise ValueError("Select sections by stable IDs, legacy headings, or one CTA, never both.")
+            raise ValueError(
+                "Select sections by stable IDs, legacy headings, or one CTA, never both."
+            )
         if any(not heading for heading in headings) or any(
             not section_id for section_id in section_ids
         ):

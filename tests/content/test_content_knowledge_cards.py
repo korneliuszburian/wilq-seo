@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-import wilq.actions.service as action_service
+import wilq.actions.action_catalog as action_service
 from apps.api.wilq_api.routers.content_workflow import router
 from wilq.actions.service import get_action, preview_action, validate_action
 from wilq.content.knowledge.cards import (
@@ -92,7 +92,7 @@ def test_source_fact_registry_loads_commit_safe_public_facts() -> None:
     )
     assert bdo_fact.source_type == "public_site"
     assert bdo_fact.privacy_class == "commit_safe"
-    assert bdo_fact.review_status == "review_required"
+    assert bdo_fact.review_status == "approved"
     assert bdo_fact.source_connectors == ["public_site"]
     assert bdo_fact.blocked_claims
 
@@ -301,23 +301,20 @@ def test_approved_source_facts_require_evidence_and_source_connectors() -> None:
         )
 
 
-def test_source_facts_compile_to_review_required_cards() -> None:
+def test_approved_source_facts_compile_to_current_cards() -> None:
     cards = compile_source_facts_to_knowledge_cards(ekologus_source_fact_registry().facts)
 
     bdo_card = next(card for card in cards if card.id == "ekologus_service_bdo_reporting")
-    assert bdo_card.lifecycle_status == "source_backed_review_required"
-    assert bdo_card.freshness == "public_site_review_required_2026-07-01"
+    assert bdo_card.lifecycle_status == "approved_current"
+    assert bdo_card.freshness == "reviewed_2026-07-01"
     assert bdo_card.source_fact_ids == ["ekologus_public_bdo_faq_2026_07_01"]
     assert bdo_card.evidence_ids == [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID]
     assert bdo_card.source_connectors == ["public_site"]
     assert "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/" in (
         bdo_card.source_lineage
     )
-    assert bdo_card.claims_needing_review
+    assert bdo_card.claims_needing_review == []
     assert any("unikniesz kary" in rule.reason for rule in bdo_card.forbidden_claims)
-    assert "ekologus_service_eko_opieka_calendar" not in {card.id for card in cards}
-    assert "ekologus_claim_policy_brand_voice" not in {card.id for card in cards}
-    assert "ekologus_claim_policy_legal_safety" not in {card.id for card in cards}
 
 
 def test_approved_source_fact_compiles_to_approved_current_with_traceability() -> None:
@@ -716,7 +713,7 @@ def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -
         ekologus_seed_content_knowledge_cards()
     )
     assert response.production_depth_readiness.source_backed_review_required_count >= 5
-    assert response.production_depth_readiness.production_depth_card_count == 0
+    assert response.production_depth_readiness.production_depth_card_count >= 1
     evidence_card = next(
         card for card in response.cards if card.id == "ekologus_evidence_live_connector_requirement"
     )
@@ -764,18 +761,25 @@ def test_source_backed_cards_still_require_review_before_daily_content() -> None
 
 
 def test_work_item_matches_required_service_cta_claim_and_evidence_cards() -> None:
-    match = match_content_knowledge_cards(_item())
+    bdo_url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    match = match_content_knowledge_cards(
+        _item(
+            source_public_url=bdo_url,
+            final_canonical_url=bdo_url,
+            intended_final_url=bdo_url,
+        )
+    )
 
     assert match.blockers == []
     assert match.service_card is not None
     assert match.service_card.id == "ekologus_service_bdo_reporting"
-    assert match.service_card.lifecycle_status == "source_backed_review_required"
+    assert match.service_card.lifecycle_status == "approved_current"
     assert match.cta_cards
     assert match.claim_policy_cards
     assert match.evidence_requirement_cards
     required_ids = required_content_knowledge_card_ids(match)
     assert required_ids[0] == "ekologus_service_bdo_reporting"
-    assert "ekologus_cta_consultation_without_guarantee" in required_ids
+    assert "ekologus_cta_paid_consultation" in required_ids
     assert "ekologus_evidence_live_connector_requirement" in required_ids
 
 
@@ -876,13 +880,16 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.review_policy.can_request_review is True
     assert response.coverage_summary.ready_for_daily_content is False
     assert response.coverage_summary.source_backed_review_required_count >= 5
-    assert response.coverage_summary.approved_current_count == 0
+    assert response.coverage_summary.approved_current_count >= 1
     assert response.approval_readiness.status == "blocked"
     assert response.approval_readiness.can_request_promotion is False
     assert response.approval_readiness.mutation_allowed is False
     assert response.approval_readiness.production_depth_unlocked is False
     assert response.approval_readiness.reviewed_output_required is True
-    assert response.approval_readiness.approved_current_count == 0
+    assert (
+        response.approval_readiness.approved_current_count
+        == response.coverage_summary.approved_current_count
+    )
     assert response.approval_readiness.review_required_count >= 5
     assert response.approval_readiness.first_action_id
     assert response.approval_readiness.checklist
@@ -893,7 +900,7 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         "private_source_governance",
         "promotion_request_packet",
     } <= readiness_codes
-    assert "Publiczne karty usług sprawdzone przez człowieka" in (
+    assert "Publiczne karty usług sprawdzone przez człowieka" not in (
         response.approval_readiness.blockers
     )
     assert all(
@@ -903,11 +910,12 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.source_fact_coverage.pass_state is True
     assert response.source_fact_coverage.knowledge_status == "source_backed_review_required"
     assert response.source_fact_coverage.ready_for_daily_content is False
-    assert response.source_fact_coverage.production_depth_percent == 0
-    assert response.source_fact_coverage.approved_service_percent == 0
-    assert response.source_fact_coverage.reviewed_fact_percent == 0
+    assert 0 < response.source_fact_coverage.production_depth_percent < 100
+    assert 0 < response.source_fact_coverage.approved_service_percent < 100
+    assert 0 < response.source_fact_coverage.reviewed_fact_percent < 100
     assert response.source_fact_coverage.fact_count >= 10
-    assert response.source_fact_coverage.fact_review_counts["review_required"] >= 10
+    assert response.source_fact_coverage.fact_review_counts["approved"] >= 1
+    assert response.source_fact_coverage.fact_review_counts["review_required"] >= 1
     assert response.source_fact_coverage.fact_connector_counts["public_site"] >= 1
     assert (
         response.source_fact_coverage.fact_connector_counts[
@@ -953,7 +961,7 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.service_sections
     assert any(
         section.card_id == "ekologus_service_bdo_reporting"
-        and section.status == "source_backed_review_required"
+        and section.status == "approved_current"
         for section in response.service_sections
     )
     public_service_review_actions = [
@@ -962,7 +970,7 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         if action.action_id.startswith("service_profile_review_card_")
     ]
     public_review_targets = {action.target_card_id for action in public_service_review_actions}
-    assert "ekologus_service_bdo_reporting" in public_review_targets
+    assert "ekologus_service_bdo_reporting" not in public_review_targets
     assert "ekologus_service_operat_wodnoprawny" in public_review_targets
     assert all(action.mode == "review_request" for action in public_service_review_actions)
     assert all(
@@ -1091,12 +1099,15 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     } <= set(response.technical_trace.private_source_proposal_ids)
     assert response.review_actions
     assert response.review_action_summary.total_count == len(response.review_actions)
-    assert response.review_action_summary.public_service_review_count >= 6
+    assert (
+        response.review_action_summary.public_service_review_count
+        == len(public_service_review_actions)
+    )
     assert response.review_action_summary.private_review_count >= 4
     assert response.review_action_summary.private_service_review_count >= 2
     assert response.review_action_summary.private_policy_review_count >= 3
     assert response.review_action_summary.review_request_count >= 10
-    assert response.review_action_summary.prepare_count >= 1
+    assert response.review_action_summary.prepare_count == 0
     assert "nie promuje faktów" in response.review_action_summary.safe_next_step
     assert response.review_action_summary.first_review_action_id
     assert response.review_action_summary.first_review_action_label
@@ -1219,9 +1230,15 @@ def test_service_profile_exposes_water_permit_as_review_required_card() -> None:
 
 
 def test_service_profile_coverage_gaps_reject_unknown_needed_source_type() -> None:
-    response = content_service_profile_response()
-    payload = response.coverage_gaps[0].model_dump(mode="json")
-    payload["needed_source_type"] = "random_source"
+    payload = {
+        "gap_id": "gap_invalid_source_type",
+        "area": "test",
+        "severity": "review_required",
+        "label": "Testowa luka",
+        "reason": "Test walidacji typu źródła.",
+        "needed_source_type": "random_source",
+        "safe_next_step": "Dodaj właściwy typ źródła.",
+    }
 
     with pytest.raises(ValidationError, match="needed_source_type"):
         ContentServiceProfileCoverageGap.model_validate(payload)
@@ -1247,7 +1264,7 @@ def test_content_service_profile_endpoint_exposes_read_only_view_model() -> None
     assert payload["private_source_proposals"]
     assert payload["private_source_proposals"][0]["promotion_allowed"] is False
     gap_ids = {gap["gap_id"] for gap in payload["coverage_gaps"]}
-    assert "gap_no_approved_current_cards" in gap_ids
+    assert "gap_no_approved_current_cards" not in gap_ids
     assert "gap_service_operat_wodnoprawny" not in gap_ids
 
 
@@ -1268,11 +1285,12 @@ def test_service_profile_promotion_action_is_prepare_only_and_review_gated() -> 
     assert action.payload["target_lifecycle"] == "approved_current"
     preview_rows = action.payload["payload_preview"]
     assert preview_rows
-    assert any(
+    assert not any(
         row["target_card_id"] == "ekologus_service_bdo_reporting"
         and row["source_fact_ids"] == ["ekologus_public_bdo_faq_2026_07_01"]
         for row in preview_rows
     )
+    assert all(row["source_fact_ids"] for row in preview_rows)
     assert all(row["apply_allowed"] is False for row in preview_rows)
     assert all(row["api_mutation_ready"] is False for row in preview_rows)
     assert all("promotion_blocked_reason" in row for row in preview_rows)

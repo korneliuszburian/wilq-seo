@@ -10,7 +10,7 @@ from wilq.codex.app_server import (
     CodexAppServerTurnBlocker,
     CodexAppServerTurnResult,
 )
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.planning.dynamic_input import ContentPlanningInput, build_content_planning_input
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticBlockerCode,

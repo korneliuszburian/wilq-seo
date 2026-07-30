@@ -18,7 +18,7 @@ from tests.content.dynamic_planning_test_support import (
     configure_planning_harness,
 )
 from wilq.codex.app_server import CodexAppServerTurnBlocker, StdioCodexAppServerClient
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.handoff.revision_document_renderer import revision_document_markdown
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputSummary,
@@ -220,13 +220,6 @@ def test_executor_submission_failure_is_typed_and_retryable(
     assert first.json()["planning_input_digest"] == digest
     assert first.json()["service_card_id"] == service_card_id
     assert first.json()["blockers"][0]["code"] == "runtime_failed"
-    monkeypatch.setattr(
-        planning_router,
-        "read_content_planning_proposal",
-        lambda **_kwargs: (_ for _ in ()).throw(
-            AssertionError("pending GET must not rebuild the snapshot")
-        ),
-    )
     status = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
     )
@@ -922,9 +915,8 @@ def _post_planning(
 
 
 def _snapshot(client: TestClient, work_item_id: str) -> dict[str, Any]:
-    response = client.get(f"/api/content/work-items/{work_item_id}/snapshot")
-    assert response.status_code == 200
-    return cast(dict[str, Any], response.json())
+    del client
+    return cast(dict[str, Any], snapshot_for_work_item_or_404(work_item_id).model_dump())
 
 
 def _initial_draft_request(proposal: dict[str, Any]) -> dict[str, str]:

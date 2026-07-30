@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Read-only smoke for the current marketer-facing content operator seams."""
+
 from __future__ import annotations
 
 import argparse
@@ -26,7 +27,9 @@ def as_list(value: Any, label: str) -> list[Any]:
     return value
 
 
-def validate_entry(entry: dict[str, Any]) -> dict[str, Any]:
+def validate_entry(
+    entry: dict[str, Any], *, allow_empty: bool = False
+) -> dict[str, Any] | None:
     if entry.get("response_type") != "content_workflow_entry":
         raise SystemExit("Workflow entry response_type mismatch")
     recommendations = [
@@ -35,6 +38,8 @@ def validate_entry(entry: dict[str, Any]) -> dict[str, Any]:
         if isinstance(item, dict)
     ]
     if not recommendations:
+        if allow_empty:
+            return None
         raise SystemExit("No evidence-bound recommendation is available")
     selected = recommendations[0]
     if not selected.get("work_item_id") or not selected.get("url"):
@@ -42,9 +47,10 @@ def validate_entry(entry: dict[str, Any]) -> dict[str, Any]:
     return selected
 
 
-def read_entry(api_base: str) -> dict[str, Any]:
+def read_entry(api_base: str, *, allow_empty: bool = False) -> dict[str, Any] | None:
     return validate_entry(
-        as_dict(request_json(api_base, "GET", "/api/content/workflow-entry"), "workflow entry")
+        as_dict(request_json(api_base, "GET", "/api/content/workflow-entry"), "workflow entry"),
+        allow_empty=allow_empty,
     )
 
 
@@ -80,12 +86,23 @@ def validate_workspace(workspace: dict[str, Any], work_item_id: str) -> dict[str
     return workspace
 
 
+def validate_selected_workspace(response: dict[str, Any], work_item_id: str) -> dict[str, Any]:
+    if response.get("response_type") != "content_selected_workspace":
+        raise SystemExit("Selected workspace response_type mismatch")
+    if response.get("work_item_id") != work_item_id:
+        raise SystemExit("Selected workspace identity mismatch")
+    if response.get("status") != "ready":
+        raise SystemExit("Selected workspace is not ready for the exact work item")
+    workspace = as_dict(response.get("workspace"), "selected workspace")
+    return validate_workspace(workspace, work_item_id)
+
+
 def read_workspace(api_base: str, work_item_id: str) -> dict[str, Any]:
     encoded = urllib.parse.quote(work_item_id, safe="")
-    return validate_workspace(
+    return validate_selected_workspace(
         as_dict(
-            request_json(api_base, "GET", f"/api/content/work-items/{encoded}/document-workspace"),
-            "document workspace",
+            request_json(api_base, "GET", f"/api/content/work-items/{encoded}/selected-workspace"),
+            "selected workspace",
         ),
         work_item_id,
     )
@@ -138,27 +155,52 @@ def read_planning(api_base: str, work_item_id: str) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Smoke current WILQ Content Operator read seams")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
+    parser.add_argument(
+        "--allow-empty",
+        action="store_true",
+        help="Accept an empty workflow entry only as a read-only no-evidence blocker.",
+    )
     args = parser.parse_args()
 
     health = as_dict(request_json(args.api_base, "GET", "/api/health"), "health")
     if health.get("status") != "ok":
         raise SystemExit("WILQ API health is not ok")
-    selected = read_entry(args.api_base)
+    selected = read_entry(args.api_base, allow_empty=args.allow_empty)
+    if selected is None:
+        print(
+            json.dumps(
+                {
+                    "skill": "wilq-content-operator",
+                    "mode": "read_only",
+                    "status": "blocked_no_evidence",
+                    "publish_ready": False,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
     work_item_id = str(selected["work_item_id"])
     workspace = read_workspace(args.api_base, work_item_id)
     planning = read_planning(args.api_base, work_item_id)
 
-    print(json.dumps({
-        "skill": "wilq-content-operator",
-        "mode": "read_only",
-        "work_item_id": work_item_id,
-        "source_status": workspace["source_snapshot"]["status"],
-        "document_status": workspace["canonical_document"]["status"],
-        "next_action": workspace["next_action"]["kind"],
-        "planning_status": planning["status"],
-        "proposal_id": (planning.get("proposal") or {}).get("proposal_id"),
-        "publish_ready": False,
-    }, ensure_ascii=False, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "skill": "wilq-content-operator",
+                "mode": "read_only",
+                "work_item_id": work_item_id,
+                "source_status": workspace["source_snapshot"]["status"],
+                "document_status": workspace["canonical_document"]["status"],
+                "next_action": workspace["next_action"]["kind"],
+                "planning_status": planning["status"],
+                "proposal_id": (planning.get("proposal") or {}).get("proposal_id"),
+                "publish_ready": False,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
     return 0
 
 

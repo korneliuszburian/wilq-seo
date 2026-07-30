@@ -227,6 +227,8 @@ def build_content_dev_draft_write_payload(
     )
     if current.status != "ready" or current.target is None or current.confirmation is None:
         raise ValueError("Nie można zbudować payloadu bez aktualnego mapowania do dev.")
+    if current.root_field is None:
+        raise ValueError("Nie można zbudować payloadu bez odczytanego pola ACF.")
     if not _preview_matches_action_binding(current, binding):
         raise ValueError(
             "Dokładna rewizja, mapowanie albo odczyt dev zmieniły się przed "
@@ -334,7 +336,7 @@ def _document_title(components: list[Any]) -> str:
     ]
     if len(titles) != 1 or not titles[0]:
         raise ValueError("Mapowanie szkicu musi wskazywać dokładnie jeden tytuł dokumentu.")
-    return titles[0]
+    return str(titles[0])
 
 
 def _acf_layout(component: Any) -> dict[str, str]:

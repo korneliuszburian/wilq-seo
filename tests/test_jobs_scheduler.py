@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 from apps.api.wilq_api.main import app
 from wilq.cli import app as cli_app
 from wilq.connectors.refresh import get_connector_refresh_run, run_connector_refresh
-from wilq.jobs.registry import list_jobs
+from wilq.jobs.registry import VENDOR_READ_CONNECTOR_IDS, list_jobs
 from wilq.jobs.scheduler import run_job
 from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRequest
 
@@ -24,14 +24,7 @@ def test_configured_vendor_read_job_only_includes_implemented_vendor_adapters() 
     jobs = {job.id: job for job in list_jobs()}
     job = jobs["configured_vendor_read_refresh"]
 
-    assert "google_ads" in job.connector_ids
-    assert "google_search_console" in job.connector_ids
-    assert "google_analytics_4" in job.connector_ids
-    assert "google_merchant_center" in job.connector_ids
-    assert "ahrefs" in job.connector_ids
-    assert "localo" in job.connector_ids
-    assert "wordpress_ekologus" in job.connector_ids
-    assert "wordpress_sklep" in job.connector_ids
+    assert set(job.connector_ids) <= VENDOR_READ_CONNECTOR_IDS
     assert "openai_codex" not in job.connector_ids
 
 

@@ -806,11 +806,13 @@ def test_route_specific_skill_smokes_expose_typed_marketing_surfaces() -> None:
         smoke_script = (skill_root / "scripts" / smoke_script_name).read_text(encoding="utf-8")
 
         if skill == "wilq-content-operator":
-            assert "GET /api/content/work-items/queue" in skill_doc
+            assert "GET /api/content/workflow-entry" in skill_doc
+            assert "GET /api/content/work-items/queue" not in skill_doc
             assert "GET /api/marketing/brief" not in skill_doc
-            assert '"/api/content/work-items/queue"' in smoke_script
-            assert "planning_workspace" in smoke_script
-            assert "search_demand" in smoke_script
+            assert '"/api/content/workflow-entry"' in smoke_script
+            assert "selected-workspace" in smoke_script
+            assert "planning-proposals" in smoke_script
+            assert "work-items/queue" not in smoke_script
             continue
 
         assert "GET /api/marketing/brief" in skill_doc

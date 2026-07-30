@@ -29,6 +29,10 @@ WILQ API pozostaje mózgiem produktu. Dashboard i skills używają tych samych
 typed kontraktów. Codex korzysta wyłącznie z istniejącego lokalnego
 `codex login`; browser nie łączy się z nim bezpośrednio.
 
+Lokalny runtime uruchamiaj wyłącznie przez `scripts/local_stack.sh`
+(`start|stop|restart|status|logs`); nie stawiaj ręcznie osobnego Uvicorna ani
+Vite.
+
 ## Aktualna prawda
 
 - Techniczny pięciostopniowy workflow `scope → section_map → draft → review →

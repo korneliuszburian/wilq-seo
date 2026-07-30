@@ -60,7 +60,7 @@ function IntegrityReportView({ report }: { report: IntegrityReport }) {
         {report.representation_alignment.map((item) => <li key={item.section_id} className="rounded border border-line p-2"><span className="font-medium text-ink">{item.section_heading}:</span> {item.status === "aligned" ? "zgodne" : "niespójne"}<details className="mt-1 text-xs text-slate-500"><summary>Identyfikatory techniczne</summary><p>Źródło: {item.source_body_sha256}; HTML: {item.rendered_html_sha256 ?? "brak"}.</p></details></li>)}
       </ul>
       <h3 className="mt-4 font-semibold text-ink">Przed → po: różnice leksykalne</h3>
-      <p className="mt-1">To kandydaci do oceny człowieka, nie automatyczny werdykt o utracie znaczenia.</p>
+      <p className="mt-1">To propozycje do oceny człowieka, nie automatyczny werdykt o utracie znaczenia.</p>
       {changedLexicalUnits.length ? <div className="mt-2 space-y-3">{Object.entries(lexicalBySection).map(([sectionId, units]) => {
         const changes = units.filter((unit) => unit.status !== "preserved");
         return changes.length ? <div key={sectionId} className="rounded border border-line p-3"><p className="font-medium text-ink">{changes[0]?.section_heading}</p>{changes.map((unit) => <div key={unit.unit_id} className="mt-2"><p><span className="font-medium">Przed:</span> {unit.before_excerpt}</p><p><span className="font-medium">Po:</span> {unit.after_excerpt ?? "Brak podobnego fragmentu leksykalnego."}</p></div>)}</div> : null;

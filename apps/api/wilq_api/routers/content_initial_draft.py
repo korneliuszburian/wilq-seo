@@ -8,7 +8,7 @@ from uuid import uuid4
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from apps.api.wilq_api.routers.content_codex_proposal import (
+from apps.api.wilq_api.routers.content_codex_runtime import (
     content_codex_app_server_client,
 )
 from wilq.codex.app_server import StdioCodexAppServerClient

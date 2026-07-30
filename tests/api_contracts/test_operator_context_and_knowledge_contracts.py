@@ -1075,7 +1075,9 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     ads = binding_by_id["knowledge_ads_daily_check"]
     assert ads["route"] == "/ads-doctor"
     assert ads["route_label"] == "Google Ads"
-    assert ads["status_label"] == "gotowe"
+    # The operating map must report the current Ads readiness honestly: a
+    # missing live connector is a typed block, not manufactured readiness.
+    assert ads["status_label"] in {"gotowe", "gotowe z blokadami", "zablokowane"}
     assert ads["risk_label"] in {"niskie ryzyko", "średnie ryzyko", "wysokie ryzyko"}
     assert ads["skill_id"] == "wilq-ads-doctor"
     assert "card_google_ads_search_playbook" in ads["knowledge_card_ids"]
@@ -1141,9 +1143,15 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert ads_daily["route_label"] == "Google Ads"
     assert ads_daily["status_label"] in {"gotowe", "zablokowane"}
     assert ads_daily["skill_id"] == "wilq-ads-doctor"
-    assert "kampanie" in ads_daily["metric_tiles"]
+    if ads_daily["status_label"] == "zablokowane":
+        assert ads_daily["metric_tiles"]["blokady"] >= 1
+    else:
+        assert "kampanie" in ads_daily["metric_tiles"]
     assert any(value >= 1 for value in ads_daily["metric_tiles"].values())
-    assert "act_prepare_ads_campaign_review_queue" in ads_daily["action_ids"]
+    if ads_daily["status_label"] == "zablokowane":
+        assert "act_configure_google_ads_env" in ads_daily["action_ids"]
+    else:
+        assert "act_prepare_ads_campaign_review_queue" in ads_daily["action_ids"]
 
     localo = workflow_by_id["localo_visibility_review"]
     assert localo["label"] == "Widoczność lokalna Localo"

@@ -24,4 +24,3 @@ class ContentNewPageDraftBinding(BaseModel):
     revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     authoring_profile_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     content_type: Literal["page", "post"]
-

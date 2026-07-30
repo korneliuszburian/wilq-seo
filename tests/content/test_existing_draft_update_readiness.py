@@ -3,39 +3,13 @@ from fastapi.testclient import TestClient
 from apps.api.wilq_api.main import app
 
 
-def test_existing_draft_update_readiness_is_explicitly_dev_only_and_blocked() -> None:
+def test_existing_draft_update_readiness_is_not_a_public_content_seam() -> None:
     response = TestClient(app).get(
         "/api/content/wordpress/existing-draft-update-readiness"
     )
 
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["contract"] == "wordpress_existing_draft_update_readiness_v1"
-    assert payload["action_id"] == "act_prepare_wordpress_existing_draft_update"
-    assert payload["ready"] is False
-    assert payload["update_supported"] is False
-    assert payload["current_state_available"] is True
-    assert payload["target_post_id"] == "2"
-    assert payload["target_url"] == "https://ekologus.dev.proudsite.pl/"
-    assert payload["current_section_count"] == 9
-    assert payload["proposed_section_count"] == 3
-    assert len(payload["section_diff_preview"]) == 3
-    assert {row["status"] for row in payload["section_diff_preview"]} <= {
-        "unchanged",
-        "changed",
-        "missing_current",
-        "proposed",
-    }
-    assert payload["publish_allowed"] is False
-    assert payload["destructive_update_allowed"] is False
-    assert [blocker["code"] for blocker in payload["blockers"]] == [
-        "existing_draft_update_contract_not_implemented"
-    ]
-    assert payload["evidence_ids"]
-    assert payload["source_connectors"] == [
-        "google_search_console",
-        "wordpress_ekologus",
-    ]
+    assert response.status_code == 404
+    assert "/api/content/wordpress/existing-draft-update-readiness" not in app.openapi()["paths"]
 
 
 def test_existing_draft_update_action_validates_and_previews_without_mutation() -> None:

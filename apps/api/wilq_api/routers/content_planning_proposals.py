@@ -8,11 +8,11 @@ from uuid import uuid4
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from apps.api.wilq_api.routers.content_codex_proposal import (
+from apps.api.wilq_api.routers.content_codex_runtime import (
     content_codex_app_server_client,
 )
 from wilq.codex.app_server import StdioCodexAppServerClient
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputSummary,
@@ -79,9 +79,6 @@ def register_content_planning_proposal_routes(
     def content_work_item_planning_proposal_status(
         work_item_id: str,
     ) -> ContentPlanningProposalResponse:
-        pending = content_planning_proposal_store().latest_generation_response(work_item_id)
-        if pending is not None:
-            return pending
         snapshot = snapshot_loader(work_item_id)
         response = read_content_planning_proposal(
             snapshot=snapshot,
@@ -152,28 +149,46 @@ def register_content_planning_proposal_routes(
                 snapshot=snapshot,
                 store=store,
             )
-            stale_mapping = (
-                request.regenerate_stale_mapping
-                or (
-                    current.status == "stale"
-                    and any(
-                        blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
-                        for blocker in current.blockers
-                    )
-                )
+            current_is_exact_input = (
+                current.work_item_id == work_item_id
+                and current.service_card_id == request.service_card_id
+                and current.planning_input_digest == request.expected_planning_input_digest
             )
-            if not stale_mapping:
-                return ContentPlanningProposalResponse(
-                    status="idempotent",
-                    work_item_id=work_item_id,
-                    service_card_id=request.service_card_id,
-                    proposal=existing,
-                    safe_next_step=(
-                        "Plan już istnieje dla tego exact wejścia; odczytano wersję "
-                        "bez ponownego uruchamiania Codexa."
-                    ),
+            current_has_existing_proposal = (
+                current.proposal is not None
+                and current.proposal.proposal_id == existing.proposal_id
+                and current.proposal.planning_digest == existing.planning_digest
+                and current.proposal.planning_input_digest == existing.planning_input_digest
+            )
+            current_is_exact_existing = current_is_exact_input and current_has_existing_proposal
+            stale_mapping = current_is_exact_existing and current.status == "stale" and any(
+                blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
+                for blocker in current.blockers
+            )
+            if stale_mapping:
+                # The server has already proved that this is the same exact
+                # proposal and input; refreshing its deterministic inventory
+                # map must not depend on an optional browser flag.
+                request = request.model_copy(update={"regenerate_stale_mapping": True})
+            elif current_is_exact_existing and current.status in {"created", "idempotent", "ready"}:
+                return current.model_copy(
+                    update={
+                        "status": "idempotent",
+                        "safe_next_step": (
+                            "Plan już istnieje dla tego exact wejścia; odczytano wersję "
+                            "bez ponownego uruchamiania Codexa."
+                        ),
+                    }
                 )
-            request = request.model_copy(update={"regenerate_stale_mapping": True})
+            elif not current_is_exact_existing:
+                # Never promote a historical proposal over the current typed
+                # state: stale and quality-blocked reads are already the safe
+                # response for this command.
+                return current
+            else:
+                # A current quality blocker is actionable only after an
+                # explicit new generation path, never through idempotency.
+                return current
         if snapshot is None:
             try:
                 snapshot = snapshot_loader(work_item_id)
@@ -192,7 +207,14 @@ def register_content_planning_proposal_routes(
         )
         if early_response is not None:
             return early_response
-        assert planning_input is not None
+        if planning_input is None:
+            return _planning_generation_failure_response(
+                work_item_id=work_item_id,
+                service_card_id=request.service_card_id,
+                planning_input_digest=request.expected_planning_input_digest,
+                input_summary=None,
+                error=RuntimeError("Planning preparation returned no input or blocker."),
+            )
         # A changed digest is the normal re-plan path after fresh metrics,
         # inventory or knowledge arrive.  The command accepts only the exact
         # snapshot validated above; once queued, the worker must not rebuild a

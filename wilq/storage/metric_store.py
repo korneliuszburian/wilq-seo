@@ -119,6 +119,8 @@ class DuckDbMetricStore:
         limit: int = 100,
     ) -> list[MetricFact]:
         bounded_limit = max(1, min(limit, MAX_METRIC_FACT_READ_LIMIT))
+        # Only fixed SQL fragments above are interpolated; all
+        # connector, URL, path and identity values remain bound parameters.
         query = """
             WITH metric_facts_with_previous AS (
             SELECT
@@ -578,7 +580,7 @@ class DuckDbMetricStore:
               facts.dimensions_json ASC,
               facts.evidence_id ASC
             LIMIT ?
-        """.replace("{legacy_join}", legacy_join).replace(
+        """.replace("{legacy_join}", legacy_join).replace(  # nosec B608
             "{legacy_condition}", legacy_condition
         )
         params: list[Any] = [
@@ -776,8 +778,9 @@ def _prepare_legacy_landing_identity_index(
         "$.page",
         "$.page_location",
     ]
-    stored_rows = connection.execute(
-        f"""
+    # The repeated predicate and JSON paths are module-owned
+    # literals; connector IDs and URL bases are passed as bound parameters.
+    query = f"""
         SELECT DISTINCT run_id, metric_name, dimensions_json
         FROM connector_metric_facts
         WHERE connector_id = ANY(?)
@@ -785,7 +788,9 @@ def _prepare_legacy_landing_identity_index(
             dimensions_json, '$._wilq_landing_identity'
           ) IS NULL
           AND ({" OR ".join(base_match for _ in dimension_paths)})
-        """,
+        """  # nosec B608
+    stored_rows = connection.execute(
+        query,
         [
             list(dict.fromkeys(connector_ids)),
             *[

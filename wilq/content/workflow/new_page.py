@@ -372,7 +372,7 @@ def build_new_page_overlap_guard(
             candidates=title_matches,
         )
 
-    signals = [
+    signals: list[tuple[Literal["shared_intent", "shared_service"], str]] = [
         ("shared_intent", _normalized(brief.search_intent)),
         ("shared_service", _normalized(brief.service)),
     ]

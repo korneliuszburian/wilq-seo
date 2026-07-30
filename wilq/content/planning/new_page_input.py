@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Iterable
 from hashlib import sha256
+from typing import cast
 
 from wilq.content.knowledge.cards import ContentKnowledgeCard
 from wilq.content.knowledge.source_facts import ContentSourceFact
@@ -10,6 +11,7 @@ from wilq.content.knowledge.work_item_service_profile import ContentWorkItemServ
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
+    ContentPlanningInputBlockerCode,
     ContentPlanningInputBuildResult,
 )
 from wilq.content.planning.input_sources import (
@@ -17,6 +19,7 @@ from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningSourceAssessment,
     ContentPlanningSourceFact,
+    ContentPlanningSourceName,
 )
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.new_page import (
@@ -40,8 +43,20 @@ def build_new_page_planning_input(
     blocker = _current_foundation_blocker(brief, foundation, overlap_guard, service_card)
     if blocker is not None:
         return ContentPlanningInputBuildResult(blockers=[blocker])
-    assert foundation is not None
-    assert service_card is not None
+    if foundation is None:
+        return ContentPlanningInputBuildResult(blockers=[_blocker(
+            "missing_planning_foundation",
+            "Brakuje zapisanej podstawy planowania",
+            "Nowa strona wymaga exact briefu, kontroli pokrycia i ręcznego wyboru usługi.",
+            "Zapisz podstawę planowania po sprawdzeniu pokrycia serwisu.",
+        )])
+    if service_card is None:
+        return ContentPlanningInputBuildResult(blockers=[_blocker(
+            "service_card_not_approved",
+            "Karta usługi nie jest zatwierdzona",
+            "Wybrana usługa nie ma bieżącej, zatwierdzonej karty wiedzy.",
+            "Wybierz zatwierdzoną kartę usługi i odśwież podstawę planowania.",
+        )])
     source_facts = _source_facts(service_card, source_facts_loader())
     if not source_facts:
         return ContentPlanningInputBuildResult(blockers=[_blocker(
@@ -209,7 +224,7 @@ def _source_assessments(
     ])
     return [
         ContentPlanningSourceAssessment(
-            source=source,
+            source=cast(ContentPlanningSourceName, source),
             status="used" if source == "service_profile" else "not_applicable",
             reason=(
                 "Zatwierdzony kontekst usługi jest źródłem planu nowej strony."
@@ -227,7 +242,7 @@ def _source_assessments(
 
 
 def _blocker(
-    code: str,
+    code: ContentPlanningInputBlockerCode,
     label: str,
     reason: str,
     next_step: str,

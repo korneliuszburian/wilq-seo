@@ -1,3 +1,5 @@
+import { useState, type SyntheticEvent } from "react";
+
 export function ContentHtmlPreview({
   contentHtml,
   title,
@@ -11,6 +13,26 @@ export function ContentHtmlPreview({
   className?: string;
   minHeightClass?: string;
 }) {
+  const [measurement, setMeasurement] = useState<{
+    contentHtml: string;
+    height: number;
+  } | null>(null);
+
+  const measureHeight = (event: SyntheticEvent<HTMLIFrameElement>) => {
+    const document = event.currentTarget.contentDocument;
+    if (!document) return;
+    const height = Math.max(
+      document.body?.scrollHeight ?? 0,
+      document.documentElement?.scrollHeight ?? 0,
+      document.body?.offsetHeight ?? 0,
+      document.documentElement?.offsetHeight ?? 0
+    );
+    // The iframe border consumes two pixels from its content viewport. Keep
+    // that margin so a document that exactly fills its measured height does
+    // not gain a cosmetic inner scrollbar.
+    if (height > 0) setMeasurement({ contentHtml, height: height + 2 });
+  };
+
   return (
     <iframe
       title={title}
@@ -19,6 +41,8 @@ export function ContentHtmlPreview({
       srcDoc={previewDocument(contentHtml)}
       data-testid={testId}
       className={`block ${minHeightClass} w-full rounded-md border border-line bg-white ${className}`}
+      style={measurement?.contentHtml === contentHtml ? { height: `${measurement.height}px` } : undefined}
+      onLoad={measureHeight}
     />
   );
 }

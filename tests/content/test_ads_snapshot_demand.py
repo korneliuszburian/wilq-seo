@@ -5,9 +5,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-from fastapi.testclient import TestClient
-
-from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_snapshot
 from wilq.content.canonical.redacted_landing import build_redacted_landing_reference
 from wilq.content.workflow.ads_demand_source import content_diagnostics_with_ads_refresh
@@ -20,14 +17,13 @@ from wilq.schemas import (
 )
 
 
-def test_snapshot_reads_latest_ads_batch_and_joins_clicked_term_landing(
+def test_exact_demand_read_enriches_selected_decision_and_caches_ads_batch(
     monkeypatch: Any,
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
     diagnostics = ContentDiagnosticsResponse.model_validate(
-        client.get("/api/content/diagnostics").json()
+        content_snapshot.build_content_diagnostics_cached().model_dump()
     )
     decision = next(item for item in diagnostics.decision_queue if item.source_public_url)
     assert decision.source_public_url is not None
@@ -79,34 +75,32 @@ def test_snapshot_reads_latest_ads_batch_and_joins_clicked_term_landing(
     monkeypatch.setattr(content_snapshot, "list_connector_refresh_runs", lambda **_: [ads_refresh])
     monkeypatch.setattr(content_snapshot, "metric_store", lambda: store)
     monkeypatch.setattr(content_snapshot, "list_exact_metric_batch", exact_batch)
+    content_snapshot._exact_diagnostics_cache.clear()
 
-    response = client.get(
-        "/api/content/work-items/"
-        f"{work_item_id}/snapshot"
+    enriched = content_snapshot.diagnostics_with_exact_gsc_demand(work_item_id)
+    enriched_decision = next(
+        item for item in enriched.decision_queue if item.id == decision.id
     )
 
-    assert response.status_code == 200
-    ads_rows = response.json()["planning_workspace"]["proposal"]["search_demand"][
-        "ads_term_rows"
-    ]
     assert calls[0]["connector_id"] == "google_ads"
     assert calls[0]["evidence_id"] == ads_refresh.evidence_ids[0]
     assert "search_term_clicks" in calls[0]["metric_names"]
     assert "search_term_payload_status" in calls[0]["metric_names"]
-    assert [(row["term"], row["clicks"]) for row in ads_rows] == [("ekologus", 7)]
-    assert ads_rows[0]["alignment_basis"] == "same_window_search_term_landing"
-    assert ads_rows[0]["freshness"] == "stale"
-    assert response.json()["planning_workspace"]["proposal"]["search_demand"][
-        "optional_ads_status"
-    ] == "stale"
+    assert {
+        (fact.name, fact.value)
+        for fact in enriched_decision.metric_facts
+        if fact.source_connector == "google_ads"
+    } >= {
+        ("search_term_clicks", 7),
+        ("search_term_payload_status", "ready"),
+    }
+    assert ads_refresh.evidence_ids[0] in enriched_decision.evidence_ids
+    assert "google_ads" in enriched_decision.source_connectors
 
-    # Dashboard polling must reuse the exact-demand read model instead of
-    # rescanning the same GSC/Ads batch on every GET.
-    second_response = client.get(
-        "/api/content/work-items/"
-        f"{work_item_id}/snapshot"
-    )
-    assert second_response.status_code == 200
+    # Read callers must reuse the exact-demand projection instead of rescanning
+    # the same GSC/Ads batch on every request.
+    second = content_snapshot.diagnostics_with_exact_gsc_demand(work_item_id)
+    assert second is enriched
     assert len(calls) == 1
 
 

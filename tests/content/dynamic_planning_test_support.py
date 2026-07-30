@@ -10,7 +10,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
-from apps.api.wilq_api.routers import content_codex_proposal as section_proposal_router
 from apps.api.wilq_api.routers import content_initial_draft as initial_draft_router
 from apps.api.wilq_api.routers import content_planning_proposals as planning_router
 from apps.api.wilq_api.routers import content_semantic_review as semantic_review_router
@@ -561,6 +560,12 @@ def _patch_synthetic_inventory_material(monkeypatch: pytest.MonkeyPatch) -> None
             None,
         )
         headings = [] if item is None else (item.acf_section_headings or [])
+        # The harness models a source-bound material read. Some real catalog
+        # entries have no extracted ACF headings, but the synthetic material
+        # still needs one observed content section for the planning fake to
+        # exercise the existing-page mapping contract.
+        if item is not None and not headings:
+            headings = [f"Zakres strony: {item.title}"]
         return ContentInventoryMaterialResponse(
             status="ready",
             url=url,
@@ -587,7 +592,6 @@ def _patch_codex_clients(
         planning_router,
         initial_draft_router,
         semantic_review_router,
-        section_proposal_router,
     ):
         monkeypatch.setattr(
             router,

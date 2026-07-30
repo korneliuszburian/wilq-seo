@@ -8,7 +8,7 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.codex.app_server import CodexAppServerClientProtocol
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.knowledge.cards import ContentKnowledgeCard
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
@@ -22,6 +22,7 @@ from wilq.content.planning.generated_proposal import _run_planning_turn
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
     ContentPlanningProposalBlocker,
+    ContentPlanningProposalBlockerCode,
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
@@ -69,6 +70,35 @@ class ContentNewPagePlanningProposalWorkspace(BaseModel):
     brief_id: str = Field(min_length=1)
     readiness: ContentPlanningInputReadinessResponse
     proposal_status: ContentPlanningProposalResponse | None = None
+
+    @model_validator(mode="after")
+    def require_one_exact_new_page_input(self) -> ContentNewPagePlanningProposalWorkspace:
+        response = self.proposal_status
+        if response is None:
+            return self
+        identity = self.readiness.new_page_document_identity
+        if (
+            self.readiness.status != "ready"
+            or self.readiness.work_item_id is None
+            or self.readiness.planning_input_digest is None
+            or identity is None
+            or self.brief_id != identity.brief_id
+            or response.work_item_id != self.readiness.work_item_id
+            or response.service_card_id != identity.service_card_id
+            or response.planning_input_digest != self.readiness.planning_input_digest
+        ):
+            raise ValueError("New-page proposal workspace must keep one exact ready input.")
+        proposal = response.proposal
+        if proposal is not None:
+            proposal_identity = proposal.new_page_document_identity
+            if (
+                proposal.goal != "new_page"
+                or proposal.planning_input_digest != self.readiness.planning_input_digest
+                or proposal_identity is None
+                or proposal_identity != identity
+            ):
+                raise ValueError("New-page proposal must match the workspace document identity.")
+        return self
 
 
 def build_new_page_planning_proposal_workspace(
@@ -118,6 +148,7 @@ def generate_new_page_planning_proposal(
     if build_result.planning_input is None:
         return workspace
     planning_input = build_result.planning_input
+    _require_workspace_matches_planning_input(workspace, planning_input)
     response = _generate_proposal(
         planning_input,
         request,
@@ -126,7 +157,7 @@ def generate_new_page_planning_proposal(
         run_store=run_store,
         endpoint_path=endpoint_path,
     )
-    return workspace.model_copy(update={"proposal_status": response})
+    return _workspace_with_proposal_status(workspace, response)
 
 
 def queue_new_page_planning_proposal(
@@ -141,15 +172,54 @@ def queue_new_page_planning_proposal(
     if build_result.planning_input is None:
         return workspace, False
     planning_input = build_result.planning_input
+    _require_workspace_matches_planning_input(workspace, planning_input)
     response, outcome = _queue_proposal(planning_input, request, store)
-    return workspace.model_copy(update={"proposal_status": response}), outcome == "queued"
+    return _workspace_with_proposal_status(workspace, response), outcome == "queued"
+
+
+def _require_workspace_matches_planning_input(
+    workspace: ContentNewPagePlanningProposalWorkspace,
+    planning_input: ContentPlanningInput,
+) -> None:
+    """Reject a rebuilt input before it can claim a different brief workspace."""
+
+    identity = workspace.readiness.new_page_document_identity
+    if (
+        planning_input.new_page_foundation is None
+        or planning_input.proposed_ia_location is None
+    ):
+        raise ValueError("New-page planning input requires exact document identity.")
+    expected_identity = build_new_page_document_identity(
+        foundation=planning_input.new_page_foundation,
+        proposed_ia_location=planning_input.proposed_ia_location,
+    )
+    if (
+        workspace.readiness.status != "ready"
+        or workspace.readiness.work_item_id != planning_input.work_item_id
+        or workspace.readiness.planning_input_digest != planning_input.planning_input_digest
+        or identity != expected_identity
+        or workspace.brief_id != expected_identity.brief_id
+    ):
+        raise ValueError("New-page planning input must match the exact workspace readiness.")
+
+
+def _workspace_with_proposal_status(
+    workspace: ContentNewPagePlanningProposalWorkspace,
+    response: ContentPlanningProposalResponse,
+) -> ContentNewPagePlanningProposalWorkspace:
+    """Revalidate derived workspaces; model_copy(update=...) skips validators."""
+
+    return ContentNewPagePlanningProposalWorkspace.model_validate(
+        workspace.model_dump(mode="python")
+        | {"proposal_status": response.model_dump(mode="python")}
+    )
 
 
 def terminalize_new_page_planning_claim(
     response: ContentPlanningProposalResponse,
     store: ContentPlanningProposalStore,
     *,
-    code: str,
+    code: ContentPlanningProposalBlockerCode,
 ) -> None:
     """Release the exact queued claim when its worker cannot safely start Codex."""
 
@@ -276,6 +346,8 @@ def _generate_proposal(
         planning_input=planning_input, operator_hint=request.operator_hint, client=client
     )
     if blocker is not None:
+        if status is None:
+            raise RuntimeError("Blocked planning turn returned no terminal status.")
         run_store.save_codex_run(
             run.model_copy(
                 update={"status": status, "completed_at": utc_now(), "error": blocker.code}
@@ -293,7 +365,8 @@ def _generate_proposal(
             blockers=[blocker],
             safe_next_step=blocker.next_step,
         )
-    assert output is not None
+    if output is None:
+        raise RuntimeError("Completed planning turn returned no model output.")
     completed = run.model_copy(
         update={"status": "completed", "completed_at": utc_now(), "error": None}
     )
@@ -335,7 +408,8 @@ def _proposal_from_output(
     planning_input: ContentPlanningInput, output: ContentPlanningModelOutput, run: CodexRun
 ) -> ContentPlanningProposal:
     foundation = planning_input.new_page_foundation
-    assert foundation is not None and planning_input.proposed_ia_location is not None
+    if foundation is None or planning_input.proposed_ia_location is None:
+        raise ValueError("New-page proposal requires exact foundation and IA location.")
     proposal_id = f"content_planning_proposal_{uuid4().hex}"
     proposal = ContentPlanningProposal(
         work_item_id=planning_input.work_item_id,

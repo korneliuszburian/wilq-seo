@@ -24,6 +24,8 @@ def build_content_revision_html_package(
 
     if revision.page_assets is None:
         raise ValueError("HTML package requires a full-document revision.")
+    if revision.final_canonical_url is None:
+        raise ValueError("HTML package requires a canonical refresh-page URL.")
     if (
         review.revision_id != revision.revision_id
         or review.revision_digest != revision.content_digest

@@ -165,7 +165,7 @@ describe("KnowledgeSurface", () => {
         title: "Styl marki i język Ekologus",
         kind: "policy",
         word_count: 306,
-        digest_prefix: "8186c09a4f715e64",
+        digest_prefix: "8186c09a4f715e64", // pragma: allowlist secret
         privacy_class: "redacted_only",
         import_status: "import_pending",
         source_path: "materials_clean/approved/KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md"
@@ -184,7 +184,7 @@ describe("KnowledgeSurface", () => {
         title: "Styl marki i język Ekologus",
         kind: "policy",
         word_count: 306,
-        digest_prefix: "8186c09a4f715e64",
+        digest_prefix: "8186c09a4f715e64", // pragma: allowlist secret
         privacy_class: "redacted_only",
         import_status: "import_pending",
         source_path: "materials_clean/approved/KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md"

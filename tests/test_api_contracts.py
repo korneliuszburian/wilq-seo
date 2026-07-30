@@ -124,14 +124,13 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings(
     assert google_ads["domain_label"] == "Google Ads"
     assert google_ads["source_connector_labels"] == ["Google Ads"]
     assert "dowod" in google_ads["evidence_summary_label"]
-    assert google_ads["action_summary_label"] == "4 akcje do sprawdzenia"
+    assert google_ads["action_summary_label"] == "3 akcje do sprawdzenia"
     assert google_ads["knowledge_summary_label"] == "1 element wiedzy użyty w decyzji"
     assert google_ads["metric_tiles"]["kampanie"] >= 1
     assert google_ads["action_ids"] == [
         "act_prepare_ads_campaign_review_queue",
         "act_prepare_google_ads_recommendation_review_queue",
         "act_prepare_custom_segments_from_search_terms",
-        "act_prepare_negative_keyword_review_queue",
     ]
     assert google_ads["is_fixture"] is False
     localo = next(

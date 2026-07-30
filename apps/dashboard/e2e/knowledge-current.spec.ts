@@ -5,12 +5,12 @@ test.describe("WILQ Knowledge current behavior", () => {
     test.setTimeout(60_000);
     await page.goto("/knowledge");
 
-    await expect(page.getByRole("heading", { name: "Wiedza", exact: true })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Źródła i wiedza", exact: true })).toBeVisible({
       timeout: 30_000
     });
-    await expect(page.getByRole("heading", { name: "Najbliższa wiedza do sprawdzenia" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Najbliższy krok źródłowy" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co blokuje produkcję treści" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kolejka sprawdzania wiedzy" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kolejka review materiałów źródłowych" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Pokaż kartę" })).toBeVisible();
 
     await page.getByRole("button", { name: "Pokaż kartę" }).click();

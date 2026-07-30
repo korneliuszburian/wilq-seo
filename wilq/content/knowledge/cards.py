@@ -302,7 +302,7 @@ def _live_evidence_requirement_card() -> ContentKnowledgeCard:
         title="Live evidence i source connector są wymagane",
         summary=(
             "Knowledge card może powiedzieć jak interpretować temat, ale rekomendacja "
-            "wymaga evidence IDs i source connectors z WILQ API."
+            "wymaga identyfikatorów dowodów i źródeł WILQ API."
         ),
         evidence_requirements=[
             "Brak evidence ID oznacza brak rekomendacji.",

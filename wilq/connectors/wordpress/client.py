@@ -430,7 +430,7 @@ def read_wordpress_authoring_content(
     try:
         try:
             endpoint = urljoin(credentials.base_url or "", f"wp-json/wp/v2/{normalized_type}")
-            params = {
+            params: dict[str, str | int] = {
                 "context": "edit",
                 "per_page": max(1, min(limit, WORDPRESS_CONTENT_PER_PAGE)),
                 "orderby": "modified",

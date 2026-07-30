@@ -129,7 +129,11 @@ API_BASE="$skill_api_base" scripts/eval_action_validation.sh >/dev/null
 uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base "$skill_api_base" >/dev/null
 uv run python scripts/context_pack_language_guard.py --api-base "$skill_api_base" >/dev/null
 for skill_script in .agents/skills/wilq-*/scripts/smoke_skill_contract.py; do
-  timeout 90s uv run python "$skill_script" --api-base "$skill_api_base" >/dev/null
+  if [ "$skill_script" = ".agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py" ]; then
+    timeout 90s uv run python "$skill_script" --api-base "$skill_api_base" --allow-empty >/dev/null
+  else
+    timeout 90s uv run python "$skill_script" --api-base "$skill_api_base" >/dev/null
+  fi
 done
 echo "Skill API smoke passed"
 

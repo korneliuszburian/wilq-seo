@@ -121,7 +121,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki diagnozy Localo" })).toBeVisible();
     await expect(
-      page.getByText(/Przejrzyj agregaty widoczności lokalnej z Localo/)
+      page.getByText(/Dokończ dostęp Localo przed lokalnymi rekomendacjami/)
     ).toBeVisible();
     await expect(page.getByText(/rankingi lokalne/).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dane Localo w WILQ" })).toBeVisible();

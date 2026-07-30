@@ -32,6 +32,7 @@ def _item(**overrides: object) -> ContentWorkItem:
     payload: dict[str, object] = {
         "id": "content_work_item_bdo",
         "topic": "BDO dla firm",
+        "wordpress_title_or_h1": "Rejestr BDO dla firm",
         "source_public_url": "https://ekologus.pl/bdo/",
         "final_canonical_url": "https://ekologus.pl/bdo/",
         "intended_final_url": "https://ekologus.pl/bdo/",

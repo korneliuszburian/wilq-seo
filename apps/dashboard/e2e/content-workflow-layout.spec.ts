@@ -2,22 +2,23 @@ import { expect, test, type Page } from "@playwright/test";
 
 const evidenceBoundUrl = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/";
 
-async function bindEvidenceBoundPage(page: Page) {
+async function selectEvidenceBoundPage(page: Page) {
   const apiPort = process.env.WILQ_E2E_API_PORT ?? "8875";
-  const response = await page.request.post(
-    `http://127.0.0.1:${apiPort}/api/content/inventory/bind`,
-    { data: { url: evidenceBoundUrl } }
+  const response = await page.request.get(
+    `http://127.0.0.1:${apiPort}/api/content/workflow-entry`
   );
   expect(response.ok()).toBe(true);
-  const binding = (await response.json()) as { status: string; work_item_id: string | null };
-  expect(binding.status).toBe("ready");
-  expect(binding.work_item_id).toBeTruthy();
-  return binding.work_item_id as string;
+  const entry = (await response.json()) as {
+    recommendations: Array<{ url: string; work_item_id: string }>;
+  };
+  const recommendation = entry.recommendations.find((item) => item.url === evidenceBoundUrl);
+  expect(recommendation?.work_item_id).toBeTruthy();
+  return recommendation!.work_item_id;
 }
 
 test.describe("WILQ marketer content workspace", () => {
   test("opens an exact selected page without queue authority or browser writes", async ({ page }) => {
-    const workItemId = await bindEvidenceBoundPage(page);
+    const workItemId = await selectEvidenceBoundPage(page);
     let queueRequests = 0;
     const contentWrites: string[] = [];
     await page.route("**/api/content/work-items/queue*", async (route) => {

@@ -109,9 +109,9 @@ def _item(**overrides: object) -> ContentWorkItem:
     payload: dict[str, Any] = {
         "id": "content_work_item_bdo",
         "topic": "BDO dla firm",
-        "source_public_url": "https://ekologus.pl/bdo/",
-        "final_canonical_url": "https://ekologus.pl/bdo/",
-        "intended_final_url": "https://ekologus.pl/bdo/",
+        "source_public_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        "final_canonical_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        "intended_final_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
         "preview_url": "https://ekologus.dev.proudsite.pl/bdo/",
         "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
         "source_connectors": ["google_search_console", "wordpress_ekologus"],
@@ -132,9 +132,9 @@ def _item(**overrides: object) -> ContentWorkItem:
 def _inventory(**overrides: object) -> ContentInventoryRecord:
     payload: dict[str, Any] = {
         "id": "inventory_bdo",
-        "url": "https://ekologus.pl/bdo/",
-        "final_canonical_url": "https://ekologus.pl/bdo/",
-        "intended_final_url": "https://ekologus.pl/bdo/",
+        "url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        "final_canonical_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        "intended_final_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
         "preview_url": "https://ekologus.dev.proudsite.pl/bdo/",
         "content_status": "published",
         "source_connectors": ["wordpress_ekologus"],
@@ -292,7 +292,9 @@ def test_sales_brief_builds_structured_contract_from_valid_work_item() -> None:
         "source_fact_queries_bdo",
         "source_fact_wordpress_bdo",
     ]
-    assert result.brief.final_canonical_url == "https://ekologus.pl/bdo/"
+    assert result.brief.final_canonical_url == (
+        "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    )
     assert result.brief.preview_url == "https://ekologus.dev.proudsite.pl/bdo/"
     assert result.brief.buyer_problem.startswith("Firma nie wie")
     assert result.brief.buyer_trigger == "obawa przed błędem formalnym, terminem albo kontrolą"
@@ -307,7 +309,7 @@ def test_sales_brief_builds_structured_contract_from_valid_work_item() -> None:
     ]
     assert result.brief.measurement_plan.measurement_window_id == "measure_bdo"
     assert "ekologus_service_environmental_compliance" in result.brief.knowledge_card_ids
-    assert "ekologus_cta_consultation_without_guarantee" in result.brief.knowledge_card_ids
+    assert "ekologus_cta_paid_consultation" in result.brief.knowledge_card_ids
     assert "ekologus_evidence_live_connector_requirement" in result.brief.knowledge_card_ids
     assert result.brief.knowledge_constraints
     assert any(

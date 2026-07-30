@@ -64,8 +64,10 @@ def validate_localo_refresh_contract(
             (runs[0], "context_pack.connector_refresh_runs") if runs else (None, "missing")
         )
     if latest_run is None:
-        if access_probe.get("status") != "unknown":
-            raise SystemExit("Missing Localo refresh run is allowed only for unknown access status")
+        if access_probe.get("status") not in {"unknown", "access_blocked"}:
+            raise SystemExit(
+                "Missing Localo refresh run is allowed only for unknown or blocked access status"
+            )
         if "localo_fix_access_before_visibility_review" not in decision_ids:
             raise SystemExit("Missing Localo refresh run must expose the access review decision")
         if "localo_block_visibility_claims_without_read_contract" not in decision_ids:

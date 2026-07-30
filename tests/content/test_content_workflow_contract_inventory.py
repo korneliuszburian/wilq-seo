@@ -5,15 +5,9 @@ import json
 from fastapi.routing import APIRoute
 
 from apps.api.wilq_api.main import app
-from apps.api.wilq_api.routers import content_workflow as content_workflow_module
 from apps.api.wilq_api.routers.content_workflow import router
 from apps.api.wilq_api.routers.content_workflow_http import _browser_item
-from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
-from wilq.content.drafts.codex_section_proposal import (
-    ContentCodexSectionProposalResponse,
-)
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftResponse
-from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResponse
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
 from wilq.content.planning.dynamic_input import ContentPlanningInputReadinessResponse
@@ -23,19 +17,8 @@ from wilq.content.planning.generated_proposal_contracts import (
 from wilq.content.planning.new_page_proposal import ContentNewPagePlanningProposalWorkspace
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReviewResponse
 from wilq.content.workflow.api import (
-    ContentWordPressDraftActivationPacketResponse,
-    ContentWordPressDraftWriteReadinessResponse,
-    ContentWordPressExistingDraftUpdateReadinessResponse,
-    ContentWorkItemDraftPackageResponse,
-    ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
-    ContentWorkItemPreflightResponse,
-    ContentWorkItemQualityReviewResponse,
-    ContentWorkItemSalesBriefResponse,
-    ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
-    ContentWorkItemWordPressDraftExecutionResponse,
-    ContentWorkItemWordPressDraftHandoffResponse,
 )
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionReviewResponse,
@@ -44,24 +27,19 @@ from wilq.content.workflow.contracts import (
     ContentPublicDeploymentConfirmationResponse,
     ContentPublicDeploymentReadResponse,
     ContentRevisionHtmlPackageResponse,
-    ContentWorkItemBrowserSnapshotResponse,
-    ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemLearningProposalResponse,
 )
-from wilq.content.workflow.decision_context import ContentDecisionContext
-from wilq.content.workflow.document_workspace import ContentDocumentWorkspace
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.new_page import (
     ContentNewPageBriefWorkspace,
     ContentNewPageFoundationResult,
 )
-from wilq.content.workflow.new_page_topics import ContentNewPageTopicRecommendations
 from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     ContentNewPageDeliveryReadiness,
 )
 from wilq.content.workflow.new_page_revision import ContentNewPageRevisionReviewResponse
-from wilq.content.workflow.queue import ContentWorkItemQueueResponse
+from wilq.content.workflow.new_page_topics import ContentNewPageTopicRecommendations
 from wilq.content.workflow.selected_workspace import ContentSelectedWorkspace
 from wilq.content.workflow.target_discovery import ContentTargetDiscovery
 from wilq.content.workflow.target_mapping import (
@@ -113,10 +91,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
     (
         "GET",
-        "/api/content/work-items/{work_item_id}/document-workspace",
-    ): ContentDocumentWorkspace,
-    (
-        "GET",
         "/api/content/work-items/{work_item_id}/selected-workspace",
     ): ContentSelectedWorkspace,
     (
@@ -140,36 +114,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/target-mapping/draft-action",
     ): ActionObject,
     ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
-    ("GET", "/api/content/wordpress/authoring-profile"): WordPressAuthoringProfile,
-    (
-        "GET",
-        "/api/content/wordpress/draft-activation-packet",
-    ): ContentWordPressDraftActivationPacketResponse,
-    (
-        "GET",
-        "/api/content/wordpress/draft-write-readiness",
-    ): ContentWordPressDraftWriteReadinessResponse,
-    (
-        "GET",
-        "/api/content/wordpress/existing-draft-update-readiness",
-    ): ContentWordPressExistingDraftUpdateReadinessResponse,
-    ("GET", "/api/content/work-items/queue"): ContentWorkItemQueueResponse,
-    (
-        "GET",
-        "/api/content/work-items/{work_item_id}/decision-context",
-    ): ContentDecisionContext,
-    (
-        "GET",
-        "/api/content/work-items/snapshot",
-    ): ContentWorkItemBrowserWorkflowSnapshotResponse,
-    (
-        "GET",
-        "/api/content/work-items/{work_item_id}/snapshot",
-    ): ContentWorkItemBrowserSnapshotResponse,
-    (
-        "GET",
-        "/api/content/work-items/{work_item_id}/enrichment",
-    ): ContentOpportunityEnrichmentResponse,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/planning-proposals",
@@ -182,10 +126,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions",
     ): ContentDraftRevisionSaveResponse,
-    (
-        "POST",
-        "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal",
-    ): ContentCodexSectionProposalResponse,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
@@ -228,43 +168,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ): ContentInitialDraftResponse,
     (
         "POST",
-        "/api/content/work-items/snapshot/human-review",
-    ): ContentWorkItemHumanReviewResponse,
-    (
-        "POST",
-        "/api/content/work-items/{work_item_id}/human-review",
-    ): ContentWorkItemHumanReviewResponse,
-    (
-        "POST",
-        "/api/content/work-items/snapshot/audit",
-    ): ContentWorkItemWordPressDraftHandoffResponse,
-    (
-        "POST",
-        "/api/content/work-items/{work_item_id}/audit",
-    ): ContentWorkItemWordPressDraftHandoffResponse,
-    ("POST", "/api/content/work-items/preflight"): ContentWorkItemPreflightResponse,
-    ("POST", "/api/content/work-items/sales-brief"): ContentWorkItemSalesBriefResponse,
-    ("POST", "/api/content/work-items/draft-package"): ContentWorkItemDraftPackageResponse,
-    ("POST", "/api/content/work-items/quality-review"): ContentWorkItemQualityReviewResponse,
-    (
-        "POST",
-        "/api/content/work-items/{work_item_id}/quality-review",
-    ): ContentWorkItemQualityReviewResponse,
-    ("POST", "/api/content/work-items/human-review"): ContentWorkItemHumanReviewResponse,
-    (
-        "POST",
-        "/api/content/work-items/wordpress-draft-handoff",
-    ): ContentWorkItemWordPressDraftHandoffResponse,
-    (
-        "POST",
-        "/api/content/work-items/wordpress-draft-execution",
-    ): ContentWorkItemWordPressDraftExecutionResponse,
-    (
-        "POST",
-        "/api/content/work-items/wordpress-authoring-payload-preview",
-    ): ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
-    (
-        "POST",
         "/api/content/work-items/measurement-window",
     ): ContentWorkItemMeasurementWindowResponse,
     (
@@ -286,19 +189,20 @@ def test_content_workflow_routes_have_frozen_response_models() -> None:
         assert routes[key].response_model is expected_response_model
 
 
-def test_content_workflow_stateful_routes_have_selected_work_item_variants() -> None:
+def test_content_workflow_stateful_routes_include_active_selected_work_item_reads() -> None:
     routes = set(_content_workflow_routes())
 
     for suffix in [
-        "snapshot",
-        "human-review",
-        "audit",
-        "quality-review",
+        "selected-workspace",
+        "target-discovery",
     ]:
         assert any(
-            path == f"/api/content/work-items/{{work_item_id}}/{suffix}"
-            for _method, path in routes
+            path == f"/api/content/work-items/{{work_item_id}}/{suffix}" for _method, path in routes
         )
+
+    assert not any(
+        path == "/api/content/work-items/{work_item_id}/snapshot" for _method, path in routes
+    )
 
 
 def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> None:
@@ -327,6 +231,7 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
         "/api/content/work-items/structured-draft-preview",
         "/api/content/work-items/{work_item_id}/structured-draft-preview",
         "/api/content/work-items/draft-variants",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal",
     }
 
     assert model_paths == {
@@ -334,10 +239,7 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
         "/api/content/new-page-briefs/{brief_id}/planning-proposal",
         "/api/content/work-items/{work_item_id}/initial-draft",
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
-        "/api/content/work-items/{work_item_id}/draft-revisions/"
-        "{base_revision_id}/codex-proposal",
-        "/api/content/work-items/{work_item_id}/draft-revisions/"
-        "{revision_id}/semantic-review",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
     }
     assert forbidden_paths.isdisjoint(content_paths)
     serialized_contract = json.dumps(content_paths, sort_keys=True)
@@ -376,24 +278,36 @@ def test_browser_item_does_not_duplicate_full_wordpress_material() -> None:
     assert projected.metric_facts == item.metric_facts[:12]
 
 
-def test_selected_snapshot_handler_uses_browser_projection(monkeypatch) -> None:
-    sentinel = object()
-    monkeypatch.setattr(
-        content_workflow_module,
-        "_snapshot_for_work_item_or_blocked_or_404",
-        lambda _work_item_id: "internal-snapshot",
-    )
-    monkeypatch.setattr(
-        content_workflow_module,
-        "project_content_work_item_browser_snapshot",
-        lambda snapshot: (snapshot, sentinel),
-    )
+def test_legacy_workflow_routes_are_not_public_content_routes() -> None:
+    for method, path in (
+        ("GET", "/api/content/work-items/queue"),
+        ("GET", "/api/content/work-items/{work_item_id}/enrichment"),
+        ("GET", "/api/content/work-items/{work_item_id}/document-workspace"),
+        ("GET", "/api/content/work-items/{work_item_id}/decision-context"),
+        ("GET", "/api/content/work-items/snapshot"),
+        ("GET", "/api/content/work-items/{work_item_id}/snapshot"),
+        ("POST", "/api/content/work-items/snapshot/human-review"),
+        ("POST", "/api/content/work-items/{work_item_id}/human-review"),
+        ("POST", "/api/content/work-items/snapshot/audit"),
+        ("POST", "/api/content/work-items/{work_item_id}/audit"),
+        ("POST", "/api/content/work-items/wordpress-draft-execution"),
+    ):
+        assert (method, path) not in _content_workflow_routes()
+        assert path not in app.openapi()["paths"]
 
-    result = content_workflow_module.content_work_item_snapshot_for_selected_item(
-        "content_work_item_test"
-    )
 
-    assert result == ("internal-snapshot", sentinel)
+def test_retired_global_authoring_profile_is_not_a_public_content_route() -> None:
+    path = "/api/content/wordpress/authoring-profile"
+
+    assert ("GET", path) not in _content_workflow_routes()
+    assert path not in app.openapi()["paths"]
+
+
+def test_retired_inventory_mutation_and_material_reads_are_not_public_routes() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "/api/content/inventory/bind" not in paths
+    assert "/api/content/inventory/material" not in paths
 
 
 def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:

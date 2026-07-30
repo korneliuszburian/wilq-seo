@@ -10,7 +10,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.knowledge.cards import (
     match_content_knowledge_cards,
     select_content_knowledge_service_card,
@@ -133,7 +133,6 @@ def read_content_planning_proposal(
             service_card_id=service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
-            proposal=latest,
             blockers=[_stale_input_blocker()],
             safe_next_step="Wygeneruj nową wersję planu z aktualnego wejścia.",
         )
@@ -239,29 +238,30 @@ def generate_content_planning_proposal(
     )
     if early_response is not None:
         return early_response
-    assert planning_input is not None
+    if planning_input is None:
+        return _unexpected_planning_input_response(snapshot, request)
     run = _start_run(planning_input, run_store)
     output, trace, blocker, status = _run_planning_turn(
         planning_input=planning_input,
         operator_hint=request.operator_hint,
         client=client,
     )
-    if blocker is not None:
-        assert status is not None
+    if blocker is not None or output is None:
+        failure_status: Literal["blocked", "failed"] = status or "failed"
+        failure_blocker = blocker or _unexpected_runtime_blocker()
         _finish_run(
             run_store,
             run,
-            status=status,
-            error=_run_error_code(blocker),
+            status=failure_status,
+            error=_run_error_code(failure_blocker),
         )
         return _runtime_failure_response(
             planning_input,
-            blocker,
-            status=status,
+            failure_blocker,
+            status=failure_status,
             trace=trace,
             run_id=run.id,
         )
-    assert output is not None
     completed_run = run.model_copy(
         update={"status": "completed", "completed_at": utc_now(), "error": None}
     )
@@ -292,7 +292,8 @@ def queue_content_planning_proposal(
     )
     if early_response is not None:
         return early_response
-    assert planning_input is not None
+    if planning_input is None:
+        return _unexpected_planning_input_response(snapshot, request)
     response = ContentPlanningProposalResponse(
         status="generating",
         work_item_id=planning_input.work_item_id,
@@ -391,6 +392,27 @@ def _prepare_generation(
             safe_next_step="Sprawdź zapisaną wersję planu; model nie został uruchomiony ponownie.",
         )
     return planning_input, None
+
+
+def _unexpected_planning_input_response(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    request: ContentPlanningProposalRequest,
+) -> ContentPlanningProposalResponse:
+    return _blocked_response(
+        snapshot.preflight.item.id,
+        service_card_id=request.service_card_id,
+        planning_input_digest=None,
+        blockers=[_unexpected_runtime_blocker()],
+    )
+
+
+def _unexpected_runtime_blocker() -> ContentPlanningProposalBlocker:
+    return _blocker(
+        "runtime_failed",
+        "Planowanie nie zwróciło kompletnego wejścia",
+        "WILQ nie otrzymał kompletnego stanu potrzebnego do bezpiecznego planowania.",
+        "Odśwież workspace i uruchom nową próbę dopiero po sprawdzeniu blockerów.",
+    )
 
 
 def with_explicit_content_service_selection(
@@ -689,7 +711,11 @@ def _persist_generated_proposal(
     run_store: LocalStateStore,
 ) -> ContentPlanningProposalResponse:
     try:
-        store_status, stored = store.save_generated(proposal, completed_run)
+        store_status, stored = store.save_generated(
+            proposal,
+            completed_run,
+            replace_existing_exact_input=request.regenerate_stale_mapping,
+        )
     except Exception:
         blocker = _blocker(
             "persistence_failed",
@@ -706,7 +732,7 @@ def _persist_generated_proposal(
             run_id=started_run.id,
         )
     return ContentPlanningProposalResponse(
-        status="created" if store_status == "created" else "idempotent",
+        status="idempotent" if store_status == "idempotent" else "created",
         work_item_id=planning_input.work_item_id,
         service_card_id=request.service_card_id,
         planning_input_digest=planning_input.planning_input_digest,

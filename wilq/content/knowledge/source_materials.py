@@ -30,7 +30,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Strategia biznesowa Ekologus",
         kind="strategy",
         word_count=356,
-        digest_prefix="e27259ca8b5b3fc3",
+        digest_prefix="e27259ca8b5b3fc3",  # pragma: allowlist secret
         import_status="excerpt_review_required",
         source_path="materials_clean/approved/01_STRATEGIA_BIZNESOWA_EKOLOGUS.cleaned.md",
     ),
@@ -40,7 +40,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Portfel usług i modele przychodu",
         kind="service",
         word_count=321,
-        digest_prefix="3bbbfbdae02ca38f",
+        digest_prefix="3bbbfbdae02ca38f",  # pragma: allowlist secret
         import_status="excerpt_review_required",
         source_path="materials_clean/approved/02_PORTFEL_USLUG_I_MODELE_PRZYCHODU.cleaned.md",
     ),
@@ -50,7 +50,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Eko-Opieka i Eko Kalendarz",
         kind="playbook",
         word_count=255,
-        digest_prefix="b3ed8d97a9f5262b",
+        digest_prefix="b3ed8d97a9f5262b",  # pragma: allowlist secret
         import_status="excerpt_review_required",
         source_path="materials_clean/approved/03_EKO_OPIEKA_I_EKO_KALENDARZ_PLAYBOOK.cleaned.md",
     ),
@@ -60,7 +60,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Sprzedaż, marketing i follow-up",
         kind="playbook",
         word_count=211,
-        digest_prefix="de3b411e4d96d550",
+        digest_prefix="de3b411e4d96d550",  # pragma: allowlist secret
         import_status="excerpt_review_required",
         source_path="materials_clean/approved/04_SPRZEDAZ_MARKETING_FOLLOWUP.cleaned.md",
     ),
@@ -70,7 +70,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Eko-Opieka",
         kind="knowledge_card",
         word_count=166,
-        digest_prefix="4493485707a7d57b",
+        digest_prefix="4493485707a7d57b",  # pragma: allowlist secret
         import_status="excerpt_review_required",
         source_path="materials_clean/approved/KB_001_EKO_OPIEKA.cleaned.md",
     ),
@@ -100,7 +100,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Kwalifikacja leada",
         kind="knowledge_card",
         word_count=177,
-        digest_prefix="e7fdcf5c70b0cf8a",
+        digest_prefix="e7fdcf5c70b0cf8a",  # pragma: allowlist secret
         import_status="excerpt_review_required",
         source_path="materials_clean/approved/KB_006_KWALIFIKACJA_LEADA.cleaned.md",
     ),
@@ -110,7 +110,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Wycena i stawki",
         kind="knowledge_card",
         word_count=155,
-        digest_prefix="e958790e0cd9445e",
+        digest_prefix="e958790e0cd9445e",  # pragma: allowlist secret
         import_status="excerpt_review_required",
         source_path="materials_clean/approved/KB_008_WYCENA_I_STAWKI.cleaned.md",
     ),
@@ -120,7 +120,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Reguły źródeł i statusów",
         kind="policy",
         word_count=137,
-        digest_prefix="504e467f4a874230",
+        digest_prefix="504e467f4a874230",  # pragma: allowlist secret
         import_status="imported",
         source_path="materials_clean/approved/KB_013_REGULY_ZRODEL_I_STATUSOW.cleaned.md",
     ),
@@ -130,7 +130,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Styl marki i język Ekologus",
         kind="policy",
         word_count=306,
-        digest_prefix="8186c09a4f715e64",
+        digest_prefix="8186c09a4f715e64",  # pragma: allowlist secret
         import_status="imported",
         source_path="materials_clean/approved/KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md",
     ),
@@ -150,7 +150,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Bezpieczeństwo prawne, poufność i zgody",
         kind="policy",
         word_count=146,
-        digest_prefix="536c173c0e2b074b",
+        digest_prefix="536c173c0e2b074b",  # pragma: allowlist secret
         import_status="imported",
         source_path="materials_clean/approved/KB_021_BEZPIECZENSTWO_PRAWNE_POUFNOSC_ZGODY.cleaned.md",
     ),
@@ -170,7 +170,7 @@ _MATERIALS: tuple[ContentSourceMaterial, ...] = (
         title="Indeks korpusu Ekologusa",
         kind="index",
         word_count=302,
-        digest_prefix="c933b0e08b057e29",
+        digest_prefix="c933b0e08b057e29",  # pragma: allowlist secret
         import_status="excerpt_review_required",
         source_path="materials_clean/approved/KB_INDEX.cleaned.md",
     ),

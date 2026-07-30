@@ -136,7 +136,9 @@ class _EditorialHtmlValidator(HTMLParser):
                 continue
             if tag in {"td", "th"} and attribute in {"colspan", "rowspan"}:
                 if value is None or not value.isdigit() or int(value) < 1:
-                    raise ValueError(f"Draft revision content HTML has an invalid {name} attribute.")
+                    raise ValueError(
+                        f"Draft revision content HTML has an invalid {name} attribute."
+                    )
                 continue
             raise ValueError(f"Draft revision content HTML has an unsupported attribute: {name}.")
 

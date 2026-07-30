@@ -7,7 +7,7 @@ from hashlib import sha256
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-from apps.api.wilq_api.routers.content_codex_proposal import content_codex_app_server_client
+from apps.api.wilq_api.routers.content_codex_runtime import content_codex_app_server_client
 from apps.api.wilq_api.routers.content_workflow_http import revision_conflict_next_step
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -260,7 +260,11 @@ def register_content_new_page_planning_proposal_routes(router: APIRouter) -> Non
         store = new_page_brief_store()
         brief = store.load_new_page_brief(brief_id)
         foundation = store.load_new_page_foundation(brief_id)
-        assert brief is not None and foundation is not None
+        if brief is None or foundation is None:
+            # The readiness read and this command are separate requests. A
+            # deleted or superseded prerequisite must return the refreshed
+            # typed workspace, never proceed with a partial plan input.
+            return _new_page_planning_proposal_workspace(brief_id)
         result = build_new_page_planning_input(
             brief=brief,
             foundation=foundation,
@@ -546,7 +550,7 @@ def _run_new_page_planning_generation(
         workspace = _new_page_planning_proposal_workspace(brief_id)
         if workspace.readiness.status != "ready":
             terminalize_new_page_planning_claim(
-                queued_response, claim_store, code="planning_input_blocked"
+                queued_response, claim_store, code="stale_input"
             )
             return
         store = new_page_brief_store()
@@ -554,7 +558,7 @@ def _run_new_page_planning_generation(
         foundation = store.load_new_page_foundation(brief_id)
         if brief is None or foundation is None:
             terminalize_new_page_planning_claim(
-                queued_response, claim_store, code="planning_input_missing"
+                queued_response, claim_store, code="stale_input"
             )
             return
         result = build_new_page_planning_input(

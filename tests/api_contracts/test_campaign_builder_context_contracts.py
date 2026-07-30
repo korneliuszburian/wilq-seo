@@ -30,7 +30,10 @@ def test_codex_context_pack_scopes_campaign_builder_payload() -> None:
     assert "merchant_diagnostics" not in data
     assert "content_diagnostics" not in data
     action_ids = {action["id"] for action in data["active_action_objects"]}
-    assert action_ids == {
+    # Action availability depends on the latest evidence. The skill scope must
+    # constrain every surfaced action, not manufacture a campaign candidate
+    # when the current Ads facts do not establish one.
+    assert action_ids <= {
         "act_prepare_ads_campaign_review_queue",
         "act_prepare_google_ads_recommendation_review_queue",
     }

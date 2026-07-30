@@ -6,6 +6,37 @@ from typing import Any
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from apps.api.wilq_api.routers.content_snapshot import (
+    snapshot_for_default_work_item_or_404,
+)
+from apps.api.wilq_api.routers.content_workflow_http import (
+    project_content_work_item_browser_snapshot,
+)
+from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
+from wilq.content.knowledge.cards import (
+    ContentKnowledgeCardMatch,
+    ekologus_seed_content_knowledge_cards,
+)
+from wilq.content.workflow.api import (
+    build_content_work_item_diagnostics_snapshot_response,
+    build_content_work_item_snapshot_audit_response,
+    build_content_work_item_snapshot_human_review_response,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemHumanReviewRequest,
+    ContentWorkItemPreflightRequest,
+    ContentWorkItemSnapshotAuditRequest,
+    ContentWorkItemSnapshotHumanReviewRequest,
+    ContentWorkItemWordPressDraftHandoffRequest,
+)
+from wilq.content.workflow.stage_preparation import (
+    build_content_work_item_preflight_response,
+)
+from wilq.content.workflow.stage_review import (
+    build_content_work_item_human_review_response,
+    build_content_work_item_wordpress_draft_handoff_response,
+)
+from wilq.content.workflow.store import content_workflow_store
 
 
 def _item(**overrides: object) -> dict[str, object]:
@@ -159,6 +190,29 @@ def _enrichment(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def _knowledge_match() -> ContentKnowledgeCardMatch:
+    cards = ekologus_seed_content_knowledge_cards()
+    service_card = next(card for card in cards if card.card_type == "service")
+    return ContentKnowledgeCardMatch(
+        work_item_id="content_work_item_bdo",
+        service_card=service_card,
+        recommended_service_card_id=service_card.id,
+        buyer_problem_cards=[service_card],
+        cta_cards=[card for card in cards if card.card_type == "cta_pattern"],
+        claim_policy_cards=[
+            card
+            for card in cards
+            if card.claims_needing_review
+            or card.forbidden_claims
+            or card.measurement_sensitive_claims
+        ],
+        evidence_requirement_cards=[
+            card for card in cards if card.card_type == "evidence_requirement"
+        ],
+        measurement_sensitive_cards=[card for card in cards if card.measurement_sensitive_claims],
+    )
+
+
 def _draft_package(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
         "id": "draft_package_content_work_item_bdo",
@@ -244,17 +298,17 @@ def _wordpress_handoff(**overrides: object) -> dict[str, object]:
 
 
 def _post_preflight(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post("/api/content/work-items/preflight", json=payload)
-    assert response.status_code == 200
-    data = response.json()
+    data = build_content_work_item_preflight_response(
+        ContentWorkItemPreflightRequest.model_validate(payload)
+    ).model_dump(mode="json")
     assert sorted(data) == ["inventory_resolution", "item", "preflight_verdict"]
     return data
 
 
 def _post_human_review(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post("/api/content/work-items/human-review", json=payload)
-    assert response.status_code == 200
-    data = response.json()
+    data = build_content_work_item_human_review_response(
+        ContentWorkItemHumanReviewRequest.model_validate(payload)
+    ).model_dump(mode="json")
     assert sorted(data) == [
         "blockers",
         "item",
@@ -268,12 +322,9 @@ def _post_human_review(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _post_wordpress_handoff(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-handoff",
-        json=payload,
-    )
-    assert response.status_code == 200
-    data = response.json()
+    data = build_content_work_item_wordpress_draft_handoff_response(
+        ContentWorkItemWordPressDraftHandoffRequest.model_validate(payload)
+    ).model_dump(mode="json")
     assert sorted(data) == ["handoff_result", "item"]
     return data
 
@@ -317,6 +368,10 @@ def test_content_work_item_preflight_api_preserves_evidence_for_valid_item() -> 
         "wordpress_ekologus",
     ]
     assert "https://ekologus.pl/bdo/" in data["preflight_verdict"]["similar_existing_urls"]
+
+
+def test_retired_legacy_preflight_route_returns_404() -> None:
+    assert TestClient(app).post("/api/content/work-items/preflight", json={}).status_code == 404
 
 
 def test_existing_content_preflight_endpoint_shape_stays_unchanged() -> None:
@@ -531,9 +586,7 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
         and decision.get("source_connectors")
     )
 
-    response = client.get("/api/content/work-items/snapshot")
-    assert response.status_code == 200
-    data = response.json()
+    data = _default_snapshot_json()
 
     item = data["preflight"]["item"]
     assert item["id"] == f"content_work_item_{source_decision['id']}"
@@ -555,9 +608,7 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
     preflight = data["preflight"]["preflight_verdict"]
     assert preflight["status"] == "plan_allowed"
     assert preflight["final_canonical_url"] == source_decision["final_canonical_url"]
-    assert set(source_decision["source_connectors"]).issubset(
-        preflight["source_connectors"]
-    )
+    assert set(source_decision["source_connectors"]).issubset(preflight["source_connectors"])
 
     generation_readiness = data["structured_generation_readiness"]
     brief_result = data["sales_brief"]["sales_brief_result"]
@@ -570,9 +621,7 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
         assert {
             "missing_sales_brief",
             "missing_draft_package",
-        }.issubset(
-            {blocker["code"] for blocker in generation_readiness["blockers"]}
-        )
+        }.issubset({blocker["code"] for blocker in generation_readiness["blockers"]})
         assert generation_readiness["status"] == "blocked"
         assert generation_readiness["editable_section_headings"] == []
     else:
@@ -614,9 +663,7 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
     assert measurement["measurement_window_result"]["window"] is None
     assert [
         blocker["code"] for blocker in measurement["measurement_window_result"]["blockers"]
-    ] == [
-        "missing_publication_event"
-    ]
+    ] == ["missing_publication_event"]
     assert measurement["outcome_blockers"] == []
 
     operator_steps = data["operator_steps"]
@@ -661,10 +708,7 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
         # scope while the generated plan is being produced; no map approval
         # step is exposed.
         assert data["current_step_id"] == "scope"
-    elif (
-        not planning_workspace["scope_current"]
-        or not planning_workspace["section_map_current"]
-    ):
+    elif not planning_workspace["scope_current"] or not planning_workspace["section_map_current"]:
         assert data["current_step_id"] == "scope"
     else:
         assert data["current_step_id"] == "draft"
@@ -714,14 +758,43 @@ def _snapshot_blocks_draft_on_missing_knowledge(snapshot: dict[str, Any]) -> boo
     )
 
 
+def _default_snapshot_json() -> dict[str, Any]:
+    return project_content_work_item_browser_snapshot(
+        snapshot_for_default_work_item_or_404()
+    ).model_dump(mode="json")
+
+
+def _record_legacy_snapshot_human_review(review: dict[str, Any]) -> dict[str, Any]:
+    response = build_content_work_item_snapshot_human_review_response(
+        build_content_diagnostics_cached(),
+        ContentWorkItemSnapshotHumanReviewRequest.model_validate({"review": review}),
+    )
+    if response.review_recordable and response.review is not None:
+        content_workflow_store().save_human_review(response.review)
+        response = response.model_copy(update={"review_recorded": True})
+    return response.model_dump(mode="json")
+
+
+def _record_legacy_snapshot_audit(audit: dict[str, Any]) -> dict[str, Any]:
+    diagnostics = build_content_diagnostics_cached()
+    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
+    request = ContentWorkItemSnapshotAuditRequest.model_validate({"audit": audit})
+    response = build_content_work_item_snapshot_audit_response(
+        diagnostics,
+        request,
+        human_review=content_workflow_store().latest_human_review(snapshot.preflight.item.id),
+    )
+    if response.handoff_result.handoff is not None:
+        content_workflow_store().save_audit(request.audit)
+    return response.model_dump(mode="json")
+
+
 def test_content_work_item_snapshot_persists_real_human_review(
     monkeypatch: Any,
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
-
-    initial = client.get("/api/content/work-items/snapshot").json()
+    initial = _default_snapshot_json()
     item = initial["preflight"]["item"]
     draft = initial["draft_package"]["draft_package_result"]["draft_package"]
     if draft is None:
@@ -735,14 +808,10 @@ def test_content_work_item_snapshot_persists_real_human_review(
         blocked_claims_handled=draft["claims_removed_or_blocked"],
     )
 
-    response = client.post(
-        "/api/content/work-items/snapshot/human-review",
-        json={"review": review},
-    )
-    assert response.status_code == 200
-    assert response.json()["wordpress_handoff_allowed"] is True
+    response = _record_legacy_snapshot_human_review(review)
+    assert response["wordpress_handoff_allowed"] is True
 
-    persisted = client.get("/api/content/work-items/snapshot").json()
+    persisted = _default_snapshot_json()
     human_review = persisted["human_review"]
     assert human_review["review"]["id"] == review["id"]
     assert human_review["reviewed_item"]["human_review_status"] == "approved"
@@ -765,33 +834,27 @@ def test_content_work_item_snapshot_does_not_persist_wrong_work_item_review(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
-
-    initial = client.get("/api/content/work-items/snapshot").json()
+    initial = _default_snapshot_json()
     item = initial["preflight"]["item"]
     draft = initial["draft_package"]["draft_package_result"]["draft_package"]
     if draft is None:
         assert _snapshot_blocks_draft_on_missing_knowledge(initial)
         return
 
-    response = client.post(
-        "/api/content/work-items/snapshot/human-review",
-        json={
-            "review": _human_review(
-                id=f"human_review_{item['id']}",
-                work_item_id="content_work_item_wrong",
-                evidence_ids=item["evidence_ids"],
-                draft_package_id=draft["id"],
-            )
-        },
+    response = _record_legacy_snapshot_human_review(
+        _human_review(
+            id=f"human_review_{item['id']}",
+            work_item_id="content_work_item_wrong",
+            evidence_ids=item["evidence_ids"],
+            draft_package_id=draft["id"],
+        )
     )
-    assert response.status_code == 200
-    assert response.json()["review_recordable"] is False
-    assert response.json()["review_recorded"] is False
-    assert response.json()["wordpress_handoff_allowed"] is False
-    assert "wrong_work_item" in [blocker["code"] for blocker in response.json()["blockers"]]
+    assert response["review_recordable"] is False
+    assert response["review_recorded"] is False
+    assert response["wordpress_handoff_allowed"] is False
+    assert "wrong_work_item" in [blocker["code"] for blocker in response["blockers"]]
 
-    persisted = client.get("/api/content/work-items/snapshot").json()
+    persisted = _default_snapshot_json()
     assert persisted["human_review"]["review"] is None
     assert persisted["human_review"]["reviewed_item"]["human_review_status"] == "missing"
 
@@ -801,9 +864,7 @@ def test_content_work_item_snapshot_persists_needs_changes_without_allowing_hand
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
-
-    initial = client.get("/api/content/work-items/snapshot").json()
+    initial = _default_snapshot_json()
     item = initial["preflight"]["item"]
     draft = initial["draft_package"]["draft_package_result"]["draft_package"]
     if draft is None:
@@ -818,18 +879,14 @@ def test_content_work_item_snapshot_persists_needs_changes_without_allowing_hand
         blocked_claims_handled=draft["claims_removed_or_blocked"],
     )
 
-    response = client.post(
-        "/api/content/work-items/snapshot/human-review",
-        json={"review": review},
-    )
+    response = _record_legacy_snapshot_human_review(review)
 
-    assert response.status_code == 200
-    assert response.json()["review_recordable"] is True
-    assert response.json()["review_recorded"] is True
-    assert response.json()["reviewed_item"]["human_review_status"] == "needs_changes"
-    assert response.json()["wordpress_handoff_allowed"] is False
+    assert response["review_recordable"] is True
+    assert response["review_recorded"] is True
+    assert response["reviewed_item"]["human_review_status"] == "needs_changes"
+    assert response["wordpress_handoff_allowed"] is False
 
-    persisted = client.get("/api/content/work-items/snapshot").json()["human_review"]
+    persisted = _default_snapshot_json()["human_review"]
     assert persisted["review"]["id"] == review["id"]
     assert persisted["reviewed_item"]["human_review_status"] == "needs_changes"
     assert persisted["review_recorded"] is True
@@ -841,9 +898,7 @@ def test_content_work_item_snapshot_persists_matching_audit_envelope(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
-
-    initial = client.get("/api/content/work-items/snapshot").json()
+    initial = _default_snapshot_json()
     item = initial["preflight"]["item"]
     draft = initial["draft_package"]["draft_package_result"]["draft_package"]
     if draft is None:
@@ -856,7 +911,7 @@ def test_content_work_item_snapshot_persists_matching_audit_envelope(
         draft_package_id=draft["id"],
         blocked_claims_handled=draft["claims_removed_or_blocked"],
     )
-    client.post("/api/content/work-items/snapshot/human-review", json={"review": review})
+    _record_legacy_snapshot_human_review(review)
 
     audit = {
         "audit_id": f"audit_{item['id']}",
@@ -865,11 +920,10 @@ def test_content_work_item_snapshot_persists_matching_audit_envelope(
         "evidence_ids": item["evidence_ids"],
         "human_review_id": review["id"],
     }
-    response = client.post("/api/content/work-items/snapshot/audit", json={"audit": audit})
-    assert response.status_code == 200
-    assert response.json()["handoff_result"]["blockers"] == []
+    response = _record_legacy_snapshot_audit(audit)
+    assert response["handoff_result"]["blockers"] == []
 
-    persisted = client.get("/api/content/work-items/snapshot").json()
+    persisted = _default_snapshot_json()
     handoff = persisted["wordpress_handoff"]["handoff_result"]["handoff"]
     assert handoff["post_status"] == "draft"
     assert handoff["publish_allowed"] is False
@@ -888,9 +942,7 @@ def test_content_work_item_snapshot_persists_matching_audit_envelope(
     assert operator_steps["scope"]["phase"] == "current"
     assert operator_steps["draft"]["phase"] == "pending"
     assert operator_steps["review"]["phase"] == "pending"
-    assert operator_steps["review"]["blocker"]["code"] == (
-        "missing_revision_bound_draft"
-    )
+    assert operator_steps["review"]["blocker"]["code"] == ("missing_revision_bound_draft")
     assert operator_steps["dev_draft"]["phase"] == "pending"
     assert operator_steps["dev_draft"]["can_submit"] is False
 
@@ -900,9 +952,7 @@ def test_content_work_item_snapshot_does_not_persist_mismatched_audit(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    client = TestClient(app)
-
-    initial = client.get("/api/content/work-items/snapshot").json()
+    initial = _default_snapshot_json()
     item = initial["preflight"]["item"]
     draft = initial["draft_package"]["draft_package_result"]["draft_package"]
     if draft is None:
@@ -915,27 +965,23 @@ def test_content_work_item_snapshot_does_not_persist_mismatched_audit(
         draft_package_id=draft["id"],
         blocked_claims_handled=draft["claims_removed_or_blocked"],
     )
-    client.post("/api/content/work-items/snapshot/human-review", json={"review": review})
+    _record_legacy_snapshot_human_review(review)
 
-    response = client.post(
-        "/api/content/work-items/snapshot/audit",
-        json={
-            "audit": {
-                "audit_id": f"audit_{item['id']}",
-                "actor": "wilku",
-                "reason": "Zatwierdzony szkic może trafić do WordPress jako draft.",
-                "evidence_ids": item["evidence_ids"],
-                "human_review_id": "human_review_other",
-            }
-        },
+    response = _record_legacy_snapshot_audit(
+        {
+            "audit_id": f"audit_{item['id']}",
+            "actor": "wilku",
+            "reason": "Zatwierdzony szkic może trafić do WordPress jako draft.",
+            "evidence_ids": item["evidence_ids"],
+            "human_review_id": "human_review_other",
+        }
     )
-    assert response.status_code == 200
-    assert response.json()["handoff_result"]["handoff"] is None
+    assert response["handoff_result"]["handoff"] is None
     assert "audit_human_review_mismatch" in [
-        blocker["code"] for blocker in response.json()["handoff_result"]["blockers"]
+        blocker["code"] for blocker in response["handoff_result"]["blockers"]
     ]
 
-    persisted = client.get("/api/content/work-items/snapshot").json()
+    persisted = _default_snapshot_json()
     assert persisted["wordpress_handoff"]["handoff_result"]["handoff"] is None
     assert "missing_audit" in [
         blocker["code"] for blocker in persisted["wordpress_handoff"]["handoff_result"]["blockers"]

@@ -3,7 +3,9 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
 from tests.content.structured_generation_fixtures import (
@@ -13,6 +15,13 @@ from tests.content.structured_generation_fixtures import (
     _sales_brief,
     _structured_output,
 )
+from wilq.content.workflow.api import build_content_work_item_quality_review_response
+from wilq.content.workflow.contracts import (
+    ContentWorkItemHumanReviewRequest,
+    ContentWorkItemQualityReviewRequest,
+    ContentWorkItemWordPressDraftExecutionRequest,
+)
+from wilq.content.workflow.stage_review import build_content_work_item_human_review_response
 
 
 def test_adversarial_quality_review_blocks_forbidden_guarantee_claim() -> None:
@@ -30,10 +39,9 @@ def test_adversarial_quality_review_blocks_forbidden_guarantee_claim() -> None:
     )
     payload["structured_output"]["sections"][0]["claims_used"].append(forbidden_claim)
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = build_content_work_item_quality_review_response(
+        ContentWorkItemQualityReviewRequest.model_validate(payload)
+    ).quality_review.model_dump(mode="json")
     assert review["verdict"] == "blocked"
     assert {"claim_ledger_blocks_quality", "forbidden_claim_used"} <= _blocker_codes(review)
 
@@ -44,35 +52,32 @@ def test_adversarial_quality_review_blocks_claim_outside_ledger() -> None:
         "Ekologus przejmie pełną odpowiedzialność za wszystkie obowiązki BDO."
     )
 
-    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
-
-    assert response.status_code == 200
-    review = response.json()["quality_review"]
+    review = build_content_work_item_quality_review_response(
+        ContentWorkItemQualityReviewRequest.model_validate(payload)
+    ).quality_review.model_dump(mode="json")
     assert review["verdict"] == "blocked"
     assert review["claim_safety"]["status"] == "blocked"
     assert "unsupported_claim_used" in _blocker_codes(review)
 
 
 def test_adversarial_wordpress_publish_request_is_rejected_and_live_write_is_blocked() -> None:
-    publish_response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
-            "handoff": _wordpress_handoff(post_status="publish", publish_allowed=True),
-            "draft_package": _draft_package(),
-            "mode": "dry_run",
-        },
-    )
-    assert publish_response.status_code == 422
+    with pytest.raises(ValidationError):
+        ContentWorkItemWordPressDraftExecutionRequest.model_validate(
+            {
+                "handoff": _wordpress_handoff(post_status="publish", publish_allowed=True),
+                "draft_package": _draft_package(),
+                "mode": "dry_run",
+            }
+        )
 
-    live_response = TestClient(app).post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
-            "handoff": _wordpress_handoff(),
-            "draft_package": _draft_package(),
-            "mode": "live",
-        },
-    )
-    assert live_response.status_code == 422
+    with pytest.raises(ValidationError):
+        ContentWorkItemWordPressDraftExecutionRequest.model_validate(
+            {
+                "handoff": _wordpress_handoff(),
+                "draft_package": _draft_package(),
+                "mode": "live",
+            }
+        )
 
 
 def test_adversarial_measurement_outcome_is_blocked_before_window_is_ready() -> None:
@@ -98,18 +103,18 @@ def test_adversarial_wrong_item_review_cannot_unlock_handoff() -> None:
         draft_package_id="draft_package_content_work_item_zielony_lad",
     )
 
-    response = TestClient(app).post(
-        "/api/content/work-items/human-review",
-        json={
-            "item": other_item,
-            "review": _human_review(),
-            "draft_package": _draft_package(),
-            "claim_ledger": _claim_ledger(),
-        },
+    response = build_content_work_item_human_review_response(
+        ContentWorkItemHumanReviewRequest.model_validate(
+            {
+                "item": other_item,
+                "review": _human_review(),
+                "draft_package": _draft_package(),
+                "claim_ledger": _claim_ledger(),
+            }
+        )
     )
 
-    assert response.status_code == 200
-    data = response.json()
+    data = response.model_dump(mode="json")
     assert data["wordpress_handoff_allowed"] is False
     assert {"wrong_work_item", "draft_package_mismatch"} <= _blocker_codes(data)
 

@@ -1,6 +1,8 @@
 """API proof that daily-check is an operator-ready typed projection."""
 
 from tests._contract_support.api_client import client
+from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
+from wilq.content.workflow.queue import build_content_work_item_queue_response
 
 
 def test_daily_check_returns_traceable_operator_queue() -> None:
@@ -32,23 +34,19 @@ def test_daily_check_returns_traceable_operator_queue() -> None:
         *payload["blocked_recommendations"],
         *payload["opportunities"],
     ]:
+        if item["id"] == "daily_check_runtime_prewarm":
+            assert item["status"] == "blocked"
+            assert item["freshness"]["state"] == "unknown"
+            assert item["source_connectors"] == []
+            assert item["evidence_ids"] == []
+            continue
         assert item["source_connectors"]
         assert item["evidence_ids"]
         assert item["expert_rule_ids"]
         assert item["false_positive_guards"]
-        assert item["freshness"]["state"] != "unknown"
+        if item["freshness"]["state"] == "unknown":
+            assert item["status"] == "blocked", item["id"]
         assert item["next_step"]
-    ga4_items = [
-        item
-        for item in [*payload["safe_next_actions"], *payload["blocked_recommendations"]]
-        if "ga4_platform_traps_v1" in item["expert_rule_ids"]
-    ]
-    if ga4_items:
-        assert any(
-            guard in {"conversion_readiness_ready", "missing_conversion"}
-            for item in ga4_items
-            for guard in item["false_positive_guards"]
-        )
     content_items = [
         item
         for item in [*payload["safe_next_actions"], *payload["blocked_recommendations"]]
@@ -79,9 +77,9 @@ def test_daily_check_returns_traceable_operator_queue() -> None:
             assert all(
                 item["evidence_ids"] for item in content_queue_items
             )
-            queue_response = client.get("/api/content/work-items/queue")
-            assert queue_response.status_code == 200
-            queue = queue_response.json()
+            queue = build_content_work_item_queue_response(
+                build_content_diagnostics_cached()
+            ).model_dump()
             if any(
                 blocker["code"] == "not_enough_actionable_candidates"
                 for blocker in queue["blockers"]

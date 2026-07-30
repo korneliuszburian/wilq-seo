@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -160,7 +160,8 @@ def _validate_workspace_with_revision(
     workspace: ContentNewPageCanonicalDocumentWorkspace,
 ) -> None:
     revision = workspace.canonical_revision
-    assert revision is not None
+    if revision is None:
+        raise ValueError("Canonical new-page workspace requires a revision.")
     identity = revision.new_page_document_identity
     if not (
         revision.document_kind == "new_page"
@@ -213,8 +214,6 @@ def _validate_workspace_revision_review(
         )
     ):
         raise ValueError("Workspace review must match the canonical revision and status.")
-    if workspace.document_status == "not_created":
-        raise ValueError("Canonical new-page revision requires a document status.")
     expected_workspace_status = {
         "unreviewed": "document_review_required",
         "approved": "document_approved",
@@ -246,7 +245,16 @@ def build_new_page_canonical_document_workspace(
         and revision is None
     ):
         return _blocked_workspace(brief, foundation)
-    document_status = "not_created" if revision is None else revision_state.status
+    if revision is None:
+        document_status: Literal[
+            "not_created", "unreviewed", "approved", "needs_changes", "rejected", "deferred"
+        ] = "not_created"
+        revision_review = None
+    else:
+        if revision_state is None or revision_state.status == "empty":
+            return _blocked_workspace(brief, foundation)
+        document_status = revision_state.status
+        revision_review = revision_state.latest_review
     return ContentNewPageCanonicalDocumentWorkspace(
         status=_workspace_status(document_status),
         work_item_id=foundation.work_item_id,
@@ -270,7 +278,7 @@ def build_new_page_canonical_document_workspace(
         ],
         document_status=document_status,
         canonical_revision=revision,
-        revision_review=None if revision is None else revision_state.latest_review,
+        revision_review=revision_review,
         assigned_source_material_ids=([] if revision is None else revision.source_material_ids),
         assigned_knowledge_card_ids=([] if revision is None else revision.knowledge_card_ids),
         document_lineage=build_content_document_lineage(revision),
@@ -351,16 +359,37 @@ def _current_revision(
     return revision
 
 
-def _workspace_status(document_status: str) -> str:
+def _workspace_status(
+    document_status: Literal[
+        "not_created", "unreviewed", "approved", "needs_changes", "rejected", "deferred"
+    ],
+) -> Literal[
+    "ready_for_document",
+    "document_review_required",
+    "document_approved",
+    "document_needs_changes",
+    "document_rejected",
+    "document_deferred",
+]:
     if document_status == "not_created":
         return "ready_for_document"
-    return {
+    return cast(
+        Literal[
+            "ready_for_document",
+            "document_review_required",
+            "document_approved",
+            "document_needs_changes",
+            "document_rejected",
+            "document_deferred",
+        ],
+        {
         "unreviewed": "document_review_required",
         "approved": "document_approved",
         "needs_changes": "document_needs_changes",
         "rejected": "document_rejected",
         "deferred": "document_deferred",
-    }[document_status]
+        }[document_status],
+    )
 
 
 def _next_step(document_status: str) -> str:
@@ -441,7 +470,15 @@ def build_new_page_delivery_readiness(
         and workspace.revision_review is not None
         and workspace.revision_review.decision == "approved"
     )
-    types = sorted({value for value in allowed_content_types if value in {"page", "post"}})
+    types = [
+        cast(Literal["page", "post"], value)
+        for value in sorted({value for value in allowed_content_types if value in {"page", "post"}})
+    ]
+    if revision is None:
+        return _blocked_delivery_readiness(
+            workspace,
+            "Brakuje exact rewizji dokumentu przed przygotowaniem ActionObjectu.",
+        )
     if not approved:
         return _blocked_delivery_readiness(
             workspace,

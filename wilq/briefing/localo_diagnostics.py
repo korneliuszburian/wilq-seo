@@ -17,6 +17,7 @@ from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
+    ConnectorStatus,
     LocaloAccessProbe,
     LocaloDecisionItem,
     LocaloDiagnosticSection,
@@ -129,9 +130,9 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
 
     return LocaloDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
-        connector=connector,
+        connector=_operator_connector(connector),
         connector_status_label=_localo_connector_status_label(str(connector.status)),
-        latest_refresh=latest_refresh,
+        latest_refresh=_operator_refresh(latest_refresh),
         latest_refresh_status_label=_localo_refresh_status_label(latest_refresh)
         if latest_refresh
         else None,
@@ -152,6 +153,42 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
         ),
         action_ids=action_ids,
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
+    )
+
+
+def _operator_connector(connector: ConnectorStatus) -> ConnectorStatus:
+    """Return the Localo status without configuration-field names for marketers."""
+    missing_count = len(connector.missing_credentials)
+    return connector.model_copy(
+        update={
+            "missing_credentials": [],
+            "missing_credentials_summary_label": (
+                f"{missing_count} pola dostępu wymagają konfiguracji"
+                if missing_count
+                else connector.missing_credentials_summary_label
+            ),
+            "available_credential_sources": [],
+            "credential_source_summary_label": "Źródło konfiguracji do sprawdzenia",
+            "required_env": [],
+            "error": None,
+        }
+    )
+
+
+def _operator_refresh(run: ConnectorRefreshRun | None) -> ConnectorRefreshRun | None:
+    if run is None:
+        return None
+    summary = run.summary
+    if run.status in {ConnectorRefreshStatus.blocked, ConnectorRefreshStatus.failed}:
+        summary = "Ostatni odczyt Localo nie dostarczył danych widoczności."
+    return run.model_copy(
+        update={
+            "missing_credentials": [],
+            "checked_credentials": [],
+            "summary": summary,
+            "errors": [],
+            "redacted": True,
+        }
     )
 
 
@@ -401,7 +438,6 @@ def _access_probe(
         ConnectorRefreshStatus.failed,
     }
     if connector_missing or has_blocked_refresh:
-        missing = ", ".join(connector_missing) if connector_missing else "dostęp Localo"
         return LocaloAccessProbe(
             status="access_blocked",
             source_run_id=run.id if run else None,
@@ -411,7 +447,7 @@ def _access_probe(
             access_token_present=access_token_present,
             evidence_ids=evidence_ids,
             summary=(
-                f"Localo nie ma gotowego dostępu do odczytu: {missing}. "
+                "Localo nie ma gotowego dostępu do odczytu danych. "
                 "WILQ blokuje lokalne rekomendacje zamiast zgadywać widoczność."
             ),
         )

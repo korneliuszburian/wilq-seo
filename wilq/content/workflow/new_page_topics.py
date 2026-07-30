@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
+from collections.abc import Iterable
 from hashlib import sha256
 from typing import TYPE_CHECKING, Literal
 
@@ -202,8 +203,8 @@ def _candidate_from_row(
             "Ahrefs wskazuje temat, GSC potwierdza dokładne zapytanie, a katalog WordPress "
             "nie wskazuje istniejącej strony o tym samym temacie."
         ),
-        source_connectors=payload["source_connectors"],
-        evidence_ids=payload["evidence_ids"],
+        source_connectors=sorted(set(row.source_connectors)),
+        evidence_ids=sorted(set(row.evidence_ids)),
     )
 
 
@@ -217,5 +218,5 @@ def _normalized_topic(value: str) -> str:
     return _slug(value)
 
 
-def _unique(values: object) -> list[str]:
+def _unique(values: Iterable[object]) -> list[str]:
     return list(dict.fromkeys(value for value in values if isinstance(value, str) and value))

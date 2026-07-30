@@ -81,7 +81,6 @@ import {
   TacticalQueueResponseSchema,
   WorkflowRunSchema,
   WorkflowSchema,
-  WordPressAuthoringProfileSchema,
   type ActionObject,
   type ActionConfirmRequest,
   type ActionConfirmResult,
@@ -184,7 +183,6 @@ import {
   type Workflow,
   type WorkflowRun,
   type WorkOrder,
-  type WordPressAuthoringProfile
 } from "@wilq/shared-schemas";
 import { z } from "zod";
 
@@ -365,10 +363,6 @@ export function reviseSocialReuseProposal(
     SocialReuseProposalResponseSchema,
     SocialReuseRevisionRequestSchema.parse(request)
   );
-}
-
-export function getWordPressAuthoringProfile(): Promise<WordPressAuthoringProfile> {
-  return apiGet("/api/content/wordpress/authoring-profile", WordPressAuthoringProfileSchema);
 }
 
 export function getActionMutationReadiness(
@@ -969,6 +963,5 @@ export type {
   TacticalQueueResponse,
   Workflow,
   WorkflowRun,
-  WorkOrder,
-  WordPressAuthoringProfile
+  WorkOrder
 };

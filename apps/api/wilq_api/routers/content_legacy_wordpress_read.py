@@ -4,10 +4,6 @@ from collections.abc import Callable
 
 from fastapi import APIRouter
 
-from wilq.connectors.wordpress.authoring import (
-    WordPressAuthoringProfile,
-    build_wordpress_authoring_profile,
-)
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
 from wilq.content.workflow.api import (
     build_content_wordpress_draft_activation_packet_response,
@@ -16,12 +12,8 @@ from wilq.content.workflow.api import (
 from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
-    ContentWordPressExistingDraftUpdateReadinessResponse,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemWorkflowSnapshotResponse,
-)
-from wilq.content.workflow.stage_readiness import (
-    build_content_wordpress_existing_draft_update_readiness_response,
 )
 from wilq.content.workflow.store import content_workflow_store
 
@@ -41,13 +33,6 @@ def register_content_legacy_wordpress_read_routes(
     """Keep compatibility reads separate from the document-first content journey."""
 
     @router.get(
-        "/api/content/wordpress/authoring-profile",
-        response_model=WordPressAuthoringProfile,
-    )
-    def content_wordpress_authoring_profile() -> WordPressAuthoringProfile:
-        return build_wordpress_authoring_profile("wordpress_ekologus", include_dev_content=True)
-
-    @router.get(
         "/api/content/wordpress/draft-write-readiness",
         response_model=ContentWordPressDraftWriteReadinessResponse,
     )
@@ -57,16 +42,6 @@ def register_content_legacy_wordpress_read_routes(
         return build_content_wordpress_draft_write_readiness_response(action_id=action_id)
 
     @router.get(
-        "/api/content/wordpress/existing-draft-update-readiness",
-        response_model=ContentWordPressExistingDraftUpdateReadinessResponse,
-    )
-    def content_wordpress_existing_draft_update_readiness(
-        work_item_id: str | None = None,
-    ) -> ContentWordPressExistingDraftUpdateReadinessResponse:
-        snapshot = snapshot_loader(work_item_id) if work_item_id else default_snapshot_loader()
-        return build_content_wordpress_existing_draft_update_readiness_response(snapshot)
-
-    @router.get(
         "/api/content/wordpress/draft-activation-packet",
         response_model=ContentWordPressDraftActivationPacketResponse,
     )
@@ -74,6 +49,8 @@ def register_content_legacy_wordpress_read_routes(
         work_item_id: str | None = None,
     ) -> ContentWordPressDraftActivationPacketResponse:
         snapshot = snapshot_loader(work_item_id) if work_item_id else default_snapshot_loader()
+        if not isinstance(snapshot, ContentWorkItemWorkflowSnapshotResponse):
+            raise RuntimeError("Legacy WordPress packet requires the full workflow snapshot.")
         return build_content_wordpress_draft_activation_packet_response(
             snapshot,
             latest_execution_result=_latest_exact_wordpress_execution(snapshot),

@@ -18,7 +18,7 @@ from wilq.content.workflow.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     build_new_page_canonical_document_workspace,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
@@ -197,7 +197,7 @@ def _revision_command(
 
 
 def _validate_output_matches_plan(
-    plan_sections: list,
+    plan_sections: list[ContentPlanningSection],
     proposal: ContentPlanningProposal,
     output: ContentInitialDraftModelOutput,
 ) -> None:
@@ -216,7 +216,7 @@ def _validate_output_matches_plan(
 
 
 def _revision_sections(
-    plan_sections: list,
+    plan_sections: list[ContentPlanningSection],
     output: ContentInitialDraftModelOutput,
 ) -> list[ContentDraftRevisionSection]:
     return [

@@ -2333,11 +2333,29 @@ def test_localo_diagnostics_blocks_visibility_when_access_is_missing(
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
     clear_localo_env(monkeypatch)
     metric_store().status()
+    local_state_store().save_connector_refresh_run(
+        ConnectorRefreshRun(
+            id="refresh_localo_raw_configuration_error",
+            connector_id="localo",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.blocked,
+            evidence_ids=["ev_refresh_localo_raw_configuration_error"],
+            external_call_attempted=True,
+            vendor_data_collected=False,
+            missing_credentials=["LOCALO_ACCESS_TOKEN"],
+            checked_credentials=["LOCALO_API_TOKEN", "LOCALO_ORGANIZATION_ID"],
+            summary="Missing LOCALO_ACCESS_TOKEN.",
+            errors=["Localo OAuth authorization is incomplete: missing LOCALO_ACCESS_TOKEN."],
+        )
+    )
 
     response = client.get("/api/localo/diagnostics")
 
     assert response.status_code == 200
     payload = response.json()
+    assert "LOCALO_ACCESS_TOKEN" not in json.dumps(payload)
+    assert "LOCALO_ORGANIZATION_ID" not in json.dumps(payload)
+    assert "LOCALO_API_TOKEN" not in json.dumps(payload)
     assert payload["access_probe"]["status"] == "access_blocked"
     assert payload["live_data_available"] is False
     assert payload["visibility_fact_count"] == 0
@@ -2489,7 +2507,9 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert block_decision["status"] == "blocked"
     assert block_decision["status_label"] == "zablokowane"
     assert block_decision["priority_label"] == "wysoki priorytet"
-    assert block_decision["metric_tiles"]["brakujące dane"] == 5
+    assert block_decision["metric_tiles"]["brakujące dane"] == len(
+        block_decision["missing_read_contracts"]
+    )
     assert block_decision["evidence_ids"] == ["ev_refresh_refresh_ahrefs_diag_test"]
     assert block_decision["evidence_summary_label"] == "1 dowód źródłowy"
     assert (
@@ -2863,18 +2883,20 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
         "ahrefs_competitor_pages",
         "ahrefs_content_gap_records",
         "ahrefs_backlink_gap_records",
-        "ahrefs_organic_keywords_by_url",
-        "ahrefs_top_pages_by_competitor",
-    ]
+            "ahrefs_organic_keywords_by_url",
+            "ahrefs_top_pages_by_competitor",
+            "ahrefs_gap_coverage",
+        ]
     assert gap_contract["available_read_contract_labels"] == [
         "podsumowanie autorytetu domeny",
         "metryki luk z Ahrefs",
         "strony konkurencji",
         "rekordy luk treści",
         "rekordy luk linków",
-        "organiczne słowa dla URL",
-        "najlepsze strony konkurencji",
-    ]
+            "organiczne słowa dla URL",
+            "najlepsze strony konkurencji",
+            "zakres próby i limit porównania dla każdej luki",
+        ]
     assert set(gap_contract["allowed_evidence"]) == {
         "domain_rating",
         "ahrefs_rank",

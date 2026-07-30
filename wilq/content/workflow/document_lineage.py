@@ -4,7 +4,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
+from wilq.content.knowledge.cards import (
+    ContentKnowledgeCardType,
+    ekologus_content_knowledge_cards,
+)
 from wilq.content.workflow.revisions import ContentDraftRevision
 
 
@@ -14,6 +17,7 @@ class ContentDocumentWorkspaceKnowledgeCard(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str
+    card_type: ContentKnowledgeCardType
     title: str
     summary: str
 
@@ -51,6 +55,7 @@ def build_content_document_lineage(
     knowledge_cards = [
         ContentDocumentWorkspaceKnowledgeCard(
             id=card.id,
+            card_type=card.card_type,
             title=card.title,
             summary=card.summary,
         )

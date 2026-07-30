@@ -7,6 +7,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 AUDIT_STORE_FIXTURE = REPO_ROOT / "tests/actions/test_audit_store_contracts.py"
+KNOWLEDGE_SOURCE_MATERIALS = REPO_ROOT / "wilq/content/knowledge/source_materials.py"
+KNOWLEDGE_SURFACE_FIXTURE = REPO_ROOT / "apps/dashboard/src/routes/KnowledgeSurface.test.tsx"
 SECURITY_SCRIPT = REPO_ROOT / "scripts/security.sh"
 
 
@@ -32,6 +34,11 @@ def _detect_secret_results(path: Path) -> dict[str, object]:
 
 def test_audit_redaction_fixture_is_allowlisted_only_on_its_test_line() -> None:
     assert _detect_secret_results(AUDIT_STORE_FIXTURE) == {}
+
+
+def test_public_material_digest_prefixes_are_allowlisted_at_their_literals() -> None:
+    assert _detect_secret_results(KNOWLEDGE_SOURCE_MATERIALS) == {}
+    assert _detect_secret_results(KNOWLEDGE_SURFACE_FIXTURE) == {}
 
 
 def test_detect_secrets_still_flags_the_same_unallowlisted_field_in_another_file(

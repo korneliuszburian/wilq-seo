@@ -139,7 +139,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer może przygotować teraz" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki segmentów" })).toBeVisible();
-    await expect(page.getByText(/Wyszukiwane hasła|Brak danych o wyszukiwanych hasłach/).first()).toBeVisible();
+    await expect(page.getByText(/Wyszukiwane hasła|Brak wierszy wyszukiwanych haseł/).first()).toBeVisible();
     await expect(page.getByText(/nie twierdzi, że segment ma zasięg|rozmiar odbiorców/i).first()).toBeVisible();
     await expect(page.getByText(/audience size/i)).toHaveCount(0);
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
@@ -275,10 +275,10 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/knowledge");
     await operatingMapResponse;
 
-    await expectApiBackedRouteHeading(page, "Wiedza", { exact: true });
-    await expect(page.getByRole("heading", { name: "Najbliższa wiedza do sprawdzenia" })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Źródła i wiedza", { exact: true });
+    await expect(page.getByRole("heading", { name: "Najbliższy krok źródłowy" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co blokuje produkcję treści" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kolejka sprawdzania wiedzy" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kolejka review materiałów źródłowych" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż kartę" }).click();
     await expect(page.getByRole("heading", { name: "Karty wiedzy" })).toBeVisible();
     await page.getByRole("button", { name: "Zobacz pełne zasady pracy" }).first().click();
@@ -327,10 +327,9 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Dowody i warunki diagnozy Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa Localo i profilu firmy w Google" })).toBeVisible();
     await expect(
-      page.getByText(/Przejrzyj agregaty widoczności lokalnej z Localo/)
+      page.getByText(/Dokończ dostęp Localo i odczyt danych/).first()
     ).toBeVisible();
-    await expect(page.getByText(/lista lokalizacji/)).toBeVisible();
-    await expect(page.getByText(/rankingi lokalne/)).toBeVisible();
+    await expect(page.getByText(/rankingi lokalne/).first()).toBeVisible();
     await expect(page.getByText(/opinie/).first()).toBeVisible();
     await expect(page.getByText(/widoczność konkurencji/).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dane Localo w WILQ" })).toBeVisible();

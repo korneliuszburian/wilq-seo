@@ -5,9 +5,10 @@ from __future__ import annotations
 import sqlite3
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from wilq.content.workflow.new_page_revision_binding import ContentNewPageDraftBinding
+from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
 from wilq.content.workflow.store_queries import (
     latest_draft_revision,
     latest_draft_revision_review,
@@ -91,7 +92,9 @@ class NewPageApplyClaimStore:
         status = row["status"]
         if status == "claimed":
             return "in_progress"
-        return status
+        if status in {"applied", "failed"}:
+            return cast(Literal["applied", "failed"], status)
+        raise RuntimeError("New-page apply claim has an unsupported persisted status.")
 
     def finish_new_page_revision_apply_claim(
         self,
@@ -120,7 +123,11 @@ def _claim_key(binding: ContentNewPageDraftBinding) -> str:
     ).hexdigest()
 
 
-def _binding_is_current_and_approved(binding, revision, review) -> bool:
+def _binding_is_current_and_approved(
+    binding: ContentNewPageDraftBinding,
+    revision: ContentDraftRevision | None,
+    review: ContentDraftRevisionReview | None,
+) -> bool:
     identity = None if revision is None else revision.new_page_document_identity
     return bool(
         revision

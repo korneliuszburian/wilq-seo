@@ -32,7 +32,7 @@ lineage, ale nie jest osobnym ekranem akceptacji ani zadaniem dla marketera.
    Wybierz wskazany `work_item_id` albo pokaż blokadę danych. Nie zaczynaj od
    kolejki, snapshotu ani katalogu WordPressa.
 
-2. Odczytaj `GET /api/content/work-items/{work_item_id}/document-workspace`
+2. Odczytaj `GET /api/content/work-items/{work_item_id}/selected-workspace`
    oraz `GET /api/content/work-items/{work_item_id}/planning-proposals`.
    Pokaż publiczne źródło, stan dokumentu, faktycznie zapisane lineage i jedno
    `next_action`. „Zmiany w treści” oznaczają wyłącznie obserwowane nagłówki i
@@ -49,7 +49,7 @@ lineage, ale nie jest osobnym ekranem akceptacji ani zadaniem dla marketera.
 
 4. Pełny tekst jest immutable rewizją. Pokaż go przed dalszym krokiem. Po
    jawnym „zatwierdź tekst” zapisz `POST .../draft-revisions/{revision_id}/review`
-   z exact `expected_revision_digest` i evidence IDs rewizji. „Tekst wymaga
+   z exact `expected_revision_digest` i identyfikatorami dowodów rewizji. „Tekst wymaga
    zmian” wymaga krótkiej notatki; poprawka powstaje wyłącznie przez exact
    child revision, nigdy przez edycję istniejącej rewizji.
 

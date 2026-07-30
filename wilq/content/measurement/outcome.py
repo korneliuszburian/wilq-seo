@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Literal
+from typing import Literal, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -20,6 +20,13 @@ ContentMeasurementOutcomeStatus = Literal[
     "likely_underperformance",
     "measured_success",
 ]
+
+
+class _OutcomeProvenance(TypedDict):
+    evidence_ids: list[str]
+    source_connectors: list[str]
+    metric_fact_ids: list[str]
+    refresh_run_ids: list[str]
 
 
 class ContentMeasurementObservedMetric(BaseModel):
@@ -212,7 +219,7 @@ def _interpret_ready_outcome(
 
 def _outcome_provenance(
     metrics: list[ContentMeasurementObservedMetric],
-) -> dict[str, list[str]]:
+) -> _OutcomeProvenance:
     return {
         "evidence_ids": _unique(
             [evidence_id for metric in metrics for evidence_id in metric.evidence_ids]

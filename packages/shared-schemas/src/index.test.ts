@@ -34,6 +34,7 @@ import {
   ContentDraftRevisionSchema,
   ContentDraftRevisionConflictSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
+  ContentNewPagePlanningProposalWorkspaceSchema,
   ContentNewPageBriefInputSchema,
   ContentNewPageBriefSchema,
   ContentNewPageTopicRecommendationsSchema,
@@ -41,7 +42,6 @@ import {
   ContentNewPageDraftActionCommandSchema,
   ContentNewPageDocumentReviewPrerequisiteConflictSchema,
   ContentNewPageRevisionReviewConflictSchema,
-  ContentCodexSectionProposalRequestSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentRevisionHtmlPackageResponseSchema,
   ContentEditorialIntegrityReportSchema,
@@ -902,6 +902,16 @@ describe("ContentPlanningProposalResponseSchema", () => {
         planning_workspace: { ...planningWorkspace, proposal: { ...response.proposal, planning_digest: "f".repeat(64) } }
       }).success
     ).toBe(false);
+    for (const mismatchedProposal of [
+      { ...response.proposal, work_item_id: "content_work_item_other" },
+      { ...response.proposal, service_card_id: "ekologus_service_other" },
+      { ...response.proposal, planning_input_digest: "f".repeat(64) }
+    ]) {
+      expect(ContentPlanningProposalResponseSchema.safeParse({
+        ...response,
+        proposal: mismatchedProposal
+      }).success).toBe(false);
+    }
     expect(
       ContentPlanningProposalResponseSchema.safeParse({
         ...response,
@@ -984,7 +994,7 @@ describe("ContentPlanningProposalResponseSchema", () => {
 
 describe("ContentPlanningInputReadinessResponseSchema", () => {
   it("preserves a new-page input without inventing an existing page identity", () => {
-    const parsed = ContentPlanningInputReadinessResponseSchema.parse({
+    const readiness = {
       status: "ready",
       work_item_id: "content_work_item_new_page_a",
       planning_input_digest: "a".repeat(64),
@@ -1030,11 +1040,39 @@ describe("ContentPlanningInputReadinessResponseSchema", () => {
       },
       blockers: [],
       safe_next_step: "Przygotuj propozycję planu."
-    });
+    };
+    const parsed = ContentPlanningInputReadinessResponseSchema.parse(readiness);
 
     expect(parsed.input_summary?.goal).toBe("new_page");
     expect(parsed.input_summary?.final_canonical_url).toBeNull();
     expect(parsed.input_summary?.inventory_status).toBe("not_applicable");
+    const workspace = {
+      response_type: "content_new_page_planning_proposal_workspace" as const,
+      contract_version: "content_new_page_planning_proposal_workspace_v1" as const,
+      brief_id: "content_new_page_brief_a",
+      readiness,
+      proposal_status: {
+        status: "not_generated" as const,
+        work_item_id: "content_work_item_new_page_a",
+        service_card_id: "knowledge_service",
+        planning_input_digest: "a".repeat(64),
+        input_summary: readiness.input_summary,
+        runtime: {
+          status: "not_started" as const,
+          thread_id: null,
+          turn_id: null,
+          external_call_attempted: false
+        },
+        blockers: [],
+        safe_next_step: "Przygotuj propozycję planu.",
+        publish_ready: false as const
+      }
+    };
+    expect(ContentNewPagePlanningProposalWorkspaceSchema.safeParse(workspace).success).toBe(true);
+    expect(ContentNewPagePlanningProposalWorkspaceSchema.safeParse({
+      ...workspace,
+      proposal_status: { ...workspace.proposal_status, work_item_id: "other-work-item" }
+    }).success).toBe(false);
   });
 
   it("rejects contradictory current work kinds while preserving historical refresh summaries", () => {
@@ -1113,7 +1151,9 @@ describe("ContentPlanningInputReadinessResponseSchema", () => {
       ).toBe(false);
     }
 
-    const { goal: _, ...historicalNewPageShape } = newPageSummary;
+    const historicalNewPageShape = Object.fromEntries(
+      Object.entries(newPageSummary).filter(([key]) => key !== "goal")
+    );
     expect(ContentPlanningInputReadinessResponseSchema.safeParse(readiness({
       ...historicalNewPageShape,
       final_canonical_url: "https://www.ekologus.pl/istniejaca/",
@@ -4026,36 +4066,6 @@ describe("Content work item workflow schemas", () => {
         current_revision_id: "content_revision_bdo_2",
         current_digest: "a".repeat(64),
         safe_next_step: "Porównaj wersje."
-      }).success
-    ).toBe(false);
-    expect(
-      ContentCodexSectionProposalRequestSchema.safeParse({
-        expected_base_digest: "a".repeat(64),
-        selected_section_headings: ["Kogo dotyczy BDO", "Kogo dotyczy BDO"],
-        requested_by: "wilku"
-      }).success
-    ).toBe(false);
-    expect(
-      ContentCodexSectionProposalRequestSchema.safeParse({
-        expected_base_digest: "a".repeat(64),
-        selected_section_ids: ["section_bdo_scope"],
-        requested_by: "wilku"
-      }).success
-    ).toBe(true);
-    expect(
-      ContentCodexSectionProposalRequestSchema.safeParse({
-        expected_base_digest: "a".repeat(64),
-        selected_section_ids: ["section_bdo_scope"],
-        selected_section_headings: ["Kogo dotyczy BDO"],
-        requested_by: "wilku"
-      }).success
-    ).toBe(false);
-    expect(
-      ContentCodexSectionProposalRequestSchema.safeParse({
-        expected_base_digest: "a".repeat(64),
-        selected_section_headings: ["Kogo dotyczy BDO"],
-        requested_by: "wilku",
-        system_prompt: "Nie wolno wysyłać promptu z przeglądarki."
       }).success
     ).toBe(false);
   });

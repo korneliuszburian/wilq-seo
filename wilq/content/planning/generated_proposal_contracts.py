@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBlockerCode,
     ContentPlanningInputSummary,
@@ -192,6 +192,12 @@ class ContentPlanningProposalResponse(BaseModel):
                 raise ValueError("Generating response cannot expose proposal or blockers.")
         elif not self.blockers:
             raise ValueError("Non-ready planning response requires typed blockers.")
+        if self.proposal is not None and (
+            self.proposal.work_item_id != self.work_item_id
+            or self.proposal.service_card_id != self.service_card_id
+            or self.proposal.planning_input_digest != self.planning_input_digest
+        ):
+            raise ValueError("Planning response must match the nested exact proposal.")
         if self.planning_workspace is not None:
             if self.status != "ready" or self.proposal is None:
                 raise ValueError("Planning workspace is available only for a ready proposal.")

@@ -121,7 +121,7 @@ def _started_run(run_id: str) -> CodexRun:
         hook="content_revision_proposal",
         source="wilq_api",
         status="started",
-        used_endpoints=["/api/content/work-items/test/codex-proposal"],
+        used_endpoints=["/api/content/work-items/test/initial-draft"],
         evidence_ids=["evidence_atomic"],
     )
 

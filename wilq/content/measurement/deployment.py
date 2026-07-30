@@ -188,7 +188,8 @@ def _public_url_for_fact(revision: ContentDraftRevision, fact: MetricFact) -> st
 
     if revision.document_kind == "new_page":
         return str(fact.dimensions["content_url"])
-    assert revision.final_canonical_url is not None
+    if revision.final_canonical_url is None:
+        raise ValueError("Refresh revision has no canonical URL for public deployment.")
     return revision.final_canonical_url
 
 

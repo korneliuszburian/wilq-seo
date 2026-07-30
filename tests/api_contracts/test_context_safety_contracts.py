@@ -111,7 +111,10 @@ def test_connector_consumer_readiness_uses_production_connector_descriptors() ->
     assert rows["google_sheets"]["status"] == "not_applicable"
     assert rows["linkedin"]["status"] == "blocked"
     assert rows["facebook"]["status"] == "blocked"
-    assert set(payload["blocked_connector_ids"]) == {"linkedin", "facebook"}
+    # The production descriptor read reflects the current local connector
+    # state. These two disabled publisher connectors must be visible as
+    # blockers, while other unavailable production connectors may join them.
+    assert {"linkedin", "facebook"}.issubset(payload["blocked_connector_ids"])
 
 
 def test_daily_context_pack_uses_daily_decisions_for_action_summaries(

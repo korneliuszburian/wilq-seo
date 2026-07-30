@@ -13,17 +13,29 @@ from tests.content.test_work_item_preflight_api import (
     _human_review,
     _inventory_record,
     _item,
+    _knowledge_match,
     _post_human_review,
     _post_preflight,
     _post_wordpress_handoff,
     _sales_brief_seed,
 )
+from wilq.content.workflow.contracts import (
+    ContentWorkItemDraftPackageRequest,
+    ContentWorkItemSalesBriefRequest,
+)
+from wilq.content.workflow.stage_drafts import (
+    build_content_work_item_draft_package_response,
+)
+from wilq.content.workflow.stage_preparation import (
+    build_content_work_item_sales_brief_response,
+)
 
 
 def _post_sales_brief(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post("/api/content/work-items/sales-brief", json=payload)
-    assert response.status_code == 200
-    data = response.json()
+    payload.setdefault("knowledge_match", _knowledge_match())
+    data = build_content_work_item_sales_brief_response(
+        ContentWorkItemSalesBriefRequest.model_validate(payload)
+    ).model_dump(mode="json")
     assert sorted(data) == [
         "inventory_resolution",
         "item",
@@ -34,9 +46,10 @@ def _post_sales_brief(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _post_draft_package(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post("/api/content/work-items/draft-package", json=payload)
-    assert response.status_code == 200
-    data = response.json()
+    payload.setdefault("knowledge_match", _knowledge_match())
+    data = build_content_work_item_draft_package_response(
+        ContentWorkItemDraftPackageRequest.model_validate(payload)
+    ).model_dump(mode="json")
     assert sorted(data) == [
         "draft_package_result",
         "inventory_resolution",
@@ -45,6 +58,12 @@ def _post_draft_package(payload: dict[str, Any]) -> dict[str, Any]:
         "sales_brief_result",
     ]
     return data
+
+
+def test_retired_legacy_brief_and_draft_routes_return_404() -> None:
+    client = TestClient(app)
+    assert client.post("/api/content/work-items/sales-brief", json={}).status_code == 404
+    assert client.post("/api/content/work-items/draft-package", json={}).status_code == 404
 
 
 def test_content_work_item_sales_brief_api_builds_typed_brief() -> None:
