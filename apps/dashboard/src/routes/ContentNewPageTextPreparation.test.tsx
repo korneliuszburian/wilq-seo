@@ -77,7 +77,9 @@ describe("ContentNewPageTextPreparation", () => {
     expect(evidence).toHaveTextContent("Źródło jest zablokowane. Pomiar zacznie się po wdrożeniu.");
     expect(evidence).toHaveTextContent("Nowa strona nie ma własnej historii GSC");
     expect(evidence).not.toHaveTextContent("historyczne zapytanie");
+    expect(evidence).not.toHaveTextContent("2026-07");
     expect(evidence).not.toHaveTextContent("181 wyświetleń");
+    expect(evidence).not.toHaveTextContent("4 kliknięć");
     expect(evidence).not.toHaveTextContent("niewystarczająco dokładne lub świeże");
   });
 });
