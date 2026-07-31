@@ -47,6 +47,10 @@ import {
   ContentSemanticReviewResponseSchema,
   ContentPlanningProposalRequestSchema,
   ContentPlanningProposalResponseSchema,
+  ContentRegulatorySourceReviewCommandSchema,
+  ContentRegulatorySourceReviewConflictSchema,
+  ContentRegulatorySourceReviewSchema,
+  ContentRegulatorySourceSnapshotReadResponseSchema,
   ContentServiceProfileResponseSchema,
   ContentInventoryCatalogResponseSchema,
   ContentOperatorContextSchema,
@@ -143,6 +147,10 @@ import {
   type ContentPlanningProposalRequest,
   type ContentPlanningProposal,
   type ContentPlanningProposalResponse,
+  type ContentRegulatorySourceReviewCommand,
+  type ContentRegulatorySourceReview,
+  type ContentRegulatorySourceReviewConflict,
+  type ContentRegulatorySourceSnapshotReadResponse,
   type ContentPlanningWorkspace,
   type ContentServiceProfileResponse,
   type ContentInventoryCatalogResponse,
@@ -631,6 +639,26 @@ export function postContentWorkItemPlanningProposal(
     ContentPlanningProposalResponseSchema,
     ContentPlanningProposalResponseSchema,
     ContentPlanningProposalRequestSchema.parse(request)
+  );
+}
+
+export function getContentRegulatorySourceSnapshot(
+  candidateId: string
+): Promise<ContentRegulatorySourceSnapshotReadResponse> {
+  return apiGet(
+    `/api/content/regulatory-source-candidates/${encodeURIComponent(candidateId)}/snapshot`,
+    ContentRegulatorySourceSnapshotReadResponseSchema
+  );
+}
+
+export function postContentRegulatorySourceReview(
+  request: ContentRegulatorySourceReviewCommand
+): Promise<ContentRegulatorySourceReview | ContentRegulatorySourceReviewConflict> {
+  return apiPostWithConflict(
+    "/api/content/regulatory-source-reviews",
+    ContentRegulatorySourceReviewSchema,
+    ContentRegulatorySourceReviewConflictSchema,
+    ContentRegulatorySourceReviewCommandSchema.parse(request)
   );
 }
 

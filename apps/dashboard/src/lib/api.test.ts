@@ -8,6 +8,8 @@ import {
   getActionMutationReadiness,
   getActionsMutationReadiness,
   getContentWorkItemSemanticReview,
+  getContentRegulatorySourceSnapshot,
+  postContentRegulatorySourceReview,
   postContentWorkItemInitialDraft,
   previewAction
 } from "./api";
@@ -133,6 +135,68 @@ afterEach(() => {
 });
 
 describe("content workflow API helpers", () => {
+  it("binds a source review to the exact captured official snapshot", async () => {
+    const snapshot = {
+      status: "captured",
+      snapshot: {
+        snapshot_id: "regulatory_snapshot_scope",
+        candidate_id: "bdo_registration_scope_2026_07_31",
+        profile_id: "bdo",
+        profile_version: "2026-07",
+        source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+        content_digest: "a".repeat(64),
+        content_type: "text/html",
+        byte_length: 128,
+        observed_at: "2026-07-31T12:00:00Z"
+      },
+      reason: "Pobrano snapshot.",
+      safe_next_step: "Sprawdź źródło."
+    };
+    const request = {
+      candidate_id: snapshot.snapshot.candidate_id,
+      expected_source_url: snapshot.snapshot.source_url,
+      expected_profile_version: snapshot.snapshot.profile_version,
+      expected_source_snapshot_id: snapshot.snapshot.snapshot_id,
+      expected_source_snapshot_digest: snapshot.snapshot.content_digest,
+      reviewed_fact: "Zakres obowiązku wymaga oceny względem konkretnej działalności.",
+      covered_requirement_ids: ["bdo_scope"],
+      decision: "accepted" as const,
+      reviewer: "Wilku"
+    };
+    const review = {
+      review_id: "regulatory_review_scope",
+      ...snapshot.snapshot,
+      source_snapshot_id: snapshot.snapshot.snapshot_id,
+      source_snapshot_digest: snapshot.snapshot.content_digest,
+      source_title: "BDO: zakres obowiązku",
+      observed_on: "2026-07-31",
+      service_card_ids: ["ekologus_service_bdo_reporting"],
+      reviewed_fact: request.reviewed_fact,
+      covered_requirement_ids: request.covered_requirement_ids,
+      decision: request.decision,
+      reviewer: request.reviewer,
+      reviewed_at: "2026-07-31T12:01:00Z"
+    };
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(String(url)).pathname;
+      if (path.endsWith("/snapshot")) {
+        return new Response(JSON.stringify(snapshot), { status: 200 });
+      }
+      expect(path).toBe("/api/content/regulatory-source-reviews");
+      expect(init?.method).toBe("POST");
+      expect(JSON.parse(String(init?.body))).toEqual(request);
+      return new Response(JSON.stringify(review), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const captured = await getContentRegulatorySourceSnapshot(request.candidate_id);
+    const result = await postContentRegulatorySourceReview(request);
+
+    expect(captured.status).toBe("captured");
+    expect("code" in result).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("posts an exact new-page foundation and preserves its typed lineage", async () => {
     const foundation = {
       foundation_id: "content_new_page_foundation_a",
