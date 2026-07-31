@@ -2,7 +2,7 @@
   "profiles": [
     {
       "id": "bdo",
-      "version": "2026-07",
+      "version": "2026-07-31",
       "service_card_ids": [
         "ekologus_service_bdo_reporting"
       ],
@@ -12,9 +12,19 @@
       "max_source_age_days": 180,
       "requirements": [
         {
-          "id": "bdo_scope",
-          "label": "zakres BDO",
-          "reason": "Treść musi odróżniać obowiązek, wyjątki i sytuacje wymagające weryfikacji."
+          "id": "bdo_definition",
+          "label": "definicja systemu BDO",
+          "reason": "Treść musi poprawnie nazwać Bazę danych o produktach i opakowaniach oraz o gospodarce odpadami, Rejestr i moduły systemu."
+        },
+        {
+          "id": "bdo_registration_scope",
+          "label": "kogo może dotyczyć wpis do BDO",
+          "reason": "Treść musi uwzględniać działalność odpadową oraz wskazane przez urząd kategorie produktów, opakowań i innych wprowadzanych wyrobów."
+        },
+        {
+          "id": "bdo_exemptions",
+          "label": "wyłączenia z wpisu lub ewidencji",
+          "reason": "Treść nie może sugerować, że każdy wytwórca odpadów podlega identycznemu wpisowi albo ewidencji."
         },
         {
           "id": "bdo_registration_and_updates",
@@ -24,12 +34,12 @@
         {
           "id": "bdo_records_and_kpo",
           "label": "ewidencja i KPO",
-          "reason": "Treść o ewidencji oraz KPO wymaga aktualnego źródła urzędowego."
+          "reason": "Treść o ewidencji oraz KPO wymaga aktualnego źródła urzędowego, w tym właściwego momentu sporządzenia KPO."
         },
         {
           "id": "bdo_reporting",
           "label": "sprawozdawczość BDO",
-          "reason": "Terminy i zakres sprawozdawczości nie mogą być uogólniane bez źródła."
+          "reason": "Terminy, zakres i właściwość sprawozdawczości nie mogą być uogólniane bez źródła."
         },
         {
           "id": "bdo_access_and_account",

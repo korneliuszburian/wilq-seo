@@ -173,10 +173,12 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
 
     assert profile is not None
     assert profile.id == "bdo"
-    assert profile.version == "2026-07"
+    assert profile.version == "2026-07-31"
     assert profile.official_source_hosts == ["bdo.mos.gov.pl"]
     assert [requirement.id for requirement in profile.requirements] == [
-        "bdo_scope",
+        "bdo_definition",
+        "bdo_registration_scope",
+        "bdo_exemptions",
         "bdo_registration_and_updates",
         "bdo_records_and_kpo",
         "bdo_reporting",

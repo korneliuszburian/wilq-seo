@@ -1,64 +1,88 @@
 {
   "candidates": [
     {
+      "candidate_id": "bdo_system_definition_2026_07_31",
+      "profile_id": "bdo",
+      "profile_version": "2026-07-31",
+      "service_card_ids": ["ekologus_service_bdo_reporting"],
+      "source_url": "https://bdo.mos.gov.pl/o-systemie-bdo/",
+      "source_title": "BDO: O systemie BDO",
+      "observed_on": "2026-07-31",
+      "requirement_ids": ["bdo_definition"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź definicję systemu oraz granice jej zastosowania przed zatwierdzeniem faktu źródłowego."
+    },
+    {
       "candidate_id": "bdo_registration_scope_2026_07_31",
       "profile_id": "bdo",
-      "profile_version": "2026-07",
+      "profile_version": "2026-07-31",
       "service_card_ids": ["ekologus_service_bdo_reporting"],
-      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
-      "source_title": "BDO: Kto podlega pod obowiązek rejestracji?",
+      "source_url": "https://bdo.mos.gov.pl/news/podmioty-zobowiazane-do-rejestracji-w-bdo/",
+      "source_title": "BDO: Podmioty zobowiązane do rejestracji w BDO",
       "observed_on": "2026-07-31",
-      "requirement_ids": ["bdo_scope"],
+      "requirement_ids": ["bdo_registration_scope"],
       "review_status": "review_required",
-      "safe_next_step": "Sprawdź aktualny zakres obowiązku z ekspertem przed zatwierdzeniem faktu źródłowego."
+      "safe_next_step": "Potwierdź katalog działalności i produktów wymagających weryfikacji przed zatwierdzeniem faktu źródłowego."
     },
     {
       "candidate_id": "bdo_registration_exemptions_2026_07_31",
       "profile_id": "bdo",
-      "profile_version": "2026-07",
+      "profile_version": "2026-07-31",
       "service_card_ids": ["ekologus_service_bdo_reporting"],
-      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/ktore-podmioty-nie-podlegaja-wpisowi-do-rejestru-bdo/",
-      "source_title": "BDO: Które podmioty nie podlegają wpisowi do Rejestru-BDO?",
+      "source_url": "https://bdo.mos.gov.pl/zasady-rejestracji/",
+      "source_title": "BDO: Zasady rejestracji i wyłączenia",
       "observed_on": "2026-07-31",
-      "requirement_ids": ["bdo_scope"],
+      "requirement_ids": ["bdo_exemptions", "bdo_risks_and_sanctions"],
       "review_status": "review_required",
-      "safe_next_step": "Sprawdź wyjątki dla konkretnej działalności przed zatwierdzeniem faktu źródłowego."
+      "safe_next_step": "Potwierdź ustawowe wyłączenia i opis sankcji przed zatwierdzeniem faktu źródłowego."
     },
     {
       "candidate_id": "bdo_registration_application_2026_07_31",
       "profile_id": "bdo",
-      "profile_version": "2026-07",
+      "profile_version": "2026-07-31",
       "service_card_ids": ["ekologus_service_bdo_reporting"],
       "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/jak-wypelnic-wniosek-rejestrowy/",
       "source_title": "BDO: Jak wypełnić wniosek rejestrowy?",
       "observed_on": "2026-07-31",
       "requirement_ids": ["bdo_registration_and_updates"],
       "review_status": "review_required",
-      "safe_next_step": "Potwierdź aktualny tryb rejestracji przed zatwierdzeniem faktu źródłowego."
+      "safe_next_step": "Potwierdź aktualny tryb rejestracji i zmian przed zatwierdzeniem faktu źródłowego."
     },
     {
-      "candidate_id": "bdo_system_instructions_2026_07_31",
+      "candidate_id": "bdo_kpo_before_transport_2026_07_31",
       "profile_id": "bdo",
-      "profile_version": "2026-07",
+      "profile_version": "2026-07-31",
       "service_card_ids": ["ekologus_service_bdo_reporting"],
-      "source_url": "https://bdo.mos.gov.pl/instrukcje-krok-po-kroku-system-bdo/",
-      "source_title": "BDO: instrukcje krok po kroku systemu BDO",
+      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/czy-podmiot-przejmujacy-odpad-moze-wystawic-kpo-lub-kpok/",
+      "source_title": "BDO: Kto wystawia KPO lub KPOK?",
       "observed_on": "2026-07-31",
-      "requirement_ids": ["bdo_registration_and_updates", "bdo_records_and_kpo", "bdo_reporting", "bdo_access_and_account"],
+      "requirement_ids": ["bdo_records_and_kpo"],
       "review_status": "review_required",
-      "safe_next_step": "Wybierz właściwy moduł i potwierdź jego aktualność przed zatwierdzeniem faktu źródłowego."
+      "safe_next_step": "Potwierdź rolę przekazującego i moment sporządzenia KPO przed zatwierdzeniem faktu źródłowego."
     },
     {
-      "candidate_id": "bdo_sanctions_2026_07_31",
+      "candidate_id": "bdo_reporting_instruction_2026_07_31",
       "profile_id": "bdo",
-      "profile_version": "2026-07",
+      "profile_version": "2026-07-31",
       "service_card_ids": ["ekologus_service_bdo_reporting"],
-      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/jakie-groza-sankcje-karne-podmiotom-zobowiazanym-do-uzyskania-wpisu-do-rejestru-bdo-za-dzialanie-niezgodne-z-przepisami/",
-      "source_title": "BDO: sankcje za działanie niezgodne z przepisami",
+      "source_url": "https://bdo.mos.gov.pl/wp-content/uploads/2025/01/BDO_SPR_IS-Sprawozdanie-o-produktach-opakowaniach-i-o-gospodarowaniu-odpadami-wersja-1.3.pdf",
+      "source_title": "BDO: Instrukcja sprawozdania o produktach, opakowaniach i gospodarowaniu odpadami",
       "observed_on": "2026-07-31",
-      "requirement_ids": ["bdo_risks_and_sanctions"],
+      "requirement_ids": ["bdo_reporting"],
       "review_status": "review_required",
-      "safe_next_step": "Potwierdź aktualny zakres sankcji i ograniczenia komunikacji przed zatwierdzeniem faktu źródłowego."
+      "safe_next_step": "Potwierdź zakres, termin i właściwość sprawozdania przed zatwierdzeniem faktu źródłowego."
+    },
+    {
+      "candidate_id": "bdo_login_access_2026_07_31",
+      "profile_id": "bdo",
+      "profile_version": "2026-07-31",
+      "service_card_ids": ["ekologus_service_bdo_reporting"],
+      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/w-jaki-sposob-loguje-sie-uzytkownik-glowny-systemu-bdo/",
+      "source_title": "BDO: W jaki sposób loguje się użytkownik główny systemu BDO?",
+      "observed_on": "2026-07-31",
+      "requirement_ids": ["bdo_access_and_account"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź sposób logowania i rozdział ról przed zatwierdzeniem faktu źródłowego."
     }
   ]
 }

@@ -181,7 +181,9 @@ def test_public_source_review_route_persists_only_human_decision(tmp_path, monke
         "/api/content/regulatory-source-candidates/bdo_registration_scope_2026_07_31/snapshot"
     )
     snapshot = ContentRegulatorySourceSnapshot.model_validate(snapshot_response.json()["snapshot"])
-    payload = _command(snapshot=snapshot).model_dump(mode="json")
+    payload = _command(
+        candidate_id="bdo_registration_scope_2026_07_31", snapshot=snapshot
+    ).model_dump(mode="json")
     missing_snapshot_payload = {
         **payload,
         "expected_source_snapshot_id": "regulatory_snapshot_missing",
