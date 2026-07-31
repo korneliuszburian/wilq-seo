@@ -357,6 +357,48 @@ describe("ContentTextPreparationPanel", () => {
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Ahrefs");
   });
 
+  it("distinguishes an exact measurement comparison from an unavailable trend", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyToGenerate(),
+      input_summary: {
+        ...readyToGenerate().input_summary,
+        metric_comparisons: [{
+          source_connector: "google_search_console",
+          status: "available",
+          baseline_period: "2026-06",
+          comparison_period: "2026-07",
+          metric_names: ["clicks", "impressions"],
+          baseline_values: { clicks: 12, impressions: 140 },
+          comparison_values: { clicks: 18, impressions: 210 },
+          evidence_ids: ["ev_gsc_periods"],
+          reason: "Dwa dokładne okresy tej strony."
+        }, {
+          source_connector: "google_analytics_4",
+          status: "not_available",
+          baseline_period: null,
+          comparison_period: null,
+          metric_names: [],
+          baseline_values: {},
+          comparison_values: {},
+          evidence_ids: [],
+          reason: "Brakuje dwóch odrębnych, dokładnych okresów tego samego adresu."
+        }]
+      }
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+
+    const comparisons = screen.getByTestId("content-planning-measurement-comparisons");
+    expect(comparisons).toHaveTextContent("Google Search Console");
+    expect(comparisons).toHaveTextContent("Dokładne okresy: 2026-06 → 2026-07");
+    expect(comparisons).toHaveTextContent("Kliknięcia: 12 → 18");
+    expect(comparisons).toHaveTextContent("Wyświetlenia: 140 → 210");
+    expect(comparisons).toHaveTextContent("Google Analytics 4: brak bezpiecznego porównania");
+    expect(comparisons).toHaveTextContent("Brakuje dwóch odrębnych, dokładnych okresów tego samego adresu.");
+    expect(comparisons).not.toHaveTextContent("zmiana:");
+  });
+
   it("replaces a POST planning state with fresher exact query evidence", async () => {
     const inputA = { ...readyToGenerate().input_summary, source_material_ids: ["material_a"], evidence_id_count: 1 };
     const inputB = { ...readyToGenerate().input_summary, source_material_ids: ["material_b", "material_c"], evidence_id_count: 2 };
