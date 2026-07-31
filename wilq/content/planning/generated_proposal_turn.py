@@ -217,6 +217,11 @@ def content_planning_output_schema(
     _restrict_array(_properties(section), "query_terms", queries)
     _restrict_array(_properties(section), "evidence_ids", evidence_ids)
     _restrict_array(_properties(section), "claim_ids", claim_ids)
+    _restrict_array(
+        _properties(section),
+        "regulatory_requirement_ids",
+        [requirement.id for requirement in planning_input.regulatory_coverage.requirements],
+    )
     _restrict_nullable_string(
         _properties(section),
         "inventory_heading",

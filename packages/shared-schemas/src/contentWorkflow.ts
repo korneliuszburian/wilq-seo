@@ -3470,7 +3470,8 @@ export const ContentPlanningProposalSchema = z.object({
     evidence_ids: z.array(z.string()),
     claim_ids: z.array(z.string()).default([]),
     source_material_ids: z.array(z.string()).default([]),
-    knowledge_card_ids: z.array(z.string()).default([])
+    knowledge_card_ids: z.array(z.string()).default([]),
+    regulatory_requirement_ids: z.array(z.string()).default([])
   })).min(1),
   inventory_mapping: z.array(z.object({
     inventory_section_id: z.string().min(1),
@@ -3632,7 +3633,8 @@ export const ContentPlanningSourceFactPreviewSchema = z.object({
   evidence_ids: z.array(z.string()).min(1),
   knowledge_card_ids: z.array(z.string()).default([]),
   source_fact_ids: z.array(z.string()).default([]),
-  source_material_ids: z.array(z.string()).default([])
+  source_material_ids: z.array(z.string()).default([]),
+  regulatory_requirement_ids: z.array(z.string()).default([])
 });
 
 const contentPlanningSourceNames = [
@@ -3663,6 +3665,10 @@ export const ContentPlanningInputSummarySchema = z.object({
   source_fact_ids: z.array(z.string()).default([]),
   source_material_ids: z.array(z.string()).default([]),
   source_fact_previews: z.array(ContentPlanningSourceFactPreviewSchema).optional(),
+  regulatory_profile_id: z.string().min(1).nullable().optional(),
+  regulatory_profile_version: z.string().min(1).nullable().optional(),
+  regulatory_requirement_ids: z.array(z.string().min(1)).default([]),
+  regulatory_source_fact_ids: z.array(z.string().min(1)).default([]),
   evidence_id_count: z.number().int().nonnegative(),
   knowledge_card_count: z.number().int().nonnegative(),
   measurement_metrics: z.array(z.string()).default([]),

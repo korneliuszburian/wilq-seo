@@ -21,6 +21,7 @@ from wilq.content.planning import dynamic_input
 from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
 )
+from wilq.content.regulatory import policy as regulatory_policy
 from wilq.content.workflow import catalog as inventory_catalog
 from wilq.content.workflow import inventory_binding
 from wilq.content.workflow.catalog import (
@@ -432,6 +433,9 @@ def configure_planning_harness(
     _patch_fresh_diagnostics(monkeypatch)
     _patch_synthetic_inventory_material(monkeypatch)
     _patch_internal_link_candidates(monkeypatch)
+    # This harness exercises generic exact-planning mechanics. Regulatory
+    # profiles have their own focused source-coverage contract tests.
+    monkeypatch.setattr(regulatory_policy, "regulatory_content_profiles", lambda: ())
     runtime = PlanningClient()
     _patch_codex_clients(monkeypatch, runtime)
     return TestClient(app), runtime

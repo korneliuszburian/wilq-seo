@@ -1,0 +1,47 @@
+{
+  "profiles": [
+    {
+      "id": "bdo",
+      "version": "2026-07",
+      "service_card_ids": [
+        "ekologus_service_bdo_reporting"
+      ],
+      "official_source_hosts": [
+        "bdo.mos.gov.pl"
+      ],
+      "max_source_age_days": 180,
+      "requirements": [
+        {
+          "id": "bdo_scope",
+          "label": "zakres BDO",
+          "reason": "Treść musi odróżniać obowiązek, wyjątki i sytuacje wymagające weryfikacji."
+        },
+        {
+          "id": "bdo_registration_and_updates",
+          "label": "wpis i aktualizacja BDO",
+          "reason": "Treść nie może opisywać rejestracji lub zmian bez oficjalnej podstawy."
+        },
+        {
+          "id": "bdo_records_and_kpo",
+          "label": "ewidencja i KPO",
+          "reason": "Treść o ewidencji oraz KPO wymaga aktualnego źródła urzędowego."
+        },
+        {
+          "id": "bdo_reporting",
+          "label": "sprawozdawczość BDO",
+          "reason": "Terminy i zakres sprawozdawczości nie mogą być uogólniane bez źródła."
+        },
+        {
+          "id": "bdo_access_and_account",
+          "label": "dostęp do konta BDO",
+          "reason": "Instrukcje logowania i ról wymagają oficjalnej instrukcji systemu."
+        },
+        {
+          "id": "bdo_risks_and_sanctions",
+          "label": "ryzyka i sankcje",
+          "reason": "Opis ryzyk lub sankcji wymaga dokładnej, sprawdzonej podstawy."
+        }
+      ]
+    }
+  ]
+}

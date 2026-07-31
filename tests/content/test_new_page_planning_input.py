@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 
 import wilq.content.planning.dynamic_input as planning_input_module
+import wilq.content.regulatory.policy as regulatory_policy
 from wilq.content.knowledge.cards import ContentKnowledgeCard, ekologus_content_knowledge_cards
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import (
@@ -12,6 +13,10 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInputSummary,
     build_new_page_planning_input,
     content_planning_input_summary,
+)
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryProfile,
+    ContentRegulatoryRequirement,
 )
 from wilq.content.workflow.new_page import (
     ContentNewPageBrief,
@@ -280,3 +285,50 @@ def test_new_page_document_identity_rejects_public_source_or_deployment_claims(
     ):
         with pytest.raises(ValueError):
             type(identity).model_validate(identity.model_dump(mode="json") | update)
+
+
+def test_new_page_regulatory_profile_blocks_generation_without_official_coverage(
+    monkeypatch,
+) -> None:
+    _, brief, foundation, guard, service_card = _ready_new_page_input(monkeypatch)
+    profile = ContentRegulatoryProfile(
+        id="regulated_new_page",
+        version="2026-07",
+        service_card_ids=[service_card.id],
+        official_source_hosts=["gov.example"],
+        max_source_age_days=180,
+        requirements=[
+            ContentRegulatoryRequirement(
+                id="regulated_scope",
+                label="zakres obowiązku",
+                reason="Zakres wymaga źródła urzędowego.",
+            )
+        ],
+    )
+    monkeypatch.setattr(
+        regulatory_policy,
+        "regulatory_content_profiles",
+        lambda: (profile,),
+    )
+
+    blocked = build_new_page_planning_input(
+        brief=brief,
+        foundation=foundation,
+        overlap_guard=guard,
+        service_card=service_card,
+    )
+
+    assert blocked.planning_input is not None
+    requirement_ids = [
+        requirement.id
+        for requirement in blocked.planning_input.regulatory_coverage.requirements
+    ]
+    assert requirement_ids == [
+        "regulated_scope"
+    ]
+    assert [blocker.code for blocker in blocked.blockers] == [
+        "missing_regulatory_source_coverage"
+    ]
+    readiness = planning_input_module.content_planning_input_readiness(blocked)
+    assert readiness.status == "blocked"
+    assert readiness.planning_input_digest is None

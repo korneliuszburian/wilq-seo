@@ -66,6 +66,13 @@ class ContentSourceFact(BaseModel):
     allowed_claims: list[str] = Field(default_factory=list)
     evidence_requirements: list[str] = Field(default_factory=list)
     usage_notes: list[str] = Field(default_factory=list)
+    # Coverage is explicit rather than inferred from prose. Only approved
+    # official facts may satisfy a regulated-content planning requirement.
+    official_source: bool = False
+    regulatory_profile_id: str | None = None
+    regulatory_profile_version: str | None = None
+    regulatory_requirement_ids: list[str] = Field(default_factory=list)
+    applicable_service_card_ids: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_review_state(self) -> ContentSourceFact:
@@ -100,6 +107,8 @@ class ContentSourceFact(BaseModel):
             "allowed_claims": self.allowed_claims,
             "evidence_requirements": self.evidence_requirements,
             "usage_notes": self.usage_notes,
+            "regulatory_requirement_ids": self.regulatory_requirement_ids,
+            "applicable_service_card_ids": self.applicable_service_card_ids,
         }
         blank_list_fields = sorted(
             field_name
@@ -121,6 +130,27 @@ class ContentSourceFact(BaseModel):
                 raise ValueError("approved source facts require source_connectors")
         if self.source_type == "public_site" and self.privacy_class != "commit_safe":
             raise ValueError("public site source facts must be commit_safe")
+        if self.official_source and self.source_type != "legal_update":
+            raise ValueError("official regulatory source facts must use legal_update")
+        regulatory_fields_present = any(
+            (
+                self.regulatory_profile_id is not None,
+                self.regulatory_profile_version is not None,
+                self.regulatory_requirement_ids,
+                self.applicable_service_card_ids,
+            )
+        )
+        if regulatory_fields_present and not (
+            self.official_source
+            and self.regulatory_profile_id
+            and self.regulatory_profile_version
+            and self.regulatory_requirement_ids
+            and self.applicable_service_card_ids
+        ):
+            raise ValueError(
+                "regulatory source facts require exact official profile, version, "
+                "requirement and service bindings"
+            )
         if "ekologus_ai_private_source_catalog" in self.source_connectors:
             if self.source_type not in {"private_candidate", "reviewed_internal"}:
                 raise ValueError("ekologus-ai source facts must use private source types")

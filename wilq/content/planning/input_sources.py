@@ -141,6 +141,7 @@ class ContentPlanningSourceFact(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
     source_fact_ids: list[str] = Field(default_factory=list)
     source_material_ids: list[str] = Field(default_factory=list)
+    regulatory_requirement_ids: list[str] = Field(default_factory=list)
 
 
 class ContentPlanningSourceAssessment(BaseModel):

@@ -86,6 +86,7 @@ class ContentPlanningModelSection(BaseModel):
     query_terms: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(min_length=1)
     claim_ids: list[str] = Field(default_factory=list)
+    regulatory_requirement_ids: list[str] = Field(default_factory=list)
 
 
 class ContentPlanningModelOutput(BaseModel):
