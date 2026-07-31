@@ -22,10 +22,14 @@ from wilq.content.handoff.wordpress_execution import (
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.workflow.contracts import ContentDraftRevisionSaveRequest
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.new_page import ContentNewPageDocumentIdentity
 from wilq.content.workflow.official_source_lineage import (
     build_official_source_lineage_rebase_command,
+)
+from wilq.content.workflow.official_source_lineage_store import (
+    ContentOfficialSourceLineageStore,
 )
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.revision_persistence import draft_revision_content_digest
@@ -298,6 +302,62 @@ def test_official_source_lineage_rebase_appends_an_exact_bdo_like_child(
             planning_input=planning_input.model_copy(update={"planning_input_digest": "0" * 64}),
             proposal=proposal,  # type: ignore[arg-type]
             requested_by="wilku",
+        )
+
+
+def test_store_rejects_lineage_rebase_when_review_arrives_before_atomic_append(
+    tmp_path: Path,
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    base_command = _full_document_command(_draft_package(), base_revision_id=None)
+    base = store.append_draft_revision(base_command).revision
+    assert base is not None
+    review = store.review_draft_revision(
+        ContentDraftRevisionReviewCommand(
+            work_item_id=base.work_item_id,
+            revision_id=base.revision_id,
+            revision_digest=base.content_digest,
+            decision="approved",
+            reviewed_by="wilku",
+            checked_items=["tekst", "źródła"],
+            evidence_ids=["ev_wp", "ev_gsc"],
+        )
+    ).review
+    assert review is not None
+    child = _full_document_command(
+        _draft_package(), base_revision_id=base.revision_id
+    ).model_copy(update={"correction_reason": "official_source_lineage_rebase"})
+
+    result = ContentOfficialSourceLineageStore(tmp_path / "wilq.sqlite3").append_rebase(
+        child,
+        expected_latest_review_decision_id=None,
+    )
+
+    assert result.status == "conflict"
+    assert result.conflict is not None
+    assert result.conflict.code == "stale_review"
+    state = store.load_draft_revision_state(base.work_item_id)
+    assert state.revision_count == 1
+    assert state.latest_revision == base
+
+
+def test_generic_revision_save_contract_rejects_reserved_lineage_only_reason() -> None:
+    with pytest.raises(ValidationError):
+        ContentDraftRevisionSaveRequest.model_validate(
+            {
+                "base_revision_id": "content_revision_bdo",
+                "title": "BDO dla firm",
+                "sections": [
+                    {
+                        "heading": "Obowiązki BDO",
+                        "body_markdown": "Treść bez zmiany.",
+                        "content_html": "<p>Treść bez zmiany.</p>",
+                        "evidence_ids": ["ev_bdo"],
+                    }
+                ],
+                "correction_reason": "official_source_lineage_rebase",
+                "created_by": "wilku",
+            }
         )
 
 

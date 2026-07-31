@@ -17,7 +17,9 @@ from wilq.content.workflow.contracts import (
 from wilq.content.workflow.official_source_lineage import (
     build_official_source_lineage_rebase_command,
 )
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.official_source_lineage_store import (
+    content_official_source_lineage_store,
+)
 
 ContentOfficialSourceLineageSnapshotLoader = Callable[
     [str], ContentWorkItemWorkflowSnapshotResponse
@@ -97,12 +99,20 @@ def register_content_official_source_lineage_route(
                 "Bieżący plan nie odpowiada dokładnie rewizji lub nie ma kompletnej "
                 "lineage źródeł urzędowych.",
             )
-        result = content_workflow_store().append_draft_revision(command)
+        expected_review_decision_id = (
+            None
+            if workspace.status == "unreviewed"
+            else None if workspace.latest_review is None else workspace.latest_review.decision_id
+        )
+        result = content_official_source_lineage_store().append_rebase(
+            command,
+            expected_latest_review_decision_id=expected_review_decision_id,
+        )
         if result.status == "conflict":
             return _conflict(
                 snapshot_loader(work_item_id),
-                "stale_revision",
-                "Rewizja zmieniła się w trakcie operacji. Odśwież dokument przed kolejną próbą.",
+                result.conflict.code if result.conflict is not None else "stale_revision",
+                "Stan review zmienił się w trakcie operacji. Odśwież dokument przed kolejną próbą.",
             )
         refreshed_workspace = snapshot_loader(work_item_id).revision_workspace
         return ContentDraftRevisionSaveResponse(

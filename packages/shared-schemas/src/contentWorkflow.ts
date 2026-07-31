@@ -2996,7 +2996,7 @@ export const ContentDraftRevisionSaveRequestSchema = z.object({
   base_revision_id: z.string().nullable(),
   title: z.string().refine((value) => value.trim().length > 0),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
-  correction_reason: z.enum(["canonical_html_alignment", "official_source_lineage_rebase"]).nullable().optional(),
+  correction_reason: z.enum(["canonical_html_alignment"]).nullable().optional(),
   created_by: z.string().refine((value) => value.trim().length > 0)
 });
 

@@ -61,7 +61,6 @@ from wilq.content.workflow.planning import ContentPlanningWorkspace
 from wilq.content.workflow.queue import ContentWorkItemQueueBlocker, ContentWorkItemQueueCandidate
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
-    ContentDraftRevisionCorrectionReason,
     ContentDraftRevisionDecision,
     ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionReview,
@@ -69,6 +68,8 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionStateStatus,
 )
 from wilq.schemas import ContentFreshnessAssessment
+
+ContentDraftRevisionSaveCorrectionReason = Literal["canonical_html_alignment"]
 
 ContentDraftRevisionPublicConflictCode = Literal[
     "workspace_not_saveable",
@@ -493,7 +494,7 @@ class ContentDraftRevisionSaveRequest(BaseModel):
     base_revision_id: str | None = None
     title: str = Field(min_length=1)
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)
-    correction_reason: ContentDraftRevisionCorrectionReason | None = None
+    correction_reason: ContentDraftRevisionSaveCorrectionReason | None = None
     created_by: str = Field(min_length=1)
 
     @model_validator(mode="after")

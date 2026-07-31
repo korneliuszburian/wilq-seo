@@ -4219,6 +4219,20 @@ describe("Content work item workflow schemas", () => {
           content_html: "<p>Treść sekcji.</p>",
           evidence_ids: ["ev_gsc_bdo"]
         }],
+        correction_reason: "official_source_lineage_rebase",
+        created_by: "operator_local_dashboard"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "BDO dla firm",
+        sections: [{
+          heading: "Zakres obowiązków",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_gsc_bdo"]
+        }],
         correction_reason: "rewrite_everything",
         created_by: "operator_local_dashboard"
       }).success
