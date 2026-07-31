@@ -481,6 +481,30 @@ describe("ContentDraftRevisionSchema", () => {
     expect(parsed.faq[0].answer_markdown).toBe("Od sprawdzenia sytuacji firmy.");
     expect(parsed.cta_blocks[0].placement).toBe("after_content");
     expect(parsed.internal_links[0].target_url).toBe("https://www.ekologus.pl/kontakt/");
+    const regulated = {
+      ...parsed,
+      official_source_references: [{
+        source_fact_id: "regulatory_source_fact_bdo_scope",
+        source_url: "https://bdo.mos.gov.pl/o-systemie-bdo/",
+        source_title: "Oficjalny opis systemu BDO",
+        verified_on: "2026-07-31",
+        evidence_ids: ["ev_regulatory_bdo_scope"],
+        regulatory_requirement_ids: ["bdo_scope"]
+      }]
+    };
+    expect(ContentDraftRevisionSchema.safeParse(regulated).success).toBe(true);
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...regulated,
+      official_source_references: [{ ...regulated.official_source_references[0], evidence_ids: ["   "] }]
+    }).success).toBe(false);
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...regulated,
+      official_source_references: [regulated.official_source_references[0], regulated.official_source_references[0]]
+    }).success).toBe(false);
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...common,
+      official_source_references: regulated.official_source_references
+    }).success).toBe(false);
     const newPage = {
       ...parsed,
       document_kind: "new_page" as const,

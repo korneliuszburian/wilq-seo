@@ -41,6 +41,7 @@ def build_child_draft_revision_command(
         faq=base_revision.faq,
         cta_blocks=base_revision.cta_blocks if cta_blocks is None else cta_blocks,
         internal_links=base_revision.internal_links,
+        official_source_references=base_revision.official_source_references,
         proposal_metadata=proposal_metadata,
         created_by=created_by,
     )

@@ -19,6 +19,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionCtaBlock,
     ContentDraftRevisionFaqItem,
     ContentDraftRevisionInternalLink,
+    ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionProposalSectionLineage,
     ContentDraftRevisionSection,
@@ -82,6 +83,7 @@ def build_initial_draft_revision_command(
         faq=_revision_faq(proposal, output),
         cta_blocks=_revision_ctas(proposal, output),
         internal_links=_revision_links(proposal, output),
+        official_source_references=_official_source_references(planning_input),
         proposal_metadata=ContentDraftRevisionProposalMetadata(
             codex_run_id=run.id,
             selected_section_headings=[item.heading for item in sections],
@@ -160,6 +162,58 @@ def _revision_links(
             zip(proposal.internal_links, output.internal_links, strict=True), start=1
         )
     ]
+
+
+def _official_source_references(
+    planning_input: ContentPlanningInput,
+) -> list[ContentDraftRevisionOfficialSourceReference]:
+    """Project reader-visible links from exact approved regulatory coverage.
+
+    URLs never come from the model output.  A regulated document can only
+    carry sources that its own planning input used to satisfy explicit,
+    profile-bound requirements.
+    """
+
+    coverage = planning_input.regulatory_coverage
+    if not coverage.requirements:
+        return []
+    if not coverage.complete:
+        raise ValueError("Regulated initial draft requires complete official-source coverage.")
+    facts_by_id = {fact.source_id: fact for fact in coverage.source_facts}
+    requirement_ids_by_source = {
+        source_fact_id: sorted(
+            coverage_item.requirement_id
+            for coverage_item in coverage.requirement_coverage
+            if source_fact_id in coverage_item.source_fact_ids
+        )
+        for source_fact_id in coverage.source_fact_ids
+    }
+    references: list[ContentDraftRevisionOfficialSourceReference] = []
+    for source_fact_id in coverage.source_fact_ids:
+        fact = facts_by_id.get(source_fact_id)
+        requirement_ids = requirement_ids_by_source.get(source_fact_id, [])
+        if (
+            fact is None
+            or not fact.official_source
+            or fact.source_type != "legal_update"
+            or fact.review_status != "approved"
+            or not fact.evidence_ids
+            or not requirement_ids
+        ):
+            raise ValueError(
+                "Regulated initial draft requires exact approved official-source lineage."
+            )
+        references.append(
+            ContentDraftRevisionOfficialSourceReference(
+                source_fact_id=fact.source_id,
+                source_url=fact.source_url_or_path,
+                source_title=fact.target_card_title,
+                verified_on=fact.freshness_date,
+                evidence_ids=fact.evidence_ids,
+                regulatory_requirement_ids=requirement_ids,
+            )
+        )
+    return references
 
 
 def _revision_placement(value: str, proposal: ContentPlanningProposal) -> str:

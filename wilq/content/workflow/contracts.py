@@ -63,6 +63,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionCorrectionReason,
     ContentDraftRevisionDecision,
+    ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,
     ContentDraftRevisionStateStatus,
@@ -555,6 +556,9 @@ class ContentRevisionHtmlPackageManifest(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
+    official_source_references: list[ContentDraftRevisionOfficialSourceReference] = Field(
+        default_factory=list
+    )
     section_count: int = Field(ge=1)
 
 

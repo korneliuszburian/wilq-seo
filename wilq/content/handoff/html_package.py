@@ -42,6 +42,7 @@ def build_content_revision_html_package(
         evidence_ids=_revision_evidence_ids(revision),
         source_material_ids=_revision_lineage_ids(revision, "source_material_ids"),
         knowledge_card_ids=_revision_lineage_ids(revision, "knowledge_card_ids"),
+        official_source_references=revision.official_source_references,
         section_count=len(revision.sections),
     )
     manifest_json = json.dumps(manifest.model_dump(mode="json"), ensure_ascii=False, sort_keys=True)

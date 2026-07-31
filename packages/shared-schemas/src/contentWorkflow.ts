@@ -2599,6 +2599,35 @@ export const ContentDraftRevisionInternalLinkSchema = z.object({
   claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
 });
 
+const isSafeOfficialSourceUrl = (value: string): boolean => {
+  if (value !== value.trim() || /[\x00-\x20\x7f<>"'`(){}|\\^\[\]]/.test(value)) return false;
+  try {
+    const parsed = new URL(value);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname.length > 0 &&
+      parsed.username === "" &&
+      parsed.password === ""
+    );
+  } catch {
+    return false;
+  }
+};
+
+const isIsoDate = (value: string): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  return !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+};
+
+export const ContentDraftRevisionOfficialSourceReferenceSchema = z.object({
+  source_fact_id: z.string().trim().min(1),
+  source_url: z.string().trim().min(1).refine(isSafeOfficialSourceUrl),
+  source_title: z.string().trim().min(1),
+  verified_on: z.string().trim().min(1).refine(isIsoDate),
+  evidence_ids: z.array(z.string().trim().min(1)).min(1),
+  regulatory_requirement_ids: z.array(z.string().trim().min(1)).min(1)
+});
+
 export const ContentDraftRevisionSchema = z.object({
   schema_version: z
     .enum(["wilq_content_draft_revision_v1", "wilq_content_draft_revision_v2"])
@@ -2626,6 +2655,7 @@ export const ContentDraftRevisionSchema = z.object({
   faq: z.array(ContentDraftRevisionFaqItemSchema).default([]),
   cta_blocks: z.array(ContentDraftRevisionCtaBlockSchema).default([]),
   internal_links: z.array(ContentDraftRevisionInternalLinkSchema).default([]),
+  official_source_references: z.array(ContentDraftRevisionOfficialSourceReferenceSchema).default([]),
   proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
   correction_reason: z.literal("canonical_html_alignment").nullable().optional(),
   publish_ready: z.literal(false),
@@ -2636,11 +2666,16 @@ export const ContentDraftRevisionSchema = z.object({
     if (
       revision.document_kind !== "refresh_existing" ||
       !revision.final_canonical_url?.trim() ||
-      revision.new_page_document_identity
+      revision.new_page_document_identity ||
+      revision.official_source_references.length > 0
     ) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Historical v1 revision requires a refresh URL and cannot carry new-page identity." });
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Historical v1 revision requires a refresh URL and cannot carry new-page identity or official source references." });
     }
     return;
+  }
+  const sourceFactIds = revision.official_source_references.map((item) => item.source_fact_id);
+  if (sourceFactIds.length !== new Set(sourceFactIds).size) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["official_source_references"], message: "Full-document official source references require unique source fact IDs." });
   }
   if (revision.document_kind === "refresh_existing" && (!revision.final_canonical_url?.trim() || revision.new_page_document_identity)) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["final_canonical_url"], message: "Refresh revision requires a public canonical URL and no new-page identity." });
@@ -3018,6 +3053,7 @@ export const ContentRevisionHtmlPackageManifestSchema = z.object({
   evidence_ids: z.array(z.string()).default([]),
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
+  official_source_references: z.array(ContentDraftRevisionOfficialSourceReferenceSchema).default([]),
   section_count: z.number().int().positive()
 });
 

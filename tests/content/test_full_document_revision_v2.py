@@ -23,9 +23,11 @@ from wilq.content.handoff.wordpress_execution import (
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.new_page import ContentNewPageDocumentIdentity
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
+from wilq.content.workflow.revision_persistence import draft_revision_content_digest
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionProposalSectionLineage,
     ContentDraftRevisionReviewCommand,
@@ -174,6 +176,58 @@ def test_new_page_full_revision_is_append_only_without_a_public_url(tmp_path: Pa
         ContentDraftRevision.model_validate(
             created.model_dump(mode="python") | {"service_digest": "f" * 64}
         )
+
+
+def test_full_document_official_sources_are_digest_bound_and_preserved_by_child_revision() -> None:
+    command = _full_document_command(_draft_package(), base_revision_id="content_revision_base")
+    reference = ContentDraftRevisionOfficialSourceReference(
+        source_fact_id="regulatory_source_fact_bdo_scope",
+        source_url="https://bdo.mos.gov.pl/o-systemie-bdo/",
+        source_title="Oficjalny opis systemu BDO",
+        verified_on="2026-07-31",
+        evidence_ids=["ev_regulatory_bdo_scope"],
+        regulatory_requirement_ids=["bdo_scope"],
+    )
+    regulated = command.model_copy(update={"official_source_references": [reference]})
+
+    assert draft_revision_content_digest(regulated) != draft_revision_content_digest(command)
+    revision = ContentDraftRevision.model_validate(
+        regulated.model_dump(mode="python")
+        | {
+            "revision_id": "content_revision_regulatory",
+            "revision_number": 2,
+            "content_digest": draft_revision_content_digest(regulated),
+            "created_at": "2026-07-31T12:00:00Z",
+        }
+    )
+    assert revision_document_markdown(revision).endswith(
+        "[Oficjalny opis systemu BDO](https://bdo.mos.gov.pl/o-systemie-bdo/) — "
+        "zweryfikowano: 2026-07-31."
+    )
+
+    child = build_child_draft_revision_command(
+        revision,
+        sections=revision.sections,
+        proposal_metadata=ContentDraftRevisionProposalMetadata(
+            codex_run_id="codex_run_regulatory_child",
+            selected_section_headings=[revision.sections[0].heading],
+            section_lineage=[
+                ContentDraftRevisionProposalSectionLineage(
+                    heading=revision.sections[0].heading,
+                    evidence_ids=revision.sections[0].evidence_ids,
+                )
+            ],
+            quality_verdict="needs_changes",
+            quality_finding_codes=["semantic_review_required"],
+        ),
+        created_by="wilku",
+    )
+    assert child.official_source_references == [reference]
+
+    duplicate_payload = regulated.model_dump(mode="python")
+    duplicate_payload["official_source_references"] = [reference, reference]
+    with pytest.raises(ValidationError, match="official source IDs must be unique"):
+        ContentDraftRevisionAppendCommand.model_validate(duplicate_payload)
 
 
 def test_full_document_v2_handoff_allows_generated_section_map_to_rewrite_baseline(

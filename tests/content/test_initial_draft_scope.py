@@ -12,11 +12,13 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
     ContentInitialDraftSectionOutput,
 )
+from wilq.content.drafts.initial_full_draft_document import _official_source_references
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import (
     _regulatory_draft_directive,
     initial_full_draft_output_schema,
 )
+from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
@@ -135,6 +137,69 @@ def test_full_draft_turn_has_section_bound_regulatory_directive() -> None:
 
     assert "section_keep" in directive
     assert "KPO przed transportem" in directive
+
+
+def test_initial_draft_projects_only_exact_approved_official_sources() -> None:
+    requirement = ContentRegulatoryRequirement(
+        id="bdo_scope",
+        label="zakres BDO",
+        reason="Wymaga źródła urzędowego.",
+    )
+    approved_fact = ContentSourceFact(
+        source_id="regulatory_source_fact_bdo_scope",
+        source_type="legal_update",
+        privacy_class="commit_safe",
+        source_url_or_path="https://bdo.mos.gov.pl/o-systemie-bdo/",
+        extracted_fact="Oficjalny opis systemu BDO obejmuje rejestr oraz obowiązki podmiotów.",
+        scope="claim_policy",
+        freshness_date="2026-07-31",
+        confidence=1,
+        review_status="approved",
+        reviewer="wilku",
+        evidence_ids=["ev_regulatory_bdo_scope"],
+        source_connectors=["official_regulatory_review"],
+        target_card_id="regulatory_bdo",
+        target_card_type="regulatory_source",
+        target_card_title="Oficjalny opis systemu BDO",
+        official_source=True,
+        regulatory_profile_id="bdo",
+        regulatory_profile_version="2026-07",
+        regulatory_requirement_ids=[requirement.id],
+        applicable_service_card_ids=["ekologus_service_bdo_reporting"],
+    )
+    coverage = ContentRegulatoryCoverage(
+        profile_id="bdo",
+        profile_version="2026-07",
+        requirements=[requirement],
+        requirement_coverage=[
+            {
+                "requirement_id": requirement.id,
+                "source_fact_ids": [approved_fact.source_id],
+                "evidence_ids": approved_fact.evidence_ids,
+            }
+        ],
+        source_fact_ids=[approved_fact.source_id],
+        evidence_ids=approved_fact.evidence_ids,
+        source_facts=[approved_fact],
+    )
+    planning_input = ContentPlanningInput.model_construct(regulatory_coverage=coverage)
+
+    assert [item.model_dump() for item in _official_source_references(planning_input)] == [
+        {
+            "source_fact_id": approved_fact.source_id,
+            "source_url": approved_fact.source_url_or_path,
+            "source_title": approved_fact.target_card_title,
+            "verified_on": approved_fact.freshness_date,
+            "evidence_ids": approved_fact.evidence_ids,
+            "regulatory_requirement_ids": [requirement.id],
+        }
+    ]
+
+    incomplete = coverage.model_copy(update={"requirement_coverage": []})
+    with pytest.raises(ValueError, match="complete official-source coverage"):
+        _official_source_references(
+            ContentPlanningInput.model_construct(regulatory_coverage=incomplete)
+        )
 
 
 def test_document_scope_accepts_the_same_excluded_section_projection() -> None:
