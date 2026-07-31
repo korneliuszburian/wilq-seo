@@ -82,6 +82,13 @@ ContentPlanningInputBlockerCode = Literal[
     "missing_regulatory_source_coverage",
 ]
 
+# A refresh plan cannot be grounded without the current page, the approved
+# service boundary and its exact organic-demand evidence. Other assessed
+# sources remain visible in the input and may enrich a plan when exact, but a
+# missing, stale or failed optional integration must not invent demand or
+# prevent a grounded content repair from proceeding.
+_REQUIRED_EXACT_PLANNING_SOURCES = frozenset({"wordpress", "service_profile", "gsc"})
+
 
 class ContentPlanningInputBlocker(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -657,7 +664,10 @@ def _source_readiness_blockers(
     stale_sources = [
         assessment.source
         for assessment in source_assessments
-        if assessment.status == "stale"
+        if (
+            assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES
+            and assessment.status == "stale"
+        )
     ]
     if stale_sources:
         blockers.append(
@@ -672,7 +682,10 @@ def _source_readiness_blockers(
     blocked_sources = [
         assessment.source
         for assessment in source_assessments
-        if assessment.status == "blocked"
+        if (
+            assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES
+            and assessment.status == "blocked"
+        )
     ]
     if blocked_sources and not (
         {"service_card_not_approved", "stale_planning_sources"}

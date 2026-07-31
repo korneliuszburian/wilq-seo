@@ -346,6 +346,18 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
     assert ads_assessment.status == "blocked"
     assert ads_assessment.evidence_ids == ["ev_ads_blocked"]
 
+    optional_ads_failure = _build_result(
+        item,
+        resolution,
+        brief,
+        service_profile,
+        baseline.model_copy(update={"search_demand": blocked_ads}),
+        _freshness([]),
+    )
+    assert "blocked_planning_sources" not in {
+        blocker.code for blocker in optional_ads_failure.blockers
+    }
+
 
 def test_refresh_suppresses_generic_blocked_source_when_service_review_is_required(
     source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
