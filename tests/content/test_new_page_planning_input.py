@@ -332,3 +332,7 @@ def test_new_page_regulatory_profile_blocks_generation_without_official_coverage
     readiness = planning_input_module.content_planning_input_readiness(blocked)
     assert readiness.status == "blocked"
     assert readiness.planning_input_digest is None
+    summary = planning_input_module.content_planning_input_summary(blocked.planning_input)
+    assert summary.regulatory_profile_id == "regulated_new_page"
+    assert summary.regulatory_requirement_coverage[0].source_fact_ids == []
+    assert summary.regulatory_requirement_coverage[0].evidence_ids == []

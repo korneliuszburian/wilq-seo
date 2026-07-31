@@ -237,7 +237,11 @@ class ContentPlanningProposalResponse(BaseModel):
             or self.proposal.planning_input_digest != self.planning_input_digest
         ):
             raise ValueError("Planning response must match the nested exact proposal.")
-        if self.proposal is not None and self.input_summary is not None:
+        if (
+            self.status in {"created", "idempotent", "ready"}
+            and self.proposal is not None
+            and self.input_summary is not None
+        ):
             lineage_errors = regulatory_response_lineage_errors(self.input_summary, self.proposal)
             if lineage_errors:
                 raise ValueError(

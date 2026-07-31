@@ -3753,8 +3753,6 @@ export const ContentPlanningInputSummarySchema = z.object({
     const coverage = new Map(summary.regulatory_requirement_coverage.map((item) => [item.requirement_id, item]));
     if (!required.size || coverage.size !== required.size || [...required].some((id) => !coverage.has(id))) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Regulatory planning summary requires exact coverage for every requirement." });
-    } else if ([...coverage.values()].some((item) => item.source_fact_ids.length === 0 || item.evidence_ids.length === 0)) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Regulatory planning summary requires exact evidence coverage." });
     } else {
       const coveredSourceFactIds = new Set([...coverage.values()].flatMap((item) => item.source_fact_ids));
       if (coveredSourceFactIds.size !== summary.regulatory_source_fact_ids.length || summary.regulatory_source_fact_ids.some((id) => !coveredSourceFactIds.has(id))) {
@@ -3859,7 +3857,7 @@ export const ContentPlanningProposalResponseSchema = z.object({
       message: "Planning response must match the nested exact proposal."
     });
   }
-  if (response.proposal && response.input_summary?.regulatory_profile_id) {
+  if (["created", "idempotent", "ready"].includes(response.status) && response.proposal && response.input_summary?.regulatory_profile_id) {
     const coverage = new Map(response.input_summary.regulatory_requirement_coverage.map((item) => [item.requirement_id, new Set(item.evidence_ids)]));
     const required = new Set(response.input_summary.regulatory_requirement_ids);
     const sectionRequirements = new Set(response.proposal.sections.flatMap((section) => section.regulatory_requirement_ids));

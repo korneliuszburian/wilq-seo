@@ -861,6 +861,27 @@ describe("ContentPlanningProposalResponseSchema", () => {
     }).success).toBe(false);
     expect(ContentPlanningProposalResponseSchema.safeParse({
       ...regulatoryResponse,
+      status: "blocked",
+      proposal: null,
+      planning_workspace: null,
+      input_summary: {
+        ...regulatoryResponse.input_summary,
+        regulatory_source_fact_ids: [],
+        regulatory_requirement_coverage: [{
+          requirement_id: "bdo_scope",
+          source_fact_ids: [],
+          evidence_ids: []
+        }]
+      },
+      blockers: [{
+        code: "missing_regulatory_source_coverage",
+        label: "Brakuje źródeł urzędowych",
+        reason: "Brak pokrycia.",
+        next_step: "Dodaj źródło."
+      }]
+    }).success).toBe(true);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...regulatoryResponse,
       proposal: {
         ...regulatoryResponse.proposal,
         sections: [{ ...regulatoryResponse.proposal.sections[0], regulatory_requirement_ids: ["unknown_requirement"] }]

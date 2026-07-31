@@ -90,11 +90,6 @@ def _validate_regulatory_summary(summary: ContentPlanningInputSummary) -> None:
             raise ValueError(
                 "Regulatory planning summary requires exact coverage for every requirement."
             )
-        if any(
-            not item.source_fact_ids or not item.evidence_ids
-            for item in coverage_by_requirement.values()
-        ):
-            raise ValueError("Regulatory planning summary requires exact evidence coverage.")
         covered_fact_ids = {
             source_fact_id
             for item in coverage_by_requirement.values()
