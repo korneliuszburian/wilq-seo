@@ -73,7 +73,10 @@ def regulatory_planning_lineage_errors(
         for requirement_id in section.regulatory_requirement_ids
         if requirement_id not in required_ids
     }
-    errors.extend(f"regulatory_requirement_unknown:{requirement_id}" for requirement_id in sorted(unknown_requirements))
+    errors.extend(
+        f"regulatory_requirement_unknown:{requirement_id}"
+        for requirement_id in sorted(unknown_requirements)
+    )
     for requirement in planning_input.regulatory_coverage.requirements:
         matching_sections = [
             section
@@ -89,6 +92,43 @@ def regulatory_planning_lineage_errors(
         ):
             errors.append(f"regulatory_evidence:{requirement.id}")
     return errors
+
+
+def canonicalize_regulatory_section_evidence(
+    planning_input: ContentPlanningInput,
+    output: ContentPlanningModelOutput,
+) -> ContentPlanningModelOutput:
+    """Attach exact official evidence to every declared regulated section.
+
+    The model may choose which reviewable section covers a requirement, but it
+    must not choose a different, merely allowed evidence ID for that
+    requirement. The requirement-to-evidence mapping is already exact and
+    server-owned in the planning input, so this only completes lineage metadata
+    for a declared known requirement. Unknown or missing requirements remain
+    the responsibility of the fail-closed validator below.
+    """
+
+    evidence_by_requirement = {
+        item.requirement_id: item.evidence_ids
+        for item in planning_input.regulatory_coverage.requirement_coverage
+    }
+    sections = []
+    for section in output.sections:
+        required_evidence = [
+            evidence_id
+            for requirement_id in section.regulatory_requirement_ids
+            for evidence_id in evidence_by_requirement.get(requirement_id, [])
+        ]
+        sections.append(
+            section.model_copy(
+                update={
+                    "evidence_ids": list(
+                        dict.fromkeys([*section.evidence_ids, *required_evidence])
+                    )
+                }
+            )
+        )
+    return output.model_copy(update={"sections": sections})
 
 
 def _section_lineage_errors(

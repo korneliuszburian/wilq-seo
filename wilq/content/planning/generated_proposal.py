@@ -34,7 +34,10 @@ from wilq.content.planning.generated_proposal_contracts import (
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.generated_proposal_turn import content_planning_turn_request
-from wilq.content.planning.proposal_lineage import planning_output_lineage_errors
+from wilq.content.planning.proposal_lineage import (
+    canonicalize_regulatory_section_evidence,
+    planning_output_lineage_errors,
+)
 from wilq.content.planning.proposal_quality import (
     persisted_inventory_mapping_is_current,
     planning_output_quality_errors,
@@ -383,6 +386,7 @@ def _run_planning_turn(
         )
         return None, trace, blocker, "blocked"
     output = canonicalize_model_inventory_headings(planning_input, output)
+    output = canonicalize_regulatory_section_evidence(planning_input, output)
     quality_errors = planning_output_quality_errors(output, planning_input=planning_input)
     if quality_errors:
         quality_reason = (

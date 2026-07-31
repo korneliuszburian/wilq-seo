@@ -6,7 +6,10 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelSection,
     regulatory_response_lineage_errors,
 )
-from wilq.content.planning.proposal_lineage import regulatory_planning_lineage_errors
+from wilq.content.planning.proposal_lineage import (
+    canonicalize_regulatory_section_evidence,
+    regulatory_planning_lineage_errors,
+)
 from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
     ContentRegulatoryRequirement,
@@ -87,6 +90,21 @@ def test_regulatory_requirements_need_a_planned_section_with_exact_evidence() ->
     assert missing == ["regulatory_requirement:regulated_deadline"]
     assert wrong_evidence == ["regulatory_evidence:regulated_deadline"]
     assert complete == []
+
+
+def test_declared_regulatory_requirement_gets_its_exact_server_owned_evidence() -> None:
+    planning_input = _planning_input()
+    output = _output(
+        _section(
+            requirement_ids=["regulated_scope", "regulated_deadline"],
+            evidence_ids=["ev_scope"],
+        )
+    )
+
+    normalized = canonicalize_regulatory_section_evidence(planning_input, output)
+
+    assert normalized.sections[0].evidence_ids == ["ev_scope", "ev_deadline"]
+    assert regulatory_planning_lineage_errors(planning_input, normalized) == []
 
 
 def test_public_response_lineage_rejects_missing_unknown_or_wrong_regulatory_evidence() -> None:
