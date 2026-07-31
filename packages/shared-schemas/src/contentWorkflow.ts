@@ -3637,6 +3637,34 @@ export const ContentPlanningSourceFactPreviewSchema = z.object({
   regulatory_requirement_ids: z.array(z.string()).default([])
 });
 
+export const ContentRegulatorySourceReviewCommandSchema = z.object({
+  candidate_id: z.string().trim().min(1),
+  expected_source_url: z.string().url(),
+  expected_profile_version: z.string().trim().min(1),
+  source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  reviewed_fact: z.string().trim().min(20).max(2000),
+  covered_requirement_ids: z.array(z.string().trim().min(1)).min(1),
+  decision: z.enum(["accepted", "rejected"]),
+  reviewer: z.string().trim().min(1).max(200)
+});
+
+export const ContentRegulatorySourceReviewSchema = ContentRegulatorySourceReviewCommandSchema.extend({
+  review_id: z.string().min(1),
+  profile_id: z.string().trim().min(1),
+  service_card_ids: z.array(z.string().trim().min(1)).min(1),
+  source_url: z.string().url(),
+  source_title: z.string().trim().min(1),
+  observed_on: z.string().min(1),
+  reviewed_at: z.string().datetime()
+}).omit({
+  expected_source_url: true,
+  expected_profile_version: true
+});
+
+export const ContentRegulatorySourceReviewListSchema = z.object({
+  reviews: z.array(ContentRegulatorySourceReviewSchema).default([])
+});
+
 const contentPlanningSourceNames = [
   "wordpress",
   "service_profile",
@@ -4801,6 +4829,15 @@ export type ContentDraftRevisionConflict = z.infer<
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentPlanningWorkspace = z.infer<typeof ContentPlanningWorkspaceSchema>;
 export type ContentPlanningProposal = z.infer<typeof ContentPlanningProposalSchema>;
+export type ContentRegulatorySourceReviewCommand = z.input<
+  typeof ContentRegulatorySourceReviewCommandSchema
+>;
+export type ContentRegulatorySourceReview = z.infer<
+  typeof ContentRegulatorySourceReviewSchema
+>;
+export type ContentRegulatorySourceReviewList = z.infer<
+  typeof ContentRegulatorySourceReviewListSchema
+>;
 export type ContentPlanningInputReadinessResponse = z.infer<
   typeof ContentPlanningInputReadinessResponseSchema
 >;

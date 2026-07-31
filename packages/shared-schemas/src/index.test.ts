@@ -21,6 +21,8 @@ import {
   ContentSelectedWorkspaceSchema,
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningInputReadinessResponseSchema,
+  ContentRegulatorySourceReviewListSchema,
+  ContentRegulatorySourceReviewSchema,
   ContentPlanningProposalResponseSchema,
   ContentPlanningWorkspaceSchema,
   ContentServiceProfileResponseSchema,
@@ -77,6 +79,33 @@ import {
   WorkOrderSchema,
   WordPressAuthoringProfileSchema
 } from "./index";
+
+describe("ContentRegulatorySourceReview schemas", () => {
+  const review = {
+    review_id: "regulatory_review_bdo_scope",
+    candidate_id: "bdo_registration_scope_2026_07_31",
+    profile_id: "bdo",
+    profile_version: "2026-07",
+    service_card_ids: ["ekologus_service_bdo_reporting"],
+    source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+    source_title: "BDO: zakres obowiązku rejestracji",
+    observed_on: "2026-07-31",
+    source_snapshot_digest: "a".repeat(64),
+    reviewed_fact: "Zatwierdzony fakt ograniczony do wskazanego źródła urzędowego i zakresu BDO.",
+    covered_requirement_ids: ["bdo_scope"],
+    decision: "accepted",
+    reviewer: "Wilku",
+    reviewed_at: "2026-07-31T12:00:00Z"
+  };
+
+  it("requires an exact review identity and rejects blank human fields", () => {
+    expect(ContentRegulatorySourceReviewSchema.safeParse(review).success).toBe(true);
+    expect(ContentRegulatorySourceReviewListSchema.safeParse({ reviews: [review] }).success).toBe(true);
+    expect(
+      ContentRegulatorySourceReviewSchema.safeParse({ ...review, reviewer: "   " }).success
+    ).toBe(false);
+  });
+});
 
 describe("ContentWorkItemLearningProposal schemas", () => {
   it("keeps the exact measurement window binding in the public request and response", () => {

@@ -16,6 +16,10 @@ from wilq.content.planning.generated_proposal_contracts import (
 )
 from wilq.content.planning.new_page_proposal import ContentNewPagePlanningProposalWorkspace
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReviewResponse
+from wilq.content.regulatory.source_reviews import (
+    ContentRegulatorySourceReview,
+    ContentRegulatorySourceReviewList,
+)
 from wilq.content.workflow.api import (
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
@@ -50,6 +54,8 @@ from wilq.content.workflow.target_mapping import (
 from wilq.schemas import ActionObject, MetricFact
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
+    ("GET", "/api/content/regulatory-source-reviews"): ContentRegulatorySourceReviewList,
+    ("POST", "/api/content/regulatory-source-reviews"): ContentRegulatorySourceReview,
     ("GET", "/api/content/new-page-topics"): ContentNewPageTopicRecommendations,
     ("POST", "/api/content/new-page-briefs"): ContentNewPageBriefWorkspace,
     (
@@ -322,6 +328,7 @@ def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
                 "/api/content/service-profile",
                 "/api/content/new-page-briefs",
                 "/api/content/new-page-topics",
+                "/api/content/regulatory-source-reviews",
                 "/api/content/wordpress",
             )
         ):

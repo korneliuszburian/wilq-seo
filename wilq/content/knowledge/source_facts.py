@@ -190,7 +190,7 @@ class ContentSourceFactRegistry(BaseModel):
 
 
 @lru_cache(maxsize=1)
-def ekologus_source_facts() -> tuple[ContentSourceFact, ...]:
+def _seed_source_facts() -> tuple[ContentSourceFact, ...]:
     paths = (
         Path(__file__).with_name("source_facts.json"),
         Path(__file__).with_name("approved_material_facts.json"),
@@ -202,6 +202,19 @@ def ekologus_source_facts() -> tuple[ContentSourceFact, ...]:
     ]
     facts = [ContentSourceFact.model_validate(item) for item in raw_facts]
     return tuple(facts)
+
+
+def ekologus_source_facts() -> tuple[ContentSourceFact, ...]:
+    """Return seed facts plus accepted, append-only regulatory source reviews.
+
+    The dynamic review projection deliberately is not cached: an accepted
+    review must become visible to coverage and evidence reads immediately,
+    while rejected reviews never become SourceFacts.
+    """
+
+    from wilq.content.regulatory.source_reviews import regulatory_source_review_store
+
+    return (*_seed_source_facts(), *regulatory_source_review_store().approved_source_facts())
 
 
 def ekologus_source_fact_registry() -> ContentSourceFactRegistry:

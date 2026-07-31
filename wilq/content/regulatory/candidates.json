@@ -47,6 +47,18 @@
       "requirement_ids": ["bdo_registration_and_updates", "bdo_records_and_kpo", "bdo_reporting", "bdo_access_and_account"],
       "review_status": "review_required",
       "safe_next_step": "Wybierz właściwy moduł i potwierdź jego aktualność przed zatwierdzeniem faktu źródłowego."
+    },
+    {
+      "candidate_id": "bdo_sanctions_2026_07_31",
+      "profile_id": "bdo",
+      "profile_version": "2026-07",
+      "service_card_ids": ["ekologus_service_bdo_reporting"],
+      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/jakie-groza-sankcje-karne-podmiotom-zobowiazanym-do-uzyskania-wpisu-do-rejestru-bdo-za-dzialanie-niezgodne-z-przepisami/",
+      "source_title": "BDO: sankcje za działanie niezgodne z przepisami",
+      "observed_on": "2026-07-31",
+      "requirement_ids": ["bdo_risks_and_sanctions"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź aktualny zakres sankcji i ograniczenia komunikacji przed zatwierdzeniem faktu źródłowego."
     }
   ]
 }
