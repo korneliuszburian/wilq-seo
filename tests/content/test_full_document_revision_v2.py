@@ -242,6 +242,21 @@ def test_official_source_lineage_rebase_appends_an_exact_bdo_like_child(
     base_command = _full_document_command(_draft_package(), base_revision_id=None)
     base = store.append_draft_revision(base_command).revision
     assert base is not None
+    base = base.model_copy(
+        update={
+            "proposal_metadata": ContentDraftRevisionProposalMetadata(
+                codex_run_id="codex_run_bdo_original",
+                selected_section_headings=["Kiedy firma potrzebuje wsparcia"],
+                section_lineage=[
+                    ContentDraftRevisionProposalSectionLineage(
+                        heading="Kiedy firma potrzebuje wsparcia",
+                        evidence_ids=["ev_wp", "ev_gsc"],
+                    )
+                ],
+                quality_verdict="ready_for_human_review",
+            )
+        }
+    )
     reference = ContentDraftRevisionOfficialSourceReference(
         source_fact_id="official_source_fact_bdo",
         source_url="https://bdo.mos.gov.pl/",

@@ -20,6 +20,10 @@ def prepare_codex_completion(
         if completed_run is not None:
             raise ValueError("Codex completion requires proposal metadata.")
         return None
+    if command.correction_reason == "official_source_lineage_rebase":
+        if completed_run is not None:
+            raise ValueError("Official-source lineage rebase cannot attach a Codex completion.")
+        return None
     if completed_run is None:
         raise ValueError("Codex proposal append requires its completed run.")
     redacted = CodexRun.model_validate(redact_mapping(completed_run.model_dump(mode="json")))

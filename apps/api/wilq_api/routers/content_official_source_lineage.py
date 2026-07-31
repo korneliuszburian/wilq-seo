@@ -77,7 +77,7 @@ def register_content_official_source_lineage_route(
             with_explicit_content_service_selection(snapshot, base_revision.service_card_id),
             service_card_id=base_revision.service_card_id,
         )
-        if planning_input_result.input is None or planning_input_result.blockers:
+        if planning_input_result.planning_input is None or planning_input_result.blockers:
             return _conflict(
                 snapshot,
                 "official_source_lineage_unavailable",
@@ -86,7 +86,7 @@ def register_content_official_source_lineage_route(
         try:
             command = build_official_source_lineage_rebase_command(
                 base_revision=base_revision,
-                planning_input=planning_input_result.input,
+                planning_input=planning_input_result.planning_input,
                 proposal=planning.proposal,
                 requested_by=request.requested_by,
             )
