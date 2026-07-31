@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from copy import deepcopy
 from typing import cast
 
@@ -12,8 +11,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.regulatory.policy import ContentRegulatoryRequirement
-from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
+from wilq.content.workflow.planning import ContentPlanningProposal
 
 _INSTRUCTION = (
     "Napisz po polsku pełny, roboczy dokument odświeżonej strony na podstawie "
@@ -89,13 +87,10 @@ def initial_full_draft_turn_request(
         separators=(",", ":"),
     )
     return CodexAppServerStructuredTurnRequest(
-        instruction=_INSTRUCTION,
+        instruction=_INSTRUCTION + _regulatory_draft_directive(planning_input, proposal),
         application_context=application_context,
         untrusted_context=untrusted_context,
-        output_schema=initial_full_draft_output_schema(
-            proposal,
-            regulatory_requirements=planning_input.regulatory_coverage.requirements,
-        ),
+        output_schema=initial_full_draft_output_schema(proposal),
     )
 
 
@@ -167,8 +162,6 @@ def compact_initial_draft_planning_input(
 
 def initial_full_draft_output_schema(
     proposal: ContentPlanningProposal,
-    *,
-    regulatory_requirements: list[ContentRegulatoryRequirement] | None = None,
 ) -> dict[str, object]:
     schema = deepcopy(ContentInitialDraftModelOutput.model_json_schema())
     _require_all_object_properties(schema)
@@ -192,68 +185,39 @@ def initial_full_draft_output_schema(
     _mapping(link, "target_url")["enum"] = [
         item.target_url for item in proposal.internal_links
     ] or ["__WILQ_EMPTY_ARRAY_ONLY__"]
-    _apply_regulatory_document_patterns(
-        section_definition,
-        draftable_sections,
-        regulatory_requirements or [],
-    )
     return schema
 
 
-def _apply_regulatory_document_patterns(
-    section_schema: dict[str, object],
-    draftable_sections: list[ContentPlanningSection],
-    requirements: list[ContentRegulatoryRequirement],
-) -> None:
-    """Bind profile-owned document concepts to the exact output section IDs."""
+def _regulatory_draft_directive(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> str:
+    """Render the trusted, section-bound regulatory concepts for the writer."""
 
-    requirements_by_id = {requirement.id: requirement for requirement in requirements}
-    conditions: list[dict[str, object]] = []
-    for section in draftable_sections:
-        section_id = section.section_id
-        assertion_patterns: list[str] = []
+    requirements = {
+        requirement.id: requirement
+        for requirement in planning_input.regulatory_coverage.requirements
+    }
+    obligations: list[str] = []
+    for section in draftable_planning_sections(proposal.sections):
+        terms: list[str] = []
         for requirement_id in section.regulatory_requirement_ids:
-            requirement = requirements_by_id.get(requirement_id)
+            requirement = requirements.get(requirement_id)
             if requirement is not None:
-                assertion_patterns.extend(
-                    _assertion_pattern(assertion.required_any_of)
+                terms.extend(
+                    " lub ".join(assertion.required_any_of)
                     for assertion in requirement.document_assertions
                 )
-        if not assertion_patterns:
-            continue
-        conditions.append(
-            {
-                "if": {"properties": {"section_id": {"const": section_id}}},
-                "then": {
-                    "properties": {
-                        "body_markdown": {
-                            "allOf": [
-                                {"pattern": pattern} for pattern in assertion_patterns
-                            ]
-                        }
-                    }
-                },
-            }
-        )
-    if conditions:
-        section_schema["allOf"] = conditions
-
-
-def _assertion_pattern(terms: list[str]) -> str:
-    return "(?:" + "|".join(_case_agnostic_literal_pattern(term) for term in terms) + ")"
-
-
-def _case_agnostic_literal_pattern(value: str) -> str:
-    parts: list[str] = []
-    for character in value:
-        if character.isspace():
-            if not parts or parts[-1] != r"\s+":
-                parts.append(r"\s+")
-        elif character.isalpha() and character.lower() != character.upper():
-            parts.append(f"[{character.lower()}{character.upper()}]")
-        else:
-            parts.append(re.escape(character))
-    return "".join(parts)
+        if terms:
+            obligations.append(f"{section.section_id}: {'; '.join(terms)}")
+    if not obligations:
+        return ""
+    return (
+        " Dla poniższych section_id body_markdown musi zawierać każdy wskazany "
+        "koncept (jedną z podanych dopuszczalnych form), oparty na źródłach z planu: "
+        + " | ".join(obligations)
+        + "."
+    )
 
 
 def _properties(definition: dict[str, object]) -> dict[str, object]:

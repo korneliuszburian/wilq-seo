@@ -13,12 +13,17 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftSectionOutput,
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
-from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_output_schema
+from wilq.content.drafts.initial_full_draft_turn import (
+    _regulatory_draft_directive,
+    initial_full_draft_output_schema,
+)
 from wilq.content.planning.dynamic_input import (
+    ContentPlanningInput,
     ContentPlanningInputBlocker,
     ContentPlanningInputBuildResult,
 )
 from wilq.content.regulatory.policy import (
+    ContentRegulatoryCoverage,
     ContentRegulatoryDocumentAssertion,
     ContentRegulatoryRequirement,
 )
@@ -107,7 +112,7 @@ def test_full_draft_schema_excludes_remove_review_required_sections() -> None:
     assert section_definition["properties"]["heading"]["enum"] == ["Sekcja do tekstu"]
 
 
-def test_full_draft_schema_binds_regulatory_concepts_to_their_section() -> None:
+def test_full_draft_turn_has_section_bound_regulatory_directive() -> None:
     proposal = _proposal_with_review_required_inventory()
     proposal.sections[0].regulatory_requirement_ids = ["bdo_records_and_kpo"]
     requirement = ContentRegulatoryRequirement(
@@ -123,17 +128,13 @@ def test_full_draft_schema_binds_regulatory_concepts_to_their_section() -> None:
         ],
     )
 
-    schema = initial_full_draft_output_schema(
-        proposal,
-        regulatory_requirements=[requirement],
+    planning_input = ContentPlanningInput.model_construct(
+        regulatory_coverage=ContentRegulatoryCoverage(requirements=[requirement])
     )
-    conditions = schema["$defs"]["ContentInitialDraftSectionOutput"]["allOf"]
+    directive = _regulatory_draft_directive(planning_input, proposal)
 
-    assert conditions[0]["if"]["properties"]["section_id"] == {"const": "section_keep"}
-    pattern = conditions[0]["then"]["properties"]["body_markdown"]["allOf"][0][
-        "pattern"
-    ]
-    assert "[kK][pP][oO]" in pattern
+    assert "section_keep" in directive
+    assert "KPO przed transportem" in directive
 
 
 def test_document_scope_accepts_the_same_excluded_section_projection() -> None:
