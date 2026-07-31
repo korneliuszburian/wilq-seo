@@ -3674,6 +3674,16 @@ export const ContentPlanningInputSummarySchema = z.object({
     source_fact_ids: z.array(z.string().min(1)).default([]),
     evidence_ids: z.array(z.string().min(1)).default([])
   })).default([]),
+  regulatory_review_candidates: z.array(z.object({
+    candidate_id: z.string().min(1),
+    source_url: z.string().url(),
+    source_title: z.string().min(1),
+    observed_on: z.string().min(1),
+    requirement_ids: z.array(z.string().min(1)).min(1),
+    requirement_labels: z.array(z.string().min(1)).min(1),
+    review_status: z.literal("review_required"),
+    safe_next_step: z.string().min(1)
+  })).default([]),
   evidence_id_count: z.number().int().nonnegative(),
   knowledge_card_count: z.number().int().nonnegative(),
   measurement_metrics: z.array(z.string()).default([]),
@@ -3759,7 +3769,7 @@ export const ContentPlanningInputSummarySchema = z.object({
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_source_fact_ids"], message: "Regulatory planning summary requires exact covered source-fact IDs." });
       }
     }
-  } else if (summary.regulatory_requirement_ids.length || summary.regulatory_source_fact_ids.length || summary.regulatory_requirement_coverage.length) {
+  } else if (summary.regulatory_requirement_ids.length || summary.regulatory_source_fact_ids.length || summary.regulatory_requirement_coverage.length || summary.regulatory_review_candidates.length) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Unprofiled planning summary cannot carry regulatory coverage." });
   }
 });
@@ -3794,15 +3804,15 @@ export const ContentPlanningInputReadinessResponseSchema = z.object({
   }
   if (response.input_summary?.goal === "new_page") {
     const identity = response.new_page_document_identity;
-    if (response.status !== "ready" || !identity) {
+    if (response.status === "ready" && !identity) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Ready new-page planning input requires its exact document identity."
       });
-    } else if (
+    } else if (identity && (
       identity.work_item_id !== response.work_item_id ||
       identity.proposed_ia_location !== response.input_summary.proposed_ia_location
-    ) {
+    )) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: "New-page document identity must match the ready planning input."

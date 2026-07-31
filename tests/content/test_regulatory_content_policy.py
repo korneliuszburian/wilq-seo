@@ -8,8 +8,10 @@ from wilq.content.regulatory.planning import regulatory_planning_source_facts
 from wilq.content.regulatory.policy import (
     ContentRegulatoryProfile,
     ContentRegulatoryRequirement,
+    ContentRegulatorySourceCandidate,
     regulatory_content_coverage,
     regulatory_content_profile,
+    regulatory_review_candidates,
 )
 from wilq.schemas import Evidence, FreshnessState
 
@@ -181,3 +183,65 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
         "bdo_access_and_account",
         "bdo_risks_and_sanctions",
     ]
+
+
+def test_review_candidates_are_current_exact_and_never_complete_coverage() -> None:
+    profile = _profile()
+    coverage = regulatory_content_coverage(
+        service_card_id="service_water_permit",
+        source_facts=(),
+        profiles=(profile,),
+        as_of=date(2026, 7, 31),
+    )
+    candidate = ContentRegulatorySourceCandidate(
+        candidate_id="water_permit_scope_candidate",
+        profile_id="water_permit",
+        profile_version="2026-07",
+        service_card_ids=["service_water_permit"],
+        source_url="https://gov.example/water-permit",
+        source_title="Oficjalny materiał o operacie",
+        observed_on="2026-07-31",
+        requirement_ids=["water_permit_scope"],
+        safe_next_step="Sprawdź materiał przed promowaniem do SourceFact.",
+    )
+
+    candidates = regulatory_review_candidates(
+        service_card_id="service_water_permit",
+        coverage=coverage,
+        candidates=(candidate,),
+        profiles=(profile,),
+        as_of=date(2026, 7, 31),
+    )
+
+    assert not coverage.complete
+    assert [item.candidate_id for item in candidates] == ["water_permit_scope_candidate"]
+    assert candidates[0].requirement_labels == ["zakres operatu"]
+
+
+def test_unofficial_review_candidate_is_not_exposed_for_a_profile() -> None:
+    profile = _profile()
+    coverage = regulatory_content_coverage(
+        service_card_id="service_water_permit",
+        source_facts=(),
+        profiles=(profile,),
+        as_of=date(2026, 7, 31),
+    )
+    candidate = ContentRegulatorySourceCandidate(
+        candidate_id="unofficial_water_permit_candidate",
+        profile_id="water_permit",
+        profile_version="2026-07",
+        service_card_ids=["service_water_permit"],
+        source_url="https://unofficial.example/water-permit",
+        source_title="Niezweryfikowany opis",
+        observed_on="2026-07-31",
+        requirement_ids=["water_permit_scope"],
+        safe_next_step="Nie promuj bez źródła urzędowego.",
+    )
+
+    assert regulatory_review_candidates(
+        service_card_id="service_water_permit",
+        coverage=coverage,
+        candidates=(candidate,),
+        profiles=(profile,),
+        as_of=date(2026, 7, 31),
+    ) == []

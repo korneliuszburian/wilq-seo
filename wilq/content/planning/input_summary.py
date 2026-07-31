@@ -10,7 +10,10 @@ from wilq.content.planning.input_sources import (
     ContentPlanningSourceFact,
     validate_source_assessment_membership,
 )
-from wilq.content.regulatory.policy import ContentRegulatoryRequirementCoverage
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryRequirementCoverage,
+    ContentRegulatoryReviewCandidate,
+)
 
 
 class ContentPlanningInputSummary(BaseModel):
@@ -37,6 +40,9 @@ class ContentPlanningInputSummary(BaseModel):
     regulatory_requirement_ids: list[str] = Field(default_factory=list)
     regulatory_source_fact_ids: list[str] = Field(default_factory=list)
     regulatory_requirement_coverage: list[ContentRegulatoryRequirementCoverage] = Field(
+        default_factory=list
+    )
+    regulatory_review_candidates: list[ContentRegulatoryReviewCandidate] = Field(
         default_factory=list
     )
     evidence_id_count: int = Field(ge=0)
@@ -101,5 +107,6 @@ def _validate_regulatory_summary(summary: ContentPlanningInputSummary) -> None:
         summary.regulatory_requirement_ids
         or summary.regulatory_source_fact_ids
         or summary.regulatory_requirement_coverage
+        or summary.regulatory_review_candidates
     ):
         raise ValueError("Unprofiled planning summary cannot carry regulatory coverage.")

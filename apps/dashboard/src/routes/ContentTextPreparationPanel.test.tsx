@@ -177,6 +177,53 @@ describe("ContentTextPreparationPanel", () => {
     expect(screen.queryByText("Zatwierdź plan.")).not.toBeInTheDocument();
   });
 
+  it("shows an official regulatory candidate as review-only, never as planning evidence", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyToGenerate(),
+      status: "blocked",
+      blockers: [{
+        code: "missing_regulatory_source_coverage",
+        label: "Brakuje zatwierdzonego źródła urzędowego",
+        reason: "Zakres BDO wymaga review źródła urzędowego.",
+        next_step: "Sprawdź źródło."
+      }],
+      input_summary: {
+        ...readyToGenerate().input_summary,
+        regulatory_profile_id: "bdo",
+        regulatory_profile_version: "2026-07",
+        regulatory_requirement_ids: ["bdo_scope"],
+        regulatory_source_fact_ids: [],
+        regulatory_requirement_coverage: [{
+          requirement_id: "bdo_scope",
+          label: "Zakres obowiązku",
+          reason: "Wymaga źródła urzędowego.",
+          source_fact_ids: [],
+          evidence_ids: []
+        }],
+        regulatory_review_candidates: [{
+          candidate_id: "bdo_scope_candidate",
+          source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+          source_title: "BDO: Kto podlega pod obowiązek rejestracji?",
+          observed_on: "2026-07-31",
+          requirement_ids: ["bdo_scope"],
+          requirement_labels: ["Zakres obowiązku"],
+          review_status: "review_required",
+          safe_next_step: "Sprawdź zakres z ekspertem przed zatwierdzeniem faktu."
+        }]
+      }
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+
+    const evidence = screen.getByTestId("content-planning-evidence");
+    expect(evidence).toHaveTextContent("Źródła urzędowe do sprawdzenia przed przygotowaniem treści");
+    expect(evidence).toHaveTextContent("nie są jeszcze dowodem w planie");
+    expect(evidence).toHaveTextContent("BDO: Kto podlega pod obowiązek rejestracji?");
+    expect(evidence).toHaveTextContent("Zakres obowiązku");
+    expect(screen.queryByRole("button", { name: "Przygotuj tekst" })).not.toBeInTheDocument();
+  });
+
   it("shows only exact planning evidence and GSC queries used by the ready plan", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
       ...readyPlan(),

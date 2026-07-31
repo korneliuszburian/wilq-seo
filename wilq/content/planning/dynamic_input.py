@@ -42,6 +42,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
     regulatory_content_coverage,
     regulatory_coverage_gap,
+    regulatory_review_candidates,
 )
 from wilq.content.workflow.demand_evidence import (
     ContentSearchDemandEvidence,
@@ -193,13 +194,18 @@ class ContentPlanningInputReadinessResponse(BaseModel):
         if self.status == "blocked" and self.planning_input_digest is not None:
             raise ValueError("Blocked planning input cannot expose a usable digest.")
         if self.input_summary is not None and self.input_summary.goal == "new_page":
-            if self.status != "ready" or self.new_page_document_identity is None:
+            if self.status == "ready" and self.new_page_document_identity is None:
                 raise ValueError(
                     "Ready new-page planning input requires its exact document identity."
                 )
-            if self.new_page_document_identity.work_item_id != self.work_item_id:
+            if (
+                self.new_page_document_identity is not None
+                and self.new_page_document_identity.work_item_id != self.work_item_id
+            ):
                 raise ValueError("New-page document identity must match the planning work item.")
             if (
+                self.new_page_document_identity is not None
+                and
                 self.new_page_document_identity.proposed_ia_location
                 != self.input_summary.proposed_ia_location
             ):
@@ -216,6 +222,11 @@ def content_planning_input_readiness(
 ) -> ContentPlanningInputReadinessResponse:
     generation_blockers = planning_generation_blockers(result.blockers)
     if result.planning_input is None or generation_blockers:
+        input_summary = (
+            content_planning_input_summary(result.planning_input)
+            if result.planning_input is not None
+            else None
+        )
         return ContentPlanningInputReadinessResponse(
             status="blocked",
             work_item_id=(
@@ -223,6 +234,7 @@ def content_planning_input_readiness(
                 if result.planning_input is not None
                 else work_item_id
             ),
+            input_summary=input_summary,
             blockers=generation_blockers,
             safe_next_step=(
                 generation_blockers[0].next_step
@@ -289,6 +301,10 @@ def content_planning_input_summary(
         ],
         regulatory_source_fact_ids=planning_input.regulatory_coverage.source_fact_ids,
         regulatory_requirement_coverage=planning_input.regulatory_coverage.requirement_coverage,
+        regulatory_review_candidates=regulatory_review_candidates(
+            service_card_id=planning_input.confirmed_service_card_id,
+            coverage=planning_input.regulatory_coverage,
+        ),
         evidence_id_count=len(planning_input.evidence_ids),
         knowledge_card_count=len(planning_input.knowledge_card_ids),
         measurement_metrics=planning_input.measurement_metrics,

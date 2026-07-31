@@ -1,0 +1,52 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "bdo_registration_scope_2026_07_31",
+      "profile_id": "bdo",
+      "profile_version": "2026-07",
+      "service_card_ids": ["ekologus_service_bdo_reporting"],
+      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+      "source_title": "BDO: Kto podlega pod obowiązek rejestracji?",
+      "observed_on": "2026-07-31",
+      "requirement_ids": ["bdo_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Sprawdź aktualny zakres obowiązku z ekspertem przed zatwierdzeniem faktu źródłowego."
+    },
+    {
+      "candidate_id": "bdo_registration_exemptions_2026_07_31",
+      "profile_id": "bdo",
+      "profile_version": "2026-07",
+      "service_card_ids": ["ekologus_service_bdo_reporting"],
+      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/ktore-podmioty-nie-podlegaja-wpisowi-do-rejestru-bdo/",
+      "source_title": "BDO: Które podmioty nie podlegają wpisowi do Rejestru-BDO?",
+      "observed_on": "2026-07-31",
+      "requirement_ids": ["bdo_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Sprawdź wyjątki dla konkretnej działalności przed zatwierdzeniem faktu źródłowego."
+    },
+    {
+      "candidate_id": "bdo_registration_application_2026_07_31",
+      "profile_id": "bdo",
+      "profile_version": "2026-07",
+      "service_card_ids": ["ekologus_service_bdo_reporting"],
+      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/jak-wypelnic-wniosek-rejestrowy/",
+      "source_title": "BDO: Jak wypełnić wniosek rejestrowy?",
+      "observed_on": "2026-07-31",
+      "requirement_ids": ["bdo_registration_and_updates"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź aktualny tryb rejestracji przed zatwierdzeniem faktu źródłowego."
+    },
+    {
+      "candidate_id": "bdo_system_instructions_2026_07_31",
+      "profile_id": "bdo",
+      "profile_version": "2026-07",
+      "service_card_ids": ["ekologus_service_bdo_reporting"],
+      "source_url": "https://bdo.mos.gov.pl/instrukcje-krok-po-kroku-system-bdo/",
+      "source_title": "BDO: instrukcje krok po kroku systemu BDO",
+      "observed_on": "2026-07-31",
+      "requirement_ids": ["bdo_registration_and_updates", "bdo_records_and_kpo", "bdo_reporting", "bdo_access_and_account"],
+      "review_status": "review_required",
+      "safe_next_step": "Wybierz właściwy moduł i potwierdź jego aktualność przed zatwierdzeniem faktu źródłowego."
+    }
+  ]
+}

@@ -4,9 +4,10 @@ import json
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.evidence.registry import list_evidence_by_ids
@@ -80,6 +81,68 @@ class ContentRegulatoryCoverageGap(BaseModel):
     next_step: str = Field(min_length=1)
 
 
+class ContentRegulatorySourceCandidate(BaseModel):
+    """Read-only official source awaiting human promotion into a SourceFact."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_id: str = Field(min_length=1)
+    profile_id: str = Field(min_length=1)
+    profile_version: str = Field(min_length=1)
+    service_card_ids: list[str] = Field(min_length=1)
+    source_url: str = Field(min_length=1)
+    source_title: str = Field(min_length=1)
+    observed_on: str = Field(min_length=1)
+    requirement_ids: list[str] = Field(min_length=1)
+    review_status: Literal["review_required"] = "review_required"
+    safe_next_step: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_reviewable_identity(self) -> ContentRegulatorySourceCandidate:
+        text_fields = {
+            "candidate_id": self.candidate_id,
+            "profile_id": self.profile_id,
+            "profile_version": self.profile_version,
+            "source_url": self.source_url,
+            "source_title": self.source_title,
+            "observed_on": self.observed_on,
+            "safe_next_step": self.safe_next_step,
+        }
+        blank_fields = sorted(
+            name for name, value in text_fields.items() if not value.strip()
+        )
+        list_fields = {
+            "service_card_ids": self.service_card_ids,
+            "requirement_ids": self.requirement_ids,
+        }
+        blank_lists = sorted(
+            name
+            for name, values in list_fields.items()
+            if any(not value.strip() for value in values)
+        )
+        if blank_fields or blank_lists:
+            fields = ", ".join([*blank_fields, *blank_lists])
+            raise ValueError(f"Regulatory source candidates require non-empty fields: {fields}")
+        try:
+            date.fromisoformat(self.observed_on)
+        except ValueError as exc:
+            raise ValueError("Regulatory source candidates require ISO observed_on.") from exc
+        return self
+
+
+class ContentRegulatoryReviewCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_id: str = Field(min_length=1)
+    source_url: str = Field(min_length=1)
+    source_title: str = Field(min_length=1)
+    observed_on: str = Field(min_length=1)
+    requirement_ids: list[str] = Field(min_length=1)
+    requirement_labels: list[str] = Field(min_length=1)
+    review_status: Literal["review_required"] = "review_required"
+    safe_next_step: str = Field(min_length=1)
+
+
 @lru_cache(maxsize=1)
 def regulatory_content_profiles() -> tuple[ContentRegulatoryProfile, ...]:
     raw_profiles = json.loads(
@@ -92,6 +155,21 @@ def regulatory_content_profiles() -> tuple[ContentRegulatoryProfile, ...]:
     if len(service_card_ids) != len(set(service_card_ids)):
         raise ValueError("Regulatory profiles must not share service_card_ids.")
     return profiles
+
+
+@lru_cache(maxsize=1)
+def regulatory_source_candidates() -> tuple[ContentRegulatorySourceCandidate, ...]:
+    raw_candidates = json.loads(
+        Path(__file__).with_name("candidates.json").read_text(encoding="utf-8")
+    )["candidates"]
+    candidates = tuple(
+        ContentRegulatorySourceCandidate.model_validate(candidate)
+        for candidate in raw_candidates
+    )
+    candidate_ids = [candidate.candidate_id for candidate in candidates]
+    if len(candidate_ids) != len(set(candidate_ids)):
+        raise ValueError("Regulatory source candidates must have unique candidate_id values.")
+    return candidates
 
 
 def regulatory_content_profile(
@@ -167,6 +245,47 @@ def regulatory_content_coverage(
     )
 
 
+def regulatory_review_candidates(
+    *,
+    service_card_id: str,
+    coverage: ContentRegulatoryCoverage,
+    candidates: tuple[ContentRegulatorySourceCandidate, ...] | None = None,
+    profiles: tuple[ContentRegulatoryProfile, ...] | None = None,
+    as_of: date | None = None,
+) -> list[ContentRegulatoryReviewCandidate]:
+    """Expose only current official candidates for requirements still blocked."""
+
+    profile = regulatory_content_profile(service_card_id=service_card_id, profiles=profiles)
+    if profile is None or coverage.complete:
+        return []
+    today = as_of or date.today()
+    missing_ids = {requirement.id for requirement in coverage.missing_requirements}
+    labels = {requirement.id: requirement.label for requirement in profile.requirements}
+    return [
+        ContentRegulatoryReviewCandidate(
+            candidate_id=candidate.candidate_id,
+            source_url=candidate.source_url,
+            source_title=candidate.source_title,
+            observed_on=candidate.observed_on,
+            requirement_ids=sorted(set(candidate.requirement_ids).intersection(missing_ids)),
+            requirement_labels=[
+                labels[requirement_id]
+                for requirement_id in candidate.requirement_ids
+                if requirement_id in missing_ids
+            ],
+            safe_next_step=candidate.safe_next_step,
+        )
+        for candidate in (candidates if candidates is not None else regulatory_source_candidates())
+        if _candidate_matches_profile(
+            candidate,
+            profile=profile,
+            service_card_id=service_card_id,
+            missing_ids=missing_ids,
+            as_of=today,
+        )
+    ]
+
+
 def _fact_covers_profile(
     fact: ContentSourceFact,
     *,
@@ -199,6 +318,28 @@ def _fact_covers_profile(
         and urlsplit(fact.source_url_or_path).hostname in profile.official_source_hosts
         and 0 <= age_days <= profile.max_source_age_days
         and evidence_is_exact
+    )
+
+
+def _candidate_matches_profile(
+    candidate: ContentRegulatorySourceCandidate,
+    *,
+    profile: ContentRegulatoryProfile,
+    service_card_id: str,
+    missing_ids: set[str],
+    as_of: date,
+) -> bool:
+    try:
+        age_days = (as_of - date.fromisoformat(candidate.observed_on)).days
+    except ValueError:
+        return False
+    return (
+        candidate.profile_id == profile.id
+        and candidate.profile_version == profile.version
+        and service_card_id in candidate.service_card_ids
+        and bool(missing_ids.intersection(candidate.requirement_ids))
+        and urlsplit(candidate.source_url).hostname in profile.official_source_hosts
+        and 0 <= age_days <= profile.max_source_age_days
     )
 
 
