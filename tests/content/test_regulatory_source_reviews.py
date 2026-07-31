@@ -12,6 +12,7 @@ import wilq.content.regulatory.source_snapshots as source_snapshots_module
 from apps.api.wilq_api.routers.content_regulatory_source_reviews import (
     register_content_regulatory_source_review_routes,
 )
+from wilq.content.knowledge.cards import compile_source_facts_to_knowledge_cards
 from wilq.content.regulatory.policy import regulatory_content_coverage, regulatory_source_candidates
 from wilq.content.regulatory.source_reviews import (
     ContentRegulatorySourceReviewCommand,
@@ -89,6 +90,11 @@ def test_accepted_review_projects_exact_source_fact_and_resolvable_evidence(
     assert fact.source_url_or_path == review.source_url
     assert [item.source_id for item in evidence] == [fact.source_id]
     assert [item.raw_ref for item in evidence] == [review.source_url]
+
+    cards = compile_source_facts_to_knowledge_cards((fact,))
+    assert len(cards) == 1
+    assert cards[0].card_type == "regulatory_source"
+    assert cards[0].source_fact_ids == [fact.source_id]
 
 
 def test_rejected_review_never_projects_to_source_fact_or_coverage(tmp_path, monkeypatch) -> None:

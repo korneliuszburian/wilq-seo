@@ -52,6 +52,7 @@ import {
   ContentDraftRevisionWorkspaceSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
+  ContentKnowledgeCardSchema,
   ContentTargetDiscoverySchema,
   ContentTargetMappingPreviewSchema,
   ContentSemanticReviewRequestSchema,
@@ -80,6 +81,22 @@ import {
   WorkOrderSchema,
   WordPressAuthoringProfileSchema
 } from "./index";
+
+describe("ContentKnowledgeCardSchema", () => {
+  it("accepts an evidence-bound regulatory source card", () => {
+    expect(() => ContentKnowledgeCardSchema.parse({
+      id: "regulatory_bdo",
+      card_type: "regulatory_source",
+      title: "BDO: obowiązek rejestracji",
+      summary: "Fakt z oficjalnego źródła związany z exact evidence.",
+      evidence_ids: ["ev_regulatory_source_review_scope"],
+      source_fact_ids: ["regulatory_source_fact_scope"],
+      source_lineage: ["https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/"],
+      confidence: 1,
+      freshness: "reviewed_2026-07-31"
+    })).not.toThrow();
+  });
+});
 
 describe("ContentRegulatorySourceReview schemas", () => {
   const review = {

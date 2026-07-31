@@ -1188,7 +1188,8 @@ export const ContentKnowledgeCardSchema = z.object({
     "cta_pattern",
     "claim_policy",
     "evidence_requirement",
-    "measurement_sensitive_claim"
+    "measurement_sensitive_claim",
+    "regulatory_source"
   ]),
   title: z.string(),
   summary: z.string(),

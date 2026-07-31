@@ -28,6 +28,7 @@ ContentKnowledgeCardType = Literal[
     "claim_policy",
     "evidence_requirement",
     "measurement_sensitive_claim",
+    "regulatory_source",
 ]
 ContentKnowledgeClaimStatus = Literal[
     "allowed_with_evidence",
