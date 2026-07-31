@@ -13,6 +13,10 @@ from wilq.content.regulatory.policy import (
     ContentRegulatorySourceCandidate,
     regulatory_source_candidates,
 )
+from wilq.content.regulatory.source_snapshots import (
+    ContentRegulatorySourceSnapshot,
+    RegulatorySourceSnapshotStore,
+)
 from wilq.storage.local_state import state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
 
@@ -28,7 +32,8 @@ class ContentRegulatorySourceReviewCommand(BaseModel):
     candidate_id: str = Field(min_length=1)
     expected_source_url: str = Field(min_length=1)
     expected_profile_version: str = Field(min_length=1)
-    source_snapshot_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    expected_source_snapshot_id: str = Field(min_length=1)
+    expected_source_snapshot_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     reviewed_fact: str = Field(min_length=20, max_length=2000)
     covered_requirement_ids: list[str] = Field(min_length=1)
     decision: Literal["accepted", "rejected"]
@@ -54,6 +59,7 @@ class ContentRegulatorySourceReview(BaseModel):
     source_url: str = Field(min_length=1)
     source_title: str = Field(min_length=1)
     observed_on: str = Field(min_length=1)
+    source_snapshot_id: str = Field(min_length=1)
     source_snapshot_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     reviewed_fact: str = Field(min_length=20)
     covered_requirement_ids: list[str] = Field(min_length=1)
@@ -111,6 +117,15 @@ class ContentRegulatorySourceReviewList(BaseModel):
     reviews: list[ContentRegulatorySourceReview] = Field(default_factory=list)
 
 
+class ContentRegulatorySourceReviewConflict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Literal["candidate_changed", "source_snapshot_missing", "source_snapshot_changed"]
+    label: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+    safe_next_step: str = Field(min_length=1)
+
+
 class RegulatorySourceReviewStore:
     def __init__(self, path: Path) -> None:
         self.path = path
@@ -120,12 +135,17 @@ class RegulatorySourceReviewStore:
         command: ContentRegulatorySourceReviewCommand,
         *,
         candidates: tuple[ContentRegulatorySourceCandidate, ...] | None = None,
+        snapshot_store: RegulatorySourceSnapshotStore | None = None,
         now: datetime | None = None,
     ) -> ContentRegulatorySourceReview:
         candidate = _resolve_candidate(
             command,
             candidates if candidates is not None else regulatory_source_candidates(),
         )
+        snapshot = (snapshot_store or RegulatorySourceSnapshotStore(self.path)).get(
+            command.expected_source_snapshot_id
+        )
+        _require_exact_snapshot(candidate, command, snapshot)
         reviewed_at = now or datetime.now(UTC)
         review = ContentRegulatorySourceReview(
             review_id=_review_id(command),
@@ -135,8 +155,9 @@ class RegulatorySourceReviewStore:
             service_card_ids=candidate.service_card_ids,
             source_url=candidate.source_url,
             source_title=candidate.source_title,
-            observed_on=candidate.observed_on,
-            source_snapshot_digest=command.source_snapshot_digest,
+            observed_on=snapshot.observed_on,
+            source_snapshot_id=snapshot.snapshot_id,
+            source_snapshot_digest=snapshot.content_digest,
             reviewed_fact=command.reviewed_fact.strip(),
             covered_requirement_ids=sorted(set(command.covered_requirement_ids)),
             decision=command.decision,
@@ -244,6 +265,23 @@ def _resolve_candidate(
             "Regulatory source review cannot cover requirements outside its candidate."
         )
     return candidate
+
+
+def _require_exact_snapshot(
+    candidate: ContentRegulatorySourceCandidate,
+    command: ContentRegulatorySourceReviewCommand,
+    snapshot: ContentRegulatorySourceSnapshot | None,
+) -> None:
+    if snapshot is None:
+        raise ValueError("Regulatory source snapshot is missing; read the official source again.")
+    if (
+        snapshot.candidate_id != candidate.candidate_id
+        or snapshot.profile_id != candidate.profile_id
+        or snapshot.profile_version != candidate.profile_version
+        or snapshot.source_url != candidate.source_url
+        or snapshot.content_digest != command.expected_source_snapshot_digest
+    ):
+        raise ValueError("Regulatory source snapshot changed; read the official source again.")
 
 
 def _review_id(command: ContentRegulatorySourceReviewCommand) -> str:

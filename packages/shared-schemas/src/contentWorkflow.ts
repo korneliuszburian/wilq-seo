@@ -3641,7 +3641,8 @@ export const ContentRegulatorySourceReviewCommandSchema = z.object({
   candidate_id: z.string().trim().min(1),
   expected_source_url: z.string().url(),
   expected_profile_version: z.string().trim().min(1),
-  source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_source_snapshot_id: z.string().trim().min(1),
+  expected_source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
   reviewed_fact: z.string().trim().min(20).max(2000),
   covered_requirement_ids: z.array(z.string().trim().min(1)).min(1),
   decision: z.enum(["accepted", "rejected"]),
@@ -3655,14 +3656,51 @@ export const ContentRegulatorySourceReviewSchema = ContentRegulatorySourceReview
   source_url: z.string().url(),
   source_title: z.string().trim().min(1),
   observed_on: z.string().min(1),
+  source_snapshot_id: z.string().trim().min(1),
+  source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
   reviewed_at: z.string().datetime()
 }).omit({
   expected_source_url: true,
-  expected_profile_version: true
+  expected_profile_version: true,
+  expected_source_snapshot_id: true,
+  expected_source_snapshot_digest: true
 });
 
 export const ContentRegulatorySourceReviewListSchema = z.object({
   reviews: z.array(ContentRegulatorySourceReviewSchema).default([])
+});
+
+export const ContentRegulatorySourceReviewConflictSchema = z.object({
+  code: z.enum(["candidate_changed", "source_snapshot_missing", "source_snapshot_changed"]),
+  label: z.string().trim().min(1),
+  reason: z.string().trim().min(1),
+  safe_next_step: z.string().trim().min(1)
+});
+
+export const ContentRegulatorySourceSnapshotSchema = z.object({
+  snapshot_id: z.string().trim().min(1),
+  candidate_id: z.string().trim().min(1),
+  profile_id: z.string().trim().min(1),
+  profile_version: z.string().trim().min(1),
+  source_url: z.string().url(),
+  content_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  content_type: z.string().trim().min(1),
+  byte_length: z.number().int().positive().max(512 * 1024),
+  observed_at: z.string().datetime()
+});
+
+export const ContentRegulatorySourceSnapshotReadResponseSchema = z.object({
+  status: z.enum(["captured", "blocked"]),
+  snapshot: ContentRegulatorySourceSnapshotSchema.nullable().optional(),
+  reason: z.string().trim().min(1),
+  safe_next_step: z.string().trim().min(1)
+}).superRefine((response, context) => {
+  if (response.status === "captured" && !response.snapshot) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Captured source read requires a snapshot." });
+  }
+  if (response.status === "blocked" && response.snapshot) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Blocked source read cannot expose a snapshot." });
+  }
 });
 
 const contentPlanningSourceNames = [
@@ -4837,6 +4875,15 @@ export type ContentRegulatorySourceReview = z.infer<
 >;
 export type ContentRegulatorySourceReviewList = z.infer<
   typeof ContentRegulatorySourceReviewListSchema
+>;
+export type ContentRegulatorySourceReviewConflict = z.infer<
+  typeof ContentRegulatorySourceReviewConflictSchema
+>;
+export type ContentRegulatorySourceSnapshot = z.infer<
+  typeof ContentRegulatorySourceSnapshotSchema
+>;
+export type ContentRegulatorySourceSnapshotReadResponse = z.infer<
+  typeof ContentRegulatorySourceSnapshotReadResponseSchema
 >;
 export type ContentPlanningInputReadinessResponse = z.infer<
   typeof ContentPlanningInputReadinessResponseSchema

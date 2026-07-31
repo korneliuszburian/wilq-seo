@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 import wilq.content.knowledge.source_facts as source_facts_module
 import wilq.content.regulatory.source_reviews as source_reviews_module
+import wilq.content.regulatory.source_snapshots as source_snapshots_module
 from apps.api.wilq_api.routers.content_regulatory_source_reviews import (
     register_content_regulatory_source_review_routes,
 )
@@ -16,12 +17,17 @@ from wilq.content.regulatory.source_reviews import (
     ContentRegulatorySourceReviewCommand,
     RegulatorySourceReviewStore,
 )
+from wilq.content.regulatory.source_snapshots import (
+    ContentRegulatorySourceSnapshot,
+    RegulatorySourceSnapshotStore,
+)
 from wilq.evidence.registry import list_evidence_by_ids
 
 
 def _command(
     *,
     candidate_id: str | None = None,
+    snapshot: ContentRegulatorySourceSnapshot,
     decision: str = "accepted",
     requirement_ids: list[str] | None = None,
 ) -> ContentRegulatorySourceReviewCommand:
@@ -34,7 +40,8 @@ def _command(
         candidate_id=candidate.candidate_id,
         expected_source_url=candidate.source_url,
         expected_profile_version=candidate.profile_version,
-        source_snapshot_digest="a" * 64,
+        expected_source_snapshot_id=snapshot.snapshot_id,
+        expected_source_snapshot_digest=snapshot.content_digest,
         reviewed_fact=(
             "Zatwierdzony reviewer potwierdził zakres informacji tylko dla wskazanego "
             "oficjalnego źródła i przypisanych wymagań profilu BDO."
@@ -45,12 +52,27 @@ def _command(
     )
 
 
+def _snapshot(
+    path,
+    candidate_id: str,
+    *,
+    now: datetime | None = None,
+) -> ContentRegulatorySourceSnapshot:
+    return RegulatorySourceSnapshotStore(path).capture(
+        candidate_id,
+        reader=lambda _: (b"<html>official source snapshot</html>", "text/html"),
+        now=now or datetime(2026, 7, 31, 12, 0, tzinfo=UTC),
+    )
+
+
 def test_accepted_review_projects_exact_source_fact_and_resolvable_evidence(
     tmp_path, monkeypatch
 ) -> None:
     store = RegulatorySourceReviewStore(tmp_path / "wilq.sqlite3")
+    snapshot = _snapshot(store.path, regulatory_source_candidates()[0].candidate_id)
     review = store.record(
-        _command(),
+        _command(snapshot=snapshot),
+        snapshot_store=RegulatorySourceSnapshotStore(store.path),
         now=datetime(2026, 7, 31, 12, 0, tzinfo=UTC),
     )
 
@@ -71,7 +93,11 @@ def test_accepted_review_projects_exact_source_fact_and_resolvable_evidence(
 
 def test_rejected_review_never_projects_to_source_fact_or_coverage(tmp_path, monkeypatch) -> None:
     store = RegulatorySourceReviewStore(tmp_path / "wilq.sqlite3")
-    review = store.record(_command(decision="rejected"))
+    snapshot = _snapshot(store.path, regulatory_source_candidates()[0].candidate_id)
+    review = store.record(
+        _command(snapshot=snapshot, decision="rejected"),
+        snapshot_store=RegulatorySourceSnapshotStore(store.path),
+    )
     monkeypatch.setattr(source_reviews_module, "regulatory_source_review_store", lambda: store)
 
     facts = source_facts_module.ekologus_source_facts()
@@ -90,11 +116,14 @@ def test_full_bdo_candidate_review_set_unlocks_exact_coverage_only_after_accepta
 ) -> None:
     store = RegulatorySourceReviewStore(tmp_path / "wilq.sqlite3")
     for candidate in regulatory_source_candidates():
+        snapshot = _snapshot(store.path, candidate.candidate_id)
         store.record(
             _command(
                 candidate_id=candidate.candidate_id,
+                snapshot=snapshot,
                 requirement_ids=candidate.requirement_ids,
-            )
+            ),
+            snapshot_store=RegulatorySourceSnapshotStore(store.path),
         )
     monkeypatch.setattr(source_reviews_module, "regulatory_source_review_store", lambda: store)
 
@@ -112,13 +141,22 @@ def test_full_bdo_candidate_review_set_unlocks_exact_coverage_only_after_accepta
 
 def test_review_rejects_changed_candidate_or_unassigned_requirement(tmp_path) -> None:
     store = RegulatorySourceReviewStore(tmp_path / "wilq.sqlite3")
-    changed = _command().model_copy(update={"expected_source_url": "https://bdo.mos.gov.pl/other"})
+    snapshot = _snapshot(store.path, regulatory_source_candidates()[0].candidate_id)
+    changed = _command(snapshot=snapshot).model_copy(
+        update={"expected_source_url": "https://bdo.mos.gov.pl/other"}
+    )
     with pytest.raises(ValueError, match="candidate changed"):
-        store.record(changed)
+        store.record(changed, snapshot_store=RegulatorySourceSnapshotStore(store.path))
 
-    outside_requirement = _command(requirement_ids=["bdo_risks_and_sanctions"])
+    outside_requirement = _command(
+        snapshot=snapshot,
+        requirement_ids=["bdo_risks_and_sanctions"],
+    )
     with pytest.raises(ValueError, match="outside its candidate"):
-        store.record(outside_requirement)
+        store.record(
+            outside_requirement,
+            snapshot_store=RegulatorySourceSnapshotStore(store.path),
+        )
 
 
 def test_public_source_review_route_persists_only_human_decision(tmp_path, monkeypatch) -> None:
@@ -128,14 +166,35 @@ def test_public_source_review_route_persists_only_human_decision(tmp_path, monke
     register_content_regulatory_source_review_routes(router)
     app.include_router(router)
     client = TestClient(app)
-    payload = _command().model_dump(mode="json")
+    monkeypatch.setattr(
+        source_snapshots_module,
+        "_read_official_source",
+        lambda _: (b"<html>official source snapshot</html>", "text/html"),
+    )
+    snapshot_response = client.get(
+        "/api/content/regulatory-source-candidates/bdo_registration_scope_2026_07_31/snapshot"
+    )
+    snapshot = ContentRegulatorySourceSnapshot.model_validate(snapshot_response.json()["snapshot"])
+    payload = _command(snapshot=snapshot).model_dump(mode="json")
+    missing_snapshot_payload = {
+        **payload,
+        "expected_source_snapshot_id": "regulatory_snapshot_missing",
+    }
 
     before = client.get("/api/content/regulatory-source-reviews")
+    missing_snapshot = client.post(
+        "/api/content/regulatory-source-reviews",
+        json=missing_snapshot_payload,
+    )
     recorded = client.post("/api/content/regulatory-source-reviews", json=payload)
     after = client.get("/api/content/regulatory-source-reviews")
 
     assert before.status_code == 200
     assert before.json() == {"reviews": []}
+    assert snapshot_response.status_code == 200
+    assert snapshot_response.json()["status"] == "captured"
+    assert missing_snapshot.status_code == 409
+    assert missing_snapshot.json()["code"] == "source_snapshot_missing"
     assert recorded.status_code == 200
     assert recorded.json()["decision"] == "accepted"
     assert recorded.json()["source_url"] == payload["expected_source_url"]

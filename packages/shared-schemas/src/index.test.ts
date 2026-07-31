@@ -23,6 +23,7 @@ import {
   ContentPlanningInputReadinessResponseSchema,
   ContentRegulatorySourceReviewListSchema,
   ContentRegulatorySourceReviewSchema,
+  ContentRegulatorySourceSnapshotReadResponseSchema,
   ContentPlanningProposalResponseSchema,
   ContentPlanningWorkspaceSchema,
   ContentServiceProfileResponseSchema,
@@ -90,6 +91,7 @@ describe("ContentRegulatorySourceReview schemas", () => {
     source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
     source_title: "BDO: zakres obowiązku rejestracji",
     observed_on: "2026-07-31",
+    source_snapshot_id: "regulatory_snapshot_bdo_scope",
     source_snapshot_digest: "a".repeat(64),
     reviewed_fact: "Zatwierdzony fakt ograniczony do wskazanego źródła urzędowego i zakresu BDO.",
     covered_requirement_ids: ["bdo_scope"],
@@ -101,6 +103,24 @@ describe("ContentRegulatorySourceReview schemas", () => {
   it("requires an exact review identity and rejects blank human fields", () => {
     expect(ContentRegulatorySourceReviewSchema.safeParse(review).success).toBe(true);
     expect(ContentRegulatorySourceReviewListSchema.safeParse({ reviews: [review] }).success).toBe(true);
+    expect(
+      ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
+        status: "captured",
+        snapshot: {
+          snapshot_id: review.source_snapshot_id,
+          candidate_id: review.candidate_id,
+          profile_id: review.profile_id,
+          profile_version: review.profile_version,
+          source_url: review.source_url,
+          content_digest: review.source_snapshot_digest,
+          content_type: "text/html",
+          byte_length: 128,
+          observed_at: review.reviewed_at
+        },
+        reason: "Pobrano źródło.",
+        safe_next_step: "Sprawdź źródło."
+      }).success
+    ).toBe(true);
     expect(
       ContentRegulatorySourceReviewSchema.safeParse({ ...review, reviewer: "   " }).success
     ).toBe(false);
