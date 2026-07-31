@@ -20,7 +20,10 @@ from wilq.content.regulatory.policy import (
 from wilq.storage.local_state import state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
 
-_MAX_SNAPSHOT_BYTES = 512 * 1024
+# Official regulatory instructions are commonly PDFs. We persist only their
+# digest and metadata, never the body, but must still read a bounded complete
+# response to bind a review to its exact source snapshot.
+_MAX_SNAPSHOT_BYTES = 12 * 1024 * 1024
 _SOURCE_READ_TIMEOUT_SECONDS = 15
 SourceReader = Callable[[str], tuple[bytes, str]]
 

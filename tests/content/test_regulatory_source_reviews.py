@@ -117,6 +117,20 @@ def test_rejected_review_never_projects_to_source_fact_or_coverage(tmp_path, mon
     assert coverage.source_fact_ids == []
 
 
+def test_source_snapshot_stays_bounded_without_persisting_source_body(tmp_path) -> None:
+    from wilq.content.regulatory.source_snapshots import _MAX_SNAPSHOT_BYTES
+
+    store = RegulatorySourceSnapshotStore(tmp_path / "wilq.sqlite3")
+
+    with pytest.raises(ValueError, match="exceeds the safe snapshot size"):
+        store.capture(
+            "bdo_system_definition_2026_07_31",
+            reader=lambda _: (b"x" * (_MAX_SNAPSHOT_BYTES + 1), "application/pdf"),
+        )
+
+    assert not store.path.exists()
+
+
 def test_full_bdo_candidate_review_set_unlocks_exact_coverage_only_after_acceptance(
     tmp_path, monkeypatch
 ) -> None:
