@@ -1,8 +1,13 @@
 from types import SimpleNamespace
 
+import pytest
+from pydantic import BaseModel, ValidationError
+
 from wilq.content.drafts import initial_full_draft
 from wilq.content.drafts.initial_full_draft import _document_scope_errors, _planning_input_blocker
 from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftCtaOutput,
+    ContentInitialDraftFaqOutput,
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
     ContentInitialDraftSectionOutput,
@@ -15,6 +20,27 @@ from wilq.content.planning.dynamic_input import (
 )
 from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
 from wilq.content.workflow.revisions import ContentDraftRevisionPageAssets
+
+
+@pytest.mark.parametrize(
+    ("model", "payload"),
+    [
+        (
+            ContentInitialDraftSectionOutput,
+            {"section_id": "section", "heading": "Nagłówek", "body_markdown": "   "},
+        ),
+        (
+            ContentInitialDraftFaqOutput,
+            {"question": "Pytanie", "answer_markdown": "   "},
+        ),
+        (ContentInitialDraftCtaOutput, {"body_markdown": "   "}),
+    ],
+)
+def test_initial_draft_model_output_rejects_whitespace_only_content(
+    model: type[BaseModel], payload: dict[str, str]
+) -> None:
+    with pytest.raises(ValidationError, match="cannot be blank"):
+        model.model_validate(payload)
 
 
 def _proposal_with_review_required_inventory() -> ContentPlanningProposal:

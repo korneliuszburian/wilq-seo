@@ -72,7 +72,9 @@ class ContentInitialDraftSectionOutput(BaseModel):
 
     @field_validator("heading", "body_markdown")
     @classmethod
-    def reject_inline_links(cls, value: str) -> str:
+    def require_visible_text_without_inline_links(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Initial-draft section fields cannot be blank.")
         return validate_no_inline_link(value)
 
 
@@ -84,7 +86,9 @@ class ContentInitialDraftFaqOutput(BaseModel):
 
     @field_validator("question", "answer_markdown")
     @classmethod
-    def reject_inline_links(cls, value: str) -> str:
+    def require_visible_text_without_inline_links(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Initial-draft FAQ fields cannot be blank.")
         return validate_no_inline_link(value)
 
 
@@ -95,7 +99,9 @@ class ContentInitialDraftCtaOutput(BaseModel):
 
     @field_validator("body_markdown")
     @classmethod
-    def reject_inline_links(cls, value: str) -> str:
+    def require_visible_text_without_inline_links(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Initial-draft CTA body cannot be blank.")
         return validate_no_inline_link(value)
 
 
