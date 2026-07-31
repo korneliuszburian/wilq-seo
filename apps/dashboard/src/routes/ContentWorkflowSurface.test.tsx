@@ -167,6 +167,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByTestId("content-document-state")).not.toBeInTheDocument();
     expect(screen.getByText(/Nie ma jeszcze zapisanej rewizji/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Zmiany w treści" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
     expect(screen.getAllByText("Nowa wersja nie została jeszcze przygotowana")).toHaveLength(2);
   });
@@ -195,9 +196,33 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("BDO i sprawozdawczość środowiskowa");
     expect(screen.queryByText("Live evidence i source connector są wymagane")).not.toBeInTheDocument();
     expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("kontrolę źródeł i zasad tekstu");
+    const officialSources = screen.getByTestId("content-official-sources");
+    expect(officialSources).toHaveTextContent("Źródła użyte do weryfikacji tej dokładnej wersji tekstu");
+    expect(officialSources).toHaveTextContent("Nie stanowią indywidualnej porady prawnej");
+    expect(officialSources).toHaveTextContent("Zweryfikowano: 2026-07-31");
+    expect(officialSources).toHaveTextContent("Zakres weryfikacji: 2 zagadnienia regulacyjne.");
+    expect(screen.getByRole("link", { name: "Baza danych o produktach i opakowaniach oraz o gospodarce odpadami" })).toHaveAttribute("href", "https://bdo.mos.gov.pl/");
+    expect(officialSources).not.toHaveTextContent("ev_regulatory_bdo");
 
     fireEvent.click(screen.getByRole("button", { name: "Obecna strona" }));
     expect(await screen.findByTestId("content-source-snapshot")).toBeInTheDocument();
+  });
+
+  it("fails closed for blank official-source data on the exact revision", async () => {
+    const revision = {
+      ...savedFullDraftRevision(),
+      official_source_references: [{
+        ...savedFullDraftRevision().official_source_references[0]!,
+        source_title: "   "
+      }]
+    };
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(contentDocumentWorkspace(revision)));
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })} client={client} />);
+
+    expect(await screen.findByText("Pełna odpowiedź sekcji 1 oparta na planie i dowodach.")).toBeInTheDocument();
+    expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
   });
 
   it("opens a newly saved exact revision instead of leaving the marketer on the old source", async () => {
@@ -579,6 +604,7 @@ describe("ContentWorkflowSurface", () => {
         evidence_ids: uniqueTestEvidence(revision),
         source_material_ids: revision.source_material_ids,
         knowledge_card_ids: revision.knowledge_card_ids,
+        official_source_references: revision.official_source_references,
         section_count: revision.sections.length
       },
       file_name: `wilq-exact-revision-${revision.revision_id}.html`,
@@ -1046,6 +1072,7 @@ function savedDraftRevision(): ContentDraftRevision {
     faq: [],
     cta_blocks: [],
     internal_links: [],
+    official_source_references: [],
     publish_ready: false,
     created_by: "wilku",
     created_at: "2026-07-14T04:00:00Z"
@@ -1095,6 +1122,14 @@ function savedFullDraftRevision(): ContentDraftRevision {
       claim_ids: []
     }],
     internal_links: [],
+    official_source_references: [{
+      source_fact_id: "official_source_fact_bdo",
+      source_url: "https://bdo.mos.gov.pl/",
+      source_title: "Baza danych o produktach i opakowaniach oraz o gospodarce odpadami",
+      verified_on: "2026-07-31",
+      evidence_ids: ["ev_regulatory_bdo"],
+      regulatory_requirement_ids: ["bdo_registration", "bdo_reporting"]
+    }],
     proposal_metadata: {
       source: "codex_app_server",
       codex_run_id: "codex_content_initial_draft_bdo",

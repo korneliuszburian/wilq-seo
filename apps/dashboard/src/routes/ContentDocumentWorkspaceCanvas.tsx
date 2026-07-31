@@ -170,7 +170,40 @@ function CanonicalDocument({ workspace }: { workspace: ContentDocumentWorkspace 
     {preview.lead ? <p className="mt-4 text-base leading-7 text-slate-700">{preview.lead}</p> : null}
     <p className="mt-4 text-sm text-slate-600">{preview.sections.length} sekcji · {preview.faq_count} pytań i odpowiedzi · {preview.cta_count} wezwań do działania</p>
     <div className="mt-7 space-y-7">{preview.sections.map((section) => <section key={section.section_id ?? section.heading} className="border-t border-line pt-6"><h3 className="text-xl font-semibold text-ink">{section.heading}</h3><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{section.body_markdown}</p></section>)}</div>
+    <OfficialSourceReferences references={workspace.canonical_document.revision?.official_source_references ?? []} />
   </>;
+}
+
+function OfficialSourceReferences({
+  references
+}: {
+  references: NonNullable<ContentDocumentWorkspace["canonical_document"]["revision"]>["official_source_references"];
+}) {
+  const visibleReferences = references.filter((reference) => (
+    reference.source_title.trim().length > 0
+    && reference.source_url.trim().length > 0
+    && reference.verified_on.trim().length > 0
+    && reference.regulatory_requirement_ids.length > 0
+  ));
+  if (!visibleReferences.length) return null;
+
+  return <section className="mt-8 rounded-xl border border-line bg-slate-50 p-4" data-testid="content-official-sources">
+    <p className="font-semibold text-ink">Źródła urzędowe</p>
+    <p className="mt-1 text-sm leading-6 text-slate-700">Źródła użyte do weryfikacji tej dokładnej wersji tekstu. Nie stanowią indywidualnej porady prawnej.</p>
+    <ul className="mt-4 space-y-3">
+      {visibleReferences.map((reference) => <li key={reference.source_fact_id} className="border-t border-line pt-3 first:border-t-0 first:pt-0">
+        <a className="font-medium text-action underline underline-offset-2" href={reference.source_url} rel="noreferrer" target="_blank">{reference.source_title}</a>
+        <p className="mt-1 text-sm text-slate-700">Zweryfikowano: {reference.verified_on}</p>
+        <p className="mt-1 text-sm text-slate-600">Zakres weryfikacji: {regulatoryRequirementScope(reference.regulatory_requirement_ids.length)}.</p>
+      </li>)}
+    </ul>
+  </section>;
+}
+
+function regulatoryRequirementScope(count: number) {
+  if (count === 1) return "1 zagadnienie regulacyjne";
+  if (count >= 2 && count <= 4) return `${count} zagadnienia regulacyjne`;
+  return `${count} zagadnień regulacyjnych`;
 }
 
 export function ContentDocumentLineageDisclosure({ workspace }: { workspace: ContentDocumentWorkspace }) {
