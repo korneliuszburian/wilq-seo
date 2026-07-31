@@ -107,6 +107,35 @@ def test_full_draft_schema_excludes_remove_review_required_sections() -> None:
     assert section_definition["properties"]["heading"]["enum"] == ["Sekcja do tekstu"]
 
 
+def test_full_draft_schema_binds_regulatory_concepts_to_their_section() -> None:
+    proposal = _proposal_with_review_required_inventory()
+    proposal.sections[0].regulatory_requirement_ids = ["bdo_records_and_kpo"]
+    requirement = ContentRegulatoryRequirement(
+        id="bdo_records_and_kpo",
+        label="ewidencja i KPO",
+        reason="Wymaga źródła urzędowego.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="kpo_before_transport",
+                label="moment sporządzenia KPO",
+                required_any_of=["KPO przed transportem"],
+            )
+        ],
+    )
+
+    schema = initial_full_draft_output_schema(
+        proposal,
+        regulatory_requirements=[requirement],
+    )
+    conditions = schema["$defs"]["ContentInitialDraftSectionOutput"]["allOf"]
+
+    assert conditions[0]["if"]["properties"]["section_id"] == {"const": "section_keep"}
+    pattern = conditions[0]["then"]["properties"]["body_markdown"]["allOf"][0][
+        "pattern"
+    ]
+    assert "[kK][pP][oO]" in pattern
+
+
 def test_document_scope_accepts_the_same_excluded_section_projection() -> None:
     proposal = _proposal_with_review_required_inventory()
     output = ContentInitialDraftModelOutput(

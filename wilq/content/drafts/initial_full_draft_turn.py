@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from copy import deepcopy
 from typing import cast
 
@@ -11,7 +12,8 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.regulatory.policy import ContentRegulatoryRequirement
+from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
 
 _INSTRUCTION = (
     "Napisz po polsku pełny, roboczy dokument odświeżonej strony na podstawie "
@@ -90,7 +92,10 @@ def initial_full_draft_turn_request(
         instruction=_INSTRUCTION,
         application_context=application_context,
         untrusted_context=untrusted_context,
-        output_schema=initial_full_draft_output_schema(proposal),
+        output_schema=initial_full_draft_output_schema(
+            proposal,
+            regulatory_requirements=planning_input.regulatory_coverage.requirements,
+        ),
     )
 
 
@@ -162,12 +167,15 @@ def compact_initial_draft_planning_input(
 
 def initial_full_draft_output_schema(
     proposal: ContentPlanningProposal,
+    *,
+    regulatory_requirements: list[ContentRegulatoryRequirement] | None = None,
 ) -> dict[str, object]:
     schema = deepcopy(ContentInitialDraftModelOutput.model_json_schema())
     _require_all_object_properties(schema)
     properties = _mapping(schema, "properties")
     definitions = _mapping(schema, "$defs")
-    section = _properties(_mapping(definitions, "ContentInitialDraftSectionOutput"))
+    section_definition = _mapping(definitions, "ContentInitialDraftSectionOutput")
+    section = _properties(section_definition)
     faq = _properties(_mapping(definitions, "ContentInitialDraftFaqOutput"))
     link = _properties(_mapping(definitions, "ContentInitialDraftInternalLinkOutput"))
 
@@ -184,7 +192,68 @@ def initial_full_draft_output_schema(
     _mapping(link, "target_url")["enum"] = [
         item.target_url for item in proposal.internal_links
     ] or ["__WILQ_EMPTY_ARRAY_ONLY__"]
+    _apply_regulatory_document_patterns(
+        section_definition,
+        draftable_sections,
+        regulatory_requirements or [],
+    )
     return schema
+
+
+def _apply_regulatory_document_patterns(
+    section_schema: dict[str, object],
+    draftable_sections: list[ContentPlanningSection],
+    requirements: list[ContentRegulatoryRequirement],
+) -> None:
+    """Bind profile-owned document concepts to the exact output section IDs."""
+
+    requirements_by_id = {requirement.id: requirement for requirement in requirements}
+    conditions: list[dict[str, object]] = []
+    for section in draftable_sections:
+        section_id = section.section_id
+        assertion_patterns: list[str] = []
+        for requirement_id in section.regulatory_requirement_ids:
+            requirement = requirements_by_id.get(requirement_id)
+            if requirement is not None:
+                assertion_patterns.extend(
+                    _assertion_pattern(assertion.required_any_of)
+                    for assertion in requirement.document_assertions
+                )
+        if not assertion_patterns:
+            continue
+        conditions.append(
+            {
+                "if": {"properties": {"section_id": {"const": section_id}}},
+                "then": {
+                    "properties": {
+                        "body_markdown": {
+                            "allOf": [
+                                {"pattern": pattern} for pattern in assertion_patterns
+                            ]
+                        }
+                    }
+                },
+            }
+        )
+    if conditions:
+        section_schema["allOf"] = conditions
+
+
+def _assertion_pattern(terms: list[str]) -> str:
+    return "(?:" + "|".join(_case_agnostic_literal_pattern(term) for term in terms) + ")"
+
+
+def _case_agnostic_literal_pattern(value: str) -> str:
+    parts: list[str] = []
+    for character in value:
+        if character.isspace():
+            if not parts or parts[-1] != r"\s+":
+                parts.append(r"\s+")
+        elif character.isalpha() and character.lower() != character.upper():
+            parts.append(f"[{character.lower()}{character.upper()}]")
+        else:
+            parts.append(re.escape(character))
+    return "".join(parts)
 
 
 def _properties(definition: dict[str, object]) -> dict[str, object]:
