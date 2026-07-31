@@ -69,7 +69,6 @@ export function ContentWorkflowSurface() {
     operatorContext
   } = useContentWorkflowQueries(
     selectedWorkItemId,
-    reviewOpen,
     browseInventory,
     !selectedWorkItemId && !newPageOpen && !browseInventory
   );
@@ -258,6 +257,7 @@ function ContentWorkflowRouteState({
       <ContentTextWorkspace
         workItemId={selectedWorkItemId}
         selectedWorkspace={selectedWorkspace}
+        operatorLabel={operatorLabel}
         onOpenReview={onOpenReview}
       />
     );
@@ -280,10 +280,12 @@ function ContentWorkflowEntryFailure({ onRetry }: { onRetry: () => void }) {
 function ContentTextWorkspace({
   workItemId,
   selectedWorkspace,
+  operatorLabel,
   onOpenReview
 }: {
   workItemId: string;
   selectedWorkspace: ContentSelectedWorkspaceQuery;
+  operatorLabel: string | null;
   onOpenReview: (workItemId: string) => void;
 }) {
   if (selectedWorkspace.isLoading) {
@@ -294,7 +296,12 @@ function ContentTextWorkspace({
   }
   const workspace = selectedWorkspace.data.workspace;
   if (!workspace) return <DocumentWorkspaceError onRetry={() => void selectedWorkspace.refetch()} />;
-  return <ContentDocumentWorkspaceCanvas workspace={workspace} onOpenReview={() => onOpenReview(workItemId)} />;
+  return <ContentDocumentWorkspaceCanvas
+    workspace={workspace}
+    onOpenReview={() => onOpenReview(workItemId)}
+    operatorLabel={operatorLabel}
+    onWorkspaceChanged={() => void selectedWorkspace.refetch()}
+  />;
 }
 
 function DocumentWorkspacePending() {

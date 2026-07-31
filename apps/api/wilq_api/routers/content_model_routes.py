@@ -4,6 +4,9 @@ from collections.abc import Callable
 
 from fastapi import APIRouter
 
+from apps.api.wilq_api.routers.content_codex_proposal import (
+    register_content_revision_repair_route,
+)
 from apps.api.wilq_api.routers.content_editorial_integrity import (
     register_content_editorial_integrity_route,
 )
@@ -50,6 +53,7 @@ def register_content_model_routes(
     register_content_regulatory_source_review_routes(router)
     register_content_selected_workspace_route(router)
     register_content_editorial_integrity_route(router)
+    register_content_revision_repair_route(router, snapshot_loader=snapshot_loader)
     register_content_initial_draft_route(router, snapshot_loader=snapshot_loader)
     register_content_new_page_brief_routes(router)
     register_content_revision_html_package_route(router)

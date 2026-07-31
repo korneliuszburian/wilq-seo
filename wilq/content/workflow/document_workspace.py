@@ -110,7 +110,7 @@ class ContentDocumentWorkspaceDocumentPreview(BaseModel):
 class ContentDocumentWorkspaceNextAction(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["open_review", "prepare_document", "none"]
+    kind: Literal["open_review", "prepare_document", "repair_document", "none"]
     label: str
     reason: str
 
@@ -479,6 +479,15 @@ def _next_action(document: ContentDocumentWorkspaceDocument) -> ContentDocumentW
             reason=(
                 "Przygotowanie dokumentu jest kolejnym krokiem; ten read-only workspace "
                 "nie uruchamia generowania."
+            ),
+        )
+    if document.status in {"needs_changes", "rejected"}:
+        return ContentDocumentWorkspaceNextAction(
+            kind="repair_document",
+            label="Przygotuj poprawkę",
+            reason=(
+                "Dokument ma zapisaną decyzję człowieka. Wybierz jeden element, "
+                "aby utworzyć nową wersję do ponownego review."
             ),
         )
     return ContentDocumentWorkspaceNextAction(

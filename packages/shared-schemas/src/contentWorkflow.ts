@@ -496,7 +496,7 @@ export const ContentDocumentWorkspaceDocumentLineageSchema = z.object({
 });
 
 export const ContentDocumentWorkspaceNextActionSchema = z.object({
-  kind: z.enum(["open_review", "prepare_document", "none"]),
+  kind: z.enum(["open_review", "prepare_document", "repair_document", "none"]),
   label: z.string(),
   reason: z.string()
 });
@@ -3115,7 +3115,7 @@ export const ContentDraftRevisionConflictSchema = z.object({
   safe_next_step: z.string()
 });
 
- export const ContentCodexRuntimeTraceSchema = z.object({
+export const ContentCodexRuntimeTraceSchema = z.object({
   status: z.enum(["not_started", "completed", "blocked", "failed"]),
   run_id: z.string().nullable().optional(),
   thread_id: z.string().nullable(),
@@ -3123,6 +3123,85 @@ export const ContentDraftRevisionConflictSchema = z.object({
   event_methods: z.array(z.string()).default([]),
   item_types: z.array(z.string()).default([]),
   external_call_attempted: z.boolean()
+});
+
+export const ContentRevisionRepairProposalRequestSchema = z.object({
+  expected_base_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  selected_section_ids: z.array(z.string().trim().min(1)).default([]),
+  selected_cta_ids: z.array(z.string().trim().min(1)).default([]),
+  requested_by: z.string().trim().min(1)
+}).superRefine((request, context) => {
+  const selectedCount = request.selected_section_ids.length + request.selected_cta_ids.length;
+  if (selectedCount !== 1) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "repair proposal requires exactly one persisted section or CTA"
+    });
+  }
+  if (
+    new Set(request.selected_section_ids).size !== request.selected_section_ids.length ||
+    new Set(request.selected_cta_ids).size !== request.selected_cta_ids.length
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "repair proposal component IDs must be unique"
+    });
+  }
+});
+
+export const ContentRevisionRepairProposalBlockerSchema = z.object({
+  code: z.enum([
+    "missing_planning_binding",
+    "missing_base_revision",
+    "stale_base_revision",
+    "revision_not_ready_for_proposal",
+    "stale_content_context",
+    "missing_generation_contract",
+    "unknown_selected_section",
+    "unknown_selected_cta",
+    "ambiguous_claim_marker",
+    "runtime_blocked",
+    "runtime_failed",
+    "invalid_structured_output",
+    "section_scope_mismatch",
+    "proposal_contract_blocked",
+    "quality_blocked",
+    "revision_conflict"
+  ]),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  next_step: z.string().min(1),
+  source_codes: z.array(z.string()).default([])
+});
+
+export const ContentRevisionRepairProposalResponseSchema = z.object({
+  status: z.enum(["created", "idempotent", "blocked", "failed", "conflict"]),
+  run_id: z.string().nullable().optional(),
+  work_item_id: z.string().min(1),
+  base_revision_id: z.string().min(1),
+  selected_section_headings: z.array(z.string()).default([]),
+  selected_cta_ids: z.array(z.string()).default([]),
+  revision: ContentDraftRevisionSchema.nullable().optional(),
+  quality_review: ContentQualityReviewSchema.nullable().optional(),
+  quality_review_scope: z.enum([
+    "persisted_selected_sections_and_declared_lineage",
+    "persisted_selected_components_and_declared_lineage"
+  ]),
+  semantic_review_required: z.literal(true),
+  runtime: ContentCodexRuntimeTraceSchema,
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  blockers: z.array(ContentRevisionRepairProposalBlockerSchema).default([]),
+  safe_next_step: z.string().min(1),
+  publish_ready: z.literal(false)
+}).superRefine((response, context) => {
+  if (["created", "idempotent"].includes(response.status)) {
+    if (!response.run_id || !response.revision || !response.quality_review || response.quality_review.verdict === "blocked" || response.blockers.length) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "created repair proposal requires a reviewable child revision" });
+    }
+  } else if (response.revision || !response.blockers.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "non-created repair proposal requires blockers without a revision" });
+  }
 });
 
  export const ContentWorkflowOperatorStepIdSchema = z.enum(
@@ -4953,6 +5032,12 @@ export type ContentPlanningProposalResponse = z.infer<
 >;
 export type ContentInitialDraftRequest = z.input<typeof ContentInitialDraftRequestSchema>;
 export type ContentInitialDraftResponse = z.infer<typeof ContentInitialDraftResponseSchema>;
+export type ContentRevisionRepairProposalRequest = z.input<
+  typeof ContentRevisionRepairProposalRequestSchema
+>;
+export type ContentRevisionRepairProposalResponse = z.infer<
+  typeof ContentRevisionRepairProposalResponseSchema
+>;
 export type ContentSemanticReview = z.infer<typeof ContentSemanticReviewSchema>;
 export type ContentSemanticReviewRequest = z.input<typeof ContentSemanticReviewRequestSchema>;
 export type ContentSemanticReviewResponse = z.infer<typeof ContentSemanticReviewResponseSchema>;

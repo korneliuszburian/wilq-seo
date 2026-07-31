@@ -2,16 +2,21 @@ import { useEffect, useRef, useState } from "react";
 
 import { type ContentDocumentWorkspace } from "../lib/api";
 import { ContentTextPreparationPanel } from "./ContentTextPreparationPanel";
+import { ContentRevisionRepairPanel } from "./ContentRevisionRepairPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
 type View = "source" | "document" | "comparison";
 
 export function ContentDocumentWorkspaceCanvas({
   workspace,
-  onOpenReview
+  onOpenReview,
+  operatorLabel,
+  onWorkspaceChanged
 }: {
   workspace: ContentDocumentWorkspace;
   onOpenReview: () => void;
+  operatorLabel: string | null;
+  onWorkspaceChanged: () => void;
 }) {
   const [view, setView] = useState<View>(() =>
     workspace.canonical_document.preview ? "document" : "source"
@@ -68,6 +73,13 @@ export function ContentDocumentWorkspaceCanvas({
           <ContentTextPreparationPanel workItemId={workspace.work_item_id} />
         </section>
       ) : null}
+
+      <ContentRevisionRepairPanel
+        key={workspace.canonical_document.revision_id ?? "no-revision"}
+        workspace={workspace}
+        operatorLabel={operatorLabel}
+        onChanged={onWorkspaceChanged}
+      />
 
       <nav className="mt-4 flex gap-1 border-b border-line" aria-label="Widok dokumentu">
         <Tab active={view === "source"} onClick={() => setView("source")}>Obecna strona</Tab>

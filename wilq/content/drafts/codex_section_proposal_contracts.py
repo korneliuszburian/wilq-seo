@@ -70,6 +70,36 @@ class ContentCodexSectionProposalRequest(BaseModel):
         return self
 
 
+class ContentRevisionRepairProposalRequest(BaseModel):
+    """Public, stable-ID command for one human-review-gated repair."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    expected_base_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    selected_section_ids: list[str] = Field(default_factory=list)
+    selected_cta_ids: list[str] = Field(default_factory=list)
+    requested_by: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_one_exact_component(self) -> ContentRevisionRepairProposalRequest:
+        section_ids = [section_id.strip() for section_id in self.selected_section_ids]
+        cta_ids = [cta_id.strip() for cta_id in self.selected_cta_ids]
+        if (
+            len(section_ids) + len(cta_ids) != 1
+            or any(not value for value in [*section_ids, *cta_ids])
+        ):
+            raise ValueError("Select exactly one non-blank persisted section or CTA.")
+        if len(section_ids) != len(set(section_ids)) or len(cta_ids) != len(set(cta_ids)):
+            raise ValueError("Selected component IDs must be unique.")
+        requester = self.requested_by.strip()
+        if not requester:
+            raise ValueError("Content repair requires a visible requester attribution.")
+        self.selected_section_ids = section_ids
+        self.selected_cta_ids = cta_ids
+        self.requested_by = requester
+        return self
+
+
 class ContentCodexSectionProposalBlocker(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -131,10 +161,16 @@ class ContentCodexSectionProposalResponse(BaseModel):
         return self
 
 
+class ContentRevisionRepairProposalResponse(ContentCodexSectionProposalResponse):
+    """Public response for an immutable, review-gated repair child revision."""
+
+
 __all__ = [
     "ContentCodexRuntimeTrace",
     "ContentCodexSectionProposalBlocker",
     "ContentCodexSectionProposalBlockerCode",
     "ContentCodexSectionProposalRequest",
     "ContentCodexSectionProposalResponse",
+    "ContentRevisionRepairProposalRequest",
+    "ContentRevisionRepairProposalResponse",
 ]

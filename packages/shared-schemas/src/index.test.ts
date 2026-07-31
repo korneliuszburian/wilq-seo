@@ -52,6 +52,7 @@ import {
   ContentDraftRevisionWorkspaceSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
+  ContentRevisionRepairProposalRequestSchema,
   ContentKnowledgeCardSchema,
   ContentTargetDiscoverySchema,
   ContentTargetMappingPreviewSchema,
@@ -95,6 +96,30 @@ describe("ContentKnowledgeCardSchema", () => {
       confidence: 1,
       freshness: "reviewed_2026-07-31"
     })).not.toThrow();
+  });
+});
+
+describe("ContentRevisionRepairProposalRequestSchema", () => {
+  it("requires exactly one non-blank stable persisted component ID", () => {
+    const base = {
+      expected_base_digest: "a".repeat(64),
+      requested_by: "wilku"
+    };
+    expect(ContentRevisionRepairProposalRequestSchema.safeParse({
+      ...base,
+      selected_section_ids: ["section_01"],
+      selected_cta_ids: []
+    }).success).toBe(true);
+    expect(ContentRevisionRepairProposalRequestSchema.safeParse({
+      ...base,
+      selected_section_ids: ["section_01"],
+      selected_cta_ids: ["cta_01"]
+    }).success).toBe(false);
+    expect(ContentRevisionRepairProposalRequestSchema.safeParse({
+      ...base,
+      selected_section_ids: ["   "],
+      selected_cta_ids: []
+    }).success).toBe(false);
   });
 });
 

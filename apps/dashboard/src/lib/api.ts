@@ -15,6 +15,8 @@ import {
   CommandCenterResponseSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
+  ContentRevisionRepairProposalRequestSchema,
+  ContentRevisionRepairProposalResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentSelectedWorkspaceSchema,
   ContentTargetDiscoverySchema,
@@ -105,6 +107,8 @@ import {
   type CommandCenterResponse,
   type ContentInitialDraftRequest,
   type ContentInitialDraftResponse,
+  type ContentRevisionRepairProposalRequest,
+  type ContentRevisionRepairProposalResponse,
   type ContentDiagnosticsResponse,
   type ContentDocumentWorkspace,
   type ContentSelectedWorkspace,
@@ -676,6 +680,21 @@ export function saveContentWorkItemDraftRevisionReview(
   );
 }
 
+export function postContentWorkItemRevisionRepairProposal(
+  request: ContentRevisionRepairProposalRequest,
+  workItemId: string,
+  baseRevisionId: string
+): Promise<ContentRevisionRepairProposalResponse> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(baseRevisionId)}/repair-proposal`;
+  return apiPostWithConflict(
+    path,
+    ContentRevisionRepairProposalResponseSchema,
+    ContentRevisionRepairProposalResponseSchema,
+    ContentRevisionRepairProposalRequestSchema.parse(request),
+    CODEX_PROPOSAL_TIMEOUT_MS
+  );
+}
+
 export function getContentWorkItemRevisionHtmlPackage(
   workItemId: string,
   revisionId: string
@@ -940,6 +959,8 @@ export type {
   ContentNewPageCanonicalDocumentWorkspace,
   ContentInitialDraftRequest,
   ContentInitialDraftResponse,
+  ContentRevisionRepairProposalRequest,
+  ContentRevisionRepairProposalResponse,
   ContentDraftRevision,
   ContentDraftRevisionBinding,
   ContentDraftRevisionConflict,

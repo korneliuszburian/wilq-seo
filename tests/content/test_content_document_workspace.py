@@ -83,6 +83,20 @@ def test_document_workspace_keeps_public_source_visible_when_no_revision_exists(
     assert workspace.next_action.label == "Przygotuj nową wersję"
 
 
+def test_document_workspace_projects_one_repair_action_after_human_changes() -> None:
+    document = workspace_module.ContentDocumentWorkspaceDocument(
+        status="needs_changes",
+        review_state="needs_changes",
+        label="Tekst wymaga zmian",
+        reason="Marketer zapisał dokładne uwagi do dokumentu.",
+    )
+
+    action = workspace_module._next_action(document)
+
+    assert action.kind == "repair_document"
+    assert action.label == "Przygotuj poprawkę"
+
+
 def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
     monkeypatch,
 ) -> None:

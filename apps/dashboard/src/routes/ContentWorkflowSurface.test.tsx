@@ -19,6 +19,7 @@ import {
   getContentOperatorContext,
   getContentDiagnostics,
   postContentWorkItemInitialDraft,
+  postContentWorkItemRevisionRepairProposal,
   saveContentWorkItemDraftRevisionReview,
   type ActionObject,
   type ContentDraftRevision,
@@ -52,6 +53,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentOperatorContext: vi.fn(),
     getContentDiagnostics: vi.fn(),
     postContentWorkItemInitialDraft: vi.fn(),
+    postContentWorkItemRevisionRepairProposal: vi.fn(),
     saveContentWorkItemDraftRevisionReview: vi.fn(),
   };
 });
@@ -88,6 +90,24 @@ describe("ContentWorkflowSurface", () => {
       measurement_window_result: { window: null, blockers: [] }
     } as never);
     vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
+    vi.mocked(postContentWorkItemRevisionRepairProposal).mockResolvedValue({
+      status: "created",
+      run_id: "codex_repair_1",
+      work_item_id: "content_work_item_bdo",
+      base_revision_id: "content_revision_bdo_1",
+      selected_section_headings: ["Kto powinien sprawdzić obowiązek wpisu?"],
+      selected_cta_ids: [],
+      revision: savedFullDraftRevision(),
+      quality_review: { verdict: "reviewable" },
+      quality_review_scope: "persisted_selected_sections_and_declared_lineage",
+      semantic_review_required: true,
+      runtime: { status: "completed", thread_id: null, turn_id: null, event_methods: [], item_types: [], external_call_attempted: false },
+      evidence_ids: [],
+      source_connectors: [],
+      blockers: [],
+      safe_next_step: "Sprawdź nową wersję.",
+      publish_ready: false
+    } as never);
     const revision = savedDraftRevision();
     const review = savedDraftRevisionReview(revision);
     vi.mocked(saveContentWorkItemDraftRevisionReview).mockResolvedValue({
@@ -669,6 +689,39 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText(/Dodaj konkretne wezwanie do kontaktu/)).toBeInTheDocument();
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
+  });
+
+  it("offers one exact repair only after the human records needs changes", async () => {
+    const revision = savedFullDraftRevision();
+    const review = savedDraftRevisionReview(revision, "needs_changes");
+    const workspace = contentDocumentWorkspace(revision, review);
+    workspace.canonical_document.status = "needs_changes";
+    workspace.canonical_document.review_state = "needs_changes";
+    workspace.canonical_document.label = "Tekst wymaga zmian";
+    workspace.canonical_document.reason = "Marketer zapisał dokładne uwagi do tej wersji.";
+    workspace.next_action = { kind: "repair_document", label: "Przygotuj poprawkę", reason: "Dokument ma zapisane uwagi." };
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })} client={client} />);
+
+    const repair = await screen.findByTestId("content-revision-repair");
+    expect(repair).toHaveTextContent("Uwagi marketera: Ta wersja wymaga opisanych poprawek.");
+    const repairButton = screen.getByRole("button", { name: "Przygotuj poprawkę" });
+    await waitFor(() => expect(repairButton).toBeEnabled());
+    fireEvent.click(repairButton);
+
+    await waitFor(() => expect(postContentWorkItemRevisionRepairProposal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expected_base_digest: revision.content_digest,
+        selected_section_ids: [revision.sections[0]?.section_id],
+        selected_cta_ids: [],
+        requested_by: "wilku"
+      }),
+      revision.work_item_id,
+      revision.revision_id
+    ));
+    expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
   });
 
 });

@@ -120,7 +120,6 @@ export function useContentPlanningProposal(workItemId: string): ContentPlanningP
 
 export function useContentWorkflowQueries(
   selectedWorkItemId: string | null,
-  _reviewOpen = false,
   browseInventory = false,
   showEntryDiagnostics = false
 ) {
@@ -150,9 +149,9 @@ export function useContentWorkflowQueries(
     queryKey: ["content-workflow", "operator-context"],
     queryFn: getContentOperatorContext,
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
-    // Identity can be refreshed independently for a review save, but neither
-    // its latency nor failure may replace the exact review workspace.
-    enabled: Boolean(selectedWorkItemId && _reviewOpen)
+    // Identity can be refreshed independently for an exact review or repair
+    // command, but neither its latency nor failure may replace the workspace.
+    enabled: Boolean(selectedWorkItemId)
   });
   const selectedWorkspace = useQuery({
     queryKey: ["content-workflow", "work-item", selectedWorkItemId, "selected-workspace"],
