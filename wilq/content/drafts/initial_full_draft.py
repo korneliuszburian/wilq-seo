@@ -7,6 +7,10 @@ from uuid import uuid4
 from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
 from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
+from wilq.content.drafts.draft_assurance_runtime import (
+    run_regulatory_draft_assurance,
+)
 from wilq.content.drafts.generated_claim_safety import generated_claim_safety_issues
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
@@ -83,6 +87,17 @@ def generate_initial_full_draft(
             runtime=trace,
             blockers=[blocker],
         )
+    assurance = _assure_regulated_draft(
+        inputs=prepared,
+        output=output,
+        client=client,
+        writer_run=run,
+        writer_trace=trace,
+        run_store=run_store,
+        snapshot=snapshot,
+    )
+    if isinstance(assurance, ContentInitialDraftResponse):
+        return assurance
     return _persist_document(
         snapshot=snapshot,
         request=request,
@@ -92,6 +107,7 @@ def generate_initial_full_draft(
         trace=trace,
         workflow_store=workflow_store,
         run_store=run_store,
+        regulatory_assurance=assurance,
     )
 
 
@@ -365,6 +381,45 @@ def _output_blocker(
     return None
 
 
+def _assure_regulated_draft(
+    *,
+    inputs: _InitialDraftInputs,
+    output: ContentInitialDraftModelOutput,
+    client: CodexAppServerClientProtocol,
+    writer_run: CodexRun,
+    writer_trace: ContentCodexRuntimeTrace,
+    run_store: LocalStateStore,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> ContentDraftAssuranceReceipt | ContentInitialDraftResponse | None:
+    """Run the independent critic before a regulated draft can be persisted."""
+
+    attempt = run_regulatory_draft_assurance(
+        planning_input=inputs.planning_input,
+        proposal=inputs.proposal,
+        output=output,
+        client=client,
+        run_store=run_store,
+    )
+    if attempt is None or isinstance(attempt, ContentDraftAssuranceReceipt):
+        return attempt
+    blocker = _blocker(
+        attempt.code,
+        attempt.label,
+        attempt.reason,
+        attempt.next_step,
+        source_codes=attempt.source_codes,
+    )
+    _finish_run(run_store, writer_run, status="blocked", error=_run_error(blocker))
+    return _blocked_response(
+        snapshot,
+        proposal=inputs.proposal,
+        status="blocked",
+        run=writer_run,
+        runtime=writer_trace,
+        blockers=[blocker],
+    )
+
+
 def _document_scope_errors(
     proposal: ContentPlanningProposal,
     output: ContentInitialDraftModelOutput,
@@ -525,6 +580,7 @@ def _persist_document(
     trace: ContentCodexRuntimeTrace,
     workflow_store: ContentWorkflowStore,
     run_store: LocalStateStore,
+    regulatory_assurance: ContentDraftAssuranceReceipt | None,
 ) -> ContentInitialDraftResponse:
     try:
         command = build_initial_draft_revision_command(
@@ -535,6 +591,7 @@ def _persist_document(
             output=output,
             run=run,
             base_revision_id=inputs.base_revision_id,
+            regulatory_assurance=regulatory_assurance,
         )
     except (ValueError, StopIteration):
         blocker = _blocker(

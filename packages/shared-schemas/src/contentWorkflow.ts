@@ -2484,6 +2484,8 @@ export const ContentDraftRevisionProposalMetadataSchema = z
     cta_lineage: z.array(ContentDraftRevisionProposalCtaLineageSchema).default([]),
     quality_verdict: z.enum(["needs_changes", "reviewable", "ready_for_human_review"]),
     quality_finding_codes: z.array(z.string()).default([]),
+    regulatory_assurance_run_id: z.string().trim().min(1).nullable().optional(),
+    regulatory_assurance_criteria_version: z.string().trim().min(1).nullable().optional(),
     review_scope: z.enum([
       "persisted_selected_sections_and_declared_lineage",
       "persisted_selected_components_and_declared_lineage",
@@ -2498,6 +2500,20 @@ export const ContentDraftRevisionProposalMetadataSchema = z
     const lineageCtaIds = metadata.cta_lineage.map((lineage) => lineage.cta_id);
     const sectionSelection = headings.length > 0;
     const ctaSelection = ctaIds.length > 0;
+    const assuranceBound =
+      metadata.regulatory_assurance_run_id != null ||
+      metadata.regulatory_assurance_criteria_version != null;
+    if (
+      assuranceBound &&
+      (!metadata.regulatory_assurance_run_id ||
+        !metadata.regulatory_assurance_criteria_version)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["regulatory_assurance_run_id"],
+        message: "regulatory assurance provenance must be complete"
+      });
+    }
     const validSections =
       new Set(headings).size === headings.length &&
       headings.length === lineageHeadings.length &&

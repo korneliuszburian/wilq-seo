@@ -129,6 +129,8 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
         "ready_for_human_review",
     ]
     quality_finding_codes: list[str] = Field(default_factory=list)
+    regulatory_assurance_run_id: str | None = None
+    regulatory_assurance_criteria_version: str | None = None
     review_scope: Literal[
         "persisted_selected_sections_and_declared_lineage",
         "persisted_selected_components_and_declared_lineage",
@@ -140,6 +142,16 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
 
     @model_validator(mode="after")
     def require_selected_lineage(self) -> ContentDraftRevisionProposalMetadata:
+        assurance_fields = (
+            self.regulatory_assurance_run_id,
+            self.regulatory_assurance_criteria_version,
+        )
+        if any(value is not None and not value.strip() for value in assurance_fields):
+            raise ValueError("Regulatory assurance provenance cannot be blank.")
+        if (self.regulatory_assurance_run_id is None) != (
+            self.regulatory_assurance_criteria_version is None
+        ):
+            raise ValueError("Regulatory assurance provenance must be complete.")
         headings = [heading.strip() for heading in self.selected_section_headings]
         lineage_headings = [lineage.heading.strip() for lineage in self.section_lineage]
         cta_ids = [cta_id.strip() for cta_id in self.selected_cta_ids]

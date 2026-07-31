@@ -2,7 +2,7 @@
   "profiles": [
     {
       "id": "bdo",
-      "version": "2026-07-31",
+      "version": "2026-07-31-r2",
       "service_card_ids": [
         "ekologus_service_bdo_reporting"
       ],

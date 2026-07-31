@@ -11,7 +11,9 @@ from wilq.content.regulatory.policy import (
     ContentRegulatorySourceCandidate,
     regulatory_content_coverage,
     regulatory_content_profile,
+    regulatory_draft_assurance_constraints,
     regulatory_review_candidates,
+    regulatory_source_candidates,
 )
 from wilq.schemas import Evidence, FreshnessState
 
@@ -173,7 +175,7 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
 
     assert profile is not None
     assert profile.id == "bdo"
-    assert profile.version == "2026-07-31"
+    assert profile.version == "2026-07-31-r2"
     assert profile.official_source_hosts == ["bdo.mos.gov.pl"]
     assert [requirement.id for requirement in profile.requirements] == [
         "bdo_definition",
@@ -185,6 +187,19 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
         "bdo_access_and_account",
         "bdo_risks_and_sanctions",
     ]
+    assert profile.claim_constraints == []
+    assert [constraint.id for constraint in regulatory_draft_assurance_constraints(profile)] == [
+        f"requirement:{requirement.id}" for requirement in profile.requirements
+    ]
+    assert {
+        candidate.source_url
+        for candidate in regulatory_source_candidates()
+        if candidate.profile_id == profile.id
+        and candidate.profile_version == profile.version
+    } >= {
+        "https://bdo.mos.gov.pl/news/przedsiebiorco-pamietaj-o-aktualizacji-danych-w-bdo/",
+        "https://bdo.mos.gov.pl/news/odpady-komunalne-kpo-czy-kpok/",
+    }
 
 
 def test_review_candidates_are_current_exact_and_never_complete_coverage() -> None:

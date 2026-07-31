@@ -1,0 +1,288 @@
+from types import SimpleNamespace
+
+import pytest
+
+from wilq.codex.app_server import CodexAppServerTurnResult
+from wilq.content.drafts import draft_assurance_runtime, initial_full_draft
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.draft_assurance import (
+    ContentDraftAssuranceModelOutput,
+    draft_assurance_output_schema,
+    validate_draft_assurance_output,
+)
+from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftModelOutput,
+    ContentInitialDraftSectionOutput,
+)
+from wilq.content.knowledge.source_facts import ContentSourceFact
+from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryCoverage,
+    ContentRegulatoryDocumentAssertion,
+    ContentRegulatoryProfile,
+    ContentRegulatoryRequirement,
+    regulatory_requirement_assertion_errors,
+)
+from wilq.content.workflow.revisions import ContentDraftRevisionPageAssets
+from wilq.schemas import CodexRun
+
+
+def _profile() -> ContentRegulatoryProfile:
+    requirement = ContentRegulatoryRequirement(
+        id="transport_document",
+        label="warunek KPO",
+        reason="KPO wymaga zakresu stosowania.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="mentions_kpo",
+                label="wzmianka o KPO",
+                required_any_of=["KPO"],
+            )
+        ],
+    )
+    return ContentRegulatoryProfile(
+        id="regulated_service",
+        version="2026-07-31",
+        service_card_ids=["service_regulated"],
+        official_source_hosts=["example.gov.pl"],
+        max_source_age_days=180,
+        requirements=[requirement],
+    )
+
+
+def _planning_input(profile: ContentRegulatoryProfile) -> ContentPlanningInput:
+    fact = ContentSourceFact(
+        source_id="official_kpo_fact",
+        source_type="legal_update",
+        privacy_class="commit_safe",
+        source_url_or_path="https://example.gov.pl/kpo",
+        extracted_fact="KPO stosuje się, gdy przekazanie odpadów podlega ewidencji.",
+        scope="claim_policy",
+        freshness_date="2026-07-31",
+        confidence=1,
+        review_status="approved",
+        reviewer="ekspert",
+        evidence_ids=["ev_kpo"],
+        source_connectors=["official_regulatory_review"],
+        target_card_id="regulatory_service",
+        target_card_type="regulatory_source",
+        target_card_title="KPO",
+        official_source=True,
+        regulatory_profile_id=profile.id,
+        regulatory_profile_version=profile.version,
+        regulatory_requirement_ids=["transport_document"],
+        applicable_service_card_ids=["service_regulated"],
+    )
+    return ContentPlanningInput.model_construct(
+        work_item_id="content_work_item_regulated",
+        planning_input_digest="a" * 64,
+        confirmed_service_card_id="service_regulated",
+        regulatory_coverage=ContentRegulatoryCoverage(
+            profile_id=profile.id,
+            profile_version=profile.version,
+            requirements=profile.requirements,
+            requirement_coverage=[
+                {
+                    "requirement_id": "transport_document",
+                    "source_fact_ids": [fact.source_id],
+                    "evidence_ids": fact.evidence_ids,
+                }
+            ],
+            source_fact_ids=[fact.source_id],
+            evidence_ids=fact.evidence_ids,
+            source_facts=[fact],
+        ),
+    )
+
+
+def _output(body_markdown: str) -> ContentInitialDraftModelOutput:
+    return ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="BDO",
+            meta_title="BDO",
+            meta_description="Opis BDO",
+            h1="BDO",
+            lead="Praktyczna informacja.",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="kpo",
+                heading="KPO",
+                body_markdown=body_markdown,
+            )
+        ],
+    )
+
+
+def test_assurance_blocks_an_unqualified_kpo_statement_that_phrase_checks_allow() -> None:
+    profile = _profile()
+    planning_input = _planning_input(profile)
+    output = _output("Każdy transport odpadów wymaga KPO.")
+
+    assert regulatory_requirement_assertion_errors(
+        requirement=profile.requirements[0],
+        text=output.sections[0].body_markdown,
+    ) == []
+
+    receipt = validate_draft_assurance_output(
+        planning_input=planning_input,
+        output=output,
+        profile=profile,
+        assessment=ContentDraftAssuranceModelOutput(
+            checks=[
+                {
+                    "constraint_id": "requirement:transport_document",
+                    "status": "fail",
+                    "reason": "Zdanie przedstawia KPO jako obowiązek dla każdego transportu.",
+                    "document_excerpt": "Każdy transport odpadów wymaga KPO.",
+                    "evidence_ids": ["ev_kpo"],
+                }
+            ]
+        ),
+        codex_run_id="codex_content_draft_assurance_1",
+    )
+
+    assert receipt.status == "failed"
+    assert receipt.failed_constraint_ids == ["requirement:transport_document"]
+
+
+def test_assurance_rejects_a_critic_that_cites_another_constraint_evidence() -> None:
+    profile = _profile()
+    planning_input = _planning_input(profile)
+
+    with pytest.raises(ValueError, match="exact constraint evidence"):
+        validate_draft_assurance_output(
+            planning_input=planning_input,
+            output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
+            profile=profile,
+            assessment=ContentDraftAssuranceModelOutput(
+                checks=[
+                    {
+                        "constraint_id": "requirement:transport_document",
+                        "status": "pass",
+                        "reason": "Warunek został podany.",
+                        "document_excerpt": "KPO stosuje się, gdy przekazanie podlega ewidencji.",
+                        "evidence_ids": ["ev_other"],
+                    }
+                ]
+            ),
+            codex_run_id="codex_content_draft_assurance_1",
+        )
+
+
+def test_assurance_rejects_an_ungrounded_pass() -> None:
+    profile = _profile()
+    planning_input = _planning_input(profile)
+
+    with pytest.raises(ValueError, match="exact constraint evidence"):
+        validate_draft_assurance_output(
+            planning_input=planning_input,
+            output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
+            profile=profile,
+            assessment=ContentDraftAssuranceModelOutput(
+                checks=[
+                    {
+                        "constraint_id": "requirement:transport_document",
+                        "status": "pass",
+                        "reason": "Warunek został podany.",
+                        "document_excerpt": "KPO stosuje się, gdy przekazanie podlega ewidencji.",
+                        "evidence_ids": [],
+                    }
+                ]
+            ),
+            codex_run_id="codex_content_draft_assurance_1",
+        )
+
+
+def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -> None:
+    profile = _profile()
+    schema = draft_assurance_output_schema(profile, _planning_input(profile).regulatory_coverage)
+
+    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"][
+        "constraint_id"
+    ]["enum"] == ["requirement:transport_document"]
+
+    with pytest.raises(ValueError, match="unknown requirements"):
+        ContentRegulatoryProfile(
+            id="invalid",
+            version="1",
+            service_card_ids=["service"],
+            official_source_hosts=["example.gov.pl"],
+            max_source_age_days=30,
+            requirements=profile.requirements,
+            claim_constraints=[
+                {
+                    "id": "unknown",
+                    "label": "unknown",
+                    "instruction": "unknown",
+                    "requirement_ids": ["missing"],
+                }
+            ],
+        )
+
+
+def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypatch) -> None:
+    profile = _profile()
+    planning_input = _planning_input(profile)
+    output = _output("Każdy transport odpadów wymaga KPO.")
+
+    class RunStore:
+        def __init__(self) -> None:
+            self.saved: list[CodexRun] = []
+
+        def save_codex_run(self, run: CodexRun) -> CodexRun:
+            self.saved.append(run)
+            return run
+
+    class Client:
+        def run_structured_turn(self, _request: object) -> CodexAppServerTurnResult:
+            return CodexAppServerTurnResult(
+                status="completed",
+                output_text=ContentDraftAssuranceModelOutput(
+                    checks=[
+                        {
+                            "constraint_id": "requirement:transport_document",
+                            "status": "fail",
+                            "reason": "KPO jest przedstawione jako bezwarunkowe.",
+                            "document_excerpt": "Każdy transport odpadów wymaga KPO.",
+                            "evidence_ids": ["ev_kpo"],
+                        }
+                    ]
+                ).model_dump_json(),
+            )
+
+    monkeypatch.setattr(
+        draft_assurance_runtime,
+        "regulatory_draft_assurance_profile",
+        lambda _planning_input: profile,
+    )
+    store = RunStore()
+    writer_run = CodexRun(
+        id="codex_writer",
+        skill="wilq-content-operator",
+        hook="content_initial_full_draft",
+        source="wilq_api",
+        status="started",
+    )
+    result = initial_full_draft._assure_regulated_draft(
+        inputs=initial_full_draft._InitialDraftInputs(
+            planning_input=planning_input,
+            proposal=type("Proposal", (), {"proposal_id": "proposal-1"})(),
+            generation_contract=object(),
+        ),
+        output=output,
+        client=Client(),
+        writer_run=writer_run,
+        writer_trace=ContentCodexRuntimeTrace(status="completed"),
+        run_store=store,
+        snapshot=SimpleNamespace(
+            preflight=SimpleNamespace(
+                item=SimpleNamespace(id="content_work_item_regulated")
+            )
+        ),
+    )
+
+    assert result.status == "blocked"
+    assert result.revision is None
+    assert result.blockers[0].code == "draft_assurance_failed"
+    assert [run.status for run in store.saved] == ["started", "completed", "blocked"]

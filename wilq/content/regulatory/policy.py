@@ -93,6 +93,50 @@ class ContentRegulatoryRequirement(BaseModel):
     )
 
 
+class ContentRegulatoryClaimConstraint(BaseModel):
+    """One profile-owned semantic constraint for a regulated document.
+
+    Phrase assertions prove that a visible concept is present.  They cannot
+    distinguish a qualified legal statement from an overbroad one, so the
+    assurance critic receives these versioned constraints together with the
+    exact approved source facts.  The constraint is data, not a BDO branch in
+    a prompt: every regulated service can declare its own checks.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    instruction: str = Field(min_length=1)
+    requirement_ids: list[str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_visible_fields(self) -> ContentRegulatoryClaimConstraint:
+        text_fields = {
+            "id": self.id,
+            "label": self.label,
+            "instruction": self.instruction,
+        }
+        blank_fields = sorted(
+            name for name, value in text_fields.items() if not value.strip()
+        )
+        requirement_ids = [value.strip() for value in self.requirement_ids]
+        if not requirement_ids or any(not value for value in requirement_ids):
+            blank_fields.append("requirement_ids")
+        if len(requirement_ids) != len(set(requirement_ids)):
+            raise ValueError("Regulatory claim constraints cannot repeat requirement IDs.")
+        if blank_fields:
+            raise ValueError(
+                "Regulatory claim constraints require visible fields: "
+                + ", ".join(blank_fields)
+            )
+        self.id = self.id.strip()
+        self.label = self.label.strip()
+        self.instruction = self.instruction.strip()
+        self.requirement_ids = requirement_ids
+        return self
+
+
 class ContentRegulatoryProfile(BaseModel):
     """Versioned, data-owned policy for one exact service context."""
 
@@ -104,6 +148,64 @@ class ContentRegulatoryProfile(BaseModel):
     official_source_hosts: list[str] = Field(min_length=1)
     max_source_age_days: int = Field(ge=1, le=3650)
     requirements: list[ContentRegulatoryRequirement] = Field(min_length=1)
+    claim_constraints: list[ContentRegulatoryClaimConstraint] = Field(
+        default_factory=list
+    )
+
+    @model_validator(mode="after")
+    def require_constraint_requirement_bindings(self) -> ContentRegulatoryProfile:
+        requirement_ids = [requirement.id for requirement in self.requirements]
+        if len(requirement_ids) != len(set(requirement_ids)):
+            raise ValueError("Regulatory profiles must have unique requirement IDs.")
+        known_ids = set(requirement_ids)
+        constraint_ids = [constraint.id for constraint in self.claim_constraints]
+        if len(constraint_ids) != len(set(constraint_ids)):
+            raise ValueError("Regulatory profiles must have unique claim constraint IDs.")
+        unknown = sorted(
+            {
+                requirement_id
+                for constraint in self.claim_constraints
+                for requirement_id in constraint.requirement_ids
+                if requirement_id not in known_ids
+            }
+        )
+        if unknown:
+            raise ValueError(
+                "Regulatory claim constraints reference unknown requirements: "
+                + ", ".join(unknown)
+            )
+        return self
+
+
+def regulatory_draft_assurance_constraints(
+    profile: ContentRegulatoryProfile,
+) -> list[ContentRegulatoryClaimConstraint]:
+    """Compile universal critic checks from the profile's approved requirements.
+
+    This is deliberately requirement-driven rather than service-driven: every
+    regulated service gets the same baseline check for scope, conditions,
+    exceptions, deadlines and quantified consequences present in its exact
+    official facts. Profiles may add narrow, exceptional constraints, but do
+    not need a hand-authored rubric merely to receive the safety baseline.
+    """
+
+    baseline = [
+        ContentRegulatoryClaimConstraint(
+            id=f"requirement:{requirement.id}",
+            label=requirement.label,
+            instruction=(
+                "Oceń ten wymóg wyłącznie względem przypisanych oficjalnych faktów. "
+                "Jeżeli kandydat opisuje obowiązek, uprawnienie, wyjątek, termin, "
+                "sankcję albo procedurę, musi zachować podmiot, warunek, zakres, "
+                "wyjątki oraz wartości i terminy z tych faktów. Nie wolno zaakceptować "
+                "uogólnienia, które rozszerza obowiązek na wszystkich, przypisuje termin "
+                "innemu obowiązkowi, usuwa wyjątek albo obiecuje wynik kontroli."
+            ),
+            requirement_ids=[requirement.id],
+        )
+        for requirement in profile.requirements
+    ]
+    return [*baseline, *profile.claim_constraints]
 
 
 class ContentRegulatoryRequirementCoverage(BaseModel):
