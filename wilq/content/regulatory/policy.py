@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
@@ -13,6 +14,72 @@ from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.evidence.registry import list_evidence_by_ids
 
 
+class ContentRegulatoryDocumentAssertion(BaseModel):
+    """One observable concept a regulated plan and draft must cover.
+
+    The profile owns these assertions.  They are deliberately small, typed
+    concept checks rather than a hidden prompt rubric, so a future regulated
+    service can declare its own obligations without adding service-specific
+    code.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    required_any_of: list[str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_visible_terms(self) -> ContentRegulatoryDocumentAssertion:
+        fields = {"id": self.id, "label": self.label}
+        blanks = [name for name, value in fields.items() if not value.strip()]
+        terms = [term.strip() for term in self.required_any_of]
+        if not terms or any(not term for term in terms):
+            blanks.append("required_any_of")
+        if len(terms) != len(set(terms)):
+            raise ValueError("Regulatory document assertions cannot repeat terms.")
+        if blanks:
+            raise ValueError(
+                "Regulatory document assertions require visible fields: "
+                + ", ".join(blanks)
+            )
+        self.id = self.id.strip()
+        self.label = self.label.strip()
+        self.required_any_of = terms
+        return self
+
+
+def regulatory_assertion_matches(
+    *, text: str, assertion: ContentRegulatoryDocumentAssertion
+) -> bool:
+    """Return whether one profile-owned observable concept occurs in text.
+
+    Case-folding and whitespace normalization keep the policy robust to
+    ordinary Polish capitalization and layout, while profiles explicitly own
+    permitted variants for inflection or wording.
+    """
+
+    normalized = re.sub(r"\s+", " ", text).casefold()
+    return any(
+        re.sub(r"\s+", " ", term).casefold() in normalized
+        for term in assertion.required_any_of
+    )
+
+
+def regulatory_requirement_assertion_errors(
+    *,
+    requirement: ContentRegulatoryRequirement,
+    text: str,
+) -> list[str]:
+    """Return exact missing profile-owned concepts for one content target."""
+
+    return [
+        f"regulatory_document_assertion:{requirement.id}:{assertion.id}"
+        for assertion in requirement.document_assertions
+        if not regulatory_assertion_matches(text=text, assertion=assertion)
+    ]
+
+
 class ContentRegulatoryRequirement(BaseModel):
     """One topic that must be grounded before WILQ plans regulated content."""
 
@@ -21,6 +88,9 @@ class ContentRegulatoryRequirement(BaseModel):
     id: str = Field(min_length=1)
     label: str = Field(min_length=1)
     reason: str = Field(min_length=1)
+    document_assertions: list[ContentRegulatoryDocumentAssertion] = Field(
+        default_factory=list
+    )
 
 
 class ContentRegulatoryProfile(BaseModel):

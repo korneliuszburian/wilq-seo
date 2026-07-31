@@ -3734,6 +3734,18 @@ export const ContentPlanningInputSummarySchema = z.object({
   source_fact_previews: z.array(ContentPlanningSourceFactPreviewSchema).optional(),
   regulatory_profile_id: z.string().min(1).nullable().optional(),
   regulatory_profile_version: z.string().min(1).nullable().optional(),
+  // Present on current regulated planning inputs. Optional only so historical
+  // persisted proposal summaries remain readable.
+  regulatory_requirements: z.array(z.object({
+    id: z.string().trim().min(1),
+    label: z.string().trim().min(1),
+    reason: z.string().trim().min(1),
+    document_assertions: z.array(z.object({
+      id: z.string().trim().min(1),
+      label: z.string().trim().min(1),
+      required_any_of: z.array(z.string().trim().min(1)).min(1)
+    })).default([])
+  })).optional(),
   regulatory_requirement_ids: z.array(z.string().min(1)).default([]),
   regulatory_source_fact_ids: z.array(z.string().min(1)).default([]),
   regulatory_requirement_coverage: z.array(z.object({
@@ -3827,6 +3839,13 @@ export const ContentPlanningInputSummarySchema = z.object({
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_profile_id"], message: "Regulatory planning summary requires exact profile identity." });
     }
     const required = new Set(summary.regulatory_requirement_ids);
+    if (
+      summary.regulatory_requirements !== undefined &&
+      (summary.regulatory_requirements.length !== required.size ||
+        summary.regulatory_requirements.some((requirement) => !required.has(requirement.id)))
+    ) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirements"], message: "Regulatory planning summary requires exact requirement definitions." });
+    }
     const coverage = new Map(summary.regulatory_requirement_coverage.map((item) => [item.requirement_id, item]));
     if (!required.size || coverage.size !== required.size || [...required].some((id) => !coverage.has(id))) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Regulatory planning summary requires exact coverage for every requirement." });
@@ -3836,7 +3855,7 @@ export const ContentPlanningInputSummarySchema = z.object({
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_source_fact_ids"], message: "Regulatory planning summary requires exact covered source-fact IDs." });
       }
     }
-  } else if (summary.regulatory_requirement_ids.length || summary.regulatory_source_fact_ids.length || summary.regulatory_requirement_coverage.length || summary.regulatory_review_candidates.length) {
+  } else if (summary.regulatory_requirement_ids.length || (summary.regulatory_requirements?.length ?? 0) || summary.regulatory_source_fact_ids.length || summary.regulatory_requirement_coverage.length || summary.regulatory_review_candidates.length) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Unprofiled planning summary cannot carry regulatory coverage." });
   }
 });
@@ -3949,6 +3968,22 @@ export const ContentPlanningProposalResponseSchema = z.object({
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response requires every regulatory requirement." });
       } else if (!sections.some((section) => section.evidence_ids.some((evidenceId) => coverage.get(requirementId)?.has(evidenceId)))) {
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response requires exact regulatory evidence." });
+      }
+      const requirement = response.input_summary.regulatory_requirements?.find((item) => item.id === requirementId);
+      if (requirement) {
+        const sectionText = sections
+          .map((section) => `${section.heading}\n${section.purpose}\n${section.reader_question}`)
+          .join("\n")
+          .replace(/\s+/g, " ")
+          .toLocaleLowerCase("pl-PL");
+        for (const assertion of requirement.document_assertions) {
+          const covered = assertion.required_any_of.some((term) =>
+            sectionText.includes(term.replace(/\s+/g, " ").toLocaleLowerCase("pl-PL"))
+          );
+          if (!covered) {
+            context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response omits a required regulatory document concept." });
+          }
+        }
       }
     }
   }

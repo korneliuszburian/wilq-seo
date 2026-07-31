@@ -901,6 +901,16 @@ describe("ContentPlanningProposalResponseSchema", () => {
         ...response.input_summary,
         regulatory_profile_id: "bdo",
         regulatory_profile_version: "2026-07",
+        regulatory_requirements: [{
+          id: "bdo_scope",
+          label: "zakres obowiązku",
+          reason: "Wymaga źródła urzędowego.",
+          document_assertions: [{
+            id: "scope_check",
+            label: "sprawdzenie zakresu",
+            required_any_of: ["sprawdzić"]
+          }]
+        }],
         regulatory_requirement_ids: ["bdo_scope"],
         regulatory_source_fact_ids: ["official_bdo_scope"],
         regulatory_requirement_coverage: [{
@@ -923,6 +933,18 @@ describe("ContentPlanningProposalResponseSchema", () => {
       proposal: {
         ...regulatoryResponse.proposal,
         sections: [{ ...regulatoryResponse.proposal.sections[0], regulatory_requirement_ids: [] }]
+      }
+    }).success).toBe(false);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...regulatoryResponse,
+      proposal: {
+        ...regulatoryResponse.proposal,
+        sections: [{
+          ...regulatoryResponse.proposal.sections[0],
+          heading: "Zakres obowiązku",
+          purpose: "Opisz obowiązek.",
+          reader_question: "Co trzeba wiedzieć?"
+        }]
       }
     }).success).toBe(false);
     expect(ContentPlanningProposalResponseSchema.safeParse({

@@ -29,10 +29,15 @@ from wilq.content.drafts.structured_generation import (
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
+    ContentPlanningInputBuildResult,
     build_content_planning_input,
 )
 from wilq.content.planning.generated_proposal import (
     with_explicit_content_service_selection,
+)
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryRequirement,
+    regulatory_requirement_assertion_errors,
 )
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal
@@ -129,21 +134,7 @@ def _prepare_inputs(
         )
     proposal = planning.proposal
     if not draftable_planning_sections(proposal.sections):
-        return _blocked_response(
-            snapshot,
-            proposal=proposal,
-            status="blocked",
-            blockers=[
-                _blocker(
-                    "document_scope_mismatch",
-                    "Plan nie ma sekcji do napisania",
-                    "Wszystkie rozpoznane elementy zostały oznaczone do usunięcia "
-                    "lub osobnego review.",
-                    "Zostaw co najmniej jedną sekcję do tekstu albo zakończ review "
-                    "bez generowania draftu.",
-                )
-            ],
-        )
+        return _no_draftable_sections(snapshot, proposal)
     mismatch = _proposal_request_mismatch(proposal, request)
     if mismatch is not None:
         return _blocked_response(
@@ -155,14 +146,7 @@ def _prepare_inputs(
     service_card_id = proposal.service_card_id
     if service_card_id is None:
         return _planning_not_generated(snapshot, proposal)
-    planning_snapshot = with_explicit_content_service_selection(
-        snapshot,
-        service_card_id,
-    )
-    planning_result = build_content_planning_input(
-        planning_snapshot,
-        service_card_id=service_card_id,
-    )
+    planning_result = _current_planning_input(snapshot, service_card_id)
     # Planning may use a public rendered ``the_content`` read to produce a
     # reviewable strategy, but a full durable document is a stronger boundary.
     # Keep every readiness blocker here: review-required WordPress material,
@@ -211,6 +195,36 @@ def _prepare_inputs(
         generation_contract=generation_contract,
         base_revision_id=None if latest_revision is None else latest_revision.revision_id,
     )
+
+
+def _no_draftable_sections(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    proposal: ContentPlanningProposal,
+) -> ContentInitialDraftResponse:
+    return _blocked_response(
+        snapshot,
+        proposal=proposal,
+        status="blocked",
+        blockers=[
+            _blocker(
+                "document_scope_mismatch",
+                "Plan nie ma sekcji do napisania",
+                "Wszystkie rozpoznane elementy zostały oznaczone do usunięcia lub osobnego review.",
+                (
+                    "Zostaw co najmniej jedną sekcję do tekstu albo zakończ review "
+                    "bez generowania draftu."
+                ),
+            )
+        ],
+    )
+
+
+def _current_planning_input(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    service_card_id: str,
+) -> ContentPlanningInputBuildResult:
+    planning_snapshot = with_explicit_content_service_selection(snapshot, service_card_id)
+    return build_content_planning_input(planning_snapshot, service_card_id=service_card_id)
 
 
 def _proposal_request_mismatch(
@@ -323,7 +337,11 @@ def _output_blocker(
     inputs: _InitialDraftInputs,
     output: ContentInitialDraftModelOutput,
 ) -> ContentInitialDraftBlocker | None:
-    errors = _document_scope_errors(inputs.proposal, output)
+    errors = _document_scope_errors(
+        inputs.proposal,
+        output,
+        regulatory_requirements=inputs.planning_input.regulatory_coverage.requirements,
+    )
     if errors:
         return _blocker(
             "document_scope_mismatch",
@@ -350,6 +368,8 @@ def _output_blocker(
 def _document_scope_errors(
     proposal: ContentPlanningProposal,
     output: ContentInitialDraftModelOutput,
+    *,
+    regulatory_requirements: list[ContentRegulatoryRequirement] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     draftable_sections = draftable_planning_sections(proposal.sections)
@@ -387,6 +407,24 @@ def _document_scope_errors(
         errors.append("blank_lineage_atom")
     if any(not content_is_safe_public_url(item.target_url) for item in proposal.internal_links):
         errors.append("invalid_internal_link_target")
+    if regulatory_requirements:
+        output_by_section_id = {section.section_id: section for section in output.sections}
+        for requirement in regulatory_requirements:
+            requirement_id = requirement.id
+            generated_sections = [
+                output_by_section_id[section.section_id]
+                for section in draftable_sections
+                if requirement_id in section.regulatory_requirement_ids
+                and section.section_id in output_by_section_id
+            ]
+            if not generated_sections:
+                continue
+            errors.extend(
+                regulatory_requirement_assertion_errors(
+                    requirement=requirement,
+                    text="\n".join(section.body_markdown for section in generated_sections),
+                )
+            )
     return errors
 
 

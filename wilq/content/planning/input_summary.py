@@ -11,6 +11,7 @@ from wilq.content.planning.input_sources import (
     validate_source_assessment_membership,
 )
 from wilq.content.regulatory.policy import (
+    ContentRegulatoryRequirement,
     ContentRegulatoryRequirementCoverage,
     ContentRegulatoryReviewCandidate,
 )
@@ -37,6 +38,7 @@ class ContentPlanningInputSummary(BaseModel):
     source_fact_previews: list[ContentPlanningSourceFact] = Field(default_factory=list)
     regulatory_profile_id: str | None = None
     regulatory_profile_version: str | None = None
+    regulatory_requirements: list[ContentRegulatoryRequirement] = Field(default_factory=list)
     regulatory_requirement_ids: list[str] = Field(default_factory=list)
     regulatory_source_fact_ids: list[str] = Field(default_factory=list)
     regulatory_requirement_coverage: list[ContentRegulatoryRequirementCoverage] = Field(
@@ -89,6 +91,16 @@ def _validate_regulatory_summary(summary: ContentPlanningInputSummary) -> None:
         if not summary.regulatory_profile_id or not summary.regulatory_profile_version:
             raise ValueError("Regulatory planning summary requires exact profile identity.")
         required_ids = set(summary.regulatory_requirement_ids)
+        requirements_by_id = {
+            requirement.id: requirement for requirement in summary.regulatory_requirements
+        }
+        if (
+            "regulatory_requirements" in summary.model_fields_set
+            and set(requirements_by_id) != required_ids
+        ):
+            raise ValueError(
+                "Regulatory planning summary requires exact requirement definitions."
+            )
         coverage_by_requirement = {
             item.requirement_id: item for item in summary.regulatory_requirement_coverage
         }
@@ -105,6 +117,7 @@ def _validate_regulatory_summary(summary: ContentPlanningInputSummary) -> None:
             raise ValueError("Regulatory planning summary requires exact covered source-fact IDs.")
     elif (
         summary.regulatory_requirement_ids
+        or summary.regulatory_requirements
         or summary.regulatory_source_fact_ids
         or summary.regulatory_requirement_coverage
         or summary.regulatory_review_candidates

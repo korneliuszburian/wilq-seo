@@ -303,6 +303,7 @@ def content_planning_input_summary(
         source_fact_previews=list(planning_input.source_facts),
         regulatory_profile_id=planning_input.regulatory_coverage.profile_id,
         regulatory_profile_version=planning_input.regulatory_coverage.profile_version,
+        regulatory_requirements=planning_input.regulatory_coverage.requirements,
         regulatory_requirement_ids=[
             requirement.id for requirement in planning_input.regulatory_coverage.requirements
         ],

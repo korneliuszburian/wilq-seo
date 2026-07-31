@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.planning.generated_proposal_contracts import ContentPlanningModelOutput
+from wilq.content.planning.generated_proposal_contracts import (
+    ContentPlanningModelOutput,
+    ContentPlanningModelSection,
+)
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryRequirement,
+    regulatory_requirement_assertion_errors,
+)
 
 
 def planning_output_lineage_errors(
@@ -91,7 +98,25 @@ def regulatory_planning_lineage_errors(
             for section in matching_sections
         ):
             errors.append(f"regulatory_evidence:{requirement.id}")
+        errors.extend(
+            regulatory_requirement_text_errors(requirement, matching_sections)
+        )
     return errors
+
+
+def regulatory_requirement_text_errors(
+    requirement: ContentRegulatoryRequirement,
+    sections: list[ContentPlanningModelSection],
+) -> list[str]:
+    """Require each profile-owned concept in the plan section that owns it."""
+
+    if not requirement.document_assertions:
+        return []
+    text = "\n".join(
+        "\n".join((section.heading, section.purpose, section.reader_question))
+        for section in sections
+    )
+    return regulatory_requirement_assertion_errors(requirement=requirement, text=text)
 
 
 def canonicalize_regulatory_section_evidence(

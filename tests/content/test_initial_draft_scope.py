@@ -18,6 +18,10 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBlocker,
     ContentPlanningInputBuildResult,
 )
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryDocumentAssertion,
+    ContentRegulatoryRequirement,
+)
 from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
 from wilq.content.workflow.revisions import ContentDraftRevisionPageAssets
 
@@ -124,6 +128,46 @@ def test_document_scope_accepts_the_same_excluded_section_projection() -> None:
     )
 
     assert _document_scope_errors(proposal, output) == []
+
+
+def test_document_scope_rejects_a_regulatory_topic_without_its_required_concept() -> None:
+    proposal = _proposal_with_review_required_inventory()
+    proposal.sections[0].regulatory_requirement_ids = ["bdo_records_and_kpo"]
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Tytuł",
+            meta_title="Meta",
+            meta_description="Opis",
+            h1="Nagłówek",
+            lead="Lead",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="section_keep",
+                heading="Sekcja do tekstu",
+                body_markdown="Prowadzenie dokumentacji wymaga sprawdzenia obowiązków.",
+            )
+        ],
+        publish_ready=False,
+    )
+    requirement = ContentRegulatoryRequirement(
+        id="bdo_records_and_kpo",
+        label="ewidencja i KPO",
+        reason="Wymaga źródła urzędowego.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="kpo_before_transport",
+                label="moment sporządzenia KPO",
+                required_any_of=["przed transportem"],
+            )
+        ],
+    )
+
+    assert _document_scope_errors(
+        proposal,
+        output,
+        regulatory_requirements=[requirement],
+    ) == ["regulatory_document_assertion:bdo_records_and_kpo:kpo_before_transport"]
 
 
 def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None:

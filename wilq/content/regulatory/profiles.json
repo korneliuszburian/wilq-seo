@@ -14,42 +14,130 @@
         {
           "id": "bdo_definition",
           "label": "definicja systemu BDO",
-          "reason": "Treść musi poprawnie nazwać Bazę danych o produktach i opakowaniach oraz o gospodarce odpadami, Rejestr i moduły systemu."
+          "reason": "Treść musi poprawnie nazwać Bazę danych o produktach i opakowaniach oraz o gospodarce odpadami, Rejestr i moduły systemu.",
+          "document_assertions": [
+            {
+              "id": "bdo_full_name",
+              "label": "pełna nazwa BDO",
+              "required_any_of": [
+                "Baza danych o produktach i opakowaniach oraz o gospodarce odpadami"
+              ]
+            }
+          ]
         },
         {
           "id": "bdo_registration_scope",
           "label": "kogo może dotyczyć wpis do BDO",
-          "reason": "Treść musi uwzględniać działalność odpadową oraz wskazane przez urząd kategorie produktów, opakowań i innych wprowadzanych wyrobów."
+          "reason": "Treść musi uwzględniać działalność odpadową oraz wskazane przez urząd kategorie produktów, opakowań i innych wprowadzanych wyrobów.",
+          "document_assertions": [
+            {
+              "id": "bdo_scope_products_or_packaging",
+              "label": "kategorie produktów lub opakowań",
+              "required_any_of": ["produkt", "opakowań", "opakowania"]
+            },
+            {
+              "id": "bdo_scope_waste_activity",
+              "label": "działalność związana z odpadami",
+              "required_any_of": ["odpad"]
+            }
+          ]
         },
         {
           "id": "bdo_exemptions",
           "label": "wyłączenia z wpisu lub ewidencji",
-          "reason": "Treść nie może sugerować, że każdy wytwórca odpadów podlega identycznemu wpisowi albo ewidencji."
+          "reason": "Treść nie może sugerować, że każdy wytwórca odpadów podlega identycznemu wpisowi albo ewidencji.",
+          "document_assertions": [
+            {
+              "id": "bdo_exemption_condition",
+              "label": "warunkowe wyłączenia",
+              "required_any_of": ["zwoln", "wyłączen"]
+            }
+          ]
         },
         {
           "id": "bdo_registration_and_updates",
           "label": "wpis i aktualizacja BDO",
-          "reason": "Treść nie może opisywać rejestracji lub zmian bez oficjalnej podstawy."
+          "reason": "Treść nie może opisywać rejestracji lub zmian bez oficjalnej podstawy.",
+          "document_assertions": [
+            {
+              "id": "bdo_registration_application",
+              "label": "wniosek o wpis",
+              "required_any_of": ["wniosek"]
+            },
+            {
+              "id": "bdo_registration_update",
+              "label": "aktualizacja danych",
+              "required_any_of": ["aktualiz"]
+            }
+          ]
         },
         {
           "id": "bdo_records_and_kpo",
           "label": "ewidencja i KPO",
-          "reason": "Treść o ewidencji oraz KPO wymaga aktualnego źródła urzędowego, w tym właściwego momentu sporządzenia KPO."
+          "reason": "Treść o ewidencji oraz KPO wymaga aktualnego źródła urzędowego, w tym właściwego momentu sporządzenia KPO.",
+          "document_assertions": [
+            {
+              "id": "bdo_kpo_name",
+              "label": "Karta Przekazania Odpadów",
+              "required_any_of": ["KPO", "Karta Przekazania Odpadów"]
+            },
+            {
+              "id": "bdo_kpo_timing",
+              "label": "moment sporządzenia KPO",
+              "required_any_of": ["przed transportem", "przed rozpoczęciem transportu"]
+            }
+          ]
         },
         {
           "id": "bdo_reporting",
           "label": "sprawozdawczość BDO",
-          "reason": "Terminy, zakres i właściwość sprawozdawczości nie mogą być uogólniane bez źródła."
+          "reason": "Terminy, zakres i właściwość sprawozdawczości nie mogą być uogólniane bez źródła.",
+          "document_assertions": [
+            {
+              "id": "bdo_reporting_name",
+              "label": "sprawozdawczość",
+              "required_any_of": ["sprawozd"]
+            },
+            {
+              "id": "bdo_reporting_deadline",
+              "label": "termin 15 marca",
+              "required_any_of": ["15 marca"]
+            },
+            {
+              "id": "bdo_reporting_marshal",
+              "label": "właściwy marszałek województwa",
+              "required_any_of": ["marszałk"]
+            }
+          ]
         },
         {
           "id": "bdo_access_and_account",
           "label": "dostęp do konta BDO",
-          "reason": "Instrukcje logowania i ról wymagają oficjalnej instrukcji systemu."
+          "reason": "Instrukcje logowania i ról wymagają oficjalnej instrukcji systemu.",
+          "document_assertions": [
+            {
+              "id": "bdo_access_login",
+              "label": "logowanie przez login.gov.pl",
+              "required_any_of": ["login.gov.pl"]
+            },
+            {
+              "id": "bdo_access_roles",
+              "label": "role lub uprawnienia konta",
+              "required_any_of": ["rola", "uprawnien"]
+            }
+          ]
         },
         {
           "id": "bdo_risks_and_sanctions",
           "label": "ryzyka i sankcje",
-          "reason": "Opis ryzyk lub sankcji wymaga dokładnej, sprawdzonej podstawy."
+          "reason": "Opis ryzyk lub sankcji wymaga dokładnej, sprawdzonej podstawy.",
+          "document_assertions": [
+            {
+              "id": "bdo_sanctions",
+              "label": "sankcje lub konsekwencje",
+              "required_any_of": ["sankcj", "konsekwencj"]
+            }
+          ]
         }
       ]
     }

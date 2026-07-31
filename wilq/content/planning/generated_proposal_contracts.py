@@ -9,6 +9,7 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBlockerCode,
     ContentPlanningInputSummary,
 )
+from wilq.content.regulatory.policy import regulatory_requirement_assertion_errors
 from wilq.content.workflow.planning import (
     ContentPlanningConditionalHypothesis,
     ContentPlanningCtaBlock,
@@ -79,6 +80,25 @@ def regulatory_response_lineage_errors(
             for section in matching_sections
         ):
             errors.append(f"regulatory_evidence:{requirement_id}")
+        requirement = next(
+            (
+                item
+                for item in input_summary.regulatory_requirements
+                if item.id == requirement_id
+            ),
+            None,
+        )
+        if requirement is not None:
+            text = "\n".join(
+                "\n".join((section.heading, section.purpose, section.reader_question))
+                for section in matching_sections
+            )
+            errors.extend(
+                regulatory_requirement_assertion_errors(
+                    requirement=requirement,
+                    text=text,
+                )
+            )
     return errors
 
 

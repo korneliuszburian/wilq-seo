@@ -12,6 +12,7 @@ from wilq.content.planning.proposal_lineage import (
 )
 from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
+    ContentRegulatoryDocumentAssertion,
     ContentRegulatoryRequirement,
     ContentRegulatoryRequirementCoverage,
 )
@@ -105,6 +106,50 @@ def test_declared_regulatory_requirement_gets_its_exact_server_owned_evidence() 
 
     assert normalized.sections[0].evidence_ids == ["ev_scope", "ev_deadline"]
     assert regulatory_planning_lineage_errors(planning_input, normalized) == []
+
+
+def test_regulatory_requirement_needs_its_observable_document_concept() -> None:
+    requirement = ContentRegulatoryRequirement(
+        id="regulated_deadline",
+        label="termin obowiązku",
+        reason="Wymaga źródła urzędowego.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="deadline_date",
+                label="konkretny termin",
+                required_any_of=["15 marca"],
+            )
+        ],
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        regulatory_coverage=ContentRegulatoryCoverage(
+            profile_id="regulated_service",
+            profile_version="2026-07",
+            requirements=[requirement],
+            requirement_coverage=[
+                ContentRegulatoryRequirementCoverage(
+                    requirement_id="regulated_deadline",
+                    source_fact_ids=["official_source"],
+                    evidence_ids=["ev_deadline"],
+                )
+            ],
+        )
+    )
+    generic = ContentPlanningModelSection.model_construct(
+        heading="Gdzie skonsultować obowiązki?",
+        purpose="Pomóż czytelnikowi ustalić dalszy krok.",
+        reader_question="Kogo zapytać?",
+        regulatory_requirement_ids=["regulated_deadline"],
+        evidence_ids=["ev_deadline"],
+    )
+    explicit = generic.model_copy(
+        update={"purpose": "Wyjaśnij termin złożenia sprawozdania do 15 marca."}
+    )
+
+    assert regulatory_planning_lineage_errors(planning_input, _output(generic)) == [
+        "regulatory_document_assertion:regulated_deadline:deadline_date"
+    ]
+    assert regulatory_planning_lineage_errors(planning_input, _output(explicit)) == []
 
 
 def test_public_response_lineage_rejects_missing_unknown_or_wrong_regulatory_evidence() -> None:
