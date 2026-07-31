@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.knowledge.source_facts import ContentSourceFact
+from wilq.evidence.registry import list_evidence_by_ids
 
 
 class ContentRegulatoryRequirement(BaseModel):
@@ -178,6 +179,15 @@ def _fact_covers_profile(
         age_days = (as_of - date.fromisoformat(fact.freshness_date)).days
     except ValueError:
         return False
+    evidence_by_id = {
+        evidence.id: evidence for evidence in list_evidence_by_ids(fact.evidence_ids)
+    }
+    evidence_is_exact = bool(fact.evidence_ids) and all(
+        evidence_id in evidence_by_id
+        and evidence_by_id[evidence_id].source_id == fact.source_id
+        and evidence_by_id[evidence_id].raw_ref == fact.source_url_or_path
+        for evidence_id in fact.evidence_ids
+    )
     return (
         fact.review_status == "approved"
         and fact.source_type == "legal_update"
@@ -188,6 +198,7 @@ def _fact_covers_profile(
         and bool(required_ids.intersection(fact.regulatory_requirement_ids))
         and urlsplit(fact.source_url_or_path).hostname in profile.official_source_hosts
         and 0 <= age_days <= profile.max_source_age_days
+        and evidence_is_exact
     )
 
 

@@ -7,7 +7,10 @@ from wilq.content.planning.dynamic_input import (
     content_planning_input_summary,
     planning_generation_blockers,
 )
-from wilq.content.planning.generated_proposal_contracts import ContentPlanningProposalResponse
+from wilq.content.planning.generated_proposal_contracts import (
+    ContentPlanningProposalResponse,
+    regulatory_response_lineage_errors,
+)
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.proposal_quality import (
     inventory_mapping_has_unresolved_rows,
@@ -141,10 +144,17 @@ def _response_for_current_proposal(
                 )
             ],
         )
-    if (
-        not persisted_inventory_mapping_is_current(planning_input, latest)
-        or inventory_mapping_has_unresolved_rows(latest)
-    ):
+    regulatory_blocked = _regulatory_lineage_blocked_response(
+        planning_input,
+        service_card_id=service_card_id,
+        input_summary=input_summary,
+        proposal=latest,
+    )
+    if regulatory_blocked is not None:
+        return regulatory_blocked
+    if not persisted_inventory_mapping_is_current(
+        planning_input, latest
+    ) or inventory_mapping_has_unresolved_rows(latest):
         return ContentPlanningProposalResponse(
             status="stale",
             work_item_id=planning_input.work_item_id,
@@ -172,4 +182,34 @@ def _response_for_current_proposal(
         proposal=latest,
         runtime=_persisted_runtime_trace(latest),
         safe_next_step="Sprawdź strukturę i przygotuj pełny tekst z tej dokładnej wersji planu.",
+    )
+
+
+def _regulatory_lineage_blocked_response(
+    planning_input: ContentPlanningInput,
+    *,
+    service_card_id: str,
+    input_summary: ContentPlanningInputSummary,
+    proposal: ContentPlanningProposal,
+) -> ContentPlanningProposalResponse | None:
+    regulatory_errors = regulatory_response_lineage_errors(input_summary, proposal)
+    if not regulatory_errors:
+        return None
+    from wilq.content.planning.generated_proposal import _blocked_response, _blocker
+
+    return _blocked_response(
+        planning_input.work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=planning_input.planning_input_digest,
+        input_summary=input_summary,
+        blockers=[
+            _blocker(
+                "lineage_mismatch",
+                "Zapisany plan nie ma pełnej lineage źródeł urzędowych",
+                "Wymagania regulacyjne lub ich dokładne dowody nie są zgodne "
+                "z bieżącym profilem planowania.",
+                "Wygeneruj plan ponownie z aktualnych, zatwierdzonych źródeł urzędowych.",
+                source_codes=regulatory_errors,
+            )
+        ],
     )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from wilq.connectors.registry import list_connector_statuses
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.operator_labels import source_connector_labels
 from wilq.schemas import ConnectorRefreshRun, Evidence, FreshnessState
 from wilq.storage.local_state import local_state_store
@@ -60,7 +61,14 @@ def list_evidence() -> list[Evidence]:
     metric_evidence = [
         evidence for evidence in _metric_fact_evidence() if evidence.id not in known_evidence_ids
     ]
-    return [*service_profile_evidence, *connector_evidence, *refresh_evidence, *metric_evidence]
+    regulatory_evidence = _official_regulatory_source_fact_evidence()
+    return [
+        *service_profile_evidence,
+        *connector_evidence,
+        *refresh_evidence,
+        *metric_evidence,
+        *regulatory_evidence,
+    ]
 
 
 def list_evidence_by_ids(evidence_ids: list[str]) -> list[Evidence]:
@@ -109,11 +117,49 @@ def list_evidence_by_ids(evidence_ids: list[str]) -> list[Evidence]:
     for evidence in _metric_fact_evidence_for_ids(missing_metric_evidence_ids):
         evidence_by_id.setdefault(evidence.id, evidence)
 
+    for evidence in _official_regulatory_source_fact_evidence():
+        if evidence.id in requested_id_set:
+            evidence_by_id.setdefault(evidence.id, evidence)
+
     return [
         evidence_by_id[evidence_id]
         for evidence_id in requested_ids
         if evidence_id in evidence_by_id
     ]
+
+
+def _official_regulatory_source_fact_evidence() -> list[Evidence]:
+    """Project approved official facts into resolvable, read-only evidence."""
+
+    evidence: list[Evidence] = []
+    for fact in ekologus_source_facts():
+        if not (
+            fact.review_status == "approved"
+            and fact.official_source
+            and fact.regulatory_profile_id
+            and fact.regulatory_profile_version
+        ):
+            continue
+        for evidence_id in fact.evidence_ids:
+            evidence.append(
+                Evidence(
+                    id=evidence_id,
+                    title_label=fact.target_card_title,
+                    source_connector=fact.source_connectors[0],
+                    source_type="official_regulatory_source_fact",
+                    source_id=fact.source_id,
+                    freshness=FreshnessState(
+                        state="fresh",
+                        notes=(
+                            "Zatwierdzone źródło urzędowe powiązane z profilem regulacyjnym "
+                            f"{fact.regulatory_profile_id}@{fact.regulatory_profile_version}."
+                        ),
+                    ),
+                    summary=fact.extracted_fact,
+                    raw_ref=fact.source_url_or_path,
+                )
+            )
+    return evidence
 
 
 def get_evidence(evidence_id: str) -> Evidence | None:

@@ -65,7 +65,15 @@ def regulatory_planning_lineage_errors(
         item.requirement_id: set(item.evidence_ids)
         for item in planning_input.regulatory_coverage.requirement_coverage
     }
+    required_ids = set(required_evidence)
     errors: list[str] = []
+    unknown_requirements = {
+        requirement_id
+        for section in output.sections
+        for requirement_id in section.regulatory_requirement_ids
+        if requirement_id not in required_ids
+    }
+    errors.extend(f"regulatory_requirement_unknown:{requirement_id}" for requirement_id in sorted(unknown_requirements))
     for requirement in planning_input.regulatory_coverage.requirements:
         matching_sections = [
             section

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
+import wilq.content.regulatory.policy as regulatory_policy
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.regulatory.planning import regulatory_planning_source_facts
 from wilq.content.regulatory.policy import (
@@ -10,6 +11,7 @@ from wilq.content.regulatory.policy import (
     regulatory_content_coverage,
     regulatory_content_profile,
 )
+from wilq.schemas import Evidence, FreshnessState
 
 
 def _profile() -> ContentRegulatoryProfile:
@@ -66,11 +68,24 @@ def _official_fact(
     )
 
 
-def test_coverage_is_exactly_bound_to_profile_version_service_and_evidence() -> None:
+def _evidence_for(fact: ContentSourceFact) -> Evidence:
+    return Evidence(
+        id=fact.evidence_ids[0],
+        source_connector=fact.source_connectors[0],
+        source_type="official_regulatory_source_fact",
+        source_id=fact.source_id,
+        freshness=FreshnessState(state="fresh"),
+        summary=fact.extracted_fact,
+        raw_ref=fact.source_url_or_path,
+    )
+
+
+def test_coverage_is_exactly_bound_to_profile_version_service_and_evidence(monkeypatch) -> None:
     profile = _profile()
     fact = _official_fact(
         requirement_ids=["water_permit_scope", "water_permit_deadlines"],
     )
+    monkeypatch.setattr(regulatory_policy, "list_evidence_by_ids", lambda _: [_evidence_for(fact)])
 
     coverage = regulatory_content_coverage(
         service_card_id="service_water_permit",
@@ -101,13 +116,41 @@ def test_coverage_is_exactly_bound_to_profile_version_service_and_evidence() -> 
     ]
 
 
-def test_coverage_fails_closed_for_wrong_service_version_or_stale_source() -> None:
+def test_coverage_rejects_unresolvable_or_mismatched_official_evidence(monkeypatch) -> None:
+    profile = _profile()
+    fact = _official_fact(requirement_ids=["water_permit_scope"])
+    monkeypatch.setattr(regulatory_policy, "list_evidence_by_ids", lambda _: [])
+    assert not regulatory_content_coverage(
+        service_card_id="service_water_permit",
+        source_facts=(fact,),
+        profiles=(profile,),
+        as_of=date(2026, 7, 31),
+    ).complete
+
+    mismatched = _evidence_for(fact).model_copy(update={"source_id": "other_fact"})
+    monkeypatch.setattr(regulatory_policy, "list_evidence_by_ids", lambda _: [mismatched])
+    assert not regulatory_content_coverage(
+        service_card_id="service_water_permit",
+        source_facts=(fact,),
+        profiles=(profile,),
+        as_of=date(2026, 7, 31),
+    ).complete
+
+
+def test_coverage_fails_closed_for_wrong_service_version_or_stale_source(monkeypatch) -> None:
     profile = _profile()
     requirements = ["water_permit_scope", "water_permit_deadlines"]
     invalid_facts = (
         _official_fact(requirement_ids=requirements, service_card_ids=["other_service"]),
         _official_fact(requirement_ids=requirements, version="2026-06"),
         _official_fact(requirement_ids=requirements, freshness_date="2025-01-01"),
+    )
+    monkeypatch.setattr(
+        regulatory_policy,
+        "list_evidence_by_ids",
+        lambda evidence_ids: (
+            [_evidence_for(_official_fact(requirement_ids=requirements))] if evidence_ids else []
+        ),
     )
 
     for fact in invalid_facts:
@@ -124,9 +167,7 @@ def test_coverage_fails_closed_for_wrong_service_version_or_stale_source() -> No
 
 
 def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
-    profile = regulatory_content_profile(
-        service_card_id="ekologus_service_bdo_reporting"
-    )
+    profile = regulatory_content_profile(service_card_id="ekologus_service_bdo_reporting")
 
     assert profile is not None
     assert profile.id == "bdo"

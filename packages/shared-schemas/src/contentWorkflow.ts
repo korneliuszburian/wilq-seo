@@ -3669,6 +3669,11 @@ export const ContentPlanningInputSummarySchema = z.object({
   regulatory_profile_version: z.string().min(1).nullable().optional(),
   regulatory_requirement_ids: z.array(z.string().min(1)).default([]),
   regulatory_source_fact_ids: z.array(z.string().min(1)).default([]),
+  regulatory_requirement_coverage: z.array(z.object({
+    requirement_id: z.string().min(1),
+    source_fact_ids: z.array(z.string().min(1)).default([]),
+    evidence_ids: z.array(z.string().min(1)).default([])
+  })).default([]),
   evidence_id_count: z.number().int().nonnegative(),
   knowledge_card_count: z.number().int().nonnegative(),
   measurement_metrics: z.array(z.string()).default([]),
@@ -3738,6 +3743,26 @@ export const ContentPlanningInputSummarySchema = z.object({
         message: "Refresh planning requires existing-page inventory."
       });
     }
+  }
+  const profileBound = summary.regulatory_profile_id != null || summary.regulatory_profile_version != null;
+  if (profileBound) {
+    if (!summary.regulatory_profile_id || !summary.regulatory_profile_version) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_profile_id"], message: "Regulatory planning summary requires exact profile identity." });
+    }
+    const required = new Set(summary.regulatory_requirement_ids);
+    const coverage = new Map(summary.regulatory_requirement_coverage.map((item) => [item.requirement_id, item]));
+    if (!required.size || coverage.size !== required.size || [...required].some((id) => !coverage.has(id))) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Regulatory planning summary requires exact coverage for every requirement." });
+    } else if ([...coverage.values()].some((item) => item.source_fact_ids.length === 0 || item.evidence_ids.length === 0)) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Regulatory planning summary requires exact evidence coverage." });
+    } else {
+      const coveredSourceFactIds = new Set([...coverage.values()].flatMap((item) => item.source_fact_ids));
+      if (coveredSourceFactIds.size !== summary.regulatory_source_fact_ids.length || summary.regulatory_source_fact_ids.some((id) => !coveredSourceFactIds.has(id))) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_source_fact_ids"], message: "Regulatory planning summary requires exact covered source-fact IDs." });
+      }
+    }
+  } else if (summary.regulatory_requirement_ids.length || summary.regulatory_source_fact_ids.length || summary.regulatory_requirement_coverage.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Unprofiled planning summary cannot carry regulatory coverage." });
   }
 });
 
@@ -3833,6 +3858,24 @@ export const ContentPlanningProposalResponseSchema = z.object({
       path: ["proposal"],
       message: "Planning response must match the nested exact proposal."
     });
+  }
+  if (response.proposal && response.input_summary?.regulatory_profile_id) {
+    const coverage = new Map(response.input_summary.regulatory_requirement_coverage.map((item) => [item.requirement_id, new Set(item.evidence_ids)]));
+    const required = new Set(response.input_summary.regulatory_requirement_ids);
+    const sectionRequirements = new Set(response.proposal.sections.flatMap((section) => section.regulatory_requirement_ids));
+    for (const requirementId of sectionRequirements) {
+      if (!required.has(requirementId)) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response cannot carry an unknown regulatory requirement." });
+      }
+    }
+    for (const requirementId of required) {
+      const sections = response.proposal.sections.filter((section) => section.regulatory_requirement_ids.includes(requirementId));
+      if (!sections.length) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response requires every regulatory requirement." });
+      } else if (!sections.some((section) => section.evidence_ids.some((evidenceId) => coverage.get(requirementId)?.has(evidenceId)))) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response requires exact regulatory evidence." });
+      }
+    }
   }
   if (response.planning_workspace) {
     if (response.status !== "ready" || !response.proposal) {

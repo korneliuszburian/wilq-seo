@@ -829,6 +829,50 @@ describe("ContentPlanningProposalResponseSchema", () => {
 
     const parsed = ContentPlanningProposalResponseSchema.parse(response);
     expect(parsed.input_summary?.metric_comparisons?.[0]?.comparison_values.clicks).toBe(19);
+    const regulatoryResponse = {
+      ...response,
+      input_summary: {
+        ...response.input_summary,
+        regulatory_profile_id: "bdo",
+        regulatory_profile_version: "2026-07",
+        regulatory_requirement_ids: ["bdo_scope"],
+        regulatory_source_fact_ids: ["official_bdo_scope"],
+        regulatory_requirement_coverage: [{
+          requirement_id: "bdo_scope",
+          source_fact_ids: ["official_bdo_scope"],
+          evidence_ids: ["ev_1"]
+        }]
+      },
+      proposal: {
+        ...response.proposal,
+        sections: [{
+          ...response.proposal.sections[0],
+          regulatory_requirement_ids: ["bdo_scope"]
+        }]
+      }
+    };
+    expect(ContentPlanningProposalResponseSchema.safeParse(regulatoryResponse).success).toBe(true);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...regulatoryResponse,
+      proposal: {
+        ...regulatoryResponse.proposal,
+        sections: [{ ...regulatoryResponse.proposal.sections[0], regulatory_requirement_ids: [] }]
+      }
+    }).success).toBe(false);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...regulatoryResponse,
+      proposal: {
+        ...regulatoryResponse.proposal,
+        sections: [{ ...regulatoryResponse.proposal.sections[0], regulatory_requirement_ids: ["unknown_requirement"] }]
+      }
+    }).success).toBe(false);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...regulatoryResponse,
+      proposal: {
+        ...regulatoryResponse.proposal,
+        sections: [{ ...regulatoryResponse.proposal.sections[0], evidence_ids: ["ev_wrong"] }]
+      }
+    }).success).toBe(false);
     const scopeDecision = {
       decision_id: "planning_decision_1",
       decision_number: 1,
