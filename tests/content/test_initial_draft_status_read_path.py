@@ -435,3 +435,49 @@ def test_initial_draft_status_ignores_newer_job_for_another_service(monkeypatch)
 
     assert response.status_code == 200
     assert response.json()["blockers"][0]["code"] == "draft_not_started"
+
+
+def test_initial_draft_status_exposes_safe_document_gate_details(monkeypatch) -> None:
+    app = FastAPI()
+    endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
+    proposal = SimpleNamespace(
+        proposal_id="proposal", planning_input_digest="1" * 64,
+        service_card_id="service", generation_status="codex_generated",
+    )
+    run = SimpleNamespace(
+        hook="content_initial_full_draft", used_endpoints=[endpoint],
+        started_at=datetime(2026, 7, 31, tzinfo=UTC), status="blocked", id="run",
+        error="document_scope_mismatch|regulatory_document_assertion:bdo_kpo:before_transport",
+        proposal_id="proposal", planning_input_digest="1" * 64,
+    )
+
+    class LocalState:
+        def list_codex_runs(self):
+            return [run]
+
+    class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return proposal
+
+    class WorkflowStore:
+        def load_draft_revision_state(self, _work_item_id: str):
+            return SimpleNamespace(latest_revision=None)
+
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_planning_proposal_store",
+        lambda: ProposalStore(),
+    )
+    monkeypatch.setattr(content_initial_draft, "content_workflow_store", lambda: WorkflowStore())
+    content_initial_draft.register_content_initial_draft_route(
+        app,
+        snapshot_loader=lambda _work_item_id: (_ for _ in ()).throw(AssertionError()),
+    )
+
+    body = TestClient(app).get(endpoint).json()
+
+    assert body["blockers"][0]["code"] == "document_scope_mismatch"
+    assert body["blockers"][0]["source_codes"] == [
+        "regulatory_document_assertion:bdo_kpo:before_transport"
+    ]

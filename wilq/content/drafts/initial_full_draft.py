@@ -74,7 +74,7 @@ def generate_initial_full_draft(
     output, trace = runtime_result
     blocker = _output_blocker(prepared, output)
     if blocker is not None:
-        _finish_run(run_store, run, status="blocked", error=blocker.code)
+        _finish_run(run_store, run, status="blocked", error=_run_error(blocker))
         return _blocked_response(
             snapshot,
             proposal=prepared.proposal,
@@ -638,6 +638,16 @@ def _finish_run(
 ) -> CodexRun:
     return run_store.save_codex_run(
         run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
+    )
+
+
+def _run_error(blocker: ContentInitialDraftBlocker) -> str:
+    """Persist one safe blocker code with bounded actionable source codes."""
+
+    return (
+        blocker.code
+        if not blocker.source_codes
+        else f"{blocker.code}|{','.join(blocker.source_codes[:12])}"
     )
 
 
