@@ -434,11 +434,17 @@ class MetricFact(BaseModel):
             "period_label": "etykieta okresu",
             "source_connector_label": "etykieta źródła",
             "evidence_id": "identyfikator dowodu",
+            "previous_evidence_id": "identyfikator poprzedniego dowodu",
+            "previous_period_label": "etykieta poprzedniego okresu",
         }
         explicit_blanks = [
             label
             for field, label in explicit_context.items()
-            if field in self.model_fields_set and not getattr(self, field).strip()
+            if (
+                field in self.model_fields_set
+                and isinstance(getattr(self, field), str)
+                and not getattr(self, field).strip()
+            )
         ]
         if explicit_blanks:
             raise ValueError(

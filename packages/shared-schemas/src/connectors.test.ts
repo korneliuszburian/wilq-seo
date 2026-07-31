@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DiagnosticDataReadinessSchema } from "./connectors";
+import { DiagnosticDataReadinessSchema, MetricFactSchema } from "./connectors";
 
 const observedZero = {
   name: "localo_competitor_change_count",
@@ -69,6 +69,24 @@ describe("DiagnosticDataReadinessSchema", () => {
           refresh_allowed: false
         }).success
       ).toBe(false);
+    }
+  });
+
+  it("rejects blank prior-comparison lineage", () => {
+    const factWithComparison = {
+      ...observedZero,
+      previous_evidence_id: "ev_localo_previous",
+      previous_period_label: "poprzedni odczyt Localo",
+      delta: 3,
+      trend: "up" as const
+    };
+
+    for (const field of ["previous_evidence_id", "previous_period_label"] as const) {
+      for (const blankValue of ["", "   "]) {
+        expect(
+          MetricFactSchema.safeParse({ ...factWithComparison, [field]: blankValue }).success
+        ).toBe(false);
+      }
     }
   });
 });

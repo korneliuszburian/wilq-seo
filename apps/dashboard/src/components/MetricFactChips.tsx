@@ -115,8 +115,8 @@ function hasExactComparison(fact: MetricFact) {
   return Boolean(
     fact.delta !== null &&
       fact.delta !== undefined &&
-      fact.previous_evidence_id &&
-      fact.previous_period_label
+      fact.previous_evidence_id?.trim() &&
+      fact.previous_period_label?.trim()
   );
 }
 

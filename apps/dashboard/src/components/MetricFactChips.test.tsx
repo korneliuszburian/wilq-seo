@@ -228,4 +228,46 @@ describe("MetricFactChips", () => {
     expect(within(container).getByText("zmiana: kierunek niepotwierdzony")).toBeInTheDocument();
     expect(container.textContent).not.toContain("zmiana: brak");
   });
+
+  it.each([
+    ["previous_evidence_id", ""],
+    ["previous_evidence_id", "   "],
+    ["previous_period_label", ""],
+    ["previous_period_label", "   "]
+  ] as const)("does not present a delta without exact prior lineage: %s=%j", (field, blankValue) => {
+    const comparison = {
+      previous_evidence_id: "ev_refresh_ga4_previous",
+      previous_period_label: "poprzednie 28 dni",
+      [field]: blankValue
+    };
+    const { container } = render(
+      <MetricFactChips
+        facts={[
+          {
+            name: "ga4_engaged_sessions",
+            metric_label: "sesje z zaangażowaniem",
+            value: 14,
+            period: "last_28d",
+            period_label: "ostatnie 28 dni",
+            source_connector: "google_analytics_4",
+            source_connector_label: "GA4",
+            evidence_id: "ev_refresh_ga4_test",
+            dimensions: {},
+            dimension_labels: {},
+            dimension_value_labels: {},
+            unit: null,
+            previous_evidence_id: comparison.previous_evidence_id,
+            previous_period: "last_28d",
+            previous_period_label: comparison.previous_period_label,
+            delta: 3,
+            delta_percent: null,
+            trend: "up",
+            freshness_label: ""
+          }
+        ]}
+      />
+    );
+
+    expect(container.textContent).not.toContain("zmiana:");
+  });
 });

@@ -68,10 +68,17 @@ def test_observed_zero_is_ready_factual_metric_with_trace() -> None:
 
 @pytest.mark.parametrize(
     "field",
-    ["evidence_id", "metric_label", "period_label", "source_connector_label"],
+    [
+        "evidence_id",
+        "metric_label",
+        "period_label",
+        "source_connector_label",
+        "previous_evidence_id",
+        "previous_period_label",
+    ],
 )
-def test_metric_fact_rejects_blank_marketer_context(field: str) -> None:
-    payload = {
+def test_metric_fact_rejects_explicit_blank_marketer_or_comparison_context(field: str) -> None:
+    valid_payload = {
         "name": "localo_competitor_change_count",
         "metric_label": "Zmiany konkurencji",
         "value": 0,
@@ -80,9 +87,10 @@ def test_metric_fact_rejects_blank_marketer_context(field: str) -> None:
         "source_connector": "localo",
         "source_connector_label": "Localo",
         "evidence_id": "ev_localo_observed_zero",
+        "previous_evidence_id": "ev_localo_previous",
+        "previous_period_label": "poprzedni odczyt Localo",
     }
     for blank_value in ["", "   "]:
-        payload[field] = blank_value
-
+        payload = {**valid_payload, field: blank_value}
         with pytest.raises(ValueError, match="pustego kontekstu marketera"):
             MetricFact(**payload)
