@@ -106,6 +106,7 @@ def _build_editor_save_command(
             faq=latest_revision.faq,
             cta_blocks=latest_revision.cta_blocks,
             internal_links=latest_revision.internal_links,
+            official_source_references=latest_revision.official_source_references,
             proposal_metadata=(
                 None
                 if request.correction_reason == "canonical_html_alignment"

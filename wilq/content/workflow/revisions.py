@@ -31,7 +31,10 @@ ContentDraftRevisionDecision = Literal[
     "rejected",
     "deferred",
 ]
-ContentDraftRevisionCorrectionReason = Literal["canonical_html_alignment"]
+ContentDraftRevisionCorrectionReason = Literal[
+    "canonical_html_alignment",
+    "official_source_lineage_rebase",
+]
 ContentDraftRevisionDocumentKind = Literal["refresh_existing", "new_page"]
 _UNSAFE_INTERNAL_LINK_ANCHOR_CHARACTERS = frozenset("[]<>\\\r\n\t")
 _INLINE_LINK_MARKERS = (

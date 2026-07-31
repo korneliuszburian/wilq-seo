@@ -2657,7 +2657,7 @@ export const ContentDraftRevisionSchema = z.object({
   internal_links: z.array(ContentDraftRevisionInternalLinkSchema).default([]),
   official_source_references: z.array(ContentDraftRevisionOfficialSourceReferenceSchema).default([]),
   proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
-  correction_reason: z.literal("canonical_html_alignment").nullable().optional(),
+  correction_reason: z.enum(["canonical_html_alignment", "official_source_lineage_rebase"]).nullable().optional(),
   publish_ready: z.literal(false),
   created_by: z.string().refine((value) => value.trim().length > 0),
   created_at: z.string()
@@ -2996,7 +2996,7 @@ export const ContentDraftRevisionSaveRequestSchema = z.object({
   base_revision_id: z.string().nullable(),
   title: z.string().refine((value) => value.trim().length > 0),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
-  correction_reason: z.literal("canonical_html_alignment").nullable().optional(),
+  correction_reason: z.enum(["canonical_html_alignment", "official_source_lineage_rebase"]).nullable().optional(),
   created_by: z.string().refine((value) => value.trim().length > 0)
 });
 
@@ -3004,6 +3004,11 @@ export const ContentDraftRevisionSaveResponseSchema = z.object({
   status: z.enum(["created", "idempotent"]),
   revision: ContentDraftRevisionSchema,
   workspace: ContentDraftRevisionWorkspaceSchema
+});
+
+export const ContentOfficialSourceLineageRebaseRequestSchema = z.object({
+  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  requested_by: z.string().trim().min(1)
 });
 
 export const ContentDraftRevisionReviewRequestSchema = z
@@ -3144,7 +3149,8 @@ export const ContentDraftRevisionConflictSchema = z.object({
     "revision_not_found",
     "stale_revision",
     "stale_review",
-    "digest_mismatch"
+    "digest_mismatch",
+    "official_source_lineage_unavailable"
   ]),
   current_revision_id: z.string().nullable(),
   current_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
@@ -4996,6 +5002,9 @@ export type ContentDraftRevisionSaveRequest = z.input<
 >;
 export type ContentDraftRevisionSaveResponse = z.infer<
   typeof ContentDraftRevisionSaveResponseSchema
+>;
+export type ContentOfficialSourceLineageRebaseRequest = z.input<
+  typeof ContentOfficialSourceLineageRebaseRequestSchema
 >;
 export type ContentDraftRevisionReviewRequest = z.input<
   typeof ContentDraftRevisionReviewRequestSchema

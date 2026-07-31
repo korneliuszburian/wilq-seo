@@ -15,6 +15,7 @@ import {
   CommandCenterResponseSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
+  ContentOfficialSourceLineageRebaseRequestSchema,
   ContentRevisionRepairProposalRequestSchema,
   ContentRevisionRepairProposalResponseSchema,
   ContentDiagnosticsResponseSchema,
@@ -42,6 +43,7 @@ import {
   ContentNewPageRevisionReviewConflictSchema,
   ContentNewPageRevisionReviewResponseSchema,
   ContentDraftRevisionConflictSchema,
+  ContentDraftRevisionSaveResponseSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionReviewResponseSchema,
   ContentEditorialIntegrityReportSchema,
@@ -107,6 +109,7 @@ import {
   type CommandCenterResponse,
   type ContentInitialDraftRequest,
   type ContentInitialDraftResponse,
+  type ContentOfficialSourceLineageRebaseRequest,
   type ContentRevisionRepairProposalRequest,
   type ContentRevisionRepairProposalResponse,
   type ContentDiagnosticsResponse,
@@ -138,6 +141,7 @@ import {
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
   type ContentDraftRevisionConflict,
+  type ContentDraftRevisionSaveResponse,
   type ContentDraftRevisionDecision,
   type ContentDraftRevisionReview,
   type ContentDraftRevisionReviewRequest,
@@ -677,6 +681,20 @@ export function saveContentWorkItemDraftRevisionReview(
     ContentDraftRevisionReviewResponseSchema,
     ContentDraftRevisionConflictSchema,
     ContentDraftRevisionReviewRequestSchema.parse(request)
+  );
+}
+
+export function postContentWorkItemOfficialSourceLineageRebase(
+  request: ContentOfficialSourceLineageRebaseRequest,
+  workItemId: string,
+  revisionId: string
+): Promise<ContentDraftRevisionSaveResponse | ContentDraftRevisionConflict> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/official-source-lineage-rebase`;
+  return apiPostWithConflict(
+    path,
+    ContentDraftRevisionSaveResponseSchema,
+    ContentDraftRevisionConflictSchema,
+    ContentOfficialSourceLineageRebaseRequestSchema.parse(request)
   );
 }
 

@@ -79,6 +79,7 @@ ContentDraftRevisionPublicConflictCode = Literal[
     "stale_revision",
     "stale_review",
     "digest_mismatch",
+    "official_source_lineage_unavailable",
 ]
 
 
@@ -503,6 +504,21 @@ class ContentDraftRevisionSaveRequest(BaseModel):
             raise ValueError("Draft revision requires a visible creator identifier.")
         if any(section.content_html is None for section in self.sections):
             raise ValueError("Workshop saves require canonical content_html for every section.")
+        return self
+
+
+class ContentOfficialSourceLineageRebaseRequest(BaseModel):
+    """Narrow command for replacing an unreviewed document's source lineage."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    expected_revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    requested_by: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_visible_requester(self) -> ContentOfficialSourceLineageRebaseRequest:
+        if not self.requested_by.strip():
+            raise ValueError("Official-source lineage rebase requires a visible requester.")
         return self
 
 

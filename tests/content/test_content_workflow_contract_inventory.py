@@ -142,6 +142,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ): ContentDraftRevisionSaveResponse,
     (
         "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/official-source-lineage-rebase",
+    ): ContentDraftRevisionSaveResponse,
+    (
+        "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/repair-proposal",
     ): ContentRevisionRepairProposalResponse,
     (

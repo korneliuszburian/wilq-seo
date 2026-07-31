@@ -12,7 +12,9 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
     ContentInitialDraftSectionOutput,
 )
-from wilq.content.drafts.initial_full_draft_document import _official_source_references
+from wilq.content.drafts.initial_full_draft_document import (
+    official_source_references_for_planning_input,
+)
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import (
     _regulatory_draft_directive,
@@ -184,7 +186,7 @@ def test_initial_draft_projects_only_exact_approved_official_sources() -> None:
     )
     planning_input = ContentPlanningInput.model_construct(regulatory_coverage=coverage)
 
-    assert [item.model_dump() for item in _official_source_references(planning_input)] == [
+    assert [item.model_dump() for item in official_source_references_for_planning_input(planning_input)] == [
         {
             "source_fact_id": approved_fact.source_id,
             "source_url": approved_fact.source_url_or_path,
@@ -197,7 +199,7 @@ def test_initial_draft_projects_only_exact_approved_official_sources() -> None:
 
     incomplete = coverage.model_copy(update={"requirement_coverage": []})
     with pytest.raises(ValueError, match="complete official-source coverage"):
-        _official_source_references(
+        official_source_references_for_planning_input(
             ContentPlanningInput.model_construct(regulatory_coverage=incomplete)
         )
 

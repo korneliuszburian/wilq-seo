@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 
-import { type ContentDocumentWorkspace } from "../lib/api";
+import { postContentWorkItemOfficialSourceLineageRebase, type ContentDocumentWorkspace } from "../lib/api";
 import { ContentTextPreparationPanel } from "./ContentTextPreparationPanel";
 import { ContentRevisionRepairPanel } from "./ContentRevisionRepairPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
@@ -90,7 +91,7 @@ export function ContentDocumentWorkspaceCanvas({
       <section className="mt-4 grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_18rem]">
         <section className="order-1 min-w-0 rounded-2xl border border-line bg-white p-5 shadow-sm lg:p-7 xl:order-2" data-testid="content-workspace-canvas">
           {view === "source" ? <CurrentSource workspace={workspace} /> : null}
-          {view === "document" ? <CanonicalDocument workspace={workspace} /> : null}
+          {view === "document" ? <CanonicalDocument workspace={workspace} onWorkspaceChanged={onWorkspaceChanged} /> : null}
           {view === "comparison" ? <Comparison workspace={workspace} /> : null}
         </section>
         <aside className="order-2 rounded-2xl border border-line bg-white p-4 shadow-sm xl:order-1" aria-label="Struktura strony">
@@ -156,7 +157,7 @@ function CurrentSource({ workspace }: { workspace: ContentDocumentWorkspace }) {
   </div>;
 }
 
-function CanonicalDocument({ workspace }: { workspace: ContentDocumentWorkspace }) {
+function CanonicalDocument({ workspace, onWorkspaceChanged }: { workspace: ContentDocumentWorkspace; onWorkspaceChanged: () => void }) {
   const preview = workspace.canonical_document.preview;
   if (!preview) return <>
     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Nowa wersja</p>
@@ -171,7 +172,40 @@ function CanonicalDocument({ workspace }: { workspace: ContentDocumentWorkspace 
     <p className="mt-4 text-sm text-slate-600">{preview.sections.length} sekcji · {preview.faq_count} pytań i odpowiedzi · {preview.cta_count} wezwań do działania</p>
     <div className="mt-7 space-y-7">{preview.sections.map((section) => <section key={section.section_id ?? section.heading} className="border-t border-line pt-6"><h3 className="text-xl font-semibold text-ink">{section.heading}</h3><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{section.body_markdown}</p></section>)}</div>
     <OfficialSourceReferences references={workspace.canonical_document.revision?.official_source_references ?? []} />
+    <OfficialSourceLineageRebase workspace={workspace} onWorkspaceChanged={onWorkspaceChanged} />
   </>;
+}
+
+function OfficialSourceLineageRebase({ workspace, onWorkspaceChanged }: { workspace: ContentDocumentWorkspace; onWorkspaceChanged: () => void }) {
+  const revision = workspace.canonical_document.revision;
+  const [message, setMessage] = useState<string | null>(null);
+  const eligible = revision?.schema_version === "wilq_content_draft_revision_v2"
+    && revision.official_source_references.length === 0
+    && (workspace.canonical_document.status === "unreviewed" || workspace.canonical_document.status === "deferred");
+  const rebase = useMutation({
+    mutationFn: () => postContentWorkItemOfficialSourceLineageRebase({
+      expected_revision_digest: revision!.content_digest,
+      requested_by: "wilku"
+    }, workspace.work_item_id, revision!.revision_id),
+    onSuccess: (result) => {
+      if (result.status === "conflict") {
+        setMessage(result.safe_next_step);
+        return;
+      }
+      setMessage("Utworzono nową, niezatwierdzoną rewizję z zapisanymi źródłami urzędowymi. Tekst nie został zmieniony.");
+      onWorkspaceChanged();
+    },
+    onError: () => setMessage("Nie udało się uzupełnić źródeł. Odśwież dokument i spróbuj ponownie.")
+  });
+  if (!eligible) return null;
+  return <section className="mt-8 rounded-xl border border-wait/25 bg-wait/5 p-4" data-testid="content-official-source-lineage-rebase">
+    <p className="font-semibold text-ink">Brakuje zapisanych źródeł urzędowych</p>
+    <p className="mt-1 text-sm leading-6 text-slate-700">WILQ sprawdzi bieżący plan i dopisze nową rewizję z jego źródłami. Nie zmieni tekstu ani WordPressa.</p>
+    <button type="button" className="mt-3 rounded-md bg-action px-3 py-2 text-sm font-semibold text-white disabled:opacity-60" disabled={rebase.isPending} onClick={() => rebase.mutate()}>
+      {rebase.isPending ? "Uzupełniam źródła…" : "Uzupełnij źródła urzędowe"}
+    </button>
+    {message ? <p className="mt-3 text-sm leading-6 text-slate-700">{message}</p> : null}
+  </section>;
 }
 
 function OfficialSourceReferences({

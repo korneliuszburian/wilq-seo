@@ -16,6 +16,9 @@ from apps.api.wilq_api.routers.content_initial_draft import (
 from apps.api.wilq_api.routers.content_new_page_brief import (
     register_content_new_page_brief_routes,
 )
+from apps.api.wilq_api.routers.content_official_source_lineage import (
+    register_content_official_source_lineage_route,
+)
 from apps.api.wilq_api.routers.content_planning_proposals import (
     register_content_planning_proposal_routes,
 )
@@ -54,6 +57,7 @@ def register_content_model_routes(
     register_content_selected_workspace_route(router)
     register_content_editorial_integrity_route(router)
     register_content_revision_repair_route(router, snapshot_loader=snapshot_loader)
+    register_content_official_source_lineage_route(router, snapshot_loader=snapshot_loader)
     register_content_initial_draft_route(router, snapshot_loader=snapshot_loader)
     register_content_new_page_brief_routes(router)
     register_content_revision_html_package_route(router)

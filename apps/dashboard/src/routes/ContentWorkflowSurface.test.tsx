@@ -19,6 +19,7 @@ import {
   getContentOperatorContext,
   getContentDiagnostics,
   postContentWorkItemInitialDraft,
+  postContentWorkItemOfficialSourceLineageRebase,
   postContentWorkItemRevisionRepairProposal,
   saveContentWorkItemDraftRevisionReview,
   type ActionObject,
@@ -53,6 +54,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentOperatorContext: vi.fn(),
     getContentDiagnostics: vi.fn(),
     postContentWorkItemInitialDraft: vi.fn(),
+    postContentWorkItemOfficialSourceLineageRebase: vi.fn(),
     postContentWorkItemRevisionRepairProposal: vi.fn(),
     saveContentWorkItemDraftRevisionReview: vi.fn(),
   };
@@ -90,6 +92,11 @@ describe("ContentWorkflowSurface", () => {
       measurement_window_result: { window: null, blockers: [] }
     } as never);
     vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
+    vi.mocked(postContentWorkItemOfficialSourceLineageRebase).mockResolvedValue({
+      status: "created",
+      revision: savedFullDraftRevision(),
+      workspace: {} as never
+    });
     vi.mocked(postContentWorkItemRevisionRepairProposal).mockResolvedValue({
       status: "created",
       run_id: "codex_repair_1",
@@ -223,6 +230,24 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByText("Pełna odpowiedź sekcji 1 oparta na planie i dowodach.")).toBeInTheDocument();
     expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
+  });
+
+  it("replaces an unreviewed document with server-derived official-source lineage", async () => {
+    const revision = { ...savedFullDraftRevision(), official_source_references: [] };
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(
+      selectedWorkspace(contentDocumentWorkspace(revision))
+    );
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })} client={client} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Uzupełnij źródła urzędowe" }));
+
+    await waitFor(() => expect(postContentWorkItemOfficialSourceLineageRebase).toHaveBeenCalledWith(
+      { expected_revision_digest: revision.content_digest, requested_by: "wilku" },
+      "content_work_item_bdo",
+      revision.revision_id
+    ));
+    expect(await screen.findByText(/Tekst nie został zmieniony/)).toBeInTheDocument();
   });
 
   it("opens a newly saved exact revision instead of leaving the marketer on the old source", async () => {

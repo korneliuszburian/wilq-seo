@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from hashlib import sha256
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
@@ -20,8 +21,12 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftSectionOverride,
     execute_content_wordpress_draft_handoff,
 )
+from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.new_page import ContentNewPageDocumentIdentity
+from wilq.content.workflow.official_source_lineage import (
+    build_official_source_lineage_rebase_command,
+)
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.revision_persistence import draft_revision_content_digest
 from wilq.content.workflow.revisions import (
@@ -228,6 +233,57 @@ def test_full_document_official_sources_are_digest_bound_and_preserved_by_child_
     duplicate_payload["official_source_references"] = [reference, reference]
     with pytest.raises(ValidationError, match="official source IDs must be unique"):
         ContentDraftRevisionAppendCommand.model_validate(duplicate_payload)
+
+
+def test_official_source_lineage_rebase_appends_an_exact_bdo_like_child(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    base_command = _full_document_command(_draft_package(), base_revision_id=None)
+    base = store.append_draft_revision(base_command).revision
+    assert base is not None
+    reference = ContentDraftRevisionOfficialSourceReference(
+        source_fact_id="official_source_fact_bdo",
+        source_url="https://bdo.mos.gov.pl/",
+        source_title="Oficjalny serwis BDO",
+        verified_on="2026-07-31",
+        evidence_ids=["ev_regulatory_bdo"],
+        regulatory_requirement_ids=["bdo_reporting"],
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.official_source_lineage.official_source_references_for_planning_input",
+        lambda _input: [reference],
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        planning_input_digest=base.planning_input_digest,
+        confirmed_service_card_id=base.service_card_id,
+    )
+    proposal = SimpleNamespace(
+        planning_digest=base.planning_digest,
+        planning_input_digest=base.planning_input_digest,
+        service_card_id=base.service_card_id,
+    )
+
+    child = build_official_source_lineage_rebase_command(
+        base_revision=base,
+        planning_input=planning_input,
+        proposal=proposal,  # type: ignore[arg-type]
+        requested_by="wilku",
+    )
+    appended = store.append_draft_revision(child).revision
+
+    assert appended is not None
+    assert appended.base_revision_id == base.revision_id
+    assert appended.sections == base.sections
+    assert appended.official_source_references == [reference]
+    assert appended.correction_reason == "official_source_lineage_rebase"
+    with pytest.raises(ValueError, match="Current planning identity"):
+        build_official_source_lineage_rebase_command(
+            base_revision=base,
+            planning_input=planning_input.model_copy(update={"planning_input_digest": "0" * 64}),
+            proposal=proposal,  # type: ignore[arg-type]
+            requested_by="wilku",
+        )
 
 
 def test_full_document_v2_handoff_allows_generated_section_map_to_rewrite_baseline(

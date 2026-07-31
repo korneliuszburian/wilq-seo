@@ -83,7 +83,7 @@ def build_initial_draft_revision_command(
         faq=_revision_faq(proposal, output),
         cta_blocks=_revision_ctas(proposal, output),
         internal_links=_revision_links(proposal, output),
-        official_source_references=_official_source_references(planning_input),
+        official_source_references=official_source_references_for_planning_input(planning_input),
         proposal_metadata=ContentDraftRevisionProposalMetadata(
             codex_run_id=run.id,
             selected_section_headings=[item.heading for item in sections],
@@ -164,7 +164,7 @@ def _revision_links(
     ]
 
 
-def _official_source_references(
+def official_source_references_for_planning_input(
     planning_input: ContentPlanningInput,
 ) -> list[ContentDraftRevisionOfficialSourceReference]:
     """Project reader-visible links from exact approved regulatory coverage.
