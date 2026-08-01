@@ -22,6 +22,11 @@ from wilq.storage.private_paths import prepare_private_store_path
 
 if TYPE_CHECKING:
     from wilq.content.knowledge.source_facts import ContentSourceFact
+    from wilq.content.regulatory.source_fact_proposals import ContentRegulatorySourceFactProposal
+
+
+_STALE_PROPOSAL_REASON = "Regulatory source fact proposal is stale; read it again before review."
+_MISSING_SNAPSHOT_REASON = "Regulatory source snapshot is missing; read the official source again."
 
 
 class ContentRegulatorySourceReviewCommand(BaseModel):
@@ -120,7 +125,12 @@ class ContentRegulatorySourceReviewList(BaseModel):
 class ContentRegulatorySourceReviewConflict(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    code: Literal["candidate_changed", "source_snapshot_missing", "source_snapshot_changed"]
+    code: Literal[
+        "candidate_changed",
+        "source_snapshot_missing",
+        "source_snapshot_changed",
+        "source_proposal_stale",
+    ]
     label: str = Field(min_length=1)
     reason: str = Field(min_length=1)
     safe_next_step: str = Field(min_length=1)
@@ -146,50 +156,65 @@ class RegulatorySourceReviewStore:
             command.expected_source_snapshot_id
         )
         _require_exact_snapshot(candidate, command, snapshot)
-        reviewed_at = now or datetime.now(UTC)
-        review = ContentRegulatorySourceReview(
-            review_id=_review_id(command),
-            candidate_id=candidate.candidate_id,
-            profile_id=candidate.profile_id,
-            profile_version=candidate.profile_version,
-            service_card_ids=candidate.service_card_ids,
-            source_url=candidate.source_url,
-            source_title=candidate.source_title,
-            observed_on=snapshot.observed_on,
-            source_snapshot_id=snapshot.snapshot_id,
-            source_snapshot_digest=snapshot.content_digest,
-            reviewed_fact=command.reviewed_fact.strip(),
-            covered_requirement_ids=sorted(set(command.covered_requirement_ids)),
-            decision=command.decision,
-            reviewer=command.reviewer.strip(),
-            reviewed_at=reviewed_at,
+        review = _review_from_command(
+            command, candidate, snapshot, reviewed_at=now or datetime.now(UTC)
         )
         with self._connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO content_regulatory_source_reviews (
-                  review_id, candidate_id, decision, reviewed_at, payload_json
-                ) VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(review_id) DO NOTHING
-                """,
-                (
-                    review.review_id,
-                    review.candidate_id,
-                    review.decision,
-                    review.reviewed_at.isoformat(),
-                    json.dumps(
-                        review.model_dump(mode="json"),
-                        sort_keys=True,
-                        separators=(",", ":"),
-                    ),
-                ),
-            )
-            row = connection.execute(
-                "SELECT payload_json FROM content_regulatory_source_reviews WHERE review_id = ?",
-                (review.review_id,),
+            row = _insert_review(connection, review)
+        return ContentRegulatorySourceReview.model_validate(json.loads(row["payload_json"]))
+
+    def record_current_proposal(
+        self,
+        proposal: ContentRegulatorySourceFactProposal,
+        command: ContentRegulatorySourceReviewCommand,
+        *,
+        candidates: tuple[ContentRegulatorySourceCandidate, ...] | None = None,
+        now: datetime | None = None,
+    ) -> ContentRegulatorySourceReview:
+        """Persist one proposal decision only while its proposal/snapshot are current.
+
+        The latest checks and review insert share one SQLite write transaction.  A
+        fresh capture or proposal either commits before this decision (which then
+        fails closed) or waits until this exact decision has completed.
+        """
+
+        candidate = _resolve_candidate(
+            command,
+            candidates if candidates is not None else regulatory_source_candidates(),
+        )
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            if not _table_exists(connection, "content_regulatory_source_fact_proposals"):
+                raise ValueError(_STALE_PROPOSAL_REASON)
+            latest_proposal = connection.execute(
+                """SELECT proposal_id FROM content_regulatory_source_fact_proposals
+                   WHERE candidate_id = ? ORDER BY created_at DESC, proposal_id DESC LIMIT 1""",
+                (proposal.candidate_id,),
             ).fetchone()
-        if row is None:
-            raise RuntimeError("Regulatory source review was not persisted.")
+            if latest_proposal is None or latest_proposal["proposal_id"] != proposal.proposal_id:
+                raise ValueError(_STALE_PROPOSAL_REASON)
+            if not _table_exists(connection, "content_regulatory_source_snapshots"):
+                raise ValueError(_MISSING_SNAPSHOT_REASON)
+            latest_snapshot = connection.execute(
+                """SELECT payload_json FROM content_regulatory_source_snapshots
+                   WHERE candidate_id = ? ORDER BY observed_at DESC, snapshot_id DESC LIMIT 1""",
+                (proposal.candidate_id,),
+            ).fetchone()
+            if latest_snapshot is None:
+                raise ValueError(_MISSING_SNAPSHOT_REASON)
+            snapshot = ContentRegulatorySourceSnapshot.model_validate(
+                json.loads(latest_snapshot["payload_json"])
+            )
+            if snapshot.snapshot_id != proposal.source_snapshot_id:
+                raise ValueError(_STALE_PROPOSAL_REASON)
+            _require_exact_snapshot(candidate, command, snapshot)
+            review = _review_from_command(
+                command,
+                candidate,
+                snapshot,
+                reviewed_at=now or datetime.now(UTC),
+            )
+            row = _insert_review(connection, review)
         return ContentRegulatorySourceReview.model_validate(json.loads(row["payload_json"]))
 
     def list_reviews(self) -> list[ContentRegulatorySourceReview]:
@@ -265,6 +290,62 @@ def _resolve_candidate(
             "Regulatory source review cannot cover requirements outside its candidate."
         )
     return candidate
+
+
+def _review_from_command(
+    command: ContentRegulatorySourceReviewCommand,
+    candidate: ContentRegulatorySourceCandidate,
+    snapshot: ContentRegulatorySourceSnapshot,
+    *,
+    reviewed_at: datetime,
+) -> ContentRegulatorySourceReview:
+    return ContentRegulatorySourceReview(
+        review_id=_review_id(command),
+        candidate_id=candidate.candidate_id,
+        profile_id=candidate.profile_id,
+        profile_version=candidate.profile_version,
+        service_card_ids=candidate.service_card_ids,
+        source_url=candidate.source_url,
+        source_title=candidate.source_title,
+        observed_on=snapshot.observed_on,
+        source_snapshot_id=snapshot.snapshot_id,
+        source_snapshot_digest=snapshot.content_digest,
+        reviewed_fact=command.reviewed_fact.strip(),
+        covered_requirement_ids=sorted(set(command.covered_requirement_ids)),
+        decision=command.decision,
+        reviewer=command.reviewer.strip(),
+        reviewed_at=reviewed_at,
+    )
+
+
+def _insert_review(
+    connection: sqlite3.Connection,
+    review: ContentRegulatorySourceReview,
+) -> sqlite3.Row:
+    connection.execute(
+        """
+        INSERT INTO content_regulatory_source_reviews (
+          review_id, candidate_id, decision, reviewed_at, payload_json
+        ) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(review_id) DO NOTHING
+        """,
+        (
+            review.review_id,
+            review.candidate_id,
+            review.decision,
+            review.reviewed_at.isoformat(),
+            json.dumps(
+                review.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
+            ),
+        ),
+    )
+    row = connection.execute(
+        "SELECT payload_json FROM content_regulatory_source_reviews WHERE review_id = ?",
+        (review.review_id,),
+    ).fetchone()
+    if row is None:
+        raise RuntimeError("Regulatory source review was not persisted.")
+    return row
 
 
 def _require_exact_snapshot(

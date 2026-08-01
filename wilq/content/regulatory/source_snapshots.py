@@ -25,7 +25,7 @@ from wilq.storage.private_paths import prepare_private_store_path
 # response to bind a review to its exact source snapshot.
 _MAX_SNAPSHOT_BYTES = 12 * 1024 * 1024
 _SOURCE_READ_TIMEOUT_SECONDS = 15
-SourceReader = Callable[[str], tuple[bytes, str]]
+SourceReader = Callable[[str], tuple[bytes, str] | tuple[bytes, str, str]]
 
 
 class ContentRegulatorySourceSnapshot(BaseModel):
@@ -108,7 +108,10 @@ class RegulatorySourceSnapshotStore:
             candidate_id,
             candidates if candidates is not None else regulatory_source_candidates(),
         )
-        body, content_type = (reader or _read_official_source)(candidate.source_url)
+        response = (reader or _read_official_source)(candidate.source_url)
+        body, content_type = response[:2]
+        final_url = candidate.source_url if len(response) == 2 else response[2]
+        _require_exact_final_source_url(candidate, final_url)
         if not body:
             raise ValueError("Official regulatory source returned an empty response.")
         if len(body) > _MAX_SNAPSHOT_BYTES:
@@ -219,7 +222,7 @@ def _reviewable_candidate(
     return candidate
 
 
-def _read_official_source(source_url: str) -> tuple[bytes, str]:
+def _read_official_source(source_url: str) -> tuple[bytes, str, str]:
     request = Request(
         source_url,
         headers={"User-Agent": "WILQ-regulatory-source-review/1.0"},
@@ -227,7 +230,25 @@ def _read_official_source(source_url: str) -> tuple[bytes, str]:
     with urlopen(request, timeout=_SOURCE_READ_TIMEOUT_SECONDS) as response:  # noqa: S310
         body = response.read(_MAX_SNAPSHOT_BYTES + 1)
         content_type = response.headers.get_content_type() or "application/octet-stream"
-    return body, content_type
+        final_url = response.geturl()
+    return body, content_type, final_url
+
+
+def _require_exact_final_source_url(
+    candidate: ContentRegulatorySourceCandidate, final_url: str
+) -> None:
+    """Reject redirects so persisted lineage always names the fetched official URL."""
+
+    profile = regulatory_content_profile(service_card_id=candidate.service_card_ids[0])
+    final = urlsplit(final_url)
+    if (
+        final.scheme != "https"
+        or profile is None
+        or final.hostname not in profile.official_source_hosts
+    ):
+        raise ValueError("Official regulatory source redirected outside the allowlist.")
+    if final_url != candidate.source_url:
+        raise ValueError("Official regulatory source redirected from its exact candidate URL.")
 
 
 def _snapshot_id(

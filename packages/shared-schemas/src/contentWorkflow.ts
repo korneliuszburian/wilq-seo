@@ -3809,7 +3809,7 @@ export const ContentRegulatorySourceReviewListSchema = z.object({
 });
 
 export const ContentRegulatorySourceReviewConflictSchema = z.object({
-  code: z.enum(["candidate_changed", "source_snapshot_missing", "source_snapshot_changed"]),
+  code: z.enum(["candidate_changed", "source_snapshot_missing", "source_snapshot_changed", "source_proposal_stale"]),
   label: z.string().trim().min(1),
   reason: z.string().trim().min(1),
   safe_next_step: z.string().trim().min(1)

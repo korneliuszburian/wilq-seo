@@ -22,6 +22,7 @@ import {
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningInputReadinessResponseSchema,
   ContentRegulatorySourceReviewListSchema,
+  ContentRegulatorySourceReviewConflictSchema,
   ContentRegulatorySourceReviewSchema,
   ContentRegulatorySourceSnapshotReadResponseSchema,
   ContentPlanningProposalResponseSchema,
@@ -237,6 +238,15 @@ describe("ContentRegulatorySourceReview schemas", () => {
     expect(
       ContentRegulatorySourceReviewSchema.safeParse({ ...review, reviewer: "   " }).success
     ).toBe(false);
+  });
+
+  it("parses the typed stale-proposal recovery conflict", () => {
+    expect(ContentRegulatorySourceReviewConflictSchema.safeParse({
+      code: "source_proposal_stale",
+      label: "Propozycja źródła jest nieaktualna",
+      reason: "Regulatory source fact proposal is stale; read it again before review.",
+      safe_next_step: "Odczytaj bieżący materiał urzędowy i zapisz review ponownie."
+    }).success).toBe(true);
   });
 });
 

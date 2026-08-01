@@ -140,7 +140,10 @@ def _register_review_routes(router: APIRouter) -> None:
 
 
 def _review_conflict(reason: str) -> ContentRegulatorySourceReviewConflict:
-    if "snapshot is missing" in reason:
+    if "fact proposal is stale" in reason:
+        code = "source_proposal_stale"
+        label = "Propozycja źródła jest nieaktualna"
+    elif "snapshot is missing" in reason:
         code = "source_snapshot_missing"
         label = "Brakuje snapshotu źródła"
     elif "snapshot changed" in reason:

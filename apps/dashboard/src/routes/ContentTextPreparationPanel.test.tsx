@@ -70,6 +70,30 @@ function readyToGenerate(status: "not_generated" | "failed" = "not_generated") {
   };
 }
 
+function readyRegulatoryProposal(proposalId = "regulatory_fact_proposal_scope", snapshotId = "regulatory_snapshot_scope") {
+  return {
+    status: "ready",
+    proposal: {
+      proposal_id: proposalId,
+      candidate_id: "bdo_registration_scope_2026_07_31_r2",
+      profile_id: "bdo",
+      profile_version: "2026-07",
+      source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+      source_snapshot_id: snapshotId,
+      source_snapshot_digest: "d".repeat(64),
+      observed_on: "2026-07-31",
+      proposed_fact: `Zakres obowiązku z propozycji ${proposalId} wymaga dalszej oceny dla konkretnej działalności.`,
+      covered_requirement_ids: ["bdo_scope"],
+      codex_run_id: `codex_${proposalId}`,
+      status: "ready",
+      human_review_required: true,
+      created_at: "2026-07-31T12:00:00Z"
+    },
+    reason: "Pobrano snapshot.",
+    safe_next_step: "Sprawdź źródło."
+  };
+}
+
 describe("ContentTextPreparationPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -270,27 +294,12 @@ describe("ContentTextPreparationPanel", () => {
         }]
       }
     } as never);
-    vi.mocked(postContentRegulatorySourceFactProposal).mockResolvedValue({
-      status: "ready",
-      proposal: {
-        proposal_id: "regulatory_fact_proposal_scope",
-        candidate_id: "bdo_registration_scope_2026_07_31_r2",
-        profile_id: "bdo",
-        profile_version: "2026-07",
-        source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
-        source_snapshot_id: "regulatory_snapshot_scope",
-        source_snapshot_digest: "d".repeat(64),
-        observed_on: "2026-07-31",
-        proposed_fact: "Zakres obowiązku wymaga dalszej oceny dla konkretnej działalności.",
-        covered_requirement_ids: ["bdo_scope"],
-        codex_run_id: "codex_regulatory_source_fact_1",
-        status: "ready",
-        human_review_required: true,
-        created_at: "2026-07-31T12:00:00Z"
-      },
-      reason: "Pobrano snapshot.",
-      safe_next_step: "Sprawdź źródło."
-    } as never);
+    vi.mocked(postContentRegulatorySourceFactProposal).mockResolvedValue(
+      readyRegulatoryProposal("proposal_post_p1", "snapshot_p1") as never
+    );
+    vi.mocked(getContentRegulatorySourceFactProposal)
+      .mockResolvedValueOnce({ status: "not_generated", reason: "Brak propozycji.", safe_next_step: "Przygotuj propozycję." } as never)
+      .mockResolvedValue(readyRegulatoryProposal("proposal_get_p2", "snapshot_p2") as never);
     vi.mocked(postContentRegulatorySourceFactProposalReview).mockResolvedValue({
       review_id: "regulatory_review_scope",
       candidate_id: "bdo_registration_scope_2026_07_31_r2",
@@ -312,16 +321,74 @@ describe("ContentTextPreparationPanel", () => {
 
     fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
     fireEvent.click(screen.getByRole("button", { name: "Przygotuj propozycję do review" }));
-    await screen.findByText("Zakres obowiązku wymaga dalszej oceny dla konkretnej działalności.");
-    fireEvent.click(screen.getByRole("button", { name: "Przyjmij propozycję po review" }));
+    await screen.findByText("Zakres obowiązku z propozycji proposal_get_p2 wymaga dalszej oceny dla konkretnej działalności.");
+    fireEvent.click(await screen.findByRole("button", { name: "Przyjmij propozycję po review" }));
 
-    await waitFor(() => expect(postContentRegulatorySourceFactProposalReview).toHaveBeenCalledWith("regulatory_fact_proposal_scope", {
-      expected_source_snapshot_id: "regulatory_snapshot_scope",
+    await waitFor(() => expect(postContentRegulatorySourceFactProposalReview).toHaveBeenCalledWith("proposal_get_p2", {
+      expected_source_snapshot_id: "snapshot_p2",
       expected_source_snapshot_digest: "d".repeat(64),
       decision: "accepted",
       reviewer: "Wilku"
     }));
     expect(screen.queryByRole("button", { name: "Przygotuj tekst" })).not.toBeInTheDocument();
+  });
+
+  it("records the exact persisted regulatory proposal after a reload without a proposal POST", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyToGenerate(),
+      status: "blocked",
+      blockers: [{
+        code: "missing_regulatory_source_coverage",
+        label: "Brakuje zatwierdzonego źródła urzędowego",
+        reason: "Zakres BDO wymaga review źródła urzędowego.",
+        next_step: "Sprawdź źródło."
+      }],
+      input_summary: {
+        ...readyToGenerate().input_summary,
+        regulatory_review_candidates: [{
+          candidate_id: "bdo_registration_scope_2026_07_31_r2",
+          source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+          source_title: "BDO: Kto podlega pod obowiązek rejestracji?",
+          observed_on: "2026-07-31",
+          requirement_ids: ["bdo_scope"],
+          requirement_labels: ["Zakres obowiązku"],
+          review_status: "review_required",
+          safe_next_step: "Sprawdź źródło."
+        }]
+      }
+    } as never);
+    vi.mocked(getContentRegulatorySourceFactProposal).mockResolvedValue(
+      readyRegulatoryProposal("proposal_reload", "snapshot_reload") as never
+    );
+    vi.mocked(postContentRegulatorySourceFactProposalReview).mockResolvedValue({
+      review_id: "regulatory_review_reload",
+      candidate_id: "bdo_registration_scope_2026_07_31_r2",
+      profile_id: "bdo",
+      profile_version: "2026-07",
+      service_card_ids: ["ekologus_service_bdo_reporting"],
+      source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+      source_title: "BDO: Kto podlega pod obowiązek rejestracji?",
+      observed_on: "2026-07-31",
+      source_snapshot_id: "snapshot_reload",
+      source_snapshot_digest: "d".repeat(64),
+      reviewed_fact: "Zakres obowiązku z propozycji proposal_reload wymaga dalszej oceny dla konkretnej działalności.",
+      covered_requirement_ids: ["bdo_scope"],
+      decision: "accepted",
+      reviewer: "Wilku",
+      reviewed_at: "2026-07-31T12:01:00Z"
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+    fireEvent.click(await screen.findByRole("button", { name: "Przyjmij propozycję po review" }));
+
+    await waitFor(() => expect(postContentRegulatorySourceFactProposalReview).toHaveBeenCalledWith("proposal_reload", {
+      expected_source_snapshot_id: "snapshot_reload",
+      expected_source_snapshot_digest: "d".repeat(64),
+      decision: "accepted",
+      reviewer: "Wilku"
+    }));
+    expect(postContentRegulatorySourceFactProposal).not.toHaveBeenCalled();
   });
 
   it("shows only exact planning evidence and GSC queries used by the ready plan", async () => {

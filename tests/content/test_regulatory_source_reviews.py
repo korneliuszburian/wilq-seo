@@ -131,6 +131,22 @@ def test_source_snapshot_stays_bounded_without_persisting_source_body(tmp_path) 
     assert not store.path.exists()
 
 
+def test_source_snapshot_rejects_a_redirect_outside_the_official_allowlist(tmp_path) -> None:
+    store = RegulatorySourceSnapshotStore(tmp_path / "wilq.sqlite3")
+
+    with pytest.raises(ValueError, match="outside the allowlist"):
+        store.capture(
+            "bdo_system_definition_2026_07_31_r2",
+            reader=lambda _: (
+                b"<html><main>untrusted body</main></html>",
+                "text/html",
+                "https://not-official.example/regulatory-source",
+            ),
+        )
+
+    assert not store.path.exists()
+
+
 def test_full_bdo_candidate_review_set_unlocks_exact_coverage_only_after_acceptance(
     tmp_path, monkeypatch
 ) -> None:

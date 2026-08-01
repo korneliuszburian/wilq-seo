@@ -151,7 +151,14 @@ class RegulatorySourceFactProposalStore:
                     proposal.model_dump_json(),
                 ),
             )
-        return proposal
+            row = connection.execute(
+                "SELECT payload_json FROM content_regulatory_source_fact_proposals "
+                "WHERE proposal_id = ?",
+                (proposal.proposal_id,),
+            ).fetchone()
+        if row is None:
+            raise RuntimeError("Regulatory source fact proposal was not persisted.")
+        return ContentRegulatorySourceFactProposal.model_validate_json(row[0])
 
     def get(self, proposal_id: str) -> ContentRegulatorySourceFactProposal | None:
         if not self.path.exists():
@@ -206,7 +213,10 @@ def regulatory_source_fact_proposal_store() -> RegulatorySourceFactProposalStore
 
 
 def read_source_fact_proposal(
-    *, candidate_id: str, proposal_store: RegulatorySourceFactProposalStore
+    *,
+    candidate_id: str,
+    proposal_store: RegulatorySourceFactProposalStore,
+    candidates: tuple[ContentRegulatorySourceCandidate, ...] | None = None,
 ) -> ContentRegulatorySourceFactProposalResponse:
     proposal = proposal_store.latest(candidate_id)
     if proposal is None:
@@ -214,6 +224,12 @@ def read_source_fact_proposal(
             status="not_generated",
             reason="Nie ma jeszcze propozycji factu dla bieżącego źródła.",
             safe_next_step="Przygotuj propozycję, a następnie sprawdź ją przed decyzją.",
+        )
+    candidate = _current_candidate(candidate_id, candidates)
+    if candidate is None or not _proposal_matches_candidate(proposal, candidate):
+        return _blocked(
+            "Zapisana propozycja nie odpowiada już bieżącemu kandydatowi źródła.",
+            "Odczytaj bieżący materiał urzędowy i przygotuj nową propozycję do review.",
         )
     return ContentRegulatorySourceFactProposalResponse(
         status="ready",
@@ -266,6 +282,13 @@ def _generate_from_snapshot(
     proposal_store: RegulatorySourceFactProposalStore,
     run_store: LocalStateStore,
 ) -> ContentRegulatorySourceFactProposalResponse:
+    try:
+        source_text = _source_text_for_proposal(snapshot, body)
+    except ValueError:
+        return _blocked(
+            "Materiał urzędowy nie zawiera bezpiecznie wyodrębnionej treści do review.",
+            "Otwórz inne aktualne źródło urzędowe albo zapisz własne review.",
+        )
     run = run_store.save_codex_run(
         CodexRun(
             id=f"codex_regulatory_source_fact_{uuid4().hex}",
@@ -280,7 +303,6 @@ def _generate_from_snapshot(
         )
     )
     try:
-        source_text = _source_text_for_proposal(snapshot, body)
         result = client.run_structured_turn(
             _turn_request(candidate, snapshot, _relevant_source_text(candidate, source_text))
         )
@@ -337,7 +359,7 @@ def _generate_from_snapshot(
         codex_run_id=run.id,
         created_at=datetime.now(UTC),
     )
-    proposal_store.save(proposal)
+    proposal = proposal_store.save(proposal)
     return ContentRegulatorySourceFactProposalResponse(
         status="ready",
         proposal=proposal,
@@ -354,6 +376,7 @@ def review_source_fact_proposal(
     command: ContentRegulatorySourceFactProposalReviewCommand,
     proposal_store: RegulatorySourceFactProposalStore,
     review_store: RegulatorySourceReviewStore,
+    candidates: tuple[ContentRegulatorySourceCandidate, ...] | None = None,
 ) -> ContentRegulatorySourceReview:
     proposal = proposal_store.get(proposal_id)
     if proposal is None:
@@ -363,7 +386,8 @@ def review_source_fact_proposal(
         or proposal.source_snapshot_digest != command.expected_source_snapshot_digest
     ):
         raise ValueError("Regulatory source fact proposal snapshot changed.")
-    return review_store.record(
+    return review_store.record_current_proposal(
+        proposal,
         ContentRegulatorySourceReviewCommand(
             candidate_id=proposal.candidate_id,
             expected_source_url=proposal.source_url,
@@ -374,7 +398,8 @@ def review_source_fact_proposal(
             covered_requirement_ids=proposal.covered_requirement_ids,
             decision=command.decision,
             reviewer=command.reviewer,
-        )
+        ),
+        candidates=candidates,
     )
 
 
@@ -431,7 +456,9 @@ def _extract_html_main_text(html: str) -> str:
     parser.feed(html)
     parser.close()
     extracted = " ".join(parser.parts).strip()
-    return extracted or html
+    if not extracted:
+        raise ValueError("Official HTML source has no article or main content.")
+    return extracted
 
 
 def _relevant_source_text(candidate: ContentRegulatorySourceCandidate, source_text: str) -> str:
@@ -526,6 +553,10 @@ def _proposal_id(
     value = json.dumps(
         [
             candidate.candidate_id,
+            candidate.profile_id,
+            candidate.profile_version,
+            candidate.source_url,
+            snapshot.snapshot_id,
             snapshot.content_digest,
             output.proposed_fact,
             output.covered_requirement_ids,
@@ -534,6 +565,27 @@ def _proposal_id(
         separators=(",", ":"),
     )
     return f"regulatory_source_fact_proposal_{sha256(value.encode()).hexdigest()[:24]}"
+
+
+def _current_candidate(
+    candidate_id: str,
+    candidates: tuple[ContentRegulatorySourceCandidate, ...] | None,
+) -> ContentRegulatorySourceCandidate | None:
+    known = candidates if candidates is not None else regulatory_source_candidates()
+    return next((item for item in known if item.candidate_id == candidate_id), None)
+
+
+def _proposal_matches_candidate(
+    proposal: ContentRegulatorySourceFactProposal,
+    candidate: ContentRegulatorySourceCandidate,
+) -> bool:
+    return (
+        proposal.candidate_id == candidate.candidate_id
+        and proposal.profile_id == candidate.profile_id
+        and proposal.profile_version == candidate.profile_version
+        and proposal.source_url == candidate.source_url
+        and proposal.covered_requirement_ids == sorted(candidate.requirement_ids)
+    )
 
 
 def _normalize_source_text(value: str) -> str:

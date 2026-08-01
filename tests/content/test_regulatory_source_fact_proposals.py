@@ -3,8 +3,14 @@ from __future__ import annotations
 import json
 
 import pytest
+from fastapi import APIRouter, FastAPI
+from fastapi.testclient import TestClient
 
+import apps.api.wilq_api.routers.content_regulatory_source_reviews as regulatory_router
 import wilq.content.regulatory.source_fact_proposals as proposals_module
+from apps.api.wilq_api.routers.content_regulatory_source_reviews import (
+    register_content_regulatory_source_review_routes,
+)
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.regulatory.policy import regulatory_source_candidates
 from wilq.content.regulatory.source_fact_proposals import (
@@ -39,28 +45,34 @@ def _stores(tmp_path):
     )
 
 
+def _html_source(text: str) -> tuple[bytes, str]:
+    return f"<html><main>{text}</main></html>".encode(), "text/html"
+
+
+def _ready_output(candidate) -> dict[str, object]:
+    return {
+        "source_sufficiency": "sufficient",
+        "insufficiency_reason": None,
+        "proposed_fact": (
+            "Oficjalne źródło opisuje obowiązek wyłącznie w zakresie wskazanym "
+            "dla tego kandydata i wymaga dalszej oceny działalności firmy."
+        ),
+        "source_terms": ["Oficjalne", "źródło", "obowiązek"],
+        "covered_requirement_ids": list(candidate.requirement_ids),
+    }
+
+
 def test_fact_proposal_is_exact_human_gated_and_never_persists_raw_source_body(tmp_path) -> None:
     candidate = regulatory_source_candidates()[0]
     proposal_store, snapshot_store, review_store, run_store = _stores(tmp_path)
-    client = _Client(
-        {
-            "source_sufficiency": "sufficient",
-            "insufficiency_reason": None,
-            "proposed_fact": (
-                "Oficjalne źródło opisuje obowiązek wyłącznie w zakresie wskazanym "
-                "dla tego kandydata i wymaga dalszej oceny działalności firmy."
-            ),
-            "source_terms": ["TOP", "SECRET", "OFFICIAL"],
-            "covered_requirement_ids": list(candidate.requirement_ids),
-        }
-    )
+    client = _Client(_ready_output(candidate))
     result = generate_source_fact_proposal(
         candidate_id=candidate.candidate_id,
         client=client,
         proposal_store=proposal_store,
         snapshot_store=snapshot_store,
         run_store=run_store,
-        reader=lambda _: (b"TOP_SECRET_OFFICIAL_SOURCE_BODY", "text/html"),
+        reader=lambda _: _html_source("TOP SECRET Oficjalne źródło opisuje obowiązek."),
     )
 
     assert result.status == "ready"
@@ -68,8 +80,8 @@ def test_fact_proposal_is_exact_human_gated_and_never_persists_raw_source_body(t
     proposal = result.proposal
     assert proposal.human_review_required is True
     assert proposal.covered_requirement_ids == sorted(candidate.requirement_ids)
-    assert "TOP_SECRET_OFFICIAL_SOURCE_BODY" not in proposal_store.path.read_text(errors="ignore")
-    assert "TOP_SECRET_OFFICIAL_SOURCE_BODY" in client.requests[0].untrusted_context
+    assert "TOP SECRET Oficjalne" not in proposal_store.path.read_text(errors="ignore")
+    assert "TOP SECRET Oficjalne" in client.requests[0].untrusted_context
 
     review = review_source_fact_proposal(
         proposal_id=proposal.proposal_id,
@@ -118,7 +130,7 @@ def test_invalid_requirement_binding_blocks_before_proposal_or_human_review(tmp_
         proposal_store=proposal_store,
         snapshot_store=snapshot_store,
         run_store=run_store,
-        reader=lambda _: ("Oficjalny tekst źródła dla testu.".encode(), "text/html"),
+            reader=lambda _: _html_source("Oficjalny tekst źródła dla testu."),
     )
 
     assert result.status == "blocked"
@@ -145,7 +157,7 @@ def test_proposal_review_rejects_stale_snapshot_without_human_review(tmp_path) -
         proposal_store=proposal_store,
         snapshot_store=snapshot_store,
         run_store=run_store,
-        reader=lambda _: ("Oficjalny tekst źródła dla testu.".encode(), "text/html"),
+        reader=lambda _: _html_source("Oficjalny tekst źródła dla testu."),
     )
     assert result.proposal is not None
     with pytest.raises(ValueError, match="snapshot changed"):
@@ -270,6 +282,216 @@ def test_html_proposal_context_uses_main_content_not_layout_or_scripts() -> None
     assert "Literalny fakt" in text
     assert "menu layout" not in text
     assert "secret" not in text
+
+
+def test_html_source_without_main_or_article_is_blocked_before_a_codex_run(tmp_path) -> None:
+    candidate = regulatory_source_candidates()[0]
+    proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
+    client = _Client(_ready_output(candidate))
+
+    result = generate_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        client=client,
+        proposal_store=proposal_store,
+        snapshot_store=snapshot_store,
+        run_store=run_store,
+        reader=lambda _: (
+            b"<html><nav>menu layout</nav><script>secret()</script><p>body</p></html>",
+            "text/html",
+        ),
+    )
+
+    assert result.status == "blocked"
+    assert client.requests == []
+    assert "secret" not in proposal_store.path.read_text(errors="ignore")
+
+
+def test_same_source_digest_on_two_snapshots_persists_two_exact_proposals(tmp_path) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    candidate = regulatory_source_candidates()[0]
+    proposal_store, snapshot_store, review_store, run_store = _stores(tmp_path)
+    body, content_type = _html_source("Oficjalne źródło opisuje obowiązek.")
+    first_snapshot = snapshot_store.capture(
+        candidate.candidate_id,
+        reader=lambda _: (body, content_type),
+        now=datetime(2026, 8, 2, 10, 0, tzinfo=UTC),
+    )
+    second_snapshot = snapshot_store.capture(
+        candidate.candidate_id,
+        reader=lambda _: (body, content_type),
+        now=datetime(2026, 8, 2, 10, 0, tzinfo=UTC) + timedelta(minutes=1),
+    )
+    assert first_snapshot.content_digest == second_snapshot.content_digest
+    assert first_snapshot.snapshot_id != second_snapshot.snapshot_id
+
+    first = proposals_module._generate_from_snapshot(
+        candidate=candidate,
+        snapshot=first_snapshot,
+        body=body,
+        client=_Client(_ready_output(candidate)),
+        proposal_store=proposal_store,
+        run_store=run_store,
+    )
+    second = proposals_module._generate_from_snapshot(
+        candidate=candidate,
+        snapshot=second_snapshot,
+        body=body,
+        client=_Client(_ready_output(candidate)),
+        proposal_store=proposal_store,
+        run_store=run_store,
+    )
+
+    assert first.proposal is not None and second.proposal is not None
+    assert first.proposal.proposal_id != second.proposal.proposal_id
+    assert proposal_store.get(second.proposal.proposal_id) == second.proposal
+    assert read_source_fact_proposal(
+        candidate_id=candidate.candidate_id, proposal_store=proposal_store
+    ).proposal == second.proposal
+    review = review_source_fact_proposal(
+        proposal_id=second.proposal.proposal_id,
+        command=ContentRegulatorySourceFactProposalReviewCommand(
+            expected_source_snapshot_id=second.proposal.source_snapshot_id,
+            expected_source_snapshot_digest=second.proposal.source_snapshot_digest,
+            decision="accepted",
+            reviewer="Wilku",
+        ),
+        proposal_store=proposal_store,
+        review_store=review_store,
+    )
+    assert review.source_snapshot_id == second_snapshot.snapshot_id
+
+
+def test_review_rejects_a_proposal_superseded_by_a_newer_snapshot(tmp_path) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    candidate = regulatory_source_candidates()[0]
+    proposal_store, snapshot_store, review_store, run_store = _stores(tmp_path)
+    first_body, content_type = _html_source("Oficjalne źródło opisuje obowiązek.")
+    second_body, _ = _html_source("Oficjalne źródło opisuje nowy obowiązek.")
+    first_snapshot = snapshot_store.capture(
+        candidate.candidate_id,
+        reader=lambda _: (first_body, content_type),
+        now=datetime(2026, 8, 2, 10, 0, tzinfo=UTC),
+    )
+    first = proposals_module._generate_from_snapshot(
+        candidate=candidate,
+        snapshot=first_snapshot,
+        body=first_body,
+        client=_Client(_ready_output(candidate)),
+        proposal_store=proposal_store,
+        run_store=run_store,
+    )
+    second_snapshot = snapshot_store.capture(
+        candidate.candidate_id,
+        reader=lambda _: (second_body, content_type),
+        now=datetime(2026, 8, 2, 10, 0, tzinfo=UTC) + timedelta(minutes=1),
+    )
+    proposals_module._generate_from_snapshot(
+        candidate=candidate,
+        snapshot=second_snapshot,
+        body=second_body,
+        client=_Client(_ready_output(candidate)),
+        proposal_store=proposal_store,
+        run_store=run_store,
+    )
+
+    assert first.proposal is not None
+    with pytest.raises(ValueError, match="proposal is stale"):
+        review_source_fact_proposal(
+            proposal_id=first.proposal.proposal_id,
+            command=ContentRegulatorySourceFactProposalReviewCommand(
+                expected_source_snapshot_id=first.proposal.source_snapshot_id,
+                expected_source_snapshot_digest=first.proposal.source_snapshot_digest,
+                decision="accepted",
+                reviewer="Wilku",
+            ),
+            proposal_store=proposal_store,
+            review_store=review_store,
+        )
+    assert review_store.list_reviews() == []
+
+
+def test_stale_proposal_review_route_returns_a_typed_conflict_without_a_review(
+    tmp_path, monkeypatch
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    candidate = regulatory_source_candidates()[0]
+    proposal_store, snapshot_store, review_store, run_store = _stores(tmp_path)
+    body, content_type = _html_source("Oficjalne źródło opisuje obowiązek.")
+    first_snapshot = snapshot_store.capture(
+        candidate.candidate_id,
+        reader=lambda _: (body, content_type),
+        now=datetime(2026, 8, 2, 10, 0, tzinfo=UTC),
+    )
+    first = proposals_module._generate_from_snapshot(
+        candidate=candidate,
+        snapshot=first_snapshot,
+        body=body,
+        client=_Client(_ready_output(candidate)),
+        proposal_store=proposal_store,
+        run_store=run_store,
+    )
+    second_snapshot = snapshot_store.capture(
+        candidate.candidate_id,
+        reader=lambda _: (body, content_type),
+        now=datetime(2026, 8, 2, 10, 0, tzinfo=UTC) + timedelta(minutes=1),
+    )
+    proposals_module._generate_from_snapshot(
+        candidate=candidate,
+        snapshot=second_snapshot,
+        body=body,
+        client=_Client(_ready_output(candidate)),
+        proposal_store=proposal_store,
+        run_store=run_store,
+    )
+    assert first.proposal is not None
+    monkeypatch.setattr(
+        regulatory_router, "regulatory_source_fact_proposal_store", lambda: proposal_store
+    )
+    monkeypatch.setattr(regulatory_router, "regulatory_source_review_store", lambda: review_store)
+    app = FastAPI()
+    router = APIRouter()
+    register_content_regulatory_source_review_routes(router)
+    app.include_router(router)
+
+    response = TestClient(app).post(
+        f"/api/content/regulatory-source-fact-proposals/{first.proposal.proposal_id}/review",
+        json={
+            "expected_source_snapshot_id": first.proposal.source_snapshot_id,
+            "expected_source_snapshot_digest": first.proposal.source_snapshot_digest,
+            "decision": "accepted",
+            "reviewer": "Wilku",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "source_proposal_stale"
+    assert review_store.list_reviews() == []
+
+
+def test_canonical_read_blocks_a_proposal_when_its_candidate_profile_changes(tmp_path) -> None:
+    candidate = regulatory_source_candidates()[0]
+    proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
+    result = generate_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        client=_Client(_ready_output(candidate)),
+        proposal_store=proposal_store,
+        snapshot_store=snapshot_store,
+        run_store=run_store,
+        reader=lambda _: _html_source("Oficjalne źródło opisuje obowiązek."),
+    )
+
+    assert result.proposal is not None
+    changed_candidate = candidate.model_copy(update={"profile_version": "profile-v2"})
+    restored = read_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        proposal_store=proposal_store,
+        candidates=(changed_candidate,),
+    )
+    assert restored.status == "blocked"
+    assert restored.proposal is None
 
 
 def test_excerpt_matching_normalizes_pdf_line_break_hyphenation() -> None:
