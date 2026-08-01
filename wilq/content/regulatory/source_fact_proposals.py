@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import subprocess
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -240,7 +241,8 @@ def _generate_from_snapshot(
         )
     )
     try:
-        result = client.run_structured_turn(_turn_request(candidate, snapshot, body))
+        source_text = _source_text_for_proposal(snapshot, body)
+        result = client.run_structured_turn(_turn_request(candidate, snapshot, source_text))
     except Exception:
         result = CodexAppServerTurnResult(status="failed")
     if result.status != "completed" or result.output_text is None or result.external_call_attempted:
@@ -335,12 +337,33 @@ def review_source_fact_proposal(
     )
 
 
+def _source_text_for_proposal(snapshot: ContentRegulatorySourceSnapshot, body: bytes) -> str:
+    """Extract bounded text transiently; never write the official body to disk/state."""
+
+    if snapshot.content_type == "application/pdf" or body.startswith(b"%PDF-"):
+        result = subprocess.run(
+            ["pdftotext", "-", "-"],
+            input=body,
+            capture_output=True,
+            check=False,
+            timeout=20,
+        )
+        if result.returncode != 0:
+            raise ValueError("Official PDF source cannot be extracted safely.")
+        text = result.stdout.decode("utf-8", errors="replace")
+    else:
+        text = body.decode("utf-8", errors="replace")
+    text = text.strip()
+    if not text:
+        raise ValueError("Official source has no extractable text.")
+    return text[:500_000]
+
+
 def _turn_request(
     candidate: ContentRegulatorySourceCandidate,
     snapshot: ContentRegulatorySourceSnapshot,
-    body: bytes,
+    source_text: str,
 ) -> CodexAppServerStructuredTurnRequest:
-    text = body.decode("utf-8", errors="replace")[:500_000]
     schema = ContentRegulatorySourceFactProposalOutput.model_json_schema()
     schema["required"] = ["proposed_fact", "covered_requirement_ids"]
     schema["properties"]["covered_requirement_ids"] = {
@@ -368,7 +391,7 @@ def _turn_request(
             ensure_ascii=False,
             sort_keys=True,
         ),
-        untrusted_context=json.dumps({"official_source_body": text}, ensure_ascii=False),
+        untrusted_context=json.dumps({"official_source_text": source_text}, ensure_ascii=False),
         output_schema=schema,
     )
 

@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+import wilq.content.regulatory.source_fact_proposals as proposals_module
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.regulatory.policy import regulatory_source_candidates
 from wilq.content.regulatory.source_fact_proposals import (
@@ -110,7 +111,9 @@ def test_proposal_review_rejects_stale_snapshot_without_human_review(tmp_path) -
         candidate_id=candidate.candidate_id,
         client=_Client(
             {
-                "proposed_fact": "Dokładny fact z oficjalnego źródła wymaga sprawdzenia przez człowieka.",
+                "proposed_fact": (
+                    "Dokładny fact z oficjalnego źródła wymaga sprawdzenia przez człowieka."
+                ),
                 "covered_requirement_ids": list(candidate.requirement_ids),
             }
         ),
@@ -133,3 +136,32 @@ def test_proposal_review_rejects_stale_snapshot_without_human_review(tmp_path) -
             review_store=review_store,
         )
     assert review_store.list_reviews() == []
+
+
+def test_pdf_source_is_extracted_transiently_before_structured_turn(tmp_path, monkeypatch) -> None:
+    candidate = regulatory_source_candidates()[0]
+    proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
+    client = _Client(
+        {
+            "proposed_fact": "Wyekstrahowany tekst urzędowy wymaga nadal decyzji człowieka.",
+            "covered_requirement_ids": list(candidate.requirement_ids),
+        }
+    )
+
+    class _PdfResult:
+        returncode = 0
+        stdout = b"Tekst z oficjalnego PDF-a."
+
+    monkeypatch.setattr(proposals_module.subprocess, "run", lambda *args, **kwargs: _PdfResult())
+    result = generate_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        client=client,
+        proposal_store=proposal_store,
+        snapshot_store=snapshot_store,
+        run_store=run_store,
+        reader=lambda _: (b"%PDF-raw-official-body", "application/pdf"),
+    )
+
+    assert result.status == "ready"
+    assert "Tekst z oficjalnego PDF-a." in client.requests[0].untrusted_context
+    assert "%PDF-raw-official-body" not in client.requests[0].untrusted_context
