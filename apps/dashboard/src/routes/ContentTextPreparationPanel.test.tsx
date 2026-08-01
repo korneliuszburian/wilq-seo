@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getContentRegulatorySourceFactProposal,
   getContentWorkItemInitialDraft,
   getContentWorkItemPlanningProposal,
   postContentRegulatorySourceFactProposal,
@@ -16,6 +17,7 @@ vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
   getContentWorkItemInitialDraft: vi.fn(),
   getContentWorkItemPlanningProposal: vi.fn(),
+  getContentRegulatorySourceFactProposal: vi.fn(),
   postContentRegulatorySourceFactProposal: vi.fn(),
   postContentRegulatorySourceFactProposalReview: vi.fn(),
   postContentWorkItemInitialDraft: vi.fn(),
@@ -69,7 +71,14 @@ function readyToGenerate(status: "not_generated" | "failed" = "not_generated") {
 }
 
 describe("ContentTextPreparationPanel", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getContentRegulatorySourceFactProposal).mockResolvedValue({
+      status: "not_generated",
+      reason: "Brak propozycji.",
+      safe_next_step: "Przygotuj propozycję."
+    });
+  });
   afterEach(cleanup);
 
   it("starts one exact planning request from the ready state with one marketer-facing action", async () => {

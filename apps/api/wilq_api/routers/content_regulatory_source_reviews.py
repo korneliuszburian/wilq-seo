@@ -8,6 +8,7 @@ from wilq.content.regulatory.source_fact_proposals import (
     ContentRegulatorySourceFactProposalResponse,
     ContentRegulatorySourceFactProposalReviewCommand,
     generate_source_fact_proposal,
+    read_source_fact_proposal,
     regulatory_source_fact_proposal_store,
     review_source_fact_proposal,
 )
@@ -32,6 +33,11 @@ def register_content_regulatory_source_review_routes(router: APIRouter) -> None:
     changes a regulator system and it never creates a content plan by itself.
     """
 
+    _register_candidate_routes(router)
+    _register_review_routes(router)
+
+
+def _register_candidate_routes(router: APIRouter) -> None:
     @router.get(
         "/api/content/regulatory-source-candidates/{candidate_id}/snapshot",
         response_model=ContentRegulatorySourceSnapshotReadResponse,
@@ -71,6 +77,20 @@ def register_content_regulatory_source_review_routes(router: APIRouter) -> None:
             run_store=local_state_store(),
         )
 
+    @router.get(
+        "/api/content/regulatory-source-candidates/{candidate_id}/fact-proposal",
+        response_model=ContentRegulatorySourceFactProposalResponse,
+    )
+    def read_content_regulatory_source_fact_proposal(
+        candidate_id: str,
+    ) -> ContentRegulatorySourceFactProposalResponse:
+        return read_source_fact_proposal(
+            candidate_id=candidate_id,
+            proposal_store=regulatory_source_fact_proposal_store(),
+        )
+
+
+def _register_review_routes(router: APIRouter) -> None:
     @router.get(
         "/api/content/regulatory-source-reviews",
         response_model=ContentRegulatorySourceReviewList,

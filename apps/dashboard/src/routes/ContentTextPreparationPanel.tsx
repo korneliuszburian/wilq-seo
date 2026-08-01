@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  getContentRegulatorySourceFactProposal,
   getContentWorkItemInitialDraft,
   postContentRegulatorySourceFactProposal,
   postContentRegulatorySourceFactProposalReview,
@@ -278,10 +279,15 @@ function RegulatorySourceReviewCandidate({
 }) {
   const [proposalResult, setProposalResult] = useState<Awaited<ReturnType<typeof postContentRegulatorySourceFactProposal>> | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const existingProposal = useQuery({
+    queryKey: ["content-workflow", "regulatory-source", candidate.candidate_id, "fact-proposal"],
+    queryFn: () => getContentRegulatorySourceFactProposal(candidate.candidate_id),
+  });
   const capture = useMutation({
     mutationFn: () => postContentRegulatorySourceFactProposal(candidate.candidate_id),
     onSuccess: (result) => {
       setProposalResult(result);
+      void existingProposal.refetch();
       setMessage(result.status === "ready" ? null : result.reason);
     }
   });
@@ -312,7 +318,8 @@ function RegulatorySourceReviewCandidate({
     },
     onError: () => setMessage("Nie udało się zapisać review. Nic nie zostało promowane do planu.")
   });
-  const proposal = proposalResult?.status === "ready" ? proposalResult.proposal : null;
+  const currentProposal = proposalResult ?? existingProposal.data;
+  const proposal = currentProposal?.status === "ready" ? currentProposal.proposal : null;
 
   return <div className="rounded bg-white p-3"><p><a className="font-medium text-action underline" href={candidate.source_url} target="_blank" rel="noreferrer">{candidate.source_title}</a><span> · {candidate.requirement_labels.join(", ")} · odczyt kandydacki: {candidate.observed_on}</span></p><p className="mt-1 text-xs leading-5 text-slate-600">{candidate.safe_next_step}</p>{!proposal ? <button type="button" className="mt-2 rounded border border-action/30 px-3 py-1.5 text-xs font-semibold text-action disabled:opacity-60" disabled={capture.isPending} onClick={() => capture.mutate()}>{capture.isPending ? "Przygotowuję propozycję…" : "Przygotuj propozycję do review"}</button> : <div className="mt-2 rounded border border-line bg-slate-50 p-2"><p className="text-xs text-slate-600">Snapshot: {proposal.observed_on} · SHA-256: {proposal.source_snapshot_digest.slice(0, 12)}…</p><p className="mt-2 text-sm leading-6">{proposal.proposed_fact}</p><p className="mt-2 text-xs text-slate-600">To propozycja WILQ, nie zatwierdzony dowód. Porównaj ją z materiałem urzędowym przed decyzją.</p><div className="mt-2 flex flex-wrap gap-2"><button type="button" className="rounded bg-action px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60" disabled={record.isPending} onClick={() => record.mutate("accepted")}>Przyjmij propozycję po review</button><button type="button" className="rounded border border-line px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-60" disabled={record.isPending} onClick={() => record.mutate("rejected")}>Odrzuć po review</button></div></div>}{message ? <p className="mt-2 text-xs leading-5 text-slate-700">{message}</p> : null}</div>;
 }

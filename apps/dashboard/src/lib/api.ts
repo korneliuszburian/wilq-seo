@@ -684,6 +684,15 @@ export function postContentRegulatorySourceFactProposal(
   );
 }
 
+export function getContentRegulatorySourceFactProposal(
+  candidateId: string
+): Promise<ContentRegulatorySourceFactProposalResponse> {
+  return apiGet(
+    `/api/content/regulatory-source-candidates/${encodeURIComponent(candidateId)}/fact-proposal`,
+    ContentRegulatorySourceFactProposalResponseSchema
+  );
+}
+
 export function postContentRegulatorySourceFactProposalReview(
   proposalId: string,
   request: ContentRegulatorySourceFactProposalReviewCommand

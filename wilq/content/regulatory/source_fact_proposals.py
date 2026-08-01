@@ -103,7 +103,7 @@ class ContentRegulatorySourceFactProposal(BaseModel):
 class ContentRegulatorySourceFactProposalResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    status: Literal["ready", "blocked", "failed"]
+    status: Literal["ready", "not_generated", "blocked", "failed"]
     proposal: ContentRegulatorySourceFactProposal | None = None
     reason: str = Field(min_length=1)
     safe_next_step: str = Field(min_length=1)
@@ -203,6 +203,24 @@ class RegulatorySourceFactProposalStore:
 
 def regulatory_source_fact_proposal_store() -> RegulatorySourceFactProposalStore:
     return RegulatorySourceFactProposalStore(state_db_path())
+
+
+def read_source_fact_proposal(
+    *, candidate_id: str, proposal_store: RegulatorySourceFactProposalStore
+) -> ContentRegulatorySourceFactProposalResponse:
+    proposal = proposal_store.latest(candidate_id)
+    if proposal is None:
+        return ContentRegulatorySourceFactProposalResponse(
+            status="not_generated",
+            reason="Nie ma jeszcze propozycji factu dla bieżącego źródła.",
+            safe_next_step="Przygotuj propozycję, a następnie sprawdź ją przed decyzją.",
+        )
+    return ContentRegulatorySourceFactProposalResponse(
+        status="ready",
+        proposal=proposal,
+        reason="WILQ odczytał istniejącą propozycję z dokładnym snapshotem.",
+        safe_next_step="Porównaj propozycję z oficjalnym źródłem, potem przyjmij albo odrzuć.",
+    )
 
 
 def generate_source_fact_proposal(
@@ -555,6 +573,7 @@ __all__ = [
     "ContentRegulatorySourceFactProposalReviewCommand",
     "RegulatorySourceFactProposalStore",
     "generate_source_fact_proposal",
+    "read_source_fact_proposal",
     "regulatory_source_fact_proposal_store",
     "review_source_fact_proposal",
 ]

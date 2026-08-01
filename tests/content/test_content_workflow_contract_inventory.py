@@ -19,12 +19,12 @@ from wilq.content.planning.generated_proposal_contracts import (
 )
 from wilq.content.planning.new_page_proposal import ContentNewPagePlanningProposalWorkspace
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReviewResponse
+from wilq.content.regulatory.source_fact_proposals import (
+    ContentRegulatorySourceFactProposalResponse,
+)
 from wilq.content.regulatory.source_reviews import (
     ContentRegulatorySourceReview,
     ContentRegulatorySourceReviewList,
-)
-from wilq.content.regulatory.source_fact_proposals import (
-    ContentRegulatorySourceFactProposalResponse,
 )
 from wilq.content.regulatory.source_snapshots import ContentRegulatorySourceSnapshotReadResponse
 from wilq.content.workflow.api import (
@@ -65,6 +65,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/regulatory-source-candidates/{candidate_id}/snapshot",
     ): ContentRegulatorySourceSnapshotReadResponse,
+    (
+        "GET",
+        "/api/content/regulatory-source-candidates/{candidate_id}/fact-proposal",
+    ): ContentRegulatorySourceFactProposalResponse,
     (
         "POST",
         "/api/content/regulatory-source-candidates/{candidate_id}/fact-proposal",

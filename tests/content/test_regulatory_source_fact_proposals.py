@@ -11,6 +11,7 @@ from wilq.content.regulatory.source_fact_proposals import (
     ContentRegulatorySourceFactProposalReviewCommand,
     RegulatorySourceFactProposalStore,
     generate_source_fact_proposal,
+    read_source_fact_proposal,
     review_source_fact_proposal,
 )
 from wilq.content.regulatory.source_reviews import RegulatorySourceReviewStore
@@ -83,6 +84,21 @@ def test_fact_proposal_is_exact_human_gated_and_never_persists_raw_source_body(t
     )
     assert review.decision == "accepted"
     assert review.reviewed_fact == proposal.proposed_fact
+    restored = read_source_fact_proposal(
+        candidate_id=candidate.candidate_id, proposal_store=proposal_store
+    )
+    assert restored.status == "ready"
+    assert restored.proposal == proposal
+
+
+def test_read_without_persisted_proposal_is_not_generated(tmp_path) -> None:
+    proposal_store, _snapshot_store, _review_store, _run_store = _stores(tmp_path)
+    result = read_source_fact_proposal(
+        candidate_id=regulatory_source_candidates()[0].candidate_id,
+        proposal_store=proposal_store,
+    )
+    assert result.status == "not_generated"
+    assert result.proposal is None
 
 
 def test_invalid_requirement_binding_blocks_before_proposal_or_human_review(tmp_path) -> None:

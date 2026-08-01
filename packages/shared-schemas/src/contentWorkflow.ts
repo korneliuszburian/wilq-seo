@@ -3860,7 +3860,7 @@ export const ContentRegulatorySourceFactProposalSchema = z.object({
 });
 
 export const ContentRegulatorySourceFactProposalResponseSchema = z.object({
-  status: z.enum(["ready", "blocked", "failed"]),
+  status: z.enum(["ready", "not_generated", "blocked", "failed"]),
   proposal: ContentRegulatorySourceFactProposalSchema.nullable().optional(),
   reason: z.string().trim().min(1),
   safe_next_step: z.string().trim().min(1)
