@@ -3,6 +3,14 @@ from __future__ import annotations
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from apps.api.wilq_api.routers.content_codex_runtime import content_codex_app_server_client
+from wilq.content.regulatory.source_fact_proposals import (
+    ContentRegulatorySourceFactProposalResponse,
+    ContentRegulatorySourceFactProposalReviewCommand,
+    generate_source_fact_proposal,
+    regulatory_source_fact_proposal_store,
+    review_source_fact_proposal,
+)
 from wilq.content.regulatory.source_reviews import (
     ContentRegulatorySourceReview,
     ContentRegulatorySourceReviewCommand,
@@ -14,6 +22,7 @@ from wilq.content.regulatory.source_snapshots import (
     ContentRegulatorySourceSnapshotReadResponse,
     regulatory_source_snapshot_store,
 )
+from wilq.storage.local_state import local_state_store
 
 
 def register_content_regulatory_source_review_routes(router: APIRouter) -> None:
@@ -47,6 +56,21 @@ def register_content_regulatory_source_review_routes(router: APIRouter) -> None:
             safe_next_step="Sprawdź materiał i zapisz decyzję z dokładnym snapshotem.",
         )
 
+    @router.post(
+        "/api/content/regulatory-source-candidates/{candidate_id}/fact-proposal",
+        response_model=ContentRegulatorySourceFactProposalResponse,
+    )
+    def content_regulatory_source_fact_proposal(
+        candidate_id: str,
+    ) -> ContentRegulatorySourceFactProposalResponse:
+        return generate_source_fact_proposal(
+            candidate_id=candidate_id,
+            client=content_codex_app_server_client(),
+            proposal_store=regulatory_source_fact_proposal_store(),
+            snapshot_store=regulatory_source_snapshot_store(),
+            run_store=local_state_store(),
+        )
+
     @router.get(
         "/api/content/regulatory-source-reviews",
         response_model=ContentRegulatorySourceReviewList,
@@ -66,6 +90,28 @@ def register_content_regulatory_source_review_routes(router: APIRouter) -> None:
     ) -> ContentRegulatorySourceReview | JSONResponse:
         try:
             return regulatory_source_review_store().record(command)
+        except ValueError as error:
+            return JSONResponse(
+                status_code=409,
+                content=_review_conflict(str(error)).model_dump(mode="json"),
+            )
+
+    @router.post(
+        "/api/content/regulatory-source-fact-proposals/{proposal_id}/review",
+        response_model=ContentRegulatorySourceReview,
+        responses={409: {"model": ContentRegulatorySourceReviewConflict}},
+    )
+    def content_regulatory_source_fact_proposal_review(
+        proposal_id: str,
+        command: ContentRegulatorySourceFactProposalReviewCommand,
+    ) -> ContentRegulatorySourceReview | JSONResponse:
+        try:
+            return review_source_fact_proposal(
+                proposal_id=proposal_id,
+                command=command,
+                proposal_store=regulatory_source_fact_proposal_store(),
+                review_store=regulatory_source_review_store(),
+            )
         except ValueError as error:
             return JSONResponse(
                 status_code=409,

@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getContentWorkItemInitialDraft,
   getContentWorkItemPlanningProposal,
-  getContentRegulatorySourceSnapshot,
-  postContentRegulatorySourceReview,
+  postContentRegulatorySourceFactProposal,
+  postContentRegulatorySourceFactProposalReview,
   postContentWorkItemInitialDraft,
   postContentWorkItemPlanningProposal
 } from "../lib/api";
@@ -16,8 +16,8 @@ vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
   getContentWorkItemInitialDraft: vi.fn(),
   getContentWorkItemPlanningProposal: vi.fn(),
-  getContentRegulatorySourceSnapshot: vi.fn(),
-  postContentRegulatorySourceReview: vi.fn(),
+  postContentRegulatorySourceFactProposal: vi.fn(),
+  postContentRegulatorySourceFactProposalReview: vi.fn(),
   postContentWorkItemInitialDraft: vi.fn(),
   postContentWorkItemPlanningProposal: vi.fn()
 }));
@@ -250,7 +250,7 @@ describe("ContentTextPreparationPanel", () => {
           evidence_ids: []
         }],
         regulatory_review_candidates: [{
-          candidate_id: "bdo_registration_scope_2026_07_31",
+          candidate_id: "bdo_registration_scope_2026_07_31_r2",
           source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
           source_title: "BDO: Kto podlega pod obowiązek rejestracji?",
           observed_on: "2026-07-31",
@@ -261,25 +261,30 @@ describe("ContentTextPreparationPanel", () => {
         }]
       }
     } as never);
-    vi.mocked(getContentRegulatorySourceSnapshot).mockResolvedValue({
-      status: "captured",
-      snapshot: {
-        snapshot_id: "regulatory_snapshot_scope",
-        candidate_id: "bdo_registration_scope_2026_07_31",
+    vi.mocked(postContentRegulatorySourceFactProposal).mockResolvedValue({
+      status: "ready",
+      proposal: {
+        proposal_id: "regulatory_fact_proposal_scope",
+        candidate_id: "bdo_registration_scope_2026_07_31_r2",
         profile_id: "bdo",
         profile_version: "2026-07",
         source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
-        content_digest: "d".repeat(64),
-        content_type: "text/html",
-        byte_length: 128,
-        observed_at: "2026-07-31T12:00:00Z"
+        source_snapshot_id: "regulatory_snapshot_scope",
+        source_snapshot_digest: "d".repeat(64),
+        observed_on: "2026-07-31",
+        proposed_fact: "Zakres obowiązku wymaga dalszej oceny dla konkretnej działalności.",
+        covered_requirement_ids: ["bdo_scope"],
+        codex_run_id: "codex_regulatory_source_fact_1",
+        status: "ready",
+        human_review_required: true,
+        created_at: "2026-07-31T12:00:00Z"
       },
       reason: "Pobrano snapshot.",
       safe_next_step: "Sprawdź źródło."
     } as never);
-    vi.mocked(postContentRegulatorySourceReview).mockResolvedValue({
+    vi.mocked(postContentRegulatorySourceFactProposalReview).mockResolvedValue({
       review_id: "regulatory_review_scope",
-      candidate_id: "bdo_registration_scope_2026_07_31",
+      candidate_id: "bdo_registration_scope_2026_07_31_r2",
       profile_id: "bdo",
       profile_version: "2026-07",
       service_card_ids: ["ekologus_service_bdo_reporting"],
@@ -297,21 +302,13 @@ describe("ContentTextPreparationPanel", () => {
     renderPanel();
 
     fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
-    fireEvent.click(screen.getByRole("button", { name: "Pobierz snapshot do review" }));
-    await screen.findByLabelText("Fakt po sprawdzeniu źródła");
-    fireEvent.change(screen.getByLabelText("Fakt po sprawdzeniu źródła"), {
-      target: { value: "Zakres obowiązku wymaga dalszej oceny dla konkretnej działalności." }
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Przyjmij fakt źródłowy" }));
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj propozycję do review" }));
+    await screen.findByText("Zakres obowiązku wymaga dalszej oceny dla konkretnej działalności.");
+    fireEvent.click(screen.getByRole("button", { name: "Przyjmij propozycję po review" }));
 
-    await waitFor(() => expect(postContentRegulatorySourceReview).toHaveBeenCalledWith({
-      candidate_id: "bdo_registration_scope_2026_07_31",
-      expected_source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
-      expected_profile_version: "2026-07",
+    await waitFor(() => expect(postContentRegulatorySourceFactProposalReview).toHaveBeenCalledWith("regulatory_fact_proposal_scope", {
       expected_source_snapshot_id: "regulatory_snapshot_scope",
       expected_source_snapshot_digest: "d".repeat(64),
-      reviewed_fact: "Zakres obowiązku wymaga dalszej oceny dla konkretnej działalności.",
-      covered_requirement_ids: ["bdo_scope"],
       decision: "accepted",
       reviewer: "Wilku"
     }));

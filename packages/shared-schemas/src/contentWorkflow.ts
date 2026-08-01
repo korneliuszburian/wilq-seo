@@ -3841,6 +3841,42 @@ export const ContentRegulatorySourceSnapshotReadResponseSchema = z.object({
   }
 });
 
+export const ContentRegulatorySourceFactProposalSchema = z.object({
+  proposal_id: z.string().trim().min(1),
+  candidate_id: z.string().trim().min(1),
+  profile_id: z.string().trim().min(1),
+  profile_version: z.string().trim().min(1),
+  source_url: z.string().url(),
+  source_title: z.string().trim().min(1),
+  source_snapshot_id: z.string().trim().min(1),
+  source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  observed_on: z.string().min(1),
+  proposed_fact: z.string().trim().min(20).max(2000),
+  covered_requirement_ids: z.array(z.string().trim().min(1)).min(1),
+  codex_run_id: z.string().trim().min(1),
+  status: z.literal("ready"),
+  human_review_required: z.literal(true),
+  created_at: z.string().datetime()
+});
+
+export const ContentRegulatorySourceFactProposalResponseSchema = z.object({
+  status: z.enum(["ready", "blocked", "failed"]),
+  proposal: ContentRegulatorySourceFactProposalSchema.nullable().optional(),
+  reason: z.string().trim().min(1),
+  safe_next_step: z.string().trim().min(1)
+}).superRefine((response, context) => {
+  if ((response.status === "ready") !== Boolean(response.proposal)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Only ready source proposal response may contain proposal." });
+  }
+});
+
+export const ContentRegulatorySourceFactProposalReviewCommandSchema = z.object({
+  expected_source_snapshot_id: z.string().trim().min(1),
+  expected_source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  decision: z.enum(["accepted", "rejected"]),
+  reviewer: z.string().trim().min(1).max(200)
+});
+
 const contentPlanningSourceNames = [
   "wordpress",
   "service_profile",
@@ -5060,6 +5096,15 @@ export type ContentRegulatorySourceSnapshot = z.infer<
 >;
 export type ContentRegulatorySourceSnapshotReadResponse = z.infer<
   typeof ContentRegulatorySourceSnapshotReadResponseSchema
+>;
+export type ContentRegulatorySourceFactProposal = z.infer<
+  typeof ContentRegulatorySourceFactProposalSchema
+>;
+export type ContentRegulatorySourceFactProposalResponse = z.infer<
+  typeof ContentRegulatorySourceFactProposalResponseSchema
+>;
+export type ContentRegulatorySourceFactProposalReviewCommand = z.input<
+  typeof ContentRegulatorySourceFactProposalReviewCommandSchema
 >;
 export type ContentPlanningInputReadinessResponse = z.infer<
   typeof ContentPlanningInputReadinessResponseSchema

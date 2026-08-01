@@ -85,6 +85,25 @@ class RegulatorySourceSnapshotStore:
         candidates: tuple[ContentRegulatorySourceCandidate, ...] | None = None,
         now: datetime | None = None,
     ) -> ContentRegulatorySourceSnapshot:
+        snapshot, _ = self.capture_with_body(
+            candidate_id, reader=reader, candidates=candidates, now=now
+        )
+        return snapshot
+
+    def capture_with_body(
+        self,
+        candidate_id: str,
+        *,
+        reader: SourceReader | None = None,
+        candidates: tuple[ContentRegulatorySourceCandidate, ...] | None = None,
+        now: datetime | None = None,
+    ) -> tuple[ContentRegulatorySourceSnapshot, bytes]:
+        """Capture metadata and return the bounded body only to the current caller.
+
+        The body is intentionally not put in the snapshot model or database.  This
+        narrow helper is for a server-owned extraction turn that must be bound to
+        the exact digest it observed.
+        """
         candidate = _reviewable_candidate(
             candidate_id,
             candidates if candidates is not None else regulatory_source_candidates(),
@@ -126,7 +145,7 @@ class RegulatorySourceSnapshotStore:
                     ),
                 ),
             )
-        return snapshot
+        return snapshot, body
 
     def get(
         self,

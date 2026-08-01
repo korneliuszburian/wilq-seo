@@ -124,7 +124,7 @@ def test_source_snapshot_stays_bounded_without_persisting_source_body(tmp_path) 
 
     with pytest.raises(ValueError, match="exceeds the safe snapshot size"):
         store.capture(
-            "bdo_system_definition_2026_07_31",
+            "bdo_system_definition_2026_07_31_r2",
             reader=lambda _: (b"x" * (_MAX_SNAPSHOT_BYTES + 1), "application/pdf"),
         )
 
@@ -192,11 +192,11 @@ def test_public_source_review_route_persists_only_human_decision(tmp_path, monke
         lambda _: (b"<html>official source snapshot</html>", "text/html"),
     )
     snapshot_response = client.get(
-        "/api/content/regulatory-source-candidates/bdo_registration_scope_2026_07_31/snapshot"
+        "/api/content/regulatory-source-candidates/bdo_registration_scope_2026_07_31_r2/snapshot"
     )
     snapshot = ContentRegulatorySourceSnapshot.model_validate(snapshot_response.json()["snapshot"])
     payload = _command(
-        candidate_id="bdo_registration_scope_2026_07_31", snapshot=snapshot
+        candidate_id="bdo_registration_scope_2026_07_31_r2", snapshot=snapshot
     ).model_dump(mode="json")
     missing_snapshot_payload = {
         **payload,

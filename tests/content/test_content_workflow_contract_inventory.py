@@ -23,6 +23,9 @@ from wilq.content.regulatory.source_reviews import (
     ContentRegulatorySourceReview,
     ContentRegulatorySourceReviewList,
 )
+from wilq.content.regulatory.source_fact_proposals import (
+    ContentRegulatorySourceFactProposalResponse,
+)
 from wilq.content.regulatory.source_snapshots import ContentRegulatorySourceSnapshotReadResponse
 from wilq.content.workflow.api import (
     ContentWorkItemMeasurementOutcomeResponse,
@@ -62,6 +65,14 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/regulatory-source-candidates/{candidate_id}/snapshot",
     ): ContentRegulatorySourceSnapshotReadResponse,
+    (
+        "POST",
+        "/api/content/regulatory-source-candidates/{candidate_id}/fact-proposal",
+    ): ContentRegulatorySourceFactProposalResponse,
+    (
+        "POST",
+        "/api/content/regulatory-source-fact-proposals/{proposal_id}/review",
+    ): ContentRegulatorySourceReview,
     ("GET", "/api/content/regulatory-source-reviews"): ContentRegulatorySourceReviewList,
     ("POST", "/api/content/regulatory-source-reviews"): ContentRegulatorySourceReview,
     ("GET", "/api/content/new-page-topics"): ContentNewPageTopicRecommendations,
@@ -244,6 +255,7 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
                 "planning-proposals",
                 "planning-proposal",
                 "semantic-review",
+                "fact-proposal",
             )
         )
     }
@@ -263,6 +275,8 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
         "/api/content/work-items/{work_item_id}/initial-draft",
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
+        "/api/content/regulatory-source-candidates/{candidate_id}/fact-proposal",
+        "/api/content/regulatory-source-fact-proposals/{proposal_id}/review",
     }
     assert forbidden_paths.isdisjoint(content_paths)
     serialized_contract = json.dumps(content_paths, sort_keys=True)
@@ -346,6 +360,7 @@ def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
                 "/api/content/new-page-briefs",
                 "/api/content/new-page-topics",
                 "/api/content/regulatory-source-candidates",
+                "/api/content/regulatory-source-fact-proposals",
                 "/api/content/regulatory-source-reviews",
                 "/api/content/wordpress",
             )

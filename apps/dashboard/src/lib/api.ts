@@ -55,6 +55,8 @@ import {
   ContentRegulatorySourceReviewConflictSchema,
   ContentRegulatorySourceReviewSchema,
   ContentRegulatorySourceSnapshotReadResponseSchema,
+  ContentRegulatorySourceFactProposalResponseSchema,
+  ContentRegulatorySourceFactProposalReviewCommandSchema,
   ContentServiceProfileResponseSchema,
   ContentInventoryCatalogResponseSchema,
   ContentOperatorContextSchema,
@@ -159,6 +161,8 @@ import {
   type ContentRegulatorySourceReview,
   type ContentRegulatorySourceReviewConflict,
   type ContentRegulatorySourceSnapshotReadResponse,
+  type ContentRegulatorySourceFactProposalResponse,
+  type ContentRegulatorySourceFactProposalReviewCommand,
   type ContentPlanningWorkspace,
   type ContentServiceProfileResponse,
   type ContentInventoryCatalogResponse,
@@ -667,6 +671,28 @@ export function postContentRegulatorySourceReview(
     ContentRegulatorySourceReviewSchema,
     ContentRegulatorySourceReviewConflictSchema,
     ContentRegulatorySourceReviewCommandSchema.parse(request)
+  );
+}
+
+export function postContentRegulatorySourceFactProposal(
+  candidateId: string
+): Promise<ContentRegulatorySourceFactProposalResponse> {
+  return apiPost(
+    `/api/content/regulatory-source-candidates/${encodeURIComponent(candidateId)}/fact-proposal`,
+    ContentRegulatorySourceFactProposalResponseSchema,
+    {}
+  );
+}
+
+export function postContentRegulatorySourceFactProposalReview(
+  proposalId: string,
+  request: ContentRegulatorySourceFactProposalReviewCommand
+): Promise<ContentRegulatorySourceReview | ContentRegulatorySourceReviewConflict> {
+  return apiPostWithConflict(
+    `/api/content/regulatory-source-fact-proposals/${encodeURIComponent(proposalId)}/review`,
+    ContentRegulatorySourceReviewSchema,
+    ContentRegulatorySourceReviewConflictSchema,
+    ContentRegulatorySourceFactProposalReviewCommandSchema.parse(request)
   );
 }
 
