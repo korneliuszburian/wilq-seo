@@ -28,6 +28,7 @@ from wilq.codex.app_server import (
 )
 from wilq.content.regulatory.policy import (
     ContentRegulatorySourceCandidate,
+    regulatory_content_profile,
     regulatory_source_candidates,
 )
 from wilq.content.regulatory.source_reviews import (
@@ -260,7 +261,9 @@ def _generate_from_snapshot(
     )
     try:
         source_text = _source_text_for_proposal(snapshot, body)
-        result = client.run_structured_turn(_turn_request(candidate, snapshot, source_text))
+        result = client.run_structured_turn(
+            _turn_request(candidate, snapshot, _relevant_source_text(candidate, source_text))
+        )
     except Exception:
         result = CodexAppServerTurnResult(status="failed")
     if result.status != "completed" or result.output_text is None or result.external_call_attempted:
@@ -407,6 +410,41 @@ def _extract_html_main_text(html: str) -> str:
     parser.close()
     extracted = " ".join(parser.parts).strip()
     return extracted or html
+
+
+def _relevant_source_text(candidate: ContentRegulatorySourceCandidate, source_text: str) -> str:
+    """Reduce a long official document to deterministic candidate-relevant excerpts."""
+
+    profile = regulatory_content_profile(service_card_id=candidate.service_card_ids[0])
+    requirements = (
+        []
+        if profile is None
+        else [item for item in profile.requirements if item.id in candidate.requirement_ids]
+    )
+    terms = _search_terms(
+        " ".join(
+            [candidate.source_title, *(item.label + " " + item.reason for item in requirements)]
+        )
+    )
+    if not terms or len(source_text) <= 50_000:
+        return source_text[:50_000]
+    chunks = [source_text[index : index + 1_500] for index in range(0, len(source_text), 1_250)]
+    ranked = sorted(
+        enumerate(chunks),
+        key=lambda item: (-sum(term in item[1].casefold() for term in terms), item[0]),
+    )
+    selected = sorted(
+        index for index, chunk in ranked[:24] if any(term in chunk.casefold() for term in terms)
+    )
+    if not selected:
+        return source_text[:50_000]
+    return "\n\n[...fragmenty źródła poza zakresem... ]\n\n".join(
+        chunks[index] for index in selected
+    )
+
+
+def _search_terms(value: str) -> set[str]:
+    return {term for term in re.findall(r"\w+", value.casefold()) if len(term) >= 4}
 
 
 def _turn_request(

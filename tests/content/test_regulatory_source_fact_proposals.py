@@ -260,3 +260,15 @@ def test_excerpt_matching_normalizes_pdf_line_break_hyphenation() -> None:
     assert proposals_module._normalize_source_text("sprawozda-\nnie roczne") == (
         proposals_module._normalize_source_text("sprawozdanie roczne")
     )
+
+
+def test_long_source_context_keeps_candidate_relevant_fragments() -> None:
+    candidate = regulatory_source_candidates()[0]
+    source = ("szum layoutu " * 8_000) + (
+        "Podmioty zobowiązane do rejestracji w BDO prowadzą ewidencję odpadów. " * 20
+    )
+
+    selected = proposals_module._relevant_source_text(candidate, source)
+
+    assert "Podmioty zobowiązane do rejestracji" in selected
+    assert len(selected) < len(source)
