@@ -43,10 +43,13 @@ def test_fact_proposal_is_exact_human_gated_and_never_persists_raw_source_body(t
     proposal_store, snapshot_store, review_store, run_store = _stores(tmp_path)
     client = _Client(
         {
+            "source_sufficiency": "sufficient",
+            "insufficiency_reason": None,
             "proposed_fact": (
                 "Oficjalne źródło opisuje obowiązek wyłącznie w zakresie wskazanym "
                 "dla tego kandydata i wymaga dalszej oceny działalności firmy."
             ),
+            "source_excerpt": "TOP_SECRET_OFFICIAL_SOURCE_BODY",
             "covered_requirement_ids": list(candidate.requirement_ids),
         }
     )
@@ -89,14 +92,17 @@ def test_invalid_requirement_binding_blocks_before_proposal_or_human_review(tmp_
         candidate_id=candidate.candidate_id,
         client=_Client(
             {
+                "source_sufficiency": "sufficient",
+                "insufficiency_reason": None,
                 "proposed_fact": "To jest pozornie poprawny fact, ale odnosi się do obcego wymogu.",
+                "source_excerpt": "Oficjalny tekst źródła dla testu.",
                 "covered_requirement_ids": ["other_requirement"],
             }
         ),
         proposal_store=proposal_store,
         snapshot_store=snapshot_store,
         run_store=run_store,
-        reader=lambda _: (b"official", "text/html"),
+        reader=lambda _: ("Oficjalny tekst źródła dla testu.".encode(), "text/html"),
     )
 
     assert result.status == "blocked"
@@ -111,16 +117,19 @@ def test_proposal_review_rejects_stale_snapshot_without_human_review(tmp_path) -
         candidate_id=candidate.candidate_id,
         client=_Client(
             {
+                "source_sufficiency": "sufficient",
+                "insufficiency_reason": None,
                 "proposed_fact": (
                     "Dokładny fact z oficjalnego źródła wymaga sprawdzenia przez człowieka."
                 ),
+                "source_excerpt": "Oficjalny tekst źródła dla testu.",
                 "covered_requirement_ids": list(candidate.requirement_ids),
             }
         ),
         proposal_store=proposal_store,
         snapshot_store=snapshot_store,
         run_store=run_store,
-        reader=lambda _: (b"official", "text/html"),
+        reader=lambda _: ("Oficjalny tekst źródła dla testu.".encode(), "text/html"),
     )
     assert result.proposal is not None
     with pytest.raises(ValueError, match="snapshot changed"):
@@ -138,12 +147,66 @@ def test_proposal_review_rejects_stale_snapshot_without_human_review(tmp_path) -
     assert review_store.list_reviews() == []
 
 
+def test_proposal_blocks_when_its_ephemeral_excerpt_is_not_in_exact_source(tmp_path) -> None:
+    candidate = regulatory_source_candidates()[0]
+    proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
+    result = generate_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        client=_Client(
+            {
+                "source_sufficiency": "sufficient",
+                "insufficiency_reason": None,
+                "proposed_fact": "Fact nie może przejść bez literalnego śladu w źródle urzędowym.",
+                "source_excerpt": "Nieistniejący fragment oficjalnego materiału.",
+                "covered_requirement_ids": list(candidate.requirement_ids),
+            }
+        ),
+        proposal_store=proposal_store,
+        snapshot_store=snapshot_store,
+        run_store=run_store,
+        reader=lambda _: ("Oficjalny materiał zawiera inny tekst.".encode(), "text/html"),
+    )
+
+    assert result.status == "blocked"
+    assert proposal_store.latest(candidate.candidate_id) is None
+
+
+def test_insufficient_source_is_a_typed_blocker_not_a_weak_proposal(tmp_path) -> None:
+    candidate = regulatory_source_candidates()[0]
+    proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
+    result = generate_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        client=_Client(
+            {
+                "source_sufficiency": "insufficient",
+                "insufficiency_reason": "Źródło nie zawiera pełnego zakresu obowiązku.",
+                "proposed_fact": (
+                    "Źródło nie daje pełnej podstawy do tworzenia factu regulacyjnego."
+                ),
+                "source_excerpt": "Źródło nie zawiera pełnego zakresu obowiązku.",
+                "covered_requirement_ids": list(candidate.requirement_ids),
+            }
+        ),
+        proposal_store=proposal_store,
+        snapshot_store=snapshot_store,
+        run_store=run_store,
+        reader=lambda _: ("Źródło nie zawiera pełnego zakresu obowiązku.".encode(), "text/html"),
+    )
+
+    assert result.status == "blocked"
+    assert result.proposal is None
+    assert proposal_store.latest(candidate.candidate_id) is None
+
+
 def test_pdf_source_is_extracted_transiently_before_structured_turn(tmp_path, monkeypatch) -> None:
     candidate = regulatory_source_candidates()[0]
     proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
     client = _Client(
         {
+            "source_sufficiency": "sufficient",
+            "insufficiency_reason": None,
             "proposed_fact": "Wyekstrahowany tekst urzędowy wymaga nadal decyzji człowieka.",
+            "source_excerpt": "Tekst z oficjalnego PDF-a.",
             "covered_requirement_ids": list(candidate.requirement_ids),
         }
     )
