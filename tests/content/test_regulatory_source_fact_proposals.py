@@ -228,3 +228,29 @@ def test_pdf_source_is_extracted_transiently_before_structured_turn(tmp_path, mo
     assert result.status == "ready"
     assert "Tekst z oficjalnego PDF-a." in client.requests[0].untrusted_context
     assert "%PDF-raw-official-body" not in client.requests[0].untrusted_context
+
+
+def test_html_proposal_context_uses_main_content_not_layout_or_scripts() -> None:
+    text = proposals_module._source_text_for_proposal(
+        proposals_module.ContentRegulatorySourceSnapshot(
+            snapshot_id="snapshot",
+            candidate_id="candidate",
+            profile_id="profile",
+            profile_version="version",
+            source_url="https://example.gov.pl/source",
+            content_digest="a" * 64,
+            content_type="text/html",
+            byte_length=180,
+            observed_at="2026-08-01T12:00:00Z",
+        ),
+        (
+            "<html><nav>menu layout</nav><main><h1>Obowiązek BDO</h1>"
+            "<p>Literalny fakt z materiału urzędowego.</p><script>secret()</script>"
+            "</main></html>"
+        ).encode(),
+    )
+
+    assert "Obowiązek BDO" in text
+    assert "Literalny fakt" in text
+    assert "menu layout" not in text
+    assert "secret" not in text

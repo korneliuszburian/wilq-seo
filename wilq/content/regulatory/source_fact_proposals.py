@@ -12,6 +12,7 @@ import sqlite3
 import subprocess
 from datetime import UTC, datetime
 from hashlib import sha256
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Literal
 from uuid import uuid4
@@ -365,11 +366,45 @@ def _source_text_for_proposal(snapshot: ContentRegulatorySourceSnapshot, body: b
             raise ValueError("Official PDF source cannot be extracted safely.")
         text = result.stdout.decode("utf-8", errors="replace")
     else:
-        text = body.decode("utf-8", errors="replace")
+        text = _extract_html_main_text(body.decode("utf-8", errors="replace"))
     text = text.strip()
     if not text:
         raise ValueError("Official source has no extractable text.")
     return text[:500_000]
+
+
+class _HtmlMainTextExtractor(HTMLParser):
+    """Keep article/main text while dropping layout and executable markup."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._content_depth = 0
+        self._ignored_depth = 0
+        self.parts: list[str] = []
+
+    def handle_starttag(self, tag: str, _attrs: list[tuple[str, str | None]]) -> None:
+        if tag in {"article", "main"}:
+            self._content_depth += 1
+        elif self._content_depth and tag in {"script", "style", "noscript", "svg"}:
+            self._ignored_depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"script", "style", "noscript", "svg"} and self._ignored_depth:
+            self._ignored_depth -= 1
+        elif tag in {"article", "main"} and self._content_depth:
+            self._content_depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if self._content_depth and not self._ignored_depth:
+            self.parts.append(data)
+
+
+def _extract_html_main_text(html: str) -> str:
+    parser = _HtmlMainTextExtractor()
+    parser.feed(html)
+    parser.close()
+    extracted = " ".join(parser.parts).strip()
+    return extracted or html
 
 
 def _turn_request(
