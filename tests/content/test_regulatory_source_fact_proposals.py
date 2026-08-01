@@ -254,3 +254,9 @@ def test_html_proposal_context_uses_main_content_not_layout_or_scripts() -> None
     assert "Literalny fakt" in text
     assert "menu layout" not in text
     assert "secret" not in text
+
+
+def test_excerpt_matching_normalizes_pdf_line_break_hyphenation() -> None:
+    assert proposals_module._normalize_source_text("sprawozda-\nnie roczne") == (
+        proposals_module._normalize_source_text("sprawozdanie roczne")
+    )

@@ -8,8 +8,10 @@ isolated structured turn and is never stored or returned by this module.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import subprocess
+import unicodedata
 from datetime import UTC, datetime
 from hashlib import sha256
 from html.parser import HTMLParser
@@ -475,7 +477,9 @@ def _proposal_id(
 
 
 def _normalize_source_text(value: str) -> str:
-    return " ".join(value.split()).casefold()
+    normalized = unicodedata.normalize("NFKC", value).replace("\u00ad", "")
+    normalized = re.sub(r"(\w)-\s+(\w)", r"\1\2", normalized)
+    return re.sub(r"[\W_]+", " ", normalized, flags=re.UNICODE).strip().casefold()
 
 
 def _block_run(
