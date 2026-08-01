@@ -262,6 +262,17 @@ def test_excerpt_matching_normalizes_pdf_line_break_hyphenation() -> None:
     )
 
 
+def test_source_term_coverage_allows_one_nonliteral_term_in_a_five_term_anchor() -> None:
+    assert proposals_module._has_sufficient_source_term_coverage(
+        ["pierwszy", "drugi", "trzeci", "czwarty", "modelowy"],
+        "pierwszy drugi trzeci czwarty termin źródłowy",
+    )
+    assert not proposals_module._has_sufficient_source_term_coverage(
+        ["pierwszy", "drugi", "trzeci", "czwarty", "modelowy"],
+        "pierwszy drugi trzeci termin źródłowy",
+    )
+
+
 def test_long_source_context_keeps_candidate_relevant_fragments() -> None:
     candidate = regulatory_source_candidates()[0]
     source = ("szum layoutu " * 8_000) + (

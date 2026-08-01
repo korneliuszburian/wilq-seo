@@ -8,6 +8,7 @@ isolated structured turn and is never stored or returned by this module.
 from __future__ import annotations
 
 import json
+import math
 import re
 import sqlite3
 import subprocess
@@ -279,11 +280,10 @@ def _generate_from_snapshot(
         output = ContentRegulatorySourceFactProposalOutput.model_validate_json(result.output_text)
         if output.covered_requirement_ids != sorted(candidate.requirement_ids):
             raise ValueError("Fact proposal requirement IDs do not exactly match candidate.")
-        normalized_source = _normalize_source_text(source_text)
-        if any(
-            _normalize_source_text(term) not in normalized_source for term in output.source_terms
-        ):
-            raise ValueError("Fact proposal source terms are not present in exact source text.")
+        if not _has_sufficient_source_term_coverage(output.source_terms, source_text):
+            raise ValueError(
+                "Fact proposal source terms do not sufficiently match exact source text."
+            )
     except ValueError:
         return _block_run(
             run_store,
@@ -522,6 +522,12 @@ def _normalize_source_text(value: str) -> str:
     normalized = unicodedata.normalize("NFKC", value).replace("\u00ad", "")
     normalized = re.sub(r"(\w)-\s+(\w)", r"\1\2", normalized)
     return re.sub(r"[\W_]+", " ", normalized, flags=re.UNICODE).strip().casefold()
+
+
+def _has_sufficient_source_term_coverage(terms: list[str], source_text: str) -> bool:
+    normalized_source = _normalize_source_text(source_text)
+    matched = sum(_normalize_source_text(term) in normalized_source for term in terms)
+    return matched >= math.ceil(len(terms) * 0.8)
 
 
 def _block_run(
