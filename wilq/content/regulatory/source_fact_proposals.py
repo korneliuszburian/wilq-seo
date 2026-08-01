@@ -36,6 +36,7 @@ from wilq.content.regulatory.source_reviews import (
     ContentRegulatorySourceReview,
     ContentRegulatorySourceReviewCommand,
     RegulatorySourceReviewStore,
+    proposal_matches_candidate,
 )
 from wilq.content.regulatory.source_snapshots import (
     ContentRegulatorySourceSnapshot,
@@ -196,6 +197,27 @@ class RegulatorySourceFactProposalStore:
             None if row is None else ContentRegulatorySourceFactProposal.model_validate_json(row[0])
         )
 
+    def latest_for_snapshot(
+        self, candidate_id: str, snapshot_id: str
+    ) -> ContentRegulatorySourceFactProposal | None:
+        if not self.path.exists():
+            return None
+        connection = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True)
+        try:
+            row = connection.execute(
+                """SELECT payload_json FROM content_regulatory_source_fact_proposals
+                   WHERE candidate_id = ? AND snapshot_id = ?
+                   ORDER BY created_at DESC, proposal_id DESC LIMIT 1""",
+                (candidate_id, snapshot_id),
+            ).fetchone()
+        except sqlite3.OperationalError:
+            return None
+        finally:
+            connection.close()
+        return (
+            None if row is None else ContentRegulatorySourceFactProposal.model_validate_json(row[0])
+        )
+
     def _connect(self) -> sqlite3.Connection:
         prepare_private_store_path(self.path, normalize_existing_parent=False)
         connection = sqlite3.connect(self.path)
@@ -216,17 +238,26 @@ def read_source_fact_proposal(
     *,
     candidate_id: str,
     proposal_store: RegulatorySourceFactProposalStore,
+    snapshot_store: RegulatorySourceSnapshotStore | None = None,
     candidates: tuple[ContentRegulatorySourceCandidate, ...] | None = None,
 ) -> ContentRegulatorySourceFactProposalResponse:
-    proposal = proposal_store.latest(candidate_id)
-    if proposal is None:
+    snapshot = (snapshot_store or RegulatorySourceSnapshotStore(proposal_store.path)).latest(
+        candidate_id
+    )
+    if snapshot is None:
         return ContentRegulatorySourceFactProposalResponse(
             status="not_generated",
-            reason="Nie ma jeszcze propozycji factu dla bieżącego źródła.",
+            reason="Nie ma jeszcze snapshotu ani propozycji factu dla bieżącego źródła.",
             safe_next_step="Przygotuj propozycję, a następnie sprawdź ją przed decyzją.",
         )
+    proposal = proposal_store.latest_for_snapshot(candidate_id, snapshot.snapshot_id)
+    if proposal is None or proposal.source_snapshot_digest != snapshot.content_digest:
+        return _blocked(
+            "Najnowszy snapshot materiału urzędowego nie ma jeszcze gotowej propozycji factu.",
+            "Przygotuj nową propozycję do review dla bieżącego snapshotu.",
+        )
     candidate = _current_candidate(candidate_id, candidates)
-    if candidate is None or not _proposal_matches_candidate(proposal, candidate):
+    if candidate is None or not proposal_matches_candidate(proposal, candidate):
         return _blocked(
             "Zapisana propozycja nie odpowiada już bieżącemu kandydatowi źródła.",
             "Odczytaj bieżący materiał urzędowy i przygotuj nową propozycję do review.",
@@ -573,19 +604,6 @@ def _current_candidate(
 ) -> ContentRegulatorySourceCandidate | None:
     known = candidates if candidates is not None else regulatory_source_candidates()
     return next((item for item in known if item.candidate_id == candidate_id), None)
-
-
-def _proposal_matches_candidate(
-    proposal: ContentRegulatorySourceFactProposal,
-    candidate: ContentRegulatorySourceCandidate,
-) -> bool:
-    return (
-        proposal.candidate_id == candidate.candidate_id
-        and proposal.profile_id == candidate.profile_id
-        and proposal.profile_version == candidate.profile_version
-        and proposal.source_url == candidate.source_url
-        and proposal.covered_requirement_ids == sorted(candidate.requirement_ids)
-    )
 
 
 def _normalize_source_text(value: str) -> str:

@@ -182,16 +182,11 @@ class RegulatorySourceReviewStore:
             command,
             candidates if candidates is not None else regulatory_source_candidates(),
         )
+        if not proposal_matches_candidate(proposal, candidate):
+            raise ValueError(_STALE_PROPOSAL_REASON)
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             if not _table_exists(connection, "content_regulatory_source_fact_proposals"):
-                raise ValueError(_STALE_PROPOSAL_REASON)
-            latest_proposal = connection.execute(
-                """SELECT proposal_id FROM content_regulatory_source_fact_proposals
-                   WHERE candidate_id = ? ORDER BY created_at DESC, proposal_id DESC LIMIT 1""",
-                (proposal.candidate_id,),
-            ).fetchone()
-            if latest_proposal is None or latest_proposal["proposal_id"] != proposal.proposal_id:
                 raise ValueError(_STALE_PROPOSAL_REASON)
             if not _table_exists(connection, "content_regulatory_source_snapshots"):
                 raise ValueError(_MISSING_SNAPSHOT_REASON)
@@ -206,6 +201,14 @@ class RegulatorySourceReviewStore:
                 json.loads(latest_snapshot["payload_json"])
             )
             if snapshot.snapshot_id != proposal.source_snapshot_id:
+                raise ValueError(_STALE_PROPOSAL_REASON)
+            current_proposal = connection.execute(
+                """SELECT proposal_id FROM content_regulatory_source_fact_proposals
+                   WHERE candidate_id = ? AND snapshot_id = ?
+                   ORDER BY created_at DESC, proposal_id DESC LIMIT 1""",
+                (proposal.candidate_id, snapshot.snapshot_id),
+            ).fetchone()
+            if current_proposal is None or current_proposal["proposal_id"] != proposal.proposal_id:
                 raise ValueError(_STALE_PROPOSAL_REASON)
             _require_exact_snapshot(candidate, command, snapshot)
             review = _review_from_command(
@@ -290,6 +293,21 @@ def _resolve_candidate(
             "Regulatory source review cannot cover requirements outside its candidate."
         )
     return candidate
+
+
+def proposal_matches_candidate(
+    proposal: ContentRegulatorySourceFactProposal,
+    candidate: ContentRegulatorySourceCandidate,
+) -> bool:
+    """Keep read and review bound to the same current candidate identity."""
+
+    return (
+        proposal.candidate_id == candidate.candidate_id
+        and proposal.profile_id == candidate.profile_id
+        and proposal.profile_version == candidate.profile_version
+        and proposal.source_url == candidate.source_url
+        and proposal.covered_requirement_ids == sorted(candidate.requirement_ids)
+    )
 
 
 def _review_from_command(

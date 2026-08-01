@@ -7,8 +7,9 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 from typing import Literal
+from urllib.error import HTTPError
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -174,6 +175,28 @@ class RegulatorySourceSnapshotStore:
             return None
         return ContentRegulatorySourceSnapshot.model_validate(json.loads(row["payload_json"]))
 
+    def latest(self, candidate_id: str) -> ContentRegulatorySourceSnapshot | None:
+        if not self.path.exists():
+            return None
+        connection = self._read_connection()
+        if connection is None:
+            return None
+        try:
+            if not _table_exists(connection, "content_regulatory_source_snapshots"):
+                return None
+            row = connection.execute(
+                """SELECT payload_json FROM content_regulatory_source_snapshots
+                   WHERE candidate_id = ? ORDER BY observed_at DESC, snapshot_id DESC LIMIT 1""",
+                (candidate_id,),
+            ).fetchone()
+        finally:
+            connection.close()
+        return (
+            None
+            if row is None
+            else ContentRegulatorySourceSnapshot.model_validate(json.loads(row["payload_json"]))
+        )
+
     def _connect(self) -> sqlite3.Connection:
         prepare_private_store_path(self.path, normalize_existing_parent=False)
         connection = sqlite3.connect(self.path)
@@ -222,12 +245,22 @@ def _reviewable_candidate(
     return candidate
 
 
+class _NoOfficialSourceRedirects(HTTPRedirectHandler):
+    """Stop before a redirect target is requested; lineage must be one exact URL."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        raise HTTPError(
+            req.full_url, code, "Official source redirects are not allowed.", headers, fp
+        )
+
+
 def _read_official_source(source_url: str) -> tuple[bytes, str, str]:
     request = Request(
         source_url,
         headers={"User-Agent": "WILQ-regulatory-source-review/1.0"},
     )
-    with urlopen(request, timeout=_SOURCE_READ_TIMEOUT_SECONDS) as response:  # noqa: S310
+    opener = build_opener(_NoOfficialSourceRedirects())
+    with opener.open(request, timeout=_SOURCE_READ_TIMEOUT_SECONDS) as response:  # noqa: S310
         body = response.read(_MAX_SNAPSHOT_BYTES + 1)
         content_type = response.headers.get_content_type() or "application/octet-stream"
         final_url = response.geturl()

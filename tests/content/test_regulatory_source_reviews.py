@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from urllib.error import HTTPError
 
 import pytest
 from fastapi import APIRouter, FastAPI
@@ -145,6 +146,32 @@ def test_source_snapshot_rejects_a_redirect_outside_the_official_allowlist(tmp_p
         )
 
     assert not store.path.exists()
+
+
+def test_official_reader_stops_before_a_redirect_target_is_requested(monkeypatch) -> None:
+    candidate = regulatory_source_candidates()[0]
+    redirected_to = "https://not-official.example/return-to-source"
+    requested_urls: list[str] = []
+
+    class _RedirectingOpener:
+        def __init__(self, handler) -> None:
+            self.handler = handler
+
+        def open(self, request, *, timeout):
+            requested_urls.append(request.full_url)
+            return self.handler.redirect_request(
+                request, None, 302, "Found", None, redirected_to
+            )
+
+    monkeypatch.setattr(
+        source_snapshots_module,
+        "build_opener",
+        lambda handler: _RedirectingOpener(handler),
+    )
+
+    with pytest.raises(HTTPError, match="redirects are not allowed"):
+        source_snapshots_module._read_official_source(candidate.source_url)
+    assert requested_urls == [candidate.source_url]
 
 
 def test_full_bdo_candidate_review_set_unlocks_exact_coverage_only_after_acceptance(

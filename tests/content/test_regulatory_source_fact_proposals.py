@@ -494,6 +494,67 @@ def test_canonical_read_blocks_a_proposal_when_its_candidate_profile_changes(tmp
     assert restored.proposal is None
 
 
+def test_review_rejects_a_latest_proposal_when_candidate_requirements_expand(tmp_path) -> None:
+    candidate = regulatory_source_candidates()[0]
+    proposal_store, snapshot_store, review_store, run_store = _stores(tmp_path)
+    result = generate_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        client=_Client(_ready_output(candidate)),
+        proposal_store=proposal_store,
+        snapshot_store=snapshot_store,
+        run_store=run_store,
+        reader=lambda _: _html_source("Oficjalne źródło opisuje obowiązek."),
+    )
+    assert result.proposal is not None
+    expanded_candidate = candidate.model_copy(
+        update={"requirement_ids": [*candidate.requirement_ids, "new_requirement"]}
+    )
+
+    with pytest.raises(ValueError, match="proposal is stale"):
+        review_source_fact_proposal(
+            proposal_id=result.proposal.proposal_id,
+            command=ContentRegulatorySourceFactProposalReviewCommand(
+                expected_source_snapshot_id=result.proposal.source_snapshot_id,
+                expected_source_snapshot_digest=result.proposal.source_snapshot_digest,
+                decision="accepted",
+                reviewer="Wilku",
+            ),
+            proposal_store=proposal_store,
+            review_store=review_store,
+            candidates=(expanded_candidate,),
+        )
+    assert review_store.list_reviews() == []
+
+
+def test_canonical_read_blocks_when_a_newer_snapshot_has_no_proposal(tmp_path) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    candidate = regulatory_source_candidates()[0]
+    proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
+    first = generate_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        client=_Client(_ready_output(candidate)),
+        proposal_store=proposal_store,
+        snapshot_store=snapshot_store,
+        run_store=run_store,
+        reader=lambda _: _html_source("Oficjalne źródło opisuje obowiązek."),
+    )
+    assert first.proposal is not None
+    snapshot_store.capture(
+        candidate.candidate_id,
+        reader=lambda _: _html_source("Oficjalne źródło ma nową treść obowiązku."),
+        now=datetime.now(UTC) + timedelta(minutes=1),
+    )
+
+    restored = read_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        proposal_store=proposal_store,
+        snapshot_store=snapshot_store,
+    )
+    assert restored.status == "blocked"
+    assert restored.proposal is None
+
+
 def test_excerpt_matching_normalizes_pdf_line_break_hyphenation() -> None:
     assert proposals_module._normalize_source_text("sprawozda-\nnie roczne") == (
         proposals_module._normalize_source_text("sprawozdanie roczne")
