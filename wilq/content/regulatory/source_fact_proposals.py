@@ -399,7 +399,10 @@ def _turn_request(
             "czy źródło zawiera wystarczającą literalną podstawę dla wszystkich "
             "requirement IDs. Gdy nie zawiera, zwróć source_sufficiency=insufficient "
             "i wskaż powód; nie maskuj braku ogólnym factem. Użyj dokładnie wskazanych "
-            "requirement IDs i zwróć tylko JSON zgodny ze schema."
+            "requirement IDs i zwróć tylko JSON zgodny ze schema. Zawsze zwróć każde "
+            "pole schema: dla insufficient proposed_fact ma wyłącznie opisywać brak "
+            "podstawy, source_excerpt ma być literalnym fragmentem źródła, a "
+            "insufficiency_reason ma być widocznym powodem."
         ),
         application_context=json.dumps(
             {
