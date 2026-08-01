@@ -52,19 +52,20 @@ class ContentRegulatorySourceFactProposalOutput(BaseModel):
     source_sufficiency: Literal["sufficient", "insufficient"]
     insufficiency_reason: str | None = Field(default=None, max_length=1000)
     proposed_fact: str = Field(min_length=20, max_length=2000)
-    source_excerpt: str = Field(min_length=20, max_length=1000)
+    source_terms: list[str] = Field(min_length=3, max_length=12)
     covered_requirement_ids: list[str] = Field(min_length=1)
 
     @model_validator(mode="after")
     def require_visible_fact(self) -> ContentRegulatorySourceFactProposalOutput:
         self.proposed_fact = self.proposed_fact.strip()
-        self.source_excerpt = self.source_excerpt.strip()
+        self.source_terms = sorted({value.strip() for value in self.source_terms})
         self.covered_requirement_ids = sorted(
             {value.strip() for value in self.covered_requirement_ids}
         )
         if (
             not self.proposed_fact
-            or not self.source_excerpt
+            or len(self.source_terms) < 3
+            or any(len(value) < 3 for value in self.source_terms)
             or not all(self.covered_requirement_ids)
         ):
             raise ValueError("Fact proposal requires visible fact and requirement IDs.")
@@ -278,8 +279,11 @@ def _generate_from_snapshot(
         output = ContentRegulatorySourceFactProposalOutput.model_validate_json(result.output_text)
         if output.covered_requirement_ids != sorted(candidate.requirement_ids):
             raise ValueError("Fact proposal requirement IDs do not exactly match candidate.")
-        if _normalize_source_text(output.source_excerpt) not in _normalize_source_text(source_text):
-            raise ValueError("Fact proposal excerpt is not present in exact source text.")
+        normalized_source = _normalize_source_text(source_text)
+        if any(
+            _normalize_source_text(term) not in normalized_source for term in output.source_terms
+        ):
+            raise ValueError("Fact proposal source terms are not present in exact source text.")
     except ValueError:
         return _block_run(
             run_store,
@@ -457,7 +461,7 @@ def _turn_request(
         "source_sufficiency",
         "insufficiency_reason",
         "proposed_fact",
-        "source_excerpt",
+        "source_terms",
         "covered_requirement_ids",
     ]
     schema["properties"]["covered_requirement_ids"] = {
@@ -476,7 +480,7 @@ def _turn_request(
             "i wskaż powód; nie maskuj braku ogólnym factem. Użyj dokładnie wskazanych "
             "requirement IDs i zwróć tylko JSON zgodny ze schema. Zawsze zwróć każde "
             "pole schema: dla insufficient proposed_fact ma wyłącznie opisywać brak "
-            "podstawy, source_excerpt ma być literalnym fragmentem źródła, a "
+            "podstawy, source_terms mają być literalnymi krótkimi terminami ze źródła, a "
             "insufficiency_reason ma być widocznym powodem."
         ),
         application_context=json.dumps(
