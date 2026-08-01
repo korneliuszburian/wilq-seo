@@ -161,6 +161,16 @@ class ContentRegulatoryProfile(BaseModel):
         constraint_ids = [constraint.id for constraint in self.claim_constraints]
         if len(constraint_ids) != len(set(constraint_ids)):
             raise ValueError("Regulatory profiles must have unique claim constraint IDs.")
+        reserved_constraint_ids = sorted(
+            constraint_id
+            for constraint_id in constraint_ids
+            if constraint_id.startswith("requirement:")
+        )
+        if reserved_constraint_ids:
+            raise ValueError(
+                "Regulatory claim constraints cannot use the reserved requirement: namespace: "
+                + ", ".join(reserved_constraint_ids)
+            )
         unknown = sorted(
             {
                 requirement_id
@@ -205,7 +215,11 @@ def regulatory_draft_assurance_constraints(
         )
         for requirement in profile.requirements
     ]
-    return [*baseline, *profile.claim_constraints]
+    constraints = [*baseline, *profile.claim_constraints]
+    ids = [constraint.id for constraint in constraints]
+    if len(ids) != len(set(ids)):
+        raise ValueError("Regulatory draft assurance constraints must have unique IDs.")
+    return constraints
 
 
 class ContentRegulatoryRequirementCoverage(BaseModel):

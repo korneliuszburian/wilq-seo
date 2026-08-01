@@ -142,6 +142,12 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
 
     @model_validator(mode="after")
     def require_selected_lineage(self) -> ContentDraftRevisionProposalMetadata:
+        if self.regulatory_assurance_run_id is not None:
+            self.regulatory_assurance_run_id = self.regulatory_assurance_run_id.strip()
+        if self.regulatory_assurance_criteria_version is not None:
+            self.regulatory_assurance_criteria_version = (
+                self.regulatory_assurance_criteria_version.strip()
+            )
         assurance_fields = (
             self.regulatory_assurance_run_id,
             self.regulatory_assurance_criteria_version,

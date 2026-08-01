@@ -34,6 +34,7 @@ import {
   ContentClaimLedgerSchema,
   ContentClaimReferenceSchema,
   ContentDraftPackageSchema,
+  ContentDraftRevisionProposalMetadataSchema,
   ContentDraftRevisionSchema,
   ContentDraftRevisionConflictSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
@@ -120,6 +121,40 @@ describe("ContentRevisionRepairProposalRequestSchema", () => {
       selected_section_ids: ["   "],
       selected_cta_ids: []
     }).success).toBe(false);
+  });
+});
+
+describe("ContentDraftRevisionProposalMetadataSchema", () => {
+  it("canonicalizes complete regulatory assurance provenance and rejects partial values", () => {
+    const base = {
+      source: "codex_app_server" as const,
+      codex_run_id: "codex_writer",
+      selected_section_headings: ["Zakres"],
+      section_lineage: [{ heading: "Zakres", evidence_ids: ["ev_scope"] }],
+      selected_cta_ids: [],
+      cta_lineage: [],
+      quality_verdict: "ready_for_human_review" as const,
+      quality_finding_codes: [],
+      review_scope: "persisted_full_document_and_declared_lineage" as const,
+      semantic_review_required: true as const
+    };
+
+    expect(
+      ContentDraftRevisionProposalMetadataSchema.parse({
+        ...base,
+        regulatory_assurance_run_id: " codex_assurance ",
+        regulatory_assurance_criteria_version: " criteria_v1 "
+      })
+    ).toMatchObject({
+      regulatory_assurance_run_id: "codex_assurance",
+      regulatory_assurance_criteria_version: "criteria_v1"
+    });
+    expect(
+      ContentDraftRevisionProposalMetadataSchema.safeParse({
+        ...base,
+        regulatory_assurance_run_id: "codex_assurance"
+      }).success
+    ).toBe(false);
   });
 });
 

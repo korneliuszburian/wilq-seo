@@ -214,10 +214,10 @@ def validate_draft_assurance_output(
     )
     failed_ids: list[str] = []
     for constraint, check in zip(constraints, assessment.checks, strict=True):
-        if (
-            check.document_excerpt != "brak w dokumencie"
-            and check.document_excerpt not in candidate_text
-        ):
+        excerpt_missing = check.document_excerpt == "brak w dokumencie"
+        if check.status == "pass" and excerpt_missing:
+            raise ValueError("Passed draft assurance must cite a candidate excerpt.")
+        if not excerpt_missing and check.document_excerpt not in candidate_text:
             raise ValueError("Draft assurance excerpt must occur in the candidate document.")
         allowed_evidence = allowed_evidence_by_constraint[constraint.id]
         if not check.evidence_ids:

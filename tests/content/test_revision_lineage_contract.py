@@ -185,6 +185,20 @@ def test_child_revision_preserves_full_document_lineage() -> None:
     assert child.sections[0].source_material_ids == revision.sections[0].source_material_ids
 
 
+def test_regulatory_assurance_provenance_is_canonicalized_for_shared_contracts() -> None:
+    metadata = ContentDraftRevisionProposalMetadata(
+        codex_run_id="codex_lineage_child",
+        selected_section_headings=["Zakres"],
+        section_lineage=[{"heading": "Zakres", "evidence_ids": ["ev_lineage"]}],
+        quality_verdict="reviewable",
+        regulatory_assurance_run_id=" codex_assurance ",
+        regulatory_assurance_criteria_version=" criteria_v1 ",
+    )
+
+    assert metadata.regulatory_assurance_run_id == "codex_assurance"
+    assert metadata.regulatory_assurance_criteria_version == "criteria_v1"
+
+
 def test_editor_save_v2_carries_page_assets_and_lineage() -> None:
     command = _command(
         schema_version="wilq_content_draft_revision_v2",

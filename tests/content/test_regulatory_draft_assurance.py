@@ -194,6 +194,30 @@ def test_assurance_rejects_an_ungrounded_pass() -> None:
         )
 
 
+def test_assurance_rejects_a_pass_that_declares_the_document_missing() -> None:
+    profile = _profile()
+    planning_input = _planning_input(profile)
+
+    with pytest.raises(ValueError, match="must cite a candidate excerpt"):
+        validate_draft_assurance_output(
+            planning_input=planning_input,
+            output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
+            profile=profile,
+            assessment=ContentDraftAssuranceModelOutput(
+                checks=[
+                    {
+                        "constraint_id": "requirement:transport_document",
+                        "status": "pass",
+                        "reason": "Warunek został podany.",
+                        "document_excerpt": "brak w dokumencie",
+                        "evidence_ids": ["ev_kpo"],
+                    }
+                ]
+            ),
+            codex_run_id="codex_content_draft_assurance_1",
+        )
+
+
 def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -> None:
     profile = _profile()
     schema = draft_assurance_output_schema(profile, _planning_input(profile).regulatory_coverage)
@@ -216,6 +240,28 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
                     "label": "unknown",
                     "instruction": "unknown",
                     "requirement_ids": ["missing"],
+                }
+            ],
+        )
+
+
+def test_profile_rejects_a_custom_constraint_in_the_reserved_requirement_namespace() -> None:
+    profile = _profile()
+
+    with pytest.raises(ValueError, match="reserved requirement"):
+        ContentRegulatoryProfile(
+            id="invalid_reserved_namespace",
+            version="1",
+            service_card_ids=["service"],
+            official_source_hosts=["example.gov.pl"],
+            max_source_age_days=30,
+            requirements=profile.requirements,
+            claim_constraints=[
+                {
+                    "id": "requirement:transport_document",
+                    "label": "collision",
+                    "instruction": "collision",
+                    "requirement_ids":["transport_document"],
                 }
             ],
         )
