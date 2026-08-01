@@ -3823,7 +3823,7 @@ export const ContentRegulatorySourceSnapshotSchema = z.object({
   source_url: z.string().url(),
   content_digest: z.string().regex(/^[0-9a-f]{64}$/),
   content_type: z.string().trim().min(1),
-  byte_length: z.number().int().positive().max(512 * 1024),
+  byte_length: z.number().int().positive().max(12 * 1024 * 1024),
   observed_at: z.string().datetime()
 });
 

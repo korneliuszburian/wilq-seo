@@ -199,6 +199,42 @@ describe("ContentRegulatorySourceReview schemas", () => {
       }).success
     ).toBe(true);
     expect(
+      ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
+        status: "captured",
+        snapshot: {
+          snapshot_id: review.source_snapshot_id,
+          candidate_id: review.candidate_id,
+          profile_id: review.profile_id,
+          profile_version: review.profile_version,
+          source_url: review.source_url,
+          content_digest: review.source_snapshot_digest,
+          content_type: "application/pdf",
+          byte_length: 2_148_042,
+          observed_at: review.reviewed_at
+        },
+        reason: "Pobrano źródło.",
+        safe_next_step: "Sprawdź źródło."
+      }).success
+    ).toBe(true);
+    expect(
+      ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
+        status: "captured",
+        snapshot: {
+          snapshot_id: review.source_snapshot_id,
+          candidate_id: review.candidate_id,
+          profile_id: review.profile_id,
+          profile_version: review.profile_version,
+          source_url: review.source_url,
+          content_digest: review.source_snapshot_digest,
+          content_type: "application/pdf",
+          byte_length: 12 * 1024 * 1024 + 1,
+          observed_at: review.reviewed_at
+        },
+        reason: "Pobrano źródło.",
+        safe_next_step: "Sprawdź źródło."
+      }).success
+    ).toBe(false);
+    expect(
       ContentRegulatorySourceReviewSchema.safeParse({ ...review, reviewer: "   " }).success
     ).toBe(false);
   });
