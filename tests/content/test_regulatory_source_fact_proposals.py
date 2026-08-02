@@ -611,8 +611,9 @@ def test_long_source_context_keeps_profile_assertion_terms() -> None:
         for item in regulatory_source_candidates()
         if item.candidate_id == "bdo_reporting_recipient_2026_08_02_r3"
     )
-    source = ("szum dokumentu urzędowego " * 10_000) + (
-        "15 marca za poprzedni rok właściwemu marszałkowi województwa."
+    source = (
+        "Sprawozdanie o produktach opisuje zakres dokumentu. " * 3_000
+        + "15 marca za poprzedni rok właściwemu marszałkowi województwa."
     )
 
     selected = proposals_module._relevant_source_text(candidate, source)

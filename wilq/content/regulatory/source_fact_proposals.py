@@ -522,15 +522,29 @@ def _relevant_source_text(candidate: ContentRegulatorySourceCandidate, source_te
             ]
         )
     )
+    assertion_terms = _search_terms(
+        " ".join(
+            value
+            for requirement in requirements
+            for assertion in requirement.document_assertions
+            for value in [assertion.label, *assertion.required_any_of]
+        )
+    )
     if not terms or len(source_text) <= 50_000:
         return source_text[:50_000]
     chunks = [source_text[index : index + 1_500] for index in range(0, len(source_text), 1_250)]
     ranked = sorted(
         enumerate(chunks),
-        key=lambda item: (-sum(term in item[1].casefold() for term in terms), item[0]),
+        key=lambda item: (
+            -sum(term in item[1].casefold() for term in assertion_terms),
+            -sum(term in item[1].casefold() for term in terms),
+            item[0],
+        ),
     )
     selected = sorted(
-        index for index, chunk in ranked[:24] if any(term in chunk.casefold() for term in terms)
+        index
+        for index, chunk in ranked[:12]
+        if any(term in chunk.casefold() for term in terms)
     )
     if not selected:
         return source_text[:50_000]
