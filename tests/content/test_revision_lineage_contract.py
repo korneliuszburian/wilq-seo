@@ -24,6 +24,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionSection,
+    ContentDraftRevisionSourceProvenance,
 )
 from wilq.content.workflow.store import ContentWorkflowStore
 
@@ -109,6 +110,25 @@ def test_v1_digest_remains_isolated_from_v2_lineage_fields() -> None:
     )
 
     assert draft_revision_content_digest(baseline) == draft_revision_content_digest(with_lineage)
+
+
+def test_v1_digest_binds_source_provenance() -> None:
+    baseline = _command(schema_version="wilq_content_draft_revision_v1")
+    with_provenance = baseline.model_copy(
+        update={
+            "source_provenance": [
+                ContentDraftRevisionSourceProvenance(
+                    source_fact_id="source_fact_lineage",
+                    source_url_or_path="https://bdo.mos.gov.pl/zasady-rejestracji/",
+                    freshness_date="2026-08-02",
+                    reviewer="Ekspert Ekologus",
+                    evidence_ids=["ev_lineage"],
+                )
+            ]
+        }
+    )
+
+    assert draft_revision_content_digest(with_provenance) != draft_revision_content_digest(baseline)
 
 
 def test_v2_lineage_is_deterministic_and_part_of_digest() -> None:
