@@ -78,9 +78,6 @@ def register_content_planning_proposal_routes(
     def content_work_item_planning_proposal_status(
         work_item_id: str,
     ) -> ContentPlanningProposalResponse:
-        pending = content_planning_proposal_store().latest_generation_response(work_item_id)
-        if pending is not None:
-            return pending
         return read_content_planning_proposal(
             snapshot=snapshot_loader(work_item_id),
             store=content_planning_proposal_store(),

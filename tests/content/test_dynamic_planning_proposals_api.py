@@ -197,13 +197,6 @@ def test_executor_submission_failure_is_typed_and_retryable(
     assert first.json()["planning_input_digest"] == digest
     assert first.json()["service_card_id"] == service_card_id
     assert first.json()["blockers"][0]["code"] == "runtime_failed"
-    monkeypatch.setattr(
-        planning_router,
-        "read_content_planning_proposal",
-        lambda **_kwargs: (_ for _ in ()).throw(
-            AssertionError("pending GET must not rebuild the snapshot")
-        ),
-    )
     status = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
     )
@@ -215,6 +208,53 @@ def test_executor_submission_failure_is_typed_and_retryable(
     assert second.status_code == 200
     assert second.json()["status"] == "failed"
     assert executor.calls == 2
+
+
+def test_planning_get_does_not_let_a_failed_historical_job_shadow_current_input(
+    planning_harness: tuple[TestClient, PlanningClient],
+) -> None:
+    client, _runtime = planning_harness
+    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
+    service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    current = client.get(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    ).json()
+    current_digest = current["planning_input_digest"]
+    old_digest = "f" * 64
+    store = content_planning_proposal_store()
+    historical = ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id=BDO_WORK_ITEM_ID,
+        service_card_id=service_card_id,
+        planning_input_digest=old_digest,
+        safe_next_step="Odczytaj bieżące wejście.",
+    )
+    assert store.enqueue(historical) == "queued"
+    store.save_terminal_response(
+        historical.model_copy(
+            update={
+                "status": "failed",
+                "blockers": [
+                    {
+                        "code": "runtime_failed",
+                        "label": "Stary błąd",
+                        "reason": "To jest historyczny job.",
+                        "next_step": "Odczytaj bieżące wejście.",
+                    }
+                ],
+            }
+        )
+    )
+
+    result = client.get(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    )
+
+    assert result.status_code == 200
+    assert result.json()["planning_input_digest"] == current_digest
+    assert result.json()["planning_input_digest"] != old_digest
+    assert result.json()["status"] == current["status"]
+    assert result.json()["status"] != "failed"
 
 
 def test_existing_not_started_job_is_recovered_after_api_process_restart(
