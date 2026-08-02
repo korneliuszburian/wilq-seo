@@ -35,6 +35,7 @@ from wilq.content.planning.generated_proposal_contracts import (
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.generated_proposal_turn import content_planning_turn_request
 from wilq.content.planning.proposal_lineage import (
+    canonicalize_regulatory_section_assertions,
     canonicalize_regulatory_section_evidence,
     planning_output_lineage_errors,
 )
@@ -94,8 +95,7 @@ def with_current_planning_workspace(
         if decision.work_item_id == proposal.work_item_id
         and decision.planning_digest == proposal.planning_digest
         and (
-            decision.service_card_id is None
-            or decision.service_card_id == proposal.service_card_id
+            decision.service_card_id is None or decision.service_card_id == proposal.service_card_id
         )
     ]
     return response.model_copy(
@@ -387,6 +387,7 @@ def _run_planning_turn(
         return None, trace, blocker, "blocked"
     output = canonicalize_model_inventory_headings(planning_input, output)
     output = canonicalize_regulatory_section_evidence(planning_input, output)
+    output = canonicalize_regulatory_section_assertions(planning_input, output)
     quality_errors = planning_output_quality_errors(output, planning_input=planning_input)
     if quality_errors:
         quality_reason = (

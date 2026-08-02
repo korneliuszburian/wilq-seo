@@ -7,6 +7,7 @@ from wilq.content.planning.generated_proposal_contracts import (
     regulatory_response_lineage_errors,
 )
 from wilq.content.planning.proposal_lineage import (
+    canonicalize_regulatory_section_assertions,
     canonicalize_regulatory_section_evidence,
     regulatory_planning_lineage_errors,
 )
@@ -150,6 +151,47 @@ def test_regulatory_requirement_needs_its_observable_document_concept() -> None:
         "regulatory_document_assertion:regulated_deadline:deadline_date"
     ]
     assert regulatory_planning_lineage_errors(planning_input, _output(explicit)) == []
+
+
+def test_declared_regulatory_requirement_gets_profile_owned_missing_terms() -> None:
+    requirement = ContentRegulatoryRequirement(
+        id="regulated_deadline",
+        label="termin obowiązku",
+        reason="Wymaga źródła urzędowego.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="deadline_date",
+                label="konkretny termin",
+                required_any_of=["15 marca"],
+            )
+        ],
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        regulatory_coverage=ContentRegulatoryCoverage(
+            profile_id="regulated_service",
+            profile_version="2026-07",
+            requirements=[requirement],
+            requirement_coverage=[
+                ContentRegulatoryRequirementCoverage(
+                    requirement_id="regulated_deadline",
+                    source_fact_ids=["official_source"],
+                    evidence_ids=["ev_deadline"],
+                )
+            ],
+        )
+    )
+    generic = ContentPlanningModelSection.model_construct(
+        heading="Obowiązki sprawozdawcze",
+        purpose="Pomóż czytelnikowi zrozumieć obowiązek.",
+        reader_question="Co trzeba sprawdzić?",
+        regulatory_requirement_ids=["regulated_deadline"],
+        evidence_ids=["ev_deadline"],
+    )
+
+    normalized = canonicalize_regulatory_section_assertions(planning_input, _output(generic))
+
+    assert "15 marca" in normalized.sections[0].purpose
+    assert regulatory_planning_lineage_errors(planning_input, normalized) == []
 
 
 def test_public_response_lineage_rejects_missing_unknown_or_wrong_regulatory_evidence() -> None:
