@@ -9,6 +9,7 @@ from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import (
+    ContentDraftAssuranceFailure,
     run_regulatory_draft_assurance,
 )
 from wilq.content.drafts.generated_claim_safety import generated_claim_safety_issues
@@ -110,15 +111,16 @@ def generate_initial_full_draft(
         run_store=run_store,
         snapshot=snapshot,
     )
-    if isinstance(assurance, ContentInitialDraftResponse):
+    if isinstance(assurance, ContentDraftAssuranceFailure):
         repaired = _repair_regulatory_assertions(
             inputs=prepared,
             output=output,
-            blocker=assurance.blockers[0] if assurance.blockers else _blocker(
-                "draft_assurance_failed", "Kontrola merytoryczna nie przeszła",
-                "Brakuje wyniku kontroli.", "Uruchom nową próbę."
+            blocker=_blocker(
+                assurance.code, assurance.label, assurance.reason, assurance.next_step,
+                source_codes=assurance.source_codes,
             ),
             client=client,
+            repair_reasons=assurance.repair_reasons,
         )
         if repaired is not None:
             output, trace = repaired
@@ -153,8 +155,16 @@ def generate_initial_full_draft(
                     runtime=trace,
                     blockers=[blocker],
                 )
-    if isinstance(assurance, ContentInitialDraftResponse):
-        return assurance
+    if isinstance(assurance, ContentDraftAssuranceFailure):
+        blocker = _blocker(
+            assurance.code, assurance.label, assurance.reason, assurance.next_step,
+            source_codes=assurance.source_codes,
+        )
+        _finish_run(run_store, run, status="blocked", error=_run_error(blocker))
+        return _blocked_response(
+            snapshot, proposal=prepared.proposal, status="blocked", run=run,
+            runtime=trace, blockers=[blocker]
+        )
     return _persist_document(
         snapshot=snapshot,
         request=request,
@@ -174,6 +184,7 @@ def _repair_regulatory_assertions(
     output: ContentInitialDraftModelOutput,
     blocker: ContentInitialDraftBlocker,
     client: CodexAppServerClientProtocol,
+    repair_reasons: dict[str, str] | None = None,
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | None:
     missing = [
         code
@@ -189,6 +200,7 @@ def _repair_regulatory_assertions(
                 proposal=inputs.proposal,
                 candidate=output,
                 missing_assertion_codes=missing,
+                repair_reasons=repair_reasons,
             )
         )
     except Exception:
@@ -500,7 +512,7 @@ def _assure_regulated_draft(
     writer_trace: ContentCodexRuntimeTrace,
     run_store: LocalStateStore,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
-) -> ContentDraftAssuranceReceipt | ContentInitialDraftResponse | None:
+) -> ContentDraftAssuranceReceipt | ContentDraftAssuranceFailure | None:
     """Run the independent critic before a regulated draft can be persisted."""
 
     attempt = run_regulatory_draft_assurance(
@@ -512,22 +524,7 @@ def _assure_regulated_draft(
     )
     if attempt is None or isinstance(attempt, ContentDraftAssuranceReceipt):
         return attempt
-    blocker = _blocker(
-        attempt.code,
-        attempt.label,
-        attempt.reason,
-        attempt.next_step,
-        source_codes=attempt.source_codes,
-    )
-    _finish_run(run_store, writer_run, status="blocked", error=_run_error(blocker))
-    return _blocked_response(
-        snapshot,
-        proposal=inputs.proposal,
-        status="blocked",
-        run=writer_run,
-        runtime=writer_trace,
-        blockers=[blocker],
-    )
+    return attempt
 
 
 def _document_scope_errors(

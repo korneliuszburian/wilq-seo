@@ -33,6 +33,7 @@ class ContentDraftAssuranceFailure:
     reason: str
     next_step: str
     source_codes: list[str]
+    repair_reasons: dict[str, str]
 
 
 def run_regulatory_draft_assurance(
@@ -99,6 +100,7 @@ def run_regulatory_draft_assurance(
             reason="Wynik krytyka nie przeszedł ścisłego kontraktu profilu i źródeł.",
             next_step="Odrzuć próbę i uruchom nową; WILQ nie zapisał dokumentu.",
             source_codes=[invalid_output_code],
+            repair_reasons={},
         )
     run_store.save_codex_run(
         critic_run.model_copy(
@@ -116,6 +118,11 @@ def run_regulatory_draft_assurance(
             "WILQ nie zapisał dokumentu."
         ),
         source_codes=receipt.failed_constraint_ids,
+        repair_reasons={
+            check.constraint_id: check.reason
+            for check in assessment.checks
+            if check.constraint_id in receipt.failed_constraint_ids
+        },
     )
 
 
@@ -139,6 +146,7 @@ def _failed_runtime_attempt(
         reason="WILQ nie zapisze regulowanego tekstu bez zakończonej kontroli krytyka.",
         next_step="Sprawdź runtime i uruchom nową próbę; dokument nie został zapisany.",
         source_codes=[item.code for item in result.blockers],
+        repair_reasons={},
     )
 
 

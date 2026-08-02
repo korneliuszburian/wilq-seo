@@ -116,6 +116,7 @@ def regulatory_assertion_repair_turn_request(
     proposal: ContentPlanningProposal,
     candidate: ContentInitialDraftModelOutput,
     missing_assertion_codes: list[str],
+    repair_reasons: dict[str, str] | None = None,
 ) -> CodexAppServerStructuredTurnRequest:
     """Make one bounded correction turn for deterministic regulatory omissions."""
 
@@ -144,6 +145,7 @@ def regulatory_assertion_repair_turn_request(
                 "work_item_id": planning_input.work_item_id,
                 "proposal_id": proposal.proposal_id,
                 "missing_regulatory_document_assertions": assertions,
+                "critic_reasons": repair_reasons or {},
                 "do_not_approve": True,
                 "do_not_write_vendor": True,
                 "publish_ready": False,

@@ -372,7 +372,9 @@ def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypa
         ),
     )
 
-    assert result.status == "blocked"
-    assert result.revision is None
-    assert result.blockers[0].code == "draft_assurance_failed"
-    assert [run.status for run in store.saved] == ["started", "completed", "blocked"]
+    assert result.code == "draft_assurance_failed"
+    assert result.source_codes == ["requirement:transport_document"]
+    assert result.repair_reasons == {
+        "requirement:transport_document": "KPO jest przedstawione jako bezwarunkowe."
+    }
+    assert [run.status for run in store.saved] == ["started", "completed"]
