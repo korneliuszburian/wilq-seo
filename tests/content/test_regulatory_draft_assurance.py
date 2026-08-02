@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -8,6 +9,7 @@ from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_assurance import (
     ContentDraftAssuranceModelOutput,
     draft_assurance_output_schema,
+    draft_assurance_turn_request,
     validate_draft_assurance_output,
 )
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -378,6 +380,31 @@ def test_assurance_schema_binds_each_check_to_its_requirement_section() -> None:
     assert check_variant["properties"]["document_section_id"] == {
         "anyOf": [{"enum": ["kpo"]}, {"type": "null"}]
     }
+
+
+def test_assurance_request_exposes_profile_assertions_to_the_critic() -> None:
+    profile = _profile()
+    request = draft_assurance_turn_request(
+        planning_input=_planning_input(profile),
+        proposal=_proposal(),
+        output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
+        profile=profile,
+    )
+
+    context = json.loads(request.application_context)
+    assert context["required_document_assertions"] == [
+        {
+            "requirement_id": "transport_document",
+            "label": "warunek KPO",
+            "assertions": [
+                {
+                    "id": "mentions_kpo",
+                    "label": "wzmianka o KPO",
+                    "required_any_of": ["KPO"],
+                }
+            ],
+        }
+    ]
 
 
 def test_assurance_invalid_output_codes_do_not_retain_model_text() -> None:
