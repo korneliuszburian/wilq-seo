@@ -146,12 +146,11 @@ def test_assurance_blocks_an_unqualified_kpo_statement_that_phrase_checks_allow(
     assert receipt.failed_constraint_ids == ["requirement:transport_document"]
 
 
-def test_assurance_rejects_a_critic_that_cites_another_constraint_evidence() -> None:
+def test_assurance_uses_server_owned_evidence_instead_of_critic_selection() -> None:
     profile = _profile()
     planning_input = _planning_input(profile)
 
-    with pytest.raises(ValueError, match="exact constraint evidence"):
-        validate_draft_assurance_output(
+    receipt = validate_draft_assurance_output(
             planning_input=planning_input,
             output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
             profile=profile,
@@ -167,15 +166,15 @@ def test_assurance_rejects_a_critic_that_cites_another_constraint_evidence() -> 
                 ]
             ),
             codex_run_id="codex_content_draft_assurance_1",
-        )
+    )
+    assert receipt.status == "passed"
 
 
-def test_assurance_rejects_an_ungrounded_pass() -> None:
+def test_assurance_does_not_require_model_selected_evidence() -> None:
     profile = _profile()
     planning_input = _planning_input(profile)
 
-    with pytest.raises(ValueError, match="exact constraint evidence"):
-        validate_draft_assurance_output(
+    receipt = validate_draft_assurance_output(
             planning_input=planning_input,
             output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
             profile=profile,
@@ -191,7 +190,8 @@ def test_assurance_rejects_an_ungrounded_pass() -> None:
                 ]
             ),
             codex_run_id="codex_content_draft_assurance_1",
-        )
+    )
+    assert receipt.status == "passed"
 
 
 def test_assurance_rejects_a_pass_that_declares_the_document_missing() -> None:
@@ -227,9 +227,6 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
     ]["enum"] == ["requirement:transport_document"]
     assert schema["properties"]["checks"]["minItems"] == 1
     assert schema["properties"]["checks"]["maxItems"] == 1
-    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"][
-        "evidence_ids"
-    ]["minItems"] == 1
 
     with pytest.raises(ValueError, match="unknown requirements"):
         ContentRegulatoryProfile(

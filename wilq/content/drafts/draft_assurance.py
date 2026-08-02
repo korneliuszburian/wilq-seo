@@ -40,8 +40,8 @@ _INSTRUCTION = (
     "fail — nie domyślaj się intencji autora. Nie przepisuj tekstu, nie dodawaj "
     "faktów ani źródeł, nie zatwierdzaj dokumentu, nie twórz ActionObjectu i nie "
     "wykonuj write. Dla każdego wyniku podaj krótki literalny fragment kandydata "
-    "albo 'brak w dokumencie'; evidence_ids mogą pochodzić wyłącznie z przypisanych "
-    "oficjalnych facts. Zwróć wyłącznie JSON zgodny ze schema."
+    "albo 'brak w dokumencie'. Nie wybieraj dowodów: WILQ wiąże je po stronie serwera "
+    "z exact requirementem. Zwróć wyłącznie JSON zgodny ze schema."
 )
 
 
@@ -197,7 +197,6 @@ def draft_assurance_output_schema(
         "evidence_ids",
         coverage.evidence_ids,
     )
-    _mapping(checks, "evidence_ids")["minItems"] = 1
     return schema
 
 
@@ -217,10 +216,6 @@ def validate_draft_assurance_output(
     if check_ids != expected_ids:
         raise ValueError("Draft assurance must assess every constraint in canonical order.")
     candidate_text = _candidate_text(output)
-    allowed_evidence_by_constraint = _evidence_by_constraint(
-        planning_input.regulatory_coverage,
-        constraints,
-    )
     failed_ids: list[str] = []
     for constraint, check in zip(constraints, assessment.checks, strict=True):
         excerpt_missing = check.document_excerpt == "brak w dokumencie"
@@ -230,11 +225,6 @@ def validate_draft_assurance_output(
             check.document_excerpt, candidate_text
         ):
             raise ValueError("Draft assurance excerpt must occur in the candidate document.")
-        allowed_evidence = allowed_evidence_by_constraint[constraint.id]
-        if not check.evidence_ids:
-            raise ValueError("Draft assurance must cite exact constraint evidence.")
-        if not set(check.evidence_ids).issubset(allowed_evidence):
-            raise ValueError("Draft assurance must cite only exact constraint evidence.")
         if check.status == "fail":
             failed_ids.append(constraint.id)
     return ContentDraftAssuranceReceipt(
