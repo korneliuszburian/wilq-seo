@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from typing import cast
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -43,6 +43,7 @@ class _RegulatorySectionPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     section_id: str = Field(min_length=1)
+    mode: Literal["append", "replace"]
     body_markdown: str = Field(min_length=1)
 
 
@@ -129,6 +130,11 @@ def regulatory_assertion_repair_turn_request(
     assertions, section_ids = _missing_assertions_for_repair(
         planning_input, proposal, missing_assertion_codes
     )
+    section_repair_modes = _section_repair_modes(
+        proposal,
+        missing_assertion_codes,
+        repair_reasons or {},
+    )
     requirement_ids = {item["requirement_id"] for item in assertions}
     source_facts = [
         {
@@ -136,18 +142,21 @@ def regulatory_assertion_repair_turn_request(
             "requirement_ids": fact.regulatory_requirement_ids,
         }
         for fact in planning_input.regulatory_coverage.source_facts
-        if requirement_ids.intersection(fact.regulatory_requirement_ids)
+        if fact.official_source
+        and fact.review_status == "approved"
+        and requirement_ids.intersection(fact.regulatory_requirement_ids)
     ]
     return CodexAppServerStructuredTurnRequest(
         instruction=(
-            "Zwróć wyłącznie patch body_markdown wskazanych section_id. Uzupełnij "
-            "server-owned regulatory assertions bez usuwania istniejącej treści. Nie "
-            "dotykaj innych sekcji, nagłówków, FAQ, CTA ani linków. Nie dodawaj faktów "
-            "spoza przekazanych approved_official_source_facts. Dla każdego wskazanego "
-            "requirementu zapisz kwalifikowane zdanie oparte na właściwym oficjalnym "
-            "fakcie; assertion określa wymagany koncept, a nie ogranicza faktów do "
-            "samego słowa kluczowego. Nie rozszerzaj zakresu obowiązku, wyjątków, "
-            "terminów ani sankcji. Zwróć wyłącznie JSON zgodny ze schema."
+            "Zwróć wyłącznie patch body_markdown wskazanych section_id wraz z server-owned "
+            "mode. append oznacza dopisanie kwalifikowanego zdania bez usuwania istniejącej "
+            "treści. replace oznacza pełne, poprawione body_markdown tej jednej sekcji: usuń "
+            "nadmierne albo niewspierane twierdzenie, zachowaj użyteczną odpowiedź dla "
+            "czytelnika i oprzyj ją wyłącznie na approved_official_source_facts. Nie dotykaj "
+            "innych sekcji, nagłówków, FAQ, CTA ani linków. Dla każdego requirementu zachowaj "
+            "podmiot, warunek, zakres, wyjątek oraz termin lub wartość z właściwego faktu. "
+            "Nie rozszerzaj obowiązku, wyjątków, terminów ani sankcji. Zwróć wyłącznie JSON "
+            "zgodny ze schema."
         ),
         application_context=json.dumps(
             {
@@ -156,6 +165,7 @@ def regulatory_assertion_repair_turn_request(
                 "proposal_id": proposal.proposal_id,
                 "missing_regulatory_document_assertions": assertions,
                 "critic_reasons": repair_reasons or {},
+                "section_repair_modes": section_repair_modes,
                 "do_not_approve": True,
                 "do_not_write_vendor": True,
                 "publish_ready": False,
@@ -205,6 +215,41 @@ def _missing_assertions_for_repair(
                     if section.section_id not in section_ids:
                         section_ids.append(section.section_id)
     return assertions, section_ids
+
+
+def _section_repair_modes(
+    proposal: ContentPlanningProposal,
+    missing_codes: list[str],
+    repair_reasons: dict[str, str],
+) -> dict[str, Literal["append", "replace"]]:
+    """Replace only sections whose independent critic found an unsafe claim."""
+
+    unsafe_requirement_ids = {
+        constraint_id.removeprefix("requirement:")
+        for constraint_id, reason_code in repair_reasons.items()
+        if constraint_id.startswith("requirement:")
+        and reason_code
+        in {"overbroad_claim", "unsupported_specific", "insufficient_source_alignment"}
+    }
+    missing_requirement_ids = {
+        code.removeprefix("requirement:")
+        for code in missing_codes
+        if code.startswith("requirement:")
+    }
+    return {
+        section.section_id: (
+            "replace"
+            if unsafe_requirement_ids.intersection(section.regulatory_requirement_ids)
+            else "append"
+        )
+        for section in draftable_planning_sections(proposal.sections)
+        if missing_requirement_ids.intersection(section.regulatory_requirement_ids)
+        or any(
+            code.startswith("regulatory_document_assertion:")
+            and code.split(":", 2)[1] in section.regulatory_requirement_ids
+            for code in missing_codes
+        )
+    }
 
 
 def _regulatory_assertion_repair_output_schema(section_ids: list[str]) -> dict[str, object]:

@@ -59,17 +59,20 @@ def repair_regulatory_assertions(
         patch = _RegulatoryAssertionRepairOutput.model_validate_json(result.output_text)
     except ValueError:
         return _grounded_repair_fallback(planning_input, proposal, output, missing)
-    replacements = {item.section_id: item.body_markdown for item in patch.sections}
-    if len(replacements) != len(patch.sections):
+    patches = {item.section_id: item for item in patch.sections}
+    if len(patches) != len(patch.sections):
+        return _grounded_repair_fallback(planning_input, proposal, output, missing)
+    expected_modes = _expected_repair_modes(proposal, missing, repair_reasons or {})
+    if {section_id: item.mode for section_id, item in patches.items()} != expected_modes:
         return _grounded_repair_fallback(planning_input, proposal, output, missing)
     patched = output.model_copy(
         update={
             "sections": [
                 section.model_copy(
                     update={
-                        "body_markdown": _append_patch(
+                        "body_markdown": _apply_patch(
                             section.body_markdown,
-                            replacements.get(section.section_id),
+                            patches.get(section.section_id),
                         )
                     }
                 )
@@ -88,12 +91,55 @@ def repair_regulatory_assertions(
     )
 
 
-def _append_patch(existing: str, patch: str | None) -> str:
-    """Apply a model-returned repair fragment without deleting validated draft text."""
+def _apply_patch(existing: str, patch: object | None) -> str:
+    """Apply the server-authorized append or replacement for one targeted section."""
 
-    if patch is None or patch in existing:
+    if patch is None:
         return existing
-    return f"{existing}\n\n{patch}"
+    mode = getattr(patch, "mode", None)
+    body_markdown = getattr(patch, "body_markdown", None)
+    if not isinstance(body_markdown, str):
+        return existing
+    if mode == "replace":
+        return body_markdown
+    if mode != "append" or body_markdown in existing:
+        return existing
+    return f"{existing}\n\n{body_markdown}"
+
+
+def _expected_repair_modes(
+    proposal: ContentPlanningProposal,
+    missing_codes: list[str],
+    repair_reasons: dict[str, str],
+) -> dict[str, str]:
+    """Mirror the trusted request policy before applying model-authored content."""
+
+    unsafe_requirement_ids = {
+        constraint_id.removeprefix("requirement:")
+        for constraint_id, reason_code in repair_reasons.items()
+        if constraint_id.startswith("requirement:")
+        and reason_code
+        in {"overbroad_claim", "unsupported_specific", "insufficient_source_alignment"}
+    }
+    missing_requirement_ids = {
+        code.removeprefix("requirement:")
+        for code in missing_codes
+        if code.startswith("requirement:")
+    }
+    return {
+        section.section_id: (
+            "replace"
+            if unsafe_requirement_ids.intersection(section.regulatory_requirement_ids)
+            else "append"
+        )
+        for section in proposal.sections
+        if missing_requirement_ids.intersection(section.regulatory_requirement_ids)
+        or any(
+            code.startswith("regulatory_document_assertion:")
+            and code.split(":", 2)[1] in section.regulatory_requirement_ids
+            for code in missing_codes
+        )
+    }
 
 
 def _grounded_repair_fallback(

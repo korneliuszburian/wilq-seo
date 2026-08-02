@@ -365,8 +365,10 @@ def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts()
                 status="completed",
                 output_text=(
                     '{"sections":['
-                    '{"section_id":"section_keep","body_markdown":"Pierwsza wersja."},'
-                    '{"section_id":"section_keep","body_markdown":"Druga wersja."}'
+                    '{"section_id":"section_keep","mode":"append",'
+                    '"body_markdown":"Pierwsza wersja."},'
+                    '{"section_id":"section_keep","mode":"append",'
+                    '"body_markdown":"Druga wersja."}'
                     ']}'
                 ),
             )
@@ -400,7 +402,7 @@ def test_regulatory_repair_appends_a_valid_patch_without_replacing_existing_text
             return CodexAppServerTurnResult(
                 status="completed",
                 output_text=(
-                    '{"sections":[{"section_id":"section_keep",'
+                    '{"sections":[{"section_id":"section_keep","mode":"append",'
                     '"body_markdown":"Doprecyzowanie z oficjalnego źródła."}]}'
                 ),
             )
@@ -426,6 +428,50 @@ def test_regulatory_repair_appends_a_valid_patch_without_replacing_existing_text
     assert fact.extracted_fact in body
 
 
+def test_regulatory_repair_replaces_an_overbroad_section_when_critic_requires_it() -> None:
+    proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
+    output = output.model_copy(
+        update={
+            "sections": [
+                output.sections[0].model_copy(
+                    update={"body_markdown": "Każda firma zawsze podlega BDO."}
+                )
+            ]
+        }
+    )
+
+    class ReplacementClient:
+        def run_structured_turn(self, _request):
+            return CodexAppServerTurnResult(
+                status="completed",
+                output_text=(
+                    '{"sections":[{"section_id":"section_keep","mode":"replace",'
+                    '"body_markdown":"Zwolnienie zależy od spełnienia warunków ustawowych."}]}'
+                ),
+            )
+
+    repaired = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        blocker=ContentInitialDraftBlocker(
+            code="draft_assurance_failed",
+            label="Twierdzenie jest zbyt szerokie.",
+            reason="Krytyk wykrył nadmierny zakres.",
+            next_step="Popraw dokument.",
+            source_codes=["requirement:bdo_exemptions"],
+        ),
+        repair_reasons={"requirement:bdo_exemptions": "overbroad_claim"},
+        client=ReplacementClient(),
+    )
+
+    assert repaired is not None
+    body = repaired[0].sections[0].body_markdown
+    assert "Każda firma zawsze podlega BDO." not in body
+    assert body.startswith("Zwolnienie zależy od spełnienia warunków ustawowych.")
+    assert fact.extracted_fact in body
+
+
 def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() -> None:
     proposal, planning_input, output, _, _ = _regulatory_repair_fixture()
 
@@ -437,8 +483,8 @@ def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() ->
     )
 
     assert "approved_official_source_facts" in request.instruction
-    assert "assertion określa wymagany koncept" in request.instruction
-    assert "Nie rozszerzaj zakresu obowiązku" in request.instruction
+    assert "server-owned mode" in request.instruction
+    assert "Nie rozszerzaj obowiązku" in request.instruction
 
 
 def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None:
