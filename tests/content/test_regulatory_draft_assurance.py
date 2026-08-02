@@ -257,6 +257,35 @@ def test_assurance_invalid_output_codes_do_not_retain_model_text() -> None:
         )
         == "assurance_excerpt_not_in_document"
     )
+
+
+def test_assurance_accepts_an_exact_excerpt_with_only_layout_whitespace_changed() -> None:
+    profile = _profile()
+    receipt = validate_draft_assurance_output(
+        planning_input=_planning_input(profile),
+        output=_output("KPO\n stosuje się, gdy przekazanie odpadów podlega ewidencji."),
+        profile=profile,
+        assessment=ContentDraftAssuranceModelOutput.model_validate(
+            {
+                "checks": [
+                    {
+                        "constraint_id": "requirement:transport_document",
+                        "status": "pass",
+                        "reason": "Warunek został podany.",
+                        "document_excerpt": (
+                            "KPO stosuje się, gdy przekazanie odpadów podlega ewidencji."
+                        ),
+                        "evidence_ids": ["ev_kpo"],
+                    }
+                ],
+                "publish_ready": False,
+                "human_review_required": True,
+            }
+        ),
+        codex_run_id="codex_content_draft_assurance_1",
+    )
+
+    assert receipt.status == "passed"
     assert (
         draft_assurance_runtime._invalid_output_code(ValueError("untrusted model text"))
         == "assurance_schema_invalid"

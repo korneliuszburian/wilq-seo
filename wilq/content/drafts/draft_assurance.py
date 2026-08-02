@@ -226,7 +226,9 @@ def validate_draft_assurance_output(
         excerpt_missing = check.document_excerpt == "brak w dokumencie"
         if check.status == "pass" and excerpt_missing:
             raise ValueError("Passed draft assurance must cite a candidate excerpt.")
-        if not excerpt_missing and check.document_excerpt not in candidate_text:
+        if not excerpt_missing and not _excerpt_occurs_in_candidate(
+            check.document_excerpt, candidate_text
+        ):
             raise ValueError("Draft assurance excerpt must occur in the candidate document.")
         allowed_evidence = allowed_evidence_by_constraint[constraint.id]
         if not check.evidence_ids:
@@ -298,6 +300,12 @@ def _candidate_text(output: ContentInitialDraftModelOutput) -> str:
             *(item.body_markdown for item in output.cta_blocks),
         ]
     )
+
+
+def _excerpt_occurs_in_candidate(excerpt: str, candidate_text: str) -> bool:
+    """Allow layout-only whitespace differences, never different words."""
+
+    return " ".join(excerpt.split()) in " ".join(candidate_text.split())
 
 
 def _require_all_object_properties(value: object) -> None:
