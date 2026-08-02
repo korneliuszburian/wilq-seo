@@ -26,6 +26,7 @@ from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningSourceAssessment,
     ContentPlanningSourceFact,
+    ContentPlanningSourceProvenance,
     assessment_status,
     build_planning_inventory,
     build_source_assessments,
@@ -123,6 +124,7 @@ class ContentPlanningInput(BaseModel):
     buyer_trigger: str = Field(min_length=1)
     search_intent: str = Field(min_length=1)
     source_facts: list[ContentPlanningSourceFact] = Field(default_factory=list)
+    source_provenance: list[ContentPlanningSourceProvenance] = Field(default_factory=list)
     source_assessments: list[ContentPlanningSourceAssessment] = Field(min_length=10)
     regulatory_coverage: ContentRegulatoryCoverage = Field(
         default_factory=ContentRegulatoryCoverage

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,8 @@ from wilq.content.workflow.catalog import (
     ContentInventoryMaterialResponse,
     inventory_work_item_id,
 )
+from wilq.schemas import ContentDecisionItem
+from wilq.schemas.core import MetricFact
 from wilq.storage.metric_store import metric_store_path
 
 
@@ -552,6 +555,112 @@ def _patch_fresh_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
                 "next_step": "Można zbudować wejście planu do testu.",
             }
         )
+        if not decisions:
+            synthetic_urls = (
+                "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+                "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+            )
+            decisions = [
+                ContentDecisionItem(
+                    id=inventory_work_item_id(url).removeprefix("content_work_item_"),
+                    decision_type="refresh_or_merge",
+                    status="ready",
+                    title="Syntetyczna strona do testu planowania",
+                    priority=1,
+                    source_connectors=["wordpress_ekologus"],
+                    evidence_ids=["ev_connector_wordpress_ekologus_status"],
+                    metric_facts=[
+                        MetricFact(
+                            name="gsc_query_performance",
+                            metric_label="Wyświetlenia GSC",
+                            value=120,
+                            period="2026-07",
+                            source_connector="google_search_console",
+                            evidence_id="ev_synthetic_gsc",
+                            dimensions={"query": "bdo dla firm", "page": url},
+                            collected_at=datetime.now(UTC),
+                            unit="impressions",
+                        )
+                    ],
+                    source_public_url=url,
+                    final_canonical_url=url,
+                    wordpress_content_inventory_status="available",
+                    wordpress_content_text="Syntetyczna treść strony do testu.",
+                    wordpress_content_summary="Syntetyczne podsumowanie publicznej treści.",
+                    wordpress_section_headings=["Syntetyczna sekcja strony"],
+                    wordpress_section_inventory_status="available",
+                    wordpress_content_source_kind="synthetic_reviewed_fixture",
+                    wordpress_content_material_confidence="source_bound",
+                    wordpress_content_word_count=500,
+                    inventory_gate_status="confirmed_current_inventory",
+                    duplicate_gate_status="checked",
+                    rationale="Syntetyczny fixture exact planning.",
+                    next_step="Sprawdź plan.",
+                )
+                for url in synthetic_urls
+            ]
+        synthetic_urls = (
+            "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+            "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+        )
+        template = next(
+            (item for item in decisions if item.status == "ready"),
+            ContentDecisionItem(
+                id="synthetic_template",
+                decision_type="refresh_or_merge",
+                status="ready",
+                title="Syntetyczna strona do testu planowania",
+                priority=1,
+                source_connectors=["wordpress_ekologus"],
+                evidence_ids=["ev_connector_wordpress_ekologus_status"],
+                source_public_url=synthetic_urls[0],
+                final_canonical_url=synthetic_urls[0],
+                wordpress_content_inventory_status="available",
+                wordpress_content_text="Syntetyczna treść strony do testu.",
+                wordpress_content_summary="Syntetyczne podsumowanie publicznej treści.",
+                wordpress_section_headings=["Syntetyczna sekcja strony"],
+                wordpress_section_inventory_status="available",
+                wordpress_content_source_kind="synthetic_reviewed_fixture",
+                wordpress_content_material_confidence="source_bound",
+                wordpress_content_word_count=500,
+                inventory_gate_status="confirmed_current_inventory",
+                duplicate_gate_status="checked",
+                rationale="Syntetyczny fixture exact planning.",
+                next_step="Sprawdź plan.",
+            ),
+        )
+        for url in synthetic_urls:
+            synthetic_id = inventory_work_item_id(url).removeprefix("content_work_item_")
+            if any(item.id == synthetic_id for item in decisions):
+                continue
+            decisions.append(
+                template.model_copy(
+                    update={
+                        "id": synthetic_id,
+                        "page": url,
+                        "source_public_url": url,
+                        "final_canonical_url": url,
+                        "status": "ready",
+                        "evidence_ids": ["ev_connector_wordpress_ekologus_status"],
+                        "metric_facts": [
+                            MetricFact(
+                                name="gsc_query_performance",
+                                metric_label="Wyświetlenia GSC",
+                                value=120,
+                                period="2026-07",
+                                source_connector="google_search_console",
+                                evidence_id="ev_synthetic_gsc",
+                                dimensions={"query": "bdo dla firm", "page": url},
+                                collected_at=datetime.now(UTC),
+                                unit="impressions",
+                            )
+                        ],
+                        "source_connectors": ["wordpress_ekologus"],
+                        "inventory_gate_status": "confirmed_current_inventory",
+                        "duplicate_gate_status": "checked",
+                    }
+                )
+            )
         result = diagnostics.model_copy(
             update={"decision_queue": decisions, "freshness_assessment": freshness}
         )

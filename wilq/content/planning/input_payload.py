@@ -13,6 +13,7 @@ from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningSourceAssessment,
     ContentPlanningSourceFact,
+    build_source_provenance,
     planning_source_connectors,
     usable_query_portfolio,
 )
@@ -58,6 +59,7 @@ def refresh_planning_payload(
         "buyer_trigger": brief.buyer_trigger,
         "search_intent": brief.search_intent,
         "source_facts": source_facts,
+        "source_provenance": build_source_provenance(source_facts),
         "source_assessments": source_assessments,
         "regulatory_coverage": regulatory_coverage,
         "query_portfolio": query_portfolio,
