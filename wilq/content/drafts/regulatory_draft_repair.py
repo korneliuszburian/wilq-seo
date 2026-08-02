@@ -184,13 +184,21 @@ def ground_unmet_regulatory_assertions(
             ),
             None,
         )
-        if target is not None:
-            destination = (
-                replacements
-                if replace_semantic_requirements and requirement_id in semantic_requirement_ids
-                else additions
-            )
-            destination.setdefault(target, []).extend(facts)
+        if target is None:
+            continue
+        if replace_semantic_requirements and requirement_id in semantic_requirement_ids:
+            replacement_facts = [
+                fact
+                for covered_requirement_id in sections[target].regulatory_requirement_ids
+                for fact in _approved_facts_for_requirement(
+                    planning_input,
+                    requirement_id=covered_requirement_id,
+                    assertion_terms=None,
+                )
+            ]
+            replacements.setdefault(target, []).extend(replacement_facts)
+            continue
+        additions.setdefault(target, []).extend(facts)
     if not additions and not replacements:
         return output
     return output.model_copy(

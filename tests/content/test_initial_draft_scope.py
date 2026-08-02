@@ -567,6 +567,56 @@ def test_regulatory_repair_uses_only_official_facts_when_semantic_repair_is_exha
     assert body == "\n\n".join([fact.extracted_fact, related_fact.extracted_fact])
 
 
+def test_semantic_fallback_preserves_every_requirement_bound_to_replaced_section() -> None:
+    proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
+    companion = ContentRegulatoryRequirement(
+        id="registration_scope",
+        label="zakres wpisu",
+        reason="Wymaga źródła urzędowego.",
+        document_assertions=[],
+    )
+    companion_fact = fact.model_copy(
+        update={
+            "source_id": "regulatory_source_fact_registration_scope",
+            "extracted_fact": "Wpis zależy od rzeczywistego zakresu działalności.",
+            "regulatory_requirement_ids": [companion.id],
+            "evidence_ids": ["ev_regulatory_registration_scope"],
+        }
+    )
+    proposal.sections[0].regulatory_requirement_ids = [
+        "bdo_exemptions",
+        companion.id,
+    ]
+    planning_input = planning_input.model_copy(
+        update={
+            "regulatory_coverage": ContentRegulatoryCoverage(
+                requirements=[planning_input.regulatory_coverage.requirements[0], companion],
+                source_facts=[fact, companion_fact],
+            )
+        }
+    )
+
+    repaired = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        blocker=ContentInitialDraftBlocker(
+            code="draft_assurance_failed",
+            label="Twierdzenie pozostaje zbyt szerokie.",
+            reason="Krytyk ponownie wykrył nadmierny zakres.",
+            next_step="Zastąp sekcję wyłącznie źródłami urzędowymi.",
+            source_codes=["requirement:bdo_exemptions"],
+        ),
+        client=SimpleNamespace(),
+        force_deterministic_replace=True,
+    )
+
+    assert repaired is not None
+    assert repaired[0].sections[0].body_markdown == "\n\n".join(
+        [fact.extracted_fact, companion_fact.extracted_fact]
+    )
+
+
 def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() -> None:
     proposal, planning_input, output, _, _ = _regulatory_repair_fixture()
 
