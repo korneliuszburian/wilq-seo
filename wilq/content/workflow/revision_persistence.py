@@ -21,6 +21,9 @@ def draft_revision_content_digest(command: ContentDraftRevisionAppendCommand) ->
         "planning_digest": command.planning_digest,
         "final_canonical_url": command.final_canonical_url,
         "title": command.title,
+        "source_provenance": [
+            item.model_dump(mode="json") for item in command.source_provenance
+        ],
         "sections": [
             _section_digest_payload(section, command.schema_version) for section in command.sections
         ],
@@ -69,9 +72,6 @@ def _full_document_digest_payload(
         "inventory_digest": command.inventory_digest,
         "source_material_ids": command.source_material_ids,
         "knowledge_card_ids": command.knowledge_card_ids,
-        "source_provenance": [
-            item.model_dump(mode="json") for item in command.source_provenance
-        ],
         "page_assets": (
             None if command.page_assets is None else command.page_assets.model_dump(mode="json")
         ),
