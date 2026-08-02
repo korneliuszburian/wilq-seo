@@ -76,6 +76,15 @@ class PlanningClient:
 def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
     planning_input = json.loads(request.untrusted_context)["planning_input"]
     assert_planning_input_contract(planning_input)
+    placement_contract = json.loads(request.application_context)["placement_contract"]
+    assert "remove_review_required" in placement_contract["forbidden_placement_rule"]
+    assert placement_contract["inventory_section_headings"] == [
+        section["heading"] for section in planning_input["inventory"]["sections"]
+    ]
+    assert placement_contract["safe_fallback_placements"] == [
+        "after_lead",
+        "after_content",
+    ]
     inventory_headings = [
         section["heading"]
         for section in planning_input["inventory"]["sections"]
