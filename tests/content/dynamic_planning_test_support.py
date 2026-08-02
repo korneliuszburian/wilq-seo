@@ -81,6 +81,7 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
         for section in planning_input["inventory"]["sections"]
         if _is_useful_synthetic_heading(section["heading"])
     ] or [planning_input["inventory"]["sections"][0]["heading"]]
+    cta_placements = ["after_lead", "after_content", *inventory_headings]
     inventory_heading = inventory_headings[0]
     evidence_id = planning_input["evidence_ids"][0]
     query_rows = planning_input["query_portfolio"]["gsc_query_rows"]
@@ -123,8 +124,16 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
         "faq": [_planning_faq(query_terms, lineage)],
         "cta_blocks": (
             [
-                _planning_cta(client, lineage)
-                for _ in range(planning_input.get("minimum_cta_blocks", 1))
+                _planning_cta(
+                    client,
+                    lineage,
+                    placement=(
+                        client.planning_placement
+                        if planning_input.get("minimum_cta_blocks", 1) == 1
+                        else cta_placements[index]
+                    ),
+                )
+                for index in range(planning_input.get("minimum_cta_blocks", 1))
             ]
             if client.planning_cta_blocks
             else []
@@ -205,10 +214,13 @@ def _planning_faq(
 
 
 def _planning_cta(
-    client: PlanningClient, lineage: dict[str, list[str]]
+    client: PlanningClient,
+    lineage: dict[str, list[str]],
+    *,
+    placement: str | None = None,
 ) -> dict[str, Any]:
     return {
-        "placement": client.planning_placement,
+        "placement": placement or client.planning_placement,
         "purpose": "Przejście do konsultacji bez gwarancji wyniku.",
         "copy_direction": "Opisz sytuację firmy i poproś o weryfikację.",
         **lineage,
@@ -568,6 +580,12 @@ def _patch_synthetic_inventory_material(monkeypatch: pytest.MonkeyPatch) -> None
             None,
         )
         headings = [] if item is None else (item.acf_section_headings or [])
+        if not headings:
+            headings = [
+                item.title.strip()
+                if item is not None and item.title and item.title.strip()
+                else "Syntetyczna sekcja strony"
+            ]
         return ContentInventoryMaterialResponse(
             status="ready",
             url=url,
