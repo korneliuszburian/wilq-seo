@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import Any
+
+import pytest
 
 from scripts.export_marketer_uat_packet import (
     build_marketer_uat_packet,
+    fetch_surfaces,
     render_markdown,
 )
 
@@ -253,6 +257,50 @@ def test_content_packet_reports_missing_exact_demand_as_blocker_not_zero() -> No
     assert content["sygnały_planistyczne_gsc"] is None
     assert content["wyświetlenia_gsc"] is None
     assert content["kliknięcia_gsc"] is None
+
+
+def test_fetch_surfaces_uses_workflow_entry_to_load_selected_workspace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fetch_json(_api_base: str, path: str) -> dict[str, Any]:
+        calls.append(path)
+        if path == "/api/content/workflow-entry":
+            return {
+                "recommendations": [
+                    {
+                        "work_item_id": "content_work_item_bdo / exact",
+                        "title": "BDO",
+                        "url": "https://www.ekologus.pl/bdo/",
+                    }
+                ]
+            }
+        return {"operator_summary": {}}
+
+    monkeypatch.setattr("scripts.export_marketer_uat_packet.fetch_json", fake_fetch_json)
+
+    surfaces = fetch_surfaces("http://127.0.0.1:8000")
+
+    assert "/api/content/work-items/content_work_item_bdo%20%2F%20exact/selected-workspace" in calls
+    assert (
+        surfaces["content_entry"]["recommendation"]["work_item_id"]
+        == "content_work_item_bdo / exact"
+    )
+
+
+def test_fetch_surfaces_refuses_to_export_without_exact_content_recommendation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_fetch_json(_api_base: str, path: str) -> dict[str, Any]:
+        if path == "/api/content/workflow-entry":
+            return {"recommendations": [{"title": "Brak dokładnego workspace"}]}
+        return {"operator_summary": {}}
+
+    monkeypatch.setattr("scripts.export_marketer_uat_packet.fetch_json", fake_fetch_json)
+
+    with pytest.raises(RuntimeError, match="dokładnym work_item_id"):
+        fetch_surfaces("http://127.0.0.1:8000")
 
 
 def _content_preview(packet: dict) -> dict:
