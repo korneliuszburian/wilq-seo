@@ -3360,7 +3360,8 @@ export const ContentWorkItemServiceProfileContextSchema = z.object({
   evidence_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
   review_action_id: z.string().nullable().optional(),
-  review_action_label: z.string().nullable().optional()
+  review_action_label: z.string().nullable().optional(),
+  minimum_cta_blocks: z.number().int().min(1).max(4).optional()
 });
 
 const ContentWorkItemServiceProfileContextDefault = {
@@ -3607,6 +3608,7 @@ export const ContentPlanningProposalSchema = z.object({
   angle: z.string().default(""),
   value_proposition: z.string().default(""),
   cta_direction: z.string().min(1),
+  minimum_cta_blocks: z.number().int().min(1).max(4).optional(),
   internal_link_directions: z.array(z.string()),
   sections: z.array(z.object({
     section_id: z.string().default(""),
