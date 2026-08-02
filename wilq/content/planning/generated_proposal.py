@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterable
 from hashlib import sha256
 from typing import Literal, cast
