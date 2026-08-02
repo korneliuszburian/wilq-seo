@@ -82,6 +82,27 @@ def test_fact_proposal_is_exact_human_gated_and_never_persists_raw_source_body(t
     assert proposal.covered_requirement_ids == sorted(candidate.requirement_ids)
     assert "TOP SECRET Oficjalne" not in proposal_store.path.read_text(errors="ignore")
     assert "TOP SECRET Oficjalne" in client.requests[0].untrusted_context
+    application_context = json.loads(client.requests[0].application_context)
+    assert application_context["requirements"] == [
+        {
+            "id": "bdo_definition",
+            "label": "definicja systemu BDO",
+            "reason": (
+                "Treść musi poprawnie nazwać Bazę danych o produktach i opakowaniach oraz "
+                "o gospodarce odpadami, Rejestr i moduły systemu."
+            ),
+            "document_assertions": [
+                {
+                    "id": "bdo_full_name",
+                    "label": "pełna nazwa BDO",
+                    "required_any_of": [
+                        "Baza danych o produktach i opakowaniach oraz o gospodarce odpadami"
+                    ],
+                }
+            ],
+        }
+    ]
+    assert "TOP SECRET Oficjalne" not in client.requests[0].application_context
 
     review = review_source_fact_proposal(
         proposal_id=proposal.proposal_id,

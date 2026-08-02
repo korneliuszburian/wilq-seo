@@ -546,6 +546,13 @@ def _turn_request(
         "minItems": len(candidate.requirement_ids),
         "maxItems": len(candidate.requirement_ids),
     }
+    profile = regulatory_content_profile(service_card_id=candidate.service_card_ids[0])
+    requirements_by_id = {} if profile is None else {item.id: item for item in profile.requirements}
+    trusted_requirements = [
+        requirements_by_id[requirement_id].model_dump(mode="json")
+        for requirement_id in sorted(candidate.requirement_ids)
+        if requirement_id in requirements_by_id
+    ]
     return CodexAppServerStructuredTurnRequest(
         instruction=(
             "Przygotuj po polsku jeden zwięzły, ostrożny fact do human review. "
@@ -567,6 +574,7 @@ def _turn_request(
                 "source_url": candidate.source_url,
                 "source_snapshot_digest": snapshot.content_digest,
                 "requirement_ids": sorted(candidate.requirement_ids),
+                "requirements": trusted_requirements,
             },
             ensure_ascii=False,
             sort_keys=True,
