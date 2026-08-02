@@ -266,6 +266,12 @@ def content_planning_output_schema(
     for definition in (faq, cta):
         _restrict_array(_properties(definition), "evidence_ids", evidence_ids)
         _restrict_array(_properties(definition), "claim_ids", claim_ids)
+    if planning_input.required_cta_patterns:
+        _restrict_string(
+            _properties(cta),
+            "copy_direction",
+            planning_input.required_cta_patterns,
+        )
     _restrict_array(_properties(faq), "query_terms", queries)
     _restrict_array(_properties(link), "evidence_ids", evidence_ids)
     _restrict_array(_properties(link), "claim_ids", claim_ids)
