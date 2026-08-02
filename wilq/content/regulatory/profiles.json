@@ -51,6 +51,11 @@
               "id": "bdo_exemption_condition",
               "label": "warunkowe wyłączenia",
               "required_any_of": ["zwoln", "wyłączen"]
+            },
+            {
+              "id": "bdo_paper_records_rule",
+              "label": "zasady dokumentacji papierowej",
+              "required_any_of": ["papier", "papierowych"]
             }
           ]
         },
@@ -68,6 +73,11 @@
               "id": "bdo_registration_update",
               "label": "aktualizacja danych",
               "required_any_of": ["aktualiz"]
+            },
+            {
+              "id": "bdo_registration_update_deadline",
+              "label": "termin 30 dni na aktualizację",
+              "required_any_of": ["30 dni"]
             }
           ]
         },
@@ -85,6 +95,11 @@
               "id": "bdo_kpo_timing",
               "label": "moment sporządzenia KPO",
               "required_any_of": ["przed transportem", "przed rozpoczęciem transportu"]
+            },
+            {
+              "id": "bdo_kpok",
+              "label": "Karta Przekazania Odpadów Komunalnych",
+              "required_any_of": ["KPOK", "Karta Przekazania Odpadów Komunalnych"]
             }
           ]
         },
@@ -107,6 +122,11 @@
               "id": "bdo_reporting_marshal",
               "label": "właściwy marszałek województwa",
               "required_any_of": ["marszałk"]
+            },
+            {
+              "id": "bdo_reporting_community_deadline",
+              "label": "termin 31 stycznia dla wybranych sprawozdań",
+              "required_any_of": ["31 stycznia"]
             }
           ]
         },
@@ -141,6 +161,11 @@
               "id": "bdo_sanctions",
               "label": "sankcje lub konsekwencje",
               "required_any_of": ["sankcj", "konsekwencj", "kar"]
+            },
+            {
+              "id": "bdo_sanctions_examples",
+              "label": "konkretne przykłady kar",
+              "required_any_of": ["1 000", "2 000", "aresztu", "grzywny"]
             }
           ]
         }
