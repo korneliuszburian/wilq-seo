@@ -25,6 +25,8 @@ _REFRESH_INSTRUCTION = (
     "Nie pomijaj istniejących sekcji inventory: każdą przypisz przez inventory_section_id "
     "do jednej sekcji planu z disposition albo pozostaw jako jawnie wymagającą review; "
     "nie twórz cichego unmapped. "
+    "Przy disposition rewrite zachowaj w nowym headingu główny termin i intencję "
+    "odpowiadającej sekcji inventory, nawet gdy porządkujesz jego brzmienie. "
     "Jeśli wejście zawiera regulatory_coverage.requirements, każdemu requirement_id "
     "przypisz sekcję z jego official evidence i opisz w nagłówku, purpose albo "
     "reader_question wszystkie document_assertions tego wymagania. Dla każdej "
