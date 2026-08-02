@@ -339,6 +339,7 @@ def validate_draft_assurance_output(
             check=check,
             constraint=constraint,
             output=output,
+            proposal=proposal,
             profile=profile,
         ):
             failed_ids.append(constraint.id)
@@ -356,6 +357,7 @@ def _deterministic_scope_is_complete(
     check: ContentDraftAssuranceCheckOutput,
     constraint: ContentRegulatoryClaimConstraint,
     output: ContentInitialDraftModelOutput,
+    proposal: ContentPlanningProposal,
     profile: ContentRegulatoryProfile,
 ) -> bool:
     """Do not let a critic invent missing scope after profile assertions pass."""
@@ -366,7 +368,12 @@ def _deterministic_scope_is_complete(
         "not_assessable",
     }:
         return False
-    section_ids = {check.document_section_id} if check.document_section_id else set()
+    section_ids = {
+        section.section_id
+        for section in proposal.sections
+        if section.section_id in {item.section_id for item in output.sections}
+        if set(section.regulatory_requirement_ids).intersection(constraint.requirement_ids)
+    }
     if not section_ids:
         return False
     text = "\n".join(
