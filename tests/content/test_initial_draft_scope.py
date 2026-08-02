@@ -421,6 +421,68 @@ def test_regulatory_scope_repair_uses_approved_facts_without_a_second_model_turn
     assert fact.extracted_fact in body
 
 
+def test_regulatory_scope_repair_accepts_profile_owned_role_variants_in_approved_fact() -> None:
+    proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
+    requirement = ContentRegulatoryRequirement(
+        id="account_access",
+        label="dostęp do konta",
+        reason="Wymaga źródła urzędowego.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="roles",
+                label="role lub uprawnienia konta",
+                required_any_of=[
+                    "rola",
+                    "uprawnien",
+                    "użytkownik główny",
+                    "użytkownik podrzędny",
+                ],
+            )
+        ],
+    )
+    proposal.sections[0].regulatory_requirement_ids = [requirement.id]
+    role_fact = fact.model_copy(
+        update={
+            "source_id": "regulatory_source_fact_account_access",
+            "extracted_fact": (
+                "Użytkownik główny może dodawać użytkowników, a użytkownik "
+                "podrzędny ma dostęp do wskazanego modułu."
+            ),
+            "regulatory_requirement_ids": [requirement.id],
+        }
+    )
+    planning_input = planning_input.model_copy(
+        update={
+            "regulatory_coverage": ContentRegulatoryCoverage(
+                requirements=[requirement], source_facts=[role_fact]
+            )
+        }
+    )
+    missing = document_scope_errors(
+        proposal, output, regulatory_requirements=[requirement]
+    )
+
+    repaired = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        blocker=ContentInitialDraftBlocker(
+            code="document_scope_mismatch",
+            label="Brakuje wymaganego pojęcia.",
+            reason="Wymaganie nie występuje w dokumencie.",
+            next_step="Uzupełnij dokument.",
+            source_codes=missing,
+        ),
+        client=SimpleNamespace(),
+    )
+
+    assert repaired is not None
+    assert role_fact.extracted_fact in repaired[0].sections[0].body_markdown
+    assert document_scope_errors(
+        proposal, repaired[0], regulatory_requirements=[requirement]
+    ) == []
+
+
 def test_regulatory_repair_replaces_an_overbroad_section_when_critic_requires_it() -> None:
     proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
     output = output.model_copy(

@@ -123,7 +123,12 @@
             {
               "id": "bdo_access_roles",
               "label": "role lub uprawnienia konta",
-              "required_any_of": ["rola", "uprawnien"]
+              "required_any_of": [
+                "rola",
+                "uprawnien",
+                "użytkownik główny",
+                "użytkownik podrzędny"
+              ]
             }
           ]
         },
