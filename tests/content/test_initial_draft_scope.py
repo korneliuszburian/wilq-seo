@@ -22,6 +22,7 @@ from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sect
 from wilq.content.drafts.initial_full_draft_turn import (
     _regulatory_draft_directive,
     initial_full_draft_output_schema,
+    regulatory_assertion_repair_turn_request,
 )
 from wilq.content.drafts.regulatory_draft_repair import repair_regulatory_assertions
 from wilq.content.knowledge.source_facts import ContentSourceFact
@@ -326,6 +327,9 @@ def _regulatory_repair_fixture() -> tuple[
         }
     )
     planning_input = ContentPlanningInput.model_construct(
+        work_item_id=proposal.work_item_id,
+        planning_input_digest="b" * 64,
+        confirmed_service_card_id=proposal.service_card_id,
         regulatory_coverage=ContentRegulatoryCoverage(
             requirements=[requirement],
             source_facts=[fact, related_fact],
@@ -386,6 +390,21 @@ def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts()
     assert trace.status == "completed"
     assert fact.extracted_fact in repaired_output.sections[0].body_markdown
     assert related_fact.extracted_fact in repaired_output.sections[0].body_markdown
+
+
+def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() -> None:
+    proposal, planning_input, output, _, _ = _regulatory_repair_fixture()
+
+    request = regulatory_assertion_repair_turn_request(
+        planning_input=planning_input,
+        proposal=proposal,
+        candidate=output,
+        missing_assertion_codes=["requirement:bdo_exemptions"],
+    )
+
+    assert "approved_official_source_facts" in request.instruction
+    assert "assertion określa wymagany koncept" in request.instruction
+    assert "Nie rozszerzaj zakresu obowiązku" in request.instruction
 
 
 def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None:

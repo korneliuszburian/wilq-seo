@@ -137,7 +137,11 @@ def regulatory_assertion_repair_turn_request(
             "Zwróć wyłącznie patch body_markdown wskazanych section_id. Uzupełnij "
             "server-owned regulatory assertions bez usuwania istniejącej treści. Nie "
             "dotykaj innych sekcji, nagłówków, FAQ, CTA ani linków. Nie dodawaj faktów "
-            "spoza przekazanych assertions. Zwróć wyłącznie JSON zgodny ze schema."
+            "spoza przekazanych approved_official_source_facts. Dla każdego wskazanego "
+            "requirementu zapisz kwalifikowane zdanie oparte na właściwym oficjalnym "
+            "fakcie; assertion określa wymagany koncept, a nie ogranicza faktów do "
+            "samego słowa kluczowego. Nie rozszerzaj zakresu obowiązku, wyjątków, "
+            "terminów ani sankcji. Zwróć wyłącznie JSON zgodny ze schema."
         ),
         application_context=json.dumps(
             {
