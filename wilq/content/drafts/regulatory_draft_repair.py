@@ -41,6 +41,8 @@ def repair_regulatory_assertions(
     ]
     if blocker.code not in {"document_scope_mismatch", "draft_assurance_failed"} or not missing:
         return None
+    if blocker.code == "document_scope_mismatch":
+        return _grounded_repair_fallback(planning_input, proposal, output, missing)
     try:
         result = client.run_structured_turn(
             regulatory_assertion_repair_turn_request(

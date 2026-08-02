@@ -394,18 +394,12 @@ def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts()
     assert related_fact.extracted_fact in repaired_output.sections[0].body_markdown
 
 
-def test_regulatory_repair_appends_a_valid_patch_without_replacing_existing_text() -> None:
+def test_regulatory_scope_repair_uses_approved_facts_without_a_second_model_turn() -> None:
     proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
 
-    class ValidPatchClient:
+    class UnexpectedModelClient:
         def run_structured_turn(self, _request):
-            return CodexAppServerTurnResult(
-                status="completed",
-                output_text=(
-                    '{"sections":[{"section_id":"section_keep","mode":"append",'
-                    '"body_markdown":"Doprecyzowanie z oficjalnego źródła."}]}'
-                ),
-            )
+            raise AssertionError("Deterministic scope repair must not call Codex.")
 
     repaired = repair_regulatory_assertions(
         planning_input=planning_input,
@@ -418,13 +412,12 @@ def test_regulatory_repair_appends_a_valid_patch_without_replacing_existing_text
             next_step="Uzupełnij dokument.",
             source_codes=["regulatory_document_assertion:bdo_exemptions:bdo_exemption_condition"],
         ),
-        client=ValidPatchClient(),
+        client=UnexpectedModelClient(),
     )
 
     assert repaired is not None
     body = repaired[0].sections[0].body_markdown
     assert "Sprawdź obowiązki." in body
-    assert "Doprecyzowanie z oficjalnego źródła." in body
     assert fact.extracted_fact in body
 
 
