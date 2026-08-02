@@ -3415,6 +3415,8 @@ export const ContentPlanningProposalSchema = z.object({
     observation_rule: "",
     success_claim_rule: ""
   }),
+  measurement_metrics: z.array(z.string()).optional(),
+  measurement_baseline_evidence_ids: z.array(z.string()).optional(),
   evidence_ids: z.array(z.string()),
   source_connectors: z.array(z.string()),
   source_material_ids: z.array(z.string()).default([]),
