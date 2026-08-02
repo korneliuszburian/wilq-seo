@@ -27,7 +27,10 @@ _REFRESH_INSTRUCTION = (
     "nie twórz cichego unmapped. "
     "Jeśli wejście zawiera regulatory_coverage.requirements, każdemu requirement_id "
     "przypisz sekcję z jego official evidence i opisz w nagłówku, purpose albo "
-    "reader_question wszystkie document_assertions tego wymagania. Nie łącz "
+    "reader_question wszystkie document_assertions tego wymagania. Dla każdej "
+    "pozycji z application_context.regulatory_document_assertions użyj dosłownie "
+    "co najmniej jednego wariantu z required_any_of w sekcji przypisanej do tego "
+    "requirement_id. Nie łącz "
     "niepowiązanych obowiązków pod ogólnym nagłówkiem konsultacji. "
     "Każdy nagłówek sekcji ma nazywać konkretną odpowiedź lub problem czytelnika; "
     "nie używaj nagłówków prezentacyjnych, nawigacyjnych ani promocyjnych, takich jak "
@@ -55,7 +58,10 @@ _NEW_PAGE_INSTRUCTION = (
     "przekazanego wejścia. Każdy nagłówek ma nazywać konkretną odpowiedź lub problem czytelnika; "
     "Jeśli wejście zawiera regulatory_coverage.requirements, każdemu requirement_id "
     "przypisz sekcję z jego official evidence i opisz w nagłówku, purpose albo "
-    "reader_question wszystkie document_assertions tego wymagania. "
+    "reader_question wszystkie document_assertions tego wymagania. Dla każdej "
+    "pozycji z application_context.regulatory_document_assertions użyj dosłownie "
+    "co najmniej jednego wariantu z required_any_of w sekcji przypisanej do tego "
+    "requirement_id. "
     "nie używaj nagłówków nawigacyjnych, promocyjnych ani opisujących sam plan. "
     "Placement CTA lub linku ma być after_lead, after_content albo dokładnym nagłówkiem "
     "zaplanowanej sekcji. Nie zatwierdzaj treści, nie wykonuj write i zawsze zwróć "
@@ -159,6 +165,16 @@ def content_planning_turn_request(
                 "do_not_write_vendor": True,
                 "publish_ready": False,
             },
+            "regulatory_document_assertions": [
+                {
+                    "requirement_id": requirement.id,
+                    "assertion_id": assertion.id,
+                    "label": assertion.label,
+                    "required_any_of": assertion.required_any_of,
+                }
+                for requirement in planning_input.regulatory_coverage.requirements
+                for assertion in requirement.document_assertions
+            ],
         },
         ensure_ascii=False,
         sort_keys=True,
