@@ -215,7 +215,8 @@ def _repair_regulatory_assertions(
     if len(replacements) != len(patch.sections):
         return None
     return (
-        output.model_copy(
+        _ground_unmet_regulatory_assertions(
+            output.model_copy(
             update={
                 "sections": [
                     section.model_copy(
@@ -228,8 +229,79 @@ def _repair_regulatory_assertions(
                     for section in output.sections
                 ]
             }
+            ),
+            planning_input=inputs.planning_input,
+            proposal=inputs.proposal,
+            missing_codes=missing,
         ),
         _runtime_trace(result),
+    )
+
+
+def _ground_unmet_regulatory_assertions(
+    output: ContentInitialDraftModelOutput,
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    missing_codes: list[str],
+) -> ContentInitialDraftModelOutput:
+    """Append one approved fact only where a deterministic assertion remains unmet."""
+
+    requirement_by_id = {item.id: item for item in planning_input.regulatory_coverage.requirements}
+    sections = {item.section_id: item for item in proposal.sections}
+    additions: dict[str, list[str]] = {}
+    for code in missing_codes:
+        if not code.startswith("regulatory_document_assertion:"):
+            continue
+        _, requirement_id, assertion_id = code.split(":", 2)
+        requirement = requirement_by_id.get(requirement_id)
+        if requirement is None:
+            continue
+        assertion = next(
+            (item for item in requirement.document_assertions if item.id == assertion_id),
+            None,
+        )
+        if assertion is None:
+            continue
+        fact = next(
+            (
+                item.extracted_fact
+                for item in planning_input.regulatory_coverage.source_facts
+                if requirement_id in item.regulatory_requirement_ids
+                and any(
+                    term.lower() in item.extracted_fact.lower()
+                    for term in assertion.required_any_of
+                )
+            ),
+            None,
+        )
+        if fact is None:
+            continue
+        target = next(
+            (
+                section_id
+                for section_id, section in sections.items()
+                if requirement_id in section.regulatory_requirement_ids
+            ),
+            None,
+        )
+        if target is not None:
+            additions.setdefault(target, []).append(fact)
+    if not additions:
+        return output
+    return output.model_copy(
+        update={
+            "sections": [
+                section.model_copy(
+                    update={
+                        "body_markdown": section.body_markdown
+                        + "\n\n"
+                        + "\n\n".join(dict.fromkeys(additions.get(section.section_id, [])))
+                    }
+                )
+                for section in output.sections
+            ]
+        }
     )
 
 
