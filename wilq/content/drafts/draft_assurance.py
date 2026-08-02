@@ -197,6 +197,7 @@ def draft_assurance_output_schema(
         "evidence_ids",
         coverage.evidence_ids,
     )
+    _mapping(checks, "evidence_ids")["minItems"] = 1
     return schema
 
 

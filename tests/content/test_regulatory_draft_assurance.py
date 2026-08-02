@@ -227,6 +227,9 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
     ]["enum"] == ["requirement:transport_document"]
     assert schema["properties"]["checks"]["minItems"] == 1
     assert schema["properties"]["checks"]["maxItems"] == 1
+    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"][
+        "evidence_ids"
+    ]["minItems"] == 1
 
     with pytest.raises(ValueError, match="unknown requirements"):
         ContentRegulatoryProfile(
