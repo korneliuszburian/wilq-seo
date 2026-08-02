@@ -188,6 +188,16 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
         "bdo_risks_and_sanctions",
     ]
     assert profile.claim_constraints == []
+    sanctions_requirement = next(
+        requirement
+        for requirement in profile.requirements
+        if requirement.id == "bdo_risks_and_sanctions"
+    )
+    assert sanctions_requirement.document_assertions[0].required_any_of == [
+        "sankcj",
+        "konsekwencj",
+        "kar",
+    ]
     assert [constraint.id for constraint in regulatory_draft_assurance_constraints(profile)] == [
         f"requirement:{requirement.id}" for requirement in profile.requirements
     ]

@@ -140,7 +140,7 @@
             {
               "id": "bdo_sanctions",
               "label": "sankcje lub konsekwencje",
-              "required_any_of": ["sankcj", "konsekwencj"]
+              "required_any_of": ["sankcj", "konsekwencj", "kar"]
             }
           ]
         }
