@@ -136,6 +136,13 @@ def test_python_service_profile_rejects_blank_cta_patterns() -> None:
         ContentWorkItemServiceProfileContext.model_validate(payload)
 
 
+def test_python_service_profile_caps_cta_patterns_at_four() -> None:
+    payload = ContentWorkItemServiceProfileContext.not_evaluated().model_dump()
+    payload["cta_patterns"] = [f"pattern-{index}" for index in range(5)]
+    with pytest.raises(ValueError, match="at most 4 items"):
+        ContentWorkItemServiceProfileContext.model_validate(payload)
+
+
 def _snapshot_with_service_override(
     client: TestClient,
 ) -> tuple[str, dict[str, Any]]:
