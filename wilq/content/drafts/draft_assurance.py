@@ -28,6 +28,15 @@ from wilq.content.regulatory.policy import (
 
 ContentDraftAssuranceStatus = Literal["passed", "failed", "not_applicable"]
 ContentDraftAssuranceCheckStatus = Literal["pass", "fail"]
+ContentDraftAssuranceReasonCode = Literal[
+    "supported",
+    "missing_scope",
+    "missing_exception",
+    "unsupported_specific",
+    "overbroad_claim",
+    "insufficient_source_alignment",
+    "not_assessable",
+]
 _CRITERIA_VERSION = "wilq_regulatory_draft_assurance_v1"
 
 _INSTRUCTION = (
@@ -40,7 +49,10 @@ _INSTRUCTION = (
     "fail — nie domyślaj się intencji autora. Nie przepisuj tekstu, nie dodawaj "
     "faktów ani źródeł, nie zatwierdzaj dokumentu, nie twórz ActionObjectu i nie "
     "wykonuj write. Dla każdego wyniku podaj krótki literalny fragment kandydata "
-    "albo 'brak w dokumencie'. Nie wybieraj dowodów: WILQ wiąże je po stronie serwera "
+    "albo 'brak w dokumencie' oraz reason_code: supported tylko dla pass; dla fail "
+    "wybierz missing_scope, missing_exception, unsupported_specific, overbroad_claim, "
+    "insufficient_source_alignment albo not_assessable. Nie wybieraj dowodów: "
+    "WILQ wiąże je po stronie serwera "
     "z exact requirementem. Zwróć wyłącznie JSON zgodny ze schema."
 )
 
@@ -50,6 +62,7 @@ class ContentDraftAssuranceCheckOutput(BaseModel):
 
     constraint_id: str = Field(min_length=1)
     status: ContentDraftAssuranceCheckStatus
+    reason_code: ContentDraftAssuranceReasonCode = "not_assessable"
     reason: str = Field(min_length=1)
     document_excerpt: str = Field(min_length=1)
     evidence_ids: list[str] = Field(default_factory=list)

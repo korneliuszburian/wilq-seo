@@ -133,6 +133,7 @@ def test_assurance_blocks_an_unqualified_kpo_statement_that_phrase_checks_allow(
                 {
                     "constraint_id": "requirement:transport_document",
                     "status": "fail",
+                    "reason_code": "overbroad_claim",
                     "reason": "Zdanie przedstawia KPO jako obowiązek dla każdego transportu.",
                     "document_excerpt": "Każdy transport odpadów wymaga KPO.",
                     "evidence_ids": ["ev_kpo"],
@@ -227,6 +228,17 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
     ]["enum"] == ["requirement:transport_document"]
     assert schema["properties"]["checks"]["minItems"] == 1
     assert schema["properties"]["checks"]["maxItems"] == 1
+    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"][
+        "reason_code"
+    ]["enum"] == [
+        "supported",
+        "missing_scope",
+        "missing_exception",
+        "unsupported_specific",
+        "overbroad_claim",
+        "insufficient_source_alignment",
+        "not_assessable",
+    ]
 
     with pytest.raises(ValueError, match="unknown requirements"):
         ContentRegulatoryProfile(
@@ -333,6 +345,7 @@ def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypa
                         {
                             "constraint_id": "requirement:transport_document",
                             "status": "fail",
+                            "reason_code": "overbroad_claim",
                             "reason": "KPO jest przedstawione jako bezwarunkowe.",
                             "document_excerpt": "Każdy transport odpadów wymaga KPO.",
                             "evidence_ids": ["ev_kpo"],
@@ -375,6 +388,9 @@ def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypa
     assert result.code == "draft_assurance_failed"
     assert result.source_codes == ["requirement:transport_document"]
     assert result.repair_reasons == {
-        "requirement:transport_document": "KPO jest przedstawione jako bezwarunkowe."
+        "requirement:transport_document": "overbroad_claim"
     }
     assert [run.status for run in store.saved] == ["started", "completed"]
+    assert store.saved[-1].error == (
+        "draft_assurance_failed|requirement:transport_document:overbroad_claim"
+    )

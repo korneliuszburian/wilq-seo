@@ -104,7 +104,11 @@ def run_regulatory_draft_assurance(
         )
     run_store.save_codex_run(
         critic_run.model_copy(
-            update={"status": "completed", "completed_at": utc_now(), "error": None}
+            update={
+                "status": "completed",
+                "completed_at": utc_now(),
+                "error": _assessment_audit_error(assessment, receipt),
+            }
         )
     )
     if receipt.status == "passed":
@@ -119,7 +123,7 @@ def run_regulatory_draft_assurance(
         ),
         source_codes=receipt.failed_constraint_ids,
         repair_reasons={
-            check.constraint_id: check.reason
+            check.constraint_id: check.reason_code
             for check in assessment.checks
             if check.constraint_id in receipt.failed_constraint_ids
         },
@@ -165,3 +169,17 @@ def _invalid_output_code(error: ValueError) -> str:
     if "must cite only exact constraint evidence" in message:
         return "assurance_evidence_mismatch"
     return "assurance_schema_invalid"
+
+
+def _assessment_audit_error(
+    assessment: ContentDraftAssuranceModelOutput,
+    receipt: ContentDraftAssuranceReceipt,
+) -> str | None:
+    """Persist only controlled judge categories, never model prose or excerpts."""
+
+    failure_codes = [
+        f"{check.constraint_id}:{check.reason_code}"
+        for check in assessment.checks
+        if check.constraint_id in receipt.failed_constraint_ids
+    ]
+    return None if not failure_codes else "draft_assurance_failed|" + ",".join(failure_codes)
