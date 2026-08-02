@@ -250,6 +250,19 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
         )
 
 
+def test_assurance_invalid_output_codes_do_not_retain_model_text() -> None:
+    assert (
+        draft_assurance_runtime._invalid_output_code(
+            ValueError("Draft assurance excerpt must occur in the candidate document.")
+        )
+        == "assurance_excerpt_not_in_document"
+    )
+    assert (
+        draft_assurance_runtime._invalid_output_code(ValueError("untrusted model text"))
+        == "assurance_schema_invalid"
+    )
+
+
 def test_profile_rejects_a_custom_constraint_in_the_reserved_requirement_namespace() -> None:
     profile = _profile()
 

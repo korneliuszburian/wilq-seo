@@ -82,13 +82,14 @@ def run_regulatory_draft_assurance(
             assessment=assessment,
             codex_run_id=critic_run.id,
         )
-    except ValueError:
+    except ValueError as error:
+        invalid_output_code = _invalid_output_code(error)
         run_store.save_codex_run(
             critic_run.model_copy(
                 update={
                     "status": "blocked",
                     "completed_at": utc_now(),
-                    "error": "draft_assurance_invalid_output",
+                    "error": f"draft_assurance_invalid_output|{invalid_output_code}",
                 }
             )
         )
@@ -97,7 +98,7 @@ def run_regulatory_draft_assurance(
             label="Kontrola merytoryczna zwróciła niepoprawny wynik",
             reason="Wynik krytyka nie przeszedł ścisłego kontraktu profilu i źródeł.",
             next_step="Odrzuć próbę i uruchom nową; WILQ nie zapisał dokumentu.",
-            source_codes=[],
+            source_codes=[invalid_output_code],
         )
     run_store.save_codex_run(
         critic_run.model_copy(
@@ -139,3 +140,20 @@ def _failed_runtime_attempt(
         next_step="Sprawdź runtime i uruchom nową próbę; dokument nie został zapisany.",
         source_codes=[item.code for item in result.blockers],
     )
+
+
+def _invalid_output_code(error: ValueError) -> str:
+    """Classify validation failures without retaining model-provided text."""
+
+    message = str(error)
+    if "assess every constraint in canonical order" in message:
+        return "assurance_check_order"
+    if "must cite a candidate excerpt" in message:
+        return "assurance_pass_without_excerpt"
+    if "excerpt must occur in the candidate document" in message:
+        return "assurance_excerpt_not_in_document"
+    if "must cite exact constraint evidence" in message:
+        return "assurance_missing_evidence"
+    if "must cite only exact constraint evidence" in message:
+        return "assurance_evidence_mismatch"
+    return "assurance_schema_invalid"
