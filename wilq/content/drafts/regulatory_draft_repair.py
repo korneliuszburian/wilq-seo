@@ -1,9 +1,8 @@
 """Bounded repair of unmet profile-owned regulatory assertions.
 
 This owner may change a transient draft candidate only.  It never approves,
-persists, publishes, or writes to a vendor.  A deterministic fallback appends
-only an already approved official fact that is exact for the missing profile
-requirement.
+persists, publishes, or writes to a vendor.  A deterministic fallback uses
+only already approved official facts exact for the missing profile requirement.
 """
 
 from __future__ import annotations
@@ -32,6 +31,7 @@ def repair_regulatory_assertions(
     blocker: ContentInitialDraftBlocker,
     client: CodexAppServerClientProtocol,
     repair_reasons: dict[str, str] | None = None,
+    force_deterministic_replace: bool = False,
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | None:
     """Repair only profile-owned failures, falling back to exact approved facts."""
 
@@ -42,8 +42,14 @@ def repair_regulatory_assertions(
     ]
     if blocker.code not in {"document_scope_mismatch", "draft_assurance_failed"} or not missing:
         return None
-    if blocker.code == "document_scope_mismatch":
-        return _grounded_repair_fallback(planning_input, proposal, output, missing)
+    if blocker.code == "document_scope_mismatch" or force_deterministic_replace:
+        return _grounded_repair_fallback(
+            planning_input,
+            proposal,
+            output,
+            missing,
+            replace_semantic_requirements=force_deterministic_replace,
+        )
     try:
         result = client.run_structured_turn(
             regulatory_assertion_repair_turn_request(
@@ -65,9 +71,7 @@ def repair_regulatory_assertions(
     patches = {item.section_id: item for item in patch.sections}
     if len(patches) != len(patch.sections):
         return _grounded_repair_fallback(planning_input, proposal, output, missing)
-    expected_modes = regulatory_section_repair_modes(
-        proposal, missing, repair_reasons or {}
-    )
+    expected_modes = regulatory_section_repair_modes(proposal, missing, repair_reasons or {})
     if {section_id: item.mode for section_id, item in patches.items()} != expected_modes:
         return _grounded_repair_fallback(planning_input, proposal, output, missing)
     patched = output.model_copy(
@@ -117,12 +121,15 @@ def _grounded_repair_fallback(
     proposal: ContentPlanningProposal,
     output: ContentInitialDraftModelOutput,
     missing: list[str],
+    *,
+    replace_semantic_requirements: bool = False,
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | None:
     grounded = ground_unmet_regulatory_assertions(
         output,
         planning_input=planning_input,
         proposal=proposal,
         missing_codes=missing,
+        replace_semantic_requirements=replace_semantic_requirements,
     )
     if grounded == output:
         return None
@@ -135,14 +142,14 @@ def ground_unmet_regulatory_assertions(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
     missing_codes: list[str],
+    replace_semantic_requirements: bool = False,
 ) -> ContentInitialDraftModelOutput:
-    """Append one exact approved fact only where an assertion remains unmet."""
+    """Ground unmet assertions with source facts, replacing only failed semantics."""
 
-    requirement_by_id = {
-        item.id: item for item in planning_input.regulatory_coverage.requirements
-    }
+    requirement_by_id = {item.id: item for item in planning_input.regulatory_coverage.requirements}
     sections = {item.section_id: item for item in proposal.sections}
     additions: dict[str, list[str]] = {}
+    replacements: dict[str, list[str]] = {}
     semantic_requirement_ids = {
         code.removeprefix("requirement:")
         for code in missing_codes
@@ -164,9 +171,7 @@ def ground_unmet_regulatory_assertions(
             planning_input,
             requirement_id=requirement_id,
             assertion_terms=(
-                None
-                if requirement_id in semantic_requirement_ids
-                else assertion.required_any_of
+                None if requirement_id in semantic_requirement_ids else assertion.required_any_of
             ),
         )
         if not facts:
@@ -180,18 +185,23 @@ def ground_unmet_regulatory_assertions(
             None,
         )
         if target is not None:
-            additions.setdefault(target, []).extend(facts)
-    if not additions:
+            destination = (
+                replacements
+                if replace_semantic_requirements and requirement_id in semantic_requirement_ids
+                else additions
+            )
+            destination.setdefault(target, []).extend(facts)
+    if not additions and not replacements:
         return output
     return output.model_copy(
         update={
             "sections": [
                 section.model_copy(
                     update={
-                        "body_markdown": section.body_markdown
-                        + "\n\n"
-                        + "\n\n".join(
-                            dict.fromkeys(additions.get(section.section_id, []))
+                        "body_markdown": _grounded_section_body(
+                            section.body_markdown,
+                            additions.get(section.section_id, []),
+                            replacements.get(section.section_id, []),
                         )
                     }
                 )
@@ -199,6 +209,20 @@ def ground_unmet_regulatory_assertions(
             ]
         }
     )
+
+
+def _grounded_section_body(
+    existing: str,
+    additions: list[str],
+    replacements: list[str],
+) -> str:
+    """Keep literal repairs additive; remove failed semantic prose before fallback."""
+
+    if replacements:
+        return "\n\n".join(dict.fromkeys(replacements))
+    if additions:
+        return existing + "\n\n" + "\n\n".join(dict.fromkeys(additions))
+    return existing
 
 
 def _approved_facts_for_requirement(
@@ -217,10 +241,7 @@ def _approved_facts_for_requirement(
         and requirement_id in item.regulatory_requirement_ids
         and (
             assertion_terms is None
-            or any(
-                term.lower() in item.extracted_fact.lower()
-                for term in assertion_terms
-            )
+            or any(term.lower() in item.extracted_fact.lower() for term in assertion_terms)
         )
     ]
 
@@ -240,8 +261,7 @@ def _assertion_codes_for_missing_requirements(
             requirement = requirement_by_id.get(code.removeprefix("requirement:"))
             if requirement is not None:
                 assertion_codes.extend(
-                    (requirement.id, assertion.id)
-                    for assertion in requirement.document_assertions
+                    (requirement.id, assertion.id) for assertion in requirement.document_assertions
                 )
     return assertion_codes
 

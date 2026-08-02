@@ -334,7 +334,7 @@ def _regulatory_repair_fixture() -> tuple[
         regulatory_coverage=ContentRegulatoryCoverage(
             requirements=[requirement],
             source_facts=[fact, related_fact],
-        )
+        ),
     )
     output = ContentInitialDraftModelOutput(
         page_assets=ContentDraftRevisionPageAssets(
@@ -370,7 +370,7 @@ def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts()
                     '"body_markdown":"Pierwsza wersja."},'
                     '{"section_id":"section_keep","mode":"append",'
                     '"body_markdown":"Druga wersja."}'
-                    ']}'
+                    "]}"
                 ),
             )
 
@@ -459,9 +459,7 @@ def test_regulatory_scope_repair_accepts_profile_owned_role_variants_in_approved
             )
         }
     )
-    missing = document_scope_errors(
-        proposal, output, regulatory_requirements=[requirement]
-    )
+    missing = document_scope_errors(proposal, output, regulatory_requirements=[requirement])
 
     repaired = repair_regulatory_assertions(
         planning_input=planning_input,
@@ -479,9 +477,7 @@ def test_regulatory_scope_repair_accepts_profile_owned_role_variants_in_approved
 
     assert repaired is not None
     assert role_fact.extracted_fact in repaired[0].sections[0].body_markdown
-    assert document_scope_errors(
-        proposal, repaired[0], regulatory_requirements=[requirement]
-    ) == []
+    assert document_scope_errors(proposal, repaired[0], regulatory_requirements=[requirement]) == []
 
 
 def test_regulatory_repair_replaces_an_overbroad_section_when_critic_requires_it() -> None:
@@ -538,6 +534,39 @@ def test_regulatory_repair_replaces_a_section_for_missing_scope() -> None:
     ) == {"section_keep": "replace"}
 
 
+def test_regulatory_repair_uses_only_official_facts_when_semantic_repair_is_exhausted() -> None:
+    proposal, planning_input, output, fact, related_fact = _regulatory_repair_fixture()
+    output = output.model_copy(
+        update={
+            "sections": [
+                output.sections[0].model_copy(
+                    update={"body_markdown": "Każda firma zawsze podlega BDO."}
+                )
+            ]
+        }
+    )
+
+    repaired = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        blocker=ContentInitialDraftBlocker(
+            code="draft_assurance_failed",
+            label="Twierdzenie pozostaje zbyt szerokie.",
+            reason="Krytyk ponownie wykrył nadmierny zakres.",
+            next_step="Zastąp sekcję wyłącznie źródłami urzędowymi.",
+            source_codes=["requirement:bdo_exemptions"],
+        ),
+        client=SimpleNamespace(),
+        force_deterministic_replace=True,
+    )
+
+    assert repaired is not None
+    body = repaired[0].sections[0].body_markdown
+    assert "Każda firma zawsze podlega BDO." not in body
+    assert body == "\n\n".join([fact.extracted_fact, related_fact.extracted_fact])
+
+
 def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() -> None:
     proposal, planning_input, output, _, _ = _regulatory_repair_fixture()
 
@@ -554,20 +583,22 @@ def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() ->
 
 
 def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None:
-    blocker = _planning_input_blocker([
-        ContentPlanningInputBlocker(
-            code="missing_approved_service_fact",
-            label="Brakuje zatwierdzonego faktu usługi",
-            reason="Karta wskazuje nieznany source fact.",
-            next_step="Uzupełnij approved source fact.",
-        ),
-        ContentPlanningInputBlocker(
-            code="stale_planning_sources",
-            label="Źródła są nieświeże",
-            reason="Odśwież dane.",
-            next_step="Uruchom refresh.",
-        ),
-    ])
+    blocker = _planning_input_blocker(
+        [
+            ContentPlanningInputBlocker(
+                code="missing_approved_service_fact",
+                label="Brakuje zatwierdzonego faktu usługi",
+                reason="Karta wskazuje nieznany source fact.",
+                next_step="Uzupełnij approved source fact.",
+            ),
+            ContentPlanningInputBlocker(
+                code="stale_planning_sources",
+                label="Źródła są nieświeże",
+                reason="Odśwież dane.",
+                next_step="Uruchom refresh.",
+            ),
+        ]
+    )
 
     assert blocker.code == "missing_approved_service_fact"
     assert blocker.label == "Brakuje zatwierdzonego faktu usługi"

@@ -89,16 +89,13 @@ def generate_initial_full_draft(
         inputs=prepared, output=output, trace=trace, client=client
     )
     if blocker is not None:
-        finish_initial_draft_run(
-            run_store, run, status="blocked", error=safe_initial_draft_run_error(blocker)
-        )
-        return _blocked_response(
-            snapshot,
+        return _finish_blocked_draft(
+            snapshot=snapshot,
             proposal=prepared.proposal,
-            status="blocked",
             run=run,
-            runtime=trace,
-            blockers=[blocker],
+            trace=trace,
+            blocker=blocker,
+            run_store=run_store,
         )
     assurance = _assure_regulated_draft(
         inputs=prepared,
@@ -121,31 +118,29 @@ def generate_initial_full_draft(
             snapshot=snapshot,
         )
         if blocker is not None:
-            finish_initial_draft_run(
-                run_store,
-                run,
-                status="blocked",
-                error=safe_initial_draft_run_error(blocker),
-            )
-            return _blocked_response(
-                snapshot,
+            return _finish_blocked_draft(
+                snapshot=snapshot,
                 proposal=prepared.proposal,
-                status="blocked",
                 run=run,
-                runtime=trace,
-                blockers=[blocker],
+                trace=trace,
+                blocker=blocker,
+                run_store=run_store,
             )
     if isinstance(assurance, ContentDraftAssuranceFailure):
         blocker = _blocker(
-            assurance.code, assurance.label, assurance.reason, assurance.next_step,
+            assurance.code,
+            assurance.label,
+            assurance.reason,
+            assurance.next_step,
             source_codes=assurance.source_codes,
         )
-        finish_initial_draft_run(
-            run_store, run, status="blocked", error=safe_initial_draft_run_error(blocker)
-        )
-        return _blocked_response(
-            snapshot, proposal=prepared.proposal, status="blocked", run=run,
-            runtime=trace, blockers=[blocker]
+        return _finish_blocked_draft(
+            snapshot=snapshot,
+            proposal=prepared.proposal,
+            run=run,
+            trace=trace,
+            blocker=blocker,
+            run_store=run_store,
         )
     return _persist_document(
         snapshot=snapshot,
@@ -157,6 +152,31 @@ def generate_initial_full_draft(
         workflow_store=workflow_store,
         run_store=run_store,
         regulatory_assurance=assurance,
+    )
+
+
+def _finish_blocked_draft(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    proposal: ContentPlanningProposal,
+    run: CodexRun,
+    trace: ContentCodexRuntimeTrace,
+    blocker: ContentInitialDraftBlocker,
+    run_store: LocalStateStore,
+) -> ContentInitialDraftResponse:
+    finish_initial_draft_run(
+        run_store,
+        run,
+        status="blocked",
+        error=safe_initial_draft_run_error(blocker),
+    )
+    return _blocked_response(
+        snapshot,
+        proposal=proposal,
+        status="blocked",
+        run=run,
+        runtime=trace,
+        blockers=[blocker],
     )
 
 
@@ -234,6 +254,37 @@ def _repair_after_assurance_failure(
             blocker = _output_blocker(inputs, output)
     if blocker is not None:
         return output, trace, assurance, blocker
+    reassured = _assure_regulated_draft(
+        inputs=inputs,
+        output=output,
+        client=client,
+        writer_run=run,
+        writer_trace=trace,
+        run_store=run_store,
+        snapshot=snapshot,
+    )
+    if not isinstance(reassured, ContentDraftAssuranceFailure):
+        return output, trace, reassured, None
+    deterministic = repair_regulatory_assertions(
+        planning_input=inputs.planning_input,
+        proposal=inputs.proposal,
+        output=output,
+        blocker=_blocker(
+            reassured.code,
+            reassured.label,
+            reassured.reason,
+            reassured.next_step,
+            source_codes=reassured.source_codes,
+        ),
+        client=client,
+        force_deterministic_replace=True,
+    )
+    if deterministic is None:
+        return output, trace, reassured, None
+    output, trace = deterministic
+    blocker = _output_blocker(inputs, output)
+    if blocker is not None:
+        return output, trace, reassured, blocker
     return (
         output,
         trace,
@@ -302,11 +353,7 @@ def _prepare_inputs(
     if service_card_id is None:
         return _planning_not_generated(snapshot, proposal)
     planning_result = _current_planning_input(snapshot, service_card_id)
-    # Planning may use a public rendered ``the_content`` read to produce a
-    # reviewable strategy, but a full durable document is a stronger boundary.
-    # Keep every readiness blocker here: review-required WordPress material,
-    # unapproved service cards and stale/blocked sources must not become a
-    # real draft merely because the planner was allowed to inspect them.
+    # A durable document requires stricter readiness than a reviewable plan.
     draft_blockers = planning_result.blockers
     if planning_result.planning_input is None or draft_blockers:
         return _blocked_response(
@@ -454,9 +501,7 @@ def _execute_runtime(
             "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
             source_codes=[item.code for item in result.blockers],
         )
-        status: Literal["blocked", "failed"] = (
-            "blocked" if result.status == "blocked" else "failed"
-        )
+        status: Literal["blocked", "failed"] = "blocked" if result.status == "blocked" else "failed"
         finish_initial_draft_run(run_store, run, status=status, error=code)
         return ContentInitialDraftResponse(
             status=status,
