@@ -160,6 +160,7 @@ def test_assurance_uses_server_owned_evidence_instead_of_critic_selection() -> N
                     {
                         "constraint_id": "requirement:transport_document",
                         "status": "pass",
+                        "reason_code": "supported",
                         "reason": "Warunek został podany.",
                         "document_excerpt": "KPO stosuje się, gdy przekazanie podlega ewidencji.",
                         "evidence_ids": ["ev_other"],
@@ -184,6 +185,7 @@ def test_assurance_does_not_require_model_selected_evidence() -> None:
                     {
                         "constraint_id": "requirement:transport_document",
                         "status": "pass",
+                        "reason_code": "supported",
                         "reason": "Warunek został podany.",
                         "document_excerpt": "KPO stosuje się, gdy przekazanie podlega ewidencji.",
                         "evidence_ids": [],
@@ -195,12 +197,11 @@ def test_assurance_does_not_require_model_selected_evidence() -> None:
     assert receipt.status == "passed"
 
 
-def test_assurance_uses_the_critic_decision_not_its_non_audited_excerpt() -> None:
+def test_assurance_rejects_a_pass_that_claims_the_excerpt_is_missing() -> None:
     profile = _profile()
-    planning_input = _planning_input(profile)
-
-    receipt = validate_draft_assurance_output(
-            planning_input=planning_input,
+    with pytest.raises(ValueError, match="must cite a candidate excerpt"):
+        validate_draft_assurance_output(
+            planning_input=_planning_input(profile),
             output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
             profile=profile,
             assessment=ContentDraftAssuranceModelOutput(
@@ -208,6 +209,7 @@ def test_assurance_uses_the_critic_decision_not_its_non_audited_excerpt() -> Non
                     {
                         "constraint_id": "requirement:transport_document",
                         "status": "pass",
+                        "reason_code": "supported",
                         "reason": "Warunek został podany.",
                         "document_excerpt": "brak w dokumencie",
                         "evidence_ids": ["ev_kpo"],
@@ -215,8 +217,30 @@ def test_assurance_uses_the_critic_decision_not_its_non_audited_excerpt() -> Non
                 ]
             ),
             codex_run_id="codex_content_draft_assurance_1",
-    )
-    assert receipt.status == "passed"
+        )
+
+
+def test_assurance_rejects_a_pass_with_a_reason_code_for_a_failure() -> None:
+    profile = _profile()
+    with pytest.raises(ValueError, match="requires the supported reason code"):
+        validate_draft_assurance_output(
+            planning_input=_planning_input(profile),
+            output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
+            profile=profile,
+            assessment=ContentDraftAssuranceModelOutput(
+                checks=[
+                    {
+                        "constraint_id": "requirement:transport_document",
+                        "status": "pass",
+                        "reason_code": "missing_scope",
+                        "reason": "Warunek został podany.",
+                        "document_excerpt": "KPO stosuje się, gdy przekazanie podlega ewidencji.",
+                        "evidence_ids": [],
+                    }
+                ]
+            ),
+            codex_run_id="codex_content_draft_assurance_1",
+        )
 
 
 def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -> None:
@@ -280,6 +304,7 @@ def test_assurance_accepts_an_exact_excerpt_with_only_layout_whitespace_changed(
                     {
                         "constraint_id": "requirement:transport_document",
                         "status": "pass",
+                        "reason_code": "supported",
                         "reason": "Warunek został podany.",
                         "document_excerpt": (
                             "KPO stosuje się, gdy przekazanie odpadów podlega ewidencji."

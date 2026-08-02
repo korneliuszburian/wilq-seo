@@ -10,6 +10,7 @@ rewrites, publishes or persists a document.
 from __future__ import annotations
 
 import json
+import re
 from copy import deepcopy
 from typing import Literal, cast
 
@@ -38,6 +39,7 @@ ContentDraftAssuranceReasonCode = Literal[
     "not_assessable",
 ]
 _CRITERIA_VERSION = "wilq_regulatory_draft_assurance_v1"
+_MISSING_DOCUMENT_EXCERPT = "brak w dokumencie"
 
 _INSTRUCTION = (
     "Jesteś niezależnym krytykiem merytorycznym roboczego dokumentu regulowanego. "
@@ -230,6 +232,7 @@ def validate_draft_assurance_output(
         raise ValueError("Draft assurance must assess every constraint in canonical order.")
     failed_ids: list[str] = []
     for constraint, check in zip(constraints, assessment.checks, strict=True):
+        _validate_check_against_candidate(check, output)
         if check.status == "fail":
             failed_ids.append(constraint.id)
     return ContentDraftAssuranceReceipt(
@@ -239,6 +242,52 @@ def validate_draft_assurance_output(
         codex_run_id=codex_run_id,
         failed_constraint_ids=failed_ids,
     )
+
+
+def _validate_check_against_candidate(
+    check: ContentDraftAssuranceCheckOutput,
+    output: ContentInitialDraftModelOutput,
+) -> None:
+    """Reject a critic receipt that contradicts its frozen document verdict."""
+
+    excerpt = _normalize_document_text(check.document_excerpt)
+    missing_excerpt = excerpt == _MISSING_DOCUMENT_EXCERPT
+    if check.status == "pass":
+        if check.reason_code != "supported":
+            raise ValueError("Draft assurance pass requires the supported reason code.")
+        if missing_excerpt:
+            raise ValueError("Draft assurance pass must cite a candidate excerpt.")
+        if not _normalized_excerpt_in_document(excerpt, output):
+            raise ValueError("Draft assurance excerpt must occur in the candidate document.")
+    elif check.reason_code == "supported":
+        raise ValueError("Draft assurance fail cannot use the supported reason code.")
+
+
+def _normalized_excerpt_in_document(
+    excerpt: str,
+    output: ContentInitialDraftModelOutput,
+) -> bool:
+    return excerpt in _normalize_document_text(_visible_document_text(output))
+
+
+def _visible_document_text(output: ContentInitialDraftModelOutput) -> str:
+    """Return content readable by a marketer, excluding ids and other metadata."""
+
+    return "\n".join(
+        [
+            *output.page_assets.model_dump().values(),
+            *(item.heading for item in output.sections),
+            *(item.body_markdown for item in output.sections),
+            *(item.question for item in output.faq),
+            *(item.answer_markdown for item in output.faq),
+            *(item.body_markdown for item in output.cta_blocks),
+            *(item.anchor_text for item in output.internal_links),
+        ]
+    )
+
+
+def _normalize_document_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip().casefold()
 
 
 def _source_facts_for_critic(
