@@ -24,6 +24,7 @@ from wilq.content.drafts.initial_full_draft_document import (
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import (
+    _RegulatoryAssertionRepairOutput,
     initial_full_draft_turn_request,
     regulatory_assertion_repair_turn_request,
 )
@@ -152,12 +153,29 @@ def _repair_regulatory_assertions(
     if result.status != "completed" or result.output_text is None:
         return None
     try:
-        return (
-            ContentInitialDraftModelOutput.model_validate_json(result.output_text),
-            _runtime_trace(result),
-        )
+        patch = _RegulatoryAssertionRepairOutput.model_validate_json(result.output_text)
     except ValueError:
         return None
+    replacements = {item.section_id: item.body_markdown for item in patch.sections}
+    if len(replacements) != len(patch.sections):
+        return None
+    return (
+        output.model_copy(
+            update={
+                "sections": [
+                    section.model_copy(
+                        update={
+                            "body_markdown": replacements.get(
+                                section.section_id, section.body_markdown
+                            )
+                        }
+                    )
+                    for section in output.sections
+                ]
+            }
+        ),
+        _runtime_trace(result),
+    )
 
 
 def _prepare_inputs(

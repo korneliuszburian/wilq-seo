@@ -4,6 +4,8 @@ import json
 from copy import deepcopy
 from typing import cast
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
@@ -33,6 +35,20 @@ _INSTRUCTION = (
     "krótki zwykły tekst bez nawiasów, bez Markdown i bez adresu URL. "
     "Zwróć wyłącznie JSON zgodny ze schema."
 )
+
+
+class _RegulatorySectionPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    section_id: str = Field(min_length=1)
+    body_markdown: str = Field(min_length=1)
+
+
+class _RegulatoryAssertionRepairOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sections: list[_RegulatorySectionPatch] = Field(min_length=1)
+    publish_ready: bool = False
 
 
 def initial_full_draft_turn_request(
@@ -103,21 +119,15 @@ def regulatory_assertion_repair_turn_request(
 ) -> CodexAppServerStructuredTurnRequest:
     """Make one bounded correction turn for deterministic regulatory omissions."""
 
-    assertions = [
-        item
-        for item in _regulatory_document_assertion_context(planning_input)
-        if (
-            f"regulatory_document_assertion:{item['requirement_id']}:{item['assertion_id']}"
-            in missing_assertion_codes
-        )
-    ]
+    assertions, section_ids = _missing_assertions_for_repair(
+        planning_input, proposal, missing_assertion_codes
+    )
     return CodexAppServerStructuredTurnRequest(
         instruction=(
-            "Popraw po polsku roboczy dokument wyłącznie tak, aby pokrywał wskazane "
-            "server-owned regulatory assertions. Zachowaj jego strukturę, section_id, "
-            "nagłówki, FAQ, CTA, linki i wszystkie istniejące bezpieczne treści; nie "
-            "dodawaj faktów spoza przekazanych assertions i planu. Zwróć wyłącznie JSON "
-            "zgodny ze schema, publish_ready=false."
+            "Zwróć wyłącznie patch body_markdown wskazanych section_id. Uzupełnij "
+            "server-owned regulatory assertions bez usuwania istniejącej treści. Nie "
+            "dotykaj innych sekcji, nagłówków, FAQ, CTA ani linków. Nie dodawaj faktów "
+            "spoza przekazanych assertions. Zwróć wyłącznie JSON zgodny ze schema."
         ),
         application_context=json.dumps(
             {
@@ -139,8 +149,49 @@ def regulatory_assertion_repair_turn_request(
             sort_keys=True,
             separators=(",", ":"),
         ),
-        output_schema=initial_full_draft_output_schema(proposal),
+        output_schema=_regulatory_assertion_repair_output_schema(section_ids),
     )
+
+
+def _missing_assertions_for_repair(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    missing_codes: list[str],
+) -> tuple[list[dict[str, object]], list[str]]:
+    missing = set(missing_codes)
+    requirements = {item.id: item for item in planning_input.regulatory_coverage.requirements}
+    assertions: list[dict[str, object]] = []
+    section_ids: list[str] = []
+    for section in draftable_planning_sections(proposal.sections):
+        for requirement_id in section.regulatory_requirement_ids:
+            requirement = requirements.get(requirement_id)
+            if requirement is None:
+                continue
+            for assertion in requirement.document_assertions:
+                code = f"regulatory_document_assertion:{requirement_id}:{assertion.id}"
+                if code in missing:
+                    assertions.append(
+                        {
+                            "section_id": section.section_id,
+                            "requirement_id": requirement_id,
+                            "assertion_id": assertion.id,
+                            "required_any_of": assertion.required_any_of,
+                        }
+                    )
+                    if section.section_id not in section_ids:
+                        section_ids.append(section.section_id)
+    return assertions, section_ids
+
+
+def _regulatory_assertion_repair_output_schema(section_ids: list[str]) -> dict[str, object]:
+    schema = deepcopy(_RegulatoryAssertionRepairOutput.model_json_schema())
+    _require_all_object_properties(schema)
+    definition = _mapping(_mapping(schema, "$defs"), "_RegulatorySectionPatch")
+    _mapping(definition, "properties")["section_id"]["enum"] = section_ids
+    sections = _mapping(_mapping(schema, "properties"), "sections")
+    sections["minItems"] = len(section_ids)
+    sections["maxItems"] = len(section_ids)
+    return schema
 def compact_initial_draft_planning_input(
     planning_input: ContentPlanningInput,
 ) -> dict[str, object]:
