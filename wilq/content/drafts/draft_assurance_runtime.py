@@ -66,6 +66,7 @@ def run_regulatory_draft_assurance(
         result = client.run_structured_turn(
             draft_assurance_turn_request(
                 planning_input=planning_input,
+                proposal=proposal,
                 output=output,
                 profile=profile,
             )

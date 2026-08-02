@@ -354,6 +354,29 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
         )
 
 
+def test_assurance_schema_binds_each_ordered_check_to_its_requirement_section() -> None:
+    profile = _profile()
+    planning_input = _planning_input(profile)
+    proposal = _proposal()
+    output = _output("KPO stosuje się, gdy przekazanie podlega ewidencji.")
+
+    schema = draft_assurance_output_schema(
+        profile,
+        planning_input.regulatory_coverage,
+        output,
+        proposal,
+    )
+
+    checks = schema["properties"]["checks"]
+    assert checks["items"] is False
+    assert checks["prefixItems"][0]["properties"]["constraint_id"] == {
+        "const": "requirement:transport_document"
+    }
+    assert checks["prefixItems"][0]["properties"]["document_section_id"] == {
+        "anyOf": [{"enum": ["kpo"]}, {"type": "null"}]
+    }
+
+
 def test_assurance_invalid_output_codes_do_not_retain_model_text() -> None:
     assert (
         draft_assurance_runtime._invalid_output_code(
