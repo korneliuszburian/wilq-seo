@@ -55,7 +55,7 @@
             {
               "id": "bdo_paper_records_rule",
               "label": "zasady dokumentacji papierowej",
-              "required_any_of": ["papier", "papierowych"]
+              "required_any_of": ["nie upoważnia", "papierowych"]
             }
           ]
         },
@@ -166,6 +166,16 @@
               "id": "bdo_sanctions_examples",
               "label": "konkretne przykłady kar",
               "required_any_of": ["1 000", "2 000", "aresztu", "grzywny"]
+            },
+            {
+              "id": "bdo_sanctions_upper_bound",
+              "label": "górna granica administracyjnej kary",
+              "required_any_of": ["1 000 000"]
+            },
+            {
+              "id": "bdo_transport_sanction_range",
+              "label": "zakres kary za transport bez wpisu",
+              "required_any_of": ["10 000"]
             }
           ]
         }
