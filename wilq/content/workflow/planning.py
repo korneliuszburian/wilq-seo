@@ -174,6 +174,8 @@ class ContentPlanningProposal(BaseModel):
     measurement_plan: ContentPlanningMeasurementPlan = Field(
         default_factory=ContentPlanningMeasurementPlan
     )
+    measurement_metrics: list[str] = Field(default_factory=list)
+    measurement_baseline_evidence_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     source_material_ids: list[str] = Field(default_factory=list)
