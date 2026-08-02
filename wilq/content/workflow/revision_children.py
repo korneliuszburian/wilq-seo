@@ -32,6 +32,7 @@ def build_child_draft_revision_command(
         inventory_digest=base_revision.inventory_digest,
         source_material_ids=base_revision.source_material_ids,
         knowledge_card_ids=base_revision.knowledge_card_ids,
+        source_provenance=base_revision.source_provenance,
         final_canonical_url=base_revision.final_canonical_url,
         title=base_revision.title,
         page_assets=base_revision.page_assets,

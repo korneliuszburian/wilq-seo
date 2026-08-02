@@ -6,7 +6,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.workflow.catalog import read_content_inventory_material
 from wilq.content.workflow.decision_context import build_content_decision_context
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionSourceProvenance,
+)
 from wilq.content.workflow.store import content_workflow_store
 
 
@@ -49,6 +52,7 @@ class ContentDocumentWorkspaceDocument(BaseModel):
     )
     label: str
     reason: str
+    source_provenance: list[ContentDraftRevisionSourceProvenance] = Field(default_factory=list)
     preview: ContentDocumentWorkspaceDocumentPreview | None = None
 
 
@@ -299,6 +303,7 @@ def _canonical_document(status: str, revision) -> ContentDocumentWorkspaceDocume
         review_state=normalized,
         label=labels[normalized],
         reason=reasons[normalized],
+        source_provenance=list(revision.source_provenance),
         preview=_document_preview(revision),
     )
 

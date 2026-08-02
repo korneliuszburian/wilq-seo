@@ -114,6 +114,7 @@ export function ContentDocumentWorkspaceCanvas({
             <summary className="cursor-pointer font-semibold text-ink">Źródła i ograniczenia</summary>
             <p className="mt-3 leading-6">{workspace.source_snapshot.reason}</p>
             {workspace.secondary_disclosures.map((detail) => <p key={detail} className="mt-3 leading-6">{detail}</p>)}
+            <EditorialProvenance provenance={workspace.canonical_document.source_provenance ?? []} />
           </details>
           <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
             if ((event.currentTarget as HTMLDetailsElement).open) setDevDetailsOpen(true);
@@ -146,6 +147,22 @@ export function ContentDocumentWorkspaceCanvas({
       </section>
     </main>
   );
+}
+
+function EditorialProvenance({
+  provenance
+}: {
+  provenance: NonNullable<ContentDocumentWorkspace["canonical_document"]["source_provenance"]>;
+}) {
+  if (provenance.length === 0) {
+    return <p className="mt-3 leading-6 text-slate-600">Brak zapisanej daty świeżości i weryfikacji eksperckiej dla tej rewizji.</p>;
+  }
+  return <div className="mt-3 rounded-lg bg-slate-50 p-3">
+    <p className="font-semibold text-ink">Aktualność i weryfikacja</p>
+    {provenance.map((item) => <p key={item.source_fact_id} className="mt-2 leading-6">
+      {item.freshness_date} · {item.reviewer ? `weryfikacja: ${item.reviewer}` : "brak przypisanego eksperta"}
+    </p>)}
+  </div>;
 }
 
 function TargetDraftPreviewDetails({ preview }: { preview: ContentTargetDraftPreview }) {

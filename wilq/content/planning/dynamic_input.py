@@ -23,10 +23,12 @@ from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningSourceAssessment,
     ContentPlanningSourceFact,
+    ContentPlanningSourceProvenance,
     assessment_status,
     build_planning_inventory,
     build_source_assessments,
     build_source_facts,
+    build_source_provenance,
     planning_source_connectors,
     usable_query_portfolio,
     validate_source_assessment_membership,
@@ -95,6 +97,7 @@ class ContentPlanningInput(BaseModel):
     buyer_trigger: str = Field(min_length=1)
     search_intent: str = Field(min_length=1)
     source_facts: list[ContentPlanningSourceFact] = Field(default_factory=list)
+    source_provenance: list[ContentPlanningSourceProvenance] = Field(default_factory=list)
     source_assessments: list[ContentPlanningSourceAssessment] = Field(min_length=10)
     query_portfolio: ContentSearchDemandEvidence
     claim_ledger: list[ContentClaimLedgerEntry] = Field(default_factory=list)
@@ -524,6 +527,7 @@ def _planning_payload(
         "buyer_trigger": brief.buyer_trigger,
         "search_intent": brief.search_intent,
         "source_facts": source_facts,
+        "source_provenance": build_source_provenance(source_facts),
         "source_assessments": source_assessments,
         "query_portfolio": query_portfolio,
         "claim_ledger": claim_ledger.entries,

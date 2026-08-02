@@ -431,6 +431,14 @@ export const ContentDocumentWorkspaceSourceSnapshotSchema = z.object({
   evidence_ids: z.array(z.string()).default([])
 });
 
+const ContentDocumentSourceProvenanceSchema = z.object({
+  source_fact_id: z.string().min(1),
+  source_url_or_path: z.string().min(1),
+  freshness_date: z.string().min(1),
+  reviewer: z.string().min(1).nullable().optional(),
+  evidence_ids: z.array(z.string().min(1)).min(1)
+});
+
 export const ContentDocumentWorkspaceDocumentSchema = z.object({
   status: z.enum(["not_created", "unreviewed", "needs_changes", "approved", "rejected", "deferred"]),
   revision_id: z.string().nullable().optional(),
@@ -438,6 +446,7 @@ export const ContentDocumentWorkspaceDocumentSchema = z.object({
   review_state: z.enum(["unreviewed", "needs_changes", "approved", "rejected", "deferred"]).default("unreviewed"),
   label: z.string(),
   reason: z.string(),
+  source_provenance: z.array(ContentDocumentSourceProvenanceSchema).optional(),
   preview: z.lazy(() => ContentDocumentWorkspaceDocumentPreviewSchema).nullable().optional()
 });
 
@@ -2365,6 +2374,14 @@ const isSafePublicContentUrl = (value: string): boolean => {
   }
 };
 
+export const ContentDraftRevisionSourceProvenanceSchema = z.object({
+  source_fact_id: z.string().min(1),
+  source_url_or_path: z.string().min(1),
+  freshness_date: z.string().min(1),
+  reviewer: z.string().min(1).nullable().optional(),
+  evidence_ids: z.array(z.string().min(1)).min(1)
+});
+
 export const ContentDraftRevisionInternalLinkSchema = z.object({
   link_id: z.string().min(1),
   placement: z.string().min(1),
@@ -2392,6 +2409,7 @@ export const ContentDraftRevisionSchema = z.object({
   inventory_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
+  source_provenance: z.array(ContentDraftRevisionSourceProvenanceSchema).optional(),
   final_canonical_url: z.string(),
   title: z.string().refine((value) => value.trim().length > 0),
   page_assets: ContentDraftRevisionPageAssetsSchema.nullable().optional(),
