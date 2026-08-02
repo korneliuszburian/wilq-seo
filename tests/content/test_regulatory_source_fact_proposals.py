@@ -603,3 +603,20 @@ def test_long_source_context_keeps_candidate_relevant_fragments() -> None:
 
     assert "Podmioty zobowiązane do rejestracji" in selected
     assert len(selected) < len(source)
+
+
+def test_long_source_context_keeps_profile_assertion_terms() -> None:
+    candidate = next(
+        item
+        for item in regulatory_source_candidates()
+        if item.candidate_id == "bdo_reporting_recipient_2026_08_02_r3"
+    )
+    source = ("szum dokumentu urzędowego " * 10_000) + (
+        "15 marca za poprzedni rok właściwemu marszałkowi województwa."
+    )
+
+    selected = proposals_module._relevant_source_text(candidate, source)
+
+    assert "15 marca" in selected
+    assert "marszałkowi województwa" in selected
+    assert len(selected) < len(source)

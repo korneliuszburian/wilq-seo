@@ -503,7 +503,23 @@ def _relevant_source_text(candidate: ContentRegulatorySourceCandidate, source_te
     )
     terms = _search_terms(
         " ".join(
-            [candidate.source_title, *(item.label + " " + item.reason for item in requirements)]
+            [
+                candidate.source_title,
+                *(
+                    " ".join(
+                        [
+                            item.label,
+                            item.reason,
+                            *(
+                                value
+                                for assertion in item.document_assertions
+                                for value in [assertion.label, *assertion.required_any_of]
+                            ),
+                        ]
+                    )
+                    for item in requirements
+                ),
+            ]
         )
     )
     if not terms or len(source_text) <= 50_000:
