@@ -204,13 +204,13 @@ def _repair_regulatory_assertions(
             )
         )
     except Exception:
-        return None
+        return _grounded_repair_fallback(inputs, output, missing)
     if result.status != "completed" or result.output_text is None:
-        return None
+        return _grounded_repair_fallback(inputs, output, missing)
     try:
         patch = _RegulatoryAssertionRepairOutput.model_validate_json(result.output_text)
     except ValueError:
-        return None
+        return _grounded_repair_fallback(inputs, output, missing)
     replacements = {item.section_id: item.body_markdown for item in patch.sections}
     if len(replacements) != len(patch.sections):
         return None
@@ -236,6 +236,22 @@ def _repair_regulatory_assertions(
         ),
         _runtime_trace(result),
     )
+
+
+def _grounded_repair_fallback(
+    inputs: _InitialDraftInputs,
+    output: ContentInitialDraftModelOutput,
+    missing: list[str],
+) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | None:
+    grounded = _ground_unmet_regulatory_assertions(
+        output,
+        planning_input=inputs.planning_input,
+        proposal=inputs.proposal,
+        missing_codes=missing,
+    )
+    if grounded == output:
+        return None
+    return grounded, ContentCodexRuntimeTrace(status="completed")
 
 
 def _ground_unmet_regulatory_assertions(

@@ -4,8 +4,13 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from wilq.content.drafts import initial_full_draft
-from wilq.content.drafts.initial_full_draft import _document_scope_errors, _planning_input_blocker
+from wilq.content.drafts.initial_full_draft import (
+    _document_scope_errors,
+    _planning_input_blocker,
+    _repair_regulatory_assertions,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftBlocker,
     ContentInitialDraftCtaOutput,
     ContentInitialDraftFaqOutput,
     ContentInitialDraftModelOutput,
@@ -186,7 +191,9 @@ def test_initial_draft_projects_only_exact_approved_official_sources() -> None:
     )
     planning_input = ContentPlanningInput.model_construct(regulatory_coverage=coverage)
 
-    assert [item.model_dump() for item in official_source_references_for_planning_input(planning_input)] == [
+    references = official_source_references_for_planning_input(planning_input)
+
+    assert [item.model_dump() for item in references] == [
         {
             "source_fact_id": approved_fact.source_id,
             "source_url": approved_fact.source_url_or_path,
@@ -265,6 +272,92 @@ def test_document_scope_rejects_a_regulatory_topic_without_its_required_concept(
         output,
         regulatory_requirements=[requirement],
     ) == ["regulatory_document_assertion:bdo_records_and_kpo:kpo_before_transport"]
+
+
+def test_regulatory_repair_falls_back_to_an_approved_exact_fact_when_turn_fails() -> None:
+    proposal = _proposal_with_review_required_inventory()
+    proposal.sections[0].regulatory_requirement_ids = ["bdo_exemptions"]
+    requirement = ContentRegulatoryRequirement(
+        id="bdo_exemptions",
+        label="zwolnienia z wpisu",
+        reason="Wymaga źródła urzędowego.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="bdo_exemption_condition",
+                label="warunkowy charakter zwolnienia",
+                required_any_of=["zwolnienie zależy od warunków ustawowych"],
+            )
+        ],
+    )
+    fact = ContentSourceFact(
+        source_id="regulatory_source_fact_bdo_exemptions",
+        source_type="legal_update",
+        privacy_class="commit_safe",
+        source_url_or_path="https://bdo.mos.gov.pl/zasady-rejestracji/",
+        extracted_fact="Zwolnienie zależy od warunków ustawowych.",
+        scope="claim_policy",
+        freshness_date="2026-08-02",
+        confidence=1,
+        review_status="approved",
+        reviewer="wilku",
+        evidence_ids=["ev_regulatory_bdo_exemptions"],
+        source_connectors=["official_regulatory_review"],
+        target_card_id="regulatory_bdo",
+        target_card_type="regulatory_source",
+        target_card_title="Zasady rejestracji BDO",
+        official_source=True,
+        regulatory_profile_id="bdo",
+        regulatory_profile_version="2026-07",
+        regulatory_requirement_ids=[requirement.id],
+        applicable_service_card_ids=[proposal.service_card_id],
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        regulatory_coverage=ContentRegulatoryCoverage(
+            requirements=[requirement],
+            source_facts=[fact],
+        )
+    )
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Tytuł",
+            meta_title="Meta",
+            meta_description="Opis",
+            h1="Nagłówek",
+            lead="Lead",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="section_keep",
+                heading="Sekcja do tekstu",
+                body_markdown="Sprawdź obowiązki.",
+            )
+        ],
+        publish_ready=False,
+    )
+
+    class FailingRepairClient:
+        def run_structured_turn(self, _request):
+            raise RuntimeError("repair runtime unavailable")
+
+    repaired = _repair_regulatory_assertions(
+        inputs=SimpleNamespace(planning_input=planning_input, proposal=proposal),
+        output=output,
+        blocker=ContentInitialDraftBlocker(
+            code="document_scope_mismatch",
+            label="Brakuje wymaganego pojęcia.",
+            reason="Wymaganie nie występuje w dokumencie.",
+            next_step="Uzupełnij dokument.",
+            source_codes=[
+                "regulatory_document_assertion:bdo_exemptions:bdo_exemption_condition"
+            ],
+        ),
+        client=FailingRepairClient(),
+    )
+
+    assert repaired is not None
+    repaired_output, trace = repaired
+    assert trace.status == "completed"
+    assert repaired_output.sections[0].body_markdown.endswith(fact.extracted_fact)
 
 
 def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None:
