@@ -4,6 +4,7 @@ import json
 from types import SimpleNamespace
 
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
+from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.input_sources import ContentPlanningInventory
 from wilq.content.regulatory.policy import (
@@ -15,7 +16,33 @@ from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.planning import ContentPlanningProposal
 
 
+def _approved_access_fact() -> ContentSourceFact:
+    return ContentSourceFact(
+        source_id="official_access_fact",
+        source_type="legal_update",
+        privacy_class="commit_safe",
+        source_url_or_path="https://example.gov.pl/bdo",
+        extracted_fact="Użytkownik główny może nadawać uprawnienia w systemie.",
+        scope="claim_policy",
+        freshness_date="2026-08-01",
+        confidence=1,
+        review_status="approved",
+        reviewer="ekspert",
+        evidence_ids=["ev_access"],
+        source_connectors=["official_regulatory_review"],
+        target_card_id="regulated_service",
+        target_card_type="regulatory_source",
+        target_card_title="Dostęp do systemu",
+        official_source=True,
+        regulatory_profile_id="regulated",
+        regulatory_profile_version="2026-08",
+        regulatory_requirement_ids=["access"],
+        applicable_service_card_ids=["service_regulated"],
+    )
+
+
 def test_initial_draft_turn_exposes_server_owned_regulatory_assertions() -> None:
+    fact = _approved_access_fact()
     planning_input = ContentPlanningInput.model_construct(
         work_item_id="content_work_item_regulated",
         planning_input_digest="a" * 64,
@@ -46,12 +73,20 @@ def test_initial_draft_turn_exposes_server_owned_regulatory_assertions() -> None
                     ],
                 )
             ],
+            source_facts=[fact],
         ),
     )
     proposal = ContentPlanningProposal.model_construct(
         proposal_id="proposal-regulated",
         planning_digest="b" * 64,
-        sections=[],
+        sections=[
+            SimpleNamespace(
+                section_id="section_access",
+                heading="Dostęp",
+                inventory_disposition="rewrite",
+                regulatory_requirement_ids=["access"],
+            )
+        ],
         faq=[],
         cta_blocks=[],
         internal_links=[],
@@ -72,5 +107,19 @@ def test_initial_draft_turn_exposes_server_owned_regulatory_assertions() -> None
             "assertion_id": "roles",
             "label": "role lub uprawnienia",
             "required_any_of": ["rola", "uprawnien"],
+        }
+    ]
+    assert json.loads(request.untrusted_context)["approved_regulatory_facts_by_section"] == [
+        {
+            "section_id": "section_access",
+            "requirement_ids": ["access"],
+            "source_facts": [
+                {
+                    "source_fact_id": "official_access_fact",
+                    "summary": "Użytkownik główny może nadawać uprawnienia w systemie.",
+                    "evidence_ids": ["ev_access"],
+                    "requirement_ids": ["access"],
+                }
+            ],
         }
     ]

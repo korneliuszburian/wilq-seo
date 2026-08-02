@@ -23,8 +23,10 @@ _INSTRUCTION = (
     "Nie dodawaj faktów, zapytań, obietnic efektu, zgodności prawnej ani twierdzeń "
     "spoza przekazanych source facts i claim policy. CTA ma pomagać w następnym "
     "Jeśli zatwierdzony plan przypisuje sekcji regulatory_requirement_ids, w treści tej "
-    "sekcji pokryj wszystkie document_assertions przypisanego wymagania; nie zastępuj "
-    "ich ogólną zachętą do konsultacji. To jest twardy warunek odbioru dokumentu: "
+    "sekcji wykorzystaj wyłącznie przypisane approved_regulatory_facts_by_section, "
+    "zachowując podmiot, warunek, zakres, wyjątek oraz termin lub wartość z faktu. "
+    "Pokryj wszystkie document_assertions przypisanego wymagania; nie zastępuj ich "
+    "ogólną zachętą do konsultacji. To jest twardy warunek odbioru dokumentu: "
     "każdy wymagany assertion musi wystąpić dosłownie w jednej z dopuszczalnych form. "
     "kroku bez gwarancji wyniku. Nie zatwierdzaj tekstu, nie wykonuj write i zawsze "
     "zwróć publish_ready=false. Każde pole ze schema jest obowiązkowe: podaj "
@@ -97,6 +99,10 @@ def initial_full_draft_turn_request(
                     if section.inventory_disposition == "remove_review_required"
                 ],
             },
+            "approved_regulatory_facts_by_section": _regulatory_facts_by_section(
+                planning_input,
+                proposal,
+            ),
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -350,6 +356,46 @@ def _regulatory_document_assertion_context(
         }
         for requirement in planning_input.regulatory_coverage.requirements
         for assertion in requirement.document_assertions
+    ]
+
+
+def _regulatory_facts_by_section(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> list[dict[str, object]]:
+    """Project reviewed official facts next to each regulated document target."""
+
+    facts_by_requirement = {
+        requirement_id: [
+            {
+                "source_fact_id": fact.source_id,
+                "summary": fact.extracted_fact,
+                "evidence_ids": fact.evidence_ids,
+                "requirement_ids": fact.regulatory_requirement_ids,
+            }
+            for fact in planning_input.regulatory_coverage.source_facts
+            if fact.official_source
+            and fact.review_status == "approved"
+            and requirement_id in fact.regulatory_requirement_ids
+        ]
+        for requirement_id in {
+            requirement_id
+            for section in draftable_planning_sections(proposal.sections)
+            for requirement_id in section.regulatory_requirement_ids
+        }
+    }
+    return [
+        {
+            "section_id": section.section_id,
+            "requirement_ids": section.regulatory_requirement_ids,
+            "source_facts": [
+                fact
+                for requirement_id in section.regulatory_requirement_ids
+                for fact in facts_by_requirement[requirement_id]
+            ],
+        }
+        for section in draftable_planning_sections(proposal.sections)
+        if section.regulatory_requirement_ids
     ]
 
 
