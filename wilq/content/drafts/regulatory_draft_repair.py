@@ -67,8 +67,9 @@ def repair_regulatory_assertions(
             "sections": [
                 section.model_copy(
                     update={
-                        "body_markdown": replacements.get(
-                            section.section_id, section.body_markdown
+                        "body_markdown": _append_patch(
+                            section.body_markdown,
+                            replacements.get(section.section_id),
                         )
                     }
                 )
@@ -85,6 +86,14 @@ def repair_regulatory_assertions(
         ),
         _runtime_trace(result),
     )
+
+
+def _append_patch(existing: str, patch: str | None) -> str:
+    """Apply a model-returned repair fragment without deleting validated draft text."""
+
+    if patch is None or patch in existing:
+        return existing
+    return f"{existing}\n\n{patch}"
 
 
 def _grounded_repair_fallback(

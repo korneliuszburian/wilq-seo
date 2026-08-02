@@ -392,6 +392,40 @@ def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts()
     assert related_fact.extracted_fact in repaired_output.sections[0].body_markdown
 
 
+def test_regulatory_repair_appends_a_valid_patch_without_replacing_existing_text() -> None:
+    proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
+
+    class ValidPatchClient:
+        def run_structured_turn(self, _request):
+            return CodexAppServerTurnResult(
+                status="completed",
+                output_text=(
+                    '{"sections":[{"section_id":"section_keep",'
+                    '"body_markdown":"Doprecyzowanie z oficjalnego źródła."}]}'
+                ),
+            )
+
+    repaired = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        blocker=ContentInitialDraftBlocker(
+            code="document_scope_mismatch",
+            label="Brakuje wymaganego pojęcia.",
+            reason="Wymaganie nie występuje w dokumencie.",
+            next_step="Uzupełnij dokument.",
+            source_codes=["regulatory_document_assertion:bdo_exemptions:bdo_exemption_condition"],
+        ),
+        client=ValidPatchClient(),
+    )
+
+    assert repaired is not None
+    body = repaired[0].sections[0].body_markdown
+    assert "Sprawdź obowiązki." in body
+    assert "Doprecyzowanie z oficjalnego źródła." in body
+    assert fact.extracted_fact in body
+
+
 def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() -> None:
     proposal, planning_input, output, _, _ = _regulatory_repair_fixture()
 
