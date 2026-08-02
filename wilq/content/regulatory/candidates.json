@@ -85,6 +85,18 @@
       "safe_next_step": "Potwierdź zakres, termin i właściwość sprawozdania przed zatwierdzeniem faktu źródłowego."
     },
     {
+      "candidate_id": "bdo_reporting_recipient_2026_08_02_r3",
+      "profile_id": "bdo",
+      "profile_version": "2026-07-31-r2",
+      "service_card_ids": ["ekologus_service_bdo_reporting"],
+      "source_url": "https://bdo.mos.gov.pl/wp-content/uploads/2025/01/BDO_SPR_IS-Sprawozdanie-o-produktach-opakowaniach-i-o-gospodarowaniu-odpadami-wersja-1.3.pdf",
+      "source_title": "BDO: Sprawozdanie o produktach, opakowaniach i gospodarowaniu odpadami",
+      "observed_on": "2026-08-02",
+      "requirement_ids": ["bdo_reporting"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź zakres, termin i właściwość sprawozdania produktowego przed zatwierdzeniem factu źródłowego."
+    },
+    {
       "candidate_id": "bdo_paper_records_exception_2026_07_31_r2",
       "profile_id": "bdo",
       "profile_version": "2026-07-31-r2",

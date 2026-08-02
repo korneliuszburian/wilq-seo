@@ -218,6 +218,18 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
         "logowanie-do-systemu-bdo-i-uwierzytelnienie-uzytkownika-poprzez-krajowy-wezel-"
         "identyfikacji-elektronicznej/"
     )
+    assert {
+        candidate.source_url
+        for candidate in regulatory_source_candidates()
+        if candidate.profile_id == profile.id
+        and candidate.profile_version == profile.version
+        and candidate.requirement_ids == ["bdo_reporting"]
+    } >= {
+        "https://bdo.mos.gov.pl/wp-content/uploads/2023/03/"
+        "BDO_SPR_IS-Nawigacja-Modul-Sprawozdawczosc-wersja-1.1.pdf",
+        "https://bdo.mos.gov.pl/wp-content/uploads/2025/01/"
+        "BDO_SPR_IS-Sprawozdanie-o-produktach-opakowaniach-i-o-gospodarowaniu-odpadami-wersja-1.3.pdf",
+    }
 
 
 def test_review_candidates_are_current_exact_and_never_complete_coverage() -> None:
