@@ -392,6 +392,7 @@ def test_assurance_request_exposes_profile_assertions_to_the_critic() -> None:
     )
 
     context = json.loads(request.application_context)
+    assert "MUSISZ wybrać pass" in request.instruction
     assert context["required_document_assertions"] == [
         {
             "requirement_id": "transport_document",
