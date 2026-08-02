@@ -3917,6 +3917,7 @@ export const ContentPlanningInputSummarySchema = z.object({
   source_fact_ids: z.array(z.string()).default([]),
   source_material_ids: z.array(z.string()).default([]),
   source_fact_previews: z.array(ContentPlanningSourceFactPreviewSchema).optional(),
+  gsc_query_rows: z.array(ContentSearchDemandRowSchema).default([]),
   regulatory_profile_id: z.string().min(1).nullable().optional(),
   regulatory_profile_version: z.string().min(1).nullable().optional(),
   // Present on current regulated planning inputs. Optional only so historical
@@ -3991,6 +3992,13 @@ export const ContentPlanningInputSummarySchema = z.object({
         code: z.ZodIssueCode.custom,
         path: ["metric_comparisons"],
         message: "New-page planning cannot carry page metric comparisons."
+      });
+    }
+    if (summary.gsc_query_rows.length > 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["gsc_query_rows"],
+        message: "New-page planning cannot carry historic GSC query rows."
       });
     }
   } else {

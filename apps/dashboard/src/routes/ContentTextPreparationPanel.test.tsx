@@ -430,6 +430,52 @@ describe("ContentTextPreparationPanel", () => {
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Ahrefs");
   });
 
+  it("shows evidence-bound GSC queries from the current input before a plan exists", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyToGenerate(),
+      status: "blocked",
+      blockers: [{
+        code: "missing_regulatory_source_coverage",
+        label: "Brakuje zatwierdzonych źródeł urzędowych",
+        reason: "Źródła urzędowe wymagają decyzji człowieka.",
+        next_step: "Sprawdź źródła."
+      }],
+      input_summary: {
+        ...readyToGenerate().input_summary,
+        gsc_query_rows: [{
+          source_kind: "gsc_query",
+          source_connector: "google_search_console",
+          term: "bdo co to",
+          page: "https://ekologus.pl/bdo/",
+          landing_match_tiers: ["exact"],
+          service_card_id: "service_card",
+          alignment_basis: "gsc_exact_page",
+          review_required: true,
+          section_headings: [],
+          section_mapping_status: "page_only",
+          period: "2026-07",
+          freshness: "fresh",
+          collected_at: null,
+          evidence_ids: ["ev_gsc_bdo"],
+          impressions: 181,
+          clicks: 4,
+          ctr: null,
+          average_position: null,
+          average_monthly_searches: null,
+          cost_micros: null,
+          conversions: null,
+          conversion_value: null
+        }]
+      }
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+
+    const evidence = screen.getByTestId("content-planning-evidence");
+    expect(evidence).toHaveTextContent("bdo co to · okres: 2026-07 · 181 wyświetleń · 4 kliknięć");
+  });
+
   it("distinguishes an exact measurement comparison from an unavailable trend", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
       ...readyToGenerate(),

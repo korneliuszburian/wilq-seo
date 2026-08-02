@@ -650,6 +650,7 @@ function newPagePlanningWorkspace(
         evidence_id_count: 1,
         knowledge_card_count: 1,
         measurement_metrics: [],
+        gsc_query_rows: [],
         metric_comparisons: []
       },
       blockers: [],
@@ -679,6 +680,7 @@ function newPagePlanningWorkspace(
         evidence_id_count: 1,
         knowledge_card_count: 1,
         measurement_metrics: [],
+        gsc_query_rows: [],
         metric_comparisons: []
       },
       retry_after_seconds: null,

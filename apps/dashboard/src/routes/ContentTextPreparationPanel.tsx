@@ -183,7 +183,7 @@ export function PlanningEvidenceDetails({
   proposal: ContentPlanningProposalResponse["proposal"];
 }) {
   const queryClient = useQueryClient();
-  const queries = proposal?.search_demand?.gsc_query_rows ?? [];
+  const queries = proposal?.search_demand?.gsc_query_rows ?? input.gsc_query_rows ?? [];
   const regulatoryReviewCandidates = input.regulatory_review_candidates ?? [];
   const metricComparisons = input.metric_comparisons ?? [];
   const hasPlan = Boolean(proposal);

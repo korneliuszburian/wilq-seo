@@ -653,6 +653,7 @@ def test_planning_input_preserves_source_fact_and_material_lineage(
         "ekologus_public_consulting_outsourcing_offer_2026_07_01"
     ]
     assert summary.source_material_ids == ["ekologus_material_portfolio"]
+    assert summary.gsc_query_rows == result.planning_input.query_portfolio.gsc_query_rows
 
 
 def test_service_profile_projection_uses_the_approved_fact_summary() -> None:

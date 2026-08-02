@@ -15,6 +15,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirementCoverage,
     ContentRegulatoryReviewCandidate,
 )
+from wilq.content.workflow.demand_evidence import ContentSearchDemandRow
 
 
 class ContentPlanningInputSummary(BaseModel):
@@ -36,6 +37,7 @@ class ContentPlanningInputSummary(BaseModel):
     source_fact_ids: list[str] = Field(default_factory=list)
     source_material_ids: list[str] = Field(default_factory=list)
     source_fact_previews: list[ContentPlanningSourceFact] = Field(default_factory=list)
+    gsc_query_rows: list[ContentSearchDemandRow] = Field(default_factory=list)
     regulatory_profile_id: str | None = None
     regulatory_profile_version: str | None = None
     regulatory_requirements: list[ContentRegulatoryRequirement] = Field(default_factory=list)
@@ -74,6 +76,8 @@ class ContentPlanningInputSummary(BaseModel):
                 raise ValueError("New-page planning cannot carry existing-page inventory.")
             if self.metric_comparisons:
                 raise ValueError("New-page planning cannot carry page metric comparisons.")
+            if self.gsc_query_rows:
+                raise ValueError("New-page planning cannot carry historic GSC query rows.")
         elif not self.final_canonical_url or not self.final_canonical_url.strip():
             raise ValueError("Refresh planning requires final_canonical_url.")
         elif self.inventory_status == "not_applicable":

@@ -232,6 +232,20 @@ def test_new_page_planning_input_summary_rejects_contradictory_work_kind(
                 }
             ]
         },
+        {
+            "gsc_query_rows": [
+                {
+                    "source_kind": "gsc_query",
+                    "source_connector": "google_search_console",
+                    "term": "historyczne zapytanie",
+                    "page": "https://www.ekologus.pl/istniejaca/",
+                    "section_mapping_status": "page_only",
+                    "period": "2026-07",
+                    "freshness": "fresh",
+                    "evidence_ids": ["ev_gsc_historyczne"],
+                }
+            ]
+        },
     ):
         with pytest.raises(ValueError):
             ContentPlanningInputSummary.model_validate(

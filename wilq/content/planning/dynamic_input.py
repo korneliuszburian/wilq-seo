@@ -301,6 +301,7 @@ def content_planning_input_summary(
             }
         ),
         source_fact_previews=list(planning_input.source_facts),
+        gsc_query_rows=list(planning_input.query_portfolio.gsc_query_rows),
         regulatory_profile_id=planning_input.regulatory_coverage.profile_id,
         regulatory_profile_version=planning_input.regulatory_coverage.profile_version,
         regulatory_requirements=planning_input.regulatory_coverage.requirements,

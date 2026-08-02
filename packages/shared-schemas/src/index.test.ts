@@ -21,6 +21,7 @@ import {
   ContentSelectedWorkspaceSchema,
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningInputReadinessResponseSchema,
+  ContentPlanningInputSummarySchema,
   ContentRegulatorySourceReviewListSchema,
   ContentRegulatorySourceReviewConflictSchema,
   ContentRegulatorySourceReviewSchema,
@@ -455,6 +456,61 @@ describe("ContentSelectedWorkspaceSchema", () => {
         safe_next_step: "Przygotuj dokument"
       }).success
     ).toBe(false);
+  });
+});
+
+describe("ContentPlanningInputSummarySchema", () => {
+  const sourceAssessments = [
+    "wordpress", "service_profile", "gsc", "ga4", "google_ads",
+    "ahrefs", "keyword_planner", "merchant", "localo", "social"
+  ].map((source) => ({
+    source,
+    status: "not_applicable",
+    reason: "To źródło nie dotyczy nowej strony.",
+    landing_match_tiers: [],
+    evidence_ids: [],
+    knowledge_card_ids: []
+  }));
+  const newPageSummary = {
+    goal: "new_page",
+    final_canonical_url: null,
+    proposed_ia_location: "Usługi → Dokumentacja",
+    service_label: "Dokumentacja środowiskowa",
+    inventory_status: "not_applicable",
+    content_inventory_status: "not_applicable",
+    acf_section_inventory_status: "not_applicable",
+    source_assessments: sourceAssessments,
+    source_fact_count: 0,
+    evidence_id_count: 0,
+    knowledge_card_count: 0
+  };
+
+  it("keeps historic GSC rows out of a new-page summary", () => {
+    expect(ContentPlanningInputSummarySchema.safeParse(newPageSummary).success).toBe(true);
+    expect(ContentPlanningInputSummarySchema.safeParse({
+      ...newPageSummary,
+      gsc_query_rows: [{
+        source_kind: "gsc_query",
+        source_connector: "google_search_console",
+        term: "historyczne zapytanie",
+        page: "https://www.ekologus.pl/istniejaca/",
+        landing_match_tiers: ["exact"],
+        service_card_id: null,
+        alignment_basis: "gsc_exact_page",
+        review_required: true,
+        section_headings: [],
+        section_mapping_status: "page_only",
+        period: "2026-07",
+        freshness: "fresh",
+        collected_at: null,
+        evidence_ids: ["ev_gsc_historyczne"],
+        impressions: 181,
+        clicks: 4,
+        ctr: null,
+        average_position: null,
+        average_monthly_searches: null
+      }]
+    }).success).toBe(false);
   });
 });
 
