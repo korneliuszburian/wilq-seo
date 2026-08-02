@@ -53,7 +53,9 @@ _INSTRUCTION = (
     "pass — nie obniżaj wyniku za styl, brak dodatkowego kontekstu ani własne "
     "oczekiwanie szerszego zakresu. Oznacz brak zakresu, wyjątku albo konkretu jako "
     "fail tylko wtedy, gdy brak wynika wprost z faktu i odpowiedni wymagany wariant "
-    "nie występuje; nie dopowiadaj wymogów prawnych, których źródło nie opisuje. "
+    "nie występuje. Nie używaj not_assessable, gdy sekcja i przypisany source fact "
+    "pozwalają ocenić wymagane warianty; nie dopowiadaj wymogów prawnych, których "
+    "źródło nie opisuje. "
     "Nie przepisuj tekstu, nie dodawaj "
     "faktów ani źródeł, nie zatwierdzaj dokumentu, nie twórz ActionObjectu i nie "
     "wykonuj write. Dla każdego wyniku podaj document_section_id sekcji, na której "
@@ -365,7 +367,6 @@ def _deterministic_scope_is_complete(
     if check.status != "fail" or check.reason_code not in {
         "missing_scope",
         "missing_exception",
-        "not_assessable",
     }:
         return False
     section_ids = {
