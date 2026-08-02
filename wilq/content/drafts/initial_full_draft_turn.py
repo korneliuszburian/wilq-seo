@@ -67,10 +67,6 @@ def initial_full_draft_turn_request(
     )
     untrusted_context = json.dumps(
         {
-            # The complete planning input remains server-owned for digest,
-            # lineage and stale checks. The model only needs a bounded
-            # projection; generation_contract.model_input carries the
-            # content facts, claims and section instructions it must write.
             "planning_input": compact_initial_draft_planning_input(planning_input),
             "approved_planning_proposal": proposal.model_dump(mode="json"),
             "generation_constraints": generation_contract.model_input.model_dump(mode="json"),
@@ -98,6 +94,53 @@ def initial_full_draft_turn_request(
     )
 
 
+def regulatory_assertion_repair_turn_request(
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    candidate: ContentInitialDraftModelOutput,
+    missing_assertion_codes: list[str],
+) -> CodexAppServerStructuredTurnRequest:
+    """Make one bounded correction turn for deterministic regulatory omissions."""
+
+    assertions = [
+        item
+        for item in _regulatory_document_assertion_context(planning_input)
+        if (
+            f"regulatory_document_assertion:{item['requirement_id']}:{item['assertion_id']}"
+            in missing_assertion_codes
+        )
+    ]
+    return CodexAppServerStructuredTurnRequest(
+        instruction=(
+            "Popraw po polsku roboczy dokument wyłącznie tak, aby pokrywał wskazane "
+            "server-owned regulatory assertions. Zachowaj jego strukturę, section_id, "
+            "nagłówki, FAQ, CTA, linki i wszystkie istniejące bezpieczne treści; nie "
+            "dodawaj faktów spoza przekazanych assertions i planu. Zwróć wyłącznie JSON "
+            "zgodny ze schema, publish_ready=false."
+        ),
+        application_context=json.dumps(
+            {
+                "operation": "repair_initial_draft_regulatory_assertions",
+                "work_item_id": planning_input.work_item_id,
+                "proposal_id": proposal.proposal_id,
+                "missing_regulatory_document_assertions": assertions,
+                "do_not_approve": True,
+                "do_not_write_vendor": True,
+                "publish_ready": False,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        untrusted_context=json.dumps(
+            {"candidate_document": candidate.model_dump(mode="json")},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        output_schema=initial_full_draft_output_schema(proposal),
+    )
 def compact_initial_draft_planning_input(
     planning_input: ContentPlanningInput,
 ) -> dict[str, object]:
@@ -273,4 +316,8 @@ def _require_all_object_properties(value: object) -> None:
             _require_all_object_properties(nested)
 
 
-__all__ = ["initial_full_draft_output_schema", "initial_full_draft_turn_request"]
+__all__ = [
+    "initial_full_draft_output_schema",
+    "initial_full_draft_turn_request",
+    "regulatory_assertion_repair_turn_request",
+]

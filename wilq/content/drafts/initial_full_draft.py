@@ -23,7 +23,10 @@ from wilq.content.drafts.initial_full_draft_document import (
     build_initial_draft_revision_command,
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
-from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
+from wilq.content.drafts.initial_full_draft_turn import (
+    initial_full_draft_turn_request,
+    regulatory_assertion_repair_turn_request,
+)
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftOutput,
@@ -78,6 +81,16 @@ def generate_initial_full_draft(
     output, trace = runtime_result
     blocker = _output_blocker(prepared, output)
     if blocker is not None:
+        repaired = _repair_regulatory_assertions(
+            inputs=prepared,
+            output=output,
+            blocker=blocker,
+            client=client,
+        )
+        if repaired is not None:
+            output, trace = repaired
+            blocker = _output_blocker(prepared, output)
+    if blocker is not None:
         _finish_run(run_store, run, status="blocked", error=_run_error(blocker))
         return _blocked_response(
             snapshot,
@@ -109,6 +122,42 @@ def generate_initial_full_draft(
         run_store=run_store,
         regulatory_assurance=assurance,
     )
+
+
+def _repair_regulatory_assertions(
+    *,
+    inputs: _InitialDraftInputs,
+    output: ContentInitialDraftModelOutput,
+    blocker: ContentInitialDraftBlocker,
+    client: CodexAppServerClientProtocol,
+) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | None:
+    missing = [
+        code
+        for code in blocker.source_codes
+        if code.startswith("regulatory_document_assertion:")
+    ]
+    if blocker.code != "document_scope_mismatch" or not missing:
+        return None
+    try:
+        result = client.run_structured_turn(
+            regulatory_assertion_repair_turn_request(
+                planning_input=inputs.planning_input,
+                proposal=inputs.proposal,
+                candidate=output,
+                missing_assertion_codes=missing,
+            )
+        )
+    except Exception:
+        return None
+    if result.status != "completed" or result.output_text is None:
+        return None
+    try:
+        return (
+            ContentInitialDraftModelOutput.model_validate_json(result.output_text),
+            _runtime_trace(result),
+        )
+    except ValueError:
+        return None
 
 
 def _prepare_inputs(
