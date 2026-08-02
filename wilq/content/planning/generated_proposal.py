@@ -52,6 +52,7 @@ from wilq.content.planning.section_mapping import (
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import (
     ContentPlanningDecision,
+    ContentPlanningInventoryMapping,
     ContentPlanningProposal,
     ContentPlanningSection,
     build_content_planning_workspace,
