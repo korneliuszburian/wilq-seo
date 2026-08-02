@@ -169,7 +169,7 @@ def _missing_assertions_for_repair(
                 continue
             for assertion in requirement.document_assertions:
                 code = f"regulatory_document_assertion:{requirement_id}:{assertion.id}"
-                if code in missing:
+                if code in missing or f"requirement:{requirement_id}" in missing:
                     assertions.append(
                         {
                             "section_id": section.section_id,

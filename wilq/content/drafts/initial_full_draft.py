@@ -111,6 +111,29 @@ def generate_initial_full_draft(
         snapshot=snapshot,
     )
     if isinstance(assurance, ContentInitialDraftResponse):
+        repaired = _repair_regulatory_assertions(
+            inputs=prepared,
+            output=output,
+            blocker=assurance.blockers[0] if assurance.blockers else _blocker(
+                "draft_assurance_failed", "Kontrola merytoryczna nie przeszła",
+                "Brakuje wyniku kontroli.", "Uruchom nową próbę."
+            ),
+            client=client,
+        )
+        if repaired is not None:
+            output, trace = repaired
+            blocker = _output_blocker(prepared, output)
+            if blocker is None:
+                assurance = _assure_regulated_draft(
+                    inputs=prepared,
+                    output=output,
+                    client=client,
+                    writer_run=run,
+                    writer_trace=trace,
+                    run_store=run_store,
+                    snapshot=snapshot,
+                )
+    if isinstance(assurance, ContentInitialDraftResponse):
         return assurance
     return _persist_document(
         snapshot=snapshot,
@@ -135,9 +158,9 @@ def _repair_regulatory_assertions(
     missing = [
         code
         for code in blocker.source_codes
-        if code.startswith("regulatory_document_assertion:")
+        if code.startswith(("regulatory_document_assertion:", "requirement:"))
     ]
-    if blocker.code != "document_scope_mismatch" or not missing:
+    if blocker.code not in {"document_scope_mismatch", "draft_assurance_failed"} or not missing:
         return None
     try:
         result = client.run_structured_turn(
