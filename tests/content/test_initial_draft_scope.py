@@ -4,11 +4,8 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from wilq.content.drafts import initial_full_draft
-from wilq.content.drafts.initial_full_draft import (
-    _document_scope_errors,
-    _planning_input_blocker,
-    _repair_regulatory_assertions,
-)
+from wilq.content.drafts.initial_draft_validation import document_scope_errors
+from wilq.content.drafts.initial_full_draft import _planning_input_blocker
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftCtaOutput,
@@ -25,6 +22,7 @@ from wilq.content.drafts.initial_full_draft_turn import (
     _regulatory_draft_directive,
     initial_full_draft_output_schema,
 )
+from wilq.content.drafts.regulatory_draft_repair import repair_regulatory_assertions
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
@@ -231,7 +229,7 @@ def test_document_scope_accepts_the_same_excluded_section_projection() -> None:
         publish_ready=False,
     )
 
-    assert _document_scope_errors(proposal, output) == []
+    assert document_scope_errors(proposal, output) == []
 
 
 def test_document_scope_rejects_a_regulatory_topic_without_its_required_concept() -> None:
@@ -267,14 +265,14 @@ def test_document_scope_rejects_a_regulatory_topic_without_its_required_concept(
         ],
     )
 
-    assert _document_scope_errors(
+    assert document_scope_errors(
         proposal,
         output,
         regulatory_requirements=[requirement],
     ) == ["regulatory_document_assertion:bdo_records_and_kpo:kpo_before_transport"]
 
 
-def test_regulatory_repair_falls_back_to_an_approved_exact_fact_when_turn_fails() -> None:
+def test_regulatory_repair_expands_a_semantic_requirement_failure_to_approved_facts() -> None:
     proposal = _proposal_with_review_required_inventory()
     proposal.sections[0].regulatory_requirement_ids = ["bdo_exemptions"]
     requirement = ContentRegulatoryRequirement(
@@ -339,17 +337,16 @@ def test_regulatory_repair_falls_back_to_an_approved_exact_fact_when_turn_fails(
         def run_structured_turn(self, _request):
             raise RuntimeError("repair runtime unavailable")
 
-    repaired = _repair_regulatory_assertions(
-        inputs=SimpleNamespace(planning_input=planning_input, proposal=proposal),
+    repaired = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
         output=output,
         blocker=ContentInitialDraftBlocker(
             code="document_scope_mismatch",
             label="Brakuje wymaganego pojęcia.",
             reason="Wymaganie nie występuje w dokumencie.",
             next_step="Uzupełnij dokument.",
-            source_codes=[
-                "regulatory_document_assertion:bdo_exemptions:bdo_exemption_condition"
-            ],
+            source_codes=["requirement:bdo_exemptions"],
         ),
         client=FailingRepairClient(),
     )
