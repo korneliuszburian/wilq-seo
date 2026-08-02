@@ -24,6 +24,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionProposalSectionLineage,
     ContentDraftRevisionSection,
+    ContentDraftRevisionSourceProvenance,
     content_draft_package_digest,
 )
 from wilq.schemas import CodexRun
@@ -78,6 +79,10 @@ def build_initial_draft_revision_command(
             }
         ),
         knowledge_card_ids=sorted(set(planning_input.knowledge_card_ids)),
+        source_provenance=[
+            ContentDraftRevisionSourceProvenance.model_validate(item.model_dump())
+            for item in planning_input.source_provenance
+        ],
         final_canonical_url=planning_input.final_canonical_url,
         title=output.page_assets.wordpress_title,
         page_assets=output.page_assets,

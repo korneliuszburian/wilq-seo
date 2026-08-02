@@ -431,6 +431,14 @@ export const ContentDocumentWorkspaceSourceSnapshotSchema = z.object({
   evidence_ids: z.array(z.string()).default([])
 });
 
+const ContentDocumentSourceProvenanceSchema = z.object({
+  source_fact_id: z.string().min(1),
+  source_url_or_path: z.string().min(1),
+  freshness_date: z.string().min(1),
+  reviewer: z.string().min(1).nullable().optional(),
+  evidence_ids: z.array(z.string().min(1)).min(1)
+});
+
 export const ContentDocumentWorkspaceDocumentSchema = z.object({
   status: z.enum(["not_created", "unreviewed", "needs_changes", "approved", "rejected", "deferred"]),
   revision_id: z.string().nullable().optional(),
@@ -462,6 +470,7 @@ export const ContentDocumentWorkspaceDocumentSchema = z.object({
   ) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical document review must match its exact revision." });
   }
+  source_provenance: z.array(ContentDocumentSourceProvenanceSchema).optional()
 });
 
 export const ContentDocumentWorkspaceDocumentSectionSchema = z.object({
@@ -2618,6 +2627,14 @@ const isSafePublicContentUrl = (value: string): boolean => {
   }
 };
 
+export const ContentDraftRevisionSourceProvenanceSchema = z.object({
+  source_fact_id: z.string().min(1),
+  source_url_or_path: z.string().min(1),
+  freshness_date: z.string().min(1),
+  reviewer: z.string().min(1).nullable().optional(),
+  evidence_ids: z.array(z.string().min(1)).min(1)
+});
+
 export const ContentDraftRevisionInternalLinkSchema = z.object({
   link_id: z.string().min(1),
   placement: z.string().min(1),
@@ -2677,6 +2694,7 @@ export const ContentDraftRevisionSchema = z.object({
   document_kind: z.enum(["refresh_existing", "new_page"]).default("refresh_existing"),
   final_canonical_url: z.string().nullable().default(null),
   new_page_document_identity: ContentNewPageDocumentIdentitySchema.nullable().optional(),
+  source_provenance: z.array(ContentDraftRevisionSourceProvenanceSchema).optional(),
   title: z.string().refine((value) => value.trim().length > 0),
   page_assets: ContentDraftRevisionPageAssetsSchema.nullable().optional(),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),

@@ -203,6 +203,16 @@ class ContentDraftRevisionPageAssets(BaseModel):
         return validate_no_inline_link(value)
 
 
+class ContentDraftRevisionSourceProvenance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_fact_id: str = Field(min_length=1)
+    source_url_or_path: str = Field(min_length=1)
+    freshness_date: str = Field(min_length=1)
+    reviewer: str | None = None
+    evidence_ids: list[str] = Field(min_length=1)
+
+
 class ContentDraftRevisionFaqItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -363,6 +373,7 @@ class ContentDraftRevision(BaseModel):
     inventory_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
+    source_provenance: list[ContentDraftRevisionSourceProvenance] = Field(default_factory=list)
     document_kind: ContentDraftRevisionDocumentKind = "refresh_existing"
     final_canonical_url: str | None = None
     new_page_document_identity: ContentNewPageDocumentIdentity | None = None
@@ -437,6 +448,7 @@ class ContentDraftRevisionAppendCommand(BaseModel):
     inventory_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
+    source_provenance: list[ContentDraftRevisionSourceProvenance] = Field(default_factory=list)
     document_kind: ContentDraftRevisionDocumentKind = "refresh_existing"
     final_canonical_url: str | None = None
     new_page_document_identity: ContentNewPageDocumentIdentity | None = None

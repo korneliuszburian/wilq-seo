@@ -144,6 +144,16 @@ class ContentPlanningSourceFact(BaseModel):
     regulatory_requirement_ids: list[str] = Field(default_factory=list)
 
 
+class ContentPlanningSourceProvenance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_fact_id: str = Field(min_length=1)
+    source_url_or_path: str = Field(min_length=1)
+    freshness_date: str = Field(min_length=1)
+    reviewer: str | None = None
+    evidence_ids: list[str] = Field(min_length=1)
+
+
 class ContentPlanningSourceAssessment(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -564,6 +574,30 @@ def build_source_facts(
                 for index, fact in enumerate(approved_profile_facts, start=1)
             )
     return facts
+
+
+def build_source_provenance(
+    source_facts: list[ContentPlanningSourceFact],
+) -> list[ContentPlanningSourceProvenance]:
+    registry = {fact.source_id: fact for fact in ekologus_source_facts()}
+    provenance: list[ContentPlanningSourceProvenance] = []
+    seen: set[str] = set()
+    for planning_fact in source_facts:
+        for source_fact_id in planning_fact.source_fact_ids:
+            fact = registry.get(source_fact_id)
+            if fact is None or fact.source_id in seen or fact.review_status != "approved":
+                continue
+            provenance.append(
+                ContentPlanningSourceProvenance(
+                    source_fact_id=fact.source_id,
+                    source_url_or_path=fact.source_url_or_path,
+                    freshness_date=fact.freshness_date,
+                    reviewer=fact.reviewer,
+                    evidence_ids=fact.evidence_ids or planning_fact.evidence_ids,
+                )
+            )
+            seen.add(fact.source_id)
+    return provenance
 
 
 def assessment_status(

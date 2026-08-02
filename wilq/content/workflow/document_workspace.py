@@ -25,6 +25,7 @@ from wilq.content.workflow.document_lineage import (
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
+    ContentDraftRevisionSourceProvenance,
     ContentDraftRevisionStateStatus,
 )
 from wilq.content.workflow.store import content_workflow_store
@@ -69,6 +70,7 @@ class ContentDocumentWorkspaceDocument(BaseModel):
     )
     label: str
     reason: str
+    source_provenance: list[ContentDraftRevisionSourceProvenance] = Field(default_factory=list)
     preview: ContentDocumentWorkspaceDocumentPreview | None = None
     revision: ContentDraftRevision | None = None
     review: ContentDraftRevisionReview | None = None
@@ -375,6 +377,7 @@ def _canonical_document(
         review_state=normalized,
         label=labels[normalized],
         reason=reasons[normalized],
+        source_provenance=list(revision.source_provenance),
         preview=_document_preview(revision),
         revision=revision if isinstance(revision, ContentDraftRevision) else None,
         review=review if isinstance(review, ContentDraftRevisionReview) else None,

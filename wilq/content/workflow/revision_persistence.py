@@ -69,6 +69,9 @@ def _full_document_digest_payload(
         "inventory_digest": command.inventory_digest,
         "source_material_ids": command.source_material_ids,
         "knowledge_card_ids": command.knowledge_card_ids,
+        "source_provenance": [
+            item.model_dump(mode="json") for item in command.source_provenance
+        ],
         "page_assets": (
             None if command.page_assets is None else command.page_assets.model_dump(mode="json")
         ),
