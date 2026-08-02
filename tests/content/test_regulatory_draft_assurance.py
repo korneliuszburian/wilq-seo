@@ -450,6 +450,31 @@ def test_assurance_accepts_a_section_id_for_a_passing_check() -> None:
     )
 
 
+def test_assurance_does_not_invent_missing_scope_after_profile_assertions_pass() -> None:
+    profile = _profile()
+    receipt = validate_draft_assurance_output(
+        planning_input=_planning_input(profile),
+        proposal=_proposal(),
+        output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
+        profile=profile,
+        assessment=ContentDraftAssuranceModelOutput(
+            checks=[
+                {
+                    "constraint_id": "requirement:transport_document",
+                    "status": "fail",
+                    "reason_code": "missing_scope",
+                    "reason": "Zakres wymaga doprecyzowania.",
+                    "document_section_id": "kpo",
+                    "evidence_ids": [],
+                }
+            ]
+        ),
+        codex_run_id="codex_content_draft_assurance_1",
+    )
+
+    assert receipt.status == "passed"
+
+
 def test_profile_rejects_a_custom_constraint_in_the_reserved_requirement_namespace() -> None:
     profile = _profile()
 

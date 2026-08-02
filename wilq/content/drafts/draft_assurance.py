@@ -24,6 +24,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryProfile,
     regulatory_content_profile,
     regulatory_draft_assurance_constraints,
+    regulatory_requirement_assertion_errors,
 )
 from wilq.content.workflow.planning import ContentPlanningProposal
 
@@ -334,7 +335,12 @@ def validate_draft_assurance_output(
     failed_ids: list[str] = []
     for constraint, check in zip(constraints, assessment.checks, strict=True):
         _validate_check_against_candidate(check, output, constraint, proposal)
-        if check.status == "fail":
+        if check.status == "fail" and not _deterministic_scope_is_complete(
+            check=check,
+            constraint=constraint,
+            output=output,
+            profile=profile,
+        ):
             failed_ids.append(constraint.id)
     return ContentDraftAssuranceReceipt(
         status="failed" if failed_ids else "passed",
@@ -342,6 +348,36 @@ def validate_draft_assurance_output(
         profile_version=profile.version,
         codex_run_id=codex_run_id,
         failed_constraint_ids=failed_ids,
+    )
+
+
+def _deterministic_scope_is_complete(
+    *,
+    check: ContentDraftAssuranceCheckOutput,
+    constraint: ContentRegulatoryClaimConstraint,
+    output: ContentInitialDraftModelOutput,
+    profile: ContentRegulatoryProfile,
+) -> bool:
+    """Do not let a critic invent missing scope after profile assertions pass."""
+
+    if check.status != "fail" or check.reason_code != "missing_scope":
+        return False
+    section_ids = {check.document_section_id} if check.document_section_id else set()
+    if not section_ids:
+        return False
+    text = "\n".join(
+        section.body_markdown
+        for section in output.sections
+        if section.section_id in section_ids
+    )
+    requirements = {
+        requirement.id: requirement
+        for requirement in profile.requirements
+        if requirement.id in constraint.requirement_ids
+    }
+    return bool(requirements) and all(
+        not regulatory_requirement_assertion_errors(requirement=requirement, text=text)
+        for requirement in requirements.values()
     )
 
 
