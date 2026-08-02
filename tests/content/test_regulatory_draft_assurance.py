@@ -135,7 +135,7 @@ def test_assurance_blocks_an_unqualified_kpo_statement_that_phrase_checks_allow(
                     "status": "fail",
                     "reason_code": "overbroad_claim",
                     "reason": "Zdanie przedstawia KPO jako obowiązek dla każdego transportu.",
-                    "document_excerpt": "Każdy transport odpadów wymaga KPO.",
+                    "document_section_id": "kpo",
                     "evidence_ids": ["ev_kpo"],
                 }
             ]
@@ -162,7 +162,7 @@ def test_assurance_uses_server_owned_evidence_instead_of_critic_selection() -> N
                         "status": "pass",
                         "reason_code": "supported",
                         "reason": "Warunek został podany.",
-                        "document_excerpt": "KPO stosuje się, gdy przekazanie podlega ewidencji.",
+                        "document_section_id": "kpo",
                         "evidence_ids": ["ev_other"],
                     }
                 ]
@@ -187,7 +187,7 @@ def test_assurance_does_not_require_model_selected_evidence() -> None:
                         "status": "pass",
                         "reason_code": "supported",
                         "reason": "Warunek został podany.",
-                        "document_excerpt": "KPO stosuje się, gdy przekazanie podlega ewidencji.",
+                        "document_section_id": "kpo",
                         "evidence_ids": [],
                     }
                 ]
@@ -197,9 +197,9 @@ def test_assurance_does_not_require_model_selected_evidence() -> None:
     assert receipt.status == "passed"
 
 
-def test_assurance_rejects_a_pass_that_claims_the_excerpt_is_missing() -> None:
+def test_assurance_rejects_a_pass_without_a_document_section() -> None:
     profile = _profile()
-    with pytest.raises(ValueError, match="must cite a candidate excerpt"):
+    with pytest.raises(ValueError, match="must cite a candidate document section"):
         validate_draft_assurance_output(
             planning_input=_planning_input(profile),
             output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
@@ -211,7 +211,7 @@ def test_assurance_rejects_a_pass_that_claims_the_excerpt_is_missing() -> None:
                         "status": "pass",
                         "reason_code": "supported",
                         "reason": "Warunek został podany.",
-                        "document_excerpt": "brak w dokumencie",
+                        "document_section_id": None,
                         "evidence_ids": ["ev_kpo"],
                     }
                 ]
@@ -234,7 +234,7 @@ def test_assurance_rejects_a_pass_with_a_reason_code_for_a_failure() -> None:
                         "status": "pass",
                         "reason_code": "missing_scope",
                         "reason": "Warunek został podany.",
-                        "document_excerpt": "KPO stosuje się, gdy przekazanie podlega ewidencji.",
+                        "document_section_id": "kpo",
                         "evidence_ids": [],
                     }
                 ]
@@ -245,7 +245,11 @@ def test_assurance_rejects_a_pass_with_a_reason_code_for_a_failure() -> None:
 
 def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -> None:
     profile = _profile()
-    schema = draft_assurance_output_schema(profile, _planning_input(profile).regulatory_coverage)
+    schema = draft_assurance_output_schema(
+        profile,
+        _planning_input(profile).regulatory_coverage,
+        _output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
+    )
 
     assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"][
         "constraint_id"
@@ -263,6 +267,9 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
         "insufficient_source_alignment",
         "not_assessable",
     ]
+    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"][
+        "document_section_id"
+    ]["anyOf"] == [{"enum": ["kpo"]}, {"type": "null"}]
 
     with pytest.raises(ValueError, match="unknown requirements"):
         ContentRegulatoryProfile(
@@ -286,13 +293,13 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
 def test_assurance_invalid_output_codes_do_not_retain_model_text() -> None:
     assert (
         draft_assurance_runtime._invalid_output_code(
-            ValueError("Draft assurance excerpt must occur in the candidate document.")
+            ValueError("Draft assurance must cite a candidate document section.")
         )
-        == "assurance_excerpt_not_in_document"
+        == "assurance_section_mismatch"
     )
 
 
-def test_assurance_accepts_an_exact_excerpt_with_only_layout_whitespace_changed() -> None:
+def test_assurance_accepts_a_section_id_for_a_passing_check() -> None:
     profile = _profile()
     receipt = validate_draft_assurance_output(
         planning_input=_planning_input(profile),
@@ -306,9 +313,7 @@ def test_assurance_accepts_an_exact_excerpt_with_only_layout_whitespace_changed(
                         "status": "pass",
                         "reason_code": "supported",
                         "reason": "Warunek został podany.",
-                        "document_excerpt": (
-                            "KPO stosuje się, gdy przekazanie odpadów podlega ewidencji."
-                        ),
+                        "document_section_id": "kpo",
                         "evidence_ids": ["ev_kpo"],
                     }
                 ],
@@ -372,7 +377,7 @@ def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypa
                             "status": "fail",
                             "reason_code": "overbroad_claim",
                             "reason": "KPO jest przedstawione jako bezwarunkowe.",
-                            "document_excerpt": "Każdy transport odpadów wymaga KPO.",
+                            "document_section_id": "kpo",
                             "evidence_ids": ["ev_kpo"],
                         }
                     ]

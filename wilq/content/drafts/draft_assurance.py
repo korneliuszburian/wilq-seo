@@ -10,7 +10,6 @@ rewrites, publishes or persists a document.
 from __future__ import annotations
 
 import json
-import re
 from copy import deepcopy
 from typing import Literal, cast
 
@@ -39,7 +38,6 @@ ContentDraftAssuranceReasonCode = Literal[
     "not_assessable",
 ]
 _CRITERIA_VERSION = "wilq_regulatory_draft_assurance_v1"
-_MISSING_DOCUMENT_EXCERPT = "brak w dokumencie"
 
 _INSTRUCTION = (
     "Jesteś niezależnym krytykiem merytorycznym roboczego dokumentu regulowanego. "
@@ -50,8 +48,9 @@ _INSTRUCTION = (
     "source facts. Gdy brakuje warunku, zakresu, wyjątku albo konkretu, wybierz "
     "fail — nie domyślaj się intencji autora. Nie przepisuj tekstu, nie dodawaj "
     "faktów ani źródeł, nie zatwierdzaj dokumentu, nie twórz ActionObjectu i nie "
-    "wykonuj write. Dla każdego wyniku podaj krótki literalny fragment kandydata "
-    "albo 'brak w dokumencie' oraz reason_code: supported tylko dla pass; dla fail "
+    "wykonuj write. Dla każdego wyniku podaj document_section_id sekcji, na której "
+    "opierasz ocenę, albo null wyłącznie gdy kandydat nie zawiera takiej treści; "
+    "reason_code supported wybieraj tylko dla pass, a dla fail "
     "wybierz missing_scope, missing_exception, unsupported_specific, overbroad_claim, "
     "insufficient_source_alignment albo not_assessable. Nie wybieraj dowodów: "
     "WILQ wiąże je po stronie serwera "
@@ -66,10 +65,10 @@ class ContentDraftAssuranceCheckOutput(BaseModel):
     status: ContentDraftAssuranceCheckStatus
     reason_code: ContentDraftAssuranceReasonCode = "not_assessable"
     reason: str = Field(min_length=1)
-    document_excerpt: str = Field(min_length=1)
+    document_section_id: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
 
-    @field_validator("constraint_id", "reason", "document_excerpt")
+    @field_validator("constraint_id", "reason")
     @classmethod
     def require_visible_text(cls, value: str) -> str:
         stripped = value.strip()
@@ -189,13 +188,18 @@ def draft_assurance_turn_request(
         instruction=_INSTRUCTION,
         application_context=application_context,
         untrusted_context=untrusted_context,
-        output_schema=draft_assurance_output_schema(profile, planning_input.regulatory_coverage),
+        output_schema=draft_assurance_output_schema(
+            profile,
+            planning_input.regulatory_coverage,
+            output,
+        ),
     )
 
 
 def draft_assurance_output_schema(
     profile: ContentRegulatoryProfile,
     coverage: ContentRegulatoryCoverage,
+    output: ContentInitialDraftModelOutput | None = None,
 ) -> dict[str, object]:
     schema = deepcopy(ContentDraftAssuranceModelOutput.model_json_schema())
     _require_all_object_properties(schema)
@@ -212,6 +216,11 @@ def draft_assurance_output_schema(
         "evidence_ids",
         coverage.evidence_ids,
     )
+    if output is not None:
+        _mapping(checks, "document_section_id")["anyOf"] = [
+            {"enum": [item.section_id for item in output.sections]},
+            {"type": "null"},
+        ]
     return schema
 
 
@@ -250,44 +259,19 @@ def _validate_check_against_candidate(
 ) -> None:
     """Reject a critic receipt that contradicts its frozen document verdict."""
 
-    excerpt = _normalize_document_text(check.document_excerpt)
-    missing_excerpt = excerpt == _MISSING_DOCUMENT_EXCERPT
+    valid_section_ids = {section.section_id for section in output.sections}
+    if (
+        check.document_section_id is not None
+        and check.document_section_id not in valid_section_ids
+    ):
+        raise ValueError("Draft assurance must cite a candidate document section.")
     if check.status == "pass":
         if check.reason_code != "supported":
             raise ValueError("Draft assurance pass requires the supported reason code.")
-        if missing_excerpt:
-            raise ValueError("Draft assurance pass must cite a candidate excerpt.")
-        if not _normalized_excerpt_in_document(excerpt, output):
-            raise ValueError("Draft assurance excerpt must occur in the candidate document.")
+        if check.document_section_id is None:
+            raise ValueError("Draft assurance pass must cite a candidate document section.")
     elif check.reason_code == "supported":
         raise ValueError("Draft assurance fail cannot use the supported reason code.")
-
-
-def _normalized_excerpt_in_document(
-    excerpt: str,
-    output: ContentInitialDraftModelOutput,
-) -> bool:
-    return excerpt in _normalize_document_text(_visible_document_text(output))
-
-
-def _visible_document_text(output: ContentInitialDraftModelOutput) -> str:
-    """Return content readable by a marketer, excluding ids and other metadata."""
-
-    return "\n".join(
-        [
-            *output.page_assets.model_dump().values(),
-            *(item.heading for item in output.sections),
-            *(item.body_markdown for item in output.sections),
-            *(item.question for item in output.faq),
-            *(item.answer_markdown for item in output.faq),
-            *(item.body_markdown for item in output.cta_blocks),
-            *(item.anchor_text for item in output.internal_links),
-        ]
-    )
-
-
-def _normalize_document_text(value: str) -> str:
-    return re.sub(r"\s+", " ", value).strip().casefold()
 
 
 def _source_facts_for_critic(

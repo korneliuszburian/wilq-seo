@@ -160,10 +160,8 @@ def _invalid_output_code(error: ValueError) -> str:
     message = str(error)
     if "assess every constraint in canonical order" in message:
         return "assurance_check_order"
-    if "must cite a candidate excerpt" in message:
-        return "assurance_pass_without_excerpt"
-    if "excerpt must occur in the candidate document" in message:
-        return "assurance_excerpt_not_in_document"
+    if "must cite a candidate document section" in message:
+        return "assurance_section_mismatch"
     if "must cite exact constraint evidence" in message:
         return "assurance_missing_evidence"
     if "must cite only exact constraint evidence" in message:
