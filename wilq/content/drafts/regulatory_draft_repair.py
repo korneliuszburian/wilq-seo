@@ -61,7 +61,7 @@ def repair_regulatory_assertions(
         return _grounded_repair_fallback(planning_input, proposal, output, missing)
     replacements = {item.section_id: item.body_markdown for item in patch.sections}
     if len(replacements) != len(patch.sections):
-        return None
+        return _grounded_repair_fallback(planning_input, proposal, output, missing)
     patched = output.model_copy(
         update={
             "sections": [

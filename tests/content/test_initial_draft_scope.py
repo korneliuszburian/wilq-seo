@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 from pydantic import BaseModel, ValidationError
 
+from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.drafts import initial_full_draft
 from wilq.content.drafts.initial_draft_validation import document_scope_errors
 from wilq.content.drafts.initial_full_draft import _planning_input_blocker
@@ -272,7 +273,7 @@ def test_document_scope_rejects_a_regulatory_topic_without_its_required_concept(
     ) == ["regulatory_document_assertion:bdo_records_and_kpo:kpo_before_transport"]
 
 
-def test_regulatory_repair_expands_a_semantic_requirement_failure_to_approved_facts() -> None:
+def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts() -> None:
     proposal = _proposal_with_review_required_inventory()
     proposal.sections[0].regulatory_requirement_ids = ["bdo_exemptions"]
     requirement = ContentRegulatoryRequirement(
@@ -333,9 +334,17 @@ def test_regulatory_repair_expands_a_semantic_requirement_failure_to_approved_fa
         publish_ready=False,
     )
 
-    class FailingRepairClient:
+    class DuplicatePatchClient:
         def run_structured_turn(self, _request):
-            raise RuntimeError("repair runtime unavailable")
+            return CodexAppServerTurnResult(
+                status="completed",
+                output_text=(
+                    '{"sections":['
+                    '{"section_id":"section_keep","body_markdown":"Pierwsza wersja."},'
+                    '{"section_id":"section_keep","body_markdown":"Druga wersja."}'
+                    ']}'
+                ),
+            )
 
     repaired = repair_regulatory_assertions(
         planning_input=planning_input,
@@ -348,7 +357,7 @@ def test_regulatory_repair_expands_a_semantic_requirement_failure_to_approved_fa
             next_step="Uzupełnij dokument.",
             source_codes=["requirement:bdo_exemptions"],
         ),
-        client=FailingRepairClient(),
+        client=DuplicatePatchClient(),
     )
 
     assert repaired is not None
