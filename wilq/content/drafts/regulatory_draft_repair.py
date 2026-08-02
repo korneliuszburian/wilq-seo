@@ -18,6 +18,7 @@ from wilq.content.drafts.initial_full_draft_turn import (
     _RegulatoryAssertionRepairOutput,
     regulatory_assertion_repair_turn_request,
 )
+from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory.policy import ContentRegulatoryRequirement
 from wilq.content.workflow.planning import ContentPlanningProposal
@@ -64,7 +65,9 @@ def repair_regulatory_assertions(
     patches = {item.section_id: item for item in patch.sections}
     if len(patches) != len(patch.sections):
         return _grounded_repair_fallback(planning_input, proposal, output, missing)
-    expected_modes = _expected_repair_modes(proposal, missing, repair_reasons or {})
+    expected_modes = regulatory_section_repair_modes(
+        proposal, missing, repair_reasons or {}
+    )
     if {section_id: item.mode for section_id, item in patches.items()} != expected_modes:
         return _grounded_repair_fallback(planning_input, proposal, output, missing)
     patched = output.model_copy(
@@ -107,41 +110,6 @@ def _apply_patch(existing: str, patch: object | None) -> str:
     if mode != "append" or body_markdown in existing:
         return existing
     return f"{existing}\n\n{body_markdown}"
-
-
-def _expected_repair_modes(
-    proposal: ContentPlanningProposal,
-    missing_codes: list[str],
-    repair_reasons: dict[str, str],
-) -> dict[str, str]:
-    """Mirror the trusted request policy before applying model-authored content."""
-
-    unsafe_requirement_ids = {
-        constraint_id.removeprefix("requirement:")
-        for constraint_id, reason_code in repair_reasons.items()
-        if constraint_id.startswith("requirement:")
-        and reason_code
-        in {"overbroad_claim", "unsupported_specific", "insufficient_source_alignment"}
-    }
-    missing_requirement_ids = {
-        code.removeprefix("requirement:")
-        for code in missing_codes
-        if code.startswith("requirement:")
-    }
-    return {
-        section.section_id: (
-            "replace"
-            if unsafe_requirement_ids.intersection(section.regulatory_requirement_ids)
-            else "append"
-        )
-        for section in proposal.sections
-        if missing_requirement_ids.intersection(section.regulatory_requirement_ids)
-        or any(
-            code.startswith("regulatory_document_assertion:")
-            and code.split(":", 2)[1] in section.regulatory_requirement_ids
-            for code in missing_codes
-        )
-    }
 
 
 def _grounded_repair_fallback(

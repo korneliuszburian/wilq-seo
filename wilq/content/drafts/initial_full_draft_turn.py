@@ -11,6 +11,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
+from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.planning import ContentPlanningProposal
@@ -130,7 +131,7 @@ def regulatory_assertion_repair_turn_request(
     assertions, section_ids = _missing_assertions_for_repair(
         planning_input, proposal, missing_assertion_codes
     )
-    section_repair_modes = _section_repair_modes(
+    section_repair_modes = regulatory_section_repair_modes(
         proposal,
         missing_assertion_codes,
         repair_reasons or {},
@@ -215,41 +216,6 @@ def _missing_assertions_for_repair(
                     if section.section_id not in section_ids:
                         section_ids.append(section.section_id)
     return assertions, section_ids
-
-
-def _section_repair_modes(
-    proposal: ContentPlanningProposal,
-    missing_codes: list[str],
-    repair_reasons: dict[str, str],
-) -> dict[str, Literal["append", "replace"]]:
-    """Replace only sections whose independent critic found an unsafe claim."""
-
-    unsafe_requirement_ids = {
-        constraint_id.removeprefix("requirement:")
-        for constraint_id, reason_code in repair_reasons.items()
-        if constraint_id.startswith("requirement:")
-        and reason_code
-        in {"overbroad_claim", "unsupported_specific", "insufficient_source_alignment"}
-    }
-    missing_requirement_ids = {
-        code.removeprefix("requirement:")
-        for code in missing_codes
-        if code.startswith("requirement:")
-    }
-    return {
-        section.section_id: (
-            "replace"
-            if unsafe_requirement_ids.intersection(section.regulatory_requirement_ids)
-            else "append"
-        )
-        for section in draftable_planning_sections(proposal.sections)
-        if missing_requirement_ids.intersection(section.regulatory_requirement_ids)
-        or any(
-            code.startswith("regulatory_document_assertion:")
-            and code.split(":", 2)[1] in section.regulatory_requirement_ids
-            for code in missing_codes
-        )
-    }
 
 
 def _regulatory_assertion_repair_output_schema(section_ids: list[str]) -> dict[str, object]:

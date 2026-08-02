@@ -25,6 +25,7 @@ from wilq.content.drafts.initial_full_draft_turn import (
     regulatory_assertion_repair_turn_request,
 )
 from wilq.content.drafts.regulatory_draft_repair import repair_regulatory_assertions
+from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
@@ -525,6 +526,16 @@ def test_regulatory_repair_replaces_an_overbroad_section_when_critic_requires_it
     assert "Każda firma zawsze podlega BDO." not in body
     assert body.startswith("Zwolnienie zależy od spełnienia warunków ustawowych.")
     assert fact.extracted_fact in body
+
+
+def test_regulatory_repair_replaces_a_section_for_missing_scope() -> None:
+    proposal, _, _, _, _ = _regulatory_repair_fixture()
+
+    assert regulatory_section_repair_modes(
+        proposal,
+        ["requirement:bdo_exemptions"],
+        {"requirement:bdo_exemptions": "missing_scope"},
+    ) == {"section_keep": "replace"}
 
 
 def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() -> None:
