@@ -273,7 +273,13 @@ def test_document_scope_rejects_a_regulatory_topic_without_its_required_concept(
     ) == ["regulatory_document_assertion:bdo_records_and_kpo:kpo_before_transport"]
 
 
-def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts() -> None:
+def _regulatory_repair_fixture() -> tuple[
+    ContentPlanningProposal,
+    ContentPlanningInput,
+    ContentInitialDraftModelOutput,
+    ContentSourceFact,
+    ContentSourceFact,
+]:
     proposal = _proposal_with_review_required_inventory()
     proposal.sections[0].regulatory_requirement_ids = ["bdo_exemptions"]
     requirement = ContentRegulatoryRequirement(
@@ -310,10 +316,19 @@ def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts()
         regulatory_requirement_ids=[requirement.id],
         applicable_service_card_ids=[proposal.service_card_id],
     )
+    related_fact = fact.model_copy(
+        update={
+            "source_id": "regulatory_source_fact_bdo_exemptions_scope",
+            "extracted_fact": (
+                "Zakres obowiązku należy oceniać dla całej działalności przedsiębiorcy."
+            ),
+            "evidence_ids": ["ev_regulatory_bdo_exemptions_scope"],
+        }
+    )
     planning_input = ContentPlanningInput.model_construct(
         regulatory_coverage=ContentRegulatoryCoverage(
             requirements=[requirement],
-            source_facts=[fact],
+            source_facts=[fact, related_fact],
         )
     )
     output = ContentInitialDraftModelOutput(
@@ -333,6 +348,12 @@ def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts()
         ],
         publish_ready=False,
     )
+
+    return proposal, planning_input, output, fact, related_fact
+
+
+def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts() -> None:
+    proposal, planning_input, output, fact, related_fact = _regulatory_repair_fixture()
 
     class DuplicatePatchClient:
         def run_structured_turn(self, _request):
@@ -363,7 +384,8 @@ def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts()
     assert repaired is not None
     repaired_output, trace = repaired
     assert trace.status == "completed"
-    assert repaired_output.sections[0].body_markdown.endswith(fact.extracted_fact)
+    assert fact.extracted_fact in repaired_output.sections[0].body_markdown
+    assert related_fact.extracted_fact in repaired_output.sections[0].body_markdown
 
 
 def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None:

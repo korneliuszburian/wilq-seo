@@ -118,6 +118,11 @@ def ground_unmet_regulatory_assertions(
     }
     sections = {item.section_id: item for item in proposal.sections}
     additions: dict[str, list[str]] = {}
+    semantic_requirement_ids = {
+        code.removeprefix("requirement:")
+        for code in missing_codes
+        if code.startswith("requirement:")
+    }
     for requirement_id, assertion_id in _assertion_codes_for_missing_requirements(
         missing_codes, requirement_by_id
     ):
@@ -130,19 +135,16 @@ def ground_unmet_regulatory_assertions(
         )
         if assertion is None:
             continue
-        fact = next(
-            (
-                item.extracted_fact
-                for item in planning_input.regulatory_coverage.source_facts
-                if requirement_id in item.regulatory_requirement_ids
-                and any(
-                    term.lower() in item.extracted_fact.lower()
-                    for term in assertion.required_any_of
-                )
+        facts = _approved_facts_for_requirement(
+            planning_input,
+            requirement_id=requirement_id,
+            assertion_terms=(
+                None
+                if requirement_id in semantic_requirement_ids
+                else assertion.required_any_of
             ),
-            None,
         )
-        if fact is None:
+        if not facts:
             continue
         target = next(
             (
@@ -153,7 +155,7 @@ def ground_unmet_regulatory_assertions(
             None,
         )
         if target is not None:
-            additions.setdefault(target, []).append(fact)
+            additions.setdefault(target, []).extend(facts)
     if not additions:
         return output
     return output.model_copy(
@@ -172,6 +174,30 @@ def ground_unmet_regulatory_assertions(
             ]
         }
     )
+
+
+def _approved_facts_for_requirement(
+    planning_input: ContentPlanningInput,
+    *,
+    requirement_id: str,
+    assertion_terms: list[str] | None,
+) -> list[str]:
+    """Return only exact approved facts, optionally narrowed to one assertion."""
+
+    return [
+        item.extracted_fact
+        for item in planning_input.regulatory_coverage.source_facts
+        if item.official_source
+        and item.review_status == "approved"
+        and requirement_id in item.regulatory_requirement_ids
+        and (
+            assertion_terms is None
+            or any(
+                term.lower() in item.extracted_fact.lower()
+                for term in assertion_terms
+            )
+        )
+    ]
 
 
 def _assertion_codes_for_missing_requirements(
