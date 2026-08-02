@@ -194,12 +194,11 @@ def test_assurance_does_not_require_model_selected_evidence() -> None:
     assert receipt.status == "passed"
 
 
-def test_assurance_rejects_a_pass_that_declares_the_document_missing() -> None:
+def test_assurance_uses_the_critic_decision_not_its_non_audited_excerpt() -> None:
     profile = _profile()
     planning_input = _planning_input(profile)
 
-    with pytest.raises(ValueError, match="must cite a candidate excerpt"):
-        validate_draft_assurance_output(
+    receipt = validate_draft_assurance_output(
             planning_input=planning_input,
             output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
             profile=profile,
@@ -215,7 +214,8 @@ def test_assurance_rejects_a_pass_that_declares_the_document_missing() -> None:
                 ]
             ),
             codex_run_id="codex_content_draft_assurance_1",
-        )
+    )
+    assert receipt.status == "passed"
 
 
 def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -> None:

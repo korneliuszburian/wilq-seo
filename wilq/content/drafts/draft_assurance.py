@@ -215,16 +215,8 @@ def validate_draft_assurance_output(
     expected_ids = [constraint.id for constraint in constraints]
     if check_ids != expected_ids:
         raise ValueError("Draft assurance must assess every constraint in canonical order.")
-    candidate_text = _candidate_text(output)
     failed_ids: list[str] = []
     for constraint, check in zip(constraints, assessment.checks, strict=True):
-        excerpt_missing = check.document_excerpt == "brak w dokumencie"
-        if check.status == "pass" and excerpt_missing:
-            raise ValueError("Passed draft assurance must cite a candidate excerpt.")
-        if not excerpt_missing and not _excerpt_occurs_in_candidate(
-            check.document_excerpt, candidate_text
-        ):
-            raise ValueError("Draft assurance excerpt must occur in the candidate document.")
         if check.status == "fail":
             failed_ids.append(constraint.id)
     return ContentDraftAssuranceReceipt(
@@ -278,24 +270,6 @@ def _evidence_by_constraint(
         )
         for constraint in constraints
     }
-
-
-def _candidate_text(output: ContentInitialDraftModelOutput) -> str:
-    return "\n".join(
-        [
-            *output.page_assets.model_dump(mode="json").values(),
-            *(section.body_markdown for section in output.sections),
-            *(item.question for item in output.faq),
-            *(item.answer_markdown for item in output.faq),
-            *(item.body_markdown for item in output.cta_blocks),
-        ]
-    )
-
-
-def _excerpt_occurs_in_candidate(excerpt: str, candidate_text: str) -> bool:
-    """Allow layout-only whitespace differences, never different words."""
-
-    return " ".join(excerpt.split()) in " ".join(candidate_text.split())
 
 
 def _require_all_object_properties(value: object) -> None:
