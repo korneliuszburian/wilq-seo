@@ -8,6 +8,7 @@ import {
   postContentRegulatorySourceFactProposalReview,
   postContentWorkItemInitialDraft,
   postContentWorkItemPlanningProposal,
+  type ContentDocumentWorkspace,
   type ContentInitialDraftResponse,
   type ContentPlanningProposalResponse
 } from "../lib/api";
@@ -197,7 +198,11 @@ export function PlanningEvidenceDetails({
       <EvidenceCount label="Dowody" value={input.evidence_id_count} />
     </div>
     {input.source_assessments.length ? <ul className="mt-3 space-y-2 text-slate-600">{input.source_assessments.map((source) => <li key={source.source}><span className="font-semibold text-ink">{planningSourceLabel(source.source)}: </span>{planningSourceStatusCopy(source.status)}{source.reason ? ` ${source.reason}` : ""}</li>)}</ul> : null}
-    {regulatoryReviewCandidates.length ? <div className="mt-3 rounded border border-wait/30 bg-wait/5 p-3"><p className="font-semibold text-ink">Źródła urzędowe do sprawdzenia przed przygotowaniem treści</p><p className="mt-1 leading-6">Te materiały nie są jeszcze dowodem w planie ani podstawą twierdzeń. Sprawdź materiał, zapisz dokładny fakt człowieka i dopiero wtedy WILQ odświeży gotowość.</p><ul className="mt-2 space-y-3">{regulatoryReviewCandidates.map((candidate) => <li key={candidate.candidate_id}><RegulatorySourceReviewCandidate candidate={candidate} onRecorded={() => void queryClient.invalidateQueries({ queryKey: ["content-workflow"] })} /></li>)}</ul></div> : null}
+    <RegulatorySourceReviewCandidates
+      candidates={regulatoryReviewCandidates}
+      onRecorded={() => void queryClient.invalidateQueries({ queryKey: ["content-workflow"] })}
+      title="Źródła urzędowe do sprawdzenia przed przygotowaniem treści"
+    />
     {!isNewPage && metricComparisons.length ? <MeasurementComparisonDetails comparisons={metricComparisons} /> : null}
     {isNewPage ? <p className="mt-3 leading-6">Nowa strona nie ma własnej historii GSC. WILQ nie pokazuje tu historycznych zapytań ani metryk.</p> : queries.length ? <div className="mt-3"><p className="font-semibold text-ink">Zapytania GSC przypisane do tej strony</p><ul className="mt-2 space-y-1">{queries.slice(0, 6).map((query) => <li key={`${query.term}-${query.period}`} className="rounded bg-white px-2 py-1">{query.term} · okres: {query.period}{query.impressions !== null ? ` · ${query.impressions} wyświetleń` : ""}{query.clicks !== null ? ` · ${query.clicks} kliknięć` : ""}</li>)}</ul>{queries.length > 6 ? <p className="mt-2 text-xs text-slate-600">Pokazano 6 z {queries.length} exact zapytań GSC.</p> : null}</div> : <p className="mt-3 leading-6">Brak exact zapytań GSC {hasPlan ? "w aktualnym planie" : "w danych wejściowych"} — WILQ nie pokazuje zastępczej listy słów kluczowych.</p>}
   </details>;
@@ -266,9 +271,24 @@ function formatMeasurementValue(value: number) {
   return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(value);
 }
 
-type RegulatoryReviewCandidate = NonNullable<
-  NonNullable<ContentPlanningProposalResponse["input_summary"]>["regulatory_review_candidates"]
->[number];
+type RegulatoryReviewCandidate = ContentDocumentWorkspace["regulatory_review_candidates"][number];
+
+export function RegulatorySourceReviewCandidates({
+  candidates,
+  onRecorded,
+  title = "Źródła urzędowe do sprawdzenia"
+}: {
+  candidates: RegulatoryReviewCandidate[];
+  onRecorded: () => void;
+  title?: string;
+}) {
+  if (!candidates.length) return null;
+  return <div className="mt-3 rounded border border-wait/30 bg-wait/5 p-3" data-testid="content-regulatory-source-review">
+    <p className="font-semibold text-ink">{title}</p>
+    <p className="mt-1 leading-6">Te materiały nie są jeszcze dowodem w planie ani podstawą twierdzeń. Sprawdź materiał, zapisz dokładny fakt człowieka i dopiero wtedy WILQ odświeży gotowość.</p>
+    <ul className="mt-2 space-y-3">{candidates.map((candidate) => <li key={candidate.candidate_id}><RegulatorySourceReviewCandidate candidate={candidate} onRecorded={onRecorded} /></li>)}</ul>
+  </div>;
+}
 
 function RegulatorySourceReviewCandidate({
   candidate,

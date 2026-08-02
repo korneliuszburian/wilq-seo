@@ -97,6 +97,38 @@ def test_document_workspace_projects_one_repair_action_after_human_changes() -> 
     assert action.label == "Przygotuj poprawkę"
 
 
+def test_document_workspace_uses_revision_service_binding_for_official_review_candidates(
+    monkeypatch,
+) -> None:
+    revision = SimpleNamespace(service_card_id="ekologus_service_bdo_reporting")
+    candidate = SimpleNamespace(candidate_id="bdo_sanctions")
+    coverage = SimpleNamespace()
+    seen: dict[str, object] = {}
+    monkeypatch.setattr(workspace_module, "ekologus_source_facts", lambda: ("fact",))
+    monkeypatch.setattr(
+        workspace_module,
+        "regulatory_content_coverage",
+        lambda *, service_card_id, source_facts: seen.update(
+            service_card_id=service_card_id, source_facts=source_facts
+        ) or coverage,
+    )
+    monkeypatch.setattr(
+        workspace_module,
+        "regulatory_review_candidates",
+        lambda *, service_card_id, coverage: [candidate]
+        if service_card_id == "ekologus_service_bdo_reporting" and coverage is not None
+        else [],
+    )
+
+    candidates = workspace_module._regulatory_review_candidates(revision)
+
+    assert candidates == [candidate]
+    assert seen == {
+        "service_card_id": "ekologus_service_bdo_reporting",
+        "source_facts": ("fact",),
+    }
+
+
 def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
     monkeypatch,
 ) -> None:

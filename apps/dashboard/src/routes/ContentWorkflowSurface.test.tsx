@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getContentWorkItemInitialDraft,
   getContentWorkItemPlanningProposal,
+  getContentRegulatorySourceFactProposal,
   getContentWorkItemEditorialIntegrity,
   getContentWorkItemSemanticReview,
   getContentWorkItemRevisionHtmlPackage,
@@ -19,6 +20,7 @@ import {
   getContentOperatorContext,
   getContentDiagnostics,
   postContentWorkItemInitialDraft,
+  postContentRegulatorySourceFactProposalReview,
   postContentWorkItemOfficialSourceLineageRebase,
   postContentWorkItemRevisionRepairProposal,
   saveContentWorkItemDraftRevisionReview,
@@ -39,6 +41,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     ...actual,
     getContentWorkItemInitialDraft: vi.fn(),
     getContentWorkItemPlanningProposal: vi.fn(),
+    getContentRegulatorySourceFactProposal: vi.fn(),
     getContentWorkItemEditorialIntegrity: vi.fn(),
     getContentWorkItemSemanticReview: vi.fn(),
     getContentWorkItemRevisionHtmlPackage: vi.fn(),
@@ -54,6 +57,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentOperatorContext: vi.fn(),
     getContentDiagnostics: vi.fn(),
     postContentWorkItemInitialDraft: vi.fn(),
+    postContentRegulatorySourceFactProposalReview: vi.fn(),
     postContentWorkItemOfficialSourceLineageRebase: vi.fn(),
     postContentWorkItemRevisionRepairProposal: vi.fn(),
     saveContentWorkItemDraftRevisionReview: vi.fn(),
@@ -77,6 +81,12 @@ describe("ContentWorkflowSurface", () => {
       blockers: [],
       safe_next_step: "Przygotuj plan.",
       publish_ready: false
+    } as never);
+    vi.mocked(getContentRegulatorySourceFactProposal).mockResolvedValue({
+      status: "not_generated",
+      proposal: null,
+      reason: "Nie ma jeszcze propozycji do review.",
+      safe_next_step: "Przygotuj propozycję do review."
     } as never);
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
@@ -248,6 +258,52 @@ describe("ContentWorkflowSurface", () => {
       revision.revision_id
     ));
     expect(await screen.findByText(/Tekst nie został zmieniony/)).toBeInTheDocument();
+  });
+
+  it("loads an official-source proposal from the exact document workspace without auto-promoting it", async () => {
+    const workspace = contentDocumentWorkspace();
+    workspace.regulatory_review_candidates = [{
+      candidate_id: "bdo_sanctions_2026_08_02_r3",
+      source_url: "https://bdo.mos.gov.pl/baza-wiedzy/sankcje/",
+      source_title: "BDO: sankcje za naruszenia obowiązków",
+      observed_on: "2026-08-02",
+      requirement_ids: ["bdo_risks_and_sanctions"],
+      requirement_labels: ["Ryzyka i sankcje"],
+      review_status: "review_required",
+      safe_next_step: "Sprawdź propozycję z materiałem urzędowym przed decyzją."
+    }];
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
+    vi.mocked(getContentRegulatorySourceFactProposal).mockResolvedValue({
+      status: "ready",
+      proposal: {
+        proposal_id: "regulatory_source_fact_proposal_sanctions",
+        candidate_id: "bdo_sanctions_2026_08_02_r3",
+        profile_id: "bdo",
+        profile_version: "2026-08",
+        source_url: "https://bdo.mos.gov.pl/baza-wiedzy/sankcje/",
+        source_title: "BDO: sankcje za naruszenia obowiązków",
+        source_snapshot_id: "regulatory_snapshot_sanctions",
+        source_snapshot_digest: "d".repeat(64),
+        observed_on: "2026-08-02",
+        proposed_fact: "Naruszenia obowiązków BDO mogą prowadzić do sankcji wskazanych w materiale urzędowym.",
+        covered_requirement_ids: ["bdo_risks_and_sanctions"],
+        codex_run_id: "codex_regulatory_source_fact_sanctions",
+        status: "ready",
+        human_review_required: true,
+        created_at: "2026-08-02T12:00:00Z"
+      },
+      reason: "Propozycja wymaga decyzji człowieka.",
+      safe_next_step: "Porównaj ją z materiałem urzędowym."
+    } as never);
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })} client={client} />);
+
+    await screen.findByText("Naruszenia obowiązków BDO mogą prowadzić do sankcji wskazanych w materiale urzędowym.");
+    const sourceReview = screen.getByTestId("content-regulatory-source-review");
+    expect(sourceReview).toHaveTextContent("Źródła urzędowe wymagają decyzji przed uzupełnieniem rewizji");
+    expect(getContentRegulatorySourceFactProposal).toHaveBeenCalledWith("bdo_sanctions_2026_08_02_r3");
+    expect(postContentRegulatorySourceFactProposalReview).not.toHaveBeenCalled();
   });
 
   it("opens a newly saved exact revision instead of leaving the marketer on the old source", async () => {
@@ -925,6 +981,7 @@ function contentDocumentWorkspace(
       label: "Przejdź do review",
       reason: "Dokument istnieje i czeka na decyzję człowieka."
     },
+    regulatory_review_candidates: [],
     secondary_disclosures: []
   };
 }

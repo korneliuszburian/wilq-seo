@@ -517,6 +517,17 @@ export const ContentDocumentWorkspaceComparisonSchema = z.object({
   items: z.array(ContentDocumentWorkspaceComparisonItemSchema).default([])
 });
 
+export const ContentRegulatoryReviewCandidateSchema = z.object({
+  candidate_id: z.string().min(1),
+  source_url: z.string().url(),
+  source_title: z.string().min(1),
+  observed_on: z.string().min(1),
+  requirement_ids: z.array(z.string().min(1)).min(1),
+  requirement_labels: z.array(z.string().min(1)).min(1),
+  review_status: z.literal("review_required"),
+  safe_next_step: z.string().min(1)
+});
+
 export const ContentDocumentWorkspaceSchema = z.object({
   response_type: z.literal("content_document_workspace").default("content_document_workspace"),
   contract_version: z.literal("content_document_workspace_v2").default("content_document_workspace_v2"),
@@ -528,6 +539,7 @@ export const ContentDocumentWorkspaceSchema = z.object({
   document_lineage: ContentDocumentWorkspaceDocumentLineageSchema,
   comparison: ContentDocumentWorkspaceComparisonSchema,
   next_action: ContentDocumentWorkspaceNextActionSchema,
+  regulatory_review_candidates: z.array(ContentRegulatoryReviewCandidateSchema).default([]),
   secondary_disclosures: z.array(z.string()).default([])
 });
 
@@ -3926,16 +3938,7 @@ export const ContentPlanningInputSummarySchema = z.object({
     source_fact_ids: z.array(z.string().min(1)).default([]),
     evidence_ids: z.array(z.string().min(1)).default([])
   })).default([]),
-  regulatory_review_candidates: z.array(z.object({
-    candidate_id: z.string().min(1),
-    source_url: z.string().url(),
-    source_title: z.string().min(1),
-    observed_on: z.string().min(1),
-    requirement_ids: z.array(z.string().min(1)).min(1),
-    requirement_labels: z.array(z.string().min(1)).min(1),
-    review_status: z.literal("review_required"),
-    safe_next_step: z.string().min(1)
-  })).default([]),
+  regulatory_review_candidates: z.array(ContentRegulatoryReviewCandidateSchema).default([]),
   evidence_id_count: z.number().int().nonnegative(),
   knowledge_card_count: z.number().int().nonnegative(),
   measurement_metrics: z.array(z.string()).default([]),

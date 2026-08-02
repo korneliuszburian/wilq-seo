@@ -413,19 +413,30 @@ describe("ContentSelectedWorkspaceSchema", () => {
     },
     comparison: { status: "unavailable", reason: "Brak rewizji.", items: [] },
     next_action: { kind: "prepare_document", label: "Przygotuj dokument", reason: "Brak rewizji." },
+    regulatory_review_candidates: [{
+      candidate_id: "bdo_sanctions_2026_08_02_r3",
+      source_url: "https://bdo.mos.gov.pl/baza-wiedzy/sankcje/",
+      source_title: "BDO: sankcje za naruszenia obowiązków",
+      observed_on: "2026-08-02",
+      requirement_ids: ["bdo_risks_and_sanctions"],
+      requirement_labels: ["Ryzyka i sankcje"],
+      review_status: "review_required",
+      safe_next_step: "Sprawdź materiał urzędowy przed decyzją."
+    }],
     secondary_disclosures: []
   };
 
   it("keeps ready and missing selection states exact", () => {
-    expect(
-      ContentSelectedWorkspaceSchema.safeParse({
+    const parsed = ContentSelectedWorkspaceSchema.parse({
         status: "ready",
         work_item_id: "content_work_item_bdo",
         workspace,
         reason: "Odczytano workspace.",
         safe_next_step: "Przygotuj dokument"
-      }).success
-    ).toBe(true);
+      });
+    expect(parsed.workspace?.regulatory_review_candidates).toEqual([
+      expect.objectContaining({ candidate_id: "bdo_sanctions_2026_08_02_r3" })
+    ]);
     expect(
       ContentSelectedWorkspaceSchema.safeParse({
         status: "missing",

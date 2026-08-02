@@ -4,6 +4,12 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.content.knowledge.source_facts import ekologus_source_facts
+from wilq.content.regulatory import (
+    ContentRegulatoryReviewCandidate,
+    regulatory_content_coverage,
+    regulatory_review_candidates,
+)
 from wilq.content.workflow.catalog import (
     ContentInventoryMaterialResponse,
     read_content_inventory_material,
@@ -152,6 +158,9 @@ class ContentDocumentWorkspace(BaseModel):
     document_lineage: ContentDocumentWorkspaceDocumentLineage
     comparison: ContentDocumentWorkspaceComparison
     next_action: ContentDocumentWorkspaceNextAction
+    regulatory_review_candidates: list[ContentRegulatoryReviewCandidate] = Field(
+        default_factory=list
+    )
     secondary_disclosures: list[str] = Field(default_factory=list)
 
 
@@ -182,6 +191,9 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
         document_lineage=build_content_document_lineage(revision_state.latest_revision),
         comparison=_comparison(source_snapshot, revision_state.latest_revision),
         next_action=_next_action(document),
+        regulatory_review_candidates=_regulatory_review_candidates(
+            revision_state.latest_revision
+        ),
         secondary_disclosures=[
             (
                 "Target WordPress może pozostać nieznany: blokuje to dopiero delivery, "
@@ -192,6 +204,22 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
                 "Gutenberga ani the_content."
             ),
         ],
+    )
+
+
+def _regulatory_review_candidates(
+    revision: ContentDraftRevision | None,
+) -> list[ContentRegulatoryReviewCandidate]:
+    service_card_id = None if revision is None else getattr(revision, "service_card_id", None)
+    if service_card_id is None:
+        return []
+    coverage = regulatory_content_coverage(
+        service_card_id=service_card_id,
+        source_facts=ekologus_source_facts(),
+    )
+    return regulatory_review_candidates(
+        service_card_id=service_card_id,
+        coverage=coverage,
     )
 
 

@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 
 import { postContentWorkItemOfficialSourceLineageRebase, type ContentDocumentWorkspace } from "../lib/api";
-import { ContentTextPreparationPanel } from "./ContentTextPreparationPanel";
+import {
+  ContentTextPreparationPanel,
+  RegulatorySourceReviewCandidates
+} from "./ContentTextPreparationPanel";
 import { ContentRevisionRepairPanel } from "./ContentRevisionRepairPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
@@ -80,6 +83,12 @@ export function ContentDocumentWorkspaceCanvas({
         workspace={workspace}
         operatorLabel={operatorLabel}
         onChanged={onWorkspaceChanged}
+      />
+
+      <RegulatorySourceReviewCandidates
+        candidates={workspace.regulatory_review_candidates ?? []}
+        onRecorded={onWorkspaceChanged}
+        title="Źródła urzędowe wymagają decyzji przed uzupełnieniem rewizji"
       />
 
       <nav className="mt-4 flex gap-1 border-b border-line" aria-label="Widok dokumentu">
