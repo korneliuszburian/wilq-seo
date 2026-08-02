@@ -79,8 +79,8 @@ Każda pozycja niżej jest zapisaną propozycją, powiązaną z exact snapshotem
 
 - **Wymaganie:** ryzyka i sankcje (`bdo_risks_and_sanctions`)
 - **Źródło:** [BDO: Sankcje za działanie niezgodne z przepisami](https://bdo.mos.gov.pl/baza-wiedzy/jakie-groza-sankcje-karne-podmiotom-zobowiazanym-do-uzyskania-wpisu-do-rejestru-bdo-za-dzialanie-niezgodne-z-przepisami/)
-- **Propozycja factu:** Za wskazane naruszenia obowiązków związanych z Rejestrem-BDO mogą grozić kara aresztu albo grzywny lub administracyjne kary pieniężne — zależnie od rodzaju naruszenia, od 1 000 zł do 1 000 000 zł, a za transport odpadów bez wpisu od 2 000 zł do 10 000 zł.
-- **Ślad WILQ:** proposal `regulatory_source_fact_proposal_81cd271cf2591f2a08d9d539`; snapshot `regulatory_snapshot_a71060282f0a1b120723e68e`; digest `dfac05a0ea17e206ad87dbc707977018d1aa5608b391799e64bf8b56c720e555`; run `codex_regulatory_source_fact_c57773396c984904b7ec8a0edcb6ea79`.
+- **Propozycja factu:** Źródło wskazuje, że za wybrane naruszenia obowiązków związanych z Rejestrem-BDO mogą grozić kary aresztu albo grzywny oraz administracyjne kary pieniężne, w podanych przypadkach od 1 000 zł do 1 000 000 zł, a przy transporcie odpadów bez wpisu od 2 000 do 10 000 zł.
+- **Ślad WILQ:** proposal `regulatory_source_fact_proposal_b32b9e27255ca6b1a483870d`; snapshot `regulatory_snapshot_b428bc1d128388f8c349ac34`; digest `1c2de4603ea17a3ba151007d565c5ec44733bd39c56628a35a657fe35f44f918`; run `codex_regulatory_source_fact_5b7ed70485814a8aaf80497164338769`.
 
 ## Decyzja ekspercka
 
