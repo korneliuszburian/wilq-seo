@@ -472,6 +472,11 @@ def _run_planning_turn(
             if "missing_cta" in quality_errors
             else "Plan zawiera exact zapytania, ale nie przypisuje żadnego z nich do sekcji."
             if "missing_query_assignments" in quality_errors
+            else "Plan ma dostępne sygnały pomiarowe, ale nie zawiera ich w planie obserwacji."
+            if {
+                "missing_measurement_metrics",
+                "missing_measurement_evidence",
+            }.intersection(quality_errors)
             else "Plan zawiera nagłówki nawigacyjne, promocyjne albo datowane, "
             "które nie są użyteczną strukturą odpowiedzi dla czytelnika."
         )
@@ -600,6 +605,13 @@ def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
         section.query_terms for section in proposal.sections
     ):
         errors.append("missing_query_assignments")
+    if proposal.measurement_metrics and not proposal.measurement_plan.metrics_to_watch:
+        errors.append("missing_measurement_metrics")
+    if (
+        proposal.measurement_baseline_evidence_ids
+        and not proposal.measurement_plan.baseline_evidence_ids
+    ):
+        errors.append("missing_measurement_evidence")
     return list(dict.fromkeys(errors))
 
 
@@ -793,6 +805,8 @@ def _proposal_from_output(
         internal_links=output.internal_links,
         conditional_hypotheses=output.conditional_hypotheses,
         measurement_plan=output.measurement_plan,
+        measurement_metrics=planning_input.measurement_metrics,
+        measurement_baseline_evidence_ids=planning_input.measurement_baseline_evidence_ids,
         evidence_ids=planning_input.evidence_ids,
         source_connectors=planning_input.source_connectors,
         source_material_ids=sorted(
