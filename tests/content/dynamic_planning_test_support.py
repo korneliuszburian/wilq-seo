@@ -103,6 +103,10 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
         assert link_schema["properties"]["evidence_ids"]["items"]["enum"] == (
             candidates[0]["evidence_ids"]
         )
+    if planning_input.get("required_cta_patterns"):
+        assert request.output_schema["$defs"]["ContentPlanningCtaBlock"]["properties"][
+            "copy_direction"
+        ]["enum"] == planning_input["required_cta_patterns"]
     lineage = {"evidence_ids": [evidence_id], "claim_ids": allowed_claims[:1]}
     return {
         "language": "pl-PL",
@@ -130,7 +134,12 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
                     placement=(
                         client.planning_placement
                         if planning_input.get("minimum_cta_blocks", 1) == 1
-                        else cta_placements[index]
+                        else cta_placements[index % len(cta_placements)]
+                    ),
+                    copy_direction=(
+                        planning_input["required_cta_patterns"][index]
+                        if planning_input.get("required_cta_patterns")
+                        else None
                     ),
                 )
                 for index in range(planning_input.get("minimum_cta_blocks", 1))
@@ -218,11 +227,12 @@ def _planning_cta(
     lineage: dict[str, list[str]],
     *,
     placement: str | None = None,
+    copy_direction: str | None = None,
 ) -> dict[str, Any]:
     return {
         "placement": placement or client.planning_placement,
         "purpose": "Przejście do konsultacji bez gwarancji wyniku.",
-        "copy_direction": "Opisz sytuację firmy i poproś o weryfikację.",
+        "copy_direction": copy_direction or "Opisz sytuację firmy i poproś o weryfikację.",
         **lineage,
     }
 

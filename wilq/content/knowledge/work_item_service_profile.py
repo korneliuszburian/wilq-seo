@@ -79,6 +79,7 @@ class ContentWorkItemServiceProfileContext(BaseModel):
     review_action_id: str | None = None
     review_action_label: str | None = None
     minimum_cta_blocks: int = Field(default=1, ge=1, le=4)
+    cta_patterns: list[str] = Field(default_factory=list)
 
     @classmethod
     def not_evaluated(
@@ -182,6 +183,7 @@ def build_content_work_item_service_profile_context(
         review_action_id=None if review_action is None else review_action.action_id,
         review_action_label=None if review_action is None else review_action.label,
         minimum_cta_blocks=_minimum_cta_blocks(match, service_card),
+        cta_patterns=_cta_patterns(match, service_card),
     )
 
 
@@ -195,13 +197,21 @@ def _minimum_cta_blocks(
     enough distinct next-step blocks to cover that contract, while keeping the
     upper bound owned by the public planning schema.
     """
-    cards = [
-        card
-        for card in (service_card, *match.cta_cards)
-        if card is not None
+    return max(1, min(len(_cta_patterns(match, service_card)), 4))
+
+
+def _cta_patterns(
+    match: ContentKnowledgeCardMatch,
+    service_card: object,
+) -> list[str]:
+    cards = [service_card] if service_card is not None else list(match.cta_cards)
+    patterns = [
+        pattern.strip()
+        for card in cards
+        for pattern in getattr(card, "cta_patterns", [])
+        if pattern.strip()
     ]
-    pattern_count = max((len(card.cta_patterns) for card in cards), default=1)
-    return max(1, min(pattern_count, 4))
+    return list(dict.fromkeys(patterns))[:4]
 
 
 def _source_material_ids_for_match(match: ContentKnowledgeCardMatch) -> list[str]:

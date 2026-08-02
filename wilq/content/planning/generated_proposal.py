@@ -548,6 +548,11 @@ def _planning_output_quality_errors(
     )
     if len(output.cta_blocks) < required_cta_blocks:
         errors.append("missing_cta")
+    required_patterns = list(getattr(planning_input, "required_cta_patterns", []))
+    if required_patterns:
+        observed_patterns = [item.copy_direction.strip() for item in output.cta_blocks]
+        if observed_patterns != required_patterns:
+            errors.append("cta_pattern_coverage")
     errors.extend(
         _orphaned_placement_quality_errors(
             sections=output.sections,
@@ -568,6 +573,10 @@ def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
     errors = _planning_heading_quality_errors(section.heading for section in proposal.sections)
     if len(proposal.cta_blocks) < proposal.minimum_cta_blocks:
         errors.append("missing_cta")
+    if proposal.required_cta_patterns:
+        observed_patterns = [item.copy_direction.strip() for item in proposal.cta_blocks]
+        if observed_patterns != proposal.required_cta_patterns:
+            errors.append("cta_pattern_coverage")
     errors.extend(
         _orphaned_placement_quality_errors(
             sections=proposal.sections,
@@ -768,6 +777,7 @@ def _proposal_from_output(
         faq=output.faq,
         cta_blocks=output.cta_blocks,
         minimum_cta_blocks=planning_input.minimum_cta_blocks,
+        required_cta_patterns=planning_input.required_cta_patterns,
         internal_links=output.internal_links,
         conditional_hypotheses=output.conditional_hypotheses,
         measurement_plan=output.measurement_plan,

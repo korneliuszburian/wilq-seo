@@ -155,6 +155,7 @@ class ContentPlanningProposal(BaseModel):
     faq: list[ContentPlanningFaqItem] = Field(default_factory=list)
     cta_blocks: list[ContentPlanningCtaBlock] = Field(default_factory=list)
     minimum_cta_blocks: int = Field(default=1, ge=1, le=4)
+    required_cta_patterns: list[str] = Field(default_factory=list, max_length=4)
     internal_links: list[ContentPlanningInternalLink] = Field(default_factory=list)
     conditional_hypotheses: list[ContentPlanningConditionalHypothesis] = Field(
         default_factory=list
