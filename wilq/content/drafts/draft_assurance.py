@@ -360,7 +360,11 @@ def _deterministic_scope_is_complete(
 ) -> bool:
     """Do not let a critic invent missing scope after profile assertions pass."""
 
-    if check.status != "fail" or check.reason_code != "missing_scope":
+    if check.status != "fail" or check.reason_code not in {
+        "missing_scope",
+        "missing_exception",
+        "not_assessable",
+    }:
         return False
     section_ids = {check.document_section_id} if check.document_section_id else set()
     if not section_ids:
