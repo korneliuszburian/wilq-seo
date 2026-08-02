@@ -541,11 +541,11 @@ def _relevant_source_text(candidate: ContentRegulatorySourceCandidate, source_te
             item[0],
         ),
     )
-    selected = sorted(
+    selected = [
         index
         for index, chunk in ranked[:12]
         if any(term in chunk.casefold() for term in terms)
-    )
+    ]
     if not selected:
         return source_text[:50_000]
     return "\n\n[...fragmenty źródła poza zakresem... ]\n\n".join(

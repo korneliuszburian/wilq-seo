@@ -620,4 +620,5 @@ def test_long_source_context_keeps_profile_assertion_terms() -> None:
 
     assert "15 marca" in selected
     assert "marszałkowi województwa" in selected
+    assert selected.index("15 marca") < 2_000
     assert len(selected) < len(source)
