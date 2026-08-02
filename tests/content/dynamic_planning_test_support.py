@@ -107,6 +107,9 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
         assert request.output_schema["$defs"]["ContentPlanningCtaBlock"]["properties"][
             "copy_direction"
         ]["enum"] == planning_input["required_cta_patterns"]
+    assert request.output_schema["properties"]["cta_blocks"]["minItems"] == planning_input.get(
+        "minimum_cta_blocks", 1
+    )
     lineage = {"evidence_ids": [evidence_id], "claim_ids": allowed_claims[:1]}
     return {
         "language": "pl-PL",

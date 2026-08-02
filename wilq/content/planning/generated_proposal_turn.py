@@ -285,6 +285,12 @@ def content_planning_output_schema(
     _cap_array(properties, "sections", 12)
     _cap_array(properties, "faq", 8)
     _cap_array(properties, "cta_blocks", 4)
+    # The quality gate already owns this invariant after parsing, but the
+    # structured-output boundary must communicate it to Codex as well.  An
+    # empty array is schema-valid only when no CTA is required by the exact
+    # planning input; otherwise it needlessly burns a run before being
+    # rejected downstream.
+    _mapping(properties, "cta_blocks")["minItems"] = planning_input.minimum_cta_blocks
     _cap_array(properties, "conditional_hypotheses", 4)
     _restrict_array(
         _properties(measurement),
