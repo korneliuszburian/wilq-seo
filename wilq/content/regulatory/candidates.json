@@ -32,9 +32,21 @@
       "source_url": "https://bdo.mos.gov.pl/zasady-rejestracji/",
       "source_title": "BDO: Zasady rejestracji i wyłączenia",
       "observed_on": "2026-07-31",
-      "requirement_ids": ["bdo_exemptions", "bdo_risks_and_sanctions"],
+      "requirement_ids": ["bdo_exemptions"],
       "review_status": "review_required",
-      "safe_next_step": "Potwierdź ustawowe wyłączenia i opis sankcji przed zatwierdzeniem faktu źródłowego."
+      "safe_next_step": "Potwierdź ustawowe wyłączenia przed zatwierdzeniem faktu źródłowego."
+    },
+    {
+      "candidate_id": "bdo_sanctions_2026_08_02_r3",
+      "profile_id": "bdo",
+      "profile_version": "2026-07-31-r2",
+      "service_card_ids": ["ekologus_service_bdo_reporting"],
+      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/jakie-groza-sankcje-karne-podmiotom-zobowiazanym-do-uzyskania-wpisu-do-rejestru-bdo-za-dzialanie-niezgodne-z-przepisami/",
+      "source_title": "BDO: Sankcje za działanie niezgodne z przepisami",
+      "observed_on": "2026-08-02",
+      "requirement_ids": ["bdo_risks_and_sanctions"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź zakres sankcji i ich warunki przed zatwierdzeniem factu źródłowego."
     },
     {
       "candidate_id": "bdo_registration_application_2026_07_31_r2",
@@ -97,16 +109,16 @@
       "safe_next_step": "Potwierdź, w których operacjach odpadów komunalnych stosuje się KPOK zamiast KPO."
     },
     {
-      "candidate_id": "bdo_login_access_2026_07_31_r2",
+      "candidate_id": "bdo_login_access_2026_08_02_r3",
       "profile_id": "bdo",
       "profile_version": "2026-07-31-r2",
       "service_card_ids": ["ekologus_service_bdo_reporting"],
-      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/w-jaki-sposob-loguje-sie-uzytkownik-glowny-systemu-bdo/",
-      "source_title": "BDO: W jaki sposób loguje się użytkownik główny systemu BDO?",
-      "observed_on": "2026-07-31",
+      "source_url": "https://bdo.mos.gov.pl/news/logowanie-do-systemu-bdo-i-uwierzytelnienie-uzytkownika-poprzez-krajowy-wezel-identyfikacji-elektronicznej/",
+      "source_title": "BDO: Logowanie i uwierzytelnienie użytkowników systemu",
+      "observed_on": "2026-08-02",
       "requirement_ids": ["bdo_access_and_account"],
       "review_status": "review_required",
-      "safe_next_step": "Potwierdź sposób logowania i rozdział ról przed zatwierdzeniem faktu źródłowego."
+      "safe_next_step": "Potwierdź sposób logowania, powiązanie konta i rozdział ról przed zatwierdzeniem factu źródłowego."
     }
   ]
 }

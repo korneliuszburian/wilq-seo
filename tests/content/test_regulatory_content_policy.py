@@ -200,6 +200,24 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
         "https://bdo.mos.gov.pl/news/przedsiebiorco-pamietaj-o-aktualizacji-danych-w-bdo/",
         "https://bdo.mos.gov.pl/news/odpady-komunalne-kpo-czy-kpok/",
     }
+    candidates_by_requirement = {
+        tuple(candidate.requirement_ids): candidate.source_url
+        for candidate in regulatory_source_candidates()
+        if candidate.profile_id == profile.id and candidate.profile_version == profile.version
+    }
+    assert candidates_by_requirement[("bdo_exemptions",)] == (
+        "https://bdo.mos.gov.pl/zasady-rejestracji/"
+    )
+    assert candidates_by_requirement[("bdo_risks_and_sanctions",)] == (
+        "https://bdo.mos.gov.pl/baza-wiedzy/"
+        "jakie-groza-sankcje-karne-podmiotom-zobowiazanym-do-uzyskania-wpisu-do-rejestru-bdo-"
+        "za-dzialanie-niezgodne-z-przepisami/"
+    )
+    assert candidates_by_requirement[("bdo_access_and_account",)] == (
+        "https://bdo.mos.gov.pl/news/"
+        "logowanie-do-systemu-bdo-i-uwierzytelnienie-uzytkownika-poprzez-krajowy-wezel-"
+        "identyfikacji-elektronicznej/"
+    )
 
 
 def test_review_candidates_are_current_exact_and_never_complete_coverage() -> None:
