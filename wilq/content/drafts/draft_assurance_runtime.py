@@ -78,6 +78,7 @@ def run_regulatory_draft_assurance(
         assessment = ContentDraftAssuranceModelOutput.model_validate_json(result.output_text)
         receipt = validate_draft_assurance_output(
             planning_input=planning_input,
+            proposal=proposal,
             output=output,
             profile=profile,
             assessment=assessment,
@@ -160,7 +161,7 @@ def _invalid_output_code(error: ValueError) -> str:
     message = str(error)
     if "assess every constraint in canonical order" in message:
         return "assurance_check_order"
-    if "must cite a candidate document section" in message:
+    if "must cite a candidate" in message and "section" in message:
         return "assurance_section_mismatch"
     if "must cite exact constraint evidence" in message:
         return "assurance_missing_evidence"

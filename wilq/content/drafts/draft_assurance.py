@@ -25,6 +25,7 @@ from wilq.content.regulatory.policy import (
     regulatory_content_profile,
     regulatory_draft_assurance_constraints,
 )
+from wilq.content.workflow.planning import ContentPlanningProposal
 
 ContentDraftAssuranceStatus = Literal["passed", "failed", "not_applicable"]
 ContentDraftAssuranceCheckStatus = Literal["pass", "fail"]
@@ -227,6 +228,7 @@ def draft_assurance_output_schema(
 def validate_draft_assurance_output(
     *,
     planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
     output: ContentInitialDraftModelOutput,
     profile: ContentRegulatoryProfile,
     assessment: ContentDraftAssuranceModelOutput,
@@ -241,7 +243,7 @@ def validate_draft_assurance_output(
         raise ValueError("Draft assurance must assess every constraint in canonical order.")
     failed_ids: list[str] = []
     for constraint, check in zip(constraints, assessment.checks, strict=True):
-        _validate_check_against_candidate(check, output)
+        _validate_check_against_candidate(check, output, constraint, proposal)
         if check.status == "fail":
             failed_ids.append(constraint.id)
     return ContentDraftAssuranceReceipt(
@@ -256,6 +258,8 @@ def validate_draft_assurance_output(
 def _validate_check_against_candidate(
     check: ContentDraftAssuranceCheckOutput,
     output: ContentInitialDraftModelOutput,
+    constraint: ContentRegulatoryClaimConstraint,
+    proposal: ContentPlanningProposal,
 ) -> None:
     """Reject a critic receipt that contradicts its frozen document verdict."""
 
@@ -265,6 +269,19 @@ def _validate_check_against_candidate(
         and check.document_section_id not in valid_section_ids
     ):
         raise ValueError("Draft assurance must cite a candidate document section.")
+    if check.document_section_id is not None:
+        constraint_section_ids = {
+            section.section_id
+            for section in proposal.sections
+            if set(section.regulatory_requirement_ids).intersection(
+                constraint.requirement_ids
+            )
+        }
+        if check.document_section_id not in constraint_section_ids:
+            raise ValueError(
+                "Draft assurance must cite a candidate section assigned to the "
+                "constraint requirement."
+            )
     if check.status == "pass":
         if check.reason_code != "supported":
             raise ValueError("Draft assurance pass requires the supported reason code.")

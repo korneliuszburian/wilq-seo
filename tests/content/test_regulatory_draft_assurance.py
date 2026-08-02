@@ -23,6 +23,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     regulatory_requirement_assertion_errors,
 )
+from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import ContentDraftRevisionPageAssets
 from wilq.schemas import CodexRun
 
@@ -114,6 +115,17 @@ def _output(body_markdown: str) -> ContentInitialDraftModelOutput:
     )
 
 
+def _proposal() -> ContentPlanningProposal:
+    return ContentPlanningProposal.model_construct(
+        sections=[
+            SimpleNamespace(
+                section_id="kpo",
+                regulatory_requirement_ids=["transport_document"],
+            )
+        ]
+    )
+
+
 def test_assurance_blocks_an_unqualified_kpo_statement_that_phrase_checks_allow() -> None:
     profile = _profile()
     planning_input = _planning_input(profile)
@@ -126,6 +138,7 @@ def test_assurance_blocks_an_unqualified_kpo_statement_that_phrase_checks_allow(
 
     receipt = validate_draft_assurance_output(
         planning_input=planning_input,
+        proposal=_proposal(),
         output=output,
         profile=profile,
         assessment=ContentDraftAssuranceModelOutput(
@@ -153,6 +166,7 @@ def test_assurance_uses_server_owned_evidence_instead_of_critic_selection() -> N
 
     receipt = validate_draft_assurance_output(
             planning_input=planning_input,
+            proposal=_proposal(),
             output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
             profile=profile,
             assessment=ContentDraftAssuranceModelOutput(
@@ -178,6 +192,7 @@ def test_assurance_does_not_require_model_selected_evidence() -> None:
 
     receipt = validate_draft_assurance_output(
             planning_input=planning_input,
+            proposal=_proposal(),
             output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
             profile=profile,
             assessment=ContentDraftAssuranceModelOutput(
@@ -202,6 +217,7 @@ def test_assurance_rejects_a_pass_without_a_document_section() -> None:
     with pytest.raises(ValueError, match="must cite a candidate document section"):
         validate_draft_assurance_output(
             planning_input=_planning_input(profile),
+            proposal=_proposal(),
             output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
             profile=profile,
             assessment=ContentDraftAssuranceModelOutput(
@@ -220,11 +236,59 @@ def test_assurance_rejects_a_pass_without_a_document_section() -> None:
         )
 
 
+def test_assurance_rejects_a_check_bound_to_an_unrelated_document_section() -> None:
+    profile = _profile()
+    output = _output("KPO stosuje się, gdy przekazanie podlega ewidencji.")
+    output = output.model_copy(
+        update={
+            "sections": [
+                *output.sections,
+                ContentInitialDraftSectionOutput(
+                    section_id="other",
+                    heading="Inna sekcja",
+                    body_markdown="Treść niezwiązana z KPO.",
+                ),
+            ]
+        }
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        sections=[
+            SimpleNamespace(
+                section_id="kpo",
+                regulatory_requirement_ids=["transport_document"],
+            ),
+            SimpleNamespace(section_id="other", regulatory_requirement_ids=[]),
+        ]
+    )
+
+    with pytest.raises(ValueError, match="assigned to the constraint requirement"):
+        validate_draft_assurance_output(
+            planning_input=_planning_input(profile),
+            proposal=proposal,
+            output=output,
+            profile=profile,
+            assessment=ContentDraftAssuranceModelOutput(
+                checks=[
+                    {
+                        "constraint_id": "requirement:transport_document",
+                        "status": "pass",
+                        "reason_code": "supported",
+                        "reason": "Warunek został podany.",
+                        "document_section_id": "other",
+                        "evidence_ids": ["ev_kpo"],
+                    }
+                ]
+            ),
+            codex_run_id="codex_content_draft_assurance_1",
+        )
+
+
 def test_assurance_rejects_a_pass_with_a_reason_code_for_a_failure() -> None:
     profile = _profile()
     with pytest.raises(ValueError, match="requires the supported reason code"):
         validate_draft_assurance_output(
             planning_input=_planning_input(profile),
+            proposal=_proposal(),
             output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
             profile=profile,
             assessment=ContentDraftAssuranceModelOutput(
@@ -303,6 +367,7 @@ def test_assurance_accepts_a_section_id_for_a_passing_check() -> None:
     profile = _profile()
     receipt = validate_draft_assurance_output(
         planning_input=_planning_input(profile),
+        proposal=_proposal(),
         output=_output("KPO\n stosuje się, gdy przekazanie odpadów podlega ewidencji."),
         profile=profile,
         assessment=ContentDraftAssuranceModelOutput.model_validate(
@@ -400,7 +465,11 @@ def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypa
     result = initial_full_draft._assure_regulated_draft(
         inputs=initial_full_draft._InitialDraftInputs(
             planning_input=planning_input,
-            proposal=type("Proposal", (), {"proposal_id": "proposal-1"})(),
+            proposal=type(
+                "Proposal",
+                (),
+                {"proposal_id": "proposal-1", "sections": _proposal().sections},
+            )(),
             generation_contract=object(),
         ),
         output=output,
