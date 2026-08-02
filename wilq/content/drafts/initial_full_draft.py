@@ -123,6 +123,16 @@ def generate_initial_full_draft(
         if repaired is not None:
             output, trace = repaired
             blocker = _output_blocker(prepared, output)
+            if blocker is not None:
+                assertion_repair = _repair_regulatory_assertions(
+                    inputs=prepared,
+                    output=output,
+                    blocker=blocker,
+                    client=client,
+                )
+                if assertion_repair is not None:
+                    output, trace = assertion_repair
+                    blocker = _output_blocker(prepared, output)
             if blocker is None:
                 assurance = _assure_regulated_draft(
                     inputs=prepared,
@@ -132,6 +142,16 @@ def generate_initial_full_draft(
                     writer_trace=trace,
                     run_store=run_store,
                     snapshot=snapshot,
+                )
+            else:
+                _finish_run(run_store, run, status="blocked", error=_run_error(blocker))
+                return _blocked_response(
+                    snapshot,
+                    proposal=prepared.proposal,
+                    status="blocked",
+                    run=run,
+                    runtime=trace,
+                    blockers=[blocker],
                 )
     if isinstance(assurance, ContentInitialDraftResponse):
         return assurance
