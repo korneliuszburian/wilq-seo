@@ -10,8 +10,10 @@ from tests.content.dynamic_planning_test_support import (
     PlanningClient,
     configure_planning_harness,
 )
+from wilq.content.knowledge.cards import ContentKnowledgeCard, ContentKnowledgeCardMatch
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
+    _cta_patterns,
 )
 from wilq.content.workflow.api import _gate_candidate_on_service_binding
 from wilq.content.workflow.catalog import inventory_work_item_id
@@ -35,8 +37,8 @@ def test_planning_scope_persists_only_allowed_service_override(
 ) -> None:
     client, _runtime = planning_harness
     work_item_id, snapshot = _snapshot_with_service_override(client)
-    assert snapshot["service_profile_context"]["minimum_cta_blocks"] == 2
-    assert len(snapshot["service_profile_context"]["cta_patterns"]) == 2
+    assert snapshot["service_profile_context"]["minimum_cta_blocks"] == 4
+    assert len(snapshot["service_profile_context"]["cta_patterns"]) == 4
     proposal = snapshot["planning_workspace"]["proposal"]
     candidates = snapshot["service_profile_context"]["service_candidates"]
     recommended = next(candidate for candidate in candidates if candidate["recommended"])
@@ -113,6 +115,25 @@ def test_unbound_service_candidate_cannot_look_plan_ready() -> None:
     assert gated.recommended_mode == "block"
     assert gated.preflight_status == "blocked"
     assert gated.blockers[0].code == "missing_service_binding"
+
+
+def test_cta_pattern_projection_falls_back_to_matched_cta_cards() -> None:
+    service_card = ContentKnowledgeCard.model_construct(cta_patterns=[])
+    cta_card = ContentKnowledgeCard.model_construct(cta_patterns=["reviewed CTA"])
+    match = ContentKnowledgeCardMatch.model_construct(
+        work_item_id="work-item",
+        service_card=service_card,
+        cta_cards=[cta_card],
+    )
+
+    assert _cta_patterns(match, service_card) == ["reviewed CTA"]
+
+
+def test_python_service_profile_rejects_blank_cta_patterns() -> None:
+    payload = ContentWorkItemServiceProfileContext.not_evaluated().model_dump()
+    payload["cta_patterns"] = ["   "]
+    with pytest.raises(ValueError, match="CTA patterns"):
+        ContentWorkItemServiceProfileContext.model_validate(payload)
 
 
 def _snapshot_with_service_override(

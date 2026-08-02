@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.knowledge.cards import (
     ContentKnowledgeCardMatch,
@@ -80,6 +80,12 @@ class ContentWorkItemServiceProfileContext(BaseModel):
     review_action_label: str | None = None
     minimum_cta_blocks: int = Field(default=1, ge=1, le=4)
     cta_patterns: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def require_nonblank_cta_patterns(self) -> ContentWorkItemServiceProfileContext:
+        if any(not pattern.strip() for pattern in self.cta_patterns):
+            raise ValueError("CTA patterns must be non-blank")
+        return self
 
     @classmethod
     def not_evaluated(
@@ -204,7 +210,7 @@ def _cta_patterns(
     match: ContentKnowledgeCardMatch,
     service_card: object,
 ) -> list[str]:
-    cards = [service_card] if service_card is not None else list(match.cta_cards)
+    cards = [card for card in (service_card, *match.cta_cards) if card is not None]
     patterns = [
         pattern.strip()
         for card in cards
