@@ -131,10 +131,13 @@ def test_assurance_blocks_an_unqualified_kpo_statement_that_phrase_checks_allow(
     planning_input = _planning_input(profile)
     output = _output("Każdy transport odpadów wymaga KPO.")
 
-    assert regulatory_requirement_assertion_errors(
-        requirement=profile.requirements[0],
-        text=output.sections[0].body_markdown,
-    ) == []
+    assert (
+        regulatory_requirement_assertion_errors(
+            requirement=profile.requirements[0],
+            text=output.sections[0].body_markdown,
+        )
+        == []
+    )
 
     receipt = validate_draft_assurance_output(
         planning_input=planning_input,
@@ -165,23 +168,23 @@ def test_assurance_uses_server_owned_evidence_instead_of_critic_selection() -> N
     planning_input = _planning_input(profile)
 
     receipt = validate_draft_assurance_output(
-            planning_input=planning_input,
-            proposal=_proposal(),
-            output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
-            profile=profile,
-            assessment=ContentDraftAssuranceModelOutput(
-                checks=[
-                    {
-                        "constraint_id": "requirement:transport_document",
-                        "status": "pass",
-                        "reason_code": "supported",
-                        "reason": "Warunek został podany.",
-                        "document_section_id": "kpo",
-                        "evidence_ids": ["ev_other"],
-                    }
-                ]
-            ),
-            codex_run_id="codex_content_draft_assurance_1",
+        planning_input=planning_input,
+        proposal=_proposal(),
+        output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
+        profile=profile,
+        assessment=ContentDraftAssuranceModelOutput(
+            checks=[
+                {
+                    "constraint_id": "requirement:transport_document",
+                    "status": "pass",
+                    "reason_code": "supported",
+                    "reason": "Warunek został podany.",
+                    "document_section_id": "kpo",
+                    "evidence_ids": ["ev_other"],
+                }
+            ]
+        ),
+        codex_run_id="codex_content_draft_assurance_1",
     )
     assert receipt.status == "passed"
 
@@ -191,23 +194,23 @@ def test_assurance_does_not_require_model_selected_evidence() -> None:
     planning_input = _planning_input(profile)
 
     receipt = validate_draft_assurance_output(
-            planning_input=planning_input,
-            proposal=_proposal(),
-            output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
-            profile=profile,
-            assessment=ContentDraftAssuranceModelOutput(
-                checks=[
-                    {
-                        "constraint_id": "requirement:transport_document",
-                        "status": "pass",
-                        "reason_code": "supported",
-                        "reason": "Warunek został podany.",
-                        "document_section_id": "kpo",
-                        "evidence_ids": [],
-                    }
-                ]
-            ),
-            codex_run_id="codex_content_draft_assurance_1",
+        planning_input=planning_input,
+        proposal=_proposal(),
+        output=_output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
+        profile=profile,
+        assessment=ContentDraftAssuranceModelOutput(
+            checks=[
+                {
+                    "constraint_id": "requirement:transport_document",
+                    "status": "pass",
+                    "reason_code": "supported",
+                    "reason": "Warunek został podany.",
+                    "document_section_id": "kpo",
+                    "evidence_ids": [],
+                }
+            ]
+        ),
+        codex_run_id="codex_content_draft_assurance_1",
     )
     assert receipt.status == "passed"
 
@@ -315,14 +318,14 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
         _output("KPO stosuje się, gdy przekazanie podlega ewidencji."),
     )
 
-    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"][
-        "constraint_id"
-    ]["enum"] == ["requirement:transport_document"]
+    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"]["constraint_id"][
+        "enum"
+    ] == ["requirement:transport_document"]
     assert schema["properties"]["checks"]["minItems"] == 1
     assert schema["properties"]["checks"]["maxItems"] == 1
-    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"][
-        "reason_code"
-    ]["enum"] == [
+    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"]["reason_code"][
+        "enum"
+    ] == [
         "supported",
         "missing_scope",
         "missing_exception",
@@ -331,9 +334,9 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
         "insufficient_source_alignment",
         "not_assessable",
     ]
-    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"][
-        "document_section_id"
-    ]["anyOf"] == [{"enum": ["kpo"]}, {"type": "null"}]
+    assert schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"]["document_section_id"][
+        "anyOf"
+    ] == [{"enum": ["kpo"]}, {"type": "null"}]
 
     with pytest.raises(ValueError, match="unknown requirements"):
         ContentRegulatoryProfile(
@@ -354,7 +357,7 @@ def test_assurance_schema_and_profile_reject_unknown_constraint_requirements() -
         )
 
 
-def test_assurance_schema_binds_each_ordered_check_to_its_requirement_section() -> None:
+def test_assurance_schema_binds_each_check_to_its_requirement_section() -> None:
     profile = _profile()
     planning_input = _planning_input(profile)
     proposal = _proposal()
@@ -368,11 +371,11 @@ def test_assurance_schema_binds_each_ordered_check_to_its_requirement_section() 
     )
 
     checks = schema["properties"]["checks"]
-    assert checks["items"] is False
-    assert checks["prefixItems"][0]["properties"]["constraint_id"] == {
-        "const": "requirement:transport_document"
+    check_variant = checks["items"]["anyOf"][0]
+    assert check_variant["properties"]["constraint_id"] == {
+        "enum": ["requirement:transport_document"]
     }
-    assert checks["prefixItems"][0]["properties"]["document_section_id"] == {
+    assert check_variant["properties"]["document_section_id"] == {
         "anyOf": [{"enum": ["kpo"]}, {"type": "null"}]
     }
 
@@ -435,7 +438,7 @@ def test_profile_rejects_a_custom_constraint_in_the_reserved_requirement_namespa
                     "id": "requirement:transport_document",
                     "label": "collision",
                     "instruction": "collision",
-                    "requirement_ids":["transport_document"],
+                    "requirement_ids": ["transport_document"],
                 }
             ],
         )
@@ -501,17 +504,13 @@ def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypa
         writer_trace=ContentCodexRuntimeTrace(status="completed"),
         run_store=store,
         snapshot=SimpleNamespace(
-            preflight=SimpleNamespace(
-                item=SimpleNamespace(id="content_work_item_regulated")
-            )
+            preflight=SimpleNamespace(item=SimpleNamespace(id="content_work_item_regulated"))
         ),
     )
 
     assert result.code == "draft_assurance_failed"
     assert result.source_codes == ["requirement:transport_document"]
-    assert result.repair_reasons == {
-        "requirement:transport_document": "overbroad_claim"
-    }
+    assert result.repair_reasons == {"requirement:transport_document": "overbroad_claim"}
     assert [run.status for run in store.saved] == ["started", "completed"]
     assert store.saved[-1].error == (
         "draft_assurance_failed|requirement:transport_document:overbroad_claim"

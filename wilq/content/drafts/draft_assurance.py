@@ -51,6 +51,8 @@ _INSTRUCTION = (
     "faktów ani źródeł, nie zatwierdzaj dokumentu, nie twórz ActionObjectu i nie "
     "wykonuj write. Dla każdego wyniku podaj document_section_id sekcji, na której "
     "opierasz ocenę, albo null wyłącznie gdy kandydat nie zawiera takiej treści; "
+    "dla każdego constraintu wybieraj section ID wyłącznie z jego "
+    "constraint_section_bindings w wilq_application_context; "
     "reason_code supported wybieraj tylko dla pass, a dla fail "
     "wybierz missing_scope, missing_exception, unsupported_specific, overbroad_claim, "
     "insufficient_source_alignment albo not_assessable. Nie wybieraj dowodów: "
@@ -143,6 +145,13 @@ def draft_assurance_turn_request(
 ) -> CodexAppServerStructuredTurnRequest:
     """Make a fresh critic request over a frozen writer result and source bundle."""
 
+    constraints = regulatory_draft_assurance_constraints(profile)
+    section_ids_by_constraint = _section_ids_by_constraint(
+        constraints,
+        proposal,
+        output,
+    )
+
     application_context = json.dumps(
         {
             "operation": "assure_regulatory_content_draft",
@@ -152,8 +161,13 @@ def draft_assurance_turn_request(
             "criteria_version": _CRITERIA_VERSION,
             "profile_id": profile.id,
             "profile_version": profile.version,
-            "constraint_ids_in_order": [
-                constraint.id for constraint in regulatory_draft_assurance_constraints(profile)
+            "constraint_ids_in_order": [constraint.id for constraint in constraints],
+            "constraint_section_bindings": [
+                {
+                    "constraint_id": constraint.id,
+                    "allowed_document_section_ids": section_ids_by_constraint[constraint.id],
+                }
+                for constraint in constraints
             ],
             "scope_rules": {
                 "independent_critic": True,
@@ -170,13 +184,10 @@ def draft_assurance_turn_request(
     untrusted_context = json.dumps(
         {
             "candidate_document": output.model_dump(mode="json"),
-            "constraints": [
-                constraint.model_dump(mode="json")
-                for constraint in regulatory_draft_assurance_constraints(profile)
-            ],
+            "constraints": [constraint.model_dump(mode="json") for constraint in constraints],
             "official_source_facts": _source_facts_for_critic(
                 planning_input.regulatory_coverage,
-                regulatory_draft_assurance_constraints(profile),
+                constraints,
             ),
         },
         ensure_ascii=False,
@@ -218,29 +229,21 @@ def draft_assurance_output_schema(
         coverage.evidence_ids,
     )
     if output is not None and proposal is not None:
-        output_section_ids = {item.section_id for item in output.sections}
-        section_ids_by_constraint = {
-            constraint.id: [
-                section.section_id
-                for section in proposal.sections
-                if section.section_id in output_section_ids
-                if any(
-                    requirement_id in section.regulatory_requirement_ids
-                    for requirement_id in constraint.requirement_ids
+        section_ids_by_constraint = _section_ids_by_constraint(
+            expected_constraints,
+            proposal,
+            output,
+        )
+        check_list["items"] = {
+            "anyOf": [
+                _check_schema_for_constraint(
+                    checks,
+                    constraint.id,
+                    section_ids_by_constraint[constraint.id],
                 )
+                for constraint in expected_constraints
             ]
-            for constraint in expected_constraints
         }
-        check_list.pop("items", None)
-        check_list["prefixItems"] = [
-            _check_schema_for_constraint(
-                checks,
-                constraint.id,
-                section_ids_by_constraint[constraint.id],
-            )
-            for constraint in expected_constraints
-        ]
-        check_list["items"] = False
     elif output is not None:
         _mapping(checks, "document_section_id")["anyOf"] = [
             {"enum": [item.section_id for item in output.sections]},
@@ -249,15 +252,37 @@ def draft_assurance_output_schema(
     return schema
 
 
+def _section_ids_by_constraint(
+    constraints: list[ContentRegulatoryClaimConstraint],
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+) -> dict[str, list[str]]:
+    """Return the server-owned document sections eligible for each constraint."""
+
+    output_section_ids = {item.section_id for item in output.sections}
+    return {
+        constraint.id: [
+            section.section_id
+            for section in proposal.sections
+            if section.section_id in output_section_ids
+            if any(
+                requirement_id in section.regulatory_requirement_ids
+                for requirement_id in constraint.requirement_ids
+            )
+        ]
+        for constraint in constraints
+    }
+
+
 def _check_schema_for_constraint(
     check_properties: dict[str, object],
     constraint_id: str,
     section_ids: list[str],
 ) -> dict[str, object]:
-    """Bind one ordered critic check to its exact planned document sections."""
+    """Bind one critic check to its exact planned document sections."""
 
     properties = deepcopy(check_properties)
-    properties["constraint_id"] = {"const": constraint_id}
+    properties["constraint_id"] = {"enum": [constraint_id]}
     properties["document_section_id"] = {
         "anyOf": ([{"enum": section_ids}] if section_ids else []) + [{"type": "null"}]
     }
