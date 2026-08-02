@@ -142,6 +142,12 @@ class ContentPlanningInput(BaseModel):
     required_cta_patterns: list[str] = Field(default_factory=list, max_length=4)
 
     @model_validator(mode="after")
+    def require_nonblank_cta_patterns(self) -> ContentPlanningInput:
+        if any(not pattern.strip() for pattern in self.required_cta_patterns):
+            raise ValueError("Required CTA patterns must be non-blank")
+        return self
+
+    @model_validator(mode="after")
     def require_complete_source_assessments(self) -> ContentPlanningInput:
         validate_source_assessment_membership(self.source_assessments)
         if self.goal == "refresh_existing":

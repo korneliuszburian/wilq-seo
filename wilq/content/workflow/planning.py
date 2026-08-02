@@ -161,6 +161,12 @@ class ContentPlanningProposal(BaseModel):
     cta_blocks: list[ContentPlanningCtaBlock] = Field(default_factory=list)
     minimum_cta_blocks: int = Field(default=1, ge=1, le=4)
     required_cta_patterns: list[str] = Field(default_factory=list, max_length=4)
+
+    @model_validator(mode="after")
+    def require_nonblank_cta_patterns(self) -> ContentPlanningProposal:
+        if any(not pattern.strip() for pattern in self.required_cta_patterns):
+            raise ValueError("Required CTA patterns must be non-blank")
+        return self
     internal_links: list[ContentPlanningInternalLink] = Field(default_factory=list)
     conditional_hypotheses: list[ContentPlanningConditionalHypothesis] = Field(
         default_factory=list

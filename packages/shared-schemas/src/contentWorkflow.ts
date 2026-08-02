@@ -3408,7 +3408,6 @@ const ContentWorkItemServiceProfileContextDefault = {
   source_fact_ids: [],
   source_material_ids: [],
   evidence_ids: [],
-<<<<<<< HEAD
   knowledge_card_ids: [],
   minimum_cta_blocks: 1,
   cta_patterns: []
