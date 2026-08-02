@@ -508,10 +508,35 @@ def _validation_source_codes(error: ValidationError) -> list[str]:
     for detail in error.errors():
         location = ".".join(str(part) for part in detail.get("loc", ())) or "$"
         error_type = str(detail.get("type", "validation_error"))
-        code = f"schema:{location}:{error_type}"[:160]
+        suffix = ""
+        if location == "$" and error_type == "value_error":
+            suffix = f":{_root_validation_reason_code(str(detail.get('msg', '')))}"
+        code = f"schema:{location}:{error_type}{suffix}"[:160]
         if code not in codes:
             codes.append(code)
     return codes[:12]
+
+
+def _root_validation_reason_code(message: str) -> str:
+    """Classify root-model failures without exposing model output text."""
+
+    patterns = (
+        ("section headings must be unique", "duplicate_section_headings"),
+        ("placement must name", "invalid_placement"),
+        ("remove_review_required", "removed_section_placement"),
+        ("every page asset", "missing_page_asset"),
+        ("every faq item", "missing_faq_evidence"),
+        ("every cta block", "missing_cta_evidence"),
+        ("every internal link", "missing_internal_link_evidence"),
+        ("internal-link targets must be unique", "duplicate_internal_link"),
+        ("observation rule", "missing_measurement_observation_rule"),
+        ("success-claim rule", "missing_measurement_success_claim_rule"),
+    )
+    lowered = re.sub(r"\s+", " ", message).strip().lower()
+    for phrase, code in patterns:
+        if phrase in lowered:
+            return code
+    return "root_contract"
 
 
 _HEADING_NOISE_PATTERNS = (
