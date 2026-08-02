@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 import time
+from collections.abc import Iterator
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Literal, cast
@@ -71,8 +72,13 @@ class _FailingPlanningStore(ContentPlanningProposalStore):
 def planning_harness(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-) -> tuple[TestClient, PlanningClient]:
-    return configure_planning_harness(monkeypatch, tmp_path)
+) -> Iterator[tuple[TestClient, PlanningClient]]:
+    try:
+        yield configure_planning_harness(monkeypatch, tmp_path)
+    finally:
+        # Holding/CaptureExecutor tests intentionally do not run the worker;
+        # never leak their in-process claim into the next isolated database.
+        planning_router._PLANNING_ACTIVE_KEYS.clear()
 
 
 def test_dynamic_planning_proposals_are_two_case_and_idempotent(
