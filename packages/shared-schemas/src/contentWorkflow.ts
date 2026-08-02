@@ -446,6 +446,7 @@ export const ContentDocumentWorkspaceDocumentSchema = z.object({
   review_state: z.enum(["unreviewed", "needs_changes", "approved", "rejected", "deferred"]).default("unreviewed"),
   label: z.string(),
   reason: z.string(),
+  source_provenance: z.array(ContentDocumentSourceProvenanceSchema).optional(),
   preview: z.lazy(() => ContentDocumentWorkspaceDocumentPreviewSchema).nullable().optional(),
   revision: z.lazy(() => ContentDraftRevisionSchema).nullable().optional(),
   review: z.lazy(() => ContentDraftRevisionReviewSchema).nullable().optional()
@@ -470,7 +471,6 @@ export const ContentDocumentWorkspaceDocumentSchema = z.object({
   ) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical document review must match its exact revision." });
   }
-  source_provenance: z.array(ContentDocumentSourceProvenanceSchema).optional()
 });
 
 export const ContentDocumentWorkspaceDocumentSectionSchema = z.object({
