@@ -470,6 +470,11 @@ def _run_planning_turn(
         quality_reason = (
             "Plan nie zawiera żadnego bloku CTA wymaganego dla bezpiecznego następnego kroku."
             if "missing_cta" in quality_errors
+            else (
+                "Plan nie obejmuje wszystkich zatwierdzonych wzorców CTA dokładnie "
+                "po jednym razie."
+            )
+            if "cta_pattern_coverage" in quality_errors
             else "Plan zawiera exact zapytania, ale nie przypisuje żadnego z nich do sekcji."
             if "missing_query_assignments" in quality_errors
             else "Plan ma dostępne sygnały pomiarowe, ale nie zawiera ich w planie obserwacji."
@@ -581,7 +586,9 @@ def _planning_output_quality_errors(
     required_patterns = list(getattr(planning_input, "required_cta_patterns", []))
     if required_patterns:
         observed_patterns = [item.copy_direction.strip() for item in output.cta_blocks]
-        if observed_patterns != required_patterns:
+        if len(observed_patterns) != len(required_patterns) or set(observed_patterns) != set(
+            required_patterns
+        ):
             errors.append("cta_pattern_coverage")
     errors.extend(
         _orphaned_placement_quality_errors(
@@ -617,7 +624,9 @@ def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
         errors.append("missing_cta")
     if proposal.required_cta_patterns:
         observed_patterns = [item.copy_direction.strip() for item in proposal.cta_blocks]
-        if observed_patterns != proposal.required_cta_patterns:
+        if len(observed_patterns) != len(proposal.required_cta_patterns) or set(
+            observed_patterns
+        ) != set(proposal.required_cta_patterns):
             errors.append("cta_pattern_coverage")
     errors.extend(
         _orphaned_placement_quality_errors(

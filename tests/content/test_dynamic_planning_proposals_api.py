@@ -517,6 +517,29 @@ def test_planning_output_quality_gate_requires_distinct_reviewed_cta_patterns() 
     ]
 
 
+def test_planning_output_quality_gate_accepts_reviewed_cta_patterns_in_any_order() -> None:
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[ContentPlanningModelSection.model_construct(heading="Zakres")],
+        cta_blocks=[
+            ContentPlanningCtaBlock.model_construct(
+                placement="after_lead", copy_direction="pattern-b"
+            ),
+            ContentPlanningCtaBlock.model_construct(
+                placement="after_content", copy_direction="pattern-a"
+            ),
+        ],
+    )
+    planning_input = SimpleNamespace(
+        minimum_cta_blocks=2,
+        required_cta_patterns=["pattern-a", "pattern-b"],
+        query_portfolio=SimpleNamespace(
+            gsc_query_rows=[], ads_term_rows=[], keyword_planner_rows=[]
+        ),
+    )
+
+    assert _planning_output_quality_errors(output, planning_input=planning_input) == []
+
+
 def test_planning_output_quality_gate_requires_available_measurement_signals() -> None:
     output = ContentPlanningModelOutput.model_construct(
         sections=[ContentPlanningModelSection.model_construct(heading="Zakres")],
