@@ -22,7 +22,8 @@ _INSTRUCTION = (
     "spoza przekazanych source facts i claim policy. CTA ma pomagać w następnym "
     "Jeśli zatwierdzony plan przypisuje sekcji regulatory_requirement_ids, w treści tej "
     "sekcji pokryj wszystkie document_assertions przypisanego wymagania; nie zastępuj "
-    "ich ogólną zachętą do konsultacji. "
+    "ich ogólną zachętą do konsultacji. To jest twardy warunek odbioru dokumentu: "
+    "każdy wymagany assertion musi wystąpić dosłownie w jednej z dopuszczalnych form. "
     "kroku bez gwarancji wyniku. Nie zatwierdzaj tekstu, nie wykonuj write i zawsze "
     "zwróć publish_ready=false. Każde pole ze schema jest obowiązkowe: podaj "
     "language=pl-PL, page_assets, wszystkie sekcje, wszystkie pytania FAQ, wszystkie "
@@ -48,6 +49,9 @@ def initial_full_draft_turn_request(
             "planning_digest": proposal.planning_digest,
             "planning_input_digest": planning_input.planning_input_digest,
             "service_card_id": planning_input.confirmed_service_card_id,
+            "regulatory_document_assertions": _regulatory_document_assertion_context(
+                planning_input
+            ),
             "scope_rules": {
                 "preserve_exact_document_structure": True,
                 "excluded_inventory_sections_are_not_document_targets": True,
@@ -218,6 +222,23 @@ def _regulatory_draft_directive(
         + " | ".join(obligations)
         + "."
     )
+
+
+def _regulatory_document_assertion_context(
+    planning_input: ContentPlanningInput,
+) -> list[dict[str, object]]:
+    """Expose only server-owned assertion policy to the document writer."""
+
+    return [
+        {
+            "requirement_id": requirement.id,
+            "assertion_id": assertion.id,
+            "label": assertion.label,
+            "required_any_of": assertion.required_any_of,
+        }
+        for requirement in planning_input.regulatory_coverage.requirements
+        for assertion in requirement.document_assertions
+    ]
 
 
 def _properties(definition: dict[str, object]) -> dict[str, object]:
