@@ -543,7 +543,10 @@ def _planning_output_quality_errors(
     planning_input: ContentPlanningInput | None = None,
 ) -> list[str]:
     errors = _planning_heading_quality_errors(section.heading for section in output.sections)
-    if not output.cta_blocks:
+    required_cta_blocks = (
+        1 if planning_input is None else getattr(planning_input, "minimum_cta_blocks", 1)
+    )
+    if len(output.cta_blocks) < required_cta_blocks:
         errors.append("missing_cta")
     errors.extend(
         _orphaned_placement_quality_errors(
@@ -563,7 +566,7 @@ def _planning_output_quality_errors(
 
 def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
     errors = _planning_heading_quality_errors(section.heading for section in proposal.sections)
-    if not proposal.cta_blocks:
+    if len(proposal.cta_blocks) < proposal.minimum_cta_blocks:
         errors.append("missing_cta")
     errors.extend(
         _orphaned_placement_quality_errors(
@@ -764,6 +767,7 @@ def _proposal_from_output(
         page_assets=output.page_assets,
         faq=output.faq,
         cta_blocks=output.cta_blocks,
+        minimum_cta_blocks=planning_input.minimum_cta_blocks,
         internal_links=output.internal_links,
         conditional_hypotheses=output.conditional_hypotheses,
         measurement_plan=output.measurement_plan,

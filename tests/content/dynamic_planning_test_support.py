@@ -121,7 +121,14 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
             for heading in inventory_headings
         ],
         "faq": [_planning_faq(query_terms, lineage)],
-        "cta_blocks": [_planning_cta(client, lineage)] if client.planning_cta_blocks else [],
+        "cta_blocks": (
+            [
+                _planning_cta(client, lineage)
+                for _ in range(planning_input.get("minimum_cta_blocks", 1))
+            ]
+            if client.planning_cta_blocks
+            else []
+        ),
         "internal_links": [_planning_link(client, item) for item in candidates],
         "conditional_hypotheses": [],
         "measurement_plan": {

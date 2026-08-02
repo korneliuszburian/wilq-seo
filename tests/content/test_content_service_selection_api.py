@@ -35,6 +35,7 @@ def test_planning_scope_persists_only_allowed_service_override(
 ) -> None:
     client, _runtime = planning_harness
     work_item_id, snapshot = _snapshot_with_service_override(client)
+    assert snapshot["service_profile_context"]["minimum_cta_blocks"] == 2
     proposal = snapshot["planning_workspace"]["proposal"]
     candidates = snapshot["service_profile_context"]["service_candidates"]
     recommended = next(candidate for candidate in candidates if candidate["recommended"])

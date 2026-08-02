@@ -107,6 +107,7 @@ class ContentPlanningInput(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     baseline_cta_direction: str = Field(min_length=1)
+    minimum_cta_blocks: int = Field(default=1, ge=1, le=4)
 
     @model_validator(mode="after")
     def require_complete_source_assessments(self) -> ContentPlanningInput:
@@ -545,6 +546,7 @@ def _planning_payload(
             assessments=source_assessments,
         ),
         "baseline_cta_direction": baseline.cta_direction,
+        "minimum_cta_blocks": service_profile.minimum_cta_blocks,
     }
 
 

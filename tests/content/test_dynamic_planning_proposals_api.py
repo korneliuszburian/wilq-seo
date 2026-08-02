@@ -460,6 +460,29 @@ def test_planning_output_quality_gate_requires_query_to_section_assignment() -> 
     ]
 
 
+def test_planning_output_quality_gate_requires_profile_cta_contract() -> None:
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Zakres doradztwa środowiskowego",
+            )
+        ],
+        cta_blocks=[ContentPlanningCtaBlock.model_construct(placement="after_lead")],
+    )
+
+    assert _planning_output_quality_errors(
+        output,
+        planning_input=SimpleNamespace(
+            minimum_cta_blocks=2,
+            query_portfolio=SimpleNamespace(
+                gsc_query_rows=[],
+                ads_term_rows=[],
+                keyword_planner_rows=[],
+            ),
+        ),
+    ) == ["missing_cta"]
+
+
 def test_changed_input_can_enqueue_replan_when_older_proposal_exists(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
