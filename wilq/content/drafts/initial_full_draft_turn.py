@@ -122,6 +122,15 @@ def regulatory_assertion_repair_turn_request(
     assertions, section_ids = _missing_assertions_for_repair(
         planning_input, proposal, missing_assertion_codes
     )
+    requirement_ids = {item["requirement_id"] for item in assertions}
+    source_facts = [
+        {
+            "summary": fact.extracted_fact,
+            "requirement_ids": fact.regulatory_requirement_ids,
+        }
+        for fact in planning_input.regulatory_coverage.source_facts
+        if requirement_ids.intersection(fact.regulatory_requirement_ids)
+    ]
     return CodexAppServerStructuredTurnRequest(
         instruction=(
             "Zwróć wyłącznie patch body_markdown wskazanych section_id. Uzupełnij "
@@ -144,7 +153,10 @@ def regulatory_assertion_repair_turn_request(
             separators=(",", ":"),
         ),
         untrusted_context=json.dumps(
-            {"candidate_document": candidate.model_dump(mode="json")},
+            {
+                "candidate_document": candidate.model_dump(mode="json"),
+                "approved_official_source_facts": source_facts,
+            },
             ensure_ascii=False,
             sort_keys=True,
             separators=(",", ":"),
