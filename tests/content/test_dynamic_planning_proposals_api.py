@@ -46,7 +46,10 @@ from wilq.content.planning.runtime_contract import (
     planning_job_stale_after_seconds,
 )
 from wilq.content.workflow.catalog import inventory_work_item_id
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.planning import (
+    ContentPlanningMeasurementPlan,
+    ContentPlanningProposal,
+)
 from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import local_state_store
@@ -511,6 +514,30 @@ def test_planning_output_quality_gate_requires_distinct_reviewed_cta_patterns() 
 
     assert _planning_output_quality_errors(output, planning_input=planning_input) == [
         "cta_pattern_coverage"
+    ]
+
+
+def test_planning_output_quality_gate_requires_available_measurement_signals() -> None:
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[ContentPlanningModelSection.model_construct(heading="Zakres")],
+        cta_blocks=[ContentPlanningCtaBlock.model_construct(placement="after_lead")],
+        measurement_plan=ContentPlanningMeasurementPlan.model_construct(
+            metrics_to_watch=[], baseline_evidence_ids=[]
+        ),
+    )
+    planning_input = SimpleNamespace(
+        minimum_cta_blocks=1,
+        required_cta_patterns=[],
+        measurement_metrics=["clicks"],
+        measurement_baseline_evidence_ids=["ev_gsc"],
+        query_portfolio=SimpleNamespace(
+            gsc_query_rows=[], ads_term_rows=[], keyword_planner_rows=[]
+        ),
+    )
+
+    assert _planning_output_quality_errors(output, planning_input=planning_input) == [
+        "missing_measurement_metrics",
+        "missing_measurement_evidence",
     ]
 
 

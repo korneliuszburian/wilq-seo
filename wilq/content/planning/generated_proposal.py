@@ -566,6 +566,18 @@ def _planning_output_quality_errors(
         and not any(section.query_terms for section in output.sections)
     ):
         errors.append("missing_query_assignments")
+    if (
+        planning_input is not None
+        and getattr(planning_input, "measurement_metrics", [])
+        and not output.measurement_plan.metrics_to_watch
+    ):
+        errors.append("missing_measurement_metrics")
+    if (
+        planning_input is not None
+        and getattr(planning_input, "measurement_baseline_evidence_ids", [])
+        and not output.measurement_plan.baseline_evidence_ids
+    ):
+        errors.append("missing_measurement_evidence")
     return list(dict.fromkeys(errors))
 
 
