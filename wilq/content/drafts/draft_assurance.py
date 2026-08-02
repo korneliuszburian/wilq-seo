@@ -138,6 +138,10 @@ def draft_assurance_turn_request(
             "criteria_version": _CRITERIA_VERSION,
             "profile_id": profile.id,
             "profile_version": profile.version,
+            "constraint_ids_in_order": [
+                constraint.id
+                for constraint in regulatory_draft_assurance_constraints(profile)
+            ],
             "scope_rules": {
                 "independent_critic": True,
                 "do_not_approve": True,
@@ -181,9 +185,13 @@ def draft_assurance_output_schema(
     schema = deepcopy(ContentDraftAssuranceModelOutput.model_json_schema())
     _require_all_object_properties(schema)
     checks = _properties(_definition(_mapping(schema, "$defs"), "ContentDraftAssuranceCheckOutput"))
+    expected_constraints = regulatory_draft_assurance_constraints(profile)
     _mapping(checks, "constraint_id")["enum"] = [
-        constraint.id for constraint in regulatory_draft_assurance_constraints(profile)
+        constraint.id for constraint in expected_constraints
     ]
+    check_list = _mapping(_mapping(schema, "properties"), "checks")
+    check_list["minItems"] = len(expected_constraints)
+    check_list["maxItems"] = len(expected_constraints)
     _restrict_array(
         checks,
         "evidence_ids",
