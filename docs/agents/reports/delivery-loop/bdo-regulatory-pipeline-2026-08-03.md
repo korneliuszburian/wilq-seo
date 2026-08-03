@@ -6,7 +6,7 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
 
 - Isolated implementation branch: `feat/regulatory-visible-extraction`
 - Base used for the current repair slice: `0cea8eeb4aabbe512f17b74921667554d0452e87`
-- Current HEAD: `a3c2e81a`
+- Current HEAD: `9260d8e1`
 - Latest cohesive commits:
   - `214c944c` — per-constraint regulatory assurance context
   - `adf2e0b3` — semantic reviewer detects editorial/source artifacts
@@ -20,6 +20,8 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
   - `2a958a9b` — bind semantic context targets to the exact revision section IDs
   - `1df3a3e2` — fail closed when regulated sections lose source-fact coverage
   - `a3c2e81a` — keep active semantic polling proof aligned with the current timeout contract
+  - `52d23c15` — record the final unmutated semantic turn
+  - `9260d8e1` — close the cumulative focused proof gate
 
 ## Exact live BDO lineage
 
