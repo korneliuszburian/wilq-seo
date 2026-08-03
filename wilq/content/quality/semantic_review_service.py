@@ -29,6 +29,7 @@ from wilq.content.quality.semantic_review_guards import (
 from wilq.content.quality.semantic_review_store import (
     ContentSemanticReviewStore,
     SemanticReviewConflict,
+    SemanticReviewDeadlineExpired,
     SemanticReviewStorageActivationRequired,
 )
 from wilq.content.quality.semantic_review_turn import semantic_review_turn_request
@@ -164,60 +165,71 @@ def generate_content_semantic_review(
         return _scope_mismatch_response(
             snapshot, prepared.revision, run, trace, run_store, scope_errors
         )
-    review = _build_review(prepared, request, output, run)
+    return _persist_review(
+        snapshot=snapshot,
+        inputs=prepared,
+        request=request,
+        output=output,
+        run=run,
+        trace=trace,
+        store=store,
+        run_store=run_store,
+    )
+
+
+def _persist_review(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    inputs: _SemanticInputs,
+    request: ContentSemanticReviewRequest,
+    output: ContentSemanticReviewModelOutput,
+    run: CodexRun,
+    trace: ContentCodexRuntimeTrace,
+    store: ContentSemanticReviewStore,
+    run_store: LocalStateStore,
+) -> ContentSemanticReviewResponse:
+    review = _build_review(inputs, request, output, run)
     completed = run.model_copy(
         update={"status": "completed", "completed_at": utc_now(), "error": None}
     )
     try:
         stored = store.save_generated(review, completed)
+    except SemanticReviewDeadlineExpired:
+        return _finish_with_blocker(
+            snapshot, inputs.revision, run, trace,
+            _blocker(
+                "runtime_failed", "Przekroczono czas review semantycznego",
+                "Exact deadline minął przed atomowym zapisem wyniku.",
+                "Uruchom nową próbę review dla tej samej exact rewizji.",
+                source_codes=["semantic_review_timeout"],
+            ), run_store, response_status="failed", run_status="failed"
+        )
     except SemanticReviewStorageActivationRequired:
         return _finish_with_blocker(
-            snapshot,
-            prepared.revision,
-            run,
-            trace,
-            _storage_blocker(),
-            run_store,
+            snapshot, inputs.revision, run, trace, _storage_blocker(), run_store
         )
     except SemanticReviewConflict:
         return _finish_with_blocker(
-            snapshot,
-            prepared.revision,
-            run,
-            trace,
+            snapshot, inputs.revision, run, trace,
             _blocker(
-                "review_conflict",
-                "Review powstał równolegle",
+                "review_conflict", "Review powstał równolegle",
                 "WILQ nie nadpisze immutable review drugim wynikiem.",
                 "Odśwież review widoczne dla bieżącej wersji.",
-            ),
-            run_store,
-            response_status="conflict",
+            ), run_store, response_status="conflict"
         )
     except Exception:
         return _finish_with_blocker(
-            snapshot,
-            prepared.revision,
-            run,
-            trace,
+            snapshot, inputs.revision, run, trace,
             _blocker(
-                "persistence_failed",
-                "Nie zapisano review semantycznego",
+                "persistence_failed", "Nie zapisano review semantycznego",
                 "Atomowy zapis review i terminalnego CodexRun nie powiódł się.",
                 "Sprawdź prywatny store; częściowe review nie jest dostępne.",
-            ),
-            run_store,
-            response_status="failed",
-            run_status="failed",
+            ), run_store, response_status="failed", run_status="failed"
         )
     return ContentSemanticReviewResponse(
-        status="created",
-        work_item_id=stored.work_item_id,
-        revision_id=stored.revision_id,
-        revision_digest=stored.revision_digest,
-        review=stored,
-        run_id=stored.codex_run_id,
-        runtime=trace,
+        status="created", work_item_id=stored.work_item_id,
+        revision_id=stored.revision_id, revision_digest=stored.revision_digest,
+        review=stored, run_id=stored.codex_run_id, runtime=trace,
         safe_next_step=stored.safe_next_step,
     )
 

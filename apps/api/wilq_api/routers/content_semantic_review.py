@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from os import environ
 from typing import Literal
-from uuid import uuid4
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -349,20 +348,42 @@ def _queue_semantic_review(
     client: StdioCodexAppServerClient,
     snapshot_loader: ContentSemanticSnapshotLoader,
 ) -> ContentSemanticReviewResponse:
-    active = _latest_semantic_run(work_item_id, revision_id)
-    if active is not None and active.status == "started":
-        return _generating_response(work_item_id, revision_id, revision.content_digest, active.id)
-    run_id = f"codex_content_semantic_review_{uuid4().hex}"
-    # Publish the queued run before handing it to the worker.  The worker
-    # performs expensive exact-snapshot/planning preflight before its service
-    # creates a run; GET must still expose this exact attempt in that window.
-    _save_queued_semantic_run(
+    claim = content_semantic_review_store().claim_run(
         work_item_id=work_item_id,
         revision_id=revision_id,
-        revision=revision,
-        run_id=run_id,
-        store=local_state_store(),
+        revision_digest=revision.content_digest,
+        endpoint=(
+            f"/api/content/work-items/{work_item_id}/draft-revisions/"
+            f"{revision_id}/semantic-review"
+        ),
+        evidence_ids=[
+            evidence_id
+            for item in (
+                *revision.sections,
+                *revision.faq,
+                *revision.cta_blocks,
+                *revision.internal_links,
+            )
+            for evidence_id in item.evidence_ids
+        ],
+        planning_input_digest=revision.planning_input_digest,
+        timeout_seconds=_semantic_timeout_seconds(),
     )
+    if claim.review is not None:
+        return _existing_review_response(
+            work_item_id,
+            revision_id,
+            revision.content_digest,
+            claim.review,
+            status="idempotent",
+        )
+    if claim.run is None:
+        raise RuntimeError("semantic review claim did not return a run")
+    if not claim.newly_claimed:
+        return _generating_response(
+            work_item_id, revision_id, revision.content_digest, claim.run.id
+        )
+    run_id = claim.run.id
     _SEMANTIC_REVIEW_EXECUTOR.submit(
         _run_queued_semantic_review,
         work_item_id,

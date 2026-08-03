@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 from typing import cast
+from uuid import uuid4
 
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
 from wilq.content.workflow.codex_revision_commit import (
@@ -11,6 +14,7 @@ from wilq.content.workflow.codex_revision_commit import (
     persist_codex_completion,
 )
 from wilq.schemas import CodexRun
+from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
@@ -26,6 +30,17 @@ class SemanticReviewStorageActivationRequired(RuntimeError):
 
 class SemanticReviewConflict(RuntimeError):
     pass
+
+
+class SemanticReviewDeadlineExpired(SemanticReviewConflict):
+    pass
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticReviewClaim:
+    run: CodexRun | None = None
+    review: ContentSemanticReview | None = None
+    newly_claimed: bool = False
 
 
 def content_semantic_review_store() -> ContentSemanticReviewStore:
@@ -128,6 +143,10 @@ class ContentSemanticReviewStore:
                 raise SemanticReviewConflict("Semantic review appeared concurrently.")
             if codex_completion_state(connection, safe_run) != "started":
                 raise SemanticReviewConflict("Semantic review run is already completed.")
+            if safe_run.deadline_at is not None and utc_now() >= safe_run.deadline_at:
+                raise SemanticReviewDeadlineExpired(
+                    "Semantic review deadline expired before atomic commit."
+                )
             connection.execute(
                 """
                 INSERT INTO content_semantic_reviews (
@@ -147,6 +166,82 @@ class ContentSemanticReviewStore:
             )
             persist_codex_completion(connection, safe_run)
         return safe_review
+
+    def claim_run(
+        self,
+        *,
+        work_item_id: str,
+        revision_id: str,
+        revision_digest: str,
+        endpoint: str,
+        evidence_ids: list[str],
+        planning_input_digest: str | None,
+        timeout_seconds: float,
+    ) -> SemanticReviewClaim:
+        """Atomically claim one active semantic run for an exact revision."""
+        from wilq.storage.local_state import LocalStateStore
+
+        LocalStateStore(self.path).status()
+        with self._write_connection() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            review_row = _exact_review_row(
+                connection, work_item_id, revision_id, revision_digest
+            )
+            review = _review_from_row(review_row)
+            if review is not None:
+                return SemanticReviewClaim(review=review)
+            runs = connection.execute(
+                "SELECT payload_json FROM codex_runs ORDER BY started_at DESC, id DESC"
+            ).fetchall()
+            for row in runs:
+                run = CodexRun.model_validate_json(cast(str, row["payload_json"]))
+                if (
+                    run.status == "started"
+                    and run.hook == "content_semantic_review"
+                    and run.planning_input_digest == planning_input_digest
+                    and endpoint in run.used_endpoints
+                ):
+                    if run.deadline_at is not None and utc_now() >= run.deadline_at:
+                        expired = run.model_copy(
+                            update={
+                                "status": "failed",
+                                "completed_at": utc_now(),
+                                "error": "semantic_review_timeout",
+                            }
+                        )
+                        connection.execute(
+                            "UPDATE codex_runs SET started_at = ?, payload_json = ? WHERE id = ?",
+                            (
+                                expired.started_at.isoformat(),
+                                json.dumps(
+                                    expired.model_dump(mode="json"),
+                                    sort_keys=True,
+                                    separators=(",", ":"),
+                                ),
+                                expired.id,
+                            ),
+                        )
+                        continue
+                    return SemanticReviewClaim(run=run)
+            run = CodexRun(
+                id=f"codex_content_semantic_review_{uuid4().hex}",
+                skill="wilq-content-operator",
+                hook="content_semantic_review",
+                source="wilq_api",
+                status="started",
+                used_endpoints=[endpoint],
+                evidence_ids=list(dict.fromkeys(evidence_ids)),
+                planning_input_digest=planning_input_digest,
+                deadline_at=utc_now() + timedelta(seconds=timeout_seconds),
+            )
+            payload_json = json.dumps(
+                run.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
+            )
+            connection.execute(
+                "INSERT INTO codex_runs (id, started_at, payload_json) VALUES (?, ?, ?)",
+                (run.id, run.started_at.isoformat(), payload_json),
+            )
+            return SemanticReviewClaim(run=run, newly_claimed=True)
 
     def _write_connection(self) -> sqlite3.Connection:
         prepare_private_store_path(
@@ -248,6 +343,8 @@ def _validated_models(
 __all__ = [
     "ContentSemanticReviewStore",
     "SemanticReviewConflict",
+    "SemanticReviewDeadlineExpired",
+    "SemanticReviewClaim",
     "SemanticReviewStorageActivationRequired",
     "content_semantic_review_store",
 ]

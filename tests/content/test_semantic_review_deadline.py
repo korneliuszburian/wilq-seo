@@ -1,12 +1,23 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
+from threading import Barrier
 
 import pytest
 
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality import semantic_review_service
+from wilq.content.quality.semantic_review_contracts import (
+    CONTENT_SEMANTIC_DIMENSIONS,
+    ContentSemanticDimensionAssessment,
+    ContentSemanticReview,
+)
 from wilq.content.quality.semantic_review_service import _SemanticInputs
+from wilq.content.quality.semantic_review_store import (
+    ContentSemanticReviewStore,
+    SemanticReviewDeadlineExpired,
+)
 from wilq.content.quality.semantic_run_state import transition_codex_run_if_status
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import ContentDraftRevision
@@ -74,3 +85,84 @@ def test_terminal_transition_cannot_overwrite_completed_run(tmp_path) -> None:
     )
     assert transition_codex_run_if_status(store, failed) is None
     assert store.list_codex_runs()[0] == completed
+
+
+def test_expired_started_run_cannot_commit_review(tmp_path) -> None:
+    now = datetime.now(UTC)
+    db = tmp_path / "state.sqlite3"
+    run_store = LocalStateStore(db)
+    review_store = ContentSemanticReviewStore(db)
+    started = CodexRun(
+        id="codex_content_semantic_review_expired_commit",
+        hook="content_semantic_review",
+        source="wilq_api",
+        status="started",
+        started_at=now - timedelta(seconds=2),
+        deadline_at=now - timedelta(seconds=1),
+        planning_input_digest="b" * 64,
+        used_endpoints=[
+            "/api/content/work-items/work/draft-revisions/"
+            "revision/semantic-review"
+        ],
+    )
+    run_store.save_codex_run(started)
+    dimensions = [
+        ContentSemanticDimensionAssessment(
+            dimension=dimension,
+            status="strong",
+            reason="OK",
+            affected_targets=["whole_document"],
+        )
+        for dimension in CONTENT_SEMANTIC_DIMENSIONS
+    ]
+    review = ContentSemanticReview(
+        review_id="content_semantic_review_expired_commit",
+        work_item_id="work",
+        revision_id="revision",
+        revision_digest="a" * 64,
+        codex_run_id=started.id,
+        status="reviewable",
+        dimensions=dimensions,
+        findings=[],
+        requested_by="reviewer",
+        created_at=now,
+        safe_next_step="Przekaż do review człowieka.",
+    )
+    completed = started.model_copy(
+        update={"status": "completed", "completed_at": now, "error": None}
+    )
+
+    with pytest.raises(SemanticReviewDeadlineExpired):
+        review_store.save_generated(review, completed)
+    assert review_store.for_revision("work", "revision", "a" * 64) is None
+
+
+def test_parallel_claims_share_one_semantic_run(tmp_path) -> None:
+    store = ContentSemanticReviewStore(tmp_path / "state.sqlite3")
+    barrier = Barrier(2)
+    endpoint = "/api/content/work-items/work/draft-revisions/revision/semantic-review"
+
+    def claim():
+        barrier.wait()
+        return store.claim_run(
+            work_item_id="work",
+            revision_id="revision",
+            revision_digest="a" * 64,
+            endpoint=endpoint,
+            evidence_ids=["ev"],
+            planning_input_digest="b" * 64,
+            timeout_seconds=30,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        claims = list(pool.map(lambda _item: claim(), range(2)))
+
+    assert len({claim.run.id for claim in claims if claim.run is not None}) == 1
+    assert sum(claim.newly_claimed for claim in claims) == 1
+    assert len(
+        [
+            run
+            for run in LocalStateStore(store.path).list_codex_runs()
+            if run.status == "started"
+        ]
+    ) == 1
