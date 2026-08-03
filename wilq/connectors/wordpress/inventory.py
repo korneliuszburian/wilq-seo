@@ -10,6 +10,10 @@ import httpx
 from defusedxml import ElementTree
 
 from wilq.connectors.vendor import VendorMetricFact
+from wilq.connectors.wordpress.sitemap_policy import (
+    sitemap_group_for_url,
+    sitemap_url_object,
+)
 from wilq.connectors.wordpress.text import (
     clean_metadata_text,
     html_text,
@@ -209,6 +213,9 @@ def _sitemap_metric_facts(
                 "acf_field_names_json": item.get("acf_field_names_json", ""),
                 "acf_section_count": item.get("acf_section_count", ""),
                 "inventory_source": source,
+                "sitemap_group": item.get("sitemap_group", "other"),
+                "editorial_eligible": item.get("editorial_eligible", "false"),
+                "inventory_scope": item.get("inventory_scope", "other"),
             },
         )
         for item in objects
@@ -517,12 +524,12 @@ def _sitemap_objects_from_xml(client: httpx.Client, xml_text: str) -> list[dict[
     entries = _parse_sitemap_xml(xml_text)
     child_sitemaps = [entry for entry in entries if entry["kind"] == "sitemap"]
     if not child_sitemaps:
-        return [_sitemap_url_object(entry) for entry in entries if entry["kind"] == "url"][
+        return [sitemap_url_object(entry) for entry in entries if entry["kind"] == "url"][
             :WORDPRESS_SITEMAP_URL_LIMIT
         ]
     objects: list[dict[str, str]] = []
     for sitemap in child_sitemaps[:WORDPRESS_SITEMAP_CHILD_LIMIT]:
-        metadata_group = _sitemap_metadata_group(sitemap["loc"])
+        metadata_group = sitemap_group_for_url(sitemap["loc"])
         try:
             response = client.get(sitemap["loc"])
             response.raise_for_status()
@@ -530,7 +537,7 @@ def _sitemap_objects_from_xml(client: httpx.Client, xml_text: str) -> list[dict[
             continue
         child_entries = _parse_sitemap_xml(response.text)
         objects.extend(
-            _sitemap_url_object(entry, metadata_group=metadata_group)
+            sitemap_url_object(entry, metadata_group=metadata_group)
             for entry in child_entries
             if entry["kind"] == "url"
         )
@@ -559,26 +566,6 @@ def _parse_sitemap_xml(xml_text: str) -> list[dict[str, str]]:
                 }
             )
     return entries
-
-
-def _sitemap_url_object(
-    entry: dict[str, str], *, metadata_group: str = "other"
-) -> dict[str, str]:
-    return {
-        "content_type": "sitemap",
-        "content_url": entry["loc"],
-        "modified_gmt": entry.get("lastmod", ""),
-        "_metadata_group": metadata_group,
-    }
-
-
-def _sitemap_metadata_group(sitemap_url: str) -> str:
-    filename = urlparse(sitemap_url).path.rsplit("/", 1)[-1].lower()
-    if filename.startswith("post-sitemap"):
-        return "posts"
-    if filename.startswith("page-sitemap"):
-        return "pages"
-    return "other"
 
 
 def _local_name(tag: str) -> str:

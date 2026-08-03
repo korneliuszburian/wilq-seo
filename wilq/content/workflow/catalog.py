@@ -148,6 +148,8 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
         if fact.name != "content_object_seen":
             continue
         dimensions: dict[str, Any] = fact.dimensions
+        if dimensions.get("editorial_eligible") == "false":
+            continue
         url = str(dimensions.get("content_url") or dimensions.get("canonical_url") or "").strip()
         if not content_is_safe_public_url(url) or url in rows:
             continue
@@ -266,48 +268,12 @@ def _inventory_coverage() -> ContentInventoryCoverage:
     if latest is None:
         return ContentInventoryCoverage()
     summary = latest.metric_summary
-    source_count = _coverage_int(summary.get("sitemap_url_source_count"))
-    returned_count = _coverage_int(summary.get("sitemap_url_returned_count"))
-    public_sitemap_returned_count = _coverage_int(summary.get("public_sitemap_url_count"))
-    public_sitemap_source_count = _coverage_int(summary.get("public_sitemap_url_source_count"))
-    public_sitemap_returned = _coverage_int(summary.get("public_sitemap_url_returned_count"))
-    public_sitemap_limit = _coverage_int(summary.get("public_sitemap_url_limit"))
-    public_sitemap_truncated = _coverage_bool(summary.get("public_sitemap_url_truncated"))
-    limit = _coverage_int(summary.get("sitemap_url_limit"))
-    truncated = _coverage_bool(summary.get("sitemap_url_truncated"))
+    values = _coverage_values(summary)
+    source_count, returned_count, public_sitemap_returned_count = values[:3]
+    public_sitemap_source_count, public_sitemap_returned = values[3:5]
+    public_sitemap_limit, public_sitemap_truncated, limit, truncated = values[5:]
     if not all(isinstance(value, int) for value in (source_count, returned_count, limit)):
-        return ContentInventoryCoverage(
-            status="unknown",
-            returned_count=int(summary.get("sitemap_url_count", 0) or 0),
-            public_sitemap_source_count=(
-                int(public_sitemap_source_count)
-                if isinstance(public_sitemap_source_count, (int, float))
-                else None
-            ),
-            public_sitemap_returned_count=(
-                int(public_sitemap_returned)
-                if isinstance(public_sitemap_returned, (int, float))
-                else (
-                    int(public_sitemap_returned_count)
-                    if isinstance(public_sitemap_returned_count, (int, float))
-                    else None
-                )
-            ),
-            public_sitemap_limit=(
-                int(public_sitemap_limit)
-                if isinstance(public_sitemap_limit, (int, float))
-                else None
-            ),
-            public_sitemap_truncated=(
-                bool(public_sitemap_truncated)
-                if isinstance(public_sitemap_truncated, bool)
-                else None
-            ),
-            caveat=(
-                "Ostatni odczyt nie zapisał liczników coverage; nie traktuj inventory "
-                "jako pełnego."
-            ),
-        )
+        return _unknown_inventory_coverage(summary, values)
     public_coverage_unknown = (
         public_sitemap_source_count is not None
         and public_sitemap_returned is not None
@@ -316,10 +282,57 @@ def _inventory_coverage() -> ContentInventoryCoverage:
         and public_sitemap_returned >= public_sitemap_limit
         and not isinstance(public_sitemap_truncated, bool)
     )
+    return _complete_inventory_coverage(
+        summary,
+        values,
+        public_coverage_unknown,
+    )
+
+
+def _coverage_values(summary: dict[str, Any]) -> tuple[Any, ...]:
+    return (
+        _coverage_int(summary.get("sitemap_url_source_count")),
+        _coverage_int(summary.get("sitemap_url_returned_count")),
+        _coverage_int(summary.get("public_sitemap_url_count")),
+        _coverage_int(summary.get("public_sitemap_url_source_count")),
+        _coverage_int(summary.get("public_sitemap_url_returned_count")),
+        _coverage_int(summary.get("public_sitemap_url_limit")),
+        _coverage_bool(summary.get("public_sitemap_url_truncated")),
+        _coverage_int(summary.get("sitemap_url_limit")),
+        _coverage_bool(summary.get("sitemap_url_truncated")),
+    )
+
+
+def _unknown_inventory_coverage(
+    summary: dict[str, Any], values: tuple[Any, ...]
+) -> ContentInventoryCoverage:
+    public_source, public_returned, public_limit, public_truncated = values[3:7]
+    return ContentInventoryCoverage(
+        status="unknown",
+        returned_count=int(summary.get("sitemap_url_count", 0) or 0),
+        public_sitemap_source_count=(
+            public_source if isinstance(public_source, (int, float)) else None
+        ),
+        public_sitemap_returned_count=(
+            public_returned if isinstance(public_returned, (int, float)) else None
+        ),
+        public_sitemap_limit=(
+            public_limit if isinstance(public_limit, (int, float)) else None
+        ),
+        public_sitemap_truncated=public_truncated if isinstance(public_truncated, bool) else None,
+        caveat="Ostatni odczyt nie zapisał liczników coverage; nie traktuj inventory jako pełnego.",
+    )
+
+
+def _complete_inventory_coverage(
+    summary: dict[str, Any], values: tuple[Any, ...], public_coverage_unknown: bool
+) -> ContentInventoryCoverage:
+    source_count, returned_count, public_returned_count = values[:3]
+    public_source, public_returned, public_limit, public_truncated, limit, truncated = values[3:]
     return ContentInventoryCoverage(
         status=(
             "truncated"
-            if truncated or public_sitemap_truncated is True
+            if truncated or public_truncated is True
             else "unknown"
             if public_coverage_unknown
             else "complete"
@@ -327,34 +340,28 @@ def _inventory_coverage() -> ContentInventoryCoverage:
         source_count=source_count,
         returned_count=returned_count or 0,
         public_sitemap_source_count=(
-            int(public_sitemap_source_count)
-            if isinstance(public_sitemap_source_count, (int, float))
-            else None
+            public_source if isinstance(public_source, (int, float)) else None
         ),
         public_sitemap_returned_count=(
-            int(public_sitemap_returned)
-            if isinstance(public_sitemap_returned, (int, float))
+            int(public_returned)
+            if isinstance(public_returned, (int, float))
             else (
-                int(public_sitemap_returned_count)
-                if isinstance(public_sitemap_returned_count, (int, float))
+                int(public_returned_count)
+                if isinstance(public_returned_count, (int, float))
                 else None
             )
         ),
         public_sitemap_limit=(
-            int(public_sitemap_limit)
-            if isinstance(public_sitemap_limit, (int, float))
-            else None
+            int(public_limit) if isinstance(public_limit, (int, float)) else None
         ),
         public_sitemap_truncated=(
-            bool(public_sitemap_truncated)
-            if isinstance(public_sitemap_truncated, bool)
-            else None
+            bool(public_truncated) if isinstance(public_truncated, bool) else None
         ),
         limit=limit,
         truncated=bool(truncated),
         caveat=(
             "Sitemap przekroczył limit; część adresów wymaga osobnego odczytu."
-            if truncated or public_sitemap_truncated is True
+            if truncated or public_truncated is True
             else (
                 "Publiczna sitemap osiągnęła limit, ale starszy odczyt nie zapisał "
                 "flagi ucięcia; kompletność wymaga ponownego odczytu."
