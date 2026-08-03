@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from os import environ
 from typing import Literal
 from uuid import uuid4
@@ -179,7 +180,20 @@ def _latest_semantic_run(work_item_id: str, revision_id: str) -> CodexRun | None
         for run in local_state_store().list_codex_runs()
         if run.hook == "content_semantic_review" and endpoint in run.used_endpoints
     ]
-    return max(runs, key=lambda run: run.started_at, default=None)
+    latest = max(runs, key=lambda run: run.started_at, default=None)
+    if latest is not None and latest.status == "started":
+        deadline = utc_now() - timedelta(seconds=_DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS)
+        if latest.started_at < deadline:
+            latest = local_state_store().save_codex_run(
+                latest.model_copy(
+                    update={
+                        "status": "failed",
+                        "completed_at": utc_now(),
+                        "error": "semantic_review_timeout",
+                    }
+                )
+            )
+    return latest
 
 
 def _save_queued_semantic_run(

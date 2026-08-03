@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -32,6 +33,7 @@ from wilq.content.quality.semantic_review_turn import (
 )
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
+from wilq.schemas import CodexRun
 from wilq.storage.local_state import local_state_store
 
 pytest_plugins = ("tests.content.test_dynamic_planning_proposals_api",)
@@ -139,6 +141,37 @@ def test_queued_semantic_run_is_visible_before_worker_preflight() -> None:
     assert run.status == "started"
     assert run.planning_input_digest == revision.planning_input_digest
     assert run.evidence_ids == ["ev_exact"]
+
+
+def test_stale_semantic_run_becomes_terminal_after_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    old = CodexRun(
+        id="codex_content_semantic_review_old",
+        hook="content_semantic_review",
+        status="started",
+        started_at=datetime.now(UTC) - timedelta(seconds=301),
+        used_endpoints=[
+            "/api/content/work-items/work/draft-revisions/revision/semantic-review"
+        ],
+    )
+    saved: list[CodexRun] = []
+
+    class Store:
+        def list_codex_runs(self) -> list[CodexRun]:
+            return [old]
+
+        def save_codex_run(self, run: CodexRun) -> CodexRun:
+            saved.append(run)
+            return run
+
+    monkeypatch.setattr(semantic_review_router, "local_state_store", lambda: Store())
+    result = semantic_review_router._latest_semantic_run("work", "revision")
+
+    assert result is not None
+    assert result.status == "failed"
+    assert result.error == "semantic_review_timeout"
+    assert saved == [result]
 
 
 def test_semantic_turn_exposes_regulatory_requirement_coverage() -> None:
