@@ -8,9 +8,13 @@ from wilq.schemas import CodexRun
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import LocalStateStore
 
+LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS = 180.0
 
-def effective_deadline(run: CodexRun, timeout_seconds: float) -> datetime:
-    return run.deadline_at or (run.started_at + timedelta(seconds=timeout_seconds))
+
+def effective_deadline(run: CodexRun) -> datetime:
+    return run.deadline_at or (
+        run.started_at + timedelta(seconds=LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS)
+    )
 
 
 def runtime_error(code: str, source_codes: list[str]) -> str:

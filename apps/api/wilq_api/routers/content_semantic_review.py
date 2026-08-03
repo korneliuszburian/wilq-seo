@@ -239,7 +239,7 @@ def _latest_semantic_run(work_item_id: str, revision_id: str) -> CodexRun | None
     ]
     latest = max(runs, key=lambda run: run.started_at, default=None)
     if latest is not None and latest.status == "started":
-        deadline = effective_deadline(latest, _semantic_timeout_seconds())
+        deadline = effective_deadline(latest)
         if utc_now() >= deadline:
             terminal = latest.model_copy(
                 update={
@@ -501,7 +501,7 @@ def _client_for_queued_deadline(
     if run is None:
         return client
     remaining = (
-        effective_deadline(run, _semantic_timeout_seconds()) - utc_now()
+        effective_deadline(run) - utc_now()
     ).total_seconds()
     if remaining <= 0:
         raise TimeoutError("semantic review deadline expired before Codex turn")

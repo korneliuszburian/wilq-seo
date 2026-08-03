@@ -208,6 +208,41 @@ def test_claim_terminalizes_legacy_started_run_without_deadline(tmp_path) -> Non
     assert persisted.error == "semantic_review_timeout"
 
 
+def test_legacy_deadline_uses_one_conservative_fallback(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("WILQ_SEMANTIC_REVIEW_CODEX_TIMEOUT_SECONDS", "211")
+    db = tmp_path / "state.sqlite3"
+    run_store = LocalStateStore(db)
+    review_store = ContentSemanticReviewStore(db)
+    endpoint = "/api/content/work-items/work/draft-revisions/revision/semantic-review"
+    legacy = CodexRun(
+        id="codex_content_semantic_review_legacy_211",
+        hook="content_semantic_review",
+        source="wilq_api",
+        status="started",
+        started_at=datetime.now(UTC) - timedelta(seconds=190),
+        planning_input_digest="b" * 64,
+        used_endpoints=[endpoint],
+    )
+    run_store.save_codex_run(legacy)
+
+    claim = review_store.claim_run(
+        work_item_id="work",
+        revision_id="revision",
+        revision_digest="a" * 64,
+        endpoint=endpoint,
+        evidence_ids=["ev"],
+        planning_input_digest="b" * 64,
+        timeout_seconds=211,
+    )
+
+    assert claim.newly_claimed is True
+    persisted = next(
+        run for run in run_store.list_codex_runs() if run.id == legacy.id
+    )
+    assert persisted.status == "failed"
+    assert persisted.error == "semantic_review_timeout"
+
+
 def test_commit_timeout_preserves_source_code_in_run_error() -> None:
     saved = []
 

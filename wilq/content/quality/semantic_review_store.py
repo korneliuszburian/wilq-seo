@@ -144,7 +144,7 @@ class ContentSemanticReviewStore:
                 raise SemanticReviewConflict("Semantic review appeared concurrently.")
             if codex_completion_state(connection, safe_run) != "started":
                 raise SemanticReviewConflict("Semantic review run is already completed.")
-            if utc_now() >= effective_deadline(safe_run, 180.0):
+            if utc_now() >= effective_deadline(safe_run):
                 raise SemanticReviewDeadlineExpired(
                     "Semantic review deadline expired before atomic commit."
                 )
@@ -202,7 +202,7 @@ class ContentSemanticReviewStore:
                     and run.planning_input_digest == planning_input_digest
                     and endpoint in run.used_endpoints
                 ):
-                    if utc_now() >= effective_deadline(run, timeout_seconds):
+                    if utc_now() >= effective_deadline(run):
                         expired = run.model_copy(
                             update={
                                 "status": "failed",
