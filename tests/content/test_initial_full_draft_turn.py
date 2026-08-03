@@ -109,6 +109,10 @@ def test_initial_draft_turn_exposes_server_owned_regulatory_assertions() -> None
             "required_any_of": ["rola", "uprawnien"],
         }
     ]
+    compact_proposal = json.loads(request.untrusted_context)["approved_planning_proposal"]
+    assert compact_proposal["planning_digest"] == "b" * 64
+    assert "page_assets" not in compact_proposal
+    assert compact_proposal["sections"][0]["section_id"] == "section_access"
     assert json.loads(request.untrusted_context)["approved_regulatory_facts_by_section"] == [
         {
             "section_id": "section_access",

@@ -88,7 +88,7 @@ def initial_full_draft_turn_request(
     untrusted_context = json.dumps(
         {
             "planning_input": compact_initial_draft_planning_input(planning_input),
-            "approved_planning_proposal": proposal.model_dump(mode="json"),
+            "approved_planning_proposal": compact_initial_draft_proposal(proposal),
             "generation_constraints": generation_contract.model_input.model_dump(mode="json"),
             "document_scope": {
                 "included_section_ids": [
@@ -291,6 +291,39 @@ def compact_initial_draft_planning_input(
         payload["metric_comparisons"] = compact_comparisons
 
     return payload
+
+
+def compact_initial_draft_proposal(
+    proposal: ContentPlanningProposal,
+) -> dict[str, object]:
+    """Keep the writer's editorial contract without replaying page telemetry."""
+
+    payload = proposal.model_dump(mode="json", exclude_none=True)
+    allowed = {
+        "work_item_id",
+        "planning_digest",
+        "proposal_id",
+        "planning_input_digest",
+        "final_canonical_url",
+        "service_card_id",
+        "service_label",
+        "target_reader",
+        "buyer_problem",
+        "buyer_trigger",
+        "search_intent",
+        "angle",
+        "value_proposition",
+        "cta_direction",
+        "sections",
+        "faq",
+        "cta_blocks",
+        "internal_links",
+        "evidence_ids",
+        "source_connectors",
+        "source_material_ids",
+        "knowledge_card_ids",
+    }
+    return {key: value for key, value in payload.items() if key in allowed}
 
 
 def initial_full_draft_output_schema(
