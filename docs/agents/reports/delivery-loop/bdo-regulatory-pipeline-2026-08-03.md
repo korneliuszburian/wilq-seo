@@ -6,7 +6,7 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
 
 - Isolated implementation branch: `feat/regulatory-visible-extraction`
 - Base used for the current repair slice: `0cea8eeb4aabbe512f17b74921667554d0452e87`
-- Current HEAD: `00bb3337`
+- Current HEAD: `2a958a9b` (with the pending deterministic regulatory preflight repair below)
 - Latest cohesive commits:
   - `214c944c` — per-constraint regulatory assurance context
   - `adf2e0b3` — semantic reviewer detects editorial/source artifacts
@@ -16,7 +16,8 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
   - `cf7c4e1b` — run independent draft-assurance checks concurrently and allow a bounded 15-minute run
   - `7e2dbea7` — treat dev editorial maps as eligible and legacy shop/sorbent URLs as commerce-only audit inventory
   - `9ec01b0a` — make semantic reviewer failure-mode mapping explicit
-  - `00bb3337` — add deterministic CTA, query-intent, repetition and source-note guards
+  - `00bb3337` — add deterministic CTA, repetition and source-note guards
+  - `2a958a9b` — bind semantic context targets to the exact revision section IDs
 
 ## Exact live BDO lineage
 
@@ -47,6 +48,7 @@ The revision is `unreviewed`, `publish_ready=false`, and has not been sent to Wo
 - Focused sitemap tests: 4 passed; focused semantic API/guard tests include the deterministic quality guard falsifier. Ruff, complexity audit and `git diff --check` pass for the changed paths. One unrelated polling fixture still assumes an old timeout-store stub and is not claimed as green.
 - A queued semantic POST now becomes visible immediately through GET with the same run ID.
 - A stalled semantic run is terminalized as `failed` after the configured deadline; it cannot remain `generating` forever.
+- The final in-memory behavioral suite uses the exact live revision/proposal/planning digest and 7 controlled mutations. All 7 transport turns completed; every mutation became `needs_changes` with exact revision-section or CTA/whole-document targets. The transient result is retained in `docs/agents/runs/delivery-loop/bdo-20260803/semantic-mutation-suite-final.json` (ignored runtime artifact, not product state).
 
 ## Semantic review state
 
@@ -58,7 +60,7 @@ The running API reports 9/12 configured connectors: Google Ads, Search Console, 
 
 ## Remaining acceptance work
 
-1. Re-run the behavioral mutation suite for missing requirement answers, scope/exception loss, term/amount/procedure changes, CTA defects, query mismatch, and repetition/source-artifact slop after the deterministic guards; any remaining model-only misses stay open rather than being presented as passing.
+1. Commit and re-run the deterministic regulatory source-fact preflight; the current in-memory suite now catches all 7 targeted mutations (missing requirement, scope/exception, term/procedure, CTA, query mismatch, repetition and source-style slop) without persistence or vendor writes.
 2. Export exact revision, planning proposal/input, source facts/reviews, assurance receipts, semantic request/response, and digests into a reviewable transient run artifact.
 3. Obtain separate human review for legal/content accuracy. `reviewable` is not approval.
 

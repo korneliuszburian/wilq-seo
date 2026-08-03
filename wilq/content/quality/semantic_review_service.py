@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal, cast
@@ -430,11 +431,73 @@ def _apply_deterministic_quality_guards(
         str(section.section_id): section.body_markdown.strip().casefold()
         for section in inputs.revision.sections
     }
+    coverage = inputs.planning_input.regulatory_coverage
+    if coverage is not None:
+        fact_by_id = {fact.source_id: fact for fact in coverage.source_facts}
+        coverage_by_requirement = {
+            item.requirement_id: item for item in coverage.requirement_coverage
+        }
+        for revision_section, proposal_section in zip(
+            inputs.revision.sections,
+            inputs.proposal.sections,
+            strict=False,
+        ):
+            requirement_ids = getattr(proposal_section, "regulatory_requirement_ids", [])
+            if not requirement_ids:
+                continue
+            body_tokens = _semantic_tokens(revision_section.body_markdown)
+            fact_tokens = set()
+            for requirement_id in requirement_ids:
+                binding = coverage_by_requirement.get(requirement_id)
+                if binding is None:
+                    continue
+                for fact_id in binding.source_fact_ids:
+                    fact = fact_by_id.get(fact_id)
+                    if fact is not None:
+                        fact_tokens.update(_semantic_tokens(fact.extracted_fact))
+            if fact_tokens and len(body_tokens & fact_tokens) < 3:
+                issues.append(
+                    (
+                        "credibility",
+                        str(revision_section.section_id),
+                        (
+                            "Sekcja regulacyjna nie zachowuje wystarczającego "
+                            "pokrycia zatwierdzonych source facts."
+                        ),
+                    )
+                )
+            query_tokens = {
+                token
+                for term in proposal_section.query_terms
+                for token in _semantic_tokens(str(term))
+            }
+            if (
+                query_tokens
+                and len(body_tokens) < 15
+                and not body_tokens.intersection(query_tokens)
+            ):
+                issues.append(
+                    (
+                        "search_intent_fit",
+                        str(revision_section.section_id),
+                        "Sekcja nie odpowiada zatwierdzonej mapie zapytań.",
+                    )
+                )
     normalized_bodies = [body for body in section_bodies.values() if body]
     if len(normalized_bodies) != len(set(normalized_bodies)):
         issues.append(
             ("repetition", "whole_document", "Dokument zawiera powtórzone całe sekcje.")
         )
+    for section_id, body in section_bodies.items():
+        paragraphs = [part.strip() for part in re.split(r"\n+", body) if part.strip()]
+        if len(paragraphs) > 1 and len(paragraphs) != len(set(paragraphs)):
+            issues.append(
+                (
+                    "repetition",
+                    section_id,
+                    "Sekcja zawiera powtórzony akapit lub odpowiedź.",
+                )
+            )
     all_text = "\n".join(section_bodies.values())
     if any(
         marker in all_text
@@ -502,6 +565,30 @@ def _apply_deterministic_quality_guards(
     if not issues or len(findings) == len(output.findings):
         return output
     return output.model_copy(update={"dimensions": dimensions, "findings": findings})
+
+
+_SEMANTIC_STOPWORDS = frozenset(
+    {
+        "albo",
+        "który",
+        "która",
+        "które",
+        "przez",
+        "może",
+        "jest",
+        "się",
+        "dla",
+        "jego",
+    }
+)
+
+
+def _semantic_tokens(value: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-ząćęłńóśźż0-9]+", value.casefold())
+        if len(token) >= 4 and token not in _SEMANTIC_STOPWORDS
+    }
 
 
 def _scope_errors(
