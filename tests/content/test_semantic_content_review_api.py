@@ -28,6 +28,8 @@ from wilq.content.planning.dynamic_input import (
 )
 from wilq.content.quality import semantic_review_store as semantic_review_store_module
 from wilq.content.quality.semantic_review_turn import (
+    compact_semantic_review_planning_input,
+    compact_semantic_review_proposal,
     semantic_review_output_schema,
     semantic_review_turn_request,
 )
@@ -217,6 +219,66 @@ def test_semantic_turn_exposes_regulatory_requirement_coverage() -> None:
         }
     ]
     assert "regulatory_coverage.requirements" in request.instruction
+
+
+def test_semantic_payload_keeps_regulatory_lineage_without_duplicate_page_telemetry() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        planning_input_digest="d" * 64,
+        regulatory_coverage={
+            "profile_id": "bdo_profile",
+            "profile_version": "2026-08-03",
+            "requirements": [{"id": "registration", "label": "Rejestracja"}],
+            "requirement_coverage": [
+                {
+                    "requirement_id": "registration",
+                    "source_fact_ids": ["fact_registration"],
+                    "evidence_ids": ["ev_registration"],
+                }
+            ],
+            "source_facts": [
+                {
+                    "source_id": "fact_registration",
+                    "source_url_or_path": "https://bdo.mos.gov.pl/zasady-rejestracji/",
+                    "extracted_fact": "Wymagany wpis zależy od działalności.",
+                    "scope": "registration",
+                    "freshness_date": "2026-08-03",
+                    "review_status": "approved",
+                    "evidence_ids": ["ev_registration"],
+                    "regulatory_requirement_ids": ["registration"],
+                    "official_source": True,
+                }
+            ],
+        }
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        sections=[
+            {
+                "section_id": "section_registration",
+                "heading": "Kto podlega wpisowi?",
+                "purpose": "Odpowiedź dla firmy",
+                "reader_question": "Kogo dotyczy obowiązek?",
+                "query_terms": ["kto musi mieć BDO"],
+                "evidence_ids": ["ev_registration"],
+                "regulatory_requirement_ids": ["registration"],
+                "page_assets": {"should_not_be_forwarded": True},
+            }
+        ],
+        page_assets=[{"should_not_be_forwarded": True}],
+    )
+
+    compact_input = compact_semantic_review_planning_input(planning_input)
+    compact_proposal = compact_semantic_review_proposal(proposal)
+
+    assert compact_input["regulatory_coverage"]["source_facts"][0]["evidence_ids"] == [
+        "ev_registration"
+    ]
+    assert "page_assets" not in compact_proposal
+    assert compact_proposal["sections"][0]["regulatory_requirement_ids"] == [
+        "registration"
+    ]
+    assert "should_not_be_forwarded" not in json.dumps(
+        compact_proposal, ensure_ascii=False
+    )
 
 
 def test_full_draft_model_envelope_is_compact_but_digest_bound(

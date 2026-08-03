@@ -176,7 +176,11 @@ def compact_semantic_review_planning_input(
         "evidence_ids",
         "source_connectors",
     }
-    return {key: value for key, value in payload.items() if key in allowed}
+    projected = {key: value for key, value in payload.items() if key in allowed}
+    coverage = projected.get("regulatory_coverage")
+    if isinstance(coverage, dict):
+        projected["regulatory_coverage"] = _compact_regulatory_coverage(coverage)
+    return projected
 
 
 def compact_semantic_review_proposal(
@@ -210,7 +214,59 @@ def compact_semantic_review_proposal(
         "source_material_ids",
         "knowledge_card_ids",
     }
-    return {key: value for key, value in payload.items() if key in allowed}
+    projected = {key: value for key, value in payload.items() if key in allowed}
+    projected.pop("page_assets", None)
+    projected["sections"] = [
+        {
+            key: section[key]
+            for key in (
+                "section_id",
+                "heading",
+                "purpose",
+                "reader_question",
+                "query_terms",
+                "evidence_ids",
+                "regulatory_requirement_ids",
+            )
+            if key in section
+        }
+        for section in projected.get("sections", [])
+    ]
+    return projected
+
+
+def _compact_regulatory_coverage(coverage: dict[str, object]) -> dict[str, object]:
+    """Keep legal assertions and lineage while dropping duplicate model fields."""
+
+    allowed = {
+        "profile_id",
+        "profile_version",
+        "requirements",
+        "requirement_coverage",
+        "source_fact_ids",
+        "evidence_ids",
+    }
+    projected = {key: coverage[key] for key in allowed if key in coverage}
+    projected["source_facts"] = [
+        {
+            key: fact[key]
+            for key in (
+                "source_id",
+                "source_url_or_path",
+                "extracted_fact",
+                "scope",
+                "freshness_date",
+                "review_status",
+                "evidence_ids",
+                "regulatory_requirement_ids",
+                "official_source",
+            )
+            if key in fact
+        }
+        for fact in coverage.get("source_facts", [])
+        if isinstance(fact, dict)
+    ]
+    return projected
 
 
 def _properties(definition: dict[str, object]) -> dict[str, object]:
