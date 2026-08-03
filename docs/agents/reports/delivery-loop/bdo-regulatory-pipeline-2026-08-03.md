@@ -6,7 +6,7 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
 
 - Isolated implementation branch: `feat/regulatory-visible-extraction`
 - Base used for the current repair slice: `0cea8eeb4aabbe512f17b74921667554d0452e87`
-- Current HEAD: `2a958a9b` (with the pending deterministic regulatory preflight repair below)
+- Current HEAD: `1df3a3e2`
 - Latest cohesive commits:
   - `214c944c` — per-constraint regulatory assurance context
   - `adf2e0b3` — semantic reviewer detects editorial/source artifacts
@@ -18,6 +18,7 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
   - `9ec01b0a` — make semantic reviewer failure-mode mapping explicit
   - `00bb3337` — add deterministic CTA, repetition and source-note guards
   - `2a958a9b` — bind semantic context targets to the exact revision section IDs
+  - `1df3a3e2` — fail closed when regulated sections lose source-fact coverage
 
 ## Exact live BDO lineage
 
@@ -60,9 +61,8 @@ The running API reports 9/12 configured connectors: Google Ads, Search Console, 
 
 ## Remaining acceptance work
 
-1. Commit and re-run the deterministic regulatory source-fact preflight; the current in-memory suite now catches all 7 targeted mutations (missing requirement, scope/exception, term/procedure, CTA, query mismatch, repetition and source-style slop) without persistence or vendor writes.
-2. Export exact revision, planning proposal/input, source facts/reviews, assurance receipts, semantic request/response, and digests into a reviewable transient run artifact.
-3. Obtain separate human review for legal/content accuracy. `reviewable` is not approval.
+1. Export exact revision, planning proposal/input, source facts/reviews, assurance receipts, semantic request/response, and digests into a reviewable transient run artifact.
+2. Obtain separate human review for legal/content accuracy. `reviewable` is not approval.
 
 ## Boundaries
 
