@@ -41,7 +41,9 @@ ContentSemanticSnapshotLoader = Callable[
 ]
 
 _SEMANTIC_REVIEW_EXECUTOR = ThreadPoolExecutor(
-    max_workers=1,
+    # A Codex subprocess can outlive its asyncio timeout during teardown. One
+    # stale worker must not monopolize the queue after its run is terminalized.
+    max_workers=2,
     thread_name_prefix="wilq-content-review",
 )
 _DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS = 180.0
