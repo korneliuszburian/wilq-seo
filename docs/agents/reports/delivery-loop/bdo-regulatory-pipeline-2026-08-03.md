@@ -53,7 +53,7 @@ The revision is `unreviewed`, `publish_ready=false`, and has not been sent to Wo
 
 ## Semantic review state
 
-The fresh semantic run for the exact revision is `content_semantic_review_8d2c19d3daa6406596d772b3c67b7237`, status `reviewable`, with 9 dimensions and 0 findings. Its request/response is retained in `docs/agents/runs/delivery-loop/bdo-20260803/semantic-review-fresh.json`. Human review remains required; `reviewable` is not legal or publication approval.
+The fresh semantic turn after target binding and deterministic guards is `reviewable` with 9 dimensions and 0 findings for the same exact revision/planning digest. Its transient result is retained in `docs/agents/runs/delivery-loop/bdo-20260803/semantic-review-final.json`; the prior persisted review remains immutable and is not overwritten. Human review remains required; `reviewable` is not legal or publication approval.
 
 ## Runtime configuration
 
