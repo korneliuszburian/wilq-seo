@@ -6,57 +6,58 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
 
 - Isolated implementation branch: `feat/regulatory-visible-extraction`
 - Base used for the current repair slice: `0cea8eeb4aabbe512f17b74921667554d0452e87`
-- Current HEAD: `7164e837`
-- Subsequent runtime repairs: `1d28b136` (current branch HEAD)
+- Current HEAD: `cf7c4e1b`
 - Latest cohesive commits:
   - `214c944c` — per-constraint regulatory assurance context
   - `adf2e0b3` — semantic reviewer detects editorial/source artifacts
   - `3a4539cf` — queued semantic review is visible before worker preflight
   - `7164e837` — stale semantic runs become terminal after deadline
+  - `102e89cd` — classify commerce sitemap maps and exclude them from editorial catalog
+  - `cf7c4e1b` — run independent draft-assurance checks concurrently and allow a bounded 15-minute run
 
 ## Exact live BDO lineage
 
 - Work item: `content_work_item_content_decision_https___www_ekologus_pl_bdo_co_musi_wiedziec_przedsiebiorca`
 - Service: `ekologus_service_bdo_reporting`
-- Planning input digest: `9b6440a3d161372d60df91ccc3d5cb25a07a31660fe91beae4924a7188ef2d0b`
-- Planning digest: `16514fb2b9cf95dd0389bbbd02bf1d01219634f17138991bf234645eb9434559`
-- Proposal: `content_planning_proposal_8d03f0744e4d432ab64fcff8774d7fe0`
-- Initial-draft run: `codex_content_initial_draft_8470e329d2ed40a982dbdac9f4d30083`
-- Exact revision: `content_revision_6ee42f01b97b4a25814b0665f26e9fab`
-- Content digest: `6570099bf08c1f2625de40d2cb6b6fa3118a5f85736e25f000c08fdb4a200f6e`
+- Planning input digest: `bcde37bf6ed6068287a70a6b13847bc5d24d8cffeda0206b8eef29572a78f26b`
+- Planning digest: `0c3515c3ddf720d1bc51ce7d26fbdf2530c7bd62d34e633193c728d093d76f40`
+- Proposal: `content_planning_proposal_2f1047ef9c2c4f7fb00c7191ae5b4436`
+- Initial-draft run: `codex_content_initial_draft_b5a5b878513748e890949fbf662b341f`
+- Exact revision: `content_revision_6b801326be75414186dc4f9f79b05139`
+- Content digest: `d13459d19d50b52e31a9809d8e395b0c25e4275a94db422af56c60d9f191289e`
 
 The revision is `unreviewed`, `publish_ready=false`, and has not been sent to WordPress.
 
 ## Evidence state at planning
 
-- WordPress and GSC: `used`; GSC carries exact query rows and evidence IDs.
+- WordPress and GSC: `used`; GSC carries 8 exact query rows and evidence IDs.
 - GA4: `blocked`, `settling/unverified`; no GA4 values are treated as used planning evidence.
 - Google Ads, Ahrefs, Keyword Planner: explicit `missing`; no synthetic metrics are added.
 - Merchant, Localo, social: `not_applicable` for this page.
-- Regulatory coverage: 8/8 requirements, 12 approved source facts.
+- Regulatory coverage: 8/8 requirements, 10 approved source facts in the current planning input.
+- Public sitemap audit: 808 URLs total (posts 116, pages 24, products 564, training 17, training-close 2, career 4, category 9, product_cat 72). Product and product-category URLs remain in raw connector evidence but are marked `editorial_eligible=false`, so shop/sorbent URLs cannot become editorial refresh candidates.
 
 ## Runtime proof
 
-- Earlier assurance attempts blocked real defects (`overbroad_claim`, `insufficient_source_alignment`).
-- The per-constraint assurance run completed and created the exact revision only after those checks passed.
+- Earlier assurance attempts blocked real defects (`overbroad_claim`, `insufficient_source_alignment`) and one generated draft failed the deterministic full-name assertion without persisting a revision.
+- The current per-constraint assurance run completed in the new bounded parallel executor and created the exact revision only after those checks passed.
 - Focused assurance/source tests: 79 passed before the later semantic-runtime slice; current focused semantic tests: 6 passed, Ruff and complexity audit passed, `git diff --check` passed. Commit `0a2c7925` compacts semantic context while retaining regulatory lineage and adds a payload falsifier.
 - A queued semantic POST now becomes visible immediately through GET with the same run ID.
 - A stalled semantic run is terminalized as `failed` after the configured deadline; it cannot remain `generating` forever.
 
 ## Semantic review state
 
-The first semantic run was `reviewable` with 9 dimensions and no findings, but manual inspection found duplicated source-style paragraphs in the draft. The reviewer prompt now explicitly checks repeated paragraphs, source-attribution narration, and pasted working notes. Fresh API retries are now visible and terminalize instead of becoming zombies, but the current full semantic app-server turn has timed out; no new canonical review has replaced the immutable first review. A transient fresh turn artifact records that timeout under `docs/agents/runs/delivery-loop/bdo-20260803/semantic-fresh-transient.json`. A new retry `codex_content_semantic_review_7824147152d74860b92cd66e4de356ac` was queued, then the local stack was restarted; its worker result still needs verification.
+The fresh semantic run for the exact revision is `content_semantic_review_8d2c19d3daa6406596d772b3c67b7237`, status `reviewable`, with 9 dimensions and 0 findings. Its request/response is retained in `docs/agents/runs/delivery-loop/bdo-20260803/semantic-review-fresh.json`. Human review remains required; `reviewable` is not legal or publication approval.
 
-## Runtime configuration blocker
+## Runtime configuration
 
-The running API reports `openai_codex` as the only configured connector. Google Ads, Search Console, GA4, Merchant Center, Ahrefs, Localo, both WordPress sites, LinkedIn, and Facebook report missing credentials; Google Sheets is disabled. The source checkout contains a private `.env`, but the isolated worktree running this proof does not, so the runtime cannot see those values. No credential values are copied into this packet. This is an environment handoff blocker, not a content-contract failure.
+The running API reports 9/12 configured connectors: Google Ads, Search Console, GA4, Merchant Center, Ahrefs, Localo, both WordPress sites and Codex. LinkedIn and Facebook remain unconfigured; Google Sheets is disabled. No credential values are copied into this packet.
 
 ## Remaining acceptance work
 
-1. Obtain a fresh semantic result for the exact revision after the prompt/runtime repairs (the existing immutable review is pre-prompt-repair and cannot be treated as that proof).
-2. Run the behavioral mutation suite for missing requirement answers, scope/exception loss, term/amount/procedure changes, CTA defects, query mismatch, and repetition/source-artifact slop.
-3. Export the exact revision, planning proposal/input, source facts/reviews, assurance receipts, semantic request/response, and digests into a reviewable transient run artifact.
-4. Obtain separate human review for legal/content accuracy. `reviewable` is not approval.
+1. Run the behavioral mutation suite for missing requirement answers, scope/exception loss, term/amount/procedure changes, CTA defects, query mismatch, and repetition/source-artifact slop.
+2. Export exact revision, planning proposal/input, source facts/reviews, assurance receipts, semantic request/response, and digests into a reviewable transient run artifact.
+3. Obtain separate human review for legal/content accuracy. `reviewable` is not approval.
 
 ## Boundaries
 
