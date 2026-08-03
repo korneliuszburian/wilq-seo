@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_initial_draft
+from wilq.schemas import CodexRun
 
 
 def test_initial_draft_status_get_avoids_heavy_snapshot_loader(monkeypatch) -> None:
@@ -257,6 +258,66 @@ def test_initial_draft_status_uses_latest_generated_plan(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.json()["proposal_id"] == "approved-plan-proposal"
+
+
+def test_initial_draft_status_terminalizes_a_stalled_current_run(monkeypatch) -> None:
+    app = FastAPI()
+    endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
+    stale_run = CodexRun(
+        id="stalled-initial-draft",
+        hook="content_initial_full_draft",
+        status="started",
+        started_at=datetime.now(UTC) - timedelta(seconds=181),
+        used_endpoints=[endpoint],
+        proposal_id="current-proposal",
+        planning_input_digest="1" * 64,
+    )
+    saved: list[CodexRun] = []
+
+    class LocalState:
+        def list_codex_runs(self):
+            return [stale_run]
+
+        def save_codex_run(self, run: CodexRun) -> CodexRun:
+            saved.append(run)
+            return run
+
+    class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return SimpleNamespace(
+                proposal_id="current-proposal",
+                planning_input_digest="1" * 64,
+                generation_status="codex_generated",
+            )
+
+    class WorkflowStore:
+        def load_draft_revision_state(self, _work_item_id: str):
+            return SimpleNamespace(latest_revision=None)
+
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_planning_proposal_store",
+        lambda: ProposalStore(),
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_workflow_store",
+        lambda: WorkflowStore(),
+    )
+    content_initial_draft.register_content_initial_draft_route(
+        app,
+        snapshot_loader=lambda _work_item_id: (_ for _ in ()).throw(
+            AssertionError("status GET must remain snapshot-free")
+        ),
+    )
+
+    response = TestClient(app).get(endpoint)
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "failed"
+    assert response.json()["blockers"][0]["code"] == "runtime_failed"
+    assert saved and saved[0].error == "initial_draft_timeout"
 
 
 def test_initial_draft_status_blocks_old_revision_when_newer_planning_job_exists(

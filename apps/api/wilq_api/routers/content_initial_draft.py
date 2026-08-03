@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from typing import Literal
 from uuid import uuid4
 
@@ -36,9 +37,13 @@ ContentInitialDraftSnapshotLoader = Callable[
 ]
 
 _INITIAL_DRAFT_EXECUTOR = ThreadPoolExecutor(
-    max_workers=1,
+    # Assurance may spend minutes in a Codex subprocess. A stale worker must
+    # not monopolize the queue and prevent a later exact proposal from being
+    # retried.
+    max_workers=2,
     thread_name_prefix="wilq-content-draft",
 )
+_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 180.0
 
 _INITIAL_DRAFT_BLOCKER_CODES = {
     "planning_not_ready",
@@ -226,7 +231,7 @@ def _latest_run_for_proposal(
     if proposal is None:
         return None
     endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
-    return max(
+    latest = max(
         (
             run
             for run in local_state_store().list_codex_runs()
@@ -240,6 +245,7 @@ def _latest_run_for_proposal(
         key=lambda run: run.started_at,
         default=None,
     )
+    return _expire_stale_initial_draft_run(latest)
 
 
 def _completed_initial_draft_matches(
@@ -367,7 +373,26 @@ def _latest_initial_draft_run(work_item_id: str) -> CodexRun | None:
         for run in local_state_store().list_codex_runs()
         if run.hook == "content_initial_full_draft" and endpoint in run.used_endpoints
     ]
-    return max(runs, key=lambda run: run.started_at, default=None)
+    latest = max(runs, key=lambda run: run.started_at, default=None)
+    return _expire_stale_initial_draft_run(latest)
+
+
+def _expire_stale_initial_draft_run(run: CodexRun | None) -> CodexRun | None:
+    if run is None or run.status != "started":
+        return run
+    if run.started_at >= utc_now() - timedelta(
+        seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS
+    ):
+        return run
+    return local_state_store().save_codex_run(
+        run.model_copy(
+            update={
+                "status": "failed",
+                "completed_at": utc_now(),
+                "error": "initial_draft_timeout",
+            }
+        )
+    )
 
 
 def _run_queued_initial_draft(
