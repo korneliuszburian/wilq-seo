@@ -4,7 +4,8 @@ Review the exact fixed point:
 
 ```text
 Base: 0cea8eeb4aabbe512f17b74921667554d0452e87
-HEAD: ea2a7aa0
+HEAD: c72a6246
+Packet wrapper: 73cd37b4 (documentation only)
 Branch: feat/regulatory-visible-extraction
 ```
 
