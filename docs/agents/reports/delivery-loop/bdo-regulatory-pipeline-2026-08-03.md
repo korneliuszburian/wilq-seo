@@ -6,7 +6,7 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
 
 - Isolated implementation branch: `feat/regulatory-visible-extraction`
 - Base used for the current repair slice: `0cea8eeb4aabbe512f17b74921667554d0452e87`
-- Current HEAD: `cf7c4e1b`
+- Current HEAD: `00bb3337`
 - Latest cohesive commits:
   - `214c944c` — per-constraint regulatory assurance context
   - `adf2e0b3` — semantic reviewer detects editorial/source artifacts
@@ -14,6 +14,9 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
   - `7164e837` — stale semantic runs become terminal after deadline
   - `102e89cd` — classify commerce sitemap maps and exclude them from editorial catalog
   - `cf7c4e1b` — run independent draft-assurance checks concurrently and allow a bounded 15-minute run
+  - `7e2dbea7` — treat dev editorial maps as eligible and legacy shop/sorbent URLs as commerce-only audit inventory
+  - `9ec01b0a` — make semantic reviewer failure-mode mapping explicit
+  - `00bb3337` — add deterministic CTA, query-intent, repetition and source-note guards
 
 ## Exact live BDO lineage
 
@@ -35,13 +38,13 @@ The revision is `unreviewed`, `publish_ready=false`, and has not been sent to Wo
 - Google Ads, Ahrefs, Keyword Planner: explicit `missing`; no synthetic metrics are added.
 - Merchant, Localo, social: `not_applicable` for this page.
 - Regulatory coverage: 8/8 requirements, 10 approved source facts in the current planning input.
-- Public sitemap audit: 808 URLs total (posts 116, pages 24, products 564, training 17, training-close 2, career 4, category 9, product_cat 72). Product and product-category URLs remain in raw connector evidence but are marked `editorial_eligible=false`, so shop/sorbent URLs cannot become editorial refresh candidates.
+- Public sitemap audit: 808 URLs total (posts 116, pages 24, products 564, training 17, training-close 2, career 4, category 9, product_cat 72). Product and product-category URLs remain in raw connector evidence but are marked `editorial_eligible=false`. Legacy `/sorbent*`, `/sklep*`, `/shop*` paths and the `sklep.ekologus.pl` host are also commerce-only; the dev sitemap's service/content maps are explicitly editorial while its taxonomy maps remain audit-only. This keeps outdated shop/sorbent inventory visible for audit without allowing it into new-page/editorial decisions.
 
 ## Runtime proof
 
 - Earlier assurance attempts blocked real defects (`overbroad_claim`, `insufficient_source_alignment`) and one generated draft failed the deterministic full-name assertion without persisting a revision.
 - The current per-constraint assurance run completed in the new bounded parallel executor and created the exact revision only after those checks passed.
-- Focused assurance/source tests: 79 passed before the later semantic-runtime slice; current focused semantic tests: 6 passed, Ruff and complexity audit passed, `git diff --check` passed. Commit `0a2c7925` compacts semantic context while retaining regulatory lineage and adds a payload falsifier.
+- Focused sitemap tests: 4 passed; focused semantic API/guard tests include the deterministic quality guard falsifier. Ruff, complexity audit and `git diff --check` pass for the changed paths. One unrelated polling fixture still assumes an old timeout-store stub and is not claimed as green.
 - A queued semantic POST now becomes visible immediately through GET with the same run ID.
 - A stalled semantic run is terminalized as `failed` after the configured deadline; it cannot remain `generating` forever.
 
@@ -55,7 +58,7 @@ The running API reports 9/12 configured connectors: Google Ads, Search Console, 
 
 ## Remaining acceptance work
 
-1. Run the behavioral mutation suite for missing requirement answers, scope/exception loss, term/amount/procedure changes, CTA defects, query mismatch, and repetition/source-artifact slop.
+1. Re-run the behavioral mutation suite for missing requirement answers, scope/exception loss, term/amount/procedure changes, CTA defects, query mismatch, and repetition/source-artifact slop after the deterministic guards; any remaining model-only misses stay open rather than being presented as passing.
 2. Export exact revision, planning proposal/input, source facts/reviews, assurance receipts, semantic request/response, and digests into a reviewable transient run artifact.
 3. Obtain separate human review for legal/content accuracy. `reviewable` is not approval.
 
