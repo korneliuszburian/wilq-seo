@@ -6,7 +6,7 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
 
 - Isolated implementation branch: `feat/regulatory-visible-extraction`
 - Base used for the current repair slice: `0cea8eeb4aabbe512f17b74921667554d0452e87`
-- Current HEAD: `1df3a3e2`
+- Current HEAD: `a3c2e81a`
 - Latest cohesive commits:
   - `214c944c` — per-constraint regulatory assurance context
   - `adf2e0b3` — semantic reviewer detects editorial/source artifacts
@@ -19,6 +19,7 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
   - `00bb3337` — add deterministic CTA, repetition and source-note guards
   - `2a958a9b` — bind semantic context targets to the exact revision section IDs
   - `1df3a3e2` — fail closed when regulated sections lose source-fact coverage
+  - `a3c2e81a` — keep active semantic polling proof aligned with the current timeout contract
 
 ## Exact live BDO lineage
 
@@ -46,7 +47,7 @@ The revision is `unreviewed`, `publish_ready=false`, and has not been sent to Wo
 
 - Earlier assurance attempts blocked real defects (`overbroad_claim`, `insufficient_source_alignment`) and one generated draft failed the deterministic full-name assertion without persisting a revision.
 - The current per-constraint assurance run completed in the new bounded parallel executor and created the exact revision only after those checks passed.
-- Focused sitemap tests: 4 passed; focused semantic API/guard tests include the deterministic quality guard falsifier. Ruff, complexity audit and `git diff --check` pass for the changed paths. One unrelated polling fixture still assumes an old timeout-store stub and is not claimed as green.
+- Focused sitemap, semantic API, semantic polling and deterministic guard tests pass together; Ruff, complexity audit and `git diff --check` also pass for the changed paths.
 - A queued semantic POST now becomes visible immediately through GET with the same run ID.
 - A stalled semantic run is terminalized as `failed` after the configured deadline; it cannot remain `generating` forever.
 - The final in-memory behavioral suite uses the exact live revision/proposal/planning digest and 7 controlled mutations. All 7 transport turns completed; every mutation became `needs_changes` with exact revision-section or CTA/whole-document targets. The transient result is retained in `docs/agents/runs/delivery-loop/bdo-20260803/semantic-mutation-suite-final.json` (ignored runtime artifact, not product state).
