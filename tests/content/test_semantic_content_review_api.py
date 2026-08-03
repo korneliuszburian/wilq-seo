@@ -131,7 +131,8 @@ def test_semantic_quality_guards_cannot_waive_missing_cta_query_or_repetition() 
     proposal = ContentPlanningProposal.model_construct(
         cta_blocks=[{"cta_id": "cta_required"}],
         sections=[
-            SimpleNamespace(section_id="section_exact_01", query_terms=["bdo przedsiębiorca"])
+            SimpleNamespace(section_id="section_exact_01", query_terms=["bdo przedsiębiorca"]),
+            SimpleNamespace(section_id="section_exact_02", query_terms=[]),
         ],
     )
     output = ContentSemanticReviewModelOutput.model_construct(
@@ -204,6 +205,116 @@ def test_queued_semantic_run_is_visible_before_worker_preflight() -> None:
     assert run.status == "started"
     assert run.planning_input_digest == revision.planning_input_digest
     assert run.evidence_ids == ["ev_exact"]
+    assert run.deadline_at is not None
+
+
+def test_queued_idempotent_result_terminalizes_the_published_run(monkeypatch) -> None:
+    run = CodexRun(
+        id="codex_content_semantic_review_queued",
+        hook="content_semantic_review",
+        status="started",
+    )
+    saved: list[CodexRun] = []
+
+    class Store:
+        def list_codex_runs(self):
+            return [run]
+
+        def save_codex_run(self, item):
+            saved.append(item)
+            return item
+
+    monkeypatch.setattr(semantic_review_router, "local_state_store", lambda: Store())
+    semantic_review_router._terminalize_queued_run_from_result(
+        run.id,
+        SimpleNamespace(status="idempotent", blockers=[]),
+    )
+
+    assert saved[0].status == "completed"
+    assert saved[0].error is None
+
+
+def test_semantic_turn_filters_removed_sections_and_keeps_exact_ids() -> None:
+    planning_input = ContentPlanningInput.model_construct()
+    proposal = ContentPlanningProposal.model_construct(
+        sections=[
+            {
+                "section_id": "removed",
+                "heading": "Sprzedaż sorbentów",
+                "inventory_disposition": "remove_review_required",
+                "query_terms": [],
+                "evidence_ids": [],
+                "regulatory_requirement_ids": [],
+            },
+            {
+                "section_id": "bdo_scope",
+                "heading": "Kto podlega BDO?",
+                "inventory_disposition": "rewrite",
+                "query_terms": ["kto musi mieć BDO"],
+                "evidence_ids": ["ev_bdo"],
+                "regulatory_requirement_ids": ["registration"],
+            },
+        ]
+    )
+    revision = ContentDraftRevision.model_construct(
+        work_item_id="work",
+        revision_id="revision",
+        content_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="bdo_scope",
+                heading="Kto podlega BDO?",
+                body_markdown="Odpowiedź.",
+                evidence_ids=["ev_bdo"],
+            )
+        ],
+    )
+
+    request = semantic_review_turn_request(
+        revision=revision,
+        planning_input=planning_input,
+        proposal=proposal,
+    )
+    sections = json.loads(request.untrusted_context)["approved_planning_proposal"]["sections"]
+    assert [item["section_id"] for item in sections] == ["bdo_scope"]
+    assert sections[0]["query_terms"] == ["kto musi mieć BDO"]
+
+
+def test_semantic_turn_rejects_unmapped_draftable_section() -> None:
+    proposal = ContentPlanningProposal.model_construct(
+        sections=[
+            {
+                "section_id": "proposal_only",
+                "heading": "Nieistniejąca sekcja",
+                "inventory_disposition": "rewrite",
+                "query_terms": [],
+                "evidence_ids": [],
+                "regulatory_requirement_ids": [],
+            }
+        ]
+    )
+    revision = ContentDraftRevision.model_construct(
+        work_item_id="work",
+        revision_id="revision",
+        content_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="revision_only",
+                heading="Bieżąca sekcja",
+                body_markdown="Treść.",
+                evidence_ids=[],
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="bind exactly"):
+        semantic_review_turn_request(
+            revision=revision,
+            planning_input=ContentPlanningInput.model_construct(),
+            proposal=proposal,
+        )
 
 
 def test_stale_semantic_run_becomes_terminal_after_deadline(
@@ -235,6 +346,34 @@ def test_stale_semantic_run_becomes_terminal_after_deadline(
     assert result.status == "failed"
     assert result.error == "semantic_review_timeout"
     assert saved == [result]
+
+
+def test_semantic_polling_uses_the_run_deadline_not_default_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WILQ_SEMANTIC_REVIEW_CODEX_TIMEOUT_SECONDS", "211")
+    started = datetime.now(UTC) - timedelta(seconds=190)
+    active = CodexRun(
+        id="codex_content_semantic_review_active",
+        hook="content_semantic_review",
+        status="started",
+        started_at=started,
+        deadline_at=started + timedelta(seconds=211),
+        used_endpoints=[
+            "/api/content/work-items/work/draft-revisions/revision/semantic-review"
+        ],
+    )
+
+    class Store:
+        def list_codex_runs(self):
+            return [active]
+
+        def save_codex_run(self, run):
+            raise AssertionError("run is still within its persisted deadline")
+
+    monkeypatch.setattr(semantic_review_router, "local_state_store", lambda: Store())
+
+    assert semantic_review_router._latest_semantic_run("work", "revision") is active
 
 
 def test_semantic_turn_exposes_regulatory_requirement_coverage() -> None:
@@ -347,7 +486,7 @@ def test_semantic_payload_keeps_regulatory_lineage_without_duplicate_page_teleme
         planning_input_digest="d" * 64,
         sections=[
             ContentDraftRevisionSection(
-                section_id="content_revision_exact_section_01",
+                section_id="section_registration",
                 heading="Kto podlega wpisowi?",
                 body_markdown="Odpowiedź.",
                 evidence_ids=["ev_registration"],
@@ -361,7 +500,7 @@ def test_semantic_payload_keeps_regulatory_lineage_without_duplicate_page_teleme
     )
     request_context = json.loads(request.untrusted_context)
     aligned = request_context["approved_planning_proposal"]["sections"][0]
-    assert aligned["section_id"] == "content_revision_exact_section_01"
+    assert aligned["section_id"] == "section_registration"
     assert "planning_section_id" not in aligned
 
 

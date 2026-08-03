@@ -12,6 +12,9 @@ from wilq.codex.app_server import (
     CodexAppServerTurnResult,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.initial_full_draft_scope import (
+    bind_draftable_planning_sections,
+)
 from wilq.content.planning.dynamic_input import ContentPlanningInput, build_content_planning_input
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticBlockerCode,
@@ -96,11 +99,6 @@ def read_content_semantic_review(
     )
     if exact is not None:
         return _review_response("ready", revision, exact)
-    # GET remains model-free, but it should still explain a deterministic
-    # preflight blocker after reload.  Without this check a blocked review
-    # briefly appears as ``not_generated`` and the marketer loses the next
-    # actionable step.  `_prepare_inputs` performs only digest/source/storage
-    # validation and starts no run.
     preflight = _prepare_inputs(
         snapshot,
         revision_id,
@@ -336,9 +334,6 @@ def _execute(
             )
         )
     except Exception:
-        # The app-server normally converts expected transport failures into a
-        # typed result. Keep an unexpected adapter failure typed as well so a
-        # terminal run cannot degrade into an uninformative ``runtime_failed``.
         result = CodexAppServerTurnResult(
             status="failed",
             blockers=(
@@ -416,8 +411,6 @@ def _apply_deterministic_quality_guards(
     inputs: _SemanticInputs,
     output: ContentSemanticReviewModelOutput,
 ) -> ContentSemanticReviewModelOutput:
-    """Add only mechanical findings the model cannot safely waive."""
-
     issues: list[tuple[str, str, str]] = []
     if inputs.proposal.cta_blocks and not inputs.revision.cta_blocks:
         issues.append(
@@ -431,58 +424,7 @@ def _apply_deterministic_quality_guards(
         str(section.section_id): section.body_markdown.strip().casefold()
         for section in inputs.revision.sections
     }
-    coverage = inputs.planning_input.regulatory_coverage
-    if coverage is not None:
-        fact_by_id = {fact.source_id: fact for fact in coverage.source_facts}
-        coverage_by_requirement = {
-            item.requirement_id: item for item in coverage.requirement_coverage
-        }
-        for revision_section, proposal_section in zip(
-            inputs.revision.sections,
-            inputs.proposal.sections,
-            strict=False,
-        ):
-            requirement_ids = getattr(proposal_section, "regulatory_requirement_ids", [])
-            if not requirement_ids:
-                continue
-            body_tokens = _semantic_tokens(revision_section.body_markdown)
-            fact_tokens = set()
-            for requirement_id in requirement_ids:
-                binding = coverage_by_requirement.get(requirement_id)
-                if binding is None:
-                    continue
-                for fact_id in binding.source_fact_ids:
-                    fact = fact_by_id.get(fact_id)
-                    if fact is not None:
-                        fact_tokens.update(_semantic_tokens(fact.extracted_fact))
-            if fact_tokens and len(body_tokens & fact_tokens) < 3:
-                issues.append(
-                    (
-                        "credibility",
-                        str(revision_section.section_id),
-                        (
-                            "Sekcja regulacyjna nie zachowuje wystarczającego "
-                            "pokrycia zatwierdzonych source facts."
-                        ),
-                    )
-                )
-            query_tokens = {
-                token
-                for term in proposal_section.query_terms
-                for token in _semantic_tokens(str(term))
-            }
-            if (
-                query_tokens
-                and len(body_tokens) < 15
-                and not body_tokens.intersection(query_tokens)
-            ):
-                issues.append(
-                    (
-                        "search_intent_fit",
-                        str(revision_section.section_id),
-                        "Sekcja nie odpowiada zatwierdzonej mapie zapytań.",
-                    )
-                )
+    issues.extend(_regulatory_quality_issues(inputs))
     normalized_bodies = [body for body in section_bodies.values() if body]
     if len(normalized_bodies) != len(set(normalized_bodies)):
         issues.append(
@@ -565,6 +507,63 @@ def _apply_deterministic_quality_guards(
     if not issues or len(findings) == len(output.findings):
         return output
     return output.model_copy(update={"dimensions": dimensions, "findings": findings})
+
+
+def _regulatory_quality_issues(
+    inputs: _SemanticInputs,
+) -> list[tuple[str, str, str]]:
+    coverage = inputs.planning_input.regulatory_coverage
+    if coverage is None:
+        return []
+    fact_by_id = {fact.source_id: fact for fact in coverage.source_facts}
+    coverage_by_requirement = {
+        item.requirement_id: item for item in coverage.requirement_coverage
+    }
+    proposal_by_id = bind_draftable_planning_sections(
+        inputs.proposal.sections,
+        inputs.revision.sections,
+    )
+    issues: list[tuple[str, str, str]] = []
+    for revision_section in inputs.revision.sections:
+        proposal_section = proposal_by_id[revision_section.section_id]
+        requirement_ids = getattr(proposal_section, "regulatory_requirement_ids", [])
+        if not requirement_ids:
+            continue
+        body_tokens = _semantic_tokens(revision_section.body_markdown)
+        fact_tokens: set[str] = set()
+        for requirement_id in requirement_ids:
+            binding = coverage_by_requirement.get(requirement_id)
+            if binding is None:
+                continue
+            for fact_id in binding.source_fact_ids:
+                fact = fact_by_id.get(fact_id)
+                if fact is not None:
+                    fact_tokens.update(_semantic_tokens(fact.extracted_fact))
+        if fact_tokens and len(body_tokens & fact_tokens) < 3:
+            issues.append(
+                (
+                    "credibility",
+                    str(revision_section.section_id),
+                    (
+                        "Sekcja regulacyjna nie zachowuje wystarczającego "
+                        "pokrycia zatwierdzonych source facts."
+                    ),
+                )
+            )
+        query_tokens = {
+            token
+            for term in proposal_section.query_terms
+            for token in _semantic_tokens(str(term))
+        }
+        if query_tokens and len(body_tokens) < 15 and not body_tokens.intersection(query_tokens):
+            issues.append(
+                (
+                    "search_intent_fit",
+                    str(revision_section.section_id),
+                    "Sekcja nie odpowiada zatwierdzonej mapie zapytań.",
+                )
+            )
+    return issues
 
 
 _SEMANTIC_STOPWORDS = frozenset(

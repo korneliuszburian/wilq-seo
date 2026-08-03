@@ -11,6 +11,7 @@ from defusedxml import ElementTree
 
 from wilq.connectors.vendor import VendorMetricFact
 from wilq.connectors.wordpress.sitemap_policy import (
+    is_commerce_only_url,
     sitemap_group_for_url,
     sitemap_url_object,
 )
@@ -176,6 +177,14 @@ def _rest_metric_facts(
                         "acf_field_names_json": item.get("acf_field_names_json", ""),
                         "acf_section_count": item.get("acf_section_count", ""),
                         "inventory_source": "wordpress_rest",
+                        "editorial_eligible": (
+                            "false" if is_commerce_only_url(item.get("content_url", "")) else "true"
+                        ),
+                        "inventory_scope": (
+                            "commerce_catalog"
+                            if is_commerce_only_url(item.get("content_url", ""))
+                            else "editorial"
+                        ),
                     },
                 )
             )

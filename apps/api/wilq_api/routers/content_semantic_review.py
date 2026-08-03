@@ -61,16 +61,20 @@ def _semantic_codex_client() -> StdioCodexAppServerClient:
     client = content_codex_app_server_client()
     if not isinstance(client, _REAL_STDIO_CODEX_CLIENT):
         return client
+    return _REAL_STDIO_CODEX_CLIENT(timeout_seconds=_semantic_timeout_seconds())
+
+
+def _semantic_timeout_seconds() -> float:
     try:
-        timeout_seconds = float(
+        configured = float(
             environ.get(
                 "WILQ_SEMANTIC_REVIEW_CODEX_TIMEOUT_SECONDS",
                 str(_DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS),
             )
         )
-    except ValueError:
-        timeout_seconds = _DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS
-    return _REAL_STDIO_CODEX_CLIENT(timeout_seconds=max(5.0, timeout_seconds))
+    except (TypeError, ValueError):
+        configured = _DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS
+    return max(5.0, configured)
 
 
 def register_content_semantic_review_routes(
@@ -184,8 +188,12 @@ def _latest_semantic_run(work_item_id: str, revision_id: str) -> CodexRun | None
     ]
     latest = max(runs, key=lambda run: run.started_at, default=None)
     if latest is not None and latest.status == "started":
-        deadline = utc_now() - timedelta(seconds=_DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS)
-        if latest.started_at < deadline:
+        deadline_at = getattr(latest, "deadline_at", None)
+        deadline = deadline_at or (
+            latest.started_at
+            + timedelta(seconds=_semantic_timeout_seconds())
+        )
+        if utc_now() >= deadline:
             latest = local_state_store().save_codex_run(
                 latest.model_copy(
                     update={
@@ -230,6 +238,7 @@ def _save_queued_semantic_run(
                 for evidence_id in item.evidence_ids
             ],
             planning_input_digest=revision.planning_input_digest,
+            deadline_at=utc_now() + timedelta(seconds=_semantic_timeout_seconds()),
         )
     )
 
@@ -349,7 +358,7 @@ def _run_queued_semantic_review(
     snapshot_loader: ContentSemanticSnapshotLoader,
 ) -> None:
     try:
-        generate_content_semantic_review(
+        result = generate_content_semantic_review(
             snapshot=snapshot_loader(work_item_id),
             revision_id=revision_id,
             request=request,
@@ -358,8 +367,30 @@ def _run_queued_semantic_review(
             run_store=local_state_store(),
             run_id=run_id,
         )
+        _terminalize_queued_run_from_result(run_id, result)
     except Exception as error:
         _mark_semantic_run_failed(run_id, error)
+
+
+def _terminalize_queued_run_from_result(
+    run_id: str, result: ContentSemanticReviewResponse
+) -> None:
+    store = local_state_store()
+    run = next((item for item in store.list_codex_runs() if item.id == run_id), None)
+    if run is None or run.status != "started":
+        return
+    if result.status in {"created", "idempotent", "ready", "stale"}:
+        status = "completed"
+        error = None
+    elif result.status == "blocked":
+        status = "blocked"
+        error = result.blockers[0].code if result.blockers else "semantic_review_blocked"
+    else:
+        status = "failed"
+        error = result.blockers[0].code if result.blockers else "semantic_review_failed"
+    store.save_codex_run(
+        run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
+    )
 
 
 def _mark_semantic_run_failed(run_id: str, error: Exception) -> None:

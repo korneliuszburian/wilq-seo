@@ -18,8 +18,29 @@ def draftable_planning_sections(
     return [
         section
         for section in sections
-        if section.inventory_disposition != "remove_review_required"
+        if (
+            section.get("inventory_disposition")
+            if isinstance(section, dict)
+            else getattr(section, "inventory_disposition", None)
+        )
+        != "remove_review_required"
     ]
 
 
-__all__ = ["draftable_planning_sections"]
+def bind_draftable_planning_sections(
+    proposal_sections: Iterable[ContentPlanningSection],
+    revision_sections: Iterable[object],
+) -> dict[str, ContentPlanningSection]:
+    """Bind every draftable plan section to exactly one revision target."""
+
+    bound = {
+        section.section_id: section
+        for section in draftable_planning_sections(proposal_sections)
+    }
+    revision_ids = {section.section_id for section in revision_sections}
+    if set(bound) != revision_ids:
+        raise ValueError("Semantic review proposal sections do not bind to the revision.")
+    return bound
+
+
+__all__ = ["bind_draftable_planning_sections", "draftable_planning_sections"]

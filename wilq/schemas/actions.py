@@ -502,5 +502,6 @@ class CodexRun(BaseModel):
     proposal_id: str | None = None
     planning_input_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     started_at: datetime = Field(default_factory=utc_now)
+    deadline_at: datetime | None = None
     completed_at: datetime | None = None
     error: str | None = None

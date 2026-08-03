@@ -5,6 +5,7 @@ from copy import deepcopy
 from typing import cast
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
+from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.semantic_review_contracts import (
     CONTENT_SEMANTIC_DIMENSIONS,
@@ -77,12 +78,18 @@ def semantic_review_turn_request(
         separators=(",", ":"),
     )
     proposal_context = compact_semantic_review_proposal(proposal)
-    proposal_sections = proposal_context.get("sections")
-    if isinstance(proposal_sections, list):
-        for index, section in enumerate(proposal_sections):
-            if index >= len(revision.sections) or not isinstance(section, dict):
-                continue
-            section["section_id"] = revision.sections[index].section_id
+    revision_ids = [section.section_id for section in revision.sections]
+    proposal_ids = [
+        section.get("section_id")
+        for section in proposal_context.get("sections", [])
+        if isinstance(section, dict)
+    ]
+    if len(proposal_ids) != len(set(proposal_ids)) or any(
+        section_id not in revision_ids for section_id in proposal_ids
+    ):
+        raise ValueError(
+            "Semantic review proposal sections do not bind exactly to revision sections."
+        )
     untrusted_context = json.dumps(
         {
             # The full immutable document is the subject of review. The plan
@@ -230,6 +237,11 @@ def compact_semantic_review_proposal(
     }
     projected = {key: value for key, value in payload.items() if key in allowed}
     projected.pop("page_assets", None)
+    proposal_sections = getattr(proposal, "sections", [])
+    draftable_ids = {
+        section.get("section_id") if isinstance(section, dict) else section.section_id
+        for section in draftable_planning_sections(proposal_sections)
+    }
     projected["sections"] = [
         {
             key: section[key]
@@ -244,7 +256,8 @@ def compact_semantic_review_proposal(
             )
             if key in section
         }
-        for section in projected.get("sections", [])
+        for section in payload.get("sections", [])
+        if section.get("section_id") in draftable_ids
     ]
     return projected
 

@@ -12,6 +12,7 @@ from wilq.connectors.wordpress.client import (
     WordPressDraftReadError,
     read_wordpress_content_material,
 )
+from wilq.connectors.wordpress.sitemap_policy import is_commerce_only_url
 from wilq.content.canonical.landing_identity import (
     landing_page_metric_lookup_path,
     landing_page_metric_lookup_urls,
@@ -151,7 +152,11 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
         if dimensions.get("editorial_eligible") == "false":
             continue
         url = str(dimensions.get("content_url") or dimensions.get("canonical_url") or "").strip()
-        if not content_is_safe_public_url(url) or url in rows:
+        if (
+            not content_is_safe_public_url(url)
+            or is_commerce_only_url(url)
+            or url in rows
+        ):
             continue
         section_headings = _json_list(dimensions.get("section_headings_json"))
         headings = _json_list(dimensions.get("acf_section_headings_json"))
