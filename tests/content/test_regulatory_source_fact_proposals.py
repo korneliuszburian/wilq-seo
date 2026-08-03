@@ -305,7 +305,7 @@ def test_html_proposal_context_uses_main_content_not_layout_or_scripts() -> None
     assert "secret" not in text
 
 
-def test_html_source_without_main_or_article_is_blocked_before_a_codex_run(tmp_path) -> None:
+def test_html_source_without_main_or_article_uses_visible_body_without_layout(tmp_path) -> None:
     candidate = regulatory_source_candidates()[0]
     proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
     client = _Client(_ready_output(candidate))
@@ -316,15 +316,20 @@ def test_html_source_without_main_or_article_is_blocked_before_a_codex_run(tmp_p
         proposal_store=proposal_store,
         snapshot_store=snapshot_store,
         run_store=run_store,
-        reader=lambda _: (
-            b"<html><nav>menu layout</nav><script>secret()</script><p>body</p></html>",
+            reader=lambda _: (
+            (
+                "<html><nav>menu layout</nav><script>secret()</script>"
+                "<p>Oficjalne źródło opisuje obowiązek.</p></html>"
+            ).encode(),
             "text/html",
         ),
     )
 
-    assert result.status == "blocked"
-    assert client.requests == []
-    assert "secret" not in proposal_store.path.read_text(errors="ignore")
+    assert result.status == "ready"
+    assert len(client.requests) == 1
+    assert "Oficjalne źródło opisuje obowiązek" in client.requests[0].untrusted_context
+    assert "menu layout" not in client.requests[0].untrusted_context
+    assert "secret" not in client.requests[0].untrusted_context
 
 
 def test_same_source_digest_on_two_snapshots_persists_two_exact_proposals(tmp_path) -> None:

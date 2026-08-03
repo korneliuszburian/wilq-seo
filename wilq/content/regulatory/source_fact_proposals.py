@@ -462,24 +462,57 @@ class _HtmlMainTextExtractor(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self._content_depth = 0
+        self._body_depth = 0
+        self._head_depth = 0
         self._ignored_depth = 0
         self.parts: list[str] = []
+        self.body_parts: list[str] = []
 
     def handle_starttag(self, tag: str, _attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "body":
+            self._body_depth += 1
+        elif tag == "head":
+            self._head_depth += 1
         if tag in {"article", "main"}:
             self._content_depth += 1
-        elif self._content_depth and tag in {"script", "style", "noscript", "svg"}:
+        elif tag in {
+            "aside",
+            "footer",
+            "form",
+            "header",
+            "nav",
+            "noscript",
+            "script",
+            "style",
+            "svg",
+        }:
             self._ignored_depth += 1
 
     def handle_endtag(self, tag: str) -> None:
-        if tag in {"script", "style", "noscript", "svg"} and self._ignored_depth:
+        if tag in {
+            "aside",
+            "footer",
+            "form",
+            "header",
+            "nav",
+            "noscript",
+            "script",
+            "style",
+            "svg",
+        } and self._ignored_depth:
             self._ignored_depth -= 1
         elif tag in {"article", "main"} and self._content_depth:
             self._content_depth -= 1
+        elif tag == "body" and self._body_depth:
+            self._body_depth -= 1
+        elif tag == "head" and self._head_depth:
+            self._head_depth -= 1
 
     def handle_data(self, data: str) -> None:
         if self._content_depth and not self._ignored_depth:
             self.parts.append(data)
+        elif not self._head_depth and not self._ignored_depth:
+            self.body_parts.append(data)
 
 
 def _extract_html_main_text(html: str) -> str:
@@ -487,9 +520,12 @@ def _extract_html_main_text(html: str) -> str:
     parser.feed(html)
     parser.close()
     extracted = " ".join(parser.parts).strip()
-    if not extracted:
-        raise ValueError("Official HTML source has no article or main content.")
-    return extracted
+    if extracted:
+        return extracted
+    fallback = " ".join(parser.body_parts).strip()
+    if not fallback:
+        raise ValueError("Official HTML source has no visible body content.")
+    return fallback
 
 
 def _relevant_source_text(candidate: ContentRegulatorySourceCandidate, source_text: str) -> str:
@@ -591,6 +627,10 @@ def _turn_request(
             "czy źródło zawiera wystarczającą literalną podstawę dla wszystkich "
             "requirement IDs. Gdy nie zawiera, zwróć source_sufficiency=insufficient "
             "i wskaż powód; nie maskuj braku ogólnym factem. Użyj dokładnie wskazanych "
+            "Nie utożsamiaj wieku publikacji ani potrzeby sprawdzenia aktualności z "
+            "brakiem literalnej podstawy: jeśli tekst źródła opisuje wymagany zakres, "
+            "możesz zwrócić sufficient, a zastrzeżenie aktualności umieść w proposed_fact "
+            "dla późniejszej decyzji człowieka. "
             "requirement IDs i zwróć tylko JSON zgodny ze schema. Zawsze zwróć każde "
             "pole schema: dla insufficient proposed_fact ma wyłącznie opisywać brak "
             "podstawy, source_terms mają być literalnymi krótkimi terminami ze źródła, a "
