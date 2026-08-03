@@ -158,6 +158,35 @@ def register_content_semantic_review_routes(
                     work_item_id, revision_id, revision.content_digest, active.id
                 )
             run_id = f"codex_content_semantic_review_{uuid4().hex}"
+            # Publish the queued run before handing it to the worker.  The
+            # worker performs the expensive exact-snapshot/planning preflight
+            # before ``generate_content_semantic_review`` creates its run; a
+            # GET during that window must still see this exact attempt rather
+            # than an older completed review.
+            local_state_store().save_codex_run(
+                CodexRun(
+                    id=run_id,
+                    skill="wilq-content-operator",
+                    hook="content_semantic_review",
+                    source="wilq_api",
+                    status="started",
+                    used_endpoints=[
+                        f"/api/content/work-items/{work_item_id}/draft-revisions/"
+                        f"{revision_id}/semantic-review"
+                    ],
+                    evidence_ids=[
+                        evidence_id
+                        for item in (
+                            *revision.sections,
+                            *revision.faq,
+                            *revision.cta_blocks,
+                            *revision.internal_links,
+                        )
+                        for evidence_id in item.evidence_ids
+                    ],
+                    planning_input_digest=revision.planning_input_digest,
+                )
+            )
             _SEMANTIC_REVIEW_EXECUTOR.submit(
                 _run_queued_semantic_review,
                 work_item_id,
