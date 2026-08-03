@@ -4,11 +4,14 @@ from types import SimpleNamespace
 
 from apps.api.wilq_api.routers import content_initial_draft
 from apps.api.wilq_api.routers.content_initial_draft import _can_queue_initial_draft
+from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
 )
+from wilq.schemas import CodexRun
+from wilq.storage.local_state import LocalStateStore
 
 
 def _request() -> ContentInitialDraftRequest:
@@ -110,3 +113,77 @@ def test_preflight_blocker_from_async_queue_is_persisted_for_status_read(monkeyp
     assert len(store.runs) == 1
     assert store.runs[0].status == "blocked"
     assert store.runs[0].error == "stale_planning_input"
+
+
+def test_initial_draft_queue_claim_is_durable_and_exact(tmp_path, monkeypatch) -> None:
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    submitted = []
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_INITIAL_DRAFT_EXECUTOR",
+        SimpleNamespace(submit=lambda fn, *args: submitted.append((fn, args))),
+    )
+    snapshot = _snapshot(latest_revision=None)
+    client = StdioCodexAppServerClient()
+
+    first = content_initial_draft._queue_initial_draft(
+        "work",
+        _request(),
+        client,
+        lambda _work_item_id: snapshot,
+        snapshot,
+    )
+    second = content_initial_draft._queue_initial_draft(
+        "work",
+        _request(),
+        client,
+        lambda _work_item_id: snapshot,
+        snapshot,
+    )
+
+    assert first.run_id == second.run_id
+    assert len(submitted) == 1
+    runs = [run for run in store.list_codex_runs() if run.status == "started"]
+    assert len(runs) == 1
+    assert runs[0].proposal_id == "proposal-1"
+    assert runs[0].planning_digest == "a" * 64
+    assert runs[0].planning_input_digest == "b" * 64
+
+
+def test_initial_draft_queue_ignores_started_run_from_another_proposal(
+    tmp_path, monkeypatch
+) -> None:
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    endpoint = "/api/content/work-items/work/initial-draft"
+    store.save_codex_run(
+        CodexRun(
+            id="old-run",
+            hook="content_initial_full_draft",
+            source="wilq_api",
+            status="started",
+            proposal_id="proposal-old",
+            planning_digest="c" * 64,
+            planning_input_digest="1" * 64,
+            used_endpoints=[endpoint],
+        )
+    )
+    submitted = []
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_INITIAL_DRAFT_EXECUTOR",
+        SimpleNamespace(submit=lambda fn, *args: submitted.append((fn, args))),
+    )
+    snapshot = _snapshot(latest_revision=None)
+    response = content_initial_draft._queue_initial_draft(
+        "work",
+        _request(),
+        StdioCodexAppServerClient(),
+        lambda _work_item_id: snapshot,
+        snapshot,
+    )
+
+    assert response.run_id != "old-run"
+    assert response.proposal_id == "proposal-1"
+    assert len(submitted) == 1

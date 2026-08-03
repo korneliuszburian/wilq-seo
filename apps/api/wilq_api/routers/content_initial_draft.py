@@ -4,7 +4,6 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from typing import Literal
-from uuid import uuid4
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -13,6 +12,7 @@ from apps.api.wilq_api.routers.content_codex_runtime import (
     content_codex_app_server_client,
 )
 from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.content.drafts.initial_draft_run import claim_initial_draft_run
 from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
@@ -125,11 +125,21 @@ def _queue_initial_draft(
     planning = snapshot.planning_workspace
     if planning is None:
         raise RuntimeError("Initial draft queue requires a planning workspace.")
-    existing = _latest_initial_draft_run(work_item_id)
     proposal = planning.proposal
-    if existing is not None and existing.status == "started":
-        return _queued_initial_draft_response(work_item_id, proposal.proposal_id, existing.id, True)
-    run_id = f"codex_content_initial_draft_{uuid4().hex}"
+    claim = claim_initial_draft_run(
+        local_state_store(),
+        work_item_id=work_item_id,
+        proposal_id=proposal.proposal_id,
+        planning_digest=proposal.planning_digest,
+        planning_input_digest=proposal.planning_input_digest,
+        evidence_ids=list(getattr(planning, "evidence_ids", [])),
+        timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
+    )
+    run_id = claim.run.id
+    if not claim.newly_claimed:
+        return _queued_initial_draft_response(
+            work_item_id, proposal.proposal_id, run_id, True
+        )
     _INITIAL_DRAFT_EXECUTOR.submit(
         _run_queued_initial_draft,
         work_item_id,
@@ -138,7 +148,9 @@ def _queue_initial_draft(
         run_id,
         snapshot_loader,
     )
-    return _queued_initial_draft_response(work_item_id, proposal.proposal_id, run_id, False)
+    return _queued_initial_draft_response(
+        work_item_id, proposal.proposal_id, run_id, False
+    )
 
 
 def _queued_initial_draft_response(
@@ -239,6 +251,8 @@ def _latest_run_for_proposal(
                 run.hook == "content_initial_full_draft"
                 and endpoint in run.used_endpoints
                 and run.proposal_id == proposal.proposal_id
+                and getattr(run, "planning_digest", None)
+                == getattr(proposal, "planning_digest", None)
                 and run.planning_input_digest == proposal.planning_input_digest
             )
         ),
@@ -434,12 +448,24 @@ def _persist_terminal_preflight_run(
     run_id: str,
 ) -> None:
     store = local_state_store()
-    if any(run.id == run_id for run in store.list_codex_runs()):
-        return
     status: Literal["failed", "blocked"] = (
         "failed" if result.status == "failed" else "blocked"
     )
     blocker_code = result.blockers[0].code if result.blockers else status
+    existing = next(
+        (run for run in store.list_codex_runs() if run.id == run_id), None
+    )
+    if existing is not None:
+        store.save_codex_run(
+            existing.model_copy(
+                update={
+                    "status": status,
+                    "completed_at": utc_now(),
+                    "error": blocker_code,
+                }
+            )
+        )
+        return
     store.save_codex_run(
         CodexRun(
             id=run_id,
