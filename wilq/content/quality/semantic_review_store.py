@@ -9,6 +9,7 @@ from typing import cast
 from uuid import uuid4
 
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
+from wilq.content.quality.semantic_run_state import effective_deadline
 from wilq.content.workflow.codex_revision_commit import (
     codex_completion_state,
     persist_codex_completion,
@@ -143,7 +144,7 @@ class ContentSemanticReviewStore:
                 raise SemanticReviewConflict("Semantic review appeared concurrently.")
             if codex_completion_state(connection, safe_run) != "started":
                 raise SemanticReviewConflict("Semantic review run is already completed.")
-            if safe_run.deadline_at is not None and utc_now() >= safe_run.deadline_at:
+            if utc_now() >= effective_deadline(safe_run, 180.0):
                 raise SemanticReviewDeadlineExpired(
                     "Semantic review deadline expired before atomic commit."
                 )
@@ -201,7 +202,7 @@ class ContentSemanticReviewStore:
                     and run.planning_input_digest == planning_input_digest
                     and endpoint in run.used_endpoints
                 ):
-                    if run.deadline_at is not None and utc_now() >= run.deadline_at:
+                    if utc_now() >= effective_deadline(run, timeout_seconds):
                         expired = run.model_copy(
                             update={
                                 "status": "failed",

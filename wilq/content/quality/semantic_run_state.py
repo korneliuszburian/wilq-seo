@@ -1,11 +1,21 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta
 from typing import cast
 
 from wilq.schemas import CodexRun
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import LocalStateStore
+
+
+def effective_deadline(run: CodexRun, timeout_seconds: float) -> datetime:
+    return run.deadline_at or (run.started_at + timedelta(seconds=timeout_seconds))
+
+
+def runtime_error(code: str, source_codes: list[str]) -> str:
+    source = next((item for item in source_codes if item), None)
+    return code if source is None else f"{code}:{source}"
 
 
 def transition_codex_run_if_status(

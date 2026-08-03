@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from typing import Literal, cast
 from uuid import uuid4
 
@@ -11,7 +10,8 @@ from wilq.codex.app_server import (
     CodexAppServerTurnResult,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
-from wilq.content.planning.dynamic_input import ContentPlanningInput, build_content_planning_input
+from wilq.content.planning.dynamic_input import build_content_planning_input
+from wilq.content.quality.semantic_inputs import SemanticInputs
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticBlockerCode,
     ContentSemanticFinding,
@@ -33,20 +33,17 @@ from wilq.content.quality.semantic_review_store import (
     SemanticReviewStorageActivationRequired,
 )
 from wilq.content.quality.semantic_review_turn import semantic_review_turn_request
-from wilq.content.quality.semantic_run_state import transition_codex_run_if_status
+from wilq.content.quality.semantic_run_state import (
+    runtime_error,
+    transition_codex_run_if_status,
+)
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore
 
-
-@dataclass(frozen=True, slots=True)
-class _SemanticInputs:
-    revision: ContentDraftRevision
-    planning_input: ContentPlanningInput
-    proposal: ContentPlanningProposal
+_SemanticInputs = SemanticInputs
 
 
 def read_content_semantic_review(
@@ -383,7 +380,7 @@ def _execute(
             run_store,
             run,
             status=status,
-            error=_runtime_error(code, [item.code for item in result.blockers]),
+            error=runtime_error(code, [item.code for item in result.blockers]),
         )
         return _blocked(
             snapshot,
@@ -689,7 +686,12 @@ def _finish_with_blocker(
     response_status: Literal["blocked", "failed", "conflict"] = "blocked",
     run_status: Literal["blocked", "failed"] = "blocked",
 ) -> ContentSemanticReviewResponse:
-    _finish_run(run_store, run, status=run_status, error=blocker.code)
+    _finish_run(
+        run_store,
+        run,
+        status=run_status,
+        error=runtime_error(blocker.code, blocker.source_codes),
+    )
     return _blocked(
         snapshot,
         revision=revision,
@@ -713,13 +715,6 @@ def _finish_run(
     if hasattr(store, "_connect"):
         return transition_codex_run_if_status(store, terminal) or run
     return store.save_codex_run(terminal)
-
-
-def _runtime_error(code: str, source_codes: list[str]) -> str:
-    """Persist the public failure plus the safe app-server source code."""
-
-    source = next((item for item in source_codes if item), None)
-    return code if source is None else f"{code}:{source}"
 
 
 def _trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:

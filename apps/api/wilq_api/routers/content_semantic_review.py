@@ -26,7 +26,10 @@ from wilq.content.quality.semantic_review_service import (
     read_content_semantic_review,
 )
 from wilq.content.quality.semantic_review_store import content_semantic_review_store
-from wilq.content.quality.semantic_run_state import transition_codex_run_if_status
+from wilq.content.quality.semantic_run_state import (
+    effective_deadline,
+    transition_codex_run_if_status,
+)
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.content.workflow.store import content_workflow_store
@@ -236,11 +239,7 @@ def _latest_semantic_run(work_item_id: str, revision_id: str) -> CodexRun | None
     ]
     latest = max(runs, key=lambda run: run.started_at, default=None)
     if latest is not None and latest.status == "started":
-        deadline_at = getattr(latest, "deadline_at", None)
-        deadline = deadline_at or (
-            latest.started_at
-            + timedelta(seconds=_semantic_timeout_seconds())
-        )
+        deadline = effective_deadline(latest, _semantic_timeout_seconds())
         if utc_now() >= deadline:
             terminal = latest.model_copy(
                 update={
@@ -499,10 +498,11 @@ def _client_for_queued_deadline(
         (item for item in local_state_store().list_codex_runs() if item.id == run_id),
         None,
     )
-    deadline_at = None if run is None else getattr(run, "deadline_at", None)
-    if deadline_at is None:
+    if run is None:
         return client
-    remaining = (deadline_at - utc_now()).total_seconds()
+    remaining = (
+        effective_deadline(run, _semantic_timeout_seconds()) - utc_now()
+    ).total_seconds()
     if remaining <= 0:
         raise TimeoutError("semantic review deadline expired before Codex turn")
     return _REAL_STDIO_CODEX_CLIENT(

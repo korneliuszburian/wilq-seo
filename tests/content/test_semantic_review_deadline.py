@@ -3,15 +3,18 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from threading import Barrier
+from types import SimpleNamespace
 
 import pytest
 
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality import semantic_review_service
 from wilq.content.quality.semantic_review_contracts import (
     CONTENT_SEMANTIC_DIMENSIONS,
     ContentSemanticDimensionAssessment,
     ContentSemanticReview,
+    ContentSemanticReviewBlocker,
 )
 from wilq.content.quality.semantic_review_service import _SemanticInputs
 from wilq.content.quality.semantic_review_store import (
@@ -166,3 +169,83 @@ def test_parallel_claims_share_one_semantic_run(tmp_path) -> None:
             if run.status == "started"
         ]
     ) == 1
+
+
+def test_claim_terminalizes_legacy_started_run_without_deadline(tmp_path) -> None:
+    db = tmp_path / "state.sqlite3"
+    run_store = LocalStateStore(db)
+    review_store = ContentSemanticReviewStore(db)
+    endpoint = "/api/content/work-items/work/draft-revisions/revision/semantic-review"
+    legacy = CodexRun(
+        id="codex_content_semantic_review_legacy",
+        hook="content_semantic_review",
+        source="wilq_api",
+        status="started",
+        started_at=datetime.now(UTC) - timedelta(seconds=301),
+        planning_input_digest="b" * 64,
+        used_endpoints=[endpoint],
+        evidence_ids=["ev"],
+    )
+    run_store.save_codex_run(legacy)
+
+    claim = review_store.claim_run(
+        work_item_id="work",
+        revision_id="revision",
+        revision_digest="a" * 64,
+        endpoint=endpoint,
+        evidence_ids=["ev"],
+        planning_input_digest="b" * 64,
+        timeout_seconds=180,
+    )
+
+    assert claim.newly_claimed is True
+    assert claim.run is not None
+    assert claim.run.id != legacy.id
+    persisted = next(
+        run for run in run_store.list_codex_runs() if run.id == legacy.id
+    )
+    assert persisted.status == "failed"
+    assert persisted.error == "semantic_review_timeout"
+
+
+def test_commit_timeout_preserves_source_code_in_run_error() -> None:
+    saved = []
+
+    class Store:
+        def save_codex_run(self, run):
+            saved.append(run)
+            return run
+
+    now = datetime.now(UTC)
+    run = CodexRun(
+        id="codex_content_semantic_review_timeout_source",
+        hook="content_semantic_review",
+        status="started",
+        started_at=now,
+    )
+    revision = ContentDraftRevision.model_construct(
+        work_item_id="work",
+        revision_id="revision",
+        content_digest="a" * 64,
+    )
+    snapshot = SimpleNamespace(preflight=SimpleNamespace(item=SimpleNamespace(id="work")))
+    blocker = ContentSemanticReviewBlocker(
+        code="runtime_failed",
+        label="Timeout",
+        reason="Timeout.",
+        next_step="Retry.",
+        source_codes=["semantic_review_timeout"],
+    )
+
+    semantic_review_service._finish_with_blocker(
+        snapshot,
+        revision,
+        run,
+        ContentCodexRuntimeTrace(status="failed"),
+        blocker,
+        Store(),
+        response_status="failed",
+        run_status="failed",
+    )
+
+    assert saved[0].error == "runtime_failed:semantic_review_timeout"
