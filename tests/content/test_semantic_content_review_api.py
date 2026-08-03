@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_semantic_review as semantic_review_router
@@ -26,10 +27,12 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     build_content_planning_input,
 )
+from wilq.content.quality import semantic_review_service
 from wilq.content.quality import semantic_review_store as semantic_review_store_module
 from wilq.content.quality.semantic_review_contracts import (
     CONTENT_SEMANTIC_DIMENSIONS,
     ContentSemanticDimensionAssessment,
+    ContentSemanticReview,
     ContentSemanticReviewModelOutput,
 )
 from wilq.content.quality.semantic_review_service import (
@@ -45,7 +48,7 @@ from wilq.content.quality.semantic_review_turn import (
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
 from wilq.schemas import CodexRun
-from wilq.storage.local_state import local_state_store
+from wilq.storage.local_state import LocalStateStore, local_state_store
 
 pytest_plugins = ("tests.content.test_dynamic_planning_proposals_api",)
 
@@ -232,6 +235,156 @@ def test_queued_idempotent_result_terminalizes_the_published_run(monkeypatch) ->
 
     assert saved[0].status == "completed"
     assert saved[0].error is None
+
+
+def test_worker_preserves_exact_queued_deadline_and_lineage(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("WILQ_SEMANTIC_REVIEW_CODEX_TIMEOUT_SECONDS", "211")
+    revision = ContentDraftRevision.model_construct(
+        work_item_id="work",
+        revision_id="revision",
+        planning_input_digest="b" * 64,
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="section",
+                heading="Zakres",
+                body_markdown="Treść.",
+                evidence_ids=["ev"],
+            )
+        ],
+        faq=[],
+        cta_blocks=[],
+        internal_links=[],
+    )
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    queued = semantic_review_router._save_queued_semantic_run(
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revision=revision,
+        run_id="codex_content_semantic_review_exact",
+        store=store,
+    )
+
+    started = semantic_review_service._start_run(
+        semantic_review_service._SemanticInputs(
+            revision=revision,
+            planning_input=ContentPlanningInput.model_construct(),
+            proposal=ContentPlanningProposal.model_construct(),
+        ),
+        store,
+        run_id=queued.id,
+    )
+    persisted = next(
+        run for run in store.list_codex_runs() if run.id == queued.id
+    )
+
+    assert started.id == queued.id
+    assert started.started_at == queued.started_at
+    assert persisted.started_at == queued.started_at
+    assert persisted.deadline_at == queued.deadline_at
+    assert persisted.planning_input_digest == queued.planning_input_digest
+
+
+def test_worker_codex_budget_is_limited_by_persisted_absolute_deadline(monkeypatch) -> None:
+    deadline = datetime.now(UTC) + timedelta(seconds=11)
+    run = CodexRun(
+        id="codex_content_semantic_review_deadline",
+        hook="content_semantic_review",
+        status="started",
+        deadline_at=deadline,
+    )
+
+    monkeypatch.setattr(
+        semantic_review_router,
+        "local_state_store",
+        lambda: SimpleNamespace(list_codex_runs=lambda: [run]),
+    )
+    client = semantic_review_router._REAL_STDIO_CODEX_CLIENT(timeout_seconds=211)
+
+    bounded = semantic_review_router._client_for_queued_deadline(client, run.id)
+
+    assert 0 < bounded.timeout_seconds <= 11
+
+
+def test_existing_exact_review_wins_over_retry_preflight_and_polling(
+    monkeypatch,
+) -> None:
+    app = FastAPI()
+    work_item_id = "content_work_item_bdo"
+    revision_id = "content_revision_bdo"
+    endpoint = (
+        f"/api/content/work-items/{work_item_id}/draft-revisions/"
+        f"{revision_id}/semantic-review"
+    )
+    revision = SimpleNamespace(
+        revision_id=revision_id,
+        content_digest="a" * 64,
+    )
+    review = ContentSemanticReview.model_construct(
+        review_id="content_semantic_review_original",
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision_digest=revision.content_digest,
+        codex_run_id="codex_content_semantic_review_original",
+        status="reviewable",
+        dimensions=[],
+        findings=[],
+        requested_by="wilku",
+        created_at=datetime.now(UTC),
+        safe_next_step="Przekaż wynik do niezależnego review człowieka.",
+    )
+
+    class Snapshot:
+        revision_workspace = SimpleNamespace(latest_revision=revision)
+
+    class RevisionStore:
+        def load_draft_revision_state(self, _work_item_id):
+            return SimpleNamespace(latest_revision=revision)
+
+    class ReviewStore:
+        def for_revision(self, *_args):
+            return review
+
+        def write_ready(self):
+            return True
+
+    class FakeClient(StdioCodexAppServerClient):
+        pass
+
+    submitted = False
+
+    def submit(*_args, **_kwargs):
+        nonlocal submitted
+        submitted = True
+
+    monkeypatch.setattr(semantic_review_router, "content_workflow_store", lambda: RevisionStore())
+    monkeypatch.setattr(
+        semantic_review_router,
+        "content_semantic_review_store",
+        lambda: ReviewStore(),
+    )
+    monkeypatch.setattr(
+        semantic_review_router,
+        "local_state_store",
+        lambda: SimpleNamespace(list_codex_runs=lambda: []),
+    )
+    monkeypatch.setattr(semantic_review_router, "_semantic_codex_client", lambda: FakeClient())
+    monkeypatch.setattr(semantic_review_router._SEMANTIC_REVIEW_EXECUTOR, "submit", submit)
+    semantic_review_router.register_content_semantic_review_routes(
+        app,
+        snapshot_loader=lambda _work_item_id: Snapshot(),
+    )
+
+    payload = {"expected_revision_digest": revision.content_digest, "requested_by": "wilku"}
+    post = TestClient(app).post(endpoint, json=payload)
+    get = TestClient(app).get(endpoint)
+
+    assert post.status_code == 200
+    assert post.json()["status"] == "idempotent"
+    assert post.json()["review"]["review_id"] == review.review_id
+    assert get.status_code == 200
+    assert get.json()["status"] == "ready"
+    assert get.json()["review"]["review_id"] == review.review_id
+    assert submitted is False
 
 
 def test_semantic_turn_filters_removed_sections_and_keeps_exact_ids() -> None:

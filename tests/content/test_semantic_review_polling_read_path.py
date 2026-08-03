@@ -146,6 +146,9 @@ def test_semantic_review_returns_known_storage_blocker_before_queueing(monkeypat
         revision_workspace = SimpleNamespace(latest_revision=Revision())
 
     class ReviewStore:
+        def for_revision(self, *_args):
+            return None
+
         def write_ready(self):
             return False
 

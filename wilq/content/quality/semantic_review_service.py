@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal, cast
@@ -12,9 +11,6 @@ from wilq.codex.app_server import (
     CodexAppServerTurnResult,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
-from wilq.content.drafts.initial_full_draft_scope import (
-    bind_draftable_planning_sections,
-)
 from wilq.content.planning.dynamic_input import ContentPlanningInput, build_content_planning_input
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticBlockerCode,
@@ -25,6 +21,10 @@ from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticReviewModelOutput,
     ContentSemanticReviewRequest,
     ContentSemanticReviewResponse,
+)
+from wilq.content.quality.semantic_review_guards import (
+    regulatory_quality_issues,
+    repetition_quality_issues,
 )
 from wilq.content.quality.semantic_review_store import (
     ContentSemanticReviewStore,
@@ -424,38 +424,14 @@ def _apply_deterministic_quality_guards(
         str(section.section_id): section.body_markdown.strip().casefold()
         for section in inputs.revision.sections
     }
-    issues.extend(_regulatory_quality_issues(inputs))
-    normalized_bodies = [body for body in section_bodies.values() if body]
-    if len(normalized_bodies) != len(set(normalized_bodies)):
-        issues.append(
-            ("repetition", "whole_document", "Dokument zawiera powtórzone całe sekcje.")
+    issues.extend(
+        regulatory_quality_issues(
+            revision=inputs.revision,
+            planning_input=inputs.planning_input,
+            proposal=inputs.proposal,
         )
-    for section_id, body in section_bodies.items():
-        paragraphs = [part.strip() for part in re.split(r"\n+", body) if part.strip()]
-        if len(paragraphs) > 1 and len(paragraphs) != len(set(paragraphs)):
-            issues.append(
-                (
-                    "repetition",
-                    section_id,
-                    "Sekcja zawiera powtórzony akapit lub odpowiedź.",
-                )
-            )
-    all_text = "\n".join(section_bodies.values())
-    if any(
-        marker in all_text
-        for marker in (
-            "źródło wskazuje",
-            "informacja wymaga weryfikacji",
-            "[do uzupełnienia]",
-        )
-    ):
-        issues.append(
-            (
-                "repetition",
-                "whole_document",
-                "Dokument zawiera meta-komentarz źródłowy albo notatkę roboczą.",
-            )
-        )
+    )
+    issues.extend(repetition_quality_issues(section_bodies))
     grouped: dict[str, tuple[list[str], str]] = {}
     for dimension, target, reason in issues:
         targets, previous_reason = grouped.get(dimension, ([], reason))
@@ -507,87 +483,6 @@ def _apply_deterministic_quality_guards(
     if not issues or len(findings) == len(output.findings):
         return output
     return output.model_copy(update={"dimensions": dimensions, "findings": findings})
-
-
-def _regulatory_quality_issues(
-    inputs: _SemanticInputs,
-) -> list[tuple[str, str, str]]:
-    coverage = inputs.planning_input.regulatory_coverage
-    if coverage is None:
-        return []
-    fact_by_id = {fact.source_id: fact for fact in coverage.source_facts}
-    coverage_by_requirement = {
-        item.requirement_id: item for item in coverage.requirement_coverage
-    }
-    proposal_by_id = bind_draftable_planning_sections(
-        inputs.proposal.sections,
-        inputs.revision.sections,
-    )
-    issues: list[tuple[str, str, str]] = []
-    for revision_section in inputs.revision.sections:
-        proposal_section = proposal_by_id[revision_section.section_id]
-        requirement_ids = getattr(proposal_section, "regulatory_requirement_ids", [])
-        if not requirement_ids:
-            continue
-        body_tokens = _semantic_tokens(revision_section.body_markdown)
-        fact_tokens: set[str] = set()
-        for requirement_id in requirement_ids:
-            binding = coverage_by_requirement.get(requirement_id)
-            if binding is None:
-                continue
-            for fact_id in binding.source_fact_ids:
-                fact = fact_by_id.get(fact_id)
-                if fact is not None:
-                    fact_tokens.update(_semantic_tokens(fact.extracted_fact))
-        if fact_tokens and len(body_tokens & fact_tokens) < 3:
-            issues.append(
-                (
-                    "credibility",
-                    str(revision_section.section_id),
-                    (
-                        "Sekcja regulacyjna nie zachowuje wystarczającego "
-                        "pokrycia zatwierdzonych source facts."
-                    ),
-                )
-            )
-        query_tokens = {
-            token
-            for term in proposal_section.query_terms
-            for token in _semantic_tokens(str(term))
-        }
-        if query_tokens and len(body_tokens) < 15 and not body_tokens.intersection(query_tokens):
-            issues.append(
-                (
-                    "search_intent_fit",
-                    str(revision_section.section_id),
-                    "Sekcja nie odpowiada zatwierdzonej mapie zapytań.",
-                )
-            )
-    return issues
-
-
-_SEMANTIC_STOPWORDS = frozenset(
-    {
-        "albo",
-        "który",
-        "która",
-        "które",
-        "przez",
-        "może",
-        "jest",
-        "się",
-        "dla",
-        "jego",
-    }
-)
-
-
-def _semantic_tokens(value: str) -> set[str]:
-    return {
-        token
-        for token in re.findall(r"[a-ząćęłńóśźż0-9]+", value.casefold())
-        if len(token) >= 4 and token not in _SEMANTIC_STOPWORDS
-    }
 
 
 def _scope_errors(
@@ -665,6 +560,13 @@ def _start_run(
     *,
     run_id: str | None = None,
 ) -> CodexRun:
+    if run_id is not None:
+        queued = next(
+            (run for run in store.list_codex_runs() if run.id == run_id),
+            None,
+        )
+        if queued is not None and queued.status == "started":
+            return queued
     revision = inputs.revision
     return store.save_codex_run(
         CodexRun(
@@ -673,6 +575,7 @@ def _start_run(
             hook="content_semantic_review",
             source="wilq_api",
             status="started",
+            planning_input_digest=revision.planning_input_digest,
             used_endpoints=[
                 f"/api/content/work-items/{revision.work_item_id}/draft-revisions/"
                 f"{revision.revision_id}/semantic-review"

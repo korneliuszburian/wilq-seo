@@ -17,6 +17,7 @@ from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticBlockerCode,
+    ContentSemanticReview,
     ContentSemanticReviewBlocker,
     ContentSemanticReviewRequest,
     ContentSemanticReviewResponse,
@@ -92,6 +93,9 @@ def register_content_semantic_review_routes(
         work_item_id: str,
         revision_id: str,
     ) -> ContentSemanticReviewResponse:
+        exact_review = _read_exact_review_without_snapshot(work_item_id, revision_id)
+        if exact_review is not None:
+            return exact_review
         latest_run = _latest_semantic_run(work_item_id, revision_id)
         # A runtime safety violation is an audit event, not a semantic review
         # result. Keep the exact attempt in local state, but expose the
@@ -145,17 +149,8 @@ def register_content_semantic_review_routes(
             and revision.revision_id == revision_id
             and revision.content_digest == request.expected_revision_digest
         ):
-            review_store = content_semantic_review_store()
-            if not review_store.write_ready():
-                return generate_content_semantic_review(
-                    snapshot=snapshot,
-                    revision_id=revision_id,
-                    request=request,
-                    client=client,
-                    store=review_store,
-                    run_store=local_state_store(),
-                )
-            return _queue_semantic_review(
+            return _handle_exact_semantic_post(
+                snapshot=snapshot,
                 work_item_id=work_item_id,
                 revision_id=revision_id,
                 revision=revision,
@@ -174,6 +169,49 @@ def register_content_semantic_review_routes(
         if result.status == "conflict":
             return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
         return result
+
+
+def _handle_exact_semantic_post(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    work_item_id: str,
+    revision_id: str,
+    revision: ContentDraftRevision,
+    request: ContentSemanticReviewRequest,
+    client: StdioCodexAppServerClient,
+    snapshot_loader: ContentSemanticSnapshotLoader,
+) -> ContentSemanticReviewResponse | JSONResponse:
+    review_store = content_semantic_review_store()
+    existing = review_store.for_revision(
+        work_item_id,
+        revision_id,
+        revision.content_digest,
+    )
+    if existing is not None:
+        return _existing_review_response(
+            work_item_id,
+            revision_id,
+            revision.content_digest,
+            existing,
+            status="idempotent",
+        )
+    if not review_store.write_ready():
+        return generate_content_semantic_review(
+            snapshot=snapshot,
+            revision_id=revision_id,
+            request=request,
+            client=client,
+            store=review_store,
+            run_store=local_state_store(),
+        )
+    return _queue_semantic_review(
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision=revision,
+        request=request,
+        client=client,
+        snapshot_loader=snapshot_loader,
+    )
 
 
 def _latest_semantic_run(work_item_id: str, revision_id: str) -> CodexRun | None:
@@ -204,6 +242,50 @@ def _latest_semantic_run(work_item_id: str, revision_id: str) -> CodexRun | None
                 )
             )
     return latest
+
+
+def _existing_review_response(
+    work_item_id: str,
+    revision_id: str,
+    revision_digest: str,
+    review: ContentSemanticReview,
+    *,
+    status: Literal["idempotent", "ready"],
+) -> ContentSemanticReviewResponse:
+    return ContentSemanticReviewResponse(
+        status=status,
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision_digest=revision_digest,
+        review=review,
+        run_id=review.codex_run_id,
+        safe_next_step=review.safe_next_step,
+    )
+
+
+def _read_exact_review_without_snapshot(
+    work_item_id: str,
+    revision_id: str,
+) -> ContentSemanticReviewResponse | None:
+    revision = content_workflow_store().load_draft_revision_state(
+        work_item_id
+    ).latest_revision
+    if revision is None or revision.revision_id != revision_id:
+        return None
+    review = content_semantic_review_store().for_revision(
+        work_item_id,
+        revision_id,
+        revision.content_digest,
+    )
+    if review is None:
+        return None
+    return _existing_review_response(
+        work_item_id,
+        revision_id,
+        revision.content_digest,
+        review,
+        status="ready",
+    )
 
 
 def _save_queued_semantic_run(
@@ -358,6 +440,7 @@ def _run_queued_semantic_review(
     snapshot_loader: ContentSemanticSnapshotLoader,
 ) -> None:
     try:
+        client = _client_for_queued_deadline(client, run_id)
         result = generate_content_semantic_review(
             snapshot=snapshot_loader(work_item_id),
             revision_id=revision_id,
@@ -370,6 +453,23 @@ def _run_queued_semantic_review(
         _terminalize_queued_run_from_result(run_id, result)
     except Exception as error:
         _mark_semantic_run_failed(run_id, error)
+
+
+def _client_for_queued_deadline(
+    client: StdioCodexAppServerClient,
+    run_id: str,
+) -> StdioCodexAppServerClient:
+    run = next(
+        (item for item in local_state_store().list_codex_runs() if item.id == run_id),
+        None,
+    )
+    deadline_at = None if run is None else getattr(run, "deadline_at", None)
+    if deadline_at is None:
+        return client
+    remaining = max(0.1, (deadline_at - utc_now()).total_seconds())
+    return _REAL_STDIO_CODEX_CLIENT(
+        timeout_seconds=min(client.timeout_seconds, remaining)
+    )
 
 
 def _terminalize_queued_run_from_result(
