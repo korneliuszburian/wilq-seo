@@ -29,13 +29,16 @@ def test_active_semantic_review_poll_avoids_heavy_snapshot_loader(monkeypatch) -
         hook="content_semantic_review",
         status="started",
         id="codex_content_semantic_review_active",
-        started_at=datetime(2026, 7, 18, 8, 0, tzinfo=UTC),
+        started_at=datetime.now(UTC),
         used_endpoints=[endpoint],
     )
 
     class LocalState:
         def list_codex_runs(self):
             return [active_run]
+
+        def save_codex_run(self, run):
+            return run
 
     class RevisionStore:
         def load_draft_revision_state(self, _work_item_id: str):
