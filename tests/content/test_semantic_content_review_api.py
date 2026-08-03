@@ -99,6 +99,51 @@ def test_semantic_turn_exposes_exact_allowed_targets_to_the_reviewer() -> None:
     assert "literalnych wartości z application_context.allowed_evidence_ids" in request.instruction
 
 
+def test_semantic_turn_exposes_regulatory_requirement_coverage() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        regulatory_coverage={
+            "profile_id": "bdo_profile",
+            "profile_version": "2026-08-03",
+            "requirements": [
+                {"id": "bdo_reporting", "label": "Sprawozdawczość"}
+            ],
+            "requirement_coverage": [
+                {
+                    "requirement_id": "bdo_reporting",
+                    "source_fact_ids": ["fact_reporting"],
+                    "evidence_ids": ["ev_reporting"],
+                }
+            ],
+            "source_fact_ids": ["fact_reporting"],
+            "evidence_ids": ["ev_reporting"],
+            "source_facts": [],
+        }
+    )
+
+    request = semantic_review_turn_request(
+        revision=ContentDraftRevision.model_construct(
+            work_item_id="content_work_item_exact",
+            revision_id="content_revision_exact",
+            content_digest="a" * 64,
+            planning_input_digest="b" * 64,
+            sections=[],
+        ),
+        planning_input=planning_input,
+        proposal=ContentPlanningProposal.model_construct(),
+    )
+
+    context = json.loads(request.untrusted_context)
+    assert context["planning_input"]["regulatory_coverage"]["profile_id"] == "bdo_profile"
+    assert context["planning_input"]["regulatory_coverage"]["requirement_coverage"] == [
+        {
+            "requirement_id": "bdo_reporting",
+            "source_fact_ids": ["fact_reporting"],
+            "evidence_ids": ["ev_reporting"],
+        }
+    ]
+    assert "regulatory_coverage.requirements" in request.instruction
+
+
 def test_full_draft_model_envelope_is_compact_but_digest_bound(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:

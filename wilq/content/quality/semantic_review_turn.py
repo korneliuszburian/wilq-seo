@@ -20,6 +20,10 @@ _INSTRUCTION = (
     "widoczne w rewizji względem planu, odbiorcy, intencji, zapytań i dozwolonych faktów. "
     "Nie zatwierdzaj tekstu, nie przepisuj go, nie wymyślaj faktów ani targetów, nie twórz "
     "ActionObject i nie wykonuj write. Każdy finding ma być instrukcją dla człowieka i "
+    "Dla regulowanego profilu sprawdź osobno każdy wpis w regulatory_coverage.requirements: "
+    "tekst musi odpowiadać jego source_facts i requirement_coverage, zachować podmiot, "
+    "warunki, wyjątki, terminy i kwoty, a brak odpowiedzi albo nieuzasadnione uogólnienie "
+    "zgłoś jako needs_changes w najbardziej konkretnym wymiarze. "
     "wskazywać exact target z dozwolonej listy. W affected_targets używaj wyłącznie "
     "literalnych wartości z application_context.allowed_targets; nie używaj nagłówków, "
     "nazw pól, skrótów ani własnych aliasów. W evidence_ids używaj wyłącznie literalnych "
@@ -162,6 +166,7 @@ def compact_semantic_review_planning_input(
         "buyer_trigger",
         "search_intent",
         "source_facts",
+        "regulatory_coverage",
         "query_portfolio",
         "claim_ledger",
         "baseline_cta_direction",
