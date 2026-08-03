@@ -763,6 +763,8 @@ def _proposal_from_output(
         page_assets=output.page_assets,
         faq=output.faq,
         cta_blocks=output.cta_blocks,
+        minimum_cta_blocks=planning_input.minimum_cta_blocks,
+        required_cta_patterns=planning_input.required_cta_patterns,
         internal_links=output.internal_links,
         conditional_hypotheses=output.conditional_hypotheses,
         measurement_plan=output.measurement_plan,

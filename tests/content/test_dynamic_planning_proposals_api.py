@@ -3,13 +3,11 @@ from __future__ import annotations
 import sqlite3
 import time
 from collections.abc import Iterator
-from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Literal, cast
 
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_planning_proposals as planning_router
@@ -19,7 +17,7 @@ from tests.content.dynamic_planning_test_support import (
     configure_planning_harness,
 )
 from wilq.codex.app_server import CodexAppServerTurnBlocker, StdioCodexAppServerClient
-from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.handoff.revision_document_renderer import revision_document_markdown
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputSummary,
@@ -30,7 +28,6 @@ from wilq.content.planning.generated_proposal import (
     _planning_runtime_blocker,
     generate_content_planning_proposal,
     read_content_planning_proposal,
-    with_current_planning_workspace,
 )
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningCtaBlock,
@@ -49,11 +46,9 @@ from wilq.content.planning.runtime_contract import (
     planning_job_stale_after_seconds,
 )
 from wilq.content.workflow.catalog import inventory_work_item_id
-from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.planning import (
-    ContentPlanningDecision,
+    ContentPlanningMeasurementPlan,
     ContentPlanningProposal,
-    ContentPlanningSection,
 )
 from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.schemas import CodexRun
@@ -76,52 +71,6 @@ class _FailingPlanningStore(ContentPlanningProposalStore):
         raise RuntimeError("synthetic persistence failure")
 
 
-def test_ready_plan_projects_only_its_exact_historical_decision() -> None:
-    proposal = ContentPlanningProposal(
-        work_item_id="content_work_item_bdo",
-        planning_digest="a" * 64,
-        service_card_id="service_bdo",
-        final_canonical_url="https://www.ekologus.pl/bdo/",
-        target_reader="firma",
-        buyer_problem="brak porządku",
-        buyer_trigger="zmiana wymagań",
-        search_intent="informational",
-        cta_direction="Skonsultuj sytuację.",
-        sections=[ContentPlanningSection(heading="Zakres", purpose="Porządkuje temat.")],
-        search_demand=ContentSearchDemandEvidence(
-            status="missing",
-            optional_ads_status="not_exactly_mapped",
-            safe_next_step="Brak dokładnych danych.",
-        ),
-    )
-    response = ContentPlanningProposalResponse(
-        status="ready",
-        work_item_id=proposal.work_item_id,
-        service_card_id=proposal.service_card_id,
-        proposal=proposal,
-        safe_next_step="Sprawdź plan.",
-    )
-    exact = ContentPlanningDecision(
-        decision_id="planning_decision_exact",
-        decision_number=1,
-        work_item_id=proposal.work_item_id,
-        stage="scope",
-        planning_digest=proposal.planning_digest,
-        service_card_id=proposal.service_card_id,
-        decision="approved",
-        reviewed_by="wilku",
-        created_at=datetime.now(UTC),
-    )
-    stale = exact.model_copy(update={"planning_digest": "b" * 64})
-
-    projected = with_current_planning_workspace(response, [stale, exact])
-
-    assert projected.planning_workspace is not None
-    assert projected.planning_workspace.proposal == proposal
-    assert projected.planning_workspace.scope_decision == exact
-    assert projected.planning_workspace.scope_current is True
-
-
 @pytest.fixture
 def planning_harness(
     monkeypatch: pytest.MonkeyPatch,
@@ -140,7 +89,7 @@ def test_dynamic_planning_proposals_are_two_case_and_idempotent(
 ) -> None:
     client, runtime = planning_harness
     generated = {
-        work_item_id: _generate_plan(
+        work_item_id: _approve_and_generate(
             client,
             runtime,
             work_item_id,
@@ -167,7 +116,7 @@ def test_dynamic_planning_proposals_are_two_case_and_idempotent(
     )
 
 
-def test_dynamic_planning_allows_an_exact_service_without_plan_review(
+def test_dynamic_planning_requires_saved_scope_before_model(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
@@ -176,6 +125,7 @@ def test_dynamic_planning_allows_an_exact_service_without_plan_review(
     before = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
     ).json()
+
     result = _post_planning(
         client,
         BDO_WORK_ITEM_ID,
@@ -183,14 +133,35 @@ def test_dynamic_planning_allows_an_exact_service_without_plan_review(
     )
 
     assert result.status_code == 200
-    assert result.json()["status"] in {"ready", "idempotent"}, result.json()
-    assert result.json()["proposal"]["service_card_id"] == service_card_id
-    assert runtime.calls == 1
-    current = client.get(
+    assert result.json()["status"] == "blocked"
+    blocker = result.json()["blockers"][0]
+    assert blocker["code"] == "scope_not_current"
+    assert "aktualnej decyzji zakresu" in blocker["reason"]
+    assert runtime.calls == 0
+
+
+def test_explicit_plan_request_requires_current_scope(
+    planning_harness: tuple[TestClient, PlanningClient],
+) -> None:
+    client, runtime = planning_harness
+    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
+    assert snapshot["planning_workspace"]["scope_current"] is False
+    service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    before = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
-    ).json()
-    assert current["status"] == "ready"
-    assert current["planning_workspace"]["scope_current"] is False
+    )
+    assert before.json()["status"] == "not_generated", before.json()
+
+    generated = _post_planning(
+        client,
+        BDO_WORK_ITEM_ID,
+        _generation_request(service_card_id, before.json()["planning_input_digest"]),
+    )
+
+    assert generated.status_code == 200
+    assert generated.json()["status"] == "blocked", generated.json()
+    assert generated.json()["blockers"][0]["code"] == "scope_not_current"
+    assert runtime.calls == 0
 
 
 def test_executor_submission_failure_is_typed_and_retryable(
@@ -325,10 +296,6 @@ def test_existing_not_started_job_is_recovered_after_api_process_restart(
     assert second.status_code == 200
     assert second.json()["status"] == "generating"
     assert executor.calls == 2
-    # This test deliberately simulates a worker that never runs. Its
-    # in-memory claim is process-local and must not leak into the next
-    # isolated harness, where the same deterministic input digest is valid.
-    planning_router._PLANNING_ACTIVE_KEYS.clear()
 
 
 def test_planning_runtime_has_separate_bounded_timeout(
@@ -411,55 +378,7 @@ def test_planning_store_blocks_a_sibling_digest_while_generation_is_in_flight(
     assert active.runtime.run_id == "planning_generation_first"
 
 
-def test_planning_snapshot_failure_does_not_create_a_generating_job(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
-    app = FastAPI()
-
-    class CaptureExecutor:
-        calls = 0
-
-        def submit(self, *_args: Any, **_kwargs: Any) -> None:
-            self.calls += 1
-
-    executor = CaptureExecutor()
-    monkeypatch.setattr(planning_router, "content_planning_proposal_store", lambda: store)
-    monkeypatch.setattr(
-        planning_router,
-        "ekologus_content_knowledge_cards",
-        lambda: (SimpleNamespace(id="service-card", card_type="service"),),
-    )
-    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
-    planning_router.register_content_planning_proposal_routes(
-        app,
-        snapshot_loader=lambda _work_item_id: (_ for _ in ()).throw(
-            RuntimeError("snapshot unavailable")
-        ),
-    )
-
-    response = TestClient(app).post(
-        "/api/content/work-items/work-item/planning-proposals",
-        json={
-            "service_card_id": "service-card",
-            "expected_planning_input_digest": "a" * 64,
-            "requested_by": "wilku",
-        },
-    )
-
-    assert response.status_code == 200
-    assert response.json()["status"] == "failed"
-    assert response.json()["blockers"][0]["code"] == "runtime_failed"
-    assert executor.calls == 0
-    assert store.queued_response(
-        "work-item",
-        "service-card",
-        "a" * 64,
-    ) is None
-
-
-def test_planning_api_rejects_a_stale_digest_before_sibling_queue_logic(
+def test_planning_api_returns_typed_blocker_for_a_sibling_generation(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -487,10 +406,9 @@ def test_planning_api_rejects_a_stale_digest_before_sibling_queue_logic(
         json=_generation_request(service_card_id, "b" * 64),
     )
     assert second.status_code == 200
-    assert second.json()["status"] == "stale"
-    assert second.json()["blockers"][0]["code"] == "stale_input"
-    assert second.json()["planning_input_digest"] == current["planning_input_digest"]
-    planning_router._PLANNING_ACTIVE_KEYS.clear()
+    assert second.json()["status"] == "blocked"
+    assert second.json()["blockers"][0]["code"] == "runtime_blocked"
+    assert second.json()["runtime"]["run_id"] == first.json()["runtime"]["run_id"]
 
 
 def test_planning_runtime_default_allows_full_structured_turn(
@@ -591,12 +509,107 @@ def test_planning_output_quality_gate_requires_query_to_section_assignment() -> 
     ]
 
 
-def test_changed_input_digest_is_rejected_before_a_replan_is_queued(
+def test_planning_output_quality_gate_requires_profile_cta_contract() -> None:
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Zakres doradztwa środowiskowego",
+            )
+        ],
+        cta_blocks=[ContentPlanningCtaBlock.model_construct(placement="after_lead")],
+    )
+
+    assert _planning_output_quality_errors(
+        output,
+        planning_input=SimpleNamespace(
+            minimum_cta_blocks=2,
+            query_portfolio=SimpleNamespace(
+                gsc_query_rows=[],
+                ads_term_rows=[],
+                keyword_planner_rows=[],
+            ),
+        ),
+    ) == ["missing_cta"]
+
+
+def test_planning_output_quality_gate_requires_distinct_reviewed_cta_patterns() -> None:
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[ContentPlanningModelSection.model_construct(heading="Zakres")],
+        cta_blocks=[
+            ContentPlanningCtaBlock.model_construct(
+                placement="after_lead", copy_direction="pattern-a"
+            ),
+            ContentPlanningCtaBlock.model_construct(
+                placement="after_content", copy_direction="pattern-a"
+            ),
+        ],
+    )
+    planning_input = SimpleNamespace(
+        minimum_cta_blocks=2,
+        required_cta_patterns=["pattern-a", "pattern-b"],
+        query_portfolio=SimpleNamespace(
+            gsc_query_rows=[], ads_term_rows=[], keyword_planner_rows=[]
+        ),
+    )
+
+    assert _planning_output_quality_errors(output, planning_input=planning_input) == [
+        "cta_pattern_coverage"
+    ]
+
+
+def test_planning_output_quality_gate_accepts_reviewed_cta_patterns_in_any_order() -> None:
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[ContentPlanningModelSection.model_construct(heading="Zakres")],
+        cta_blocks=[
+            ContentPlanningCtaBlock.model_construct(
+                placement="after_lead", copy_direction="pattern-b"
+            ),
+            ContentPlanningCtaBlock.model_construct(
+                placement="after_content", copy_direction="pattern-a"
+            ),
+        ],
+    )
+    planning_input = SimpleNamespace(
+        minimum_cta_blocks=2,
+        required_cta_patterns=["pattern-a", "pattern-b"],
+        query_portfolio=SimpleNamespace(
+            gsc_query_rows=[], ads_term_rows=[], keyword_planner_rows=[]
+        ),
+    )
+
+    assert _planning_output_quality_errors(output, planning_input=planning_input) == []
+
+
+def test_planning_output_quality_gate_requires_available_measurement_signals() -> None:
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[ContentPlanningModelSection.model_construct(heading="Zakres")],
+        cta_blocks=[ContentPlanningCtaBlock.model_construct(placement="after_lead")],
+        measurement_plan=ContentPlanningMeasurementPlan.model_construct(
+            metrics_to_watch=[], baseline_evidence_ids=[]
+        ),
+    )
+    planning_input = SimpleNamespace(
+        minimum_cta_blocks=1,
+        required_cta_patterns=[],
+        measurement_metrics=["clicks"],
+        measurement_baseline_evidence_ids=["ev_gsc"],
+        query_portfolio=SimpleNamespace(
+            gsc_query_rows=[], ads_term_rows=[], keyword_planner_rows=[]
+        ),
+    )
+
+    assert _planning_output_quality_errors(output, planning_input=planning_input) == [
+        "missing_measurement_metrics",
+        "missing_measurement_evidence",
+    ]
+
+
+def test_changed_input_can_enqueue_replan_when_older_proposal_exists(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client, runtime = planning_harness
-    proposal = _generate_plan(
+    proposal = _approve_and_generate(
         client,
         runtime,
         BDO_WORK_ITEM_ID,
@@ -622,10 +635,34 @@ def test_changed_input_digest_is_rejected_before_a_replan_is_queued(
     )
 
     assert response.status_code == 200
-    assert response.json()["status"] == "stale"
-    assert response.json()["planning_input_digest"] == proposal["planning_input_digest"]
-    assert executor.submitted == 0
+    assert response.json()["status"] == "generating"
+    assert response.json()["planning_input_digest"] == changed_digest
+    assert executor.submitted == 1
 
+
+def test_browser_snapshot_digest_is_accepted_by_scope_review(
+    planning_harness: tuple[TestClient, PlanningClient],
+) -> None:
+    client, _runtime = planning_harness
+    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
+    planning_digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
+    service_card_id = snapshot["service_profile_context"]["service_card_id"]
+
+    reviewed = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-review",
+        json={
+            "stage": "scope",
+            "service_card_id": service_card_id,
+            "expected_planning_digest": planning_digest,
+            "decision": "approved",
+            "reviewed_by": "wilku",
+            "checked_items": ["zakres", "dowody", "CTA"],
+            "notes": "Sprawdzono digest pokazany przez snapshot przeglądarkowy.",
+        },
+    )
+
+    assert reviewed.status_code == 200
+    assert reviewed.json()["decision"]["planning_digest"] == planning_digest
 
 def test_dynamic_planning_rejects_an_unknown_document_placement(
     planning_harness: tuple[TestClient, PlanningClient],
@@ -633,6 +670,20 @@ def test_dynamic_planning_rejects_an_unknown_document_placement(
     client, runtime = planning_harness
     snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
     service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    planning_digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
+    approved = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-review",
+        json={
+            "stage": "scope",
+            "service_card_id": service_card_id,
+            "expected_planning_digest": planning_digest,
+            "decision": "approved",
+            "reviewed_by": "wilku",
+            "checked_items": ["strona", "usługa", "intencja", "CTA"],
+            "notes": "Syntetyczny proof zatwierdzonej karty.",
+        },
+    )
+    assert approved.status_code == 200
     planning_input = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
     ).json()
@@ -666,6 +717,20 @@ def test_dynamic_planning_rejects_internal_link_outside_exact_lineage(
     client, runtime = planning_harness
     snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
     service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    planning_digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
+    approved = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-review",
+        json={
+            "stage": "scope",
+            "service_card_id": service_card_id,
+            "expected_planning_digest": planning_digest,
+            "decision": "approved",
+            "reviewed_by": "wilku",
+            "checked_items": ["strona", "usługa", "intencja", "CTA"],
+            "notes": "Syntetyczny proof linkowania.",
+        },
+    )
+    assert approved.status_code == 200
     planning_input = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
     ).json()
@@ -693,7 +758,7 @@ def test_dynamic_planning_input_change_is_stale_and_runtime_fails_closed(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    generated = _generate_plan(
+    generated = _approve_and_generate(
         client,
         runtime,
         BDO_WORK_ITEM_ID,
@@ -763,13 +828,14 @@ def test_initial_full_draft_uses_the_same_atomic_contract_for_both_services(
     revisions: dict[str, dict[str, Any]] = {}
     expected_calls = 0
     for work_item_id in (BDO_WORK_ITEM_ID, OUTSOURCING_WORK_ITEM_ID):
-        proposal = _generate_plan(
+        proposal = _approve_and_generate(
             client,
             runtime,
             work_item_id,
             expected_calls=expected_calls,
         )
         expected_calls += 1
+        _approve_generated_plan(client, work_item_id, proposal)
         stale_request = _initial_draft_request(proposal)
         stale_request["expected_planning_digest"] = "0" * 64
         stale = client.post(
@@ -830,7 +896,8 @@ def test_initial_full_draft_rejects_unstructured_or_unsafe_links(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    proposal = _generate_plan(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
+    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
+    _approve_generated_plan(client, BDO_WORK_ITEM_ID, proposal)
     malicious_outputs = (
         ("initial_link_anchor_text", "Kontakt](https://example.com/phish)[dalej"),
         (
@@ -868,7 +935,8 @@ def test_initial_full_draft_runtime_failure_writes_no_partial_revision_and_get_i
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
-    proposal = _generate_plan(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
+    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
+    _approve_generated_plan(client, BDO_WORK_ITEM_ID, proposal)
     runtime.fail = True
     failed = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/initial-draft",
@@ -882,7 +950,7 @@ def test_initial_full_draft_runtime_failure_writes_no_partial_revision_and_get_i
     assert runtime.calls == calls_after_failure
 
 
-def _generate_plan(
+def _approve_and_generate(
     client: TestClient,
     runtime: PlanningClient,
     work_item_id: str,
@@ -891,6 +959,20 @@ def _generate_plan(
 ) -> dict[str, Any]:
     snapshot = _snapshot(client, work_item_id)
     service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    planning_digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
+    approved = client.post(
+        f"/api/content/work-items/{work_item_id}/planning-review",
+        json={
+            "stage": "scope",
+            "service_card_id": service_card_id,
+            "expected_planning_digest": planning_digest,
+            "decision": "approved",
+            "reviewed_by": "wilku",
+            "checked_items": ["strona", "usługa", "intencja", "CTA"],
+            "notes": "Syntetyczny proof zatwierdzonej karty.",
+        },
+    )
+    assert approved.status_code == 200
     before = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
     assert before.status_code == 200
     assert before.json()["status"] == "not_generated", before.json()["blockers"]
@@ -930,7 +1012,7 @@ def _generate_plan(
         for blocker in created.json().get("blockers", [])
     ]
     assert created.json()["proposal"]["input_schema_version"] == (
-        "wilq_content_planning_input_v7"
+        "wilq_content_planning_input_v6"
     )
     repeated = client.post(
         f"/api/content/work-items/{work_item_id}/planning-proposals",
@@ -941,8 +1023,6 @@ def _generate_plan(
     ready = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
     assert ready.json()["status"] == "ready"
     assert ready.json()["proposal"] == created.json()["proposal"]
-    assert ready.json()["planning_workspace"]["proposal"] == created.json()["proposal"]
-    assert ready.json()["planning_workspace"]["scope_current"] is False
     assert ready.json()["input_summary"] == input_summary
     return cast(dict[str, Any], created.json()["proposal"])
 
@@ -968,8 +1048,29 @@ def _post_planning(
 
 
 def _snapshot(client: TestClient, work_item_id: str) -> dict[str, Any]:
-    del client
-    return cast(dict[str, Any], snapshot_for_work_item_or_404(work_item_id).model_dump())
+    response = client.get(f"/api/content/work-items/{work_item_id}/snapshot")
+    assert response.status_code == 200
+    return cast(dict[str, Any], response.json())
+
+
+def _approve_generated_plan(
+    client: TestClient,
+    work_item_id: str,
+    proposal: dict[str, Any],
+) -> None:
+    response = client.post(
+        f"/api/content/work-items/{work_item_id}/planning-review",
+        json={
+            "stage": "scope",
+            "service_card_id": proposal["service_card_id"],
+            "expected_planning_digest": proposal["planning_digest"],
+            "decision": "approved",
+            "reviewed_by": "wilku",
+            "checked_items": ["strona", "usługa", "intencja", "CTA"],
+            "notes": "Syntetyczne zatwierdzenie aktualnego planu.",
+        },
+    )
+    assert response.status_code == 200, response.json()
 
 
 def _initial_draft_request(proposal: dict[str, Any]) -> dict[str, str]:

@@ -154,6 +154,16 @@ class ContentPlanningSourceProvenance(BaseModel):
     evidence_ids: list[str] = Field(min_length=1)
 
 
+class ContentPlanningSourceProvenance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_fact_id: str = Field(min_length=1)
+    source_url_or_path: str = Field(min_length=1)
+    freshness_date: str = Field(min_length=1)
+    reviewer: str | None = None
+    evidence_ids: list[str] = Field(min_length=1)
+
+
 class ContentPlanningSourceAssessment(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

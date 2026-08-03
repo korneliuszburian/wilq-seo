@@ -447,30 +447,7 @@ export const ContentDocumentWorkspaceDocumentSchema = z.object({
   label: z.string(),
   reason: z.string(),
   source_provenance: z.array(ContentDocumentSourceProvenanceSchema).optional(),
-  preview: z.lazy(() => ContentDocumentWorkspaceDocumentPreviewSchema).nullable().optional(),
-  revision: z.lazy(() => ContentDraftRevisionSchema).nullable().optional(),
-  review: z.lazy(() => ContentDraftRevisionReviewSchema).nullable().optional()
-}).superRefine((document, context) => {
-  if (!document.revision) {
-    if (document.review) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Document without a revision cannot carry review data." });
-    }
-    return;
-  }
-  if (
-    document.revision_id !== document.revision.revision_id ||
-    document.content_digest !== document.revision.content_digest
-  ) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical document identity must match its exact revision." });
-  }
-  if (
-    document.review &&
-    (document.review.work_item_id !== document.revision.work_item_id ||
-      document.review.revision_id !== document.revision.revision_id ||
-      document.review.revision_digest !== document.revision.content_digest)
-  ) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical document review must match its exact revision." });
-  }
+  preview: z.lazy(() => ContentDocumentWorkspaceDocumentPreviewSchema).nullable().optional()
 });
 
 export const ContentDocumentWorkspaceDocumentSectionSchema = z.object({
@@ -489,23 +466,8 @@ export const ContentDocumentWorkspaceDocumentPreviewSchema = z.object({
   cta_count: z.number().int().nonnegative()
 });
 
-export const ContentDocumentWorkspaceKnowledgeCardSchema = z.object({
-  id: z.string().min(1),
-  card_type: z.enum(["service", "buyer_problem", "buyer_trigger", "cta_pattern", "claim_policy", "evidence_requirement", "measurement_sensitive_claim"]).optional(),
-  title: z.string().min(1),
-  summary: z.string().min(1)
-});
-
-export const ContentDocumentWorkspaceDocumentLineageSchema = z.object({
-  status: z.enum(["available", "partial", "not_recorded"]),
-  source_material_ids: z.array(z.string()).default([]),
-  knowledge_cards: z.array(ContentDocumentWorkspaceKnowledgeCardSchema).default([]),
-  unresolved_knowledge_card_ids: z.array(z.string()).default([]),
-  reason: z.string()
-});
-
 export const ContentDocumentWorkspaceNextActionSchema = z.object({
-  kind: z.enum(["open_review", "prepare_document", "repair_document", "none"]),
+  kind: z.enum(["open_review", "prepare_document", "none"]),
   label: z.string(),
   reason: z.string()
 });
@@ -526,53 +488,18 @@ export const ContentDocumentWorkspaceComparisonSchema = z.object({
   items: z.array(ContentDocumentWorkspaceComparisonItemSchema).default([])
 });
 
-export const ContentRegulatoryReviewCandidateSchema = z.object({
-  candidate_id: z.string().min(1),
-  source_url: z.string().url(),
-  source_title: z.string().min(1),
-  observed_on: z.string().min(1),
-  requirement_ids: z.array(z.string().min(1)).min(1),
-  requirement_labels: z.array(z.string().min(1)).min(1),
-  review_status: z.literal("review_required"),
-  safe_next_step: z.string().min(1)
-});
-
 export const ContentDocumentWorkspaceSchema = z.object({
   response_type: z.literal("content_document_workspace").default("content_document_workspace"),
-  contract_version: z.literal("content_document_workspace_v2").default("content_document_workspace_v2"),
+  contract_version: z.literal("content_document_workspace_v1").default("content_document_workspace_v1"),
   work_item_id: z.string(),
   work_kind: z.literal("refresh_existing"),
   service_label: z.string().nullable().optional(),
   source_snapshot: ContentDocumentWorkspaceSourceSnapshotSchema,
   canonical_document: ContentDocumentWorkspaceDocumentSchema,
-  document_lineage: ContentDocumentWorkspaceDocumentLineageSchema,
   comparison: ContentDocumentWorkspaceComparisonSchema,
   next_action: ContentDocumentWorkspaceNextActionSchema,
-  regulatory_review_candidates: z.array(ContentRegulatoryReviewCandidateSchema).default([]),
   secondary_disclosures: z.array(z.string()).default([])
 });
-
-export const ContentSelectedWorkspaceSchema = z
-  .object({
-    response_type: z.literal("content_selected_workspace").default("content_selected_workspace"),
-    contract_version: z.literal("content_selected_workspace_v1").default("content_selected_workspace_v1"),
-    status: z.enum(["ready", "missing"]),
-    work_item_id: z.string().min(1),
-    workspace: ContentDocumentWorkspaceSchema.nullable().optional(),
-    reason: z.string().min(1),
-    safe_next_step: z.string().min(1)
-  })
-  .superRefine((value, context) => {
-    if (value.status === "ready" && !value.workspace) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Ready workspace requires exact workspace data." });
-    }
-    if (value.status === "missing" && value.workspace) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Missing workspace cannot carry workspace data." });
-    }
-    if (value.workspace && value.workspace.work_item_id !== value.work_item_id) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace must match the selected work item." });
-    }
-  });
 
 export const ContentWorkflowEntryModeSchema = z.object({
   kind: z.enum(["refresh_existing", "new_page"]),
@@ -617,59 +544,14 @@ export const ContentNewPageBriefInputSchema = z.object({
   service: z.string().min(2).max(160),
   audience: z.string().min(3).max(300),
   search_intent: z.string().min(3).max(300),
-  proposed_ia_location: z.string().min(3).max(300),
-  topic_candidate_id: z.string().min(1).nullable().optional(),
-  topic_candidate_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional()
-}).strict().superRefine((brief, context) => {
-  const hasId = brief.topic_candidate_id != null;
-  const hasDigest = brief.topic_candidate_digest != null;
-  if (hasId !== hasDigest) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "A source-backed topic needs both its candidate ID and exact digest." });
-  }
+  proposed_ia_location: z.string().min(3).max(300)
 });
 
 export const ContentNewPageBriefSchema = ContentNewPageBriefInputSchema.extend({
   brief_id: z.string().min(1),
   brief_digest: z.string().length(64),
   created_at: z.string(),
-  work_kind: z.literal("new_page"),
-  topic_evidence_ids: z.array(z.string()).default([])
-}).superRefine((brief, context) => {
-  if (brief.topic_candidate_id == null && brief.topic_evidence_ids.length) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "A manual new-page brief cannot claim topic evidence." });
-  }
-  if (brief.topic_candidate_id != null && !brief.topic_evidence_ids.length) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "A selected topic candidate needs persisted evidence." });
-  }
-});
-
-export const ContentNewPageTopicCandidateSchema = z.object({
-  candidate_id: z.string().min(1),
-  candidate_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  title: z.string().min(3).max(160),
-  topic: z.string().min(3).max(160),
-  rationale: z.string().min(1),
-  source_connectors: z.array(z.string()).min(2),
-  evidence_ids: z.array(z.string()).min(2)
-});
-
-export const ContentNewPageTopicRecommendationsSchema = z.object({
-  response_type: z.literal("content_new_page_topic_recommendations"),
-  contract_version: z.literal("content_new_page_topic_recommendations_v1"),
-  status: z.enum(["ready", "no_qualified_topics", "blocked"]),
-  title: z.string().min(1),
-  reason: z.string().min(1),
-  safe_next_step: z.string().min(1),
-  candidates: z.array(ContentNewPageTopicCandidateSchema).default([]),
-  source_connectors: z.array(z.string()).default([]),
-  evidence_ids: z.array(z.string()).default([])
-}).superRefine((recommendations, context) => {
-  if (recommendations.status === "ready" && !recommendations.candidates.length) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Ready topic recommendations need at least one candidate." });
-  }
-  if (recommendations.status !== "ready" && recommendations.candidates.length) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "A non-ready topic recommendation response cannot expose candidates." });
-  }
+  work_kind: z.literal("new_page")
 });
 
 export const ContentNewPageOverlapCandidateSchema = z.object({
@@ -694,73 +576,11 @@ export const ContentNewPageOverlapGuardSchema = z.object({
   candidates: z.array(ContentNewPageOverlapCandidateSchema).default([])
 });
 
-export const ContentNewPageServiceOptionSchema = z.object({
-  service_card_id: z.string().min(1),
-  label: z.string().min(1),
-  summary: z.string().min(1),
-  evidence_ids: z.array(z.string()).default([])
-});
-
-export const ContentNewPageFoundationCommandSchema = z.object({
-  expected_brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  expected_overlap_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  service_card_id: z.string().min(1),
-  confirmed_by: z.string().min(2).max(160)
-}).strict();
-
-export const ContentNewPagePlanningFoundationSchema = z.object({
-  foundation_id: z.string().min(1),
-  work_item_id: z.string().min(1),
-  brief_id: z.string().min(1),
-  brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  overlap_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  overlap_evidence_ids: z.array(z.string()).default([]),
-  service_card_id: z.string().min(1),
-  service_card_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  service_label: z.string().min(1),
-  service_evidence_ids: z.array(z.string()).default([]),
-  confirmed_by: z.string().min(2),
-  created_at: z.string()
-});
-
-export const ContentNewPageDocumentIdentitySchema = z.object({
-  work_item_id: z.string().min(1),
-  work_kind: z.literal("new_page"),
-  brief_id: z.string().min(1),
-  brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  foundation_id: z.string().min(1),
-  service_card_id: z.string().min(1),
-  service_card_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  proposed_ia_location: z.string().trim().min(3),
-  public_source_status: z.literal("not_applicable"),
-  public_source_url: z.null(),
-  public_source_evidence_ids: z.array(z.string()).length(0),
-  document_status: z.literal("not_created"),
-  public_deployment_status: z.literal("not_confirmed"),
-  public_deployment_id: z.null()
-});
-
-export const ContentNewPagePlanningProposalRequestSchema = z.object({
-  expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  requested_by: z.string().trim().min(1).max(160),
-  operator_hint: z.string().max(500).default("")
-}).strict();
-
-export const ContentNewPageFoundationResultSchema = z.object({
-  status: z.enum(["created", "idempotent", "blocked", "conflict"]),
-  foundation: ContentNewPagePlanningFoundationSchema.nullable().optional(),
-  reason: z.string().min(1),
-  safe_next_step: z.string().min(1)
-});
-
 export const ContentNewPageBriefWorkspaceSchema = z.object({
   response_type: z.literal("content_new_page_brief_workspace"),
-  contract_version: z.literal("content_new_page_brief_workspace_v2"),
+  contract_version: z.literal("content_new_page_brief_workspace_v1"),
   brief: ContentNewPageBriefSchema,
   overlap_guard: ContentNewPageOverlapGuardSchema,
-  overlap_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  service_options: z.array(ContentNewPageServiceOptionSchema).default([]),
-  foundation: ContentNewPagePlanningFoundationSchema.nullable().optional(),
   review_status: z.literal("blocked"),
   review_reason: z.string().min(1),
   next_action_label: z.string().min(1)
@@ -929,40 +749,6 @@ export const ContentTargetDraftActionCommandSchema = z.object({
   expected_target_contract_digest: z.string().regex(/^[0-9a-f]{64}$/),
   expected_confirmation_digest: z.string().regex(/^[0-9a-f]{64}$/),
   expected_payload_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  requested_by: z.string().min(1).max(200)
-});
-
-export const ContentNewPageDeliveryReadinessSchema = z.object({
-  response_type: z.literal("content_new_page_delivery_readiness"),
-  contract_version: z.literal("content_new_page_delivery_readiness_v1"),
-  status: z.enum(["ready_for_action", "blocked"]),
-  work_item_id: z.string().min(1),
-  brief_id: z.string().min(1),
-  brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  foundation_id: z.string().min(1),
-  service_card_id: z.string().min(1),
-  service_card_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  revision_id: z.string().min(1).nullable().optional(),
-  revision_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
-  allowed_content_types: z.array(z.enum(["page", "post"])).default([]),
-  authoring_profile_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
-  evidence_ids: z.array(z.string().min(1)).default([]),
-  blockers: z.array(z.string().min(1)).default([]),
-  safe_next_step: z.string().min(1)
-}).superRefine((readiness, context) => {
-  if (readiness.status === "ready_for_action") {
-    if (!readiness.revision_id || !readiness.revision_digest || !readiness.authoring_profile_digest || !readiness.allowed_content_types.length || !readiness.evidence_ids.length || readiness.blockers.length) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Ready new-page delivery requires exact revision and observed capability." });
-    }
-  } else if (readiness.revision_id != null || readiness.revision_digest != null) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Blocked new-page delivery cannot expose an action revision." });
-  }
-});
-
-export const ContentNewPageDraftActionCommandSchema = z.object({
-  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  expected_authoring_profile_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  content_type: z.enum(["page", "post"]),
   requested_by: z.string().min(1).max(200)
 });
 
@@ -1209,8 +995,7 @@ export const ContentKnowledgeCardSchema = z.object({
     "cta_pattern",
     "claim_policy",
     "evidence_requirement",
-    "measurement_sensitive_claim",
-    "regulatory_source"
+    "measurement_sensitive_claim"
   ]),
   title: z.string(),
   summary: z.string(),
@@ -2345,28 +2130,8 @@ export const ContentPublicDeploymentConfirmationResponseSchema = z.object({
   deployment: ContentPublicDeploymentSchema
 });
 
-export const ContentPublicDeploymentConfirmationCommandSchema = z.object({
-  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  wordpress_post_id: z.string().min(1),
-  publication_evidence_id: z.string().min(1),
-  confirmed_by: z.string().min(1).max(200)
-});
-
-export const ContentPublicDeploymentObservationSchema = z.object({
-  wordpress_post_id: z.string(),
-  publication_evidence_id: z.string(),
-  publication_source_connector: z.string(),
-  public_url: z.string(),
-  observed_at: z.string()
-});
-
 export const ContentPublicDeploymentReadResponseSchema = z.object({
   deployment: ContentPublicDeploymentSchema.nullable().optional(),
-  publication_observations: z.array(ContentPublicDeploymentObservationSchema).default([]),
-  measurement_window: ContentMeasurementWindowSchema.nullable().optional(),
-  measurement_outcome: z.lazy(() => ContentMeasurementOutcomeInterpretationSchema).nullable().optional(),
-  learning_proposal: z.lazy(() => ContentLearningProposalSchema).nullable().optional(),
-  outcome_allowed: z.boolean().default(false),
   safe_next_step: z.string()
 });
 
@@ -2383,7 +2148,6 @@ export const ContentMeasurementObservedMetricSchema = z.object({
   content_url: z.string().nullable().optional(),
   quality_state: z.enum(["verified", "partial", "unverified", "unknown"]).optional(),
   settlement_state: z.enum(["settled", "settling", "not_applicable", "unknown"]).optional(),
-  freshness_state: z.enum(["fresh", "stale", "unknown"]).optional(),
   interpretation_caveats: z.array(z.string()).default([])
 });
 
@@ -2410,7 +2174,6 @@ export const ContentMeasurementOutcomeInterpretationSchema = z.object({
   metric_fact_ids: z.array(z.string()).default([]),
   refresh_run_ids: z.array(z.string()).default([]),
   limitations: z.array(z.string()).default([]),
-  observed_metrics: z.array(ContentMeasurementObservedMetricSchema).default([]),
   success_claim_allowed: z.boolean(),
   queue_feedback_allowed: z.boolean(),
   safe_next_step: z.string()
@@ -2505,8 +2268,6 @@ export const ContentDraftRevisionProposalMetadataSchema = z
     cta_lineage: z.array(ContentDraftRevisionProposalCtaLineageSchema).default([]),
     quality_verdict: z.enum(["needs_changes", "reviewable", "ready_for_human_review"]),
     quality_finding_codes: z.array(z.string()).default([]),
-    regulatory_assurance_run_id: z.string().trim().min(1).nullable().optional(),
-    regulatory_assurance_criteria_version: z.string().trim().min(1).nullable().optional(),
     review_scope: z.enum([
       "persisted_selected_sections_and_declared_lineage",
       "persisted_selected_components_and_declared_lineage",
@@ -2521,20 +2282,6 @@ export const ContentDraftRevisionProposalMetadataSchema = z
     const lineageCtaIds = metadata.cta_lineage.map((lineage) => lineage.cta_id);
     const sectionSelection = headings.length > 0;
     const ctaSelection = ctaIds.length > 0;
-    const assuranceBound =
-      metadata.regulatory_assurance_run_id != null ||
-      metadata.regulatory_assurance_criteria_version != null;
-    if (
-      assuranceBound &&
-      (!metadata.regulatory_assurance_run_id ||
-        !metadata.regulatory_assurance_criteria_version)
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["regulatory_assurance_run_id"],
-        message: "regulatory assurance provenance must be complete"
-      });
-    }
     const validSections =
       new Set(headings).size === headings.length &&
       headings.length === lineageHeadings.length &&
@@ -2644,35 +2391,6 @@ export const ContentDraftRevisionInternalLinkSchema = z.object({
   claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
 });
 
-const isSafeOfficialSourceUrl = (value: string): boolean => {
-  if (value !== value.trim() || /[\x00-\x20\x7f<>"'`(){}|\\^\[\]]/.test(value)) return false;
-  try {
-    const parsed = new URL(value);
-    return (
-      parsed.protocol === "https:" &&
-      parsed.hostname.length > 0 &&
-      parsed.username === "" &&
-      parsed.password === ""
-    );
-  } catch {
-    return false;
-  }
-};
-
-const isIsoDate = (value: string): boolean => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  return !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
-};
-
-export const ContentDraftRevisionOfficialSourceReferenceSchema = z.object({
-  source_fact_id: z.string().trim().min(1),
-  source_url: z.string().trim().min(1).refine(isSafeOfficialSourceUrl),
-  source_title: z.string().trim().min(1),
-  verified_on: z.string().trim().min(1).refine(isIsoDate),
-  evidence_ids: z.array(z.string().trim().min(1)).min(1),
-  regulatory_requirement_ids: z.array(z.string().trim().min(1)).min(1)
-});
-
 export const ContentDraftRevisionSchema = z.object({
   schema_version: z
     .enum(["wilq_content_draft_revision_v1", "wilq_content_draft_revision_v2"])
@@ -2691,50 +2409,21 @@ export const ContentDraftRevisionSchema = z.object({
   inventory_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
-  document_kind: z.enum(["refresh_existing", "new_page"]).default("refresh_existing"),
-  final_canonical_url: z.string().nullable().default(null),
-  new_page_document_identity: ContentNewPageDocumentIdentitySchema.nullable().optional(),
   source_provenance: z.array(ContentDraftRevisionSourceProvenanceSchema).optional(),
+  final_canonical_url: z.string(),
   title: z.string().refine((value) => value.trim().length > 0),
   page_assets: ContentDraftRevisionPageAssetsSchema.nullable().optional(),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
   faq: z.array(ContentDraftRevisionFaqItemSchema).default([]),
   cta_blocks: z.array(ContentDraftRevisionCtaBlockSchema).default([]),
   internal_links: z.array(ContentDraftRevisionInternalLinkSchema).default([]),
-  official_source_references: z.array(ContentDraftRevisionOfficialSourceReferenceSchema).default([]),
   proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
-  correction_reason: z.enum(["canonical_html_alignment", "official_source_lineage_rebase"]).nullable().optional(),
+  correction_reason: z.literal("canonical_html_alignment").nullable().optional(),
   publish_ready: z.literal(false),
   created_by: z.string().refine((value) => value.trim().length > 0),
   created_at: z.string()
 }).superRefine((revision, context) => {
-  if (revision.schema_version === "wilq_content_draft_revision_v1") {
-    if (
-      revision.document_kind !== "refresh_existing" ||
-      !revision.final_canonical_url?.trim() ||
-      revision.new_page_document_identity ||
-      revision.official_source_references.length > 0
-    ) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Historical v1 revision requires a refresh URL and cannot carry new-page identity or official source references." });
-    }
-    return;
-  }
-  const sourceFactIds = revision.official_source_references.map((item) => item.source_fact_id);
-  if (sourceFactIds.length !== new Set(sourceFactIds).size) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["official_source_references"], message: "Full-document official source references require unique source fact IDs." });
-  }
-  if (revision.document_kind === "refresh_existing" && (!revision.final_canonical_url?.trim() || revision.new_page_document_identity)) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["final_canonical_url"], message: "Refresh revision requires a public canonical URL and no new-page identity." });
-  }
-  if (revision.document_kind === "new_page" && (
-    revision.final_canonical_url !== null ||
-    !revision.new_page_document_identity ||
-    revision.new_page_document_identity.work_item_id !== revision.work_item_id ||
-    revision.service_card_id !== revision.new_page_document_identity.service_card_id ||
-    revision.service_digest !== revision.new_page_document_identity.service_card_digest
-  )) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["new_page_document_identity"], message: "New-page revision requires exact pre-document identity and no public URL." });
-  }
+  if (revision.schema_version !== "wilq_content_draft_revision_v2") return;
   const requiredBindings = [
     revision.planning_input_digest,
     revision.service_card_id,
@@ -3042,7 +2731,7 @@ export const ContentDraftRevisionSaveRequestSchema = z.object({
   base_revision_id: z.string().nullable(),
   title: z.string().refine((value) => value.trim().length > 0),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
-  correction_reason: z.enum(["canonical_html_alignment"]).nullable().optional(),
+  correction_reason: z.literal("canonical_html_alignment").nullable().optional(),
   created_by: z.string().refine((value) => value.trim().length > 0)
 });
 
@@ -3050,11 +2739,6 @@ export const ContentDraftRevisionSaveResponseSchema = z.object({
   status: z.enum(["created", "idempotent"]),
   revision: ContentDraftRevisionSchema,
   workspace: ContentDraftRevisionWorkspaceSchema
-});
-
-export const ContentOfficialSourceLineageRebaseRequestSchema = z.object({
-  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  requested_by: z.string().trim().min(1)
 });
 
 export const ContentDraftRevisionReviewRequestSchema = z
@@ -3104,7 +2788,6 @@ export const ContentRevisionHtmlPackageManifestSchema = z.object({
   evidence_ids: z.array(z.string()).default([]),
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
-  official_source_references: z.array(ContentDraftRevisionOfficialSourceReferenceSchema).default([]),
   section_count: z.number().int().positive()
 });
 
@@ -3195,12 +2878,87 @@ export const ContentDraftRevisionConflictSchema = z.object({
     "revision_not_found",
     "stale_revision",
     "stale_review",
-    "digest_mismatch",
-    "official_source_lineage_unavailable"
+    "digest_mismatch"
   ]),
   current_revision_id: z.string().nullable(),
   current_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
   safe_next_step: z.string()
+});
+
+export const ContentCodexSectionProposalRequestSchema = z
+  .object({
+    expected_base_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    selected_section_headings: z
+      .array(z.string().refine((value) => value.trim().length > 0))
+      .default([]),
+    selected_section_ids: z
+      .array(z.string().refine((value) => value.trim().length > 0))
+      .default([]),
+    selected_cta_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
+    requested_by: z.string().refine((value) => value.trim().length > 0)
+  })
+  .strict()
+  .superRefine((request, context) => {
+    const selectedKinds = [
+      request.selected_section_headings.length > 0,
+      request.selected_section_ids.length > 0,
+      request.selected_cta_ids.length > 0
+    ].filter(Boolean).length;
+    if (selectedKinds !== 1) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selected_cta_ids"],
+        message: "select sections by stable IDs, legacy headings, or one CTA, never both"
+      });
+    }
+    if (new Set(request.selected_section_headings).size !== request.selected_section_headings.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selected_section_headings"],
+        message: "selected section headings must be unique"
+      });
+    }
+    if (new Set(request.selected_section_ids).size !== request.selected_section_ids.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selected_section_ids"],
+        message: "selected section IDs must be unique"
+      });
+    }
+    if (request.selected_cta_ids.length > 1 || new Set(request.selected_cta_ids).size !== request.selected_cta_ids.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selected_cta_ids"],
+        message: "select exactly one unique CTA"
+      });
+    }
+  });
+
+export const ContentCodexSectionProposalBlockerCodeSchema = z.enum([
+  "missing_planning_binding",
+  "missing_base_revision",
+  "stale_base_revision",
+  "revision_not_ready_for_proposal",
+  "stale_content_context",
+  "missing_generation_contract",
+  "unknown_selected_section",
+  "unknown_selected_cta",
+  "ambiguous_claim_marker",
+  "runtime_blocked",
+  "runtime_failed",
+  "invalid_structured_output",
+  "section_scope_mismatch",
+  "proposal_contract_blocked",
+  "quality_blocked",
+  "revision_conflict"
+]);
+
+export const ContentCodexSectionProposalBlockerSchema = z.object({
+  code: ContentCodexSectionProposalBlockerCodeSchema,
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string(),
+  source_codes: z.array(z.string()).default([])
 });
 
 export const ContentCodexRuntimeTraceSchema = z.object({
@@ -3213,86 +2971,72 @@ export const ContentCodexRuntimeTraceSchema = z.object({
   external_call_attempted: z.boolean()
 });
 
-export const ContentRevisionRepairProposalRequestSchema = z.object({
-  expected_base_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  selected_section_ids: z.array(z.string().trim().min(1)).default([]),
-  selected_cta_ids: z.array(z.string().trim().min(1)).default([]),
-  requested_by: z.string().trim().min(1)
-}).superRefine((request, context) => {
-  const selectedCount = request.selected_section_ids.length + request.selected_cta_ids.length;
-  if (selectedCount !== 1) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "repair proposal requires exactly one persisted section or CTA"
-    });
-  }
-  if (
-    new Set(request.selected_section_ids).size !== request.selected_section_ids.length ||
-    new Set(request.selected_cta_ids).size !== request.selected_cta_ids.length
-  ) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "repair proposal component IDs must be unique"
-    });
-  }
-});
-
-export const ContentRevisionRepairProposalBlockerSchema = z.object({
-  code: z.enum([
-    "missing_planning_binding",
-    "missing_base_revision",
-    "stale_base_revision",
-    "revision_not_ready_for_proposal",
-    "stale_content_context",
-    "missing_generation_contract",
-    "unknown_selected_section",
-    "unknown_selected_cta",
-    "ambiguous_claim_marker",
-    "runtime_blocked",
-    "runtime_failed",
-    "invalid_structured_output",
-    "section_scope_mismatch",
-    "proposal_contract_blocked",
-    "quality_blocked",
-    "revision_conflict"
-  ]),
-  label: z.string().min(1),
-  reason: z.string().min(1),
-  next_step: z.string().min(1),
-  source_codes: z.array(z.string()).default([])
-});
-
-export const ContentRevisionRepairProposalResponseSchema = z.object({
-  status: z.enum(["created", "idempotent", "blocked", "failed", "conflict"]),
-  run_id: z.string().nullable().optional(),
-  work_item_id: z.string().min(1),
-  base_revision_id: z.string().min(1),
-  selected_section_headings: z.array(z.string()).default([]),
-  selected_cta_ids: z.array(z.string()).default([]),
-  revision: ContentDraftRevisionSchema.nullable().optional(),
-  quality_review: ContentQualityReviewSchema.nullable().optional(),
-  quality_review_scope: z.enum([
-    "persisted_selected_sections_and_declared_lineage",
-    "persisted_selected_components_and_declared_lineage"
-  ]),
-  semantic_review_required: z.literal(true),
-  runtime: ContentCodexRuntimeTraceSchema,
-  evidence_ids: z.array(z.string()).default([]),
-  source_connectors: z.array(z.string()).default([]),
-  blockers: z.array(ContentRevisionRepairProposalBlockerSchema).default([]),
-  safe_next_step: z.string().min(1),
-  publish_ready: z.literal(false)
-}).superRefine((response, context) => {
-  if (["created", "idempotent"].includes(response.status)) {
-    if (!response.run_id || !response.revision || !response.quality_review || response.quality_review.verdict === "blocked" || response.blockers.length) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "created repair proposal requires a reviewable child revision" });
+export const ContentCodexSectionProposalResponseSchema = z
+  .object({
+    status: z.enum(["created", "idempotent", "blocked", "failed", "conflict"]),
+    run_id: z.string().nullable(),
+    work_item_id: z.string(),
+    base_revision_id: z.string(),
+    selected_section_headings: z.array(z.string()),
+    selected_cta_ids: z.array(z.string()).default([]),
+    revision: ContentDraftRevisionSchema.nullable(),
+    quality_review: ContentQualityReviewSchema.nullable(),
+    quality_review_scope: z.enum([
+      "persisted_selected_sections_and_declared_lineage",
+      "persisted_selected_components_and_declared_lineage"
+    ]),
+    semantic_review_required: z.literal(true),
+    runtime: ContentCodexRuntimeTraceSchema,
+    evidence_ids: z.array(z.string()).default([]),
+    source_connectors: z.array(z.string()).default([]),
+    blockers: z.array(ContentCodexSectionProposalBlockerSchema).default([]),
+    safe_next_step: z.string(),
+    publish_ready: z.literal(false)
+  })
+  .superRefine((response, context) => {
+    const created = response.status === "created" || response.status === "idempotent";
+    if (
+      created &&
+      (response.run_id === null ||
+        response.revision === null ||
+        response.quality_review === null ||
+        response.quality_review.verdict === "blocked" ||
+        response.runtime.status !== "completed" ||
+        response.runtime.external_call_attempted ||
+        response.blockers.length > 0)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["status"],
+        message: "created proposal requires an unblocked reviewable revision"
+      });
     }
-  } else if (response.revision || !response.blockers.length) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "non-created repair proposal requires blockers without a revision" });
-  }
-});
+    const metadata = response.revision?.proposal_metadata;
+    if (
+      created &&
+      (!metadata ||
+        metadata.codex_run_id !== response.run_id ||
+        response.revision?.base_revision_id !== response.base_revision_id ||
+        JSON.stringify(metadata.selected_section_headings) !==
+          JSON.stringify(response.selected_section_headings) ||
+        JSON.stringify(metadata.selected_cta_ids) !== JSON.stringify(response.selected_cta_ids))
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["revision", "proposal_metadata"],
+        message: "created proposal revision must match the exact run, base and selected sections"
+      });
+    }
+    if (!created && (response.revision !== null || response.blockers.length === 0)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["status"],
+        message: "non-created proposal requires blockers and no revision"
+      });
+    }
+  });
 
- export const ContentWorkflowOperatorStepIdSchema = z.enum(
+export const ContentWorkflowOperatorStepIdSchema = z.enum(
   CONTENT_WORKFLOW_OPERATOR_STEP_ORDER
 );
 
@@ -3614,10 +3358,7 @@ export const ContentPlanningProposalSchema = z.object({
   input_schema_version: z.string().default("wilq_content_planning_input_v1"),
   criteria_version: z.string().default("wilq_people_first_planning_v5"),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
-  goal: z.enum(["refresh_existing", "new_page"]).default("refresh_existing"),
-  final_canonical_url: z.string().min(1).nullable().optional(),
-  proposed_ia_location: z.string().trim().min(3).nullable().optional(),
-  new_page_document_identity: ContentNewPageDocumentIdentitySchema.nullable().optional(),
+  final_canonical_url: z.string().min(1),
   service_card_id: z.string().nullable(),
   service_label: z.string().nullable(),
   service_selection_confirmed: z.boolean().default(false),
@@ -3644,8 +3385,7 @@ export const ContentPlanningProposalSchema = z.object({
     evidence_ids: z.array(z.string()),
     claim_ids: z.array(z.string()).default([]),
     source_material_ids: z.array(z.string()).default([]),
-    knowledge_card_ids: z.array(z.string()).default([]),
-    regulatory_requirement_ids: z.array(z.string()).default([])
+    knowledge_card_ids: z.array(z.string()).default([])
   })).min(1),
   inventory_mapping: z.array(z.object({
     inventory_section_id: z.string().min(1),
@@ -3682,87 +3422,35 @@ export const ContentPlanningProposalSchema = z.object({
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
   created_at: z.string().nullable().optional()
-}).superRefine((proposal, context) => {
-  if (proposal.goal === "refresh_existing") {
-    if (!proposal.final_canonical_url?.trim()) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["final_canonical_url"], message: "Refresh proposal requires final_canonical_url." });
-    }
-    if (proposal.proposed_ia_location || proposal.new_page_document_identity) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Refresh proposal cannot carry new-page identity." });
-    }
-    return;
-  }
-  if (proposal.final_canonical_url !== null || !proposal.proposed_ia_location?.trim() || !proposal.new_page_document_identity) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "New-page proposal requires exact IA and document identity without a public URL." });
-    return;
-  }
-  if (
-    proposal.new_page_document_identity.work_item_id !== proposal.work_item_id ||
-    proposal.new_page_document_identity.proposed_ia_location !== proposal.proposed_ia_location ||
-    (proposal.inventory_mapping?.length ?? 0) > 0
-  ) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "New-page proposal identity or inventory is contradictory." });
-  }
-  proposal.sections.forEach((section, index) => {
-    if (
-      section.inventory_disposition !== "create" ||
-      section.inventory_section_id !== null ||
-      section.inventory_heading !== null
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["sections", index],
-        message: "New-page proposal sections cannot reference existing-page inventory."
-      });
-    }
-  });
 });
 
-export const ContentPlanningWorkspaceSchema = z
-  .object({
-    proposal: ContentPlanningProposalSchema,
-    scope_decision: ContentPlanningDecisionSchema.nullable(),
-    section_map_decision: ContentPlanningDecisionSchema.nullable(),
-    scope_current: z.boolean(),
-    section_map_current: z.boolean()
-  })
-  .superRefine((workspace, context) => {
-    for (const [field, decision] of [
-      ["scope_decision", workspace.scope_decision],
-      ["section_map_decision", workspace.section_map_decision]
-    ] as const) {
-      if (!decision) continue;
-      if (
-        decision.work_item_id !== workspace.proposal.work_item_id ||
-        decision.planning_digest !== workspace.proposal.planning_digest ||
-        (decision.service_card_id !== null && decision.service_card_id !== workspace.proposal.service_card_id)
-      ) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [field],
-          message: "Planning decision must bind to the exact proposal."
-        });
-      }
-    }
-    const scopeCurrent = Boolean(
-      workspace.scope_decision?.decision === "approved" &&
-      workspace.scope_decision.work_item_id === workspace.proposal.work_item_id &&
-      workspace.scope_decision.planning_digest === workspace.proposal.planning_digest &&
-      (workspace.scope_decision.service_card_id === null ||
-        workspace.scope_decision.service_card_id === workspace.proposal.service_card_id)
-    );
-    if (workspace.scope_current !== scopeCurrent) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["scope_current"], message: "scope_current must reflect the exact scope decision." });
-    }
-    const sectionMapCurrent = Boolean(
-      workspace.proposal.generation_status === "codex_generated" &&
-      workspace.proposal.proposal_id &&
-      workspace.proposal.sections.length
-    );
-    if (workspace.section_map_current !== sectionMapCurrent) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["section_map_current"], message: "section_map_current must reflect the exact generated proposal." });
-    }
-  });
+export const ContentPlanningWorkspaceSchema = z.object({
+  proposal: ContentPlanningProposalSchema,
+  scope_decision: ContentPlanningDecisionSchema.nullable(),
+  section_map_decision: ContentPlanningDecisionSchema.nullable(),
+  scope_current: z.boolean(),
+  section_map_current: z.boolean()
+});
+
+export const ContentPlanningReviewRequestSchema = z.object({
+  stage: z.enum(["scope", "section_map"]),
+  expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  service_card_id: z.string().nullable().optional(),
+  decision: z.enum(["approved", "needs_changes"]),
+  reviewed_by: z.string().min(1),
+  checked_items: z.array(z.string()),
+  notes: z.string()
+});
+
+export const ContentPlanningReviewResponseSchema = z.object({
+  status: z.enum(["recorded", "idempotent"]),
+  decision: ContentPlanningDecisionSchema,
+  planning_workspace: ContentPlanningWorkspaceSchema
+});
+
+export const ContentPlanningReviewConflictSchema = z.object({
+  detail: z.string().min(1)
+});
 
 export const ContentPlanningProposalRequestSchema = z.object({
   service_card_id: z.string().min(1),
@@ -3809,110 +3497,7 @@ export const ContentPlanningSourceFactPreviewSchema = z.object({
   evidence_ids: z.array(z.string()).min(1),
   knowledge_card_ids: z.array(z.string()).default([]),
   source_fact_ids: z.array(z.string()).default([]),
-  source_material_ids: z.array(z.string()).default([]),
-  regulatory_requirement_ids: z.array(z.string()).default([])
-});
-
-export const ContentRegulatorySourceReviewCommandSchema = z.object({
-  candidate_id: z.string().trim().min(1),
-  expected_source_url: z.string().url(),
-  expected_profile_version: z.string().trim().min(1),
-  expected_source_snapshot_id: z.string().trim().min(1),
-  expected_source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  reviewed_fact: z.string().trim().min(20).max(2000),
-  covered_requirement_ids: z.array(z.string().trim().min(1)).min(1),
-  decision: z.enum(["accepted", "rejected"]),
-  reviewer: z.string().trim().min(1).max(200)
-});
-
-export const ContentRegulatorySourceReviewSchema = ContentRegulatorySourceReviewCommandSchema.extend({
-  review_id: z.string().min(1),
-  profile_id: z.string().trim().min(1),
-  service_card_ids: z.array(z.string().trim().min(1)).min(1),
-  source_url: z.string().url(),
-  source_title: z.string().trim().min(1),
-  observed_on: z.string().min(1),
-  source_snapshot_id: z.string().trim().min(1),
-  source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  reviewed_at: z.string().datetime()
-}).omit({
-  expected_source_url: true,
-  expected_profile_version: true,
-  expected_source_snapshot_id: true,
-  expected_source_snapshot_digest: true
-});
-
-export const ContentRegulatorySourceReviewListSchema = z.object({
-  reviews: z.array(ContentRegulatorySourceReviewSchema).default([])
-});
-
-export const ContentRegulatorySourceReviewConflictSchema = z.object({
-  code: z.enum(["candidate_changed", "source_snapshot_missing", "source_snapshot_changed", "source_proposal_stale"]),
-  label: z.string().trim().min(1),
-  reason: z.string().trim().min(1),
-  safe_next_step: z.string().trim().min(1)
-});
-
-export const ContentRegulatorySourceSnapshotSchema = z.object({
-  snapshot_id: z.string().trim().min(1),
-  candidate_id: z.string().trim().min(1),
-  profile_id: z.string().trim().min(1),
-  profile_version: z.string().trim().min(1),
-  source_url: z.string().url(),
-  content_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  content_type: z.string().trim().min(1),
-  byte_length: z.number().int().positive().max(12 * 1024 * 1024),
-  observed_at: z.string().datetime()
-});
-
-export const ContentRegulatorySourceSnapshotReadResponseSchema = z.object({
-  status: z.enum(["captured", "blocked"]),
-  snapshot: ContentRegulatorySourceSnapshotSchema.nullable().optional(),
-  reason: z.string().trim().min(1),
-  safe_next_step: z.string().trim().min(1)
-}).superRefine((response, context) => {
-  if (response.status === "captured" && !response.snapshot) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Captured source read requires a snapshot." });
-  }
-  if (response.status === "blocked" && response.snapshot) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Blocked source read cannot expose a snapshot." });
-  }
-});
-
-export const ContentRegulatorySourceFactProposalSchema = z.object({
-  proposal_id: z.string().trim().min(1),
-  candidate_id: z.string().trim().min(1),
-  profile_id: z.string().trim().min(1),
-  profile_version: z.string().trim().min(1),
-  source_url: z.string().url(),
-  source_title: z.string().trim().min(1),
-  source_snapshot_id: z.string().trim().min(1),
-  source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  observed_on: z.string().min(1),
-  proposed_fact: z.string().trim().min(20).max(2000),
-  covered_requirement_ids: z.array(z.string().trim().min(1)).min(1),
-  codex_run_id: z.string().trim().min(1),
-  status: z.literal("ready"),
-  human_review_required: z.literal(true),
-  created_at: z.string().datetime()
-});
-
-export const ContentRegulatorySourceFactProposalResponseSchema = z.object({
-  status: z.enum(["ready", "not_generated", "blocked", "failed"]),
-  proposal: ContentRegulatorySourceFactProposalSchema.nullable().optional(),
-  reason: z.string().trim().min(1),
-  safe_next_step: z.string().trim().min(1)
-}).superRefine((response, context) => {
-  if ((response.status === "ready") !== Boolean(response.proposal)) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Only ready source proposal response may contain proposal." });
-  }
-});
-
-export const ContentRegulatorySourceFactProposalReviewCommandSchema = z.object({
-  expected_source_snapshot_id: z.string().trim().min(1),
-  expected_source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  decision: z.enum(["accepted", "rejected"]),
-  reviewer: z.string().trim().min(1).max(200)
+  source_material_ids: z.array(z.string()).default([])
 });
 
 const contentPlanningSourceNames = [
@@ -3929,43 +3514,16 @@ const contentPlanningSourceNames = [
 ] as const;
 
 export const ContentPlanningInputSummarySchema = z.object({
-  // Optional only for parsing historical proposal records. Every current API
-  // producer supplies this discriminator.
-  goal: z.enum(["refresh_existing", "new_page"]).optional(),
-  final_canonical_url: z.string().min(1).nullable().optional(),
-  proposed_ia_location: z.string().min(3).nullable().optional(),
+  final_canonical_url: z.string().min(1),
   service_label: z.string().min(1),
-  inventory_status: z.enum(["available", "missing", "not_applicable"]),
-  content_inventory_status: z.enum(["available", "missing", "not_applicable"]).optional(),
-  acf_section_inventory_status: z.enum(["available", "missing", "not_applicable"]).optional(),
+  inventory_status: z.enum(["available", "missing"]),
+  content_inventory_status: z.enum(["available", "missing"]).optional(),
+  acf_section_inventory_status: z.enum(["available", "missing"]).optional(),
   source_assessments: z.array(ContentPlanningSourceAssessmentSchema).min(10),
   source_fact_count: z.number().int().nonnegative(),
   source_fact_ids: z.array(z.string()).default([]),
   source_material_ids: z.array(z.string()).default([]),
   source_fact_previews: z.array(ContentPlanningSourceFactPreviewSchema).optional(),
-  gsc_query_rows: z.array(ContentSearchDemandRowSchema).default([]),
-  regulatory_profile_id: z.string().min(1).nullable().optional(),
-  regulatory_profile_version: z.string().min(1).nullable().optional(),
-  // Present on current regulated planning inputs. Optional only so historical
-  // persisted proposal summaries remain readable.
-  regulatory_requirements: z.array(z.object({
-    id: z.string().trim().min(1),
-    label: z.string().trim().min(1),
-    reason: z.string().trim().min(1),
-    document_assertions: z.array(z.object({
-      id: z.string().trim().min(1),
-      label: z.string().trim().min(1),
-      required_any_of: z.array(z.string().trim().min(1)).min(1)
-    })).default([])
-  })).optional(),
-  regulatory_requirement_ids: z.array(z.string().min(1)).default([]),
-  regulatory_source_fact_ids: z.array(z.string().min(1)).default([]),
-  regulatory_requirement_coverage: z.array(z.object({
-    requirement_id: z.string().min(1),
-    source_fact_ids: z.array(z.string().min(1)).default([]),
-    evidence_ids: z.array(z.string().min(1)).default([])
-  })).default([]),
-  regulatory_review_candidates: z.array(ContentRegulatoryReviewCandidateSchema).default([]),
   evidence_id_count: z.number().int().nonnegative(),
   knowledge_card_count: z.number().int().nonnegative(),
   measurement_metrics: z.array(z.string()).default([]),
@@ -3983,141 +3541,6 @@ export const ContentPlanningInputSummarySchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["source_assessments"],
       message: "Every planning source must appear exactly once."
-    });
-  }
-  const goal = summary.goal ?? "refresh_existing";
-  const inventoryStatuses = [
-    summary.inventory_status,
-    summary.content_inventory_status,
-    summary.acf_section_inventory_status
-  ];
-  if (goal === "new_page") {
-    if (summary.final_canonical_url !== null) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["final_canonical_url"],
-        message: "New-page planning cannot claim a public canonical URL."
-      });
-    }
-    if (!summary.proposed_ia_location?.trim()) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["proposed_ia_location"],
-        message: "New-page planning requires an IA location."
-      });
-    }
-    if (inventoryStatuses.some((status) => status !== "not_applicable")) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["inventory_status"],
-        message: "New-page planning cannot carry existing-page inventory."
-      });
-    }
-    if ((summary.metric_comparisons ?? []).length > 0) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["metric_comparisons"],
-        message: "New-page planning cannot carry page metric comparisons."
-      });
-    }
-    if (summary.gsc_query_rows.length > 0) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["gsc_query_rows"],
-        message: "New-page planning cannot carry historic GSC query rows."
-      });
-    }
-  } else {
-    if (!summary.final_canonical_url?.trim()) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["final_canonical_url"],
-        message: "Refresh planning requires final_canonical_url."
-      });
-    }
-    if (summary.inventory_status === "not_applicable") {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["inventory_status"],
-        message: "Refresh planning requires existing-page inventory."
-      });
-    }
-  }
-  const profileBound = summary.regulatory_profile_id != null || summary.regulatory_profile_version != null;
-  if (profileBound) {
-    if (!summary.regulatory_profile_id || !summary.regulatory_profile_version) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_profile_id"], message: "Regulatory planning summary requires exact profile identity." });
-    }
-    const required = new Set(summary.regulatory_requirement_ids);
-    if (
-      summary.regulatory_requirements !== undefined &&
-      (summary.regulatory_requirements.length !== required.size ||
-        summary.regulatory_requirements.some((requirement) => !required.has(requirement.id)))
-    ) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirements"], message: "Regulatory planning summary requires exact requirement definitions." });
-    }
-    const coverage = new Map(summary.regulatory_requirement_coverage.map((item) => [item.requirement_id, item]));
-    if (!required.size || coverage.size !== required.size || [...required].some((id) => !coverage.has(id))) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Regulatory planning summary requires exact coverage for every requirement." });
-    } else {
-      const coveredSourceFactIds = new Set([...coverage.values()].flatMap((item) => item.source_fact_ids));
-      if (coveredSourceFactIds.size !== summary.regulatory_source_fact_ids.length || summary.regulatory_source_fact_ids.some((id) => !coveredSourceFactIds.has(id))) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_source_fact_ids"], message: "Regulatory planning summary requires exact covered source-fact IDs." });
-      }
-    }
-  } else if (summary.regulatory_requirement_ids.length || (summary.regulatory_requirements?.length ?? 0) || summary.regulatory_source_fact_ids.length || summary.regulatory_requirement_coverage.length || summary.regulatory_review_candidates.length) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Unprofiled planning summary cannot carry regulatory coverage." });
-  }
-});
-
-export const ContentPlanningInputBlockerSchema = z.object({
-  code: z.string().min(1),
-  label: z.string().min(1),
-  reason: z.string().min(1),
-  next_step: z.string().min(1)
-});
-
-export const ContentPlanningInputReadinessResponseSchema = z.object({
-  status: z.enum(["ready", "blocked"]),
-  work_item_id: z.string().min(1).nullable().optional(),
-  planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
-  input_summary: ContentPlanningInputSummarySchema.nullable().optional(),
-  new_page_document_identity: ContentNewPageDocumentIdentitySchema.nullable().optional(),
-  blockers: z.array(ContentPlanningInputBlockerSchema).default([]),
-  safe_next_step: z.string().min(1)
-}).superRefine((response, context) => {
-  if (response.status === "ready" && (!response.work_item_id || !response.planning_input_digest || !response.input_summary)) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Ready planning input requires exact identity and summary."
-    });
-  }
-  if (response.status === "blocked" && response.planning_input_digest) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Blocked planning input cannot expose a usable digest."
-    });
-  }
-  if (response.input_summary?.goal === "new_page") {
-    const identity = response.new_page_document_identity;
-    if (response.status === "ready" && !identity) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Ready new-page planning input requires its exact document identity."
-      });
-    } else if (identity && (
-      identity.work_item_id !== response.work_item_id ||
-      identity.proposed_ia_location !== response.input_summary.proposed_ia_location
-    )) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "New-page document identity must match the ready planning input."
-      });
-    }
-  } else if (response.new_page_document_identity) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Refresh planning cannot carry a new-page document identity."
     });
   }
 });
@@ -4139,7 +3562,6 @@ export const ContentPlanningProposalResponseSchema = z.object({
   input_summary: ContentPlanningInputSummarySchema.nullable().optional(),
   retry_after_seconds: z.number().int().nonnegative().nullable().optional(),
   proposal: ContentPlanningProposalSchema.nullable().optional(),
-  planning_workspace: ContentPlanningWorkspaceSchema.nullable().optional(),
   runtime: ContentCodexRuntimeTraceSchema,
   blockers: z.array(ContentPlanningProposalBlockerSchema).default([]),
   safe_next_step: z.string().min(1),
@@ -4152,299 +3574,6 @@ export const ContentPlanningProposalResponseSchema = z.object({
       message: "Planning input digest requires its exact input summary."
     });
   }
-  if (response.proposal && (
-    response.proposal.work_item_id !== response.work_item_id ||
-    response.proposal.service_card_id !== response.service_card_id ||
-    response.proposal.planning_input_digest !== response.planning_input_digest
-  )) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["proposal"],
-      message: "Planning response must match the nested exact proposal."
-    });
-  }
-  if (["created", "idempotent", "ready"].includes(response.status) && response.proposal && response.input_summary?.regulatory_profile_id) {
-    const coverage = new Map(response.input_summary.regulatory_requirement_coverage.map((item) => [item.requirement_id, new Set(item.evidence_ids)]));
-    const required = new Set(response.input_summary.regulatory_requirement_ids);
-    const sectionRequirements = new Set(response.proposal.sections.flatMap((section) => section.regulatory_requirement_ids));
-    for (const requirementId of sectionRequirements) {
-      if (!required.has(requirementId)) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response cannot carry an unknown regulatory requirement." });
-      }
-    }
-    for (const requirementId of required) {
-      const sections = response.proposal.sections.filter((section) => section.regulatory_requirement_ids.includes(requirementId));
-      if (!sections.length) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response requires every regulatory requirement." });
-      } else if (!sections.some((section) => section.evidence_ids.some((evidenceId) => coverage.get(requirementId)?.has(evidenceId)))) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response requires exact regulatory evidence." });
-      }
-      const requirement = response.input_summary.regulatory_requirements?.find((item) => item.id === requirementId);
-      if (requirement) {
-        const sectionText = sections
-          .map((section) => `${section.heading}\n${section.purpose}\n${section.reader_question}`)
-          .join("\n")
-          .replace(/\s+/g, " ")
-          .toLocaleLowerCase("pl-PL");
-        for (const assertion of requirement.document_assertions) {
-          const covered = assertion.required_any_of.some((term) =>
-            sectionText.includes(term.replace(/\s+/g, " ").toLocaleLowerCase("pl-PL"))
-          );
-          if (!covered) {
-            context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response omits a required regulatory document concept." });
-          }
-        }
-      }
-    }
-  }
-  if (response.planning_workspace) {
-    if (response.status !== "ready" || !response.proposal) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["planning_workspace"],
-        message: "Planning workspace is available only for a ready proposal."
-      });
-    } else if (
-      JSON.stringify(response.planning_workspace.proposal) !== JSON.stringify(response.proposal)
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["planning_workspace"],
-        message: "Planning workspace must carry the response exact proposal."
-      });
-    }
-  }
-});
-
-export const ContentNewPagePlanningProposalWorkspaceSchema = z.object({
-  response_type: z.literal("content_new_page_planning_proposal_workspace"),
-  contract_version: z.literal("content_new_page_planning_proposal_workspace_v1"),
-  brief_id: z.string().min(1),
-  readiness: ContentPlanningInputReadinessResponseSchema,
-  proposal_status: ContentPlanningProposalResponseSchema.nullable().optional()
-}).superRefine((workspace, context) => {
-  const response = workspace.proposal_status;
-  if (!response) return;
-  const identity = workspace.readiness.new_page_document_identity;
-  if (
-    workspace.readiness.status !== "ready" ||
-    !workspace.readiness.work_item_id ||
-    !workspace.readiness.planning_input_digest ||
-    !identity ||
-    workspace.brief_id !== identity.brief_id ||
-    response.work_item_id !== workspace.readiness.work_item_id ||
-    response.service_card_id !== identity.service_card_id ||
-    response.planning_input_digest !== workspace.readiness.planning_input_digest
-  ) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "New-page proposal workspace must keep one exact ready input."
-    });
-    return;
-  }
-  const proposal = response.proposal;
-  const proposalIdentity = proposal?.new_page_document_identity;
-  if (proposal && (
-    proposal.goal !== "new_page" ||
-    proposal.planning_input_digest !== workspace.readiness.planning_input_digest ||
-    !proposalIdentity ||
-    proposalIdentity.work_item_id !== identity.work_item_id ||
-    proposalIdentity.brief_id !== identity.brief_id ||
-    proposalIdentity.brief_digest !== identity.brief_digest ||
-    proposalIdentity.foundation_id !== identity.foundation_id ||
-    proposalIdentity.service_card_id !== identity.service_card_id ||
-    proposalIdentity.service_card_digest !== identity.service_card_digest ||
-    proposalIdentity.proposed_ia_location !== identity.proposed_ia_location
-  )) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["proposal_status", "proposal"],
-      message: "New-page proposal must match the workspace document identity."
-    });
-  }
-});
-
-export const ContentNewPageDocumentOutlineSectionSchema = z.object({
-  section_id: z.string().min(1),
-  heading: z.string().min(1),
-  purpose: z.string().min(1)
-});
-
-export const ContentNewPageDocumentReviewPrerequisiteConflictSchema = z.object({
-  response_type: z.literal("content_new_page_document_review_prerequisite_conflict"),
-  contract_version: z.literal("content_new_page_document_review_prerequisite_conflict_v1"),
-  status: z.literal("blocked"),
-  code: z.literal("missing_planning_foundation"),
-  brief_id: z.string().min(1),
-  safe_next_step: z.string().min(1)
-});
-
-export const ContentNewPageCanonicalDocumentWorkspaceSchema = z.object({
-  response_type: z.literal("content_new_page_canonical_document"),
-  contract_version: z.literal("content_new_page_canonical_document_v3"),
-  status: z.enum([
-    "ready_for_document",
-    "document_review_required",
-    "document_approved",
-    "document_needs_changes",
-    "document_rejected",
-    "document_deferred",
-    "blocked"
-  ]),
-  work_item_id: z.string().min(1),
-  brief_id: z.string().min(1),
-  brief_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  foundation_id: z.string().min(1),
-  service_card_id: z.string().min(1),
-  service_card_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  proposal_id: z.string().trim().min(1).nullable().optional(),
-  planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
-  planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
-  title: z.string().min(1),
-  proposed_ia_location: z.string().trim().min(3),
-  outline: z.array(ContentNewPageDocumentOutlineSectionSchema).default([]),
-  document_status: z.enum([
-    "not_created",
-    "unreviewed",
-    "approved",
-    "needs_changes",
-    "rejected",
-    "deferred"
-  ]),
-  canonical_revision: ContentDraftRevisionSchema.nullable().optional(),
-  revision_review: ContentDraftRevisionReviewSchema.nullable().optional(),
-  assigned_source_material_ids: z.array(z.string()).default([]),
-  assigned_knowledge_card_ids: z.array(z.string()).default([]),
-  document_lineage: ContentDocumentWorkspaceDocumentLineageSchema.default({
-    status: "not_recorded",
-    source_material_ids: [],
-    knowledge_cards: [],
-    unresolved_knowledge_card_ids: [],
-    reason: "Nie ma jeszcze zapisanej rewizji, więc WILQ nie może wskazać materiałów przypisanych do dokumentu."
-  }),
-  public_source_status: z.literal("not_applicable"),
-  public_source_url: z.null(),
-  public_deployment_status: z.literal("not_confirmed"),
-  safe_next_step: z.string().min(1)
-}).strict().superRefine((workspace, context) => {
-  const revision = workspace.canonical_revision;
-  if (!revision) {
-    if (
-      workspace.revision_review ||
-      workspace.assigned_source_material_ids.length > 0 ||
-      workspace.assigned_knowledge_card_ids.length > 0 ||
-      workspace.document_status !== "not_created" ||
-      workspace.document_lineage.status !== "not_recorded" ||
-      workspace.document_lineage.source_material_ids.length > 0 ||
-      workspace.document_lineage.knowledge_cards.length > 0 ||
-      workspace.document_lineage.unresolved_knowledge_card_ids.length > 0
-    ) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Missing new-page revision cannot carry document lineage." });
-    }
-    if (
-      workspace.status !== "ready_for_document" &&
-      workspace.status !== "blocked"
-    ) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Document workspace status requires a canonical revision." });
-    }
-    const hasExactPlanIdentity = Boolean(
-      workspace.proposal_id && workspace.planning_digest && workspace.planning_input_digest
-    );
-    if (workspace.status === "blocked") {
-      if (
-        workspace.proposal_id !== null ||
-        workspace.planning_digest !== null ||
-        workspace.planning_input_digest !== null
-      ) {
-        context.addIssue({ code: z.ZodIssueCode.custom, message: "Blocked new-page workspace cannot carry a current plan." });
-      }
-      return;
-    }
-    if (!hasExactPlanIdentity) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "New-page plan state requires exact proposal identity." });
-    }
-    if (workspace.status !== "ready_for_document") {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Generated new-page plan must be ready for its first document." });
-    }
-    return;
-  }
-  const identity = revision.new_page_document_identity;
-  if (
-    revision.document_kind !== "new_page" ||
-    revision.final_canonical_url !== null ||
-    !identity ||
-    revision.work_item_id !== workspace.work_item_id ||
-    revision.planning_digest !== workspace.planning_digest ||
-    revision.planning_input_digest !== workspace.planning_input_digest ||
-    identity.brief_id !== workspace.brief_id ||
-    identity.brief_digest !== workspace.brief_digest ||
-    identity.foundation_id !== workspace.foundation_id ||
-    identity.service_card_id !== workspace.service_card_id ||
-    identity.service_card_digest !== workspace.service_card_digest ||
-    identity.proposed_ia_location !== workspace.proposed_ia_location
-  ) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical revision does not match the exact new-page workspace." });
-  }
-  if (
-    JSON.stringify(workspace.assigned_source_material_ids) !== JSON.stringify(revision.source_material_ids) ||
-    JSON.stringify(workspace.assigned_knowledge_card_ids) !== JSON.stringify(revision.knowledge_card_ids)
-  ) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace lineage must match the canonical new-page revision." });
-  }
-  const expectedSourceMaterialIds = [...new Set(revision.source_material_ids)];
-  const expectedKnowledgeCardIds = [...new Set(revision.knowledge_card_ids)];
-  const lineageKnowledgeCardIds = workspace.document_lineage.knowledge_cards.map((card) => card.id);
-  if (
-    JSON.stringify(workspace.document_lineage.source_material_ids) !== JSON.stringify(expectedSourceMaterialIds) ||
-    new Set([...lineageKnowledgeCardIds, ...workspace.document_lineage.unresolved_knowledge_card_ids]).size !== expectedKnowledgeCardIds.length ||
-    !expectedKnowledgeCardIds.every((id) =>
-      lineageKnowledgeCardIds.includes(id) || workspace.document_lineage.unresolved_knowledge_card_ids.includes(id)
-    ) ||
-    new Set(lineageKnowledgeCardIds).size !== lineageKnowledgeCardIds.length
-  ) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Document lineage must match the canonical new-page revision." });
-  }
-  const expectedLineageStatus = expectedSourceMaterialIds.length === 0 && expectedKnowledgeCardIds.length === 0
-    ? "not_recorded"
-    : workspace.document_lineage.unresolved_knowledge_card_ids.length > 0
-      ? "partial"
-      : "available";
-  if (workspace.document_lineage.status !== expectedLineageStatus) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Document lineage status must match the canonical revision." });
-  }
-  const review = workspace.revision_review;
-  const expectedStatus = review ? review.decision : "unreviewed";
-  if (
-    workspace.document_status !== expectedStatus ||
-    (review && (review.revision_id !== revision.revision_id || review.revision_digest !== revision.content_digest))
-  ) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace review must match the canonical revision and status." });
-  }
-  if (workspace.document_status === "not_created") {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Canonical new-page revision requires a document status." });
-    return;
-  }
-  const expectedWorkspaceStatus = {
-    unreviewed: "document_review_required",
-    approved: "document_approved",
-    needs_changes: "document_needs_changes",
-    rejected: "document_rejected",
-    deferred: "document_deferred"
-  }[workspace.document_status];
-  if (workspace.status !== expectedWorkspaceStatus) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace status must match the canonical document status." });
-  }
-});
-
-/** Typed 409 body for an exact new-page revision-review conflict. */
-export const ContentNewPageRevisionReviewConflictSchema = z.union([
-  ContentDraftRevisionConflictSchema,
-  ContentNewPageDocumentReviewPrerequisiteConflictSchema
-]);
-
-export const ContentNewPageRevisionReviewResponseSchema = z.object({
-  status: z.enum(["recorded", "idempotent"]),
-  review: ContentDraftRevisionReviewSchema
 });
 
 export const ContentInitialDraftRequestSchema = z.object({
@@ -4599,7 +3728,6 @@ export const ContentSemanticReviewBlockerCodeSchema = z.enum([
   "legacy_revision",
   "stale_content_context",
   "missing_planning_input",
-  "source_material_review_required",
   "storage_activation_required",
   "runtime_blocked",
   "runtime_failed",
@@ -4929,7 +4057,6 @@ export type ContentWorkItemQueueCandidate = z.infer<
 export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueResponseSchema>;
 export type ContentDecisionContext = z.infer<typeof ContentDecisionContextSchema>;
 export type ContentDocumentWorkspace = z.infer<typeof ContentDocumentWorkspaceSchema>;
-export type ContentSelectedWorkspace = z.infer<typeof ContentSelectedWorkspaceSchema>;
 export type ContentTargetDiscovery = z.infer<typeof ContentTargetDiscoverySchema>;
 export type ContentTargetMappingPreview = z.infer<typeof ContentTargetMappingPreviewSchema>;
 export type ContentTargetMappingConfirmation = z.infer<
@@ -4943,17 +4070,9 @@ export type ContentTargetMappingConfirmationResult = z.infer<
 >;
 export type ContentTargetDraftPreview = z.infer<typeof ContentTargetDraftPreviewSchema>;
 export type ContentTargetDraftActionCommand = z.infer<typeof ContentTargetDraftActionCommandSchema>;
-export type ContentNewPageDeliveryReadiness = z.infer<typeof ContentNewPageDeliveryReadinessSchema>;
-export type ContentNewPageDraftActionCommand = z.input<typeof ContentNewPageDraftActionCommandSchema>;
 export type ContentWorkflowEntryResponse = z.infer<typeof ContentWorkflowEntryResponseSchema>;
 export type ContentNewPageBriefInput = z.input<typeof ContentNewPageBriefInputSchema>;
-export type ContentNewPageTopicCandidate = z.infer<typeof ContentNewPageTopicCandidateSchema>;
-export type ContentNewPageTopicRecommendations = z.infer<
-  typeof ContentNewPageTopicRecommendationsSchema
->;
 export type ContentNewPageBriefWorkspace = z.infer<typeof ContentNewPageBriefWorkspaceSchema>;
-export type ContentNewPageFoundationCommand = z.input<typeof ContentNewPageFoundationCommandSchema>;
-export type ContentNewPageFoundationResult = z.infer<typeof ContentNewPageFoundationResultSchema>;
 export type ContentInventoryCatalogItem = z.infer<typeof ContentInventoryCatalogItemSchema>;
 export type ContentInventoryCatalogResponse = z.infer<typeof ContentInventoryCatalogResponseSchema>;
 export type ContentInventoryMaterialResponse = z.infer<typeof ContentInventoryMaterialResponseSchema>;
@@ -5047,12 +4166,6 @@ export type ContentPublicDeployment = z.infer<typeof ContentPublicDeploymentSche
 export type ContentPublicDeploymentConfirmationResponse = z.infer<
   typeof ContentPublicDeploymentConfirmationResponseSchema
 >;
-export type ContentPublicDeploymentConfirmationCommand = z.input<
-  typeof ContentPublicDeploymentConfirmationCommandSchema
->;
-export type ContentPublicDeploymentObservation = z.infer<
-  typeof ContentPublicDeploymentObservationSchema
->;
 export type ContentPublicDeploymentReadResponse = z.infer<
   typeof ContentPublicDeploymentReadResponseSchema
 >;
@@ -5092,9 +4205,6 @@ export type ContentDraftRevisionSaveRequest = z.input<
 export type ContentDraftRevisionSaveResponse = z.infer<
   typeof ContentDraftRevisionSaveResponseSchema
 >;
-export type ContentOfficialSourceLineageRebaseRequest = z.input<
-  typeof ContentOfficialSourceLineageRebaseRequestSchema
->;
 export type ContentDraftRevisionReviewRequest = z.input<
   typeof ContentDraftRevisionReviewRequestSchema
 >;
@@ -5113,60 +4223,15 @@ export type ContentEditorialIntegrityReport = z.infer<
 export type ContentDraftRevisionConflict = z.infer<
   typeof ContentDraftRevisionConflictSchema
 >;
+export type ContentCodexSectionProposalRequest = z.input<
+  typeof ContentCodexSectionProposalRequestSchema
+>;
+export type ContentCodexSectionProposalResponse = z.infer<
+  typeof ContentCodexSectionProposalResponseSchema
+>;
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentPlanningWorkspace = z.infer<typeof ContentPlanningWorkspaceSchema>;
 export type ContentPlanningProposal = z.infer<typeof ContentPlanningProposalSchema>;
-export type ContentRegulatorySourceReviewCommand = z.input<
-  typeof ContentRegulatorySourceReviewCommandSchema
->;
-export type ContentRegulatorySourceReview = z.infer<
-  typeof ContentRegulatorySourceReviewSchema
->;
-export type ContentRegulatorySourceReviewList = z.infer<
-  typeof ContentRegulatorySourceReviewListSchema
->;
-export type ContentRegulatorySourceReviewConflict = z.infer<
-  typeof ContentRegulatorySourceReviewConflictSchema
->;
-export type ContentRegulatorySourceSnapshot = z.infer<
-  typeof ContentRegulatorySourceSnapshotSchema
->;
-export type ContentRegulatorySourceSnapshotReadResponse = z.infer<
-  typeof ContentRegulatorySourceSnapshotReadResponseSchema
->;
-export type ContentRegulatorySourceFactProposal = z.infer<
-  typeof ContentRegulatorySourceFactProposalSchema
->;
-export type ContentRegulatorySourceFactProposalResponse = z.infer<
-  typeof ContentRegulatorySourceFactProposalResponseSchema
->;
-export type ContentRegulatorySourceFactProposalReviewCommand = z.input<
-  typeof ContentRegulatorySourceFactProposalReviewCommandSchema
->;
-export type ContentPlanningInputReadinessResponse = z.infer<
-  typeof ContentPlanningInputReadinessResponseSchema
->;
-export type ContentNewPageDocumentIdentity = z.infer<
-  typeof ContentNewPageDocumentIdentitySchema
->;
-export type ContentNewPagePlanningProposalRequest = z.input<
-  typeof ContentNewPagePlanningProposalRequestSchema
->;
-export type ContentNewPageCanonicalDocumentWorkspace = z.infer<
-  typeof ContentNewPageCanonicalDocumentWorkspaceSchema
->;
-export type ContentNewPageDocumentReviewPrerequisiteConflict = z.infer<
-  typeof ContentNewPageDocumentReviewPrerequisiteConflictSchema
->;
-export type ContentNewPagePlanningProposalWorkspace = z.infer<
-  typeof ContentNewPagePlanningProposalWorkspaceSchema
->;
-export type ContentNewPageRevisionReviewConflict = z.infer<
-  typeof ContentNewPageRevisionReviewConflictSchema
->;
-export type ContentNewPageRevisionReviewResponse = z.infer<
-  typeof ContentNewPageRevisionReviewResponseSchema
->;
 export type ContentPlanningProposalRequest = z.input<
   typeof ContentPlanningProposalRequestSchema
 >;
@@ -5175,15 +4240,12 @@ export type ContentPlanningProposalResponse = z.infer<
 >;
 export type ContentInitialDraftRequest = z.input<typeof ContentInitialDraftRequestSchema>;
 export type ContentInitialDraftResponse = z.infer<typeof ContentInitialDraftResponseSchema>;
-export type ContentRevisionRepairProposalRequest = z.input<
-  typeof ContentRevisionRepairProposalRequestSchema
->;
-export type ContentRevisionRepairProposalResponse = z.infer<
-  typeof ContentRevisionRepairProposalResponseSchema
->;
 export type ContentSemanticReview = z.infer<typeof ContentSemanticReviewSchema>;
 export type ContentSemanticReviewRequest = z.input<typeof ContentSemanticReviewRequestSchema>;
 export type ContentSemanticReviewResponse = z.infer<typeof ContentSemanticReviewResponseSchema>;
+export type ContentPlanningReviewRequest = z.input<typeof ContentPlanningReviewRequestSchema>;
+export type ContentPlanningReviewResponse = z.infer<typeof ContentPlanningReviewResponseSchema>;
+export type ContentPlanningReviewConflict = z.infer<typeof ContentPlanningReviewConflictSchema>;
 export type ContentWorkItemServiceProfileContext = z.infer<
   typeof ContentWorkItemServiceProfileContextSchema
 >;

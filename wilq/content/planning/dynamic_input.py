@@ -10,7 +10,6 @@ from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.claims.ledger import ContentClaimLedger, ContentClaimLedgerEntry
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.inventory.records import ContentInventoryResolution
-from wilq.content.knowledge.cards import ContentKnowledgeCard
 from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceCandidate,
@@ -20,8 +19,6 @@ from wilq.content.measurement.aggregates import (
     MeasurementPeriodComparison,
     compare_exact_page_metric_periods,
 )
-from wilq.content.planning.generation_readiness import planning_generation_blockers
-from wilq.content.planning.input_payload import refresh_planning_payload
 from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningSourceAssessment,
@@ -31,32 +28,20 @@ from wilq.content.planning.input_sources import (
     build_planning_inventory,
     build_source_assessments,
     build_source_facts,
+    build_source_provenance,
+    planning_source_connectors,
+    usable_query_portfolio,
     validate_source_assessment_membership,
 )
-from wilq.content.planning.input_summary import ContentPlanningInputSummary
 from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
     load_content_internal_link_candidates,
-)
-from wilq.content.regulatory.planning import regulatory_planning_source_facts
-from wilq.content.regulatory.policy import (
-    ContentRegulatoryCoverage,
-    regulatory_content_coverage,
-    regulatory_coverage_gap,
-    regulatory_review_candidates,
 )
 from wilq.content.workflow.demand_evidence import (
     ContentSearchDemandEvidence,
     build_content_search_demand_evidence,
 )
 from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.new_page import (
-    ContentNewPageBrief,
-    ContentNewPageDocumentIdentity,
-    ContentNewPageOverlapGuard,
-    ContentNewPagePlanningFoundation,
-    build_new_page_document_identity,
-)
 from wilq.content.workflow.planning import (
     ContentPlanningProposal,
     build_content_planning_proposal,
@@ -78,17 +63,7 @@ ContentPlanningInputBlockerCode = Literal[
     "wordpress_material_review_required",
     "stale_planning_sources",
     "blocked_planning_sources",
-    "new_page_foundation_stale",
-    "missing_new_page_service_fact",
-    "missing_regulatory_source_coverage",
 ]
-
-# A refresh plan cannot be grounded without the current page, the approved
-# service boundary and its exact organic-demand evidence. Other assessed
-# sources remain visible in the input and may enrich a plan when exact, but a
-# missing, stale or failed optional integration must not invent demand or
-# prevent a grounded content repair from proceeding.
-_REQUIRED_EXACT_PLANNING_SOURCES = frozenset({"wordpress", "service_profile", "gsc"})
 
 
 class ContentPlanningInputBlocker(BaseModel):
@@ -103,15 +78,13 @@ class ContentPlanningInputBlocker(BaseModel):
 class ContentPlanningInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_name: Literal["wilq_content_planning_input_v7"] = "wilq_content_planning_input_v7"
+    schema_name: Literal["wilq_content_planning_input_v6"] = "wilq_content_planning_input_v6"
     criteria_version: Literal["wilq_people_first_planning_v5"] = "wilq_people_first_planning_v5"
-    inventory_mapping_policy: Literal["wilq_inventory_mapping_v7"] = "wilq_inventory_mapping_v7"
+    inventory_mapping_policy: Literal["wilq_inventory_mapping_v6"] = "wilq_inventory_mapping_v6"
     planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     work_item_id: str = Field(min_length=1)
-    goal: Literal["refresh_existing", "new_page"] = "refresh_existing"
-    final_canonical_url: str | None = None
-    proposed_ia_location: str | None = None
-    new_page_foundation: ContentNewPagePlanningFoundation | None = None
+    goal: Literal["refresh_existing"] = "refresh_existing"
+    final_canonical_url: str = Field(min_length=1)
     service_candidates: list[ContentWorkItemServiceCandidate] = Field(min_length=1)
     confirmed_service_card_id: str = Field(min_length=1)
     service_label: str = Field(min_length=1)
@@ -126,9 +99,6 @@ class ContentPlanningInput(BaseModel):
     source_facts: list[ContentPlanningSourceFact] = Field(default_factory=list)
     source_provenance: list[ContentPlanningSourceProvenance] = Field(default_factory=list)
     source_assessments: list[ContentPlanningSourceAssessment] = Field(min_length=10)
-    regulatory_coverage: ContentRegulatoryCoverage = Field(
-        default_factory=ContentRegulatoryCoverage
-    )
     query_portfolio: ContentSearchDemandEvidence
     claim_ledger: list[ContentClaimLedgerEntry] = Field(default_factory=list)
     measurement_metrics: list[str] = Field(default_factory=list)
@@ -152,26 +122,30 @@ class ContentPlanningInput(BaseModel):
     @model_validator(mode="after")
     def require_complete_source_assessments(self) -> ContentPlanningInput:
         validate_source_assessment_membership(self.source_assessments)
-        if self.goal == "refresh_existing":
-            if not self.final_canonical_url or not self.final_canonical_url.strip():
-                raise ValueError("Refresh planning requires final_canonical_url.")
-            if self.new_page_foundation is not None:
-                raise ValueError("Refresh planning cannot carry a new-page foundation.")
-            if self.inventory.status == "not_applicable":
-                raise ValueError("Refresh planning requires existing-page inventory.")
-        else:
-            if self.final_canonical_url is not None:
-                raise ValueError("New-page planning cannot claim a public canonical URL.")
-            if (
-                self.new_page_foundation is None
-                or self.proposed_ia_location is None
-                or len(self.proposed_ia_location.strip()) < 3
-            ):
-                raise ValueError("New-page planning requires exact foundation and IA location.")
-            if self.inventory.status != "not_applicable":
-                raise ValueError("New-page planning cannot carry existing-page inventory.")
-            if self.metric_comparisons or self.measurement_baseline_evidence_ids:
-                raise ValueError("New-page planning cannot carry a page measurement baseline.")
+        return self
+
+
+class ContentPlanningInputSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    final_canonical_url: str = Field(min_length=1)
+    service_label: str = Field(min_length=1)
+    inventory_status: Literal["available", "missing"]
+    content_inventory_status: Literal["available", "missing"]
+    acf_section_inventory_status: Literal["available", "missing"]
+    source_assessments: list[ContentPlanningSourceAssessment] = Field(min_length=10)
+    source_fact_count: int = Field(ge=0)
+    source_fact_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
+    source_fact_previews: list[ContentPlanningSourceFact] = Field(default_factory=list)
+    evidence_id_count: int = Field(ge=0)
+    knowledge_card_count: int = Field(ge=0)
+    measurement_metrics: list[str] = Field(default_factory=list)
+    metric_comparisons: list[MeasurementPeriodComparison] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def require_complete_source_assessments(self) -> ContentPlanningInputSummary:
+        validate_source_assessment_membership(self.source_assessments)
         return self
 
 
@@ -182,114 +156,11 @@ class ContentPlanningInputBuildResult(BaseModel):
     blockers: list[ContentPlanningInputBlocker] = Field(default_factory=list)
 
 
-class ContentPlanningInputReadinessResponse(BaseModel):
-    """Read-only readiness of one exact planning input.
-
-    This is deliberately smaller than a generated proposal: it tells the
-    operator whether WILQ can construct the exact input to planning, but it
-    neither calls Codex nor persists a plan.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    status: Literal["ready", "blocked"]
-    work_item_id: str | None = None
-    planning_input_digest: str | None = None
-    input_summary: ContentPlanningInputSummary | None = None
-    new_page_document_identity: ContentNewPageDocumentIdentity | None = None
-    blockers: list[ContentPlanningInputBlocker] = Field(default_factory=list)
-    safe_next_step: str = Field(min_length=1)
-
-    @model_validator(mode="after")
-    def require_exact_input_when_ready(self) -> ContentPlanningInputReadinessResponse:
-        if self.status == "ready" and (
-            self.work_item_id is None
-            or self.planning_input_digest is None
-            or self.input_summary is None
-        ):
-            raise ValueError("Ready planning input requires its exact identity and summary.")
-        if self.status == "blocked" and self.planning_input_digest is not None:
-            raise ValueError("Blocked planning input cannot expose a usable digest.")
-        if self.input_summary is not None and self.input_summary.goal == "new_page":
-            if self.status == "ready" and self.new_page_document_identity is None:
-                raise ValueError(
-                    "Ready new-page planning input requires its exact document identity."
-                )
-            if (
-                self.new_page_document_identity is not None
-                and self.new_page_document_identity.work_item_id != self.work_item_id
-            ):
-                raise ValueError("New-page document identity must match the planning work item.")
-            if (
-                self.new_page_document_identity is not None
-                and
-                self.new_page_document_identity.proposed_ia_location
-                != self.input_summary.proposed_ia_location
-            ):
-                raise ValueError("New-page document identity must match the planning IA location.")
-        elif self.new_page_document_identity is not None:
-            raise ValueError("Refresh planning cannot carry a new-page document identity.")
-        return self
-
-
-def content_planning_input_readiness(
-    result: ContentPlanningInputBuildResult,
-    *,
-    work_item_id: str | None = None,
-) -> ContentPlanningInputReadinessResponse:
-    generation_blockers = planning_generation_blockers(result.blockers)
-    if result.planning_input is None or generation_blockers:
-        input_summary = (
-            content_planning_input_summary(result.planning_input)
-            if result.planning_input is not None
-            else None
-        )
-        return ContentPlanningInputReadinessResponse(
-            status="blocked",
-            work_item_id=(
-                result.planning_input.work_item_id
-                if result.planning_input is not None
-                else work_item_id
-            ),
-            input_summary=input_summary,
-            blockers=generation_blockers,
-            safe_next_step=(
-                generation_blockers[0].next_step
-                if generation_blockers
-                else "Odczytaj ponownie podstawę planowania przed przygotowaniem planu."
-            ),
-        )
-    planning_input = result.planning_input
-    return ContentPlanningInputReadinessResponse(
-        status="ready",
-        work_item_id=planning_input.work_item_id,
-        planning_input_digest=planning_input.planning_input_digest,
-        input_summary=content_planning_input_summary(planning_input),
-        new_page_document_identity=(
-            build_new_page_document_identity(
-                foundation=planning_input.new_page_foundation,
-                proposed_ia_location=planning_input.proposed_ia_location,
-            )
-            if planning_input.goal == "new_page"
-            and planning_input.new_page_foundation is not None
-            and planning_input.proposed_ia_location is not None
-            else None
-        ),
-        blockers=result.blockers,
-        safe_next_step=(
-            "Wejście do planu jest gotowe. W kolejnym kroku można przygotować "
-            "propozycję planu dla tej dokładnej podstawy."
-        ),
-    )
-
-
 def content_planning_input_summary(
     planning_input: ContentPlanningInput,
 ) -> ContentPlanningInputSummary:
     return ContentPlanningInputSummary(
-        goal=planning_input.goal,
         final_canonical_url=planning_input.final_canonical_url,
-        proposed_ia_location=planning_input.proposed_ia_location,
         service_label=planning_input.service_label,
         inventory_status=planning_input.inventory.status,
         content_inventory_status=planning_input.inventory.content_status,
@@ -311,19 +182,6 @@ def content_planning_input_summary(
             }
         ),
         source_fact_previews=list(planning_input.source_facts),
-        gsc_query_rows=list(planning_input.query_portfolio.gsc_query_rows),
-        regulatory_profile_id=planning_input.regulatory_coverage.profile_id,
-        regulatory_profile_version=planning_input.regulatory_coverage.profile_version,
-        regulatory_requirements=planning_input.regulatory_coverage.requirements,
-        regulatory_requirement_ids=[
-            requirement.id for requirement in planning_input.regulatory_coverage.requirements
-        ],
-        regulatory_source_fact_ids=planning_input.regulatory_coverage.source_fact_ids,
-        regulatory_requirement_coverage=planning_input.regulatory_coverage.requirement_coverage,
-        regulatory_review_candidates=regulatory_review_candidates(
-            service_card_id=planning_input.confirmed_service_card_id,
-            coverage=planning_input.regulatory_coverage,
-        ),
         evidence_id_count=len(planning_input.evidence_ids),
         knowledge_card_count=len(planning_input.knowledge_card_ids),
         measurement_metrics=planning_input.measurement_metrics,
@@ -331,24 +189,20 @@ def content_planning_input_summary(
     )
 
 
-def build_new_page_planning_input(
-    *,
-    brief: ContentNewPageBrief,
-    foundation: ContentNewPagePlanningFoundation | None,
-    overlap_guard: ContentNewPageOverlapGuard,
-    service_card: ContentKnowledgeCard | None,
-) -> ContentPlanningInputBuildResult:
-    """Build a new-page input without coupling refresh planning to its inputs."""
+def planning_generation_blockers(
+    blockers: list[ContentPlanningInputBlocker],
+) -> list[ContentPlanningInputBlocker]:
+    """Block plan generation only for blockers that make planning unsafe.
 
-    from wilq.content.planning.new_page_input import build_new_page_planning_input as build
-
-    return build(
-        brief=brief,
-        foundation=foundation,
-        overlap_guard=overlap_guard,
-        service_card=service_card,
-        source_facts_loader=ekologus_source_facts,
-    )
+    A public rendered `the_content` read is sufficient to build a reviewable
+    plan. Its REST/ACF provenance still blocks an initial full draft, which is
+    enforced by the draft seam consuming the unfiltered result.
+    """
+    return [
+        blocker
+        for blocker in blockers
+        if blocker.code != "wordpress_material_review_required"
+    ]
 
 
 def build_content_planning_input(
@@ -432,8 +286,7 @@ def build_content_planning_input_from_components(
         return ContentPlanningInputBuildResult(blockers=[blocker])
     if brief is None or draft is None or baseline_proposal is None:
         return ContentPlanningInputBuildResult(blockers=[_foundation_blocker()])
-    if candidate is None:
-        return ContentPlanningInputBuildResult(blockers=[_foundation_blocker()])
+    assert candidate is not None
     inventory = build_planning_inventory(item, inventory_resolution)
     source_assessments = build_source_assessments(
         item=item,
@@ -444,10 +297,6 @@ def build_content_planning_input_from_components(
         demand=baseline_proposal.search_demand,
         service_lifecycle=candidate.lifecycle_status,
     )
-    regulatory_coverage = regulatory_content_coverage(
-        service_card_id=candidate.service_card_id,
-        source_facts=ekologus_source_facts(),
-    )
     blockers = _readiness_blockers(
         service_profile=service_profile,
         service_lifecycle=candidate.lifecycle_status,
@@ -455,16 +304,8 @@ def build_content_planning_input_from_components(
         freshness=freshness,
         source_assessments=source_assessments,
         existing_content_material_reviewed=existing_content_material_reviewed,
-        regulatory_coverage=regulatory_coverage,
     )
-    source_facts = [
-        *build_source_facts(brief, source_assessments, service_profile),
-        *regulatory_planning_source_facts(
-            regulatory_coverage,
-            knowledge_card_ids=service_profile.knowledge_card_ids,
-            source_material_ids=service_profile.source_material_ids,
-        ),
-    ]
+    source_facts = build_source_facts(brief, source_assessments, service_profile)
     metric_comparisons = compare_exact_page_metric_periods(
         item.metric_facts,
         content_url=brief.final_canonical_url,
@@ -478,7 +319,6 @@ def build_content_planning_input_from_components(
         inventory=inventory,
         source_facts=source_facts,
         source_assessments=source_assessments,
-        regulatory_coverage=regulatory_coverage,
         claim_ledger=claim_ledger,
         metric_comparisons=metric_comparisons,
     )
@@ -487,9 +327,9 @@ def build_content_planning_input_from_components(
     # preserve a plan produced under weaker rules.
     digest = _digest(
         {
-            "schema_name": "wilq_content_planning_input_v7",
+            "schema_name": "wilq_content_planning_input_v6",
             "criteria_version": "wilq_people_first_planning_v5",
-            "inventory_mapping_policy": "wilq_inventory_mapping_v7",
+            "inventory_mapping_policy": "wilq_inventory_mapping_v6",
             **payload,
         }
     )
@@ -547,41 +387,6 @@ def _readiness_blockers(
     freshness: ContentFreshnessAssessment,
     source_assessments: list[ContentPlanningSourceAssessment],
     existing_content_material_reviewed: bool,
-    regulatory_coverage: ContentRegulatoryCoverage,
-) -> list[ContentPlanningInputBlocker]:
-    service_blockers = _service_readiness_blockers(service_profile, service_lifecycle)
-    inventory_blockers = _inventory_readiness_blockers(
-        inventory, existing_content_material_reviewed
-    )
-    regulatory_gap = regulatory_coverage_gap(regulatory_coverage)
-    return [
-        *service_blockers,
-        *inventory_blockers,
-        *_source_readiness_blockers(
-            freshness,
-            source_assessments,
-            preceding_blocker_codes={
-                blocker.code for blocker in [*service_blockers, *inventory_blockers]
-            },
-        ),
-        *(
-            [
-                _blocker(
-                    "missing_regulatory_source_coverage",
-                    regulatory_gap.label,
-                    regulatory_gap.reason,
-                    regulatory_gap.next_step,
-                )
-            ]
-            if regulatory_gap is not None
-            else []
-        ),
-    ]
-
-
-def _service_readiness_blockers(
-    service_profile: ContentWorkItemServiceProfileContext,
-    service_lifecycle: str,
 ) -> list[ContentPlanningInputBlocker]:
     blockers: list[ContentPlanningInputBlocker] = []
     if not service_profile.service_selection_confirmed:
@@ -622,14 +427,6 @@ def _service_readiness_blockers(
                 "i odśwież snapshot.",
             )
         )
-    return blockers
-
-
-def _inventory_readiness_blockers(
-    inventory: ContentPlanningInventory,
-    existing_content_material_reviewed: bool,
-) -> list[ContentPlanningInputBlocker]:
-    blockers: list[ContentPlanningInputBlocker] = []
     if inventory.status == "missing":
         blockers.append(
             _blocker(
@@ -663,23 +460,10 @@ def _inventory_readiness_blockers(
                 "przed generowaniem planu.",
             )
         )
-    return blockers
-
-
-def _source_readiness_blockers(
-    freshness: ContentFreshnessAssessment,
-    source_assessments: list[ContentPlanningSourceAssessment],
-    *,
-    preceding_blocker_codes: set[ContentPlanningInputBlockerCode],
-) -> list[ContentPlanningInputBlocker]:
-    blockers: list[ContentPlanningInputBlocker] = []
     stale_sources = [
         assessment.source
         for assessment in source_assessments
-        if (
-            assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES
-            and assessment.status == "stale"
-        )
+        if assessment.status == "stale"
     ]
     if stale_sources:
         blockers.append(
@@ -694,14 +478,11 @@ def _source_readiness_blockers(
     blocked_sources = [
         assessment.source
         for assessment in source_assessments
-        if (
-            assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES
-            and assessment.status == "blocked"
-        )
+        if assessment.status == "blocked"
     ]
-    if blocked_sources and not (
-        {"service_card_not_approved", "stale_planning_sources"}
-        & {*preceding_blocker_codes, *(blocker.code for blocker in blockers)}
+    if blocked_sources and not any(
+        blocker.code in {"service_card_not_approved", "stale_planning_sources"}
+        for blocker in blockers
     ):
         blockers.append(
             _blocker(
@@ -725,10 +506,10 @@ def _planning_payload(
     inventory: ContentPlanningInventory,
     source_facts: list[ContentPlanningSourceFact],
     source_assessments: list[ContentPlanningSourceAssessment],
-    regulatory_coverage: ContentRegulatoryCoverage,
     claim_ledger: ContentClaimLedger,
     metric_comparisons: list[MeasurementPeriodComparison],
 ) -> dict[str, object]:
+    query_portfolio = usable_query_portfolio(baseline.search_demand, source_assessments)
     evidence_ids = _planning_evidence_ids(
         inventory=inventory,
         service_profile=service_profile,
@@ -736,26 +517,49 @@ def _planning_payload(
         source_assessments=source_assessments,
         claim_ledger=claim_ledger,
     )
-    return refresh_planning_payload(
-        item=item,
-        service_profile=service_profile,
-        candidate=candidate,
-        brief=brief,
-        baseline=baseline,
-        inventory=inventory,
-        source_facts=source_facts,
-        source_assessments=source_assessments,
-        regulatory_coverage=regulatory_coverage,
-        claim_ledger=claim_ledger,
-        metric_comparisons=metric_comparisons,
-        evidence_ids=evidence_ids,
-        internal_link_candidates_loader=lambda directions, allowed_evidence_ids: (
-            load_content_internal_link_candidates(
-                directions,
-                allowed_evidence_ids=allowed_evidence_ids,
-            )
-        ),
+    internal_link_candidates = load_content_internal_link_candidates(
+        brief.internal_link_direction,
+        allowed_evidence_ids=evidence_ids,
     )
+    return {
+        "work_item_id": item.id,
+        "final_canonical_url": brief.final_canonical_url,
+        "service_candidates": service_profile.service_candidates,
+        "confirmed_service_card_id": candidate.service_card_id,
+        "service_label": candidate.service_label,
+        "inventory": inventory,
+        "internal_link_candidates": internal_link_candidates,
+        "target_reader": brief.target_reader,
+        "buyer_problem": brief.buyer_problem,
+        "buyer_trigger": brief.buyer_trigger,
+        "search_intent": brief.search_intent,
+        "source_facts": source_facts,
+        "source_provenance": build_source_provenance(source_facts),
+        "source_assessments": source_assessments,
+        "query_portfolio": query_portfolio,
+        "claim_ledger": claim_ledger.entries,
+        "measurement_metrics": brief.measurement_plan.metrics_to_watch,
+        "metric_comparisons": metric_comparisons,
+        "measurement_baseline_evidence_ids": [
+            evidence_id
+            for evidence_id in brief.measurement_plan.baseline_evidence_ids
+            if evidence_id in evidence_ids
+        ],
+        "measurement_observation_rule": brief.measurement_plan.earliest_verdict_note,
+        "measurement_success_claim_rule": brief.measurement_plan.success_claim_rule,
+        "knowledge_card_ids": brief.knowledge_card_ids,
+        "evidence_ids": evidence_ids,
+        "source_connectors": planning_source_connectors(
+            inventory=inventory,
+            service_profile=service_profile,
+            demand=query_portfolio,
+            source_facts=source_facts,
+            assessments=source_assessments,
+        ),
+        "baseline_cta_direction": baseline.cta_direction,
+        "minimum_cta_blocks": service_profile.minimum_cta_blocks,
+        "required_cta_patterns": service_profile.cta_patterns,
+    }
 
 
 def _planning_evidence_ids(
@@ -838,13 +642,10 @@ __all__ = [
     "ContentPlanningInput",
     "ContentPlanningInputBlocker",
     "ContentPlanningInputBuildResult",
-    "ContentPlanningInputReadinessResponse",
     "ContentPlanningInputSummary",
     "ContentPlanningInventory",
     "ContentPlanningSourceAssessment",
     "build_content_planning_input",
-    "build_new_page_planning_input",
-    "content_planning_input_readiness",
     "content_planning_input_summary",
     "planning_generation_blockers",
 ]

@@ -25,8 +25,6 @@ export function ContentDocumentWorkspaceCanvas({
 }: {
   workspace: ContentDocumentWorkspace;
   onOpenReview: () => void;
-  operatorLabel?: string | null;
-  onWorkspaceChanged?: () => void;
 }) {
   const [view, setView] = useState<View>("source");
   const [devDetailsOpen, setDevDetailsOpen] = useState(false);
@@ -149,18 +147,6 @@ export function ContentDocumentWorkspaceCanvas({
       </section>
     </main>
   );
-}
-
-export function ContentDocumentLineageDisclosure({ workspace }: { workspace: ContentDocumentWorkspace }) {
-  const provenance = workspace.canonical_document.source_provenance ?? [];
-  return <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700">
-    <summary className="cursor-pointer font-semibold text-ink">Pochodzenie źródeł dokumentu</summary>
-    {provenance.length === 0 ? <p className="mt-3">Brak zapisanej listy provenance dla tej rewizji.</p> : (
-      <ul className="mt-3 space-y-2">{provenance.map((item) => <li key={`${item.source_fact_id}-${item.freshness_date}`}>
-        {item.source_fact_id} · {item.freshness_date}
-      </li>)}</ul>
-    )}
-  </details>;
 }
 
 function EditorialProvenance({
