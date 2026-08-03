@@ -7,6 +7,7 @@ Status: `needs review`; this is an owner-facing packet, not human legal approval
 - Isolated implementation branch: `feat/regulatory-visible-extraction`
 - Base used for the current repair slice: `0cea8eeb4aabbe512f17b74921667554d0452e87`
 - Current HEAD: `7164e837`
+- Subsequent runtime repairs: `1d28b136` (current branch HEAD)
 - Latest cohesive commits:
   - `214c944c` — per-constraint regulatory assurance context
   - `adf2e0b3` — semantic reviewer detects editorial/source artifacts
@@ -44,11 +45,11 @@ The revision is `unreviewed`, `publish_ready=false`, and has not been sent to Wo
 
 ## Semantic review state
 
-The first semantic run was `reviewable` with 9 dimensions and no findings, but manual inspection found duplicated source-style paragraphs in the draft. The reviewer prompt now explicitly checks repeated paragraphs, source-attribution narration, and pasted working notes. A fresh run is queued for the same exact revision; its current run is `generating` and must finish or terminalize before this packet can be accepted.
+The first semantic run was `reviewable` with 9 dimensions and no findings, but manual inspection found duplicated source-style paragraphs in the draft. The reviewer prompt now explicitly checks repeated paragraphs, source-attribution narration, and pasted working notes. Fresh API retries are now visible and terminalize instead of becoming zombies, but the current full semantic app-server turn has timed out; no new canonical review has replaced the immutable first review. A transient fresh turn artifact records that timeout under `docs/agents/runs/delivery-loop/bdo-20260803/semantic-fresh-transient.json`.
 
 ## Remaining acceptance work
 
-1. Obtain a fresh canonical semantic result for the exact revision after the prompt/runtime repairs.
+1. Obtain a fresh semantic result for the exact revision after the prompt/runtime repairs (the existing immutable review is pre-prompt-repair and cannot be treated as that proof).
 2. Run the behavioral mutation suite for missing requirement answers, scope/exception loss, term/amount/procedure changes, CTA defects, query mismatch, and repetition/source-artifact slop.
 3. Export the exact revision, planning proposal/input, source facts/reviews, assurance receipts, semantic request/response, and digests into a reviewable transient run artifact.
 4. Obtain separate human review for legal/content accuracy. `reviewable` is not approval.
