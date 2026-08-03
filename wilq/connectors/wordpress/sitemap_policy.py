@@ -5,9 +5,32 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 EDITORIAL_SITEMAP_GROUPS = frozenset(
-    {"posts", "pages", "training", "training_close", "career", "other"}
+    {
+        "posts",
+        "pages",
+        "training",
+        "training_close",
+        "career",
+        "uslugi",
+        "partnerzy",
+        "szkolenia_otwarte",
+        "specjalisci",
+        "ofertypracy",
+    }
 )
 COMMERCE_SITEMAP_GROUPS = frozenset({"products", "product_cat"})
+TAXONOMY_SITEMAP_GROUPS = frozenset(
+    {
+        "category",
+        "post_tag",
+        "obszary_dzialania",
+        "typ_wiedzy",
+        "typ_szkolenia_otwarte",
+        "kategorie_ofert",
+        "author",
+    }
+)
+LEGACY_COMMERCE_PATH_MARKERS = ("sorbent", "/sklep", "/shop")
 
 
 def sitemap_group_for_url(sitemap_url: str) -> str:
@@ -20,6 +43,18 @@ def sitemap_group_for_url(sitemap_url: str) -> str:
         ("training-close-sitemap", "training_close"),
         ("training-sitemap", "training"),
         ("career-sitemap", "career"),
+        ("uslugi-sitemap", "uslugi"),
+        ("partnerzy-sitemap", "partnerzy"),
+        ("szkolenia_otwarte-sitemap", "szkolenia_otwarte"),
+        ("specjalisci-sitemap", "specjalisci"),
+        ("ofertypracy-sitemap", "ofertypracy"),
+        ("category-sitemap", "category"),
+        ("post_tag-sitemap", "post_tag"),
+        ("obszary_dzialania-sitemap", "obszary_dzialania"),
+        ("typ_wiedzy-sitemap", "typ_wiedzy"),
+        ("typ_szkolenia_otwarte-sitemap", "typ_szkolenia_otwarte"),
+        ("kategorie_ofert-sitemap", "kategorie_ofert"),
+        ("author-sitemap", "author"),
     ):
         if filename.startswith(prefix):
             return group
@@ -31,11 +66,21 @@ def sitemap_entry_policy(group: str) -> tuple[str, str]:
         return "false", "commerce_catalog"
     if group in EDITORIAL_SITEMAP_GROUPS:
         return "true", "editorial"
+    if group in TAXONOMY_SITEMAP_GROUPS:
+        return "false", "taxonomy"
     return "false", "other"
 
 
 def sitemap_url_object(entry: dict[str, str], *, metadata_group: str = "other") -> dict[str, str]:
     editorial_eligible, inventory_scope = sitemap_entry_policy(metadata_group)
+    parsed = urlparse(entry["loc"])
+    path = parsed.path.lower()
+    host = (parsed.hostname or "").lower()
+    legacy_commerce_path = any(
+        marker in path for marker in LEGACY_COMMERCE_PATH_MARKERS
+    )
+    if host == "sklep.ekologus.pl" or legacy_commerce_path:
+        editorial_eligible, inventory_scope = "false", "commerce_catalog"
     return {
         "content_type": "sitemap",
         "content_url": entry["loc"],
