@@ -1,14 +1,32 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, cast
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from wilq.content.workflow.catalog import read_content_inventory_material
-from wilq.content.workflow.decision_context import build_content_decision_context
+from wilq.content.knowledge.source_facts import ekologus_source_facts
+from wilq.content.regulatory import (
+    ContentRegulatoryReviewCandidate,
+    regulatory_content_coverage,
+    regulatory_review_candidates,
+)
+from wilq.content.workflow.catalog import (
+    ContentInventoryMaterialResponse,
+    read_content_inventory_material,
+)
+from wilq.content.workflow.decision_context import (
+    ContentDecisionContext,
+    build_content_decision_context,
+)
+from wilq.content.workflow.document_lineage import (
+    ContentDocumentWorkspaceDocumentLineage,
+    build_content_document_lineage,
+)
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
+    ContentDraftRevisionReview,
     ContentDraftRevisionSourceProvenance,
+    ContentDraftRevisionStateStatus,
 )
 from wilq.content.workflow.store import content_workflow_store
 
@@ -54,6 +72,27 @@ class ContentDocumentWorkspaceDocument(BaseModel):
     reason: str
     source_provenance: list[ContentDraftRevisionSourceProvenance] = Field(default_factory=list)
     preview: ContentDocumentWorkspaceDocumentPreview | None = None
+    revision: ContentDraftRevision | None = None
+    review: ContentDraftRevisionReview | None = None
+
+    @model_validator(mode="after")
+    def require_exact_revision_state(self) -> ContentDocumentWorkspaceDocument:
+        if self.revision is None:
+            if self.review is not None:
+                raise ValueError("Document without a revision cannot carry review data.")
+            return self
+        if (
+            self.revision_id != self.revision.revision_id
+            or self.content_digest != self.revision.content_digest
+        ):
+            raise ValueError("Canonical document identity must match its exact revision.")
+        if self.review is not None and (
+            self.review.work_item_id != self.revision.work_item_id
+            or self.review.revision_id != self.revision.revision_id
+            or self.review.revision_digest != self.revision.content_digest
+        ):
+            raise ValueError("Canonical document review must match its exact revision.")
+        return self
 
 
 class ContentDocumentWorkspaceDocumentSection(BaseModel):
@@ -79,7 +118,7 @@ class ContentDocumentWorkspaceDocumentPreview(BaseModel):
 class ContentDocumentWorkspaceNextAction(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["open_review", "prepare_document", "none"]
+    kind: Literal["open_review", "prepare_document", "repair_document", "none"]
     label: str
     reason: str
 
@@ -112,14 +151,18 @@ class ContentDocumentWorkspace(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     response_type: Literal["content_document_workspace"] = "content_document_workspace"
-    contract_version: Literal["content_document_workspace_v1"] = "content_document_workspace_v1"
+    contract_version: Literal["content_document_workspace_v2"] = "content_document_workspace_v2"
     work_item_id: str
     work_kind: Literal["refresh_existing"]
     service_label: str | None = None
     source_snapshot: ContentDocumentWorkspaceSourceSnapshot
     canonical_document: ContentDocumentWorkspaceDocument
+    document_lineage: ContentDocumentWorkspaceDocumentLineage
     comparison: ContentDocumentWorkspaceComparison
     next_action: ContentDocumentWorkspaceNextAction
+    regulatory_review_candidates: list[ContentRegulatoryReviewCandidate] = Field(
+        default_factory=list
+    )
     secondary_disclosures: list[str] = Field(default_factory=list)
 
 
@@ -136,15 +179,23 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
     )
     source_snapshot = _source_snapshot(context, source)
     revision_state = content_workflow_store().load_draft_revision_state(work_item_id)
-    document = _canonical_document(revision_state.status, revision_state.latest_revision)
+    document = _canonical_document(
+        revision_state.status,
+        revision_state.latest_revision,
+            getattr(revision_state, "latest_review", None),
+    )
     return ContentDocumentWorkspace(
         work_item_id=work_item_id,
         work_kind="refresh_existing",
         service_label=context.service.label,
         source_snapshot=source_snapshot,
         canonical_document=document,
+        document_lineage=build_content_document_lineage(revision_state.latest_revision),
         comparison=_comparison(source_snapshot, revision_state.latest_revision),
         next_action=_next_action(document),
+        regulatory_review_candidates=_regulatory_review_candidates(
+            revision_state.latest_revision
+        ),
         secondary_disclosures=[
             (
                 "Target WordPress może pozostać nieznany: blokuje to dopiero delivery, "
@@ -158,7 +209,26 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
     )
 
 
-def _source_snapshot(context, material) -> ContentDocumentWorkspaceSourceSnapshot:
+def _regulatory_review_candidates(
+    revision: ContentDraftRevision | None,
+) -> list[ContentRegulatoryReviewCandidate]:
+    service_card_id = None if revision is None else getattr(revision, "service_card_id", None)
+    if service_card_id is None:
+        return []
+    coverage = regulatory_content_coverage(
+        service_card_id=service_card_id,
+        source_facts=ekologus_source_facts(),
+    )
+    return regulatory_review_candidates(
+        service_card_id=service_card_id,
+        coverage=coverage,
+    )
+
+
+def _source_snapshot(
+    context: ContentDecisionContext,
+    material: ContentInventoryMaterialResponse | None,
+) -> ContentDocumentWorkspaceSourceSnapshot:
     if material is None or material.status != "ready":
         return ContentDocumentWorkspaceSourceSnapshot(
             status="unavailable",
@@ -267,7 +337,11 @@ def _source_sections(text: str, headings: list[str]) -> list[tuple[str, str | No
     return sections
 
 
-def _canonical_document(status: str, revision) -> ContentDocumentWorkspaceDocument:
+def _canonical_document(
+    status: ContentDraftRevisionStateStatus,
+    revision: ContentDraftRevision | None,
+    review: ContentDraftRevisionReview | None,
+) -> ContentDocumentWorkspaceDocument:
     if revision is None:
         return ContentDocumentWorkspaceDocument(
             status="not_created",
@@ -275,7 +349,7 @@ def _canonical_document(status: str, revision) -> ContentDocumentWorkspaceDocume
             reason="WILQ ma materiał źródłowy, ale nie ma jeszcze zapisanej rewizji dokumentu.",
         )
     normalized = (
-        status
+        cast(Literal["unreviewed", "needs_changes", "approved", "rejected", "deferred"], status)
         if status in {"unreviewed", "needs_changes", "approved", "rejected", "deferred"}
         else "unreviewed"
     )
@@ -305,6 +379,8 @@ def _canonical_document(status: str, revision) -> ContentDocumentWorkspaceDocume
         reason=reasons[normalized],
         source_provenance=list(revision.source_provenance),
         preview=_document_preview(revision),
+        revision=revision if isinstance(revision, ContentDraftRevision) else None,
+        review=review if isinstance(review, ContentDraftRevisionReview) else None,
     )
 
 
@@ -337,10 +413,18 @@ def _comparison(
             status="unavailable",
             reason="Porównanie pojawi się po zapisaniu nowej wersji dokumentu.",
         )
+    if source.status != "available":
+        return ContentDocumentWorkspaceComparison(
+            status="unavailable",
+            reason=(
+                "Nie można jeszcze rzetelnie zestawić zmian: odczyt obecnej strony "
+                "nie potwierdził kompletnej struktury nagłówków."
+            ),
+        )
     source_by_heading: dict[str, list[tuple[int, ContentDocumentWorkspaceSourceSection]]] = {}
-    for source_index, section in enumerate(source.ordered_sections):
-        source_by_heading.setdefault(_heading_key(section.heading), []).append(
-            (source_index, section)
+    for source_index, source_section in enumerate(source.ordered_sections):
+        source_by_heading.setdefault(_heading_key(source_section.heading), []).append(
+            (source_index, source_section)
         )
     items: list[ContentDocumentWorkspaceComparisonItem] = []
     matched_source_indices: set[int] = set()
@@ -426,6 +510,15 @@ def _next_action(document: ContentDocumentWorkspaceDocument) -> ContentDocumentW
             reason=(
                 "Przygotowanie dokumentu jest kolejnym krokiem; ten read-only workspace "
                 "nie uruchamia generowania."
+            ),
+        )
+    if document.status in {"needs_changes", "rejected"}:
+        return ContentDocumentWorkspaceNextAction(
+            kind="repair_document",
+            label="Przygotuj poprawkę",
+            reason=(
+                "Dokument ma zapisaną decyzję człowieka. Wybierz jeden element, "
+                "aby utworzyć nową wersję do ponownego review."
             ),
         )
     return ContentDocumentWorkspaceNextAction(
