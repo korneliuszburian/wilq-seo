@@ -24,7 +24,6 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryProfile,
     regulatory_content_profile,
     regulatory_draft_assurance_constraints,
-    regulatory_requirement_assertion_errors,
 )
 from wilq.content.workflow.planning import ContentPlanningProposal
 
@@ -48,13 +47,10 @@ _INSTRUCTION = (
     "Dla każdego constraintu w podanej kolejności oceń tylko to, czy kandydat "
     "spełnia przypisane mu required_document_assertions oraz nie przeczy "
     "przypisanym, oficjalnym source facts. Najpierw sprawdź literalne warianty "
-    "assertion.required_any_of. Jeśli wszystkie wymagane warianty są obecne w "
-    "przypisanej sekcji i nie ma jawnej sprzeczności ze źródłem, MUSISZ wybrać "
-    "pass — nie obniżaj wyniku za styl, brak dodatkowego kontekstu ani własne "
-    "oczekiwanie szerszego zakresu. Oznacz brak zakresu, wyjątku albo konkretu jako "
-    "fail tylko wtedy, gdy brak wynika wprost z faktu i odpowiedni wymagany wariant "
-    "nie występuje. Nie używaj not_assessable, gdy sekcja i przypisany source fact "
-    "pozwalają ocenić wymagane warianty; nie dopowiadaj wymogów prawnych, których "
+    "assertion.required_any_of jako obserwowalne punkty kontroli, ale nie uznawaj "
+    "samej obecności frazy za dowód prawidłowego zakresu, warunku lub wyjątku. "
+    "Jeśli kandydat jest nadmiernie szeroki albo traci kwalifikator widoczny w "
+    "official source fact, wybierz fail. Nie dopowiadaj wymogów prawnych, których "
     "źródło nie opisuje. "
     "Nie przepisuj tekstu, nie dodawaj "
     "faktów ani źródeł, nie zatwierdzaj dokumentu, nie twórz ActionObjectu i nie "
@@ -337,13 +333,7 @@ def validate_draft_assurance_output(
     failed_ids: list[str] = []
     for constraint, check in zip(constraints, assessment.checks, strict=True):
         _validate_check_against_candidate(check, output, constraint, proposal)
-        if check.status == "fail" and not _deterministic_scope_is_complete(
-            check=check,
-            constraint=constraint,
-            output=output,
-            proposal=proposal,
-            profile=profile,
-        ):
+        if check.status == "fail":
             failed_ids.append(constraint.id)
     return ContentDraftAssuranceReceipt(
         status="failed" if failed_ids else "passed",
@@ -351,45 +341,6 @@ def validate_draft_assurance_output(
         profile_version=profile.version,
         codex_run_id=codex_run_id,
         failed_constraint_ids=failed_ids,
-    )
-
-
-def _deterministic_scope_is_complete(
-    *,
-    check: ContentDraftAssuranceCheckOutput,
-    constraint: ContentRegulatoryClaimConstraint,
-    output: ContentInitialDraftModelOutput,
-    proposal: ContentPlanningProposal,
-    profile: ContentRegulatoryProfile,
-) -> bool:
-    """Do not let a critic invent missing scope after profile assertions pass."""
-
-    if check.status != "fail" or check.reason_code not in {
-        "missing_scope",
-        "missing_exception",
-    }:
-        return False
-    section_ids = {
-        section.section_id
-        for section in proposal.sections
-        if section.section_id in {item.section_id for item in output.sections}
-        if set(section.regulatory_requirement_ids).intersection(constraint.requirement_ids)
-    }
-    if not section_ids:
-        return False
-    text = "\n".join(
-        section.body_markdown
-        for section in output.sections
-        if section.section_id in section_ids
-    )
-    requirements = {
-        requirement.id: requirement
-        for requirement in profile.requirements
-        if requirement.id in constraint.requirement_ids
-    }
-    return bool(requirements) and all(
-        not regulatory_requirement_assertion_errors(requirement=requirement, text=text)
-        for requirement in requirements.values()
     )
 
 

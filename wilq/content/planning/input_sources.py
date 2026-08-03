@@ -753,6 +753,13 @@ def _source_status(
     if not available:
         return absent_status
     connectors = set(connector_ids)
+    if "google_analytics_4" in connectors and (
+        freshness.connector_settlement_states.get("google_analytics_4")
+        != ConnectorSettlementState.settled
+        or freshness.connector_quality_states.get("google_analytics_4")
+        != ConnectorQualityState.verified
+    ):
+        return "blocked"
     if connectors.intersection(freshness.blocked_connector_ids):
         return "blocked"
     if connectors.intersection(freshness.stale_connector_ids):

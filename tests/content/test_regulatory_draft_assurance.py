@@ -392,7 +392,7 @@ def test_assurance_request_exposes_profile_assertions_to_the_critic() -> None:
     )
 
     context = json.loads(request.application_context)
-    assert "MUSISZ wybrać pass" in request.instruction
+    assert "nie uznawaj samej obecności frazy" in request.instruction
     assert context["required_document_assertions"] == [
         {
             "requirement_id": "transport_document",
@@ -450,7 +450,7 @@ def test_assurance_accepts_a_section_id_for_a_passing_check() -> None:
     )
 
 
-def test_assurance_does_not_invent_missing_scope_after_profile_assertions_pass() -> None:
+def test_assurance_keeps_a_critic_missing_scope_failure() -> None:
     profile = _profile()
     receipt = validate_draft_assurance_output(
         planning_input=_planning_input(profile),
@@ -472,7 +472,8 @@ def test_assurance_does_not_invent_missing_scope_after_profile_assertions_pass()
         codex_run_id="codex_content_draft_assurance_1",
     )
 
-    assert receipt.status == "passed"
+    assert receipt.status == "failed"
+    assert receipt.failed_constraint_ids == ["requirement:transport_document"]
 
 
 def test_profile_rejects_a_custom_constraint_in_the_reserved_requirement_namespace() -> None:

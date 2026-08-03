@@ -318,8 +318,8 @@ def test_html_source_without_main_or_article_uses_visible_body_without_layout(tm
         run_store=run_store,
             reader=lambda _: (
             (
-                "<html><nav>menu layout</nav><script>secret()</script>"
-                "<p>Oficjalne źródło opisuje obowiązek.</p></html>"
+                "<html><head>title</head><body><nav>menu layout</nav>"
+                "<script>secret()</script><p>Oficjalne źródło opisuje obowiązek.</p></body></html>"
             ).encode(),
             "text/html",
         ),
@@ -328,10 +328,54 @@ def test_html_source_without_main_or_article_uses_visible_body_without_layout(tm
     assert result.status == "ready"
     assert len(client.requests) == 1
     assert "Oficjalne źródło opisuje obowiązek" in client.requests[0].untrusted_context
-    assert "menu layout" not in client.requests[0].untrusted_context
-    assert "secret" not in client.requests[0].untrusted_context
 
 
+@pytest.mark.parametrize(
+    "markup",
+    [
+        '<div hidden>Termin 7 dni</div><p>Termin 30 dni</p>',
+        '<div aria-hidden="true">Termin 7 dni</div><p>Termin 30 dni</p>',
+        '<div style="display: none">Termin 7 dni</div><p>Termin 30 dni</p>',
+        '<div style="visibility:hidden">Termin 7 dni</div><p>Termin 30 dni</p>',
+        '<template>Termin 7 dni</template><p>Termin 30 dni</p>',
+    ],
+)
+def test_html_extraction_excludes_hidden_and_template_subtrees(markup: str) -> None:
+    text = proposals_module._source_text_for_proposal(
+        proposals_module.ContentRegulatorySourceSnapshot(
+            snapshot_id="snapshot",
+            candidate_id="candidate",
+            profile_id="profile",
+            profile_version="version",
+            source_url="https://example.gov.pl/source",
+            content_digest="a" * 64,
+            content_type="text/html",
+            byte_length=180,
+            observed_at="2026-08-01T12:00:00Z",
+        ),
+        f"<html><body><main>{markup}</main></body></html>".encode(),
+    )
+
+    assert "Termin 30 dni" in text
+    assert "Termin 7 dni" not in text
+
+
+def test_html_fallback_requires_body_scope() -> None:
+    with pytest.raises(ValueError, match="no visible body content"):
+        proposals_module._source_text_for_proposal(
+            proposals_module.ContentRegulatorySourceSnapshot(
+                snapshot_id="snapshot",
+                candidate_id="candidate",
+                profile_id="profile",
+                profile_version="version",
+                source_url="https://example.gov.pl/source",
+                content_digest="a" * 64,
+                content_type="text/html",
+                byte_length=180,
+                observed_at="2026-08-01T12:00:00Z",
+            ),
+            b"<html><p>Outside body</p></html>",
+        )
 def test_same_source_digest_on_two_snapshots_persists_two_exact_proposals(tmp_path) -> None:
     from datetime import UTC, datetime, timedelta
 

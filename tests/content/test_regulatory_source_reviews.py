@@ -118,6 +118,27 @@ def test_rejected_review_never_projects_to_source_fact_or_coverage(tmp_path, mon
     assert coverage.source_fact_ids == []
 
 
+def test_direct_review_rejects_a_superseded_snapshot_and_hides_old_fact(
+    tmp_path, monkeypatch
+) -> None:
+    store = RegulatorySourceReviewStore(tmp_path / "wilq.sqlite3")
+    candidate_id = regulatory_source_candidates()[0].candidate_id
+    first = _snapshot(store.path, candidate_id, now=datetime(2026, 7, 31, tzinfo=UTC))
+    store.record(_command(snapshot=first), snapshot_store=RegulatorySourceSnapshotStore(store.path))
+    second = _snapshot(store.path, candidate_id, now=datetime(2026, 8, 2, tzinfo=UTC))
+
+    with pytest.raises(ValueError, match="stale"):
+        store.record(
+            _command(snapshot=first),
+            snapshot_store=RegulatorySourceSnapshotStore(store.path),
+        )
+
+    monkeypatch.setattr(source_reviews_module, "regulatory_source_review_store", lambda: store)
+    facts = source_facts_module.ekologus_source_facts()
+    assert not any(fact.source_id.startswith("regulatory_source_fact_") for fact in facts)
+    assert second.snapshot_id != first.snapshot_id
+
+
 def test_source_snapshot_stays_bounded_without_persisting_source_body(tmp_path) -> None:
     from wilq.content.regulatory.source_snapshots import _MAX_SNAPSHOT_BYTES
 

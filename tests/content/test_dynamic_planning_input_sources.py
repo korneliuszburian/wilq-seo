@@ -359,6 +359,41 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
     }
 
 
+def test_ga4_settling_unverified_is_not_used_in_planning(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, _resolution, inventory = source_context
+    item = item.model_copy(update={"metric_facts": [MetricFact(
+        name="engaged_sessions", value=12, period="last_28_days",
+        source_connector="google_analytics_4", evidence_id="ev_ga4",
+        dimensions={"landing_page": PAGE},
+    )]})
+    demand = _demand()
+    brief, service_profile, _baseline = _planning_models(demand)
+    settling = _freshness([]).model_copy(update={
+        "connector_refresh_run_ids": {"google_analytics_4": "refresh_ga4"},
+        "connector_settlement_states": {"google_analytics_4": ConnectorSettlementState.settling},
+        "connector_quality_states": {"google_analytics_4": ConnectorQualityState.unverified},
+    })
+
+    assessment = next(
+        item for item in build_source_assessments(
+            item=item,
+            inventory=inventory,
+            service_profile=service_profile,
+            freshness=settling,
+            brief=brief,
+            demand=demand,
+            service_lifecycle="approved_current",
+        )
+        if item.source == "ga4"
+    )
+
+    assert assessment.status == "blocked"
+    assert assessment.evidence_ids == ["ev_ga4"]
+    assert build_source_facts(brief, [assessment]).__len__() == 0
+
+
 def test_refresh_suppresses_generic_blocked_source_when_service_review_is_required(
     source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
 ) -> None:

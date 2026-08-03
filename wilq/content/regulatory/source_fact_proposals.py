@@ -465,10 +465,12 @@ class _HtmlMainTextExtractor(HTMLParser):
         self._body_depth = 0
         self._head_depth = 0
         self._ignored_depth = 0
+        self._hidden_tags: list[str] = []
         self.parts: list[str] = []
         self.body_parts: list[str] = []
 
-    def handle_starttag(self, tag: str, _attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = {name.casefold(): (value or "") for name, value in attrs}
         if tag == "body":
             self._body_depth += 1
         elif tag == "head":
@@ -485,8 +487,18 @@ class _HtmlMainTextExtractor(HTMLParser):
             "script",
             "style",
             "svg",
+            "template",
         }:
             self._ignored_depth += 1
+        style = re.sub(r"\s+", "", attributes.get("style", "").casefold())
+        aria_hidden = attributes.get("aria-hidden", "").strip().casefold() == "true"
+        if (
+            "hidden" in attributes
+            or aria_hidden
+            or "display:none" in style
+            or "visibility:hidden" in style
+        ):
+            self._hidden_tags.append(tag)
 
     def handle_endtag(self, tag: str) -> None:
         if tag in {
@@ -499,6 +511,7 @@ class _HtmlMainTextExtractor(HTMLParser):
             "script",
             "style",
             "svg",
+            "template",
         } and self._ignored_depth:
             self._ignored_depth -= 1
         elif tag in {"article", "main"} and self._content_depth:
@@ -507,11 +520,18 @@ class _HtmlMainTextExtractor(HTMLParser):
             self._body_depth -= 1
         elif tag == "head" and self._head_depth:
             self._head_depth -= 1
+        if tag in self._hidden_tags:
+            self._hidden_tags.remove(tag)
 
     def handle_data(self, data: str) -> None:
-        if self._content_depth and not self._ignored_depth:
+        if self._content_depth and not self._ignored_depth and not self._hidden_tags:
             self.parts.append(data)
-        elif not self._head_depth and not self._ignored_depth:
+        elif (
+            self._body_depth
+            and not self._head_depth
+            and not self._ignored_depth
+            and not self._hidden_tags
+        ):
             self.body_parts.append(data)
 
 

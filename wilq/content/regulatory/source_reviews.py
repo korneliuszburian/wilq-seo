@@ -152,14 +152,29 @@ class RegulatorySourceReviewStore:
             command,
             candidates if candidates is not None else regulatory_source_candidates(),
         )
-        snapshot = (snapshot_store or RegulatorySourceSnapshotStore(self.path)).get(
-            command.expected_source_snapshot_id
-        )
-        _require_exact_snapshot(candidate, command, snapshot)
-        review = _review_from_command(
-            command, candidate, snapshot, reviewed_at=now or datetime.now(UTC)
-        )
         with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            latest_row = connection.execute(
+                """SELECT payload_json FROM content_regulatory_source_snapshots
+                   WHERE candidate_id = ? ORDER BY observed_at DESC, snapshot_id DESC LIMIT 1""",
+                (candidate.candidate_id,),
+            ).fetchone()
+            if latest_row is None:
+                raise ValueError(_MISSING_SNAPSHOT_REASON)
+            snapshot = ContentRegulatorySourceSnapshot.model_validate(
+                json.loads(latest_row["payload_json"])
+            )
+            if snapshot.snapshot_id != command.expected_source_snapshot_id:
+                expected_snapshot = (
+                    snapshot_store or RegulatorySourceSnapshotStore(self.path)
+                ).get(command.expected_source_snapshot_id)
+                if expected_snapshot is None:
+                    raise ValueError(_MISSING_SNAPSHOT_REASON)
+                raise ValueError(_STALE_PROPOSAL_REASON)
+            _require_exact_snapshot(candidate, command, snapshot)
+            review = _review_from_command(
+                command, candidate, snapshot, reviewed_at=now or datetime.now(UTC)
+            )
             row = _insert_review(connection, review)
         return ContentRegulatorySourceReview.model_validate(json.loads(row["payload_json"]))
 
@@ -242,9 +257,13 @@ class RegulatorySourceReviewStore:
         ]
 
     def approved_source_facts(self) -> tuple[ContentSourceFact, ...]:
+        snapshot_store = RegulatorySourceSnapshotStore(self.path)
         return tuple(
             fact
             for review in self.list_reviews()
+            if review.decision == "accepted"
+            and (latest := snapshot_store.latest(review.candidate_id)) is not None
+            and latest.snapshot_id == review.source_snapshot_id
             if (fact := review.approved_source_fact()) is not None
         )
 
