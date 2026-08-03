@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -99,6 +100,45 @@ def test_semantic_turn_exposes_exact_allowed_targets_to_the_reviewer() -> None:
     assert "literalnych wartości z application_context.allowed_evidence_ids" in request.instruction
     assert "powtórzone akapity" in request.instruction
     assert "źródło wskazuje" in request.instruction
+
+
+def test_queued_semantic_run_is_visible_before_worker_preflight() -> None:
+    saved: list[object] = []
+
+    def save(run: object) -> object:
+        saved.append(run)
+        return run
+
+    store = SimpleNamespace(save_codex_run=save)
+    revision = ContentDraftRevision.model_construct(
+        work_item_id="content_work_item_exact",
+        revision_id="content_revision_exact",
+        planning_input_digest="b" * 64,
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="section_exact_01",
+                heading="Zakres współpracy",
+                body_markdown="Zakres jest opisany konkretnie.",
+                evidence_ids=["ev_exact"],
+            )
+        ],
+        faq=[],
+        cta_blocks=[],
+        internal_links=[],
+    )
+
+    run = semantic_review_router._save_queued_semantic_run(
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revision=revision,
+        run_id="codex_content_semantic_review_queued",
+        store=store,
+    )
+
+    assert saved == [run]
+    assert run.status == "started"
+    assert run.planning_input_digest == revision.planning_input_digest
+    assert run.evidence_ids == ["ev_exact"]
 
 
 def test_semantic_turn_exposes_regulatory_requirement_coverage() -> None:

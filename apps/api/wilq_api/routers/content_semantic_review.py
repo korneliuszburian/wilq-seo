@@ -26,10 +26,11 @@ from wilq.content.quality.semantic_review_service import (
 )
 from wilq.content.quality.semantic_review_store import content_semantic_review_store
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
-from wilq.storage.local_state import local_state_store
+from wilq.storage.local_state import LocalStateStore, local_state_store
 
 _REAL_STDIO_CODEX_CLIENT = StdioCodexAppServerClient
 
@@ -137,11 +138,6 @@ def register_content_semantic_review_routes(
             and revision.revision_id == revision_id
             and revision.content_digest == request.expected_revision_digest
         ):
-            # Known preflight blockers must be returned before queueing.  Otherwise
-            # the browser sees a misleading ``generating`` response, while the
-            # worker exits before starting a CodexRun (for example when semantic
-            # review storage still needs an approved maintenance window).  The
-            # read-only readiness check cannot invoke Codex or mutate state.
             review_store = content_semantic_review_store()
             if not review_store.write_ready():
                 return generate_content_semantic_review(
@@ -152,52 +148,13 @@ def register_content_semantic_review_routes(
                     store=review_store,
                     run_store=local_state_store(),
                 )
-            active = _latest_semantic_run(work_item_id, revision_id)
-            if active is not None and active.status == "started":
-                return _generating_response(
-                    work_item_id, revision_id, revision.content_digest, active.id
-                )
-            run_id = f"codex_content_semantic_review_{uuid4().hex}"
-            # Publish the queued run before handing it to the worker.  The
-            # worker performs the expensive exact-snapshot/planning preflight
-            # before ``generate_content_semantic_review`` creates its run; a
-            # GET during that window must still see this exact attempt rather
-            # than an older completed review.
-            local_state_store().save_codex_run(
-                CodexRun(
-                    id=run_id,
-                    skill="wilq-content-operator",
-                    hook="content_semantic_review",
-                    source="wilq_api",
-                    status="started",
-                    used_endpoints=[
-                        f"/api/content/work-items/{work_item_id}/draft-revisions/"
-                        f"{revision_id}/semantic-review"
-                    ],
-                    evidence_ids=[
-                        evidence_id
-                        for item in (
-                            *revision.sections,
-                            *revision.faq,
-                            *revision.cta_blocks,
-                            *revision.internal_links,
-                        )
-                        for evidence_id in item.evidence_ids
-                    ],
-                    planning_input_digest=revision.planning_input_digest,
-                )
-            )
-            _SEMANTIC_REVIEW_EXECUTOR.submit(
-                _run_queued_semantic_review,
-                work_item_id,
-                revision_id,
-                request,
-                client,
-                run_id,
-                snapshot_loader,
-            )
-            return _generating_response(
-                work_item_id, revision_id, revision.content_digest, run_id
+            return _queue_semantic_review(
+                work_item_id=work_item_id,
+                revision_id=revision_id,
+                revision=revision,
+                request=request,
+                client=client,
+                snapshot_loader=snapshot_loader,
             )
         result = generate_content_semantic_review(
             snapshot=snapshot,
@@ -223,6 +180,77 @@ def _latest_semantic_run(work_item_id: str, revision_id: str) -> CodexRun | None
         if run.hook == "content_semantic_review" and endpoint in run.used_endpoints
     ]
     return max(runs, key=lambda run: run.started_at, default=None)
+
+
+def _save_queued_semantic_run(
+    *,
+    work_item_id: str,
+    revision_id: str,
+    revision: ContentDraftRevision,
+    run_id: str,
+    store: LocalStateStore,
+) -> CodexRun:
+    """Publish queued identity before the worker performs exact preflight."""
+
+    return store.save_codex_run(
+        CodexRun(
+            id=run_id,
+            skill="wilq-content-operator",
+            hook="content_semantic_review",
+            source="wilq_api",
+            status="started",
+            used_endpoints=[
+                f"/api/content/work-items/{work_item_id}/draft-revisions/"
+                f"{revision_id}/semantic-review"
+            ],
+            evidence_ids=[
+                evidence_id
+                for item in (
+                    *revision.sections,
+                    *revision.faq,
+                    *revision.cta_blocks,
+                    *revision.internal_links,
+                )
+                for evidence_id in item.evidence_ids
+            ],
+            planning_input_digest=revision.planning_input_digest,
+        )
+    )
+
+
+def _queue_semantic_review(
+    *,
+    work_item_id: str,
+    revision_id: str,
+    revision: ContentDraftRevision,
+    request: ContentSemanticReviewRequest,
+    client: StdioCodexAppServerClient,
+    snapshot_loader: ContentSemanticSnapshotLoader,
+) -> ContentSemanticReviewResponse:
+    active = _latest_semantic_run(work_item_id, revision_id)
+    if active is not None and active.status == "started":
+        return _generating_response(work_item_id, revision_id, revision.content_digest, active.id)
+    run_id = f"codex_content_semantic_review_{uuid4().hex}"
+    # Publish the queued run before handing it to the worker.  The worker
+    # performs expensive exact-snapshot/planning preflight before its service
+    # creates a run; GET must still expose this exact attempt in that window.
+    _save_queued_semantic_run(
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision=revision,
+        run_id=run_id,
+        store=local_state_store(),
+    )
+    _SEMANTIC_REVIEW_EXECUTOR.submit(
+        _run_queued_semantic_review,
+        work_item_id,
+        revision_id,
+        request,
+        client,
+        run_id,
+        snapshot_loader,
+    )
+    return _generating_response(work_item_id, revision_id, revision.content_digest, run_id)
 
 
 def _generating_response(
