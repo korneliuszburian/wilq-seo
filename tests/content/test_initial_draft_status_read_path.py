@@ -267,7 +267,7 @@ def test_initial_draft_status_terminalizes_a_stalled_current_run(monkeypatch) ->
         id="stalled-initial-draft",
         hook="content_initial_full_draft",
         status="started",
-        started_at=datetime.now(UTC) - timedelta(seconds=181),
+        started_at=datetime.now(UTC) - timedelta(seconds=901),
         used_endpoints=[endpoint],
         proposal_id="current-proposal",
         planning_input_digest="1" * 64,

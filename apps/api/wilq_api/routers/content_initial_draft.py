@@ -43,7 +43,7 @@ _INITIAL_DRAFT_EXECUTOR = ThreadPoolExecutor(
     max_workers=2,
     thread_name_prefix="wilq-content-draft",
 )
-_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 180.0
+_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 900.0
 
 _INITIAL_DRAFT_BLOCKER_CODES = {
     "planning_not_ready",

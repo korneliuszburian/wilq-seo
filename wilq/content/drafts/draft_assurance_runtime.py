@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Literal
 from uuid import uuid4
@@ -36,6 +37,12 @@ class ContentDraftAssuranceFailure:
     next_step: str
     source_codes: list[str]
     repair_reasons: dict[str, str]
+
+
+_ASSURANCE_EXECUTOR = ThreadPoolExecutor(
+    max_workers=2,
+    thread_name_prefix="wilq-draft-assurance",
+)
 
 
 def run_regulatory_draft_assurance(
@@ -146,20 +153,23 @@ def _collect_bounded_checks(
     run_store: LocalStateStore,
     critic_run: CodexRun,
 ) -> list[ContentDraftAssuranceCheckOutput] | ContentDraftAssuranceFailure:
+    requests = [
+        draft_assurance_turn_request(
+            planning_input=planning_input,
+            proposal=proposal,
+            output=output,
+            profile=profile,
+            constraints_override=[constraint],
+        )
+        for constraint in constraints
+    ]
+    results = list(
+        _ASSURANCE_EXECUTOR.map(
+            lambda request: _run_assurance_turn(client, request), requests
+        )
+    )
     checks: list[ContentDraftAssuranceCheckOutput] = []
-    for constraint in constraints:
-        try:
-            result = client.run_structured_turn(
-                draft_assurance_turn_request(
-                    planning_input=planning_input,
-                    proposal=proposal,
-                    output=output,
-                    profile=profile,
-                    constraints_override=[constraint],
-                )
-            )
-        except Exception:
-            result = CodexAppServerTurnResult(status="failed")
+    for result in results:
         if (
             result.external_call_attempted
             or result.status != "completed"
@@ -174,6 +184,16 @@ def _collect_bounded_checks(
         except ValueError as error:
             return _invalid_assurance_output(run_store, critic_run, error)
     return checks
+
+
+def _run_assurance_turn(
+    client: CodexAppServerClientProtocol,
+    request,
+) -> CodexAppServerTurnResult:
+    try:
+        return client.run_structured_turn(request)
+    except Exception:
+        return CodexAppServerTurnResult(status="failed")
 
 
 def _invalid_assurance_output(
