@@ -32,6 +32,7 @@ from wilq.content.quality.semantic_review_store import (
     SemanticReviewStorageActivationRequired,
 )
 from wilq.content.quality.semantic_review_turn import semantic_review_turn_request
+from wilq.content.quality.semantic_run_state import transition_codex_run_if_status
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import ContentDraftRevision
@@ -150,27 +151,18 @@ def generate_content_semantic_review(
     )
     if existing is not None:
         return _review_response("idempotent", prepared.revision, existing)
-    run = _start_run(prepared, run_store, run_id=run_id)
+    try:
+        run = _start_run(prepared, run_store, run_id=run_id)
+    except ValueError:
+        return _expired_run_response(snapshot, prepared, run_store, run_id)
     runtime = _execute(snapshot, prepared, run, client, run_store)
     if isinstance(runtime, ContentSemanticReviewResponse):
         return runtime
     output, trace = runtime
     scope_errors = _scope_errors(prepared.revision, output)
     if scope_errors:
-        blocker = _blocker(
-            "semantic_scope_mismatch",
-            "Review wyszedł poza dokładną wersję",
-            "Finding wskazuje obcy target, dowód albo niespójny wymiar.",
-            "Odrzuć wynik i uruchom nowy advisory review dla bieżącej rewizji.",
-            source_codes=scope_errors,
-        )
-        _finish_run(run_store, run, status="blocked", error=blocker.code)
-        return _blocked(
-            snapshot,
-            revision=prepared.revision,
-            blockers=[blocker],
-            run=run,
-            runtime=trace,
+        return _scope_mismatch_response(
+            snapshot, prepared.revision, run, trace, run_store, scope_errors
         )
     review = _build_review(prepared, request, output, run)
     completed = run.model_copy(
@@ -325,6 +317,8 @@ def _execute(
     tuple[ContentSemanticReviewModelOutput, ContentCodexRuntimeTrace]
     | ContentSemanticReviewResponse
 ):
+    if run.deadline_at is not None and utc_now() >= run.deadline_at:
+        return _expired_turn_response(snapshot, inputs, run, run_store)
     try:
         result = client.run_structured_turn(
             semantic_review_turn_request(
@@ -565,8 +559,23 @@ def _start_run(
             (run for run in store.list_codex_runs() if run.id == run_id),
             None,
         )
-        if queued is not None and queued.status == "started":
-            return queued
+        endpoint = (
+            f"/api/content/work-items/{inputs.revision.work_item_id}/draft-revisions/"
+            f"{inputs.revision.revision_id}/semantic-review"
+        )
+        if (
+            queued is None
+            or queued.status != "started"
+            or queued.hook != "content_semantic_review"
+            or queued.planning_input_digest != inputs.revision.planning_input_digest
+            or endpoint not in queued.used_endpoints
+            or (
+                queued.deadline_at is not None
+                and utc_now() >= queued.deadline_at
+            )
+        ):
+            raise ValueError("semantic review queued run is no longer executable")
+        return queued
     revision = inputs.revision
     return store.save_codex_run(
         CodexRun(
@@ -582,6 +591,78 @@ def _start_run(
             ],
             evidence_ids=_revision_evidence_ids(revision),
         )
+    )
+
+
+def _expired_run_response(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    inputs: _SemanticInputs,
+    store: LocalStateStore,
+    run_id: str | None,
+) -> ContentSemanticReviewResponse:
+    existing_run = next(
+        (item for item in store.list_codex_runs() if item.id == run_id),
+        None,
+    )
+    blocker = _blocker(
+        "runtime_failed",
+        "Próba review wygasła przed uruchomieniem",
+        "WILQ nie wskrzesił zakończonego albo przekroczonego deadline'u runu.",
+        "Uruchom nową próbę review dla tej samej exact rewizji.",
+    )
+    return _blocked(
+        snapshot,
+        revision=inputs.revision,
+        status="failed",
+        blockers=[blocker],
+        run=existing_run,
+        runtime=ContentCodexRuntimeTrace(status="failed"),
+    )
+
+
+def _scope_mismatch_response(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    revision: ContentDraftRevision,
+    run: CodexRun,
+    trace: ContentCodexRuntimeTrace,
+    store: LocalStateStore,
+    scope_errors: list[str],
+) -> ContentSemanticReviewResponse:
+    blocker = _blocker(
+        "semantic_scope_mismatch",
+        "Review wyszedł poza dokładną wersję",
+        "Finding wskazuje obcy target, dowód albo niespójny wymiar.",
+        "Odrzuć wynik i uruchom nowy advisory review dla bieżącej rewizji.",
+        source_codes=scope_errors,
+    )
+    _finish_run(store, run, status="blocked", error=blocker.code)
+    return _blocked(
+        snapshot,
+        revision=revision,
+        blockers=[blocker],
+        run=run,
+        runtime=trace,
+    )
+def _expired_turn_response(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    inputs: _SemanticInputs,
+    run: CodexRun,
+    store: LocalStateStore,
+) -> ContentSemanticReviewResponse:
+    blocker = _blocker(
+        "runtime_failed",
+        "Przekroczono czas review semantycznego",
+        "Exact deadline minął przed rozpoczęciem tury Codexa.",
+        "Uruchom nową próbę review dla tej samej exact rewizji.",
+    )
+    _finish_run(store, run, status="failed", error="semantic_review_timeout")
+    return _blocked(
+        snapshot,
+        revision=inputs.revision,
+        status="failed",
+        blockers=[blocker],
+        run=run,
+        runtime=ContentCodexRuntimeTrace(status="failed"),
     )
 
 
@@ -614,9 +695,12 @@ def _finish_run(
     status: Literal["blocked", "failed"],
     error: str,
 ) -> CodexRun:
-    return store.save_codex_run(
-        run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
+    terminal = run.model_copy(
+        update={"status": status, "completed_at": utc_now(), "error": error}
     )
+    if hasattr(store, "_connect"):
+        return transition_codex_run_if_status(store, terminal) or run
+    return store.save_codex_run(terminal)
 
 
 def _runtime_error(code: str, source_codes: list[str]) -> str:

@@ -284,6 +284,47 @@ def test_worker_preserves_exact_queued_deadline_and_lineage(tmp_path, monkeypatc
     assert persisted.planning_input_digest == queued.planning_input_digest
 
 
+def test_expired_deadline_skips_codex_turn() -> None:
+    calls = 0
+
+    class Client:
+        def run_structured_turn(self, _request):
+            nonlocal calls
+            calls += 1
+            raise AssertionError("expired review must not invoke Codex")
+
+    now = datetime.now(UTC)
+    revision = ContentDraftRevision.model_construct(
+        work_item_id="work",
+        revision_id="revision",
+        content_digest="a" * 64,
+        sections=[],
+    )
+    run = CodexRun(
+        id="codex_content_semantic_review_expired",
+        hook="content_semantic_review",
+        status="started",
+        started_at=now - timedelta(seconds=2),
+        deadline_at=now - timedelta(seconds=1),
+    )
+    snapshot = SimpleNamespace(preflight=SimpleNamespace(item=SimpleNamespace(id="work")))
+    result = semantic_review_service._execute(
+        snapshot,
+        _SemanticInputs(
+            revision=revision,
+            planning_input=ContentPlanningInput.model_construct(),
+            proposal=ContentPlanningProposal.model_construct(),
+        ),
+        run,
+        Client(),
+        SimpleNamespace(save_codex_run=lambda item: item),
+    )
+
+    assert calls == 0
+    assert result.status == "failed"
+    assert result.blockers[0].code == "runtime_failed"
+
+
 def test_worker_codex_budget_is_limited_by_persisted_absolute_deadline(monkeypatch) -> None:
     deadline = datetime.now(UTC) + timedelta(seconds=11)
     run = CodexRun(

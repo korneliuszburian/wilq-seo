@@ -27,6 +27,7 @@ from wilq.content.quality.semantic_review_service import (
     read_content_semantic_review,
 )
 from wilq.content.quality.semantic_review_store import content_semantic_review_store
+from wilq.content.quality.semantic_run_state import transition_codex_run_if_status
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.content.workflow.store import content_workflow_store
@@ -48,6 +49,16 @@ _SEMANTIC_REVIEW_EXECUTOR = ThreadPoolExecutor(
     thread_name_prefix="wilq-content-review",
 )
 _DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS = 180.0
+
+
+class _DeadlineAwareSemanticClient:
+    def __init__(self, client: StdioCodexAppServerClient, run_id: str) -> None:
+        self._client = client
+        self._run_id = run_id
+
+    def run_structured_turn(self, request):
+        client = _client_for_queued_deadline(self._client, self._run_id)
+        return client.run_structured_turn(request)
 
 
 def _semantic_codex_client() -> StdioCodexAppServerClient:
@@ -232,15 +243,19 @@ def _latest_semantic_run(work_item_id: str, revision_id: str) -> CodexRun | None
             + timedelta(seconds=_semantic_timeout_seconds())
         )
         if utc_now() >= deadline:
-            latest = local_state_store().save_codex_run(
-                latest.model_copy(
-                    update={
-                        "status": "failed",
-                        "completed_at": utc_now(),
-                        "error": "semantic_review_timeout",
-                    }
-                )
+            terminal = latest.model_copy(
+                update={
+                    "status": "failed",
+                    "completed_at": utc_now(),
+                    "error": "semantic_review_timeout",
+                }
             )
+            store = local_state_store()
+            latest = (
+                transition_codex_run_if_status(store, terminal)
+                if hasattr(store, "_connect")
+                else store.save_codex_run(terminal)
+            ) or latest
     return latest
 
 
@@ -440,7 +455,7 @@ def _run_queued_semantic_review(
     snapshot_loader: ContentSemanticSnapshotLoader,
 ) -> None:
     try:
-        client = _client_for_queued_deadline(client, run_id)
+        client = _DeadlineAwareSemanticClient(client, run_id)
         result = generate_content_semantic_review(
             snapshot=snapshot_loader(work_item_id),
             revision_id=revision_id,
@@ -466,7 +481,9 @@ def _client_for_queued_deadline(
     deadline_at = None if run is None else getattr(run, "deadline_at", None)
     if deadline_at is None:
         return client
-    remaining = max(0.1, (deadline_at - utc_now()).total_seconds())
+    remaining = (deadline_at - utc_now()).total_seconds()
+    if remaining <= 0:
+        raise TimeoutError("semantic review deadline expired before Codex turn")
     return _REAL_STDIO_CODEX_CLIENT(
         timeout_seconds=min(client.timeout_seconds, remaining)
     )
@@ -488,9 +505,11 @@ def _terminalize_queued_run_from_result(
     else:
         status = "failed"
         error = result.blockers[0].code if result.blockers else "semantic_review_failed"
-    store.save_codex_run(
-        run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
-    )
+    terminal = run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
+    if hasattr(store, "_connect"):
+        transition_codex_run_if_status(store, terminal)
+    else:
+        store.save_codex_run(terminal)
 
 
 def _mark_semantic_run_failed(run_id: str, error: Exception) -> None:
@@ -498,15 +517,17 @@ def _mark_semantic_run_failed(run_id: str, error: Exception) -> None:
     run = next((item for item in store.list_codex_runs() if item.id == run_id), None)
     if run is None or run.status != "started":
         return
-    store.save_codex_run(
-        run.model_copy(
-            update={
-                "status": "failed",
-                "completed_at": utc_now(),
-                "error": f"worker_exception:{type(error).__name__}",
-            }
-        )
+    terminal = run.model_copy(
+        update={
+            "status": "failed",
+            "completed_at": utc_now(),
+            "error": f"worker_exception:{type(error).__name__}",
+        }
     )
+    if hasattr(store, "_connect"):
+        transition_codex_run_if_status(store, terminal)
+    else:
+        store.save_codex_run(terminal)
 
 
 __all__ = ["register_content_semantic_review_routes"]
