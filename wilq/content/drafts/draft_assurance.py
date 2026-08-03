@@ -147,10 +147,21 @@ def draft_assurance_turn_request(
     proposal: ContentPlanningProposal,
     output: ContentInitialDraftModelOutput,
     profile: ContentRegulatoryProfile,
+    constraints_override: list[ContentRegulatoryClaimConstraint] | None = None,
 ) -> CodexAppServerStructuredTurnRequest:
     """Make a fresh critic request over a frozen writer result and source bundle."""
 
-    constraints = regulatory_draft_assurance_constraints(profile)
+    constraints = constraints_override or regulatory_draft_assurance_constraints(profile)
+    requirement_ids = {
+        requirement_id
+        for constraint in constraints
+        for requirement_id in constraint.requirement_ids
+    }
+    requirements = [
+        requirement
+        for requirement in profile.requirements
+        if requirement.id in requirement_ids
+    ]
     section_ids_by_constraint = _section_ids_by_constraint(
         constraints,
         proposal,
@@ -187,7 +198,7 @@ def draft_assurance_turn_request(
                         for assertion in requirement.document_assertions
                     ],
                 }
-                for requirement in profile.requirements
+                for requirement in requirements
             ],
             "scope_rules": {
                 "independent_critic": True,
@@ -203,8 +214,11 @@ def draft_assurance_turn_request(
     )
     untrusted_context = json.dumps(
         {
-            "candidate_document": output.model_dump(mode="json"),
-            "constraints": [constraint.model_dump(mode="json") for constraint in constraints],
+            "candidate_document": _candidate_document_for_constraints(
+                output,
+                proposal,
+                constraints,
+            ),
             "official_source_facts": _source_facts_for_critic(
                 planning_input.regulatory_coverage,
                 constraints,
@@ -223,6 +237,7 @@ def draft_assurance_turn_request(
             planning_input.regulatory_coverage,
             output,
             proposal,
+            constraints_override=constraints,
         ),
     )
 
@@ -232,11 +247,12 @@ def draft_assurance_output_schema(
     coverage: ContentRegulatoryCoverage,
     output: ContentInitialDraftModelOutput | None = None,
     proposal: ContentPlanningProposal | None = None,
+    constraints_override: list[ContentRegulatoryClaimConstraint] | None = None,
 ) -> dict[str, object]:
     schema = deepcopy(ContentDraftAssuranceModelOutput.model_json_schema())
     _require_all_object_properties(schema)
     checks = _properties(_definition(_mapping(schema, "$defs"), "ContentDraftAssuranceCheckOutput"))
-    expected_constraints = regulatory_draft_assurance_constraints(profile)
+    expected_constraints = constraints_override or regulatory_draft_assurance_constraints(profile)
     _mapping(checks, "constraint_id")["enum"] = [
         constraint.id for constraint in expected_constraints
     ]
@@ -291,6 +307,38 @@ def _section_ids_by_constraint(
             )
         ]
         for constraint in constraints
+    }
+
+
+def _candidate_document_for_constraints(
+    output: ContentInitialDraftModelOutput,
+    proposal: ContentPlanningProposal,
+    constraints: list[ContentRegulatoryClaimConstraint],
+) -> dict[str, object]:
+    """Send only the frozen sections relevant to this critic turn.
+
+    A regulated document can contain a large FAQ/CTA and page-asset payload.
+    The critic must judge each requirement against its exact planned section;
+    carrying unrelated material makes the app-server compact the candidate and
+    turns a valid document into an unassessable one.
+    """
+
+    requirement_ids = {
+        requirement_id
+        for constraint in constraints
+        for requirement_id in constraint.requirement_ids
+    }
+    section_ids = {
+        section.section_id
+        for section in proposal.sections
+        if requirement_ids.intersection(section.regulatory_requirement_ids)
+    }
+    return {
+        "sections": [
+            section.model_dump(mode="json")
+            for section in output.sections
+            if section.section_id in section_ids
+        ]
     }
 
 

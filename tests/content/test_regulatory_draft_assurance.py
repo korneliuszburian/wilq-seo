@@ -408,6 +408,28 @@ def test_assurance_request_exposes_profile_assertions_to_the_critic() -> None:
     ]
 
 
+def test_assurance_turn_can_be_bounded_to_one_constraint_and_section() -> None:
+    profile = _profile()
+    request = draft_assurance_turn_request(
+        planning_input=_planning_input(profile),
+        proposal=_proposal(),
+        output=_output("KPO stosuje się, gdy przekazanie odpadów podlega ewidencji."),
+        profile=profile,
+        constraints_override=[
+            draft_assurance_runtime.regulatory_draft_assurance_constraints(profile)[0]
+        ],
+    )
+
+    context = json.loads(request.untrusted_context)
+    schema = request.output_schema
+    assert "constraints" not in context
+    assert [section["section_id"] for section in context["candidate_document"]["sections"]] == [
+        "kpo"
+    ]
+    assert schema["properties"]["checks"]["minItems"] == 1
+    assert schema["properties"]["checks"]["maxItems"] == 1
+
+
 def test_assurance_invalid_output_codes_do_not_retain_model_text() -> None:
     assert (
         draft_assurance_runtime._invalid_output_code(

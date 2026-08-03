@@ -8,9 +8,11 @@ from uuid import uuid4
 
 from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
 from wilq.content.drafts.draft_assurance import (
+    ContentDraftAssuranceCheckOutput,
     ContentDraftAssuranceModelOutput,
     ContentDraftAssuranceReceipt,
     draft_assurance_turn_request,
+    regulatory_draft_assurance_constraints,
     regulatory_draft_assurance_profile,
     validate_draft_assurance_output,
 )
@@ -62,21 +64,22 @@ def run_regulatory_draft_assurance(
             planning_input_digest=planning_input.planning_input_digest,
         )
     )
+    constraints = regulatory_draft_assurance_constraints(profile)
+    checks_or_failure = _collect_bounded_checks(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        profile=profile,
+        constraints=constraints,
+        client=client,
+        run_store=run_store,
+        critic_run=critic_run,
+    )
+    if isinstance(checks_or_failure, ContentDraftAssuranceFailure):
+        return checks_or_failure
+    checks = checks_or_failure
+    assessment = ContentDraftAssuranceModelOutput(checks=checks)
     try:
-        result = client.run_structured_turn(
-            draft_assurance_turn_request(
-                planning_input=planning_input,
-                proposal=proposal,
-                output=output,
-                profile=profile,
-            )
-        )
-    except Exception:
-        result = CodexAppServerTurnResult(status="failed")
-    if result.external_call_attempted or result.status != "completed" or result.output_text is None:
-        return _failed_runtime_attempt(run_store, critic_run, result)
-    try:
-        assessment = ContentDraftAssuranceModelOutput.model_validate_json(result.output_text)
         receipt = validate_draft_assurance_output(
             planning_input=planning_input,
             proposal=proposal,
@@ -129,6 +132,72 @@ def run_regulatory_draft_assurance(
             for check in assessment.checks
             if check.constraint_id in receipt.failed_constraint_ids
         },
+    )
+
+
+def _collect_bounded_checks(
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+    profile,
+    constraints,
+    client: CodexAppServerClientProtocol,
+    run_store: LocalStateStore,
+    critic_run: CodexRun,
+) -> list[ContentDraftAssuranceCheckOutput] | ContentDraftAssuranceFailure:
+    checks: list[ContentDraftAssuranceCheckOutput] = []
+    for constraint in constraints:
+        try:
+            result = client.run_structured_turn(
+                draft_assurance_turn_request(
+                    planning_input=planning_input,
+                    proposal=proposal,
+                    output=output,
+                    profile=profile,
+                    constraints_override=[constraint],
+                )
+            )
+        except Exception:
+            result = CodexAppServerTurnResult(status="failed")
+        if (
+            result.external_call_attempted
+            or result.status != "completed"
+            or result.output_text is None
+        ):
+            return _failed_runtime_attempt(run_store, critic_run, result)
+        try:
+            assessment = ContentDraftAssuranceModelOutput.model_validate_json(result.output_text)
+            if len(assessment.checks) != 1:
+                raise ValueError("Draft assurance turn must return one constraint check.")
+            checks.extend(assessment.checks)
+        except ValueError as error:
+            return _invalid_assurance_output(run_store, critic_run, error)
+    return checks
+
+
+def _invalid_assurance_output(
+    store: LocalStateStore,
+    run: CodexRun,
+    error: ValueError,
+) -> ContentDraftAssuranceFailure:
+    invalid_output_code = _invalid_output_code(error)
+    store.save_codex_run(
+        run.model_copy(
+            update={
+                "status": "blocked",
+                "completed_at": utc_now(),
+                "error": f"draft_assurance_invalid_output|{invalid_output_code}",
+            }
+        )
+    )
+    return ContentDraftAssuranceFailure(
+        code="draft_assurance_invalid_output",
+        label="Kontrola merytoryczna zwróciła niepoprawny wynik",
+        reason="Wynik krytyka nie przeszedł ścisłego kontraktu profilu i źródeł.",
+        next_step="Odrzuć próbę i uruchom nową; WILQ nie zapisał dokumentu.",
+        source_codes=[invalid_output_code],
+        repair_reasons={},
     )
 
 
