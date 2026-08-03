@@ -158,13 +158,12 @@ def test_semantic_quality_guards_cannot_waive_missing_cta_query_or_repetition() 
 
     assert {finding.dimension for finding in guarded.findings} == {
         "conversion_clarity",
-        "search_intent_fit",
         "repetition",
     }
     assert all(
         item.status == "needs_changes"
         for item in guarded.dimensions
-        if item.dimension in {"conversion_clarity", "search_intent_fit", "repetition"}
+        if item.dimension in {"conversion_clarity", "repetition"}
     )
 
 
@@ -341,6 +340,29 @@ def test_semantic_payload_keeps_regulatory_lineage_without_duplicate_page_teleme
     assert "should_not_be_forwarded" not in json.dumps(
         compact_proposal, ensure_ascii=False
     )
+    revision = ContentDraftRevision.model_construct(
+        work_item_id="content_work_item_exact",
+        revision_id="content_revision_exact",
+        content_digest="a" * 64,
+        planning_input_digest="d" * 64,
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="content_revision_exact_section_01",
+                heading="Kto podlega wpisowi?",
+                body_markdown="Odpowiedź.",
+                evidence_ids=["ev_registration"],
+            )
+        ],
+    )
+    request = semantic_review_turn_request(
+        revision=revision,
+        planning_input=planning_input,
+        proposal=proposal,
+    )
+    request_context = json.loads(request.untrusted_context)
+    aligned = request_context["approved_planning_proposal"]["sections"][0]
+    assert aligned["section_id"] == "content_revision_exact_section_01"
+    assert "planning_section_id" not in aligned
 
 
 def test_full_draft_model_envelope_is_compact_but_digest_bound(

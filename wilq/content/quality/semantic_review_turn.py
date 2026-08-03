@@ -76,6 +76,13 @@ def semantic_review_turn_request(
         sort_keys=True,
         separators=(",", ":"),
     )
+    proposal_context = compact_semantic_review_proposal(proposal)
+    proposal_sections = proposal_context.get("sections")
+    if isinstance(proposal_sections, list):
+        for index, section in enumerate(proposal_sections):
+            if index >= len(revision.sections) or not isinstance(section, dict):
+                continue
+            section["section_id"] = revision.sections[index].section_id
     untrusted_context = json.dumps(
         {
             # The full immutable document is the subject of review. The plan
@@ -84,7 +91,7 @@ def semantic_review_turn_request(
             # to the advisory turn without weakening any server-side digest or
             # lineage checks.
             "revision": revision.model_dump(mode="json"),
-            "approved_planning_proposal": compact_semantic_review_proposal(proposal),
+            "approved_planning_proposal": proposal_context,
             "planning_input": compact_semantic_review_planning_input(planning_input),
         },
         ensure_ascii=False,

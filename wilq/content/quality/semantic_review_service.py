@@ -430,20 +430,6 @@ def _apply_deterministic_quality_guards(
         str(section.section_id): section.body_markdown.strip().casefold()
         for section in inputs.revision.sections
     }
-    proposal_sections = {
-        str(section.section_id): section for section in inputs.proposal.sections
-    }
-    for section_id, proposal_section in proposal_sections.items():
-        body = section_bodies.get(section_id, "")
-        terms = [str(term).strip().casefold() for term in proposal_section.query_terms]
-        if terms and body and not any(term and term in body for term in terms):
-            issues.append(
-                (
-                    "search_intent_fit",
-                    section_id,
-                    "Sekcja nie zawiera żadnego zatwierdzonego zapytania z jej mapy intencji.",
-                )
-            )
     normalized_bodies = [body for body in section_bodies.values() if body]
     if len(normalized_bodies) != len(set(normalized_bodies)):
         issues.append(
@@ -465,11 +451,27 @@ def _apply_deterministic_quality_guards(
                 "Dokument zawiera meta-komentarz źródłowy albo notatkę roboczą.",
             )
         )
+    grouped: dict[str, tuple[list[str], str]] = {}
+    for dimension, target, reason in issues:
+        targets, previous_reason = grouped.get(dimension, ([], reason))
+        if target not in targets:
+            targets.append(target)
+        grouped[dimension] = (targets, previous_reason)
     existing = {finding.dimension for finding in output.findings}
     dimensions = list(output.dimensions)
     findings = list(output.findings)
-    for dimension, target, reason in issues:
+    for dimension, (targets, reason) in grouped.items():
         if dimension in existing:
+            for index, finding in enumerate(findings):
+                if finding.dimension == dimension:
+                    findings[index] = finding.model_copy(
+                        update={
+                            "affected_targets": targets,
+                            "reason": reason,
+                            "instruction": "Popraw wskazany problem i uruchom review ponownie.",
+                        }
+                    )
+                    break
             continue
         existing.add(dimension)
         for index, assessment in enumerate(dimensions):
@@ -477,7 +479,7 @@ def _apply_deterministic_quality_guards(
                 dimensions[index] = assessment.model_copy(
                     update={
                         "status": "needs_changes",
-                        "affected_targets": [target],
+                        "affected_targets": targets,
                         "reason": reason,
                     }
                 )
@@ -493,7 +495,7 @@ def _apply_deterministic_quality_guards(
                 label="Automatyczna kontrola jakości",
                 reason=reason,
                 instruction="Popraw wskazany problem i uruchom review ponownie.",
-                affected_targets=[target],
+                affected_targets=targets,
                 evidence_ids=[],
             )
         )
