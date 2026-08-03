@@ -27,6 +27,15 @@ from wilq.content.planning.dynamic_input import (
     build_content_planning_input,
 )
 from wilq.content.quality import semantic_review_store as semantic_review_store_module
+from wilq.content.quality.semantic_review_contracts import (
+    CONTENT_SEMANTIC_DIMENSIONS,
+    ContentSemanticDimensionAssessment,
+    ContentSemanticReviewModelOutput,
+)
+from wilq.content.quality.semantic_review_service import (
+    _apply_deterministic_quality_guards,
+    _SemanticInputs,
+)
 from wilq.content.quality.semantic_review_turn import (
     compact_semantic_review_planning_input,
     compact_semantic_review_proposal,
@@ -106,6 +115,57 @@ def test_semantic_turn_exposes_exact_allowed_targets_to_the_reviewer() -> None:
     assert "źródło wskazuje" in request.instruction
     assert "failure-mode mapping" in request.instruction
     assert "brak wymaganego CTA" in request.instruction
+
+
+def test_semantic_quality_guards_cannot_waive_missing_cta_query_or_repetition() -> None:
+    section = ContentDraftRevisionSection(
+        section_id="section_exact_01",
+        heading="BDO",
+        body_markdown="Powtórzony tekst.",
+        evidence_ids=["ev_exact"],
+    )
+    revision = ContentDraftRevision.model_construct(
+        sections=[section, section.model_copy(update={"section_id": "section_exact_02"})],
+        cta_blocks=[],
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        cta_blocks=[{"cta_id": "cta_required"}],
+        sections=[
+            SimpleNamespace(section_id="section_exact_01", query_terms=["bdo przedsiębiorca"])
+        ],
+    )
+    output = ContentSemanticReviewModelOutput.model_construct(
+        dimensions=[
+            ContentSemanticDimensionAssessment(
+                dimension=dimension,
+                status="strong",
+                reason="OK",
+                affected_targets=["whole_document"],
+            )
+            for dimension in CONTENT_SEMANTIC_DIMENSIONS
+        ],
+        findings=[],
+    )
+
+    guarded = _apply_deterministic_quality_guards(
+        _SemanticInputs(
+            revision=revision,
+            planning_input=ContentPlanningInput.model_construct(),
+            proposal=proposal,
+        ),
+        output,
+    )
+
+    assert {finding.dimension for finding in guarded.findings} == {
+        "conversion_clarity",
+        "search_intent_fit",
+        "repetition",
+    }
+    assert all(
+        item.status == "needs_changes"
+        for item in guarded.dimensions
+        if item.dimension in {"conversion_clarity", "search_intent_fit", "repetition"}
+    )
 
 
 def test_queued_semantic_run_is_visible_before_worker_preflight() -> None:

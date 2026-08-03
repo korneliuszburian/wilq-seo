@@ -15,6 +15,7 @@ from wilq.content.planning.dynamic_input import ContentPlanningInput, build_cont
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticBlockerCode,
     ContentSemanticFinding,
+    ContentSemanticFindingOutput,
     ContentSemanticReview,
     ContentSemanticReviewBlocker,
     ContentSemanticReviewModelOutput,
@@ -391,7 +392,8 @@ def _execute(
             runtime=trace,
         )
     try:
-        return ContentSemanticReviewModelOutput.model_validate_json(result.output_text), trace
+        output = ContentSemanticReviewModelOutput.model_validate_json(result.output_text)
+        return _apply_deterministic_quality_guards(inputs, output), trace
     except ValueError:
         blocker = _blocker(
             "invalid_structured_output",
@@ -407,6 +409,97 @@ def _execute(
             run=run,
             runtime=trace,
         )
+
+
+def _apply_deterministic_quality_guards(
+    inputs: _SemanticInputs,
+    output: ContentSemanticReviewModelOutput,
+) -> ContentSemanticReviewModelOutput:
+    """Add only mechanical findings the model cannot safely waive."""
+
+    issues: list[tuple[str, str, str]] = []
+    if inputs.proposal.cta_blocks and not inputs.revision.cta_blocks:
+        issues.append(
+            (
+                "conversion_clarity",
+                "cta_blocks",
+                "Brakuje wymaganych bloków CTA z zatwierdzonego planu.",
+            )
+        )
+    section_bodies = {
+        str(section.section_id): section.body_markdown.strip().casefold()
+        for section in inputs.revision.sections
+    }
+    proposal_sections = {
+        str(section.section_id): section for section in inputs.proposal.sections
+    }
+    for section_id, proposal_section in proposal_sections.items():
+        body = section_bodies.get(section_id, "")
+        terms = [str(term).strip().casefold() for term in proposal_section.query_terms]
+        if terms and body and not any(term and term in body for term in terms):
+            issues.append(
+                (
+                    "search_intent_fit",
+                    section_id,
+                    "Sekcja nie zawiera żadnego zatwierdzonego zapytania z jej mapy intencji.",
+                )
+            )
+    normalized_bodies = [body for body in section_bodies.values() if body]
+    if len(normalized_bodies) != len(set(normalized_bodies)):
+        issues.append(
+            ("repetition", "whole_document", "Dokument zawiera powtórzone całe sekcje.")
+        )
+    all_text = "\n".join(section_bodies.values())
+    if any(
+        marker in all_text
+        for marker in (
+            "źródło wskazuje",
+            "informacja wymaga weryfikacji",
+            "[do uzupełnienia]",
+        )
+    ):
+        issues.append(
+            (
+                "repetition",
+                "whole_document",
+                "Dokument zawiera meta-komentarz źródłowy albo notatkę roboczą.",
+            )
+        )
+    existing = {finding.dimension for finding in output.findings}
+    dimensions = list(output.dimensions)
+    findings = list(output.findings)
+    for dimension, target, reason in issues:
+        if dimension in existing:
+            continue
+        existing.add(dimension)
+        for index, assessment in enumerate(dimensions):
+            if assessment.dimension == dimension:
+                dimensions[index] = assessment.model_copy(
+                    update={
+                        "status": "needs_changes",
+                        "affected_targets": [target],
+                        "reason": reason,
+                    }
+                )
+                break
+        findings.append(
+            ContentSemanticFindingOutput(
+                dimension=dimension,
+                severity=(
+                    "high"
+                    if dimension in {"conversion_clarity", "search_intent_fit"}
+                    else "medium"
+                ),
+                label="Automatyczna kontrola jakości",
+                reason=reason,
+                instruction="Popraw wskazany problem i uruchom review ponownie.",
+                affected_targets=[target],
+                evidence_ids=[],
+            )
+        )
+    if not issues or len(findings) == len(output.findings):
+        return output
+    return output.model_copy(update={"dimensions": dimensions, "findings": findings})
 
 
 def _scope_errors(
