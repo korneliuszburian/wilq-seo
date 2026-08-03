@@ -20,21 +20,30 @@ from wilq.content.measurement.aggregates import (
     MeasurementPeriodComparison,
     compare_exact_page_metric_periods,
 )
+from wilq.content.planning.generation_readiness import planning_generation_blockers
+from wilq.content.planning.input_payload import refresh_planning_payload
 from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningSourceAssessment,
     ContentPlanningSourceFact,
+    ContentPlanningSourceProvenance,
     assessment_status,
     build_planning_inventory,
     build_source_assessments,
     build_source_facts,
-    planning_source_connectors,
-    usable_query_portfolio,
     validate_source_assessment_membership,
 )
+from wilq.content.planning.input_summary import ContentPlanningInputSummary
 from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
     load_content_internal_link_candidates,
+)
+from wilq.content.regulatory.planning import regulatory_planning_source_facts
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryCoverage,
+    regulatory_content_coverage,
+    regulatory_coverage_gap,
+    regulatory_review_candidates,
 )
 from wilq.content.workflow.demand_evidence import (
     ContentSearchDemandEvidence,
@@ -71,7 +80,15 @@ ContentPlanningInputBlockerCode = Literal[
     "blocked_planning_sources",
     "new_page_foundation_stale",
     "missing_new_page_service_fact",
+    "missing_regulatory_source_coverage",
 ]
+
+# A refresh plan cannot be grounded without the current page, the approved
+# service boundary and its exact organic-demand evidence. Other assessed
+# sources remain visible in the input and may enrich a plan when exact, but a
+# missing, stale or failed optional integration must not invent demand or
+# prevent a grounded content repair from proceeding.
+_REQUIRED_EXACT_PLANNING_SOURCES = frozenset({"wordpress", "service_profile", "gsc"})
 
 
 class ContentPlanningInputBlocker(BaseModel):
@@ -107,7 +124,11 @@ class ContentPlanningInput(BaseModel):
     buyer_trigger: str = Field(min_length=1)
     search_intent: str = Field(min_length=1)
     source_facts: list[ContentPlanningSourceFact] = Field(default_factory=list)
+    source_provenance: list[ContentPlanningSourceProvenance] = Field(default_factory=list)
     source_assessments: list[ContentPlanningSourceAssessment] = Field(min_length=10)
+    regulatory_coverage: ContentRegulatoryCoverage = Field(
+        default_factory=ContentRegulatoryCoverage
+    )
     query_portfolio: ContentSearchDemandEvidence
     claim_ledger: list[ContentClaimLedgerEntry] = Field(default_factory=list)
     measurement_metrics: list[str] = Field(default_factory=list)
@@ -119,6 +140,14 @@ class ContentPlanningInput(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     baseline_cta_direction: str = Field(min_length=1)
+    minimum_cta_blocks: int = Field(default=1, ge=1, le=4)
+    required_cta_patterns: list[str] = Field(default_factory=list, max_length=4)
+
+    @model_validator(mode="after")
+    def require_nonblank_cta_patterns(self) -> ContentPlanningInput:
+        if any(not pattern.strip() for pattern in self.required_cta_patterns):
+            raise ValueError("Required CTA patterns must be non-blank")
+        return self
 
     @model_validator(mode="after")
     def require_complete_source_assessments(self) -> ContentPlanningInput:
@@ -143,57 +172,6 @@ class ContentPlanningInput(BaseModel):
                 raise ValueError("New-page planning cannot carry existing-page inventory.")
             if self.metric_comparisons or self.measurement_baseline_evidence_ids:
                 raise ValueError("New-page planning cannot carry a page measurement baseline.")
-        return self
-
-
-class ContentPlanningInputSummary(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    # Historical generated proposals did not carry a work-kind discriminator.
-    # They are refresh-existing records by construction.
-    goal: Literal["refresh_existing", "new_page"] = "refresh_existing"
-    final_canonical_url: str | None = None
-    proposed_ia_location: str | None = None
-    service_label: str = Field(min_length=1)
-    inventory_status: Literal["available", "missing", "not_applicable"]
-    content_inventory_status: Literal["available", "missing", "not_applicable"]
-    acf_section_inventory_status: Literal["available", "missing", "not_applicable"]
-    source_assessments: list[ContentPlanningSourceAssessment] = Field(min_length=10)
-    source_fact_count: int = Field(ge=0)
-    source_fact_ids: list[str] = Field(default_factory=list)
-    source_material_ids: list[str] = Field(default_factory=list)
-    source_fact_previews: list[ContentPlanningSourceFact] = Field(default_factory=list)
-    evidence_id_count: int = Field(ge=0)
-    knowledge_card_count: int = Field(ge=0)
-    measurement_metrics: list[str] = Field(default_factory=list)
-    metric_comparisons: list[MeasurementPeriodComparison] = Field(default_factory=list)
-
-    @model_validator(mode="after")
-    def require_complete_source_assessments(self) -> ContentPlanningInputSummary:
-        validate_source_assessment_membership(self.source_assessments)
-        if self.goal == "new_page":
-            if self.final_canonical_url is not None:
-                raise ValueError("New-page planning cannot claim a public canonical URL.")
-            if (
-                self.proposed_ia_location is None
-                or len(self.proposed_ia_location.strip()) < 3
-            ):
-                raise ValueError("New-page planning requires an IA location.")
-            if any(
-                status != "not_applicable"
-                for status in (
-                    self.inventory_status,
-                    self.content_inventory_status,
-                    self.acf_section_inventory_status,
-                )
-            ):
-                raise ValueError("New-page planning cannot carry existing-page inventory.")
-            if self.metric_comparisons:
-                raise ValueError("New-page planning cannot carry page metric comparisons.")
-        elif not self.final_canonical_url or not self.final_canonical_url.strip():
-            raise ValueError("Refresh planning requires final_canonical_url.")
-        elif self.inventory_status == "not_applicable":
-            raise ValueError("Refresh planning requires existing-page inventory.")
         return self
 
 
@@ -233,13 +211,18 @@ class ContentPlanningInputReadinessResponse(BaseModel):
         if self.status == "blocked" and self.planning_input_digest is not None:
             raise ValueError("Blocked planning input cannot expose a usable digest.")
         if self.input_summary is not None and self.input_summary.goal == "new_page":
-            if self.status != "ready" or self.new_page_document_identity is None:
+            if self.status == "ready" and self.new_page_document_identity is None:
                 raise ValueError(
                     "Ready new-page planning input requires its exact document identity."
                 )
-            if self.new_page_document_identity.work_item_id != self.work_item_id:
+            if (
+                self.new_page_document_identity is not None
+                and self.new_page_document_identity.work_item_id != self.work_item_id
+            ):
                 raise ValueError("New-page document identity must match the planning work item.")
             if (
+                self.new_page_document_identity is not None
+                and
                 self.new_page_document_identity.proposed_ia_location
                 != self.input_summary.proposed_ia_location
             ):
@@ -254,14 +237,25 @@ def content_planning_input_readiness(
     *,
     work_item_id: str | None = None,
 ) -> ContentPlanningInputReadinessResponse:
-    if result.planning_input is None:
+    generation_blockers = planning_generation_blockers(result.blockers)
+    if result.planning_input is None or generation_blockers:
+        input_summary = (
+            content_planning_input_summary(result.planning_input)
+            if result.planning_input is not None
+            else None
+        )
         return ContentPlanningInputReadinessResponse(
             status="blocked",
-            work_item_id=work_item_id,
-            blockers=result.blockers,
+            work_item_id=(
+                result.planning_input.work_item_id
+                if result.planning_input is not None
+                else work_item_id
+            ),
+            input_summary=input_summary,
+            blockers=generation_blockers,
             safe_next_step=(
-                result.blockers[0].next_step
-                if result.blockers
+                generation_blockers[0].next_step
+                if generation_blockers
                 else "Odczytaj ponownie podstawę planowania przed przygotowaniem planu."
             ),
         )
@@ -317,6 +311,19 @@ def content_planning_input_summary(
             }
         ),
         source_fact_previews=list(planning_input.source_facts),
+        gsc_query_rows=list(planning_input.query_portfolio.gsc_query_rows),
+        regulatory_profile_id=planning_input.regulatory_coverage.profile_id,
+        regulatory_profile_version=planning_input.regulatory_coverage.profile_version,
+        regulatory_requirements=planning_input.regulatory_coverage.requirements,
+        regulatory_requirement_ids=[
+            requirement.id for requirement in planning_input.regulatory_coverage.requirements
+        ],
+        regulatory_source_fact_ids=planning_input.regulatory_coverage.source_fact_ids,
+        regulatory_requirement_coverage=planning_input.regulatory_coverage.requirement_coverage,
+        regulatory_review_candidates=regulatory_review_candidates(
+            service_card_id=planning_input.confirmed_service_card_id,
+            coverage=planning_input.regulatory_coverage,
+        ),
         evidence_id_count=len(planning_input.evidence_ids),
         knowledge_card_count=len(planning_input.knowledge_card_ids),
         measurement_metrics=planning_input.measurement_metrics,
@@ -342,22 +349,6 @@ def build_new_page_planning_input(
         service_card=service_card,
         source_facts_loader=ekologus_source_facts,
     )
-
-
-def planning_generation_blockers(
-    blockers: list[ContentPlanningInputBlocker],
-) -> list[ContentPlanningInputBlocker]:
-    """Block plan generation only for blockers that make planning unsafe.
-
-    A public rendered `the_content` read is sufficient to build a reviewable
-    plan. Its REST/ACF provenance still blocks an initial full draft, which is
-    enforced by the draft seam consuming the unfiltered result.
-    """
-    return [
-        blocker
-        for blocker in blockers
-        if blocker.code != "wordpress_material_review_required"
-    ]
 
 
 def build_content_planning_input(
@@ -453,6 +444,10 @@ def build_content_planning_input_from_components(
         demand=baseline_proposal.search_demand,
         service_lifecycle=candidate.lifecycle_status,
     )
+    regulatory_coverage = regulatory_content_coverage(
+        service_card_id=candidate.service_card_id,
+        source_facts=ekologus_source_facts(),
+    )
     blockers = _readiness_blockers(
         service_profile=service_profile,
         service_lifecycle=candidate.lifecycle_status,
@@ -460,8 +455,16 @@ def build_content_planning_input_from_components(
         freshness=freshness,
         source_assessments=source_assessments,
         existing_content_material_reviewed=existing_content_material_reviewed,
+        regulatory_coverage=regulatory_coverage,
     )
-    source_facts = build_source_facts(brief, source_assessments, service_profile)
+    source_facts = [
+        *build_source_facts(brief, source_assessments, service_profile),
+        *regulatory_planning_source_facts(
+            regulatory_coverage,
+            knowledge_card_ids=service_profile.knowledge_card_ids,
+            source_material_ids=service_profile.source_material_ids,
+        ),
+    ]
     metric_comparisons = compare_exact_page_metric_periods(
         item.metric_facts,
         content_url=brief.final_canonical_url,
@@ -475,6 +478,7 @@ def build_content_planning_input_from_components(
         inventory=inventory,
         source_facts=source_facts,
         source_assessments=source_assessments,
+        regulatory_coverage=regulatory_coverage,
         claim_ledger=claim_ledger,
         metric_comparisons=metric_comparisons,
     )
@@ -543,11 +547,13 @@ def _readiness_blockers(
     freshness: ContentFreshnessAssessment,
     source_assessments: list[ContentPlanningSourceAssessment],
     existing_content_material_reviewed: bool,
+    regulatory_coverage: ContentRegulatoryCoverage,
 ) -> list[ContentPlanningInputBlocker]:
     service_blockers = _service_readiness_blockers(service_profile, service_lifecycle)
     inventory_blockers = _inventory_readiness_blockers(
         inventory, existing_content_material_reviewed
     )
+    regulatory_gap = regulatory_coverage_gap(regulatory_coverage)
     return [
         *service_blockers,
         *inventory_blockers,
@@ -557,6 +563,18 @@ def _readiness_blockers(
             preceding_blocker_codes={
                 blocker.code for blocker in [*service_blockers, *inventory_blockers]
             },
+        ),
+        *(
+            [
+                _blocker(
+                    "missing_regulatory_source_coverage",
+                    regulatory_gap.label,
+                    regulatory_gap.reason,
+                    regulatory_gap.next_step,
+                )
+            ]
+            if regulatory_gap is not None
+            else []
         ),
     ]
 
@@ -658,7 +676,10 @@ def _source_readiness_blockers(
     stale_sources = [
         assessment.source
         for assessment in source_assessments
-        if assessment.status == "stale"
+        if (
+            assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES
+            and assessment.status == "stale"
+        )
     ]
     if stale_sources:
         blockers.append(
@@ -673,7 +694,10 @@ def _source_readiness_blockers(
     blocked_sources = [
         assessment.source
         for assessment in source_assessments
-        if assessment.status == "blocked"
+        if (
+            assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES
+            and assessment.status == "blocked"
+        )
     ]
     if blocked_sources and not (
         {"service_card_not_approved", "stale_planning_sources"}
@@ -701,10 +725,10 @@ def _planning_payload(
     inventory: ContentPlanningInventory,
     source_facts: list[ContentPlanningSourceFact],
     source_assessments: list[ContentPlanningSourceAssessment],
+    regulatory_coverage: ContentRegulatoryCoverage,
     claim_ledger: ContentClaimLedger,
     metric_comparisons: list[MeasurementPeriodComparison],
 ) -> dict[str, object]:
-    query_portfolio = usable_query_portfolio(baseline.search_demand, source_assessments)
     evidence_ids = _planning_evidence_ids(
         inventory=inventory,
         service_profile=service_profile,
@@ -712,46 +736,26 @@ def _planning_payload(
         source_assessments=source_assessments,
         claim_ledger=claim_ledger,
     )
-    internal_link_candidates = load_content_internal_link_candidates(
-        brief.internal_link_direction,
-        allowed_evidence_ids=evidence_ids,
-    )
-    return {
-        "work_item_id": item.id,
-        "final_canonical_url": brief.final_canonical_url,
-        "service_candidates": service_profile.service_candidates,
-        "confirmed_service_card_id": candidate.service_card_id,
-        "service_label": candidate.service_label,
-        "inventory": inventory,
-        "internal_link_candidates": internal_link_candidates,
-        "target_reader": brief.target_reader,
-        "buyer_problem": brief.buyer_problem,
-        "buyer_trigger": brief.buyer_trigger,
-        "search_intent": brief.search_intent,
-        "source_facts": source_facts,
-        "source_assessments": source_assessments,
-        "query_portfolio": query_portfolio,
-        "claim_ledger": claim_ledger.entries,
-        "measurement_metrics": brief.measurement_plan.metrics_to_watch,
-        "metric_comparisons": metric_comparisons,
-        "measurement_baseline_evidence_ids": [
-            evidence_id
-            for evidence_id in brief.measurement_plan.baseline_evidence_ids
-            if evidence_id in evidence_ids
-        ],
-        "measurement_observation_rule": brief.measurement_plan.earliest_verdict_note,
-        "measurement_success_claim_rule": brief.measurement_plan.success_claim_rule,
-        "knowledge_card_ids": brief.knowledge_card_ids,
-        "evidence_ids": evidence_ids,
-        "source_connectors": planning_source_connectors(
-            inventory=inventory,
-            service_profile=service_profile,
-            demand=query_portfolio,
-            source_facts=source_facts,
-            assessments=source_assessments,
+    return refresh_planning_payload(
+        item=item,
+        service_profile=service_profile,
+        candidate=candidate,
+        brief=brief,
+        baseline=baseline,
+        inventory=inventory,
+        source_facts=source_facts,
+        source_assessments=source_assessments,
+        regulatory_coverage=regulatory_coverage,
+        claim_ledger=claim_ledger,
+        metric_comparisons=metric_comparisons,
+        evidence_ids=evidence_ids,
+        internal_link_candidates_loader=lambda directions, allowed_evidence_ids: (
+            load_content_internal_link_candidates(
+                directions,
+                allowed_evidence_ids=allowed_evidence_ids,
+            )
         ),
-        "baseline_cta_direction": baseline.cta_direction,
-    }
+    )
 
 
 def _planning_evidence_ids(

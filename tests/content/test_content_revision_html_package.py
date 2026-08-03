@@ -11,6 +11,7 @@ from apps.api.wilq_api.routers import content_revision_html_package
 from wilq.content.handoff.html_package import build_content_revision_html_package
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
+    ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,
@@ -29,6 +30,16 @@ def test_html_package_carries_the_exact_approved_revision_and_its_lineage() -> N
         "evidence_ids": ["ev_section"],
         "source_material_ids": ["material_bdo"],
         "knowledge_card_ids": ["knowledge_bdo"],
+        "official_source_references": [
+            {
+                "source_fact_id": "regulatory_source_fact_bdo",
+                "source_url": "https://bdo.mos.gov.pl/o-systemie-bdo/",
+                "source_title": "Oficjalny opis systemu BDO",
+                "verified_on": "2026-07-31",
+                "evidence_ids": ["ev_regulatory_bdo"],
+                "regulatory_requirement_ids": ["bdo_scope"],
+            }
+        ],
         "section_count": 1,
     }
     assert package.file_name == "wilq-exact-revision-content_revision_approved.html"
@@ -36,6 +47,8 @@ def test_html_package_carries_the_exact_approved_revision_and_its_lineage() -> N
     assert revision.content_digest in package.html_document
     assert "<h1>BDO</h1>" in package.html_document
     assert "Treść sekcji." in package.html_document
+    assert "Źródła urzędowe" in package.html_document
+    assert "https://bdo.mos.gov.pl/o-systemie-bdo/" in package.html_document
     assert "Nie jest gotowym układem ani zapisem WordPress." in package.html_document
 
 
@@ -103,12 +116,18 @@ def test_html_package_endpoint_keeps_a_historical_approved_revision_exact(
 
 def _approved_revision() -> ContentDraftRevision:
     return ContentDraftRevision(
+        schema_version="wilq_content_draft_revision_v2",
         revision_id="content_revision_approved",
         work_item_id="content_work_item_bdo",
         revision_number=1,
         content_digest="a" * 64,
         draft_package_id="draft_package_bdo",
         draft_package_digest="b" * 64,
+        planning_digest="c" * 64,
+        planning_input_digest="d" * 64,
+        service_card_id="ekologus_service_bdo_reporting",
+        service_digest="e" * 64,
+        inventory_digest="f" * 64,
         final_canonical_url="https://www.ekologus.pl/bdo/",
         title="BDO",
         page_assets=ContentDraftRevisionPageAssets(
@@ -127,6 +146,16 @@ def _approved_revision() -> ContentDraftRevision:
                 evidence_ids=["ev_section"],
                 source_material_ids=["material_bdo"],
                 knowledge_card_ids=["knowledge_bdo"],
+            )
+        ],
+        official_source_references=[
+            ContentDraftRevisionOfficialSourceReference(
+                source_fact_id="regulatory_source_fact_bdo",
+                source_url="https://bdo.mos.gov.pl/o-systemie-bdo/",
+                source_title="Oficjalny opis systemu BDO",
+                verified_on="2026-07-31",
+                evidence_ids=["ev_regulatory_bdo"],
+                regulatory_requirement_ids=["bdo_scope"],
             )
         ],
         created_by="operator_local_dashboard",

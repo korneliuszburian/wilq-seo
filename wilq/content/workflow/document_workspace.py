@@ -4,6 +4,12 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.content.knowledge.source_facts import ekologus_source_facts
+from wilq.content.regulatory import (
+    ContentRegulatoryReviewCandidate,
+    regulatory_content_coverage,
+    regulatory_review_candidates,
+)
 from wilq.content.workflow.catalog import (
     ContentInventoryMaterialResponse,
     read_content_inventory_material,
@@ -19,6 +25,7 @@ from wilq.content.workflow.document_lineage import (
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
+    ContentDraftRevisionSourceProvenance,
     ContentDraftRevisionStateStatus,
 )
 from wilq.content.workflow.store import content_workflow_store
@@ -63,6 +70,7 @@ class ContentDocumentWorkspaceDocument(BaseModel):
     )
     label: str
     reason: str
+    source_provenance: list[ContentDraftRevisionSourceProvenance] = Field(default_factory=list)
     preview: ContentDocumentWorkspaceDocumentPreview | None = None
     revision: ContentDraftRevision | None = None
     review: ContentDraftRevisionReview | None = None
@@ -110,7 +118,7 @@ class ContentDocumentWorkspaceDocumentPreview(BaseModel):
 class ContentDocumentWorkspaceNextAction(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["open_review", "prepare_document", "none"]
+    kind: Literal["open_review", "prepare_document", "repair_document", "none"]
     label: str
     reason: str
 
@@ -152,6 +160,9 @@ class ContentDocumentWorkspace(BaseModel):
     document_lineage: ContentDocumentWorkspaceDocumentLineage
     comparison: ContentDocumentWorkspaceComparison
     next_action: ContentDocumentWorkspaceNextAction
+    regulatory_review_candidates: list[ContentRegulatoryReviewCandidate] = Field(
+        default_factory=list
+    )
     secondary_disclosures: list[str] = Field(default_factory=list)
 
 
@@ -182,6 +193,9 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
         document_lineage=build_content_document_lineage(revision_state.latest_revision),
         comparison=_comparison(source_snapshot, revision_state.latest_revision),
         next_action=_next_action(document),
+        regulatory_review_candidates=_regulatory_review_candidates(
+            revision_state.latest_revision
+        ),
         secondary_disclosures=[
             (
                 "Target WordPress może pozostać nieznany: blokuje to dopiero delivery, "
@@ -192,6 +206,22 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
                 "Gutenberga ani the_content."
             ),
         ],
+    )
+
+
+def _regulatory_review_candidates(
+    revision: ContentDraftRevision | None,
+) -> list[ContentRegulatoryReviewCandidate]:
+    service_card_id = None if revision is None else getattr(revision, "service_card_id", None)
+    if service_card_id is None:
+        return []
+    coverage = regulatory_content_coverage(
+        service_card_id=service_card_id,
+        source_facts=ekologus_source_facts(),
+    )
+    return regulatory_review_candidates(
+        service_card_id=service_card_id,
+        coverage=coverage,
     )
 
 
@@ -347,6 +377,7 @@ def _canonical_document(
         review_state=normalized,
         label=labels[normalized],
         reason=reasons[normalized],
+        source_provenance=list(revision.source_provenance),
         preview=_document_preview(revision),
         revision=revision if isinstance(revision, ContentDraftRevision) else None,
         review=review if isinstance(review, ContentDraftRevisionReview) else None,
@@ -479,6 +510,15 @@ def _next_action(document: ContentDocumentWorkspaceDocument) -> ContentDocumentW
             reason=(
                 "Przygotowanie dokumentu jest kolejnym krokiem; ten read-only workspace "
                 "nie uruchamia generowania."
+            ),
+        )
+    if document.status in {"needs_changes", "rejected"}:
+        return ContentDocumentWorkspaceNextAction(
+            kind="repair_document",
+            label="Przygotuj poprawkę",
+            reason=(
+                "Dokument ma zapisaną decyzję człowieka. Wybierz jeden element, "
+                "aby utworzyć nową wersję do ponownego review."
             ),
         )
     return ContentDocumentWorkspaceNextAction(

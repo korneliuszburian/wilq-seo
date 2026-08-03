@@ -25,16 +25,30 @@ _REFRESH_INSTRUCTION = (
     "Nie pomijaj istniejących sekcji inventory: każdą przypisz przez inventory_section_id "
     "do jednej sekcji planu z disposition albo pozostaw jako jawnie wymagającą review; "
     "nie twórz cichego unmapped. "
+    "Przy disposition rewrite zachowaj w nowym headingu główny termin i intencję "
+    "odpowiadającej sekcji inventory, nawet gdy porządkujesz jego brzmienie. "
+    "Jeśli wejście zawiera regulatory_coverage.requirements, każdemu requirement_id "
+    "przypisz sekcję z jego official evidence i opisz w nagłówku, purpose albo "
+    "reader_question wszystkie document_assertions tego wymagania. Dla każdej "
+    "pozycji z application_context.regulatory_document_assertions użyj dosłownie "
+    "co najmniej jednego wariantu z required_any_of w sekcji przypisanej do tego "
+    "requirement_id. Nie łącz "
+    "niepowiązanych obowiązków pod ogólnym nagłówkiem konsultacji. "
     "Każdy nagłówek sekcji ma nazywać konkretną odpowiedź lub problem czytelnika; "
     "nie używaj nagłówków prezentacyjnych, nawigacyjnych ani promocyjnych, takich jak "
     "'Poniżej przedstawiamy', 'Dowiedz się więcej', 'Zobacz także', 'Podsumowanie' "
     "albo 'Kontakt'. Nie twórz nagłówków opisujących sam plan, proces lub układ strony. "
     "Nigdy nie używaj w nagłówku daty, roku, nazwy wydarzenia, listy klientów ani "
     "sekcji typu 'zaufali nam'; takie elementy są materiałem do pominięcia albo review, "
-    "nie strukturą odpowiedzi dla czytelnika. "
+    "nie strukturą odpowiedzi dla czytelnika. Daty, terminy, kwoty i inne wartości "
+    "z required_any_of umieszczaj w purpose, reader_question albo body scope sekcji, "
+    "nigdy w samym headingu. "
     "Placement CTA lub linku ma być after_lead, after_content albo dokładnym nagłówkiem "
     "jednej z zaplanowanych sekcji, która nie ma disposition remove_review_required; "
     "dla sekcji usuwanych użyj after_content albo nagłówka najbliższej zachowanej sekcji. "
+    "Jeśli application_context zawiera placement_contract, traktuj jego "
+    "forbidden_section_headings jako zakazane i użyj jednego z safe_fallback_placements; "
+    "nie próbuj umieszczać CTA ani linku przy sekcji zakazanej. "
     "Hipotezy Ads lub social są opcjonalne, zawsze review_required i wolno je zwrócić "
     "tylko przy exact evidence. Measurement plan nie może zawierać wymyślonych targetów. "
     "Nie zatwierdzaj treści, nie wykonuj write i zawsze zwróć publish_ready=false. "
@@ -49,6 +63,12 @@ _NEW_PAGE_INSTRUCTION = (
     "Każda sekcja musi mieć disposition create i nie może wskazywać inventory_section_id "
     "ani inventory_heading. Nie dopisuj zapytań, dowodów, claimów, linków ani metryk spoza "
     "przekazanego wejścia. Każdy nagłówek ma nazywać konkretną odpowiedź lub problem czytelnika; "
+    "Jeśli wejście zawiera regulatory_coverage.requirements, każdemu requirement_id "
+    "przypisz sekcję z jego official evidence i opisz w nagłówku, purpose albo "
+    "reader_question wszystkie document_assertions tego wymagania. Dla każdej "
+    "pozycji z application_context.regulatory_document_assertions użyj dosłownie "
+    "co najmniej jednego wariantu z required_any_of w sekcji przypisanej do tego "
+    "requirement_id. "
     "nie używaj nagłówków nawigacyjnych, promocyjnych ani opisujących sam plan. "
     "Placement CTA lub linku ma być after_lead, after_content albo dokładnym nagłówkiem "
     "zaplanowanej sekcji. Nie zatwierdzaj treści, nie wykonuj write i zawsze zwróć "
@@ -152,6 +172,17 @@ def content_planning_turn_request(
                 "do_not_write_vendor": True,
                 "publish_ready": False,
             },
+            "regulatory_document_assertions": [
+                {
+                    "requirement_id": requirement.id,
+                    "assertion_id": assertion.id,
+                    "label": assertion.label,
+                    "required_any_of": assertion.required_any_of,
+                }
+                for requirement in planning_input.regulatory_coverage.requirements
+                for assertion in requirement.document_assertions
+            ],
+            "placement_contract": _placement_contract(planning_input),
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -217,6 +248,11 @@ def content_planning_output_schema(
     _restrict_array(_properties(section), "query_terms", queries)
     _restrict_array(_properties(section), "evidence_ids", evidence_ids)
     _restrict_array(_properties(section), "claim_ids", claim_ids)
+    _restrict_array(
+        _properties(section),
+        "regulatory_requirement_ids",
+        [requirement.id for requirement in planning_input.regulatory_coverage.requirements],
+    )
     _restrict_nullable_string(
         _properties(section),
         "inventory_heading",
@@ -234,6 +270,12 @@ def content_planning_output_schema(
     for definition in (faq, cta):
         _restrict_array(_properties(definition), "evidence_ids", evidence_ids)
         _restrict_array(_properties(definition), "claim_ids", claim_ids)
+    if planning_input.required_cta_patterns:
+        _restrict_string(
+            _properties(cta),
+            "copy_direction",
+            planning_input.required_cta_patterns,
+        )
     _restrict_array(_properties(faq), "query_terms", queries)
     _restrict_array(_properties(link), "evidence_ids", evidence_ids)
     _restrict_array(_properties(link), "claim_ids", claim_ids)
@@ -247,6 +289,12 @@ def content_planning_output_schema(
     _cap_array(properties, "sections", 12)
     _cap_array(properties, "faq", 8)
     _cap_array(properties, "cta_blocks", 4)
+    # The quality gate already owns this invariant after parsing, but the
+    # structured-output boundary must communicate it to Codex as well.  An
+    # empty array is schema-valid only when no CTA is required by the exact
+    # planning input; otherwise it needlessly burns a run before being
+    # rejected downstream.
+    _mapping(properties, "cta_blocks")["minItems"] = planning_input.minimum_cta_blocks
     _cap_array(properties, "conditional_hypotheses", 4)
     _restrict_array(
         _properties(measurement),
@@ -271,6 +319,21 @@ def content_planning_output_schema(
         _mapping(properties, "conditional_hypotheses")["maxItems"] = 0
     _mapping(properties, "internal_links")["maxItems"] = len(internal_link_urls)
     return schema
+
+
+def _placement_contract(planning_input: ContentPlanningInput) -> dict[str, object]:
+    """Expose server-derived placement guardrails to the model turn."""
+
+    return {
+        "inventory_section_headings": [
+            section.heading for section in planning_input.inventory.sections
+        ],
+        "forbidden_placement_rule": (
+            "Nie umieszczaj CTA ani linku przy żadnej sekcji, której output ma "
+            "inventory_disposition=remove_review_required."
+        ),
+        "safe_fallback_placements": ["after_lead", "after_content"],
+    }
 
 
 def _definition(

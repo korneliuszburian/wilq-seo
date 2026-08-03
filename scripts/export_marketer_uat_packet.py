@@ -5,6 +5,7 @@ import json
 import sys
 from typing import Any
 from urllib.error import URLError
+from urllib.parse import quote
 from urllib.request import urlopen
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000"
@@ -13,7 +14,7 @@ ENDPOINTS = {
     "command_center": "/api/dashboard/command-center",
     "merchant": "/api/merchant/diagnostics",
     "content": "/api/content/diagnostics",
-    "content_snapshot": "/api/content/work-items/snapshot",
+    "content_entry": "/api/content/workflow-entry",
     "ads": "/api/ads/diagnostics",
     "ga4": "/api/ga4/diagnostics",
 }
@@ -130,7 +131,29 @@ def main() -> int:
 
 
 def fetch_surfaces(api_base: str) -> dict[str, dict[str, Any]]:
-    return {key: fetch_json(api_base, path) for key, path in ENDPOINTS.items()}
+    surfaces = {key: fetch_json(api_base, path) for key, path in ENDPOINTS.items()}
+    content_entry = _mapping(surfaces["content_entry"])
+    recommendation = next(
+        (
+            _mapping(item)
+            for item in _list(content_entry.get("recommendations"))
+            if isinstance(_mapping(item).get("work_item_id"), str)
+            and _mapping(item)["work_item_id"].strip()
+        ),
+        None,
+    )
+    if recommendation is None:
+        raise RuntimeError(
+            "WILQ nie zwrócił rekomendacji treści z dokładnym work_item_id; "
+            "nie można przygotować packetu UAT bez wybranego workspace."
+        )
+    work_item_id = recommendation["work_item_id"].strip()
+    surfaces["content_snapshot"] = fetch_json(
+        api_base,
+        f"/api/content/work-items/{quote(work_item_id, safe='')}/selected-workspace",
+    )
+    surfaces["content_entry"] = {"recommendation": recommendation}
+    return surfaces
 
 
 def fetch_json(api_base: str, path: str) -> dict[str, Any]:
@@ -155,13 +178,17 @@ def build_marketer_uat_packet(
     *,
     api_base: str = DEFAULT_API_BASE,
 ) -> dict[str, Any]:
-    missing = [key for key in ENDPOINTS if key not in surfaces]
+    required_surfaces = [key for key in ENDPOINTS if key != "content_entry"]
+    missing = [key for key in required_surfaces if key not in surfaces]
     if missing:
         raise RuntimeError(f"Missing UAT surfaces: {', '.join(missing)}")
 
     command_center = _mapping(surfaces["command_center"])
     content_payload = dict(_mapping(surfaces["content"]))
     content_payload["_selected_snapshot"] = _mapping(surfaces["content_snapshot"])
+    content_payload["_workflow_recommendation"] = _mapping(
+        _mapping(surfaces.get("content_entry")).get("recommendation")
+    )
     route_checks = [
         build_route_check(
             route,
@@ -467,7 +494,7 @@ def _compact_decision_queue(value: Any) -> list[dict[str, Any]]:
 def _content_uat_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
     summary = _mapping(payload.get("operator_summary"))
     selected_snapshot = _mapping(payload.get("_selected_snapshot"))
-    selected_candidate = _mapping(selected_snapshot.get("candidate"))
+    selected_candidate = _selected_content_candidate(payload, selected_snapshot)
     search_demand = _mapping(
         _mapping(_mapping(selected_snapshot.get("planning_workspace")).get("proposal")).get(
             "search_demand"
@@ -515,6 +542,34 @@ def _content_uat_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
         ),
         "akcje_do_sprawdzenia": payload.get("action_summary_label")
         or _count_label(_list(payload.get("action_ids")), "akcja do sprawdzenia"),
+    }
+
+
+def _selected_content_candidate(
+    payload: dict[str, Any], selected_snapshot: dict[str, Any]
+) -> dict[str, Any]:
+    legacy_candidate = _mapping(selected_snapshot.get("candidate"))
+    if legacy_candidate:
+        return legacy_candidate
+
+    recommendation = _mapping(payload.get("_workflow_recommendation"))
+    workspace = _mapping(selected_snapshot.get("workspace"))
+    source_snapshot = _mapping(workspace.get("source_snapshot"))
+    work_item_id = recommendation.get("work_item_id") or workspace.get("work_item_id")
+    decision_id = (
+        work_item_id.removeprefix("content_work_item_")
+        if isinstance(work_item_id, str)
+        else None
+    )
+    return {
+        "decision_id": decision_id,
+        "title": recommendation.get("title") or source_snapshot.get("title"),
+        "source_public_url": recommendation.get("url") or source_snapshot.get("url"),
+        "intended_final_url": recommendation.get("url") or source_snapshot.get("url"),
+        "final_canonical_url": recommendation.get("url") or source_snapshot.get("url"),
+        "preview_url": None,
+        "safe_next_step": _mapping(workspace.get("next_action")).get("label")
+        or selected_snapshot.get("safe_next_step"),
     }
 
 

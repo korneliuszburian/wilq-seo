@@ -431,6 +431,14 @@ export const ContentDocumentWorkspaceSourceSnapshotSchema = z.object({
   evidence_ids: z.array(z.string()).default([])
 });
 
+const ContentDocumentSourceProvenanceSchema = z.object({
+  source_fact_id: z.string().min(1),
+  source_url_or_path: z.string().min(1),
+  freshness_date: z.string().min(1),
+  reviewer: z.string().min(1).nullable().optional(),
+  evidence_ids: z.array(z.string().min(1)).min(1)
+});
+
 export const ContentDocumentWorkspaceDocumentSchema = z.object({
   status: z.enum(["not_created", "unreviewed", "needs_changes", "approved", "rejected", "deferred"]),
   revision_id: z.string().nullable().optional(),
@@ -438,6 +446,7 @@ export const ContentDocumentWorkspaceDocumentSchema = z.object({
   review_state: z.enum(["unreviewed", "needs_changes", "approved", "rejected", "deferred"]).default("unreviewed"),
   label: z.string(),
   reason: z.string(),
+  source_provenance: z.array(ContentDocumentSourceProvenanceSchema).optional(),
   preview: z.lazy(() => ContentDocumentWorkspaceDocumentPreviewSchema).nullable().optional(),
   revision: z.lazy(() => ContentDraftRevisionSchema).nullable().optional(),
   review: z.lazy(() => ContentDraftRevisionReviewSchema).nullable().optional()
@@ -496,7 +505,7 @@ export const ContentDocumentWorkspaceDocumentLineageSchema = z.object({
 });
 
 export const ContentDocumentWorkspaceNextActionSchema = z.object({
-  kind: z.enum(["open_review", "prepare_document", "none"]),
+  kind: z.enum(["open_review", "prepare_document", "repair_document", "none"]),
   label: z.string(),
   reason: z.string()
 });
@@ -517,6 +526,17 @@ export const ContentDocumentWorkspaceComparisonSchema = z.object({
   items: z.array(ContentDocumentWorkspaceComparisonItemSchema).default([])
 });
 
+export const ContentRegulatoryReviewCandidateSchema = z.object({
+  candidate_id: z.string().min(1),
+  source_url: z.string().url(),
+  source_title: z.string().min(1),
+  observed_on: z.string().min(1),
+  requirement_ids: z.array(z.string().min(1)).min(1),
+  requirement_labels: z.array(z.string().min(1)).min(1),
+  review_status: z.literal("review_required"),
+  safe_next_step: z.string().min(1)
+});
+
 export const ContentDocumentWorkspaceSchema = z.object({
   response_type: z.literal("content_document_workspace").default("content_document_workspace"),
   contract_version: z.literal("content_document_workspace_v2").default("content_document_workspace_v2"),
@@ -528,6 +548,7 @@ export const ContentDocumentWorkspaceSchema = z.object({
   document_lineage: ContentDocumentWorkspaceDocumentLineageSchema,
   comparison: ContentDocumentWorkspaceComparisonSchema,
   next_action: ContentDocumentWorkspaceNextActionSchema,
+  regulatory_review_candidates: z.array(ContentRegulatoryReviewCandidateSchema).default([]),
   secondary_disclosures: z.array(z.string()).default([])
 });
 
@@ -1188,7 +1209,8 @@ export const ContentKnowledgeCardSchema = z.object({
     "cta_pattern",
     "claim_policy",
     "evidence_requirement",
-    "measurement_sensitive_claim"
+    "measurement_sensitive_claim",
+    "regulatory_source"
   ]),
   title: z.string(),
   summary: z.string(),
@@ -2483,6 +2505,8 @@ export const ContentDraftRevisionProposalMetadataSchema = z
     cta_lineage: z.array(ContentDraftRevisionProposalCtaLineageSchema).default([]),
     quality_verdict: z.enum(["needs_changes", "reviewable", "ready_for_human_review"]),
     quality_finding_codes: z.array(z.string()).default([]),
+    regulatory_assurance_run_id: z.string().trim().min(1).nullable().optional(),
+    regulatory_assurance_criteria_version: z.string().trim().min(1).nullable().optional(),
     review_scope: z.enum([
       "persisted_selected_sections_and_declared_lineage",
       "persisted_selected_components_and_declared_lineage",
@@ -2497,6 +2521,20 @@ export const ContentDraftRevisionProposalMetadataSchema = z
     const lineageCtaIds = metadata.cta_lineage.map((lineage) => lineage.cta_id);
     const sectionSelection = headings.length > 0;
     const ctaSelection = ctaIds.length > 0;
+    const assuranceBound =
+      metadata.regulatory_assurance_run_id != null ||
+      metadata.regulatory_assurance_criteria_version != null;
+    if (
+      assuranceBound &&
+      (!metadata.regulatory_assurance_run_id ||
+        !metadata.regulatory_assurance_criteria_version)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["regulatory_assurance_run_id"],
+        message: "regulatory assurance provenance must be complete"
+      });
+    }
     const validSections =
       new Set(headings).size === headings.length &&
       headings.length === lineageHeadings.length &&
@@ -2589,6 +2627,14 @@ const isSafePublicContentUrl = (value: string): boolean => {
   }
 };
 
+export const ContentDraftRevisionSourceProvenanceSchema = z.object({
+  source_fact_id: z.string().min(1),
+  source_url_or_path: z.string().min(1),
+  freshness_date: z.string().min(1),
+  reviewer: z.string().min(1).nullable().optional(),
+  evidence_ids: z.array(z.string().min(1)).min(1)
+});
+
 export const ContentDraftRevisionInternalLinkSchema = z.object({
   link_id: z.string().min(1),
   placement: z.string().min(1),
@@ -2596,6 +2642,35 @@ export const ContentDraftRevisionInternalLinkSchema = z.object({
   anchor_text: z.string().min(1),
   evidence_ids: z.array(z.string().refine((value) => value.trim().length > 0)).min(1),
   claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
+});
+
+const isSafeOfficialSourceUrl = (value: string): boolean => {
+  if (value !== value.trim() || /[\x00-\x20\x7f<>"'`(){}|\\^\[\]]/.test(value)) return false;
+  try {
+    const parsed = new URL(value);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname.length > 0 &&
+      parsed.username === "" &&
+      parsed.password === ""
+    );
+  } catch {
+    return false;
+  }
+};
+
+const isIsoDate = (value: string): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  return !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+};
+
+export const ContentDraftRevisionOfficialSourceReferenceSchema = z.object({
+  source_fact_id: z.string().trim().min(1),
+  source_url: z.string().trim().min(1).refine(isSafeOfficialSourceUrl),
+  source_title: z.string().trim().min(1),
+  verified_on: z.string().trim().min(1).refine(isIsoDate),
+  evidence_ids: z.array(z.string().trim().min(1)).min(1),
+  regulatory_requirement_ids: z.array(z.string().trim().min(1)).min(1)
 });
 
 export const ContentDraftRevisionSchema = z.object({
@@ -2619,14 +2694,16 @@ export const ContentDraftRevisionSchema = z.object({
   document_kind: z.enum(["refresh_existing", "new_page"]).default("refresh_existing"),
   final_canonical_url: z.string().nullable().default(null),
   new_page_document_identity: ContentNewPageDocumentIdentitySchema.nullable().optional(),
+  source_provenance: z.array(ContentDraftRevisionSourceProvenanceSchema).optional(),
   title: z.string().refine((value) => value.trim().length > 0),
   page_assets: ContentDraftRevisionPageAssetsSchema.nullable().optional(),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
   faq: z.array(ContentDraftRevisionFaqItemSchema).default([]),
   cta_blocks: z.array(ContentDraftRevisionCtaBlockSchema).default([]),
   internal_links: z.array(ContentDraftRevisionInternalLinkSchema).default([]),
+  official_source_references: z.array(ContentDraftRevisionOfficialSourceReferenceSchema).default([]),
   proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
-  correction_reason: z.literal("canonical_html_alignment").nullable().optional(),
+  correction_reason: z.enum(["canonical_html_alignment", "official_source_lineage_rebase"]).nullable().optional(),
   publish_ready: z.literal(false),
   created_by: z.string().refine((value) => value.trim().length > 0),
   created_at: z.string()
@@ -2635,11 +2712,16 @@ export const ContentDraftRevisionSchema = z.object({
     if (
       revision.document_kind !== "refresh_existing" ||
       !revision.final_canonical_url?.trim() ||
-      revision.new_page_document_identity
+      revision.new_page_document_identity ||
+      revision.official_source_references.length > 0
     ) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Historical v1 revision requires a refresh URL and cannot carry new-page identity." });
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Historical v1 revision requires a refresh URL and cannot carry new-page identity or official source references." });
     }
     return;
+  }
+  const sourceFactIds = revision.official_source_references.map((item) => item.source_fact_id);
+  if (sourceFactIds.length !== new Set(sourceFactIds).size) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["official_source_references"], message: "Full-document official source references require unique source fact IDs." });
   }
   if (revision.document_kind === "refresh_existing" && (!revision.final_canonical_url?.trim() || revision.new_page_document_identity)) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["final_canonical_url"], message: "Refresh revision requires a public canonical URL and no new-page identity." });
@@ -2960,7 +3042,7 @@ export const ContentDraftRevisionSaveRequestSchema = z.object({
   base_revision_id: z.string().nullable(),
   title: z.string().refine((value) => value.trim().length > 0),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
-  correction_reason: z.literal("canonical_html_alignment").nullable().optional(),
+  correction_reason: z.enum(["canonical_html_alignment"]).nullable().optional(),
   created_by: z.string().refine((value) => value.trim().length > 0)
 });
 
@@ -2968,6 +3050,11 @@ export const ContentDraftRevisionSaveResponseSchema = z.object({
   status: z.enum(["created", "idempotent"]),
   revision: ContentDraftRevisionSchema,
   workspace: ContentDraftRevisionWorkspaceSchema
+});
+
+export const ContentOfficialSourceLineageRebaseRequestSchema = z.object({
+  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  requested_by: z.string().trim().min(1)
 });
 
 export const ContentDraftRevisionReviewRequestSchema = z
@@ -3017,6 +3104,7 @@ export const ContentRevisionHtmlPackageManifestSchema = z.object({
   evidence_ids: z.array(z.string()).default([]),
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
+  official_source_references: z.array(ContentDraftRevisionOfficialSourceReferenceSchema).default([]),
   section_count: z.number().int().positive()
 });
 
@@ -3107,14 +3195,15 @@ export const ContentDraftRevisionConflictSchema = z.object({
     "revision_not_found",
     "stale_revision",
     "stale_review",
-    "digest_mismatch"
+    "digest_mismatch",
+    "official_source_lineage_unavailable"
   ]),
   current_revision_id: z.string().nullable(),
   current_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
   safe_next_step: z.string()
 });
 
- export const ContentCodexRuntimeTraceSchema = z.object({
+export const ContentCodexRuntimeTraceSchema = z.object({
   status: z.enum(["not_started", "completed", "blocked", "failed"]),
   run_id: z.string().nullable().optional(),
   thread_id: z.string().nullable(),
@@ -3122,6 +3211,85 @@ export const ContentDraftRevisionConflictSchema = z.object({
   event_methods: z.array(z.string()).default([]),
   item_types: z.array(z.string()).default([]),
   external_call_attempted: z.boolean()
+});
+
+export const ContentRevisionRepairProposalRequestSchema = z.object({
+  expected_base_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  selected_section_ids: z.array(z.string().trim().min(1)).default([]),
+  selected_cta_ids: z.array(z.string().trim().min(1)).default([]),
+  requested_by: z.string().trim().min(1)
+}).superRefine((request, context) => {
+  const selectedCount = request.selected_section_ids.length + request.selected_cta_ids.length;
+  if (selectedCount !== 1) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "repair proposal requires exactly one persisted section or CTA"
+    });
+  }
+  if (
+    new Set(request.selected_section_ids).size !== request.selected_section_ids.length ||
+    new Set(request.selected_cta_ids).size !== request.selected_cta_ids.length
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "repair proposal component IDs must be unique"
+    });
+  }
+});
+
+export const ContentRevisionRepairProposalBlockerSchema = z.object({
+  code: z.enum([
+    "missing_planning_binding",
+    "missing_base_revision",
+    "stale_base_revision",
+    "revision_not_ready_for_proposal",
+    "stale_content_context",
+    "missing_generation_contract",
+    "unknown_selected_section",
+    "unknown_selected_cta",
+    "ambiguous_claim_marker",
+    "runtime_blocked",
+    "runtime_failed",
+    "invalid_structured_output",
+    "section_scope_mismatch",
+    "proposal_contract_blocked",
+    "quality_blocked",
+    "revision_conflict"
+  ]),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  next_step: z.string().min(1),
+  source_codes: z.array(z.string()).default([])
+});
+
+export const ContentRevisionRepairProposalResponseSchema = z.object({
+  status: z.enum(["created", "idempotent", "blocked", "failed", "conflict"]),
+  run_id: z.string().nullable().optional(),
+  work_item_id: z.string().min(1),
+  base_revision_id: z.string().min(1),
+  selected_section_headings: z.array(z.string()).default([]),
+  selected_cta_ids: z.array(z.string()).default([]),
+  revision: ContentDraftRevisionSchema.nullable().optional(),
+  quality_review: ContentQualityReviewSchema.nullable().optional(),
+  quality_review_scope: z.enum([
+    "persisted_selected_sections_and_declared_lineage",
+    "persisted_selected_components_and_declared_lineage"
+  ]),
+  semantic_review_required: z.literal(true),
+  runtime: ContentCodexRuntimeTraceSchema,
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  blockers: z.array(ContentRevisionRepairProposalBlockerSchema).default([]),
+  safe_next_step: z.string().min(1),
+  publish_ready: z.literal(false)
+}).superRefine((response, context) => {
+  if (["created", "idempotent"].includes(response.status)) {
+    if (!response.run_id || !response.revision || !response.quality_review || response.quality_review.verdict === "blocked" || response.blockers.length) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "created repair proposal requires a reviewable child revision" });
+    }
+  } else if (response.revision || !response.blockers.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "non-created repair proposal requires blockers without a revision" });
+  }
 });
 
  export const ContentWorkflowOperatorStepIdSchema = z.enum(
@@ -3210,7 +3378,9 @@ export const ContentWorkItemServiceProfileContextSchema = z.object({
   evidence_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
   review_action_id: z.string().nullable().optional(),
-  review_action_label: z.string().nullable().optional()
+  review_action_label: z.string().nullable().optional(),
+  minimum_cta_blocks: z.number().int().min(1).max(4).optional(),
+  cta_patterns: z.array(z.string().trim().min(1)).max(4).optional()
 });
 
 const ContentWorkItemServiceProfileContextDefault = {
@@ -3238,7 +3408,9 @@ const ContentWorkItemServiceProfileContextDefault = {
   source_fact_ids: [],
   source_material_ids: [],
   evidence_ids: [],
-  knowledge_card_ids: []
+  knowledge_card_ids: [],
+  minimum_cta_blocks: 1,
+  cta_patterns: []
 };
 
 export const ContentPlanningDecisionSchema = z.object({
@@ -3457,6 +3629,8 @@ export const ContentPlanningProposalSchema = z.object({
   angle: z.string().default(""),
   value_proposition: z.string().default(""),
   cta_direction: z.string().min(1),
+  minimum_cta_blocks: z.number().int().min(1).max(4).optional(),
+  required_cta_patterns: z.array(z.string().trim().min(1)).max(4).optional(),
   internal_link_directions: z.array(z.string()),
   sections: z.array(z.object({
     section_id: z.string().default(""),
@@ -3470,7 +3644,8 @@ export const ContentPlanningProposalSchema = z.object({
     evidence_ids: z.array(z.string()),
     claim_ids: z.array(z.string()).default([]),
     source_material_ids: z.array(z.string()).default([]),
-    knowledge_card_ids: z.array(z.string()).default([])
+    knowledge_card_ids: z.array(z.string()).default([]),
+    regulatory_requirement_ids: z.array(z.string()).default([])
   })).min(1),
   inventory_mapping: z.array(z.object({
     inventory_section_id: z.string().min(1),
@@ -3500,6 +3675,8 @@ export const ContentPlanningProposalSchema = z.object({
     observation_rule: "",
     success_claim_rule: ""
   }),
+  measurement_metrics: z.array(z.string()).optional(),
+  measurement_baseline_evidence_ids: z.array(z.string()).optional(),
   evidence_ids: z.array(z.string()),
   source_connectors: z.array(z.string()),
   source_material_ids: z.array(z.string()).default([]),
@@ -3632,7 +3809,110 @@ export const ContentPlanningSourceFactPreviewSchema = z.object({
   evidence_ids: z.array(z.string()).min(1),
   knowledge_card_ids: z.array(z.string()).default([]),
   source_fact_ids: z.array(z.string()).default([]),
-  source_material_ids: z.array(z.string()).default([])
+  source_material_ids: z.array(z.string()).default([]),
+  regulatory_requirement_ids: z.array(z.string()).default([])
+});
+
+export const ContentRegulatorySourceReviewCommandSchema = z.object({
+  candidate_id: z.string().trim().min(1),
+  expected_source_url: z.string().url(),
+  expected_profile_version: z.string().trim().min(1),
+  expected_source_snapshot_id: z.string().trim().min(1),
+  expected_source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  reviewed_fact: z.string().trim().min(20).max(2000),
+  covered_requirement_ids: z.array(z.string().trim().min(1)).min(1),
+  decision: z.enum(["accepted", "rejected"]),
+  reviewer: z.string().trim().min(1).max(200)
+});
+
+export const ContentRegulatorySourceReviewSchema = ContentRegulatorySourceReviewCommandSchema.extend({
+  review_id: z.string().min(1),
+  profile_id: z.string().trim().min(1),
+  service_card_ids: z.array(z.string().trim().min(1)).min(1),
+  source_url: z.string().url(),
+  source_title: z.string().trim().min(1),
+  observed_on: z.string().min(1),
+  source_snapshot_id: z.string().trim().min(1),
+  source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  reviewed_at: z.string().datetime()
+}).omit({
+  expected_source_url: true,
+  expected_profile_version: true,
+  expected_source_snapshot_id: true,
+  expected_source_snapshot_digest: true
+});
+
+export const ContentRegulatorySourceReviewListSchema = z.object({
+  reviews: z.array(ContentRegulatorySourceReviewSchema).default([])
+});
+
+export const ContentRegulatorySourceReviewConflictSchema = z.object({
+  code: z.enum(["candidate_changed", "source_snapshot_missing", "source_snapshot_changed", "source_proposal_stale"]),
+  label: z.string().trim().min(1),
+  reason: z.string().trim().min(1),
+  safe_next_step: z.string().trim().min(1)
+});
+
+export const ContentRegulatorySourceSnapshotSchema = z.object({
+  snapshot_id: z.string().trim().min(1),
+  candidate_id: z.string().trim().min(1),
+  profile_id: z.string().trim().min(1),
+  profile_version: z.string().trim().min(1),
+  source_url: z.string().url(),
+  content_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  content_type: z.string().trim().min(1),
+  byte_length: z.number().int().positive().max(12 * 1024 * 1024),
+  observed_at: z.string().datetime()
+});
+
+export const ContentRegulatorySourceSnapshotReadResponseSchema = z.object({
+  status: z.enum(["captured", "blocked"]),
+  snapshot: ContentRegulatorySourceSnapshotSchema.nullable().optional(),
+  reason: z.string().trim().min(1),
+  safe_next_step: z.string().trim().min(1)
+}).superRefine((response, context) => {
+  if (response.status === "captured" && !response.snapshot) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Captured source read requires a snapshot." });
+  }
+  if (response.status === "blocked" && response.snapshot) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Blocked source read cannot expose a snapshot." });
+  }
+});
+
+export const ContentRegulatorySourceFactProposalSchema = z.object({
+  proposal_id: z.string().trim().min(1),
+  candidate_id: z.string().trim().min(1),
+  profile_id: z.string().trim().min(1),
+  profile_version: z.string().trim().min(1),
+  source_url: z.string().url(),
+  source_title: z.string().trim().min(1),
+  source_snapshot_id: z.string().trim().min(1),
+  source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  observed_on: z.string().min(1),
+  proposed_fact: z.string().trim().min(20).max(2000),
+  covered_requirement_ids: z.array(z.string().trim().min(1)).min(1),
+  codex_run_id: z.string().trim().min(1),
+  status: z.literal("ready"),
+  human_review_required: z.literal(true),
+  created_at: z.string().datetime()
+});
+
+export const ContentRegulatorySourceFactProposalResponseSchema = z.object({
+  status: z.enum(["ready", "not_generated", "blocked", "failed"]),
+  proposal: ContentRegulatorySourceFactProposalSchema.nullable().optional(),
+  reason: z.string().trim().min(1),
+  safe_next_step: z.string().trim().min(1)
+}).superRefine((response, context) => {
+  if ((response.status === "ready") !== Boolean(response.proposal)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Only ready source proposal response may contain proposal." });
+  }
+});
+
+export const ContentRegulatorySourceFactProposalReviewCommandSchema = z.object({
+  expected_source_snapshot_id: z.string().trim().min(1),
+  expected_source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  decision: z.enum(["accepted", "rejected"]),
+  reviewer: z.string().trim().min(1).max(200)
 });
 
 const contentPlanningSourceNames = [
@@ -3663,6 +3943,29 @@ export const ContentPlanningInputSummarySchema = z.object({
   source_fact_ids: z.array(z.string()).default([]),
   source_material_ids: z.array(z.string()).default([]),
   source_fact_previews: z.array(ContentPlanningSourceFactPreviewSchema).optional(),
+  gsc_query_rows: z.array(ContentSearchDemandRowSchema).default([]),
+  regulatory_profile_id: z.string().min(1).nullable().optional(),
+  regulatory_profile_version: z.string().min(1).nullable().optional(),
+  // Present on current regulated planning inputs. Optional only so historical
+  // persisted proposal summaries remain readable.
+  regulatory_requirements: z.array(z.object({
+    id: z.string().trim().min(1),
+    label: z.string().trim().min(1),
+    reason: z.string().trim().min(1),
+    document_assertions: z.array(z.object({
+      id: z.string().trim().min(1),
+      label: z.string().trim().min(1),
+      required_any_of: z.array(z.string().trim().min(1)).min(1)
+    })).default([])
+  })).optional(),
+  regulatory_requirement_ids: z.array(z.string().min(1)).default([]),
+  regulatory_source_fact_ids: z.array(z.string().min(1)).default([]),
+  regulatory_requirement_coverage: z.array(z.object({
+    requirement_id: z.string().min(1),
+    source_fact_ids: z.array(z.string().min(1)).default([]),
+    evidence_ids: z.array(z.string().min(1)).default([])
+  })).default([]),
+  regulatory_review_candidates: z.array(ContentRegulatoryReviewCandidateSchema).default([]),
   evidence_id_count: z.number().int().nonnegative(),
   knowledge_card_count: z.number().int().nonnegative(),
   measurement_metrics: z.array(z.string()).default([]),
@@ -3717,6 +4020,13 @@ export const ContentPlanningInputSummarySchema = z.object({
         message: "New-page planning cannot carry page metric comparisons."
       });
     }
+    if (summary.gsc_query_rows.length > 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["gsc_query_rows"],
+        message: "New-page planning cannot carry historic GSC query rows."
+      });
+    }
   } else {
     if (!summary.final_canonical_url?.trim()) {
       context.addIssue({
@@ -3732,6 +4042,31 @@ export const ContentPlanningInputSummarySchema = z.object({
         message: "Refresh planning requires existing-page inventory."
       });
     }
+  }
+  const profileBound = summary.regulatory_profile_id != null || summary.regulatory_profile_version != null;
+  if (profileBound) {
+    if (!summary.regulatory_profile_id || !summary.regulatory_profile_version) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_profile_id"], message: "Regulatory planning summary requires exact profile identity." });
+    }
+    const required = new Set(summary.regulatory_requirement_ids);
+    if (
+      summary.regulatory_requirements !== undefined &&
+      (summary.regulatory_requirements.length !== required.size ||
+        summary.regulatory_requirements.some((requirement) => !required.has(requirement.id)))
+    ) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirements"], message: "Regulatory planning summary requires exact requirement definitions." });
+    }
+    const coverage = new Map(summary.regulatory_requirement_coverage.map((item) => [item.requirement_id, item]));
+    if (!required.size || coverage.size !== required.size || [...required].some((id) => !coverage.has(id))) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Regulatory planning summary requires exact coverage for every requirement." });
+    } else {
+      const coveredSourceFactIds = new Set([...coverage.values()].flatMap((item) => item.source_fact_ids));
+      if (coveredSourceFactIds.size !== summary.regulatory_source_fact_ids.length || summary.regulatory_source_fact_ids.some((id) => !coveredSourceFactIds.has(id))) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_source_fact_ids"], message: "Regulatory planning summary requires exact covered source-fact IDs." });
+      }
+    }
+  } else if (summary.regulatory_requirement_ids.length || (summary.regulatory_requirements?.length ?? 0) || summary.regulatory_source_fact_ids.length || summary.regulatory_requirement_coverage.length || summary.regulatory_review_candidates.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["regulatory_requirement_coverage"], message: "Unprofiled planning summary cannot carry regulatory coverage." });
   }
 });
 
@@ -3765,15 +4100,15 @@ export const ContentPlanningInputReadinessResponseSchema = z.object({
   }
   if (response.input_summary?.goal === "new_page") {
     const identity = response.new_page_document_identity;
-    if (response.status !== "ready" || !identity) {
+    if (response.status === "ready" && !identity) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Ready new-page planning input requires its exact document identity."
       });
-    } else if (
+    } else if (identity && (
       identity.work_item_id !== response.work_item_id ||
       identity.proposed_ia_location !== response.input_summary.proposed_ia_location
-    ) {
+    )) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: "New-page document identity must match the ready planning input."
@@ -3827,6 +4162,40 @@ export const ContentPlanningProposalResponseSchema = z.object({
       path: ["proposal"],
       message: "Planning response must match the nested exact proposal."
     });
+  }
+  if (["created", "idempotent", "ready"].includes(response.status) && response.proposal && response.input_summary?.regulatory_profile_id) {
+    const coverage = new Map(response.input_summary.regulatory_requirement_coverage.map((item) => [item.requirement_id, new Set(item.evidence_ids)]));
+    const required = new Set(response.input_summary.regulatory_requirement_ids);
+    const sectionRequirements = new Set(response.proposal.sections.flatMap((section) => section.regulatory_requirement_ids));
+    for (const requirementId of sectionRequirements) {
+      if (!required.has(requirementId)) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response cannot carry an unknown regulatory requirement." });
+      }
+    }
+    for (const requirementId of required) {
+      const sections = response.proposal.sections.filter((section) => section.regulatory_requirement_ids.includes(requirementId));
+      if (!sections.length) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response requires every regulatory requirement." });
+      } else if (!sections.some((section) => section.evidence_ids.some((evidenceId) => coverage.get(requirementId)?.has(evidenceId)))) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response requires exact regulatory evidence." });
+      }
+      const requirement = response.input_summary.regulatory_requirements?.find((item) => item.id === requirementId);
+      if (requirement) {
+        const sectionText = sections
+          .map((section) => `${section.heading}\n${section.purpose}\n${section.reader_question}`)
+          .join("\n")
+          .replace(/\s+/g, " ")
+          .toLocaleLowerCase("pl-PL");
+        for (const assertion of requirement.document_assertions) {
+          const covered = assertion.required_any_of.some((term) =>
+            sectionText.includes(term.replace(/\s+/g, " ").toLocaleLowerCase("pl-PL"))
+          );
+          if (!covered) {
+            context.addIssue({ code: z.ZodIssueCode.custom, path: ["proposal", "sections"], message: "Planning response omits a required regulatory document concept." });
+          }
+        }
+      }
+    }
   }
   if (response.planning_workspace) {
     if (response.status !== "ready" || !response.proposal) {
@@ -4723,6 +5092,9 @@ export type ContentDraftRevisionSaveRequest = z.input<
 export type ContentDraftRevisionSaveResponse = z.infer<
   typeof ContentDraftRevisionSaveResponseSchema
 >;
+export type ContentOfficialSourceLineageRebaseRequest = z.input<
+  typeof ContentOfficialSourceLineageRebaseRequestSchema
+>;
 export type ContentDraftRevisionReviewRequest = z.input<
   typeof ContentDraftRevisionReviewRequestSchema
 >;
@@ -4744,6 +5116,33 @@ export type ContentDraftRevisionConflict = z.infer<
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentPlanningWorkspace = z.infer<typeof ContentPlanningWorkspaceSchema>;
 export type ContentPlanningProposal = z.infer<typeof ContentPlanningProposalSchema>;
+export type ContentRegulatorySourceReviewCommand = z.input<
+  typeof ContentRegulatorySourceReviewCommandSchema
+>;
+export type ContentRegulatorySourceReview = z.infer<
+  typeof ContentRegulatorySourceReviewSchema
+>;
+export type ContentRegulatorySourceReviewList = z.infer<
+  typeof ContentRegulatorySourceReviewListSchema
+>;
+export type ContentRegulatorySourceReviewConflict = z.infer<
+  typeof ContentRegulatorySourceReviewConflictSchema
+>;
+export type ContentRegulatorySourceSnapshot = z.infer<
+  typeof ContentRegulatorySourceSnapshotSchema
+>;
+export type ContentRegulatorySourceSnapshotReadResponse = z.infer<
+  typeof ContentRegulatorySourceSnapshotReadResponseSchema
+>;
+export type ContentRegulatorySourceFactProposal = z.infer<
+  typeof ContentRegulatorySourceFactProposalSchema
+>;
+export type ContentRegulatorySourceFactProposalResponse = z.infer<
+  typeof ContentRegulatorySourceFactProposalResponseSchema
+>;
+export type ContentRegulatorySourceFactProposalReviewCommand = z.input<
+  typeof ContentRegulatorySourceFactProposalReviewCommandSchema
+>;
 export type ContentPlanningInputReadinessResponse = z.infer<
   typeof ContentPlanningInputReadinessResponseSchema
 >;
@@ -4776,6 +5175,12 @@ export type ContentPlanningProposalResponse = z.infer<
 >;
 export type ContentInitialDraftRequest = z.input<typeof ContentInitialDraftRequestSchema>;
 export type ContentInitialDraftResponse = z.infer<typeof ContentInitialDraftResponseSchema>;
+export type ContentRevisionRepairProposalRequest = z.input<
+  typeof ContentRevisionRepairProposalRequestSchema
+>;
+export type ContentRevisionRepairProposalResponse = z.infer<
+  typeof ContentRevisionRepairProposalResponseSchema
+>;
 export type ContentSemanticReview = z.infer<typeof ContentSemanticReviewSchema>;
 export type ContentSemanticReviewRequest = z.input<typeof ContentSemanticReviewRequestSchema>;
 export type ContentSemanticReviewResponse = z.infer<typeof ContentSemanticReviewResponseSchema>;

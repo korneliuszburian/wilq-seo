@@ -52,6 +52,9 @@ _INITIAL_DRAFT_BLOCKER_CODES = {
     "invalid_structured_output",
     "document_scope_mismatch",
     "generated_claim_blocked",
+    "draft_assurance_failed",
+    "draft_assurance_runtime_failed",
+    "draft_assurance_invalid_output",
     "revision_conflict",
     "persistence_failed",
     "generation_in_progress",
@@ -72,55 +75,7 @@ def register_content_initial_draft_route(
         work_item_id: str,
         request: ContentInitialDraftRequest,
     ) -> ContentInitialDraftResponse | JSONResponse:
-        snapshot = snapshot_loader(work_item_id)
-        client = content_codex_app_server_client()
-        if _can_queue_initial_draft(snapshot, request) and isinstance(
-            client, StdioCodexAppServerClient
-        ):
-            planning = snapshot.planning_workspace
-            if planning is None:
-                raise RuntimeError("Initial draft queue requires a planning workspace.")
-            existing = _latest_initial_draft_run(work_item_id)
-            if existing is not None and existing.status == "started":
-                proposal = planning.proposal
-                return ContentInitialDraftResponse(
-                    status="generating",
-                    work_item_id=work_item_id,
-                    proposal_id=proposal.proposal_id,
-                    run_id=existing.id,
-                    blockers=[_generation_in_progress_blocker()],
-                    safe_next_step=(
-                        "Pełny tekst jest już przygotowywany; nie uruchamiaj drugiego."
-                    ),
-                )
-            run_id = f"codex_content_initial_draft_{uuid4().hex}"
-            _INITIAL_DRAFT_EXECUTOR.submit(
-                _run_queued_initial_draft,
-                work_item_id,
-                request,
-                client,
-                run_id,
-                snapshot_loader,
-            )
-            proposal = planning.proposal
-            return ContentInitialDraftResponse(
-                status="generating",
-                work_item_id=work_item_id,
-                proposal_id=proposal.proposal_id,
-                run_id=run_id,
-                blockers=[_generation_in_progress_blocker()],
-                safe_next_step="Pełny tekst jest przygotowywany; odśwież ten etap za chwilę.",
-            )
-        result = generate_initial_full_draft(
-            snapshot=snapshot,
-            request=request,
-            client=client,
-            workflow_store=content_workflow_store(),
-            run_store=local_state_store(),
-        )
-        if result.status == "conflict":
-            return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
-        return result
+        return _submit_initial_draft(work_item_id, request, snapshot_loader)
 
     @router.get(
         "/api/content/work-items/{work_item_id}/initial-draft",
@@ -129,143 +84,231 @@ def register_content_initial_draft_route(
     def content_work_item_initial_full_draft_status(
         work_item_id: str,
     ) -> ContentInitialDraftResponse:
-        endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
-        runs = [
+        return _read_initial_draft_status(work_item_id)
+
+
+def _submit_initial_draft(
+    work_item_id: str,
+    request: ContentInitialDraftRequest,
+    snapshot_loader: ContentInitialDraftSnapshotLoader,
+) -> ContentInitialDraftResponse | JSONResponse:
+    snapshot = snapshot_loader(work_item_id)
+    client = content_codex_app_server_client()
+    if _can_queue_initial_draft(snapshot, request) and isinstance(
+        client, StdioCodexAppServerClient
+    ):
+        return _queue_initial_draft(work_item_id, request, client, snapshot_loader, snapshot)
+    result = generate_initial_full_draft(
+        snapshot=snapshot,
+        request=request,
+        client=client,
+        workflow_store=content_workflow_store(),
+        run_store=local_state_store(),
+    )
+    if result.status == "conflict":
+        return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
+    return result
+
+
+def _queue_initial_draft(
+    work_item_id: str,
+    request: ContentInitialDraftRequest,
+    client: StdioCodexAppServerClient,
+    snapshot_loader: ContentInitialDraftSnapshotLoader,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> ContentInitialDraftResponse:
+    planning = snapshot.planning_workspace
+    if planning is None:
+        raise RuntimeError("Initial draft queue requires a planning workspace.")
+    existing = _latest_initial_draft_run(work_item_id)
+    proposal = planning.proposal
+    if existing is not None and existing.status == "started":
+        return _queued_initial_draft_response(work_item_id, proposal.proposal_id, existing.id, True)
+    run_id = f"codex_content_initial_draft_{uuid4().hex}"
+    _INITIAL_DRAFT_EXECUTOR.submit(
+        _run_queued_initial_draft,
+        work_item_id,
+        request,
+        client,
+        run_id,
+        snapshot_loader,
+    )
+    return _queued_initial_draft_response(work_item_id, proposal.proposal_id, run_id, False)
+
+
+def _queued_initial_draft_response(
+    work_item_id: str,
+    proposal_id: str | None,
+    run_id: str,
+    already_running: bool,
+) -> ContentInitialDraftResponse:
+    return ContentInitialDraftResponse(
+        status="generating",
+        work_item_id=work_item_id,
+        proposal_id=proposal_id,
+        run_id=run_id,
+        blockers=[_generation_in_progress_blocker()],
+        safe_next_step=(
+            "Pełny tekst jest już przygotowywany; nie uruchamiaj drugiego."
+            if already_running
+            else "Pełny tekst jest przygotowywany; odśwież ten etap za chwilę."
+        ),
+    )
+
+
+def _read_initial_draft_status(work_item_id: str) -> ContentInitialDraftResponse:
+    proposal = _latest_generated_proposal(work_item_id, content_planning_proposal_store())
+    stale = _stale_initial_draft_response(work_item_id, proposal)
+    if stale is not None:
+        return stale
+    latest = _latest_run_for_proposal(work_item_id, proposal)
+    revision = content_workflow_store().load_draft_revision_state(work_item_id).latest_revision
+    if latest is not None and latest.status == "started":
+        return _queued_initial_draft_response(
+            work_item_id,
+            None if proposal is None else proposal.proposal_id,
+            latest.id,
+            False,
+        )
+    if _completed_initial_draft_matches(latest, revision, proposal):
+        return ContentInitialDraftResponse(
+            status="created",
+            work_item_id=work_item_id,
+            proposal_id=proposal.proposal_id,
+            run_id=latest.id,
+            revision=revision,
+            safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
+        )
+    if latest is not None and latest.status in {"failed", "blocked"}:
+        return _terminal_initial_draft_response(work_item_id, proposal, latest)
+    return _initial_draft_not_started_response(work_item_id, proposal)
+
+
+def _stale_initial_draft_response(
+    work_item_id: str,
+    proposal: ContentPlanningProposal | None,
+) -> ContentInitialDraftResponse | None:
+    if proposal is None:
+        return None
+    proposal_store = content_planning_proposal_store()
+    latest_for_service = getattr(
+        proposal_store,
+        "latest_for_service",
+        getattr(proposal_store, "latest_generation_response", lambda *_: None),
+    )
+    newer = latest_for_service(work_item_id, getattr(proposal, "service_card_id", None))
+    if (
+        newer is None
+        or newer.planning_input_digest is None
+        or getattr(newer, "proposal_id", None) == proposal.proposal_id
+        or newer.planning_input_digest == proposal.planning_input_digest
+    ):
+        return None
+    blocker = ContentInitialDraftBlocker(
+        code="stale_planning_input",
+        label="Metryki albo kontekst planu zmieniły się",
+        reason="Nowsze uruchomienie planowania ma inny planning_input_digest niż rewizja.",
+        next_step="Wygeneruj nowy plan przed tworzeniem tekstu.",
+    )
+    return ContentInitialDraftResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        proposal_id=proposal.proposal_id,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
+
+
+def _latest_run_for_proposal(
+    work_item_id: str,
+    proposal: ContentPlanningProposal | None,
+) -> CodexRun | None:
+    if proposal is None:
+        return None
+    endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
+    return max(
+        (
             run
             for run in local_state_store().list_codex_runs()
             if (
                 run.hook == "content_initial_full_draft"
                 and endpoint in run.used_endpoints
+                and run.proposal_id == proposal.proposal_id
+                and run.planning_input_digest == proposal.planning_input_digest
             )
-        ]
-        proposal_store = content_planning_proposal_store()
-        proposal = _latest_generated_proposal(work_item_id, proposal_store)
-        newer_planning_response = None
-        if proposal is not None:
-            latest_for_service = getattr(
-                proposal_store,
-                "latest_for_service",
-                getattr(proposal_store, "latest_generation_response", lambda *_: None),
-            )
-            newer_planning_response = latest_for_service(
-                work_item_id,
-                getattr(proposal, "service_card_id", None),
-            )
-        if (
-            proposal is not None
-            and newer_planning_response is not None
-            and newer_planning_response.planning_input_digest is not None
-            and getattr(newer_planning_response, "proposal_id", None)
-            != proposal.proposal_id
-            and newer_planning_response.planning_input_digest
-            != proposal.planning_input_digest
-        ):
-            blocker = ContentInitialDraftBlocker(
-                code="stale_planning_input",
-                label="Metryki albo kontekst planu zmieniły się",
-                reason=(
-                    "Nowsze uruchomienie planowania ma inny planning_input_digest "
-                    "niż zatwierdzona rewizja."
-                ),
-                next_step="Wygeneruj nowy plan przed tworzeniem tekstu.",
-            )
-            return ContentInitialDraftResponse(
-                status="blocked",
-                work_item_id=work_item_id,
-                proposal_id=proposal.proposal_id,
-                blockers=[blocker],
-                safe_next_step=blocker.next_step,
-            )
-        latest = max(
-            (
-                run
-                for run in runs
-                if proposal is not None
-                and (
-                    run.proposal_id == proposal.proposal_id
-                    and run.planning_input_digest == proposal.planning_input_digest
-                )
-            ),
-            key=lambda run: run.started_at,
-            default=None,
+        ),
+        key=lambda run: run.started_at,
+        default=None,
+    )
+
+
+def _completed_initial_draft_matches(
+    run: CodexRun | None,
+    revision: object,
+    proposal: ContentPlanningProposal | None,
+) -> bool:
+    return bool(
+        run is not None
+        and run.status == "completed"
+        and revision is not None
+        and proposal is not None
+        and getattr(revision, "planning_input_digest", None) == proposal.planning_input_digest
+    )
+
+
+def _terminal_initial_draft_response(
+    work_item_id: str,
+    proposal: ContentPlanningProposal | None,
+    run: CodexRun,
+) -> ContentInitialDraftResponse:
+    code, source_codes = _terminal_blocker_details(run)
+    blocker = ContentInitialDraftBlocker(
+        code=code,
+        label="Nie udało się przygotować pełnego tekstu",
+        reason=run.error or "Generowanie zostało zatrzymane przez bramkę workflow.",
+        next_step=(
+            "Popraw wskazany blocker i uruchom nową próbę."
+            if code not in {"runtime_failed", "runtime_blocked"}
+            else "Otwórz blocker i ponów po sprawdzeniu runtime."
+        ),
+        source_codes=source_codes,
+    )
+    return ContentInitialDraftResponse(
+        status="failed" if run.status == "failed" else "blocked",
+        work_item_id=work_item_id,
+        proposal_id=None if proposal is None else proposal.proposal_id,
+        run_id=run.id,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
+
+
+def _initial_draft_not_started_response(
+    work_item_id: str,
+    proposal: ContentPlanningProposal | None,
+) -> ContentInitialDraftResponse:
+    blocker = (
+        ContentInitialDraftBlocker(
+            code="draft_not_started",
+            label="Pełny tekst nie został jeszcze uruchomiony",
+            reason="Aktualny wygenerowany plan jest gotowy, ale nie ma uruchomienia tekstu.",
+            next_step="Przygotuj pełny tekst z widocznego szkicu struktury.",
         )
-        revision = content_workflow_store().load_draft_revision_state(work_item_id).latest_revision
-        if latest is not None and latest.status == "started":
-            return ContentInitialDraftResponse(
-                status="generating",
-                work_item_id=work_item_id,
-                proposal_id=None if proposal is None else proposal.proposal_id,
-                run_id=latest.id,
-                blockers=[_generation_in_progress_blocker()],
-                safe_next_step="Pełny tekst jest przygotowywany; odśwież ten etap za chwilę.",
-            )
-        if (
-            latest is not None
-            and latest.status == "completed"
-            and revision is not None
-            and proposal is not None
-            and revision.planning_input_digest == proposal.planning_input_digest
-        ):
-            return ContentInitialDraftResponse(
-                status="created",
-                work_item_id=work_item_id,
-                proposal_id=None if proposal is None else proposal.proposal_id,
-                run_id=latest.id,
-                revision=revision,
-                safe_next_step=(
-                    "Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji."
-                ),
-            )
-        if latest is not None and latest.status in {"failed", "blocked"}:
-            code = _terminal_blocker_code(latest)
-            blocker = ContentInitialDraftBlocker(
-                code=code,
-                label="Nie udało się przygotować pełnego tekstu",
-                reason=(
-                    latest.error
-                    or "Generowanie zostało zatrzymane przez bramkę workflow."
-                ),
-                next_step=(
-                    "Popraw wskazany blocker i uruchom nową próbę."
-                    if code not in {"runtime_failed", "runtime_blocked"}
-                    else "Otwórz blocker i ponów po sprawdzeniu runtime."
-                ),
-            )
-            return ContentInitialDraftResponse(
-                status=(
-                    "failed" if latest.status == "failed" else "blocked"
-                ),
-                work_item_id=work_item_id,
-                proposal_id=None if proposal is None else proposal.proposal_id,
-                run_id=latest.id,
-                blockers=[blocker],
-                safe_next_step=blocker.next_step,
-            )
-        blocker = (
-            ContentInitialDraftBlocker(
-                code="draft_not_started",
-                label="Pełny tekst nie został jeszcze uruchomiony",
-                reason=(
-                    "Aktualny wygenerowany plan jest gotowy, ale nie ma jeszcze "
-                    "uruchomienia pełnego tekstu dla jego exact wejścia."
-                ),
-                next_step="Przygotuj pełny tekst z widocznego szkicu struktury.",
-            )
-            if proposal is not None
-            else ContentInitialDraftBlocker(
-                code="planning_not_ready",
-                label="Pełny tekst czeka na aktualny plan",
-                reason="Nie ma aktualnego wygenerowanego planu dla bieżącego kontekstu.",
-                next_step="Wygeneruj aktualny plan dla bieżącego kontekstu.",
-            )
+        if proposal is not None
+        else ContentInitialDraftBlocker(
+            code="planning_not_ready",
+            label="Pełny tekst czeka na aktualny plan",
+            reason="Nie ma aktualnego wygenerowanego planu dla bieżącego kontekstu.",
+            next_step="Wygeneruj aktualny plan dla bieżącego kontekstu.",
         )
-        return ContentInitialDraftResponse(
-            status="blocked",
-            work_item_id=work_item_id,
-            proposal_id=None if proposal is None else proposal.proposal_id,
-            blockers=[blocker],
-            safe_next_step=blocker.next_step,
-        )
+    )
+    return ContentInitialDraftResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        proposal_id=None if proposal is None else proposal.proposal_id,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
 
 
 def _latest_generated_proposal(
@@ -391,12 +434,13 @@ def _persist_terminal_preflight_run(
     )
 
 
-def _terminal_blocker_code(
+def _terminal_blocker_details(
     run: CodexRun,
-) -> ContentInitialDraftBlockerCode:
-    if run.error in _INITIAL_DRAFT_BLOCKER_CODES:
-        return run.error  # type: ignore[return-value]
-    return "runtime_failed" if run.status == "failed" else "runtime_blocked"
+) -> tuple[ContentInitialDraftBlockerCode, list[str]]:
+    code, separator, source_text = (run.error or "").partition("|")
+    if code in _INITIAL_DRAFT_BLOCKER_CODES:
+        return code, source_text.split(",") if separator and source_text else []  # type: ignore[return-value]
+    return ("runtime_failed" if run.status == "failed" else "runtime_blocked"), []
 
 
 def _mark_initial_draft_run_failed(run_id: str, error: Exception) -> None:

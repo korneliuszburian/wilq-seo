@@ -100,6 +100,7 @@ class ContentPlanningSection(BaseModel):
     query_terms: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     claim_ids: list[str] = Field(default_factory=list)
+    regulatory_requirement_ids: list[str] = Field(default_factory=list)
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
 
@@ -158,6 +159,14 @@ class ContentPlanningProposal(BaseModel):
     )
     faq: list[ContentPlanningFaqItem] = Field(default_factory=list)
     cta_blocks: list[ContentPlanningCtaBlock] = Field(default_factory=list)
+    minimum_cta_blocks: int = Field(default=1, ge=1, le=4)
+    required_cta_patterns: list[str] = Field(default_factory=list, max_length=4)
+
+    @model_validator(mode="after")
+    def require_nonblank_cta_patterns(self) -> ContentPlanningProposal:
+        if any(not pattern.strip() for pattern in self.required_cta_patterns):
+            raise ValueError("Required CTA patterns must be non-blank")
+        return self
     internal_links: list[ContentPlanningInternalLink] = Field(default_factory=list)
     conditional_hypotheses: list[ContentPlanningConditionalHypothesis] = Field(
         default_factory=list
@@ -165,6 +174,8 @@ class ContentPlanningProposal(BaseModel):
     measurement_plan: ContentPlanningMeasurementPlan = Field(
         default_factory=ContentPlanningMeasurementPlan
     )
+    measurement_metrics: list[str] = Field(default_factory=list)
+    measurement_baseline_evidence_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     source_material_ids: list[str] = Field(default_factory=list)

@@ -17,6 +17,8 @@ from wilq.content.workflow.planning import (
 )
 
 SectionMappingStatus = Literal["mapped", "unmapped", "ambiguous", "excluded"]
+PlanSection = ContentPlanningModelSection | ContentPlanningSection
+PlanSectionReference = tuple[int, PlanSection]
 
 
 def canonicalize_model_inventory_headings(
@@ -40,7 +42,15 @@ def canonicalize_model_inventory_headings(
     changed = False
     for section in output.sections:
         if section.inventory_disposition == "create":
-            sections.append(section)
+            if section.inventory_heading is not None or section.inventory_section_id is not None:
+                sections.append(
+                    section.model_copy(
+                        update={"inventory_heading": None, "inventory_section_id": None}
+                    )
+                )
+                changed = True
+            else:
+                sections.append(section)
             continue
         if section.inventory_section_id in inventory_by_id:
             heading = inventory_by_id[section.inventory_section_id]
@@ -87,123 +97,156 @@ def build_inventory_mapping(
 ) -> list[ContentPlanningInventoryMapping]:
     """Map all current inventory rows to the generated plan without guessing."""
     output_sections = cast(
-        list[ContentPlanningModelSection | ContentPlanningSection],
+        list[PlanSection],
         output.sections,
     )
-    by_inventory_id: dict[
-        str,
-        list[tuple[int, ContentPlanningModelSection | ContentPlanningSection]],
-    ] = {}
-    by_inventory_heading: dict[
-        str,
-        list[tuple[int, ContentPlanningModelSection | ContentPlanningSection]],
-    ] = {}
+    by_inventory_id, by_inventory_heading = _index_inventory_references(output_sections)
+    used_plan_indices: set[int] = set()
+    inventory_reasons = _inventory_exclusion_reasons(planning_input)
+    return [
+        _inventory_mapping_row(
+            inventory_section=inventory_section,
+            output_sections=output_sections,
+            section_ids=section_ids,
+            by_inventory_id=by_inventory_id,
+            by_inventory_heading=by_inventory_heading,
+            used_plan_indices=used_plan_indices,
+            exclusion_reason=inventory_reasons[inventory_section.section_id],
+        )
+        for inventory_section in planning_input.inventory.sections
+    ]
+
+
+def _index_inventory_references(
+    output_sections: list[PlanSection],
+) -> tuple[
+    dict[str, list[PlanSectionReference]],
+    dict[str, list[PlanSectionReference]],
+]:
+    by_inventory_id: dict[str, list[PlanSectionReference]] = {}
+    by_inventory_heading: dict[str, list[PlanSectionReference]] = {}
     for index, section in enumerate(output_sections):
         if section.inventory_section_id:
             by_inventory_id.setdefault(section.inventory_section_id, []).append((index, section))
         if section.inventory_heading:
             by_inventory_heading.setdefault(section.inventory_heading, []).append((index, section))
-    used_plan_indices: set[int] = set()
-    inventory_reasons = _inventory_exclusion_reasons(planning_input)
-    mappings: list[ContentPlanningInventoryMapping] = []
-    for inventory_section in planning_input.inventory.sections:
-        reason = inventory_reasons[inventory_section.section_id]
-        if reason == "navigation_or_promotional_inventory":
-            mappings.append(
-                ContentPlanningInventoryMapping(
-                    inventory_section_id=inventory_section.section_id,
-                    inventory_heading=inventory_section.heading,
-                    status="excluded",
-                    mapped_section_id=None,
-                    mapped_section_heading=None,
-                    disposition="remove_review_required",
-                    reason=reason,
-                    evidence_ids=inventory_section.evidence_ids,
-                )
-            )
-            continue
-        explicit_id = by_inventory_id.get(inventory_section.section_id, [])
-        if len(explicit_id) == 1 and explicit_id[0][0] not in used_plan_indices:
-            index, section = explicit_id[0]
-            used_plan_indices.add(index)
-            status, reason = _mapped_status(section, inventory_section.heading)
-            mappings.append(
-                ContentPlanningInventoryMapping(
-                    inventory_section_id=inventory_section.section_id,
-                    inventory_heading=inventory_section.heading,
-                    status=status,
-                    mapped_section_id=section_ids[index],
-                    mapped_section_heading=section.heading,
-                    disposition=section.inventory_disposition,
-                    reason=reason,
-                    evidence_ids=inventory_section.evidence_ids,
-                )
-            )
-            continue
-        explicit = by_inventory_heading.get(inventory_section.heading, [])
-        if len(explicit) == 1 and explicit[0][0] not in used_plan_indices:
-            index, section = explicit[0]
-            used_plan_indices.add(index)
-            status, reason = _mapped_status(section, inventory_section.heading)
-            mappings.append(
-                ContentPlanningInventoryMapping(
-                    inventory_section_id=inventory_section.section_id,
-                    inventory_heading=inventory_section.heading,
-                    status=status,
-                    mapped_section_id=section_ids[index],
-                    mapped_section_heading=section.heading,
-                    disposition=section.inventory_disposition,
-                    reason=reason,
-                    evidence_ids=inventory_section.evidence_ids,
-                )
-            )
-            continue
-        candidates = [
+    return by_inventory_id, by_inventory_heading
+
+
+def _inventory_mapping_row(
+    *,
+    inventory_section,
+    output_sections: list[PlanSection],
+    section_ids: list[str],
+    by_inventory_id: dict[str, list[PlanSectionReference]],
+    by_inventory_heading: dict[str, list[PlanSectionReference]],
+    used_plan_indices: set[int],
+    exclusion_reason: str,
+) -> ContentPlanningInventoryMapping:
+    if exclusion_reason == "navigation_or_promotional_inventory":
+        return _unmapped_inventory_row(inventory_section, "excluded", exclusion_reason)
+    direct = _one_unused(
+        by_inventory_id.get(inventory_section.section_id, []), used_plan_indices
+    ) or _one_unused(by_inventory_heading.get(inventory_section.heading, []), used_plan_indices)
+    if direct is not None:
+        index, section = direct
+        used_plan_indices.add(index)
+        status, reason = _mapped_status(section, inventory_section.heading)
+        return _mapped_inventory_row(inventory_section, section_ids[index], section, status, reason)
+    return _similar_inventory_row(
+        inventory_section,
+        output_sections=output_sections,
+        section_ids=section_ids,
+        used_plan_indices=used_plan_indices,
+        exclusion_reason=exclusion_reason,
+    )
+
+
+def _one_unused(
+    candidates: list[PlanSectionReference],
+    used_plan_indices: set[int],
+) -> PlanSectionReference | None:
+    if len(candidates) == 1 and candidates[0][0] not in used_plan_indices:
+        return candidates[0]
+    return None
+
+
+def _mapped_inventory_row(
+    inventory_section,
+    section_id: str,
+    section: PlanSection,
+    status: SectionMappingStatus,
+    reason: str,
+) -> ContentPlanningInventoryMapping:
+    return ContentPlanningInventoryMapping(
+        inventory_section_id=inventory_section.section_id,
+        inventory_heading=inventory_section.heading,
+        status=status,
+        mapped_section_id=section_id,
+        mapped_section_heading=section.heading,
+        disposition=section.inventory_disposition,
+        reason=reason,
+        evidence_ids=inventory_section.evidence_ids,
+    )
+
+
+def _unmapped_inventory_row(
+    inventory_section,
+    status: SectionMappingStatus,
+    reason: str,
+) -> ContentPlanningInventoryMapping:
+    return ContentPlanningInventoryMapping(
+        inventory_section_id=inventory_section.section_id,
+        inventory_heading=inventory_section.heading,
+        status=status,
+        mapped_section_id=None,
+        mapped_section_heading=None,
+        disposition="remove_review_required" if status == "excluded" else None,
+        reason=reason,
+        evidence_ids=inventory_section.evidence_ids,
+    )
+
+
+def _similar_inventory_row(
+    inventory_section,
+    *,
+    output_sections: list[PlanSection],
+    section_ids: list[str],
+    used_plan_indices: set[int],
+    exclusion_reason: str,
+) -> ContentPlanningInventoryMapping:
+    candidates = sorted(
+        (
             (score, index, section)
             for index, section in enumerate(output_sections)
             if section.inventory_disposition != "create" and index not in used_plan_indices
             for score in [_heading_similarity(inventory_section.heading, section.heading)]
             if score >= 0.72
-        ]
-        candidates.sort(reverse=True, key=lambda item: item[0])
-        mapping_status: SectionMappingStatus = "unmapped"
-        chosen: tuple[
-            float, int, ContentPlanningModelSection | ContentPlanningSection
-        ] | None = None
-        if candidates:
-            chosen = candidates[0]
-            if len(candidates) > 1 and candidates[0][0] - candidates[1][0] < 0.05:
-                mapping_status = "ambiguous"
-                chosen = None
-            else:
-                mapping_status = "mapped"
-                used_plan_indices.add(chosen[1])
-                if chosen[2].inventory_disposition == "remove_review_required":
-                    mapping_status = "excluded"
-        reason = inventory_reasons[inventory_section.section_id]
-        if chosen is not None and mapping_status == "excluded" and not reason:
-            reason = "model_remove_review_required"
-        if chosen is None and reason:
-            mapping_status = "excluded"
-        mappings.append(
-            ContentPlanningInventoryMapping(
-                inventory_section_id=inventory_section.section_id,
-                inventory_heading=inventory_section.heading,
-                status=mapping_status,
-                mapped_section_id=section_ids[chosen[1]] if chosen else None,
-                mapped_section_heading=chosen[2].heading if chosen else None,
-                disposition=(
-                    chosen[2].inventory_disposition
-                    if chosen
-                    else "remove_review_required"
-                    if mapping_status == "excluded"
-                    else None
-                ),
-                reason=reason,
-                evidence_ids=inventory_section.evidence_ids,
-            )
+        ),
+        reverse=True,
+        key=lambda item: item[0],
+    )
+    ambiguous = len(candidates) > 1 and candidates[0][0] - candidates[1][0] < 0.05
+    chosen = None if not candidates or ambiguous else candidates[0]
+    if chosen is None:
+        return _unmapped_inventory_row(
+            inventory_section,
+            "excluded" if exclusion_reason else "ambiguous" if ambiguous else "unmapped",
+            exclusion_reason,
         )
-    return mappings
+    _, index, section = chosen
+    used_plan_indices.add(index)
+    status, model_reason = _mapped_status(section, inventory_section.heading)
+    reason = exclusion_reason
+    if status == "excluded" and not reason:
+        reason = model_reason
+    return _mapped_inventory_row(
+        inventory_section,
+        section_ids[index],
+        section,
+        status,
+        reason,
+    )
 
 
 def _inventory_exclusion_reasons(

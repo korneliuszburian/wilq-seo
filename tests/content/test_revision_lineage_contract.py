@@ -24,6 +24,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionSection,
+    ContentDraftRevisionSourceProvenance,
 )
 from wilq.content.workflow.store import ContentWorkflowStore
 
@@ -111,6 +112,25 @@ def test_v1_digest_remains_isolated_from_v2_lineage_fields() -> None:
     assert draft_revision_content_digest(baseline) == draft_revision_content_digest(with_lineage)
 
 
+def test_v1_digest_binds_source_provenance() -> None:
+    baseline = _command(schema_version="wilq_content_draft_revision_v1")
+    with_provenance = baseline.model_copy(
+        update={
+            "source_provenance": [
+                ContentDraftRevisionSourceProvenance(
+                    source_fact_id="source_fact_lineage",
+                    source_url_or_path="https://bdo.mos.gov.pl/zasady-rejestracji/",
+                    freshness_date="2026-08-02",
+                    reviewer="Ekspert Ekologus",
+                    evidence_ids=["ev_lineage"],
+                )
+            ]
+        }
+    )
+
+    assert draft_revision_content_digest(with_provenance) != draft_revision_content_digest(baseline)
+
+
 def test_v2_lineage_is_deterministic_and_part_of_digest() -> None:
     command = _command(
         schema_version="wilq_content_draft_revision_v2",
@@ -183,6 +203,20 @@ def test_child_revision_preserves_full_document_lineage() -> None:
     assert child.source_material_ids == revision.source_material_ids
     assert child.knowledge_card_ids == revision.knowledge_card_ids
     assert child.sections[0].source_material_ids == revision.sections[0].source_material_ids
+
+
+def test_regulatory_assurance_provenance_is_canonicalized_for_shared_contracts() -> None:
+    metadata = ContentDraftRevisionProposalMetadata(
+        codex_run_id="codex_lineage_child",
+        selected_section_headings=["Zakres"],
+        section_lineage=[{"heading": "Zakres", "evidence_ids": ["ev_lineage"]}],
+        quality_verdict="reviewable",
+        regulatory_assurance_run_id=" codex_assurance ",
+        regulatory_assurance_criteria_version=" criteria_v1 ",
+    )
+
+    assert metadata.regulatory_assurance_run_id == "codex_assurance"
+    assert metadata.regulatory_assurance_criteria_version == "criteria_v1"
 
 
 def test_editor_save_v2_carries_page_assets_and_lineage() -> None:

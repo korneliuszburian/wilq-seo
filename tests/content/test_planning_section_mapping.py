@@ -83,6 +83,38 @@ def test_existing_inventory_is_mapped_without_requiring_model_to_repeat_heading(
     assert mappings[1].mapped_section_id is None
 
 
+def test_created_section_cannot_carry_model_supplied_inventory_identity() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_01",
+                    heading="Archiwalny nagłówek",
+                    evidence_ids=["ev_wp"],
+                )
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Nowa odpowiedź dla czytelnika",
+                purpose="Wyjaśnić nowy temat.",
+                reader_question="Co warto sprawdzić?",
+                inventory_disposition="create",
+                inventory_section_id="inventory_01",
+                inventory_heading="Archiwalny nagłówek",
+            )
+        ]
+    )
+
+    canonical = canonicalize_model_inventory_headings(planning_input, output)
+
+    assert canonical.sections[0].inventory_section_id is None
+    assert canonical.sections[0].inventory_heading is None
+
+
 def test_fuzzy_mapping_is_one_to_one_and_never_reuses_a_plan_section() -> None:
     planning_input = ContentPlanningInput.model_construct(
         inventory=ContentPlanningInventory(

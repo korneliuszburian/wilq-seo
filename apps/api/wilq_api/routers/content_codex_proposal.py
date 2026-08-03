@@ -7,9 +7,12 @@ from fastapi.responses import JSONResponse
 
 from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts.codex_section_proposal import (
-    ContentCodexSectionProposalRequest,
-    ContentCodexSectionProposalResponse,
     propose_content_section_revision,
+)
+from wilq.content.drafts.codex_section_proposal_contracts import (
+    ContentCodexSectionProposalRequest,
+    ContentRevisionRepairProposalRequest,
+    ContentRevisionRepairProposalResponse,
 )
 from wilq.content.quality.semantic_review_store import content_semantic_review_store
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
@@ -23,21 +26,21 @@ def content_codex_app_server_client() -> StdioCodexAppServerClient:
     return StdioCodexAppServerClient()
 
 
-def register_content_codex_proposal_route(
+def register_content_revision_repair_route(
     router: APIRouter,
     *,
     snapshot_loader: ContentSnapshotLoader,
 ) -> None:
     @router.post(
-        "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal",
-        response_model=ContentCodexSectionProposalResponse,
-        responses={409: {"model": ContentCodexSectionProposalResponse}},
+        "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/repair-proposal",
+        response_model=ContentRevisionRepairProposalResponse,
+        responses={409: {"model": ContentRevisionRepairProposalResponse}},
     )
-    def content_work_item_codex_section_proposal(
+    def content_work_item_revision_repair_proposal(
         work_item_id: str,
         base_revision_id: str,
-        request: ContentCodexSectionProposalRequest,
-    ) -> ContentCodexSectionProposalResponse | JSONResponse:
+        request: ContentRevisionRepairProposalRequest,
+    ) -> ContentRevisionRepairProposalResponse | JSONResponse:
         snapshot = snapshot_loader(work_item_id)
         base_revision = snapshot.revision_workspace.latest_revision
         semantic_review = (
@@ -52,7 +55,12 @@ def register_content_codex_proposal_route(
         result = propose_content_section_revision(
             snapshot=snapshot,
             base_revision_id=base_revision_id,
-            request=request,
+            request=ContentCodexSectionProposalRequest(
+                expected_base_digest=request.expected_base_digest,
+                selected_section_ids=request.selected_section_ids,
+                selected_cta_ids=request.selected_cta_ids,
+                requested_by=request.requested_by,
+            ),
             client=content_codex_app_server_client(),
             workflow_store=content_workflow_store(),
             run_store=local_state_store(),
@@ -60,7 +68,7 @@ def register_content_codex_proposal_route(
         )
         if result.status == "conflict":
             return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
-        return result
+        return ContentRevisionRepairProposalResponse.model_validate(result.model_dump())
 
 
-__all__ = ["register_content_codex_proposal_route"]
+__all__ = ["register_content_revision_repair_route"]

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import date, datetime
 from hashlib import sha256
 from typing import TYPE_CHECKING, Literal
+from urllib.parse import urlsplit
 
 from pydantic import (
     BaseModel,
@@ -30,7 +31,10 @@ ContentDraftRevisionDecision = Literal[
     "rejected",
     "deferred",
 ]
-ContentDraftRevisionCorrectionReason = Literal["canonical_html_alignment"]
+ContentDraftRevisionCorrectionReason = Literal[
+    "canonical_html_alignment",
+    "official_source_lineage_rebase",
+]
 ContentDraftRevisionDocumentKind = Literal["refresh_existing", "new_page"]
 _UNSAFE_INTERNAL_LINK_ANCHOR_CHARACTERS = frozenset("[]<>\\\r\n\t")
 _INLINE_LINK_MARKERS = (
@@ -125,6 +129,8 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
         "ready_for_human_review",
     ]
     quality_finding_codes: list[str] = Field(default_factory=list)
+    regulatory_assurance_run_id: str | None = None
+    regulatory_assurance_criteria_version: str | None = None
     review_scope: Literal[
         "persisted_selected_sections_and_declared_lineage",
         "persisted_selected_components_and_declared_lineage",
@@ -136,6 +142,22 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
 
     @model_validator(mode="after")
     def require_selected_lineage(self) -> ContentDraftRevisionProposalMetadata:
+        if self.regulatory_assurance_run_id is not None:
+            self.regulatory_assurance_run_id = self.regulatory_assurance_run_id.strip()
+        if self.regulatory_assurance_criteria_version is not None:
+            self.regulatory_assurance_criteria_version = (
+                self.regulatory_assurance_criteria_version.strip()
+            )
+        assurance_fields = (
+            self.regulatory_assurance_run_id,
+            self.regulatory_assurance_criteria_version,
+        )
+        if any(value is not None and not value.strip() for value in assurance_fields):
+            raise ValueError("Regulatory assurance provenance cannot be blank.")
+        if (self.regulatory_assurance_run_id is None) != (
+            self.regulatory_assurance_criteria_version is None
+        ):
+            raise ValueError("Regulatory assurance provenance must be complete.")
         headings = [heading.strip() for heading in self.selected_section_headings]
         lineage_headings = [lineage.heading.strip() for lineage in self.section_lineage]
         cta_ids = [cta_id.strip() for cta_id in self.selected_cta_ids]
@@ -179,6 +201,16 @@ class ContentDraftRevisionPageAssets(BaseModel):
         if not value.strip():
             raise ValueError("Draft revision page assets cannot be blank.")
         return validate_no_inline_link(value)
+
+
+class ContentDraftRevisionSourceProvenance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_fact_id: str = Field(min_length=1)
+    source_url_or_path: str = Field(min_length=1)
+    freshness_date: str = Field(min_length=1)
+    reviewer: str | None = None
+    evidence_ids: list[str] = Field(min_length=1)
 
 
 class ContentDraftRevisionFaqItem(BaseModel):
@@ -234,6 +266,69 @@ class ContentDraftRevisionInternalLink(BaseModel):
         return value
 
 
+class ContentDraftRevisionOfficialSourceReference(BaseModel):
+    """One reader-visible, exact official source used for a regulated draft.
+
+    This is not a model-generated citation.  The initial-draft builder projects
+    it deterministically from an approved source fact that already satisfied
+    the revision's regulatory planning coverage.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_fact_id: str = Field(min_length=1)
+    source_url: str = Field(min_length=1)
+    source_title: str = Field(min_length=1)
+    verified_on: str = Field(min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
+    regulatory_requirement_ids: list[str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_exact_visible_lineage(self) -> ContentDraftRevisionOfficialSourceReference:
+        text_fields = {
+            "source_fact_id": self.source_fact_id,
+            "source_url": self.source_url,
+            "source_title": self.source_title,
+            "verified_on": self.verified_on,
+        }
+        blank = [name for name, value in text_fields.items() if not value.strip()]
+        parsed = urlsplit(self.source_url)
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
+            blank.append("source_url")
+        try:
+            date.fromisoformat(self.verified_on)
+        except ValueError:
+            blank.append("verified_on")
+        list_fields = {
+            "evidence_ids": self.evidence_ids,
+            "regulatory_requirement_ids": self.regulatory_requirement_ids,
+        }
+        invalid_lists = [
+            name
+            for name, values in list_fields.items()
+            if not values or any(not value.strip() for value in values)
+        ]
+        if blank or invalid_lists:
+            raise ValueError(
+                "Official source reference requires exact visible lineage: "
+                + ", ".join(sorted(set([*blank, *invalid_lists])))
+            )
+        self.source_fact_id = self.source_fact_id.strip()
+        self.source_url = self.source_url.strip()
+        self.source_title = self.source_title.strip()
+        self.verified_on = self.verified_on.strip()
+        self.evidence_ids = list(dict.fromkeys(value.strip() for value in self.evidence_ids))
+        self.regulatory_requirement_ids = list(
+            dict.fromkeys(value.strip() for value in self.regulatory_requirement_ids)
+        )
+        return self
+
+
 class ContentDraftRevisionSection(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -278,6 +373,7 @@ class ContentDraftRevision(BaseModel):
     inventory_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
+    source_provenance: list[ContentDraftRevisionSourceProvenance] = Field(default_factory=list)
     document_kind: ContentDraftRevisionDocumentKind = "refresh_existing"
     final_canonical_url: str | None = None
     new_page_document_identity: ContentNewPageDocumentIdentity | None = None
@@ -287,6 +383,9 @@ class ContentDraftRevision(BaseModel):
     faq: list[ContentDraftRevisionFaqItem] = Field(default_factory=list)
     cta_blocks: list[ContentDraftRevisionCtaBlock] = Field(default_factory=list)
     internal_links: list[ContentDraftRevisionInternalLink] = Field(default_factory=list)
+    official_source_references: list[ContentDraftRevisionOfficialSourceReference] = Field(
+        default_factory=list
+    )
     proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
     correction_reason: ContentDraftRevisionCorrectionReason | None = None
     publish_ready: Literal[False] = False
@@ -349,6 +448,7 @@ class ContentDraftRevisionAppendCommand(BaseModel):
     inventory_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
+    source_provenance: list[ContentDraftRevisionSourceProvenance] = Field(default_factory=list)
     document_kind: ContentDraftRevisionDocumentKind = "refresh_existing"
     final_canonical_url: str | None = None
     new_page_document_identity: ContentNewPageDocumentIdentity | None = None
@@ -358,6 +458,9 @@ class ContentDraftRevisionAppendCommand(BaseModel):
     faq: list[ContentDraftRevisionFaqItem] = Field(default_factory=list)
     cta_blocks: list[ContentDraftRevisionCtaBlock] = Field(default_factory=list)
     internal_links: list[ContentDraftRevisionInternalLink] = Field(default_factory=list)
+    official_source_references: list[ContentDraftRevisionOfficialSourceReference] = Field(
+        default_factory=list
+    )
     proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
     correction_reason: ContentDraftRevisionCorrectionReason | None = None
     publish_ready: Literal[False] = False
@@ -490,11 +593,13 @@ def _validate_full_document(
         if (
             document.document_kind != "refresh_existing"
             or document.new_page_document_identity is not None
+            or document.official_source_references
             or not document.final_canonical_url
             or not document.final_canonical_url.strip()
         ):
             raise ValueError(
-                "Historical v1 revision requires a refresh URL and cannot carry new-page identity."
+                "Historical v1 revision requires a refresh URL and cannot carry "
+                "new-page identity or official source references."
             )
         return
     if document.document_kind == "refresh_existing":
@@ -530,6 +635,7 @@ def _validate_full_document(
     _require_unique_ids([item.faq_id for item in document.faq], "FAQ")
     _require_unique_ids([item.cta_id for item in document.cta_blocks], "CTA")
     _require_unique_ids([item.link_id for item in document.internal_links], "internal link")
+    _validate_official_source_reference_ids(document)
     allowed_placements = {"after_lead", "after_content", *map(str, section_ids)}
     placements = [item.placement for item in document.cta_blocks]
     placements.extend(item.placement for item in document.internal_links)
@@ -586,6 +692,15 @@ def _require_unique_ids(values: list[str], label: str) -> None:
         raise ValueError(f"Full-document {label} IDs cannot be blank.")
     if len(normalized) != len(set(normalized)):
         raise ValueError(f"Full-document {label} IDs must be unique after stripping.")
+
+
+def _validate_official_source_reference_ids(
+    document: ContentDraftRevision | ContentDraftRevisionAppendCommand,
+) -> None:
+    _require_unique_ids(
+        [item.source_fact_id for item in document.official_source_references],
+        "official source",
+    )
 
 
 def _validate_review_decision(

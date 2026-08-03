@@ -25,6 +25,7 @@ def revision_document_markdown(document: ContentDraftRevision) -> str:
         for item in document.faq:
             chunks.extend([f"### {item.question}", item.answer_markdown.strip()])
     chunks.extend(_placed_blocks(document, "after_content"))
+    chunks.extend(_official_source_section(document))
     return "\n\n".join(chunk for chunk in chunks if chunk.strip())
 
 
@@ -64,3 +65,21 @@ def _render_internal_link(anchor_text: str, target_url: str) -> str:
     if not content_is_safe_public_url(target_url):
         return label
     return f"[{label}]({target_url})"
+
+
+def _official_source_section(document: ContentDraftRevision) -> list[str]:
+    """Render immutable, server-derived regulatory references for readers."""
+
+    if not document.official_source_references:
+        return []
+    items = [
+        "- "
+        f"[{_markdown_link_label(reference.source_title)}]({reference.source_url}) "
+        f"— zweryfikowano: {reference.verified_on}."
+        for reference in document.official_source_references
+    ]
+    return [
+        "## Źródła urzędowe",
+        "Poniższe źródła urzędowe wykorzystano do weryfikacji informacji w tym materiale.",
+        "\n".join(items),
+    ]

@@ -3,8 +3,11 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getContentRegulatorySourceFactProposal,
   getContentWorkItemInitialDraft,
   getContentWorkItemPlanningProposal,
+  postContentRegulatorySourceFactProposal,
+  postContentRegulatorySourceFactProposalReview,
   postContentWorkItemInitialDraft,
   postContentWorkItemPlanningProposal
 } from "../lib/api";
@@ -14,6 +17,9 @@ vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
   getContentWorkItemInitialDraft: vi.fn(),
   getContentWorkItemPlanningProposal: vi.fn(),
+  getContentRegulatorySourceFactProposal: vi.fn(),
+  postContentRegulatorySourceFactProposal: vi.fn(),
+  postContentRegulatorySourceFactProposalReview: vi.fn(),
   postContentWorkItemInitialDraft: vi.fn(),
   postContentWorkItemPlanningProposal: vi.fn()
 }));
@@ -64,8 +70,39 @@ function readyToGenerate(status: "not_generated" | "failed" = "not_generated") {
   };
 }
 
+function readyRegulatoryProposal(proposalId = "regulatory_fact_proposal_scope", snapshotId = "regulatory_snapshot_scope") {
+  return {
+    status: "ready",
+    proposal: {
+      proposal_id: proposalId,
+      candidate_id: "bdo_registration_scope_2026_07_31_r2",
+      profile_id: "bdo",
+      profile_version: "2026-07",
+      source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+      source_snapshot_id: snapshotId,
+      source_snapshot_digest: "d".repeat(64),
+      observed_on: "2026-07-31",
+      proposed_fact: `Zakres obowiązku z propozycji ${proposalId} wymaga dalszej oceny dla konkretnej działalności.`,
+      covered_requirement_ids: ["bdo_scope"],
+      codex_run_id: `codex_${proposalId}`,
+      status: "ready",
+      human_review_required: true,
+      created_at: "2026-07-31T12:00:00Z"
+    },
+    reason: "Pobrano snapshot.",
+    safe_next_step: "Sprawdź źródło."
+  };
+}
+
 describe("ContentTextPreparationPanel", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getContentRegulatorySourceFactProposal).mockResolvedValue({
+      status: "not_generated",
+      reason: "Brak propozycji.",
+      safe_next_step: "Przygotuj propozycję."
+    });
+  });
   afterEach(cleanup);
 
   it("starts one exact planning request from the ready state with one marketer-facing action", async () => {
@@ -177,6 +214,183 @@ describe("ContentTextPreparationPanel", () => {
     expect(screen.queryByText("Zatwierdź plan.")).not.toBeInTheDocument();
   });
 
+  it("shows an official regulatory candidate as review-only, never as planning evidence", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyToGenerate(),
+      status: "blocked",
+      blockers: [{
+        code: "missing_regulatory_source_coverage",
+        label: "Brakuje zatwierdzonego źródła urzędowego",
+        reason: "Zakres BDO wymaga review źródła urzędowego.",
+        next_step: "Sprawdź źródło."
+      }],
+      input_summary: {
+        ...readyToGenerate().input_summary,
+        regulatory_profile_id: "bdo",
+        regulatory_profile_version: "2026-07",
+        regulatory_requirement_ids: ["bdo_scope"],
+        regulatory_source_fact_ids: [],
+        regulatory_requirement_coverage: [{
+          requirement_id: "bdo_scope",
+          label: "Zakres obowiązku",
+          reason: "Wymaga źródła urzędowego.",
+          source_fact_ids: [],
+          evidence_ids: []
+        }],
+        regulatory_review_candidates: [{
+          candidate_id: "bdo_scope_candidate",
+          source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+          source_title: "BDO: Kto podlega pod obowiązek rejestracji?",
+          observed_on: "2026-07-31",
+          requirement_ids: ["bdo_scope"],
+          requirement_labels: ["Zakres obowiązku"],
+          review_status: "review_required",
+          safe_next_step: "Sprawdź zakres z ekspertem przed zatwierdzeniem faktu."
+        }]
+      }
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+
+    const evidence = screen.getByTestId("content-planning-evidence");
+    expect(evidence).toHaveTextContent("Źródła urzędowe do sprawdzenia przed przygotowaniem treści");
+    expect(evidence).toHaveTextContent("nie są jeszcze dowodem w planie");
+    expect(evidence).toHaveTextContent("BDO: Kto podlega pod obowiązek rejestracji?");
+    expect(evidence).toHaveTextContent("Zakres obowiązku");
+    expect(screen.queryByRole("button", { name: "Przygotuj tekst" })).not.toBeInTheDocument();
+  });
+
+  it("records a human regulatory fact only after an exact official-source snapshot", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyToGenerate(),
+      status: "blocked",
+      blockers: [{
+        code: "missing_regulatory_source_coverage",
+        label: "Brakuje zatwierdzonego źródła urzędowego",
+        reason: "Zakres BDO wymaga review źródła urzędowego.",
+        next_step: "Sprawdź źródło."
+      }],
+      input_summary: {
+        ...readyToGenerate().input_summary,
+        regulatory_profile_id: "bdo",
+        regulatory_profile_version: "2026-07",
+        regulatory_requirement_ids: ["bdo_scope"],
+        regulatory_source_fact_ids: [],
+        regulatory_requirement_coverage: [{
+          requirement_id: "bdo_scope",
+          source_fact_ids: [],
+          evidence_ids: []
+        }],
+        regulatory_review_candidates: [{
+          candidate_id: "bdo_registration_scope_2026_07_31_r2",
+          source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+          source_title: "BDO: Kto podlega pod obowiązek rejestracji?",
+          observed_on: "2026-07-31",
+          requirement_ids: ["bdo_scope"],
+          requirement_labels: ["Zakres obowiązku"],
+          review_status: "review_required",
+          safe_next_step: "Sprawdź źródło."
+        }]
+      }
+    } as never);
+    vi.mocked(postContentRegulatorySourceFactProposal).mockResolvedValue(
+      readyRegulatoryProposal("proposal_post_p1", "snapshot_p1") as never
+    );
+    vi.mocked(getContentRegulatorySourceFactProposal)
+      .mockResolvedValueOnce({ status: "not_generated", reason: "Brak propozycji.", safe_next_step: "Przygotuj propozycję." } as never)
+      .mockResolvedValue(readyRegulatoryProposal("proposal_get_p2", "snapshot_p2") as never);
+    vi.mocked(postContentRegulatorySourceFactProposalReview).mockResolvedValue({
+      review_id: "regulatory_review_scope",
+      candidate_id: "bdo_registration_scope_2026_07_31_r2",
+      profile_id: "bdo",
+      profile_version: "2026-07",
+      service_card_ids: ["ekologus_service_bdo_reporting"],
+      source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+      source_title: "BDO: Kto podlega pod obowiązek rejestracji?",
+      observed_on: "2026-07-31",
+      source_snapshot_id: "regulatory_snapshot_scope",
+      source_snapshot_digest: "d".repeat(64),
+      reviewed_fact: "Zakres obowiązku wymaga dalszej oceny dla konkretnej działalności.",
+      covered_requirement_ids: ["bdo_scope"],
+      decision: "accepted",
+      reviewer: "Wilku",
+      reviewed_at: "2026-07-31T12:01:00Z"
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj propozycję do review" }));
+    await screen.findByText("Zakres obowiązku z propozycji proposal_get_p2 wymaga dalszej oceny dla konkretnej działalności.");
+    fireEvent.click(await screen.findByRole("button", { name: "Przyjmij propozycję po review" }));
+
+    await waitFor(() => expect(postContentRegulatorySourceFactProposalReview).toHaveBeenCalledWith("proposal_get_p2", {
+      expected_source_snapshot_id: "snapshot_p2",
+      expected_source_snapshot_digest: "d".repeat(64),
+      decision: "accepted",
+      reviewer: "Wilku"
+    }));
+    expect(screen.queryByRole("button", { name: "Przygotuj tekst" })).not.toBeInTheDocument();
+  });
+
+  it("records the exact persisted regulatory proposal after a reload without a proposal POST", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyToGenerate(),
+      status: "blocked",
+      blockers: [{
+        code: "missing_regulatory_source_coverage",
+        label: "Brakuje zatwierdzonego źródła urzędowego",
+        reason: "Zakres BDO wymaga review źródła urzędowego.",
+        next_step: "Sprawdź źródło."
+      }],
+      input_summary: {
+        ...readyToGenerate().input_summary,
+        regulatory_review_candidates: [{
+          candidate_id: "bdo_registration_scope_2026_07_31_r2",
+          source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+          source_title: "BDO: Kto podlega pod obowiązek rejestracji?",
+          observed_on: "2026-07-31",
+          requirement_ids: ["bdo_scope"],
+          requirement_labels: ["Zakres obowiązku"],
+          review_status: "review_required",
+          safe_next_step: "Sprawdź źródło."
+        }]
+      }
+    } as never);
+    vi.mocked(getContentRegulatorySourceFactProposal).mockResolvedValue(
+      readyRegulatoryProposal("proposal_reload", "snapshot_reload") as never
+    );
+    vi.mocked(postContentRegulatorySourceFactProposalReview).mockResolvedValue({
+      review_id: "regulatory_review_reload",
+      candidate_id: "bdo_registration_scope_2026_07_31_r2",
+      profile_id: "bdo",
+      profile_version: "2026-07",
+      service_card_ids: ["ekologus_service_bdo_reporting"],
+      source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+      source_title: "BDO: Kto podlega pod obowiązek rejestracji?",
+      observed_on: "2026-07-31",
+      source_snapshot_id: "snapshot_reload",
+      source_snapshot_digest: "d".repeat(64),
+      reviewed_fact: "Zakres obowiązku z propozycji proposal_reload wymaga dalszej oceny dla konkretnej działalności.",
+      covered_requirement_ids: ["bdo_scope"],
+      decision: "accepted",
+      reviewer: "Wilku",
+      reviewed_at: "2026-07-31T12:01:00Z"
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+    fireEvent.click(await screen.findByRole("button", { name: "Przyjmij propozycję po review" }));
+
+    await waitFor(() => expect(postContentRegulatorySourceFactProposalReview).toHaveBeenCalledWith("proposal_reload", {
+      expected_source_snapshot_id: "snapshot_reload",
+      expected_source_snapshot_digest: "d".repeat(64),
+      decision: "accepted",
+      reviewer: "Wilku"
+    }));
+    expect(postContentRegulatorySourceFactProposal).not.toHaveBeenCalled();
+  });
+
   it("shows only exact planning evidence and GSC queries used by the ready plan", async () => {
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
       ...readyPlan(),
@@ -214,6 +428,94 @@ describe("ContentTextPreparationPanel", () => {
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("bdo dla firm · okres: 2026-06 · 150 wyświetleń · 3 kliknięć");
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Pokazano 6 z 7 exact zapytań GSC.");
     expect(screen.getByTestId("content-planning-evidence")).toHaveTextContent("Ahrefs");
+  });
+
+  it("shows evidence-bound GSC queries from the current input before a plan exists", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyToGenerate(),
+      status: "blocked",
+      blockers: [{
+        code: "missing_regulatory_source_coverage",
+        label: "Brakuje zatwierdzonych źródeł urzędowych",
+        reason: "Źródła urzędowe wymagają decyzji człowieka.",
+        next_step: "Sprawdź źródła."
+      }],
+      input_summary: {
+        ...readyToGenerate().input_summary,
+        gsc_query_rows: [{
+          source_kind: "gsc_query",
+          source_connector: "google_search_console",
+          term: "bdo co to",
+          page: "https://ekologus.pl/bdo/",
+          landing_match_tiers: ["exact"],
+          service_card_id: "service_card",
+          alignment_basis: "gsc_exact_page",
+          review_required: true,
+          section_headings: [],
+          section_mapping_status: "page_only",
+          period: "2026-07",
+          freshness: "fresh",
+          collected_at: null,
+          evidence_ids: ["ev_gsc_bdo"],
+          impressions: 181,
+          clicks: 4,
+          ctr: null,
+          average_position: null,
+          average_monthly_searches: null,
+          cost_micros: null,
+          conversions: null,
+          conversion_value: null
+        }]
+      }
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+
+    const evidence = screen.getByTestId("content-planning-evidence");
+    expect(evidence).toHaveTextContent("bdo co to · okres: 2026-07 · 181 wyświetleń · 4 kliknięć");
+  });
+
+  it("distinguishes an exact measurement comparison from an unavailable trend", async () => {
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue({
+      ...readyToGenerate(),
+      input_summary: {
+        ...readyToGenerate().input_summary,
+        metric_comparisons: [{
+          source_connector: "google_search_console",
+          status: "available",
+          baseline_period: "2026-06",
+          comparison_period: "2026-07",
+          metric_names: ["clicks", "impressions"],
+          baseline_values: { clicks: 12, impressions: 140 },
+          comparison_values: { clicks: 18, impressions: 210 },
+          evidence_ids: ["ev_gsc_periods"],
+          reason: "Dwa dokładne okresy tej strony."
+        }, {
+          source_connector: "google_analytics_4",
+          status: "not_available",
+          baseline_period: null,
+          comparison_period: null,
+          metric_names: [],
+          baseline_values: {},
+          comparison_values: {},
+          evidence_ids: [],
+          reason: "Brakuje dwóch odrębnych, dokładnych okresów tego samego adresu."
+        }]
+      }
+    } as never);
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Na jakich danych oprze się tekst"));
+
+    const comparisons = screen.getByTestId("content-planning-measurement-comparisons");
+    expect(comparisons).toHaveTextContent("Google Search Console");
+    expect(comparisons).toHaveTextContent("Dokładne okresy: 2026-06 → 2026-07");
+    expect(comparisons).toHaveTextContent("Kliknięcia: 12 → 18");
+    expect(comparisons).toHaveTextContent("Wyświetlenia: 140 → 210");
+    expect(comparisons).toHaveTextContent("Google Analytics 4: brak bezpiecznego porównania");
+    expect(comparisons).toHaveTextContent("Brakuje dwóch odrębnych, dokładnych okresów tego samego adresu.");
+    expect(comparisons).not.toHaveTextContent("zmiana:");
   });
 
   it("replaces a POST planning state with fresher exact query evidence", async () => {

@@ -21,6 +21,11 @@ import {
   ContentSelectedWorkspaceSchema,
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningInputReadinessResponseSchema,
+  ContentPlanningInputSummarySchema,
+  ContentRegulatorySourceReviewListSchema,
+  ContentRegulatorySourceReviewConflictSchema,
+  ContentRegulatorySourceReviewSchema,
+  ContentRegulatorySourceSnapshotReadResponseSchema,
   ContentPlanningProposalResponseSchema,
   ContentPlanningWorkspaceSchema,
   ContentServiceProfileResponseSchema,
@@ -31,6 +36,7 @@ import {
   ContentClaimLedgerSchema,
   ContentClaimReferenceSchema,
   ContentDraftPackageSchema,
+  ContentDraftRevisionProposalMetadataSchema,
   ContentDraftRevisionSchema,
   ContentDraftRevisionConflictSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
@@ -49,6 +55,8 @@ import {
   ContentDraftRevisionWorkspaceSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
+  ContentRevisionRepairProposalRequestSchema,
+  ContentKnowledgeCardSchema,
   ContentTargetDiscoverySchema,
   ContentTargetMappingPreviewSchema,
   ContentSemanticReviewRequestSchema,
@@ -77,6 +85,171 @@ import {
   WorkOrderSchema,
   WordPressAuthoringProfileSchema
 } from "./index";
+
+describe("ContentKnowledgeCardSchema", () => {
+  it("accepts an evidence-bound regulatory source card", () => {
+    expect(() => ContentKnowledgeCardSchema.parse({
+      id: "regulatory_bdo",
+      card_type: "regulatory_source",
+      title: "BDO: obowiązek rejestracji",
+      summary: "Fakt z oficjalnego źródła związany z exact evidence.",
+      evidence_ids: ["ev_regulatory_source_review_scope"],
+      source_fact_ids: ["regulatory_source_fact_scope"],
+      source_lineage: ["https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/"],
+      confidence: 1,
+      freshness: "reviewed_2026-07-31"
+    })).not.toThrow();
+  });
+});
+
+describe("ContentRevisionRepairProposalRequestSchema", () => {
+  it("requires exactly one non-blank stable persisted component ID", () => {
+    const base = {
+      expected_base_digest: "a".repeat(64),
+      requested_by: "wilku"
+    };
+    expect(ContentRevisionRepairProposalRequestSchema.safeParse({
+      ...base,
+      selected_section_ids: ["section_01"],
+      selected_cta_ids: []
+    }).success).toBe(true);
+    expect(ContentRevisionRepairProposalRequestSchema.safeParse({
+      ...base,
+      selected_section_ids: ["section_01"],
+      selected_cta_ids: ["cta_01"]
+    }).success).toBe(false);
+    expect(ContentRevisionRepairProposalRequestSchema.safeParse({
+      ...base,
+      selected_section_ids: ["   "],
+      selected_cta_ids: []
+    }).success).toBe(false);
+  });
+});
+
+describe("ContentDraftRevisionProposalMetadataSchema", () => {
+  it("canonicalizes complete regulatory assurance provenance and rejects partial values", () => {
+    const base = {
+      source: "codex_app_server" as const,
+      codex_run_id: "codex_writer",
+      selected_section_headings: ["Zakres"],
+      section_lineage: [{ heading: "Zakres", evidence_ids: ["ev_scope"] }],
+      selected_cta_ids: [],
+      cta_lineage: [],
+      quality_verdict: "ready_for_human_review" as const,
+      quality_finding_codes: [],
+      review_scope: "persisted_full_document_and_declared_lineage" as const,
+      semantic_review_required: true as const
+    };
+
+    expect(
+      ContentDraftRevisionProposalMetadataSchema.parse({
+        ...base,
+        regulatory_assurance_run_id: " codex_assurance ",
+        regulatory_assurance_criteria_version: " criteria_v1 "
+      })
+    ).toMatchObject({
+      regulatory_assurance_run_id: "codex_assurance",
+      regulatory_assurance_criteria_version: "criteria_v1"
+    });
+    expect(
+      ContentDraftRevisionProposalMetadataSchema.safeParse({
+        ...base,
+        regulatory_assurance_run_id: "codex_assurance"
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ContentRegulatorySourceReview schemas", () => {
+  const review = {
+    review_id: "regulatory_review_bdo_scope",
+    candidate_id: "bdo_registration_scope_2026_07_31",
+    profile_id: "bdo",
+    profile_version: "2026-07",
+    service_card_ids: ["ekologus_service_bdo_reporting"],
+    source_url: "https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/",
+    source_title: "BDO: zakres obowiązku rejestracji",
+    observed_on: "2026-07-31",
+    source_snapshot_id: "regulatory_snapshot_bdo_scope",
+    source_snapshot_digest: "a".repeat(64),
+    reviewed_fact: "Zatwierdzony fakt ograniczony do wskazanego źródła urzędowego i zakresu BDO.",
+    covered_requirement_ids: ["bdo_scope"],
+    decision: "accepted",
+    reviewer: "Wilku",
+    reviewed_at: "2026-07-31T12:00:00Z"
+  };
+
+  it("requires an exact review identity and rejects blank human fields", () => {
+    expect(ContentRegulatorySourceReviewSchema.safeParse(review).success).toBe(true);
+    expect(ContentRegulatorySourceReviewListSchema.safeParse({ reviews: [review] }).success).toBe(true);
+    expect(
+      ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
+        status: "captured",
+        snapshot: {
+          snapshot_id: review.source_snapshot_id,
+          candidate_id: review.candidate_id,
+          profile_id: review.profile_id,
+          profile_version: review.profile_version,
+          source_url: review.source_url,
+          content_digest: review.source_snapshot_digest,
+          content_type: "text/html",
+          byte_length: 128,
+          observed_at: review.reviewed_at
+        },
+        reason: "Pobrano źródło.",
+        safe_next_step: "Sprawdź źródło."
+      }).success
+    ).toBe(true);
+    expect(
+      ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
+        status: "captured",
+        snapshot: {
+          snapshot_id: review.source_snapshot_id,
+          candidate_id: review.candidate_id,
+          profile_id: review.profile_id,
+          profile_version: review.profile_version,
+          source_url: review.source_url,
+          content_digest: review.source_snapshot_digest,
+          content_type: "application/pdf",
+          byte_length: 2_148_042,
+          observed_at: review.reviewed_at
+        },
+        reason: "Pobrano źródło.",
+        safe_next_step: "Sprawdź źródło."
+      }).success
+    ).toBe(true);
+    expect(
+      ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
+        status: "captured",
+        snapshot: {
+          snapshot_id: review.source_snapshot_id,
+          candidate_id: review.candidate_id,
+          profile_id: review.profile_id,
+          profile_version: review.profile_version,
+          source_url: review.source_url,
+          content_digest: review.source_snapshot_digest,
+          content_type: "application/pdf",
+          byte_length: 12 * 1024 * 1024 + 1,
+          observed_at: review.reviewed_at
+        },
+        reason: "Pobrano źródło.",
+        safe_next_step: "Sprawdź źródło."
+      }).success
+    ).toBe(false);
+    expect(
+      ContentRegulatorySourceReviewSchema.safeParse({ ...review, reviewer: "   " }).success
+    ).toBe(false);
+  });
+
+  it("parses the typed stale-proposal recovery conflict", () => {
+    expect(ContentRegulatorySourceReviewConflictSchema.safeParse({
+      code: "source_proposal_stale",
+      label: "Propozycja źródła jest nieaktualna",
+      reason: "Regulatory source fact proposal is stale; read it again before review.",
+      safe_next_step: "Odczytaj bieżący materiał urzędowy i zapisz review ponownie."
+    }).success).toBe(true);
+  });
+});
 
 describe("ContentWorkItemLearningProposal schemas", () => {
   it("keeps the exact measurement window binding in the public request and response", () => {
@@ -241,19 +414,30 @@ describe("ContentSelectedWorkspaceSchema", () => {
     },
     comparison: { status: "unavailable", reason: "Brak rewizji.", items: [] },
     next_action: { kind: "prepare_document", label: "Przygotuj dokument", reason: "Brak rewizji." },
+    regulatory_review_candidates: [{
+      candidate_id: "bdo_sanctions_2026_08_02_r3",
+      source_url: "https://bdo.mos.gov.pl/baza-wiedzy/sankcje/",
+      source_title: "BDO: sankcje za naruszenia obowiązków",
+      observed_on: "2026-08-02",
+      requirement_ids: ["bdo_risks_and_sanctions"],
+      requirement_labels: ["Ryzyka i sankcje"],
+      review_status: "review_required",
+      safe_next_step: "Sprawdź materiał urzędowy przed decyzją."
+    }],
     secondary_disclosures: []
   };
 
   it("keeps ready and missing selection states exact", () => {
-    expect(
-      ContentSelectedWorkspaceSchema.safeParse({
+    const parsed = ContentSelectedWorkspaceSchema.parse({
         status: "ready",
         work_item_id: "content_work_item_bdo",
         workspace,
         reason: "Odczytano workspace.",
         safe_next_step: "Przygotuj dokument"
-      }).success
-    ).toBe(true);
+      });
+    expect(parsed.workspace?.regulatory_review_candidates).toEqual([
+      expect.objectContaining({ candidate_id: "bdo_sanctions_2026_08_02_r3" })
+    ]);
     expect(
       ContentSelectedWorkspaceSchema.safeParse({
         status: "missing",
@@ -272,6 +456,61 @@ describe("ContentSelectedWorkspaceSchema", () => {
         safe_next_step: "Przygotuj dokument"
       }).success
     ).toBe(false);
+  });
+});
+
+describe("ContentPlanningInputSummarySchema", () => {
+  const sourceAssessments = [
+    "wordpress", "service_profile", "gsc", "ga4", "google_ads",
+    "ahrefs", "keyword_planner", "merchant", "localo", "social"
+  ].map((source) => ({
+    source,
+    status: "not_applicable",
+    reason: "To źródło nie dotyczy nowej strony.",
+    landing_match_tiers: [],
+    evidence_ids: [],
+    knowledge_card_ids: []
+  }));
+  const newPageSummary = {
+    goal: "new_page",
+    final_canonical_url: null,
+    proposed_ia_location: "Usługi → Dokumentacja",
+    service_label: "Dokumentacja środowiskowa",
+    inventory_status: "not_applicable",
+    content_inventory_status: "not_applicable",
+    acf_section_inventory_status: "not_applicable",
+    source_assessments: sourceAssessments,
+    source_fact_count: 0,
+    evidence_id_count: 0,
+    knowledge_card_count: 0
+  };
+
+  it("keeps historic GSC rows out of a new-page summary", () => {
+    expect(ContentPlanningInputSummarySchema.safeParse(newPageSummary).success).toBe(true);
+    expect(ContentPlanningInputSummarySchema.safeParse({
+      ...newPageSummary,
+      gsc_query_rows: [{
+        source_kind: "gsc_query",
+        source_connector: "google_search_console",
+        term: "historyczne zapytanie",
+        page: "https://www.ekologus.pl/istniejaca/",
+        landing_match_tiers: ["exact"],
+        service_card_id: null,
+        alignment_basis: "gsc_exact_page",
+        review_required: true,
+        section_headings: [],
+        section_mapping_status: "page_only",
+        period: "2026-07",
+        freshness: "fresh",
+        collected_at: null,
+        evidence_ids: ["ev_gsc_historyczne"],
+        impressions: 181,
+        clicks: 4,
+        ctr: null,
+        average_position: null,
+        average_monthly_searches: null
+      }]
+    }).success).toBe(false);
   });
 });
 
@@ -390,6 +629,30 @@ describe("ContentDraftRevisionSchema", () => {
     expect(parsed.faq[0].answer_markdown).toBe("Od sprawdzenia sytuacji firmy.");
     expect(parsed.cta_blocks[0].placement).toBe("after_content");
     expect(parsed.internal_links[0].target_url).toBe("https://www.ekologus.pl/kontakt/");
+    const regulated = {
+      ...parsed,
+      official_source_references: [{
+        source_fact_id: "regulatory_source_fact_bdo_scope",
+        source_url: "https://bdo.mos.gov.pl/o-systemie-bdo/",
+        source_title: "Oficjalny opis systemu BDO",
+        verified_on: "2026-07-31",
+        evidence_ids: ["ev_regulatory_bdo_scope"],
+        regulatory_requirement_ids: ["bdo_scope"]
+      }]
+    };
+    expect(ContentDraftRevisionSchema.safeParse(regulated).success).toBe(true);
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...regulated,
+      official_source_references: [{ ...regulated.official_source_references[0], evidence_ids: ["   "] }]
+    }).success).toBe(false);
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...regulated,
+      official_source_references: [regulated.official_source_references[0], regulated.official_source_references[0]]
+    }).success).toBe(false);
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...common,
+      official_source_references: regulated.official_source_references
+    }).success).toBe(false);
     const newPage = {
       ...parsed,
       document_kind: "new_page" as const,
@@ -829,6 +1092,93 @@ describe("ContentPlanningProposalResponseSchema", () => {
 
     const parsed = ContentPlanningProposalResponseSchema.parse(response);
     expect(parsed.input_summary?.metric_comparisons?.[0]?.comparison_values.clicks).toBe(19);
+    const regulatoryResponse = {
+      ...response,
+      input_summary: {
+        ...response.input_summary,
+        regulatory_profile_id: "bdo",
+        regulatory_profile_version: "2026-07",
+        regulatory_requirements: [{
+          id: "bdo_scope",
+          label: "zakres obowiązku",
+          reason: "Wymaga źródła urzędowego.",
+          document_assertions: [{
+            id: "scope_check",
+            label: "sprawdzenie zakresu",
+            required_any_of: ["sprawdzić"]
+          }]
+        }],
+        regulatory_requirement_ids: ["bdo_scope"],
+        regulatory_source_fact_ids: ["official_bdo_scope"],
+        regulatory_requirement_coverage: [{
+          requirement_id: "bdo_scope",
+          source_fact_ids: ["official_bdo_scope"],
+          evidence_ids: ["ev_1"]
+        }]
+      },
+      proposal: {
+        ...response.proposal,
+        sections: [{
+          ...response.proposal.sections[0],
+          regulatory_requirement_ids: ["bdo_scope"]
+        }]
+      }
+    };
+    expect(ContentPlanningProposalResponseSchema.safeParse(regulatoryResponse).success).toBe(true);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...regulatoryResponse,
+      proposal: {
+        ...regulatoryResponse.proposal,
+        sections: [{ ...regulatoryResponse.proposal.sections[0], regulatory_requirement_ids: [] }]
+      }
+    }).success).toBe(false);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...regulatoryResponse,
+      proposal: {
+        ...regulatoryResponse.proposal,
+        sections: [{
+          ...regulatoryResponse.proposal.sections[0],
+          heading: "Zakres obowiązku",
+          purpose: "Opisz obowiązek.",
+          reader_question: "Co trzeba wiedzieć?"
+        }]
+      }
+    }).success).toBe(false);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...regulatoryResponse,
+      status: "blocked",
+      proposal: null,
+      planning_workspace: null,
+      input_summary: {
+        ...regulatoryResponse.input_summary,
+        regulatory_source_fact_ids: [],
+        regulatory_requirement_coverage: [{
+          requirement_id: "bdo_scope",
+          source_fact_ids: [],
+          evidence_ids: []
+        }]
+      },
+      blockers: [{
+        code: "missing_regulatory_source_coverage",
+        label: "Brakuje źródeł urzędowych",
+        reason: "Brak pokrycia.",
+        next_step: "Dodaj źródło."
+      }]
+    }).success).toBe(true);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...regulatoryResponse,
+      proposal: {
+        ...regulatoryResponse.proposal,
+        sections: [{ ...regulatoryResponse.proposal.sections[0], regulatory_requirement_ids: ["unknown_requirement"] }]
+      }
+    }).success).toBe(false);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...regulatoryResponse,
+      proposal: {
+        ...regulatoryResponse.proposal,
+        sections: [{ ...regulatoryResponse.proposal.sections[0], evidence_ids: ["ev_wrong"] }]
+      }
+    }).success).toBe(false);
     const scopeDecision = {
       decision_id: "planning_decision_1",
       decision_number: 1,
@@ -4007,6 +4357,20 @@ describe("Content work item workflow schemas", () => {
         created_by: "operator_local_dashboard"
       }).success
     ).toBe(true);
+    expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "BDO dla firm",
+        sections: [{
+          heading: "Zakres obowiązków",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_gsc_bdo"]
+        }],
+        correction_reason: "official_source_lineage_rebase",
+        created_by: "operator_local_dashboard"
+      }).success
+    ).toBe(false);
     expect(
       ContentDraftRevisionSaveRequestSchema.safeParse({
         base_revision_id: "content_revision_r9",

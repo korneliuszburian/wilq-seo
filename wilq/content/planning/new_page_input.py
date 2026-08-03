@@ -21,6 +21,12 @@ from wilq.content.planning.input_sources import (
     ContentPlanningSourceFact,
     ContentPlanningSourceName,
 )
+from wilq.content.regulatory.planning import regulatory_planning_source_facts
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryCoverage,
+    regulatory_content_coverage,
+    regulatory_coverage_gap,
+)
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.new_page import (
     ContentNewPageBrief,
@@ -57,7 +63,8 @@ def build_new_page_planning_input(
             "Wybrana usługa nie ma bieżącej, zatwierdzonej karty wiedzy.",
             "Wybierz zatwierdzoną kartę usługi i odśwież podstawę planowania.",
         )])
-    source_facts = _source_facts(service_card, source_facts_loader())
+    registry_facts = tuple(source_facts_loader())
+    source_facts = _source_facts(service_card, registry_facts)
     if not source_facts:
         return ContentPlanningInputBuildResult(blockers=[_blocker(
             "missing_new_page_service_fact",
@@ -65,7 +72,25 @@ def build_new_page_planning_input(
             "Wybrany kontekst usługi nie ma zatwierdzonego faktu źródłowego do użycia w planie.",
             "Uzupełnij albo zatwierdź fakt źródłowy tej usługi przed planowaniem.",
         )])
-    payload = _payload(brief, foundation, service_card, source_facts)
+    regulatory_coverage = regulatory_content_coverage(
+        service_card_id=service_card.id,
+        source_facts=registry_facts,
+    )
+    source_facts = [
+        *source_facts,
+        *regulatory_planning_source_facts(
+            regulatory_coverage,
+            knowledge_card_ids=[service_card.id],
+            source_material_ids=service_card.source_material_ids,
+        ),
+    ]
+    payload = _payload(
+        brief,
+        foundation,
+        service_card,
+        source_facts,
+        regulatory_coverage,
+    )
     digest = _digest({
         "schema_name": "wilq_content_planning_input_v7",
         "criteria_version": "wilq_people_first_planning_v5",
@@ -75,7 +100,17 @@ def build_new_page_planning_input(
     return ContentPlanningInputBuildResult(
         planning_input=ContentPlanningInput.model_validate(
             {"planning_input_digest": digest, **payload}
-        )
+        ),
+        blockers=(
+            [_blocker(
+                "missing_regulatory_source_coverage",
+                gap.label,
+                gap.reason,
+                gap.next_step,
+            )]
+            if (gap := regulatory_coverage_gap(regulatory_coverage)) is not None
+            else []
+        ),
     )
 
 
@@ -124,6 +159,7 @@ def _payload(
     foundation: ContentNewPagePlanningFoundation,
     service_card: ContentKnowledgeCard,
     source_facts: list[ContentPlanningSourceFact],
+    regulatory_coverage: ContentRegulatoryCoverage,
 ) -> dict[str, object]:
     candidate = ContentWorkItemServiceCandidate(
         service_card_id=service_card.id,
@@ -160,6 +196,7 @@ def _payload(
         "buyer_trigger": brief.purpose,
         "search_intent": brief.search_intent,
         "source_facts": source_facts,
+        "regulatory_coverage": regulatory_coverage,
         "source_assessments": _source_assessments(service_card, source_facts),
         "query_portfolio": ContentSearchDemandEvidence(
             status="missing",

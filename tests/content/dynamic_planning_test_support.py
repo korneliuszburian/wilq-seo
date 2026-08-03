@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -21,12 +22,15 @@ from wilq.content.planning import dynamic_input
 from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
 )
+from wilq.content.regulatory import policy as regulatory_policy
 from wilq.content.workflow import catalog as inventory_catalog
 from wilq.content.workflow import inventory_binding
 from wilq.content.workflow.catalog import (
     ContentInventoryMaterialResponse,
     inventory_work_item_id,
 )
+from wilq.schemas import ContentDecisionItem
+from wilq.schemas.core import MetricFact
 from wilq.storage.metric_store import metric_store_path
 
 
@@ -75,11 +79,21 @@ class PlanningClient:
 def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
     planning_input = json.loads(request.untrusted_context)["planning_input"]
     assert_planning_input_contract(planning_input)
+    placement_contract = json.loads(request.application_context)["placement_contract"]
+    assert "remove_review_required" in placement_contract["forbidden_placement_rule"]
+    assert placement_contract["inventory_section_headings"] == [
+        section["heading"] for section in planning_input["inventory"]["sections"]
+    ]
+    assert placement_contract["safe_fallback_placements"] == [
+        "after_lead",
+        "after_content",
+    ]
     inventory_headings = [
         section["heading"]
         for section in planning_input["inventory"]["sections"]
         if _is_useful_synthetic_heading(section["heading"])
     ] or [planning_input["inventory"]["sections"][0]["heading"]]
+    cta_placements = ["after_lead", "after_content", *inventory_headings]
     inventory_heading = inventory_headings[0]
     evidence_id = planning_input["evidence_ids"][0]
     query_rows = planning_input["query_portfolio"]["gsc_query_rows"]
@@ -101,6 +115,13 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
         assert link_schema["properties"]["evidence_ids"]["items"]["enum"] == (
             candidates[0]["evidence_ids"]
         )
+    if planning_input.get("required_cta_patterns"):
+        assert request.output_schema["$defs"]["ContentPlanningCtaBlock"]["properties"][
+            "copy_direction"
+        ]["enum"] == planning_input["required_cta_patterns"]
+    assert request.output_schema["properties"]["cta_blocks"]["minItems"] == planning_input.get(
+        "minimum_cta_blocks", 1
+    )
     lineage = {"evidence_ids": [evidence_id], "claim_ids": allowed_claims[:1]}
     return {
         "language": "pl-PL",
@@ -120,7 +141,27 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
             for heading in inventory_headings
         ],
         "faq": [_planning_faq(query_terms, lineage)],
-        "cta_blocks": [_planning_cta(client, lineage)] if client.planning_cta_blocks else [],
+        "cta_blocks": (
+            [
+                _planning_cta(
+                    client,
+                    lineage,
+                    placement=(
+                        client.planning_placement
+                        if planning_input.get("minimum_cta_blocks", 1) == 1
+                        else cta_placements[index % len(cta_placements)]
+                    ),
+                    copy_direction=(
+                        planning_input["required_cta_patterns"][index]
+                        if planning_input.get("required_cta_patterns")
+                        else None
+                    ),
+                )
+                for index in range(planning_input.get("minimum_cta_blocks", 1))
+            ]
+            if client.planning_cta_blocks
+            else []
+        ),
         "internal_links": [_planning_link(client, item) for item in candidates],
         "conditional_hypotheses": [],
         "measurement_plan": {
@@ -197,12 +238,16 @@ def _planning_faq(
 
 
 def _planning_cta(
-    client: PlanningClient, lineage: dict[str, list[str]]
+    client: PlanningClient,
+    lineage: dict[str, list[str]],
+    *,
+    placement: str | None = None,
+    copy_direction: str | None = None,
 ) -> dict[str, Any]:
     return {
-        "placement": client.planning_placement,
+        "placement": placement or client.planning_placement,
         "purpose": "Przejście do konsultacji bez gwarancji wyniku.",
-        "copy_direction": "Opisz sytuację firmy i poproś o weryfikację.",
+        "copy_direction": copy_direction or "Opisz sytuację firmy i poproś o weryfikację.",
         **lineage,
     }
 
@@ -432,6 +477,9 @@ def configure_planning_harness(
     _patch_fresh_diagnostics(monkeypatch)
     _patch_synthetic_inventory_material(monkeypatch)
     _patch_internal_link_candidates(monkeypatch)
+    # This harness exercises generic exact-planning mechanics. Regulatory
+    # profiles have their own focused source-coverage contract tests.
+    monkeypatch.setattr(regulatory_policy, "regulatory_content_profiles", lambda: ())
     runtime = PlanningClient()
     _patch_codex_clients(monkeypatch, runtime)
     return TestClient(app), runtime
@@ -507,6 +555,112 @@ def _patch_fresh_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
                 "next_step": "Można zbudować wejście planu do testu.",
             }
         )
+        if not decisions:
+            synthetic_urls = (
+                "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+                "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+            )
+            decisions = [
+                ContentDecisionItem(
+                    id=inventory_work_item_id(url).removeprefix("content_work_item_"),
+                    decision_type="refresh_or_merge",
+                    status="ready",
+                    title="Syntetyczna strona do testu planowania",
+                    priority=1,
+                    source_connectors=["wordpress_ekologus"],
+                    evidence_ids=["ev_connector_wordpress_ekologus_status"],
+                    metric_facts=[
+                        MetricFact(
+                            name="gsc_query_performance",
+                            metric_label="Wyświetlenia GSC",
+                            value=120,
+                            period="2026-07",
+                            source_connector="google_search_console",
+                            evidence_id="ev_synthetic_gsc",
+                            dimensions={"query": "bdo dla firm", "page": url},
+                            collected_at=datetime.now(UTC),
+                            unit="impressions",
+                        )
+                    ],
+                    source_public_url=url,
+                    final_canonical_url=url,
+                    wordpress_content_inventory_status="available",
+                    wordpress_content_text="Syntetyczna treść strony do testu.",
+                    wordpress_content_summary="Syntetyczne podsumowanie publicznej treści.",
+                    wordpress_section_headings=["Syntetyczna sekcja strony"],
+                    wordpress_section_inventory_status="available",
+                    wordpress_content_source_kind="synthetic_reviewed_fixture",
+                    wordpress_content_material_confidence="source_bound",
+                    wordpress_content_word_count=500,
+                    inventory_gate_status="confirmed_current_inventory",
+                    duplicate_gate_status="checked",
+                    rationale="Syntetyczny fixture exact planning.",
+                    next_step="Sprawdź plan.",
+                )
+                for url in synthetic_urls
+            ]
+        synthetic_urls = (
+            "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+            "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+        )
+        template = next(
+            (item for item in decisions if item.status == "ready"),
+            ContentDecisionItem(
+                id="synthetic_template",
+                decision_type="refresh_or_merge",
+                status="ready",
+                title="Syntetyczna strona do testu planowania",
+                priority=1,
+                source_connectors=["wordpress_ekologus"],
+                evidence_ids=["ev_connector_wordpress_ekologus_status"],
+                source_public_url=synthetic_urls[0],
+                final_canonical_url=synthetic_urls[0],
+                wordpress_content_inventory_status="available",
+                wordpress_content_text="Syntetyczna treść strony do testu.",
+                wordpress_content_summary="Syntetyczne podsumowanie publicznej treści.",
+                wordpress_section_headings=["Syntetyczna sekcja strony"],
+                wordpress_section_inventory_status="available",
+                wordpress_content_source_kind="synthetic_reviewed_fixture",
+                wordpress_content_material_confidence="source_bound",
+                wordpress_content_word_count=500,
+                inventory_gate_status="confirmed_current_inventory",
+                duplicate_gate_status="checked",
+                rationale="Syntetyczny fixture exact planning.",
+                next_step="Sprawdź plan.",
+            ),
+        )
+        for url in synthetic_urls:
+            synthetic_id = inventory_work_item_id(url).removeprefix("content_work_item_")
+            if any(item.id == synthetic_id for item in decisions):
+                continue
+            decisions.append(
+                template.model_copy(
+                    update={
+                        "id": synthetic_id,
+                        "page": url,
+                        "source_public_url": url,
+                        "final_canonical_url": url,
+                        "status": "ready",
+                        "evidence_ids": ["ev_connector_wordpress_ekologus_status"],
+                        "metric_facts": [
+                            MetricFact(
+                                name="gsc_query_performance",
+                                metric_label="Wyświetlenia GSC",
+                                value=120,
+                                period="2026-07",
+                                source_connector="google_search_console",
+                                evidence_id="ev_synthetic_gsc",
+                                dimensions={"query": "bdo dla firm", "page": url},
+                                collected_at=datetime.now(UTC),
+                                unit="impressions",
+                            )
+                        ],
+                        "source_connectors": ["wordpress_ekologus"],
+                        "inventory_gate_status": "confirmed_current_inventory",
+                        "duplicate_gate_status": "checked",
+                    }
+                )
+            )
         result = diagnostics.model_copy(
             update={"decision_queue": decisions, "freshness_assessment": freshness}
         )
@@ -560,12 +714,12 @@ def _patch_synthetic_inventory_material(monkeypatch: pytest.MonkeyPatch) -> None
             None,
         )
         headings = [] if item is None else (item.acf_section_headings or [])
-        # The harness models a source-bound material read. Some real catalog
-        # entries have no extracted ACF headings, but the synthetic material
-        # still needs one observed content section for the planning fake to
-        # exercise the existing-page mapping contract.
-        if item is not None and not headings:
-            headings = [f"Zakres strony: {item.title}"]
+        if not headings:
+            headings = [
+                item.title.strip()
+                if item is not None and item.title and item.title.strip()
+                else "Syntetyczna sekcja strony"
+            ]
         return ContentInventoryMaterialResponse(
             status="ready",
             url=url,

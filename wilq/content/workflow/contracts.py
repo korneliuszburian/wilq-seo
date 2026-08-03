@@ -61,13 +61,15 @@ from wilq.content.workflow.planning import ContentPlanningWorkspace
 from wilq.content.workflow.queue import ContentWorkItemQueueBlocker, ContentWorkItemQueueCandidate
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
-    ContentDraftRevisionCorrectionReason,
     ContentDraftRevisionDecision,
+    ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,
     ContentDraftRevisionStateStatus,
 )
 from wilq.schemas import ContentFreshnessAssessment
+
+ContentDraftRevisionSaveCorrectionReason = Literal["canonical_html_alignment"]
 
 ContentDraftRevisionPublicConflictCode = Literal[
     "workspace_not_saveable",
@@ -78,6 +80,7 @@ ContentDraftRevisionPublicConflictCode = Literal[
     "stale_revision",
     "stale_review",
     "digest_mismatch",
+    "official_source_lineage_unavailable",
 ]
 
 
@@ -491,7 +494,7 @@ class ContentDraftRevisionSaveRequest(BaseModel):
     base_revision_id: str | None = None
     title: str = Field(min_length=1)
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)
-    correction_reason: ContentDraftRevisionCorrectionReason | None = None
+    correction_reason: ContentDraftRevisionSaveCorrectionReason | None = None
     created_by: str = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -502,6 +505,21 @@ class ContentDraftRevisionSaveRequest(BaseModel):
             raise ValueError("Draft revision requires a visible creator identifier.")
         if any(section.content_html is None for section in self.sections):
             raise ValueError("Workshop saves require canonical content_html for every section.")
+        return self
+
+
+class ContentOfficialSourceLineageRebaseRequest(BaseModel):
+    """Narrow command for replacing an unreviewed document's source lineage."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    expected_revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    requested_by: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_visible_requester(self) -> ContentOfficialSourceLineageRebaseRequest:
+        if not self.requested_by.strip():
+            raise ValueError("Official-source lineage rebase requires a visible requester.")
         return self
 
 
@@ -555,6 +573,9 @@ class ContentRevisionHtmlPackageManifest(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
+    official_source_references: list[ContentDraftRevisionOfficialSourceReference] = Field(
+        default_factory=list
+    )
     section_count: int = Field(ge=1)
 
 

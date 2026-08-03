@@ -35,6 +35,16 @@ from wilq.content.planning.generated_proposal_contracts import (
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.generated_proposal_turn import content_planning_turn_request
+from wilq.content.planning.proposal_lineage import (
+    canonicalize_regulatory_section_assertions,
+    canonicalize_regulatory_section_evidence,
+    planning_output_lineage_errors,
+)
+from wilq.content.planning.proposal_quality import (
+    persisted_inventory_mapping_is_current,
+    planning_output_quality_errors,
+    proposal_quality_errors,
+)
 from wilq.content.planning.section_mapping import (
     build_inventory_mapping,
     canonicalize_model_inventory_headings,
@@ -57,141 +67,19 @@ def read_content_planning_proposal(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     store: ContentPlanningProposalStore,
 ) -> ContentPlanningProposalResponse:
-    service_card_id = snapshot.service_profile_context.service_card_id
-    if service_card_id is None:
-        return _blocked_response(
-            snapshot.preflight.item.id,
-            service_card_id=None,
-            planning_input_digest=None,
-            blockers=[
-                _blocker(
-                    "unknown_service_card",
-                    "Brakuje usługi do planowania",
-                    "Bieżący snapshot nie ma dozwolonej karty usługi.",
-                    "Wybierz work item z dokładnym dopasowaniem Service Profile.",
-                )
-            ],
-        )
-    planning_snapshot = with_explicit_content_service_selection(snapshot, service_card_id)
-    result = build_content_planning_input(
-        planning_snapshot,
-        service_card_id=service_card_id,
-    )
-    if result.planning_input is None:
-        return _blocked_from_input(
-            snapshot.preflight.item.id,
-            service_card_id,
-            result.blockers,
-        )
-    planning_input = result.planning_input
-    input_summary = content_planning_input_summary(planning_input)
-    generation_blockers = planning_generation_blockers(result.blockers)
-    if generation_blockers:
-        return _blocked_from_input(
-            planning_input.work_item_id,
-            service_card_id,
-            generation_blockers,
-            planning_input_digest=planning_input.planning_input_digest,
-            input_summary=input_summary,
-        )
-    queued = store.queued_response(
-        planning_input.work_item_id,
-        service_card_id,
-        planning_input.planning_input_digest,
-    )
-    if queued is not None:
-        return queued.model_copy(
-            update={
-                "planning_input_digest": planning_input.planning_input_digest,
-                "input_summary": input_summary,
-            }
-        )
-    # A newer proposal for another input digest must not shadow an exact
-    # proposal that is valid for the current fixed point. History remains
-    # immutable, but reads are keyed by the requested input first.
-    latest = store.for_input(
-        planning_input.work_item_id,
-        service_card_id,
-        planning_input.planning_input_digest,
-    ) or store.latest(planning_input.work_item_id)
-    if latest is None:
-        return ContentPlanningProposalResponse(
-            status="not_generated",
-            work_item_id=planning_input.work_item_id,
-            service_card_id=service_card_id,
-            planning_input_digest=planning_input.planning_input_digest,
-            input_summary=input_summary,
-            safe_next_step="Wygeneruj pierwszy plan z aktualnych źródeł.",
-        )
-    if (
-        latest.service_card_id != service_card_id
-        or latest.planning_input_digest != planning_input.planning_input_digest
-    ):
-        return ContentPlanningProposalResponse(
-            status="stale",
-            work_item_id=planning_input.work_item_id,
-            service_card_id=service_card_id,
-            planning_input_digest=planning_input.planning_input_digest,
-            input_summary=input_summary,
-            blockers=[_stale_input_blocker()],
-            safe_next_step="Wygeneruj nową wersję planu z aktualnego wejścia.",
-        )
-    persisted_quality_errors = _proposal_quality_errors(latest)
-    if persisted_quality_errors:
-        return ContentPlanningProposalResponse(
-            status="blocked",
-            work_item_id=planning_input.work_item_id,
-            service_card_id=service_card_id,
-            planning_input_digest=planning_input.planning_input_digest,
-            input_summary=input_summary,
-            proposal=latest,
-            blockers=[
-                _blocker(
-                    "quality_gate_failed",
-                    "Zapisany plan wymaga ponownego wygenerowania",
-                    "Ostatnia wersja zawiera nagłówki, które nie są użyteczną strukturą "
-                    "odpowiedzi dla czytelnika.",
-                    "Uruchom plan ponownie; poprzednia wersja nie jest gotowa do review.",
-                    source_codes=persisted_quality_errors,
-                )
-            ],
-            safe_next_step="Uruchom nową próbę planowania z aktualnego wejścia.",
-        )
-    if (
-        not _persisted_inventory_mapping_is_current(planning_input, latest)
-        or _inventory_mapping_has_unresolved_rows(latest)
-    ):
-        remapped = _remapped_proposal_projection(planning_input, latest)
-        return ContentPlanningProposalResponse(
-            status="stale",
-            work_item_id=planning_input.work_item_id,
-            service_card_id=service_card_id,
-            planning_input_digest=planning_input.planning_input_digest,
-            input_summary=input_summary,
-            proposal=remapped,
-            blockers=[
-                _blocker(
-                    "stale_input",
-                    "Mapa istniejącej strony wymaga odświeżenia",
-                    "Zapisany plan nie zawiera aktualnej, deterministycznej mapy sekcji inventory.",
-                    "Uruchom nową wersję planu; WILQ ponownie przypisze sekcje "
-                    "bez ręcznego mapowania.",
-                )
-            ],
-            safe_next_step="Uruchom nową wersję planu, aby odświeżyć automatyczną mapę sekcji.",
-        )
-    return ContentPlanningProposalResponse(
-        status="ready",
-        work_item_id=planning_input.work_item_id,
-        service_card_id=service_card_id,
-        planning_input_digest=planning_input.planning_input_digest,
-        input_summary=input_summary,
-        proposal=latest,
-        runtime=_persisted_runtime_trace(latest),
-        safe_next_step=(
-            "Sprawdź strukturę i przygotuj pełny tekst z tej dokładnej wersji planu."
-        ),
-    )
+    from wilq.content.planning.proposal_read import read_content_planning_proposal as read
+
+    return read(snapshot=snapshot, store=store)
+
+
+def _planning_output_quality_errors(
+    output: ContentPlanningModelOutput,
+    *,
+    planning_input: ContentPlanningInput | None = None,
+) -> list[str]:
+    """Compatibility seam for focused quality-contract tests."""
+
+    return planning_output_quality_errors(output, planning_input=planning_input)
 
 
 def with_current_planning_workspace(
@@ -209,8 +97,7 @@ def with_current_planning_workspace(
         if decision.work_item_id == proposal.work_item_id
         and decision.planning_digest == proposal.planning_digest
         and (
-            decision.service_card_id is None
-            or decision.service_card_id == proposal.service_card_id
+            decision.service_card_id is None or decision.service_card_id == proposal.service_card_id
         )
     ]
     return response.model_copy(
@@ -374,12 +261,12 @@ def _prepare_generation(
     )
     if existing is not None and not request.regenerate_stale_mapping:
         if (
-            _proposal_quality_errors(existing)
+            proposal_quality_errors(existing)
             or any(
                 mapping.status in {"unmapped", "ambiguous"}
                 for mapping in existing.inventory_mapping
             )
-            or not _persisted_inventory_mapping_is_current(planning_input, existing)
+            or not persisted_inventory_mapping_is_current(planning_input, existing)
         ):
             return planning_input, None
         return None, ContentPlanningProposalResponse(
@@ -501,13 +388,25 @@ def _run_planning_turn(
         )
         return None, trace, blocker, "blocked"
     output = canonicalize_model_inventory_headings(planning_input, output)
-    quality_errors = _planning_output_quality_errors(output, planning_input=planning_input)
+    output = canonicalize_regulatory_section_evidence(planning_input, output)
+    output = canonicalize_regulatory_section_assertions(planning_input, output)
+    quality_errors = planning_output_quality_errors(output, planning_input=planning_input)
     if quality_errors:
         quality_reason = (
             "Plan nie zawiera żadnego bloku CTA wymaganego dla bezpiecznego następnego kroku."
             if "missing_cta" in quality_errors
+            else (
+                "Plan nie obejmuje wszystkich zatwierdzonych wzorców CTA dokładnie "
+                "po jednym razie."
+            )
+            if "cta_pattern_coverage" in quality_errors
             else "Plan zawiera exact zapytania, ale nie przypisuje żadnego z nich do sekcji."
             if "missing_query_assignments" in quality_errors
+            else "Plan ma dostępne sygnały pomiarowe, ale nie zawiera ich w planie obserwacji."
+            if {
+                "missing_measurement_metrics",
+                "missing_measurement_evidence",
+            }.intersection(quality_errors)
             else "Plan zawiera nagłówki nawigacyjne, promocyjne albo datowane, "
             "które nie są użyteczną strukturą odpowiedzi dla czytelnika."
         )
@@ -519,7 +418,7 @@ def _run_planning_turn(
             source_codes=quality_errors,
         )
         return None, trace, blocker, "blocked"
-    lineage_errors = _lineage_errors(planning_input, output)
+    lineage_errors = planning_output_lineage_errors(planning_input, output)
     if lineage_errors:
         blocker = _blocker(
             "lineage_mismatch",
@@ -539,10 +438,35 @@ def _validation_source_codes(error: ValidationError) -> list[str]:
     for detail in error.errors():
         location = ".".join(str(part) for part in detail.get("loc", ())) or "$"
         error_type = str(detail.get("type", "validation_error"))
-        code = f"schema:{location}:{error_type}"[:160]
+        suffix = ""
+        if location == "$" and error_type == "value_error":
+            suffix = f":{_root_validation_reason_code(str(detail.get('msg', '')))}"
+        code = f"schema:{location}:{error_type}{suffix}"[:160]
         if code not in codes:
             codes.append(code)
     return codes[:12]
+
+
+def _root_validation_reason_code(message: str) -> str:
+    """Classify root-model failures without exposing model output text."""
+
+    patterns = (
+        ("section headings must be unique", "duplicate_section_headings"),
+        ("placement must name", "invalid_placement"),
+        ("remove_review_required", "removed_section_placement"),
+        ("every page asset", "missing_page_asset"),
+        ("every faq item", "missing_faq_evidence"),
+        ("every cta block", "missing_cta_evidence"),
+        ("every internal link", "missing_internal_link_evidence"),
+        ("internal-link targets must be unique", "duplicate_internal_link"),
+        ("observation rule", "missing_measurement_observation_rule"),
+        ("success-claim rule", "missing_measurement_success_claim_rule"),
+    )
+    lowered = re.sub(r"\s+", " ", message).strip().lower()
+    for phrase, code in patterns:
+        if phrase in lowered:
+            return code
+    return "root_contract"
 
 
 _HEADING_NOISE_PATTERNS = (
@@ -579,8 +503,18 @@ def _planning_output_quality_errors(
     planning_input: ContentPlanningInput | None = None,
 ) -> list[str]:
     errors = _planning_heading_quality_errors(section.heading for section in output.sections)
-    if not output.cta_blocks:
+    required_cta_blocks = (
+        1 if planning_input is None else getattr(planning_input, "minimum_cta_blocks", 1)
+    )
+    if len(output.cta_blocks) < required_cta_blocks:
         errors.append("missing_cta")
+    required_patterns = list(getattr(planning_input, "required_cta_patterns", []))
+    if required_patterns:
+        observed_patterns = [item.copy_direction.strip() for item in output.cta_blocks]
+        if len(observed_patterns) != len(required_patterns) or set(observed_patterns) != set(
+            required_patterns
+        ):
+            errors.append("cta_pattern_coverage")
     errors.extend(
         _orphaned_placement_quality_errors(
             sections=output.sections,
@@ -594,13 +528,31 @@ def _planning_output_quality_errors(
         and not any(section.query_terms for section in output.sections)
     ):
         errors.append("missing_query_assignments")
+    if (
+        planning_input is not None
+        and getattr(planning_input, "measurement_metrics", [])
+        and not output.measurement_plan.metrics_to_watch
+    ):
+        errors.append("missing_measurement_metrics")
+    if (
+        planning_input is not None
+        and getattr(planning_input, "measurement_baseline_evidence_ids", [])
+        and not output.measurement_plan.baseline_evidence_ids
+    ):
+        errors.append("missing_measurement_evidence")
     return list(dict.fromkeys(errors))
 
 
 def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
     errors = _planning_heading_quality_errors(section.heading for section in proposal.sections)
-    if not proposal.cta_blocks:
+    if len(proposal.cta_blocks) < proposal.minimum_cta_blocks:
         errors.append("missing_cta")
+    if proposal.required_cta_patterns:
+        observed_patterns = [item.copy_direction.strip() for item in proposal.cta_blocks]
+        if len(observed_patterns) != len(proposal.required_cta_patterns) or set(
+            observed_patterns
+        ) != set(proposal.required_cta_patterns):
+            errors.append("cta_pattern_coverage")
     errors.extend(
         _orphaned_placement_quality_errors(
             sections=proposal.sections,
@@ -612,6 +564,13 @@ def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
         section.query_terms for section in proposal.sections
     ):
         errors.append("missing_query_assignments")
+    if proposal.measurement_metrics and not proposal.measurement_plan.metrics_to_watch:
+        errors.append("missing_measurement_metrics")
+    if (
+        proposal.measurement_baseline_evidence_ids
+        and not proposal.measurement_plan.baseline_evidence_ids
+    ):
+        errors.append("missing_measurement_evidence")
     return list(dict.fromkeys(errors))
 
 
@@ -807,6 +766,8 @@ def _proposal_from_output(
         internal_links=output.internal_links,
         conditional_hypotheses=output.conditional_hypotheses,
         measurement_plan=output.measurement_plan,
+        measurement_metrics=planning_input.measurement_metrics,
+        measurement_baseline_evidence_ids=planning_input.measurement_baseline_evidence_ids,
         evidence_ids=planning_input.evidence_ids,
         source_connectors=planning_input.source_connectors,
         source_material_ids=sorted(
@@ -847,160 +808,6 @@ def _lineage_ids_for_evidence(
         if allowed_evidence.intersection(fact_evidence_ids):
             values.update(getattr(fact, field, []))
     return sorted(values)
-
-
-def _lineage_errors(
-    planning_input: ContentPlanningInput,
-    output: ContentPlanningModelOutput,
-) -> list[str]:
-    allowed_queries = {
-        row.term
-        for row in (
-            *planning_input.query_portfolio.gsc_query_rows,
-            *planning_input.query_portfolio.ads_term_rows,
-            *planning_input.query_portfolio.keyword_planner_rows,
-        )
-    }
-    allowed_evidence = set(planning_input.evidence_ids)
-    allowed_claims = {
-        entry.id
-        for entry in planning_input.claim_ledger
-        if entry.status in {"allowed_with_evidence", "allowed_general"}
-    }
-    allowed_internal_links = {
-        candidate.target_url: set(candidate.evidence_ids)
-        for candidate in planning_input.internal_link_candidates
-    }
-    inventory_headings = {item.heading for item in planning_input.inventory.sections}
-    inventory_section_ids = {item.section_id for item in planning_input.inventory.sections}
-    errors = _section_lineage_errors(
-        output,
-        allowed_queries=allowed_queries,
-        allowed_evidence=allowed_evidence,
-        allowed_claims=allowed_claims,
-        inventory_headings=inventory_headings,
-        inventory_section_ids=inventory_section_ids,
-    )
-    if output.service_card_id != planning_input.confirmed_service_card_id:
-        errors.append("service_card_id")
-    errors.extend(
-        _asset_lineage_errors(
-            output,
-            allowed_queries=allowed_queries,
-            allowed_evidence=allowed_evidence,
-            allowed_claims=allowed_claims,
-            allowed_internal_links=allowed_internal_links,
-        )
-    )
-    errors.extend(_hypothesis_lineage_errors(planning_input, output))
-    errors.extend(_measurement_lineage_errors(planning_input, output))
-    return list(dict.fromkeys(errors))
-
-
-def _section_lineage_errors(
-    output: ContentPlanningModelOutput,
-    *,
-    allowed_queries: set[str],
-    allowed_evidence: set[str],
-    allowed_claims: set[str],
-    inventory_headings: set[str],
-    inventory_section_ids: set[str],
-) -> list[str]:
-    errors: list[str] = []
-    for section in output.sections:
-        if not set(section.query_terms).issubset(allowed_queries):
-            errors.append(f"section_query:{section.heading}")
-        if not set(section.evidence_ids).issubset(allowed_evidence):
-            errors.append(f"section_evidence:{section.heading}")
-        if not set(section.claim_ids).issubset(allowed_claims):
-            errors.append(f"section_claim:{section.heading}")
-        if section.inventory_disposition == "create":
-            if section.inventory_heading is not None or section.inventory_section_id is not None:
-                errors.append(f"created_section_inventory:{section.heading}")
-        else:
-            if (
-                section.inventory_section_id is not None
-                and section.inventory_section_id not in inventory_section_ids
-            ):
-                errors.append(f"inventory_section_id:{section.heading}")
-            if section.inventory_heading not in inventory_headings:
-                errors.append(f"inventory_heading:{section.heading}")
-    return errors
-
-
-def _asset_lineage_errors(
-    output: ContentPlanningModelOutput,
-    *,
-    allowed_queries: set[str],
-    allowed_evidence: set[str],
-    allowed_claims: set[str],
-    allowed_internal_links: dict[str, set[str]],
-) -> list[str]:
-    errors: list[str] = []
-    for faq in output.faq:
-        if not set(faq.query_terms).issubset(allowed_queries):
-            errors.append(f"faq_query:{faq.question}")
-        if not set(faq.evidence_ids).issubset(allowed_evidence):
-            errors.append(f"faq_evidence:{faq.question}")
-        if not set(faq.claim_ids).issubset(allowed_claims):
-            errors.append(f"faq_claim:{faq.question}")
-    for cta in output.cta_blocks:
-        if not set(cta.evidence_ids).issubset(allowed_evidence):
-            errors.append(f"cta_evidence:{cta.placement}")
-        if not set(cta.claim_ids).issubset(allowed_claims):
-            errors.append(f"cta_claim:{cta.placement}")
-    for link in output.internal_links:
-        link_evidence = set(link.evidence_ids)
-        candidate_evidence = allowed_internal_links.get(link.target_url)
-        if candidate_evidence is None:
-            errors.append(f"link_target:{link.target_url}")
-        elif not link_evidence or not link_evidence.issubset(candidate_evidence):
-            errors.append(f"link_inventory_evidence:{link.target_url}")
-        if not link_evidence.issubset(allowed_evidence):
-            errors.append(f"link_evidence:{link.target_url}")
-        if not set(link.claim_ids).issubset(allowed_claims):
-            errors.append(f"link_claim:{link.target_url}")
-    return errors
-
-
-def _hypothesis_lineage_errors(
-    planning_input: ContentPlanningInput,
-    output: ContentPlanningModelOutput,
-) -> list[str]:
-    errors: list[str] = []
-    allowed_evidence = set(planning_input.evidence_ids)
-    used_channels = {
-        assessment.source
-        for assessment in planning_input.source_assessments
-        if assessment.status == "used"
-    }
-    for hypothesis in output.conditional_hypotheses:
-        source = "google_ads" if hypothesis.channel == "google_ads" else "social"
-        if source not in used_channels:
-            errors.append(f"hypothesis_source:{hypothesis.channel}")
-        if not set(hypothesis.evidence_ids).issubset(allowed_evidence):
-            errors.append(f"hypothesis_evidence:{hypothesis.channel}")
-    return errors
-
-
-def _measurement_lineage_errors(
-    planning_input: ContentPlanningInput,
-    output: ContentPlanningModelOutput,
-) -> list[str]:
-    errors: list[str] = []
-    if not set(output.measurement_plan.metrics_to_watch).issubset(
-        planning_input.measurement_metrics
-    ):
-        errors.append("measurement_metrics")
-    if not set(output.measurement_plan.baseline_evidence_ids).issubset(
-        planning_input.measurement_baseline_evidence_ids
-    ):
-        errors.append("measurement_evidence")
-    if output.measurement_plan.observation_rule != planning_input.measurement_observation_rule:
-        errors.append("measurement_observation_rule")
-    if output.measurement_plan.success_claim_rule != planning_input.measurement_success_claim_rule:
-        errors.append("measurement_success_claim_rule")
-    return errors
 
 
 def _start_run(

@@ -9,6 +9,7 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBlockerCode,
     ContentPlanningInputSummary,
 )
+from wilq.content.regulatory.policy import regulatory_requirement_assertion_errors
 from wilq.content.workflow.planning import (
     ContentPlanningConditionalHypothesis,
     ContentPlanningCtaBlock,
@@ -42,6 +43,63 @@ ContentPlanningProposalBlockerCode = Literal[
     "persistence_failed",
     "scope_not_current",
 ]
+
+
+def regulatory_response_lineage_errors(
+    input_summary: ContentPlanningInputSummary,
+    proposal: ContentPlanningProposal,
+) -> list[str]:
+    """Validate persisted/public regulatory lineage, not only model output."""
+
+    if input_summary.regulatory_profile_id is None:
+        return []
+    coverage = {
+        item.requirement_id: set(item.evidence_ids)
+        for item in input_summary.regulatory_requirement_coverage
+    }
+    required_ids = set(input_summary.regulatory_requirement_ids)
+    section_requirement_ids = {
+        requirement_id
+        for section in proposal.sections
+        for requirement_id in section.regulatory_requirement_ids
+    }
+    errors = [
+        f"regulatory_requirement_unknown:{requirement_id}"
+        for requirement_id in sorted(section_requirement_ids - required_ids)
+    ]
+    for requirement_id in sorted(required_ids):
+        matching_sections = [
+            section
+            for section in proposal.sections
+            if requirement_id in section.regulatory_requirement_ids
+        ]
+        if not matching_sections:
+            errors.append(f"regulatory_requirement:{requirement_id}")
+        elif not any(
+            set(section.evidence_ids).intersection(coverage[requirement_id])
+            for section in matching_sections
+        ):
+            errors.append(f"regulatory_evidence:{requirement_id}")
+        requirement = next(
+            (
+                item
+                for item in input_summary.regulatory_requirements
+                if item.id == requirement_id
+            ),
+            None,
+        )
+        if requirement is not None:
+            text = "\n".join(
+                "\n".join((section.heading, section.purpose, section.reader_question))
+                for section in matching_sections
+            )
+            errors.extend(
+                regulatory_requirement_assertion_errors(
+                    requirement=requirement,
+                    text=text,
+                )
+            )
+    return errors
 
 
 class ContentPlanningProposalRequest(BaseModel):
@@ -86,6 +144,7 @@ class ContentPlanningModelSection(BaseModel):
     query_terms: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(min_length=1)
     claim_ids: list[str] = Field(default_factory=list)
+    regulatory_requirement_ids: list[str] = Field(default_factory=list)
 
 
 class ContentPlanningModelOutput(BaseModel):
@@ -198,6 +257,16 @@ class ContentPlanningProposalResponse(BaseModel):
             or self.proposal.planning_input_digest != self.planning_input_digest
         ):
             raise ValueError("Planning response must match the nested exact proposal.")
+        if (
+            self.status in {"created", "idempotent", "ready"}
+            and self.proposal is not None
+            and self.input_summary is not None
+        ):
+            lineage_errors = regulatory_response_lineage_errors(self.input_summary, self.proposal)
+            if lineage_errors:
+                raise ValueError(
+                    "Planning response has invalid regulatory lineage: " + ", ".join(lineage_errors)
+                )
         if self.planning_workspace is not None:
             if self.status != "ready" or self.proposal is None:
                 raise ValueError("Planning workspace is available only for a ready proposal.")
@@ -212,4 +281,5 @@ __all__ = [
     "ContentPlanningProposalBlocker",
     "ContentPlanningProposalRequest",
     "ContentPlanningProposalResponse",
+    "regulatory_response_lineage_errors",
 ]

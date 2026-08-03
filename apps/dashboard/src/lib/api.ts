@@ -15,6 +15,9 @@ import {
   CommandCenterResponseSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
+  ContentOfficialSourceLineageRebaseRequestSchema,
+  ContentRevisionRepairProposalRequestSchema,
+  ContentRevisionRepairProposalResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentSelectedWorkspaceSchema,
   ContentTargetDiscoverySchema,
@@ -40,6 +43,7 @@ import {
   ContentNewPageRevisionReviewConflictSchema,
   ContentNewPageRevisionReviewResponseSchema,
   ContentDraftRevisionConflictSchema,
+  ContentDraftRevisionSaveResponseSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionReviewResponseSchema,
   ContentEditorialIntegrityReportSchema,
@@ -47,6 +51,12 @@ import {
   ContentSemanticReviewResponseSchema,
   ContentPlanningProposalRequestSchema,
   ContentPlanningProposalResponseSchema,
+  ContentRegulatorySourceReviewCommandSchema,
+  ContentRegulatorySourceReviewConflictSchema,
+  ContentRegulatorySourceReviewSchema,
+  ContentRegulatorySourceSnapshotReadResponseSchema,
+  ContentRegulatorySourceFactProposalResponseSchema,
+  ContentRegulatorySourceFactProposalReviewCommandSchema,
   ContentServiceProfileResponseSchema,
   ContentInventoryCatalogResponseSchema,
   ContentOperatorContextSchema,
@@ -101,6 +111,9 @@ import {
   type CommandCenterResponse,
   type ContentInitialDraftRequest,
   type ContentInitialDraftResponse,
+  type ContentOfficialSourceLineageRebaseRequest,
+  type ContentRevisionRepairProposalRequest,
+  type ContentRevisionRepairProposalResponse,
   type ContentDiagnosticsResponse,
   type ContentDocumentWorkspace,
   type ContentSelectedWorkspace,
@@ -130,6 +143,7 @@ import {
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
   type ContentDraftRevisionConflict,
+  type ContentDraftRevisionSaveResponse,
   type ContentDraftRevisionDecision,
   type ContentDraftRevisionReview,
   type ContentDraftRevisionReviewRequest,
@@ -143,6 +157,12 @@ import {
   type ContentPlanningProposalRequest,
   type ContentPlanningProposal,
   type ContentPlanningProposalResponse,
+  type ContentRegulatorySourceReviewCommand,
+  type ContentRegulatorySourceReview,
+  type ContentRegulatorySourceReviewConflict,
+  type ContentRegulatorySourceSnapshotReadResponse,
+  type ContentRegulatorySourceFactProposalResponse,
+  type ContentRegulatorySourceFactProposalReviewCommand,
   type ContentPlanningWorkspace,
   type ContentServiceProfileResponse,
   type ContentInventoryCatalogResponse,
@@ -634,6 +654,57 @@ export function postContentWorkItemPlanningProposal(
   );
 }
 
+export function getContentRegulatorySourceSnapshot(
+  candidateId: string
+): Promise<ContentRegulatorySourceSnapshotReadResponse> {
+  return apiGet(
+    `/api/content/regulatory-source-candidates/${encodeURIComponent(candidateId)}/snapshot`,
+    ContentRegulatorySourceSnapshotReadResponseSchema
+  );
+}
+
+export function postContentRegulatorySourceReview(
+  request: ContentRegulatorySourceReviewCommand
+): Promise<ContentRegulatorySourceReview | ContentRegulatorySourceReviewConflict> {
+  return apiPostWithConflict(
+    "/api/content/regulatory-source-reviews",
+    ContentRegulatorySourceReviewSchema,
+    ContentRegulatorySourceReviewConflictSchema,
+    ContentRegulatorySourceReviewCommandSchema.parse(request)
+  );
+}
+
+export function postContentRegulatorySourceFactProposal(
+  candidateId: string
+): Promise<ContentRegulatorySourceFactProposalResponse> {
+  return apiPost(
+    `/api/content/regulatory-source-candidates/${encodeURIComponent(candidateId)}/fact-proposal`,
+    ContentRegulatorySourceFactProposalResponseSchema,
+    {}
+  );
+}
+
+export function getContentRegulatorySourceFactProposal(
+  candidateId: string
+): Promise<ContentRegulatorySourceFactProposalResponse> {
+  return apiGet(
+    `/api/content/regulatory-source-candidates/${encodeURIComponent(candidateId)}/fact-proposal`,
+    ContentRegulatorySourceFactProposalResponseSchema
+  );
+}
+
+export function postContentRegulatorySourceFactProposalReview(
+  proposalId: string,
+  request: ContentRegulatorySourceFactProposalReviewCommand
+): Promise<ContentRegulatorySourceReview | ContentRegulatorySourceReviewConflict> {
+  return apiPostWithConflict(
+    `/api/content/regulatory-source-fact-proposals/${encodeURIComponent(proposalId)}/review`,
+    ContentRegulatorySourceReviewSchema,
+    ContentRegulatorySourceReviewConflictSchema,
+    ContentRegulatorySourceFactProposalReviewCommandSchema.parse(request)
+  );
+}
+
 export function saveContentWorkItemDraftRevisionReview(
   request: ContentDraftRevisionReviewRequest,
   workItemId: string,
@@ -645,6 +716,35 @@ export function saveContentWorkItemDraftRevisionReview(
     ContentDraftRevisionReviewResponseSchema,
     ContentDraftRevisionConflictSchema,
     ContentDraftRevisionReviewRequestSchema.parse(request)
+  );
+}
+
+export function postContentWorkItemOfficialSourceLineageRebase(
+  request: ContentOfficialSourceLineageRebaseRequest,
+  workItemId: string,
+  revisionId: string
+): Promise<ContentDraftRevisionSaveResponse | ContentDraftRevisionConflict> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/official-source-lineage-rebase`;
+  return apiPostWithConflict(
+    path,
+    ContentDraftRevisionSaveResponseSchema,
+    ContentDraftRevisionConflictSchema,
+    ContentOfficialSourceLineageRebaseRequestSchema.parse(request)
+  );
+}
+
+export function postContentWorkItemRevisionRepairProposal(
+  request: ContentRevisionRepairProposalRequest,
+  workItemId: string,
+  baseRevisionId: string
+): Promise<ContentRevisionRepairProposalResponse> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(baseRevisionId)}/repair-proposal`;
+  return apiPostWithConflict(
+    path,
+    ContentRevisionRepairProposalResponseSchema,
+    ContentRevisionRepairProposalResponseSchema,
+    ContentRevisionRepairProposalRequestSchema.parse(request),
+    CODEX_PROPOSAL_TIMEOUT_MS
   );
 }
 
@@ -912,6 +1012,8 @@ export type {
   ContentNewPageCanonicalDocumentWorkspace,
   ContentInitialDraftRequest,
   ContentInitialDraftResponse,
+  ContentRevisionRepairProposalRequest,
+  ContentRevisionRepairProposalResponse,
   ContentDraftRevision,
   ContentDraftRevisionBinding,
   ContentDraftRevisionConflict,

@@ -2,12 +2,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Literal, cast
-from uuid import uuid4
 
 from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
-from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
+from wilq.content.drafts.draft_assurance_runtime import (
+    ContentDraftAssuranceFailure,
+    run_regulatory_draft_assurance,
+)
 from wilq.content.drafts.generated_claim_safety import generated_claim_safety_issues
+from wilq.content.drafts.initial_draft_run import (
+    finish_initial_draft_run,
+    safe_initial_draft_run_error,
+    start_initial_draft_run,
+)
+from wilq.content.drafts.initial_draft_validation import document_scope_errors
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftBlockerCode,
@@ -20,6 +29,7 @@ from wilq.content.drafts.initial_full_draft_document import (
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
+from wilq.content.drafts.regulatory_draft_repair import repair_regulatory_assertions
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftOutput,
@@ -29,6 +39,7 @@ from wilq.content.drafts.structured_generation import (
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
+    ContentPlanningInputBuildResult,
     build_content_planning_input,
 )
 from wilq.content.planning.generated_proposal import (
@@ -62,21 +73,74 @@ def generate_initial_full_draft(
     prepared = _prepare_inputs(snapshot, request)
     if isinstance(prepared, ContentInitialDraftResponse):
         return prepared
-    run = _start_run(prepared, run_store, run_id=run_id)
+    run = start_initial_draft_run(
+        run_store,
+        work_item_id=prepared.planning_input.work_item_id,
+        evidence_ids=prepared.planning_input.evidence_ids,
+        proposal_id=prepared.proposal.proposal_id,
+        planning_input_digest=prepared.planning_input.planning_input_digest,
+        run_id=run_id,
+    )
     runtime_result = _execute_runtime(prepared, client, run, run_store)
     if isinstance(runtime_result, ContentInitialDraftResponse):
         return runtime_result
     output, trace = runtime_result
-    blocker = _output_blocker(prepared, output)
+    output, trace, blocker = _repair_initial_output_blocker(
+        inputs=prepared, output=output, trace=trace, client=client
+    )
     if blocker is not None:
-        _finish_run(run_store, run, status="blocked", error=blocker.code)
-        return _blocked_response(
-            snapshot,
+        return _finish_blocked_draft(
+            snapshot=snapshot,
             proposal=prepared.proposal,
-            status="blocked",
             run=run,
-            runtime=trace,
-            blockers=[blocker],
+            trace=trace,
+            blocker=blocker,
+            run_store=run_store,
+        )
+    assurance = _assure_regulated_draft(
+        inputs=prepared,
+        output=output,
+        client=client,
+        writer_run=run,
+        writer_trace=trace,
+        run_store=run_store,
+        snapshot=snapshot,
+    )
+    if isinstance(assurance, ContentDraftAssuranceFailure):
+        output, trace, assurance, blocker = _repair_after_assurance_failure(
+            inputs=prepared,
+            output=output,
+            trace=trace,
+            assurance=assurance,
+            client=client,
+            run=run,
+            run_store=run_store,
+            snapshot=snapshot,
+        )
+        if blocker is not None:
+            return _finish_blocked_draft(
+                snapshot=snapshot,
+                proposal=prepared.proposal,
+                run=run,
+                trace=trace,
+                blocker=blocker,
+                run_store=run_store,
+            )
+    if isinstance(assurance, ContentDraftAssuranceFailure):
+        blocker = _blocker(
+            assurance.code,
+            assurance.label,
+            assurance.reason,
+            assurance.next_step,
+            source_codes=assurance.source_codes,
+        )
+        return _finish_blocked_draft(
+            snapshot=snapshot,
+            proposal=prepared.proposal,
+            run=run,
+            trace=trace,
+            blocker=blocker,
+            run_store=run_store,
         )
     return _persist_document(
         snapshot=snapshot,
@@ -87,6 +151,153 @@ def generate_initial_full_draft(
         trace=trace,
         workflow_store=workflow_store,
         run_store=run_store,
+        regulatory_assurance=assurance,
+    )
+
+
+def _finish_blocked_draft(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    proposal: ContentPlanningProposal,
+    run: CodexRun,
+    trace: ContentCodexRuntimeTrace,
+    blocker: ContentInitialDraftBlocker,
+    run_store: LocalStateStore,
+) -> ContentInitialDraftResponse:
+    finish_initial_draft_run(
+        run_store,
+        run,
+        status="blocked",
+        error=safe_initial_draft_run_error(blocker),
+    )
+    return _blocked_response(
+        snapshot,
+        proposal=proposal,
+        status="blocked",
+        run=run,
+        runtime=trace,
+        blockers=[blocker],
+    )
+
+
+def _repair_initial_output_blocker(
+    *,
+    inputs: _InitialDraftInputs,
+    output: ContentInitialDraftModelOutput,
+    trace: ContentCodexRuntimeTrace,
+    client: CodexAppServerClientProtocol,
+) -> tuple[
+    ContentInitialDraftModelOutput,
+    ContentCodexRuntimeTrace,
+    ContentInitialDraftBlocker | None,
+]:
+    blocker = _output_blocker(inputs, output)
+    if blocker is None:
+        return output, trace, None
+    repaired = repair_regulatory_assertions(
+        planning_input=inputs.planning_input,
+        proposal=inputs.proposal,
+        output=output,
+        blocker=blocker,
+        client=client,
+    )
+    if repaired is None:
+        return output, trace, blocker
+    output, trace = repaired
+    return output, trace, _output_blocker(inputs, output)
+
+
+def _repair_after_assurance_failure(
+    *,
+    inputs: _InitialDraftInputs,
+    output: ContentInitialDraftModelOutput,
+    trace: ContentCodexRuntimeTrace,
+    assurance: ContentDraftAssuranceFailure,
+    client: CodexAppServerClientProtocol,
+    run: CodexRun,
+    run_store: LocalStateStore,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> tuple[
+    ContentInitialDraftModelOutput,
+    ContentCodexRuntimeTrace,
+    ContentDraftAssuranceReceipt | ContentDraftAssuranceFailure | None,
+    ContentInitialDraftBlocker | None,
+]:
+    repaired = repair_regulatory_assertions(
+        planning_input=inputs.planning_input,
+        proposal=inputs.proposal,
+        output=output,
+        blocker=_blocker(
+            assurance.code,
+            assurance.label,
+            assurance.reason,
+            assurance.next_step,
+            source_codes=assurance.source_codes,
+        ),
+        client=client,
+        repair_reasons=assurance.repair_reasons,
+    )
+    if repaired is None:
+        return output, trace, assurance, None
+    output, trace = repaired
+    blocker = _output_blocker(inputs, output)
+    if blocker is not None:
+        assertion_repair = repair_regulatory_assertions(
+            planning_input=inputs.planning_input,
+            proposal=inputs.proposal,
+            output=output,
+            blocker=blocker,
+            client=client,
+        )
+        if assertion_repair is not None:
+            output, trace = assertion_repair
+            blocker = _output_blocker(inputs, output)
+    if blocker is not None:
+        return output, trace, assurance, blocker
+    reassured = _assure_regulated_draft(
+        inputs=inputs,
+        output=output,
+        client=client,
+        writer_run=run,
+        writer_trace=trace,
+        run_store=run_store,
+        snapshot=snapshot,
+    )
+    if not isinstance(reassured, ContentDraftAssuranceFailure):
+        return output, trace, reassured, None
+    deterministic = repair_regulatory_assertions(
+        planning_input=inputs.planning_input,
+        proposal=inputs.proposal,
+        output=output,
+        blocker=_blocker(
+            reassured.code,
+            reassured.label,
+            reassured.reason,
+            reassured.next_step,
+            source_codes=reassured.source_codes,
+        ),
+        client=client,
+        force_deterministic_replace=True,
+    )
+    if deterministic is None:
+        return output, trace, reassured, None
+    output, trace = deterministic
+    blocker = _output_blocker(inputs, output)
+    if blocker is not None:
+        return output, trace, reassured, blocker
+    return (
+        output,
+        trace,
+        _assure_regulated_draft(
+            inputs=inputs,
+            output=output,
+            client=client,
+            writer_run=run,
+            writer_trace=trace,
+            run_store=run_store,
+            snapshot=snapshot,
+        ),
+        None,
     )
 
 
@@ -129,21 +340,7 @@ def _prepare_inputs(
         )
     proposal = planning.proposal
     if not draftable_planning_sections(proposal.sections):
-        return _blocked_response(
-            snapshot,
-            proposal=proposal,
-            status="blocked",
-            blockers=[
-                _blocker(
-                    "document_scope_mismatch",
-                    "Plan nie ma sekcji do napisania",
-                    "Wszystkie rozpoznane elementy zostały oznaczone do usunięcia "
-                    "lub osobnego review.",
-                    "Zostaw co najmniej jedną sekcję do tekstu albo zakończ review "
-                    "bez generowania draftu.",
-                )
-            ],
-        )
+        return _no_draftable_sections(snapshot, proposal)
     mismatch = _proposal_request_mismatch(proposal, request)
     if mismatch is not None:
         return _blocked_response(
@@ -155,19 +352,8 @@ def _prepare_inputs(
     service_card_id = proposal.service_card_id
     if service_card_id is None:
         return _planning_not_generated(snapshot, proposal)
-    planning_snapshot = with_explicit_content_service_selection(
-        snapshot,
-        service_card_id,
-    )
-    planning_result = build_content_planning_input(
-        planning_snapshot,
-        service_card_id=service_card_id,
-    )
-    # Planning may use a public rendered ``the_content`` read to produce a
-    # reviewable strategy, but a full durable document is a stronger boundary.
-    # Keep every readiness blocker here: review-required WordPress material,
-    # unapproved service cards and stale/blocked sources must not become a
-    # real draft merely because the planner was allowed to inspect them.
+    planning_result = _current_planning_input(snapshot, service_card_id)
+    # A durable document requires stricter readiness than a reviewable plan.
     draft_blockers = planning_result.blockers
     if planning_result.planning_input is None or draft_blockers:
         return _blocked_response(
@@ -211,6 +397,36 @@ def _prepare_inputs(
         generation_contract=generation_contract,
         base_revision_id=None if latest_revision is None else latest_revision.revision_id,
     )
+
+
+def _no_draftable_sections(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    proposal: ContentPlanningProposal,
+) -> ContentInitialDraftResponse:
+    return _blocked_response(
+        snapshot,
+        proposal=proposal,
+        status="blocked",
+        blockers=[
+            _blocker(
+                "document_scope_mismatch",
+                "Plan nie ma sekcji do napisania",
+                "Wszystkie rozpoznane elementy zostały oznaczone do usunięcia lub osobnego review.",
+                (
+                    "Zostaw co najmniej jedną sekcję do tekstu albo zakończ review "
+                    "bez generowania draftu."
+                ),
+            )
+        ],
+    )
+
+
+def _current_planning_input(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    service_card_id: str,
+) -> ContentPlanningInputBuildResult:
+    planning_snapshot = with_explicit_content_service_selection(snapshot, service_card_id)
+    return build_content_planning_input(planning_snapshot, service_card_id=service_card_id)
 
 
 def _proposal_request_mismatch(
@@ -285,10 +501,8 @@ def _execute_runtime(
             "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
             source_codes=[item.code for item in result.blockers],
         )
-        status: Literal["blocked", "failed"] = (
-            "blocked" if result.status == "blocked" else "failed"
-        )
-        _finish_run(run_store, run, status=status, error=code)
+        status: Literal["blocked", "failed"] = "blocked" if result.status == "blocked" else "failed"
+        finish_initial_draft_run(run_store, run, status=status, error=code)
         return ContentInitialDraftResponse(
             status=status,
             work_item_id=inputs.planning_input.work_item_id,
@@ -307,7 +521,7 @@ def _execute_runtime(
             "Wynik nie przeszedł ścisłego schematu pełnej treści WILQ.",
             "Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
         )
-        _finish_run(run_store, run, status="blocked", error=blocker.code)
+        finish_initial_draft_run(run_store, run, status="blocked", error=blocker.code)
         return ContentInitialDraftResponse(
             status="blocked",
             work_item_id=inputs.planning_input.work_item_id,
@@ -323,7 +537,11 @@ def _output_blocker(
     inputs: _InitialDraftInputs,
     output: ContentInitialDraftModelOutput,
 ) -> ContentInitialDraftBlocker | None:
-    errors = _document_scope_errors(inputs.proposal, output)
+    errors = document_scope_errors(
+        inputs.proposal,
+        output,
+        regulatory_requirements=inputs.planning_input.regulatory_coverage.requirements,
+    )
     if errors:
         return _blocker(
             "document_scope_mismatch",
@@ -347,47 +565,28 @@ def _output_blocker(
     return None
 
 
-def _document_scope_errors(
-    proposal: ContentPlanningProposal,
+def _assure_regulated_draft(
+    *,
+    inputs: _InitialDraftInputs,
     output: ContentInitialDraftModelOutput,
-) -> list[str]:
-    errors: list[str] = []
-    draftable_sections = draftable_planning_sections(proposal.sections)
-    expected_sections = [(item.section_id, item.heading) for item in draftable_sections]
-    actual_sections = [(item.section_id, item.heading) for item in output.sections]
-    if actual_sections != expected_sections:
-        errors.append("sections")
-    if [item.question for item in output.faq] != [item.question for item in proposal.faq]:
-        errors.append("faq")
-    if len(output.cta_blocks) != len(proposal.cta_blocks):
-        errors.append("cta_blocks")
-    if [item.target_url for item in output.internal_links] != [
-        item.target_url for item in proposal.internal_links
-    ]:
-        errors.append("internal_links")
-    lineage_groups = [
-        *(item.evidence_ids for item in draftable_sections),
-        *(item.evidence_ids for item in proposal.faq),
-        *(item.evidence_ids for item in proposal.cta_blocks),
-        *(item.evidence_ids for item in proposal.internal_links),
-    ]
-    if any(not values for values in lineage_groups):
-        errors.append("missing_evidence_lineage")
-    lineage_atoms = [
-        *(
-            value
-            for item in draftable_sections
-            for value in (*item.query_terms, *item.claim_ids)
-        ),
-        *(value for item in proposal.faq for value in (*item.query_terms, *item.claim_ids)),
-        *(value for item in proposal.cta_blocks for value in item.claim_ids),
-        *(value for item in proposal.internal_links for value in item.claim_ids),
-    ]
-    if any(not value.strip() for value in lineage_atoms):
-        errors.append("blank_lineage_atom")
-    if any(not content_is_safe_public_url(item.target_url) for item in proposal.internal_links):
-        errors.append("invalid_internal_link_target")
-    return errors
+    client: CodexAppServerClientProtocol,
+    writer_run: CodexRun,
+    writer_trace: ContentCodexRuntimeTrace,
+    run_store: LocalStateStore,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> ContentDraftAssuranceReceipt | ContentDraftAssuranceFailure | None:
+    """Run the independent critic before a regulated draft can be persisted."""
+
+    attempt = run_regulatory_draft_assurance(
+        planning_input=inputs.planning_input,
+        proposal=inputs.proposal,
+        output=output,
+        client=client,
+        run_store=run_store,
+    )
+    if attempt is None or isinstance(attempt, ContentDraftAssuranceReceipt):
+        return attempt
+    return attempt
 
 
 def _claim_safety_output(
@@ -487,6 +686,7 @@ def _persist_document(
     trace: ContentCodexRuntimeTrace,
     workflow_store: ContentWorkflowStore,
     run_store: LocalStateStore,
+    regulatory_assurance: ContentDraftAssuranceReceipt | None,
 ) -> ContentInitialDraftResponse:
     try:
         command = build_initial_draft_revision_command(
@@ -497,6 +697,7 @@ def _persist_document(
             output=output,
             run=run,
             base_revision_id=inputs.base_revision_id,
+            regulatory_assurance=regulatory_assurance,
         )
     except (ValueError, StopIteration):
         blocker = _blocker(
@@ -505,7 +706,7 @@ def _persist_document(
             "Plan i pełny output nie tworzą poprawnej rewizji v2.",
             "Odrzuć wynik i popraw kontrakt wejścia przed ponowną próbą.",
         )
-        _finish_run(run_store, run, status="blocked", error=blocker.code)
+        finish_initial_draft_run(run_store, run, status="blocked", error=blocker.code)
         return _blocked_response(
             snapshot,
             proposal=inputs.proposal,
@@ -529,7 +730,7 @@ def _persist_document(
             "Atomowy zapis dokumentu i zakończonego CodexRun nie powiódł się.",
             "Sprawdź prywatny store i uruchom nową próbę; częściowy tekst nie istnieje.",
         )
-        _finish_run(run_store, run, status="failed", error=blocker.code)
+        finish_initial_draft_run(run_store, run, status="failed", error=blocker.code)
         return _blocked_response(
             snapshot,
             proposal=inputs.proposal,
@@ -545,7 +746,7 @@ def _persist_document(
             "WILQ nie nadpisze istniejącej rewizji wynikiem drugiego turnu.",
             "Odśwież workspace i otwórz już zapisaną wersję.",
         )
-        _finish_run(run_store, run, status="blocked", error=blocker.code)
+        finish_initial_draft_run(run_store, run, status="blocked", error=blocker.code)
         return _blocked_response(
             snapshot,
             proposal=inputs.proposal,
@@ -567,40 +768,6 @@ def _persist_document(
 
 def _claim_texts(claim_ids: list[str], claim_text_by_id: dict[str, str]) -> list[str]:
     return [claim_text_by_id[item] for item in claim_ids if item in claim_text_by_id]
-
-
-def _start_run(
-    inputs: _InitialDraftInputs,
-    run_store: LocalStateStore,
-    *,
-    run_id: str | None = None,
-) -> CodexRun:
-    work_item_id = inputs.planning_input.work_item_id
-    return run_store.save_codex_run(
-        CodexRun(
-            id=run_id or f"codex_content_initial_draft_{uuid4().hex}",
-            skill="wilq-content-operator",
-            hook="content_initial_full_draft",
-            source="wilq_api",
-        status="started",
-        used_endpoints=[f"/api/content/work-items/{work_item_id}/initial-draft"],
-        evidence_ids=inputs.planning_input.evidence_ids,
-        proposal_id=inputs.proposal.proposal_id,
-        planning_input_digest=inputs.planning_input.planning_input_digest,
-    )
-    )
-
-
-def _finish_run(
-    run_store: LocalStateStore,
-    run: CodexRun,
-    *,
-    status: Literal["blocked", "failed"],
-    error: str,
-) -> CodexRun:
-    return run_store.save_codex_run(
-        run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
-    )
 
 
 def _runtime_trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:

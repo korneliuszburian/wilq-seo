@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from hashlib import sha256
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
@@ -20,12 +21,22 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftSectionOverride,
     execute_content_wordpress_draft_handoff,
 )
+from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.workflow.contracts import ContentDraftRevisionSaveRequest
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.new_page import ContentNewPageDocumentIdentity
+from wilq.content.workflow.official_source_lineage import (
+    build_official_source_lineage_rebase_command,
+)
+from wilq.content.workflow.official_source_lineage_store import (
+    ContentOfficialSourceLineageStore,
+)
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
+from wilq.content.workflow.revision_persistence import draft_revision_content_digest
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionProposalSectionLineage,
     ContentDraftRevisionReviewCommand,
@@ -173,6 +184,180 @@ def test_new_page_full_revision_is_append_only_without_a_public_url(tmp_path: Pa
     with pytest.raises(ValidationError, match="New-page revision requires exact"):
         ContentDraftRevision.model_validate(
             created.model_dump(mode="python") | {"service_digest": "f" * 64}
+        )
+
+
+def test_full_document_official_sources_are_digest_bound_and_preserved_by_child_revision() -> None:
+    command = _full_document_command(_draft_package(), base_revision_id="content_revision_base")
+    reference = ContentDraftRevisionOfficialSourceReference(
+        source_fact_id="regulatory_source_fact_bdo_scope",
+        source_url="https://bdo.mos.gov.pl/o-systemie-bdo/",
+        source_title="Oficjalny opis systemu BDO",
+        verified_on="2026-07-31",
+        evidence_ids=["ev_regulatory_bdo_scope"],
+        regulatory_requirement_ids=["bdo_scope"],
+    )
+    regulated = command.model_copy(update={"official_source_references": [reference]})
+
+    assert draft_revision_content_digest(regulated) != draft_revision_content_digest(command)
+    revision = ContentDraftRevision.model_validate(
+        regulated.model_dump(mode="python")
+        | {
+            "revision_id": "content_revision_regulatory",
+            "revision_number": 2,
+            "content_digest": draft_revision_content_digest(regulated),
+            "created_at": "2026-07-31T12:00:00Z",
+        }
+    )
+    assert revision_document_markdown(revision).endswith(
+        "[Oficjalny opis systemu BDO](https://bdo.mos.gov.pl/o-systemie-bdo/) — "
+        "zweryfikowano: 2026-07-31."
+    )
+
+    child = build_child_draft_revision_command(
+        revision,
+        sections=revision.sections,
+        proposal_metadata=ContentDraftRevisionProposalMetadata(
+            codex_run_id="codex_run_regulatory_child",
+            selected_section_headings=[revision.sections[0].heading],
+            section_lineage=[
+                ContentDraftRevisionProposalSectionLineage(
+                    heading=revision.sections[0].heading,
+                    evidence_ids=revision.sections[0].evidence_ids,
+                )
+            ],
+            quality_verdict="needs_changes",
+            quality_finding_codes=["semantic_review_required"],
+        ),
+        created_by="wilku",
+    )
+    assert child.official_source_references == [reference]
+
+    duplicate_payload = regulated.model_dump(mode="python")
+    duplicate_payload["official_source_references"] = [reference, reference]
+    with pytest.raises(ValidationError, match="official source IDs must be unique"):
+        ContentDraftRevisionAppendCommand.model_validate(duplicate_payload)
+
+
+def test_official_source_lineage_rebase_appends_an_exact_bdo_like_child(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    base_command = _full_document_command(_draft_package(), base_revision_id=None)
+    base = store.append_draft_revision(base_command).revision
+    assert base is not None
+    base = base.model_copy(
+        update={
+            "proposal_metadata": ContentDraftRevisionProposalMetadata(
+                codex_run_id="codex_run_bdo_original",
+                selected_section_headings=["Kiedy firma potrzebuje wsparcia"],
+                section_lineage=[
+                    ContentDraftRevisionProposalSectionLineage(
+                        heading="Kiedy firma potrzebuje wsparcia",
+                        evidence_ids=["ev_wp", "ev_gsc"],
+                    )
+                ],
+                quality_verdict="ready_for_human_review",
+            )
+        }
+    )
+    reference = ContentDraftRevisionOfficialSourceReference(
+        source_fact_id="official_source_fact_bdo",
+        source_url="https://bdo.mos.gov.pl/",
+        source_title="Oficjalny serwis BDO",
+        verified_on="2026-07-31",
+        evidence_ids=["ev_regulatory_bdo"],
+        regulatory_requirement_ids=["bdo_reporting"],
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.official_source_lineage.official_source_references_for_planning_input",
+        lambda _input: [reference],
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        planning_input_digest=base.planning_input_digest,
+        confirmed_service_card_id=base.service_card_id,
+    )
+    proposal = SimpleNamespace(
+        planning_digest=base.planning_digest,
+        planning_input_digest=base.planning_input_digest,
+        service_card_id=base.service_card_id,
+    )
+
+    child = build_official_source_lineage_rebase_command(
+        base_revision=base,
+        planning_input=planning_input,
+        proposal=proposal,  # type: ignore[arg-type]
+        requested_by="wilku",
+    )
+    appended = store.append_draft_revision(child).revision
+
+    assert appended is not None
+    assert appended.base_revision_id == base.revision_id
+    assert appended.sections == base.sections
+    assert appended.official_source_references == [reference]
+    assert appended.correction_reason == "official_source_lineage_rebase"
+    with pytest.raises(ValueError, match="Current planning identity"):
+        build_official_source_lineage_rebase_command(
+            base_revision=base,
+            planning_input=planning_input.model_copy(update={"planning_input_digest": "0" * 64}),
+            proposal=proposal,  # type: ignore[arg-type]
+            requested_by="wilku",
+        )
+
+
+def test_store_rejects_lineage_rebase_when_review_arrives_before_atomic_append(
+    tmp_path: Path,
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    base_command = _full_document_command(_draft_package(), base_revision_id=None)
+    base = store.append_draft_revision(base_command).revision
+    assert base is not None
+    review = store.review_draft_revision(
+        ContentDraftRevisionReviewCommand(
+            work_item_id=base.work_item_id,
+            revision_id=base.revision_id,
+            revision_digest=base.content_digest,
+            decision="approved",
+            reviewed_by="wilku",
+            checked_items=["tekst", "źródła"],
+            evidence_ids=["ev_wp", "ev_gsc"],
+        )
+    ).review
+    assert review is not None
+    child = _full_document_command(
+        _draft_package(), base_revision_id=base.revision_id
+    ).model_copy(update={"correction_reason": "official_source_lineage_rebase"})
+
+    result = ContentOfficialSourceLineageStore(tmp_path / "wilq.sqlite3").append_rebase(
+        child,
+        expected_latest_review_decision_id=None,
+    )
+
+    assert result.status == "conflict"
+    assert result.conflict is not None
+    assert result.conflict.code == "stale_review"
+    state = store.load_draft_revision_state(base.work_item_id)
+    assert state.revision_count == 1
+    assert state.latest_revision == base
+
+
+def test_generic_revision_save_contract_rejects_reserved_lineage_only_reason() -> None:
+    with pytest.raises(ValidationError):
+        ContentDraftRevisionSaveRequest.model_validate(
+            {
+                "base_revision_id": "content_revision_bdo",
+                "title": "BDO dla firm",
+                "sections": [
+                    {
+                        "heading": "Obowiązki BDO",
+                        "body_markdown": "Treść bez zmiany.",
+                        "content_html": "<p>Treść bez zmiany.</p>",
+                        "evidence_ids": ["ev_bdo"],
+                    }
+                ],
+                "correction_reason": "official_source_lineage_rebase",
+                "created_by": "wilku",
+            }
         )
 
 
