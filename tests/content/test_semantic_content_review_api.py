@@ -97,6 +97,8 @@ def test_semantic_turn_exposes_exact_allowed_targets_to_the_reviewer() -> None:
     assert context["allowed_evidence_ids"] == ["ev_exact"]
     assert "literalnych wartości z application_context.allowed_targets" in request.instruction
     assert "literalnych wartości z application_context.allowed_evidence_ids" in request.instruction
+    assert "powtórzone akapity" in request.instruction
+    assert "źródło wskazuje" in request.instruction
 
 
 def test_semantic_turn_exposes_regulatory_requirement_coverage() -> None:
