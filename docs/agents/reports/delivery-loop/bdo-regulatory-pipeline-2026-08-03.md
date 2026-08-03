@@ -39,13 +39,17 @@ The revision is `unreviewed`, `publish_ready=false`, and has not been sent to Wo
 
 - Earlier assurance attempts blocked real defects (`overbroad_claim`, `insufficient_source_alignment`).
 - The per-constraint assurance run completed and created the exact revision only after those checks passed.
-- Focused assurance/source tests: 79 passed before the later semantic-runtime slice; current focused semantic tests: 5 passed, Ruff and complexity audit passed, `git diff --check` passed.
+- Focused assurance/source tests: 79 passed before the later semantic-runtime slice; current focused semantic tests: 6 passed, Ruff and complexity audit passed, `git diff --check` passed. Commit `0a2c7925` compacts semantic context while retaining regulatory lineage and adds a payload falsifier.
 - A queued semantic POST now becomes visible immediately through GET with the same run ID.
 - A stalled semantic run is terminalized as `failed` after the configured deadline; it cannot remain `generating` forever.
 
 ## Semantic review state
 
-The first semantic run was `reviewable` with 9 dimensions and no findings, but manual inspection found duplicated source-style paragraphs in the draft. The reviewer prompt now explicitly checks repeated paragraphs, source-attribution narration, and pasted working notes. Fresh API retries are now visible and terminalize instead of becoming zombies, but the current full semantic app-server turn has timed out; no new canonical review has replaced the immutable first review. A transient fresh turn artifact records that timeout under `docs/agents/runs/delivery-loop/bdo-20260803/semantic-fresh-transient.json`.
+The first semantic run was `reviewable` with 9 dimensions and no findings, but manual inspection found duplicated source-style paragraphs in the draft. The reviewer prompt now explicitly checks repeated paragraphs, source-attribution narration, and pasted working notes. Fresh API retries are now visible and terminalize instead of becoming zombies, but the current full semantic app-server turn has timed out; no new canonical review has replaced the immutable first review. A transient fresh turn artifact records that timeout under `docs/agents/runs/delivery-loop/bdo-20260803/semantic-fresh-transient.json`. A new retry `codex_content_semantic_review_7824147152d74860b92cd66e4de356ac` was queued, then the local stack was restarted; its worker result still needs verification.
+
+## Runtime configuration blocker
+
+The running API reports `openai_codex` as the only configured connector. Google Ads, Search Console, GA4, Merchant Center, Ahrefs, Localo, both WordPress sites, LinkedIn, and Facebook report missing credentials; Google Sheets is disabled. The source checkout contains a private `.env`, but the isolated worktree running this proof does not, so the runtime cannot see those values. No credential values are copied into this packet. This is an environment handoff blocker, not a content-contract failure.
 
 ## Remaining acceptance work
 
