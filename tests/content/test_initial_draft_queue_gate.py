@@ -243,6 +243,30 @@ def test_different_initial_draft_contexts_do_not_share_claim(tmp_path) -> None:
     assert second.newly_claimed is True
 
 
+def test_new_context_claim_does_not_terminalize_existing_context_run(tmp_path) -> None:
+    from wilq.content.drafts.initial_draft_run import claim_initial_draft_run
+
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    common = {
+        "work_item_id": "work",
+        "proposal_id": "proposal-1",
+        "planning_digest": "a" * 64,
+        "planning_input_digest": "b" * 64,
+        "evidence_ids": ["ev"],
+        "timeout_seconds": 900,
+        "context_current": False,
+        "expected_base_revision_id": "revision-0",
+        "enforce_context_authority": True,
+    }
+    current = claim_initial_draft_run(store, context_digest="1" * 64, **common)
+    delayed = claim_initial_draft_run(store, context_digest="0" * 64, **common)
+
+    assert current.run is not None
+    assert delayed.run is not None
+    persisted = next(run for run in store.list_codex_runs() if run.id == current.run.id)
+    assert persisted.status == "started"
+
+
 def test_queue_persists_proposal_evidence_ids(tmp_path, monkeypatch) -> None:
     store = LocalStateStore(tmp_path / "state.sqlite3")
     submitted = []

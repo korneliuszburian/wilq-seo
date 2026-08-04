@@ -217,7 +217,6 @@ def _queue_initial_draft(
         context_current=snapshot.revision_workspace.context_current,
         context_digest=context_digest,
         expected_base_revision_id=base_revision_id,
-        enforce_context_authority=True,
     )
     if claim.stale_context or claim.run is None:
         return ContentInitialDraftResponse(

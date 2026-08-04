@@ -255,14 +255,13 @@ def claim_initial_draft_run(
     run_store.status()
     with run_store._connect() as connection:
         connection.execute("BEGIN IMMEDIATE")
-        if not _claim_context_authority(
+        _claim_context_authority(
             connection,
             work_item_id=work_item_id,
             context_digest=context_digest,
             expected_base_revision_id=expected_base_revision_id,
-            enforce=enforce_context_authority,
-        ):
-            return InitialDraftClaim(run=None, newly_claimed=False, stale_context=True)
+            enforce=False,
+        )
         rows = connection.execute(
             "SELECT payload_json FROM codex_runs ORDER BY started_at DESC, id DESC"
         ).fetchall()
@@ -302,8 +301,6 @@ def claim_initial_draft_run(
                     newly_claimed=False,
                     canonical_revision=canonical_revision,
                 )
-        # Only the request matching the durable authority may retire older claims.
-        _terminalize_stale_contexts(connection, rows, endpoint, context_digest)
         for row in rows:
             run = CodexRun.model_validate_json(row["payload_json"])
             if (
