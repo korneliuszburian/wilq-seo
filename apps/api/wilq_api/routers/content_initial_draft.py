@@ -15,6 +15,7 @@ from wilq.content.drafts.initial_draft_run import (
     claim_initial_draft_run,
     effective_initial_draft_deadline,
     initial_draft_context_digest,
+    record_initial_draft_context,
     transition_initial_draft_run_if_status,
 )
 from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
@@ -133,6 +134,7 @@ _INITIAL_DRAFT_BLOCKER_CODES = {
     "revision_conflict",
     "persistence_failed",
     "generation_in_progress",
+    "stale_initial_draft_context",
 }
 
 
@@ -192,11 +194,23 @@ def _queue_initial_draft(
     snapshot_loader: ContentInitialDraftSnapshotLoader,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
 ) -> ContentInitialDraftResponse:
+    # Re-read immediately before the durable claim. The caller may have held
+    # an older snapshot while another request advanced the current context.
+    snapshot = snapshot_loader(work_item_id)
     planning = snapshot.planning_workspace
     if planning is None:
         raise RuntimeError("Initial draft queue requires a planning workspace.")
     proposal = planning.proposal
     context_digest = _snapshot_initial_draft_context_digest(snapshot, proposal)
+    base_revision_id = getattr(
+        snapshot.revision_workspace.latest_revision, "revision_id", None
+    )
+    record_initial_draft_context(
+        local_state_store(),
+        work_item_id=work_item_id,
+        context_digest=context_digest,
+        base_revision_id=base_revision_id,
+    )
     claim = claim_initial_draft_run(
         local_state_store(),
         work_item_id=work_item_id,
@@ -207,10 +221,24 @@ def _queue_initial_draft(
         timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
         context_current=snapshot.revision_workspace.context_current,
         context_digest=context_digest,
-        expected_base_revision_id=getattr(
-            snapshot.revision_workspace.latest_revision, "revision_id", None
-        ),
+        expected_base_revision_id=base_revision_id,
+        enforce_context_authority=True,
     )
+    if claim.stale_context or claim.run is None:
+        return ContentInitialDraftResponse(
+            status="blocked",
+            work_item_id=work_item_id,
+            proposal_id=proposal.proposal_id,
+            blockers=[
+                ContentInitialDraftBlocker(
+                    code="stale_initial_draft_context",
+                    label="Nieaktualny kontekst szkicu",
+                    reason="Kontekst szkicu zmienił się przed uzyskaniem atomowego claimu.",
+                    next_step="Odśwież bieżący kontekst przed ponownym uruchomieniem szkicu.",
+                )
+            ],
+            safe_next_step="Odśwież bieżący kontekst przed ponownym uruchomieniem szkicu.",
+        )
     run_id = claim.run.id
     if claim.canonical_revision is not None:
         return ContentInitialDraftResponse(

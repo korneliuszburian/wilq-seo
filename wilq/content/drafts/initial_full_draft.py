@@ -723,6 +723,24 @@ def _persist_document(
             command,
             completed_codex_run=completed_run,
         )
+    except ValueError as error:
+        if str(error) == "stale_initial_draft_context":
+            blocker = _blocker(
+                "stale_initial_draft_context",
+                "Kontekst szkicu zmienił się",
+                "Bieżący package, adres lub powiązanie usługi zmieniły się przed zapisem.",
+                "Odśwież kontekst i uruchom nową próbę.",
+            )
+            finish_initial_draft_run(run_store, run, status="blocked", error=blocker.code)
+            return _blocked_response(
+                snapshot,
+                proposal=inputs.proposal,
+                status="blocked",
+                run=run,
+                runtime=trace,
+                blockers=[blocker],
+            )
+        raise
     except Exception:
         blocker = _blocker(
             "persistence_failed",

@@ -46,6 +46,7 @@ ContentInitialDraftBlockerCode = Literal[
     "revision_conflict",
     "persistence_failed",
     "generation_in_progress",
+    "stale_initial_draft_context",
 ]
 
 

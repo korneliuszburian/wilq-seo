@@ -14,6 +14,7 @@ from wilq.content.handoff.wordpress_execution import (
 from wilq.content.quality.review import ContentQualityReview
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.codex_revision_commit import (
+    assert_initial_draft_current_context,
     codex_completion_state,
     persist_codex_completion,
     prepare_codex_completion,
@@ -128,6 +129,11 @@ class _DraftRevisionStoreMixin(_StoreConnectionMixin):
         content_digest = draft_revision_content_digest(redacted_command)
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            assert_initial_draft_current_context(
+                connection,
+                work_item_id=redacted_command.work_item_id,
+                run=redacted_completion,
+            )
             completion_state = codex_completion_state(
                 connection,
                 redacted_completion,

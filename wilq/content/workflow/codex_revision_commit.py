@@ -6,6 +6,7 @@ from typing import Literal, cast
 
 from wilq.content.drafts.initial_draft_run import (
     effective_initial_draft_deadline,
+    ensure_initial_draft_context_schema,
     initial_draft_context_digest,
 )
 from wilq.content.workflow.revisions import ContentDraftRevisionAppendCommand
@@ -14,6 +15,34 @@ from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
 
 CodexCompletionState = Literal["started", "completed"]
+
+
+def assert_initial_draft_current_context(
+    connection: sqlite3.Connection,
+    *,
+    work_item_id: str,
+    run: CodexRun | None,
+) -> None:
+    if run is None or run.hook != "content_initial_full_draft":
+        return
+    ensure_initial_draft_context_schema(connection)
+    authority = connection.execute(
+        """
+        SELECT context_digest, base_revision_id
+        FROM initial_draft_context_authority
+        WHERE work_item_id = ?
+        """,
+        (work_item_id,),
+    ).fetchone()
+    if authority is None:
+        return
+    if authority["context_digest"] != run.initial_draft_context_digest:
+        raise ValueError("stale_initial_draft_context")
+    if (
+        run.initial_draft_base_revision_id is not None
+        and authority["base_revision_id"] != run.initial_draft_base_revision_id
+    ):
+        raise ValueError("stale_initial_draft_context")
 
 
 def prepare_codex_completion(
