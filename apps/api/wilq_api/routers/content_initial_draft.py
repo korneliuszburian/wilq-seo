@@ -197,6 +197,8 @@ def _queue_initial_draft(
     # Re-read immediately before the durable claim. The caller may have held
     # an older snapshot while another request advanced the current context.
     snapshot = snapshot_loader(work_item_id)
+    if not _can_queue_initial_draft(snapshot, request):
+        return _read_initial_draft_status(work_item_id)
     planning = snapshot.planning_workspace
     if planning is None:
         raise RuntimeError("Initial draft queue requires a planning workspace.")

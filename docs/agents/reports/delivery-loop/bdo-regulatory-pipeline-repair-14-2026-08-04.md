@@ -1,8 +1,8 @@
 # BDO regulatory pipeline — repair 14
 
-Production repair fixed point: `d8fb273d`
+Production repair fixed point: `pending repair-15 commit`
 
-Parent: `03429d9f9d08ec81a4a1b04bddf934c24ab87965`
+Parent: `35c7e067`
 
 ## Scope
 
@@ -23,6 +23,10 @@ deploy, or execute an ActionObject.
   `BEGIN IMMEDIATE` transaction as completion and revision insertion.
 - Context mismatch is surfaced as typed `stale_initial_draft_context`, rather
   than the generic `persistence_failed` blocker.
+- Queue reads cannot overwrite an existing authority record; an old request is
+  rejected without touching the newer run.
+- A fresh canonical revision is returned before creating a shadow retry, and
+  canonical context reconstruction uses the revision's own identity consistently.
 
 ## Verification
 
@@ -49,6 +53,6 @@ finding.
 ## Remaining proof limits
 
 The focused suite does not yet contain externally replayable barrier tests for
-old-request/new-request ordering or for a context mutation while SQLite lock
-acquisition is pending. Those are the next independent falsifiers. Live BDO
-content correctness and human/legal approval remain out of scope.
+context mutation while SQLite lock acquisition is pending. The deterministic
+old-request/new-request authority reproducer now passes at the helper level.
+Live BDO content correctness and human/legal approval remain out of scope.

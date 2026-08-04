@@ -70,7 +70,7 @@ def revision_matches_initial_draft_context(
     if context_digest is None:
         return False
     return context_digest == initial_draft_context_digest(
-        base_revision_id=revision.base_revision_id,
+        base_revision_id=revision.revision_id,
         draft_package_id=revision.draft_package_id,
         draft_package_digest=revision.draft_package_digest,
         final_canonical_url=revision.final_canonical_url,
@@ -132,7 +132,8 @@ def record_initial_draft_context(
         elif row["context_digest"] == context_digest:
             version = int(row["version"])
         else:
-            version = int(row["version"]) + 1
+            # Queue requests consume current context; they cannot roll it back.
+            return int(row["version"])
         connection.execute(
             """
             INSERT INTO initial_draft_context_authority
