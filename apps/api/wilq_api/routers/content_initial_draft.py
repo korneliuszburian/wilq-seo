@@ -14,6 +14,7 @@ from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts.initial_draft_run import (
     claim_initial_draft_run,
     effective_initial_draft_deadline,
+    initial_draft_context_digest,
     transition_initial_draft_run_if_status,
 )
 from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
@@ -29,6 +30,7 @@ from wilq.content.planning.generated_proposal_store import (
 )
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.revisions import content_draft_package_digest
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -149,6 +151,7 @@ def _queue_initial_draft(
     if planning is None:
         raise RuntimeError("Initial draft queue requires a planning workspace.")
     proposal = planning.proposal
+    context_digest = _snapshot_initial_draft_context_digest(snapshot, proposal)
     claim = claim_initial_draft_run(
         local_state_store(),
         work_item_id=work_item_id,
@@ -158,6 +161,7 @@ def _queue_initial_draft(
         evidence_ids=list(getattr(proposal, "evidence_ids", [])),
         timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
         context_current=snapshot.revision_workspace.context_current,
+        context_digest=context_digest,
     )
     run_id = claim.run.id
     if claim.canonical_revision is not None:
@@ -212,6 +216,14 @@ def _read_initial_draft_status(work_item_id: str) -> ContentInitialDraftResponse
     if stale is not None:
         return stale
     revision = content_workflow_store().load_draft_revision_state(work_item_id).latest_revision
+    latest = _latest_run_for_proposal(work_item_id, proposal, revision)
+    if latest is not None and latest.status == "started":
+        return _queued_initial_draft_response(
+            work_item_id,
+            None if proposal is None else proposal.proposal_id,
+            latest.id,
+            False,
+        )
     canonical_run = _canonical_revision_run(revision, proposal)
     if canonical_run is not None:
         return ContentInitialDraftResponse(
@@ -221,14 +233,6 @@ def _read_initial_draft_status(work_item_id: str) -> ContentInitialDraftResponse
             run_id=canonical_run.id,
             revision=revision,
             safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
-        )
-    latest = _latest_run_for_proposal(work_item_id, proposal, revision)
-    if latest is not None and latest.status == "started":
-        return _queued_initial_draft_response(
-            work_item_id,
-            None if proposal is None else proposal.proposal_id,
-            latest.id,
-            False,
         )
     if _completed_initial_draft_matches(latest, revision, proposal):
         return ContentInitialDraftResponse(
@@ -503,6 +507,18 @@ def _run_queued_initial_draft(
 ) -> None:
     try:
         snapshot = snapshot_loader(work_item_id)
+        run = next(
+            (item for item in local_state_store().list_codex_runs() if item.id == run_id),
+            None,
+        )
+        planning = snapshot.planning_workspace
+        if run is None or planning is None or (
+            run.initial_draft_context_digest
+            and run.initial_draft_context_digest
+            != _snapshot_initial_draft_context_digest(snapshot, planning.proposal)
+        ):
+            _mark_initial_draft_run_failed(run_id, RuntimeError("stale_initial_draft_context"))
+            return
         deadline_client = _InitialDraftDeadlineClient(client, run_id)
         result = generate_initial_full_draft(
             snapshot=snapshot,
@@ -524,6 +540,30 @@ def _run_queued_initial_draft(
         # own runtime boundary. A worker exception must not leave a permanent
         # ``started`` run or make every retry appear to be still running.
         _mark_initial_draft_run_failed(run_id, error)
+
+
+def _snapshot_initial_draft_context_digest(snapshot, proposal) -> str:
+    package = getattr(
+        getattr(getattr(snapshot, "draft_package", None), "draft_package_result", None),
+        "draft_package",
+        None,
+    )
+    item = getattr(getattr(snapshot, "preflight", None), "item", None)
+    return initial_draft_context_digest(
+        base_revision_id=getattr(
+            getattr(snapshot.revision_workspace, "latest_revision", None),
+            "revision_id",
+            None,
+        ),
+        draft_package_id=getattr(package, "id", None),
+        draft_package_digest=None if package is None else content_draft_package_digest(package),
+        final_canonical_url=getattr(item, "final_canonical_url", None)
+        or getattr(item, "intended_final_url", None),
+        service_card_id=getattr(proposal, "service_card_id", None),
+        proposal_id=proposal.proposal_id,
+        planning_digest=proposal.planning_digest,
+        planning_input_digest=proposal.planning_input_digest,
+    )
 
 
 def _persist_terminal_preflight_run(

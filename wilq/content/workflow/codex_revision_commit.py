@@ -4,7 +4,10 @@ import json
 import sqlite3
 from typing import Literal, cast
 
-from wilq.content.drafts.initial_draft_run import effective_initial_draft_deadline
+from wilq.content.drafts.initial_draft_run import (
+    effective_initial_draft_deadline,
+    initial_draft_context_digest,
+)
 from wilq.content.workflow.revisions import ContentDraftRevisionAppendCommand
 from wilq.schemas.actions import CodexRun
 from wilq.schemas.core import utc_now
@@ -29,6 +32,20 @@ def prepare_codex_completion(
     if completed_run is None:
         raise ValueError("Codex proposal append requires its completed run.")
     redacted = CodexRun.model_validate(redact_mapping(completed_run.model_dump(mode="json")))
+    if redacted.hook == "content_initial_full_draft":
+        expected_context = initial_draft_context_digest(
+            base_revision_id=command.base_revision_id,
+            draft_package_id=command.draft_package_id,
+            draft_package_digest=command.draft_package_digest,
+            final_canonical_url=command.final_canonical_url,
+            service_card_id=command.service_card_id,
+            proposal_id=redacted.proposal_id or "",
+            planning_digest=command.planning_digest,
+            planning_input_digest=command.planning_input_digest or "",
+        )
+        if redacted.initial_draft_context_digest not in {None, expected_context}:
+            raise ValueError("Initial draft context changed before append.")
+        redacted = redacted.model_copy(update={"initial_draft_context_digest": expected_context})
     if metadata.codex_run_id != redacted.id:
         raise ValueError("Proposal metadata must reference the completed Codex run.")
     if redacted.status != "completed" or redacted.completed_at is None:
@@ -50,6 +67,12 @@ def codex_completion_state(
     if row is None:
         raise ValueError("Codex proposal run must be persisted as started before append.")
     stored_run = CodexRun.model_validate(json.loads(cast(str, row["payload_json"])))
+    if (
+        stored_run.hook == "content_initial_full_draft"
+        and stored_run.initial_draft_context_digest
+        != completed_run.initial_draft_context_digest
+    ):
+        raise ValueError("initial_draft_context_changed")
     if stored_run == completed_run:
         return "completed"
     if (

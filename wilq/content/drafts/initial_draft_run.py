@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from hashlib import sha256
 from typing import Literal
 from uuid import uuid4
 
@@ -29,6 +30,32 @@ def effective_initial_draft_deadline(run: CodexRun) -> datetime:
     return run.deadline_at or (
         run.started_at + timedelta(seconds=LEGACY_INITIAL_DRAFT_TIMEOUT_SECONDS)
     )
+
+
+def initial_draft_context_digest(
+    *,
+    base_revision_id: str | None,
+    draft_package_id: str | None,
+    draft_package_digest: str | None,
+    final_canonical_url: str | None,
+    service_card_id: str | None,
+    proposal_id: str,
+    planning_digest: str,
+    planning_input_digest: str,
+) -> str:
+    payload = "\n".join(
+        (
+            base_revision_id or "",
+            draft_package_id or "",
+            draft_package_digest or "",
+            final_canonical_url or "",
+            service_card_id or "",
+            proposal_id,
+            planning_digest,
+            planning_input_digest,
+        )
+    )
+    return sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _canonical_revision_for_claim(connection, work_item_id: str) -> ContentDraftRevision | None:
@@ -72,6 +99,7 @@ def claim_initial_draft_run(
     evidence_ids: list[str],
     timeout_seconds: float,
     context_current: bool = True,
+    context_digest: str | None = None,
 ) -> InitialDraftClaim:
     endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
     run_store.status()
@@ -113,6 +141,7 @@ def claim_initial_draft_run(
                 and run.proposal_id == proposal_id
                 and run.planning_digest == planning_digest
                 and run.planning_input_digest == planning_input_digest
+                and run.initial_draft_context_digest == context_digest
                 and endpoint in run.used_endpoints
             ):
                 if _expire_claim_if_needed(connection, run, row["payload_json"]):
@@ -129,6 +158,7 @@ def claim_initial_draft_run(
             proposal_id=proposal_id,
             planning_digest=planning_digest,
             planning_input_digest=planning_input_digest,
+            initial_draft_context_digest=context_digest,
             deadline_at=utc_now() + timedelta(seconds=timeout_seconds),
         )
         connection.execute(
@@ -230,6 +260,7 @@ __all__ = [
     "claim_initial_draft_run",
     "InitialDraftClaim",
     "effective_initial_draft_deadline",
+    "initial_draft_context_digest",
     "transition_initial_draft_run_if_status",
     "safe_initial_draft_run_error",
     "start_initial_draft_run",
