@@ -52,9 +52,17 @@ _DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 900.0
 
 
 class _InitialDraftDeadlineClient:
-    def __init__(self, base: StdioCodexAppServerClient, run_id: str) -> None:
+    def __init__(
+        self,
+        base: StdioCodexAppServerClient,
+        run_id: str,
+        snapshot_loader: ContentInitialDraftSnapshotLoader,
+        work_item_id: str,
+    ) -> None:
         self._base = base
         self._run_id = run_id
+        self._snapshot_loader = snapshot_loader
+        self._work_item_id = work_item_id
 
     def run_structured_turn(self, request):
         run = next(
@@ -63,6 +71,20 @@ class _InitialDraftDeadlineClient:
         )
         if run is None or run.status != "started":
             raise TimeoutError("initial draft run is no longer active")
+        snapshot = self._snapshot_loader(self._work_item_id)
+        planning = snapshot.planning_workspace
+        if (
+            planning is None
+            or run.initial_draft_context_digest
+            != _snapshot_initial_draft_context_digest(snapshot, planning.proposal)
+        ):
+            transition_initial_draft_run_if_status(
+                local_state_store(),
+                run,
+                status="blocked",
+                error="stale_initial_draft_context",
+            )
+            raise TimeoutError("initial draft context changed")
         remaining = (effective_initial_draft_deadline(run) - utc_now()).total_seconds()
         if remaining <= 0:
             raise TimeoutError("initial draft deadline expired")
@@ -162,6 +184,9 @@ def _queue_initial_draft(
         timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
         context_current=snapshot.revision_workspace.context_current,
         context_digest=context_digest,
+        expected_base_revision_id=getattr(
+            snapshot.revision_workspace.latest_revision, "revision_id", None
+        ),
     )
     run_id = claim.run.id
     if claim.canonical_revision is not None:
@@ -217,7 +242,9 @@ def _read_initial_draft_status(work_item_id: str) -> ContentInitialDraftResponse
         return stale
     revision = content_workflow_store().load_draft_revision_state(work_item_id).latest_revision
     latest = _latest_run_for_proposal(work_item_id, proposal, revision)
-    if latest is not None and latest.status == "started":
+    if latest is not None and latest.status == "started" and _run_matches_revision_context(
+        latest, revision, proposal
+    ):
         return _queued_initial_draft_response(
             work_item_id,
             None if proposal is None else proposal.proposal_id,
@@ -356,6 +383,26 @@ def _canonical_revision_run(
             and run.planning_input_digest == proposal.planning_input_digest
         ),
         None,
+    )
+
+
+def _run_matches_revision_context(
+    run: CodexRun,
+    revision: object | None,
+    proposal: ContentPlanningProposal | None,
+) -> bool:
+    if revision is None or proposal is None or run.initial_draft_context_digest is None:
+        return False
+    package_digest = getattr(revision, "draft_package_digest", None)
+    return run.initial_draft_context_digest == initial_draft_context_digest(
+        base_revision_id=getattr(revision, "base_revision_id", None),
+        draft_package_id=getattr(revision, "draft_package_id", None),
+        draft_package_digest=package_digest,
+        final_canonical_url=getattr(revision, "final_canonical_url", None),
+        service_card_id=getattr(revision, "service_card_id", None),
+        proposal_id=proposal.proposal_id,
+        planning_digest=proposal.planning_digest,
+        planning_input_digest=proposal.planning_input_digest,
     )
 
 
@@ -519,7 +566,9 @@ def _run_queued_initial_draft(
         ):
             _mark_initial_draft_run_failed(run_id, RuntimeError("stale_initial_draft_context"))
             return
-        deadline_client = _InitialDraftDeadlineClient(client, run_id)
+        deadline_client = _InitialDraftDeadlineClient(
+            client, run_id, snapshot_loader, work_item_id
+        )
         result = generate_initial_full_draft(
             snapshot=snapshot,
             request=request,

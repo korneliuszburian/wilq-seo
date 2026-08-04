@@ -89,6 +89,36 @@ def _expire_claim_if_needed(connection, run: CodexRun, payload_json: str) -> boo
     return True
 
 
+def _terminalize_stale_contexts(
+    connection, rows, endpoint: str, context_digest: str | None
+) -> None:
+    for row in rows:
+        run = CodexRun.model_validate_json(row["payload_json"])
+        if not (
+            run.status == "started"
+            and run.hook == "content_initial_full_draft"
+            and endpoint in run.used_endpoints
+            and run.initial_draft_context_digest is not None
+            and run.initial_draft_context_digest != context_digest
+        ):
+            continue
+        stale = run.model_copy(
+            update={
+                "status": "blocked",
+                "completed_at": utc_now(),
+                "error": "stale_initial_draft_context",
+            }
+        )
+        connection.execute(
+            "UPDATE codex_runs SET payload_json = ? WHERE id = ? AND payload_json = ?",
+            (
+                json.dumps(stale.model_dump(mode="json"), sort_keys=True, separators=(",", ":")),
+                run.id,
+                row["payload_json"],
+            ),
+        )
+
+
 def claim_initial_draft_run(
     run_store: LocalStateStore,
     *,
@@ -100,6 +130,7 @@ def claim_initial_draft_run(
     timeout_seconds: float,
     context_current: bool = True,
     context_digest: str | None = None,
+    expected_base_revision_id: str | None = None,
 ) -> InitialDraftClaim:
     endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
     run_store.status()
@@ -110,7 +141,11 @@ def claim_initial_draft_run(
         ).fetchall()
         runs = [CodexRun.model_validate_json(row["payload_json"]) for row in rows]
         canonical_revision = _canonical_revision_for_claim(connection, work_item_id)
-        if context_current and (
+        revision_is_newer = (
+            canonical_revision is not None
+            and canonical_revision.revision_id != expected_base_revision_id
+        )
+        if (context_current or revision_is_newer) and (
             canonical_revision is not None
             and canonical_revision.planning_digest == planning_digest
             and canonical_revision.planning_input_digest == planning_input_digest
@@ -133,6 +168,7 @@ def claim_initial_draft_run(
                     newly_claimed=False,
                     canonical_revision=canonical_revision,
                 )
+        _terminalize_stale_contexts(connection, rows, endpoint, context_digest)
         for row in rows:
             run = CodexRun.model_validate_json(row["payload_json"])
             if (
