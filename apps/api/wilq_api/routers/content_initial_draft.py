@@ -92,6 +92,29 @@ class _InitialDraftDeadlineClient:
             timeout_seconds=min(self._base.timeout_seconds, remaining)
         ).run_structured_turn(request)
 
+
+class _ContextCheckedWorkflowStore:
+    def __init__(self, base, snapshot_loader, work_item_id: str) -> None:
+        self._base = base
+        self._snapshot_loader = snapshot_loader
+        self._work_item_id = work_item_id
+
+    def append_draft_revision(self, command, *, completed_codex_run=None):
+        snapshot = self._snapshot_loader(self._work_item_id)
+        planning = snapshot.planning_workspace
+        if planning is None:
+            raise ValueError("stale_initial_draft_context")
+        current_digest = _snapshot_initial_draft_context_digest(snapshot, planning.proposal)
+        if (
+            completed_codex_run is not None
+            and completed_codex_run.initial_draft_context_digest
+            != current_digest
+        ):
+            raise ValueError("stale_initial_draft_context")
+        return self._base.append_draft_revision(
+            command, completed_codex_run=completed_codex_run
+        )
+
 _INITIAL_DRAFT_BLOCKER_CODES = {
     "planning_not_ready",
     "planning_not_generated",
@@ -391,8 +414,12 @@ def _run_matches_revision_context(
     revision: object | None,
     proposal: ContentPlanningProposal | None,
 ) -> bool:
-    if revision is None or proposal is None or run.initial_draft_context_digest is None:
+    if proposal is None or run.initial_draft_context_digest is None:
         return False
+    if revision is None:
+        return run.initial_draft_base_revision_id is None
+    if run.initial_draft_base_revision_id == revision.revision_id:
+        return True
     package_digest = getattr(revision, "draft_package_digest", None)
     return run.initial_draft_context_digest == initial_draft_context_digest(
         base_revision_id=getattr(revision, "base_revision_id", None),
@@ -573,7 +600,9 @@ def _run_queued_initial_draft(
             snapshot=snapshot,
             request=request,
             client=deadline_client,
-            workflow_store=content_workflow_store(),
+            workflow_store=_ContextCheckedWorkflowStore(
+                content_workflow_store(), snapshot_loader, work_item_id
+            ),
             run_store=local_state_store(),
             run_id=run_id,
         )

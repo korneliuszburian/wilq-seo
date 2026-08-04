@@ -195,6 +195,7 @@ def claim_initial_draft_run(
             planning_digest=planning_digest,
             planning_input_digest=planning_input_digest,
             initial_draft_context_digest=context_digest,
+            initial_draft_base_revision_id=expected_base_revision_id,
             deadline_at=utc_now() + timedelta(seconds=timeout_seconds),
         )
         connection.execute(
@@ -225,6 +226,8 @@ def transition_initial_draft_run_if_status(
     status: Literal["blocked", "failed"],
     error: str,
 ) -> CodexRun | None:
+    if run.status != "started":
+        return None
     updated = run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
     if not hasattr(run_store, "_connect"):
         return run_store.save_codex_run(updated)

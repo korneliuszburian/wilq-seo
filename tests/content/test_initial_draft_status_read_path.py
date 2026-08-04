@@ -62,6 +62,26 @@ def test_canonical_revision_run_precedes_later_retry(monkeypatch) -> None:
     assert content_initial_draft._canonical_revision_run(revision, proposal) == canonical
 
 
+def test_first_initial_draft_run_is_visible_without_revision() -> None:
+    run = CodexRun(
+        id="first-run",
+        hook="content_initial_full_draft",
+        source="wilq_api",
+        status="started",
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        initial_draft_context_digest="c" * 64,
+        initial_draft_base_revision_id=None,
+    )
+    proposal = SimpleNamespace(
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+    )
+    assert content_initial_draft._run_matches_revision_context(run, None, proposal)
+
+
 def test_initial_draft_status_get_avoids_heavy_snapshot_loader(monkeypatch) -> None:
     app = FastAPI()
     snapshot_calls = 0
