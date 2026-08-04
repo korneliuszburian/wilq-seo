@@ -100,20 +100,18 @@ class _ContextCheckedWorkflowStore:
         self._work_item_id = work_item_id
 
     def append_draft_revision(self, command, *, completed_codex_run=None):
+        return self._base.append_draft_revision(
+            command,
+            completed_codex_run=completed_codex_run,
+            current_initial_draft_context=self._current_context_digest,
+        )
+
+    def _current_context_digest(self) -> str:
         snapshot = self._snapshot_loader(self._work_item_id)
         planning = snapshot.planning_workspace
         if planning is None:
             raise ValueError("stale_initial_draft_context")
-        current_digest = _snapshot_initial_draft_context_digest(snapshot, planning.proposal)
-        if (
-            completed_codex_run is not None
-            and completed_codex_run.initial_draft_context_digest
-            != current_digest
-        ):
-            raise ValueError("stale_initial_draft_context")
-        return self._base.append_draft_revision(
-            command, completed_codex_run=completed_codex_run
-        )
+        return _snapshot_initial_draft_context_digest(snapshot, planning.proposal)
 
 _INITIAL_DRAFT_BLOCKER_CODES = {
     "planning_not_ready",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -118,6 +119,7 @@ class _DraftRevisionStoreMixin(_StoreConnectionMixin):
         command: ContentDraftRevisionAppendCommand,
         *,
         completed_codex_run: CodexRun | None = None,
+        current_initial_draft_context: Callable[[], str] | None = None,
     ) -> ContentDraftRevisionWriteResult:
         redacted_command = ContentDraftRevisionAppendCommand.model_validate(
             redact_mapping(command.model_dump(mode="json"))
@@ -129,6 +131,14 @@ class _DraftRevisionStoreMixin(_StoreConnectionMixin):
         content_digest = draft_revision_content_digest(redacted_command)
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            if (
+                completed_codex_run is not None
+                and completed_codex_run.hook == "content_initial_full_draft"
+                and current_initial_draft_context is not None
+                and current_initial_draft_context()
+                != completed_codex_run.initial_draft_context_digest
+            ):
+                raise ValueError("stale_initial_draft_context")
             assert_initial_draft_current_context(
                 connection,
                 work_item_id=redacted_command.work_item_id,

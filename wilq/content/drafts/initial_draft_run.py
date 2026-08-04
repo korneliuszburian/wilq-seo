@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from hashlib import sha256
@@ -116,25 +117,27 @@ def record_initial_draft_context(
     context_digest: str,
     base_revision_id: str | None,
 ) -> int:
-    with run_store._connect() as connection:
-        connection.execute("BEGIN IMMEDIATE")
-        ensure_initial_draft_context_schema(connection)
-        row = connection.execute(
-            """
+    try:
+        with run_store._connect() as connection:
+            connection.execute("PRAGMA busy_timeout = 1")
+            connection.execute("BEGIN IMMEDIATE")
+            ensure_initial_draft_context_schema(connection)
+            row = connection.execute(
+                """
             SELECT version, context_digest
             FROM initial_draft_context_authority
             WHERE work_item_id = ?
             """,
-            (work_item_id,),
-        ).fetchone()
-        if row is None:
-            version = 1
-        elif row["context_digest"] == context_digest:
-            version = int(row["version"])
-        else:
-            version = int(row["version"]) + 1
-        connection.execute(
-            """
+                (work_item_id,),
+            ).fetchone()
+            if row is None:
+                version = 1
+            elif row["context_digest"] == context_digest:
+                version = int(row["version"])
+            else:
+                version = int(row["version"]) + 1
+            connection.execute(
+                """
             INSERT INTO initial_draft_context_authority
               (work_item_id, context_digest, base_revision_id, version, updated_at)
             VALUES (?, ?, ?, ?, ?)
@@ -144,9 +147,13 @@ def record_initial_draft_context(
               version=excluded.version,
               updated_at=excluded.updated_at
             """,
-            (work_item_id, context_digest, base_revision_id, version, utc_now().isoformat()),
-        )
-        return version
+                (work_item_id, context_digest, base_revision_id, version, utc_now().isoformat()),
+            )
+            return version
+    except sqlite3.OperationalError as error:
+        if "locked" not in str(error).lower():
+            raise
+        return 0
 
 
 def _expire_claim_if_needed(connection, run: CodexRun, payload_json: str) -> bool:
@@ -335,9 +342,11 @@ def claim_initial_draft_run(
         )
         connection.execute(
             "INSERT INTO codex_runs (id, started_at, payload_json) VALUES (?, ?, ?)",
-            (run.id, run.started_at.isoformat(), json.dumps(
-                run.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
-            )),
+            (
+                run.id,
+                run.started_at.isoformat(),
+                json.dumps(run.model_dump(mode="json"), sort_keys=True, separators=(",", ":")),
+            ),
         )
         return InitialDraftClaim(run=run, newly_claimed=True)
 
@@ -349,9 +358,7 @@ def finish_initial_draft_run(
     status: Literal["blocked", "failed"],
     error: str,
 ) -> CodexRun | None:
-    return transition_initial_draft_run_if_status(
-        run_store, run, status=status, error=error
-    )
+    return transition_initial_draft_run_if_status(run_store, run, status=status, error=error)
 
 
 def transition_initial_draft_run_if_status(
