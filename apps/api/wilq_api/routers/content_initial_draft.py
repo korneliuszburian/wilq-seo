@@ -15,7 +15,6 @@ from wilq.content.drafts.initial_draft_run import (
     claim_initial_draft_run,
     effective_initial_draft_deadline,
     initial_draft_context_digest,
-    record_initial_draft_context,
     transition_initial_draft_run_if_status,
 )
 from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
@@ -206,12 +205,6 @@ def _queue_initial_draft(
     context_digest = _snapshot_initial_draft_context_digest(snapshot, proposal)
     base_revision_id = getattr(
         snapshot.revision_workspace.latest_revision, "revision_id", None
-    )
-    record_initial_draft_context(
-        local_state_store(),
-        work_item_id=work_item_id,
-        context_digest=context_digest,
-        base_revision_id=base_revision_id,
     )
     claim = claim_initial_draft_run(
         local_state_store(),

@@ -132,8 +132,7 @@ def record_initial_draft_context(
         elif row["context_digest"] == context_digest:
             version = int(row["version"])
         else:
-            # Queue requests consume current context; they cannot roll it back.
-            return int(row["version"])
+            version = int(row["version"]) + 1
         connection.execute(
             """
             INSERT INTO initial_draft_context_authority
