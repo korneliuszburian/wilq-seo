@@ -10,6 +10,22 @@ from apps.api.wilq_api.routers import content_initial_draft
 from wilq.schemas import CodexRun
 
 
+def test_legacy_completed_run_requires_exact_revision_lineage() -> None:
+    run = SimpleNamespace(id="legacy-run", planning_digest=None)
+    proposal = SimpleNamespace(
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+    )
+    revision = SimpleNamespace(
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        proposal_metadata=SimpleNamespace(codex_run_id="legacy-run"),
+    )
+    assert content_initial_draft._legacy_run_matches_revision(run, proposal, revision)
+    revision.proposal_metadata.codex_run_id = "other-run"
+    assert not content_initial_draft._legacy_run_matches_revision(run, proposal, revision)
+
+
 def test_initial_draft_status_get_avoids_heavy_snapshot_loader(monkeypatch) -> None:
     app = FastAPI()
     snapshot_calls = 0

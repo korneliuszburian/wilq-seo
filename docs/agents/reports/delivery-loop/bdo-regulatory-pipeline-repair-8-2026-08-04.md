@@ -32,7 +32,7 @@ uv run --extra dev pytest -q \
   tests/content/test_initial_draft_status_read_path.py \
   tests/content/test_initial_draft_scope.py \
   tests/content/test_initial_full_draft_turn.py
-40 passed
+41 passed
 
 uv run ruff check --fix \
   apps/api/wilq_api/routers/content_initial_draft.py \
