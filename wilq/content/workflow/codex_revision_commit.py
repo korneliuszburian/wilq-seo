@@ -50,14 +50,14 @@ def codex_completion_state(
     if row is None:
         raise ValueError("Codex proposal run must be persisted as started before append.")
     stored_run = CodexRun.model_validate(json.loads(cast(str, row["payload_json"])))
+    if stored_run == completed_run:
+        return "completed"
     if (
         stored_run.hook == "content_initial_full_draft"
         and completed_run.status == "completed"
         and utc_now() >= effective_initial_draft_deadline(stored_run)
     ):
         raise ValueError("initial_draft_deadline_expired")
-    if stored_run == completed_run:
-        return "completed"
     expected_started = completed_run.model_copy(
         update={"status": "started", "completed_at": None, "error": None}
     )

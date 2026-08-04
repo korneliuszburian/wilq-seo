@@ -159,6 +159,15 @@ def _queue_initial_draft(
         timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
     )
     run_id = claim.run.id
+    if claim.canonical_revision is not None:
+        return ContentInitialDraftResponse(
+            status="created",
+            work_item_id=work_item_id,
+            proposal_id=proposal.proposal_id,
+            run_id=claim.run.id,
+            revision=claim.canonical_revision,
+            safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
+        )
     if not claim.newly_claimed:
         return _queued_initial_draft_response(
             work_item_id, proposal.proposal_id, run_id, True
@@ -202,6 +211,16 @@ def _read_initial_draft_status(work_item_id: str) -> ContentInitialDraftResponse
     if stale is not None:
         return stale
     revision = content_workflow_store().load_draft_revision_state(work_item_id).latest_revision
+    canonical_run = _canonical_revision_run(revision, proposal)
+    if canonical_run is not None:
+        return ContentInitialDraftResponse(
+            status="created",
+            work_item_id=work_item_id,
+            proposal_id=proposal.proposal_id,
+            run_id=canonical_run.id,
+            revision=revision,
+            safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
+        )
     latest = _latest_run_for_proposal(work_item_id, proposal, revision)
     if latest is not None and latest.status == "started":
         return _queued_initial_draft_response(
@@ -304,6 +323,34 @@ def _legacy_run_matches_revision(
         and getattr(revision, "planning_input_digest", None)
         == proposal.planning_input_digest
         and getattr(metadata, "codex_run_id", None) == run.id
+    )
+
+
+def _canonical_revision_run(
+    revision: object | None,
+    proposal: ContentPlanningProposal | None,
+) -> CodexRun | None:
+    metadata = getattr(revision, "proposal_metadata", None)
+    run_id = getattr(metadata, "codex_run_id", None)
+    if revision is None or proposal is None or not run_id:
+        return None
+    if (
+        getattr(revision, "planning_digest", None) != proposal.planning_digest
+        or getattr(revision, "planning_input_digest", None)
+        != proposal.planning_input_digest
+    ):
+        return None
+    return next(
+        (
+            run
+            for run in local_state_store().list_codex_runs()
+            if run.id == run_id
+            and run.status == "completed"
+            and run.proposal_id == proposal.proposal_id
+            and run.planning_digest == proposal.planning_digest
+            and run.planning_input_digest == proposal.planning_input_digest
+        ),
+        None,
     )
 
 

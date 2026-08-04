@@ -266,3 +266,53 @@ def test_expired_initial_draft_cannot_complete_atomic_append(tmp_path) -> None:
     with store._connect() as connection, pytest.raises(ValueError, match="deadline"):
         connection.execute("BEGIN IMMEDIATE")
         codex_completion_state(connection, completed)
+
+
+def test_completed_initial_draft_replay_is_idempotent_after_deadline(tmp_path) -> None:
+    from wilq.content.workflow.codex_revision_commit import codex_completion_state
+
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    now = datetime.now(UTC)
+    completed = CodexRun(
+        id="completed-replay",
+        hook="content_initial_full_draft",
+        source="wilq_api",
+        status="completed",
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        used_endpoints=["/api/content/work-items/work/initial-draft"],
+        started_at=now - timedelta(seconds=901),
+        deadline_at=now - timedelta(seconds=1),
+        completed_at=now - timedelta(seconds=2),
+    )
+    store.save_codex_run(completed)
+    with store._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        assert codex_completion_state(connection, completed) == "completed"
+
+
+def test_worker_terminal_write_cannot_overwrite_polling_failure(tmp_path) -> None:
+    from wilq.content.drafts.initial_draft_run import (
+        finish_initial_draft_run,
+        transition_initial_draft_run_if_status,
+    )
+
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    started = CodexRun(
+        id="cas-worker",
+        hook="content_initial_full_draft",
+        source="wilq_api",
+        status="started",
+        used_endpoints=["/api/content/work-items/work/initial-draft"],
+    )
+    store.save_codex_run(started)
+    assert transition_initial_draft_run_if_status(
+        store, started, status="failed", error="initial_draft_timeout"
+    ) is not None
+    assert finish_initial_draft_run(
+        store, started, status="blocked", error="document_scope_mismatch"
+    ) is None
+    persisted = next(run for run in store.list_codex_runs() if run.id == started.id)
+    assert persisted.status == "failed"
+    assert persisted.error == "initial_draft_timeout"

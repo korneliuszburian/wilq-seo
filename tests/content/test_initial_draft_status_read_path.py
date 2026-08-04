@@ -26,6 +26,37 @@ def test_legacy_completed_run_requires_exact_revision_lineage() -> None:
     assert not content_initial_draft._legacy_run_matches_revision(run, proposal, revision)
 
 
+def test_canonical_revision_run_precedes_later_retry(monkeypatch) -> None:
+    canonical = CodexRun(
+        id="run-1",
+        hook="content_initial_full_draft",
+        source="wilq_api",
+        status="completed",
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        used_endpoints=["/api/content/work-items/work/initial-draft"],
+    )
+    retry = canonical.model_copy(
+        update={"id": "run-2", "status": "blocked", "error": "revision_already_exists"}
+    )
+    class Store:
+        def list_codex_runs(self):
+            return [canonical, retry]
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: Store())
+    proposal = SimpleNamespace(
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+    )
+    revision = SimpleNamespace(
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        proposal_metadata=SimpleNamespace(codex_run_id="run-1"),
+    )
+    assert content_initial_draft._canonical_revision_run(revision, proposal) == canonical
+
+
 def test_initial_draft_status_get_avoids_heavy_snapshot_loader(monkeypatch) -> None:
     app = FastAPI()
     snapshot_calls = 0

@@ -9,6 +9,7 @@ from typing import Literal
 from uuid import uuid4
 
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
+from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore
@@ -18,6 +19,7 @@ from wilq.storage.local_state import LocalStateStore
 class InitialDraftClaim:
     run: CodexRun
     newly_claimed: bool
+    canonical_revision: ContentDraftRevision | None = None
 
 
 LEGACY_INITIAL_DRAFT_TIMEOUT_SECONDS = 900.0
@@ -27,6 +29,37 @@ def effective_initial_draft_deadline(run: CodexRun) -> datetime:
     return run.deadline_at or (
         run.started_at + timedelta(seconds=LEGACY_INITIAL_DRAFT_TIMEOUT_SECONDS)
     )
+
+
+def _canonical_revision_for_claim(connection, work_item_id: str) -> ContentDraftRevision | None:
+    has_table = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'content_draft_revisions'"
+    ).fetchone()
+    if has_table is None:
+        return None
+    row = connection.execute(
+        """SELECT payload_json FROM content_draft_revisions
+           WHERE work_item_id = ? ORDER BY revision_number DESC LIMIT 1""",
+        (work_item_id,),
+    ).fetchone()
+    return None if row is None else ContentDraftRevision.model_validate_json(row["payload_json"])
+
+
+def _expire_claim_if_needed(connection, run: CodexRun, payload_json: str) -> bool:
+    if utc_now() < effective_initial_draft_deadline(run):
+        return False
+    expired = run.model_copy(
+        update={"status": "failed", "completed_at": utc_now(), "error": "initial_draft_timeout"}
+    )
+    connection.execute(
+        "UPDATE codex_runs SET payload_json = ? WHERE id = ? AND payload_json = ?",
+        (
+            json.dumps(expired.model_dump(mode="json"), sort_keys=True, separators=(",", ":")),
+            run.id,
+            payload_json,
+        ),
+    )
+    return True
 
 
 def claim_initial_draft_run(
@@ -46,6 +79,31 @@ def claim_initial_draft_run(
         rows = connection.execute(
             "SELECT payload_json FROM codex_runs ORDER BY started_at DESC, id DESC"
         ).fetchall()
+        runs = [CodexRun.model_validate_json(row["payload_json"]) for row in rows]
+        canonical_revision = _canonical_revision_for_claim(connection, work_item_id)
+        if (
+            canonical_revision is not None
+            and canonical_revision.planning_digest == planning_digest
+            and canonical_revision.planning_input_digest == planning_input_digest
+            and canonical_revision.proposal_metadata is not None
+        ):
+            canonical_run = next(
+                (
+                    run
+                    for run in runs
+                    if run.id == canonical_revision.proposal_metadata.codex_run_id
+                    and run.status == "completed"
+                    and run.proposal_id == proposal_id
+                    and run.planning_input_digest == planning_input_digest
+                ),
+                None,
+            )
+            if canonical_run is not None:
+                return InitialDraftClaim(
+                    run=canonical_run,
+                    newly_claimed=False,
+                    canonical_revision=canonical_revision,
+                )
         for row in rows:
             run = CodexRun.model_validate_json(row["payload_json"])
             if (
@@ -56,26 +114,7 @@ def claim_initial_draft_run(
                 and run.planning_input_digest == planning_input_digest
                 and endpoint in run.used_endpoints
             ):
-                if utc_now() >= effective_initial_draft_deadline(run):
-                    expired = run.model_copy(
-                        update={
-                            "status": "failed",
-                            "completed_at": utc_now(),
-                            "error": "initial_draft_timeout",
-                        }
-                    )
-                    connection.execute(
-                        "UPDATE codex_runs SET payload_json = ? WHERE id = ? AND payload_json = ?",
-                        (
-                            json.dumps(
-                                expired.model_dump(mode="json"),
-                                sort_keys=True,
-                                separators=(",", ":"),
-                            ),
-                            run.id,
-                            row["payload_json"],
-                        ),
-                    )
+                if _expire_claim_if_needed(connection, run, row["payload_json"]):
                     continue
                 return InitialDraftClaim(run=run, newly_claimed=False)
         run = CodexRun(
@@ -106,9 +145,9 @@ def finish_initial_draft_run(
     *,
     status: Literal["blocked", "failed"],
     error: str,
-) -> CodexRun:
-    return run_store.save_codex_run(
-        run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
+) -> CodexRun | None:
+    return transition_initial_draft_run_if_status(
+        run_store, run, status=status, error=error
     )
 
 
