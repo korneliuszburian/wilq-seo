@@ -71,6 +71,7 @@ def claim_initial_draft_run(
     planning_input_digest: str,
     evidence_ids: list[str],
     timeout_seconds: float,
+    context_current: bool = True,
 ) -> InitialDraftClaim:
     endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
     run_store.status()
@@ -81,7 +82,7 @@ def claim_initial_draft_run(
         ).fetchall()
         runs = [CodexRun.model_validate_json(row["payload_json"]) for row in rows]
         canonical_revision = _canonical_revision_for_claim(connection, work_item_id)
-        if (
+        if context_current and (
             canonical_revision is not None
             and canonical_revision.planning_digest == planning_digest
             and canonical_revision.planning_input_digest == planning_input_digest

@@ -157,6 +157,7 @@ def _queue_initial_draft(
         planning_input_digest=proposal.planning_input_digest,
         evidence_ids=list(getattr(proposal, "evidence_ids", [])),
         timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
+        context_current=snapshot.revision_workspace.context_current,
     )
     run_id = claim.run.id
     if claim.canonical_revision is not None:
@@ -347,7 +348,7 @@ def _canonical_revision_run(
             if run.id == run_id
             and run.status == "completed"
             and run.proposal_id == proposal.proposal_id
-            and run.planning_digest == proposal.planning_digest
+            and run.planning_digest in {None, proposal.planning_digest}
             and run.planning_input_digest == proposal.planning_input_digest
         ),
         None,

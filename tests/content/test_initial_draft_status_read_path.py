@@ -33,12 +33,17 @@ def test_canonical_revision_run_precedes_later_retry(monkeypatch) -> None:
         source="wilq_api",
         status="completed",
         proposal_id="proposal-1",
-        planning_digest="a" * 64,
+        planning_digest=None,
         planning_input_digest="b" * 64,
         used_endpoints=["/api/content/work-items/work/initial-draft"],
     )
     retry = canonical.model_copy(
-        update={"id": "run-2", "status": "blocked", "error": "revision_already_exists"}
+        update={
+            "id": "run-2",
+            "status": "blocked",
+            "planning_digest": "a" * 64,
+            "error": "revision_already_exists",
+        }
     )
     class Store:
         def list_codex_runs(self):
