@@ -4,8 +4,10 @@ import json
 import sqlite3
 from typing import Literal, cast
 
+from wilq.content.drafts.initial_draft_run import effective_initial_draft_deadline
 from wilq.content.workflow.revisions import ContentDraftRevisionAppendCommand
 from wilq.schemas.actions import CodexRun
+from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
 
 CodexCompletionState = Literal["started", "completed"]
@@ -48,6 +50,12 @@ def codex_completion_state(
     if row is None:
         raise ValueError("Codex proposal run must be persisted as started before append.")
     stored_run = CodexRun.model_validate(json.loads(cast(str, row["payload_json"])))
+    if (
+        stored_run.hook == "content_initial_full_draft"
+        and completed_run.status == "completed"
+        and utc_now() >= effective_initial_draft_deadline(stored_run)
+    ):
+        raise ValueError("initial_draft_deadline_expired")
     if stored_run == completed_run:
         return "completed"
     expected_started = completed_run.model_copy(

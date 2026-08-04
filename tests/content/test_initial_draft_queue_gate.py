@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 from apps.api.wilq_api.routers import content_initial_draft
@@ -187,3 +188,81 @@ def test_initial_draft_queue_ignores_started_run_from_another_proposal(
     assert response.run_id != "old-run"
     assert response.proposal_id == "proposal-1"
     assert len(submitted) == 1
+
+
+def test_expired_exact_claim_is_replaced_without_get(tmp_path) -> None:
+    from wilq.content.drafts.initial_draft_run import claim_initial_draft_run
+
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    store.save_codex_run(
+        CodexRun(
+            id="expired-run",
+            hook="content_initial_full_draft",
+            source="wilq_api",
+            status="started",
+            proposal_id="proposal-1",
+            planning_digest="a" * 64,
+            planning_input_digest="b" * 64,
+            used_endpoints=["/api/content/work-items/work/initial-draft"],
+            started_at=datetime.now(UTC) - timedelta(seconds=901),
+            deadline_at=datetime.now(UTC) - timedelta(seconds=1),
+        )
+    )
+    claim = claim_initial_draft_run(
+        store,
+        work_item_id="work",
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        evidence_ids=["ev"],
+        timeout_seconds=900,
+    )
+    assert claim.newly_claimed is True
+    assert claim.run.id != "expired-run"
+    old = next(run for run in store.list_codex_runs() if run.id == "expired-run")
+    assert old.status == "failed"
+    assert old.error == "initial_draft_timeout"
+
+
+def test_queue_persists_proposal_evidence_ids(tmp_path, monkeypatch) -> None:
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    submitted = []
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_INITIAL_DRAFT_EXECUTOR",
+        SimpleNamespace(submit=lambda fn, *args: submitted.append(args)),
+    )
+    snapshot = _snapshot(latest_revision=None)
+    snapshot.planning_workspace.proposal.evidence_ids = ["ev-b", "ev-a", "ev-b"]
+    content_initial_draft._queue_initial_draft(
+        "work", _request(), StdioCodexAppServerClient(), lambda _: snapshot, snapshot
+    )
+    run = store.list_codex_runs()[0]
+    assert run.evidence_ids == ["ev-b", "ev-a"]
+
+
+def test_expired_initial_draft_cannot_complete_atomic_append(tmp_path) -> None:
+    import pytest
+
+    from wilq.content.workflow.codex_revision_commit import codex_completion_state
+
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    now = datetime.now(UTC)
+    started = CodexRun(
+        id="expired-append",
+        hook="content_initial_full_draft",
+        source="wilq_api",
+        status="started",
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        used_endpoints=["/api/content/work-items/work/initial-draft"],
+        started_at=now - timedelta(seconds=901),
+        deadline_at=now - timedelta(seconds=1),
+    )
+    store.save_codex_run(started)
+    completed = started.model_copy(update={"status": "completed", "completed_at": now})
+    with store._connect() as connection, pytest.raises(ValueError, match="deadline"):
+        connection.execute("BEGIN IMMEDIATE")
+        codex_completion_state(connection, completed)

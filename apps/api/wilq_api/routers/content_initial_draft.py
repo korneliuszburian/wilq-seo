@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
 from typing import Literal
 
 from fastapi import APIRouter
@@ -12,7 +11,11 @@ from apps.api.wilq_api.routers.content_codex_runtime import (
     content_codex_app_server_client,
 )
 from wilq.codex.app_server import StdioCodexAppServerClient
-from wilq.content.drafts.initial_draft_run import claim_initial_draft_run
+from wilq.content.drafts.initial_draft_run import (
+    claim_initial_draft_run,
+    effective_initial_draft_deadline,
+    transition_initial_draft_run_if_status,
+)
 from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
@@ -44,6 +47,26 @@ _INITIAL_DRAFT_EXECUTOR = ThreadPoolExecutor(
     thread_name_prefix="wilq-content-draft",
 )
 _DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 900.0
+
+
+class _InitialDraftDeadlineClient:
+    def __init__(self, base: StdioCodexAppServerClient, run_id: str) -> None:
+        self._base = base
+        self._run_id = run_id
+
+    def run_structured_turn(self, request):
+        run = next(
+            (item for item in local_state_store().list_codex_runs() if item.id == self._run_id),
+            None,
+        )
+        if run is None or run.status != "started":
+            raise TimeoutError("initial draft run is no longer active")
+        remaining = (effective_initial_draft_deadline(run) - utc_now()).total_seconds()
+        if remaining <= 0:
+            raise TimeoutError("initial draft deadline expired")
+        return StdioCodexAppServerClient(
+            timeout_seconds=min(self._base.timeout_seconds, remaining)
+        ).run_structured_turn(request)
 
 _INITIAL_DRAFT_BLOCKER_CODES = {
     "planning_not_ready",
@@ -132,7 +155,7 @@ def _queue_initial_draft(
         proposal_id=proposal.proposal_id,
         planning_digest=proposal.planning_digest,
         planning_input_digest=proposal.planning_input_digest,
-        evidence_ids=list(getattr(planning, "evidence_ids", [])),
+        evidence_ids=list(getattr(proposal, "evidence_ids", [])),
         timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
     )
     run_id = claim.run.id
@@ -178,8 +201,8 @@ def _read_initial_draft_status(work_item_id: str) -> ContentInitialDraftResponse
     stale = _stale_initial_draft_response(work_item_id, proposal)
     if stale is not None:
         return stale
-    latest = _latest_run_for_proposal(work_item_id, proposal)
     revision = content_workflow_store().load_draft_revision_state(work_item_id).latest_revision
+    latest = _latest_run_for_proposal(work_item_id, proposal, revision)
     if latest is not None and latest.status == "started":
         return _queued_initial_draft_response(
             work_item_id,
@@ -239,6 +262,7 @@ def _stale_initial_draft_response(
 def _latest_run_for_proposal(
     work_item_id: str,
     proposal: ContentPlanningProposal | None,
+    revision: object | None = None,
 ) -> CodexRun | None:
     if proposal is None:
         return None
@@ -251,15 +275,36 @@ def _latest_run_for_proposal(
                 run.hook == "content_initial_full_draft"
                 and endpoint in run.used_endpoints
                 and run.proposal_id == proposal.proposal_id
-                and getattr(run, "planning_digest", None)
-                == getattr(proposal, "planning_digest", None)
                 and run.planning_input_digest == proposal.planning_input_digest
+                and (
+                    getattr(run, "planning_digest", None)
+                    == getattr(proposal, "planning_digest", None)
+                    or (
+                        run.planning_digest is None
+                        and _legacy_run_matches_revision(run, proposal, revision)
+                    )
+                )
             )
         ),
         key=lambda run: run.started_at,
         default=None,
     )
     return _expire_stale_initial_draft_run(latest)
+
+
+def _legacy_run_matches_revision(
+    run: CodexRun,
+    proposal: ContentPlanningProposal,
+    revision: object | None,
+) -> bool:
+    metadata = getattr(revision, "proposal_metadata", None)
+    return bool(
+        revision is not None
+        and getattr(revision, "planning_digest", None) == proposal.planning_digest
+        and getattr(revision, "planning_input_digest", None)
+        == proposal.planning_input_digest
+        and getattr(metadata, "codex_run_id", None) == run.id
+    )
 
 
 def _completed_initial_draft_matches(
@@ -394,18 +439,10 @@ def _latest_initial_draft_run(work_item_id: str) -> CodexRun | None:
 def _expire_stale_initial_draft_run(run: CodexRun | None) -> CodexRun | None:
     if run is None or run.status != "started":
         return run
-    if run.started_at >= utc_now() - timedelta(
-        seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS
-    ):
+    if utc_now() < effective_initial_draft_deadline(run):
         return run
-    return local_state_store().save_codex_run(
-        run.model_copy(
-            update={
-                "status": "failed",
-                "completed_at": utc_now(),
-                "error": "initial_draft_timeout",
-            }
-        )
+    return transition_initial_draft_run_if_status(
+        local_state_store(), run, status="failed", error="initial_draft_timeout"
     )
 
 
@@ -418,10 +455,11 @@ def _run_queued_initial_draft(
 ) -> None:
     try:
         snapshot = snapshot_loader(work_item_id)
+        deadline_client = _InitialDraftDeadlineClient(client, run_id)
         result = generate_initial_full_draft(
             snapshot=snapshot,
             request=request,
-            client=client,
+            client=deadline_client,
             workflow_store=content_workflow_store(),
             run_store=local_state_store(),
             run_id=run_id,
@@ -456,14 +494,8 @@ def _persist_terminal_preflight_run(
         (run for run in store.list_codex_runs() if run.id == run_id), None
     )
     if existing is not None:
-        store.save_codex_run(
-            existing.model_copy(
-                update={
-                    "status": status,
-                    "completed_at": utc_now(),
-                    "error": blocker_code,
-                }
-            )
+        transition_initial_draft_run_if_status(
+            store, existing, status=status, error=blocker_code
         )
         return
     store.save_codex_run(
@@ -499,14 +531,11 @@ def _mark_initial_draft_run_failed(run_id: str, error: Exception) -> None:
     run = next((item for item in store.list_codex_runs() if item.id == run_id), None)
     if run is None or run.status != "started":
         return
-    store.save_codex_run(
-        run.model_copy(
-            update={
-                "status": "failed",
-                "completed_at": utc_now(),
-                "error": f"worker_exception:{type(error).__name__}",
-            }
-        )
+    transition_initial_draft_run_if_status(
+        store,
+        run,
+        status="failed",
+        error=f"worker_exception:{type(error).__name__}",
     )
 
 
