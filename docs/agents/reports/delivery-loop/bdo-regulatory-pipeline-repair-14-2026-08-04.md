@@ -1,6 +1,6 @@
 # BDO regulatory pipeline — repair 14
 
-Production repair fixed point: `pending repair-15 commit`
+Production repair fixed point: `3f4d7862`
 
 Parent: `35c7e067`
 
