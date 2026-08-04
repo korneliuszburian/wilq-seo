@@ -1,6 +1,6 @@
 # BDO regulatory pipeline — repair 14
 
-Production repair fixed point: `3f4d7862`
+Production repair fixed point: `db96ccf0`
 
 Parent: `35c7e067`
 
@@ -25,6 +25,9 @@ deploy, or execute an ActionObject.
   than the generic `persistence_failed` blocker.
 - Queue reads cannot overwrite an existing authority record; an old request is
   rejected without touching the newer run.
+- Queue no longer records authority. Context mutation code owns the explicit
+  `record_initial_draft_context()` advance; queue only bootstraps an absent
+  authority through its atomic claim.
 - A fresh canonical revision is returned before creating a shadow retry, and
   canonical context reconstruction uses the revision's own identity consistently.
 
