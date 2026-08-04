@@ -19,10 +19,6 @@ from wilq.content.canonical.landing_identity import (
     landing_page_metric_lookup_urls,
     match_landing_page,
 )
-from wilq.content.drafts.initial_draft_run import (
-    initial_draft_context_digest,
-    record_initial_draft_context,
-)
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.planning.generated_proposal import read_content_planning_proposal
 from wilq.content.planning.generated_proposal_store import (
@@ -52,7 +48,7 @@ from wilq.content.workflow.exact_demand_decision import (
 )
 from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
 from wilq.content.workflow.planning import ContentPlanningDecision, ContentPlanningProposal
-from wilq.content.workflow.revisions import ContentDraftRevisionState, content_draft_package_digest
+from wilq.content.workflow.revisions import ContentDraftRevisionState
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import (
     ContentDecisionItem,
@@ -62,7 +58,6 @@ from wilq.schemas import (
     connector_refresh_has_live_data,
 )
 from wilq.storage.exact_metric_batch import list_exact_metric_batch
-from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
 # Exact demand enrichment is a read-only projection of the already cached
@@ -249,42 +244,7 @@ def snapshot_for_work_item_or_404(
                 detail="Content work item is not available after review lookup.",
             )
         snapshot = _with_recorded_human_review(snapshot)
-    _record_current_initial_draft_context(snapshot)
     return snapshot
-
-
-def _record_current_initial_draft_context(
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-) -> None:
-    planning = snapshot.planning_workspace
-    package = snapshot.draft_package.draft_package_result.draft_package
-    if planning is None or package is None:
-        return
-    item = snapshot.preflight.item
-    proposal = planning.proposal
-    record_initial_draft_context(
-        local_state_store(),
-        work_item_id=item.id,
-        context_digest=initial_draft_context_digest(
-            base_revision_id=(
-                None
-                if snapshot.revision_workspace.latest_revision is None
-                else snapshot.revision_workspace.latest_revision.revision_id
-            ),
-            draft_package_id=package.id,
-            draft_package_digest=content_draft_package_digest(package),
-            final_canonical_url=item.final_canonical_url or item.intended_final_url,
-            service_card_id=proposal.service_card_id,
-            proposal_id=proposal.proposal_id,
-            planning_digest=proposal.planning_digest,
-            planning_input_digest=proposal.planning_input_digest,
-        ),
-        base_revision_id=(
-            None
-            if snapshot.revision_workspace.latest_revision is None
-            else snapshot.revision_workspace.latest_revision.revision_id
-        ),
-    )
 
 
 def snapshot_for_default_work_item_or_404() -> ContentWorkItemWorkflowSnapshotResponse:
