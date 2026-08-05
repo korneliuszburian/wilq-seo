@@ -94,27 +94,76 @@ pid_args() {
   ps -p "$pid" -o args= 2>/dev/null || true
 }
 
+pid_ppid() {
+  local pid="$1"
+  ps -p "$pid" -o ppid= 2>/dev/null | tr -d '[:space:]' || true
+}
+
+pid_cwd() {
+  local pid="$1"
+  readlink "/proc/$pid/cwd" 2>/dev/null || true
+}
+
 pid_pgid() {
   local pid="$1"
   ps -p "$pid" -o pgid= 2>/dev/null | tr -d '[:space:]' || true
 }
 
-safe_to_stop() {
+is_wilq_service_process() {
   local service="$1"
   local pid="$2"
   local args
   args="$(pid_args "$pid")"
   case "$service" in
     api)
-      [[ "$args" == *"apps.api.wilq_api.main:app"* ]] || [[ "$args" == *"$ROOT_DIR"*"/.venv/bin/uvicorn"* ]]
+      [[ "$args" == *"apps.api.wilq_api.main:app"* ]]
       ;;
     dashboard)
-      [[ "$args" == *"$ROOT_DIR"* ]] && { [[ "$args" == *"vite"* ]] || [[ "$args" == *"@wilq/dashboard"* ]]; }
+      [[ "$args" == *"@wilq/dashboard"* ]] || [[ "$args" == *"apps/dashboard"*"vite"* ]]
       ;;
     *)
       return 1
       ;;
   esac
+}
+
+is_current_wilq_service_process() {
+  local service="$1"
+  local pid="$2"
+  local cwd
+  cwd="$(pid_cwd "$pid")"
+  is_wilq_service_process "$service" "$pid" && {
+    [[ "$cwd" == "$ROOT_DIR" ]] || [[ "$(pid_args "$pid")" == *"$ROOT_DIR"* ]]
+  }
+}
+
+is_deleted_wilq_worktree_process() {
+  local service="$1"
+  local cursor="$2"
+  local parent
+  local cwd
+
+  # The port listener can be a Uvicorn worker whose command line no longer
+  # contains WILQ.  Follow only its short parent chain and accept a process
+  # exclusively when a WILQ service parent has a deleted working directory.
+  for _ in $(seq 1 8); do
+    [ -n "$cursor" ] || return 1
+    cwd="$(pid_cwd "$cursor")"
+    if is_wilq_service_process "$service" "$cursor" && [[ "$cwd" == *" (deleted)"* ]]; then
+      return 0
+    fi
+    parent="$(pid_ppid "$cursor")"
+    [ -n "$parent" ] && [ "$parent" != "$cursor" ] || return 1
+    cursor="$parent"
+  done
+  return 1
+}
+
+safe_to_stop() {
+  local service="$1"
+  local pid="$2"
+  is_current_wilq_service_process "$service" "$pid" || \
+    is_deleted_wilq_worktree_process "$service" "$pid"
 }
 
 kill_process_group() {
@@ -162,7 +211,13 @@ stop_service() {
   pid="$(read_pid "$service")"
 
   if is_pid_alive "$pid"; then
-    kill_process_group "$pid"
+    if safe_to_stop "$service" "$pid"; then
+      kill_process_group "$pid"
+    else
+      echo "Refusing to stop unmanaged pid from $(pid_file "$service"):" >&2
+      echo "  pid=$pid args=$(pid_args "$pid")" >&2
+      return 1
+    fi
   fi
   rm -f "$(pid_file "$service")"
 
