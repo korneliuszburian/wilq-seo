@@ -2645,7 +2645,17 @@ export const ContentDraftRevisionInternalLinkSchema = z.object({
 });
 
 const isSafeOfficialSourceUrl = (value: string): boolean => {
-  if (value !== value.trim() || /[\x00-\x20\x7f<>"'`(){}|\\^\[\]]/.test(value)) return false;
+  const containsControlCharacter = Array.from(value).some((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 0x20 || code === 0x7f;
+  });
+  if (
+    value !== value.trim() ||
+    containsControlCharacter ||
+    /[<>"'`(){}|\\^]/.test(value) ||
+    value.includes("[") ||
+    value.includes("]")
+  ) return false;
   try {
     const parsed = new URL(value);
     return (
