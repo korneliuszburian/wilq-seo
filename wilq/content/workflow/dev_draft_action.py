@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from copy import deepcopy
 from typing import Any, Literal
 from uuid import uuid4
@@ -28,6 +29,10 @@ from wilq.storage.local_state import local_state_store
 CONTENT_DEV_DRAFT_ACTION_TYPE = "content_dev_draft_create"
 CONTENT_DEV_DRAFT_ACTION_CONTRACT = "content_dev_draft_action_v1"
 CONTENT_DEV_DRAFT_ACTION_CREATED_EVENT = "content_dev_draft_action_created"
+_LEADING_DOCUMENT_H1 = re.compile(
+    r"\A\s*<h1(?:\s[^>]*)?>.*?</h1>\s*",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 class ContentTargetDraftActionCommand(BaseModel):
@@ -277,7 +282,7 @@ def build_content_dev_draft_write_payload(
             title=title,
             binding=exact_binding,
             authoring_mode=surface.kind,
-            content_html=_document_content_html(current.components),
+            content_html=_wordpress_post_content_html(current.components),
         )
     layouts = [_acf_layout(component) for component in current.components]
     return ContentDevDraftWritePayload(
@@ -376,6 +381,18 @@ def _acf_layout(component: ContentTargetDraftPreviewComponent) -> dict[str, str]
             raise ValueError("Mapowanie szkicu zawiera powtórzone pole targetu.")
         fields[field.target_field] = field.value
     return fields
+
+
+def _wordpress_post_content_html(components: list[ContentTargetDraftPreviewComponent]) -> str:
+    """Map a full document into a WordPress post body without a second page H1.
+
+    Native WordPress themes render the post title as the page H1. The immutable
+    document deliberately retains its H1, but its delivery projection must not
+    put that same heading into ``post_content``.
+    """
+
+    document_html = _document_content_html(components)
+    return _LEADING_DOCUMENT_H1.sub("", document_html, count=1).strip()
 
 
 def _document_content_html(components: list[ContentTargetDraftPreviewComponent]) -> str:

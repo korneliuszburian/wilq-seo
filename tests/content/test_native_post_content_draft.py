@@ -196,6 +196,8 @@ def test_native_post_content_mapping_builds_an_exact_draft_only_payload(monkeypa
     assert payload.endpoint == "posts"
     assert payload.acf is None
     assert payload.content_html is not None
+    assert "<h1>BDO — obowiązki przedsiębiorcy</h1>" not in payload.content_html
+    assert payload.content_html.startswith("<p>Praktyczny przewodnik po obowiązkach BDO.</p>")
     assert "Kiedy sprawdzić obowiązki BDO" in payload.content_html
     assert payload.post_status == "draft"
     assert payload.create_only is True
