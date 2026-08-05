@@ -209,10 +209,10 @@ def test_full_document_official_sources_are_digest_bound_and_preserved_by_child_
             "created_at": "2026-07-31T12:00:00Z",
         }
     )
-    assert revision_document_markdown(revision).endswith(
-        "[Oficjalny opis systemu BDO](https://bdo.mos.gov.pl/o-systemie-bdo/) — "
-        "zweryfikowano: 2026-07-31."
-    )
+    markdown = revision_document_markdown(revision)
+    assert "Źródła urzędowe" not in markdown
+    assert "https://bdo.mos.gov.pl/o-systemie-bdo/" not in markdown
+    assert revision.official_source_references == [reference]
 
     child = build_child_draft_revision_command(
         revision,
@@ -810,6 +810,9 @@ def _legacy_digest(command: ContentDraftRevisionAppendCommand) -> str:
         "planning_digest": command.planning_digest,
         "final_canonical_url": command.final_canonical_url,
         "title": command.title,
+        "source_provenance": [
+            item.model_dump(mode="json") for item in command.source_provenance
+        ],
         "sections": [
             {
                 "heading": section.heading,
