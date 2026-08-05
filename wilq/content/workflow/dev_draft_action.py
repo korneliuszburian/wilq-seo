@@ -7,6 +7,12 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.actions.metric_utils import unique_values
+from wilq.connectors.wordpress.acf_source_snapshot import read_wordpress_acf_flexible_snapshot
+from wilq.content.workflow.acf_clone_projection import (
+    ContentAcfClonePlan,
+    ContentAcfCloneReplacement,
+    compile_acf_clone_payload,
+)
 from wilq.content.workflow.delivery_projection import wordpress_post_content_html
 from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.target_discovery import build_content_target_discovery
@@ -63,7 +69,7 @@ class ContentDevDraftWritePayload(BaseModel):
     delete_allowed: Literal[False] = False
     destructive_update_allowed: Literal[False] = False
     title: str = Field(min_length=1)
-    acf: dict[str, list[dict[str, str]]] | None = None
+    acf: dict[str, list[dict[str, object]]] | None = None
     content_html: str | None = None
     binding: dict[str, str] = Field(min_length=1)
 
@@ -100,6 +106,7 @@ def create_content_target_draft_action(
     surface = target.authoring_surface
     if surface is None:
         raise ValueError("Akcja szkicu dev wymaga odczytanego układu authoringu.")
+    clone_plan = _acf_clone_plan(preview) if surface.kind == "acf_flexible_content" else None
     binding = {
         "work_item_id": preview.work_item_id,
         "revision_id": preview.revision.revision_id,
@@ -111,7 +118,9 @@ def create_content_target_draft_action(
         "root_field": preview.root_field,
         "authoring_mode": surface.kind,
     }
-    draft_payload = _draft_payload_identity(preview)
+    if clone_plan is not None:
+        binding["source_acf_digest"] = clone_plan.source_acf_digest
+    draft_payload = _draft_payload_identity(preview, clone_plan=clone_plan)
     payload_preview = {
         "preview_contract": CONTENT_DEV_DRAFT_ACTION_CONTRACT,
         "operation_type_label": "Utworzenie nowego szkicu na dev",
@@ -282,14 +291,24 @@ def build_content_dev_draft_write_payload(
             authoring_mode=surface.kind,
             content_html=_wordpress_post_content_html(current.components),
         )
-    layouts = [_acf_layout(component) for component in current.components]
+    clone_plan = _clone_plan_from_action(action)
+    acf = (
+        _compile_current_acf_clone(
+            clone_plan,
+            source_object_id=current.target.target_contract.object_id,
+            endpoint=endpoint,
+            root_field=current.root_field,
+        )
+        if clone_plan is not None
+        else {current.root_field: [_acf_layout(component) for component in current.components]}
+    )
     return ContentDevDraftWritePayload(
         connector="wordpress_ekologus",
         endpoint=endpoint,
         title=title,
         binding=exact_binding,
         authoring_mode=surface.kind,
-        acf={current.root_field: layouts},
+        acf=acf,
     )
 
 
@@ -344,11 +363,18 @@ def _action_from_creation_event(event: AuditEvent) -> ActionObject:
     return ActionObject.model_validate(payload)
 
 
-def _draft_payload_identity(preview: ContentTargetDraftPreview) -> dict[str, Any]:
-    return {
+def _draft_payload_identity(
+    preview: ContentTargetDraftPreview,
+    *,
+    clone_plan: ContentAcfClonePlan | None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
         "root_field": preview.root_field,
         "component_ids": [component.component_id for component in preview.components],
     }
+    if clone_plan is not None:
+        payload["acf_clone_plan"] = clone_plan.model_dump(mode="json")
+    return payload
 
 
 def _wordpress_endpoint(post_type: str) -> Literal["posts", "pages"]:
@@ -372,8 +398,72 @@ def _document_title(components: list[ContentTargetDraftPreviewComponent]) -> str
     return str(titles[0])
 
 
-def _acf_layout(component: ContentTargetDraftPreviewComponent) -> dict[str, str]:
-    fields: dict[str, str] = {"acf_fc_layout": component.layout_name}
+def _acf_clone_plan(preview: ContentTargetDraftPreview) -> ContentAcfClonePlan | None:
+    if preview.target is None or preview.root_field is None:
+        raise ValueError("Plan klonowania ACF wymaga dokładnego targetu.")
+    surface = preview.target.target_contract.authoring_surface
+    source_digest = surface.source_acf_digest if surface is not None else None
+    if source_digest is None or any(
+        component.target_section_index is None for component in preview.components
+    ):
+        # Older local previews cannot have been produced by the current target
+        # discovery contract. They remain executable only in compatibility
+        # tests; discovery blocks real ACF delivery without these exact facts.
+        return None
+    replacements: list[ContentAcfCloneReplacement] = []
+    for component in preview.components:
+        if component.target_section_index is None:
+            raise RuntimeError("Validated plan klonowania utracił pozycję sekcji ACF.")
+        replacements.extend(
+            ContentAcfCloneReplacement(
+                section_index=component.target_section_index,
+                layout_name=component.layout_name,
+                field_name=field.target_field,
+                value=field.value,
+                value_kind=field.value_kind,
+            )
+            for field in component.fields
+        )
+    return ContentAcfClonePlan(
+        source_object_id=preview.target.target_contract.object_id,
+        root_field=preview.root_field,
+        source_acf_digest=source_digest,
+        replacements=replacements,
+    )
+
+
+def _clone_plan_from_action(action: ActionObject) -> ContentAcfClonePlan | None:
+    draft_payload = action.payload.get("draft_payload")
+    raw_plan = draft_payload.get("acf_clone_plan") if isinstance(draft_payload, dict) else None
+    if raw_plan is None:
+        return None
+    if not isinstance(raw_plan, dict):
+        raise ValueError("Akcja szkicu ACF ma niepoprawny plan klonowania.")
+    return ContentAcfClonePlan.model_validate(raw_plan)
+
+
+def _compile_current_acf_clone(
+    plan: ContentAcfClonePlan,
+    *,
+    source_object_id: str,
+    endpoint: Literal["posts", "pages"],
+    root_field: str,
+) -> dict[str, list[dict[str, object]]]:
+    if plan.source_object_id != source_object_id:
+        raise ValueError("Plan klonowania ACF wskazuje inny obiekt dev.")
+    if plan.root_field != root_field:
+        raise ValueError("Plan klonowania ACF wskazuje inne pole targetu.")
+    snapshot = read_wordpress_acf_flexible_snapshot(
+        "wordpress_ekologus",
+        object_id=source_object_id,
+        content_type=endpoint,
+        root_field=root_field,
+    )
+    return compile_acf_clone_payload(plan, snapshot)
+
+
+def _acf_layout(component: ContentTargetDraftPreviewComponent) -> dict[str, object]:
+    fields: dict[str, object] = {"acf_fc_layout": component.layout_name}
     for field in component.fields:
         if field.target_field in fields:
             raise ValueError("Mapowanie szkicu zawiera powtórzone pole targetu.")

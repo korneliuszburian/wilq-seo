@@ -783,6 +783,7 @@ export const ContentTargetAuthoringSurfaceSchema = z.object({
   schema_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   schema_source_ref: z.string().default(""),
   schema_reason: z.string().default(""),
+  source_acf_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   write_profile_status: z.enum(["ready", "not_required", "unavailable"]).default("unavailable"),
   write_profile_reason: z.string().default("")
 });

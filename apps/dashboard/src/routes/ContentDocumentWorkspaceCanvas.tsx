@@ -540,7 +540,7 @@ function TargetMappingTargetSummary({
               <p className="mt-2 leading-6 text-slate-600">
                 {surface.schema_status === "available"
                   ? `Schema ACF z dev rozpoznany${surface.schema_digest ? " dla dokładnego obiektu" : ""}. ` +
-                    "To pozwala sprawdzić strukturę sekcji, ale nie otwiera jeszcze zapisu."
+                    "WILQ zachowa istniejący układ i może podmienić wyłącznie potwierdzone pola tekstowe."
                   : `Schema ACF nie jest jeszcze dostępny: ${surface.schema_reason || "brakuje odczytu OPTIONS."}`}
               </p>
               {surface.schema_status === "available" ? (

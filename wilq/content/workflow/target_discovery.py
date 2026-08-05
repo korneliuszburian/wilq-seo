@@ -12,8 +12,10 @@ from wilq.connectors.wordpress.acf_rest_schema import (
     WordPressAcfRestSchema,
     read_wordpress_acf_rest_schema,
 )
+from wilq.connectors.wordpress.acf_source_snapshot import (
+    read_wordpress_acf_flexible_snapshot,
+)
 from wilq.connectors.wordpress.authoring import (
-    WordPressAcfAuthoringProfile,
     WordPressAuthoringDevContentObject,
     WordPressAuthoringProfile,
     build_wordpress_authoring_profile,
@@ -46,6 +48,7 @@ class ContentTargetAuthoringSurface(BaseModel):
     schema_digest: str | None = None
     schema_source_ref: str = ""
     schema_reason: str = ""
+    source_acf_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     write_profile_status: Literal["ready", "not_required", "unavailable"] = "ready"
     write_profile_reason: str = ""
 
@@ -192,7 +195,14 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
         if item.acf_field_name
         else None
     )
-    target = _target(item, profile, observed_at, acf_schema=acf_schema)
+    source_acf_digest = _source_acf_digest(item)
+    target = _target(
+        item,
+        profile,
+        observed_at,
+        acf_schema=acf_schema,
+        source_acf_digest=source_acf_digest,
+    )
     return ContentTargetDiscovery(
         work_item_id=work_item_id,
         public_url=public_url,
@@ -259,8 +269,14 @@ def _target(
     observed_at: str,
     *,
     acf_schema: WordPressAcfRestSchema | None = None,
+    source_acf_digest: str | None = None,
 ) -> ContentTargetDiscoveryTarget:
-    contract = _target_contract(item, profile, acf_schema=acf_schema)
+    contract = _target_contract(
+        item,
+        profile,
+        acf_schema=acf_schema,
+        source_acf_digest=source_acf_digest,
+    )
     digest = _digest(contract)
     observation = _observation_evidence(item, digest, observed_at)
     return ContentTargetDiscoveryTarget(
@@ -296,10 +312,15 @@ def _target_contract(
     profile: WordPressAuthoringProfile,
     *,
     acf_schema: WordPressAcfRestSchema | None = None,
+    source_acf_digest: str | None = None,
 ) -> ContentTargetContract:
     surface = None
     if item.acf_field_name:
-        writable_fields_by_layout, profile_reason = _acf_writable_fields(item, profile.acf)
+        writable_fields_by_layout, profile_reason = _acf_writable_fields(
+            item,
+            acf_schema=acf_schema,
+            source_acf_digest=source_acf_digest,
+        )
         schema_layouts = {
             layout.name: layout for layout in acf_schema.layouts
         } if acf_schema is not None else {}
@@ -323,6 +344,7 @@ def _target_contract(
             schema_digest=acf_schema.schema_digest if acf_schema is not None else None,
             schema_source_ref=acf_schema.source_ref if acf_schema is not None else "",
             schema_reason=acf_schema.reason if acf_schema is not None else "",
+            source_acf_digest=source_acf_digest,
             write_profile_status=(
                 "ready" if writable_fields_by_layout else "unavailable"
             ),
@@ -362,9 +384,9 @@ def _write_profile_reason(
     if acf_schema is None or acf_schema.status != "available":
         return profile_reason
     return (
-        "Schema ACF została odczytana dla dokładnego obiektu dev, ale WILQ nie otwiera "
-        "jeszcze zapisu: compiler musi najpierw zachować wszystkie istniejące wartości "
-        "layoutu poza zatwierdzonymi polami copy. "
+        "Schema ACF została odczytana dla dokładnego obiektu dev. WILQ przed zapisem "
+        "ponownie odczyta cały układ, zachowa niewybrane wartości i podmieni tylko "
+        "zatwierdzone pola copy. "
         f"{profile_reason}"
     )
 
@@ -374,26 +396,27 @@ def _schema_field_names(layout: object) -> list[str]:
     return [field.name for field in fields if isinstance(getattr(field, "name", None), str)]
 
 
-_DIRECT_ACF_TEXT_TYPES = {"text", "textarea", "wysiwyg"}
-
-
 def _acf_writable_fields(
     item: WordPressAuthoringDevContentObject,
-    acf: WordPressAcfAuthoringProfile,
+    *,
+    acf_schema: WordPressAcfRestSchema | None,
+    source_acf_digest: str | None,
 ) -> tuple[dict[str, list[str]], str]:
-    """Return only fields a create-only row can populate without guessing defaults.
+    """Allow only observed direct string leaves for a preserve-first clone.
 
-    REST observation tells us the shape currently rendered on dev, but not the
-    ACF type, requiredness or safe defaults.  A configured export must match the
-    exact flexible root and an observed layout before any direct text field is
-    offered to a human mapper.
+    The eventual draft does *not* construct a Flexible Content row.  It re-reads
+    its exact source, keeps every untouched value and changes only these
+    schema-confirmed scalar leaves.  Nested objects, arrays, links, media and
+    unknown values remain outside this narrow authoring profile.
     """
 
-    if not acf.flexible_content_field_name:
-        return {}, "Brakuje dokładnego profilu ACF dla pola Flexible Content tego obiektu."
-    if acf.flexible_content_field_name != item.acf_field_name:
-        return {}, "Skonfigurowany profil ACF dotyczy innego pola Flexible Content."
-    layouts_by_name = {layout.name: layout for layout in acf.layouts}
+    if acf_schema is None or acf_schema.status != "available":
+        return {}, "Brakuje dokładnego schematu REST ACF dla pola Flexible Content."
+    if acf_schema.root_field != item.acf_field_name:
+        return {}, "Odczytany schemat ACF dotyczy innego pola Flexible Content."
+    if source_acf_digest is None:
+        return {}, "Odczyt targetu nie potwierdza pełnego digesta źródłowego pola ACF."
+    layouts_by_name = {layout.name: layout for layout in acf_schema.layouts}
     writable_by_layout: dict[str, list[str]] = {}
     for section in item.sections:
         layout = layouts_by_name.get(section.layout_name)
@@ -402,21 +425,41 @@ def _acf_writable_fields(
         writable = sorted(
             field.name
             for field in layout.fields
-            if field.name in section.field_names and field.field_type in _DIRECT_ACF_TEXT_TYPES
+            if (
+                field.name in section.field_names
+                and field.field_type == "string"
+                and not field.sub_fields
+            )
         )
-        if not writable or not set(layout.required_field_names).issubset(writable):
+        if not writable:
             continue
         writable_by_layout[section.layout_name] = writable
     if writable_by_layout:
         return (
             writable_by_layout,
-            "Dokładny profil ACF potwierdza wyłącznie bezpośrednie pola tekstowe tych layoutów.",
+            "Dokładny schema REST i digest źródła pozwalają zachować layout oraz "
+            "zmienić wyłącznie bezpośrednie pola tekstowe.",
         )
     return (
         {},
-        "Profil ACF nie potwierdza layoutu, który można utworzyć wyłącznie "
-        "z bezpiecznych pól tekstowych.",
+        "Schema ACF nie potwierdza obserwowanego, bezpośredniego pola tekstowego "
+        "do bezpiecznej podmiany.",
     )
+
+
+def _source_acf_digest(item: WordPressAuthoringDevContentObject) -> str | None:
+    if not item.acf_field_name:
+        return None
+    try:
+        snapshot = read_wordpress_acf_flexible_snapshot(
+            "wordpress_ekologus",
+            object_id=item.post_id,
+            content_type="posts" if item.content_type == "post" else "pages",
+            root_field=item.acf_field_name,
+        )
+    except ValueError:
+        return None
+    return snapshot.root_digest
 
 
 def _native_post_content_observed(item: WordPressAuthoringDevContentObject) -> bool:

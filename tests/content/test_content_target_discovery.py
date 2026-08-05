@@ -168,7 +168,7 @@ def test_target_discovery_exposes_exact_acf_schema_without_opening_acf_delivery(
     assert surface.schema_digest == "a" * 64
     assert surface.layouts[0].schema_fields == ["title", "content"]
     assert surface.write_profile_status == "unavailable"
-    assert "nie otwiera jeszcze zapisu" in surface.write_profile_reason
+    assert "pełnego digesta źródłowego" in surface.write_profile_reason
 
 
 def test_target_discovery_identifies_native_post_content_without_inventing_acf(
