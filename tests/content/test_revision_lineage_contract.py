@@ -392,3 +392,48 @@ def test_canonical_html_alignment_is_not_a_second_codex_proposal() -> None:
     assert saved.correction_reason == "canonical_html_alignment"
     assert saved.proposal_metadata is None
     assert saved.sections == request.sections
+
+
+def test_editor_child_is_not_a_replay_of_its_parent_codex_completion() -> None:
+    command = _command(schema_version="wilq_content_draft_revision_v2")
+    revision = build_stored_draft_revision(
+        command.model_copy(
+            update={
+                "proposal_metadata": ContentDraftRevisionProposalMetadata(
+                    codex_run_id="codex_parent_proposal",
+                    selected_section_headings=[command.sections[0].heading],
+                    section_lineage=[
+                        {"heading": command.sections[0].heading, "evidence_ids": ["ev_lineage"]}
+                    ],
+                    quality_verdict="needs_changes",
+                )
+            }
+        ),
+        revision_number=2,
+        content_digest="b" * 64,
+    )
+    request = ContentDraftRevisionSaveRequest(
+        base_revision_id=revision.revision_id,
+        title=revision.title,
+        sections=[
+            revision.sections[0].model_copy(
+                update={
+                    "body_markdown": "Tekst po ręcznej poprawce.",
+                    "content_html": content_html_from_markdown("Tekst po ręcznej poprawce."),
+                }
+            )
+        ],
+        created_by="wilku",
+    )
+
+    saved = _build_editor_save_command(
+        work_item_id=revision.work_item_id,
+        request=request,
+        latest_revision=revision,
+        draft_package=None,
+        planning=None,
+        final_canonical_url=revision.final_canonical_url,
+        revision_context_current=True,
+    )
+
+    assert saved.proposal_metadata is None

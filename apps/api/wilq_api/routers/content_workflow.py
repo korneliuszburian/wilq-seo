@@ -107,11 +107,11 @@ def _build_editor_save_command(
             cta_blocks=latest_revision.cta_blocks,
             internal_links=latest_revision.internal_links,
             official_source_references=latest_revision.official_source_references,
-            proposal_metadata=(
-                None
-                if request.correction_reason == "canonical_html_alignment"
-                else latest_revision.proposal_metadata
-            ),
+            # An editor save is a human-authored child revision, not a replay
+            # of the parent Codex completion. The immutable base revision
+            # retains the original proposal/run lineage; carrying that run ID
+            # into this child would incorrectly require a second completion.
+            proposal_metadata=None,
             correction_reason=request.correction_reason,
             created_by=request.created_by,
         )
