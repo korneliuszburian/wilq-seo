@@ -766,13 +766,28 @@ export const ContentNewPageBriefWorkspaceSchema = z.object({
   next_action_label: z.string().min(1)
 });
 
+export const ContentTargetAuthoringRelationshipItemSchema = z.object({
+  relationship_id: z.number().int().positive(),
+  label: z.string().min(1)
+});
+
+export const ContentTargetAuthoringRelationshipSchema = z.object({
+  field_name: z.string().min(1),
+  item_kind: z.literal("integer_id").default("integer_id"),
+  status: z.enum(["available", "unavailable"]).default("unavailable"),
+  source_ref: z.string().default(""),
+  items: z.array(ContentTargetAuthoringRelationshipItemSchema).default([]),
+  reason: z.string().default("")
+});
+
 export const ContentTargetAuthoringLayoutSchema = z.object({
   name: z.string().min(1),
   section_index: z.number().int().positive().nullable().optional(),
   label: z.string().default(""),
   fields: z.array(z.string()).default([]),
   schema_fields: z.array(z.string()).default([]),
-  writable_fields: z.array(z.string()).default([])
+  writable_fields: z.array(z.string()).default([]),
+  relationships: z.array(ContentTargetAuthoringRelationshipSchema).default([])
 });
 
 export const ContentTargetAuthoringSurfaceSchema = z.object({

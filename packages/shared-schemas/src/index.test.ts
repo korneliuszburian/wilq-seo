@@ -2393,6 +2393,63 @@ describe("ContentTargetDiscoverySchema", () => {
       caveats: ["Odczyt nie daje prawa do zapisu."]
     }).success).toBe(true);
   });
+
+  it("keeps observed ACF relationships readable without authorizing a write", () => {
+    expect(ContentTargetDiscoverySchema.safeParse({
+      response_type: "content_target_discovery",
+      contract_version: "content_target_discovery_v2",
+      work_item_id: "content_work_item_home",
+      relation_status: "partial",
+      label: "Znaleziono stronę dev do sprawdzenia",
+      reason: "Odczyt tylko do weryfikacji.",
+      target: {
+        object_id: "2",
+        url: "https://ekologus.dev.proudsite.pl/",
+        post_type: "page",
+        post_status: "publish",
+        observed_surfaces: ["acf_flexible_content"],
+        target_contract: {
+          environment: "dev",
+          object_id: "2",
+          url: "https://ekologus.dev.proudsite.pl/",
+          post_type: "page",
+          post_status: "publish",
+          modified: "2026-08-05T10:00:00",
+          authority: "observation_only",
+          write_authorized: false,
+          authoring_surface: {
+            kind: "acf_flexible_content",
+            root_field: "flexible-home",
+            layouts: [{
+              name: "services",
+              section_index: 2,
+              relationships: [{
+                field_name: "services_order",
+                item_kind: "integer_id",
+                status: "available",
+                source_ref: "https://ekologus.dev.proudsite.pl/",
+                items: [{ relationship_id: 374, label: "EKOdokumentacje" }],
+                reason: "Publiczny układ dev potwierdza relację."
+              }]
+            }],
+            schema_status: "available",
+            write_profile_status: "unavailable"
+          }
+        },
+        target_contract_digest: "a".repeat(64),
+        observation_evidence: {
+          evidence_id: "ev_wordpress_target_observation_home",
+          connector_id: "wordpress_ekologus",
+          object_id: "2",
+          post_type: "page",
+          url: "https://ekologus.dev.proudsite.pl/",
+          post_status: "publish",
+          modified: "2026-08-05T10:00:00",
+          observed_at: "2026-08-05T10:00:01+00:00"
+        }
+      }
+    }).success).toBe(true);
+  });
 });
 
 describe("ContentTargetMappingPreviewSchema", () => {

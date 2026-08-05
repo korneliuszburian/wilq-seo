@@ -26,9 +26,7 @@ def test_options_schema_normalizes_exact_flexible_layouts(
     )
 
     with httpx.Client(transport=httpx.MockTransport(_options_handler)) as client:
-        schema = read_wordpress_acf_rest_schema(
-            "wordpress_ekologus", item, http_client=client
-        )
+        schema = read_wordpress_acf_rest_schema("wordpress_ekologus", item, http_client=client)
 
     assert schema.status == "available"
     assert schema.root_field == "flexible-home"
@@ -39,6 +37,7 @@ def test_options_schema_normalizes_exact_flexible_layouts(
     assert [(field.name, field.field_type) for field in schema.layouts[0].fields] == [
         ("heading", "string"),
         ("settings", "object"),
+        ("services_order", "integer_array"),
     ]
     assert [field.name for field in schema.layouts[0].fields[1].sub_fields] == ["tone"]
 
@@ -69,6 +68,10 @@ def _options_handler(request: httpx.Request) -> httpx.Response:
                                                     "properties": {
                                                         "tone": {"type": ["string", "null"]}
                                                     },
+                                                },
+                                                "services_order": {
+                                                    "type": ["integer", "array", "null"],
+                                                    "items": {"type": "integer"},
                                                 },
                                                 "": {"type": ["string", "null"]},
                                             },

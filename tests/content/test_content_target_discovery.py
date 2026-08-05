@@ -6,11 +6,15 @@ from types import SimpleNamespace
 from typing import Literal
 
 import wilq.content.workflow.target_discovery as discovery_module
+from wilq.connectors.wordpress.acf_relationship_observation import (
+    WordPressAcfRelationshipObservation,
+)
 from wilq.connectors.wordpress.acf_rest_schema import (
     WordPressAcfRestSchema,
     WordPressAcfRestSchemaField,
     WordPressAcfRestSchemaLayout,
 )
+from wilq.connectors.wordpress.acf_source_snapshot import WordPressAcfFlexibleSnapshot
 from wilq.connectors.wordpress.authoring import (
     WordPressAuthoringDevContentObject,
     WordPressAuthoringDevSection,
@@ -96,14 +100,17 @@ def test_target_discovery_reads_exact_dev_object_but_does_not_confirm_relation(m
     assert discovery.target.observation_evidence.evidence_id in discovery.evidence_ids
     assert "ev_wordpress_dev_read" in discovery.evidence_ids
     assert len(discovery.target.target_contract_digest) == 64
-    assert discovery.target.target_contract_digest == sha256(
-        json.dumps(
-            discovery.target.target_contract.model_dump(mode="json"),
-            sort_keys=True,
-            ensure_ascii=False,
-            separators=(",", ":"),
-        ).encode()
-    ).hexdigest()
+    assert (
+        discovery.target.target_contract_digest
+        == sha256(
+            json.dumps(
+                discovery.target.target_contract.model_dump(mode="json"),
+                sort_keys=True,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+    )
     assert "nie potwierdza" in discovery.reason
 
 
@@ -204,6 +211,91 @@ def test_target_discovery_identifies_native_post_content_without_inventing_acf(
     assert surface.layouts[0].fields == ["title", "content_html"]
 
 
+def test_target_discovery_exposes_observed_acf_relationships_without_making_them_writable(
+    monkeypatch,
+) -> None:
+    item = _page("https://dev.ekologus.pl/bdo/").model_copy(
+        update={
+            "sections": [
+                WordPressAuthoringDevSection(
+                    section_index=1,
+                    acf_field_name="content_sections",
+                    layout_name="services",
+                    layout_label="Usługi",
+                    field_names=["services_order"],
+                )
+            ]
+        }
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "inventory_decision_for_work_item",
+        lambda _work_item_id, **_kwargs: SimpleNamespace(
+            source_public_url=PUBLIC_URL, final_canonical_url=None, page=PUBLIC_URL
+        ),
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "build_wordpress_authoring_profile",
+        lambda _connector_id, include_dev_content=False: _profile(item),
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "read_wordpress_acf_rest_schema",
+        lambda _connector_id, _item: WordPressAcfRestSchema(
+            status="available",
+            root_field="content_sections",
+            layouts=[
+                WordPressAcfRestSchemaLayout(
+                    name="services",
+                    label="Usługi",
+                    fields=[
+                        WordPressAcfRestSchemaField(
+                            name="services_order",
+                            label="Kolejność usług",
+                            field_type="integer_array",
+                        )
+                    ],
+                )
+            ],
+        ),
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "_source_acf_snapshot",
+        lambda _item: WordPressAcfFlexibleSnapshot(
+            object_id="346",
+            content_type="pages",
+            root_field="content_sections",
+            root_digest="a" * 64,
+            rows=[{"acf_fc_layout": "services", "services_order": [374, 352]}],
+        ),
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "observe_wordpress_acf_panel_labels",
+        lambda _url, _ids: WordPressAcfRelationshipObservation(
+            status="available",
+            source_url="https://dev.ekologus.pl/bdo/",
+            labels_by_id={374: "EKOdokumentacje", 352: "Sprzedaż sorbentów"},
+            reason="Publiczny układ dev potwierdza dokładne ID i etykiety relacji ACF.",
+        ),
+    )
+
+    discovery = discovery_module.build_content_target_discovery(WORK_ITEM_ID)
+
+    assert discovery is not None and discovery.target is not None
+    surface = discovery.target.target_contract.authoring_surface
+    assert surface is not None
+    relation = surface.layouts[0].relationships[0]
+    assert relation.field_name == "services_order"
+    assert [(item.relationship_id, item.label) for item in relation.items] == [
+        (374, "EKOdokumentacje"),
+        (352, "Sprzedaż sorbentów"),
+    ]
+    assert surface.layouts[0].writable_fields == []
+
+
 def test_target_discovery_does_not_infer_a_target_when_dev_path_differs(monkeypatch) -> None:
     monkeypatch.setattr(
         discovery_module,
@@ -266,9 +358,7 @@ def test_target_discovery_does_not_claim_no_match_when_dev_inventory_is_blocked(
     assert discovery.target is None
     assert discovery.label == "Nie można teraz odczytać obiektów dev"
     assert discovery.reason == "WP REST nie odpowiedział podczas odczytu inventory dev."
-    assert "Nie znaleziono odpowiadającego obiektu" not in (
-        f"{discovery.label} {discovery.reason}"
-    )
+    assert "Nie znaleziono odpowiadającego obiektu" not in (f"{discovery.label} {discovery.reason}")
 
 
 def test_target_discovery_requires_human_choice_for_same_path_page_and_post(monkeypatch) -> None:

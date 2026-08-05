@@ -1018,7 +1018,8 @@ function contentTargetMappingPreview({
               label: "Sekcja tekstowa",
               fields: ["heading", "content_html"],
               schema_fields: ["heading", "content_html"],
-              writable_fields: ["heading", "content_html"]
+              writable_fields: ["heading", "content_html"],
+              relationships: []
             }],
             schema_status: "available",
             schema_digest: "c".repeat(64),

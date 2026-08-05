@@ -8,11 +8,15 @@ from urllib.parse import urlparse
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.connectors.wordpress.acf_relationship_observation import (
+    observe_wordpress_acf_panel_labels,
+)
 from wilq.connectors.wordpress.acf_rest_schema import (
     WordPressAcfRestSchema,
     read_wordpress_acf_rest_schema,
 )
 from wilq.connectors.wordpress.acf_source_snapshot import (
+    WordPressAcfFlexibleSnapshot,
     read_wordpress_acf_flexible_snapshot,
 )
 from wilq.connectors.wordpress.authoring import (
@@ -36,6 +40,29 @@ class ContentTargetAuthoringLayout(BaseModel):
     fields: list[str] = Field(default_factory=list)
     schema_fields: list[str] = Field(default_factory=list)
     writable_fields: list[str] = Field(default_factory=list)
+    relationships: list[ContentTargetAuthoringRelationship] = Field(default_factory=list)
+
+
+class ContentTargetAuthoringRelationshipItem(BaseModel):
+    """One exact ID observed in an ACF relationship field."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    relationship_id: int = Field(gt=0)
+    label: str = Field(min_length=1)
+
+
+class ContentTargetAuthoringRelationship(BaseModel):
+    """Read-only relationship labels inferred only from matching public markup."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    field_name: str
+    item_kind: Literal["integer_id"] = "integer_id"
+    status: Literal["available", "unavailable"] = "unavailable"
+    source_ref: str = ""
+    items: list[ContentTargetAuthoringRelationshipItem] = Field(default_factory=list)
+    reason: str = ""
 
 
 class ContentTargetAuthoringSurface(BaseModel):
@@ -191,17 +218,22 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
         )
     item = matching_items[0]
     acf_schema = (
-        read_wordpress_acf_rest_schema("wordpress_ekologus", item)
-        if item.acf_field_name
-        else None
+        read_wordpress_acf_rest_schema("wordpress_ekologus", item) if item.acf_field_name else None
     )
-    source_acf_digest = _source_acf_digest(item)
+    source_snapshot = _source_acf_snapshot(item)
+    source_acf_digest = source_snapshot.root_digest if source_snapshot is not None else None
+    relationships_by_section = _observed_relationships(
+        item,
+        acf_schema=acf_schema,
+        source_snapshot=source_snapshot,
+    )
     target = _target(
         item,
         profile,
         observed_at,
         acf_schema=acf_schema,
         source_acf_digest=source_acf_digest,
+        relationships_by_section=relationships_by_section,
     )
     return ContentTargetDiscovery(
         work_item_id=work_item_id,
@@ -270,12 +302,14 @@ def _target(
     *,
     acf_schema: WordPressAcfRestSchema | None = None,
     source_acf_digest: str | None = None,
+    relationships_by_section: dict[int, list[ContentTargetAuthoringRelationship]] | None = None,
 ) -> ContentTargetDiscoveryTarget:
     contract = _target_contract(
         item,
         profile,
         acf_schema=acf_schema,
         source_acf_digest=source_acf_digest,
+        relationships_by_section=relationships_by_section,
     )
     digest = _digest(contract)
     observation = _observation_evidence(item, digest, observed_at)
@@ -313,6 +347,7 @@ def _target_contract(
     *,
     acf_schema: WordPressAcfRestSchema | None = None,
     source_acf_digest: str | None = None,
+    relationships_by_section: dict[int, list[ContentTargetAuthoringRelationship]] | None = None,
 ) -> ContentTargetContract:
     surface = None
     if item.acf_field_name:
@@ -321,9 +356,9 @@ def _target_contract(
             acf_schema=acf_schema,
             source_acf_digest=source_acf_digest,
         )
-        schema_layouts = {
-            layout.name: layout for layout in acf_schema.layouts
-        } if acf_schema is not None else {}
+        schema_layouts = (
+            {layout.name: layout for layout in acf_schema.layouts} if acf_schema is not None else {}
+        )
         surface = ContentTargetAuthoringSurface(
             kind="acf_flexible_content",
             root_field=item.acf_field_name,
@@ -333,10 +368,9 @@ def _target_contract(
                     section_index=section.section_index,
                     label=section.layout_label,
                     fields=section.field_names,
-                    schema_fields=_schema_field_names(
-                        schema_layouts.get(section.layout_name)
-                    ),
+                    schema_fields=_schema_field_names(schema_layouts.get(section.layout_name)),
                     writable_fields=writable_fields_by_layout.get(section.layout_name, []),
+                    relationships=(relationships_by_section or {}).get(section.section_index, []),
                 )
                 for section in item.sections
             ],
@@ -345,9 +379,7 @@ def _target_contract(
             schema_source_ref=acf_schema.source_ref if acf_schema is not None else "",
             schema_reason=acf_schema.reason if acf_schema is not None else "",
             source_acf_digest=source_acf_digest,
-            write_profile_status=(
-                "ready" if writable_fields_by_layout else "unavailable"
-            ),
+            write_profile_status=("ready" if writable_fields_by_layout else "unavailable"),
             write_profile_reason=_write_profile_reason(profile_reason, acf_schema),
         )
     elif item.content_type == "post" and _native_post_content_observed(item):
@@ -447,11 +479,13 @@ def _acf_writable_fields(
     )
 
 
-def _source_acf_digest(item: WordPressAuthoringDevContentObject) -> str | None:
+def _source_acf_snapshot(
+    item: WordPressAuthoringDevContentObject,
+) -> WordPressAcfFlexibleSnapshot | None:
     if not item.acf_field_name:
         return None
     try:
-        snapshot = read_wordpress_acf_flexible_snapshot(
+        return read_wordpress_acf_flexible_snapshot(
             "wordpress_ekologus",
             object_id=item.post_id,
             content_type="posts" if item.content_type == "post" else "pages",
@@ -459,7 +493,72 @@ def _source_acf_digest(item: WordPressAuthoringDevContentObject) -> str | None:
         )
     except ValueError:
         return None
-    return snapshot.root_digest
+
+
+def _observed_relationships(
+    item: WordPressAuthoringDevContentObject,
+    *,
+    acf_schema: WordPressAcfRestSchema | None,
+    source_snapshot: WordPressAcfFlexibleSnapshot | None,
+) -> dict[int, list[ContentTargetAuthoringRelationship]]:
+    """Expose only exact relationship IDs which current dev markup confirms.
+
+    A relation observation is deliberately separate from the clone/write profile:
+    an observed label helps an operator understand the page but never authorizes
+    a relation-field mutation.
+    """
+
+    if (
+        acf_schema is None
+        or acf_schema.status != "available"
+        or source_snapshot is None
+        or acf_schema.root_field != item.acf_field_name
+    ):
+        return {}
+    layouts_by_name = {layout.name: layout for layout in acf_schema.layouts}
+    result: dict[int, list[ContentTargetAuthoringRelationship]] = {}
+    for section in item.sections:
+        layout = layouts_by_name.get(section.layout_name)
+        row_index = section.section_index - 1
+        if layout is None or row_index >= len(source_snapshot.rows):
+            continue
+        source_row = source_snapshot.rows[row_index]
+        if source_row.get("acf_fc_layout") != section.layout_name:
+            continue
+        relationships: list[ContentTargetAuthoringRelationship] = []
+        for field in layout.fields:
+            raw_ids = source_row.get(field.name)
+            if (
+                field.field_type != "integer_array"
+                or not isinstance(raw_ids, list)
+                or not raw_ids
+                or any(
+                    isinstance(value, bool) or not isinstance(value, int) or value <= 0
+                    for value in raw_ids
+                )
+            ):
+                continue
+            observation = observe_wordpress_acf_panel_labels(item.link, raw_ids)
+            if observation.status != "available":
+                continue
+            relationships.append(
+                ContentTargetAuthoringRelationship(
+                    field_name=field.name,
+                    status=observation.status,
+                    source_ref=observation.source_url,
+                    items=[
+                        ContentTargetAuthoringRelationshipItem(
+                            relationship_id=relationship_id,
+                            label=observation.labels_by_id[relationship_id],
+                        )
+                        for relationship_id in raw_ids
+                    ],
+                    reason=observation.reason,
+                )
+            )
+        if relationships:
+            result[section.section_index] = relationships
+    return result
 
 
 def _native_post_content_observed(item: WordPressAuthoringDevContentObject) -> bool:
@@ -509,9 +608,12 @@ def _observation_evidence(
         "modified": item.modified,
         "target_contract_digest": target_contract_digest,
     }
-    evidence_id = "ev_wordpress_target_observation_" + sha256(
-        json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
-    ).hexdigest()[:24]
+    evidence_id = (
+        "ev_wordpress_target_observation_"
+        + sha256(
+            json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+        ).hexdigest()[:24]
+    )
     return ContentTargetObservationEvidence(
         evidence_id=evidence_id,
         connector_id="wordpress_ekologus",

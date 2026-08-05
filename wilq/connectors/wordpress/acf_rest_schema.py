@@ -121,8 +121,7 @@ def read_wordpress_acf_rest_schema(
         return _unavailable_schema(
             root_field,
             source_ref,
-            "Odczyt OPTIONS nie potwierdza kompletnych layoutów Flexible Content "
-            "dla tego pola.",
+            "Odczyt OPTIONS nie potwierdza kompletnych layoutów Flexible Content dla tego pola.",
         )
     normalized = [layout.model_dump(mode="json") for layout in layouts]
     digest = sha256(
@@ -138,9 +137,7 @@ def read_wordpress_acf_rest_schema(
     )
 
 
-def _unavailable_schema(
-    root_field: str, source_ref: str, reason: str
-) -> WordPressAcfRestSchema:
+def _unavailable_schema(root_field: str, source_ref: str, reason: str) -> WordPressAcfRestSchema:
     return WordPressAcfRestSchema(
         status="unavailable",
         root_field=root_field,
@@ -280,6 +277,9 @@ def _acf_rest_field_type(payload: dict[str, Any], *, has_children: bool) -> str:
     raw_type = payload.get("type")
     types = raw_type if isinstance(raw_type, list) else [raw_type]
     values = [value for value in types if isinstance(value, str) and value != "null"]
+    items = payload.get("items")
+    if set(values) == {"integer", "array"} and isinstance(items, dict):
+        return "integer_array"
     return values[0] if len(values) == 1 else "unknown"
 
 

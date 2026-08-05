@@ -711,6 +711,9 @@ function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscovery }) 
     {discovery.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
   </>;
   const target = discovery.target;
+  const observedRelationships = target?.target_contract.authoring_surface?.layouts.flatMap((layout) =>
+    layout.relationships.map((relationship) => ({ layout, relationship }))
+  ) ?? [];
   return <>
     <p className="mt-3 font-semibold text-ink">{discovery.label}</p>
     <p className="mt-2 leading-6">{discovery.reason}</p>
@@ -719,6 +722,19 @@ function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscovery }) 
       <p className="mt-1 break-all leading-6">{target.url}</p>
       <p className="mt-2 leading-6">To {target.post_type === "post" ? "artykuł" : "strona"}. Status na dev: {wordpressStatus(target.post_status)}. {target.target_contract.authoring_surface ? `WILQ odczytał ${authoringSurfaceLabel(target.target_contract.authoring_surface.kind).toLocaleLowerCase("pl-PL")}.` : "Nie rozpoznano układu treści na tym obiekcie."}</p>
     </div> : null}
+    {observedRelationships.length > 0 ? <details className="mt-3 rounded-lg bg-slate-50 p-3">
+      <summary className="cursor-pointer font-semibold text-ink">Odczytane relacje ACF</summary>
+      <p className="mt-2 text-sm leading-6 text-slate-700">To jest odczyt bieżącego układu deva. Nie zmienia kolejności ani relacji automatycznie.</p>
+      <div className="mt-3 space-y-3">
+        {observedRelationships.map(({ layout, relationship }) => <section key={`${layout.section_index ?? layout.name}-${relationship.field_name}`} className="rounded-md bg-white p-3 text-sm">
+          <p className="font-semibold text-ink">{layout.label || layout.name} · {relationship.field_name}</p>
+          <p className="mt-1 leading-6 text-slate-700">{relationship.reason}</p>
+          {relationship.status === "available" ? <ul className="mt-2 space-y-1 text-slate-700">
+            {relationship.items.map((item) => <li key={item.relationship_id}>{item.label}</li>)}
+          </ul> : null}
+        </section>)}
+      </div>
+    </details> : null}
     {discovery.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
     <details className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
       <summary className="cursor-pointer font-semibold text-slate-700">Szczegóły techniczne odczytu</summary>
