@@ -1014,6 +1014,8 @@ function contentTargetMappingPreview({
             root_field: "content_sections",
             layouts: [{
               name: "text_section",
+              section_index: 1,
+              label: "Sekcja tekstowa",
               fields: ["heading", "content_html"],
               schema_fields: ["heading", "content_html"],
               writable_fields: ["heading", "content_html"]

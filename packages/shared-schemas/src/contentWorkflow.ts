@@ -768,6 +768,8 @@ export const ContentNewPageBriefWorkspaceSchema = z.object({
 
 export const ContentTargetAuthoringLayoutSchema = z.object({
   name: z.string().min(1),
+  section_index: z.number().int().positive().nullable().optional(),
+  label: z.string().default(""),
   fields: z.array(z.string()).default([]),
   schema_fields: z.array(z.string()).default([]),
   writable_fields: z.array(z.string()).default([])
@@ -867,6 +869,7 @@ export const ContentTargetMappingFieldBindingSchema = z.object({
 export const ContentTargetMappingSelectionSchema = z.object({
   component_id: z.string().min(1),
   layout_name: z.string().min(1),
+  target_section_index: z.number().int().positive().nullable().optional(),
   field_bindings: z.array(ContentTargetMappingFieldBindingSchema).min(1)
 });
 
@@ -907,6 +910,7 @@ export const ContentTargetDraftPreviewComponentSchema = z.object({
   component_id: z.string().min(1),
   label: z.string().min(1),
   layout_name: z.string().min(1),
+  target_section_index: z.number().int().nonnegative().nullable().optional(),
   fields: z.array(ContentTargetDraftPreviewFieldSchema).min(1)
 });
 

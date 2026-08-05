@@ -26,6 +26,11 @@ class ContentTargetAuthoringLayout(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str
+    # WordPress authoring observation numbers visible ACF rows from one.
+    # Keep that human-visible identity through mapping; the eventual compiler
+    # owns the single conversion to a zero-based JSON array position.
+    section_index: int | None = Field(default=None, ge=1)
+    label: str = ""
     fields: list[str] = Field(default_factory=list)
     schema_fields: list[str] = Field(default_factory=list)
     writable_fields: list[str] = Field(default_factory=list)
@@ -304,6 +309,8 @@ def _target_contract(
             layouts=[
                 ContentTargetAuthoringLayout(
                     name=section.layout_name,
+                    section_index=section.section_index,
+                    label=section.layout_label,
                     fields=section.field_names,
                     schema_fields=_schema_field_names(
                         schema_layouts.get(section.layout_name)

@@ -46,7 +46,7 @@ def _page(
         section_count=1,
         sections=[
             WordPressAuthoringDevSection(
-                section_index=0,
+                section_index=1,
                 acf_field_name="content_sections",
                 layout_name="text_section",
                 layout_label="Sekcja tekstowa",
@@ -87,6 +87,9 @@ def test_target_discovery_reads_exact_dev_object_but_does_not_confirm_relation(m
     assert discovery.target.target_contract.write_authorized is False
     assert discovery.target.target_contract.authoring_surface is not None
     assert discovery.target.target_contract.authoring_surface.root_field == "content_sections"
+    observed_layout = discovery.target.target_contract.authoring_surface.layouts[0]
+    assert observed_layout.section_index == 1
+    assert observed_layout.label == "Sekcja tekstowa"
     assert discovery.target.target_contract.authoring_surface.write_profile_status == "unavailable"
     assert discovery.target.target_contract.authoring_surface.layouts[0].writable_fields == []
     assert discovery.target.observation_evidence.object_id == "346"

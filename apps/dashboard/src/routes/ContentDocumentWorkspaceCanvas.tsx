@@ -223,7 +223,9 @@ function TargetDraftPreviewDetails({ preview }: { preview: ContentTargetDraftPre
       <ul className="mt-3 space-y-3">
         {preview.components.map((component) => <li key={component.component_id} className="rounded-lg bg-white p-3">
           <p className="font-semibold text-ink">{component.label}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">Układ: {component.layout_name}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Układ: {component.layout_name}{component.target_section_index != null ? ` · sekcja ${component.target_section_index}` : ""}
+          </p>
           {component.fields.map((field) => <div key={`${component.component_id}-${field.target_field}`} className="mt-2 rounded-md border border-line p-2">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{field.target_field}</p>
             {field.value_kind === "html" ? (
@@ -332,7 +334,11 @@ function TargetMappingConfirmationForm({
 }) {
   const queryClient = useQueryClient();
   const [confirmedBy, setConfirmedBy] = useState("");
-  const [selections, setSelections] = useState<Record<string, { layoutName: string; fields: Record<string, string> }>>({});
+  const [selections, setSelections] = useState<Record<string, {
+    layoutName: string;
+    targetSectionIndex: number | null;
+    fields: Record<string, string>;
+  }>>({});
   const target = preview.target;
   const surface = target?.target_contract.authoring_surface;
   const layouts = surface?.layouts ?? [];
@@ -350,6 +356,7 @@ function TargetMappingConfirmationForm({
           selections: preview.components.map((component) => ({
             component_id: component.component_id,
             layout_name: selections[component.component_id]?.layoutName ?? "",
+            target_section_index: selections[component.component_id]?.targetSectionIndex ?? null,
             field_bindings: component.source_fields.map((sourceField) => ({
               source_field: sourceField.key,
               target_field: selections[component.component_id]?.fields[sourceField.key] ?? ""
@@ -365,13 +372,23 @@ function TargetMappingConfirmationForm({
   const readyToConfirm = Boolean(
     confirmedBy.trim() && preview.components.every((component) => {
       const selection = selections[component.component_id];
-      return selection?.layoutName && component.source_fields.every((field) => selection.fields[field.key]);
+      return selection?.layoutName
+        && (surface?.kind !== "acf_flexible_content" || selection.targetSectionIndex != null)
+        && component.source_fields.every((field) => selection.fields[field.key]);
     })
   );
   const updateLayout = (componentId: string, layoutName: string) => {
     setSelections((current) => ({
       ...current,
-      [componentId]: { layoutName, fields: {} }
+      [componentId]: { layoutName, targetSectionIndex: null, fields: {} }
+    }));
+  };
+  const updateTargetSection = (componentId: string, sectionIndex: number) => {
+    const layout = layouts.find((candidate) => candidate.section_index === sectionIndex);
+    if (!layout) return;
+    setSelections((current) => ({
+      ...current,
+      [componentId]: { layoutName: layout.name, targetSectionIndex: sectionIndex, fields: {} }
     }));
   };
   const updateField = (componentId: string, sourceField: string, targetField: string) => {
@@ -379,6 +396,7 @@ function TargetMappingConfirmationForm({
       ...current,
       [componentId]: {
         layoutName: current[componentId]?.layoutName ?? "",
+        targetSectionIndex: current[componentId]?.targetSectionIndex ?? null,
         fields: { ...current[componentId]?.fields, [sourceField]: targetField }
       }
     }));
@@ -407,19 +425,44 @@ function TargetMappingConfirmationForm({
       <div className="mt-4 space-y-4">
         {preview.components.map((component) => {
           const selection = selections[component.component_id];
-          const layout = layouts.find((candidate) => candidate.name === selection?.layoutName);
+          const layout = surface?.kind === "acf_flexible_content"
+            ? layouts.find((candidate) => candidate.section_index === selection?.targetSectionIndex)
+            : layouts.find((candidate) => candidate.name === selection?.layoutName);
           return (
             <fieldset key={component.component_id} className="rounded-lg border border-line bg-white p-3">
               <legend className="px-1 text-sm font-semibold text-ink">{component.label}</legend>
               <label className="mt-2 block text-sm font-medium text-slate-700">
-                Layout
+                {surface?.kind === "acf_flexible_content" ? "Sekcja na dev" : "Layout"}
                 <select
                   className="mt-1 block w-full rounded-md border border-line bg-white px-3 py-2 text-slate-800"
-                  value={selection?.layoutName ?? ""}
-                  onChange={(event) => updateLayout(component.component_id, event.target.value)}
+                  value={surface?.kind === "acf_flexible_content"
+                    ? String(selection?.targetSectionIndex ?? "")
+                    : selection?.layoutName ?? ""}
+                  onChange={(event) => {
+                    if (surface?.kind === "acf_flexible_content") {
+                      if (!event.target.value) {
+                        setSelections((current) => ({
+                          ...current,
+                          [component.component_id]: {
+                            layoutName: "",
+                            targetSectionIndex: null,
+                            fields: {}
+                          }
+                        }));
+                      } else {
+                        updateTargetSection(component.component_id, Number(event.target.value));
+                      }
+                    } else {
+                      updateLayout(component.component_id, event.target.value);
+                    }
+                  }}
                 >
-                  <option value="">Wybierz odczytany layout</option>
-                  {layouts.map((candidate) => <option key={candidate.name} value={candidate.name}>{candidate.name}</option>)}
+                  <option value="">Wybierz odczytaną sekcję</option>
+                  {layouts.map((candidate) => surface?.kind === "acf_flexible_content" ? (
+                    <option key={`${candidate.section_index}-${candidate.name}`} value={candidate.section_index ?? ""}>
+                      {candidate.section_index != null ? `Sekcja ${candidate.section_index} · ` : ""}{candidate.label || candidate.name}
+                    </option>
+                  ) : <option key={candidate.name} value={candidate.name}>{candidate.label || candidate.name}</option>)}
                 </select>
               </label>
               {component.source_fields.map((sourceField) => (
@@ -486,7 +529,11 @@ function TargetMappingTargetSummary({
             {authoringSurfaceLabel(surface.kind)}: {surface.root_field}
           </p>
           <p className="mt-1 leading-6 text-slate-700">
-            Dostępne układy: {surface.layouts.map((layout) => layout.name).join(", ")}
+            Odczytane sekcje: {surface.layouts.map((layout) => (
+              layout.section_index != null
+                ? `${layout.section_index}. ${layout.label || layout.name}`
+                : layout.label || layout.name
+            )).join(", ")}
           </p>
           {surface.kind === "acf_flexible_content" ? (
             <>
@@ -503,8 +550,10 @@ function TargetMappingTargetSummary({
                   </summary>
                   <ul className="mt-2 space-y-1">
                     {surface.layouts.map((layout) => (
-                      <li key={layout.name}>
-                        <span className="font-medium text-ink">{layout.name}:</span>{" "}
+                      <li key={`${layout.section_index}-${layout.name}`}>
+                        <span className="font-medium text-ink">
+                          {layout.section_index != null ? `Sekcja ${layout.section_index} · ` : ""}{layout.label || layout.name}:
+                        </span>{" "}
                         {layout.schema_fields.length > 0
                           ? layout.schema_fields.join(", ")
                           : "brak pola w schema dla tego obserwowanego layoutu"}

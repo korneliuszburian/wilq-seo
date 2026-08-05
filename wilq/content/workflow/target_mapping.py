@@ -88,6 +88,7 @@ class ContentTargetMappingSelection(BaseModel):
 
     component_id: str = Field(min_length=1)
     layout_name: str = Field(min_length=1)
+    target_section_index: int | None = Field(default=None, ge=1)
     field_bindings: list[ContentTargetMappingFieldBinding] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -152,6 +153,7 @@ class ContentTargetDraftPreviewComponent(BaseModel):
     component_id: str = Field(min_length=1)
     label: str = Field(min_length=1)
     layout_name: str = Field(min_length=1)
+    target_section_index: int | None = Field(default=None, ge=1)
     fields: list[ContentTargetDraftPreviewField] = Field(min_length=1)
 
 
@@ -421,19 +423,53 @@ def validate_content_target_mapping_confirmation(
     surface = preview.target.target_contract.authoring_surface
     if surface is None:
         raise ValueError("Nie odczytano powierzchni authoringu dla targetu.")
-    layouts = {
-        layout.name: set(
-            layout.writable_fields or layout.fields
-            if surface.kind == "acf_flexible_content"
-            else layout.fields
-        )
-        for layout in surface.layouts
-    }
+    observed_section_indexes = any(
+        layout.section_index is not None for layout in surface.layouts
+    )
     for component_id, component in components.items():
         selection = selections[component_id]
-        target_fields = layouts.get(selection.layout_name)
+        if surface.kind == "acf_flexible_content":
+            if observed_section_indexes:
+                if selection.target_section_index is None:
+                    raise ValueError("Mapowanie ACF musi wskazać dokładną pozycję sekcji.")
+                layout = next(
+                    (
+                        candidate
+                        for candidate in surface.layouts
+                        if candidate.section_index == selection.target_section_index
+                    ),
+                    None,
+                )
+                if layout is not None and layout.name != selection.layout_name:
+                    layout = None
+            else:
+                if selection.target_section_index is not None:
+                    raise ValueError("Historyczny odczyt ACF nie zawiera pozycji wskazanej sekcji.")
+                layout = next(
+                    (
+                        candidate
+                        for candidate in surface.layouts
+                        if candidate.name == selection.layout_name
+                    ),
+                    None,
+                )
+            target_fields = (
+                set(layout.writable_fields or layout.fields) if layout is not None else None
+            )
+        else:
+            if selection.target_section_index is not None:
+                raise ValueError("Treść wpisu WordPress nie wskazuje pozycji sekcji ACF.")
+            layout = next(
+                (
+                    candidate
+                    for candidate in surface.layouts
+                    if candidate.name == selection.layout_name
+                ),
+                None,
+            )
+            target_fields = set(layout.fields) if layout is not None else None
         if target_fields is None:
-            raise ValueError("Wybrany layout nie należy do odczytanego układu targetu.")
+            raise ValueError("Wybrana sekcja nie należy do odczytanego układu targetu.")
         expected_source_fields = {field.key for field in component.source_fields}
         actual_source_fields = {binding.source_field for binding in selection.field_bindings}
         if actual_source_fields != expected_source_fields:
@@ -525,6 +561,7 @@ def build_content_target_draft_preview(
             component_id=component_id,
             label=components[component_id].label,
             layout_name=selection.layout_name,
+            target_section_index=selection.target_section_index,
             fields=[
                 ContentTargetDraftPreviewField(
                     target_field=binding.target_field,
