@@ -581,23 +581,52 @@ function TargetMappingTargetSummary({
 
 export function DevTargetLivePreview({ url }: { url: string }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const dialog = dialogRef.current;
+    const trigger = triggerRef.current;
+    if (!dialog) return;
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
+    closeRef.current?.focus();
+    return () => {
+      if (typeof dialog.close === "function" && dialog.open) {
+        dialog.close();
+      } else {
+        dialog.removeAttribute("open");
+      }
+      trigger?.focus();
+    };
+  }, [open]);
+
   return (
     <>
       <button
         className="mt-3 w-full rounded-md border border-line bg-white px-3 py-2 text-left text-sm font-semibold text-action hover:border-action"
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
       >
         Otwórz podgląd strony dev
       </button>
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
-          <section
-            aria-labelledby="dev-target-live-preview-title"
-            aria-modal="true"
-            className="flex h-[min(88vh,64rem)] w-[min(96vw,90rem)] flex-col rounded-2xl bg-white p-4 shadow-2xl lg:p-5"
-            role="dialog"
-          >
+        <dialog
+          aria-labelledby="dev-target-live-preview-title"
+          className="h-[min(88vh,64rem)] w-[min(96vw,90rem)] rounded-2xl bg-white p-4 shadow-2xl backdrop:bg-slate-950/45 lg:p-5"
+          onCancel={(event) => {
+            event.preventDefault();
+            setOpen(false);
+          }}
+          ref={dialogRef}
+        >
+          <section className="flex h-full flex-col">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-ink" id="dev-target-live-preview-title">Podgląd strony dev</h2>
@@ -608,6 +637,7 @@ export function DevTargetLivePreview({ url }: { url: string }) {
               <button
                 aria-label="Zamknij podgląd strony dev"
                 className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-slate-700 hover:border-action hover:text-action"
+                ref={closeRef}
                 type="button"
                 onClick={() => setOpen(false)}
               >
@@ -632,7 +662,7 @@ export function DevTargetLivePreview({ url }: { url: string }) {
               title="Referencyjny podgląd strony dev"
             />
           </section>
-        </div>
+        </dialog>
       ) : null}
     </>
   );

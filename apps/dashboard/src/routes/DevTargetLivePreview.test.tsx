@@ -15,6 +15,7 @@ describe("DevTargetLivePreview", () => {
       screen.getByText(/Nie pokazuje niezapisanych zmian z mapowania/)
     ).toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zamknij podgląd strony dev" })).toHaveFocus();
     expect(screen.getByRole("link", { name: "Otwórz stronę dev w nowej karcie" }))
       .toHaveAttribute("href", "https://ekologus.dev.proudsite.pl/");
     expect(screen.getByTitle("Referencyjny podgląd strony dev"))
@@ -22,8 +23,9 @@ describe("DevTargetLivePreview", () => {
     expect(screen.getByTitle("Referencyjny podgląd strony dev"))
       .toHaveAttribute("sandbox", "allow-same-origin allow-scripts");
 
-    fireEvent.click(screen.getByRole("button", { name: "Zamknij podgląd strony dev" }));
+    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Otwórz podgląd strony dev" })).toHaveFocus();
   });
 });
