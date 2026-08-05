@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import Any, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.actions.metric_utils import unique_values
 from wilq.content.workflow.store import content_workflow_store
@@ -42,7 +42,7 @@ class ContentTargetDraftActionCommand(BaseModel):
 
 
 class ContentDevDraftWritePayload(BaseModel):
-    """Strict WordPress create payload derived only from an exact ACF mapping.
+    """Strict WordPress create payload derived only from an exact confirmed mapping.
 
     This is an internal delivery projection.  Building it performs no vendor
     operation; a later ActionObject-owned adapter may consume it only after its
@@ -53,14 +53,26 @@ class ContentDevDraftWritePayload(BaseModel):
 
     connector: Literal["wordpress_ekologus"]
     endpoint: Literal["posts", "pages"]
+    authoring_mode: Literal["acf_flexible_content", "wordpress_post_content"]
     post_status: Literal["draft"] = "draft"
     create_only: Literal[True] = True
     publish_allowed: Literal[False] = False
     update_allowed: Literal[False] = False
     delete_allowed: Literal[False] = False
+    destructive_update_allowed: Literal[False] = False
     title: str = Field(min_length=1)
-    acf: dict[str, list[dict[str, str]]] = Field(min_length=1)
+    acf: dict[str, list[dict[str, str]]] | None = None
+    content_html: str | None = None
     binding: dict[str, str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_exact_authoring_payload(self) -> ContentDevDraftWritePayload:
+        if self.authoring_mode == "acf_flexible_content":
+            if not self.acf or self.content_html is not None:
+                raise ValueError("Payload ACF szkicu wymaga wyłącznie dokładnego układu ACF.")
+        elif not self.content_html or self.acf is not None:
+            raise ValueError("Payload treści WordPress wymaga wyłącznie HTML dokumentu.")
+        return self
 
 
 def create_content_target_draft_action(
@@ -92,6 +104,7 @@ def create_content_target_draft_action(
         "confirmation_digest": preview.confirmation.confirmation_digest,
         "payload_digest": preview.payload_digest,
         "root_field": preview.root_field,
+        "authoring_mode": target.authoring_surface.kind,
     }
     draft_payload = _draft_payload_identity(preview)
     payload_preview = {
@@ -237,7 +250,6 @@ def build_content_dev_draft_write_payload(
 
     endpoint = _wordpress_endpoint(current.target.target_contract.post_type)
     title = _document_title(current.components)
-    layouts = [_acf_layout(component) for component in current.components]
     exact_binding = {
         key: _required_binding_value(binding, key)
         for key in (
@@ -251,12 +263,25 @@ def build_content_dev_draft_write_payload(
             "root_field",
         )
     }
+    surface = current.target.target_contract.authoring_surface
+    if surface is None:
+        raise ValueError("Nie można zbudować payloadu bez odczytanego układu authoringu.")
+    common = {
+        "connector": "wordpress_ekologus",
+        "endpoint": endpoint,
+        "title": title,
+        "binding": exact_binding,
+        "authoring_mode": surface.kind,
+    }
+    if surface.kind == "wordpress_post_content":
+        return ContentDevDraftWritePayload(
+            **common,
+            content_html=_document_content_html(current.components),
+        )
+    layouts = [_acf_layout(component) for component in current.components]
     return ContentDevDraftWritePayload(
-        connector="wordpress_ekologus",
-        endpoint=endpoint,
-        title=title,
+        **common,
         acf={current.root_field: layouts},
-        binding=exact_binding,
     )
 
 
@@ -346,6 +371,23 @@ def _acf_layout(component: Any) -> dict[str, str]:
             raise ValueError("Mapowanie szkicu zawiera powtórzone pole targetu.")
         fields[field.target_field] = field.value
     return fields
+
+
+def _document_content_html(components: list[Any]) -> str:
+    values = [
+        field.value.strip()
+        for component in components
+        if component.component_id == "document-content"
+        for field in component.fields
+        if field.source_field == "document_html"
+        and field.target_field == "content_html"
+        and field.value_kind == "html"
+    ]
+    if len(values) != 1 or not values[0]:
+        raise ValueError(
+            "Mapowanie szkicu treści musi wskazywać dokładnie jeden pełny dokument HTML."
+        )
+    return values[0]
 
 
 def _required_binding_value(binding: dict[str, Any], key: str) -> str:

@@ -5,6 +5,7 @@ from typing import Any
 from wilq.connectors.wordpress.client import (
     WordPressDraftWriteError,
     create_wordpress_acf_draft,
+    create_wordpress_draft_post,
 )
 from wilq.content.workflow.dev_draft_action import (
     CONTENT_DEV_DRAFT_ACTION_TYPE,
@@ -34,11 +35,17 @@ def execute_content_target_draft_action(
         ]
     try:
         payload = build_content_dev_draft_write_payload(action)
-        draft_id = create_wordpress_acf_draft(
-            payload,
-            connector_id=action.connector,
-            action_apply_authorized=True,
-        )
+        if payload.authoring_mode == "acf_flexible_content":
+            draft_id = create_wordpress_acf_draft(
+                payload,
+                connector_id=action.connector,
+                action_apply_authorized=True,
+            )
+        else:
+            draft_id = create_wordpress_draft_post(
+                payload,
+                connector_id=action.connector,
+            )
     except (ValueError, WordPressDraftWriteError) as error:
         return None, [str(error)]
     return {

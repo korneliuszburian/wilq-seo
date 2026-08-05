@@ -772,7 +772,7 @@ export const ContentTargetAuthoringLayoutSchema = z.object({
 });
 
 export const ContentTargetAuthoringSurfaceSchema = z.object({
-  kind: z.literal("acf_flexible_content"),
+  kind: z.enum(["acf_flexible_content", "wordpress_post_content"]),
   root_field: z.string().min(1),
   layouts: z.array(ContentTargetAuthoringLayoutSchema).default([])
 });
@@ -968,7 +968,7 @@ export const ContentNewPageDraftActionCommandSchema = z.object({
 
 export const ContentTargetMappingComponentSchema = z.object({
   component_id: z.string().min(1),
-  kind: z.enum(["document_title", "page_assets", "rich_text", "faq", "cta", "internal_link"]),
+  kind: z.enum(["document_title", "document_content", "page_assets", "rich_text", "faq", "cta", "internal_link"]),
   label: z.string().min(1),
   status: z.enum(["mapped", "human_only", "blocked"]),
   reason: z.string().min(1),

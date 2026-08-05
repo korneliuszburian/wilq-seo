@@ -7,12 +7,17 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.content.handoff.revision_document_renderer import revision_document_html
 from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
 from wilq.content.workflow.target_discovery import (
     ContentTargetContract,
     ContentTargetDiscovery,
     ContentTargetObservationEvidence,
+)
+from wilq.content.workflow.target_mapping_source_fields import (
+    ContentTargetSourceKind,
+    source_field_specs,
 )
 
 
@@ -31,14 +36,7 @@ class ContentTargetMappingTarget(BaseModel):
     observation_evidence: ContentTargetObservationEvidence
 
 
-ContentTargetMappingComponentKind = Literal[
-    "document_title",
-    "page_assets",
-    "rich_text",
-    "faq",
-    "cta",
-    "internal_link",
-]
+ContentTargetMappingComponentKind = ContentTargetSourceKind
 ContentTargetMappingComponentStatus = Literal["mapped", "human_only", "blocked"]
 
 
@@ -332,6 +330,11 @@ def build_content_target_mapping_preview(
                 ),
             ),
         )
+    if surface.kind == "wordpress_post_content":
+        components = [
+            _component("document-title", "document_title", "Tytuł strony"),
+            _component("document-content", "document_content", "Treść dokumentu"),
+        ]
     return _ready_mapping_preview(work_item_id, identity, target, components)
 
 
@@ -449,37 +452,10 @@ def _component(
 def _source_fields(
     kind: ContentTargetMappingComponentKind,
 ) -> list[ContentTargetMappingSourceField]:
-    fields_by_kind: dict[
-        ContentTargetMappingComponentKind, list[ContentTargetMappingSourceField]
-    ] = {
-        "document_title": [
-            ContentTargetMappingSourceField(key="wordpress_title", label="Tytuł strony"),
-        ],
-        "page_assets": [
-            ContentTargetMappingSourceField(key="meta_title", label="Tytuł meta"),
-            ContentTargetMappingSourceField(
-                key="meta_description", label="Opis meta"
-            ),
-            ContentTargetMappingSourceField(key="h1", label="Nagłówek H1"),
-            ContentTargetMappingSourceField(key="lead", label="Lead strony"),
-        ],
-        "rich_text": [
-            ContentTargetMappingSourceField(key="heading", label="Nagłówek sekcji"),
-            ContentTargetMappingSourceField(key="content_html", label="Treść sekcji"),
-        ],
-        "faq": [
-            ContentTargetMappingSourceField(key="question", label="Pytanie"),
-            ContentTargetMappingSourceField(key="answer_markdown", label="Odpowiedź"),
-        ],
-        "cta": [
-            ContentTargetMappingSourceField(key="body_markdown", label="Treść CTA"),
-        ],
-        "internal_link": [
-            ContentTargetMappingSourceField(key="anchor_text", label="Tekst linku"),
-            ContentTargetMappingSourceField(key="target_url", label="Adres linku"),
-        ],
-    }
-    return fields_by_kind[kind]
+    return [
+        ContentTargetMappingSourceField(key=key, label=label)
+        for key, label in source_field_specs(kind)
+    ]
 
 
 def validate_content_target_mapping_confirmation(
@@ -758,6 +734,8 @@ def _source_value(
             ),
             "plain_text",
         )
+    if component_id == "document-content" and source_field == "document_html":
+        return revision_document_html(revision), "html"
     if component_id == "page-assets" and revision.page_assets is not None:
         return _page_asset_source_value(revision, source_field)
     if component_id.startswith("section:"):

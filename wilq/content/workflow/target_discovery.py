@@ -5,10 +5,12 @@ from hashlib import sha256
 from typing import Literal
 from urllib.parse import urlparse
 
+import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.connectors.wordpress.authoring import (
     WordPressAuthoringDevContentObject,
+    WordPressAuthoringProfile,
     build_wordpress_authoring_profile,
 )
 from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
@@ -25,7 +27,7 @@ class ContentTargetAuthoringLayout(BaseModel):
 class ContentTargetAuthoringSurface(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["acf_flexible_content"]
+    kind: Literal["acf_flexible_content", "wordpress_post_content"]
     root_field: str
     layouts: list[ContentTargetAuthoringLayout] = Field(default_factory=list)
 
@@ -111,18 +113,7 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
     )
     if decision is None:
         return None
-    public_url = next(
-        (
-            value.strip()
-            for value in (
-                decision.source_public_url,
-                decision.final_canonical_url,
-                decision.page,
-            )
-            if value and value.strip()
-        ),
-        None,
-    )
+    public_url = _public_url(decision)
     profile = build_wordpress_authoring_profile("wordpress_ekologus", include_dev_content=True)
     evidence_ids = sorted(set(profile.evidence_ids))
     if public_url is None:
@@ -137,27 +128,7 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
             ],
         )
     if profile.dev_content.status != "available":
-        blocker = next(iter(profile.dev_content.blockers), None)
-        return ContentTargetDiscovery(
-            work_item_id=work_item_id,
-            public_url=public_url,
-            relation_status="unavailable",
-            label="Nie można teraz odczytać obiektów dev",
-            reason=(
-                blocker.reason
-                if blocker is not None
-                else "WILQ nie ma potwierdzonego odczytu obiektów dev."
-            ),
-            evidence_ids=evidence_ids,
-            caveats=[
-                (
-                    blocker.next_step
-                    if blocker is not None
-                    else "Spróbuj ponownie, gdy odczyt inventory dev będzie dostępny."
-                ),
-                "Brak odczytu nie jest dowodem, że odpowiadający obiekt dev nie istnieje.",
-            ],
-        )
+        return _unavailable_dev_content_discovery(work_item_id, public_url, evidence_ids, profile)
     matching_items = [
         item for item in profile.dev_content.items if _path(item.link) == _path(public_url)
     ]
@@ -218,6 +189,48 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
     )
 
 
+def _public_url(decision: object) -> str | None:
+    return next(
+        (
+            value.strip()
+            for value in (
+                getattr(decision, "source_public_url", None),
+                getattr(decision, "final_canonical_url", None),
+                getattr(decision, "page", None),
+            )
+            if value and value.strip()
+        ),
+        None,
+    )
+
+
+def _unavailable_dev_content_discovery(
+    work_item_id: str,
+    public_url: str,
+    evidence_ids: list[str],
+    profile: WordPressAuthoringProfile,
+) -> ContentTargetDiscovery:
+    blocker = next(iter(profile.dev_content.blockers), None)
+    return ContentTargetDiscovery(
+        work_item_id=work_item_id,
+        public_url=public_url,
+        relation_status="unavailable",
+        label="Nie można teraz odczytać obiektów dev",
+        reason=(
+            blocker.reason
+            if blocker is not None
+            else "WILQ nie ma potwierdzonego odczytu obiektów dev."
+        ),
+        evidence_ids=evidence_ids,
+        caveats=[
+            blocker.next_step
+            if blocker is not None
+            else "Spróbuj ponownie, gdy odczyt inventory dev będzie dostępny.",
+            "Brak odczytu nie jest dowodem, że odpowiadający obiekt dev nie istnieje.",
+        ],
+    )
+
+
 def _target(
     item: WordPressAuthoringDevContentObject,
     environment: str,
@@ -271,6 +284,17 @@ def _target_contract(
                 for section in item.sections
             ],
         )
+    elif item.content_type == "post" and _native_post_content_observed(item):
+        surface = ContentTargetAuthoringSurface(
+            kind="wordpress_post_content",
+            root_field="content",
+            layouts=[
+                ContentTargetAuthoringLayout(
+                    name="wordpress_post_content",
+                    fields=["title", "content_html"],
+                )
+            ],
+        )
     return ContentTargetContract(
         environment=environment,
         object_id=item.post_id,
@@ -281,6 +305,28 @@ def _target_contract(
         template=item.template or None,
         authoring_surface=surface,
     )
+
+
+def _native_post_content_observed(item: WordPressAuthoringDevContentObject) -> bool:
+    """Observe core post content without retaining it or inferring a surface from type."""
+
+    parsed = urlparse(item.link)
+    if not parsed.scheme or not parsed.netloc or not item.post_id:
+        return False
+    try:
+        response = httpx.get(
+            f"{parsed.scheme}://{parsed.netloc}/wp-json/wp/v2/posts/{item.post_id}",
+            params={"_fields": "content"},
+            timeout=3,
+            follow_redirects=False,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except (httpx.HTTPError, ValueError):
+        return False
+    content = payload.get("content") if isinstance(payload, dict) else None
+    rendered = content.get("rendered") if isinstance(content, dict) else None
+    return isinstance(rendered, str) and bool(rendered.strip())
 
 
 def _digest(contract: ContentTargetContract) -> str:

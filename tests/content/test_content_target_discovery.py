@@ -96,6 +96,39 @@ def test_target_discovery_reads_exact_dev_object_but_does_not_confirm_relation(m
     assert "nie potwierdza" in discovery.reason
 
 
+def test_target_discovery_identifies_native_post_content_without_inventing_acf(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        discovery_module,
+        "inventory_decision_for_work_item",
+        lambda work_item_id, **_kwargs: (
+            SimpleNamespace(source_public_url=PUBLIC_URL, final_canonical_url=None, page=PUBLIC_URL)
+            if work_item_id == WORK_ITEM_ID
+            else None
+        ),
+    )
+    post = _page("https://dev.ekologus.pl/bdo/", content_type="post").model_copy(
+        update={"acf_field_name": None, "section_count": 0, "sections": []}
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "build_wordpress_authoring_profile",
+        lambda _connector_id, include_dev_content=False: _profile(post),
+    )
+    monkeypatch.setattr(discovery_module, "_native_post_content_observed", lambda _item: True)
+
+    discovery = discovery_module.build_content_target_discovery(WORK_ITEM_ID)
+
+    assert discovery is not None
+    assert discovery.target is not None
+    surface = discovery.target.target_contract.authoring_surface
+    assert surface is not None
+    assert surface.kind == "wordpress_post_content"
+    assert surface.root_field == "content"
+    assert surface.layouts[0].fields == ["title", "content_html"]
+
+
 def test_target_discovery_does_not_infer_a_target_when_dev_path_differs(monkeypatch) -> None:
     monkeypatch.setattr(
         discovery_module,
@@ -245,6 +278,7 @@ def test_target_discovery_does_not_invent_an_authoring_surface(monkeypatch) -> N
         "build_wordpress_authoring_profile",
         lambda _connector_id, include_dev_content=False: _profile(item),
     )
+    monkeypatch.setattr(discovery_module, "_native_post_content_observed", lambda _item: False)
 
     discovery = discovery_module.build_content_target_discovery(WORK_ITEM_ID)
 

@@ -473,7 +473,7 @@ function TargetMappingTargetSummary({
         <>
           <p className="mt-3 font-semibold text-ink">Zaobserwowane możliwości układu</p>
           <p className="mt-1 leading-6 text-slate-700">
-            Pole układu: {surface.root_field}
+            {authoringSurfaceLabel(surface.kind)}: {surface.root_field}
           </p>
           <p className="mt-1 leading-6 text-slate-700">
             Dostępne układy: {surface.layouts.map((layout) => layout.name).join(", ")}
@@ -536,7 +536,7 @@ function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscovery }) 
     {target ? <div className="mt-3 rounded-lg bg-slate-50 p-3">
       <p className="font-semibold text-ink">Zaobserwowana strona robocza</p>
       <p className="mt-1 break-all leading-6">{target.url}</p>
-      <p className="mt-2 leading-6">To {target.post_type === "post" ? "artykuł" : "strona"}. Status na dev: {wordpressStatus(target.post_status)}. {target.target_contract.authoring_surface ? "WILQ odczytał układ ACF Flexible Content." : "Nie rozpoznano układu treści na tym obiekcie."}</p>
+      <p className="mt-2 leading-6">To {target.post_type === "post" ? "artykuł" : "strona"}. Status na dev: {wordpressStatus(target.post_status)}. {target.target_contract.authoring_surface ? `WILQ odczytał ${authoringSurfaceLabel(target.target_contract.authoring_surface.kind).toLocaleLowerCase("pl-PL")}.` : "Nie rozpoznano układu treści na tym obiekcie."}</p>
     </div> : null}
     {discovery.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
     <details className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
@@ -554,6 +554,10 @@ function wordpressStatus(status: string) {
 
 function wordpressObjectLabel(postType: string) {
   return { post: "artykuł", page: "stronę" }[postType] ?? "obiekt";
+}
+
+function authoringSurfaceLabel(kind: "acf_flexible_content" | "wordpress_post_content") {
+  return kind === "acf_flexible_content" ? "Układ ACF Flexible Content" : "Treść wpisu WordPress";
 }
 
 function Tab({ active, children, onClick }: { active: boolean; children: string; onClick: () => void }) {
