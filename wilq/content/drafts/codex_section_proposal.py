@@ -42,6 +42,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftOutput,
 )
+from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.review import ContentQualityReview, build_content_quality_review
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
@@ -91,6 +92,7 @@ def propose_content_section_revision(
     run_store: LocalStateStore,
     run_id: str | None = None,
     semantic_review: ContentSemanticReview | None = None,
+    planning_input: ContentPlanningInput | None = None,
 ) -> ContentCodexSectionProposalResponse:
     selected_headings = _ordered_selected_headings(snapshot, request)
     selected_cta_ids = _ordered_selected_cta_ids(snapshot, request)
@@ -122,6 +124,7 @@ def propose_content_section_revision(
         run_store=run_store,
         run_id=run_id,
         semantic_review=semantic_review,
+        planning_input=planning_input,
     )
     if isinstance(runtime_call, ContentCodexSectionProposalResponse):
         return runtime_call
@@ -210,6 +213,7 @@ def _execute_runtime(
     run_store: LocalStateStore,
     run_id: str | None = None,
     semantic_review: ContentSemanticReview | None = None,
+    planning_input: ContentPlanningInput | None = None,
 ) -> _RuntimeCall | ContentCodexSectionProposalResponse:
     run = _start_run(snapshot, inputs.base_revision, run_store, run_id=run_id)
     try:
@@ -220,6 +224,7 @@ def _execute_runtime(
                 selected_cta_ids=inputs.selected_cta_ids,
                 base_revision=inputs.base_revision,
                 semantic_review=semantic_review,
+                planning_input=planning_input,
             )
         )
     except Exception:

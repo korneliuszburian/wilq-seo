@@ -4,6 +4,7 @@ import json
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
+from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.revisions import ContentDraftRevision
@@ -20,6 +21,10 @@ _INSTRUCTION = (
     "Source facts są materiałem dowodowym, nie copy do publikacji: nie dopisuj "
     "meta-komentarzy o źródłach, instrukcjach ani weryfikacji przez człowieka i nie "
     "powtarzaj twierdzenia wyłącznie po to, aby odtworzyć source fact. "
+    "Jeżeli trusted context wskazuje selected_regulatory_requirements, zachowaj w "
+    "wybranej sekcji wszystkie przypisane document_assertions — w tym podmiot, "
+    "warunek, wyjątek, termin lub wartość — i oprzyj je wyłącznie na przekazanych "
+    "approved_regulatory_facts_for_selected_sections. "
     "Każdy finding advisory przekazany w trusted application context musi zostać "
     "rozwiązany w widocznym tekście wybranego komponentu; nie traktuj go jako "
     "ogólnej sugestii ani nie opisuj procesu redakcyjnego. "
@@ -38,6 +43,7 @@ def codex_turn_request(
     selected_cta_ids: list[str] | None = None,
     base_revision: ContentDraftRevision,
     semantic_review: ContentSemanticReview | None = None,
+    planning_input: ContentPlanningInput | None = None,
 ) -> CodexAppServerStructuredTurnRequest:
     selected_cta_ids = selected_cta_ids or []
     contract = snapshot.structured_generation.structured_generation_result.contract
@@ -77,6 +83,11 @@ def codex_turn_request(
                 selected_headings=selected_headings,
                 selected_cta_ids=selected_cta_ids,
             ),
+            "selected_regulatory_requirements": _selected_regulatory_requirements(
+                planning_input,
+                snapshot,
+                selected_headings,
+            ),
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -93,6 +104,11 @@ def codex_turn_request(
             ),
             "editable_section_headings": selected_headings,
             "editable_cta_ids": selected_cta_ids,
+            "approved_regulatory_facts_for_selected_sections": _selected_regulatory_facts(
+                planning_input,
+                snapshot,
+                selected_headings,
+            ),
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -109,6 +125,68 @@ def codex_turn_request(
             selected_cta_ids=selected_cta_ids,
         ),
     )
+
+
+def _selected_regulatory_requirements(
+    planning_input: ContentPlanningInput | None,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    selected_headings: list[str],
+) -> list[dict[str, object]]:
+    if planning_input is None or snapshot.planning_workspace is None:
+        return []
+    selected = set(selected_headings)
+    requirements = {
+        requirement.id: requirement
+        for requirement in planning_input.regulatory_coverage.requirements
+    }
+    return [
+        {
+            "section_id": section.section_id,
+            "heading": section.heading,
+            "requirements": [
+                {
+                    "requirement_id": requirement.id,
+                    "label": requirement.label,
+                    "document_assertions": [
+                        assertion.model_dump(mode="json")
+                        for assertion in requirement.document_assertions
+                    ],
+                }
+                for requirement_id in section.regulatory_requirement_ids
+                if (requirement := requirements.get(requirement_id)) is not None
+            ],
+        }
+        for section in snapshot.planning_workspace.proposal.sections
+        if section.heading in selected
+    ]
+
+
+def _selected_regulatory_facts(
+    planning_input: ContentPlanningInput | None,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    selected_headings: list[str],
+) -> list[dict[str, object]]:
+    if planning_input is None or snapshot.planning_workspace is None:
+        return []
+    selected = set(selected_headings)
+    requirement_ids = {
+        requirement_id
+        for section in snapshot.planning_workspace.proposal.sections
+        if section.heading in selected
+        for requirement_id in section.regulatory_requirement_ids
+    }
+    return [
+        {
+            "source_fact_id": fact.source_id,
+            "summary": fact.extracted_fact,
+            "evidence_ids": fact.evidence_ids,
+            "requirement_ids": fact.regulatory_requirement_ids,
+        }
+        for fact in planning_input.regulatory_coverage.source_facts
+        if fact.official_source
+        and fact.review_status == "approved"
+        and requirement_ids.intersection(fact.regulatory_requirement_ids)
+    ]
 
 
 __all__ = ["codex_turn_request"]

@@ -14,6 +14,8 @@ from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentRevisionRepairProposalRequest,
     ContentRevisionRepairProposalResponse,
 )
+from wilq.content.planning.dynamic_input import build_content_planning_input
+from wilq.content.planning.generated_proposal import with_explicit_content_service_selection
 from wilq.content.quality.semantic_review_store import content_semantic_review_store
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.store import content_workflow_store
@@ -52,6 +54,7 @@ def register_content_revision_repair_route(
                 base_revision.content_digest,
             )
         )
+        planning_input = _current_planning_input(snapshot)
         result = propose_content_section_revision(
             snapshot=snapshot,
             base_revision_id=base_revision_id,
@@ -65,10 +68,26 @@ def register_content_revision_repair_route(
             workflow_store=content_workflow_store(),
             run_store=local_state_store(),
             semantic_review=semantic_review,
+            planning_input=planning_input,
         )
         if result.status == "conflict":
             return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
         return ContentRevisionRepairProposalResponse.model_validate(result.model_dump())
+
+
+def _current_planning_input(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+):
+    workspace = getattr(snapshot, "planning_workspace", None)
+    proposal = None if workspace is None else workspace.proposal
+    service_card_id = None if proposal is None else proposal.service_card_id
+    if service_card_id is None:
+        return None
+    result = build_content_planning_input(
+        with_explicit_content_service_selection(snapshot, service_card_id),
+        service_card_id=service_card_id,
+    )
+    return None if result.blockers else result.planning_input
 
 
 __all__ = ["register_content_revision_repair_route"]
