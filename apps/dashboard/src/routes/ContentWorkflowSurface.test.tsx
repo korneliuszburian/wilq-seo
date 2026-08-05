@@ -16,7 +16,6 @@ import {
   postContentRevisionPublicDeployment,
   postContentWorkItemMeasurementWindow,
   getContentSelectedWorkspace,
-  getContentWorkItemTargetDiscovery,
   getContentInventoryCatalog,
   getContentOperatorContext,
   getContentDiagnostics,
@@ -34,7 +33,6 @@ import {
   type ContentInventoryCatalogResponse,
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
-  type ContentTargetDiscovery,
 } from "../lib/api";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
 vi.mock("../lib/api", async (importOriginal) => {
@@ -55,7 +53,6 @@ vi.mock("../lib/api", async (importOriginal) => {
     postContentRevisionPublicDeployment: vi.fn(),
     postContentWorkItemMeasurementWindow: vi.fn(),
     getContentSelectedWorkspace: vi.fn(),
-    getContentWorkItemTargetDiscovery: vi.fn(),
     getContentInventoryCatalog: vi.fn(),
     getContentOperatorContext: vi.fn(),
     getContentDiagnostics: vi.fn(),
@@ -92,7 +89,6 @@ describe("ContentWorkflowSurface", () => {
       safe_next_step: "Przygotuj propozycję do review."
     } as never);
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace());
-    vi.mocked(getContentWorkItemTargetDiscovery).mockResolvedValue(contentTargetDiscovery());
     vi.mocked(getContentInventoryCatalog).mockResolvedValue(contentInventoryCatalog());
     vi.mocked(getContentDiagnostics).mockResolvedValue({
       marketer_decision: null
@@ -227,28 +223,6 @@ describe("ContentWorkflowSurface", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Obecna strona" }));
     expect(await screen.findByTestId("content-source-snapshot")).toBeInTheDocument();
-  });
-
-  it("opens a read-only atlas with the exact revision and an observed dev target without claiming ACF mapping", async () => {
-    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <App
-        appRouter={createWilqRouter({
-          initialPath: "/content-workflow/content_work_item_bdo?view=atlas",
-          defaultPendingMinMs: 0
-        })}
-        client={client}
-      />
-    );
-
-    expect(await screen.findByTestId("content-atlas")).toBeInTheDocument();
-    expect(screen.getByTestId("content-atlas-graph")).toBeInTheDocument();
-    expect(screen.getByText("Atlas strony · tylko odczyt")).toBeInTheDocument();
-    expect(screen.getAllByText("Rewizja WILQ")).toHaveLength(2);
-    expect(await screen.findByText("nieodczytane / niepotwierdzone")).toBeInTheDocument();
-    const preview = screen.getByTitle("Podgląd strony na dev");
-    expect(preview).toHaveAttribute("src", "https://ekologus.dev.proudsite.pl/bdo/");
-    expect(screen.queryByText("Sekcja przypisana do ACF")).not.toBeInTheDocument();
   });
 
   it("fails closed for blank official-source data on the exact revision", async () => {
@@ -905,52 +879,6 @@ function contentInventoryCatalog(): ContentInventoryCatalogResponse {
       public_sitemap_truncated: false,
       caveat: ""
     }
-  };
-}
-
-function contentTargetDiscovery(): ContentTargetDiscovery {
-  return {
-    response_type: "content_target_discovery",
-    contract_version: "content_target_discovery_v2",
-    work_item_id: "content_work_item_bdo",
-    public_url: "https://ekologus.pl/bdo/",
-    relation_status: "partial",
-    label: "Target dev odczytany",
-    reason: "WILQ odczytał target dev, ale nie rozpoznał authoring surface.",
-    target: {
-      object_id: "1353",
-      url: "https://ekologus.dev.proudsite.pl/bdo/",
-      post_type: "post",
-      post_status: "publish",
-      template: null,
-      observed_surfaces: [],
-      target_contract: {
-        environment: "dev",
-        object_id: "1353",
-        url: "https://ekologus.dev.proudsite.pl/bdo/",
-        post_type: "post",
-        post_status: "publish",
-        modified: "2026-07-24T10:00:00",
-        template: null,
-        authority: "observation_only",
-        write_authorized: false,
-        authoring_surface: null
-      },
-      target_contract_digest: "d".repeat(64),
-      observation_evidence: {
-        evidence_id: "ev_dev_bdo",
-        connector_id: "wordpress_ekologus_dev",
-        object_id: "1353",
-        post_type: "post",
-        url: "https://ekologus.dev.proudsite.pl/bdo/",
-        post_status: "publish",
-        modified: "2026-07-24T10:00:00",
-        observed_at: "2026-07-24T10:00:00Z"
-      }
-    },
-    candidates: [],
-    evidence_ids: ["ev_dev_bdo"],
-    caveats: []
   };
 }
 

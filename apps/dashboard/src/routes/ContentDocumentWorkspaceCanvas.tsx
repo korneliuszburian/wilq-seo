@@ -21,12 +21,10 @@ type View = "source" | "document" | "comparison";
 
 export function ContentDocumentWorkspaceCanvas({
   workspace,
-  onOpenReview,
-  onOpenAtlas
+  onOpenReview
 }: {
   workspace: ContentDocumentWorkspace;
   onOpenReview: () => void;
-  onOpenAtlas: () => void;
   operatorLabel?: string | null;
   onWorkspaceChanged?: () => void;
 }) {
@@ -76,9 +74,6 @@ export function ContentDocumentWorkspaceCanvas({
                 {workspace.next_action.label}
               </button>
             ) : null}
-            <button type="button" className="mt-2 w-full rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:border-action hover:text-action" onClick={onOpenAtlas}>
-              Otwórz atlas strony
-            </button>
           </section>
         </div>
       </section>

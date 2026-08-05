@@ -195,8 +195,8 @@ function optionalSearchFlag(value: unknown): 1 | undefined {
   return value === "1" || value === 1 ? 1 : undefined;
 }
 
-function optionalContentWorkflowView(value: unknown): "review" | "browse" | "new" | "atlas" | undefined {
-  return value === "review" || value === "browse" || value === "new" || value === "atlas" ? value : undefined;
+function optionalContentWorkflowView(value: unknown): "review" | "browse" | "new" | undefined {
+  return value === "review" || value === "browse" || value === "new" ? value : undefined;
 }
 
 const rootRoute = createRootRoute({ component: Shell });
