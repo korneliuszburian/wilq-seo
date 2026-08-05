@@ -77,6 +77,14 @@ def with_review_gate(
 ) -> ActionObject:
     if audit_events is not None:
         action.audit_events = audit_events[:10]
+    if any(
+        event.event_type in {"apply_succeeded", "action_apply_completed"}
+        for event in action.audit_events
+    ):
+        # Action definitions are rebuilt from their original payload on every
+        # read. A durable successful apply is therefore the authoritative
+        # terminal state, rather than the pre-apply status from that payload.
+        action.status = ActionStatus.applied
     state_audit_events = [
         event for event in action.audit_events if not audit_event_has_raw_contract_text(event)
     ]
