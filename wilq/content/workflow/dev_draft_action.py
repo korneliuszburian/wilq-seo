@@ -11,6 +11,7 @@ from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.target_discovery import build_content_target_discovery
 from wilq.content.workflow.target_mapping import (
     ContentTargetDraftPreview,
+    ContentTargetDraftPreviewComponent,
     build_content_target_draft_preview,
     build_content_target_mapping_preview,
 )
@@ -95,6 +96,9 @@ def create_content_target_draft_action(
         raise ValueError("Akcja wskazuje inny podgląd danych do szkicu.")
 
     target = preview.target.target_contract
+    surface = target.authoring_surface
+    if surface is None:
+        raise ValueError("Akcja szkicu dev wymaga odczytanego układu authoringu.")
     binding = {
         "work_item_id": preview.work_item_id,
         "revision_id": preview.revision.revision_id,
@@ -104,7 +108,7 @@ def create_content_target_draft_action(
         "confirmation_digest": preview.confirmation.confirmation_digest,
         "payload_digest": preview.payload_digest,
         "root_field": preview.root_field,
-        "authoring_mode": target.authoring_surface.kind,
+        "authoring_mode": surface.kind,
     }
     draft_payload = _draft_payload_identity(preview)
     payload_preview = {
@@ -266,21 +270,22 @@ def build_content_dev_draft_write_payload(
     surface = current.target.target_contract.authoring_surface
     if surface is None:
         raise ValueError("Nie można zbudować payloadu bez odczytanego układu authoringu.")
-    common = {
-        "connector": "wordpress_ekologus",
-        "endpoint": endpoint,
-        "title": title,
-        "binding": exact_binding,
-        "authoring_mode": surface.kind,
-    }
     if surface.kind == "wordpress_post_content":
         return ContentDevDraftWritePayload(
-            **common,
+            connector="wordpress_ekologus",
+            endpoint=endpoint,
+            title=title,
+            binding=exact_binding,
+            authoring_mode=surface.kind,
             content_html=_document_content_html(current.components),
         )
     layouts = [_acf_layout(component) for component in current.components]
     return ContentDevDraftWritePayload(
-        **common,
+        connector="wordpress_ekologus",
+        endpoint=endpoint,
+        title=title,
+        binding=exact_binding,
+        authoring_mode=surface.kind,
         acf={current.root_field: layouts},
     )
 
@@ -351,7 +356,7 @@ def _wordpress_endpoint(post_type: str) -> Literal["posts", "pages"]:
     return endpoint
 
 
-def _document_title(components: list[Any]) -> str:
+def _document_title(components: list[ContentTargetDraftPreviewComponent]) -> str:
     titles = [
         field.value.strip()
         for component in components
@@ -364,7 +369,7 @@ def _document_title(components: list[Any]) -> str:
     return str(titles[0])
 
 
-def _acf_layout(component: Any) -> dict[str, str]:
+def _acf_layout(component: ContentTargetDraftPreviewComponent) -> dict[str, str]:
     fields: dict[str, str] = {"acf_fc_layout": component.layout_name}
     for field in component.fields:
         if field.target_field in fields:
@@ -373,7 +378,7 @@ def _acf_layout(component: Any) -> dict[str, str]:
     return fields
 
 
-def _document_content_html(components: list[Any]) -> str:
+def _document_content_html(components: list[ContentTargetDraftPreviewComponent]) -> str:
     values = [
         field.value.strip()
         for component in components
