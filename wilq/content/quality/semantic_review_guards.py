@@ -44,7 +44,10 @@ def regulatory_quality_issues(
     )
     issues: list[tuple[str, str, str]] = []
     for revision_section in revision.sections:
-        proposal_section = proposal_by_id[revision_section.section_id]
+        section_id = revision_section.section_id
+        if section_id is None:
+            raise ValueError("Semantic review requires exact revision section IDs.")
+        proposal_section = proposal_by_id[section_id]
         requirement_ids = getattr(proposal_section, "regulatory_requirement_ids", [])
         if not requirement_ids:
             continue

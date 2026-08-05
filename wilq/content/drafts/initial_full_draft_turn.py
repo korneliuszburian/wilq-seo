@@ -228,7 +228,9 @@ def _regulatory_assertion_repair_output_schema(section_ids: list[str]) -> dict[s
     schema = deepcopy(_RegulatoryAssertionRepairOutput.model_json_schema())
     _require_all_object_properties(schema)
     definition = _mapping(_mapping(schema, "$defs"), "_RegulatorySectionPatch")
-    _mapping(definition, "properties")["section_id"]["enum"] = section_ids
+    section_properties = _mapping(definition, "properties")
+    section_id = _mapping(section_properties, "section_id")
+    section_id["enum"] = section_ids
     sections = _mapping(_mapping(schema, "properties"), "sections")
     sections["minItems"] = len(section_ids)
     sections["maxItems"] = len(section_ids)
@@ -346,15 +348,19 @@ def initial_full_draft_output_schema(
 
     draftable_sections = draftable_planning_sections(proposal.sections)
     _set_array_size(properties, "sections", len(draftable_sections))
-    _mapping(section, "section_id")["enum"] = [item.section_id for item in draftable_sections]
-    _mapping(section, "heading")["enum"] = [item.heading for item in draftable_sections]
+    section_id = _mapping(section, "section_id")
+    section_id["enum"] = [item.section_id for item in draftable_sections]
+    heading = _mapping(section, "heading")
+    heading["enum"] = [item.heading for item in draftable_sections]
     _set_array_size(properties, "faq", len(proposal.faq))
-    _mapping(faq, "question")["enum"] = [item.question for item in proposal.faq] or [
+    question = _mapping(faq, "question")
+    question["enum"] = [item.question for item in proposal.faq] or [
         "__WILQ_EMPTY_ARRAY_ONLY__"
     ]
     _set_array_size(properties, "cta_blocks", len(proposal.cta_blocks))
     _set_array_size(properties, "internal_links", len(proposal.internal_links))
-    _mapping(link, "target_url")["enum"] = [
+    target_url = _mapping(link, "target_url")
+    target_url["enum"] = [
         item.target_url for item in proposal.internal_links
     ] or ["__WILQ_EMPTY_ARRAY_ONLY__"]
     return schema

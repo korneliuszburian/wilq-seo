@@ -7,18 +7,26 @@ from dataclasses import dataclass
 from typing import Literal
 from uuid import uuid4
 
-from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
+from wilq.codex.app_server import (
+    CodexAppServerClientProtocol,
+    CodexAppServerStructuredTurnRequest,
+    CodexAppServerTurnResult,
+)
 from wilq.content.drafts.draft_assurance import (
     ContentDraftAssuranceCheckOutput,
     ContentDraftAssuranceModelOutput,
     ContentDraftAssuranceReceipt,
     draft_assurance_turn_request,
-    regulatory_draft_assurance_constraints,
     regulatory_draft_assurance_profile,
     validate_draft_assurance_output,
 )
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryClaimConstraint,
+    ContentRegulatoryProfile,
+    regulatory_draft_assurance_constraints,
+)
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -147,8 +155,8 @@ def _collect_bounded_checks(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
     output: ContentInitialDraftModelOutput,
-    profile,
-    constraints,
+    profile: ContentRegulatoryProfile,
+    constraints: list[ContentRegulatoryClaimConstraint],
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
     critic_run: CodexRun,
@@ -188,7 +196,7 @@ def _collect_bounded_checks(
 
 def _run_assurance_turn(
     client: CodexAppServerClientProtocol,
-    request,
+    request: CodexAppServerStructuredTurnRequest,
 ) -> CodexAppServerTurnResult:
     try:
         return client.run_structured_turn(request)

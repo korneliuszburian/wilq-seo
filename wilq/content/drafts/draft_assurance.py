@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from typing import Literal, cast
+from typing import Final, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -38,7 +38,9 @@ ContentDraftAssuranceReasonCode = Literal[
     "insufficient_source_alignment",
     "not_assessable",
 ]
-_CRITERIA_VERSION = "wilq_regulatory_draft_assurance_v1"
+_CRITERIA_VERSION: Final[Literal["wilq_regulatory_draft_assurance_v1"]] = (
+    "wilq_regulatory_draft_assurance_v1"
+)
 
 _INSTRUCTION = (
     "Jesteś niezależnym krytykiem merytorycznym roboczego dokumentu regulowanego. "
