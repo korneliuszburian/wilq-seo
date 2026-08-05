@@ -305,12 +305,16 @@ def _read_initial_draft_status(
             unscoped_canonical is not None
             and getattr(unscoped_canonical, "initial_draft_context_digest", None)
         )
+        or _has_context_bound_initial_draft_run(work_item_id)
     )
-    context_digest = (
-        _current_initial_draft_context_digest(work_item_id, proposal, snapshot_loader)
-        if needs_current_context
-        else None
-    )
+    context_digest = None
+    if needs_current_context:
+        current_proposal, context_digest = _current_initial_draft_context(
+            work_item_id,
+            snapshot_loader,
+        )
+        if current_proposal is not None:
+            proposal = current_proposal
     latest = (
         _latest_run_for_proposal(
             work_item_id,
@@ -365,31 +369,34 @@ def _read_initial_draft_status(
     return _initial_draft_not_started_response(work_item_id, proposal)
 
 
-def _current_initial_draft_context_digest(
+def _current_initial_draft_context(
     work_item_id: str,
-    proposal: ContentPlanningProposal | None,
     snapshot_loader: ContentInitialDraftSnapshotLoader | None,
-) -> str | None:
+) -> tuple[ContentPlanningProposal | None, str | None]:
     """Read the source-owned context used to select a visible draft run.
 
     A queued run never establishes this value: a delayed request must not be
     able to make an older package, URL, service, or planning lineage current.
     """
 
-    if proposal is None or snapshot_loader is None:
-        return None
+    if snapshot_loader is None:
+        return None, None
     snapshot = snapshot_loader(work_item_id)
     planning = snapshot.planning_workspace
     if planning is None:
-        return ""
+        return None, ""
     current = planning.proposal
-    if (
-        current.proposal_id != proposal.proposal_id
-        or current.planning_digest != proposal.planning_digest
-        or current.planning_input_digest != proposal.planning_input_digest
-    ):
-        return ""
-    return _snapshot_initial_draft_context_digest(snapshot, current)
+    return current, _snapshot_initial_draft_context_digest(snapshot, current)
+
+
+def _has_context_bound_initial_draft_run(work_item_id: str) -> bool:
+    endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
+    return any(
+        run.hook == "content_initial_full_draft"
+        and endpoint in run.used_endpoints
+        and getattr(run, "initial_draft_context_digest", None) is not None
+        for run in local_state_store().list_codex_runs()
+    )
 
 
 def _current_initial_draft_claim_context(
