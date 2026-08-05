@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -28,7 +28,13 @@ export function ContentDocumentWorkspaceCanvas({
   operatorLabel?: string | null;
   onWorkspaceChanged?: () => void;
 }) {
-  const [view, setView] = useState<View>("source");
+  const hasDocument = Boolean(workspace.canonical_document.preview);
+  const [view, setView] = useState<View>(() => hasDocument ? "document" : "source");
+  const hadDocument = useRef(hasDocument);
+  useEffect(() => {
+    if (hasDocument && !hadDocument.current) setView("document");
+    hadDocument.current = hasDocument;
+  }, [hasDocument]);
   const [devDetailsOpen, setDevDetailsOpen] = useState(false);
   const [mappingOpen, setMappingOpen] = useState(false);
   const [draftPreviewOpen, setDraftPreviewOpen] = useState(false);
@@ -153,7 +159,7 @@ export function ContentDocumentWorkspaceCanvas({
 
 export function ContentDocumentLineageDisclosure({ workspace }: { workspace: ContentDocumentWorkspace }) {
   const provenance = workspace.canonical_document.source_provenance ?? [];
-  return <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700">
+  return <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" data-testid="content-document-lineage">
     <summary className="cursor-pointer font-semibold text-ink">Pochodzenie źródeł dokumentu</summary>
     {provenance.length === 0 ? <p className="mt-3">Brak zapisanej listy provenance dla tej rewizji.</p> : (
       <ul className="mt-3 space-y-2">{provenance.map((item) => <li key={`${item.source_fact_id}-${item.freshness_date}`}>

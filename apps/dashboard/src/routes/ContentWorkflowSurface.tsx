@@ -14,6 +14,7 @@ import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentEditorialIntegrityReport } from "./ContentEditorialIntegrityReport";
 import { ContentSemanticReviewPanel } from "./ContentSemanticReviewPanel";
+import { ContentRevisionRepairPanel } from "./ContentRevisionRepairPanel";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 import {
@@ -408,6 +409,12 @@ function ContentReviewWorkspace({
               void queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workspace.work_item_id, "selected-workspace"] });
             }}
             onReturnToText={() => onReturnToText(workspace.work_item_id)}
+          /><ContentRevisionRepairPanel
+            workspace={workspace}
+            operatorLabel={operatorLabel}
+            onChanged={() => {
+              void queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workspace.work_item_id, "selected-workspace"] });
+            }}
           />{completeRevision.base_revision_id ? <ContentEditorialIntegrityReport workItemId={workspace.work_item_id} revisionId={completeRevision.revision_id} /> : null}</>
         ) : null}
       </section>

@@ -179,14 +179,11 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
-    expect(screen.getByText(/dokładny stan dokumentu i materiały zapisane przy tej rewizji/)).toBeInTheDocument();
-    expect(screen.queryByText(/przygotowany dokument i uczciwe różnice/)).not.toBeInTheDocument();
-    expect(screen.queryByTestId("content-document-state")).not.toBeInTheDocument();
-    expect(screen.getByText(/Nie ma jeszcze zapisanej rewizji/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Zmiany w treści" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("content-document-state")).toHaveTextContent("Nowa wersja nie została jeszcze przygotowana");
+    expect(screen.getByText(/Nie ma jeszcze zapisanej wersji dokumentu/)).toBeInTheDocument();
     expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
-    expect(screen.getAllByText("Nowa wersja nie została jeszcze przygotowana")).toHaveLength(2);
+    expect(screen.getByRole("heading", { name: "Nowa wersja nie została jeszcze przygotowana" })).toBeInTheDocument();
   });
 
   it("opens an existing prepared text before the source so the marketer can review the actual deliverable", async () => {
@@ -208,18 +205,8 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByText("Pełna odpowiedź sekcji 1 oparta na planie i dowodach.")).toBeInTheDocument();
     expect(screen.queryByTestId("content-source-snapshot")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Zmiany w treści" })).toBeInTheDocument();
-    expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("Na czym oparto tekst");
-    expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("BDO i sprawozdawczość środowiskowa");
-    expect(screen.queryByText("Live evidence i source connector są wymagane")).not.toBeInTheDocument();
-    expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("kontrolę źródeł i zasad tekstu");
-    const officialSources = screen.getByTestId("content-official-sources");
-    expect(officialSources).toHaveTextContent("Źródła użyte do weryfikacji tej dokładnej wersji tekstu");
-    expect(officialSources).toHaveTextContent("Nie stanowią indywidualnej porady prawnej");
-    expect(officialSources).toHaveTextContent("Zweryfikowano: 2026-07-31");
-    expect(officialSources).toHaveTextContent("Zakres weryfikacji: 2 zagadnienia regulacyjne.");
-    expect(screen.getByRole("link", { name: "Baza danych o produktach i opakowaniach oraz o gospodarce odpadami" })).toHaveAttribute("href", "https://bdo.mos.gov.pl/");
-    expect(officialSources).not.toHaveTextContent("ev_regulatory_bdo");
+    expect(screen.getByRole("button", { name: "Porównanie" })).toBeInTheDocument();
+    expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Obecna strona" }));
     expect(await screen.findByTestId("content-source-snapshot")).toBeInTheDocument();
@@ -236,13 +223,13 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(contentDocumentWorkspace(revision)));
 
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })} client={client} />);
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&view=review", defaultPendingMinMs: 0 })} client={client} />);
 
     expect(await screen.findByText("Pełna odpowiedź sekcji 1 oparta na planie i dowodach.")).toBeInTheDocument();
     expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
   });
 
-  it("replaces an unreviewed document with server-derived official-source lineage", async () => {
+  it("keeps official-source lineage changes out of the immutable document canvas", async () => {
     const revision = { ...savedFullDraftRevision(), official_source_references: [] };
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(
       selectedWorkspace(contentDocumentWorkspace(revision))
@@ -250,17 +237,12 @@ describe("ContentWorkflowSurface", () => {
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })} client={client} />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Uzupełnij źródła urzędowe" }));
-
-    await waitFor(() => expect(postContentWorkItemOfficialSourceLineageRebase).toHaveBeenCalledWith(
-      { expected_revision_digest: revision.content_digest, requested_by: "wilku" },
-      "content_work_item_bdo",
-      revision.revision_id
-    ));
-    expect(await screen.findByText(/Tekst nie został zmieniony/)).toBeInTheDocument();
+    await screen.findByText("Pełna odpowiedź sekcji 1 oparta na planie i dowodach.");
+    expect(screen.queryByRole("button", { name: "Uzupełnij źródła urzędowe" })).not.toBeInTheDocument();
+    expect(postContentWorkItemOfficialSourceLineageRebase).not.toHaveBeenCalled();
   });
 
-  it("loads an official-source proposal from the exact document workspace without auto-promoting it", async () => {
+  it("does not inject a regulatory source candidate into the exact document workspace", async () => {
     const workspace = contentDocumentWorkspace();
     workspace.regulatory_review_candidates = [{
       candidate_id: "bdo_sanctions_2026_08_02_r3",
@@ -299,10 +281,9 @@ describe("ContentWorkflowSurface", () => {
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })} client={client} />);
 
-    await screen.findByText("Naruszenia obowiązków BDO mogą prowadzić do sankcji wskazanych w materiale urzędowym.");
-    const sourceReview = screen.getByTestId("content-regulatory-source-review");
-    expect(sourceReview).toHaveTextContent("Źródła urzędowe wymagają decyzji przed uzupełnieniem rewizji");
-    expect(getContentRegulatorySourceFactProposal).toHaveBeenCalledWith("bdo_sanctions_2026_08_02_r3");
+    await screen.findByTestId("content-text-workspace");
+    expect(screen.queryByText("Naruszenia obowiązków BDO mogą prowadzić do sankcji wskazanych w materiale urzędowym.")).not.toBeInTheDocument();
+    expect(getContentRegulatorySourceFactProposal).not.toHaveBeenCalled();
     expect(postContentRegulatorySourceFactProposalReview).not.toHaveBeenCalled();
   });
 
@@ -406,7 +387,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByTestId("content-review-workspace")).not.toBeInTheDocument();
   });
 
-  it("keeps target mapping outside the text workspace", async () => {
+  it("shows target mapping as an explicit, read-only detail without loading it automatically", async () => {
     const workspace = approvedDocumentWorkspace();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
     vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(
@@ -425,7 +406,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
-    expect(screen.queryByText("Przypisanie dokumentu do dev", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByText("Przypisanie dokumentu do dev", { exact: true })).toBeInTheDocument();
     expect(postContentRevisionTargetMappingConfirmation).not.toHaveBeenCalled();
     expect(getContentRevisionTargetMapping).not.toHaveBeenCalled();
   });
@@ -559,7 +540,7 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemMeasurementWindow).not.toHaveBeenCalled();
   });
 
-  it("keeps the approved document package out of the text workspace", async () => {
+  it("offers the approved document package without loading it automatically", async () => {
     const workspace = approvedDocumentWorkspace();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
 
@@ -575,11 +556,11 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
-    expect(screen.queryByTestId("content-approved-html-package")).not.toBeInTheDocument();
+    expect(screen.getByTestId("content-approved-html-package")).toBeInTheDocument();
     expect(getContentWorkItemRevisionHtmlPackage).not.toHaveBeenCalled();
   });
 
-  it("does not offer a dev-draft action from the text workspace", async () => {
+  it("does not prepare a dev-draft action until the marketer opens its explicit preview", async () => {
     const workspace = approvedDocumentWorkspace();
     const preview = contentTargetDraftPreview();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
@@ -601,11 +582,11 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
-    expect(screen.queryByText("Podgląd danych do szkicu na dev", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByText("Podgląd danych do szkicu na dev", { exact: true })).toBeInTheDocument();
     expect(postContentRevisionTargetDraftAction).not.toHaveBeenCalled();
   });
 
-  it("does not load target details for an approved text", async () => {
+  it("does not load target mapping details until the marketer opens them", async () => {
     const workspace = approvedDocumentWorkspace();
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
     vi.mocked(getContentRevisionTargetMapping).mockResolvedValue(
@@ -624,7 +605,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
-    expect(screen.queryByText("Przypisanie dokumentu do dev", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByText("Przypisanie dokumentu do dev", { exact: true })).toBeInTheDocument();
     expect(getContentRevisionTargetMapping).not.toHaveBeenCalled();
   });
 
@@ -643,8 +624,7 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByTestId("content-review-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("content-full-page-preview")).toBeInTheDocument();
     expect(screen.getByText("Szczegóły tej wersji")).toBeInTheDocument();
-    expect(screen.getByText("Na czym oparto tekst")).toBeInTheDocument();
-    expect(screen.getByText("BDO i sprawozdawczość środowiskowa")).toBeInTheDocument();
+    expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("Pochodzenie źródeł dokumentu");
     expect(screen.getByText("Sprawdź nową wersję")).toBeInTheDocument();
     expect(screen.queryByLabelText("Stan pipeline’u")).not.toBeInTheDocument();
     expect(screen.queryByText(/zatwierdź plan/i)).not.toBeInTheDocument();
@@ -810,7 +790,7 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
 
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })} client={client} />);
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&view=review", defaultPendingMinMs: 0 })} client={client} />);
 
     const repair = await screen.findByTestId("content-revision-repair");
     expect(repair).toHaveTextContent("Uwagi marketera: Ta wersja wymaga opisanych poprawek.");
