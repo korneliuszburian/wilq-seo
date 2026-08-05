@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -108,7 +109,10 @@ def revision_matches_initial_draft_context(
     )
 
 
-def _canonical_revision_for_claim(connection, work_item_id: str) -> ContentDraftRevision | None:
+def _canonical_revision_for_claim(
+    connection: sqlite3.Connection,
+    work_item_id: str,
+) -> ContentDraftRevision | None:
     has_table = connection.execute(
         "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'content_draft_revisions'"
     ).fetchone()
@@ -122,7 +126,11 @@ def _canonical_revision_for_claim(connection, work_item_id: str) -> ContentDraft
     return None if row is None else ContentDraftRevision.model_validate_json(row["payload_json"])
 
 
-def _expire_claim_if_needed(connection, run: CodexRun, payload_json: str) -> bool:
+def _expire_claim_if_needed(
+    connection: sqlite3.Connection,
+    run: CodexRun,
+    payload_json: str,
+) -> bool:
     if utc_now() < effective_initial_draft_deadline(run):
         return False
     expired = run.model_copy(
@@ -161,7 +169,7 @@ def _current_context_matches_claim(
 
 
 def _canonical_initial_draft_claim(
-    connection,
+    connection: sqlite3.Connection,
     runs: list[CodexRun],
     *,
     work_item_id: str,
