@@ -16,6 +16,11 @@ from wilq.content.workflow.target_discovery import (
     ContentTargetDiscovery,
     ContentTargetObservationEvidence,
 )
+from wilq.content.workflow.target_mapping_blockers import (
+    ContentTargetMappingBlocker,
+    authoring_surface_blocker,
+    discovery_blocker,
+)
 from wilq.content.workflow.target_mapping_preview_models import (
     ContentTargetDraftPreviewBlocker,
     ContentTargetDraftPreviewField,
@@ -186,20 +191,6 @@ class ContentTargetDraftPreview(BaseModel):
         return self
 
 
-class ContentTargetMappingBlocker(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    code: Literal[
-        "revision_not_approved",
-        "target_unavailable",
-        "target_ambiguous",
-        "authoring_surface_unknown",
-    ]
-    label: str = Field(min_length=1)
-    reason: str = Field(min_length=1)
-    next_step: str = Field(min_length=1)
-
-
 class ContentTargetMappingPreview(BaseModel):
     """Read-only relation between an exact revision and an observed target contract."""
 
@@ -269,7 +260,7 @@ def build_content_target_mapping_preview(
                 next_step="Otwórz review tej rewizji i zapisz decyzję człowieka.",
             ),
         )
-    target, target_blocker = _target_or_blocker(discovery)
+    target_blocker = discovery_blocker(discovery)
     if target_blocker is not None:
         return _blocked(
             work_item_id=work_item_id,
@@ -277,7 +268,7 @@ def build_content_target_mapping_preview(
             components=components,
             blocker=target_blocker,
         )
-    if target is None:
+    if discovery.target is None:
         return _blocked(
             work_item_id=work_item_id,
             revision=identity,
@@ -289,32 +280,23 @@ def build_content_target_mapping_preview(
                 next_step="Odczytaj ponownie dokładny obiekt dev przed mapowaniem.",
             ),
         )
-    surface = target.target_contract.authoring_surface
-    if surface is None or not surface.layouts:
-        surface_reason = (
-            "WILQ zna dokładny obiekt dev, ale nie odczytał pola ani układu, "
-            "do którego można przypisać dokument."
-            if surface is None
-            else (
-                "WILQ odczytał pole układu treści, ale nie odczytał żadnego "
-                "layoutu, do którego można przypisać dokument."
-            )
-        )
+    target = ContentTargetMappingTarget(
+        target_contract=discovery.target.target_contract,
+        target_contract_digest=discovery.target.target_contract_digest,
+        observation_evidence=discovery.target.observation_evidence,
+    )
+    surface_blocker = authoring_surface_blocker(target.target_contract.authoring_surface)
+    if surface_blocker is not None:
         return _blocked(
             work_item_id=work_item_id,
             revision=identity,
             target=target,
             components=components,
-            blocker=ContentTargetMappingBlocker(
-                code="authoring_surface_unknown",
-                label="Nie rozpoznano układu treści na dev",
-                reason=surface_reason,
-                next_step=(
-                    "Odczytaj potwierdzoną powierzchnię authoringu tego obiektu bez "
-                    "zgadywania pola lub layoutu."
-                ),
-            ),
+            blocker=surface_blocker,
         )
+    surface = target.target_contract.authoring_surface
+    if surface is None:
+        raise RuntimeError("Validated target mapping lost its authoring surface.")
     if surface.kind == "wordpress_post_content":
         components = [
             _component("document-title", "document_title", "Tytuł strony"),
@@ -360,35 +342,6 @@ def _ready_mapping_preview(
             "Zmiana rewizji albo kontraktu targetu wymaga nowego odczytu mapowania.",
         ],
     )
-
-
-def _target_or_blocker(
-    discovery: ContentTargetDiscovery,
-) -> tuple[ContentTargetMappingTarget | None, ContentTargetMappingBlocker | None]:
-    if discovery.relation_status == "ambiguous":
-        return None, ContentTargetMappingBlocker(
-            code="target_ambiguous",
-            label="Wymagany jest wybór obiektu dev",
-            reason=(
-                "WILQ odczytał kilka obiektów dev o tym samym adresie i nie "
-                "wybiera jednego samodzielnie."
-            ),
-            next_step="Potwierdź właściwy obiekt dev, zanim powstanie mapowanie.",
-        )
-    if discovery.relation_status != "partial" or discovery.target is None:
-        return None, ContentTargetMappingBlocker(
-            code="target_unavailable",
-            label="Brakuje potwierdzonego odczytu obiektu dev",
-            reason=discovery.reason,
-            next_step=(
-                "Otwórz odczyt dev ponownie, gdy inventory będzie dostępne i wskaże jeden obiekt."
-            ),
-        )
-    return ContentTargetMappingTarget(
-        target_contract=discovery.target.target_contract,
-        target_contract_digest=discovery.target.target_contract_digest,
-        observation_evidence=discovery.target.observation_evidence,
-    ), None
 
 
 def _components(revision: ContentDraftRevision) -> list[ContentTargetMappingComponent]:
@@ -468,7 +421,14 @@ def validate_content_target_mapping_confirmation(
     surface = preview.target.target_contract.authoring_surface
     if surface is None:
         raise ValueError("Nie odczytano powierzchni authoringu dla targetu.")
-    layouts = {layout.name: set(layout.fields) for layout in surface.layouts}
+    layouts = {
+        layout.name: set(
+            layout.writable_fields or layout.fields
+            if surface.kind == "acf_flexible_content"
+            else layout.fields
+        )
+        for layout in surface.layouts
+    }
     for component_id, component in components.items():
         selection = selections[component_id]
         target_fields = layouts.get(selection.layout_name)

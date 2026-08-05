@@ -19,6 +19,7 @@ def _profile(*items: WordPressAuthoringDevContentObject) -> SimpleNamespace:
     return SimpleNamespace(
         authoring_target="dev",
         evidence_ids=["ev_wordpress_dev_read"],
+        acf=SimpleNamespace(flexible_content_field_name=None, layouts=[]),
         dev_content=SimpleNamespace(status="available", items=list(items), blockers=[]),
     )
 
@@ -81,6 +82,8 @@ def test_target_discovery_reads_exact_dev_object_but_does_not_confirm_relation(m
     assert discovery.target.target_contract.write_authorized is False
     assert discovery.target.target_contract.authoring_surface is not None
     assert discovery.target.target_contract.authoring_surface.root_field == "content_sections"
+    assert discovery.target.target_contract.authoring_surface.write_profile_status == "unavailable"
+    assert discovery.target.target_contract.authoring_surface.layouts[0].writable_fields == []
     assert discovery.target.observation_evidence.object_id == "346"
     assert discovery.target.observation_evidence.evidence_id in discovery.evidence_ids
     assert "ev_wordpress_dev_read" in discovery.evidence_ids

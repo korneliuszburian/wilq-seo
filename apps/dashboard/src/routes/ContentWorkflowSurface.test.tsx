@@ -1010,9 +1010,15 @@ function contentTargetMappingPreview({
         write_authorized: false,
         authoring_surface: ready
           ? {
-              kind: "acf_flexible_content",
-              root_field: "content_sections",
-              layouts: [{ name: "text_section", fields: ["heading", "content_html"] }]
+            kind: "acf_flexible_content",
+            root_field: "content_sections",
+            layouts: [{
+              name: "text_section",
+              fields: ["heading", "content_html"],
+              writable_fields: ["heading", "content_html"]
+            }],
+            write_profile_status: "ready",
+            write_profile_reason: "Fixture ma dokładny profil ACF."
             }
           : null
       },

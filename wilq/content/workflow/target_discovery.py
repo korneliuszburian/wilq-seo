@@ -9,6 +9,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.connectors.wordpress.authoring import (
+    WordPressAcfAuthoringProfile,
     WordPressAuthoringDevContentObject,
     WordPressAuthoringProfile,
     build_wordpress_authoring_profile,
@@ -22,6 +23,7 @@ class ContentTargetAuthoringLayout(BaseModel):
 
     name: str
     fields: list[str] = Field(default_factory=list)
+    writable_fields: list[str] = Field(default_factory=list)
 
 
 class ContentTargetAuthoringSurface(BaseModel):
@@ -30,6 +32,8 @@ class ContentTargetAuthoringSurface(BaseModel):
     kind: Literal["acf_flexible_content", "wordpress_post_content"]
     root_field: str
     layouts: list[ContentTargetAuthoringLayout] = Field(default_factory=list)
+    write_profile_status: Literal["ready", "not_required", "unavailable"] = "ready"
+    write_profile_reason: str = ""
 
 
 class ContentTargetContract(BaseModel):
@@ -147,9 +151,7 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
         )
     observed_at = utc_now().isoformat()
     if len(matching_items) > 1:
-        candidates = [
-            _candidate(item, profile.authoring_target, observed_at) for item in matching_items
-        ]
+        candidates = [_candidate(item, profile, observed_at) for item in matching_items]
         return ContentTargetDiscovery(
             work_item_id=work_item_id,
             public_url=public_url,
@@ -170,7 +172,7 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
                 "Ten odczyt nie odblokowuje ACF, tworzenia draftu ani publikacji.",
             ],
         )
-    target = _target(matching_items[0], profile.authoring_target, observed_at)
+    target = _target(matching_items[0], profile, observed_at)
     return ContentTargetDiscovery(
         work_item_id=work_item_id,
         public_url=public_url,
@@ -233,10 +235,10 @@ def _unavailable_dev_content_discovery(
 
 def _target(
     item: WordPressAuthoringDevContentObject,
-    environment: str,
+    profile: WordPressAuthoringProfile,
     observed_at: str,
 ) -> ContentTargetDiscoveryTarget:
-    contract = _target_contract(item, environment)
+    contract = _target_contract(item, profile)
     digest = _digest(contract)
     observation = _observation_evidence(item, digest, observed_at)
     return ContentTargetDiscoveryTarget(
@@ -254,10 +256,10 @@ def _target(
 
 def _candidate(
     item: WordPressAuthoringDevContentObject,
-    environment: str,
+    profile: WordPressAuthoringProfile,
     observed_at: str,
 ) -> ContentTargetDiscoveryCandidate:
-    digest = _digest(_target_contract(item, environment))
+    digest = _digest(_target_contract(item, profile))
     return ContentTargetDiscoveryCandidate(
         object_id=item.post_id,
         url=item.link,
@@ -269,10 +271,11 @@ def _candidate(
 
 def _target_contract(
     item: WordPressAuthoringDevContentObject,
-    environment: str,
+    profile: WordPressAuthoringProfile,
 ) -> ContentTargetContract:
     surface = None
     if item.acf_field_name:
+        writable_fields_by_layout, profile_reason = _acf_writable_fields(item, profile.acf)
         surface = ContentTargetAuthoringSurface(
             kind="acf_flexible_content",
             root_field=item.acf_field_name,
@@ -280,9 +283,14 @@ def _target_contract(
                 ContentTargetAuthoringLayout(
                     name=section.layout_name,
                     fields=section.field_names,
+                    writable_fields=writable_fields_by_layout.get(section.layout_name, []),
                 )
                 for section in item.sections
             ],
+            write_profile_status=(
+                "ready" if writable_fields_by_layout else "unavailable"
+            ),
+            write_profile_reason=profile_reason,
         )
     elif item.content_type == "post" and _native_post_content_observed(item):
         surface = ContentTargetAuthoringSurface(
@@ -294,9 +302,11 @@ def _target_contract(
                     fields=["title", "content_html"],
                 )
             ],
+            write_profile_status="not_required",
+            write_profile_reason="Treść wpisu WordPress ma bezpośredni, dokładny kontrakt HTML.",
         )
     return ContentTargetContract(
-        environment=environment,
+        environment=profile.authoring_target,
         object_id=item.post_id,
         url=item.link,
         post_type=item.content_type,
@@ -304,6 +314,51 @@ def _target_contract(
         modified=item.modified,
         template=item.template or None,
         authoring_surface=surface,
+    )
+
+
+_DIRECT_ACF_TEXT_TYPES = {"text", "textarea", "wysiwyg"}
+
+
+def _acf_writable_fields(
+    item: WordPressAuthoringDevContentObject,
+    acf: WordPressAcfAuthoringProfile,
+) -> tuple[dict[str, list[str]], str]:
+    """Return only fields a create-only row can populate without guessing defaults.
+
+    REST observation tells us the shape currently rendered on dev, but not the
+    ACF type, requiredness or safe defaults.  A configured export must match the
+    exact flexible root and an observed layout before any direct text field is
+    offered to a human mapper.
+    """
+
+    if not acf.flexible_content_field_name:
+        return {}, "Brakuje dokładnego profilu ACF dla pola Flexible Content tego obiektu."
+    if acf.flexible_content_field_name != item.acf_field_name:
+        return {}, "Skonfigurowany profil ACF dotyczy innego pola Flexible Content."
+    layouts_by_name = {layout.name: layout for layout in acf.layouts}
+    writable_by_layout: dict[str, list[str]] = {}
+    for section in item.sections:
+        layout = layouts_by_name.get(section.layout_name)
+        if layout is None:
+            continue
+        writable = sorted(
+            field.name
+            for field in layout.fields
+            if field.name in section.field_names and field.field_type in _DIRECT_ACF_TEXT_TYPES
+        )
+        if not writable or not set(layout.required_field_names).issubset(writable):
+            continue
+        writable_by_layout[section.layout_name] = writable
+    if writable_by_layout:
+        return (
+            writable_by_layout,
+            "Dokładny profil ACF potwierdza wyłącznie bezpośrednie pola tekstowe tych layoutów.",
+        )
+    return (
+        {},
+        "Profil ACF nie potwierdza layoutu, który można utworzyć wyłącznie "
+        "z bezpiecznych pól tekstowych.",
     )
 
 

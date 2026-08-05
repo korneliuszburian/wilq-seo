@@ -334,7 +334,8 @@ function TargetMappingConfirmationForm({
   const [confirmedBy, setConfirmedBy] = useState("");
   const [selections, setSelections] = useState<Record<string, { layoutName: string; fields: Record<string, string> }>>({});
   const target = preview.target;
-  const layouts = target?.target_contract.authoring_surface?.layouts ?? [];
+  const surface = target?.target_contract.authoring_surface;
+  const layouts = surface?.layouts ?? [];
   const confirmation = useMutation({
     mutationFn: () => {
       if (!target || !preview.binding_digest) throw new Error("Brakuje dokładnego odczytu targetu.");
@@ -431,7 +432,10 @@ function TargetMappingConfirmationForm({
                     onChange={(event) => updateField(component.component_id, sourceField.key, event.target.value)}
                   >
                     <option value="">Wybierz pole</option>
-                    {layout?.fields.map((field) => <option key={field} value={field}>{field}</option>)}
+                    {(surface?.kind === "acf_flexible_content" && layout?.writable_fields.length
+                      ? layout.writable_fields
+                      : layout?.fields
+                    )?.map((field) => <option key={field} value={field}>{field}</option>)}
                   </select>
                 </label>
               ))}
@@ -483,6 +487,11 @@ function TargetMappingTargetSummary({
           </p>
           <p className="mt-1 leading-6 text-slate-700">
             Dostępne układy: {surface.layouts.map((layout) => layout.name).join(", ")}
+          </p>
+          <p className="mt-2 leading-6 text-slate-600">
+            {surface.write_profile_status === "ready"
+              ? surface.write_profile_reason
+              : `Nie przygotujemy szkicu ACF: ${surface.write_profile_reason || "brakuje dokładnego profilu pól."}`}
           </p>
           <p className="mt-2 leading-6 text-slate-600">
             To są odczytane możliwości, a nie decyzja, gdzie trafi element dokumentu.
