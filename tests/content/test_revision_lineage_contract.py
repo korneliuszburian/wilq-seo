@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
@@ -10,6 +11,7 @@ from fastapi import HTTPException
 from apps.api.wilq_api.routers.content_workflow import (
     _build_editor_save_command,
     _validate_canonical_html_alignment,
+    _validate_revision_sections,
 )
 from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import ContentDraftRevisionSaveRequest
@@ -291,6 +293,52 @@ def test_canonical_html_alignment_can_change_only_derived_html() -> None:
     )
     with pytest.raises(HTTPException, match="wyłącznie kanoniczne HTML"):
         _validate_canonical_html_alignment(changed_body, latest)
+
+
+def test_current_v2_child_validates_against_its_exact_parent_sections() -> None:
+    parent_section = ContentDraftRevisionSection(
+        section_id="section_planning",
+        heading="Pełny zakres planu regulacyjnego",
+        body_markdown="Treść oparta na zatwierdzonych źródłach.",
+        content_html=content_html_from_markdown("Treść oparta na zatwierdzonych źródłach."),
+        evidence_ids=["ev_regulatory"],
+    )
+    latest = ContentDraftRevision.model_construct(
+        schema_version="wilq_content_draft_revision_v2",
+        revision_id="content_revision_parent",
+        title="BDO dla przedsiębiorcy",
+        sections=[parent_section],
+    )
+    request = ContentDraftRevisionSaveRequest(
+        base_revision_id=latest.revision_id,
+        title=latest.title,
+        sections=[
+            parent_section.model_copy(
+                update={
+                    "body_markdown": "Treść poprawiona bez powielenia.",
+                    "content_html": content_html_from_markdown(
+                        "Treść poprawiona bez powielenia."
+                    ),
+                }
+            )
+        ],
+        created_by="wilku",
+    )
+    unrelated_package = SimpleNamespace(
+        sections=[SimpleNamespace(heading="Starszy pakiet edytora", evidence_ids=["ev_old"])]
+    )
+    snapshot = SimpleNamespace(
+        draft_package=SimpleNamespace(
+            draft_package_result=SimpleNamespace(draft_package=unrelated_package)
+        )
+    )
+
+    _validate_revision_sections(
+        request,
+        snapshot,
+        latest_revision=latest,
+        revision_context_current=True,
+    )
 
 
 def test_canonical_html_alignment_is_not_a_second_codex_proposal() -> None:

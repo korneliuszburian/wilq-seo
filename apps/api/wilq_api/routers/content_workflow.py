@@ -163,7 +163,12 @@ def content_work_item_draft_revision_save(
     if request.correction_reason == "canonical_html_alignment":
         _validate_canonical_html_alignment(request, latest_revision)
     else:
-        _validate_revision_sections(request, snapshot)
+        _validate_revision_sections(
+            request,
+            snapshot,
+            latest_revision=latest_revision,
+            revision_context_current=workspace.context_current,
+        )
 
     command = _build_editor_save_command(
         work_item_id=work_item_id,
@@ -370,12 +375,30 @@ def content_work_item_learning_proposal(
 def _validate_revision_sections(
     request: ContentDraftRevisionSaveRequest,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    *,
+    latest_revision: ContentDraftRevision | None,
+    revision_context_current: bool,
 ) -> None:
     draft_package = snapshot.draft_package.draft_package_result.draft_package
     if draft_package is None:
         raise HTTPException(status_code=422, detail="Brakuje pakietu sekcji do zapisu wersji.")
     request_headings = [section.heading for section in request.sections]
-    expected_headings = [section.heading for section in draft_package.sections]
+    # A current v2 child edits the exact immutable document. Its body can have
+    # been generated from a richer planning proposal than the legacy editor
+    # package, so validate its section contract against that exact parent.
+    # A stale parent remains bound to the current package and cannot bypass the
+    # normal current-context gate below.
+    expected_sections = (
+        latest_revision.sections
+        if (
+            latest_revision is not None
+            and latest_revision.schema_version == "wilq_content_draft_revision_v2"
+            and request.base_revision_id == latest_revision.revision_id
+            and revision_context_current
+        )
+        else draft_package.sections
+    )
+    expected_headings = [section.heading for section in expected_sections]
     if request_headings != expected_headings:
         raise HTTPException(
             status_code=422,
@@ -386,7 +409,7 @@ def _validate_revision_sections(
         )
     for section, expected_section in zip(
         request.sections,
-        draft_package.sections,
+        expected_sections,
         strict=True,
     ):
         if section.evidence_ids != expected_section.evidence_ids:
