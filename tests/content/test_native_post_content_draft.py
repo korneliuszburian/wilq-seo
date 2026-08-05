@@ -198,6 +198,12 @@ def test_native_post_content_mapping_builds_an_exact_draft_only_payload(monkeypa
     assert payload.content_html is not None
     assert "<h1>BDO — obowiązki przedsiębiorcy</h1>" not in payload.content_html
     assert payload.content_html.startswith("<p>Praktyczny przewodnik po obowiązkach BDO.</p>")
+    document_component = next(
+        component
+        for component in preview.components
+        if component.component_id == "document-content"
+    )
+    assert payload.content_html == document_component.fields[0].value
     assert "Kiedy sprawdzić obowiązki BDO" in payload.content_html
     assert payload.post_status == "draft"
     assert payload.create_only is True
@@ -214,8 +220,9 @@ def test_native_post_content_mapping_builds_an_exact_draft_only_payload(monkeypa
     monkeypatch.setattr(
         dev_draft_execution,
         "create_wordpress_draft_post",
-        lambda value, *, connector_id: created.append((value.content_html or "", connector_id))
-        or "draft_1354",
+        lambda value, *, connector_id: (
+            created.append((value.content_html or "", connector_id)) or "draft_1354"
+        ),
     )
     result, errors = dev_draft_execution.execute_content_target_draft_action(action)
 

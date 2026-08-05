@@ -9,11 +9,16 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.handoff.revision_document_renderer import revision_document_html
 from wilq.content.workflow.content_html import content_html_from_markdown
+from wilq.content.workflow.delivery_projection import project_target_field_value
 from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
 from wilq.content.workflow.target_discovery import (
     ContentTargetContract,
     ContentTargetDiscovery,
     ContentTargetObservationEvidence,
+)
+from wilq.content.workflow.target_mapping_preview_models import (
+    ContentTargetDraftPreviewBlocker,
+    ContentTargetDraftPreviewField,
 )
 from wilq.content.workflow.target_mapping_source_fields import (
     ContentTargetSourceKind,
@@ -136,15 +141,6 @@ class ContentTargetMappingConfirmationResult(BaseModel):
     confirmation: ContentTargetMappingConfirmation
 
 
-class ContentTargetDraftPreviewField(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    target_field: str = Field(min_length=1)
-    source_field: str = Field(min_length=1)
-    value: str = Field(min_length=1)
-    value_kind: Literal["plain_text", "html", "url"]
-
-
 class ContentTargetDraftPreviewComponent(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -154,24 +150,13 @@ class ContentTargetDraftPreviewComponent(BaseModel):
     fields: list[ContentTargetDraftPreviewField] = Field(min_length=1)
 
 
-class ContentTargetDraftPreviewBlocker(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    code: Literal["mapping_not_confirmed", "mapping_stale"]
-    label: str = Field(min_length=1)
-    reason: str = Field(min_length=1)
-    next_step: str = Field(min_length=1)
-
-
 class ContentTargetDraftPreview(BaseModel):
     """Exact payload preview; it is not an ActionObject and never writes WordPress."""
 
     model_config = ConfigDict(extra="forbid")
 
     response_type: Literal["content_target_draft_preview"] = "content_target_draft_preview"
-    contract_version: Literal["content_target_draft_preview_v1"] = (
-        "content_target_draft_preview_v1"
-    )
+    contract_version: Literal["content_target_draft_preview_v1"] = "content_target_draft_preview_v1"
     work_item_id: str = Field(min_length=1)
     revision: ContentTargetMappingRevision
     status: Literal["ready", "blocked"]
@@ -396,8 +381,7 @@ def _target_or_blocker(
             label="Brakuje potwierdzonego odczytu obiektu dev",
             reason=discovery.reason,
             next_step=(
-                "Otwórz odczyt dev ponownie, gdy inventory będzie dostępne i "
-                "wskaże jeden obiekt."
+                "Otwórz odczyt dev ponownie, gdy inventory będzie dostępne i wskaże jeden obiekt."
             ),
         )
     return ContentTargetMappingTarget(
@@ -491,9 +475,7 @@ def validate_content_target_mapping_confirmation(
         if target_fields is None:
             raise ValueError("Wybrany layout nie należy do odczytanego układu targetu.")
         expected_source_fields = {field.key for field in component.source_fields}
-        actual_source_fields = {
-            binding.source_field for binding in selection.field_bindings
-        }
+        actual_source_fields = {binding.source_field for binding in selection.field_bindings}
         if actual_source_fields != expected_source_fields:
             raise ValueError("Mapowanie musi wskazać każde pole elementu dokumentu dokładnie raz.")
         if any(binding.target_field not in target_fields for binding in selection.field_bindings):
@@ -587,7 +569,18 @@ def build_content_target_draft_preview(
                 ContentTargetDraftPreviewField(
                     target_field=binding.target_field,
                     source_field=binding.source_field,
-                    value=_source_value(revision, component_id, binding.source_field)[0],
+                    value=project_target_field_value(
+                        _source_value(revision, component_id, binding.source_field)[0],
+                        authoring_surface_kind=(
+                            target.target_contract.authoring_surface.kind
+                            if target.target_contract.authoring_surface is not None
+                            else None
+                        ),
+                        component_id=component_id,
+                        source_field=binding.source_field,
+                        target_field=binding.target_field,
+                        value_kind=_source_value(revision, component_id, binding.source_field)[1],
+                    ),
                     value_kind=_source_value(revision, component_id, binding.source_field)[1],
                 )
                 for binding in selection.field_bindings

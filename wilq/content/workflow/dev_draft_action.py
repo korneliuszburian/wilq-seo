@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from copy import deepcopy
 from typing import Any, Literal
 from uuid import uuid4
@@ -8,6 +7,7 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.actions.metric_utils import unique_values
+from wilq.content.workflow.delivery_projection import wordpress_post_content_html
 from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.target_discovery import build_content_target_discovery
 from wilq.content.workflow.target_mapping import (
@@ -29,10 +29,6 @@ from wilq.storage.local_state import local_state_store
 CONTENT_DEV_DRAFT_ACTION_TYPE = "content_dev_draft_create"
 CONTENT_DEV_DRAFT_ACTION_CONTRACT = "content_dev_draft_action_v1"
 CONTENT_DEV_DRAFT_ACTION_CREATED_EVENT = "content_dev_draft_action_created"
-_LEADING_DOCUMENT_H1 = re.compile(
-    r"\A\s*<h1(?:\s[^>]*)?>.*?</h1>\s*",
-    re.IGNORECASE | re.DOTALL,
-)
 
 
 class ContentTargetDraftActionCommand(BaseModel):
@@ -228,8 +224,10 @@ def refresh_content_target_draft_action(action: ActionObject) -> ActionObject:
         return _blocked_action(action, "content_draft_action_state_unavailable")
     if preview.status != "ready" or preview.target is None or preview.confirmation is None:
         return _blocked_action(action, "content_draft_action_state_unavailable")
-    return action if _preview_matches_action_binding(preview, binding) else _blocked_action(
-        action, "content_draft_action_stale"
+    return (
+        action
+        if _preview_matches_action_binding(preview, binding)
+        else _blocked_action(action, "content_draft_action_stale")
     )
 
 
@@ -392,7 +390,7 @@ def _wordpress_post_content_html(components: list[ContentTargetDraftPreviewCompo
     """
 
     document_html = _document_content_html(components)
-    return _LEADING_DOCUMENT_H1.sub("", document_html, count=1).strip()
+    return wordpress_post_content_html(document_html)
 
 
 def _document_content_html(components: list[ContentTargetDraftPreviewComponent]) -> str:
