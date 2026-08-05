@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 from fastapi import APIRouter, FastAPI
@@ -277,6 +278,26 @@ def test_pdf_source_is_extracted_transiently_before_structured_turn(tmp_path, mo
     assert result.status == "ready"
     assert "Tekst z oficjalnego PDF-a." in client.requests[0].untrusted_context
     assert "%PDF-raw-official-body" not in client.requests[0].untrusted_context
+
+
+def test_pdf_source_blocks_when_the_allowlisted_extractor_is_unavailable(monkeypatch) -> None:
+    monkeypatch.setattr(proposals_module, "_PDFTOTEXT_BINARY", Path("/missing/pdftotext"))
+
+    with pytest.raises(ValueError, match="extractor is unavailable"):
+        proposals_module._source_text_for_proposal(
+            proposals_module.ContentRegulatorySourceSnapshot(
+                snapshot_id="snapshot",
+                candidate_id="candidate",
+                profile_id="profile",
+                profile_version="version",
+                source_url="https://example.gov.pl/source.pdf",
+                content_digest="a" * 64,
+                content_type="application/pdf",
+                byte_length=100,
+                observed_at="2026-08-01T12:00:00Z",
+            ),
+            b"%PDF-raw-official-body",
+        )
 
 
 def test_html_proposal_context_uses_main_content_not_layout_or_scripts() -> None:

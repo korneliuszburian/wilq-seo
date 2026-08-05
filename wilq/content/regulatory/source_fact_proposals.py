@@ -9,15 +9,16 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
 import sqlite3
-import subprocess
+import subprocess  # nosec B404
 import unicodedata
 from datetime import UTC, datetime
 from hashlib import sha256
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Literal
+from typing import Final, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -47,6 +48,10 @@ from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore, state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
+
+_PDFTOTEXT_BINARY: Final = Path("/usr/bin/pdftotext")
+_PDF_TEXT_EXTRACTION_TIMEOUT_SECONDS: Final = 20
+_PDF_TEXT_EXTRACTION_ENV: Final = {"LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"}
 
 
 class ContentRegulatorySourceFactProposalOutput(BaseModel):
@@ -439,12 +444,17 @@ def _source_text_for_proposal(snapshot: ContentRegulatorySourceSnapshot, body: b
     """Extract bounded text transiently; never write the official body to disk/state."""
 
     if snapshot.content_type == "application/pdf" or body.startswith(b"%PDF-"):
-        result = subprocess.run(
-            ["pdftotext", "-", "-"],
+        if not _PDFTOTEXT_BINARY.is_file() or not os.access(_PDFTOTEXT_BINARY, os.X_OK):
+            raise ValueError("Official PDF text extractor is unavailable.")
+        # The executable path is fixed above, arguments are constants and no shell is used.
+        result = subprocess.run(  # nosec B603
+            [str(_PDFTOTEXT_BINARY), "-", "-"],
             input=body,
             capture_output=True,
             check=False,
-            timeout=20,
+            close_fds=True,
+            env=_PDF_TEXT_EXTRACTION_ENV,
+            timeout=_PDF_TEXT_EXTRACTION_TIMEOUT_SECONDS,
         )
         if result.returncode != 0:
             raise ValueError("Official PDF source cannot be extracted safely.")
