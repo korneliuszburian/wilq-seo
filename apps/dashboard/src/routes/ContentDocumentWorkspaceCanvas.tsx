@@ -522,6 +522,7 @@ function TargetMappingTargetSummary({
       <p className="mt-2 leading-6 text-slate-700">
         Środowisko: {target.target_contract.environment}.
       </p>
+      <DevTargetLivePreview url={target.target_contract.url} />
       {surface ? (
         <>
           <p className="mt-3 font-semibold text-ink">Zaobserwowane możliwości układu</p>
@@ -575,6 +576,65 @@ function TargetMappingTargetSummary({
         </>
       ) : null}
     </div>
+  );
+}
+
+export function DevTargetLivePreview({ url }: { url: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        className="mt-3 w-full rounded-md border border-line bg-white px-3 py-2 text-left text-sm font-semibold text-action hover:border-action"
+        type="button"
+        onClick={() => setOpen(true)}
+      >
+        Otwórz podgląd strony dev
+      </button>
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
+          <section
+            aria-labelledby="dev-target-live-preview-title"
+            aria-modal="true"
+            className="flex h-[min(88vh,64rem)] w-[min(96vw,90rem)] flex-col rounded-2xl bg-white p-4 shadow-2xl lg:p-5"
+            role="dialog"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-ink" id="dev-target-live-preview-title">Podgląd strony dev</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-700">
+                  To jest bieżąca strona dev jako punkt odniesienia. Nie pokazuje niezapisanych zmian z mapowania i nie zmienia WordPressa.
+                </p>
+              </div>
+              <button
+                aria-label="Zamknij podgląd strony dev"
+                className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-slate-700 hover:border-action hover:text-action"
+                type="button"
+                onClick={() => setOpen(false)}
+              >
+                Zamknij
+              </button>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <a
+                className="text-sm font-semibold text-action hover:underline"
+                href={url}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Otwórz stronę dev w nowej karcie
+              </a>
+            </div>
+            <iframe
+              className="mt-3 min-h-0 flex-1 rounded-md border border-line bg-white"
+              referrerPolicy="no-referrer"
+              sandbox="allow-same-origin allow-scripts"
+              src={url}
+              title="Referencyjny podgląd strony dev"
+            />
+          </section>
+        </div>
+      ) : null}
+    </>
   );
 }
 
