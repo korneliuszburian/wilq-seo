@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
@@ -13,7 +15,7 @@ from apps.api.wilq_api.routers.content_snapshot import (
 from apps.api.wilq_api.routers.content_workflow_http import (
     revision_conflict_next_step,
 )
-from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.drafts.package import ContentDraftPackage, ContentDraftSection
 from wilq.content.measurement.deployment import ContentPublicDeployment
 from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import (
@@ -42,6 +44,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionConflict,
     ContentDraftRevisionReviewCommand,
+    ContentDraftRevisionSection,
     content_draft_package_digest,
 )
 from wilq.content.workflow.stage_measurement import (
@@ -388,7 +391,7 @@ def _validate_revision_sections(
     # package, so validate its section contract against that exact parent.
     # A stale parent remains bound to the current package and cannot bypass the
     # normal current-context gate below.
-    expected_sections = (
+    expected_sections: Sequence[ContentDraftSection | ContentDraftRevisionSection] = (
         latest_revision.sections
         if (
             latest_revision is not None
