@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Literal, Protocol, cast
 
 from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
@@ -47,7 +47,10 @@ from wilq.content.planning.generated_proposal import (
 )
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.revisions import (
+    ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionWriteResult,
+)
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore
@@ -61,12 +64,21 @@ class _InitialDraftInputs:
     base_revision_id: str | None = None
 
 
+class InitialDraftRevisionStore(Protocol):
+    def append_draft_revision(
+        self,
+        command: ContentDraftRevisionAppendCommand,
+        *,
+        completed_codex_run: CodexRun | None = None,
+    ) -> ContentDraftRevisionWriteResult: ...
+
+
 def generate_initial_full_draft(
     *,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     request: ContentInitialDraftRequest,
     client: CodexAppServerClientProtocol,
-    workflow_store: ContentWorkflowStore,
+    workflow_store: InitialDraftRevisionStore,
     run_store: LocalStateStore,
     run_id: str | None = None,
 ) -> ContentInitialDraftResponse:
@@ -687,7 +699,7 @@ def _persist_document(
     output: ContentInitialDraftModelOutput,
     run: CodexRun,
     trace: ContentCodexRuntimeTrace,
-    workflow_store: ContentWorkflowStore,
+    workflow_store: InitialDraftRevisionStore,
     run_store: LocalStateStore,
     regulatory_assurance: ContentDraftAssuranceReceipt | None,
 ) -> ContentInitialDraftResponse:

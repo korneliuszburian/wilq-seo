@@ -83,6 +83,7 @@ def test_first_initial_draft_run_is_visible_without_revision() -> None:
 
 
 def test_status_uses_current_context_not_a_later_stale_run(monkeypatch) -> None:
+    now = datetime.now(UTC)
     proposal = SimpleNamespace(
         proposal_id="proposal-1",
         planning_digest="a" * 64,
@@ -108,13 +109,13 @@ def test_status_uses_current_context_not_a_later_stale_run(monkeypatch) -> None:
         initial_draft_context_digest=current_digest,
         initial_draft_base_revision_id=None,
         used_endpoints=["/api/content/work-items/work/initial-draft"],
-        started_at=datetime(2026, 8, 5, 10, tzinfo=UTC),
+        started_at=now - timedelta(seconds=10),
     )
     stale = current.model_copy(
         update={
             "id": "later-stale-run",
             "initial_draft_context_digest": "0" * 64,
-            "started_at": datetime(2026, 8, 5, 11, tzinfo=UTC),
+            "started_at": now - timedelta(seconds=5),
         }
     )
 
