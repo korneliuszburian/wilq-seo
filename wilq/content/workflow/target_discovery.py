@@ -8,6 +8,10 @@ from urllib.parse import urlparse
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.connectors.wordpress.acf_rest_schema import (
+    WordPressAcfRestSchema,
+    read_wordpress_acf_rest_schema,
+)
 from wilq.connectors.wordpress.authoring import (
     WordPressAcfAuthoringProfile,
     WordPressAuthoringDevContentObject,
@@ -23,6 +27,7 @@ class ContentTargetAuthoringLayout(BaseModel):
 
     name: str
     fields: list[str] = Field(default_factory=list)
+    schema_fields: list[str] = Field(default_factory=list)
     writable_fields: list[str] = Field(default_factory=list)
 
 
@@ -32,6 +37,10 @@ class ContentTargetAuthoringSurface(BaseModel):
     kind: Literal["acf_flexible_content", "wordpress_post_content"]
     root_field: str
     layouts: list[ContentTargetAuthoringLayout] = Field(default_factory=list)
+    schema_status: Literal["available", "unavailable"] = "unavailable"
+    schema_digest: str | None = None
+    schema_source_ref: str = ""
+    schema_reason: str = ""
     write_profile_status: Literal["ready", "not_required", "unavailable"] = "ready"
     write_profile_reason: str = ""
 
@@ -172,7 +181,13 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
                 "Ten odczyt nie odblokowuje ACF, tworzenia draftu ani publikacji.",
             ],
         )
-    target = _target(matching_items[0], profile, observed_at)
+    item = matching_items[0]
+    acf_schema = (
+        read_wordpress_acf_rest_schema("wordpress_ekologus", item)
+        if item.acf_field_name
+        else None
+    )
+    target = _target(item, profile, observed_at, acf_schema=acf_schema)
     return ContentTargetDiscovery(
         work_item_id=work_item_id,
         public_url=public_url,
@@ -237,8 +252,10 @@ def _target(
     item: WordPressAuthoringDevContentObject,
     profile: WordPressAuthoringProfile,
     observed_at: str,
+    *,
+    acf_schema: WordPressAcfRestSchema | None = None,
 ) -> ContentTargetDiscoveryTarget:
-    contract = _target_contract(item, profile)
+    contract = _target_contract(item, profile, acf_schema=acf_schema)
     digest = _digest(contract)
     observation = _observation_evidence(item, digest, observed_at)
     return ContentTargetDiscoveryTarget(
@@ -272,10 +289,15 @@ def _candidate(
 def _target_contract(
     item: WordPressAuthoringDevContentObject,
     profile: WordPressAuthoringProfile,
+    *,
+    acf_schema: WordPressAcfRestSchema | None = None,
 ) -> ContentTargetContract:
     surface = None
     if item.acf_field_name:
         writable_fields_by_layout, profile_reason = _acf_writable_fields(item, profile.acf)
+        schema_layouts = {
+            layout.name: layout for layout in acf_schema.layouts
+        } if acf_schema is not None else {}
         surface = ContentTargetAuthoringSurface(
             kind="acf_flexible_content",
             root_field=item.acf_field_name,
@@ -283,14 +305,21 @@ def _target_contract(
                 ContentTargetAuthoringLayout(
                     name=section.layout_name,
                     fields=section.field_names,
+                    schema_fields=_schema_field_names(
+                        schema_layouts.get(section.layout_name)
+                    ),
                     writable_fields=writable_fields_by_layout.get(section.layout_name, []),
                 )
                 for section in item.sections
             ],
+            schema_status=acf_schema.status if acf_schema is not None else "unavailable",
+            schema_digest=acf_schema.schema_digest if acf_schema is not None else None,
+            schema_source_ref=acf_schema.source_ref if acf_schema is not None else "",
+            schema_reason=acf_schema.reason if acf_schema is not None else "",
             write_profile_status=(
                 "ready" if writable_fields_by_layout else "unavailable"
             ),
-            write_profile_reason=profile_reason,
+            write_profile_reason=_write_profile_reason(profile_reason, acf_schema),
         )
     elif item.content_type == "post" and _native_post_content_observed(item):
         surface = ContentTargetAuthoringSurface(
@@ -302,6 +331,8 @@ def _target_contract(
                     fields=["title", "content_html"],
                 )
             ],
+            schema_status="available",
+            schema_reason="Treść wpisu ma bezpośredni kontrakt WordPress post_content.",
             write_profile_status="not_required",
             write_profile_reason="Treść wpisu WordPress ma bezpośredni, dokładny kontrakt HTML.",
         )
@@ -315,6 +346,25 @@ def _target_contract(
         template=item.template or None,
         authoring_surface=surface,
     )
+
+
+def _write_profile_reason(
+    profile_reason: str,
+    acf_schema: WordPressAcfRestSchema | None,
+) -> str:
+    if acf_schema is None or acf_schema.status != "available":
+        return profile_reason
+    return (
+        "Schema ACF została odczytana dla dokładnego obiektu dev, ale WILQ nie otwiera "
+        "jeszcze zapisu: compiler musi najpierw zachować wszystkie istniejące wartości "
+        "layoutu poza zatwierdzonymi polami copy. "
+        f"{profile_reason}"
+    )
+
+
+def _schema_field_names(layout: object) -> list[str]:
+    fields = getattr(layout, "fields", [])
+    return [field.name for field in fields if isinstance(getattr(field, "name", None), str)]
 
 
 _DIRECT_ACF_TEXT_TYPES = {"text", "textarea", "wysiwyg"}

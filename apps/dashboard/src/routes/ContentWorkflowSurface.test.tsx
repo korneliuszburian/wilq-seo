@@ -1015,8 +1015,13 @@ function contentTargetMappingPreview({
             layouts: [{
               name: "text_section",
               fields: ["heading", "content_html"],
+              schema_fields: ["heading", "content_html"],
               writable_fields: ["heading", "content_html"]
             }],
+            schema_status: "available",
+            schema_digest: "c".repeat(64),
+            schema_source_ref: "wp-json/wp/v2/pages/1353 OPTIONS",
+            schema_reason: "Fixture schema ACF.",
             write_profile_status: "ready",
             write_profile_reason: "Fixture ma dokładny profil ACF."
             }

@@ -488,6 +488,33 @@ function TargetMappingTargetSummary({
           <p className="mt-1 leading-6 text-slate-700">
             Dostępne układy: {surface.layouts.map((layout) => layout.name).join(", ")}
           </p>
+          {surface.kind === "acf_flexible_content" ? (
+            <>
+              <p className="mt-2 leading-6 text-slate-600">
+                {surface.schema_status === "available"
+                  ? `Schema ACF z dev rozpoznany${surface.schema_digest ? " dla dokładnego obiektu" : ""}. ` +
+                    "To pozwala sprawdzić strukturę sekcji, ale nie otwiera jeszcze zapisu."
+                  : `Schema ACF nie jest jeszcze dostępny: ${surface.schema_reason || "brakuje odczytu OPTIONS."}`}
+              </p>
+              {surface.schema_status === "available" ? (
+                <details className="mt-2 text-sm text-slate-600">
+                  <summary className="cursor-pointer font-medium text-ink">
+                    Rozpoznane pola ACF
+                  </summary>
+                  <ul className="mt-2 space-y-1">
+                    {surface.layouts.map((layout) => (
+                      <li key={layout.name}>
+                        <span className="font-medium text-ink">{layout.name}:</span>{" "}
+                        {layout.schema_fields.length > 0
+                          ? layout.schema_fields.join(", ")
+                          : "brak pola w schema dla tego obserwowanego layoutu"}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+            </>
+          ) : null}
           <p className="mt-2 leading-6 text-slate-600">
             {surface.write_profile_status === "ready"
               ? surface.write_profile_reason

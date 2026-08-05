@@ -6,6 +6,11 @@ from types import SimpleNamespace
 from typing import Literal
 
 import wilq.content.workflow.target_discovery as discovery_module
+from wilq.connectors.wordpress.acf_rest_schema import (
+    WordPressAcfRestSchema,
+    WordPressAcfRestSchemaField,
+    WordPressAcfRestSchemaLayout,
+)
 from wilq.connectors.wordpress.authoring import (
     WordPressAuthoringDevContentObject,
     WordPressAuthoringDevSection,
@@ -97,6 +102,70 @@ def test_target_discovery_reads_exact_dev_object_but_does_not_confirm_relation(m
         ).encode()
     ).hexdigest()
     assert "nie potwierdza" in discovery.reason
+
+
+def test_target_discovery_exposes_exact_acf_schema_without_opening_acf_delivery(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        discovery_module,
+        "inventory_decision_for_work_item",
+        lambda work_item_id, **_kwargs: (
+            SimpleNamespace(source_public_url=PUBLIC_URL, final_canonical_url=None, page=PUBLIC_URL)
+            if work_item_id == WORK_ITEM_ID
+            else None
+        ),
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "build_wordpress_authoring_profile",
+        lambda _connector_id, include_dev_content=False: _profile(
+            _page("https://dev.ekologus.pl/bdo/")
+        ),
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "read_wordpress_acf_rest_schema",
+        lambda _connector_id, _item: WordPressAcfRestSchema(
+            status="available",
+            root_field="content_sections",
+            schema_digest="a" * 64,
+            source_ref="wp-json/wp/v2/pages/346 OPTIONS",
+            reason="Schema ACF została odczytana przez OPTIONS.",
+            layouts=[
+                WordPressAcfRestSchemaLayout(
+                    name="text_section",
+                    label="Sekcja tekstowa",
+                    source_method="acf_rest",
+                    fields=[
+                        WordPressAcfRestSchemaField(
+                            name="title",
+                            label="Tytuł",
+                            field_type="string",
+                            source_method="acf_rest",
+                        ),
+                        WordPressAcfRestSchemaField(
+                            name="content",
+                            label="Treść",
+                            field_type="string",
+                            source_method="acf_rest",
+                        ),
+                    ],
+                )
+            ],
+        ),
+    )
+
+    discovery = discovery_module.build_content_target_discovery(WORK_ITEM_ID)
+
+    assert discovery is not None and discovery.target is not None
+    surface = discovery.target.target_contract.authoring_surface
+    assert surface is not None
+    assert surface.schema_status == "available"
+    assert surface.schema_digest == "a" * 64
+    assert surface.layouts[0].schema_fields == ["title", "content"]
+    assert surface.write_profile_status == "unavailable"
+    assert "nie otwiera jeszcze zapisu" in surface.write_profile_reason
 
 
 def test_target_discovery_identifies_native_post_content_without_inventing_acf(

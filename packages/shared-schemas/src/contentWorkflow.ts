@@ -769,6 +769,7 @@ export const ContentNewPageBriefWorkspaceSchema = z.object({
 export const ContentTargetAuthoringLayoutSchema = z.object({
   name: z.string().min(1),
   fields: z.array(z.string()).default([]),
+  schema_fields: z.array(z.string()).default([]),
   writable_fields: z.array(z.string()).default([])
 });
 
@@ -776,6 +777,10 @@ export const ContentTargetAuthoringSurfaceSchema = z.object({
   kind: z.enum(["acf_flexible_content", "wordpress_post_content"]),
   root_field: z.string().min(1),
   layouts: z.array(ContentTargetAuthoringLayoutSchema).default([]),
+  schema_status: z.enum(["available", "unavailable"]).default("unavailable"),
+  schema_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  schema_source_ref: z.string().default(""),
+  schema_reason: z.string().default(""),
   write_profile_status: z.enum(["ready", "not_required", "unavailable"]).default("unavailable"),
   write_profile_reason: z.string().default("")
 });
