@@ -315,15 +315,9 @@ def _unknown_inventory_coverage(
     return ContentInventoryCoverage(
         status="unknown",
         returned_count=int(summary.get("sitemap_url_count", 0) or 0),
-        public_sitemap_source_count=(
-            public_source if isinstance(public_source, (int, float)) else None
-        ),
-        public_sitemap_returned_count=(
-            public_returned if isinstance(public_returned, (int, float)) else None
-        ),
-        public_sitemap_limit=(
-            public_limit if isinstance(public_limit, (int, float)) else None
-        ),
+        public_sitemap_source_count=_coverage_int(public_source),
+        public_sitemap_returned_count=_coverage_int(public_returned),
+        public_sitemap_limit=_coverage_int(public_limit),
         public_sitemap_truncated=public_truncated if isinstance(public_truncated, bool) else None,
         caveat="Ostatni odczyt nie zapisał liczników coverage; nie traktuj inventory jako pełnego.",
     )
@@ -344,9 +338,7 @@ def _complete_inventory_coverage(
         ),
         source_count=source_count,
         returned_count=returned_count or 0,
-        public_sitemap_source_count=(
-            public_source if isinstance(public_source, (int, float)) else None
-        ),
+        public_sitemap_source_count=_coverage_int(public_source),
         public_sitemap_returned_count=(
             int(public_returned)
             if isinstance(public_returned, (int, float))
