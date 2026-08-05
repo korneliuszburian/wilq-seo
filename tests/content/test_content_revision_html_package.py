@@ -47,8 +47,10 @@ def test_html_package_carries_the_exact_approved_revision_and_its_lineage() -> N
     assert revision.content_digest in package.html_document
     assert "<h1>BDO</h1>" in package.html_document
     assert "Treść sekcji." in package.html_document
-    assert "Źródła urzędowe" in package.html_document
-    assert "https://bdo.mos.gov.pl/o-systemie-bdo/" in package.html_document
+    assert package.manifest.official_source_references == revision.official_source_references
+    reader_html = package.html_document.split("<main>", 1)[1].split("</main>", 1)[0]
+    assert "Źródła urzędowe" not in reader_html
+    assert "https://bdo.mos.gov.pl/o-systemie-bdo/" not in reader_html
     assert "Nie jest gotowym układem ani zapisem WordPress." in package.html_document
 
 
