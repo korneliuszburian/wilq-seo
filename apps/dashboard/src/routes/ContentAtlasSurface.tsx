@@ -14,6 +14,8 @@ type AtlasSection = {
   kind: "source" | "revision";
 };
 
+const GRAPH_LINK_POSITIONS = ["top-[8%]", "top-[29%]", "top-[50%]", "top-[71%]"];
+
 export function ContentAtlasSurface({
   workspace,
   inventory,
@@ -102,10 +104,10 @@ export function ContentAtlasSurface({
           </div>
         </aside>
 
-        <section className="rounded-2xl border border-line bg-white p-4 shadow-sm lg:p-5" aria-label="Potwierdzone połączenia">
+        <section className="rounded-2xl border border-line bg-white p-4 shadow-sm lg:p-5" aria-label="Mapa potwierdzonych połączeń">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Co jest połączone</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Mapa relacji strony</p>
               <h2 className="mt-1 text-lg font-semibold text-ink">
                 {selectedSection ? selectedSection.heading : "Wybierz sekcję"}
               </h2>
@@ -115,46 +117,30 @@ export function ContentAtlasSurface({
             </span>
           </div>
 
-          <div className="mt-5 grid gap-3">
-            <AtlasFact
-              label="Aktualna strona"
-              value={workspace.source_snapshot.status === "available" ? "odczytana" : workspace.source_snapshot.status}
-              detail={workspace.source_snapshot.reason}
-            />
-            <AtlasFact
-              label="Rewizja WILQ"
-              value={revision ? "dokładna rewizja istnieje" : "brak rewizji"}
-              detail={workspace.canonical_document.reason}
-            />
-            <AtlasFact
-              label="ACF na dev"
-              value={acfStatus(discovery.data)}
-              detail={acfDetail(discovery.data)}
-            />
-          </div>
+          <AtlasGraph
+            sourceTitle={workspace.source_snapshot.title ?? "Obecna strona"}
+            revisionTitle={revision?.title ?? workspace.canonical_document.label}
+            selectedSection={selectedSection?.heading ?? null}
+            links={linkedPages}
+          />
 
           <div className="mt-5 border-t border-line pt-4">
-            <h3 className="text-sm font-semibold text-ink">Potwierdzone linki wewnętrzne rewizji</h3>
+            <h3 className="text-sm font-semibold text-ink">Co WILQ może potwierdzić</h3>
             <p className="mt-1 text-sm leading-5 text-slate-700">
-              Pokazujemy wyłącznie linki zapisane przy tej exact rewizji — nie „podobne tematy” wywnioskowane przez model.
+              Krawędzie są wyłącznie relacją current workspace albo linkiem zapisanym przy exact rewizji; nie oznaczają podobieństwa tematów.
             </p>
-            {linkedPages.length ? (
-              <ul className="mt-3 space-y-2">
-                {linkedPages.map((link) => (
-                  <li key={link.linkId} className="rounded-lg border border-line bg-surface p-3">
-                    <p className="font-medium text-ink">{link.title}</p>
-                    <p className="mt-1 text-xs text-slate-600">Anchor: {link.anchorText}</p>
-                    <a className="mt-1 block break-all text-xs font-medium text-action hover:underline" href={link.url} target="_blank" rel="noreferrer">
-                      {link.url}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 rounded-lg bg-surface p-3 text-sm leading-5 text-slate-700">
-                Ta rewizja nie ma zapisanych linków wewnętrznych do pokazania w atlasie.
-              </p>
-            )}
+            <div className="mt-3 grid gap-3">
+              <AtlasFact
+                label="Aktualna strona"
+                value={workspace.source_snapshot.status === "available" ? "odczytana" : workspace.source_snapshot.status}
+                detail={workspace.source_snapshot.reason}
+              />
+              <AtlasFact
+                label="ACF na dev"
+                value={acfStatus(discovery.data)}
+                detail={acfDetail(discovery.data)}
+              />
+            </div>
           </div>
         </section>
 
@@ -205,6 +191,87 @@ function AtlasFact({ label, value, detail }: { label: string; value: string; det
       <p className="mt-1 font-medium text-ink">{value}</p>
       <p className="mt-1 text-xs leading-5 text-slate-700">{detail}</p>
     </section>
+  );
+}
+
+function AtlasGraph({
+  sourceTitle,
+  revisionTitle,
+  selectedSection,
+  links
+}: {
+  sourceTitle: string;
+  revisionTitle: string;
+  selectedSection: string | null;
+  links: Array<{ linkId: string; title: string; url: string; anchorText: string }>;
+}) {
+  const visibleLinks = links.slice(0, 4);
+  return (
+    <div className="mt-5 overflow-x-auto rounded-xl border border-line bg-surface p-3" data-testid="content-atlas-graph">
+      <div className="relative min-h-[26rem] min-w-[46rem]">
+        <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+          <line x1="30%" y1="50%" x2="50%" y2="50%" stroke="currentColor" className="text-slate-300" strokeWidth="1.5" />
+          {visibleLinks.map((link, index) => {
+            const y = 20 + index * (60 / Math.max(visibleLinks.length - 1, 1));
+            return <line key={link.linkId} x1="67%" y1="50%" x2="84%" y2={`${y}%`} stroke="currentColor" className="text-action/50" strokeWidth="1.5" />;
+          })}
+        </svg>
+        <AtlasGraphNode
+          className="absolute left-[5%] top-1/2 w-[10.5rem] -translate-y-1/2"
+          eyebrow="Publiczny snapshot"
+          title={sourceTitle}
+          detail="obecna strona"
+          tone="source"
+        />
+        <AtlasGraphNode
+          className="absolute left-[40%] top-1/2 w-[12.5rem] -translate-y-1/2"
+          eyebrow="Rewizja WILQ"
+          title={revisionTitle}
+          detail={selectedSection ? `wybrana sekcja: ${selectedSection}` : "brak zapisanej sekcji"}
+          tone="revision"
+        />
+        {visibleLinks.length ? visibleLinks.map((link, index) => (
+          <a
+            key={link.linkId}
+            className={`absolute left-[74%] w-[10.5rem] rounded-lg border border-line bg-white p-3 shadow-sm transition hover:border-action ${GRAPH_LINK_POSITIONS[index] ?? "top-[71%]"}`}
+            href={link.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-action">Link rewizji</p>
+            <p className="mt-1 text-sm font-semibold leading-5 text-ink">{link.title}</p>
+            <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-700">Anchor: {link.anchorText}</p>
+          </a>
+        )) : (
+          <div className="absolute left-[74%] top-1/2 w-[10.5rem] -translate-y-1/2 rounded-lg border border-dashed border-line bg-white p-3">
+            <p className="text-sm font-semibold text-ink">Brak krawędzi</p>
+            <p className="mt-1 text-xs leading-5 text-slate-700">Rewizja nie ma zapisanych linków wewnętrznych.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AtlasGraphNode({
+  className,
+  eyebrow,
+  title,
+  detail,
+  tone
+}: {
+  className: string;
+  eyebrow: string;
+  title: string;
+  detail: string;
+  tone: "source" | "revision";
+}) {
+  return (
+    <article className={`${className} rounded-lg border p-3 shadow-sm ${tone === "revision" ? "border-action bg-action text-white" : "border-line bg-white"}`}>
+      <p className={`text-[0.68rem] font-semibold uppercase tracking-[0.1em] ${tone === "revision" ? "text-white/80" : "text-slate-500"}`}>{eyebrow}</p>
+      <p className="mt-1 text-sm font-semibold leading-5">{title}</p>
+      <p className={`mt-2 text-xs leading-5 ${tone === "revision" ? "text-white/90" : "text-slate-700"}`}>{detail}</p>
+    </article>
   );
 }
 

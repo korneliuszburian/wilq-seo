@@ -242,6 +242,7 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-atlas")).toBeInTheDocument();
+    expect(screen.getByTestId("content-atlas-graph")).toBeInTheDocument();
     expect(screen.getByText("Atlas strony · tylko odczyt")).toBeInTheDocument();
     expect(screen.getAllByText("Rewizja WILQ")).toHaveLength(2);
     expect(await screen.findByText("nieodczytane / niepotwierdzone")).toBeInTheDocument();
