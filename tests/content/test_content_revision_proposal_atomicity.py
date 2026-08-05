@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from wilq.content.drafts.initial_draft_run import initial_draft_context_digest
+from wilq.content.workflow.codex_revision_commit import current_initial_draft_context_guard
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionProposalMetadata,
@@ -70,6 +72,51 @@ def test_codex_completion_failure_rolls_back_child_revision(tmp_path: Path) -> N
     assert state.latest_revision == base.revision
     stored_run = next(run for run in run_store.list_codex_runs() if run.id == started_run.id)
     assert stored_run.status == "started"
+
+
+def test_initial_draft_append_rechecks_current_context_inside_atomic_write(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "wilq.sqlite3"
+    workflow_store = ContentWorkflowStore(path)
+    run_store = LocalStateStore(path)
+    command = _append_command(run_id="initial-draft-run").model_copy(
+        update={"planning_input_digest": "b" * 64}
+    )
+    context_digest = initial_draft_context_digest(
+        base_revision_id=command.base_revision_id,
+        draft_package_id=command.draft_package_id,
+        draft_package_digest=command.draft_package_digest,
+        final_canonical_url=command.final_canonical_url,
+        service_card_id=command.service_card_id,
+        proposal_id="proposal-1",
+        planning_digest=command.planning_digest,
+        planning_input_digest=command.planning_input_digest or "",
+    )
+    started = CodexRun(
+        id="initial-draft-run",
+        skill="wilq-content-operator",
+        hook="content_initial_full_draft",
+        source="wilq_api",
+        status="started",
+        proposal_id="proposal-1",
+        planning_digest=command.planning_digest,
+        planning_input_digest=command.planning_input_digest,
+        initial_draft_context_digest=context_digest,
+        used_endpoints=["/api/content/work-items/content_work_item_atomic/initial-draft"],
+    )
+    run_store.save_codex_run(started)
+
+    with (
+        current_initial_draft_context_guard(lambda: "0" * 64),
+        pytest.raises(ValueError, match="stale_initial_draft_context"),
+    ):
+        workflow_store.append_draft_revision(command, completed_codex_run=_completed_run(started))
+
+    state = workflow_store.load_draft_revision_state("content_work_item_atomic")
+    assert state.latest_revision is None
+    persisted = next(run for run in run_store.list_codex_runs() if run.id == started.id)
+    assert persisted.status == "started"
 
 
 def _append_command(

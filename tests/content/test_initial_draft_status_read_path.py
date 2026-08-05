@@ -82,6 +82,78 @@ def test_first_initial_draft_run_is_visible_without_revision() -> None:
     assert content_initial_draft._run_matches_revision_context(run, None, proposal)
 
 
+def test_status_uses_current_context_not_a_later_stale_run(monkeypatch) -> None:
+    proposal = SimpleNamespace(
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        generation_status="codex_generated",
+        service_card_id=None,
+    )
+    snapshot = SimpleNamespace(
+        planning_workspace=SimpleNamespace(proposal=proposal),
+        revision_workspace=SimpleNamespace(latest_revision=None),
+    )
+    current_digest = content_initial_draft._snapshot_initial_draft_context_digest(
+        snapshot, proposal
+    )
+    current = CodexRun(
+        id="current-run",
+        hook="content_initial_full_draft",
+        source="wilq_api",
+        status="started",
+        proposal_id=proposal.proposal_id,
+        planning_digest=proposal.planning_digest,
+        planning_input_digest=proposal.planning_input_digest,
+        initial_draft_context_digest=current_digest,
+        initial_draft_base_revision_id=None,
+        used_endpoints=["/api/content/work-items/work/initial-draft"],
+        started_at=datetime(2026, 8, 5, 10, tzinfo=UTC),
+    )
+    stale = current.model_copy(
+        update={
+            "id": "later-stale-run",
+            "initial_draft_context_digest": "0" * 64,
+            "started_at": datetime(2026, 8, 5, 11, tzinfo=UTC),
+        }
+    )
+
+    class LocalState:
+        def list_codex_runs(self):
+            return [current, stale]
+
+    class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return proposal
+
+        def latest_for_service(self, _work_item_id: str, _service_card_id: str | None):
+            return proposal
+
+    class WorkflowStore:
+        def load_draft_revision_state(self, _work_item_id: str):
+            return SimpleNamespace(latest_revision=None)
+
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_planning_proposal_store",
+        lambda: ProposalStore(),
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_workflow_store",
+        lambda: WorkflowStore(),
+    )
+
+    response = content_initial_draft._read_initial_draft_status(
+        "work",
+        snapshot_loader=lambda _work_item_id: snapshot,
+    )
+
+    assert response.status == "generating"
+    assert response.run_id == current.id
+
+
 def test_initial_draft_status_get_avoids_heavy_snapshot_loader(monkeypatch) -> None:
     app = FastAPI()
     snapshot_calls = 0

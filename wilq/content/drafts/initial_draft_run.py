@@ -21,7 +21,6 @@ class InitialDraftClaim:
     run: CodexRun | None
     newly_claimed: bool
     canonical_revision: ContentDraftRevision | None = None
-    stale_context: bool = False
 
 
 LEGACY_INITIAL_DRAFT_TIMEOUT_SECONDS = 900.0
@@ -95,60 +94,6 @@ def _canonical_revision_for_claim(connection, work_item_id: str) -> ContentDraft
     return None if row is None else ContentDraftRevision.model_validate_json(row["payload_json"])
 
 
-def ensure_initial_draft_context_schema(connection) -> None:
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS initial_draft_context_authority (
-          work_item_id TEXT PRIMARY KEY,
-          context_digest TEXT NOT NULL,
-          base_revision_id TEXT,
-          version INTEGER NOT NULL,
-          updated_at TEXT NOT NULL
-        )
-        """
-    )
-
-
-def record_initial_draft_context(
-    run_store: LocalStateStore,
-    *,
-    work_item_id: str,
-    context_digest: str,
-    base_revision_id: str | None,
-) -> int:
-    with run_store._connect() as connection:
-        connection.execute("BEGIN IMMEDIATE")
-        ensure_initial_draft_context_schema(connection)
-        row = connection.execute(
-            """
-            SELECT version, context_digest
-            FROM initial_draft_context_authority
-            WHERE work_item_id = ?
-            """,
-            (work_item_id,),
-        ).fetchone()
-        if row is None:
-            version = 1
-        elif row["context_digest"] == context_digest:
-            version = int(row["version"])
-        else:
-            version = int(row["version"]) + 1
-        connection.execute(
-            """
-            INSERT INTO initial_draft_context_authority
-              (work_item_id, context_digest, base_revision_id, version, updated_at)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(work_item_id) DO UPDATE SET
-              context_digest=excluded.context_digest,
-              base_revision_id=excluded.base_revision_id,
-              version=excluded.version,
-              updated_at=excluded.updated_at
-            """,
-            (work_item_id, context_digest, base_revision_id, version, utc_now().isoformat()),
-        )
-        return version
-
-
 def _expire_claim_if_needed(connection, run: CodexRun, payload_json: str) -> bool:
     if utc_now() < effective_initial_draft_deadline(run):
         return False
@@ -166,77 +111,6 @@ def _expire_claim_if_needed(connection, run: CodexRun, payload_json: str) -> boo
     return True
 
 
-def _terminalize_stale_contexts(
-    connection, rows, endpoint: str, context_digest: str | None
-) -> None:
-    for row in rows:
-        run = CodexRun.model_validate_json(row["payload_json"])
-        if not (
-            run.status == "started"
-            and run.hook == "content_initial_full_draft"
-            and endpoint in run.used_endpoints
-            and run.initial_draft_context_digest is not None
-            and run.initial_draft_context_digest != context_digest
-        ):
-            continue
-        stale = run.model_copy(
-            update={
-                "status": "blocked",
-                "completed_at": utc_now(),
-                "error": "stale_initial_draft_context",
-            }
-        )
-        connection.execute(
-            "UPDATE codex_runs SET payload_json = ? WHERE id = ? AND payload_json = ?",
-            (
-                json.dumps(stale.model_dump(mode="json"), sort_keys=True, separators=(",", ":")),
-                run.id,
-                row["payload_json"],
-            ),
-        )
-
-
-def _claim_context_authority(
-    connection,
-    *,
-    work_item_id: str,
-    context_digest: str | None,
-    expected_base_revision_id: str | None,
-    enforce: bool,
-) -> bool:
-    ensure_initial_draft_context_schema(connection)
-    row = connection.execute(
-        "SELECT context_digest FROM initial_draft_context_authority WHERE work_item_id = ?",
-        (work_item_id,),
-    ).fetchone()
-    if row is None:
-        if context_digest is None:
-            return True
-        connection.execute(
-            """
-            INSERT INTO initial_draft_context_authority
-              (work_item_id, context_digest, base_revision_id, version, updated_at)
-            VALUES (?, ?, ?, 1, ?)
-            """,
-            (work_item_id, context_digest, expected_base_revision_id, utc_now().isoformat()),
-        )
-        return True
-    if row["context_digest"] == context_digest:
-        return True
-    if enforce:
-        return False
-    connection.execute(
-        """
-        UPDATE initial_draft_context_authority
-        SET context_digest = ?, base_revision_id = ?,
-            version = version + 1, updated_at = ?
-        WHERE work_item_id = ?
-        """,
-        (context_digest, expected_base_revision_id, utc_now().isoformat(), work_item_id),
-    )
-    return True
-
-
 def claim_initial_draft_run(
     run_store: LocalStateStore,
     *,
@@ -249,19 +123,11 @@ def claim_initial_draft_run(
     context_current: bool = True,
     context_digest: str | None = None,
     expected_base_revision_id: str | None = None,
-    enforce_context_authority: bool = False,
 ) -> InitialDraftClaim:
     endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
     run_store.status()
     with run_store._connect() as connection:
         connection.execute("BEGIN IMMEDIATE")
-        _claim_context_authority(
-            connection,
-            work_item_id=work_item_id,
-            context_digest=context_digest,
-            expected_base_revision_id=expected_base_revision_id,
-            enforce=False,
-        )
         rows = connection.execute(
             "SELECT payload_json FROM codex_runs ORDER BY started_at DESC, id DESC"
         ).fetchall()

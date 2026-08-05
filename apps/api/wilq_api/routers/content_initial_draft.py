@@ -15,6 +15,7 @@ from wilq.content.drafts.initial_draft_run import (
     claim_initial_draft_run,
     effective_initial_draft_deadline,
     initial_draft_context_digest,
+    revision_matches_initial_draft_context,
     transition_initial_draft_run_if_status,
 )
 from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
@@ -28,6 +29,7 @@ from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
     content_planning_proposal_store,
 )
+from wilq.content.workflow.codex_revision_commit import current_initial_draft_context_guard
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import content_draft_package_digest
@@ -100,20 +102,18 @@ class _ContextCheckedWorkflowStore:
         self._work_item_id = work_item_id
 
     def append_draft_revision(self, command, *, completed_codex_run=None):
+        with current_initial_draft_context_guard(self._current_context_digest):
+            return self._base.append_draft_revision(
+                command,
+                completed_codex_run=completed_codex_run,
+            )
+
+    def _current_context_digest(self) -> str:
         snapshot = self._snapshot_loader(self._work_item_id)
         planning = snapshot.planning_workspace
         if planning is None:
             raise ValueError("stale_initial_draft_context")
-        current_digest = _snapshot_initial_draft_context_digest(snapshot, planning.proposal)
-        if (
-            completed_codex_run is not None
-            and completed_codex_run.initial_draft_context_digest
-            != current_digest
-        ):
-            raise ValueError("stale_initial_draft_context")
-        return self._base.append_draft_revision(
-            command, completed_codex_run=completed_codex_run
-        )
+        return _snapshot_initial_draft_context_digest(snapshot, planning.proposal)
 
 _INITIAL_DRAFT_BLOCKER_CODES = {
     "planning_not_ready",
@@ -160,7 +160,7 @@ def register_content_initial_draft_route(
     def content_work_item_initial_full_draft_status(
         work_item_id: str,
     ) -> ContentInitialDraftResponse:
-        return _read_initial_draft_status(work_item_id)
+        return _read_initial_draft_status(work_item_id, snapshot_loader=snapshot_loader)
 
 
 def _submit_initial_draft(
@@ -197,7 +197,7 @@ def _queue_initial_draft(
     # an older snapshot while another request advanced the current context.
     snapshot = snapshot_loader(work_item_id)
     if not _can_queue_initial_draft(snapshot, request):
-        return _read_initial_draft_status(work_item_id)
+        return _read_initial_draft_status(work_item_id, snapshot_loader=snapshot_loader)
     planning = snapshot.planning_workspace
     if planning is None:
         raise RuntimeError("Initial draft queue requires a planning workspace.")
@@ -218,7 +218,7 @@ def _queue_initial_draft(
         context_digest=context_digest,
         expected_base_revision_id=base_revision_id,
     )
-    if claim.stale_context or claim.run is None:
+    if claim.run is None:
         return ContentInitialDraftResponse(
             status="blocked",
             work_item_id=work_item_id,
@@ -280,15 +280,48 @@ def _queued_initial_draft_response(
     )
 
 
-def _read_initial_draft_status(work_item_id: str) -> ContentInitialDraftResponse:
+def _read_initial_draft_status(
+    work_item_id: str,
+    *,
+    snapshot_loader: ContentInitialDraftSnapshotLoader | None = None,
+) -> ContentInitialDraftResponse:
     proposal = _latest_generated_proposal(work_item_id, content_planning_proposal_store())
     stale = _stale_initial_draft_response(work_item_id, proposal)
     if stale is not None:
         return stale
     revision = content_workflow_store().load_draft_revision_state(work_item_id).latest_revision
-    latest = _latest_run_for_proposal(work_item_id, proposal, revision)
+    unscoped_latest = _latest_run_for_proposal(work_item_id, proposal, revision)
+    unscoped_canonical = _canonical_revision_run(revision, proposal)
+    needs_current_context = bool(
+        (
+            unscoped_latest is not None
+            and getattr(unscoped_latest, "initial_draft_context_digest", None)
+        )
+        or (
+            unscoped_canonical is not None
+            and getattr(unscoped_canonical, "initial_draft_context_digest", None)
+        )
+    )
+    context_digest = (
+        _current_initial_draft_context_digest(work_item_id, proposal, snapshot_loader)
+        if needs_current_context
+        else None
+    )
+    latest = (
+        _latest_run_for_proposal(
+            work_item_id,
+            proposal,
+            revision,
+            context_digest=context_digest,
+        )
+        if needs_current_context
+        else unscoped_latest
+    )
     if latest is not None and latest.status == "started" and _run_matches_revision_context(
-        latest, revision, proposal
+        latest,
+        revision,
+        proposal,
+        context_digest=context_digest,
     ):
         return _queued_initial_draft_response(
             work_item_id,
@@ -296,7 +329,15 @@ def _read_initial_draft_status(work_item_id: str) -> ContentInitialDraftResponse
             latest.id,
             False,
         )
-    canonical_run = _canonical_revision_run(revision, proposal)
+    canonical_run = (
+        _canonical_revision_run(
+            revision,
+            proposal,
+            context_digest=context_digest,
+        )
+        if needs_current_context
+        else unscoped_canonical
+    )
     if canonical_run is not None:
         return ContentInitialDraftResponse(
             status="created",
@@ -318,6 +359,33 @@ def _read_initial_draft_status(work_item_id: str) -> ContentInitialDraftResponse
     if latest is not None and latest.status in {"failed", "blocked"}:
         return _terminal_initial_draft_response(work_item_id, proposal, latest)
     return _initial_draft_not_started_response(work_item_id, proposal)
+
+
+def _current_initial_draft_context_digest(
+    work_item_id: str,
+    proposal: ContentPlanningProposal | None,
+    snapshot_loader: ContentInitialDraftSnapshotLoader | None,
+) -> str | None:
+    """Read the source-owned context used to select a visible draft run.
+
+    A queued run never establishes this value: a delayed request must not be
+    able to make an older package, URL, service, or planning lineage current.
+    """
+
+    if proposal is None or snapshot_loader is None:
+        return None
+    snapshot = snapshot_loader(work_item_id)
+    planning = snapshot.planning_workspace
+    if planning is None:
+        return ""
+    current = planning.proposal
+    if (
+        current.proposal_id != proposal.proposal_id
+        or current.planning_digest != proposal.planning_digest
+        or current.planning_input_digest != proposal.planning_input_digest
+    ):
+        return ""
+    return _snapshot_initial_draft_context_digest(snapshot, current)
 
 
 def _stale_initial_draft_response(
@@ -359,6 +427,8 @@ def _latest_run_for_proposal(
     work_item_id: str,
     proposal: ContentPlanningProposal | None,
     revision: object | None = None,
+    *,
+    context_digest: str | None = None,
 ) -> CodexRun | None:
     if proposal is None:
         return None
@@ -372,6 +442,10 @@ def _latest_run_for_proposal(
                 and endpoint in run.used_endpoints
                 and run.proposal_id == proposal.proposal_id
                 and run.planning_input_digest == proposal.planning_input_digest
+                and (
+                    context_digest is None
+                    or run.initial_draft_context_digest == context_digest
+                )
                 and (
                     getattr(run, "planning_digest", None)
                     == getattr(proposal, "planning_digest", None)
@@ -406,6 +480,8 @@ def _legacy_run_matches_revision(
 def _canonical_revision_run(
     revision: object | None,
     proposal: ContentPlanningProposal | None,
+    *,
+    context_digest: str | None = None,
 ) -> CodexRun | None:
     metadata = getattr(revision, "proposal_metadata", None)
     run_id = getattr(metadata, "codex_run_id", None)
@@ -415,6 +491,14 @@ def _canonical_revision_run(
         getattr(revision, "planning_digest", None) != proposal.planning_digest
         or getattr(revision, "planning_input_digest", None)
         != proposal.planning_input_digest
+    ):
+        return None
+    if context_digest is not None and not revision_matches_initial_draft_context(
+        revision,
+        proposal_id=proposal.proposal_id,
+        planning_digest=proposal.planning_digest,
+        planning_input_digest=proposal.planning_input_digest,
+        context_digest=context_digest,
     ):
         return None
     return next(
@@ -435,8 +519,15 @@ def _run_matches_revision_context(
     run: CodexRun,
     revision: object | None,
     proposal: ContentPlanningProposal | None,
+    *,
+    context_digest: str | None = None,
 ) -> bool:
     if proposal is None or run.initial_draft_context_digest is None:
+        return False
+    if (
+        context_digest is not None
+        and run.initial_draft_context_digest != context_digest
+    ):
         return False
     if revision is None:
         return run.initial_draft_base_revision_id is None

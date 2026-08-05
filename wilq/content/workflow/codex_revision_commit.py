@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Literal, cast
 
 from wilq.content.drafts.initial_draft_run import (
     effective_initial_draft_deadline,
-    ensure_initial_draft_context_schema,
     initial_draft_context_digest,
 )
 from wilq.content.workflow.revisions import ContentDraftRevisionAppendCommand
@@ -15,6 +17,23 @@ from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
 
 CodexCompletionState = Literal["started", "completed"]
+_current_initial_draft_context: ContextVar[Callable[[], str] | None] = ContextVar(
+    "current_initial_draft_context",
+    default=None,
+)
+
+
+@contextmanager
+def current_initial_draft_context_guard(
+    current_context: Callable[[], str],
+) -> Iterator[None]:
+    """Bind the source context check to one atomic draft-revision append."""
+
+    token = _current_initial_draft_context.set(current_context)
+    try:
+        yield
+    finally:
+        _current_initial_draft_context.reset(token)
 
 
 def assert_initial_draft_current_context(
@@ -23,24 +42,23 @@ def assert_initial_draft_current_context(
     work_item_id: str,
     run: CodexRun | None,
 ) -> None:
+    """Reject a new initial-draft completion outside the current source context.
+
+    The store invokes this after ``BEGIN IMMEDIATE``. An exact completed replay
+    remains idempotent even if the source has advanced in the meantime.
+    """
+
     if run is None or run.hook != "content_initial_full_draft":
         return
-    ensure_initial_draft_context_schema(connection)
-    authority = connection.execute(
-        """
-        SELECT context_digest, base_revision_id
-        FROM initial_draft_context_authority
-        WHERE work_item_id = ?
-        """,
-        (work_item_id,),
+    row = connection.execute(
+        "SELECT payload_json FROM codex_runs WHERE id = ?", (run.id,)
     ).fetchone()
-    if authority is None:
+    if row is not None and CodexRun.model_validate_json(row["payload_json"]) == run:
         return
-    if authority["context_digest"] != run.initial_draft_context_digest:
-        raise ValueError("stale_initial_draft_context")
+    current_context = _current_initial_draft_context.get()
     if (
-        run.initial_draft_base_revision_id is not None
-        and authority["base_revision_id"] != run.initial_draft_base_revision_id
+        current_context is not None
+        and current_context() != run.initial_draft_context_digest
     ):
         raise ValueError("stale_initial_draft_context")
 

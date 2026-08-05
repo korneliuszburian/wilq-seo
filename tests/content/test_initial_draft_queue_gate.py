@@ -256,7 +256,6 @@ def test_new_context_claim_does_not_terminalize_existing_context_run(tmp_path) -
         "timeout_seconds": 900,
         "context_current": False,
         "expected_base_revision_id": "revision-0",
-        "enforce_context_authority": True,
     }
     current = claim_initial_draft_run(store, context_digest="1" * 64, **common)
     delayed = claim_initial_draft_run(store, context_digest="0" * 64, **common)
