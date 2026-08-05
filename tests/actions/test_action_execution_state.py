@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from wilq.actions.action_blockers import action_apply_blockers
 from wilq.actions.action_state import with_review_gate
 from wilq.schemas import (
     ActionMode,
@@ -49,3 +50,13 @@ def test_successful_apply_audit_projects_terminal_action_status() -> None:
     )
 
     assert result.status == ActionStatus.applied
+    assert action_apply_blockers(
+        action=result,
+        required_checks=[],
+        apply_allowed=True,
+        confirmation_satisfied=True,
+        impact_sanity_satisfied=True,
+        requires_human_confirmation=lambda _checks: False,
+        supported_mutation_adapter=lambda _action: "wordpress_draft",
+        string_list=lambda _value: [],
+    ) == ["action_already_applied"]

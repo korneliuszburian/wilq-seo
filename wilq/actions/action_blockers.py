@@ -13,6 +13,7 @@ from wilq.schemas import (
     ActionMode,
     ActionObject,
     ActionRisk,
+    ActionStatus,
     AuditEvent,
 )
 
@@ -182,6 +183,8 @@ def action_apply_blockers(
     string_list: StringList,
 ) -> list[str]:
     blockers: list[str] = []
+    if action.status == ActionStatus.applied:
+        blockers.append("action_already_applied")
     if action.mode != ActionMode.apply:
         blockers.append("action_mode_prepare_only")
     if action.validation_status != "valid":

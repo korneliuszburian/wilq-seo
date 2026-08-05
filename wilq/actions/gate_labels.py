@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 
 ACTION_GATE_LABELS: dict[str, str] = {
+    "action_already_applied": "akcja została już wykonana",
     "action_mode_prepare_only": "tryb przygotowania bez zapisu zmian",
     "action_validation_required": "wymagane sprawdzenie w WILQ",
     "payload_apply_allowed_false": "podgląd zmian nie pozwala na zapis",
