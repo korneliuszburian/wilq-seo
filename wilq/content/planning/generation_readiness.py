@@ -4,7 +4,8 @@ from typing import Protocol
 
 
 class _PlanningBlocker(Protocol):
-    code: str
+    @property
+    def code(self) -> str: ...
 
 
 def planning_generation_blockers[Blocker: _PlanningBlocker](

@@ -72,16 +72,6 @@ def read_content_planning_proposal(
     return read(snapshot=snapshot, store=store)
 
 
-def _planning_output_quality_errors(
-    output: ContentPlanningModelOutput,
-    *,
-    planning_input: ContentPlanningInput | None = None,
-) -> list[str]:
-    """Compatibility seam for focused quality-contract tests."""
-
-    return planning_output_quality_errors(output, planning_input=planning_input)
-
-
 def with_current_planning_workspace(
     response: ContentPlanningProposalResponse,
     decisions: list[ContentPlanningDecision],
