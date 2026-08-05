@@ -14,7 +14,7 @@ from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentRevisionRepairProposalRequest,
     ContentRevisionRepairProposalResponse,
 )
-from wilq.content.planning.dynamic_input import build_content_planning_input
+from wilq.content.planning.dynamic_input import ContentPlanningInput, build_content_planning_input
 from wilq.content.planning.generated_proposal import with_explicit_content_service_selection
 from wilq.content.quality.semantic_review_store import content_semantic_review_store
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
@@ -77,7 +77,7 @@ def register_content_revision_repair_route(
 
 def _current_planning_input(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
-):
+) -> ContentPlanningInput | None:
     workspace = getattr(snapshot, "planning_workspace", None)
     proposal = None if workspace is None else workspace.proposal
     service_card_id = None if proposal is None else proposal.service_card_id

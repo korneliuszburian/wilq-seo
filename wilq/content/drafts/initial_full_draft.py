@@ -73,11 +73,14 @@ def generate_initial_full_draft(
     prepared = _prepare_inputs(snapshot, request)
     if isinstance(prepared, ContentInitialDraftResponse):
         return prepared
+    proposal_id = prepared.proposal.proposal_id
+    if proposal_id is None:
+        raise RuntimeError("Prepared initial draft is missing its generated proposal ID.")
     run = start_initial_draft_run(
         run_store,
         work_item_id=prepared.planning_input.work_item_id,
         evidence_ids=prepared.planning_input.evidence_ids,
-        proposal_id=prepared.proposal.proposal_id,
+        proposal_id=proposal_id,
         planning_input_digest=prepared.planning_input.planning_input_digest,
         run_id=run_id,
     )

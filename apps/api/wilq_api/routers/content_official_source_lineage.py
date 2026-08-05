@@ -114,6 +114,12 @@ def register_content_official_source_lineage_route(
                 result.conflict.code if result.conflict is not None else "stale_revision",
                 "Stan review zmienił się w trakcie operacji. Odśwież dokument przed kolejną próbą.",
             )
+        if result.revision is None:
+            return _conflict(
+                snapshot_loader(work_item_id),
+                "stale_revision",
+                "Nie zapisano rewizji źródeł urzędowych. Odśwież dokument przed kolejną próbą.",
+            )
         refreshed_workspace = snapshot_loader(work_item_id).revision_workspace
         return ContentDraftRevisionSaveResponse(
             status=result.status,
