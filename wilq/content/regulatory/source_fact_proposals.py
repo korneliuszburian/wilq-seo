@@ -41,6 +41,7 @@ from wilq.content.regulatory.source_reviews import (
 from wilq.content.regulatory.source_snapshots import (
     ContentRegulatorySourceSnapshot,
     RegulatorySourceSnapshotStore,
+    SourceReader,
 )
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -277,7 +278,7 @@ def generate_source_fact_proposal(
     proposal_store: RegulatorySourceFactProposalStore,
     snapshot_store: RegulatorySourceSnapshotStore,
     run_store: LocalStateStore,
-    reader=None,
+    reader: SourceReader | None = None,
     candidates: tuple[ContentRegulatorySourceCandidate, ...] | None = None,
 ) -> ContentRegulatorySourceFactProposalResponse:
     known = candidates if candidates is not None else regulatory_source_candidates()

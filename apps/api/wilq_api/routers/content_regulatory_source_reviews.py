@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
@@ -140,6 +142,12 @@ def _register_review_routes(router: APIRouter) -> None:
 
 
 def _review_conflict(reason: str) -> ContentRegulatorySourceReviewConflict:
+    code: Literal[
+        "candidate_changed",
+        "source_snapshot_missing",
+        "source_snapshot_changed",
+        "source_proposal_stale",
+    ]
     if "fact proposal is stale" in reason:
         code = "source_proposal_stale"
         label = "Propozycja źródła jest nieaktualna"

@@ -5,7 +5,7 @@ import sqlite3
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -382,7 +382,7 @@ def _insert_review(
     ).fetchone()
     if row is None:
         raise RuntimeError("Regulatory source review was not persisted.")
-    return row
+    return cast(sqlite3.Row, row)
 
 
 def _require_exact_snapshot(
