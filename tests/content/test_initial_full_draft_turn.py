@@ -127,3 +127,5 @@ def test_initial_draft_turn_exposes_server_owned_regulatory_assertions() -> None
             ],
         }
     ]
+    assert "Source facts służą wyłącznie do ustalenia treści" in request.instruction
+    assert "nie powtarzaj tego samego twierdzenia" in request.instruction
