@@ -105,9 +105,9 @@ class _PanelLabelParser(HTMLParser):
             self._active = (relationship_id, opening_tag, depth + 1)
             return
         target = dict(attrs).get("data-panel-target")
-        relationship_id = _panel_id(target)
-        if relationship_id is not None:
-            self._active = (relationship_id, tag, 1)
+        parsed_relationship_id = _panel_id(target)
+        if parsed_relationship_id is not None:
+            self._active = (parsed_relationship_id, tag, 1)
             self._parts = []
 
     def handle_data(self, data: str) -> None:

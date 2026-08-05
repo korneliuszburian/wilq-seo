@@ -181,6 +181,7 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
         cta_blocks=[],
         source_material_ids=["ekologus_material_bdo"],
         knowledge_card_ids=["ekologus_service_bdo"],
+        source_provenance=[],
     )
     monkeypatch.setattr(
         workspace_module,

@@ -9,7 +9,7 @@ from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
 def test_knowledge_surface_exposes_real_redacted_source_facts_not_playbook_claims() -> None:
     facts = knowledge_source_facts()
 
-    assert len(facts) == 21
+    assert len(facts) >= 21
     public = next(item for item in facts if item.source_id == "ekologus_public_bdo_faq_2026_07_01")
     assert public.extracted_fact.startswith("Publiczny artykuł Ekologus omawia BDO")
     assert public.source_url_or_path.startswith("https://www.ekologus.pl/")

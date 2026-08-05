@@ -13,6 +13,7 @@ from wilq.content.drafts.draft_assurance_runtime import (
 from wilq.content.drafts.generated_claim_safety import generated_claim_safety_issues
 from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
+    initial_draft_context_digest,
     safe_initial_draft_run_error,
     start_initial_draft_run,
 )
@@ -50,6 +51,7 @@ from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionWriteResult,
+    content_draft_package_digest,
 )
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -73,6 +75,28 @@ class InitialDraftRevisionStore(Protocol):
     ) -> ContentDraftRevisionWriteResult: ...
 
 
+def _initial_draft_context_digest(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    prepared: _InitialDraftInputs,
+) -> str:
+    package = snapshot.draft_package.draft_package_result.draft_package
+    if package is None:
+        raise ValueError("Initial draft context requires a draft package.")
+    item = snapshot.preflight.item
+    return initial_draft_context_digest(
+        base_revision_id=prepared.base_revision_id,
+        draft_package_id=package.id,
+        draft_package_digest=content_draft_package_digest(package),
+        final_canonical_url=prepared.planning_input.final_canonical_url
+        or item.final_canonical_url
+        or item.intended_final_url,
+        service_card_id=prepared.planning_input.confirmed_service_card_id,
+        proposal_id=prepared.proposal.proposal_id or "",
+        planning_digest=prepared.proposal.planning_digest,
+        planning_input_digest=prepared.planning_input.planning_input_digest,
+    )
+
+
 def generate_initial_full_draft(
     *,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
@@ -81,6 +105,7 @@ def generate_initial_full_draft(
     workflow_store: InitialDraftRevisionStore,
     run_store: LocalStateStore,
     run_id: str | None = None,
+    context_digest: str | None = None,
 ) -> ContentInitialDraftResponse:
     prepared = _prepare_inputs(snapshot, request)
     if isinstance(prepared, ContentInitialDraftResponse):
@@ -93,7 +118,10 @@ def generate_initial_full_draft(
         work_item_id=prepared.planning_input.work_item_id,
         evidence_ids=prepared.planning_input.evidence_ids,
         proposal_id=proposal_id,
+        planning_digest=prepared.proposal.planning_digest,
         planning_input_digest=prepared.planning_input.planning_input_digest,
+        context_digest=context_digest
+        or _initial_draft_context_digest(snapshot, prepared),
         run_id=run_id,
     )
     runtime_result = _execute_runtime(prepared, client, run, run_store)

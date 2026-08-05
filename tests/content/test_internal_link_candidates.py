@@ -12,6 +12,7 @@ from wilq.content.planning.input_sources import ContentPlanningInventory
 from wilq.content.planning.internal_link_candidates import (
     load_content_internal_link_candidates,
 )
+from wilq.content.regulatory.policy import ContentRegulatoryCoverage
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.planning import ContentPlanningProposal
@@ -118,8 +119,6 @@ def test_dynamic_input_keeps_only_loader_bound_candidates_in_its_digest(
         )
 
     monkeypatch.setattr(dynamic_input, "load_content_internal_link_candidates", loader)
-    monkeypatch.setattr(dynamic_input, "usable_query_portfolio", lambda demand, _: demand)
-    monkeypatch.setattr(dynamic_input, "planning_source_connectors", lambda **_: [])
     monkeypatch.setattr(
         dynamic_input,
         "_planning_evidence_ids",
@@ -163,12 +162,17 @@ def test_dynamic_input_keeps_only_loader_bound_candidates_in_its_digest(
             knowledge_card_ids=[],
         ),
         baseline=ContentPlanningProposal.model_construct(
-            search_demand=ContentSearchDemandEvidence.model_construct(),
+            search_demand=ContentSearchDemandEvidence(
+                status="missing",
+                optional_ads_status="not_exactly_mapped",
+                safe_next_step="Nie wnioskuj o popycie bez dokładnych danych.",
+            ),
             cta_direction="Kontakt",
         ),
         inventory=ContentPlanningInventory(status="missing"),
         source_facts=[],
         source_assessments=[],
+        regulatory_coverage=ContentRegulatoryCoverage(),
         claim_ledger=ContentClaimLedger.model_construct(entries=[]),
         metric_comparisons=[],
     )

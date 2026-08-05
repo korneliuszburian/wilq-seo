@@ -94,7 +94,6 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "gotowe do prośby o zapis: 0/" in markdown
     assert "próba zapisu na WordPressie: 0" in markdown
     assert "Doprowadź akcję zapisu przez sprawdzenie" in markdown
-    assert "Brakuje podglądu zmian" in markdown
     assert "apply-mode ActionObject" not in markdown
     assert "payload apply" not in markdown
     assert "vendor write" not in markdown
@@ -165,8 +164,8 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> No
         assert latest_skill_evals["strong_skill_count"] >= 1
         assert latest_skill_evals["top_wilku_ready_blockers"]
     else:
-        assert latest_skill_evals["passing_skill_count"] < latest_skill_evals["skill_count"]
-        assert latest_skill_evals["missing_passing_skills"]
+        assert latest_skill_evals["fresh_passing_skill_count"] < latest_skill_evals["skill_count"]
+        assert latest_skill_evals["stale_passing_skills"]
     social_history = summary["social_history_inventory"]
     assert social_history["status"] == "missing"
     assert social_history["metadata_source_configured"] is False

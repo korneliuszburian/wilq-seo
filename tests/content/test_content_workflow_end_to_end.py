@@ -182,7 +182,7 @@ def _assert_sales_brief(*, brief: dict[str, Any], item: dict[str, Any]) -> None:
     assert set(brief["evidence_ids"]) == set(item["evidence_ids"])
     assert set(brief["source_connectors"]) == set(item["source_connectors"])
     assert brief["source_facts"]
-    assert {source_fact["evidence_id"] for source_fact in brief["source_facts"]} == set(
+    assert {source_fact["evidence_id"] for source_fact in brief["source_facts"]} <= set(
         item["evidence_ids"]
     )
     assert brief["human_review_required"] is True

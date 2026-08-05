@@ -347,6 +347,7 @@ def start_initial_draft_run(
     proposal_id: str,
     planning_input_digest: str,
     planning_digest: str | None = None,
+    context_digest: str | None = None,
     run_id: str | None = None,
 ) -> CodexRun:
     if run_id is not None:
@@ -360,6 +361,10 @@ def start_initial_draft_run(
             existing.proposal_id != proposal_id
             or existing.planning_input_digest != planning_input_digest
             or set(existing.evidence_ids) != set(evidence_ids)
+            or (
+                context_digest is not None
+                and existing.initial_draft_context_digest != context_digest
+            )
         ):
             raise ValueError("initial draft queued run lineage does not match proposal")
         return existing
@@ -375,6 +380,7 @@ def start_initial_draft_run(
             proposal_id=proposal_id,
             planning_digest=planning_digest,
             planning_input_digest=planning_input_digest,
+            initial_draft_context_digest=context_digest,
         )
     )
 
