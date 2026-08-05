@@ -10,6 +10,7 @@ import {
   type ContentDraftRevisionReviewRequest
 } from "../lib/api";
 import { ContentDocumentLineageDisclosure, ContentDocumentWorkspaceCanvas } from "./ContentDocumentWorkspaceCanvas";
+import { ContentAtlasSurface } from "./ContentAtlasSurface";
 import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentEditorialIntegrityReport } from "./ContentEditorialIntegrityReport";
@@ -36,6 +37,9 @@ export function ContentWorkflowSurface() {
   });
   const browseInventory = useRouterState({
     select: (state) => Reflect.get(state.location.search, "view") === "browse" || Reflect.get(state.location.search, "browse") === 1
+  });
+  const atlasOpen = useRouterState({
+    select: (state) => Reflect.get(state.location.search, "view") === "atlas"
   });
   const newPageId = useRouterState({
     select: (state) => {
@@ -69,8 +73,8 @@ export function ContentWorkflowSurface() {
     operatorContext
   } = useContentWorkflowQueries(
     selectedWorkItemId,
-    browseInventory,
-    !selectedWorkItemId && !newPageOpen && !browseInventory
+    browseInventory || atlasOpen,
+    !selectedWorkItemId && !newPageOpen && !browseInventory && !atlasOpen
   );
 
   return (
@@ -81,6 +85,7 @@ export function ContentWorkflowSurface() {
       inventory={inventory}
       diagnostics={diagnostics}
       reviewOpen={reviewOpen}
+      atlasOpen={atlasOpen}
       browseInventory={browseInventory}
       newPageOpen={newPageOpen}
       newPageId={newPageId}
@@ -127,6 +132,23 @@ export function ContentWorkflowSurface() {
           })
         });
       }}
+      onOpenAtlas={(workItemId) => {
+        void navigate({
+          to: "/content-workflow/$workItemId",
+          params: { workItemId },
+          search: (previous) => ({
+            work_item_id: undefined,
+            section_heading: previous.section_heading,
+            planning_digest: previous.planning_digest,
+            workspace: undefined,
+            text: undefined,
+            review: undefined,
+            browse: undefined,
+            new_page: undefined,
+            view: "atlas"
+          })
+        });
+      }}
       onReturnToText={(workItemId) => {
         void navigate({
           to: "/content-workflow/$workItemId",
@@ -162,7 +184,7 @@ function contentWorkflowSearch(previous: {
   review?: 1;
   browse?: 1;
   new_page?: string;
-  view?: "review" | "browse" | "new";
+  view?: "review" | "browse" | "new" | "atlas";
 }) {
   return {
     work_item_id: previous.work_item_id,
@@ -184,6 +206,7 @@ function ContentWorkflowRouteState({
   inventory,
   diagnostics,
   reviewOpen,
+  atlasOpen,
   browseInventory,
   newPageOpen,
   newPageId,
@@ -194,6 +217,7 @@ function ContentWorkflowRouteState({
   onNewPageBriefSaved,
   onCloseEntrySecondaryView,
   onOpenReview,
+  onOpenAtlas,
   onReturnToText
 }: {
   selectedWorkItemId: string | null;
@@ -202,6 +226,7 @@ function ContentWorkflowRouteState({
   inventory: ContentInventoryCatalogQuery;
   diagnostics: ReturnType<typeof useContentWorkflowQueries>["diagnostics"];
   reviewOpen: boolean;
+  atlasOpen: boolean;
   browseInventory: boolean;
   newPageOpen: boolean;
   newPageId: string | null;
@@ -212,6 +237,7 @@ function ContentWorkflowRouteState({
   onNewPageBriefSaved: (briefId: string) => void;
   onCloseEntrySecondaryView: () => void;
   onOpenReview: (workItemId: string) => void;
+  onOpenAtlas: (workItemId: string) => void;
   onReturnToText: (workItemId: string) => void;
 }) {
   if (!selectedWorkItemId) {
@@ -252,6 +278,15 @@ function ContentWorkflowRouteState({
       />
     );
   }
+  if (atlasOpen) {
+    return (
+      <ContentAtlasWorkspace
+        selectedWorkspace={selectedWorkspace}
+        inventory={inventory}
+        onReturnToText={onReturnToText}
+      />
+    );
+  }
   if (!reviewOpen) {
     return (
       <ContentTextWorkspace
@@ -259,6 +294,7 @@ function ContentWorkflowRouteState({
         selectedWorkspace={selectedWorkspace}
         operatorLabel={operatorLabel}
         onOpenReview={onOpenReview}
+        onOpenAtlas={onOpenAtlas}
       />
     );
   }
@@ -281,12 +317,14 @@ function ContentTextWorkspace({
   workItemId,
   selectedWorkspace,
   operatorLabel,
-  onOpenReview
+  onOpenReview,
+  onOpenAtlas
 }: {
   workItemId: string;
   selectedWorkspace: ContentSelectedWorkspaceQuery;
   operatorLabel: string | null;
   onOpenReview: (workItemId: string) => void;
+  onOpenAtlas: (workItemId: string) => void;
 }) {
   if (selectedWorkspace.isLoading) {
     return <DocumentWorkspacePending />;
@@ -299,9 +337,34 @@ function ContentTextWorkspace({
   return <ContentDocumentWorkspaceCanvas
     workspace={workspace}
     onOpenReview={() => onOpenReview(workItemId)}
+    onOpenAtlas={() => onOpenAtlas(workItemId)}
     operatorLabel={operatorLabel}
     onWorkspaceChanged={() => void selectedWorkspace.refetch()}
   />;
+}
+
+function ContentAtlasWorkspace({
+  selectedWorkspace,
+  inventory,
+  onReturnToText
+}: {
+  selectedWorkspace: ContentSelectedWorkspaceQuery;
+  inventory: ContentInventoryCatalogQuery;
+  onReturnToText: (workItemId: string) => void;
+}) {
+  if (selectedWorkspace.isLoading) return <DocumentWorkspacePending />;
+  if (selectedWorkspace.error || !selectedWorkspace.data || selectedWorkspace.data.status === "missing") {
+    return <DocumentWorkspaceError onRetry={() => void selectedWorkspace.refetch()} />;
+  }
+  const workspace = selectedWorkspace.data.workspace;
+  if (!workspace) return <DocumentWorkspaceError onRetry={() => void selectedWorkspace.refetch()} />;
+  return (
+    <ContentAtlasSurface
+      workspace={workspace}
+      inventory={inventory.data ?? null}
+      onReturnToText={() => onReturnToText(workspace.work_item_id)}
+    />
+  );
 }
 
 function DocumentWorkspacePending() {
