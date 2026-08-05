@@ -53,7 +53,14 @@ def proposal_output_schema(
         if not selected_headings
         else {
             "anyOf": [
-                _section_schema_for_heading(section_schema, base_by_heading[heading])
+                _section_schema_for_heading(
+                    section_schema,
+                    base_by_heading[heading],
+                    claim_marker_by_id={
+                        marker.claim_id: (marker.claim_text, marker.evidence_ids)
+                        for marker in contract.model_input.claim_markers
+                    },
+                )
                 for heading in selected_headings
             ]
         }
@@ -109,6 +116,8 @@ def _set_literals(
 def _section_schema_for_heading(
     section_schema: dict[str, object],
     section: ContentDraftRevisionSection,
+    *,
+    claim_marker_by_id: dict[str, tuple[str, list[str]]],
 ) -> dict[str, object]:
     schema = deepcopy(section_schema)
     properties = _mapping(schema, "properties")
@@ -119,6 +128,19 @@ def _section_schema_for_heading(
     evidence_schema = _mapping(properties, "evidence_ids")
     evidence_schema["minItems"] = len(evidence_ids)
     evidence_schema["maxItems"] = len(evidence_ids)
+    allowed_claims = _unique(
+        claim_marker_by_id[claim_id][0]
+        for claim_id in section.claim_ids
+        if claim_id in claim_marker_by_id
+        and set(claim_marker_by_id[claim_id][1]).issubset(evidence_ids)
+    )
+    claims_schema = _mapping(properties, "claims_used")
+    claims_schema["items"] = {
+        "enum": allowed_claims or ["__WILQ_EMPTY_ARRAY_ONLY__"],
+        "type": "string",
+    }
+    claims_schema["minItems"] = 0
+    claims_schema["maxItems"] = len(allowed_claims)
     return schema
 
 
