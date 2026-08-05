@@ -191,7 +191,10 @@ def test_initial_draft_queue_ignores_started_run_from_another_proposal(
 
 
 def test_expired_exact_claim_is_replaced_without_get(tmp_path) -> None:
-    from wilq.content.drafts.initial_draft_run import claim_initial_draft_run
+    from wilq.content.drafts.initial_draft_run import (
+        InitialDraftClaimContext,
+        claim_initial_draft_run,
+    )
 
     store = LocalStateStore(tmp_path / "state.sqlite3")
     store.save_codex_run(
@@ -203,6 +206,7 @@ def test_expired_exact_claim_is_replaced_without_get(tmp_path) -> None:
             proposal_id="proposal-1",
             planning_digest="a" * 64,
             planning_input_digest="b" * 64,
+            initial_draft_context_digest="c" * 64,
             used_endpoints=["/api/content/work-items/work/initial-draft"],
             started_at=datetime.now(UTC) - timedelta(seconds=901),
             deadline_at=datetime.now(UTC) - timedelta(seconds=1),
@@ -216,6 +220,16 @@ def test_expired_exact_claim_is_replaced_without_get(tmp_path) -> None:
         planning_input_digest="b" * 64,
         evidence_ids=["ev"],
         timeout_seconds=900,
+        context_digest="c" * 64,
+        expected_base_revision_id=None,
+        current_context=lambda: InitialDraftClaimContext(
+            proposal_id="proposal-1",
+            planning_digest="a" * 64,
+            planning_input_digest="b" * 64,
+            context_digest="c" * 64,
+            base_revision_id=None,
+            context_current=True,
+        ),
     )
     assert claim.newly_claimed is True
     assert claim.run.id != "expired-run"
@@ -225,7 +239,10 @@ def test_expired_exact_claim_is_replaced_without_get(tmp_path) -> None:
 
 
 def test_different_initial_draft_contexts_do_not_share_claim(tmp_path) -> None:
-    from wilq.content.drafts.initial_draft_run import claim_initial_draft_run
+    from wilq.content.drafts.initial_draft_run import (
+        InitialDraftClaimContext,
+        claim_initial_draft_run,
+    )
 
     store = LocalStateStore(tmp_path / "state.sqlite3")
     common = {
@@ -236,15 +253,40 @@ def test_different_initial_draft_contexts_do_not_share_claim(tmp_path) -> None:
         "evidence_ids": ["ev"],
         "timeout_seconds": 900,
     }
-    first = claim_initial_draft_run(store, context_digest="1" * 64, **common)
-    second = claim_initial_draft_run(store, context_digest="2" * 64, **common)
+    def context(digest: str) -> InitialDraftClaimContext:
+        return InitialDraftClaimContext(
+            proposal_id="proposal-1",
+            planning_digest="a" * 64,
+            planning_input_digest="b" * 64,
+            context_digest=digest,
+            base_revision_id=None,
+            context_current=False,
+        )
+
+    first = claim_initial_draft_run(
+        store,
+        context_digest="1" * 64,
+        expected_base_revision_id=None,
+        current_context=lambda: context("1" * 64),
+        **common,
+    )
+    second = claim_initial_draft_run(
+        store,
+        context_digest="2" * 64,
+        expected_base_revision_id=None,
+        current_context=lambda: context("2" * 64),
+        **common,
+    )
     assert first.run.id != second.run.id
     assert first.newly_claimed is True
     assert second.newly_claimed is True
 
 
-def test_new_context_claim_does_not_terminalize_existing_context_run(tmp_path) -> None:
-    from wilq.content.drafts.initial_draft_run import claim_initial_draft_run
+def test_delayed_context_cannot_create_a_shadow_initial_draft_run(tmp_path) -> None:
+    from wilq.content.drafts.initial_draft_run import (
+        InitialDraftClaimContext,
+        claim_initial_draft_run,
+    )
 
     store = LocalStateStore(tmp_path / "state.sqlite3")
     common = {
@@ -254,16 +296,100 @@ def test_new_context_claim_does_not_terminalize_existing_context_run(tmp_path) -
         "planning_input_digest": "b" * 64,
         "evidence_ids": ["ev"],
         "timeout_seconds": 900,
-        "context_current": False,
         "expected_base_revision_id": "revision-0",
     }
-    current = claim_initial_draft_run(store, context_digest="1" * 64, **common)
-    delayed = claim_initial_draft_run(store, context_digest="0" * 64, **common)
+    current_context = InitialDraftClaimContext(
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        context_digest="1" * 64,
+        base_revision_id="revision-0",
+        context_current=False,
+    )
+    current = claim_initial_draft_run(
+        store,
+        context_digest="1" * 64,
+        current_context=lambda: current_context,
+        **common,
+    )
+    delayed = claim_initial_draft_run(
+        store,
+        context_digest="0" * 64,
+        current_context=lambda: current_context,
+        **common,
+    )
 
     assert current.run is not None
-    assert delayed.run is not None
+    assert delayed.run is None
+    assert delayed.newly_claimed is False
     persisted = next(run for run in store.list_codex_runs() if run.id == current.run.id)
     assert persisted.status == "started"
+    assert all(run.initial_draft_context_digest != "0" * 64 for run in store.list_codex_runs())
+
+
+def test_queue_rejects_a_snapshot_that_changes_before_its_durable_claim(
+    tmp_path, monkeypatch
+) -> None:
+    from wilq.content.drafts.initial_draft_run import (
+        InitialDraftClaimContext,
+        claim_initial_draft_run,
+    )
+
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    current_context = InitialDraftClaimContext(
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        context_digest="1" * 64,
+        base_revision_id=None,
+        context_current=False,
+    )
+    current = claim_initial_draft_run(
+        store,
+        work_item_id="work",
+        proposal_id="proposal-1",
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+        evidence_ids=["ev"],
+        timeout_seconds=900,
+        context_digest=current_context.context_digest,
+        expected_base_revision_id=None,
+        current_context=lambda: current_context,
+    )
+    assert current.run is not None
+
+    stale_snapshot = _snapshot(latest_revision=None)
+    stale_snapshot.context_digest = "0" * 64
+    current_snapshot = _snapshot(latest_revision=None)
+    current_snapshot.context_digest = current_context.context_digest
+    snapshots = iter([stale_snapshot, current_snapshot])
+    submitted = []
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_INITIAL_DRAFT_EXECUTOR",
+        SimpleNamespace(submit=lambda fn, *args: submitted.append((fn, args))),
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_snapshot_initial_draft_context_digest",
+        lambda snapshot, _proposal: snapshot.context_digest,
+    )
+
+    response = content_initial_draft._queue_initial_draft(
+        "work",
+        _request(),
+        StdioCodexAppServerClient(),
+        lambda _work_item_id: next(snapshots),
+        stale_snapshot,
+    )
+
+    assert response.status == "blocked"
+    assert response.blockers[0].code == "stale_initial_draft_context"
+    assert submitted == []
+    persisted = store.list_codex_runs()
+    assert [run.id for run in persisted] == [current.run.id]
+    assert persisted[0].initial_draft_context_digest == current_context.context_digest
 
 
 def test_queue_persists_proposal_evidence_ids(tmp_path, monkeypatch) -> None:

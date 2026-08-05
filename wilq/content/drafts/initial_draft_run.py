@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from hashlib import sha256
@@ -21,6 +22,33 @@ class InitialDraftClaim:
     run: CodexRun | None
     newly_claimed: bool
     canonical_revision: ContentDraftRevision | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class InitialDraftClaimContext:
+    proposal_id: str
+    planning_digest: str
+    planning_input_digest: str
+    context_digest: str
+    base_revision_id: str | None
+    context_current: bool
+
+    def matches_claim(
+        self,
+        *,
+        proposal_id: str,
+        planning_digest: str,
+        planning_input_digest: str,
+        context_digest: str | None,
+        base_revision_id: str | None,
+    ) -> bool:
+        return (
+            self.proposal_id == proposal_id
+            and self.planning_digest == planning_digest
+            and self.planning_input_digest == planning_input_digest
+            and self.context_digest == context_digest
+            and self.base_revision_id == base_revision_id
+        )
 
 
 LEGACY_INITIAL_DRAFT_TIMEOUT_SECONDS = 900.0
@@ -111,6 +139,79 @@ def _expire_claim_if_needed(connection, run: CodexRun, payload_json: str) -> boo
     return True
 
 
+def _current_context_matches_claim(
+    current_context: Callable[[], InitialDraftClaimContext | None],
+    *,
+    proposal_id: str,
+    planning_digest: str,
+    planning_input_digest: str,
+    context_digest: str,
+    base_revision_id: str | None,
+) -> InitialDraftClaimContext | None:
+    observed_context = current_context()
+    if observed_context is None or not observed_context.matches_claim(
+        proposal_id=proposal_id,
+        planning_digest=planning_digest,
+        planning_input_digest=planning_input_digest,
+        context_digest=context_digest,
+        base_revision_id=base_revision_id,
+    ):
+        return None
+    return observed_context
+
+
+def _canonical_initial_draft_claim(
+    connection,
+    runs: list[CodexRun],
+    *,
+    work_item_id: str,
+    proposal_id: str,
+    planning_digest: str,
+    planning_input_digest: str,
+    context_digest: str,
+    expected_base_revision_id: str | None,
+    context_current: bool,
+) -> InitialDraftClaim | None:
+    canonical_revision = _canonical_revision_for_claim(connection, work_item_id)
+    revision_is_newer = (
+        canonical_revision is not None
+        and canonical_revision.revision_id != expected_base_revision_id
+    )
+    if not (context_current or revision_is_newer) or canonical_revision is None:
+        return None
+    if (
+        canonical_revision.planning_digest != planning_digest
+        or canonical_revision.planning_input_digest != planning_input_digest
+        or canonical_revision.proposal_metadata is None
+        or not revision_matches_initial_draft_context(
+            canonical_revision,
+            proposal_id=proposal_id,
+            planning_digest=planning_digest,
+            planning_input_digest=planning_input_digest,
+            context_digest=context_digest,
+        )
+    ):
+        return None
+    canonical_run = next(
+        (
+            run
+            for run in runs
+            if run.id == canonical_revision.proposal_metadata.codex_run_id
+            and run.status == "completed"
+            and run.proposal_id == proposal_id
+            and run.planning_input_digest == planning_input_digest
+        ),
+        None,
+    )
+    if canonical_run is None:
+        return None
+    return InitialDraftClaim(
+        run=canonical_run,
+        newly_claimed=False,
+        canonical_revision=canonical_revision,
+    )
+
+
 def claim_initial_draft_run(
     run_store: LocalStateStore,
     *,
@@ -120,53 +221,41 @@ def claim_initial_draft_run(
     planning_input_digest: str,
     evidence_ids: list[str],
     timeout_seconds: float,
-    context_current: bool = True,
-    context_digest: str | None = None,
-    expected_base_revision_id: str | None = None,
+    context_digest: str,
+    expected_base_revision_id: str | None,
+    current_context: Callable[[], InitialDraftClaimContext | None],
 ) -> InitialDraftClaim:
     endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
     run_store.status()
     with run_store._connect() as connection:
         connection.execute("BEGIN IMMEDIATE")
+        observed_context = _current_context_matches_claim(
+            current_context,
+            proposal_id=proposal_id,
+            planning_digest=planning_digest,
+            planning_input_digest=planning_input_digest,
+            context_digest=context_digest,
+            base_revision_id=expected_base_revision_id,
+        )
+        if observed_context is None:
+            return InitialDraftClaim(run=None, newly_claimed=False)
         rows = connection.execute(
             "SELECT payload_json FROM codex_runs ORDER BY started_at DESC, id DESC"
         ).fetchall()
         runs = [CodexRun.model_validate_json(row["payload_json"]) for row in rows]
-        canonical_revision = _canonical_revision_for_claim(connection, work_item_id)
-        revision_is_newer = (
-            canonical_revision is not None
-            and canonical_revision.revision_id != expected_base_revision_id
+        canonical_claim = _canonical_initial_draft_claim(
+            connection,
+            runs,
+            work_item_id=work_item_id,
+            proposal_id=proposal_id,
+            planning_digest=planning_digest,
+            planning_input_digest=planning_input_digest,
+            context_digest=context_digest,
+            expected_base_revision_id=expected_base_revision_id,
+            context_current=observed_context.context_current,
         )
-        if (context_current or revision_is_newer) and (
-            canonical_revision is not None
-            and canonical_revision.planning_digest == planning_digest
-            and canonical_revision.planning_input_digest == planning_input_digest
-            and canonical_revision.proposal_metadata is not None
-            and revision_matches_initial_draft_context(
-                canonical_revision,
-                proposal_id=proposal_id,
-                planning_digest=planning_digest,
-                planning_input_digest=planning_input_digest,
-                context_digest=context_digest,
-            )
-        ):
-            canonical_run = next(
-                (
-                    run
-                    for run in runs
-                    if run.id == canonical_revision.proposal_metadata.codex_run_id
-                    and run.status == "completed"
-                    and run.proposal_id == proposal_id
-                    and run.planning_input_digest == planning_input_digest
-                ),
-                None,
-            )
-            if canonical_run is not None:
-                return InitialDraftClaim(
-                    run=canonical_run,
-                    newly_claimed=False,
-                    canonical_revision=canonical_revision,
-                )
+        if canonical_claim is not None:
+            return canonical_claim
         for row in rows:
             run = CodexRun.model_validate_json(row["payload_json"])
             if (
@@ -296,6 +385,7 @@ __all__ = [
     "finish_initial_draft_run",
     "claim_initial_draft_run",
     "InitialDraftClaim",
+    "InitialDraftClaimContext",
     "effective_initial_draft_deadline",
     "initial_draft_context_digest",
     "transition_initial_draft_run_if_status",

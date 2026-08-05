@@ -12,6 +12,7 @@ from apps.api.wilq_api.routers.content_codex_runtime import (
 )
 from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts.initial_draft_run import (
+    InitialDraftClaimContext,
     claim_initial_draft_run,
     effective_initial_draft_deadline,
     initial_draft_context_digest,
@@ -214,9 +215,12 @@ def _queue_initial_draft(
         planning_input_digest=proposal.planning_input_digest,
         evidence_ids=list(getattr(proposal, "evidence_ids", [])),
         timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
-        context_current=snapshot.revision_workspace.context_current,
         context_digest=context_digest,
         expected_base_revision_id=base_revision_id,
+        current_context=lambda: _current_initial_draft_claim_context(
+            snapshot_loader,
+            work_item_id,
+        ),
     )
     if claim.run is None:
         return ContentInitialDraftResponse(
@@ -386,6 +390,29 @@ def _current_initial_draft_context_digest(
     ):
         return ""
     return _snapshot_initial_draft_context_digest(snapshot, current)
+
+
+def _current_initial_draft_claim_context(
+    snapshot_loader: ContentInitialDraftSnapshotLoader,
+    work_item_id: str,
+) -> InitialDraftClaimContext | None:
+    snapshot = snapshot_loader(work_item_id)
+    planning = snapshot.planning_workspace
+    if planning is None:
+        return None
+    proposal = planning.proposal
+    return InitialDraftClaimContext(
+        proposal_id=proposal.proposal_id,
+        planning_digest=proposal.planning_digest,
+        planning_input_digest=proposal.planning_input_digest,
+        context_digest=_snapshot_initial_draft_context_digest(snapshot, proposal),
+        base_revision_id=getattr(
+            snapshot.revision_workspace.latest_revision,
+            "revision_id",
+            None,
+        ),
+        context_current=snapshot.revision_workspace.context_current,
+    )
 
 
 def _stale_initial_draft_response(
