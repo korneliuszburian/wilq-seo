@@ -10,6 +10,7 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
     ContentPlanningModelSection,
 )
+from wilq.content.planning.input_sources import ContentPlanningInventorySection
 from wilq.content.workflow.planning import (
     ContentPlanningInventoryMapping,
     ContentPlanningProposal,
@@ -135,7 +136,7 @@ def _index_inventory_references(
 
 def _inventory_mapping_row(
     *,
-    inventory_section,
+    inventory_section: ContentPlanningInventorySection,
     output_sections: list[PlanSection],
     section_ids: list[str],
     by_inventory_id: dict[str, list[PlanSectionReference]],
@@ -172,7 +173,7 @@ def _one_unused(
 
 
 def _mapped_inventory_row(
-    inventory_section,
+    inventory_section: ContentPlanningInventorySection,
     section_id: str,
     section: PlanSection,
     status: SectionMappingStatus,
@@ -191,7 +192,7 @@ def _mapped_inventory_row(
 
 
 def _unmapped_inventory_row(
-    inventory_section,
+    inventory_section: ContentPlanningInventorySection,
     status: SectionMappingStatus,
     reason: str,
 ) -> ContentPlanningInventoryMapping:
@@ -208,7 +209,7 @@ def _unmapped_inventory_row(
 
 
 def _similar_inventory_row(
-    inventory_section,
+    inventory_section: ContentPlanningInventorySection,
     *,
     output_sections: list[PlanSection],
     section_ids: list[str],
