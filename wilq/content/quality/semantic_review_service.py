@@ -14,6 +14,7 @@ from wilq.content.planning.dynamic_input import build_content_planning_input
 from wilq.content.quality.semantic_inputs import SemanticInputs
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticBlockerCode,
+    ContentSemanticDimension,
     ContentSemanticFinding,
     ContentSemanticFindingOutput,
     ContentSemanticReview,
@@ -414,7 +415,7 @@ def _apply_deterministic_quality_guards(
     inputs: _SemanticInputs,
     output: ContentSemanticReviewModelOutput,
 ) -> ContentSemanticReviewModelOutput:
-    issues: list[tuple[str, str, str]] = []
+    issues: list[tuple[ContentSemanticDimension, str, str]] = []
     if inputs.proposal.cta_blocks and not inputs.revision.cta_blocks:
         issues.append(
             (
@@ -435,7 +436,7 @@ def _apply_deterministic_quality_guards(
         )
     )
     issues.extend(repetition_quality_issues(section_bodies))
-    grouped: dict[str, tuple[list[str], str]] = {}
+    grouped: dict[ContentSemanticDimension, tuple[list[str], str]] = {}
     for dimension, target, reason in issues:
         targets, previous_reason = grouped.get(dimension, ([], reason))
         if target not in targets:

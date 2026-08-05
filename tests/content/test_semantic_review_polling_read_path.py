@@ -30,6 +30,7 @@ def test_active_semantic_review_poll_avoids_heavy_snapshot_loader(monkeypatch) -
         status="started",
         id="codex_content_semantic_review_active",
         started_at=datetime.now(UTC),
+        deadline_at=None,
         used_endpoints=[endpoint],
     )
 

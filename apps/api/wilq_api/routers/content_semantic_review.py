@@ -12,7 +12,12 @@ from fastapi.responses import JSONResponse
 from apps.api.wilq_api.routers.content_codex_runtime import (
     content_codex_app_server_client,
 )
-from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.codex.app_server import (
+    CodexAppServerClientProtocol,
+    CodexAppServerStructuredTurnRequest,
+    CodexAppServerTurnResult,
+    StdioCodexAppServerClient,
+)
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticBlockerCode,
@@ -54,16 +59,23 @@ _DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS = 180.0
 
 
 class _DeadlineAwareSemanticClient:
-    def __init__(self, client: StdioCodexAppServerClient, run_id: str) -> None:
+    def __init__(self, client: CodexAppServerClientProtocol, run_id: str) -> None:
         self._client = client
         self._run_id = run_id
 
-    def run_structured_turn(self, request):
-        client = _client_for_queued_deadline(self._client, self._run_id)
+    def run_structured_turn(
+        self,
+        request: CodexAppServerStructuredTurnRequest,
+    ) -> CodexAppServerTurnResult:
+        client = (
+            _client_for_queued_deadline(self._client, self._run_id)
+            if isinstance(self._client, _REAL_STDIO_CODEX_CLIENT)
+            else self._client
+        )
         return client.run_structured_turn(request)
 
 
-def _semantic_codex_client() -> StdioCodexAppServerClient:
+def _semantic_codex_client() -> CodexAppServerClientProtocol:
     """Give the full-document reviewer the same bounded budget as planning.
 
     The semantic prompt contains the complete revision, proposal and planning
@@ -322,16 +334,7 @@ def _save_queued_semantic_run(
                 f"/api/content/work-items/{work_item_id}/draft-revisions/"
                 f"{revision_id}/semantic-review"
             ],
-            evidence_ids=[
-                evidence_id
-                for item in (
-                    *revision.sections,
-                    *revision.faq,
-                    *revision.cta_blocks,
-                    *revision.internal_links,
-                )
-                for evidence_id in item.evidence_ids
-            ],
+            evidence_ids=_revision_evidence_ids(revision),
             planning_input_digest=revision.planning_input_digest,
             deadline_at=utc_now() + timedelta(seconds=_semantic_timeout_seconds()),
         )
@@ -344,7 +347,7 @@ def _queue_semantic_review(
     revision_id: str,
     revision: ContentDraftRevision,
     request: ContentSemanticReviewRequest,
-    client: StdioCodexAppServerClient,
+    client: CodexAppServerClientProtocol,
     snapshot_loader: ContentSemanticSnapshotLoader,
 ) -> ContentSemanticReviewResponse:
     claim = content_semantic_review_store().claim_run(
@@ -355,16 +358,7 @@ def _queue_semantic_review(
             f"/api/content/work-items/{work_item_id}/draft-revisions/"
             f"{revision_id}/semantic-review"
         ),
-        evidence_ids=[
-            evidence_id
-            for item in (
-                *revision.sections,
-                *revision.faq,
-                *revision.cta_blocks,
-                *revision.internal_links,
-            )
-            for evidence_id in item.evidence_ids
-        ],
+        evidence_ids=_revision_evidence_ids(revision),
         planning_input_digest=revision.planning_input_digest,
         timeout_seconds=_semantic_timeout_seconds(),
     )
@@ -422,6 +416,23 @@ def _generating_response(
     )
 
 
+def _revision_evidence_ids(revision: ContentDraftRevision) -> list[str]:
+    return [
+        *(
+            evidence_id
+            for section in revision.sections
+            for evidence_id in section.evidence_ids
+        ),
+        *(evidence_id for faq in revision.faq for evidence_id in faq.evidence_ids),
+        *(evidence_id for cta in revision.cta_blocks for evidence_id in cta.evidence_ids),
+        *(
+            evidence_id
+            for internal_link in revision.internal_links
+            for evidence_id in internal_link.evidence_ids
+        ),
+    ]
+
+
 def _terminal_run_response(
     *,
     work_item_id: str,
@@ -470,7 +481,7 @@ def _run_queued_semantic_review(
     work_item_id: str,
     revision_id: str,
     request: ContentSemanticReviewRequest,
-    client: StdioCodexAppServerClient,
+    client: CodexAppServerClientProtocol,
     run_id: str,
     snapshot_loader: ContentSemanticSnapshotLoader,
 ) -> None:
@@ -517,6 +528,8 @@ def _terminalize_queued_run_from_result(
     run = next((item for item in store.list_codex_runs() if item.id == run_id), None)
     if run is None or run.status != "started":
         return
+    status: Literal["completed", "blocked", "failed"]
+    error: str | None
     if result.status in {"created", "idempotent", "ready", "stale"}:
         status = "completed"
         error = None

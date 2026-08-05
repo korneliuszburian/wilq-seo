@@ -79,9 +79,12 @@ def semantic_review_turn_request(
     )
     proposal_context = compact_semantic_review_proposal(proposal)
     revision_ids = [section.section_id for section in revision.sections]
+    proposal_sections = proposal_context.get("sections", [])
+    if not isinstance(proposal_sections, list):
+        raise RuntimeError("Semantic review proposal context sections must be a list.")
     proposal_ids = [
         section.get("section_id")
-        for section in proposal_context.get("sections", [])
+        for section in proposal_sections
         if isinstance(section, dict)
     ]
     if len(proposal_ids) != len(set(proposal_ids)) or any(
@@ -274,6 +277,9 @@ def _compact_regulatory_coverage(coverage: dict[str, object]) -> dict[str, objec
         "evidence_ids",
     }
     projected = {key: coverage[key] for key in allowed if key in coverage}
+    source_facts = coverage.get("source_facts", [])
+    if not isinstance(source_facts, list):
+        raise RuntimeError("Semantic review regulatory coverage source facts must be a list.")
     projected["source_facts"] = [
         {
             key: fact[key]
@@ -290,7 +296,7 @@ def _compact_regulatory_coverage(coverage: dict[str, object]) -> dict[str, objec
             )
             if key in fact
         }
-        for fact in coverage.get("source_facts", [])
+        for fact in source_facts
         if isinstance(fact, dict)
     ]
     return projected

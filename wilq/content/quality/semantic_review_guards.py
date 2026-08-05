@@ -6,6 +6,7 @@ from wilq.content.drafts.initial_full_draft_scope import (
     bind_draftable_planning_sections,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.quality.semantic_review_contracts import ContentSemanticDimension
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.revisions import ContentDraftRevision
 
@@ -30,7 +31,7 @@ def regulatory_quality_issues(
     revision: ContentDraftRevision,
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
-) -> list[tuple[str, str, str]]:
+) -> list[tuple[ContentSemanticDimension, str, str]]:
     coverage = planning_input.regulatory_coverage
     if coverage is None:
         return []
@@ -42,7 +43,7 @@ def regulatory_quality_issues(
         proposal.sections,
         revision.sections,
     )
-    issues: list[tuple[str, str, str]] = []
+    issues: list[tuple[ContentSemanticDimension, str, str]] = []
     for revision_section in revision.sections:
         section_id = revision_section.section_id
         if section_id is None:
@@ -98,9 +99,9 @@ def _semantic_tokens(value: str) -> set[str]:
 
 def repetition_quality_issues(
     section_bodies: dict[str, str],
-) -> list[tuple[str, str, str]]:
+) -> list[tuple[ContentSemanticDimension, str, str]]:
     """Return deterministic repetition and drafting-note findings."""
-    issues: list[tuple[str, str, str]] = []
+    issues: list[tuple[ContentSemanticDimension, str, str]] = []
     normalized_bodies = [body for body in section_bodies.values() if body]
     if len(normalized_bodies) != len(set(normalized_bodies)):
         issues.append(
