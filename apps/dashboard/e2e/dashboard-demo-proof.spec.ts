@@ -43,7 +43,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Plan działań marketera" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Demo dla marketera" })).toHaveCount(0);
-    await expect(page.getByText("akcji do sprawdzenia").first()).toBeVisible();
+    await expect(page.getByText("Zadania do wykonania")).toBeVisible();
     await expect(page.getByText("act_review_merchant_feed_issues")).toHaveCount(0);
     await page.screenshot({
       path: path.join(runDir, "01-command-center-action-plan.png"),
@@ -121,8 +121,9 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki diagnozy Localo" })).toBeVisible();
     await expect(
-      page.getByText(/Dokończ dostęp Localo przed lokalnymi rekomendacjami/)
+      page.getByText(/dostęp działa/).first()
     ).toBeVisible();
+    await expect(page.getByText(/Brakujące dane: zadania lokalne/).first()).toBeVisible();
     await expect(page.getByText(/rankingi lokalne/).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dane Localo w WILQ" })).toBeVisible();
     await expect(page.getByText(/Dokończ Localo access/)).toHaveCount(0);

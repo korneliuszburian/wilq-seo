@@ -62,10 +62,10 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Następna najlepsza praca" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Blokady, których nie obchodź" })).toBeVisible();
     await expect(page.getByText("Kolejka dziś")).toBeVisible();
-    await expect(page.getByText("decyzje").first()).toBeVisible();
-    await expect(page.getByText("blokady krytyczne").first()).toBeVisible();
-    await expect(page.getByText("akcji do sprawdzenia").first()).toBeVisible();
-    await expect(page.getByText("źródła wymagają odświeżenia").first()).toBeVisible();
+    await expect(page.getByText("Wymagają Twojej decyzji")).toBeVisible();
+    await expect(page.getByText("Zatrzymują pracę")).toBeVisible();
+    await expect(page.getByText("Zadania do wykonania")).toBeVisible();
+    await expect(page.getByText("Dane są nieświeże")).toBeVisible();
     await expect(page.getByText("Najbezpieczniejszy następny krok")).toBeVisible();
     await expect(page.getByRole("link", { name: "Otwórz pracę" })).toBeVisible();
     await expect(page.getByText("Pokaż dowody")).toBeVisible();
@@ -327,8 +327,9 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Dowody i warunki diagnozy Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa Localo i profilu firmy w Google" })).toBeVisible();
     await expect(
-      page.getByText(/Dokończ dostęp Localo i odczyt danych/).first()
+      page.getByText(/dostęp działa/).first()
     ).toBeVisible();
+    await expect(page.getByText(/Brakujące dane: zadania lokalne/).first()).toBeVisible();
     await expect(page.getByText(/rankingi lokalne/).first()).toBeVisible();
     await expect(page.getByText(/opinie/).first()).toBeVisible();
     await expect(page.getByText(/widoczność konkurencji/).first()).toBeVisible();
