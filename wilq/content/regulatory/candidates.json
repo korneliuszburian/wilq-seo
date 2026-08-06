@@ -161,12 +161,12 @@
       "profile_id": "environmental_assessment",
       "profile_version": "2026-08-06-r1",
       "service_card_ids": ["ekologus_service_environmental_compliance_audit"],
-      "source_url": "https://www.gov.pl/web/uw-lodzki/postanowienie-wojewody-lodzkiego-nr-17026---gpb-ii7820.11.2022.ik-z-dnia-22-czerwca-2026-r-wyjasniajace-tresc-decyzji-zrid-dla-rozbudowy-drogi-wojewodzkiej-nr-486-w-miejscowosciach-ruda-wierzchlas-kraszkowice-i-krzeczow",
-      "source_title": "Łódzki Urząd Wojewódzki: wyjaśnienie analizy porealizacyjnej",
+      "source_url": "https://eli.gov.pl/api/acts/DU/2026/670/text.pdf",
+      "source_title": "ELI: tekst jednolity ustawy o ocenach oddziaływania na środowisko",
       "observed_on": "2026-08-06",
       "requirement_ids": ["environmental_post_implementation_analysis"],
       "review_status": "review_required",
-      "safe_next_step": "Potwierdź, że porównanie odnosi ustalenia raportu i decyzji do rzeczywistego oddziaływania, bez deklarowania automatycznego obowiązku analizy."
+      "safe_next_step": "Potwierdź art. 83: porównanie odnosi ustalenia raportu i decyzji do rzeczywistego oddziaływania, bez deklarowania automatycznego obowiązku analizy."
     }
   ]
 }

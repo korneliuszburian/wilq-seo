@@ -185,7 +185,7 @@
       "id": "environmental_assessment",
       "version": "2026-08-06-r1",
       "service_card_ids": ["ekologus_service_environmental_compliance_audit"],
-      "official_source_hosts": ["www.gov.pl"],
+      "official_source_hosts": ["www.gov.pl", "eli.gov.pl"],
       "max_source_age_days": 90,
       "requirements": [
         {

@@ -250,7 +250,7 @@ def test_environmental_assessment_is_a_data_profile_with_official_review_candida
     assert profile is not None
     assert profile.id == "environmental_assessment"
     assert profile.version == "2026-08-06-r1"
-    assert profile.official_source_hosts == ["www.gov.pl"]
+    assert profile.official_source_hosts == ["www.gov.pl", "eli.gov.pl"]
     assert [requirement.id for requirement in profile.requirements] == [
         "environmental_assessment_procedure",
         "environmental_assessment_qualification",
