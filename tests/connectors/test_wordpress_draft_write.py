@@ -119,6 +119,10 @@ def test_acf_create_normalizes_only_empty_values_rejected_by_rest_schema() -> No
                                 "acf_fc_layout": {"type": "string", "pattern": "^hero$"},
                                 "img": {"type": ["integer", "null"]},
                                 "content": {"type": ["string", "null"]},
+                                "background_type": {
+                                    "type": ["string", "null"],
+                                    "enum": ["gradient", "img"],
+                                },
                             },
                         }
                     ]
@@ -130,7 +134,12 @@ def test_acf_create_normalizes_only_empty_values_rejected_by_rest_schema() -> No
     normalized = _normalize_acf_for_create(
         {
             "flexible-home": [
-                {"acf_fc_layout": "hero", "img": "", "content": ""},
+                {
+                    "acf_fc_layout": "hero",
+                    "img": "",
+                    "content": "",
+                    "background_type": "",
+                },
             ]
         },
         schema,
@@ -138,7 +147,11 @@ def test_acf_create_normalizes_only_empty_values_rejected_by_rest_schema() -> No
 
     assert normalized == {
         "flexible-home": [
-            {"acf_fc_layout": "hero", "img": None, "content": ""},
+            {
+                "acf_fc_layout": "hero",
+                "img": None,
+                "content": "",
+            },
         ]
     }
 

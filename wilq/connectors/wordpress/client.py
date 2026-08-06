@@ -61,6 +61,7 @@ WORDPRESS_AUTHORING_SECTION_LIMIT = 40
 WORDPRESS_AUTHORING_TEXT_CANDIDATE_LIMIT = 40
 WORDPRESS_AUTHORING_FIELD_NAME_LIMIT = 20
 WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS = 280
+_OMIT_ACF_CREATE_VALUE = object()
 
 
 @dataclass(frozen=True)
@@ -272,19 +273,27 @@ def _normalize_acf_for_create(value: object, schema: dict[str, object]) -> objec
 
     selected_schema = _one_of_schema(schema, value)
     allowed_types = _schema_types(selected_schema)
-    if value == "" and "string" not in allowed_types and "null" in allowed_types:
+    allowed_values = selected_schema.get("enum")
+    empty_value_is_invalid = isinstance(allowed_values, list) and "" not in allowed_values
+    if value == "" and "null" in allowed_types and (
+        "string" not in allowed_types or empty_value_is_invalid
+    ):
+        if isinstance(allowed_values, list) and None not in allowed_values:
+            # ACF's schema sometimes advertises ``null`` in ``type`` while
+            # excluding it from ``enum``. The field is optional, so omission
+            # preserves the template default without sending an invalid value.
+            return _OMIT_ACF_CREATE_VALUE
         return None
     if isinstance(value, dict):
         properties = selected_schema.get("properties")
         if not isinstance(properties, dict):
             return value
-        return {
-            key: _normalize_acf_for_create(
-                item,
-                _property_schema(properties, key),
-            )
-            for key, item in value.items()
-        }
+        normalized: dict[object, object] = {}
+        for key, item in value.items():
+            normalized_item = _normalize_acf_for_create(item, _property_schema(properties, key))
+            if normalized_item is not _OMIT_ACF_CREATE_VALUE:
+                normalized[key] = normalized_item
+        return normalized
     if isinstance(value, list):
         item_schema = selected_schema.get("items")
         if not isinstance(item_schema, dict):
