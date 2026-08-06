@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import json
+from types import SimpleNamespace
+
 import httpx
 import pytest
 
 from wilq.connectors.wordpress.client import (
     WordPressDraftReadError,
     WordPressDraftWriteError,
+    _normalize_acf_for_create,
+    create_wordpress_acf_draft,
     create_wordpress_draft_post,
     read_wordpress_draft_post,
 )
@@ -98,6 +103,102 @@ def test_create_wordpress_draft_post_keeps_only_safe_rest_error_diagnostics(
         "(rest_invalid_param; pola: acf)"
     )
     assert "secret-value" not in exc_info.value.public_message
+
+
+def test_acf_create_normalizes_only_empty_values_rejected_by_rest_schema() -> None:
+    schema = {
+        "type": "object",
+        "properties": {
+            "flexible-home": {
+                "type": ["array", "null"],
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "acf_fc_layout": {"type": "string", "pattern": "^hero$"},
+                                "img": {"type": ["integer", "null"]},
+                                "content": {"type": ["string", "null"]},
+                            },
+                        }
+                    ]
+                },
+            }
+        },
+    }
+
+    normalized = _normalize_acf_for_create(
+        {
+            "flexible-home": [
+                {"acf_fc_layout": "hero", "img": "", "content": ""},
+            ]
+        },
+        schema,
+    )
+
+    assert normalized == {
+        "flexible-home": [
+            {"acf_fc_layout": "hero", "img": None, "content": ""},
+        ]
+    }
+
+
+def test_create_wordpress_acf_draft_uses_live_schema_before_create(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+    schema = {
+        "type": "object",
+        "properties": {
+            "flexible-home": {
+                "type": ["array", "null"],
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "acf_fc_layout": {"type": "string", "pattern": "^hero$"},
+                                "img": {"type": ["integer", "null"]},
+                            },
+                        }
+                    ]
+                },
+            }
+        },
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "OPTIONS":
+            return httpx.Response(
+                200,
+                json={"endpoints": [{"methods": ["POST"], "args": {"acf": schema}}]},
+            )
+        body = json.loads(request.content)
+        assert request.method == "POST"
+        assert body["status"] == "draft"
+        assert body["acf"]["flexible-home"][0]["img"] is None
+        return httpx.Response(201, json={"id": 322, "status": "draft"})
+
+    draft_id = create_wordpress_acf_draft(
+        SimpleNamespace(
+            connector="wordpress_ekologus",
+            endpoint="uslugi",
+            post_status="draft",
+            create_only=True,
+            publish_allowed=False,
+            update_allowed=False,
+            delete_allowed=False,
+            title="Test ACF",
+            acf={"flexible-home": [{"acf_fc_layout": "hero", "img": ""}]},
+        ),
+        action_apply_authorized=True,
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert draft_id == "322"
+    assert [request.method for request in requests] == ["OPTIONS", "POST"]
 
 
 def test_create_wordpress_draft_post_blocks_publish_or_destructive_payload(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -189,6 +190,109 @@ def _wordpress_draft_write_http_error(response: httpx.Response) -> WordPressDraf
     )
 
 
+def _acf_create_schema(
+    client: httpx.Client,
+    *,
+    base_url: str,
+    endpoint: str,
+    auth: httpx.BasicAuth,
+) -> dict[str, object]:
+    """Read the exact REST schema used to validate an ACF create payload."""
+
+    try:
+        response = client.options(
+            urljoin(base_url, f"wp-json/wp/v2/{endpoint}"),
+            auth=auth,
+        )
+        response.raise_for_status()
+        definition = response.json()
+    except httpx.HTTPStatusError as exc:
+        raise _wordpress_draft_write_http_error(exc.response) from exc
+    except (httpx.HTTPError, json.JSONDecodeError, ValueError) as exc:
+        raise WordPressDraftWriteError(
+            "Nie udało się odczytać schematu ACF przed utworzeniem szkicu."
+        ) from exc
+    if not isinstance(definition, dict):
+        raise WordPressDraftWriteError("WordPress nie zwrócił schematu ACF dla szkicu.")
+    endpoints = definition.get("endpoints")
+    if not isinstance(endpoints, list):
+        raise WordPressDraftWriteError("WordPress nie zwrócił endpointu zapisu ACF.")
+    for candidate in endpoints:
+        if not isinstance(candidate, dict) or candidate.get("methods") != ["POST"]:
+            continue
+        args = candidate.get("args")
+        acf = args.get("acf") if isinstance(args, dict) else None
+        if isinstance(acf, dict):
+            return acf
+    raise WordPressDraftWriteError("WordPress nie udostępnia schematu ACF dla zapisu szkicu.")
+
+
+def _schema_types(schema: dict[str, object]) -> set[str]:
+    raw_types = schema.get("type")
+    if isinstance(raw_types, str):
+        return {raw_types}
+    if isinstance(raw_types, list):
+        return {item for item in raw_types if isinstance(item, str)}
+    return set()
+
+
+def _one_of_schema(schema: dict[str, object], value: object) -> dict[str, object]:
+    """Choose a Flexible Content layout schema from its stable layout key."""
+
+    options = schema.get("oneOf")
+    if not isinstance(options, list) or not isinstance(value, dict):
+        return schema
+    layout = value.get("acf_fc_layout")
+    if not isinstance(layout, str):
+        return schema
+    for option in options:
+        if not isinstance(option, dict):
+            continue
+        properties = option.get("properties")
+        layout_schema = properties.get("acf_fc_layout") if isinstance(properties, dict) else None
+        pattern = layout_schema.get("pattern") if isinstance(layout_schema, dict) else None
+        if isinstance(pattern, str) and re.fullmatch(pattern, layout):
+            return option
+    return schema
+
+
+def _property_schema(properties: dict[object, object], key: object) -> dict[str, object]:
+    candidate = properties.get(key)
+    return candidate if isinstance(candidate, dict) else {}
+
+
+def _normalize_acf_for_create(value: object, schema: dict[str, object]) -> object:
+    """Convert only REST-invalid empty values while retaining all ACF content.
+
+    ACF view reads sometimes serialize an unset media/select field as an empty
+    string even though the corresponding write schema permits only ``null``.
+    The source object is never changed: this prepares the newly cloned draft
+    payload in memory immediately before the create-only request.
+    """
+
+    selected_schema = _one_of_schema(schema, value)
+    allowed_types = _schema_types(selected_schema)
+    if value == "" and "string" not in allowed_types and "null" in allowed_types:
+        return None
+    if isinstance(value, dict):
+        properties = selected_schema.get("properties")
+        if not isinstance(properties, dict):
+            return value
+        return {
+            key: _normalize_acf_for_create(
+                item,
+                _property_schema(properties, key),
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        item_schema = selected_schema.get("items")
+        if not isinstance(item_schema, dict):
+            return value
+        return [_normalize_acf_for_create(item, item_schema) for item in value]
+    return value
+
+
 def refresh_wordpress_content_inventory(
     connector_id: str,
     request: ConnectorRefreshRequest,
@@ -367,11 +471,20 @@ def create_wordpress_acf_draft(
     auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
     try:
         try:
+            acf_schema = _acf_create_schema(
+                client,
+                base_url=credentials.base_url or "",
+                endpoint=endpoint,
+                auth=auth,
+            )
+            normalized_acf = _normalize_acf_for_create(acf, acf_schema)
+            if not isinstance(normalized_acf, dict):
+                raise WordPressDraftWriteError("Schemat ACF nie potwierdził obiektu szkicu.")
             response = client.post(
                 urljoin(credentials.base_url or "", f"wp-json/wp/v2/{endpoint}"),
                 auth=auth,
                 params={"_fields": "id,status,link"},
-                json={"status": "draft", "title": title, "acf": acf},
+                json={"status": "draft", "title": title, "acf": normalized_acf},
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
