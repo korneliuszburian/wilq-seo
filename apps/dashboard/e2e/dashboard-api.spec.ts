@@ -311,7 +311,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("configured", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Evidence", { exact: true })).toHaveCount(0);
     await expect(page.getByText(merchantDiagnostics.connector_status_label)).toBeVisible();
-    await expect(page.getByText("metryki pliku produktowego dostępne")).toBeVisible();
+    await expect(page.getByText(merchantDiagnostics.live_data_status_label)).toBeVisible();
 
     await expect(page.getByText(/ev_refresh_refresh_google_merchant_center/)).toHaveCount(0);
     await expectNoForbiddenVisibleCopy(page);
@@ -319,16 +319,22 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   });
 
   test("localo route exposes aggregate facts without unsupported local claims", async ({ page }) => {
+    const localoDiagnosticsResponse = page.waitForResponse(
+      (response) => {
+        const url = new URL(response.url());
+        return url.pathname === "/api/localo/diagnostics" && response.status() === 200;
+      },
+      { timeout: 60_000 }
+    );
     await page.goto("/localo");
+    const localoDiagnostics = await (await localoDiagnosticsResponse).json();
 
     await expectApiBackedRouteHeading(page, "Localo", { exact: true });
     await expect(page.getByRole("heading", { name: "Status Localo i widoczność lokalna" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki diagnozy Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa Localo i profilu firmy w Google" })).toBeVisible();
-    await expect(
-      page.getByText(/dostęp działa/).first()
-    ).toBeVisible();
+    await expect(page.getByText(localoDiagnostics.access_probe.status_label)).toBeVisible();
     await expect(page.getByText(/Brakujące dane: zadania lokalne/).first()).toBeVisible();
     await expect(page.getByText(/rankingi lokalne/).first()).toBeVisible();
     await expect(page.getByText(/opinie/).first()).toBeVisible();
@@ -344,7 +350,15 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   });
 
   test("ahrefs route exposes authority context and gap safety state", async ({ page }) => {
+    const ahrefsDiagnosticsResponse = page.waitForResponse(
+      (response) => {
+        const url = new URL(response.url());
+        return url.pathname === "/api/ahrefs/diagnostics" && response.status() === 200;
+      },
+      { timeout: 60_000 }
+    );
     await page.goto("/ahrefs");
+    const ahrefsDiagnostics = await (await ahrefsDiagnosticsResponse).json();
 
     await expectApiBackedRouteHeading(page, "Ahrefs", { exact: true });
     await expect(page.getByRole("heading", { name: "Status Ahrefs i dowody SEO" })).toBeVisible();
@@ -352,8 +366,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
       page.getByRole("heading", { name: "Co marketer ma wiedzieć o Ahrefs" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki analizy Ahrefs" })).toBeVisible();
-    await expect(page.getByText(/odczyt autorytetu Ahrefs|metryki Ahrefs dostępne/).first()).toBeVisible();
-    await expect(page.getByText(/Przejrzyj rekordy luk Ahrefs|Brak typed gap records/).first()).toBeVisible();
+    await expect(page.getByText(ahrefsDiagnostics.live_data_status_label)).toBeVisible();
+    await expect(page.getByText(/Przejrzyj rekordy luk Ahrefs|Nie wskazuj luk konkurencji bez rekordów Ahrefs/).first()).toBeVisible();
     await expect(page.getByText(/ocena domeny Ahrefs|brakujące dane/).first()).toBeVisible();
     await expect(page.getByText("Rekordy luk").first()).toBeVisible();
     await expect(page.getByText(/gotowe|zablokowane/).first()).toBeVisible();

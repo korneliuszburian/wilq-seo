@@ -200,7 +200,7 @@ function ContentWorkflowEmptyRecommendations({
     <p className="mt-2 leading-6 text-slate-700">{decision.why_it_matters}</p>
     <p className="mt-3 font-semibold leading-6 text-slate-800">Co możesz zrobić teraz: {decision.safe_next_action}</p>
     {decision.source_connector_labels.length ? <p className="mt-3 text-xs leading-5 text-slate-600">Źródła wymagające odczytu: {decision.source_connector_labels.join(", ")}</p> : null}
-    {decision.evidence_ids.length ? <p className="mt-2 break-words text-xs leading-5 text-slate-600">Dowody blokady: {decision.evidence_ids.join(", ")}</p> : null}
+    {decision.evidence_ids.length ? <p className="mt-2 text-xs leading-5 text-slate-600">Dowody źródłowe są dostępne w szczegółach pracy.</p> : null}
     <ContentRequiredSourceRefresh
       connectorIds={connectorIds}
       connectorLabels={connectorLabels}
@@ -517,7 +517,9 @@ function InfoTile({ label, value }: { label: string; value: string }) {
 }
 
 function EvidenceIds({ evidenceIds, label = "Dowody" }: { evidenceIds: string[]; label?: string }) {
-  return evidenceIds.length ? <p className="mt-2 break-words text-[11px] leading-5 text-slate-500">{label}: {evidenceIds.join(", ")}</p> : <p className="mt-2 text-[11px] leading-5 text-wait">{label}: brak potwierdzonego dowodu</p>;
+  const count = evidenceIds.length;
+  const summary = count === 1 ? "1 dowód źródłowy" : count < 5 ? `${count} dowody źródłowe` : `${count} dowodów źródłowych`;
+  return count ? <p className="mt-2 text-[11px] leading-5 text-slate-500">{label}: {summary}</p> : <p className="mt-2 text-[11px] leading-5 text-wait">{label}: brak potwierdzonego dowodu</p>;
 }
 
 function overlapMatchLabel(kind: ContentNewPageBriefWorkspace["overlap_guard"]["candidates"][number]["match_kind"]) {

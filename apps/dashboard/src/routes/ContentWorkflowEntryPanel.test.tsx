@@ -130,7 +130,8 @@ describe("ContentWorkflowEntryPanel", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Użyj tego tematu" }));
     expect(screen.getByLabelText("Roboczy tytuł strony")).toHaveValue("Operat wodnoprawny");
-    expect(screen.getByText("Dowody tematu: ev_ahrefs, ev_gsc")).toBeInTheDocument();
+    expect(screen.getByText("Dowody tematu: 2 dowody źródłowe")).toBeInTheDocument();
+    expect(screen.queryByText(/ev_ahrefs, ev_gsc/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Wpisz własny temat" }));
     expect(screen.getByRole("button", { name: "Użyj tego tematu" })).toBeInTheDocument();
   });
@@ -159,7 +160,8 @@ describe("ContentWorkflowEntryPanel", () => {
 
     expect(screen.getByTestId("content-workflow-data-blocker")).toHaveTextContent("Nie podejmuj decyzji contentowej bez odczytu.");
     expect(screen.getByText(/Uruchom odczyt GSC i WordPress/)).toBeInTheDocument();
-    expect(screen.getByText(/ev_gsc, ev_wp/)).toBeInTheDocument();
+    expect(screen.getByText("Dowody źródłowe są dostępne w szczegółach pracy.")).toBeInTheDocument();
+    expect(screen.queryByText(/ev_gsc, ev_wp/)).not.toBeInTheDocument();
     expect(screen.getByTestId("content-required-source-refresh")).toHaveTextContent("Nie zmienia treści ani nie publikuje w WordPressie.");
   });
 
