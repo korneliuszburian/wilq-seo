@@ -106,6 +106,7 @@ describe("ContentWorkflowEntryPanel", () => {
   });
 
   it("prefills only an exact evidence-bound topic and preserves the manual brief path", async () => {
+    const evidenceIds = Array.from({ length: 22 }, (_, index) => `ev_topic_${index}`);
     vi.mocked(getContentNewPageTopicRecommendations).mockResolvedValue({
       response_type: "content_new_page_topic_recommendations",
       contract_version: "content_new_page_topic_recommendations_v1",
@@ -120,18 +121,18 @@ describe("ContentWorkflowEntryPanel", () => {
         topic: "operat wodnoprawny",
         rationale: "Ahrefs i GSC są zgodne.",
         source_connectors: ["ahrefs", "google_search_console"],
-        evidence_ids: ["ev_ahrefs", "ev_gsc"]
+        evidence_ids: evidenceIds
       }],
       source_connectors: ["ahrefs", "google_search_console"],
-      evidence_ids: ["ev_ahrefs", "ev_gsc"]
+      evidence_ids: evidenceIds
     });
 
     renderEntry({ newPageOpen: true, newPageId: null });
 
     fireEvent.click(await screen.findByRole("button", { name: "Użyj tego tematu" }));
     expect(screen.getByLabelText("Roboczy tytuł strony")).toHaveValue("Operat wodnoprawny");
-    expect(screen.getByText("Dowody tematu: 2 dowody źródłowe")).toBeInTheDocument();
-    expect(screen.queryByText(/ev_ahrefs, ev_gsc/)).not.toBeInTheDocument();
+    expect(screen.getByText("Dowody tematu: 22 dowody źródłowe")).toBeInTheDocument();
+    expect(screen.queryByText(/ev_topic_0/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Wpisz własny temat" }));
     expect(screen.getByRole("button", { name: "Użyj tego tematu" })).toBeInTheDocument();
   });

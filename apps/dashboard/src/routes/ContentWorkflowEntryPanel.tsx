@@ -518,7 +518,10 @@ function InfoTile({ label, value }: { label: string; value: string }) {
 
 function EvidenceIds({ evidenceIds, label = "Dowody" }: { evidenceIds: string[]; label?: string }) {
   const count = evidenceIds.length;
-  const summary = count === 1 ? "1 dowód źródłowy" : count < 5 ? `${count} dowody źródłowe` : `${count} dowodów źródłowych`;
+  const lastTwoDigits = count % 100;
+  const endsWithFew = count % 10 >= 2 && count % 10 <= 4;
+  const usesFewForm = endsWithFew && !(lastTwoDigits >= 12 && lastTwoDigits <= 14);
+  const summary = count === 1 ? "1 dowód źródłowy" : usesFewForm ? `${count} dowody źródłowe` : `${count} dowodów źródłowych`;
   return count ? <p className="mt-2 text-[11px] leading-5 text-slate-500">{label}: {summary}</p> : <p className="mt-2 text-[11px] leading-5 text-wait">{label}: brak potwierdzonego dowodu</p>;
 }
 
