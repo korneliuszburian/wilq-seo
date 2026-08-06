@@ -1,4 +1,4 @@
-# Current Delivery State — 2026-08-05
+# Current Delivery State — 2026-08-06
 
 Przeczytaj przed zmianą Content Ops, dashboardu `/content-workflow`, kontraktu
 ACF albo dev-draft delivery. Git i Beads zachowują historię zakończonych
@@ -39,6 +39,21 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
   `ekologus-2025`; wskazówki są w `notes.md`.
 - BDO jest gotowe do read-only UAT i oddzielnego review człowieka. Nie jest
   publikacją ani automatyczną zgodą prawną.
+
+## Ostatnia weryfikacja techniczna
+
+- Na local `main` po commicie `a57baa2e` pełne `scripts/verify.sh` przeszło:
+  quality, security, API smoke, smoke umiejętności, dashboard E2E i build.
+- Bieżący odczyt WILQ API nadal wskazuje exact revision
+  `content_revision_56bfb0e0fe1742738dfe3f07a39f780c` jako zatwierdzony
+  dokument BDO o digescie
+  `3c14b3d8a71e77a4d561ce2ce5b5df47c84b99e960a6c5d56d83f59ad738ceec`.
+- ActionObject `act_content_dev_draft_a75ad8a27e9e4f07b773205fdf0a5b7f`
+  pozostaje wykonanym, jednorazowym create-only przygotowaniem szkicu. Jego
+  ponowny apply jest zablokowany; odczyt nie tworzy nowej akcji ani nie zmienia
+  WordPressa.
+- Dashboard nie emituje już ostrzeżenia React o zduplikowanych kluczach, gdy
+  metryka Localo ma dwa różne wymiary z tą samą etykietą dla marketera.
 
 ## Strona główna i ACF na dev
 
