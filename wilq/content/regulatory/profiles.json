@@ -183,7 +183,7 @@
     },
     {
       "id": "environmental_assessment",
-      "version": "2026-08-06-r1",
+      "version": "2026-08-06-r2",
       "service_card_ids": ["ekologus_service_environmental_compliance_audit"],
       "official_source_hosts": ["www.gov.pl", "eli.gov.pl"],
       "max_source_age_days": 90,
@@ -201,7 +201,10 @@
             {
               "id": "environmental_assessment_procedure_name",
               "label": "ocena oddziaływania na środowisko",
-              "required_any_of": ["ocena oddziaływania na środowisko"]
+              "required_any_of": [
+                "ocena oddziaływania na środowisko",
+                "ocenę oddziaływania na środowisko"
+              ]
             }
           ]
         },

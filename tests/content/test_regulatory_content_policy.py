@@ -12,6 +12,7 @@ from wilq.content.regulatory.policy import (
     regulatory_content_coverage,
     regulatory_content_profile,
     regulatory_draft_assurance_constraints,
+    regulatory_requirement_assertion_errors,
     regulatory_review_candidates,
     regulatory_source_candidates,
 )
@@ -249,7 +250,7 @@ def test_environmental_assessment_is_a_data_profile_with_official_review_candida
 
     assert profile is not None
     assert profile.id == "environmental_assessment"
-    assert profile.version == "2026-08-06-r1"
+    assert profile.version == "2026-08-06-r2"
     assert profile.official_source_hosts == ["www.gov.pl", "eli.gov.pl"]
     assert [requirement.id for requirement in profile.requirements] == [
         "environmental_assessment_procedure",
@@ -262,15 +263,35 @@ def test_environmental_assessment_is_a_data_profile_with_official_review_candida
         if candidate.profile_id == profile.id
     ]
     assert {candidate.candidate_id for candidate in candidates} == {
-        "environmental_assessment_procedure_2026_08_06_r1",
-        "environmental_assessment_qualification_2026_08_06_r1",
-        "environmental_post_implementation_analysis_2026_08_06_r1",
+        "environmental_assessment_procedure_2026_08_06_r2",
+        "environmental_assessment_qualification_2026_08_06_r2",
+        "environmental_post_implementation_analysis_2026_08_06_r2",
     }
     assert {
         requirement_id
         for candidate in candidates
         for requirement_id in candidate.requirement_ids
     } == {requirement.id for requirement in profile.requirements}
+
+
+def test_environmental_assessment_assertion_accepts_polish_case_used_in_heading() -> None:
+    profile = regulatory_content_profile(
+        service_card_id="ekologus_service_environmental_compliance_audit"
+    )
+    assert profile is not None
+    requirement = next(
+        item
+        for item in profile.requirements
+        if item.id == "environmental_assessment_procedure"
+    )
+
+    assert regulatory_requirement_assertion_errors(
+        requirement=requirement,
+        text=(
+            "Kiedy przeprowadza się ocenę oddziaływania na środowisko w postępowaniu "
+            "o wydanie decyzji o środowiskowych uwarunkowaniach?"
+        ),
+    ) == []
 
 
 def test_review_candidates_are_current_exact_and_never_complete_coverage() -> None:

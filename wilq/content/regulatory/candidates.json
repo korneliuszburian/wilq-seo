@@ -133,9 +133,9 @@
       "safe_next_step": "Potwierdź sposób logowania, powiązanie konta i rozdział ról przed zatwierdzeniem factu źródłowego."
     },
     {
-      "candidate_id": "environmental_assessment_procedure_2026_08_06_r1",
+      "candidate_id": "environmental_assessment_procedure_2026_08_06_r2",
       "profile_id": "environmental_assessment",
-      "profile_version": "2026-08-06-r1",
+      "profile_version": "2026-08-06-r2",
       "service_card_ids": ["ekologus_service_environmental_compliance_audit"],
       "source_url": "https://www.gov.pl/web/gdos/oceny-oddzialywania-na-srodowisko",
       "source_title": "GDOŚ: Oceny oddziaływania na środowisko",
@@ -145,9 +145,9 @@
       "safe_next_step": "Potwierdź, że opis procedury zachowuje jej związek z decyzją o środowiskowych uwarunkowaniach i nie rozszerza obowiązku na każde przedsięwzięcie."
     },
     {
-      "candidate_id": "environmental_assessment_qualification_2026_08_06_r1",
+      "candidate_id": "environmental_assessment_qualification_2026_08_06_r2",
       "profile_id": "environmental_assessment",
-      "profile_version": "2026-08-06-r1",
+      "profile_version": "2026-08-06-r2",
       "service_card_ids": ["ekologus_service_environmental_compliance_audit"],
       "source_url": "https://www.gov.pl/web/gis/ocena-oddzialywania-na-srodowisko-oos-oos-przedsiewziecia",
       "source_title": "GIS: Ocena oddziaływania na środowisko przedsięwzięcia",
@@ -157,9 +157,9 @@
       "safe_next_step": "Potwierdź warunki kwalifikacji przedsięwzięcia do oceny bez przypisywania obowiązku wszystkim inwestycjom."
     },
     {
-      "candidate_id": "environmental_post_implementation_analysis_2026_08_06_r1",
+      "candidate_id": "environmental_post_implementation_analysis_2026_08_06_r2",
       "profile_id": "environmental_assessment",
-      "profile_version": "2026-08-06-r1",
+      "profile_version": "2026-08-06-r2",
       "service_card_ids": ["ekologus_service_environmental_compliance_audit"],
       "source_url": "https://eli.gov.pl/api/acts/DU/2026/670/text.pdf",
       "source_title": "ELI: tekst jednolity ustawy o ocenach oddziaływania na środowisko",
