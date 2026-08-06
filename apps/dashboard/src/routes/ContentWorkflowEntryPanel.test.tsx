@@ -219,7 +219,8 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(screen.getByText("Intencja wyszukiwania")).toBeInTheDocument();
     expect(screen.getByText("audyt środowiskowy dla inwestycji")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Sprawdzone strony i dowody"));
-    expect(screen.getByText("Dowody sprawdzonego katalogu: ev_wp_other")).toBeInTheDocument();
+    expect(screen.getByText("Dowody sprawdzonego katalogu: 1 dowód źródłowy")).toBeInTheDocument();
+    expect(screen.queryByText(/ev_wp_other/)).not.toBeInTheDocument();
   });
 
   it("uses one marketer action to bind the source of knowledge before preparing text", async () => {
@@ -444,7 +445,8 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(await screen.findByText("Pokrycie wymaga decyzji człowieka")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Sprawdzone strony i dowody"));
     expect(screen.getByText("Podstawa dopasowania: wspólna intencja wyszukiwania.")).toBeInTheDocument();
-    expect(screen.getByText("Dowody: ev_wp_audit")).toBeInTheDocument();
+    expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
+    expect(screen.queryByText(/ev_wp_audit/)).not.toBeInTheDocument();
   });
 
   it("does not describe an unevidenced human-decision guard as no direct coverage", async () => {
