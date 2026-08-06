@@ -14,10 +14,7 @@ def test_python_quality_tools_use_the_active_uv_interpreter() -> None:
     expected_commands = {
         "scripts/lint.sh": "uv run --extra dev python -m ruff check .",
         "scripts/typecheck.sh": "uv run --extra dev python -m mypy",
-        "scripts/test.sh": (
-            "WILQ_TEST_TMPDIR=\"$test_tmp_root\" "
-            "uv run --extra dev python -m pytest"
-        ),
+        "scripts/test.sh": "uv run --extra dev python -m pytest \"$@\"",
         "scripts/security.sh": "uv run --extra dev python -m bandit",
         "scripts/verify.sh": "uv run python -m uvicorn",
         "scripts/local_stack.sh": "uv run python -m uvicorn",

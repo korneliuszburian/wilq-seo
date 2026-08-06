@@ -51,6 +51,7 @@ PY
 
 scripts/quality.sh
 scripts/security.sh
+WILQ_TEST_EXCLUSIVE=1 scripts/test.sh --full
 
 WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" uv run python - <<'PY'
 from fastapi.testclient import TestClient

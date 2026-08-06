@@ -28,7 +28,7 @@ jobs:
       - run: uv run python scripts/skill_hygiene_check.py
       - run: uv run python scripts/marketer_language_guard.py
       - run: scripts/typecheck.sh
-      - run: scripts/test.sh
+      - run: WILQ_TEST_EXCLUSIVE=1 scripts/test.sh --full
       - run: scripts/security.sh
 
   frontend:
