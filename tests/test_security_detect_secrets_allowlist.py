@@ -59,5 +59,5 @@ def test_detect_secrets_still_flags_the_same_unallowlisted_field_in_another_file
 def test_security_script_keeps_the_fixture_in_full_repository_scan_scope() -> None:
     script = SECURITY_SCRIPT.read_text()
 
-    assert "detect-secrets scan ." in script
+    assert "python -m detect_secrets scan ." in script
     assert "test_audit_store_contracts.py" not in script
