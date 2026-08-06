@@ -16,7 +16,10 @@ def test_bare_backend_test_command_refuses_to_start_a_full_suite() -> None:
     assert "Run focused Python tests" in result.stderr
 
 
-def test_full_backend_suite_requires_explicit_exclusive_authority() -> None:
+def test_full_backend_suite_requires_explicit_exclusive_authority(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv("WILQ_TEST_EXCLUSIVE", raising=False)
     result = subprocess.run(
         ["bash", "scripts/test.sh", "--full"],
         check=False,

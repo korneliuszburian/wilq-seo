@@ -27,6 +27,7 @@ from wilq.actions.google_ads.business_context import (
 )
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.merchant import _merchant_attribute_key as _action_merchant_attribute_key
+from wilq.briefing import ga4_diagnostics
 from wilq.briefing.command_center import build_daily_decisions
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.merchant_diagnostics import (
@@ -676,6 +677,7 @@ def test_ga4_measurement_decision_titles_include_reporting_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("GA4_PROPERTY_ID", "411974093")
+    monkeypatch.setattr(ga4_diagnostics, "_latest_ga4_refresh", lambda: None)
     facts = [
         MetricFact(
             name="active_users",
@@ -723,7 +725,12 @@ def test_ga4_measurement_decision_titles_include_reporting_context(
     assert decisions[0].source_connector_labels == ["GA4"]
     assert decisions[0].evidence_summary_label == "1 dowód źródłowy"
     assert decisions[0].action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
-    assert payload.evidence_summary_label == "4 dowody źródłowe"
+    assert payload.evidence_ids == [
+        "ev_ga4_not_set",
+        "ev_ga4_organic",
+        "ev_connector_google_analytics_4_status",
+    ]
+    assert payload.evidence_summary_label == "3 dowody źródłowe"
     assert payload.action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     assert (
         payload.operator_summary.action_summary_label

@@ -164,8 +164,14 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> No
         assert latest_skill_evals["strong_skill_count"] >= 1
         assert latest_skill_evals["top_wilku_ready_blockers"]
     else:
-        assert latest_skill_evals["fresh_passing_skill_count"] < latest_skill_evals["skill_count"]
-        assert latest_skill_evals["stale_passing_skills"]
+        unavailable_skill_count = (
+            latest_skill_evals["skill_count"] - latest_skill_evals["fresh_passing_skill_count"]
+        )
+        assert unavailable_skill_count > 0
+        assert unavailable_skill_count == (
+            len(latest_skill_evals["stale_passing_skills"])
+            + len(latest_skill_evals["missing_passing_skills"])
+        )
     social_history = summary["social_history_inventory"]
     assert social_history["status"] == "missing"
     assert social_history["metadata_source_configured"] is False

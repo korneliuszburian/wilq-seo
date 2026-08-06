@@ -265,6 +265,9 @@ def test_pdf_source_is_extracted_transiently_before_structured_turn(tmp_path, mo
         returncode = 0
         stdout = b"Tekst z oficjalnego PDF-a."
 
+    extractor = tmp_path / "pdftotext"
+    extractor.touch(mode=0o700)
+    monkeypatch.setattr(proposals_module, "_PDFTOTEXT_BINARY", extractor)
     monkeypatch.setattr(proposals_module.subprocess, "run", lambda *args, **kwargs: _PdfResult())
     result = generate_source_fact_proposal(
         candidate_id=candidate.candidate_id,
