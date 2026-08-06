@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 from wilq.content.measurement import evidence as measurement_evidence
 from wilq.content.measurement.aggregates import (
@@ -370,3 +371,18 @@ def test_loader_reuses_exact_refresh_snapshot_until_refresh_changes(monkeypatch)
     refreshed = measurement_evidence.load_content_measurement_evidence(url)
     assert calls == first_calls * 2
     assert refreshed is not first
+
+
+def test_measurement_evidence_cache_identity_uses_durable_store_path() -> None:
+    class Store:
+        def __init__(self, path: Path) -> None:
+            self.path = path
+
+    first = Store(Path("/tmp/first-metrics.duckdb"))
+    second = Store(Path("/tmp/second-metrics.duckdb"))
+
+    assert measurement_evidence._measurement_store_identity(first) == str(first.path)
+    assert measurement_evidence._measurement_store_identity(second) == str(second.path)
+    assert measurement_evidence._measurement_store_identity(first) != (
+        measurement_evidence._measurement_store_identity(second)
+    )

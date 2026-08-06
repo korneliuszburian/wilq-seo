@@ -54,7 +54,7 @@ METRIC_NAMES: dict[tuple[str, str], ContentMeasurementMetric] = {
 _MEASUREMENT_EVIDENCE_CACHE_TTL_SECONDS = 15.0
 _measurement_evidence_cache_lock = RLock()
 _measurement_evidence_cache: dict[
-    tuple[int, str, str, tuple[tuple[str, str, str, tuple[str, ...]], ...]],
+    tuple[str, str, str, tuple[tuple[str, str, str, tuple[str, ...]], ...]],
     tuple[float, MeasurementAggregateResult],
 ] = {}
 
@@ -69,17 +69,25 @@ def load_content_measurement_evidence(
     store = metric_store()
     normalized_path = landing_page_metric_lookup_path(content_url)
     refresh_identity = _measurement_refresh_identity()
+    # A cache is safe only when a persisted connector refresh identifies the
+    # exact observation.  Otherwise a direct metric-store update could leave
+    # us serving stale evidence for the TTL.
     cache_key = (
-        id(store),
-        content_url or "",
-        normalized_path,
-        refresh_identity,
+        (
+            _measurement_store_identity(store),
+            content_url or "",
+            normalized_path,
+            refresh_identity,
+        )
+        if refresh_identity
+        else None
     )
     now = monotonic()
-    with _measurement_evidence_cache_lock:
-        cached = _measurement_evidence_cache.get(cache_key)
-        if cached is not None and now - cached[0] < _MEASUREMENT_EVIDENCE_CACHE_TTL_SECONDS:
-            return cached[1]
+    if cache_key is not None:
+        with _measurement_evidence_cache_lock:
+            cached = _measurement_evidence_cache.get(cache_key)
+            if cached is not None and now - cached[0] < _MEASUREMENT_EVIDENCE_CACHE_TTL_SECONDS:
+                return cached[1]
     facts = [
         fact
         for normalized_url in landing_page_metric_lookup_urls(content_url)
@@ -94,16 +102,33 @@ def load_content_measurement_evidence(
         unique_facts,
         content_url=content_url or "",
     )
-    with _measurement_evidence_cache_lock:
-        _measurement_evidence_cache[cache_key] = (now, result)
-        expired = [
-            key
-            for key, (created_at, _) in _measurement_evidence_cache.items()
-            if now - created_at >= _MEASUREMENT_EVIDENCE_CACHE_TTL_SECONDS
-        ]
-        for key in expired:
-            _measurement_evidence_cache.pop(key, None)
+    if cache_key is not None:
+        with _measurement_evidence_cache_lock:
+            _measurement_evidence_cache[cache_key] = (now, result)
+            expired = [
+                key
+                for key, (created_at, _) in _measurement_evidence_cache.items()
+                if now - created_at >= _MEASUREMENT_EVIDENCE_CACHE_TTL_SECONDS
+            ]
+            for key in expired:
+                _measurement_evidence_cache.pop(key, None)
     return result
+
+
+def _measurement_store_identity(store: object) -> str:
+    """Keep cached evidence bound to the durable metric-store location.
+
+    ``metric_store()`` creates a short-lived wrapper on every call.  Its Python
+    object id can therefore be reused after a test/runtime store swap, which
+    would make a cached result from another database look current.  The DB path
+    is the stable ownership boundary; mocks without a path retain a local-only
+    fallback identity.
+    """
+
+    path = getattr(store, "path", None)
+    if path is not None:
+        return str(path)
+    return f"mock:{id(store)}"
 
 
 def _measurement_refresh_identity() -> tuple[tuple[str, str, str, tuple[str, ...]], ...]:
