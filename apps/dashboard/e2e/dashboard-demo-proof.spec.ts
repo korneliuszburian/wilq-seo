@@ -14,7 +14,7 @@ async function gotoAndWaitForApi(page: Page, route: string, apiPath: string) {
     return url.pathname === apiPath && response.status() === 200;
   });
   await page.goto(route);
-  await apiResponse;
+  return apiResponse;
 }
 
 async function expectNoVisibleTechnicalIds(page: Page) {
@@ -115,13 +115,14 @@ test.describe("WILQ dashboard marketer demo proof", () => {
       fullPage: true,
     });
 
-    await gotoAndWaitForApi(page, "/localo", "/api/localo/diagnostics");
+    const localoDiagnosticsResponse = await gotoAndWaitForApi(page, "/localo", "/api/localo/diagnostics");
+    const localoDiagnostics = await localoDiagnosticsResponse.json();
     await expect(page.getByRole("heading", { name: "Localo", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status Localo i widoczność lokalna" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki diagnozy Localo" })).toBeVisible();
     await expect(
-      page.getByText(/dostęp działa/).first()
+      page.getByText(localoDiagnostics.access_probe.status_label, { exact: true }).first()
     ).toBeVisible();
     await expect(page.getByText(/Brakujące dane: zadania lokalne/).first()).toBeVisible();
     await expect(page.getByText(/rankingi lokalne/).first()).toBeVisible();

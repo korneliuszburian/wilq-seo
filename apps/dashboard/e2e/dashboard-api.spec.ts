@@ -334,7 +334,9 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki diagnozy Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa Localo i profilu firmy w Google" })).toBeVisible();
-    await expect(page.getByText(localoDiagnostics.access_probe.status_label)).toBeVisible();
+    await expect(
+      page.getByText(localoDiagnostics.access_probe.status_label, { exact: true }).first()
+    ).toBeVisible();
     await expect(page.getByText(/Brakujące dane: zadania lokalne/).first()).toBeVisible();
     await expect(page.getByText(/rankingi lokalne/).first()).toBeVisible();
     await expect(page.getByText(/opinie/).first()).toBeVisible();
