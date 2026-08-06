@@ -41,7 +41,7 @@ DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
 mkdir -p "$RUNTIME_DIR"
 chmod 700 "$RUNTIME_DIR"
 
-for runtime_file in "$RUNTIME_DIR"/*.pid "$RUNTIME_DIR"/*.log; do
+for runtime_file in "$RUNTIME_DIR"/*.pid "$RUNTIME_DIR"/*.log "$RUNTIME_DIR"/*.port; do
   if [ -e "$runtime_file" ]; then
     chmod 600 "$runtime_file"
   fi
@@ -71,6 +71,44 @@ log_file() {
   printf "%s/%s.log" "$RUNTIME_DIR" "$1"
 }
 
+port_file() {
+  printf "%s/%s.port" "$RUNTIME_DIR" "$1"
+}
+
+is_valid_port() {
+  local port="${1:-}"
+  [[ "$port" =~ ^[0-9]+$ ]] && ((10#$port >= 1 && 10#$port <= 65535))
+}
+
+read_recorded_port() {
+  local file
+  local port
+  file="$(port_file "$1")"
+  if [ -f "$file" ]; then
+    port="$(tr -d '[:space:]' <"$file")"
+    if is_valid_port "$port"; then
+      printf "%s" "$port"
+    fi
+  fi
+}
+
+record_service_port() {
+  local service="$1"
+  local port="$2"
+  local file
+  is_valid_port "$port" || {
+    echo "Refusing to persist invalid ${service} port: ${port}" >&2
+    return 1
+  }
+  file="$(port_file "$service")"
+  printf "%s\n" "$port" >"$file"
+  chmod 600 "$file"
+}
+
+remove_recorded_port() {
+  rm -f "$(port_file "$1")"
+}
+
 read_pid() {
   local file
   file="$(pid_file "$1")"
@@ -92,6 +130,43 @@ port_pid() {
 pid_args() {
   local pid="$1"
   ps -p "$pid" -o args= 2>/dev/null || true
+}
+
+port_from_process_args() {
+  local pid="$1"
+  local args
+  local port
+  args="$(pid_args "$pid")"
+  if [[ "$args" =~ --port[[:space:]]+([0-9]+) ]]; then
+    port="${BASH_REMATCH[1]}"
+    if is_valid_port "$port"; then
+      printf "%s" "$port"
+    fi
+  fi
+}
+
+runtime_service_port() {
+  local service="$1"
+  local configured_port="$2"
+  local pid
+  local port
+  pid="$(read_pid "$service")"
+  if is_pid_alive "$pid"; then
+    port="$(read_recorded_port "$service")"
+    if [ -n "$port" ]; then
+      printf "%s" "$port"
+      return 0
+    fi
+    # Compatibility for a process that was started before port metadata
+    # existed.  This is read-only and lets status/stop target the managed
+    # service rather than a default port occupied by another checkout.
+    port="$(port_from_process_args "$pid")"
+    if [ -n "$port" ]; then
+      printf "%s" "$port"
+      return 0
+    fi
+  fi
+  printf "%s" "$configured_port"
 }
 
 pid_ppid() {
@@ -206,8 +281,10 @@ wait_url() {
 
 stop_service() {
   local service="$1"
-  local port="$2"
+  local configured_port="$2"
+  local port
   local pid
+  port="$(runtime_service_port "$service" "$configured_port")"
   pid="$(read_pid "$service")"
 
   if is_pid_alive "$pid"; then
@@ -219,8 +296,6 @@ stop_service() {
       return 1
     fi
   fi
-  rm -f "$(pid_file "$service")"
-
   local owner
   owner="$(port_pid "$port")"
   if [ -n "$owner" ]; then
@@ -234,6 +309,8 @@ stop_service() {
   fi
 
   if wait_port_free "$port"; then
+    rm -f "$(pid_file "$service")"
+    remove_recorded_port "$service"
     return 0
   fi
 
@@ -254,7 +331,21 @@ stop_service() {
 
 start_api() {
   local log
+  local managed_port
+  local managed_url
+  local pid
   log="$(log_file api)"
+  managed_port="$(runtime_service_port api "$API_PORT")"
+  managed_url="http://${API_HOST}:${managed_port}"
+  pid="$(read_pid api)"
+  if is_pid_alive "$pid" && [ "$managed_port" != "$API_PORT" ]; then
+    if curl -fsS --max-time 2 "${managed_url}/api/health" >/dev/null 2>&1; then
+      echo "API already ready: ${managed_url}"
+      return 0
+    fi
+    echo "Managed API pid ${pid} exists on port ${managed_port} but is not ready. Run restart." >&2
+    return 1
+  fi
   if curl -fsS --max-time 2 "${API_URL}/api/health" >/dev/null 2>&1; then
     echo "API already ready: ${API_URL}"
     return 0
@@ -275,13 +366,28 @@ start_api() {
       >>"$log" 2>&1 </dev/null &
     echo "$!" >"$(pid_file api)"
   )
+  record_service_port api "$API_PORT"
   wait_url "${API_URL}/api/health" "$log"
   echo "API ready: ${API_URL}"
 }
 
 start_dashboard() {
   local log
+  local managed_port
+  local managed_url
+  local pid
   log="$(log_file dashboard)"
+  managed_port="$(runtime_service_port dashboard "$DASHBOARD_PORT")"
+  managed_url="http://${DASHBOARD_HOST}:${managed_port}"
+  pid="$(read_pid dashboard)"
+  if is_pid_alive "$pid" && [ "$managed_port" != "$DASHBOARD_PORT" ]; then
+    if curl -fsS --max-time 2 "${managed_url}/command-center" >/dev/null 2>&1; then
+      echo "Dashboard already ready: ${managed_url}/command-center"
+      return 0
+    fi
+    echo "Managed dashboard pid ${pid} exists on port ${managed_port} but is not ready. Run restart." >&2
+    return 1
+  fi
   if curl -fsS --max-time 2 "${DASHBOARD_URL}/command-center" >/dev/null 2>&1; then
     echo "Dashboard already ready: ${DASHBOARD_URL}/command-center"
     return 0
@@ -298,6 +404,7 @@ start_dashboard() {
       >>"$log" 2>&1 </dev/null &
     echo "$!" >"$(pid_file dashboard)"
   )
+  record_service_port dashboard "$DASHBOARD_PORT"
   wait_url "${DASHBOARD_URL}/command-center" "$log"
   echo "Dashboard ready: ${DASHBOARD_URL}/command-center"
 }
@@ -336,8 +443,12 @@ status_service() {
 }
 
 status_stack() {
-  status_service api "$API_PORT" "${API_URL}/api/health"
-  status_service dashboard "$DASHBOARD_PORT" "${DASHBOARD_URL}/command-center"
+  local api_port
+  local dashboard_port
+  api_port="$(runtime_service_port api "$API_PORT")"
+  dashboard_port="$(runtime_service_port dashboard "$DASHBOARD_PORT")"
+  status_service api "$api_port" "http://${API_HOST}:${api_port}/api/health"
+  status_service dashboard "$dashboard_port" "http://${DASHBOARD_HOST}:${dashboard_port}/command-center"
 }
 
 logs_stack() {

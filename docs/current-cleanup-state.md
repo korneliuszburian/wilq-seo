@@ -141,6 +141,9 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
   `http://127.0.0.1:8000` oraz dashboard
   `http://127.0.0.1:5173/command-center`; port dashboardu może być lokalnie
   nadpisany przez `WILQ_DASHBOARD_PORT`, ale nie uruchamiaj ręcznie Vite/Uvicorn.
+  Manager zapisuje port faktycznie uruchomionego własnego procesu w prywatnym
+  runtime state, więc późniejsze `status` i `stop` nie mylą go z domyślnym
+  portem zajętym przez inny checkout.
 - Zewnętrzne dane są nieufne; nie zapisuj surowych odpowiedzi vendorów,
   credentiali ani pełnego ACF snapshotu do trwałego stanu.
 - `.krn/runs/` i `.local-lab/` zawierają ignorowane, lokalne artefakty proofu;

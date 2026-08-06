@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 import subprocess
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,10 +73,13 @@ def test_local_stack_normalizes_runtime_directory_and_file_modes(tmp_path: Path)
     runtime_dir.mkdir(mode=0o755)
     pid_file = runtime_dir / "api.pid"
     log_file = runtime_dir / "api.log"
+    port_file = runtime_dir / "dashboard.port"
     pid_file.write_text("", encoding="utf-8")
     log_file.write_text("", encoding="utf-8")
+    port_file.write_text("5188\n", encoding="utf-8")
     pid_file.chmod(0o644)
     log_file.chmod(0o644)
+    port_file.chmod(0o644)
 
     result = subprocess.run(
         [str(STACK_SCRIPT), "status"],
@@ -89,6 +94,55 @@ def test_local_stack_normalizes_runtime_directory_and_file_modes(tmp_path: Path)
     assert runtime_dir.stat().st_mode & 0o777 == 0o700
     assert pid_file.stat().st_mode & 0o777 == 0o600
     assert log_file.stat().st_mode & 0o777 == 0o600
+    assert port_file.stat().st_mode & 0o777 == 0o600
+
+
+def test_local_stack_status_uses_recorded_port_for_live_dashboard(
+    tmp_path: Path,
+) -> None:
+    class DashboardHandler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, _format: str, *_args: object) -> None:
+            return
+
+    runtime_dir = tmp_path / "runtime"
+    runtime_dir.mkdir()
+    server = ThreadingHTTPServer(("127.0.0.1", 0), DashboardHandler)
+    dashboard_port = server.server_address[1]
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+    managed_process = subprocess.Popen(["sleep", "30"])
+    try:
+        (runtime_dir / "dashboard.pid").write_text(
+            f"{managed_process.pid}\n",
+            encoding="utf-8",
+        )
+        (runtime_dir / "dashboard.port").write_text(
+            f"{dashboard_port}\n",
+            encoding="utf-8",
+        )
+
+        result = subprocess.run(
+            [str(STACK_SCRIPT), "status"],
+            cwd=ROOT,
+            env={**os.environ, "WILQ_RUNTIME_DIR": str(runtime_dir)},
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    finally:
+        managed_process.terminate()
+        managed_process.wait(timeout=5)
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 0, result.stderr
+    dashboard_status = result.stdout.split("dashboard\n", maxsplit=1)[1]
+    assert f"port_owner_pid: {os.getpid()}" in dashboard_status
+    assert "ready: yes" in dashboard_status
 
 
 def test_operator_docs_point_to_local_stack_manager() -> None:
