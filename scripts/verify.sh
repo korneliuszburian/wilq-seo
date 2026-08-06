@@ -117,7 +117,7 @@ PY
 skill_api_base="http://127.0.0.1:${skill_api_port}"
 skill_api_log="${TMPDIR:-/tmp}/wilq-skill-api.log"
 WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" \
-  .venv/bin/uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port "$skill_api_port" >"$skill_api_log" 2>&1 &
+  uv run python -m uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port "$skill_api_port" >"$skill_api_log" 2>&1 &
 skill_api_pid="$!"
 for _ in $(seq 1 30); do
   if curl -fsS --max-time 2 "$skill_api_base/api/health" >/dev/null 2>&1; then
