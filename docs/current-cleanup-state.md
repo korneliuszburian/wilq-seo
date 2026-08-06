@@ -47,6 +47,11 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
   `scripts/verify.sh` z integracją i E2E. Pełna bramka jest uruchamiana w CI;
   lokalny pełny suite wymaga jawnego, ekskluzywnego okna i nie działa na
   współdzielonej maszynie.
+- CI dla `195bec2d` również przeszła w całości: Python quality/security,
+  frontend lint/typecheck/test oraz `scripts/verify.sh`. Naprawa wiąże cache
+  measurement evidence z trwałą bazą metryk i nie cache'uje odczytu bez
+  persisted refresh lineage; dzięki temu nowy fakt nie może przez TTL udawać
+  starszego snapshotu.
 - Bieżący odczyt WILQ API nadal wskazuje exact revision
   `content_revision_56bfb0e0fe1742738dfe3f07a39f780c` jako zatwierdzony
   dokument BDO o digescie
@@ -90,8 +95,9 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
    dev` i czytelny podgląd referencyjnej strony dev w dashboardzie.
 2. Homepage ma wystarczający odczyt do ręcznego wyboru dokładnych pól/relacji,
    ale nie ma jeszcze zatwierdzonego celu copy ani potwierdzenia ActionObject.
-3. Kolejny kandydat — doradztwo i outsourcing — ma sygnał GSC (49 wyświetleń,
-   0 kliknięć, 22 zapytania), ale nie ma odpowiadającego exact targetu dev;
+3. Kolejny kandydat — doradztwo i outsourcing — ma częściowy sygnał GSC
+   (46 wyświetleń, 0 kliknięć, 19 zapytań) i immutable rewizję czekającą na
+   review, ale nie ma odpowiadającego exact targetu dev;
    target discovery zwraca `unavailable`. Nie twórz dla niego draftu przez
    pożyczenie targetu BDO lub homepage.
 4. Kolejne drafty wymagają dla każdego adresu: potwierdzonego source contentu,
@@ -117,10 +123,15 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
   zapis.
 - Plan jest obecnie prawidłowo zablokowany: mapuje temat do
   `ekologus_service_environmental_compliance_audit`, którego prywatny source
-  fact nadal wymaga owner review. Istnieje podobna, zatwierdzona karta
-  `ekologus_service_compliance_audit`, ale WILQ nie może sam uznać ich za tę
-  samą usługę. Przed generowaniem należy potwierdzić exact binding albo
-  zakończyć review obecnej karty. Nie wolno omijać tej bramki promptem.
+  fact nadal wymaga owner review. Właściwym ruchem nie jest automatyczne
+  przypięcie podobnej karty, lecz review exact prywatnej propozycji „Audyt
+  zgodności środowiskowej” przez Wilka/ownera — z potwierdzeniem source trace,
+  blocked claims, aktualności, zakresu dostępu i retencji. Nie wolno omijać
+  tej bramki promptem ani aliasem nazwy usługi.
+- Preflight „Europejskiego Zielonego Ładu” potwierdza, że post dev `1332`
+  ma bezpośredni kontrakt `wordpress_post_content`, ale plan także blokuje
+  review-required karta `ekologus_service_environmental_compliance`. Nie
+  zastępuje to przeglądu exact karty dla „Oceny…”.
 
 ## Runtime i granice
 
@@ -137,8 +148,7 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
 
 ## Następny bezpieczny ruch
 
-Najpierw owner usługi rozstrzyga exact binding dla artykułu o ocenie
-oddziaływania na środowisko: review obecnej karty albo potwierdzone przypisanie
-do zatwierdzonej karty audytu. Wtedy WILQ może przygotować jedną exact rewizję,
+Najpierw Wilku/owner usługi kończy review exact prywatnej propozycji „Audyt
+zgodności środowiskowej”. Wtedy WILQ może przygotować jedną exact rewizję,
 pokazać ją z referencyjnym widokiem dev i przejść zwykłe review → ActionObject
 → create-only draft. Publikacja oraz update/delete pozostają poza zakresem.
