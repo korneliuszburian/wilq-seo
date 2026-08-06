@@ -131,6 +131,42 @@
       "requirement_ids": ["bdo_access_and_account"],
       "review_status": "review_required",
       "safe_next_step": "Potwierdź sposób logowania, powiązanie konta i rozdział ról przed zatwierdzeniem factu źródłowego."
+    },
+    {
+      "candidate_id": "environmental_assessment_procedure_2026_08_06_r1",
+      "profile_id": "environmental_assessment",
+      "profile_version": "2026-08-06-r1",
+      "service_card_ids": ["ekologus_service_environmental_compliance_audit"],
+      "source_url": "https://www.gov.pl/web/gdos/oceny-oddzialywania-na-srodowisko",
+      "source_title": "GDOŚ: Oceny oddziaływania na środowisko",
+      "observed_on": "2026-08-06",
+      "requirement_ids": ["environmental_assessment_procedure"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź, że opis procedury zachowuje jej związek z decyzją o środowiskowych uwarunkowaniach i nie rozszerza obowiązku na każde przedsięwzięcie."
+    },
+    {
+      "candidate_id": "environmental_assessment_qualification_2026_08_06_r1",
+      "profile_id": "environmental_assessment",
+      "profile_version": "2026-08-06-r1",
+      "service_card_ids": ["ekologus_service_environmental_compliance_audit"],
+      "source_url": "https://www.gov.pl/web/gis/ocena-oddzialywania-na-srodowisko-oos-oos-przedsiewziecia",
+      "source_title": "GIS: Ocena oddziaływania na środowisko przedsięwzięcia",
+      "observed_on": "2026-08-06",
+      "requirement_ids": ["environmental_assessment_qualification"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź warunki kwalifikacji przedsięwzięcia do oceny bez przypisywania obowiązku wszystkim inwestycjom."
+    },
+    {
+      "candidate_id": "environmental_post_implementation_analysis_2026_08_06_r1",
+      "profile_id": "environmental_assessment",
+      "profile_version": "2026-08-06-r1",
+      "service_card_ids": ["ekologus_service_environmental_compliance_audit"],
+      "source_url": "https://www.gov.pl/web/uw-lodzki/postanowienie-wojewody-lodzkiego-nr-17026---gpb-ii7820.11.2022.ik-z-dnia-22-czerwca-2026-r-wyjasniajace-tresc-decyzji-zrid-dla-rozbudowy-drogi-wojewodzkiej-nr-486-w-miejscowosciach-ruda-wierzchlas-kraszkowice-i-krzeczow",
+      "source_title": "Łódzki Urząd Wojewódzki: wyjaśnienie analizy porealizacyjnej",
+      "observed_on": "2026-08-06",
+      "requirement_ids": ["environmental_post_implementation_analysis"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź, że porównanie odnosi ustalenia raportu i decyzji do rzeczywistego oddziaływania, bez deklarowania automatycznego obowiązku analizy."
     }
   ]
 }

@@ -180,6 +180,61 @@
           ]
         }
       ]
+    },
+    {
+      "id": "environmental_assessment",
+      "version": "2026-08-06-r1",
+      "service_card_ids": ["ekologus_service_environmental_compliance_audit"],
+      "official_source_hosts": ["www.gov.pl"],
+      "max_source_age_days": 90,
+      "requirements": [
+        {
+          "id": "environmental_assessment_procedure",
+          "label": "procedura oceny oddziaływania przedsięwzięcia na środowisko",
+          "reason": "Treść musi odróżniać ocenę oddziaływania od samego opisu inwestycji oraz umieszczać ją w postępowaniu o decyzję o środowiskowych uwarunkowaniach.",
+          "document_assertions": [
+            {
+              "id": "environmental_decision_context",
+              "label": "decyzja o środowiskowych uwarunkowaniach",
+              "required_any_of": ["decyzji o środowiskowych uwarunkowaniach"]
+            },
+            {
+              "id": "environmental_assessment_procedure_name",
+              "label": "ocena oddziaływania na środowisko",
+              "required_any_of": ["ocena oddziaływania na środowisko"]
+            }
+          ]
+        },
+        {
+          "id": "environmental_assessment_qualification",
+          "label": "kwalifikacja przedsięwzięcia do oceny",
+          "reason": "Treść nie może sugerować, że ocena jest wymagana dla każdego przedsięwzięcia albo pomijać warunkowego obowiązku dla przedsięwzięć potencjalnie znacząco oddziałujących.",
+          "document_assertions": [
+            {
+              "id": "environmental_assessment_qualification_condition",
+              "label": "warunkowa kwalifikacja przedsięwzięcia",
+              "required_any_of": ["mogących potencjalnie znacząco oddziaływać", "obowiązek przeprowadzenia oceny"]
+            }
+          ]
+        },
+        {
+          "id": "environmental_post_implementation_analysis",
+          "label": "analiza porealizacyjna",
+          "reason": "Porównanie analizy porealizacyjnej z oceną planowanego przedsięwzięcia wymaga oficjalnej podstawy i nie może dopowiadać jej zakresu.",
+          "document_assertions": [
+            {
+              "id": "environmental_post_implementation_name",
+              "label": "analiza porealizacyjna",
+              "required_any_of": ["analiza porealizacyjna"]
+            },
+            {
+              "id": "environmental_post_implementation_comparison",
+              "label": "porównanie z rzeczywistym oddziaływaniem",
+              "required_any_of": ["rzeczywistym oddziaływaniem", "rzeczywiste oddziaływanie"]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -242,6 +242,37 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
     }
 
 
+def test_environmental_assessment_is_a_data_profile_with_official_review_candidates() -> None:
+    profile = regulatory_content_profile(
+        service_card_id="ekologus_service_environmental_compliance_audit"
+    )
+
+    assert profile is not None
+    assert profile.id == "environmental_assessment"
+    assert profile.version == "2026-08-06-r1"
+    assert profile.official_source_hosts == ["www.gov.pl"]
+    assert [requirement.id for requirement in profile.requirements] == [
+        "environmental_assessment_procedure",
+        "environmental_assessment_qualification",
+        "environmental_post_implementation_analysis",
+    ]
+    candidates = [
+        candidate
+        for candidate in regulatory_source_candidates()
+        if candidate.profile_id == profile.id
+    ]
+    assert {candidate.candidate_id for candidate in candidates} == {
+        "environmental_assessment_procedure_2026_08_06_r1",
+        "environmental_assessment_qualification_2026_08_06_r1",
+        "environmental_post_implementation_analysis_2026_08_06_r1",
+    }
+    assert {
+        requirement_id
+        for candidate in candidates
+        for requirement_id in candidate.requirement_ids
+    } == {requirement.id for requirement in profile.requirements}
+
+
 def test_review_candidates_are_current_exact_and_never_complete_coverage() -> None:
     profile = _profile()
     coverage = regulatory_content_coverage(
