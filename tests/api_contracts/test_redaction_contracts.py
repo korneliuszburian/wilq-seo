@@ -115,6 +115,20 @@ def test_redaction_preserves_valid_planning_binding_but_not_token_like_values() 
     assert redacted["summary"] == "[REDACTED]"
 
 
+def test_redaction_preserves_exact_acf_source_digest_for_clone_lineage() -> None:
+    redacted = redact_mapping(
+        {
+            "source_acf_digest": "a" * 64,
+        }
+    )
+    unsafe = redact_mapping(
+        {"source_acf_digest": "sk-" + "x" * 40}  # pragma: allowlist secret
+    )
+
+    assert redacted["source_acf_digest"] == "a" * 64
+    assert unsafe["source_acf_digest"] == "[REDACTED]"
+
+
 def test_redaction_preserves_operator_contract_metadata() -> None:
     redacted = redact_mapping(
         {
