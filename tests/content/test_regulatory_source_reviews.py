@@ -220,7 +220,9 @@ def test_full_bdo_candidate_review_set_unlocks_exact_coverage_only_after_accepta
     assert {
         requirement.id for requirement in coverage.requirements
     } == set(coverage.covered_requirement_ids)
-    assert len(coverage.evidence_ids) == len(regulatory_source_candidates())
+    assert len(coverage.evidence_ids) == len(
+        [candidate for candidate in regulatory_source_candidates() if candidate.profile_id == "bdo"]
+    )
 
 
 def test_review_rejects_changed_candidate_or_unassigned_requirement(tmp_path) -> None:
