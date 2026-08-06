@@ -204,17 +204,39 @@ def _seed_source_facts() -> tuple[ContentSourceFact, ...]:
     return tuple(facts)
 
 
+def ekologus_seed_source_facts() -> tuple[ContentSourceFact, ...]:
+    """Return the immutable redacted catalog before runtime review projections."""
+
+    return _seed_source_facts()
+
+
 def ekologus_source_facts() -> tuple[ContentSourceFact, ...]:
-    """Return seed facts plus accepted, append-only regulatory source reviews.
+    """Return seed facts plus accepted, append-only human source reviews.
 
     The dynamic review projection deliberately is not cached: an accepted
     review must become visible to coverage and evidence reads immediately,
     while rejected reviews never become SourceFacts.
     """
 
+    from wilq.content.knowledge.private_source_reviews import private_source_review_store
     from wilq.content.regulatory.source_reviews import regulatory_source_review_store
 
-    return (*_seed_source_facts(), *regulatory_source_review_store().approved_source_facts())
+    seed_facts = _seed_source_facts()
+    private_review_store = private_source_review_store()
+    approved_private_source_ids = private_review_store.approved_source_ids(seed_facts)
+    approved_private_facts = private_review_store.approved_source_facts(seed_facts)
+    # A reviewed projection supersedes only the exact redacted candidate that
+    # produced it.  Keeping both would make the card lifecycle remain
+    # review-required forever, while deleting the seed entry would lose the
+    # source's immutable catalog history.
+    active_seed_facts = tuple(
+        fact for fact in seed_facts if fact.source_id not in approved_private_source_ids
+    )
+    return (
+        *active_seed_facts,
+        *approved_private_facts,
+        *regulatory_source_review_store().approved_source_facts(),
+    )
 
 
 def ekologus_source_fact_registry() -> ContentSourceFactRegistry:

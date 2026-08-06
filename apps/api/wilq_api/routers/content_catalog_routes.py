@@ -1,15 +1,22 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from wilq.content.knowledge.cards import (
     ContentKnowledgeCardsResponse,
     content_knowledge_cards_response,
+    ekologus_content_knowledge_cards,
+)
+from wilq.content.knowledge.private_source_reviews import (
+    ContentPrivateSourceReviewCommand,
+    ContentPrivateSourceReviewResponse,
+    private_source_review_store,
 )
 from wilq.content.knowledge.service_profile import (
     ContentServiceProfileResponse,
     content_service_profile_response,
 )
+from wilq.content.knowledge.source_facts import ekologus_seed_source_facts
 from wilq.content.workflow.catalog import (
     ContentInventoryCatalogResponse,
     build_content_inventory_catalog_cached,
@@ -35,6 +42,24 @@ def register_content_catalog_routes(router: APIRouter) -> None:
     @router.get("/api/content/service-profile", response_model=ContentServiceProfileResponse)
     def content_service_profile() -> ContentServiceProfileResponse:
         return content_service_profile_response()
+
+    @router.post(
+        "/api/content/private-source-reviews",
+        response_model=ContentPrivateSourceReviewResponse,
+        responses={409: {"description": "Private source candidate changed or conflicts."}},
+    )
+    def record_private_source_review(
+        request: ContentPrivateSourceReviewCommand,
+    ) -> ContentPrivateSourceReviewResponse:
+        try:
+            response = private_source_review_store().record(
+                request,
+                candidates=ekologus_seed_source_facts(),
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        ekologus_content_knowledge_cards.cache_clear()
+        return response
 
 
 __all__ = ["register_content_catalog_routes"]
