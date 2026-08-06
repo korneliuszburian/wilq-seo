@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-uv run --extra dev python -m pytest
+test_tmp_root="${WILQ_TEST_TMPDIR:-$PWD/.local-lab/test-tmp}"
+mkdir -p "$test_tmp_root"
+WILQ_TEST_TMPDIR="$test_tmp_root" uv run --extra dev python -m pytest
 if [ -d apps/dashboard/node_modules ]; then
   pnpm test
 else
