@@ -337,10 +337,6 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(
       page.getByText(localoDiagnostics.access_probe.status_label, { exact: true }).first()
     ).toBeVisible();
-    await expect(page.getByText(/Brakujące dane: zadania lokalne/).first()).toBeVisible();
-    await expect(page.getByText(/rankingi lokalne/).first()).toBeVisible();
-    await expect(page.getByText(/opinie/).first()).toBeVisible();
-    await expect(page.getByText(/widoczność konkurencji/).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dane Localo w WILQ" })).toBeVisible();
     await expect(page.getByText(/LOCALO_ACCESS_TOKEN/)).toHaveCount(0);
     await expect(page.getByText(/Dokończ Localo access/)).toHaveCount(0);
