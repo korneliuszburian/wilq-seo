@@ -114,6 +114,25 @@ from wilq.schemas import (
 from wilq.storage.metric_store import metric_store
 
 
+def test_action_lifecycle_routes_publish_their_typed_response_contracts() -> None:
+    paths = client.get("/openapi.json").json()["paths"]
+    expected_schemas = {
+        "/api/actions": ("get", "ActionObject"),
+        "/api/actions/{action_id}": ("get", "ActionObject"),
+        "/api/actions/{action_id}/validate": ("post", "ActionValidationResult"),
+        "/api/actions/{action_id}/review": ("post", "ActionReviewResult"),
+        "/api/actions/{action_id}/preview": ("post", "ActionPreviewResult"),
+        "/api/actions/{action_id}/confirm": ("post", "ActionConfirmResult"),
+        "/api/actions/{action_id}/impact-check": ("post", "ActionImpactCheckResult"),
+        "/api/actions/{action_id}/apply": ("post", "ActionApplyResult"),
+    }
+
+    for path, (method, schema_name) in expected_schemas.items():
+        schema = paths[path][method]["responses"]["200"]["content"]["application/json"]["schema"]
+        schema_ref = schema.get("items", schema).get("$ref", "")
+        assert schema_ref.endswith(f"/{schema_name}")
+
+
 def test_action_operator_labels_are_specific(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -790,7 +809,6 @@ def test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exist
     assert preview["wordpress_inventory_match"] == "present"
     assert preview["apply_allowed"] is False
     assert preview["api_mutation_ready"] is False
-
 
 
 

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
@@ -27,13 +26,20 @@ from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
 from wilq.evidence.registry import list_evidence_by_ids
 from wilq.schemas import (
     ActionApplyRequest,
+    ActionApplyResult,
     ActionConfirmRequest,
+    ActionConfirmResult,
     ActionImpactCheckRequest,
+    ActionImpactCheckResult,
     ActionMutationAuditRecord,
     ActionMutationReadinessResponse,
     ActionMutationReadinessSummaryResponse,
+    ActionObject,
     ActionPreviewRequest,
+    ActionPreviewResult,
     ActionReviewRequest,
+    ActionReviewResult,
+    ActionValidationResult,
     AdsExternalExecutionAcknowledgementRequest,
     AdsExternalObservationRequest,
     AdsStrategyReviewRecord,
@@ -46,9 +52,9 @@ from wilq.storage.local_state import local_state_store
 def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> APIRouter:
     router = APIRouter()
 
-    @router.get("/api/actions")
-    def actions() -> list[dict[str, Any]]:
-        return [action.model_dump(mode="json") for action in list_actions_cached()]
+    @router.get("/api/actions", response_model=list[ActionObject])
+    def actions() -> list[ActionObject]:
+        return list_actions_cached()
 
     @router.get(
         "/api/actions/mutation-readiness",
@@ -57,27 +63,27 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
     def actions_mutation_readiness() -> ActionMutationReadinessSummaryResponse:
         return mutation_readiness_actions()
 
-    @router.get("/api/actions/{action_id}")
-    def action_detail(action_id: str) -> dict[str, Any]:
+    @router.get("/api/actions/{action_id}", response_model=ActionObject)
+    def action_detail(action_id: str) -> ActionObject:
         action = get_action(action_id)
         if action is None:
             raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-        return action.model_dump(mode="json")
+        return action
 
-    @router.post("/api/actions/{action_id}/validate")
-    def validate_action_endpoint(action_id: str) -> dict[str, Any]:
+    @router.post("/api/actions/{action_id}/validate", response_model=ActionValidationResult)
+    def validate_action_endpoint(action_id: str) -> ActionValidationResult:
         action = get_action(action_id)
         if action is None:
             raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-        result = validate_action(action).model_dump(mode="json")
+        result = validate_action(action)
         clear_api_view_model_caches()
         return result
 
-    @router.post("/api/actions/{action_id}/review")
+    @router.post("/api/actions/{action_id}/review", response_model=ActionReviewResult)
     def review_action_endpoint(
         action_id: str,
         request: ActionReviewRequest,
-    ) -> dict[str, Any]:
+    ) -> ActionReviewResult:
         action = get_action(action_id)
         if action is None:
             raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
@@ -98,7 +104,7 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
                 )
             )
         clear_api_view_model_caches()
-        return result.model_dump(mode="json")
+        return result
 
     @router.post(
         "/api/actions/{action_id}/external-execution-acknowledgement",
@@ -247,24 +253,28 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
         clear_api_view_model_caches()
         return event
 
-    @router.post("/api/actions/{action_id}/preview")
+    @router.post(
+        "/api/actions/{action_id}/preview",
+        response_model=ActionPreviewResult,
+        response_model_exclude_none=True,
+    )
     def preview_action_endpoint(
         action_id: str,
         request: ActionPreviewRequest | None = None,
-    ) -> dict[str, Any]:
+    ) -> ActionPreviewResult:
         action = get_action(action_id)
         if action is None:
             raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
         result = preview_action(action, request)
         local_state_store().save_audit_event(result.audit_event)
         clear_api_view_model_caches()
-        return result.model_dump(mode="json", exclude_none=True)
+        return result
 
-    @router.post("/api/actions/{action_id}/confirm")
+    @router.post("/api/actions/{action_id}/confirm", response_model=ActionConfirmResult)
     def confirm_action_endpoint(
         action_id: str,
         request: ActionConfirmRequest,
-    ) -> dict[str, Any]:
+    ) -> ActionConfirmResult:
         action = get_action(action_id)
         if action is None:
             raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
@@ -284,26 +294,29 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
                 )
             )
         clear_api_view_model_caches()
-        return result.model_dump(mode="json")
+        return result
 
-    @router.post("/api/actions/{action_id}/impact-check")
+    @router.post(
+        "/api/actions/{action_id}/impact-check",
+        response_model=ActionImpactCheckResult,
+    )
     def impact_check_action_endpoint(
         action_id: str,
         request: ActionImpactCheckRequest,
-    ) -> dict[str, Any]:
+    ) -> ActionImpactCheckResult:
         action = get_action(action_id)
         if action is None:
             raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
         result = impact_check_action(action, request)
         local_state_store().save_audit_event(result.audit_event)
         clear_api_view_model_caches()
-        return result.model_dump(mode="json")
+        return result
 
-    @router.post("/api/actions/{action_id}/apply")
+    @router.post("/api/actions/{action_id}/apply", response_model=ActionApplyResult)
     def apply_action_endpoint(
         action_id: str,
         request: ActionApplyRequest | None = None,
-    ) -> dict[str, Any]:
+    ) -> ActionApplyResult:
         action = get_action(action_id)
         if action is None:
             raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
@@ -313,7 +326,7 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
         clear_api_view_model_caches()
         if not result.applied:
             raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))
-        return result.model_dump(mode="json")
+        return result
 
     @router.get(
         "/api/actions/{action_id}/mutation-readiness",
