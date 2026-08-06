@@ -25,4 +25,9 @@ def test_python_quality_tools_use_the_active_uv_interpreter() -> None:
         assert command in Path(path).read_text(encoding="utf-8")
 
     verify_script = Path("scripts/verify.sh").read_text(encoding="utf-8")
+    assert ".venv/bin/" not in verify_script
     assert "uv run python -m wilq.cli jobs status" in verify_script
+    assert (
+        "uv run python -m uvicorn apps.api.wilq_api.main:app "
+        '--host 127.0.0.1 --port "$skill_api_port"'
+    ) in verify_script
