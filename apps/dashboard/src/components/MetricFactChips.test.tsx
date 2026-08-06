@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { MetricFactChips } from "./MetricFactChips";
 
@@ -107,6 +107,52 @@ describe("MetricFactChips", () => {
     expect(within(container).getByText(/Wymiar bez etykiety: wartość do sprawdzenia/)).toBeInTheDocument();
     expect(within(container).queryByText(/obszar: widoczność konkurencji/)).not.toBeInTheDocument();
     expect(within(container).queryByText(/competitor_visibility/)).not.toBeInTheDocument();
+  });
+
+  it("keeps repeated presentation labels keyed by their API dimension identity", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    try {
+      render(
+        <MetricFactChips
+          facts={[
+            {
+              name: "localo_active_place_count",
+              metric_label: "Aktywne lokalizacje",
+              value: 4,
+              period: "localo_mcp_read",
+              source_connector: "localo",
+              evidence_id: "ev_refresh_localo_test",
+              dimensions: {
+                contract: "place_inventory",
+                source: "google_business_profile"
+              },
+              dimension_labels: {
+                contract: "wymiar",
+                source: "wymiar"
+              },
+              dimension_value_labels: {
+                contract: "inwentarz lokalizacji",
+                source: "profil firmy w Google"
+              },
+              unit: null,
+              delta: null,
+              delta_percent: null,
+              trend: "unknown",
+              freshness_label: ""
+            }
+          ]}
+        />
+      );
+
+      expect(screen.getByText("wymiar: inwentarz lokalizacji")).toBeInTheDocument();
+      expect(screen.getByText("wymiar: profil firmy w Google")).toBeInTheDocument();
+      expect(consoleError).not.toHaveBeenCalledWith(
+        expect.stringContaining("Encountered two children with the same key")
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   it("keeps metric details as labelled chips instead of slash-combined copy", () => {

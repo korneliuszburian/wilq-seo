@@ -14,8 +14,8 @@ export function MetricFactChips({ facts }: { facts: MetricFact[] }) {
               {metricFactLabel(fact)}: {formatMetricFactValue(fact)}
             </span>
             {" "}
-            {dimensionChips.map(({ label, value }) => (
-              <span key={`${metricFactKey(fact, index)}-${label}`}>
+            {dimensionChips.map(({ key, label, value }) => (
+              <span key={`${metricFactKey(fact, index)}-${key}`}>
                 <span className="rounded bg-white px-1.5 py-0.5 text-slate-600">
                   {label}: {value}
                 </span>{" "}
@@ -90,6 +90,6 @@ function metricDimensionChips(fact: MetricFact) {
     .map(([key]) => {
       const keyLabel = fact.dimension_labels[key] || "Wymiar bez etykiety";
       const valueLabel = fact.dimension_value_labels[key] || "wartość do sprawdzenia";
-      return { label: keyLabel, value: valueLabel };
+      return { key, label: keyLabel, value: valueLabel };
     });
 }
