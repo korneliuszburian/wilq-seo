@@ -138,18 +138,18 @@ export function ContentDocumentWorkspaceCanvas({
           }}>
             <summary className="cursor-pointer font-semibold text-ink">Przypisanie dokumentu do dev</summary>
             {!mappingOpen ? <p className="mt-3 leading-6">Otwórz, aby sprawdzić, które elementy zatwierdzonego dokumentu wymagają jeszcze potwierdzenia w układzie dev.</p> : null}
-            {targetMapping.isPending ? <p className="mt-3 leading-6">Sprawdzam przypisanie zatwierdzonego dokumentu…</p> : null}
-            {targetMapping.isError ? <p className="mt-3 leading-6">Nie udało się odczytać przypisania dokumentu. Spróbuj ponownie później.</p> : null}
-            {targetMapping.data ? <TargetMappingDetails preview={targetMapping.data} /> : null}
+            {mappingOpen && targetMapping.isPending ? <p className="mt-3 leading-6">Sprawdzam przypisanie zatwierdzonego dokumentu…</p> : null}
+            {mappingOpen && targetMapping.isError ? <p className="mt-3 leading-6">Nie udało się odczytać przypisania dokumentu. Spróbuj ponownie później.</p> : null}
+            {mappingOpen && targetMapping.data ? <TargetMappingDetails preview={targetMapping.data} /> : null}
           </details> : null}
           {workspace.canonical_document.status === "approved" ? <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
             if ((event.currentTarget as HTMLDetailsElement).open) setDraftPreviewOpen(true);
           }}>
             <summary className="cursor-pointer font-semibold text-ink">Podgląd danych do szkicu na dev</summary>
             {!draftPreviewOpen ? <p className="mt-3 leading-6">Otwórz po potwierdzeniu przypisania, aby zobaczyć dane przygotowane z dokładnej wersji dokumentu. To nadal nie tworzy szkicu.</p> : null}
-            {targetDraftPreview.isPending ? <p className="mt-3 leading-6">Przygotowuję podgląd danych do szkicu…</p> : null}
-            {targetDraftPreview.isError ? <p className="mt-3 leading-6">Nie udało się przygotować podglądu danych. Spróbuj ponownie później.</p> : null}
-            {targetDraftPreview.data ? <TargetDraftPreviewDetails preview={targetDraftPreview.data} /> : null}
+            {draftPreviewOpen && targetDraftPreview.isPending ? <p className="mt-3 leading-6">Przygotowuję podgląd danych do szkicu…</p> : null}
+            {draftPreviewOpen && targetDraftPreview.isError ? <p className="mt-3 leading-6">Nie udało się przygotować podglądu danych. Spróbuj ponownie później.</p> : null}
+            {draftPreviewOpen && targetDraftPreview.data ? <TargetDraftPreviewDetails preview={targetDraftPreview.data} /> : null}
           </details> : null}
         </aside>
       </section>
@@ -339,9 +339,14 @@ function TargetMappingConfirmationForm({
     targetSectionIndex: number | null;
     fields: Record<string, string>;
   }>>({});
+  const [deliveryScope, setDeliveryScope] = useState<"full_document" | "selected_components">("full_document");
+  const [selectedComponentIds, setSelectedComponentIds] = useState<Record<string, boolean>>({});
   const target = preview.target;
   const surface = target?.target_contract.authoring_surface;
   const layouts = surface?.layouts ?? [];
+  const selectedComponents = deliveryScope === "full_document"
+    ? preview.components
+    : preview.components.filter((component) => selectedComponentIds[component.component_id]);
   const confirmation = useMutation({
     mutationFn: () => {
       if (!target || !preview.binding_digest) throw new Error("Brakuje dokładnego odczytu targetu.");
@@ -353,7 +358,8 @@ function TargetMappingConfirmationForm({
           expected_target_contract_digest: target.target_contract_digest,
           expected_binding_digest: preview.binding_digest,
           confirmed_by: confirmedBy,
-          selections: preview.components.map((component) => ({
+          delivery_scope: deliveryScope,
+          selections: selectedComponents.map((component) => ({
             component_id: component.component_id,
             layout_name: selections[component.component_id]?.layoutName ?? "",
             target_section_index: selections[component.component_id]?.targetSectionIndex ?? null,
@@ -370,7 +376,7 @@ function TargetMappingConfirmationForm({
     })
   });
   const readyToConfirm = Boolean(
-    confirmedBy.trim() && preview.components.every((component) => {
+    confirmedBy.trim() && selectedComponents.length > 0 && selectedComponents.every((component) => {
       const selection = selections[component.component_id];
       return selection?.layoutName
         && (surface?.kind !== "acf_flexible_content" || selection.targetSectionIndex != null)
@@ -408,6 +414,31 @@ function TargetMappingConfirmationForm({
       <p className="mt-2 leading-6 text-slate-700">
         Wybierasz wyłącznie odczytane layouty i pola. Ten zapis pozostaje w WILQ; nie tworzy draftu ani nie zmienia WordPressa.
       </p>
+      {surface?.kind === "acf_flexible_content" ? (
+        <fieldset className="mt-4 rounded-lg border border-line bg-white p-3">
+          <legend className="px-1 text-sm font-semibold text-ink">Zakres szkicu ACF</legend>
+          <label className="mt-2 flex items-start gap-2 text-sm leading-6 text-slate-700">
+            <input
+              checked={deliveryScope === "full_document"}
+              name="acf-delivery-scope"
+              type="radio"
+              value="full_document"
+              onChange={() => setDeliveryScope("full_document")}
+            />
+            <span>Cały dokument — wymaga przypisania każdego elementu rewizji.</span>
+          </label>
+          <label className="mt-2 flex items-start gap-2 text-sm leading-6 text-slate-700">
+            <input
+              checked={deliveryScope === "selected_components"}
+              name="acf-delivery-scope"
+              type="radio"
+              value="selected_components"
+              onChange={() => setDeliveryScope("selected_components")}
+            />
+            <span>Tylko wybrane sekcje treści — WILQ zachowa pozostałe pola i layouty z dev.</span>
+          </label>
+        </fieldset>
+      ) : null}
       {preview.confirmation ? (
         <p className="mt-3 rounded-md bg-white p-3 text-sm leading-6 text-slate-700">
           Ostatnie przypisanie zapisał(a) {preview.confirmation.confirmed_by}. Ponowne potwierdzenie utworzy kolejną decyzję dla tej samej wersji i tego samego odczytu targetu.
@@ -424,6 +455,8 @@ function TargetMappingConfirmationForm({
       </label>
       <div className="mt-4 space-y-4">
         {preview.components.map((component) => {
+          const canSelectPartial = component.kind === "rich_text";
+          const included = deliveryScope === "full_document" || Boolean(selectedComponentIds[component.component_id]);
           const selection = selections[component.component_id];
           const layout = surface?.kind === "acf_flexible_content"
             ? layouts.find((candidate) => candidate.section_index === selection?.targetSectionIndex)
@@ -431,6 +464,21 @@ function TargetMappingConfirmationForm({
           return (
             <fieldset key={component.component_id} className="rounded-lg border border-line bg-white p-3">
               <legend className="px-1 text-sm font-semibold text-ink">{component.label}</legend>
+              {deliveryScope === "selected_components" ? (
+                <label className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    checked={included}
+                    disabled={!canSelectPartial}
+                    type="checkbox"
+                    onChange={(event) => setSelectedComponentIds((current) => ({
+                      ...current,
+                      [component.component_id]: event.target.checked
+                    }))}
+                  />
+                  {canSelectPartial ? "Uwzględnij tę sekcję w szkicu ACF" : "Ten element wymaga pełnego mapowania dokumentu"}
+                </label>
+              ) : null}
+              {included ? <>
               <label className="mt-2 block text-sm font-medium text-slate-700">
                 {surface?.kind === "acf_flexible_content" ? "Sekcja na dev" : "Layout"}
                 <select
@@ -482,6 +530,7 @@ function TargetMappingConfirmationForm({
                   </select>
                 </label>
               ))}
+              </> : null}
             </fieldset>
           );
         })}

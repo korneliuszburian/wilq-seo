@@ -13,7 +13,7 @@ from wilq.connectors.wordpress.client import (
     _wordpress_credentials,
 )
 
-_WORDPRESS_ACF_CONTENT_TYPES = {"posts", "pages"}
+_WORDPRESS_ACF_CONTENT_TYPES = {"posts", "pages", "uslugi"}
 
 
 @dataclass(frozen=True)

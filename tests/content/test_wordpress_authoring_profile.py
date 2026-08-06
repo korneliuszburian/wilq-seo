@@ -198,6 +198,31 @@ def test_wordpress_authoring_profile_reads_generic_dev_acf_rest_sections(
     assert profile.dev_content.items[2].slug == "kolejny-artykul"
 
 
+def test_wordpress_authoring_profile_reads_configured_service_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_rest(monkeypatch)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ACF_POST_TYPES", "uslugi")
+    transport = httpx.MockTransport(_service_acf_rest_handler)
+
+    with httpx.Client(transport=transport) as client:
+        profile = build_wordpress_authoring_profile(
+            "wordpress_ekologus",
+            include_dev_content=True,
+            http_client=client,
+        )
+
+    assert profile.dev_content.status == "available"
+    assert profile.dev_content.source_ref.endswith("wp-json/wp/v2/uslugi?context=edit")
+    observed_items = [
+        (item.content_type, item.rest_endpoint, item.post_id)
+        for item in profile.dev_content.items
+    ]
+    assert observed_items == [
+        ("uslugi", "uslugi", "332")
+    ]
+
+
 def test_wordpress_authoring_profile_derives_layouts_from_acf_groups(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -568,6 +593,35 @@ def _dev_pages_acf_rest_handler(request: httpx.Request) -> httpx.Response:
                                 }
                             ],
                         },
+                    ]
+                },
+            }
+        ],
+    )
+
+
+def _service_acf_rest_handler(request: httpx.Request) -> httpx.Response:
+    assert request.url.path == "/wp-json/wp/v2/uslugi"
+    return httpx.Response(
+        200,
+        json=[
+            {
+                "id": 332,
+                "slug": "doradztwo-i-outsourcing-ekologiczny",
+                "link": "https://wp.example.test/oferta/doradztwo-i-outsourcing-ekologiczny/",
+                "title": {"rendered": "EKOdoradztwo"},
+                "status": "publish",
+                "modified": "2026-08-06T10:00:00",
+                "modified_gmt": "2026-08-06T08:00:00",
+                "template": "",
+                "parent": 0,
+                "acf": {
+                    "flexible-home": [
+                        {
+                            "acf_fc_layout": "content_data",
+                            "heading": "Doradztwo środowiskowe",
+                            "content": "Zakres wsparcia dla firm.",
+                        }
                     ]
                 },
             }

@@ -128,7 +128,8 @@ class WordPressAuthoringDevContentObject(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     post_id: str
-    content_type: Literal["page", "post"] = "page"
+    content_type: str = "page"
+    rest_endpoint: str = "pages"
     slug: str
     title: str
     link: str
@@ -353,7 +354,8 @@ def _dev_content_profile(
     include_dev_content: bool,
     http_client: httpx.Client | None,
 ) -> WordPressAuthoringDevContentProfile:
-    source_ref = f"{prefix}_URL wp-json/wp/v2/pages,posts?context=edit"
+    endpoints = [_rest_endpoint_for_post_type(post_type) for post_type in acf.post_types]
+    source_ref = f"{prefix}_URL wp-json/wp/v2/{','.join(endpoints)}?context=edit"
     if not include_dev_content:
         return WordPressAuthoringDevContentProfile(status="unknown", source_ref=source_ref)
     if rest_profile.status != "configured":
@@ -379,7 +381,7 @@ def _dev_content_profile(
     try:
         items = [
             item
-            for endpoint, content_type in (("pages", "page"), ("posts", "post"))
+            for endpoint in endpoints
             for item in read_wordpress_authoring_content(
                 connector_id,
                 preferred_flexible_field_name=acf.flexible_content_field_name,
@@ -431,7 +433,8 @@ def _dev_object_from_readback(
 ) -> WordPressAuthoringDevContentObject:
     return WordPressAuthoringDevContentObject(
         post_id=item.post_id,
-        content_type="post" if item.content_type == "posts" else "page",
+        content_type=_post_type_for_rest_endpoint(item.content_type),
+        rest_endpoint=item.content_type,
         slug=item.slug,
         title=item.title,
         link=item.link,
@@ -459,6 +462,15 @@ def _dev_section_from_readback(
         field_names=section.field_names,
         text_field_paths=section.text_field_paths,
     )
+
+
+def _rest_endpoint_for_post_type(post_type: str) -> str:
+    normalized = post_type.strip().strip("/")
+    return {"page": "pages", "post": "posts"}.get(normalized, normalized)
+
+
+def _post_type_for_rest_endpoint(endpoint: str) -> str:
+    return {"pages": "page", "posts": "post"}.get(endpoint, endpoint)
 
 
 def _wp_cli_profile(prefix: str) -> WordPressAuthoringFallbackProfile:

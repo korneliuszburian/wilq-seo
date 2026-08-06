@@ -60,7 +60,7 @@ class ContentDevDraftWritePayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     connector: Literal["wordpress_ekologus"]
-    endpoint: Literal["posts", "pages"]
+    endpoint: str = Field(pattern=r"^[a-z0-9_-]+$")
     authoring_mode: Literal["acf_flexible_content", "wordpress_post_content"]
     post_status: Literal["draft"] = "draft"
     create_only: Literal[True] = True
@@ -264,8 +264,8 @@ def build_content_dev_draft_write_payload(
             "przygotowaniem payloadu."
         )
 
-    endpoint = _wordpress_endpoint(current.target.target_contract.post_type)
-    title = _document_title(current.components)
+    endpoint = _wordpress_endpoint(current.target.target_contract)
+    title = _draft_title(current)
     exact_binding = {
         key: _required_binding_value(binding, key)
         for key in (
@@ -372,17 +372,35 @@ def _draft_payload_identity(
         "root_field": preview.root_field,
         "component_ids": [component.component_id for component in preview.components],
     }
+    if preview.delivery_scope == "selected_components":
+        payload["delivery_scope"] = preview.delivery_scope
+        payload["draft_title"] = preview.draft_title
     if clone_plan is not None:
         payload["acf_clone_plan"] = clone_plan.model_dump(mode="json")
     return payload
 
 
-def _wordpress_endpoint(post_type: str) -> Literal["posts", "pages"]:
-    endpoints: dict[str, Literal["posts", "pages"]] = {"post": "posts", "page": "pages"}
-    endpoint = endpoints.get(post_type)
-    if endpoint is None:
+def _wordpress_endpoint(target: object) -> str:
+    endpoint = getattr(target, "rest_endpoint", None)
+    post_type = getattr(target, "post_type", None)
+    # Older persisted target contracts predate ``rest_endpoint``.  Their
+    # Pydantic default is ``pages``, so retain the exact legacy post mapping
+    # instead of accidentally changing a post draft into a page draft.
+    if endpoint == "pages" and post_type == "post":
+        endpoint = "posts"
+    if not isinstance(endpoint, str) or endpoint not in {"posts", "pages", "uslugi"}:
         raise ValueError("Odczytany typ obiektu dev nie obsługuje tworzenia szkicu.")
     return endpoint
+
+
+def _draft_title(preview: ContentTargetDraftPreview) -> str:
+    if (
+        preview.delivery_scope == "selected_components"
+        and preview.draft_title
+        and preview.draft_title.strip()
+    ):
+        return preview.draft_title.strip()
+    return _document_title(preview.components)
 
 
 def _document_title(components: list[ContentTargetDraftPreviewComponent]) -> str:
@@ -446,7 +464,7 @@ def _compile_current_acf_clone(
     plan: ContentAcfClonePlan,
     *,
     source_object_id: str,
-    endpoint: Literal["posts", "pages"],
+    endpoint: str,
     root_field: str,
 ) -> dict[str, list[dict[str, object]]]:
     if plan.source_object_id != source_object_id:

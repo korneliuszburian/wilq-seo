@@ -89,6 +89,7 @@ class ContentTargetContract(BaseModel):
     object_id: str
     url: str
     post_type: str
+    rest_endpoint: str = "pages"
     post_status: str
     modified: str
     template: str | None = None
@@ -425,6 +426,7 @@ def _target_contract(
         object_id=item.post_id,
         url=item.link,
         post_type=item.content_type,
+        rest_endpoint=item.rest_endpoint,
         post_status=item.status,
         modified=item.modified,
         template=item.template or None,
@@ -511,7 +513,7 @@ def _source_acf_snapshot(
         return read_wordpress_acf_flexible_snapshot(
             "wordpress_ekologus",
             object_id=item.post_id,
-            content_type="posts" if item.content_type == "post" else "pages",
+            content_type=item.rest_endpoint,
             root_field=item.acf_field_name,
         )
     except ValueError:

@@ -68,13 +68,13 @@ def read_wordpress_acf_rest_schema(
     """
 
     root_field = item.acf_field_name or ""
-    endpoint = _wordpress_endpoint_for_content_type(item.content_type)
-    source_ref = f"wp-json/wp/v2/{endpoint or item.content_type}s/{item.post_id} OPTIONS"
+    endpoint = item.rest_endpoint.strip().strip("/")
+    source_ref = f"wp-json/wp/v2/{endpoint or item.content_type}/{item.post_id} OPTIONS"
     if not root_field:
         return _unavailable_schema(
             root_field, source_ref, "Obiekt dev nie wskazuje pola ACF Flexible Content."
         )
-    if endpoint is None:
+    if not endpoint:
         return _unavailable_schema(
             root_field,
             source_ref,
@@ -144,10 +144,6 @@ def _unavailable_schema(root_field: str, source_ref: str, reason: str) -> WordPr
         source_ref=source_ref,
         reason=reason,
     )
-
-
-def _wordpress_endpoint_for_content_type(content_type: str) -> str | None:
-    return {"page": "pages", "post": "posts"}.get(content_type)
 
 
 def _acf_rest_layouts_from_options(

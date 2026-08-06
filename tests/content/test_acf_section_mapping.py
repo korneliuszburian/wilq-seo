@@ -119,3 +119,36 @@ def test_acf_mapping_requires_the_exact_observed_section_position() -> None:
         validate_content_target_mapping_confirmation(
             command=_command(preview, section_index=7), preview=preview
         )
+
+
+def test_acf_mapping_can_confirm_only_selected_rich_text_sections() -> None:
+    preview = _preview().model_copy(
+        update={
+            "components": [
+                *_preview().components,
+                ContentTargetMappingComponent(
+                    component_id="document-title",
+                    kind="document_title",
+                    label="Tytuł dokumentu",
+                    status="human_only",
+                    reason="Tytuł pozostaje metadanymi szkicu.",
+                    source_fields=[
+                        ContentTargetMappingSourceField(
+                            key="wordpress_title", label="Tytuł WordPress"
+                        )
+                    ],
+                ),
+            ]
+        }
+    )
+    command = _command(preview, section_index=9).model_copy(
+        update={"delivery_scope": "selected_components"}
+    )
+
+    validate_content_target_mapping_confirmation(command=command, preview=preview)
+
+    with pytest.raises(ValueError, match="pełnego dokumentu"):
+        validate_content_target_mapping_confirmation(
+            command=command.model_copy(update={"delivery_scope": "full_document"}),
+            preview=preview,
+        )

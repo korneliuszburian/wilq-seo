@@ -808,6 +808,7 @@ export const ContentTargetContractSchema = z.object({
   object_id: z.string().min(1),
   url: z.string().url(),
   post_type: z.string().min(1),
+  rest_endpoint: z.string().regex(/^[a-z0-9_-]+$/).default("pages"),
   post_status: z.string().min(1),
   modified: z.string(),
   template: z.string().nullable().optional(),
@@ -894,6 +895,7 @@ export const ContentTargetMappingConfirmationCommandSchema = z.object({
   expected_target_contract_digest: z.string().regex(/^[0-9a-f]{64}$/),
   expected_binding_digest: z.string().regex(/^[0-9a-f]{64}$/),
   confirmed_by: z.string().min(1),
+  delivery_scope: z.enum(["full_document", "selected_components"]).default("full_document"),
   selections: z.array(ContentTargetMappingSelectionSchema).min(1)
 });
 
@@ -904,6 +906,7 @@ export const ContentTargetMappingConfirmationSchema = z.object({
   revision: ContentTargetMappingRevisionSchema,
   target_contract_digest: z.string().regex(/^[0-9a-f]{64}$/),
   binding_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  delivery_scope: z.enum(["full_document", "selected_components"]).default("full_document"),
   selections: z.array(ContentTargetMappingSelectionSchema).min(1),
   confirmed_by: z.string().min(1),
   confirmation_digest: z.string().regex(/^[0-9a-f]{64}$/),
@@ -946,6 +949,8 @@ export const ContentTargetDraftPreviewSchema = z.object({
   target: ContentTargetMappingTargetSchema.nullable().optional(),
   confirmation: ContentTargetMappingConfirmationSchema.nullable().optional(),
   root_field: z.string().min(1).nullable().optional(),
+  delivery_scope: z.enum(["full_document", "selected_components"]).default("full_document"),
+  draft_title: z.string().min(1).nullable().optional(),
   components: z.array(ContentTargetDraftPreviewComponentSchema).default([]),
   payload_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   blockers: z.array(ContentTargetDraftPreviewBlockerSchema).default([]),

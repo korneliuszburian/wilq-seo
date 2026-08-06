@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from hashlib import sha256
+from html import escape
 from typing import Literal
 from uuid import uuid4
 
@@ -48,6 +49,7 @@ class ContentTargetMappingTarget(BaseModel):
 
 ContentTargetMappingComponentKind = ContentTargetSourceKind
 ContentTargetMappingComponentStatus = Literal["mapped", "human_only", "blocked"]
+ContentTargetMappingDeliveryScope = Literal["full_document", "selected_components"]
 
 
 class ContentTargetMappingComponent(BaseModel):
@@ -94,11 +96,8 @@ class ContentTargetMappingSelection(BaseModel):
     @model_validator(mode="after")
     def require_unique_fields(self) -> ContentTargetMappingSelection:
         source_fields = [binding.source_field for binding in self.field_bindings]
-        target_fields = [binding.target_field for binding in self.field_bindings]
         if len(source_fields) != len(set(source_fields)):
             raise ValueError("A component mapping cannot bind one source field twice.")
-        if len(target_fields) != len(set(target_fields)):
-            raise ValueError("A component mapping cannot bind one target field twice.")
         return self
 
 
@@ -111,6 +110,7 @@ class ContentTargetMappingConfirmationCommand(BaseModel):
     expected_target_contract_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     expected_binding_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     confirmed_by: str = Field(min_length=1)
+    delivery_scope: ContentTargetMappingDeliveryScope = "full_document"
     selections: list[ContentTargetMappingSelection] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -134,6 +134,7 @@ class ContentTargetMappingConfirmation(BaseModel):
     revision: ContentTargetMappingRevision
     target_contract_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     binding_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    delivery_scope: ContentTargetMappingDeliveryScope = "full_document"
     selections: list[ContentTargetMappingSelection] = Field(min_length=1)
     confirmed_by: str = Field(min_length=1)
     confirmation_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -170,6 +171,8 @@ class ContentTargetDraftPreview(BaseModel):
     target: ContentTargetMappingTarget | None = None
     confirmation: ContentTargetMappingConfirmation | None = None
     root_field: str | None = None
+    delivery_scope: ContentTargetMappingDeliveryScope = "full_document"
+    draft_title: str | None = None
     components: list[ContentTargetDraftPreviewComponent] = Field(default_factory=list)
     payload_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     blockers: list[ContentTargetDraftPreviewBlocker] = Field(default_factory=list)
@@ -178,10 +181,16 @@ class ContentTargetDraftPreview(BaseModel):
     @model_validator(mode="after")
     def require_exact_ready_payload(self) -> ContentTargetDraftPreview:
         if self.status == "ready":
+            has_document_title = any(
+                component.component_id == "document-title"
+                and any(field.source_field == "wordpress_title" for field in component.fields)
+                for component in self.components
+            )
             if (
                 self.target is None
                 or self.confirmation is None
                 or self.root_field is None
+                or (not self.draft_title and not has_document_title)
                 or self.payload_digest is None
                 or not self.components
             ):
@@ -416,18 +425,29 @@ def validate_content_target_mapping_confirmation(
         raise ValueError("Podgląd mapowania zmienił się przed potwierdzeniem.")
 
     components = {component.component_id: component for component in preview.components}
-    selections = {selection.component_id: selection for selection in command.selections}
-    if set(selections) != set(components):
-        raise ValueError("Potwierdzenie musi wskazać każdy element dokumentu dokładnie raz.")
-
     surface = preview.target.target_contract.authoring_surface
     if surface is None:
         raise ValueError("Nie odczytano powierzchni authoringu dla targetu.")
+    selections = {selection.component_id: selection for selection in command.selections}
+    component_ids = set(components)
+    if not set(selections).issubset(component_ids):
+        raise ValueError("Potwierdzenie wskazuje element spoza dokładnego dokumentu.")
+    if command.delivery_scope == "full_document":
+        if set(selections) != component_ids:
+            raise ValueError(
+                "Potwierdzenie pełnego dokumentu musi wskazać każdy element dokładnie raz."
+            )
+    elif surface.kind != "acf_flexible_content":
+        raise ValueError("Zakres wybranych elementów jest dostępny wyłącznie dla ACF.")
+    elif any(components[component_id].kind != "rich_text" for component_id in selections):
+        raise ValueError(
+            "Zakres wybranych elementów ACF może obejmować wyłącznie sekcje treści."
+        )
     observed_section_indexes = any(
         layout.section_index is not None for layout in surface.layouts
     )
-    for component_id, component in components.items():
-        selection = selections[component_id]
+    for component_id, selection in selections.items():
+        component = components[component_id]
         if surface.kind == "acf_flexible_content":
             if observed_section_indexes:
                 if selection.target_section_index is None:
@@ -476,6 +496,13 @@ def validate_content_target_mapping_confirmation(
             raise ValueError("Mapowanie musi wskazać każde pole elementu dokumentu dokładnie raz.")
         if any(binding.target_field not in target_fields for binding in selection.field_bindings):
             raise ValueError("Wybrane pole nie należy do odczytanego layoutu targetu.")
+        target_field_names = [binding.target_field for binding in selection.field_bindings]
+        has_repeated_target = len(target_field_names) != len(set(target_field_names))
+        if has_repeated_target and not _is_rich_text_html_mapping(component, selection):
+            raise ValueError(
+                "Jedno pole targetu może przyjąć dwa źródła wyłącznie jako "
+                "połączoną sekcję rich text."
+            )
 
 
 def new_content_target_mapping_confirmation(
@@ -497,6 +524,8 @@ def new_content_target_mapping_confirmation(
         "selections": [selection.model_dump(mode="json") for selection in command.selections],
         "confirmed_by": command.confirmed_by,
     }
+    if command.delivery_scope == "selected_components":
+        digest_payload["delivery_scope"] = command.delivery_scope
     confirmation_digest = sha256(
         json.dumps(
             digest_payload,
@@ -512,6 +541,7 @@ def new_content_target_mapping_confirmation(
         revision=preview.revision,
         target_contract_digest=preview.target.target_contract_digest,
         binding_digest=preview.binding_digest,
+        delivery_scope=command.delivery_scope,
         selections=command.selections,
         confirmed_by=command.confirmed_by,
         confirmation_digest=confirmation_digest,
@@ -562,26 +592,16 @@ def build_content_target_draft_preview(
             label=components[component_id].label,
             layout_name=selection.layout_name,
             target_section_index=selection.target_section_index,
-            fields=[
-                ContentTargetDraftPreviewField(
-                    target_field=binding.target_field,
-                    source_field=binding.source_field,
-                    value=project_target_field_value(
-                        _source_value(revision, component_id, binding.source_field)[0],
-                        authoring_surface_kind=(
-                            target.target_contract.authoring_surface.kind
-                            if target.target_contract.authoring_surface is not None
-                            else None
-                        ),
-                        component_id=component_id,
-                        source_field=binding.source_field,
-                        target_field=binding.target_field,
-                        value_kind=_source_value(revision, component_id, binding.source_field)[1],
-                    ),
-                    value_kind=_source_value(revision, component_id, binding.source_field)[1],
-                )
-                for binding in selection.field_bindings
-            ],
+            fields=_projected_fields(
+                revision=revision,
+                component=components[component_id],
+                selection=selection,
+                authoring_surface_kind=(
+                    target.target_contract.authoring_surface.kind
+                    if target.target_contract.authoring_surface is not None
+                    else None
+                ),
+            ),
         )
         for component_id, selection in selections.items()
     ]
@@ -592,6 +612,9 @@ def build_content_target_draft_preview(
         "root_field": root_field,
         "components": [component.model_dump(mode="json") for component in projected],
     }
+    if confirmation.delivery_scope == "selected_components":
+        payload["delivery_scope"] = confirmation.delivery_scope
+        payload["draft_title"] = revision.title
     return ContentTargetDraftPreview(
         work_item_id=work_item_id,
         revision=identity,
@@ -599,6 +622,8 @@ def build_content_target_draft_preview(
         target=target,
         confirmation=confirmation,
         root_field=root_field,
+        delivery_scope=confirmation.delivery_scope,
+        draft_title=revision.title,
         components=projected,
         payload_digest=sha256(
             json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
@@ -606,7 +631,81 @@ def build_content_target_draft_preview(
         caveats=[
             "To jest podgląd danych do szkicu na dev, nie zapis do WordPressa.",
             "Kolejny etap wymaga osobnej akcji, review, potwierdzenia i audytu.",
+            *(
+                [
+                    "Zakres szkicu obejmuje wyłącznie potwierdzone elementy ACF; "
+                    "pozostałe pola zostaną zachowane z odczytanego targetu."
+                ]
+                if confirmation.delivery_scope == "selected_components"
+                else []
+            ),
         ],
+    )
+
+
+def _is_rich_text_html_mapping(
+    component: ContentTargetMappingComponent,
+    selection: ContentTargetMappingSelection,
+) -> bool:
+    return bool(
+        component.kind == "rich_text"
+        and len(selection.field_bindings) == 2
+        and {binding.source_field for binding in selection.field_bindings}
+        == {"heading", "content_html"}
+        and len({binding.target_field for binding in selection.field_bindings}) == 1
+    )
+
+
+def _projected_fields(
+    *,
+    revision: ContentDraftRevision,
+    component: ContentTargetMappingComponent,
+    selection: ContentTargetMappingSelection,
+    authoring_surface_kind: str | None,
+) -> list[ContentTargetDraftPreviewField]:
+    if _is_rich_text_html_mapping(component, selection):
+        target_field = selection.field_bindings[0].target_field
+        heading, _ = _source_value(revision, component.component_id, "heading")
+        content_html, _ = _source_value(revision, component.component_id, "content_html")
+        return [
+            ContentTargetDraftPreviewField(
+                target_field=target_field,
+                source_field="rich_text_html",
+                value=f"<h2>{escape(heading)}</h2>{content_html}",
+                value_kind="html",
+            )
+        ]
+    return [
+        _projected_field(
+            revision=revision,
+            component_id=component.component_id,
+            binding=binding,
+            authoring_surface_kind=authoring_surface_kind,
+        )
+        for binding in selection.field_bindings
+    ]
+
+
+def _projected_field(
+    *,
+    revision: ContentDraftRevision,
+    component_id: str,
+    binding: ContentTargetMappingFieldBinding,
+    authoring_surface_kind: str | None,
+) -> ContentTargetDraftPreviewField:
+    value, value_kind = _source_value(revision, component_id, binding.source_field)
+    return ContentTargetDraftPreviewField(
+        target_field=binding.target_field,
+        source_field=binding.source_field,
+        value=project_target_field_value(
+            value,
+            authoring_surface_kind=authoring_surface_kind,
+            component_id=component_id,
+            source_field=binding.source_field,
+            target_field=binding.target_field,
+            value_kind=value_kind,
+        ),
+        value_kind=value_kind,
     )
 
 

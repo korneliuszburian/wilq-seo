@@ -55,6 +55,7 @@ WORDPRESS_DEV_HOSTS = {"ekologus.dev.proudsite.pl"}
 WORDPRESS_AUTHORING_CONTENT_FIELDS = (
     "id,slug,link,title,status,modified,modified_gmt,template,parent,acf"
 )
+WORDPRESS_AUTHORING_REST_ENDPOINTS = {"posts", "pages", "uslugi"}
 WORDPRESS_AUTHORING_SECTION_LIMIT = 40
 WORDPRESS_AUTHORING_TEXT_CANDIDATE_LIMIT = 40
 WORDPRESS_AUTHORING_FIELD_NAME_LIMIT = 20
@@ -323,7 +324,7 @@ def create_wordpress_acf_draft(
             "Adapter blokuje publikację, aktualizację i usunięcie obiektu WordPress."
         )
     endpoint = getattr(payload, "endpoint", None)
-    if endpoint not in {"posts", "pages"}:
+    if endpoint not in WORDPRESS_AUTHORING_REST_ENDPOINTS:
         raise WordPressDraftWriteError("Payload nie wskazuje obsługiwanego typu obiektu dev.")
     title = getattr(payload, "title", None)
     acf = getattr(payload, "acf", None)
@@ -421,7 +422,7 @@ def read_wordpress_authoring_content(
             "Brakuje konfiguracji WordPress wymaganej do odczytu stron authoringu."
         )
     normalized_type = content_type.strip().strip("/")
-    if normalized_type not in WORDPRESS_CONTENT_TYPES:
+    if normalized_type not in WORDPRESS_AUTHORING_REST_ENDPOINTS:
         raise WordPressAuthoringReadError("Nieobsługiwany typ treści WordPress.")
 
     owns_client = http_client is None

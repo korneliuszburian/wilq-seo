@@ -425,6 +425,7 @@ describe("ContentWorkflowSurface", () => {
         revision: preview.revision,
         target_contract_digest: "b".repeat(64),
         binding_digest: "c".repeat(64),
+        delivery_scope: "full_document",
         selections: [{
           component_id: "section:section_bdo",
           layout_name: "text_section",
@@ -606,6 +607,8 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
     expect(screen.getByText("Przypisanie dokumentu do dev", { exact: true })).toBeInTheDocument();
+    expect(screen.queryByText("Sprawdzam przypisanie zatwierdzonego dokumentu…")).not.toBeInTheDocument();
+    expect(screen.queryByText("Przygotowuję podgląd danych do szkicu…")).not.toBeInTheDocument();
     expect(getContentRevisionTargetMapping).not.toHaveBeenCalled();
   });
 
@@ -1003,6 +1006,7 @@ function contentTargetMappingPreview({
         object_id: "1353",
         url: "https://ekologus.dev.proudsite.pl/bdo/",
         post_type: postType,
+        rest_endpoint: postType === "post" ? "posts" : "pages",
         post_status: "publish",
         modified: "2026-07-24T10:00:00",
         template: null,
@@ -1089,6 +1093,7 @@ function contentTargetDraftPreview(): ContentTargetDraftPreview {
       revision: mapping.revision,
       target_contract_digest: mapping.target.target_contract_digest,
       binding_digest: mapping.binding_digest,
+      delivery_scope: "full_document",
       selections: [{
         component_id: "section:section_bdo",
         layout_name: "text_section",
@@ -1099,6 +1104,8 @@ function contentTargetDraftPreview(): ContentTargetDraftPreview {
       created_at: "2026-07-25T10:00:00Z"
     },
     root_field: "content_sections",
+    delivery_scope: "full_document",
+    draft_title: "BDO — obowiązki przedsiębiorcy",
     components: [{
       component_id: "section:section_bdo",
       label: "Obowiązki BDO",

@@ -248,6 +248,78 @@ def test_target_mapping_binds_an_approved_revision_to_exact_observed_surface_wit
     assert changed_target.binding_digest != preview.binding_digest
 
 
+def test_selected_acf_rich_text_combines_heading_and_body_into_one_confirmed_field() -> None:
+    revision = _revision()
+    preview = build_content_target_mapping_preview(
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revisions=[revision],
+        human_review=_review(revision),
+        discovery=_discovery(
+            authoring_surface=ContentTargetAuthoringSurface(
+                kind="acf_flexible_content",
+                root_field="flexible-home",
+                layouts=[
+                    ContentTargetAuthoringLayout(
+                        name="message",
+                        section_index=5,
+                        fields=["content"],
+                        writable_fields=["content"],
+                    )
+                ],
+            )
+        ),
+    )
+    assert preview.target is not None
+    assert preview.binding_digest is not None
+    confirmation = new_content_target_mapping_confirmation(
+        work_item_id=revision.work_item_id,
+        preview=preview,
+        command=ContentTargetMappingConfirmationCommand(
+            expected_revision_digest=revision.content_digest,
+            expected_target_contract_digest=preview.target.target_contract_digest,
+            expected_binding_digest=preview.binding_digest,
+            confirmed_by="Marta Kowalska",
+            delivery_scope="selected_components",
+            selections=[
+                ContentTargetMappingSelection(
+                    component_id="section:section_bdo",
+                    layout_name="message",
+                    target_section_index=5,
+                    field_bindings=[
+                        ContentTargetMappingFieldBinding(
+                            source_field="heading", target_field="content"
+                        ),
+                        ContentTargetMappingFieldBinding(
+                            source_field="content_html", target_field="content"
+                        ),
+                    ],
+                )
+            ],
+        ),
+        confirmation_number=1,
+        created_at="2026-08-06T19:00:00Z",
+    )
+
+    draft_preview = build_content_target_draft_preview(
+        work_item_id=revision.work_item_id,
+        revision_id=revision.revision_id,
+        revisions=[revision],
+        mapping_preview=preview,
+        confirmation=confirmation,
+    )
+
+    assert draft_preview.status == "ready"
+    assert draft_preview.delivery_scope == "selected_components"
+    assert draft_preview.draft_title == revision.title
+    assert draft_preview.components[0].fields[0].model_dump() == {
+        "target_field": "content",
+        "source_field": "rich_text_html",
+        "value": "<h2>Kiedy sprawdzić obowiązki BDO</h2><p>Sprawdź działalność firmy.</p>",
+        "value_kind": "html",
+    }
+
+
 def test_target_mapping_blocks_every_component_when_exact_object_has_unknown_surface() -> None:
     revision = _revision()
     preview = build_content_target_mapping_preview(
@@ -569,6 +641,46 @@ def test_content_dev_draft_write_payload_is_create_only_and_requires_one_exact_t
         assert "dokładnie jeden tytuł" in str(error)
     else:
         raise AssertionError("Payload bez jednoznacznego tytułu nie może powstać.")
+
+
+def test_content_dev_draft_payload_uses_observed_service_rest_endpoint(
+    monkeypatch,
+):
+    revision, draft_preview = _ready_preview()
+    assert draft_preview.target is not None
+    assert draft_preview.confirmation is not None
+    assert draft_preview.payload_digest is not None
+    service_contract = draft_preview.target.target_contract.model_copy(
+        update={"post_type": "uslugi", "rest_endpoint": "uslugi"}
+    )
+    service_preview = draft_preview.model_copy(
+        update={
+            "target": draft_preview.target.model_copy(
+                update={"target_contract": service_contract}
+            )
+        }
+    )
+    action = dev_draft_action.create_content_target_draft_action(
+        service_preview,
+        dev_draft_action.ContentTargetDraftActionCommand(
+            expected_revision_digest=revision.content_digest,
+            expected_target_contract_digest=service_preview.target.target_contract_digest,
+            expected_confirmation_digest=service_preview.confirmation.confirmation_digest,
+            expected_payload_digest=service_preview.payload_digest,
+            requested_by="Marta Kowalska",
+        ),
+    )
+    monkeypatch.setattr(
+        dev_draft_action,
+        "current_content_target_draft_preview",
+        lambda **_: service_preview,
+    )
+
+    payload = dev_draft_action.build_content_dev_draft_write_payload(action)
+
+    assert payload.endpoint == "uslugi"
+    assert payload.post_status == "draft"
+    assert payload.create_only is True
 
 
 def test_content_dev_draft_execution_uses_only_the_exact_acf_payload(monkeypatch) -> None:
