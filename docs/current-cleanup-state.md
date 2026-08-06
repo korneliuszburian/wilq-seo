@@ -31,6 +31,8 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
 - Po pełnym łańcuchu ActionObject utworzono wyłącznie nowy post dev `1932` ze
   statusem `draft`. Źródłowy post `1353` i wcześniejszy wadliwy szkic `1931`
   nie zostały zaktualizowane, opublikowane ani usunięte.
+- Odczyt po zapisie potwierdza podgląd szkicu:
+  `https://ekologus.dev.proudsite.pl/?p=1932`.
 - Akcja:
   `act_content_dev_draft_a75ad8a27e9e4f07b773205fdf0a5b7f`; exact revision:
   `content_revision_56bfb0e0fe1742738dfe3f07a39f780c`.
@@ -92,20 +94,33 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
 ## Co realnie jest gotowe, a co blokuje skalowanie
 
 1. BDO ma pełny, bezpieczny przykład `revision → ActionObject → nowy draft
-   dev` i czytelny podgląd referencyjnej strony dev w dashboardzie.
-2. Homepage ma wystarczający odczyt do ręcznego wyboru dokładnych pól/relacji,
+   dev` i czytelny podgląd referencyjnej strony dev w dashboardzie. Exact
+   ActionObject pozostaje jednorazowy; nie twórz drugiego szkicu dla tej samej
+   rewizji.
+2. KIP ma drugi, niezależny przykład tej samej create-only ścieżki: revision
+   `content_revision_b19dcd1c79ae4a6abb00777b3ad795dc`, semantic review
+   `content_semantic_review_838b74b63266491eb86d892f2f28b245`, confirmation
+   `content_target_mapping_confirmation_b0450c25dddc484cae73510776eff8c1` i
+   ActionObject `act_content_dev_draft_784fe5fc639049e0aa8f127722af7ee4`.
+   Powstał wyłącznie nowy draft dev `1934`; referencyjny post `1294` pozostał
+   opublikowany i niezmieniony. Odczyt po zapisie potwierdza podgląd szkicu:
+   `https://ekologus.dev.proudsite.pl/?p=1934`.
+3. Homepage ma wystarczający odczyt do ręcznego wyboru dokładnych pól/relacji,
    ale nie ma jeszcze zatwierdzonego celu copy ani potwierdzenia ActionObject.
-3. Kolejny kandydat — doradztwo i outsourcing — ma częściowy sygnał GSC
-   (46 wyświetleń, 0 kliknięć, 19 zapytań) i immutable rewizję czekającą na
-   review, ale nie ma odpowiadającego exact targetu dev;
-   target discovery zwraca `unavailable`. Nie twórz dla niego draftu przez
-   pożyczenie targetu BDO lub homepage.
-4. Kolejne drafty wymagają dla każdego adresu: potwierdzonego source contentu,
+4. Doradztwo i outsourcing ma poprawioną, zatwierdzoną rewizję
+   `content_revision_6a8fa15ce0d342388fb54d6cb0f55a4c` (digest
+   `9447171…0a3a`) oraz review `content_semantic_review_463c834ca22847d383382387da5304fc`
+   z 9/9 silnymi wymiarami i bez findings. Semantic repair usunął
+   niepotwierdzone przypisanie lokalnej frazy „Warszawa”. Delivery jest jednak
+   zablokowane: target discovery zwraca `unavailable`, bo dev nie zawiera
+   obiektu pod dokładnym adresem usługi. Nie twórz dla niego draftu przez
+   pożyczenie targetu BDO, KIP lub homepage.
+5. Kolejne drafty wymagają dla każdego adresu: potwierdzonego source contentu,
    exact dev targetu, reviewer decision dla exact revision oraz osobnego
    confirmation ActionObject. Brak któregokolwiek z tych elementów jest
    blockerem, nie zaproszeniem do zgadywania.
 
-## Następny batch: ocena oddziaływania na środowisko
+## Dostarczony batch: ocena oddziaływania na środowisko
 
 - Wybrany kandydat:
   `content_work_item_content_decision_https___www_ekologus_pl_ocena_wplywu_projektow_na_srodowisko`.
@@ -121,13 +136,17 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
   identyczna obserwacja posta `1314` była fałszywą niejednoznacznością i została
   scalona w `7db9c291`; zgodność URL-a nadal nie jest mapowaniem ani zgodą na
   zapis.
-- Plan jest obecnie prawidłowo zablokowany: mapuje temat do
-  `ekologus_service_environmental_compliance_audit`, którego prywatny source
-  fact nadal wymaga owner review. Właściwym ruchem nie jest automatyczne
-  przypięcie podobnej karty, lecz review exact prywatnej propozycji „Audyt
-  zgodności środowiskowej” przez Wilka/ownera — z potwierdzeniem source trace,
-  blocked claims, aktualności, zakresu dostępu i retencji. Nie wolno omijać
-  tej bramki promptem ani aliasem nazwy usługi.
+- Owner review exact propozycji „Audyt zgodności środowiskowej” został
+  odnotowany przez append-only lokalną projekcję. WILQ użył wyłącznie
+  zsanityzowanego reviewed-internal lineage; nie przypiął podobnej karty ani
+  nie ujawnił prywatnego źródła.
+- Exact plan `content_planning_proposal_171e5c84eb9d4c61a2c1bea66f95c1a6`,
+  revision `content_revision_fefc92d17dca4d5eaad590c3104eb260` i semantic
+  review `content_semantic_review_791f6a7b2e404cd0b633fd7670f12077` przeszły
+  9/9 silnych wymiarów bez findings. ActionObject utworzył wyłącznie draft
+  dev `1933`; referencyjny post `1314` nie został zmieniony. Odczyt po
+  zapisie potwierdza podgląd szkicu:
+  `https://ekologus.dev.proudsite.pl/?p=1933`.
 - Preflight „Europejskiego Zielonego Ładu” potwierdza, że post dev `1332`
   ma bezpośredni kontrakt `wordpress_post_content`, ale plan także blokuje
   review-required karta `ekologus_service_environmental_compliance`. Nie
@@ -151,7 +170,9 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
 
 ## Następny bezpieczny ruch
 
-Najpierw Wilku/owner usługi kończy review exact prywatnej propozycji „Audyt
-zgodności środowiskowej”. Wtedy WILQ może przygotować jedną exact rewizję,
-pokazać ją z referencyjnym widokiem dev i przejść zwykłe review → ActionObject
-→ create-only draft. Publikacja oraz update/delete pozostają poza zakresem.
+Provisionuj lub wskaż rzeczywisty obiekt dev dla dokładnego adresu Doradztwa i
+outsourcingu. Musi to być właściwa strona usługi oraz odczytywalny target ACF,
+nie podobny artykuł lub zastępczy post. Dopiero wtedy WILQ ponownie odczyta
+target, pokaże preserve-first mapping, poprosi o jego osobne potwierdzenie i
+utworzy najwyżej jeden nowy draft dev. Publikacja oraz update/delete pozostają
+poza zakresem.
