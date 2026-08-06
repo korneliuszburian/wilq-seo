@@ -71,8 +71,10 @@ for path in [
 print("API smoke passed")
 PY
 
-WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" uv run wilq jobs status >/dev/null
-WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" uv run wilq jobs list >/dev/null
+WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" \
+  uv run python -m wilq.cli jobs status >/dev/null
+WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" \
+  uv run python -m wilq.cli jobs list >/dev/null
 
 uv run python - <<'PY'
 from pathlib import Path
@@ -148,7 +150,7 @@ if [ -d apps/dashboard/node_modules ]; then
   dashboard_base="http://127.0.0.1:${dashboard_dev_port}"
   dashboard_api_log="${TMPDIR:-/tmp}/wilq-dashboard-api.log"
   dashboard_dev_log="${TMPDIR:-/tmp}/wilq-dashboard-vite.log"
-  uv run uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port "$dashboard_api_port" >"$dashboard_api_log" 2>&1 &
+  uv run python -m uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port "$dashboard_api_port" >"$dashboard_api_log" 2>&1 &
   dashboard_api_pid="$!"
   for _ in $(seq 1 80); do
     if curl -fsS --max-time 2 "$dashboard_api_base/api/health" >/dev/null 2>&1; then

@@ -270,7 +270,7 @@ start_api() {
   fi
   (
     cd "$ROOT_DIR"
-    setsid uv run uvicorn apps.api.wilq_api.main:app --host "$API_HOST" --port "$API_PORT" \
+    setsid uv run python -m uvicorn apps.api.wilq_api.main:app --host "$API_HOST" --port "$API_PORT" \
       "${reload_args[@]}" \
       >>"$log" 2>&1 </dev/null &
     echo "$!" >"$(pid_file api)"

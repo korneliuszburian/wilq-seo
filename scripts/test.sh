@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-uv run --extra dev pytest
+uv run --extra dev python -m pytest
 if [ -d apps/dashboard/node_modules ]; then
   pnpm test
 else

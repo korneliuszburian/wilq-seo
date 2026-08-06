@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-uv run --extra dev ruff check .
+uv run --extra dev python -m ruff check .
 if [ -d apps/dashboard/node_modules ]; then
   pnpm lint
 else

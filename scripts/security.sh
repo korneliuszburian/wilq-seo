@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-uv run --extra dev bandit -q -r wilq apps/api .codex/hooks
+uv run --extra dev python -m bandit -q -r wilq apps/api .codex/hooks
 
 if uv run --extra dev python -m pip_audit --version >/dev/null 2>&1; then
   uv run --extra dev python -m pip_audit
@@ -15,11 +15,11 @@ else
   echo "Skipping semgrep: command unavailable."
 fi
 
-if uv run --extra dev detect-secrets --version >/dev/null 2>&1; then
+if uv run --extra dev python -m detect_secrets --version >/dev/null 2>&1; then
   detect_secrets_output="$(mktemp)"
   trap 'rm -f "${detect_secrets_output:-}"' EXIT
   detect_secrets_exclude='(^|/)(node_modules|\.venv|dist|\.git|coverage|htmlcov)/|pnpm-lock\.yaml|(^|/)\.env$|(^|/)\.env\.(?!example$)[^/]+$|(^|/)ekologus-access-pack-[^/]+/|(^|/)credentials/'
-  uv run --extra dev detect-secrets scan . \
+  uv run --extra dev python -m detect_secrets scan . \
     --exclude-files "$detect_secrets_exclude" \
     > "$detect_secrets_output"
   uv run python - "$detect_secrets_output" <<'PY'
