@@ -391,6 +391,32 @@ def test_target_discovery_requires_human_choice_for_same_path_page_and_post(monk
     )
 
 
+def test_target_discovery_deduplicates_an_exact_repeated_dev_observation(monkeypatch) -> None:
+    monkeypatch.setattr(
+        discovery_module,
+        "inventory_decision_for_work_item",
+        lambda _work_item_id, **_kwargs: SimpleNamespace(
+            source_public_url=PUBLIC_URL,
+            final_canonical_url=None,
+            page=PUBLIC_URL,
+        ),
+    )
+    item = _page("https://dev.ekologus.pl/bdo/", content_type="post")
+    monkeypatch.setattr(
+        discovery_module,
+        "build_wordpress_authoring_profile",
+        lambda _connector_id, include_dev_content=False: _profile(item, item),
+    )
+
+    discovery = discovery_module.build_content_target_discovery(WORK_ITEM_ID)
+
+    assert discovery is not None
+    assert discovery.relation_status == "partial"
+    assert discovery.target is not None
+    assert discovery.target.object_id == item.post_id
+    assert discovery.candidates == []
+
+
 def test_target_observation_evidence_changes_when_observed_state_changes(monkeypatch) -> None:
     monkeypatch.setattr(
         discovery_module,

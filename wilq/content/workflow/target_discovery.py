@@ -177,9 +177,7 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
         )
     if profile.dev_content.status != "available":
         return _unavailable_dev_content_discovery(work_item_id, public_url, evidence_ids, profile)
-    matching_items = [
-        item for item in profile.dev_content.items if _path(item.link) == _path(public_url)
-    ]
+    matching_items = _unique_matching_items(profile.dev_content.items, public_url)
     if not matching_items:
         return ContentTargetDiscovery(
             work_item_id=work_item_id,
@@ -266,6 +264,31 @@ def _public_url(decision: object) -> str | None:
         ),
         None,
     )
+
+
+def _unique_matching_items(
+    items: list[WordPressAuthoringDevContentObject], public_url: str
+) -> list[WordPressAuthoringDevContentObject]:
+    """Keep exact duplicate observations from becoming a false ambiguity.
+
+    The dev inventory can contain the same REST object more than once when
+    discovery sources overlap.  Ambiguity is meaningful only for distinct
+    observations; collapsing merely the exact model payload preserves a real
+    conflict in post type, URL, state, or authoring surface.
+    """
+
+    unique: dict[str, WordPressAuthoringDevContentObject] = {}
+    for item in items:
+        if _path(item.link) != _path(public_url):
+            continue
+        identity = json.dumps(
+            item.model_dump(mode="json"),
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        unique.setdefault(identity, item)
+    return list(unique.values())
 
 
 def _unavailable_dev_content_discovery(
