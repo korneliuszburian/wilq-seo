@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-python3 - <<'PY'
+uv run python - <<'PY'
 from wilq.access_pack.manifest import access_pack_status
 
 status = access_pack_status()

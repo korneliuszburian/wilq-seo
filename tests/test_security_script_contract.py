@@ -18,6 +18,8 @@ def test_python_quality_tools_use_the_active_uv_interpreter() -> None:
         "scripts/security.sh": "uv run --extra dev python -m bandit",
         "scripts/verify.sh": "uv run python -m uvicorn",
         "scripts/local_stack.sh": "uv run python -m uvicorn",
+        "scripts/access_pack_manifest.sh": "uv run python -",
+        "scripts/access_pack_check.sh": "uv run python -",
         ".github/workflows/quality.yml": "uv run --extra dev python -m pytest",
     }
 

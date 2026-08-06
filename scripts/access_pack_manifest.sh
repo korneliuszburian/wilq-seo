@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-python3 - <<'PY'
+uv run python - <<'PY'
 import os
 
 from wilq.access_pack.manifest import access_pack_status, env_key_names
