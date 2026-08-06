@@ -13,6 +13,7 @@ from apps.api.wilq_api.routers import content_planning_proposals as planning_rou
 from wilq.content.planning.dynamic_input import ContentPlanningInputSummary
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalBlocker,
+    ContentPlanningProposalRequest,
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
@@ -294,6 +295,81 @@ def test_planning_post_regenerates_an_exact_stale_inventory_mapping_without_clie
     assert response.status_code == 200
     assert response.json()["status"] == "generating"
     assert preparation_flags == [True]
+
+
+def test_planning_post_regenerates_exact_plan_after_review_with_visible_instruction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    existing = _proposal(digest="a" * 64, service_card_id="service-a")
+    current = ContentPlanningProposalResponse(
+        status="ready",
+        work_item_id="work-item",
+        service_card_id="service-a",
+        planning_input_digest="a" * 64,
+        input_summary=_planning_summary(),
+        proposal=existing,
+        safe_next_step="Przygotuj tekst z tego planu.",
+    )
+    snapshot = SimpleNamespace(work_item_id="work-item")
+    app = FastAPI()
+    replacement_flags: list[bool] = []
+    generating = ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id="work-item",
+        service_card_id="service-a",
+        planning_input_digest="a" * 64,
+        input_summary=_planning_summary(),
+        safe_next_step="Plan jest przygotowywany.",
+    )
+    monkeypatch.setattr(
+        planning_router,
+        "content_planning_proposal_store",
+        lambda: SimpleNamespace(for_input=lambda *_args: existing),
+    )
+    monkeypatch.setattr(
+        planning_router,
+        "ekologus_content_knowledge_cards",
+        lambda: (SimpleNamespace(id="service-a", card_type="service"),),
+    )
+    monkeypatch.setattr(
+        planning_router,
+        "read_content_planning_proposal",
+        lambda **_kwargs: current,
+    )
+
+    def prepare(**kwargs):
+        replacement_flags.append(kwargs["request"].regenerate_after_review)
+        return None, generating
+
+    monkeypatch.setattr(planning_router, "_prepare_generation", prepare)
+    planning_router.register_content_planning_proposal_routes(
+        app, snapshot_loader=lambda _id: snapshot
+    )
+
+    response = TestClient(app).post(
+        "/api/content/work-items/work-item/planning-proposals",
+        json={
+            "service_card_id": "service-a",
+            "expected_planning_input_digest": "a" * 64,
+            "operator_hint": "Usuń niepotwierdzoną lokalną frazę z planu.",
+            "requested_by": "Wilku",
+            "regenerate_after_review": True,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "generating"
+    assert replacement_flags == [True]
+
+
+def test_planning_review_regeneration_requires_visible_instruction() -> None:
+    with pytest.raises(ValueError, match="visible repair instruction"):
+        ContentPlanningProposalRequest(
+            service_card_id="service-a",
+            expected_planning_input_digest="a" * 64,
+            requested_by="Wilku",
+            regenerate_after_review=True,
+        )
 
 
 def test_planning_store_replaces_current_exact_input_without_mutating_history(

@@ -110,6 +110,7 @@ class ContentPlanningProposalRequest(BaseModel):
     operator_hint: str = Field(default="", max_length=500)
     requested_by: str = Field(min_length=1)
     regenerate_stale_mapping: bool = False
+    regenerate_after_review: bool = False
 
     @model_validator(mode="after")
     def strip_visible_text(self) -> ContentPlanningProposalRequest:
@@ -117,6 +118,10 @@ class ContentPlanningProposalRequest(BaseModel):
         self.requested_by = self.requested_by.strip()
         if not self.requested_by:
             raise ValueError("Planning generation requires requester attribution.")
+        if self.regenerate_after_review and not self.operator_hint:
+            raise ValueError(
+                "Planning regeneration after review requires a visible repair instruction."
+            )
         return self
 
 

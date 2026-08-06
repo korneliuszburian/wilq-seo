@@ -3808,7 +3808,8 @@ export const ContentPlanningProposalRequestSchema = z.object({
   expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
   operator_hint: z.string().max(500).default(""),
   requested_by: z.string().min(1),
-  regenerate_stale_mapping: z.boolean().default(false)
+  regenerate_stale_mapping: z.boolean().default(false),
+  regenerate_after_review: z.boolean().default(false)
 });
 
 export const ContentPlanningProposalBlockerSchema = z.object({

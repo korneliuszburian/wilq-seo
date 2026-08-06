@@ -165,10 +165,10 @@ def register_content_planning_proposal_routes(
                 blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
                 for blocker in current.blockers
             )
-            if stale_mapping:
+            if stale_mapping or request.regenerate_after_review:
                 # The server has already proved that this is the same exact
-                # proposal and input; refreshing its deterministic inventory
-                # map must not depend on an optional browser flag.
+                # proposal and input. A stale inventory map or a review-bound
+                # plan repair deliberately replaces only this exact lineage.
                 request = request.model_copy(update={"regenerate_stale_mapping": True})
             elif current_is_exact_existing and current.status in {"created", "idempotent", "ready"}:
                 return current.model_copy(
@@ -185,7 +185,7 @@ def register_content_planning_proposal_routes(
                 # state: stale and quality-blocked reads are already the safe
                 # response for this command.
                 return current
-            else:
+            elif not request.regenerate_after_review:
                 # A current quality blocker is actionable only after an
                 # explicit new generation path, never through idempotency.
                 return current
