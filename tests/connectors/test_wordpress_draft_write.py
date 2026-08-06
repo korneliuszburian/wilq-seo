@@ -73,6 +73,33 @@ def test_create_wordpress_draft_post_blocks_non_draft_vendor_response(
     )
 
 
+def test_create_wordpress_draft_post_keeps_only_safe_rest_error_diagnostics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda _request: httpx.Response(
+                400,
+                json={
+                    "code": "rest_invalid_param",
+                    "message": "Nie ujawniaj treści szkicu ani tokenu secret-value.",
+                    "data": {"params": {"acf": "Niedozwolone"}},
+                },
+            )
+        )
+    )
+
+    with pytest.raises(WordPressDraftWriteError) as exc_info:
+        create_wordpress_draft_post(_payload(), http_client=client)
+
+    assert exc_info.value.public_message == (
+        "WordPress odrzucił utworzenie szkicu HTTP 400. "
+        "(rest_invalid_param; pola: acf)"
+    )
+    assert "secret-value" not in exc_info.value.public_message
+
+
 def test_create_wordpress_draft_post_blocks_publish_or_destructive_payload(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

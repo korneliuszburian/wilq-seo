@@ -157,6 +157,38 @@ class WordPressAuthoringReadError(RuntimeError):
         self.public_message = public_message
 
 
+def _wordpress_draft_write_http_error(response: httpx.Response) -> WordPressDraftWriteError:
+    """Return a diagnostic-safe WordPress write failure.
+
+    WordPress error bodies are vendor input and may include a submitted value,
+    so never expose them wholesale through an ActionObject/audit response.  A
+    REST error code and the names of rejected top-level fields are enough for
+    an operator to repair the authoring contract without leaking draft text.
+    """
+
+    suffix = ""
+    try:
+        body = response.json()
+    except (json.JSONDecodeError, ValueError):
+        body = None
+    if isinstance(body, dict):
+        code = body.get("code")
+        if isinstance(code, str) and code.replace("_", "").isalnum():
+            suffix = f" ({code}"
+            data = body.get("data")
+            params = data.get("params") if isinstance(data, dict) else None
+            if isinstance(params, dict):
+                fields = sorted(
+                    key for key in params if isinstance(key, str) and key.replace("_", "").isalnum()
+                )
+                if fields:
+                    suffix += f"; pola: {', '.join(fields[:8])}"
+            suffix += ")"
+    return WordPressDraftWriteError(
+        f"WordPress odrzucił utworzenie szkicu HTTP {response.status_code}.{suffix}"
+    )
+
+
 def refresh_wordpress_content_inventory(
     connector_id: str,
     request: ConnectorRefreshRequest,
@@ -272,9 +304,7 @@ def create_wordpress_draft_post(
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            raise WordPressDraftWriteError(
-                f"WordPress odrzucił utworzenie szkicu HTTP {exc.response.status_code}."
-            ) from exc
+            raise _wordpress_draft_write_http_error(exc.response) from exc
         except httpx.HTTPError as exc:
             raise WordPressDraftWriteError(
                 f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
@@ -345,9 +375,7 @@ def create_wordpress_acf_draft(
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            raise WordPressDraftWriteError(
-                f"WordPress odrzucił utworzenie szkicu HTTP {exc.response.status_code}."
-            ) from exc
+            raise _wordpress_draft_write_http_error(exc.response) from exc
         except httpx.HTTPError as exc:
             raise WordPressDraftWriteError(
                 f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
