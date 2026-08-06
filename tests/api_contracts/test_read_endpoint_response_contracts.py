@@ -11,6 +11,7 @@ def test_read_endpoints_publish_their_typed_response_contracts() -> None:
         "/api/knowledge/search": ("get", "KnowledgeCard"),
         "/api/metrics/status": ("get", "MetricStoreStatus"),
         "/api/workflows": ("get", "Workflow"),
+        "/api/jobs/status": ("get", "SchedulerStatus"),
     }
 
     for path, (method, schema_name) in expected_schemas.items():

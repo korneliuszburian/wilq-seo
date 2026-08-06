@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from wilq.jobs.models import JobRun, JobRunRequest, ScheduledJob
+from wilq.jobs.models import JobRun, JobRunRequest, ScheduledJob, SchedulerStatus
 from wilq.jobs.registry import get_job, list_jobs
 from wilq.jobs.scheduler import get_job_run, list_job_runs, run_job, scheduler_status
 
@@ -18,9 +17,9 @@ def create_jobs_router(clear_api_view_model_caches: Callable[[], None]) -> APIRo
         return list_jobs()
 
 
-    @router.get("/api/jobs/status")
-    def jobs_status() -> dict[str, Any]:
-        return scheduler_status()
+    @router.get("/api/jobs/status", response_model=SchedulerStatus)
+    def jobs_status() -> SchedulerStatus:
+        return SchedulerStatus.model_validate(scheduler_status())
 
 
     @router.get("/api/jobs/{job_id}", response_model=ScheduledJob)

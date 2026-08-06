@@ -25,6 +25,14 @@ class JobRunRequest(BaseModel):
     reason: str | None = None
 
 
+class SchedulerStatus(BaseModel):
+    backend: Literal["apscheduler"]
+    autostart: bool
+    configured_jobs: int
+    enabled_jobs: int
+    notes: list[str] = Field(default_factory=list)
+
+
 class JobRun(BaseModel):
     id: str
     job_id: str
