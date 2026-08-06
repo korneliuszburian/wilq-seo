@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import re
-import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -23,15 +22,18 @@ from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
 )
 from wilq.content.regulatory import policy as regulatory_policy
+from wilq.content.workflow import api as workflow_api
 from wilq.content.workflow import catalog as inventory_catalog
 from wilq.content.workflow import inventory_binding
 from wilq.content.workflow.catalog import (
+    ContentInventoryCatalogItem,
+    ContentInventoryCatalogResponse,
+    ContentInventoryCoverage,
     ContentInventoryMaterialResponse,
     inventory_work_item_id,
 )
 from wilq.schemas import ContentDecisionItem
 from wilq.schemas.core import MetricFact
-from wilq.storage.metric_store import metric_store_path
 
 
 class PlanningClient:
@@ -468,12 +470,10 @@ def configure_planning_harness(
     tmp_path: Path,
 ) -> tuple[TestClient, PlanningClient]:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    source_metric_db = metric_store_path()
     isolated_metric_db = tmp_path / "metrics.duckdb"
-    if source_metric_db.exists():
-        shutil.copy2(source_metric_db, isolated_metric_db)
     monkeypatch.setenv("WILQ_METRIC_DB", str(isolated_metric_db))
     _patch_approved_service_cards(monkeypatch)
+    _patch_confirmed_service_selection(monkeypatch)
     _patch_fresh_diagnostics(monkeypatch)
     _patch_synthetic_inventory_material(monkeypatch)
     _patch_internal_link_candidates(monkeypatch)
@@ -503,6 +503,27 @@ def _patch_approved_service_cards(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def _patch_confirmed_service_selection(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Model the explicit scope decision required by planning tests."""
+
+    original = workflow_api.build_content_work_item_service_profile_context
+
+    def confirmed_context(*args: Any, **kwargs: Any) -> Any:
+        context = original(*args, **kwargs)
+        return context.model_copy(
+            update={
+                "service_selection_confirmed": True,
+                "service_card_lifecycle_status": "approved_current",
+            }
+        )
+
+    monkeypatch.setattr(
+        workflow_api,
+        "build_content_work_item_service_profile_context",
+        confirmed_context,
+    )
+
+
 def _patch_fresh_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
     original_diagnostics = content_snapshot_router.diagnostics_with_exact_gsc_demand
     diagnostics_cache: dict[str, Any] = {}
@@ -516,33 +537,7 @@ def _patch_fresh_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
         if cached is not None:
             return cached
         diagnostics = original_diagnostics(work_item_id)
-        decisions = [
-            decision.model_copy(
-                update={
-                    "wordpress_section_headings": (
-                        decision.wordpress_section_headings
-                        or [f"Istniejąca sekcja: {decision.primary_query or decision.title}"]
-                    ),
-                    "wordpress_section_count": decision.wordpress_section_count or 1,
-                    "wordpress_section_inventory_status": "available",
-                    "wordpress_content_summary": (
-                        decision.wordpress_content_summary
-                        or "Syntetyczne podsumowanie publicznej treści."
-                    ),
-                    "wordpress_content_word_count": decision.wordpress_content_word_count or 500,
-                    "wordpress_content_inventory_status": "available",
-                    # The harness supplies a reviewed synthetic material snapshot;
-                    # production keeps the review-required gate for real imports.
-                    "wordpress_content_material_confidence": "source_bound",
-                    "wordpress_content_source_kind": "synthetic_reviewed_fixture",
-                }
-            )
-            if inventory_work_item_id(
-                decision.page or decision.source_public_url or ""
-            ) == work_item_id
-            else decision
-            for decision in diagnostics.decision_queue
-        ]
+        decisions = [_synthetic_planning_decision(url) for url in _PLANNING_URLS]
         freshness = diagnostics.freshness_assessment.model_copy(
             update={
                 "state": "fresh",
@@ -555,112 +550,6 @@ def _patch_fresh_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
                 "next_step": "Można zbudować wejście planu do testu.",
             }
         )
-        if not decisions:
-            synthetic_urls = (
-                "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
-                "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
-            )
-            decisions = [
-                ContentDecisionItem(
-                    id=inventory_work_item_id(url).removeprefix("content_work_item_"),
-                    decision_type="refresh_or_merge",
-                    status="ready",
-                    title="Syntetyczna strona do testu planowania",
-                    priority=1,
-                    source_connectors=["wordpress_ekologus"],
-                    evidence_ids=["ev_connector_wordpress_ekologus_status"],
-                    metric_facts=[
-                        MetricFact(
-                            name="gsc_query_performance",
-                            metric_label="Wyświetlenia GSC",
-                            value=120,
-                            period="2026-07",
-                            source_connector="google_search_console",
-                            evidence_id="ev_synthetic_gsc",
-                            dimensions={"query": "bdo dla firm", "page": url},
-                            collected_at=datetime.now(UTC),
-                            unit="impressions",
-                        )
-                    ],
-                    source_public_url=url,
-                    final_canonical_url=url,
-                    wordpress_content_inventory_status="available",
-                    wordpress_content_text="Syntetyczna treść strony do testu.",
-                    wordpress_content_summary="Syntetyczne podsumowanie publicznej treści.",
-                    wordpress_section_headings=["Syntetyczna sekcja strony"],
-                    wordpress_section_inventory_status="available",
-                    wordpress_content_source_kind="synthetic_reviewed_fixture",
-                    wordpress_content_material_confidence="source_bound",
-                    wordpress_content_word_count=500,
-                    inventory_gate_status="confirmed_current_inventory",
-                    duplicate_gate_status="checked",
-                    rationale="Syntetyczny fixture exact planning.",
-                    next_step="Sprawdź plan.",
-                )
-                for url in synthetic_urls
-            ]
-        synthetic_urls = (
-            "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
-            "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
-        )
-        template = next(
-            (item for item in decisions if item.status == "ready"),
-            ContentDecisionItem(
-                id="synthetic_template",
-                decision_type="refresh_or_merge",
-                status="ready",
-                title="Syntetyczna strona do testu planowania",
-                priority=1,
-                source_connectors=["wordpress_ekologus"],
-                evidence_ids=["ev_connector_wordpress_ekologus_status"],
-                source_public_url=synthetic_urls[0],
-                final_canonical_url=synthetic_urls[0],
-                wordpress_content_inventory_status="available",
-                wordpress_content_text="Syntetyczna treść strony do testu.",
-                wordpress_content_summary="Syntetyczne podsumowanie publicznej treści.",
-                wordpress_section_headings=["Syntetyczna sekcja strony"],
-                wordpress_section_inventory_status="available",
-                wordpress_content_source_kind="synthetic_reviewed_fixture",
-                wordpress_content_material_confidence="source_bound",
-                wordpress_content_word_count=500,
-                inventory_gate_status="confirmed_current_inventory",
-                duplicate_gate_status="checked",
-                rationale="Syntetyczny fixture exact planning.",
-                next_step="Sprawdź plan.",
-            ),
-        )
-        for url in synthetic_urls:
-            synthetic_id = inventory_work_item_id(url).removeprefix("content_work_item_")
-            if any(item.id == synthetic_id for item in decisions):
-                continue
-            decisions.append(
-                template.model_copy(
-                    update={
-                        "id": synthetic_id,
-                        "page": url,
-                        "source_public_url": url,
-                        "final_canonical_url": url,
-                        "status": "ready",
-                        "evidence_ids": ["ev_connector_wordpress_ekologus_status"],
-                        "metric_facts": [
-                            MetricFact(
-                                name="gsc_query_performance",
-                                metric_label="Wyświetlenia GSC",
-                                value=120,
-                                period="2026-07",
-                                source_connector="google_search_console",
-                                evidence_id="ev_synthetic_gsc",
-                                dimensions={"query": "bdo dla firm", "page": url},
-                                collected_at=datetime.now(UTC),
-                                unit="impressions",
-                            )
-                        ],
-                        "source_connectors": ["wordpress_ekologus"],
-                        "inventory_gate_status": "confirmed_current_inventory",
-                        "duplicate_gate_status": "checked",
-                    }
-                )
-            )
         result = diagnostics.model_copy(
             update={"decision_queue": decisions, "freshness_assessment": freshness}
         )
@@ -671,6 +560,56 @@ def _patch_fresh_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
         content_snapshot_router,
         "diagnostics_with_exact_gsc_demand",
         fresh_diagnostics,
+    )
+
+
+_PLANNING_URLS = (
+    "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+    "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+)
+_SYNTHETIC_COLLECTED_AT = datetime(2026, 8, 1, tzinfo=UTC)
+
+
+def _synthetic_planning_decision(url: str) -> ContentDecisionItem:
+    return ContentDecisionItem(
+        id=inventory_work_item_id(url).removeprefix("content_work_item_"),
+        decision_type="refresh_or_merge",
+        status="ready",
+        title="Syntetyczna strona do testu planowania",
+        priority=1,
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+        evidence_ids=[
+            "ev_connector_google_search_console_status",
+            "ev_connector_wordpress_ekologus_status",
+        ],
+        metric_facts=[
+            MetricFact(
+                name="gsc_query_performance",
+                metric_label="Wyświetlenia GSC",
+                value=120,
+                period="2026-07",
+                source_connector="google_search_console",
+                evidence_id="ev_connector_google_search_console_status",
+                dimensions={"query": "bdo dla firm", "page": url},
+                collected_at=_SYNTHETIC_COLLECTED_AT,
+                unit="impressions",
+            )
+        ],
+        page=url,
+        source_public_url=url,
+        final_canonical_url=url,
+        wordpress_content_inventory_status="available",
+        wordpress_content_text="Syntetyczna treść strony do testu.",
+        wordpress_content_summary="Syntetyczne podsumowanie publicznej treści.",
+        wordpress_section_headings=["Syntetyczna sekcja strony"],
+        wordpress_section_inventory_status="available",
+        wordpress_content_source_kind="synthetic_reviewed_fixture",
+        wordpress_content_material_confidence="source_bound",
+        wordpress_content_word_count=500,
+        inventory_gate_status="confirmed_current_inventory",
+        duplicate_gate_status="checked",
+        rationale="Syntetyczny fixture exact planning.",
+        next_step="Sprawdź plan.",
     )
 
 
@@ -737,6 +676,70 @@ def _patch_synthetic_inventory_material(monkeypatch: pytest.MonkeyPatch) -> None
         )
 
     monkeypatch.setattr(inventory_binding, "read_content_inventory_material", material)
+
+    def catalog() -> ContentInventoryCatalogResponse:
+        items = [
+            ContentInventoryCatalogItem(
+                catalog_id=f"synthetic_catalog_{index}",
+                work_item_id=inventory_work_item_id(url),
+                url=url,
+                path=url.removeprefix("https://www.ekologus.pl").rstrip("/") or "/",
+                title="Syntetyczna strona do testu planowania",
+                content_type="posts",
+                content_summary="Syntetyczne podsumowanie publicznej treści.",
+                content_word_count=500,
+                section_count=1,
+                acf_section_count=1,
+                section_headings=["Syntetyczna sekcja strony"],
+                acf_section_headings=["Syntetyczna sekcja strony"],
+                material_status="available",
+                source_connector="wordpress_ekologus",
+                evidence_id="ev_connector_wordpress_ekologus_status",
+                collected_at=_SYNTHETIC_COLLECTED_AT,
+            )
+            for index, url in enumerate(_PLANNING_URLS, start=1)
+        ]
+        return ContentInventoryCatalogResponse(
+            total_count=len(items),
+            ready_count=len(items),
+            items=items,
+            source_connectors=["wordpress_ekologus"],
+            evidence_ids=["ev_connector_wordpress_ekologus_status"],
+            coverage=ContentInventoryCoverage(status="complete", returned_count=len(items)),
+        )
+
+    monkeypatch.setattr(inventory_binding, "build_content_inventory_catalog", catalog)
+    monkeypatch.setattr(
+        workflow_api,
+        "inventory_decision_for_work_item",
+        inventory_binding.inventory_decision_for_work_item,
+    )
+
+    def metrics(url: str, path: str) -> list[MetricFact]:
+        del path
+        dimensions = {"query": "bdo dla firm", "page": url}
+        return [
+            MetricFact(
+                name="clicks",
+                value=12,
+                period="2026-07",
+                source_connector="google_search_console",
+                evidence_id="ev_connector_google_search_console_status",
+                dimensions=dimensions,
+                collected_at=_SYNTHETIC_COLLECTED_AT,
+            ),
+            MetricFact(
+                name="impressions",
+                value=120,
+                period="2026-07",
+                source_connector="google_search_console",
+                evidence_id="ev_connector_google_search_console_status",
+                dimensions=dimensions,
+                collected_at=_SYNTHETIC_COLLECTED_AT,
+            ),
+        ]
+
+    monkeypatch.setattr(inventory_binding, "inventory_metric_facts", metrics)
 
 
 def _patch_codex_clients(

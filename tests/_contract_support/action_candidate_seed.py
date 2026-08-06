@@ -14,6 +14,11 @@ from wilq.storage.metric_store import metric_store
 def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "action_candidates.sqlite3"))
     monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "action_candidates.duckdb"))
+    save_action_candidate_metric_facts()
+
+
+def save_action_candidate_metric_facts() -> None:
+    """Persist the deterministic cross-source fixture in the active metric store."""
     detailed_facts_by_run = _detailed_facts_by_run()
 
     for run in _candidate_refresh_runs():

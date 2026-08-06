@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from tests._contract_support.action_candidate_seed import save_action_candidate_metric_facts
+
 _TEST_STATE_DIR = pytest.StashKey[Path]()
 
 
@@ -19,6 +21,7 @@ def pytest_configure(config: pytest.Config) -> None:
     config.stash[_TEST_STATE_DIR] = state_dir
     os.environ["WILQ_STATE_DB"] = str(state_dir / "state.sqlite3")
     os.environ["WILQ_METRIC_DB"] = str(state_dir / "metrics.duckdb")
+    save_action_candidate_metric_facts()
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
