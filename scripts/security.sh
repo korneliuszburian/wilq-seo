@@ -3,8 +3,8 @@ set -euo pipefail
 
 uv run --extra dev bandit -q -r wilq apps/api .codex/hooks
 
-if uv run --extra dev pip-audit --version >/dev/null 2>&1; then
-  uv run --extra dev pip-audit
+if uv run --extra dev python -m pip_audit --version >/dev/null 2>&1; then
+  uv run --extra dev python -m pip_audit
 else
   echo "Skipping pip-audit: command unavailable."
 fi
