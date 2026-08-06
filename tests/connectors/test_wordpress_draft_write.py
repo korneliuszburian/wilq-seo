@@ -4,8 +4,10 @@ import httpx
 import pytest
 
 from wilq.connectors.wordpress.client import (
+    WordPressDraftReadError,
     WordPressDraftWriteError,
     create_wordpress_draft_post,
+    read_wordpress_draft_post,
 )
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftPayload
 
@@ -109,3 +111,49 @@ def test_create_wordpress_draft_post_blocks_public_or_arbitrary_host_before_http
 
     assert "zatwierdzonym hoście dev" in exc_info.value.public_message
     assert requests == []
+
+
+def test_read_wordpress_service_draft_uses_service_rest_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert request.method == "GET"
+        assert request.url.path == "/wp-json/wp/v2/uslugi/1935"
+        return httpx.Response(
+            200,
+            json={
+                "id": 1935,
+                "status": "draft",
+                "title": {"rendered": "Doradztwo ekologiczne"},
+                "link": "https://ekologus.dev.proudsite.pl/oferta/doradztwo/",
+                "modified_gmt": "2026-08-06T12:00:00",
+                "content": {"rendered": ""},
+                "acf": {"flexible-home": []},
+            },
+        )
+
+    readback = read_wordpress_draft_post(
+        "1935",
+        endpoint="uslugi",
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert readback.endpoint == "uslugi"
+    assert readback.post_id == "1935"
+    assert readback.status == "draft"
+    assert len(requests) == 1
+
+
+def test_read_wordpress_draft_rejects_unknown_rest_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+
+    with pytest.raises(WordPressDraftReadError) as exc_info:
+        read_wordpress_draft_post("1935", endpoint="arbitrary")
+
+    assert exc_info.value.public_message == "Nieobsługiwany typ treści WordPress."

@@ -74,6 +74,7 @@ class WordPressCredentials:
 @dataclass(frozen=True)
 class WordPressDraftPostReadback:
     post_id: str
+    endpoint: str
     status: str
     title: str
     link: str
@@ -362,6 +363,7 @@ def read_wordpress_draft_post(
     post_id: str,
     *,
     connector_id: str = "wordpress_ekologus",
+    endpoint: str = "posts",
     http_client: httpx.Client | None = None,
 ) -> WordPressDraftPostReadback:
     credentials = _wordpress_credentials(connector_id)
@@ -375,6 +377,9 @@ def read_wordpress_draft_post(
     normalized_post_id = str(post_id).strip()
     if not normalized_post_id:
         raise WordPressDraftReadError("Brakuje ID szkicu WordPress do odczytu.")
+    normalized_endpoint = endpoint.strip().strip("/")
+    if normalized_endpoint not in WORDPRESS_AUTHORING_REST_ENDPOINTS:
+        raise WordPressDraftReadError("Nieobsługiwany typ treści WordPress.")
 
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
@@ -382,7 +387,10 @@ def read_wordpress_draft_post(
     try:
         try:
             response = client.get(
-                urljoin(credentials.base_url or "", f"wp-json/wp/v2/posts/{normalized_post_id}"),
+                urljoin(
+                    credentials.base_url or "",
+                    f"wp-json/wp/v2/{normalized_endpoint}/{normalized_post_id}",
+                ),
                 auth=auth,
                 params={
                     "context": "edit",
@@ -402,7 +410,12 @@ def read_wordpress_draft_post(
         if owns_client:
             client.close()
 
-    return _draft_post_readback(response, normalized_post_id, credentials.base_url)
+    return _draft_post_readback(
+        response,
+        normalized_post_id,
+        credentials.base_url,
+        normalized_endpoint,
+    )
 
 
 def read_wordpress_authoring_content(
@@ -675,6 +688,7 @@ def _draft_post_readback(
     response: httpx.Response,
     requested_post_id: str,
     credentials_base_url: str | None,
+    endpoint: str,
 ) -> WordPressDraftPostReadback:
     body = response.json()
     if not isinstance(body, dict):
@@ -687,6 +701,7 @@ def _draft_post_readback(
     acf_field_count = _optional_int(acf_dimensions.get("acf_field_count"))
     return WordPressDraftPostReadback(
         post_id=str(post_id) if post_id is not None else requested_post_id,
+        endpoint=endpoint,
         status=str(body.get("status") or ""),
         title=wordpress_title(body.get("title")),
         link=str(body.get("link") or ""),
