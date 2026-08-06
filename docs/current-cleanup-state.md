@@ -42,8 +42,11 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
 
 ## Ostatnia weryfikacja techniczna
 
-- Na local `main` po commicie `a57baa2e` pełne `scripts/verify.sh` przeszło:
-  quality, security, API smoke, smoke umiejętności, dashboard E2E i build.
+- CI dla fixed pointu `0e314a86` przeszła w całości: Python quality/security
+  (w tym 1525 izolowanych testów), frontend lint/typecheck/test oraz
+  `scripts/verify.sh` z integracją i E2E. Pełna bramka jest uruchamiana w CI;
+  lokalny pełny suite wymaga jawnego, ekskluzywnego okna i nie działa na
+  współdzielonej maszynie.
 - Bieżący odczyt WILQ API nadal wskazuje exact revision
   `content_revision_56bfb0e0fe1742738dfe3f07a39f780c` jako zatwierdzony
   dokument BDO o digescie
@@ -96,6 +99,29 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
    confirmation ActionObject. Brak któregokolwiek z tych elementów jest
    blockerem, nie zaproszeniem do zgadywania.
 
+## Następny batch: ocena oddziaływania na środowisko
+
+- Wybrany kandydat:
+  `content_work_item_content_decision_https___www_ekologus_pl_ocena_wplywu_projektow_na_srodowisko`.
+  To istniejący, editorial-eligible URL z publicznym source contentem,
+  sygnałem GSC `45` wyświetleń / `0` kliknięć / `21` zapytań w częściowym oknie
+  oraz dowodami WordPress i GSC.
+- Dev discovery znalazł exact target: post `1314`,
+  `https://ekologus.dev.proudsite.pl/ocena-wplywu-projektow-na-srodowisko/`.
+  Używa natywnego `wordpress_post_content`; profil zapisu to `not_required`
+  dla ACF, więc ewentualny draft może korzystać z tej samej create-only granicy
+  co BDO.
+- Discovery odrzuca obecnie tylko rzeczywiście różne obiekty. Powielona,
+  identyczna obserwacja posta `1314` była fałszywą niejednoznacznością i została
+  scalona w `7db9c291`; zgodność URL-a nadal nie jest mapowaniem ani zgodą na
+  zapis.
+- Plan jest obecnie prawidłowo zablokowany: mapuje temat do
+  `ekologus_service_environmental_compliance_audit`, którego prywatny source
+  fact nadal wymaga owner review. Istnieje podobna, zatwierdzona karta
+  `ekologus_service_compliance_audit`, ale WILQ nie może sam uznać ich za tę
+  samą usługę. Przed generowaniem należy potwierdzić exact binding albo
+  zakończyć review obecnej karty. Nie wolno omijać tej bramki promptem.
+
 ## Runtime i granice
 
 - Zarządzaj lokalnym stackiem wyłącznie przez
@@ -111,7 +137,8 @@ browser nie wywołuje Codexa ani adaptera WordPress bezpośrednio.
 
 ## Następny bezpieczny ruch
 
-Najpierw marketer wybiera konkretną zmianę homepage Services #2 albo wskazuje
-następny adres z potwierdzonym targetem dev. WILQ przygotowuje wtedy exact
-preview i ActionObject; dopiero osobne review i confirm mogą utworzyć nowy
-draft na dev. Publikacja oraz update/delete pozostają poza zakresem.
+Najpierw owner usługi rozstrzyga exact binding dla artykułu o ocenie
+oddziaływania na środowisko: review obecnej karty albo potwierdzone przypisanie
+do zatwierdzonej karty audytu. Wtedy WILQ może przygotować jedną exact rewizję,
+pokazać ją z referencyjnym widokiem dev i przejść zwykłe review → ActionObject
+→ create-only draft. Publikacja oraz update/delete pozostają poza zakresem.
