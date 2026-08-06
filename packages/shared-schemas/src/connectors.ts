@@ -88,6 +88,7 @@ export const FreshnessStateSchema = z.object({
 export const MetricStoreStatusSchema = z.object({
   backend: z.string(),
   enabled: z.boolean(),
+  schema_version: z.number(),
   path_configured: z.boolean(),
   metric_fact_count: z.number(),
   connector_count: z.number(),

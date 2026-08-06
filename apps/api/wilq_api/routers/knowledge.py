@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import APIRouter, HTTPException
 
 from wilq.content.knowledge.source_facts import ekologus_source_facts
@@ -160,15 +158,15 @@ def knowledge_source_material_readiness() -> KnowledgeSourceMaterialReadiness:
     )
 
 
-@router.get("/api/knowledge/search")
-def knowledge_search(q: str = "") -> list[dict[str, Any]]:
+@router.get("/api/knowledge/search", response_model=list[KnowledgeCard])
+def knowledge_search(q: str = "") -> list[KnowledgeCard]:
     query = q.lower()
     cards = compile_playbook_cards()
     if query:
         cards = [
             card for card in cards if query in card.title.lower() or query in card.summary.lower()
         ]
-    return [card.model_dump(mode="json") for card in cards]
+    return cards
 
 
 @router.get("/api/knowledge/taxonomy", response_model=list[KnowledgeTaxonomyEntry])

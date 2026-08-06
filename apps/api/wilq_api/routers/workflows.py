@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 
 from wilq.storage.local_state import local_state_store
-from wilq.workflows.models import WorkflowRun, WorkflowRunCreateRequest
+from wilq.workflows.models import Workflow, WorkflowRun, WorkflowRunCreateRequest
 from wilq.workflows.registry import list_workflows
 
 router = APIRouter()
 
 
-@router.get("/api/workflows")
-def workflows() -> list[dict[str, Any]]:
-    return [workflow.model_dump(mode="json") for workflow in list_workflows()]
+@router.get("/api/workflows", response_model=list[Workflow])
+def workflows() -> list[Workflow]:
+    return list_workflows()
 
 
 @router.post("/api/workflows/{workflow_id}/runs", response_model=WorkflowRun)

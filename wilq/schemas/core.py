@@ -386,6 +386,16 @@ class MetricFact(BaseModel):
         return self
 
 
+class MetricStoreStatus(BaseModel):
+    backend: str
+    enabled: bool
+    schema_version: int
+    path_configured: bool
+    metric_fact_count: int
+    connector_count: int
+    refresh_run_count: int
+
+
 def _metric_dimension_label(value: str) -> str:
     labels = {
         "affected_attribute": "atrybut",

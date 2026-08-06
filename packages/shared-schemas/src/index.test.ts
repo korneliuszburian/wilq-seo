@@ -77,6 +77,7 @@ import {
   ContentPreflightResponseSchema,
   ConnectorRefreshStateSchema,
   KnowledgeTaxonomyEntrySchema,
+  MetricStoreStatusSchema,
   AdsOperatorSummarySchema,
   MerchantDiagnosticsResponseSchema,
   SocialHistoryImportAuditSchema,
@@ -99,6 +100,28 @@ describe("ContentKnowledgeCardSchema", () => {
       confidence: 1,
       freshness: "reviewed_2026-07-31"
     })).not.toThrow();
+  });
+});
+
+describe("MetricStoreStatusSchema", () => {
+  it("requires the API schema version returned by the metric store", () => {
+    expect(() => MetricStoreStatusSchema.parse({
+      backend: "duckdb",
+      enabled: true,
+      schema_version: 3,
+      path_configured: true,
+      metric_fact_count: 12,
+      connector_count: 4,
+      refresh_run_count: 7
+    })).not.toThrow();
+    expect(MetricStoreStatusSchema.safeParse({
+      backend: "duckdb",
+      enabled: true,
+      path_configured: true,
+      metric_fact_count: 12,
+      connector_count: 4,
+      refresh_run_count: 7
+    }).success).toBe(false);
   });
 });
 
