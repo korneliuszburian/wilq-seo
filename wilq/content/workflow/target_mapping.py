@@ -25,6 +25,7 @@ from wilq.content.workflow.target_mapping_blockers import (
 from wilq.content.workflow.target_mapping_preview_models import (
     ContentTargetDraftPreviewBlocker,
     ContentTargetDraftPreviewField,
+    ContentTargetDraftPreviewPreservedSourceSummary,
 )
 from wilq.content.workflow.target_mapping_source_fields import (
     ContentTargetSourceKind,
@@ -174,6 +175,7 @@ class ContentTargetDraftPreview(BaseModel):
     delivery_scope: ContentTargetMappingDeliveryScope = "full_document"
     draft_title: str | None = None
     components: list[ContentTargetDraftPreviewComponent] = Field(default_factory=list)
+    preserved_source_summary: ContentTargetDraftPreviewPreservedSourceSummary | None = None
     payload_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     blockers: list[ContentTargetDraftPreviewBlocker] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
@@ -615,6 +617,11 @@ def build_content_target_draft_preview(
     if confirmation.delivery_scope == "selected_components":
         payload["delivery_scope"] = confirmation.delivery_scope
         payload["draft_title"] = revision.title
+    surface_kind = (
+        target.target_contract.authoring_surface.kind
+        if target.target_contract.authoring_surface is not None
+        else None
+    )
     return ContentTargetDraftPreview(
         work_item_id=work_item_id,
         revision=identity,
@@ -625,21 +632,63 @@ def build_content_target_draft_preview(
         delivery_scope=confirmation.delivery_scope,
         draft_title=revision.title,
         components=projected,
+        preserved_source_summary=_preserved_source_summary(target, projected),
         payload_digest=sha256(
             json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest(),
-        caveats=[
-            "To jest podgląd danych do szkicu na dev, nie zapis do WordPressa.",
-            "Kolejny etap wymaga osobnej akcji, review, potwierdzenia i audytu.",
-            *(
-                [
-                    "Zakres szkicu obejmuje wyłącznie potwierdzone elementy ACF; "
-                    "pozostałe pola zostaną zachowane z odczytanego targetu."
-                ]
-                if confirmation.delivery_scope == "selected_components"
-                else []
-            ),
-        ],
+        caveats=_draft_preview_caveats(surface_kind, confirmation.delivery_scope),
+    )
+
+
+def _draft_preview_caveats(
+    surface_kind: str | None,
+    delivery_scope: ContentTargetMappingDeliveryScope,
+) -> list[str]:
+    caveats = [
+        "To jest podgląd danych do szkicu na dev, nie zapis do WordPressa.",
+        "Kolejny etap wymaga osobnej akcji, review, potwierdzenia i audytu.",
+    ]
+    if delivery_scope == "selected_components":
+        caveats.append(
+            "Zakres szkicu obejmuje wyłącznie potwierdzone elementy ACF; "
+            "pozostałe pola zostaną zachowane z odczytanego targetu."
+        )
+    elif surface_kind == "acf_flexible_content":
+        caveats.append(
+            "Pełny szkic ACF zachowa z odczytanego targetu wszystkie niezmieniane "
+            "layouty i pola; podgląd pokazuje tylko zmieniane elementy."
+        )
+    return caveats
+
+
+def _preserved_source_summary(
+    target: ContentTargetMappingTarget,
+    projected: list[ContentTargetDraftPreviewComponent],
+) -> ContentTargetDraftPreviewPreservedSourceSummary | None:
+    surface = target.target_contract.authoring_surface
+    if (
+        surface is None
+        or surface.kind != "acf_flexible_content"
+        or surface.source_acf_root_field_count is None
+        or surface.source_acf_row_count is None
+        or any(component.target_section_index is None for component in projected)
+    ):
+        return None
+    changed_rows = {component.target_section_index for component in projected}
+    if (
+        surface.source_acf_root_field_count < 1
+        or surface.source_acf_row_count < 1
+        or not changed_rows
+        or len(changed_rows) > surface.source_acf_row_count
+    ):
+        return None
+    return ContentTargetDraftPreviewPreservedSourceSummary(
+        label="Pełny klon zachowa niezmieniane dane ACF ze źródła",
+        source_root_field_count=surface.source_acf_root_field_count,
+        source_row_count=surface.source_acf_row_count,
+        changed_row_count=len(changed_rows),
+        unchanged_row_count=surface.source_acf_row_count - len(changed_rows),
+        preserved_sibling_root_field_count=surface.source_acf_root_field_count - 1,
     )
 
 

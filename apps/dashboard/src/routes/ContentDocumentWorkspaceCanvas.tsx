@@ -218,6 +218,17 @@ function TargetDraftPreviewDetails({ preview }: { preview: ContentTargetDraftPre
     <p className="mt-3 font-semibold text-ink">Dane są gotowe do osobnego sprawdzenia</p>
     <p className="mt-2 leading-6">Podgląd pokazuje, co wynika z zatwierdzonego dokumentu i potwierdzonego przypisania. Nie zapisuje zmian na dev.</p>
     <p className="mt-3 text-sm leading-6 text-slate-600">Pole układu: {preview.root_field}. Elementów: {preview.components.length}.</p>
+    {preview.preserved_source_summary ? (
+      <section className="mt-3 rounded-lg border border-action/20 bg-action/5 p-3">
+        <p className="font-semibold text-ink">{preview.preserved_source_summary.label}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          Pola główne ACF w źródle: {preview.preserved_source_summary.source_root_field_count}. Wiersze w polu {preview.root_field}: {preview.preserved_source_summary.source_row_count}.
+        </p>
+        <p className="mt-1 text-sm leading-6 text-slate-700">
+          Wiersze zmieniane: {preview.preserved_source_summary.changed_row_count}. Wiersze bez zmian: {preview.preserved_source_summary.unchanged_row_count}. Sąsiednie pola główne bez zmian: {preview.preserved_source_summary.preserved_sibling_root_field_count}.
+        </p>
+      </section>
+    ) : null}
     <details className="mt-3 rounded-lg bg-slate-50 p-3">
       <summary className="cursor-pointer font-semibold text-ink">Pokaż przygotowane elementy</summary>
       <ul className="mt-3 space-y-3">

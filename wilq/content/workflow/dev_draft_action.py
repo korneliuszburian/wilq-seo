@@ -294,15 +294,15 @@ def build_content_dev_draft_write_payload(
             content_html=_wordpress_post_content_html(current.components),
         )
     clone_plan = _clone_plan_from_action(action)
-    acf: dict[str, object] = (
-        _compile_current_acf_clone(
-            clone_plan,
-            source_object_id=current.target.target_contract.object_id,
-            endpoint=endpoint,
-            root_field=current.root_field,
+    if clone_plan is None:
+        raise ValueError(
+            "Akcja szkicu ACF nie ma planu klonowania; partial clone jest zablokowany."
         )
-        if clone_plan is not None
-        else {current.root_field: [_acf_layout(component) for component in current.components]}
+    acf = _compile_current_acf_clone(
+        clone_plan,
+        source_object_id=current.target.target_contract.object_id,
+        endpoint=endpoint,
+        root_field=current.root_field,
     )
     return ContentDevDraftWritePayload(
         connector="wordpress_ekologus",
@@ -482,15 +482,6 @@ def _compile_current_acf_clone(
         root_field=root_field,
     )
     return compile_acf_clone_payload(plan, snapshot)
-
-
-def _acf_layout(component: ContentTargetDraftPreviewComponent) -> dict[str, object]:
-    fields: dict[str, object] = {"acf_fc_layout": component.layout_name}
-    for field in component.fields:
-        if field.target_field in fields:
-            raise ValueError("Mapowanie szkicu zawiera powtórzone pole targetu.")
-        fields[field.target_field] = field.value
-    return fields
 
 
 def _wordpress_post_content_html(components: list[ContentTargetDraftPreviewComponent]) -> str:

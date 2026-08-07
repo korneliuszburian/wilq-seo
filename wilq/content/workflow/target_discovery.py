@@ -77,6 +77,8 @@ class ContentTargetAuthoringSurface(BaseModel):
     schema_reason: str = ""
     source_acf_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     source_acf_fields_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    source_acf_root_field_count: int | None = Field(default=None, ge=0)
+    source_acf_row_count: int | None = Field(default=None, ge=0)
     write_profile_status: Literal["ready", "not_required", "unavailable"] = "ready"
     write_profile_reason: str = ""
 
@@ -251,6 +253,8 @@ def _observed_target(
         acf_schema=acf_schema,
         source_acf_digest=source_snapshot.root_digest if source_snapshot else None,
         source_acf_fields_digest=source_snapshot.fields_digest if source_snapshot else None,
+        source_acf_root_field_count=len(source_snapshot.fields) if source_snapshot else None,
+        source_acf_row_count=len(source_snapshot.rows) if source_snapshot else None,
         relationships_by_section=_observed_relationships(
             item,
             acf_schema=acf_schema,
@@ -334,6 +338,8 @@ def _target(
     acf_schema: WordPressAcfRestSchema | None = None,
     source_acf_digest: str | None = None,
     source_acf_fields_digest: str | None = None,
+    source_acf_root_field_count: int | None = None,
+    source_acf_row_count: int | None = None,
     relationships_by_section: dict[int, list[ContentTargetAuthoringRelationship]] | None = None,
 ) -> ContentTargetDiscoveryTarget:
     contract = _target_contract(
@@ -342,6 +348,8 @@ def _target(
         acf_schema=acf_schema,
         source_acf_digest=source_acf_digest,
         source_acf_fields_digest=source_acf_fields_digest,
+        source_acf_root_field_count=source_acf_root_field_count,
+        source_acf_row_count=source_acf_row_count,
         relationships_by_section=relationships_by_section,
     )
     digest = _digest(contract)
@@ -381,6 +389,8 @@ def _target_contract(
     acf_schema: WordPressAcfRestSchema | None = None,
     source_acf_digest: str | None = None,
     source_acf_fields_digest: str | None = None,
+    source_acf_root_field_count: int | None = None,
+    source_acf_row_count: int | None = None,
     relationships_by_section: dict[int, list[ContentTargetAuthoringRelationship]] | None = None,
 ) -> ContentTargetContract:
     surface = None
@@ -414,6 +424,8 @@ def _target_contract(
             schema_reason=acf_schema.reason if acf_schema is not None else "",
             source_acf_digest=source_acf_digest,
             source_acf_fields_digest=source_acf_fields_digest,
+            source_acf_root_field_count=source_acf_root_field_count,
+            source_acf_row_count=source_acf_row_count,
             write_profile_status=("ready" if writable_fields_by_layout else "unavailable"),
             write_profile_reason=_write_profile_reason(profile_reason, acf_schema),
         )

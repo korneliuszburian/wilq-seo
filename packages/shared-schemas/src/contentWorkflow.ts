@@ -800,6 +800,8 @@ export const ContentTargetAuthoringSurfaceSchema = z.object({
   schema_reason: z.string().default(""),
   source_acf_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   source_acf_fields_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  source_acf_root_field_count: z.number().int().nonnegative().nullable().optional(),
+  source_acf_row_count: z.number().int().nonnegative().nullable().optional(),
   write_profile_status: z.enum(["ready", "not_required", "unavailable"]).default("unavailable"),
   write_profile_reason: z.string().default("")
 });
@@ -941,6 +943,15 @@ export const ContentTargetDraftPreviewBlockerSchema = z.object({
   next_step: z.string().min(1)
 });
 
+export const ContentTargetDraftPreviewPreservedSourceSummarySchema = z.object({
+  label: z.string().min(1),
+  source_root_field_count: z.number().int().positive(),
+  source_row_count: z.number().int().positive(),
+  changed_row_count: z.number().int().positive(),
+  unchanged_row_count: z.number().int().nonnegative(),
+  preserved_sibling_root_field_count: z.number().int().nonnegative()
+});
+
 export const ContentTargetDraftPreviewSchema = z.object({
   response_type: z.literal("content_target_draft_preview"),
   contract_version: z.literal("content_target_draft_preview_v1"),
@@ -953,6 +964,7 @@ export const ContentTargetDraftPreviewSchema = z.object({
   delivery_scope: z.enum(["full_document", "selected_components"]).default("full_document"),
   draft_title: z.string().min(1).nullable().optional(),
   components: z.array(ContentTargetDraftPreviewComponentSchema).default([]),
+  preserved_source_summary: ContentTargetDraftPreviewPreservedSourceSummarySchema.nullable().optional(),
   payload_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   blockers: z.array(ContentTargetDraftPreviewBlockerSchema).default([]),
   caveats: z.array(z.string()).default([])

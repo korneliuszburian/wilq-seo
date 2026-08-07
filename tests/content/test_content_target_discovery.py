@@ -302,6 +302,8 @@ def test_target_discovery_exposes_observed_acf_relationships_without_making_them
     ]
     assert surface.layouts[0].writable_fields == []
     assert surface.source_acf_fields_digest == "b" * 64
+    assert surface.source_acf_root_field_count == 2
+    assert surface.source_acf_row_count == 1
 
 
 def test_target_discovery_does_not_infer_a_target_when_dev_path_differs(monkeypatch) -> None:

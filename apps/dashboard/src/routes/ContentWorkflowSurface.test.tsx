@@ -583,7 +583,10 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
-    expect(screen.getByText("Podgląd danych do szkicu na dev", { exact: true })).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Podgląd danych do szkicu na dev", { exact: true }));
+    expect(await screen.findByText("Pełny klon zachowa niezmieniane dane ACF ze źródła")).toBeInTheDocument();
+    expect(screen.getByText(/Pola główne ACF w źródle: 3.*Wiersze.*: 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Wiersze bez zmian: 3.*Sąsiednie pola główne bez zmian: 2/)).toBeInTheDocument();
     expect(postContentRevisionTargetDraftAction).not.toHaveBeenCalled();
   });
 
@@ -1139,6 +1142,14 @@ function contentTargetDraftPreview(): ContentTargetDraftPreview {
         value_kind: "html"
       }]
     }],
+    preserved_source_summary: {
+      label: "Pełny klon zachowa niezmieniane dane ACF ze źródła",
+      source_root_field_count: 3,
+      source_row_count: 5,
+      changed_row_count: 2,
+      unchanged_row_count: 3,
+      preserved_sibling_root_field_count: 2
+    },
     payload_digest: "e".repeat(64),
     blockers: [],
     caveats: ["To nadal nie tworzy draftu ani nie zmienia WordPressa."]

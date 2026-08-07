@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from typing import cast
 
+import pytest
 from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
@@ -9,6 +10,7 @@ from wilq.actions import action_validation, mutation_contract
 from wilq.actions import audit_store as action_audit_store
 from wilq.actions import payloads as action_payloads
 from wilq.actions import service as action_service
+from wilq.connectors.wordpress.acf_source_snapshot import WordPressAcfFlexibleSnapshot
 from wilq.content.workflow import dev_draft_action, dev_draft_execution
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -54,10 +56,25 @@ def _ready_preview():
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                source_acf_digest="1" * 64,
+                source_acf_fields_digest="2" * 64,
+                source_acf_root_field_count=2,
+                source_acf_row_count=3,
                 layouts=[
-                    ContentTargetAuthoringLayout(name="title_section", fields=["wordpress_title"]),
                     ContentTargetAuthoringLayout(
-                        name="text_section", fields=["heading", "content_html"]
+                        name="title_section",
+                        section_index=1,
+                        fields=["wordpress_title"],
+                    ),
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        section_index=2,
+                        fields=["heading", "content_html"],
+                    ),
+                    ContentTargetAuthoringLayout(
+                        name="gallery_section",
+                        section_index=3,
+                        fields=["images"],
                     ),
                 ],
             )
@@ -77,6 +94,7 @@ def _ready_preview():
                 ContentTargetMappingSelection(
                     component_id="document-title",
                     layout_name="title_section",
+                    target_section_index=1,
                     field_bindings=[
                         ContentTargetMappingFieldBinding(
                             source_field="wordpress_title",
@@ -87,6 +105,7 @@ def _ready_preview():
                 ContentTargetMappingSelection(
                     component_id="section:section_bdo",
                     layout_name="text_section",
+                    target_section_index=2,
                     field_bindings=[
                         ContentTargetMappingFieldBinding(
                             source_field="heading", target_field="heading"
@@ -107,6 +126,40 @@ def _ready_preview():
         revisions=[revision],
         mapping_preview=preview,
         confirmation=confirmation,
+    )
+
+
+def _source_snapshot() -> WordPressAcfFlexibleSnapshot:
+    rows = [
+        {
+            "acf_fc_layout": "title_section",
+            "wordpress_title": "Stary tytuł",
+            "background_image": 417,
+        },
+        {
+            "acf_fc_layout": "text_section",
+            "heading": "Stary nagłówek",
+            "content_html": "<p>Stara treść.</p>",
+            "media": {"id": 512},
+        },
+        {"acf_fc_layout": "gallery_section", "images": [41, 42]},
+    ]
+    return WordPressAcfFlexibleSnapshot(
+        object_id="1353",
+        content_type="posts",
+        root_field="content_sections",
+        root_digest="1" * 64,
+        rows=rows,
+        fields_digest="2" * 64,
+        fields={"content_sections": rows, "page_icon": 1126},
+    )
+
+
+def _patch_source_snapshot(monkeypatch) -> None:
+    monkeypatch.setattr(
+        dev_draft_action,
+        "read_wordpress_acf_flexible_snapshot",
+        lambda *_args, **_kwargs: _source_snapshot(),
     )
 
 
@@ -318,6 +371,7 @@ def test_selected_acf_rich_text_combines_heading_and_body_into_one_confirmed_fie
         "value": "<h2>Kiedy sprawdzić obowiązki BDO</h2><p>Sprawdź działalność firmy.</p>",
         "value_kind": "html",
     }
+    assert any("pozostałe pola zostaną zachowane" in caveat for caveat in draft_preview.caveats)
 
 
 def test_target_mapping_blocks_every_component_when_exact_object_has_unknown_surface() -> None:
@@ -509,6 +563,25 @@ def test_target_draft_preview_uses_only_the_exact_confirmed_mapping() -> None:
     assert blocked.blockers[0].code == "mapping_not_confirmed"
 
 
+def test_full_document_acf_draft_preview_exposes_preserved_source_summary() -> None:
+    _revision_value, draft_preview = _ready_preview()
+
+    assert draft_preview.delivery_scope == "full_document"
+    assert draft_preview.preserved_source_summary is not None
+    assert draft_preview.preserved_source_summary.model_dump() == {
+        "label": "Pełny klon zachowa niezmieniane dane ACF ze źródła",
+        "source_root_field_count": 2,
+        "source_row_count": 3,
+        "changed_row_count": 2,
+        "unchanged_row_count": 1,
+        "preserved_sibling_root_field_count": 1,
+    }
+    assert any(
+        "podgląd pokazuje tylko zmieniane elementy" in caveat
+        for caveat in draft_preview.caveats
+    )
+
+
 def test_content_dev_draft_action_binds_the_exact_confirmed_preview_and_fails_closed_when_stale(
     monkeypatch,
     tmp_path,
@@ -577,7 +650,7 @@ def test_content_dev_draft_action_binds_the_exact_confirmed_preview_and_fails_cl
     assert loaded.payload["runtime_blockers"] == ["content_draft_action_stale"]
 
 
-def test_content_dev_draft_write_payload_is_create_only_and_requires_one_exact_title(
+def test_content_dev_draft_write_payload_blocks_acf_action_without_clone_plan(
     monkeypatch,
 ) -> None:
     revision, draft_preview = _ready_preview()
@@ -599,26 +672,34 @@ def test_content_dev_draft_write_payload_is_create_only_and_requires_one_exact_t
         "current_content_target_draft_preview",
         lambda **_: draft_preview,
     )
+    draft_payload = dict(action.payload["draft_payload"])
+    draft_payload.pop("acf_clone_plan")
+    action_without_plan = action.model_copy(
+        update={"payload": {**action.payload, "draft_payload": draft_payload}}
+    )
 
-    payload = dev_draft_action.build_content_dev_draft_write_payload(action)
+    with pytest.raises(
+        ValueError,
+        match="Akcja szkicu ACF nie ma planu klonowania; partial clone jest zablokowany",
+    ):
+        dev_draft_action.build_content_dev_draft_write_payload(action_without_plan)
 
-    assert payload.endpoint == "posts"
-    assert payload.post_status == "draft"
-    assert payload.create_only is True
-    assert payload.publish_allowed is False
-    assert payload.update_allowed is False
-    assert payload.delete_allowed is False
-    assert payload.title == revision.title
-    assert payload.acf == {
-        "content_sections": [
-            {"acf_fc_layout": "title_section", "wordpress_title": revision.title},
-            {
-                "acf_fc_layout": "text_section",
-                "heading": "Kiedy sprawdzić obowiązki BDO",
-                "content_html": "<p>Sprawdź działalność firmy.</p>",
-            },
-        ]
-    }
+
+def test_content_dev_draft_write_payload_requires_one_exact_title(monkeypatch) -> None:
+    revision, draft_preview = _ready_preview()
+    assert draft_preview.target is not None
+    assert draft_preview.confirmation is not None
+    assert draft_preview.payload_digest is not None
+    action = dev_draft_action.create_content_target_draft_action(
+        draft_preview,
+        dev_draft_action.ContentTargetDraftActionCommand(
+            expected_revision_digest=revision.content_digest,
+            expected_target_contract_digest=draft_preview.target.target_contract_digest,
+            expected_confirmation_digest=draft_preview.confirmation.confirmation_digest,
+            expected_payload_digest=draft_preview.payload_digest,
+            requested_by="Marta Kowalska",
+        ),
+    )
 
     no_title = draft_preview.model_copy(
         update={
@@ -675,6 +756,7 @@ def test_content_dev_draft_payload_uses_observed_service_rest_endpoint(
         "current_content_target_draft_preview",
         lambda **_: service_preview,
     )
+    _patch_source_snapshot(monkeypatch)
 
     payload = dev_draft_action.build_content_dev_draft_write_payload(action)
 
@@ -703,6 +785,7 @@ def test_content_dev_draft_execution_uses_only_the_exact_acf_payload(monkeypatch
         "current_content_target_draft_preview",
         lambda **_: draft_preview,
     )
+    _patch_source_snapshot(monkeypatch)
     monkeypatch.setattr(dev_draft_execution, "_dev_draft_writes_enabled", lambda: True)
     received: dict[str, object] = {}
 
@@ -729,13 +812,20 @@ def test_content_dev_draft_execution_uses_only_the_exact_acf_payload(monkeypatch
     payload = received["payload"]
     assert payload.acf == {
         "content_sections": [
-            {"acf_fc_layout": "title_section", "wordpress_title": revision.title},
+            {
+                "acf_fc_layout": "title_section",
+                "wordpress_title": revision.title,
+                "background_image": 417,
+            },
             {
                 "acf_fc_layout": "text_section",
                 "heading": "Kiedy sprawdzić obowiązki BDO",
                 "content_html": "<p>Sprawdź działalność firmy.</p>",
+                "media": {"id": 512},
             },
-        ]
+            {"acf_fc_layout": "gallery_section", "images": [41, 42]},
+        ],
+        "page_icon": 1126,
     }
 
 
@@ -827,6 +917,7 @@ def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_us
         "current_content_target_draft_preview",
         lambda **_: current_preview[0],
     )
+    _patch_source_snapshot(monkeypatch)
     draft_writes_enabled = [True]
     monkeypatch.setattr(
         dev_draft_execution,
