@@ -10,7 +10,10 @@ from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
     run_regulatory_draft_assurance,
 )
-from wilq.content.drafts.generated_claim_safety import generated_claim_safety_issues
+from wilq.content.drafts.generated_claim_safety import (
+    GeneratedClaimSafetyIssue,
+    generated_claim_safety_issues,
+)
 from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
     initial_draft_context_digest,
@@ -598,14 +601,25 @@ def _output_blocker(
         inputs.generation_contract,
     )
     if issues:
-        return _blocker(
-            "generated_claim_blocked",
-            "Tekst zawiera niedozwoloną obietnicę",
-            "Deterministyczna bramka wykryła blocked claim albo ryzykowny język.",
-            "Odrzuć wynik i wygeneruj bez niedozwolonych twierdzeń.",
-            source_codes=list(dict.fromkeys(item.code for item in issues)),
-        )
+        return _generated_claim_blocker(issues)
     return None
+
+
+def _generated_claim_blocker(
+    issues: list[GeneratedClaimSafetyIssue],
+) -> ContentInitialDraftBlocker:
+    """Describe the exact planned section without exposing generated prose."""
+
+    headings = list(dict.fromkeys(item.heading.strip() for item in issues if item.heading.strip()))
+    section_detail = f" Sekcje planu: {', '.join(headings[:3])}." if headings else ""
+    return _blocker(
+        "generated_claim_blocked",
+        "Tekst zawiera niedozwoloną obietnicę",
+        "Deterministyczna bramka wykryła blocked claim albo ryzykowny język."
+        + section_detail,
+        "Usuń niedozwolone twierdzenie ze wskazanej sekcji i wygeneruj nową próbę.",
+        source_codes=list(dict.fromkeys(item.code for item in issues)),
+    )
 
 
 def _assure_regulated_draft(

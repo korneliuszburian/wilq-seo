@@ -5,6 +5,7 @@ from pydantic import BaseModel, ValidationError
 
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.drafts import initial_full_draft
+from wilq.content.drafts.generated_claim_safety import GeneratedClaimSafetyIssue
 from wilq.content.drafts.initial_draft_validation import document_scope_errors
 from wilq.content.drafts.initial_full_draft import _planning_input_blocker
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -60,6 +61,24 @@ def test_initial_draft_model_output_rejects_whitespace_only_content(
 ) -> None:
     with pytest.raises(ValidationError, match="cannot be blank"):
         model.model_validate(payload)
+
+
+def test_generated_claim_blocker_names_the_planned_section_without_claim_text() -> None:
+    blocker = initial_full_draft._generated_claim_blocker(
+        [
+            GeneratedClaimSafetyIssue(
+                code="undeclared_high_risk_claim_language",
+                heading="Zakres dokumentacji dla inwestycji",
+                claim_text="Nie ujawniaj wygenerowanego zdania.",
+            )
+        ]
+    )
+
+    assert blocker.code == "generated_claim_blocked"
+    assert blocker.source_codes == ["undeclared_high_risk_claim_language"]
+    assert "Zakres dokumentacji dla inwestycji" in blocker.reason
+    assert "Nie ujawniaj" not in blocker.reason
+    assert "wskazanej sekcji" in blocker.next_step
 
 
 def _proposal_with_review_required_inventory() -> ContentPlanningProposal:
