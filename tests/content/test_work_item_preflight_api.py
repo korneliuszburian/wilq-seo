@@ -590,12 +590,13 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
 
     item = data["preflight"]["item"]
     assert item["id"] == f"content_work_item_{source_decision['id']}"
-    # The marketer-facing topic uses the exact WordPress title/H1 when the
-    # selected inventory row has one; the diagnostics queue title may be a
-    # decision label such as “Istniejący URL …”.
-    assert item["topic"] == (
-        source_decision.get("wordpress_title_or_h1") or source_decision["title"]
-    )
+    inventory_records = data["preflight"]["inventory_resolution"]["records"]
+    assert len(inventory_records) == 1
+    inventory_record = inventory_records[0]
+    # A ready WordPress binding may replace the diagnostics queue title with
+    # fresher inventory material. Both snapshot projections must still come
+    # from that same selected decision.
+    assert item["topic"] == inventory_record["title"] == inventory_record["h1"]
     assert item["source_public_url"] == source_decision["source_public_url"]
     assert item["final_canonical_url"] == source_decision["final_canonical_url"]
     assert item["preview_url"] == source_decision["preview_url"]
