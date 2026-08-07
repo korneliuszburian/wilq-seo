@@ -810,6 +810,18 @@ def _digest(payload: dict[str, object]) -> str:
     return sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def content_planning_inventory_digest(inventory: ContentPlanningInventory) -> str:
+    """Return the canonical inventory binding used by persisted draft revisions."""
+
+    canonical = json.dumps(
+        inventory.model_dump(mode="json"),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def _json_default(value: object) -> object:
     if isinstance(value, BaseModel):
         return value.model_dump(mode="json")
@@ -844,6 +856,7 @@ __all__ = [
     "ContentPlanningSourceAssessment",
     "build_content_planning_input",
     "build_new_page_planning_input",
+    "content_planning_inventory_digest",
     "content_planning_input_readiness",
     "content_planning_input_summary",
     "planning_generation_blockers",

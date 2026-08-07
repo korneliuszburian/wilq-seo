@@ -4567,7 +4567,8 @@ export const ContentInitialDraftBlockerSchema = z.object({
   label: z.string().min(1),
   reason: z.string().min(1),
   next_step: z.string().min(1),
-  source_codes: z.array(z.string()).default([])
+  source_codes: z.array(z.string()).default([]),
+  retry_after_seconds: z.number().int().positive().nullable().optional()
 });
 
 export const ContentInitialDraftResponseSchema = z.object({

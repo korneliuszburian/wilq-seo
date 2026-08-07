@@ -16,6 +16,7 @@ from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.codex_revision_commit import (
     assert_initial_draft_current_context,
     codex_completion_state,
+    editor_draft_context_is_current,
     persist_codex_completion,
     prepare_codex_completion,
 )
@@ -165,6 +166,11 @@ class _DraftRevisionStoreMixin(_StoreConnectionMixin):
                 return ContentDraftRevisionWriteResult(
                     status="conflict",
                     conflict=_draft_revision_conflict("stale_base", latest),
+                )
+            if not editor_draft_context_is_current(redacted_command):
+                return ContentDraftRevisionWriteResult(
+                    status="conflict",
+                    conflict=_draft_revision_conflict("stale_context", latest),
                 )
 
             revision = build_stored_draft_revision(
@@ -638,18 +644,21 @@ class _WordPressApplyStoreMixin(_StoreConnectionMixin):
 class _ReviewStoreMixin(_StoreConnectionMixin):
     def save_human_review(self, review: ContentHumanReview) -> ContentHumanReview:
         redacted = ContentHumanReview.model_validate(redact_mapping(review.model_dump(mode="json")))
+        updated_at = utc_now().isoformat()
         with self._connect() as connection:
             connection.execute(
                 """
-                INSERT INTO content_human_reviews (id, work_item_id, payload_json)
-                VALUES (?, ?, ?)
+                INSERT INTO content_human_reviews (id, work_item_id, updated_at, payload_json)
+                VALUES (?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                   work_item_id = excluded.work_item_id,
+                  updated_at = excluded.updated_at,
                   payload_json = excluded.payload_json
                 """,
                 (
                     redacted.id,
                     redacted.work_item_id,
+                    updated_at,
                     _model_json(redacted),
                 ),
             )
@@ -857,7 +866,7 @@ class _SocialReuseStoreMixin(_StoreConnectionMixin):
                 """
                 SELECT payload_json FROM content_human_reviews
                 WHERE work_item_id = ?
-                ORDER BY rowid DESC
+                ORDER BY updated_at DESC, id DESC
                 LIMIT 1
                 """,
                 (work_item_id,),

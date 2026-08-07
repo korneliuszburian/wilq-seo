@@ -46,6 +46,7 @@ ContentInitialDraftBlockerCode = Literal[
     "revision_conflict",
     "persistence_failed",
     "generation_in_progress",
+    "initial_draft_queue_full",
     "stale_initial_draft_context",
 ]
 
@@ -158,6 +159,7 @@ class ContentInitialDraftBlocker(BaseModel):
     reason: str = Field(min_length=1)
     next_step: str = Field(min_length=1)
     source_codes: list[str] = Field(default_factory=list)
+    retry_after_seconds: int | None = Field(default=None, ge=1)
 
 
 class ContentInitialDraftResponse(BaseModel):

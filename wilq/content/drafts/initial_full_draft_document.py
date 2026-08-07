@@ -11,7 +11,10 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
-from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInput,
+    content_planning_inventory_digest,
+)
 from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal
@@ -70,7 +73,7 @@ def build_initial_draft_revision_command(
         planning_input_digest=planning_input.planning_input_digest,
         service_card_id=planning_input.confirmed_service_card_id,
         service_digest=_service_digest(planning_input),
-        inventory_digest=_digest(planning_input.inventory),
+        inventory_digest=content_planning_inventory_digest(planning_input.inventory),
         source_material_ids=sorted(
             {
                 source_material_id

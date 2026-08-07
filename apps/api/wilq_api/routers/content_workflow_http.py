@@ -163,6 +163,11 @@ def revision_conflict_next_step(code: str) -> str:
             "Na serwerze jest nowsza wersja. Zachowaj swój tekst, porównaj zmiany "
             "i dopiero potem zapisz kolejną wersję na aktualnej bazie."
         )
+    if code == "stale_context":
+        return (
+            "Plan, inventory albo adres strony zmieniły się podczas zapisu. "
+            "Odśwież workspace i przenieś tekst na aktualny kontekst przed ponowną próbą."
+        )
     if code == "stale_revision":
         return (
             "Ta wersja nie jest już najnowsza. Odśwież snapshot i sprawdź aktualną "

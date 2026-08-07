@@ -85,6 +85,7 @@ ContentDraftRevisionSchemaVersion = Literal[
 ContentDraftRevisionConflictCode = Literal[
     "apply_in_progress",
     "stale_base",
+    "stale_context",
     "revision_not_found",
     "stale_revision",
     "stale_review",

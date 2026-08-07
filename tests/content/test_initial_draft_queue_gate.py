@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from threading import Event
 from types import SimpleNamespace
+
+import pytest
 
 from apps.api.wilq_api.routers import content_initial_draft
 from apps.api.wilq_api.routers.content_initial_draft import _can_queue_initial_draft
@@ -188,6 +191,57 @@ def test_initial_draft_queue_ignores_started_run_from_another_proposal(
     assert response.run_id != "old-run"
     assert response.proposal_id == "proposal-1"
     assert len(submitted) == 1
+
+
+def test_bounded_initial_draft_executor_rejects_when_worker_capacity_is_full() -> None:
+    executor = content_initial_draft.BoundedInitialDraftExecutor(max_workers=1)
+    started = Event()
+    release = Event()
+
+    def hold_worker() -> None:
+        started.set()
+        assert release.wait(timeout=5)
+
+    future = executor.submit(hold_worker)
+    assert started.wait(timeout=5)
+    try:
+        with pytest.raises(content_initial_draft.InitialDraftQueueFullError):
+            executor.submit(lambda: None)
+    finally:
+        release.set()
+        future.result(timeout=5)
+        executor.shutdown()
+
+
+def test_initial_draft_queue_full_returns_explicit_blocker_and_terminal_run(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+
+    class FullExecutor:
+        def submit(self, *_args, **_kwargs):
+            raise content_initial_draft.InitialDraftQueueFullError
+
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(content_initial_draft, "_INITIAL_DRAFT_EXECUTOR", FullExecutor())
+    snapshot = _snapshot(latest_revision=None)
+
+    response = content_initial_draft._queue_initial_draft(
+        "work",
+        _request(),
+        StdioCodexAppServerClient(),
+        lambda _work_item_id: snapshot,
+        snapshot,
+    )
+
+    assert response.status == "blocked"
+    assert response.blockers[0].code == "initial_draft_queue_full"
+    assert response.blockers[0].retry_after_seconds == 5
+    assert response.run_id is not None
+    persisted = next(run for run in store.list_codex_runs() if run.id == response.run_id)
+    assert persisted.status == "blocked"
+    assert persisted.error == "initial_draft_queue_full"
 
 
 def test_expired_exact_claim_is_replaced_without_get(tmp_path) -> None:

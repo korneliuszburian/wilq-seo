@@ -9,6 +9,7 @@ _CONTENT_WORKFLOW_SCHEMA = (
     CREATE TABLE IF NOT EXISTS content_human_reviews (
       id TEXT PRIMARY KEY,
       work_item_id TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
       payload_json TEXT NOT NULL
     )
     """,
@@ -273,4 +274,32 @@ def ensure_content_workflow_schema(connection: sqlite3.Connection) -> None:
     reject_newer_sqlite_schema(connection)
     for statement in _CONTENT_WORKFLOW_SCHEMA:
         connection.execute(statement)
+    _ensure_content_human_review_updated_at(connection)
     ensure_sqlite_schema_version(connection)
+
+
+def _ensure_content_human_review_updated_at(connection: sqlite3.Connection) -> None:
+    columns = {
+        str(row[1]) for row in connection.execute("PRAGMA table_info(content_human_reviews)")
+    }
+    migrated = False
+    if "updated_at" not in columns:
+        connection.execute(
+            "ALTER TABLE content_human_reviews "
+            "ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''"
+        )
+        migrated = True
+    missing_timestamp = connection.execute(
+        "SELECT 1 FROM content_human_reviews WHERE updated_at = '' LIMIT 1"
+    ).fetchone()
+    if missing_timestamp is not None:
+        connection.execute(
+            """
+            UPDATE content_human_reviews
+            SET updated_at = printf('%020d', rowid)
+            WHERE updated_at = ''
+            """
+        )
+        migrated = True
+    if migrated:
+        connection.commit()

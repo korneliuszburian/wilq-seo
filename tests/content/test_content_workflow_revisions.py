@@ -1,10 +1,21 @@
 from __future__ import annotations
 
+import json
+import sqlite3
+from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
 
+from apps.api.wilq_api.routers import content_workflow as content_workflow_router
+from apps.api.wilq_api.routers.content_workflow import _revision_conflict_response
+from wilq.content.workflow.contracts import ContentDraftRevisionSaveRequest
+from wilq.content.workflow.codex_revision_commit import (
+    ContentDraftRevisionContext,
+    current_editor_draft_context_guard,
+)
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
@@ -202,6 +213,122 @@ def test_stale_base_with_different_content_does_not_mutate_history(tmp_path: Pat
         first.revision_id,
         second.revision_id,
     ]
+
+
+def test_editor_save_context_guard_accepts_current_exact_binding(tmp_path: Path) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    first = _require_revision(store.append_draft_revision(_append_command()))
+    command = _context_bound_child_command(first)
+    context = ContentDraftRevisionContext.from_command(command)
+    assert context is not None
+
+    with current_editor_draft_context_guard(lambda: context):
+        result = store.append_draft_revision(command)
+
+    assert result.status == "created"
+    assert result.revision is not None
+    assert result.revision.base_revision_id == first.revision_id
+
+
+def test_editor_save_context_change_during_atomic_append_returns_409_stale_context(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "wilq.sqlite3"
+    store = ContentWorkflowStore(path)
+    first = _require_revision(store.append_draft_revision(_append_command()))
+    command = _context_bound_child_command(first)
+    expected = ContentDraftRevisionContext.from_command(command)
+    assert expected is not None
+    observed_write_lock = False
+
+    def changed_context() -> ContentDraftRevisionContext:
+        nonlocal observed_write_lock
+        with sqlite3.connect(path, timeout=0) as concurrent:
+            with pytest.raises(sqlite3.OperationalError, match="locked"):
+                concurrent.execute("BEGIN IMMEDIATE")
+            observed_write_lock = True
+        return replace(expected, planning_digest="e" * 64)
+
+    with current_editor_draft_context_guard(changed_context):
+        result = store.append_draft_revision(command)
+
+    assert observed_write_lock is True
+    assert result.status == "conflict"
+    assert result.conflict is not None
+    assert result.conflict.code == "stale_context"
+    assert store.list_draft_revisions(first.work_item_id) == [first]
+    response = _revision_conflict_response(result.conflict)
+    assert response.status_code == 409
+    assert json.loads(response.body)["code"] == "stale_context"
+
+
+def test_editor_save_route_rechecks_planning_digest_at_append(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    first = _require_revision(store.append_draft_revision(_append_command()))
+    command = _context_bound_child_command(first)
+    expected = ContentDraftRevisionContext.from_command(command)
+    assert expected is not None
+    contexts = iter([expected, replace(expected, planning_digest="e" * 64)])
+    snapshot = SimpleNamespace(
+        draft_package=SimpleNamespace(
+            draft_package_result=SimpleNamespace(draft_package=object())
+        ),
+        preflight=SimpleNamespace(
+            item=SimpleNamespace(
+                final_canonical_url=expected.final_canonical_url,
+                intended_final_url=expected.final_canonical_url,
+            )
+        ),
+        revision_workspace=SimpleNamespace(
+            latest_revision=first,
+            can_save=True,
+            context_current=True,
+            safe_next_step="Odśwież workspace.",
+        ),
+        planning_workspace=SimpleNamespace(section_map_current=True),
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "_snapshot_for_work_item_or_404",
+        lambda _work_item_id: snapshot,
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "_editor_save_context",
+        lambda _snapshot: next(contexts),
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "_validate_revision_sections",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "_build_editor_save_command",
+        lambda **_kwargs: command,
+    )
+    monkeypatch.setattr(content_workflow_router, "content_workflow_store", lambda: store)
+    request = ContentDraftRevisionSaveRequest(
+        base_revision_id=first.revision_id,
+        title=command.title,
+        sections=[
+            section.model_copy(update={"content_html": "<p>Treść po zmianie redakcyjnej.</p>"})
+            for section in command.sections
+        ],
+        created_by=command.created_by,
+    )
+
+    response = content_workflow_router.content_work_item_draft_revision_save(
+        first.work_item_id,
+        request,
+    )
+
+    assert response.status_code == 409
+    assert json.loads(response.body)["code"] == "stale_context"
+    assert store.list_draft_revisions(first.work_item_id) == [first]
 
 
 def test_revision_state_is_isolated_by_work_item(tmp_path: Path) -> None:
@@ -480,6 +607,21 @@ def _append_command(
             ]
         ),
         created_by=created_by,
+    )
+
+
+def _context_bound_child_command(
+    revision: ContentDraftRevision,
+) -> ContentDraftRevisionAppendCommand:
+    return _append_command(
+        base_revision_id=revision.revision_id,
+        body_markdown="Treść po zmianie redakcyjnej.",
+    ).model_copy(
+        update={
+            "planning_input_digest": "1" * 64,
+            "service_card_id": "ekologus_service_bdo",
+            "inventory_digest": "2" * 64,
+        }
     )
 
 

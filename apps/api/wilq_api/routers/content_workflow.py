@@ -17,6 +17,17 @@ from apps.api.wilq_api.routers.content_workflow_http import (
 )
 from wilq.content.drafts.package import ContentDraftPackage, ContentDraftSection
 from wilq.content.measurement.deployment import ContentPublicDeployment
+from wilq.content.planning.dynamic_input import (
+    build_content_planning_input,
+    content_planning_inventory_digest,
+)
+from wilq.content.planning.generated_proposal import (
+    with_explicit_content_service_selection,
+)
+from wilq.content.workflow.codex_revision_commit import (
+    ContentDraftRevisionContext,
+    current_editor_draft_context_guard,
+)
 from wilq.content.workflow.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionConflictResponse,
@@ -75,6 +86,7 @@ def _build_editor_save_command(
     planning: ContentPlanningWorkspace,
     final_canonical_url: str,
     revision_context_current: bool,
+    save_context: ContentDraftRevisionContext | None = None,
 ) -> ContentDraftRevisionAppendCommand:
     if (
         latest_revision is not None
@@ -118,12 +130,17 @@ def _build_editor_save_command(
             correction_reason=request.correction_reason,
             created_by=request.created_by,
         )
+    if save_context is None:
+        raise ValueError("Editor save requires an exact current context binding.")
     return ContentDraftRevisionAppendCommand(
         work_item_id=work_item_id,
         base_revision_id=request.base_revision_id,
         draft_package_id=draft_package.id,
         draft_package_digest=content_draft_package_digest(draft_package),
         planning_digest=planning.proposal.planning_digest,
+        planning_input_digest=save_context.planning_input_digest,
+        service_card_id=save_context.service_card_id,
+        inventory_digest=save_context.inventory_digest,
         final_canonical_url=final_canonical_url,
         title=request.title,
         sections=request.sections,
@@ -173,6 +190,14 @@ def content_work_item_draft_revision_save(
             revision_context_current=workspace.context_current,
         )
 
+    save_context = _editor_save_context(snapshot)
+    if save_context is None:
+        return _workspace_conflict_response(
+            code="stale_context",
+            snapshot=snapshot,
+            safe_next_step=revision_conflict_next_step("stale_context"),
+        )
+
     command = _build_editor_save_command(
         work_item_id=work_item_id,
         request=request,
@@ -181,8 +206,12 @@ def content_work_item_draft_revision_save(
         planning=planning,
         final_canonical_url=final_canonical_url,
         revision_context_current=workspace.context_current,
+        save_context=save_context,
     )
-    result = content_workflow_store().append_draft_revision(command)
+    with current_editor_draft_context_guard(
+        lambda: _editor_save_context(_snapshot_for_work_item_or_404(work_item_id))
+    ):
+        result = content_workflow_store().append_draft_revision(command)
     if result.status == "conflict":
         if result.conflict is None:
             raise RuntimeError("Revision append conflict is missing conflict details.")
@@ -195,6 +224,42 @@ def content_work_item_draft_revision_save(
         status=result.status,
         revision=result.revision,
         workspace=refreshed.revision_workspace,
+    )
+
+
+def _editor_save_context(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> ContentDraftRevisionContext | None:
+    planning = snapshot.planning_workspace
+    draft_package = snapshot.draft_package.draft_package_result.draft_package
+    item = snapshot.preflight.item
+    final_canonical_url = item.final_canonical_url or item.intended_final_url
+    if planning is None or draft_package is None or not final_canonical_url:
+        return None
+    proposal = planning.proposal
+    service_card_id = proposal.service_card_id
+    if service_card_id is None or proposal.planning_input_digest is None:
+        return None
+    planning_snapshot = with_explicit_content_service_selection(snapshot, service_card_id)
+    planning_result = build_content_planning_input(
+        planning_snapshot,
+        service_card_id=service_card_id,
+    )
+    planning_input = planning_result.planning_input
+    if (
+        planning_input is None
+        or planning_input.planning_input_digest != proposal.planning_input_digest
+    ):
+        return None
+    return ContentDraftRevisionContext(
+        work_item_id=item.id,
+        draft_package_id=draft_package.id,
+        draft_package_digest=content_draft_package_digest(draft_package),
+        planning_digest=proposal.planning_digest,
+        planning_input_digest=planning_input.planning_input_digest,
+        service_card_id=service_card_id,
+        inventory_digest=content_planning_inventory_digest(planning_input.inventory),
+        final_canonical_url=final_canonical_url,
     )
 
 

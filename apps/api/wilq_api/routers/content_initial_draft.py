@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
-from typing import Literal
+from concurrent.futures import Future, ThreadPoolExecutor
+from threading import BoundedSemaphore
+from typing import Literal, ParamSpec, TypeVar
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -53,14 +54,48 @@ ContentInitialDraftSnapshotLoader = Callable[
     ContentWorkItemWorkflowSnapshotResponse,
 ]
 
-_INITIAL_DRAFT_EXECUTOR = ThreadPoolExecutor(
-    # Assurance may spend minutes in a Codex subprocess. A stale worker must
-    # not monopolize the queue and prevent a later exact proposal from being
-    # retried.
-    max_workers=2,
-    thread_name_prefix="wilq-content-draft",
-)
+_P = ParamSpec("_P")
+_T = TypeVar("_T")
+
+
+class InitialDraftQueueFullError(RuntimeError):
+    pass
+
+
+class BoundedInitialDraftExecutor:
+    """Reject work once both draft workers are occupied instead of queueing it."""
+
+    def __init__(self, *, max_workers: int) -> None:
+        self._executor = ThreadPoolExecutor(
+            max_workers=max_workers,
+            thread_name_prefix="wilq-content-draft",
+        )
+        self._capacity = BoundedSemaphore(max_workers)
+
+    def submit(
+        self,
+        fn: Callable[_P, _T],
+        /,
+        *args: _P.args,
+        **kwargs: _P.kwargs,
+    ) -> Future[_T]:
+        if not self._capacity.acquire(blocking=False):
+            raise InitialDraftQueueFullError("initial draft executor capacity is full")
+        try:
+            future = self._executor.submit(fn, *args, **kwargs)
+        except BaseException:
+            self._capacity.release()
+            raise
+        future.add_done_callback(lambda _future: self._capacity.release())
+        return future
+
+    def shutdown(self, *, wait: bool = True) -> None:
+        self._executor.shutdown(wait=wait)
+
+
+_INITIAL_DRAFT_EXECUTOR = BoundedInitialDraftExecutor(max_workers=2)
 _DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 900.0
+_INITIAL_DRAFT_QUEUE_RETRY_SECONDS = 5
 
 
 class _InitialDraftDeadlineClient:
@@ -156,6 +191,7 @@ _INITIAL_DRAFT_BLOCKER_CODES = {
     "revision_conflict",
     "persistence_failed",
     "generation_in_progress",
+    "initial_draft_queue_full",
     "stale_initial_draft_context",
 }
 
@@ -277,14 +313,23 @@ def _queue_initial_draft(
         return _queued_initial_draft_response(
             work_item_id, proposal_id, run_id, True
         )
-    _INITIAL_DRAFT_EXECUTOR.submit(
-        _run_queued_initial_draft,
-        work_item_id,
-        request,
-        client,
-        run_id,
-        snapshot_loader,
-    )
+    try:
+        _INITIAL_DRAFT_EXECUTOR.submit(
+            _run_queued_initial_draft,
+            work_item_id,
+            request,
+            client,
+            run_id,
+            snapshot_loader,
+        )
+    except InitialDraftQueueFullError:
+        transition_initial_draft_run_if_status(
+            local_state_store(),
+            claim.run,
+            status="blocked",
+            error="initial_draft_queue_full",
+        )
+        return _initial_draft_queue_full_response(work_item_id, proposal_id, run_id)
     return _queued_initial_draft_response(
         work_item_id, proposal_id, run_id, False
     )
@@ -307,6 +352,28 @@ def _queued_initial_draft_response(
             if already_running
             else "Pełny tekst jest przygotowywany; odśwież ten etap za chwilę."
         ),
+    )
+
+
+def _initial_draft_queue_full_response(
+    work_item_id: str,
+    proposal_id: str | None,
+    run_id: str,
+) -> ContentInitialDraftResponse:
+    blocker = ContentInitialDraftBlocker(
+        code="initial_draft_queue_full",
+        label="Kolejka pełnego tekstu jest pełna",
+        reason="Dwa pełne teksty są już przygotowywane i WILQ nie zakolejkuje cichej próby.",
+        next_step="Ponów uruchomienie za kilka sekund dla tego samego aktualnego planu.",
+        retry_after_seconds=_INITIAL_DRAFT_QUEUE_RETRY_SECONDS,
+    )
+    return ContentInitialDraftResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        proposal_id=proposal_id,
+        run_id=run_id,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
     )
 
 
@@ -653,6 +720,11 @@ def _terminal_initial_draft_response(
             else "Otwórz blocker i ponów po sprawdzeniu runtime."
         ),
         source_codes=source_codes,
+        retry_after_seconds=(
+            _INITIAL_DRAFT_QUEUE_RETRY_SECONDS
+            if code == "initial_draft_queue_full"
+            else None
+        ),
     )
     return ContentInitialDraftResponse(
         status="failed" if run.status == "failed" else "blocked",

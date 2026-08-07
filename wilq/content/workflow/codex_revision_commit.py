@@ -5,6 +5,7 @@ import sqlite3
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass
 from typing import Literal, cast
 
 from wilq.content.drafts.initial_draft_run import (
@@ -21,6 +22,45 @@ _current_initial_draft_context: ContextVar[Callable[[], str] | None] = ContextVa
     "current_initial_draft_context",
     default=None,
 )
+_current_editor_draft_context: ContextVar[
+    Callable[[], ContentDraftRevisionContext | None] | None
+] = ContextVar("current_editor_draft_context", default=None)
+
+
+@dataclass(frozen=True, slots=True)
+class ContentDraftRevisionContext:
+    work_item_id: str
+    draft_package_id: str
+    draft_package_digest: str
+    planning_digest: str
+    planning_input_digest: str
+    service_card_id: str
+    inventory_digest: str
+    final_canonical_url: str
+
+    @classmethod
+    def from_command(
+        cls,
+        command: ContentDraftRevisionAppendCommand,
+    ) -> ContentDraftRevisionContext | None:
+        required = (
+            command.planning_input_digest,
+            command.service_card_id,
+            command.inventory_digest,
+            command.final_canonical_url,
+        )
+        if any(value is None for value in required):
+            return None
+        return cls(
+            work_item_id=command.work_item_id,
+            draft_package_id=command.draft_package_id,
+            draft_package_digest=command.draft_package_digest,
+            planning_digest=command.planning_digest,
+            planning_input_digest=cast(str, command.planning_input_digest),
+            service_card_id=cast(str, command.service_card_id),
+            inventory_digest=cast(str, command.inventory_digest),
+            final_canonical_url=cast(str, command.final_canonical_url),
+        )
 
 
 @contextmanager
@@ -34,6 +74,29 @@ def current_initial_draft_context_guard(
         yield
     finally:
         _current_initial_draft_context.reset(token)
+
+
+@contextmanager
+def current_editor_draft_context_guard(
+    current_context: Callable[[], ContentDraftRevisionContext | None],
+) -> Iterator[None]:
+    """Bind an editor save to the source context checked during its append."""
+
+    token = _current_editor_draft_context.set(current_context)
+    try:
+        yield
+    finally:
+        _current_editor_draft_context.reset(token)
+
+
+def editor_draft_context_is_current(command: ContentDraftRevisionAppendCommand) -> bool:
+    """Check the editor snapshot binding while the append transaction is held."""
+
+    current_context = _current_editor_draft_context.get()
+    if current_context is None:
+        return True
+    expected = ContentDraftRevisionContext.from_command(command)
+    return expected is not None and current_context() == expected
 
 
 def assert_initial_draft_current_context(
