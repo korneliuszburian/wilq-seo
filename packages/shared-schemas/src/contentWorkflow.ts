@@ -19,6 +19,13 @@ export const ContentDuplicateStatusSchema = z.enum([
   "blocked"
 ]);
 export const ContentPreflightStatusSchema = z.enum([
+  "blocked",
+  "plan_allowed",
+  "brief_allowed",
+  "draft_allowed",
+  "handoff_allowed"
+]);
+const ContentWorkItemPreflightStatusSchema = z.enum([
   "missing",
   "blocked",
   "plan_allowed",
@@ -93,7 +100,7 @@ export const ContentWorkItemSchema = z.object({
   inventory_status: ContentInventoryStatusSchema,
   canonical_status: ContentCanonicalStatusSchema,
   duplicate_status: ContentDuplicateStatusSchema,
-  preflight_status: ContentPreflightStatusSchema.default("missing"),
+  preflight_status: ContentWorkItemPreflightStatusSchema.default("missing"),
   preserve_first_plan_status: ContentArtifactStatusSchema.default("missing"),
   sales_brief_status: ContentArtifactStatusSchema.default("missing"),
   sales_brief_id: z.string().nullable().optional(),
@@ -243,7 +250,7 @@ export const ContentWorkItemQueueCandidateSchema = z.object({
   final_canonical_url: z.string().nullable().optional(),
   intended_final_url: z.string().nullable().optional(),
   preview_url: z.string().nullable().optional(),
-  preflight_status: z.string(),
+  preflight_status: ContentPreflightStatusSchema,
   preflight_status_label: z.string(),
   duplicate_canonical_risk_summary: z.string(),
   measurement_readiness: ContentWorkItemQueueMeasurementReadinessSchema,

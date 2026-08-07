@@ -13,7 +13,6 @@ from wilq.content.workflow.acf_clone_projection import (
     ContentAcfCloneReplacement,
     compile_acf_clone_payload,
 )
-from wilq.content.workflow.delivery_projection import wordpress_post_content_html
 from wilq.content.workflow.store import content_workflow_store
 from wilq.content.workflow.target_discovery import build_content_target_discovery
 from wilq.content.workflow.target_mapping import (
@@ -485,15 +484,14 @@ def _compile_current_acf_clone(
 
 
 def _wordpress_post_content_html(components: list[ContentTargetDraftPreviewComponent]) -> str:
-    """Map a full document into a WordPress post body without a second page H1.
+    """Return the exact WordPress post body already approved in the preview.
 
-    Native WordPress themes render the post title as the page H1. The immutable
-    document deliberately retains its H1, but its delivery projection must not
-    put that same heading into ``post_content``.
+    The canonical document-to-target projection removes the page H1 while
+    building the preview. Applying that projection again here would hide an
+    invalid canonical document and break exact preview-to-payload equality.
     """
 
-    document_html = _document_content_html(components)
-    return wordpress_post_content_html(document_html)
+    return _document_content_html(components)
 
 
 def _document_content_html(components: list[ContentTargetDraftPreviewComponent]) -> str:

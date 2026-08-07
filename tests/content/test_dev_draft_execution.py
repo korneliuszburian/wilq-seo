@@ -164,11 +164,11 @@ def _created_execution(content_html: str) -> ContentWordPressDraftExecutionResul
     )
 
 
-def _readback(content_html: str) -> WordPressDraftPostReadback:
+def _readback(content_html: str, *, status: str = "draft") -> WordPressDraftPostReadback:
     return WordPressDraftPostReadback(
         post_id="417",
         endpoint="posts",
-        status="draft",
+        status=status,
         title="Testowy szkic",
         link="https://ekologus.dev.proudsite.pl/?p=417",
         modified_gmt="2026-08-07T12:00:00",
@@ -221,4 +221,24 @@ def test_stage_readback_blocks_content_digest_mismatch(
     assert result.verification_status == "blocked"
     assert [blocker.code for blocker in result.blockers] == [
         "wordpress_draft_content_mismatch"
+    ]
+
+
+def test_stage_readback_blocks_non_draft_status(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected_html = "<p>Oczekiwana treść.</p>"
+    monkeypatch.setattr(
+        stage_activation,
+        "read_wordpress_draft_post",
+        lambda _post_id: _readback(expected_html, status="publish"),
+    )
+
+    result = stage_activation.wordpress_draft_readback(_created_execution(expected_html))
+
+    assert result is not None
+    assert result.status == "blocked"
+    assert result.verification_status == "blocked"
+    assert [blocker.code for blocker in result.blockers] == [
+        "wordpress_draft_status_mismatch"
     ]

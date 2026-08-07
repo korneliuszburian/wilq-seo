@@ -333,29 +333,113 @@ def _schema_types(schema: dict[str, object]) -> set[str]:
     return set()
 
 
-def _one_of_schema(schema: dict[str, object], value: object) -> dict[str, object]:
+def _one_of_schema(schema: dict[str, object], value: object) -> dict[str, object] | None:
     """Choose a Flexible Content layout schema from its stable layout key."""
 
     options = schema.get("oneOf")
-    if not isinstance(options, list) or not isinstance(value, dict):
+    if not isinstance(options, list):
+        return schema
+    if not isinstance(value, dict):
         return schema
     layout = value.get("acf_fc_layout")
     if not isinstance(layout, str):
-        return schema
+        return None
     for option in options:
         if not isinstance(option, dict):
             continue
         properties = option.get("properties")
         layout_schema = properties.get("acf_fc_layout") if isinstance(properties, dict) else None
         pattern = layout_schema.get("pattern") if isinstance(layout_schema, dict) else None
-        if isinstance(pattern, str) and re.fullmatch(pattern, layout):
-            return option
-    return schema
+        if isinstance(pattern, str):
+            try:
+                if re.fullmatch(pattern, layout):
+                    return option
+            except re.error:
+                continue
+    return None
 
 
 def _property_schema(properties: dict[object, object], key: object) -> dict[str, object]:
     candidate = properties.get(key)
     return candidate if isinstance(candidate, dict) else {}
+
+
+def _acf_schema_path(path: str, key: object) -> str:
+    segment = str(key)
+    if not _WORDPRESS_REST_SAFE_ERROR_SEGMENT.fullmatch(segment):
+        segment = "?"
+    return f"{path}.{segment}"
+
+
+def _acf_value_schema_types(value: object) -> set[str]:
+    if value is None:
+        return {"null"}
+    if isinstance(value, dict):
+        return {"object"}
+    if isinstance(value, list):
+        return {"array"}
+    if isinstance(value, str):
+        return {"string"}
+    if type(value) is bool:
+        return {"boolean"}
+    if type(value) is int:
+        return {"integer", "number"}
+    if type(value) is float:
+        return {"number"}
+    return set()
+
+
+def _validate_acf_for_create(
+    value: object,
+    schema: dict[str, object],
+    *,
+    path: str = "acf",
+) -> list[str]:
+    """Return bounded schema problems that must block an ACF create request."""
+
+    selected_schema = _one_of_schema(schema, value)
+    if selected_schema is None:
+        return [f"{path}: nieznany layout ACF"]
+
+    allowed_types = _schema_types(selected_schema)
+    allowed_values = selected_schema.get("enum")
+    empty_value_is_normalizable = (
+        value == ""
+        and "null" in allowed_types
+        and (
+            "string" not in allowed_types
+            or isinstance(allowed_values, list)
+            and "" not in allowed_values
+        )
+    )
+    if (
+        allowed_types
+        and not empty_value_is_normalizable
+        and allowed_types.isdisjoint(_acf_value_schema_types(value))
+    ):
+        return [f"{path}: nieprawidłowy typ"]
+
+    problems: list[str] = []
+    if isinstance(value, dict):
+        properties = selected_schema.get("properties")
+        if not isinstance(properties, dict):
+            return problems
+        for key, item in value.items():
+            item_path = _acf_schema_path(path, key)
+            if key not in properties:
+                problems.append(f"{item_path}: pole poza schematem")
+                continue
+            problems.extend(
+                _validate_acf_for_create(item, _property_schema(properties, key), path=item_path)
+            )
+    elif isinstance(value, list):
+        item_schema = selected_schema.get("items")
+        if isinstance(item_schema, dict):
+            for index, item in enumerate(value):
+                problems.extend(
+                    _validate_acf_for_create(item, item_schema, path=f"{path}.{index}")
+                )
+    return problems
 
 
 def _normalize_acf_for_create(value: object, schema: dict[str, object]) -> object:
@@ -368,6 +452,8 @@ def _normalize_acf_for_create(value: object, schema: dict[str, object]) -> objec
     """
 
     selected_schema = _one_of_schema(schema, value)
+    if selected_schema is None:
+        raise WordPressDraftWriteError("Schemat ACF nie pokrywa layoutu Flexible Content.")
     allowed_types = _schema_types(selected_schema)
     allowed_values = selected_schema.get("enum")
     empty_value_is_invalid = isinstance(allowed_values, list) and "" not in allowed_values
@@ -588,6 +674,12 @@ def create_wordpress_acf_draft(
                 endpoint=endpoint,
                 auth=auth,
             )
+            schema_problems = _validate_acf_for_create(acf, acf_schema)
+            if schema_problems:
+                raise WordPressDraftWriteError(
+                    "Payload szkicu ACF nie pasuje do schematu zapisu "
+                    f"({'; '.join(schema_problems[:8])})."
+                )
             normalized_acf = _normalize_acf_for_create(acf, acf_schema)
             if not isinstance(normalized_acf, dict):
                 raise WordPressDraftWriteError("Schemat ACF nie potwierdził obiektu szkicu.")

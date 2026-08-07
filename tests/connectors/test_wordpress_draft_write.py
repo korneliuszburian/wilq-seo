@@ -8,6 +8,7 @@ import pytest
 
 from wilq.connectors.wordpress.client import (
     WordPressDraftReadError,
+    WordPressDraftVerificationError,
     WordPressDraftWriteError,
     _normalize_acf_for_create,
     create_wordpress_acf_draft,
@@ -100,6 +101,36 @@ def test_create_wordpress_draft_post_blocks_mismatched_content_readback(
     with pytest.raises(WordPressDraftWriteError, match="nie potwierdził zgodności"):
         create_wordpress_draft_post(_payload(), http_client=client)
 
+    assert [request.method for request in requests] == ["POST", "GET"]
+
+
+def test_create_wordpress_draft_post_blocks_non_draft_readback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "POST":
+            return httpx.Response(201, json={"id": 321, "status": "draft"})
+        return httpx.Response(
+            200,
+            json={
+                "id": 321,
+                "status": "publish",
+                "title": {"raw": "Testowy szkic"},
+                "content": {"raw": "# Testowy szkic\n\nTreść do sprawdzenia."},
+                "acf": {},
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    with pytest.raises(WordPressDraftVerificationError) as exc_info:
+        create_wordpress_draft_post(_payload(), http_client=client)
+
+    assert exc_info.value.code == "wordpress_draft_status_mismatch"
     assert [request.method for request in requests] == ["POST", "GET"]
 
 
@@ -314,6 +345,70 @@ def test_acf_create_normalizes_only_empty_values_rejected_by_rest_schema() -> No
             },
         ]
     }
+
+
+@pytest.mark.parametrize(
+    "acf",
+    [
+        {"unknown-root": "value"},
+        {"flexible-home": [{"acf_fc_layout": "unknown-layout", "img": None}]},
+        {"flexible-home": [{"acf_fc_layout": "hero", "img": {"invalid": "shape"}}]},
+    ],
+    ids=["unknown-key", "unknown-layout", "invalid-leaf-type"],
+)
+def test_create_wordpress_acf_draft_blocks_values_not_covered_by_live_schema(
+    monkeypatch: pytest.MonkeyPatch,
+    acf: dict[str, object],
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+    schema = {
+        "type": "object",
+        "properties": {
+            "flexible-home": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "acf_fc_layout": {"type": "string", "pattern": "^hero$"},
+                                "img": {"type": ["integer", "null"]},
+                            },
+                        }
+                    ]
+                },
+            }
+        },
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "OPTIONS":
+            return httpx.Response(
+                200,
+                json={"endpoints": [{"methods": ["POST"], "args": {"acf": schema}}]},
+            )
+        raise AssertionError("Nie wolno wysłać payloadu ACF poza schematem.")
+
+    with pytest.raises(WordPressDraftWriteError, match="nie pasuje do schematu zapisu"):
+        create_wordpress_acf_draft(
+            SimpleNamespace(
+                connector="wordpress_ekologus",
+                endpoint="uslugi",
+                post_status="draft",
+                create_only=True,
+                publish_allowed=False,
+                update_allowed=False,
+                delete_allowed=False,
+                title="Test ACF",
+                acf=acf,
+            ),
+            action_apply_authorized=True,
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+
+    assert [request.method for request in requests] == ["OPTIONS"]
 
 
 def test_create_wordpress_acf_draft_uses_live_schema_before_create(

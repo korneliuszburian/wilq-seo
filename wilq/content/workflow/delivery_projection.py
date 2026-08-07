@@ -38,4 +38,8 @@ def wordpress_post_content_html(document_html: str) -> str:
     that leading heading so preview, payload digest and written content agree.
     """
 
+    if _LEADING_DOCUMENT_H1.match(document_html) is None:
+        raise ValueError(
+            "Dokument kierowany do WordPress the_content musi zaczynać się od elementu h1."
+        )
     return _LEADING_DOCUMENT_H1.sub("", document_html, count=1).strip()

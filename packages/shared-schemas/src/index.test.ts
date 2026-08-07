@@ -74,6 +74,7 @@ import {
   ContentWordPressDraftHandoffSchema,
   ContentWordPressAuthoringPayloadPreviewResultSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
+  ContentWorkItemQueueCandidateSchema,
   ContentPreflightResponseSchema,
   ConnectorRefreshStateSchema,
   KnowledgeTaxonomyEntrySchema,
@@ -4773,5 +4774,17 @@ describe("Content work item workflow schemas", () => {
         candidate
       }).success
     ).toBe(true);
+    expect(
+      ContentWorkItemQueueCandidateSchema.safeParse({
+        ...candidate,
+        preflight_status: "secret_unreviewed_state"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentWorkItemQueueCandidateSchema.safeParse({
+        ...candidate,
+        preflight_status: "missing"
+      }).success
+    ).toBe(false);
   });
 });
