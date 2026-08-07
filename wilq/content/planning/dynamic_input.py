@@ -20,6 +20,10 @@ from wilq.content.measurement.aggregates import (
     MeasurementPeriodComparison,
     compare_exact_page_metric_periods,
 )
+from wilq.content.planning.ahrefs import (
+    AHREFS_GAP_FACT_NAMES,
+    ahrefs_cross_source_candidate_rows,
+)
 from wilq.content.planning.generation_readiness import planning_generation_blockers
 from wilq.content.planning.input_payload import refresh_planning_payload
 from wilq.content.planning.input_sources import (
@@ -414,6 +418,24 @@ def _resolved_inventory_section_headings(
     return [section.heading for section in inventory.sections]
 
 
+def _has_exact_ahrefs_cross_source_match(item: ContentWorkItem) -> bool:
+    gap_facts = [
+        fact
+        for fact in item.metric_facts
+        if fact.source_connector == "ahrefs" and fact.name in AHREFS_GAP_FACT_NAMES
+    ]
+    candidates = ahrefs_cross_source_candidate_rows(
+        gap_facts,
+        item.metric_facts,
+        limit=None,
+    )
+    return any(
+        candidate.gsc_cross_check.strength == "exact"
+        or candidate.wordpress_cross_check.strength == "exact"
+        for candidate in candidates
+    )
+
+
 def build_content_planning_input_from_components(
     *,
     item: ContentWorkItem,
@@ -443,6 +465,7 @@ def build_content_planning_input_from_components(
         brief=brief,
         demand=baseline_proposal.search_demand,
         service_lifecycle=candidate.lifecycle_status,
+        ahrefs_exact_match=_has_exact_ahrefs_cross_source_match(item),
     )
     regulatory_coverage = regulatory_content_coverage(
         service_card_id=candidate.service_card_id,
