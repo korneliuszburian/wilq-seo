@@ -8,6 +8,7 @@ from wilq.content.workflow.document_workspace import (
     ContentDocumentWorkspace,
     build_content_document_workspace,
 )
+from wilq.content.workflow.operator_steps import ContentWorkflowOperatorJourney
 
 
 class ContentSelectedWorkspace(BaseModel):
@@ -23,6 +24,7 @@ class ContentSelectedWorkspace(BaseModel):
     contract_version: Literal["content_selected_workspace_v1"] = "content_selected_workspace_v1"
     status: Literal["ready", "missing"]
     work_item_id: str = Field(min_length=1)
+    operator_journey: ContentWorkflowOperatorJourney
     workspace: ContentDocumentWorkspace | None = None
     reason: str = Field(min_length=1)
     safe_next_step: str = Field(min_length=1)
@@ -38,13 +40,21 @@ class ContentSelectedWorkspace(BaseModel):
         return self
 
 
-def build_content_selected_workspace(work_item_id: str) -> ContentSelectedWorkspace:
-    return build_content_selected_workspace_with_context(work_item_id)
+def build_content_selected_workspace(
+    work_item_id: str,
+    *,
+    operator_journey: ContentWorkflowOperatorJourney,
+) -> ContentSelectedWorkspace:
+    return build_content_selected_workspace_with_context(
+        work_item_id,
+        operator_journey=operator_journey,
+    )
 
 
 def build_content_selected_workspace_with_context(
     work_item_id: str,
     *,
+    operator_journey: ContentWorkflowOperatorJourney,
     revision_context_current: bool | None = None,
 ) -> ContentSelectedWorkspace:
     workspace = (
@@ -59,6 +69,7 @@ def build_content_selected_workspace_with_context(
         return ContentSelectedWorkspace(
             status="missing",
             work_item_id=work_item_id,
+            operator_journey=operator_journey,
             reason="Nie znaleziono istniejącej strony do odświeżenia pod tym dokładnym adresem.",
             safe_next_step=(
                 "Wróć do wyboru pracy i wybierz istniejącą stronę albo rozpocznij brief "
@@ -68,6 +79,7 @@ def build_content_selected_workspace_with_context(
     return ContentSelectedWorkspace(
         status="ready",
         work_item_id=work_item_id,
+        operator_journey=operator_journey,
         workspace=workspace,
         reason="WILQ odczytał dokładny workspace wskazanej strony.",
         safe_next_step=workspace.next_action.label,

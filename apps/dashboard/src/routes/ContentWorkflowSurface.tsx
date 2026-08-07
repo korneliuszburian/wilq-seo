@@ -299,6 +299,7 @@ function ContentTextWorkspace({
   if (!workspace) return <DocumentWorkspaceError onRetry={() => void selectedWorkspace.refetch()} />;
   return <ContentDocumentWorkspaceCanvas
     workspace={workspace}
+    operatorJourney={selectedWorkspace.data.operator_journey}
     onOpenReview={() => onOpenReview(workItemId)}
     operatorLabel={operatorLabel}
     onWorkspaceChanged={() => void selectedWorkspace.refetch()}

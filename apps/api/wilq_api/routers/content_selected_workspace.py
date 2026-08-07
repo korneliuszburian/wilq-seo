@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
+from wilq.content.workflow.operator_steps import ContentWorkflowOperatorJourney
 from wilq.content.workflow.selected_workspace import (
     ContentSelectedWorkspace,
     build_content_selected_workspace_with_context,
@@ -14,6 +15,10 @@ def register_content_selected_workspace_route(router: APIRouter) -> None:
         snapshot = snapshot_for_work_item_or_404(work_item_id)
         return build_content_selected_workspace_with_context(
             work_item_id,
+            operator_journey=ContentWorkflowOperatorJourney(
+                current_step_id=snapshot.current_step_id,
+                steps=snapshot.operator_steps,
+            ),
             revision_context_current=snapshot.revision_workspace.context_current,
         )
 

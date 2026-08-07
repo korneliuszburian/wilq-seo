@@ -399,6 +399,31 @@ describe("ContentDecisionContextSchema", () => {
 });
 
 describe("ContentSelectedWorkspaceSchema", () => {
+  const operatorJourney = {
+    current_step_id: "draft",
+    steps: [
+      ["scope", "Zakres i cel", "complete", "ready", "zakres gotowy"],
+      ["section_map", "Plan sekcji", "complete", "ready", "plan sekcji gotowy"],
+      ["draft", "Szkic treści", "current", "ready", "czeka na wersję szkicu"],
+      ["review", "Sprawdzenie treści", "pending", "blocked", "czeka na wersję szkicu"],
+      ["dev_draft", "Szkic na devie", "pending", "blocked", "czeka na sprawdzenie wersji"]
+    ].map(([id, title, phase, readiness, statusLabel]) => ({
+      id,
+      title,
+      phase,
+      readiness,
+      status_label: statusLabel,
+      summary: "Stan etapu pochodzi z API.",
+      can_open: phase !== "pending",
+      can_submit: id === "draft",
+      blocker: id === "dev_draft" ? {
+        code: "missing_revision_bound_draft",
+        label: "Brakuje wersji gotowej do przekazania",
+        reason: "Najpierw zapisz i zatwierdź dokładną wersję tekstu."
+      } : null,
+      safe_next_step: "Wykonaj następny bezpieczny krok wskazany przez API."
+    }))
+  };
   const workspace = {
     response_type: "content_document_workspace",
     contract_version: "content_document_workspace_v2",
@@ -454,6 +479,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
     const parsed = ContentSelectedWorkspaceSchema.parse({
         status: "ready",
         work_item_id: "content_work_item_bdo",
+        operator_journey: operatorJourney,
         workspace,
         reason: "Odczytano workspace.",
         safe_next_step: "Przygotuj dokument"
@@ -465,6 +491,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
       ContentSelectedWorkspaceSchema.safeParse({
         status: "missing",
         work_item_id: "content_work_item_missing",
+        operator_journey: operatorJourney,
         workspace: null,
         reason: "Nie znaleziono strony.",
         safe_next_step: "Wróć do wyboru."
@@ -474,6 +501,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
       ContentSelectedWorkspaceSchema.safeParse({
         status: "ready",
         work_item_id: "content_work_item_other",
+        operator_journey: operatorJourney,
         workspace,
         reason: "Odczytano workspace.",
         safe_next_step: "Przygotuj dokument"

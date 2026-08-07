@@ -411,6 +411,34 @@ describe("ContentWorkflowSurface", () => {
     expect(getContentRevisionTargetMapping).not.toHaveBeenCalled();
   });
 
+  it("keeps dev mapping hidden when the API blocks dev-draft despite an approved document", async () => {
+    const workspace = approvedDocumentWorkspace();
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(
+      selectedWorkspace(workspace, false)
+    );
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1",
+          defaultPendingMinMs: 0
+        })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(screen.getByText("Brakuje bezpiecznego przekazania zatwierdzonej wersji"))
+      .toBeInTheDocument();
+    expect(screen.queryByText("Przypisanie dokumentu do dev", { exact: true }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByText("Podgląd danych do szkicu na dev", { exact: true }))
+      .not.toBeInTheDocument();
+    expect(getContentRevisionTargetMapping).not.toHaveBeenCalled();
+    expect(getContentRevisionTargetDraftPreview).not.toHaveBeenCalled();
+  });
+
   it("does not offer a mapping confirmation from the text workspace", async () => {
     const workspace = approvedDocumentWorkspace();
     const preview = contentTargetMappingPreview();
@@ -891,16 +919,76 @@ function contentInventoryCatalog(): ContentInventoryCatalogResponse {
 }
 
 function selectedWorkspace(
-  workspace = contentDocumentWorkspace()
+  workspace = contentDocumentWorkspace(),
+  devDraftReady = workspace.canonical_document.status === "approved"
 ): ContentSelectedWorkspace {
   return {
     response_type: "content_selected_workspace",
     contract_version: "content_selected_workspace_v1",
     status: "ready",
     work_item_id: workspace.work_item_id,
+    operator_journey: contentOperatorJourney(workspace, devDraftReady),
     workspace,
     reason: "WILQ odczytał dokładny workspace wskazanej strony.",
     safe_next_step: workspace.next_action.label
+  };
+}
+
+function contentOperatorJourney(
+  workspace: ContentDocumentWorkspace,
+  devDraftReady: boolean
+): ContentSelectedWorkspace["operator_journey"] {
+  type Journey = ContentSelectedWorkspace["operator_journey"];
+  type JourneyStep = Journey["steps"][number];
+  const stepSpecs = [
+    ["scope", "Zakres i cel", "zakres gotowy"],
+    ["section_map", "Plan sekcji", "plan sekcji gotowy"],
+    ["draft", "Szkic treści", "wersja zapisana"],
+    ["review", "Sprawdzenie treści", "wersja czeka na sprawdzenie"],
+    [
+      "dev_draft",
+      "Szkic na devie",
+      devDraftReady
+        ? "zatwierdzona wersja czeka na bezpieczne przekazanie"
+        : "bezpieczne przekazanie jest zablokowane"
+    ]
+  ] as const;
+  const documentStatus = workspace.canonical_document.status;
+  const currentStepId: Journey["current_step_id"] = documentStatus === "approved"
+    ? "dev_draft"
+    : documentStatus === "unreviewed" || documentStatus === "deferred"
+      ? "review"
+      : "draft";
+  const currentStepIndex = stepSpecs.findIndex(([id]) => id === currentStepId);
+
+  return {
+    current_step_id: currentStepId,
+    steps: stepSpecs.map(([id, title, statusLabel], index): JourneyStep => {
+      const phase = index < currentStepIndex
+        ? "complete"
+        : index === currentStepIndex
+          ? "current"
+          : "pending";
+      const devDraftBlocked = id === "dev_draft" && !devDraftReady;
+      return {
+        id,
+        title,
+        phase,
+        readiness: devDraftBlocked ? "blocked" : "ready",
+        status_label: statusLabel,
+        summary: "Stan tego kroku pochodzi z kontraktu API.",
+        can_open: phase !== "pending",
+        can_submit: phase === "current" && !devDraftBlocked,
+        blocker: devDraftBlocked ? {
+          code: "missing_revision_bound_wordpress_seam",
+          label: "Brakuje bezpiecznego przekazania zatwierdzonej wersji",
+          reason: "Zatwierdzenie wersji nie potwierdza jeszcze gotowego przekazania do WordPress."
+        } : null,
+        safe_next_step: devDraftBlocked
+          ? "Najpierw przygotuj bezpieczne przekazanie tej samej wersji."
+          : "Przejdź do następnego bezpiecznego kroku."
+      };
+    })
   };
 }
 

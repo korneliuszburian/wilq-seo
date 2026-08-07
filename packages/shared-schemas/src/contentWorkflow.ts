@@ -558,6 +558,7 @@ export const ContentSelectedWorkspaceSchema = z
     contract_version: z.literal("content_selected_workspace_v1").default("content_selected_workspace_v1"),
     status: z.enum(["ready", "missing"]),
     work_item_id: z.string().min(1),
+    operator_journey: z.lazy(() => ContentWorkflowOperatorJourneySchema),
     workspace: ContentDocumentWorkspaceSchema.nullable().optional(),
     reason: z.string().min(1),
     safe_next_step: z.string().min(1)
@@ -3396,6 +3397,42 @@ export const ContentWorkflowOperatorStepSchema = z.object({
   safe_next_step: z.string()
 });
 
+export const ContentWorkflowOperatorJourneySchema = z.object({
+  current_step_id: ContentWorkflowOperatorStepIdSchema,
+  steps: z.array(ContentWorkflowOperatorStepSchema).length(5)
+}).superRefine((journey, context) => {
+  const stepIds = journey.steps.map((step) => step.id);
+  if (new Set(stepIds).size !== stepIds.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["steps"],
+      message: "steps must contain five unique operator step IDs"
+    });
+  }
+  if (
+    stepIds.some(
+      (stepId, index) => stepId !== CONTENT_WORKFLOW_OPERATOR_STEP_ORDER[index]
+    )
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["steps"],
+      message: "steps must use the canonical five-step order"
+    });
+  }
+  const currentSteps = journey.steps.filter((step) => step.phase === "current");
+  if (
+    currentSteps.length !== 1 ||
+    currentSteps[0]?.id !== journey.current_step_id
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["current_step_id"],
+      message: "current_step_id must identify the single current operator step"
+    });
+  }
+});
+
 export const ContentWorkItemServiceProfileBindingStatusSchema = z.enum([
   "not_evaluated",
   "bound",
@@ -5184,6 +5221,9 @@ export type ContentDraftRevisionConflict = z.infer<
   typeof ContentDraftRevisionConflictSchema
 >;
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
+export type ContentWorkflowOperatorJourney = z.infer<
+  typeof ContentWorkflowOperatorJourneySchema
+>;
 export type ContentPlanningWorkspace = z.infer<typeof ContentPlanningWorkspaceSchema>;
 export type ContentPlanningProposal = z.infer<typeof ContentPlanningProposalSchema>;
 export type ContentRegulatorySourceReviewCommand = z.input<

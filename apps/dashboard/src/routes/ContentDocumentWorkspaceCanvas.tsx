@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   type ContentDocumentWorkspace,
+  type ContentSelectedWorkspace,
   type ContentTargetDiscovery,
   type ContentTargetDraftPreview,
   type ContentTargetMappingPreview,
@@ -15,15 +16,18 @@ import {
   useContentTargetDiscovery
 } from "./contentWorkflowQueries";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
+import { ContentOperatorJourney } from "./ContentOperatorJourney";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 
 type View = "source" | "document" | "comparison";
 
 export function ContentDocumentWorkspaceCanvas({
   workspace,
+  operatorJourney,
   onOpenReview
 }: {
   workspace: ContentDocumentWorkspace;
+  operatorJourney: ContentSelectedWorkspace["operator_journey"];
   onOpenReview: () => void;
   operatorLabel?: string | null;
   onWorkspaceChanged?: () => void;
@@ -38,16 +42,18 @@ export function ContentDocumentWorkspaceCanvas({
   const [devDetailsOpen, setDevDetailsOpen] = useState(false);
   const [mappingOpen, setMappingOpen] = useState(false);
   const [draftPreviewOpen, setDraftPreviewOpen] = useState(false);
+  const devDraftStep = operatorJourney.steps.find((step) => step.id === "dev_draft");
+  const devDraftCanOpen = devDraftStep?.can_open === true && devDraftStep.readiness === "ready";
   const targetDiscovery = useContentTargetDiscovery(workspace.work_item_id, devDetailsOpen);
   const targetMapping = useContentRevisionTargetMapping(
     workspace.work_item_id,
     workspace.canonical_document.revision_id ?? null,
-    mappingOpen && workspace.canonical_document.status === "approved"
+    mappingOpen && devDraftCanOpen
   );
   const targetDraftPreview = useContentRevisionTargetDraftPreview(
     workspace.work_item_id,
     workspace.canonical_document.revision_id ?? null,
-    draftPreviewOpen && workspace.canonical_document.status === "approved"
+    draftPreviewOpen && devDraftCanOpen
   );
   const hasReviewAction = workspace.next_action.kind === "open_review";
 
@@ -83,6 +89,8 @@ export function ContentDocumentWorkspaceCanvas({
           </section>
         </div>
       </section>
+
+      <ContentOperatorJourney journey={operatorJourney} />
 
       <nav className="mt-4 flex gap-1 border-b border-line" aria-label="Widok dokumentu">
         <Tab active={view === "source"} onClick={() => setView("source")}>Obecna strona</Tab>
@@ -133,7 +141,7 @@ export function ContentDocumentWorkspaceCanvas({
             {targetDiscovery.isError ? <p className="mt-3 leading-6">Nie udało się odczytać strony roboczej na dev. Spróbuj ponownie później.</p> : null}
             {targetDiscovery.data ? <DevTargetDetails discovery={targetDiscovery.data} /> : null}
           </details>
-          {workspace.canonical_document.status === "approved" ? <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
+          {devDraftCanOpen ? <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
             if ((event.currentTarget as HTMLDetailsElement).open) setMappingOpen(true);
           }}>
             <summary className="cursor-pointer font-semibold text-ink">Przypisanie dokumentu do dev</summary>
@@ -142,7 +150,7 @@ export function ContentDocumentWorkspaceCanvas({
             {mappingOpen && targetMapping.isError ? <p className="mt-3 leading-6">Nie udało się odczytać przypisania dokumentu. Spróbuj ponownie później.</p> : null}
             {mappingOpen && targetMapping.data ? <TargetMappingDetails preview={targetMapping.data} /> : null}
           </details> : null}
-          {workspace.canonical_document.status === "approved" ? <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
+          {devDraftCanOpen ? <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" onToggle={(event) => {
             if ((event.currentTarget as HTMLDetailsElement).open) setDraftPreviewOpen(true);
           }}>
             <summary className="cursor-pointer font-semibold text-ink">Podgląd danych do szkicu na dev</summary>
