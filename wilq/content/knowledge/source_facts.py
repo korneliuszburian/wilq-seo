@@ -219,22 +219,29 @@ def ekologus_source_facts() -> tuple[ContentSourceFact, ...]:
     """
 
     from wilq.content.knowledge.private_source_reviews import private_source_review_store
+    from wilq.content.knowledge.public_source_reviews import public_source_review_store
     from wilq.content.regulatory.source_reviews import regulatory_source_review_store
 
     seed_facts = _seed_source_facts()
     private_review_store = private_source_review_store()
+    public_review_store = public_source_review_store()
     approved_private_source_ids = private_review_store.approved_source_ids(seed_facts)
     approved_private_facts = private_review_store.approved_source_facts(seed_facts)
+    approved_public_source_ids = public_review_store.approved_source_ids(seed_facts)
+    approved_public_facts = public_review_store.approved_source_facts(seed_facts)
     # A reviewed projection supersedes only the exact redacted candidate that
     # produced it.  Keeping both would make the card lifecycle remain
     # review-required forever, while deleting the seed entry would lose the
     # source's immutable catalog history.
     active_seed_facts = tuple(
-        fact for fact in seed_facts if fact.source_id not in approved_private_source_ids
+        fact
+        for fact in seed_facts
+        if fact.source_id not in approved_private_source_ids | approved_public_source_ids
     )
     return (
         *active_seed_facts,
         *approved_private_facts,
+        *approved_public_facts,
         *regulatory_source_review_store().approved_source_facts(),
     )
 

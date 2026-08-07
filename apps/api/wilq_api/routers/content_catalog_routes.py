@@ -12,6 +12,11 @@ from wilq.content.knowledge.private_source_reviews import (
     ContentPrivateSourceReviewResponse,
     private_source_review_store,
 )
+from wilq.content.knowledge.public_source_reviews import (
+    ContentPublicSourceReviewCommand,
+    ContentPublicSourceReviewResponse,
+    public_source_review_store,
+)
 from wilq.content.knowledge.service_profile import (
     ContentServiceProfileResponse,
     content_service_profile_response,
@@ -53,6 +58,24 @@ def register_content_catalog_routes(router: APIRouter) -> None:
     ) -> ContentPrivateSourceReviewResponse:
         try:
             response = private_source_review_store().record(
+                request,
+                candidates=ekologus_seed_source_facts(),
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        ekologus_content_knowledge_cards.cache_clear()
+        return response
+
+    @router.post(
+        "/api/content/public-source-reviews",
+        response_model=ContentPublicSourceReviewResponse,
+        responses={409: {"description": "Public source candidate changed or conflicts."}},
+    )
+    def record_public_source_review(
+        request: ContentPublicSourceReviewCommand,
+    ) -> ContentPublicSourceReviewResponse:
+        try:
+            response = public_source_review_store().record(
                 request,
                 candidates=ekologus_seed_source_facts(),
             )
