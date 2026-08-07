@@ -5,7 +5,7 @@ import sqlite3
 import duckdb
 
 SQLITE_SCHEMA_VERSION = 3
-DUCKDB_SCHEMA_VERSION = 1
+DUCKDB_SCHEMA_VERSION = 2
 
 
 def reject_newer_sqlite_schema(connection: sqlite3.Connection) -> None:

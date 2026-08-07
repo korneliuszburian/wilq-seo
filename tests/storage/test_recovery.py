@@ -62,7 +62,7 @@ def test_storage_backup_and_restore_preserve_versions_and_pilot_counts(tmp_path:
             INSERT INTO connector_metric_facts VALUES (
               'run_1', 'google_search_console', 'clicks', 3, NULL, 'number',
               '2026-07-01/2026-07-15', 'clicks', '{}', 'vendor_read', 'completed',
-              TIMESTAMP '2026-07-16 00:00:00', 'ev_run_1'
+              TIMESTAMP '2026-07-16 00:00:00', 1, 'ev_run_1'
             )
             """
         )
