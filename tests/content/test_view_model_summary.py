@@ -122,11 +122,18 @@ def test_content_summary_counts_query_pages_and_inventory_matches() -> None:
     assert content_matched_inventory_count([gsc_item, content_item]) == 1
 
 
-def test_ahrefs_wordpress_overlap_defaults_to_zero_without_review_decision() -> None:
-    assert ahrefs_wordpress_overlap_count_from_decisions([]) == 0
-    assert (
-        ahrefs_wordpress_overlap_count_from_decisions(
-            [_decision("content_decision_bdo", "refresh_or_merge")]
-        )
-        == 0
+def test_content_summary_omits_ahrefs_overlap_without_review_decision() -> None:
+    decision = _decision("content_decision_bdo", "refresh_or_merge")
+
+    assert ahrefs_wordpress_overlap_count_from_decisions([]) is None
+    assert ahrefs_wordpress_overlap_count_from_decisions([decision]) is None
+
+    summary = build_content_operator_summary(
+        [decision],
+        [],
+        [],
+        query_page_count=1,
+        matched_inventory_count=1,
     )
+
+    assert "Luki Ahrefs powiązane z WordPress" not in summary.metric_tiles

@@ -30,6 +30,13 @@ def build_content_operator_summary(
         1 for decision in decisions if content_decision_has_public_final_canonical(decision)
     )
     ahrefs_wordpress_overlap_count = ahrefs_wordpress_overlap_count_from_decisions(decisions)
+    metric_tiles: dict[str, int | float | str] = {
+        "Zapytania i adresy z GSC": query_page_count,
+        "Treści znalezione w WordPress": matched_inventory_count,
+    }
+    if ahrefs_wordpress_overlap_count is not None:
+        metric_tiles["Luki Ahrefs powiązane z WordPress"] = ahrefs_wordpress_overlap_count
+    metric_tiles["Decyzje treści"] = len(decisions)
     return ContentOperatorSummary(
         title="Co marketer ma zrobić teraz z treściami",
         summary=(
@@ -70,24 +77,19 @@ def build_content_operator_summary(
         blocked_claim_labels=content_blocked_claim_labels(
             claim for section in sections for claim in section.blocked_claims
         ),
-        metric_tiles={
-            "Zapytania i adresy z GSC": query_page_count,
-            "Treści znalezione w WordPress": matched_inventory_count,
-            "Luki Ahrefs powiązane z WordPress": ahrefs_wordpress_overlap_count,
-            "Decyzje treści": len(decisions),
-        },
+        metric_tiles=metric_tiles,
     )
 
 
 def ahrefs_wordpress_overlap_count_from_decisions(
     decisions: list[ContentDecisionItem],
-) -> int:
+) -> int | None:
     for decision in decisions:
         if decision.decision_type == "review_ahrefs_gap_records":
             value = decision.metric_tiles.get("Powiązanie z WordPress")
             if isinstance(value, (int, float)):
                 return int(value)
-    return 0
+    return None
 
 
 def content_query_page_count(items: list[TacticalQueueItem]) -> int:
