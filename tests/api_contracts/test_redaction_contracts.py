@@ -129,6 +129,18 @@ def test_redaction_preserves_exact_acf_source_digest_for_clone_lineage() -> None
     assert unsafe["source_acf_digest"] == "[REDACTED]"
 
 
+def test_redaction_preserves_exact_dev_draft_discard_fingerprints() -> None:
+    redacted = redact_mapping(
+        {
+            "content_digest": "a" * 64,
+            "acf_digest": "b" * 64,
+        }
+    )
+
+    assert redacted["content_digest"] == "a" * 64
+    assert redacted["acf_digest"] == "b" * 64
+
+
 def test_redaction_preserves_operator_contract_metadata() -> None:
     redacted = redact_mapping(
         {
