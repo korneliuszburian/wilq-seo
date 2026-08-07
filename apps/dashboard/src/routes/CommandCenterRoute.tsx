@@ -359,8 +359,7 @@ function blockerRows(data: CommandCenterResponse, blockedOrders: WorkOrder[]) {
     return [
       {
         title: `${data.blocker_count} blokady w danych WILQ`,
-        description: "Sprawdź kolejkę i nie wyciągaj końcowych wniosków bez dowodów.",
-        href: "/opportunities",
+        description: "Sprawdź kolejkę dnia i nie wyciągaj końcowych wniosków bez dowodów.",
         tone: "red" as const
       }
     ];

@@ -7,6 +7,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  redirect,
   RouterProvider,
   useParams
 } from "@tanstack/react-router";
@@ -27,7 +28,6 @@ import {
 import { GenericSurface } from "./GenericSurface";
 import {
   ActionsSurface,
-  OpportunitiesSurface,
   WorkflowsSurface
 } from "./OperatingRouteSurfaces";
 import { generatedSurfaceRoutes } from "./surfaceRegistry";
@@ -213,7 +213,9 @@ const commandCenterRoute = createRoute({
 const opportunitiesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/opportunities",
-  component: OpportunitiesSurface
+  beforeLoad: () => {
+    throw redirect({ to: "/command-center", replace: true });
+  }
 });
 const opportunityDetailRoute = createRoute({
   getParentRoute: () => rootRoute,

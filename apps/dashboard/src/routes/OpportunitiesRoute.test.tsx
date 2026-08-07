@@ -190,76 +190,26 @@ describe("Opportunities route", () => {
     vi.unstubAllGlobals();
   });
 
-  function renderOpportunities() {
-    return render(
-      <App
-        appRouter={createWilqRouter({ initialPath: "/opportunities", defaultPendingMinMs: 0 })}
-        client={testQueryClient}
-      />
+  it("redirects the retired opportunities bookmark to Dzisiaj with its action queue", async () => {
+    const appRouter = createWilqRouter({
+      initialPath: "/opportunities",
+      defaultPendingMinMs: 0
+    });
+
+    render(<App appRouter={appRouter} client={testQueryClient} />);
+
+    await waitFor(() => expect(appRouter.state.location.pathname).toBe("/command-center"));
+    expect(await screen.findByRole("heading", { name: "Dzisiaj" })).toBeInTheDocument();
+    expect(screen.getByText("Zadania do wykonania")).toBeInTheDocument();
+    expect(screen.getAllByText("Sprawdź wykluczenia w Google Ads").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Otwórz Reklamy" })).toHaveAttribute(
+      "href",
+      "/ads-doctor"
     );
-  }
-
-
-  it("opportunities route renders as the unified Kolejka", async () => {
-    renderOpportunities();
-    await waitFor(() => expect(screen.queryByText("Ładowanie stanu WILQ")).not.toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: "Kolejka" })).toBeInTheDocument();
-    expect(screen.getByText("Jedna wspólna kolejka decyzji, blokad i bezpiecznych następnych kroków. Tu nie ma drugiego raportu: to lista pracy do przejścia.")).toBeInTheDocument();
-    expect(screen.getByText("wszystkie pozycje")).toBeInTheDocument();
-    expect(screen.getByText("gotowe do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("wymaga review")).toBeInTheDocument();
-    expect(screen.getByText("zablokowane")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Wszystkie/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Priorytet P1/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Tylko blokady" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Tylko gotowe" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Kolejka decyzji i akcji" })).toBeInTheDocument();
-    expect(await screen.findByText("Sprawdź wykluczenia w Google Ads")).toBeInTheDocument();
-    expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez zapisu zmian")).toBeInTheDocument();
-    expect(screen.getAllByText("Reklamy").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("1 dowód źródłowy").length).toBeGreaterThan(0);
-    expect(screen.getByText("wysokie")).toBeInTheDocument();
-    expect(screen.getAllByText("Wymaga review").length).toBeGreaterThan(0);
-    expect(screen.getByText("Ostatnio zakończone")).toBeInTheDocument();
-    expect(screen.queryByText("Kolejka decyzji z WILQ")).not.toBeInTheDocument();
-    expect(screen.queryByText("Dowody użyte przez karty")).not.toBeInTheDocument();
-    expect(screen.queryByText("Powiązane akcje")).not.toBeInTheDocument();
-    expect(screen.queryByText("Rejestr kart opportunities")).not.toBeInTheDocument();
-    expect(screen.queryByText(/google_ads \/ google_ads_review_queue/)).not.toBeInTheDocument();
+    expect(
+      vi.mocked(fetch).mock.calls.some(([input]) => String(input).endsWith("/api/opportunities"))
+    ).toBe(false);
   });
-
-
-
-  it("shows the queue table while actions are still loading", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo | URL) => {
-        const url = String(input);
-        if (url.endsWith("/api/dashboard/command-center")) {
-          return Promise.resolve(Response.json(commandCenter));
-        }
-        if (url.endsWith("/api/opportunities")) {
-          return Promise.resolve(Response.json(opportunities));
-        }
-        if (url.endsWith("/api/actions")) {
-          return new Promise<Response>(() => {});
-        }
-        if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
-        return Promise.resolve(Response.json({}));
-      })
-    );
-
-    renderOpportunities();
-
-    await waitFor(() =>
-      expect(screen.getByText("Sprawdź wykluczenia w Google Ads")).toBeInTheDocument()
-    );
-    expect(screen.getByRole("heading", { name: "Kolejka" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Kolejka decyzji i akcji" })).toBeInTheDocument();
-    expect(screen.queryByText("Powiązane akcje")).not.toBeInTheDocument();
-    expect(screen.queryByText("Dowody użyte przez karty")).not.toBeInTheDocument();
-  });
-
 
   it("renders opportunity detail metrics as a summary before technical details", async () => {
     render(

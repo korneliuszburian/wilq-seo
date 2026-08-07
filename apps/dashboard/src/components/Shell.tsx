@@ -27,7 +27,7 @@ export function Shell() {
         <nav className="space-y-4 p-3">
           <SurfaceNavSection routes={primarySurfaceRoutes} />
           <SurfaceNavSection
-            label="System"
+            label="Zaplecze"
             routes={secondarySurfaceRoutes}
             linkClassName="text-xs text-slate-500 hover:bg-slate-50 [&.active]:bg-slate-100 [&.active]:text-slate-900"
           />

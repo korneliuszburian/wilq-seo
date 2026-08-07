@@ -22,12 +22,11 @@ describe("surface registry", () => {
     expect(surfaceRoutes.every((route) => route.firstScreenIntent.length > 0)).toBe(true);
   });
 
-  it("drives generated routes and marketer navigation from one registry", () => {
+  it("keeps exactly six primary marketer surfaces in product order", () => {
     expect(generatedSurfaceRoutes.map((route) => route.path)).toContain("/service-profile");
     expect(generatedSurfaceRoutes.map((route) => route.path)).toContain("/social-publisher");
     expect(primarySurfaceRoutes.map((route) => route.path)).toEqual([
       "/command-center",
-      "/opportunities",
       "/content-workflow",
       "/ads-doctor",
       "/merchant",
@@ -36,7 +35,6 @@ describe("surface registry", () => {
     ]);
     expect(primarySurfaceRoutes.map((route) => route.label)).toEqual([
       "Dzisiaj",
-      "Kolejka",
       "Treści i SEO",
       "Reklamy i pomiar",
       "Produkty",
@@ -44,22 +42,37 @@ describe("surface registry", () => {
       "Akcje"
     ]);
     expect(secondarySurfaceRoutes.map((route) => route.path)).toEqual([
-      "/workflows",
-      "/ga4",
       "/knowledge",
-      "/settings",
-      "/system"
+      "/settings"
     ]);
     expect(secondarySurfaceRoutes.map((route) => route.label)).toEqual([
-      "Procesy",
-      "GA4",
       "Wiedza",
-      "Źródła",
-      "System"
+      "Źródła"
     ]);
 
     for (const route of [...primarySurfaceRoutes, ...secondarySurfaceRoutes]) {
       expect(route.icon).toBeDefined();
+    }
+  });
+
+  it("keeps the retired queue and technical routes outside visible navigation", () => {
+    const visiblePaths = new Set<string>(
+      [...primarySurfaceRoutes, ...secondarySurfaceRoutes].map((route) => route.path)
+    );
+    const opportunities = surfaceRoutes.find((route) => route.path === "/opportunities");
+
+    expect(opportunities?.navGroup).toBe("hidden");
+    expect(primarySurfaceRoutes).toHaveLength(6);
+    expect(primarySurfaceRoutes.map((route) => route.path)).not.toContain("/settings");
+    for (const path of [
+      "/opportunities",
+      "/workflows",
+      "/ga4",
+      "/system",
+      "/security",
+      "/codex-runs"
+    ]) {
+      expect(visiblePaths.has(path)).toBe(false);
     }
   });
 
@@ -142,6 +155,8 @@ describe("surface registry", () => {
     expect(appSource).not.toContain("const operatingRoutes =");
     expect(shellSource).toContain("primarySurfaceRoutes");
     expect(shellSource).toContain("secondarySurfaceRoutes");
+    expect(shellSource).toContain('label="Zaplecze"');
+    expect(shellSource).not.toContain('label="System"');
     expect(shellSource).not.toContain("const primaryRoutes =");
   });
 });

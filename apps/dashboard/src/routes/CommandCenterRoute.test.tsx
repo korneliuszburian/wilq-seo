@@ -360,6 +360,19 @@ describe("CommandCenter route", () => {
     expect(within(mobile).getByText("Pozostałe ograniczenia: 2")).toBeInTheDocument();
   });
 
+  it("keeps aggregate blockers on Dzisiaj without linking to the retired queue", async () => {
+    vi.mocked(getCommandCenter).mockResolvedValue({
+      ...commandCenterFixture,
+      blocker_count: 1,
+      work_orders: []
+    });
+
+    renderCommandCenter();
+
+    expect((await screen.findAllByText("1 blokady w danych WILQ")).length).toBeGreaterThan(0);
+    expect(document.querySelector('a[href="/opportunities"]')).toBeNull();
+  });
+
   it("renders command decisions from API-owned fields instead of route-local copy maps", async () => {
     const { readFileSync } = await import("node:fs");
     const routeSource = readFileSync("src/routes/CommandCenterRoute.tsx", "utf8");
