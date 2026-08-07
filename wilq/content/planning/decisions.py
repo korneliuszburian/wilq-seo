@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import unquote, urlparse
 
+from wilq.content.canonical.metric_dimensions import metric_dimensions_match_landing
 from wilq.content.canonical.urls import content_decision_url_semantics
 from wilq.content.inventory.gates import content_inventory_gate_status
 from wilq.content.workflow.demand_evidence import content_query_is_planning_signal
@@ -43,9 +44,15 @@ class ContentDecisionMetrics:
 def gsc_content_decisions(
     items: list[TacticalQueueItem],
     *,
+    all_metric_facts: Iterable[MetricFact] = (),
     knowledge_card_ids: tuple[str, ...],
     expert_rule_ids: tuple[str, ...],
 ) -> list[ContentDecisionItem]:
+    ga4_metric_facts = [
+        fact
+        for fact in all_metric_facts
+        if fact.source_connector == "google_analytics_4"
+    ]
     page_groups: dict[str, list[TacticalQueueItem]] = {}
     for item in _unique_tactical_items(items):
         if item.domain != OpportunityDomain.gsc_seo:
@@ -117,11 +124,11 @@ def gsc_content_decisions(
         queries = _unique(
             item.dimensions.get("query") for item in page_items if item.dimensions.get("query")
         )
-        metric_facts = _unique_metric_facts(
+        item_metric_facts = _unique_metric_facts(
             fact for item in page_items for fact in item.metric_facts
         )
         wordpress_content_url = first.dimensions.get("wordpress_content_url")
-        metrics = content_decision_metrics(metric_facts, queries)
+        metrics = content_decision_metrics(item_metric_facts, queries)
         decision_type: ContentDecisionType
         if wordpress_match == "found":
             decision_type = "refresh_or_merge"
@@ -189,6 +196,20 @@ def gsc_content_decisions(
             source_url=page,
             wordpress_content_url=wordpress_content_url,
         )
+        exact_ga4_metric_facts = _exact_ga4_metric_facts_for_decision(
+            ga4_metric_facts,
+            page=page,
+            final_canonical_url=url_semantics["final_canonical_url"],
+        )
+        decision_metric_facts = [
+            *sorted(
+                item_metric_facts,
+                key=lambda fact: not content_query_is_planning_signal(
+                    fact.dimensions.get("query", "")
+                ),
+            )[:8],
+            *exact_ga4_metric_facts,
+        ]
         gate_status = content_inventory_gate_status(
             decision_type=decision_type,
             wordpress_match=wordpress_match,
@@ -249,17 +270,26 @@ def gsc_content_decisions(
                 duplicate_gate_status=gate_status["duplicate_gate_status"],
                 content_gate_summary=gate_status["content_gate_summary"],
                 source_connectors=_unique(
-                    connector for item in page_items for connector in item.source_connectors
+                    [
+                        *(
+                            connector
+                            for item in page_items
+                            for connector in item.source_connectors
+                        ),
+                        *(fact.source_connector for fact in exact_ga4_metric_facts),
+                    ]
                 ),
                 evidence_ids=_unique(
-                    evidence_id for item in page_items for evidence_id in item.evidence_ids
+                    [
+                        *(
+                            evidence_id
+                            for item in page_items
+                            for evidence_id in item.evidence_ids
+                        ),
+                        *(fact.evidence_id for fact in exact_ga4_metric_facts),
+                    ]
                 ),
-                metric_facts=sorted(
-                    metric_facts,
-                    key=lambda fact: not content_query_is_planning_signal(
-                        fact.dimensions.get("query", "")
-                    ),
-                )[:8],
+                metric_facts=decision_metric_facts,
                 action_ids=_unique(
                     action_id
                     for item in page_items
@@ -644,3 +674,24 @@ def _unique_metric_facts(values: Iterable[MetricFact]) -> list[MetricFact]:
         )
         unique_facts.setdefault(key, fact)
     return list(unique_facts.values())
+
+
+def _exact_ga4_metric_facts_for_decision(
+    facts: Iterable[MetricFact],
+    *,
+    page: str,
+    final_canonical_url: str | None,
+) -> list[MetricFact]:
+    target_urls = _unique([page, final_canonical_url])
+    return _unique_metric_facts(
+        fact
+        for fact in facts
+        if any(
+            metric_dimensions_match_landing(
+                fact.dimensions,
+                target_url,
+                allow_relative_path=True,
+            )
+            for target_url in target_urls
+        )
+    )

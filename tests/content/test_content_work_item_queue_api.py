@@ -1,17 +1,29 @@
 from __future__ import annotations
 
-from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
+from datetime import UTC, datetime
+
+import wilq.briefing.content_diagnostics as content_diagnostics_module
+from wilq.briefing.content_diagnostics import (
+    build_content_diagnostics,
+    build_content_diagnostics_cached,
+)
+from wilq.briefing.tactical_queue import build_gsc_content_tactical_items
+from wilq.connectors.vendor import VendorMetricFact
 from wilq.content.workflow import api as workflow_api
 from wilq.content.workflow.queue import (
     build_content_work_item_queue_candidate,
     build_content_work_item_queue_response,
 )
 from wilq.schemas import (
+    ConnectorRefreshMode,
+    ConnectorRefreshRun,
+    ConnectorRefreshStatus,
     ContentDecisionItem,
     ContentDiagnosticsResponse,
     ContentFreshnessAssessment,
     MetricFact,
 )
+from wilq.storage.metric_store import metric_store
 
 
 def test_content_work_item_queue_exposes_api_owned_candidates() -> None:
@@ -246,6 +258,91 @@ def test_queue_ga4_projection_keeps_only_exact_landing_facts() -> None:
         (fact.name, fact.value, fact.evidence_id) for fact in candidate.ga4_metrics.metrics
     ] == [("sessions", 42, "ev_ga4_exact")]
     assert candidate.ga4_metrics.evidence_ids == ["ev_ga4_exact"]
+
+
+def test_gsc_decision_queue_attaches_exact_ga4_landing_fact_from_metric_store(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+    monkeypatch.setattr(
+        content_diagnostics_module,
+        "_primary_content_data_available",
+        lambda *_args: True,
+    )
+    page = "https://www.ekologus.pl/oferta/doradztwo-srodowiskowe/"
+    collected_at = datetime(2026, 8, 1, 8, 0, tzinfo=UTC)
+    ga4_evidence_id = "ev_ga4_exact_landing_decision"
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="ga4_exact_landing_decision",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=collected_at,
+            completed_at=collected_at,
+            evidence_ids=[ga4_evidence_id],
+            summary="Exact GA4 landing fact for the GSC decision queue.",
+        ),
+        detailed_facts=[
+            VendorMetricFact(
+                name="sessions",
+                value=42,
+                period="2026-07-01/2026-07-31",
+                dimensions={"landing_page": "/oferta/doradztwo-srodowiskowe/"},
+            )
+        ],
+    )
+    gsc_and_wordpress_facts = [
+        MetricFact(
+            name="impressions",
+            value=240,
+            period="2026-07-01/2026-07-31",
+            source_connector="google_search_console",
+            evidence_id="ev_gsc_exact_landing_decision",
+            dimensions={"query": "doradztwo środowiskowe", "page": page},
+            collected_at=collected_at,
+        ),
+        MetricFact(
+            name="content_object_seen",
+            value=1,
+            period="connector_refresh",
+            source_connector="wordpress_ekologus",
+            evidence_id="ev_wp_exact_landing_decision",
+            dimensions={
+                "content_url": page,
+                "content_type": "pages",
+                "status": "publish",
+                "title_or_h1": "Doradztwo środowiskowe",
+            },
+            collected_at=collected_at,
+        ),
+    ]
+    stored_ga4_facts = metric_store().list_metric_facts(
+        connector_id="google_analytics_4"
+    )
+    all_metric_facts = [*gsc_and_wordpress_facts, *stored_ga4_facts]
+    tactical_items = build_gsc_content_tactical_items(all_metric_facts)
+
+    diagnostics = build_content_diagnostics(
+        tactical_items=tactical_items,
+        actions=[],
+        metric_facts=all_metric_facts,
+    )
+    decision = next(item for item in diagnostics.decision_queue if item.page == page)
+    candidate = build_content_work_item_queue_candidate(
+        decision,
+        ContentFreshnessAssessment(
+            state="fresh",
+            state_label="dane treści świeże",
+            requires_refresh=False,
+            summary="Dane są świeże.",
+            next_step="Można przejść do decyzji.",
+        ),
+    )
+
+    assert candidate.ga4_metrics.status == "available"
+    assert ga4_evidence_id in candidate.ga4_metrics.evidence_ids
 
 
 def test_selected_snapshot_rebuilds_candidate_inventory_from_fresh_binding(monkeypatch) -> None:

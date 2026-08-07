@@ -835,6 +835,7 @@ def _content_decision_queue(
     decisions = [
         *gsc_content_decisions(
             items,
+            all_metric_facts=metric_facts,
             knowledge_card_ids=GSC_CONTENT_KNOWLEDGE_CARD_IDS,
             expert_rule_ids=GSC_CONTENT_EXPERT_RULE_IDS,
         ),
