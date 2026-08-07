@@ -192,6 +192,11 @@ def test_async_refresh_transitions_keep_api_owned_status_labels(monkeypatch) -> 
         summary="queued",
     )
     monkeypatch.setattr(refresh_module, "local_state_store", lambda: FakeLocalState())
+    monkeypatch.setattr(
+        refresh_module,
+        "claim_queued_connector_refresh_run",
+        lambda _store, run: saved.append(run) or run,
+    )
     monkeypatch.setattr(refresh_module, "metric_store", lambda: FakeMetricStore())
     monkeypatch.setattr(refresh_module, "get_connector_refresh_run", lambda _run_id: queued)
     monkeypatch.setattr(

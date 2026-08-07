@@ -27,6 +27,10 @@ from wilq.schemas import (
     ConnectorStatusValue,
     utc_now,
 )
+from wilq.storage.connector_refresh_runs import (
+    claim_queued_connector_refresh_run,
+    enqueue_connector_refresh_run,
+)
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
@@ -215,16 +219,10 @@ def queue_connector_refresh(
     connector = get_connector_status(connector_id)
     if connector is None:
         return None
-    active_runs = [
-        run
-        for run in local_state_store().list_connector_refresh_runs(connector_id=connector_id)
-        if run.status in {ConnectorRefreshStatus.queued, ConnectorRefreshStatus.running}
-    ]
-    if active_runs:
-        return active_runs[0]
     started_at = utc_now()
     run_id = f"refresh_{connector_id}_{uuid4().hex[:12]}"
-    return local_state_store().save_connector_refresh_run(
+    return enqueue_connector_refresh_run(
+        local_state_store(),
         ConnectorRefreshRun(
             id=run_id,
             connector_id=connector_id,
@@ -260,7 +258,9 @@ def complete_queued_connector_refresh(
             "summary": "Odczyt źródła trwa w trybie read-only.",
         }
     )
-    local_state_store().save_connector_refresh_run(running_run)
+    claimed_run = claim_queued_connector_refresh_run(local_state_store(), running_run)
+    if claimed_run is None:
+        return None
     result = _refresh_result(
         connector_id=connector_id,
         request=request,
@@ -268,7 +268,7 @@ def complete_queued_connector_refresh(
         configured=connector.configured,
         missing_credentials=connector.missing_credentials,
     )
-    return _persist_refresh_result(running_run, result)
+    return _persist_refresh_result(claimed_run, result)
 
 
 def _persist_refresh_result(

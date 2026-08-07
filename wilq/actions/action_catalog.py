@@ -1,4 +1,9 @@
-"""Read-only assembly and cache ownership for the ActionObject catalogue."""
+"""Read-only assembly and process-local cache ownership for the action catalogue.
+
+The supported local API runtime has one process. The short TTL bounds other
+registry drift, while Google Ads refresh state is checked both on cache reads
+and around catalogue construction so an unstable build is never cached.
+"""
 
 from __future__ import annotations
 

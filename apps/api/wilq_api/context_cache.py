@@ -7,9 +7,10 @@ from typing import Any
 
 from apps.api.wilq_api.context_models import ContextPackRequest
 
-# Keep API-owned Codex context warm across a normal operator session. Connector
-# freshness and write/refresh invalidation remain authoritative; this cache only
-# avoids rebuilding the same redacted context on every adjacent request.
+# These caches intentionally belong to one API process. The managed local stack
+# runs one Uvicorn process, and clear_api_view_model_caches invalidates both maps
+# after supported writes and refreshes. A multi-worker ASGI deployment would not
+# share that invalidation and is outside the current runtime contract.
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 300.0
 DEFAULT_FULL_CONTEXT_CACHE_SECONDS = 30.0
 _cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
