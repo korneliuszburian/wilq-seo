@@ -2,15 +2,20 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
 from wilq.content.workflow.selected_workspace import (
     ContentSelectedWorkspace,
-    build_content_selected_workspace,
+    build_content_selected_workspace_with_context,
 )
 
 
 def register_content_selected_workspace_route(router: APIRouter) -> None:
     def content_selected_workspace(work_item_id: str) -> ContentSelectedWorkspace:
-        return build_content_selected_workspace(work_item_id)
+        snapshot = snapshot_for_work_item_or_404(work_item_id)
+        return build_content_selected_workspace_with_context(
+            work_item_id,
+            revision_context_current=snapshot.revision_workspace.context_current,
+        )
 
     router.add_api_route(
         "/api/content/work-items/{work_item_id}/selected-workspace",

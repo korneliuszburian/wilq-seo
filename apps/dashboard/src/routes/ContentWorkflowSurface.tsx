@@ -334,6 +334,7 @@ function ContentReviewWorkspace({
     ? persistedReview
     : null;
   const evidenceIds = completeRevision ? revisionEvidenceIds(completeRevision) : [];
+  const reviewAvailable = workspace.next_action.kind === "open_review";
   const reviewMutation = useMutation({
     mutationFn: (request: ContentDraftRevisionReviewRequest) =>
       saveContentWorkItemDraftRevisionReview(request, workspace.work_item_id, completeRevision!.revision_id),
@@ -347,6 +348,7 @@ function ContentReviewWorkspace({
     completeRevision &&
       operatorLabel &&
       !matchingReview &&
+      reviewAvailable &&
       !reviewMutation.isPending &&
       (decision === "approved"
         ? evidenceIds.length > 0
@@ -399,6 +401,7 @@ function ContentReviewWorkspace({
             decision={decision}
             notes={notes}
             canSubmit={canSubmit}
+            reviewAvailable={reviewAvailable}
             isPending={reviewMutation.isPending}
             error={reviewMutation.error}
             result={reviewMutation.data}
@@ -455,6 +458,7 @@ function ReviewDecisionPanel({
   decision,
   notes,
   canSubmit,
+  reviewAvailable,
   isPending,
   error,
   result,
@@ -470,6 +474,7 @@ function ReviewDecisionPanel({
   decision: ContentDraftRevisionDecision;
   notes: string;
   canSubmit: boolean;
+  reviewAvailable: boolean;
   isPending: boolean;
   error: Error | null;
   result: Awaited<ReturnType<typeof saveContentWorkItemDraftRevisionReview>> | undefined;
@@ -489,6 +494,15 @@ function ReviewDecisionPanel({
         {savedReview.notes ? <p className="mt-2 text-sm leading-6 text-slate-700">Notatka: {savedReview.notes}</p> : null}
         <details className="mt-3 text-xs leading-5 text-slate-600"><summary className="cursor-pointer font-semibold text-slate-700">Dokładna wersja</summary><p className="mt-2 break-all">Rewizja: {savedReview.revision_id} · digest: {savedReview.revision_digest}</p></details>
         {savedReview.decision === "approved" && savedReview.revision_id === revision.revision_id && savedReview.revision_digest === revision.content_digest ? <ContentApprovedHtmlPackage workItemId={revision.work_item_id} revisionId={revision.revision_id} revisionDigest={revision.content_digest} /> : null}
+        <button type="button" className="mt-3 rounded-md border border-action/30 px-3 py-2 text-sm font-semibold text-action" onClick={onReturnToText}>Wróć do tekstu</button>
+      </div>
+    );
+  }
+  if (!reviewAvailable) {
+    return (
+      <div className="mt-5 rounded-xl border border-wait/30 bg-wait/5 p-4" data-testid="content-review-context-blocker">
+        <p className="text-sm font-semibold text-ink">Ta wersja nie jest już aktualna do review.</p>
+        <p className="mt-1 text-sm leading-6 text-slate-700">{revision.title} pozostaje dostępna do odczytu, ale WILQ wymaga świeżej rewizji powiązanej z aktualnym planem.</p>
         <button type="button" className="mt-3 rounded-md border border-action/30 px-3 py-2 text-sm font-semibold text-action" onClick={onReturnToText}>Wróć do tekstu</button>
       </div>
     );

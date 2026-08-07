@@ -39,7 +39,22 @@ class ContentSelectedWorkspace(BaseModel):
 
 
 def build_content_selected_workspace(work_item_id: str) -> ContentSelectedWorkspace:
-    workspace = build_content_document_workspace(work_item_id)
+    return build_content_selected_workspace_with_context(work_item_id)
+
+
+def build_content_selected_workspace_with_context(
+    work_item_id: str,
+    *,
+    revision_context_current: bool | None = None,
+) -> ContentSelectedWorkspace:
+    workspace = (
+        build_content_document_workspace(work_item_id)
+        if revision_context_current is None
+        else build_content_document_workspace(
+            work_item_id,
+            revision_context_current=revision_context_current,
+        )
+    )
     if workspace is None:
         return ContentSelectedWorkspace(
             status="missing",
@@ -59,4 +74,8 @@ def build_content_selected_workspace(work_item_id: str) -> ContentSelectedWorksp
     )
 
 
-__all__ = ["ContentSelectedWorkspace", "build_content_selected_workspace"]
+__all__ = [
+    "ContentSelectedWorkspace",
+    "build_content_selected_workspace",
+    "build_content_selected_workspace_with_context",
+]

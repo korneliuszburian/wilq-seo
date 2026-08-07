@@ -814,6 +814,28 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
   });
 
+  it("keeps a stale revision readable but prevents saving review", async () => {
+    const revision = savedFullDraftRevision();
+    const workspace = contentDocumentWorkspace(revision);
+    workspace.canonical_document.label = "Wersja pochodzi z wcześniejszego planu";
+    workspace.canonical_document.reason = "Plan źródłowy zmienił się po zapisaniu tej wersji.";
+    workspace.next_action = {
+      kind: "prepare_document",
+      label: "Przygotuj świeżą wersję",
+      reason: "Przygotuj nową rewizję powiązaną z aktualnym planem."
+    };
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1&view=review", defaultPendingMinMs: 0 })} client={client} />);
+
+    expect(await screen.findByTestId("content-review-context-blocker")).toHaveTextContent(
+      "nie jest już aktualna do review"
+    );
+    expect(screen.queryByRole("button", { name: "Zatwierdź tekst" })).not.toBeInTheDocument();
+    expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
+  });
+
 });
 
 

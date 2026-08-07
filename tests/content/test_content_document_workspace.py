@@ -97,6 +97,31 @@ def test_document_workspace_projects_one_repair_action_after_human_changes() -> 
     assert action.label == "Przygotuj poprawkę"
 
 
+def test_stale_revision_stays_readable_but_cannot_offer_review() -> None:
+    document = workspace_module.ContentDocumentWorkspaceDocument.model_construct(
+        status="unreviewed",
+        review_state="unreviewed",
+        label="Nowa wersja czeka na review",
+        reason="Dokument czeka na decyzję człowieka.",
+        revision=SimpleNamespace(revision_id="content_revision_old"),
+    )
+
+    projected = workspace_module._document_for_current_context(
+        document,
+        revision_context_current=False,
+    )
+    action = workspace_module._next_action(
+        projected,
+        revision_context_current=False,
+    )
+
+    assert projected.revision is document.revision
+    assert projected.label == "Wersja pochodzi z wcześniejszego planu"
+    assert "Nie można zapisać" in projected.reason
+    assert action.kind == "prepare_document"
+    assert action.label == "Przygotuj świeżą wersję"
+
+
 def test_document_workspace_uses_revision_service_binding_for_official_review_candidates(
     monkeypatch,
 ) -> None:

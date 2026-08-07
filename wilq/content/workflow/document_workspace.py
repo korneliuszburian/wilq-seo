@@ -166,7 +166,11 @@ class ContentDocumentWorkspace(BaseModel):
     secondary_disclosures: list[str] = Field(default_factory=list)
 
 
-def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorkspace | None:
+def build_content_document_workspace(
+    work_item_id: str,
+    *,
+    revision_context_current: bool | None = None,
+) -> ContentDocumentWorkspace | None:
     """Build a source-first workspace without planning, generation or delivery reads."""
 
     context = build_content_decision_context(work_item_id)
@@ -184,6 +188,10 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
         revision_state.latest_revision,
             getattr(revision_state, "latest_review", None),
     )
+    document = _document_for_current_context(
+        document,
+        revision_context_current=revision_context_current,
+    )
     return ContentDocumentWorkspace(
         work_item_id=work_item_id,
         work_kind="refresh_existing",
@@ -192,7 +200,10 @@ def build_content_document_workspace(work_item_id: str) -> ContentDocumentWorksp
         canonical_document=document,
         document_lineage=build_content_document_lineage(revision_state.latest_revision),
         comparison=_comparison(source_snapshot, revision_state.latest_revision),
-        next_action=_next_action(document),
+        next_action=_next_action(
+            document,
+            revision_context_current=revision_context_current,
+        ),
         regulatory_review_candidates=_regulatory_review_candidates(
             revision_state.latest_revision
         ),
@@ -404,6 +415,33 @@ def _document_preview(revision: ContentDraftRevision) -> ContentDocumentWorkspac
     )
 
 
+def _document_for_current_context(
+    document: ContentDocumentWorkspaceDocument,
+    *,
+    revision_context_current: bool | None,
+) -> ContentDocumentWorkspaceDocument:
+    """Keep immutable review state visible without advertising a stale review.
+
+    A revision may remain unreviewed (or approved) in durable history after its
+    exact planning input changes.  That history is useful, but a caller must
+    not present the old revision as reviewable or deliverable for the current
+    source context.
+    """
+
+    if revision_context_current is not False or document.revision is None:
+        return document
+    return document.model_copy(
+        update={
+            "label": "Wersja pochodzi z wcześniejszego planu",
+            "reason": (
+                "Ta immutable rewizja pozostaje w historii, ale jej dokładny plan "
+                "nie odpowiada już aktualnym danym strony. Nie można zapisać dla niej "
+                "review ani przekazać jej dalej."
+            ),
+        }
+    )
+
+
 def _comparison(
     source: ContentDocumentWorkspaceSourceSnapshot,
     revision: ContentDraftRevision | None,
@@ -490,7 +528,20 @@ def _heading_key(value: str) -> str:
     return " ".join(value.casefold().split())
 
 
-def _next_action(document: ContentDocumentWorkspaceDocument) -> ContentDocumentWorkspaceNextAction:
+def _next_action(
+    document: ContentDocumentWorkspaceDocument,
+    *,
+    revision_context_current: bool | None = None,
+) -> ContentDocumentWorkspaceNextAction:
+    if revision_context_current is False and document.revision is not None:
+        return ContentDocumentWorkspaceNextAction(
+            kind="prepare_document",
+            label="Przygotuj świeżą wersję",
+            reason=(
+                "Aktualny plan lub źródłowy kontekst zmienił się po zapisaniu tej "
+                "wersji. Przygotuj nową, dokładnie powiązaną rewizję przed review."
+            ),
+        )
     if document.status == "approved":
         return ContentDocumentWorkspaceNextAction(
             kind="open_review",
