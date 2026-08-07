@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from wilq.connectors.wordpress.client import WordPressDraftVerificationError
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import (
     ContentWordPressDraftAuditEnvelope,
+    ContentWordPressDraftHandoff,
     ContentWordPressDraftHandoffBlocker,
     apply_content_wordpress_draft_handoff_to_work_item,
     build_content_wordpress_draft_handoff,
@@ -12,10 +15,16 @@ from wilq.content.handoff.wordpress import (
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionBlocker,
     ContentWordPressDraftWriteAuthorization,
+    content_wordpress_draft_payload,
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionPageAssets,
+    ContentDraftRevisionSection,
+)
 
 
 def _item(**overrides: object) -> ContentWorkItem:
@@ -235,6 +244,63 @@ def test_wordpress_draft_execution_dry_run_returns_draft_only_payload() -> None:
     assert "Kogo dotyczy BDO" in result.payload.content_markdown
 
 
+def test_wordpress_v2_the_content_payload_omits_document_h1() -> None:
+    document = ContentDraftRevision(
+        schema_version="wilq_content_draft_revision_v2",
+        revision_id="content_revision_bdo_v2",
+        work_item_id="content_work_item_bdo",
+        revision_number=1,
+        content_digest="a" * 64,
+        draft_package_id="draft_package_bdo",
+        draft_package_digest="b" * 64,
+        planning_digest="c" * 64,
+        planning_input_digest="d" * 64,
+        service_card_id="ekologus_service_bdo",
+        service_digest="e" * 64,
+        inventory_digest="f" * 64,
+        final_canonical_url="https://ekologus.pl/bdo/",
+        title="BDO dla firm",
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="BDO dla firm",
+            meta_title="BDO dla firm — Ekologus",
+            meta_description="Sprawdź obowiązki BDO swojej firmy.",
+            h1="BDO dla firm",
+            lead="Sprawdź, czy obowiązki BDO dotyczą Twojej działalności.",
+        ),
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="section_bdo",
+                heading="Kiedy sprawdzić obowiązki BDO",
+                body_markdown="Zweryfikuj rodzaj i zakres działalności firmy.",
+                evidence_ids=["ev_gsc_bdo"],
+            )
+        ],
+        faq=[],
+        cta_blocks=[],
+        internal_links=[],
+        created_by="wilku",
+        created_at=datetime(2026, 8, 7, tzinfo=UTC),
+    )
+    handoff = ContentWordPressDraftHandoff(
+        id="wordpress_draft_handoff_bdo_v2",
+        work_item_id="content_work_item_bdo",
+        draft_package_id="draft_package_bdo",
+        authoring_mode="the_content",
+        title="BDO dla firm",
+        final_canonical_url="https://ekologus.pl/bdo/",
+        revision_document=document,
+    )
+
+    payload = content_wordpress_draft_payload(handoff, _draft_package())
+
+    assert payload.content_html is not None
+    assert not payload.content_html.lstrip().lower().startswith("<h1")
+    assert payload.content_html.startswith(
+        "<p>Sprawdź, czy obowiązki BDO dotyczą Twojej działalności.</p>"
+    )
+    assert "<h2>Kiedy sprawdzić obowiązki BDO</h2>" in payload.content_html
+
+
 def test_wordpress_draft_execution_blocks_missing_or_mismatched_inputs() -> None:
     handoff_result = build_content_wordpress_draft_handoff(
         item=_item(),
@@ -437,6 +503,7 @@ def test_acf_page_never_falls_back_to_the_content_draft_payload() -> None:
     assert [blocker.code for blocker in result.blockers] == [
         "acf_authoring_payload_required"
     ]
+    assert result.payload is None
     assert result.boundary.allowed_operation == "create_wordpress_draft"
     assert result.boundary.live_write_enabled is False
     assert result.boundary.live_adapter_configured is False

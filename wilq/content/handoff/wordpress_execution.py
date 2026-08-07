@@ -11,6 +11,7 @@ from wilq.content.handoff.revision_document_renderer import (
     revision_document_markdown,
 )
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
+from wilq.content.workflow.delivery_projection import wordpress_post_content_html
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 
 ContentWordPressDraftExecutionMode = Literal["dry_run", "live"]
@@ -341,10 +342,15 @@ def content_wordpress_draft_payload(
     if document is not None and document.schema_version == "wilq_content_draft_revision_v2":
         if document.page_assets is None:
             raise RuntimeError("Full-document revision passed validation without page assets.")
+        document_html = revision_document_html(document)
         return ContentWordPressDraftPayload(
             title=document.page_assets.wordpress_title,
             content_markdown=revision_document_markdown(document),
-            content_html=revision_document_html(document),
+            content_html=(
+                wordpress_post_content_html(document_html)
+                if handoff.authoring_mode == "the_content"
+                else document_html
+            ),
             authoring_mode=handoff.authoring_mode,
             meta_title=document.page_assets.meta_title,
             meta_description=document.page_assets.meta_description,
