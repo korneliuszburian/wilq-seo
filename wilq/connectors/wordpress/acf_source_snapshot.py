@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from copy import deepcopy
+from dataclasses import dataclass, field
 from hashlib import sha256
 from typing import Any
 from urllib.parse import urljoin
@@ -18,13 +19,21 @@ _WORDPRESS_ACF_CONTENT_TYPES = {"posts", "pages", "uslugi"}
 
 @dataclass(frozen=True)
 class WordPressAcfFlexibleSnapshot:
-    """Raw source rows retained only in the in-process clone compiler."""
+    """Raw source ACF retained only in the in-process clone compiler.
+
+    ``rows`` identifies the one Flexible Content root which WILQ may edit.
+    ``fields`` retains the complete top-level ACF object so a create-only
+    draft preserves sibling fields such as an icon or a relationship list.
+    Neither raw value is persisted by WILQ.
+    """
 
     object_id: str
     content_type: str
     root_field: str
     root_digest: str
     rows: list[dict[str, Any]]
+    fields_digest: str | None = None
+    fields: dict[str, Any] = field(default_factory=dict)
 
 
 def read_wordpress_acf_flexible_snapshot(
@@ -71,7 +80,9 @@ def read_wordpress_acf_flexible_snapshot(
     if not isinstance(payload, dict) or str(payload.get("id") or "") != normalized_id:
         raise ValueError("WordPress zwrócił inny obiekt niż wskazany target.")
     acf = payload.get("acf")
-    rows = acf.get(normalized_root) if isinstance(acf, dict) else None
+    if not isinstance(acf, dict):
+        raise ValueError("WordPress nie zwrócił kompletnego obiektu ACF.")
+    rows = acf.get(normalized_root)
     if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
         raise ValueError("WordPress nie zwrócił kompletnej listy layoutów ACF.")
     normalized_rows = [dict(row) for row in rows]
@@ -86,12 +97,20 @@ def read_wordpress_acf_flexible_snapshot(
         root_field=normalized_root,
         root_digest=_digest_rows(normalized_rows),
         rows=normalized_rows,
+        fields_digest=_digest_fields(acf),
+        fields=deepcopy(acf),
     )
 
 
 def _digest_rows(rows: list[dict[str, Any]]) -> str:
     return sha256(
         json.dumps(rows, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def _digest_fields(fields: dict[str, Any]) -> str:
+    return sha256(
+        json.dumps(fields, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
 
 

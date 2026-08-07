@@ -69,7 +69,7 @@ class ContentDevDraftWritePayload(BaseModel):
     delete_allowed: Literal[False] = False
     destructive_update_allowed: Literal[False] = False
     title: str = Field(min_length=1)
-    acf: dict[str, list[dict[str, object]]] | None = None
+    acf: dict[str, object] | None = None
     content_html: str | None = None
     binding: dict[str, str] = Field(min_length=1)
 
@@ -120,6 +120,8 @@ def create_content_target_draft_action(
     }
     if clone_plan is not None:
         binding["source_acf_digest"] = clone_plan.source_acf_digest
+        if clone_plan.source_acf_fields_digest is not None:
+            binding["source_acf_fields_digest"] = clone_plan.source_acf_fields_digest
     draft_payload = _draft_payload_identity(preview, clone_plan=clone_plan)
     payload_preview = {
         "preview_contract": CONTENT_DEV_DRAFT_ACTION_CONTRACT,
@@ -292,7 +294,7 @@ def build_content_dev_draft_write_payload(
             content_html=_wordpress_post_content_html(current.components),
         )
     clone_plan = _clone_plan_from_action(action)
-    acf = (
+    acf: dict[str, object] = (
         _compile_current_acf_clone(
             clone_plan,
             source_object_id=current.target.target_contract.object_id,
@@ -421,7 +423,8 @@ def _acf_clone_plan(preview: ContentTargetDraftPreview) -> ContentAcfClonePlan |
         raise ValueError("Plan klonowania ACF wymaga dokładnego targetu.")
     surface = preview.target.target_contract.authoring_surface
     source_digest = surface.source_acf_digest if surface is not None else None
-    if source_digest is None or any(
+    fields_digest = surface.source_acf_fields_digest if surface is not None else None
+    if source_digest is None or fields_digest is None or any(
         component.target_section_index is None for component in preview.components
     ):
         # Older local previews cannot have been produced by the current target
@@ -446,6 +449,7 @@ def _acf_clone_plan(preview: ContentTargetDraftPreview) -> ContentAcfClonePlan |
         source_object_id=preview.target.target_contract.object_id,
         root_field=preview.root_field,
         source_acf_digest=source_digest,
+        source_acf_fields_digest=fields_digest,
         replacements=replacements,
     )
 
@@ -466,7 +470,7 @@ def _compile_current_acf_clone(
     source_object_id: str,
     endpoint: str,
     root_field: str,
-) -> dict[str, list[dict[str, object]]]:
+) -> dict[str, object]:
     if plan.source_object_id != source_object_id:
         raise ValueError("Plan klonowania ACF wskazuje inny obiekt dev.")
     if plan.root_field != root_field:

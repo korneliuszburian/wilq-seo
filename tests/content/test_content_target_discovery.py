@@ -269,6 +269,13 @@ def test_target_discovery_exposes_observed_acf_relationships_without_making_them
             root_field="content_sections",
             root_digest="a" * 64,
             rows=[{"acf_fc_layout": "services", "services_order": [374, 352]}],
+            fields_digest="b" * 64,
+            fields={
+                "content_sections": [
+                    {"acf_fc_layout": "services", "services_order": [374, 352]}
+                ],
+                "icon": 1126,
+            },
         ),
     )
     monkeypatch.setattr(
@@ -294,6 +301,7 @@ def test_target_discovery_exposes_observed_acf_relationships_without_making_them
         (352, "Sprzedaż sorbentów"),
     ]
     assert surface.layouts[0].writable_fields == []
+    assert surface.source_acf_fields_digest == "b" * 64
 
 
 def test_target_discovery_does_not_infer_a_target_when_dev_path_differs(monkeypatch) -> None:

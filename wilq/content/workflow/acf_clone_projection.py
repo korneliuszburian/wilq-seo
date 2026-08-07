@@ -28,6 +28,7 @@ class ContentAcfClonePlan(BaseModel):
     source_object_id: str = Field(min_length=1)
     root_field: str = Field(min_length=1)
     source_acf_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_acf_fields_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     replacements: list[ContentAcfCloneReplacement] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -44,8 +45,8 @@ class ContentAcfClonePlan(BaseModel):
 def compile_acf_clone_payload(
     plan: ContentAcfClonePlan,
     snapshot: WordPressAcfFlexibleSnapshot,
-) -> dict[str, list[dict[str, object]]]:
-    """Clone the exact current ACF root and apply approved direct-string leaves.
+) -> dict[str, object]:
+    """Clone exact current ACF fields and change approved Flexible Content leaves.
 
     The full source value is deliberately short-lived.  It is read immediately
     before the WordPress create call, deep-copied in memory, and never persisted
@@ -62,7 +63,24 @@ def compile_acf_clone_payload(
             "Źródłowy układ ACF zmienił się od potwierdzenia; utwórz nowe mapowanie."
         )
 
-    rows: list[dict[str, object]] = deepcopy(snapshot.rows)
+    if (
+        plan.source_acf_fields_digest is not None
+        and snapshot.fields_digest != plan.source_acf_fields_digest
+    ):
+        raise ValueError(
+            "Inne pola ACF źródła zmieniły się od potwierdzenia; utwórz nowe mapowanie."
+        )
+
+    fields: dict[str, object] = deepcopy(snapshot.fields)
+    if not fields:
+        # Compatibility for persisted actions and isolated fixtures predating
+        # the complete-source snapshot. New production plans always carry the
+        # full source digest and therefore cannot reach this fallback.
+        fields = {plan.root_field: deepcopy(snapshot.rows)}
+    raw_rows = fields.get(plan.root_field)
+    if not isinstance(raw_rows, list) or any(not isinstance(row, dict) for row in raw_rows):
+        raise ValueError("Źródłowy układ ACF nie zawiera kompletnej listy layoutów.")
+    rows: list[dict[str, object]] = [dict(row) for row in raw_rows]
     for replacement in plan.replacements:
         row_index = replacement.section_index - 1
         if row_index >= len(rows):
@@ -76,7 +94,8 @@ def compile_acf_clone_payload(
                 "Zatwierdzone pole ACF nie jest bezpośrednią wartością tekstową."
             )
         row[replacement.field_name] = replacement.value
-    return {plan.root_field: rows}
+    fields[plan.root_field] = rows
+    return fields
 
 
 __all__ = [

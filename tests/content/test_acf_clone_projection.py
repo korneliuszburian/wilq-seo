@@ -67,6 +67,67 @@ def test_acf_clone_projection_replaces_exact_row_and_preserves_other_values() ->
     assert snapshot.rows[1]["content"] == "Drugie CTA"
 
 
+def test_acf_clone_projection_preserves_top_level_acf_fields_and_blocks_their_drift() -> None:
+    source_fields = {
+        "flexible-home": [
+            {"acf_fc_layout": "cta", "content": "Pierwsze CTA"},
+            {"acf_fc_layout": "cta", "content": "Drugie CTA"},
+        ],
+        "icon": 1126,
+        "services_related": [374, 352, 116],
+    }
+    source_digest = "c" * 64
+    snapshot = WordPressAcfFlexibleSnapshot(
+        object_id="2",
+        content_type="pages",
+        root_field="flexible-home",
+        root_digest="a" * 64,
+        rows=source_fields["flexible-home"],
+        fields_digest=source_digest,
+        fields=source_fields,
+    )
+    plan = ContentAcfClonePlan(
+        source_object_id="2",
+        root_field="flexible-home",
+        source_acf_digest="a" * 64,
+        source_acf_fields_digest=source_digest,
+        replacements=[
+            ContentAcfCloneReplacement(
+                section_index=2,
+                layout_name="cta",
+                field_name="content",
+                value="Nowe CTA",
+                value_kind="html",
+            )
+        ],
+    )
+
+    payload = compile_acf_clone_payload(plan, snapshot)
+
+    assert payload["icon"] == 1126
+    assert payload["services_related"] == [374, 352, 116]
+    assert payload["flexible-home"] == [
+        {"acf_fc_layout": "cta", "content": "Pierwsze CTA"},
+        {"acf_fc_layout": "cta", "content": "Nowe CTA"},
+    ]
+
+    changed_fields = WordPressAcfFlexibleSnapshot(
+        object_id="2",
+        content_type="pages",
+        root_field="flexible-home",
+        root_digest="a" * 64,
+        rows=source_fields["flexible-home"],
+        fields_digest="d" * 64,
+        fields=source_fields,
+    )
+    try:
+        compile_acf_clone_payload(plan, changed_fields)
+    except ValueError as error:
+        assert "Inne pola ACF" in str(error)
+    else:
+        raise AssertionError("Zmiana pomocniczego pola ACF musi zablokować klon.")
+
+
 def test_acf_clone_projection_fails_closed_on_source_drift_or_layout_change() -> None:
     snapshot = _snapshot()
     plan = ContentAcfClonePlan(

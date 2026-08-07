@@ -76,6 +76,7 @@ class ContentTargetAuthoringSurface(BaseModel):
     schema_source_ref: str = ""
     schema_reason: str = ""
     source_acf_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    source_acf_fields_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     write_profile_status: Literal["ready", "not_required", "unavailable"] = "ready"
     write_profile_reason: str = ""
 
@@ -215,25 +216,7 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
                 "Ten odczyt nie odblokowuje ACF, tworzenia draftu ani publikacji.",
             ],
         )
-    item = matching_items[0]
-    acf_schema = (
-        read_wordpress_acf_rest_schema("wordpress_ekologus", item) if item.acf_field_name else None
-    )
-    source_snapshot = _source_acf_snapshot(item)
-    source_acf_digest = source_snapshot.root_digest if source_snapshot is not None else None
-    relationships_by_section = _observed_relationships(
-        item,
-        acf_schema=acf_schema,
-        source_snapshot=source_snapshot,
-    )
-    target = _target(
-        item,
-        profile,
-        observed_at,
-        acf_schema=acf_schema,
-        source_acf_digest=source_acf_digest,
-        relationships_by_section=relationships_by_section,
-    )
+    target = _observed_target(matching_items[0], profile, observed_at)
     return ContentTargetDiscovery(
         work_item_id=work_item_id,
         public_url=public_url,
@@ -249,6 +232,30 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
             "Szczegóły dotyczą odczytanego obiektu dev, nie mapowania zatwierdzonego dokumentu.",
             "Ten odczyt nie odblokowuje ACF, tworzenia draftu ani publikacji.",
         ],
+    )
+
+
+def _observed_target(
+    item: WordPressAuthoringDevContentObject,
+    profile: WordPressAuthoringProfile,
+    observed_at: str,
+) -> ContentTargetDiscoveryTarget:
+    acf_schema = (
+        read_wordpress_acf_rest_schema("wordpress_ekologus", item) if item.acf_field_name else None
+    )
+    source_snapshot = _source_acf_snapshot(item)
+    return _target(
+        item,
+        profile,
+        observed_at,
+        acf_schema=acf_schema,
+        source_acf_digest=source_snapshot.root_digest if source_snapshot else None,
+        source_acf_fields_digest=source_snapshot.fields_digest if source_snapshot else None,
+        relationships_by_section=_observed_relationships(
+            item,
+            acf_schema=acf_schema,
+            source_snapshot=source_snapshot,
+        ),
     )
 
 
@@ -326,6 +333,7 @@ def _target(
     *,
     acf_schema: WordPressAcfRestSchema | None = None,
     source_acf_digest: str | None = None,
+    source_acf_fields_digest: str | None = None,
     relationships_by_section: dict[int, list[ContentTargetAuthoringRelationship]] | None = None,
 ) -> ContentTargetDiscoveryTarget:
     contract = _target_contract(
@@ -333,6 +341,7 @@ def _target(
         profile,
         acf_schema=acf_schema,
         source_acf_digest=source_acf_digest,
+        source_acf_fields_digest=source_acf_fields_digest,
         relationships_by_section=relationships_by_section,
     )
     digest = _digest(contract)
@@ -371,6 +380,7 @@ def _target_contract(
     *,
     acf_schema: WordPressAcfRestSchema | None = None,
     source_acf_digest: str | None = None,
+    source_acf_fields_digest: str | None = None,
     relationships_by_section: dict[int, list[ContentTargetAuthoringRelationship]] | None = None,
 ) -> ContentTargetContract:
     surface = None
@@ -403,6 +413,7 @@ def _target_contract(
             schema_source_ref=acf_schema.source_ref if acf_schema is not None else "",
             schema_reason=acf_schema.reason if acf_schema is not None else "",
             source_acf_digest=source_acf_digest,
+            source_acf_fields_digest=source_acf_fields_digest,
             write_profile_status=("ready" if writable_fields_by_layout else "unavailable"),
             write_profile_reason=_write_profile_reason(profile_reason, acf_schema),
         )
