@@ -278,6 +278,9 @@ def _finish_apply_claim(
         new_page_apply_claim_store().finish_new_page_revision_apply_claim(
             claim.new_page_binding,
             status=cast(Literal["applied", "failed"], status),
+            audit_event=audit,
+            mutation_audit=mutation_audit,
+            adapter_result=adapter_result,
         )
 
 

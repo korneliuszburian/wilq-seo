@@ -5,15 +5,18 @@ from __future__ import annotations
 import sqlite3
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 from wilq.content.workflow.new_page_revision_binding import ContentNewPageDraftBinding
 from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
 from wilq.content.workflow.store_queries import (
     latest_draft_revision,
     latest_draft_revision_review,
+    upsert_action_mutation_audit,
+    upsert_audit_event,
 )
 from wilq.content.workflow.store_schema import ensure_content_workflow_schema
+from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
@@ -101,10 +104,15 @@ class NewPageApplyClaimStore:
         binding: ContentNewPageDraftBinding,
         *,
         status: Literal["applied", "failed"],
+        audit_event: AuditEvent,
+        mutation_audit: ActionMutationAuditRecord,
+        adapter_result: dict[str, Any] | None = None,
     ) -> None:
-        """Consume a claimed binding after the adapter has a known outcome."""
+        """Persist the outcome audit and consume the exact claim atomically."""
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            upsert_audit_event(connection, audit_event)
+            upsert_action_mutation_audit(connection, mutation_audit)
             updated = connection.execute(
                 """
                 UPDATE content_new_page_revision_apply_claims
@@ -114,6 +122,15 @@ class NewPageApplyClaimStore:
                 (status, utc_now().isoformat(), _claim_key(binding)),
             )
             if updated.rowcount != 1:
+                row = connection.execute(
+                    """
+                    SELECT status FROM content_new_page_revision_apply_claims
+                    WHERE claim_key = ?
+                    """,
+                    (_claim_key(binding),),
+                ).fetchone()
+                if row is not None and row["status"] == status:
+                    return
                 raise RuntimeError("New-page apply claim is not active during finalization.")
 
 

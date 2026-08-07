@@ -24,14 +24,30 @@ from wilq.schemas import (
 class _ClaimStore:
     def __init__(self) -> None:
         self.claims: list[tuple[str, str]] = []
-        self.finished: list[tuple[str, str]] = []
+        self.finished: list[tuple[str, str, str, str, dict | None]] = []
 
     def claim_new_page_revision_apply(self, binding, *, action_id: str, claimed_by: str) -> str:
         self.claims.append((binding.revision_id, action_id))
         return "acquired"
 
-    def finish_new_page_revision_apply_claim(self, binding, *, status: str) -> None:
-        self.finished.append((binding.revision_id, status))
+    def finish_new_page_revision_apply_claim(
+        self,
+        binding,
+        *,
+        status: str,
+        audit_event,
+        mutation_audit,
+        adapter_result=None,
+    ) -> None:
+        self.finished.append(
+            (
+                binding.revision_id,
+                status,
+                audit_event.id,
+                mutation_audit.id,
+                adapter_result,
+            )
+        )
 
 
 def _configured_connector() -> SimpleNamespace:
@@ -112,7 +128,15 @@ def test_new_page_action_requires_the_full_lifecycle_before_one_exact_dev_draft(
     assert result.mutation_audit.new_page_draft_binding.revision_id == binding["revision_id"]
     assert executed == [action.id]
     assert claim_store.claims == [(binding["revision_id"], action.id)]
-    assert claim_store.finished == [(binding["revision_id"], "applied")]
+    assert claim_store.finished == [
+        (
+            binding["revision_id"],
+            "applied",
+            result.audit_event.id,
+            result.mutation_audit.id,
+            result.adapter_result,
+        )
+    ]
 
 
 def test_new_page_action_rejects_a_changed_apply_binding_before_claim_or_executor(
@@ -193,7 +217,15 @@ def test_new_page_action_consumes_its_claim_after_a_failed_executor(monkeypatch)
 
     assert result.applied is False
     assert result.adapter_result is None
-    assert claim_store.finished == [(binding["revision_id"], "failed")]
+    assert claim_store.finished == [
+        (
+            binding["revision_id"],
+            "failed",
+            result.audit_event.id,
+            result.mutation_audit.id,
+            result.adapter_result,
+        )
+    ]
 
 
 def test_new_page_action_is_reachable_through_the_public_actions_lifecycle(
@@ -261,4 +293,5 @@ def test_new_page_action_is_reachable_through_the_public_actions_lifecycle(
 
     assert response.status_code == 200
     assert response.json()["mutation_audit"]["new_page_draft_binding"] == binding
-    assert claim_store.finished == [(binding["revision_id"], "applied")]
+    assert claim_store.finished[0][:2] == (binding["revision_id"], "applied")
+    assert claim_store.finished[0][4] == response.json()["adapter_result"]
