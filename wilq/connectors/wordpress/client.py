@@ -62,6 +62,19 @@ WORDPRESS_AUTHORING_TEXT_CANDIDATE_LIMIT = 40
 WORDPRESS_AUTHORING_FIELD_NAME_LIMIT = 20
 WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS = 280
 _OMIT_ACF_CREATE_VALUE = object()
+_WORDPRESS_REST_SAFE_ERROR_ROOTS = {
+    "acf",
+    "content",
+    "date",
+    "excerpt",
+    "featured_media",
+    "meta",
+    "slug",
+    "status",
+    "template",
+    "title",
+}
+_WORDPRESS_REST_SAFE_ERROR_SEGMENT = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 
 
 @dataclass(frozen=True)
@@ -159,16 +172,55 @@ class WordPressAuthoringReadError(RuntimeError):
         self.public_message = public_message
 
 
-def _wordpress_draft_write_http_error(response: httpx.Response) -> WordPressDraftWriteError:
+def _safe_wordpress_rest_error_field_path(value: object) -> str | None:
+    """Keep a schema field path, never a vendor-provided rejected value."""
+
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip().replace("[", ".").replace("]", "")
+    segments = [segment for segment in normalized.split(".") if segment]
+    if (
+        not segments
+        or segments[0] not in _WORDPRESS_REST_SAFE_ERROR_ROOTS
+        or len(segments) > 12
+        or not all(_WORDPRESS_REST_SAFE_ERROR_SEGMENT.fullmatch(segment) for segment in segments)
+    ):
+        return None
+    return ".".join(segments)
+
+
+def _wordpress_rest_endpoint_name(response: httpx.Response) -> str | None:
+    """Return only the known REST collection name from a failed request."""
+
+    try:
+        path = urlparse(str(response.request.url)).path
+    except RuntimeError:
+        return None
+    parts = [part for part in path.split("/") if part]
+    try:
+        endpoint = parts[parts.index("v2") + 1]
+    except (ValueError, IndexError):
+        return None
+    return endpoint if endpoint in WORDPRESS_AUTHORING_REST_ENDPOINTS else None
+
+
+def _wordpress_draft_write_http_error(
+    response: httpx.Response,
+    *,
+    operation: str = "utworzenie szkicu",
+) -> WordPressDraftWriteError:
     """Return a diagnostic-safe WordPress write failure.
 
     WordPress error bodies are vendor input and may include a submitted value,
     so never expose them wholesale through an ActionObject/audit response.  A
-    REST error code and the names of rejected top-level fields are enough for
+    REST error code, endpoint and rejected schema field paths are enough for
     an operator to repair the authoring contract without leaking draft text.
     """
 
-    suffix = ""
+    details: list[str] = []
+    endpoint = _wordpress_rest_endpoint_name(response)
+    if endpoint is not None:
+        details.append(f"endpoint: {endpoint}")
     try:
         body = response.json()
     except (json.JSONDecodeError, ValueError):
@@ -176,18 +228,20 @@ def _wordpress_draft_write_http_error(response: httpx.Response) -> WordPressDraf
     if isinstance(body, dict):
         code = body.get("code")
         if isinstance(code, str) and code.replace("_", "").isalnum():
-            suffix = f" ({code}"
+            details.append(f"kod: {code}")
             data = body.get("data")
             params = data.get("params") if isinstance(data, dict) else None
             if isinstance(params, dict):
                 fields = sorted(
-                    key for key in params if isinstance(key, str) and key.replace("_", "").isalnum()
+                    field_path
+                    for key in params
+                    if (field_path := _safe_wordpress_rest_error_field_path(key)) is not None
                 )
                 if fields:
-                    suffix += f"; pola: {', '.join(fields[:8])}"
-            suffix += ")"
+                    details.append(f"pola: {', '.join(fields[:8])}")
+    suffix = f" ({'; '.join(details)})" if details else ""
     return WordPressDraftWriteError(
-        f"WordPress odrzucił utworzenie szkicu HTTP {response.status_code}.{suffix}"
+        f"WordPress odrzucił {operation} HTTP {response.status_code}.{suffix}"
     )
 
 
@@ -208,7 +262,10 @@ def _acf_create_schema(
         response.raise_for_status()
         definition = response.json()
     except httpx.HTTPStatusError as exc:
-        raise _wordpress_draft_write_http_error(exc.response) from exc
+        raise _wordpress_draft_write_http_error(
+            exc.response,
+            operation="odczyt schematu ACF",
+        ) from exc
     except (httpx.HTTPError, json.JSONDecodeError, ValueError) as exc:
         raise WordPressDraftWriteError(
             "Nie udało się odczytać schematu ACF przed utworzeniem szkicu."

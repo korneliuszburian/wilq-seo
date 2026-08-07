@@ -89,7 +89,13 @@ def test_create_wordpress_draft_post_keeps_only_safe_rest_error_diagnostics(
                 json={
                     "code": "rest_invalid_param",
                     "message": "Nie ujawniaj treści szkicu ani tokenu secret-value.",
-                    "data": {"params": {"acf": "Niedozwolone"}},
+                    "data": {
+                        "params": {
+                            "acf[flexible-home][12][background_type]": "Niedozwolone",
+                            "title": "Niedozwolone",
+                            "untrusted secret-value": "Nie pokazuj tego",
+                        }
+                    },
                 },
             )
         )
@@ -100,7 +106,8 @@ def test_create_wordpress_draft_post_keeps_only_safe_rest_error_diagnostics(
 
     assert exc_info.value.public_message == (
         "WordPress odrzucił utworzenie szkicu HTTP 400. "
-        "(rest_invalid_param; pola: acf)"
+        "(endpoint: posts; kod: rest_invalid_param; "
+        "pola: acf.flexible-home.12.background_type, title)"
     )
     assert "secret-value" not in exc_info.value.public_message
 
@@ -212,6 +219,42 @@ def test_create_wordpress_acf_draft_uses_live_schema_before_create(
 
     assert draft_id == "322"
     assert [request.method for request in requests] == ["OPTIONS", "POST"]
+
+
+def test_create_wordpress_acf_draft_names_schema_read_stage_on_rest_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+
+    with pytest.raises(WordPressDraftWriteError) as exc_info:
+        create_wordpress_acf_draft(
+            SimpleNamespace(
+                connector="wordpress_ekologus",
+                endpoint="uslugi",
+                post_status="draft",
+                create_only=True,
+                publish_allowed=False,
+                update_allowed=False,
+                delete_allowed=False,
+                title="Test ACF",
+                acf={"flexible-home": [{"acf_fc_layout": "hero"}]},
+            ),
+            action_apply_authorized=True,
+            http_client=httpx.Client(
+                transport=httpx.MockTransport(
+                    lambda _request: httpx.Response(
+                        403,
+                        json={"code": "rest_forbidden", "message": "secret-value"},
+                    )
+                )
+            ),
+        )
+
+    assert exc_info.value.public_message == (
+        "WordPress odrzucił odczyt schematu ACF HTTP 403. "
+        "(endpoint: uslugi; kod: rest_forbidden)"
+    )
+    assert "secret-value" not in exc_info.value.public_message
 
 
 def test_create_wordpress_draft_post_blocks_publish_or_destructive_payload(
