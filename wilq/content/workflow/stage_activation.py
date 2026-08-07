@@ -4,7 +4,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal, cast
 
-from wilq.connectors.wordpress.client import WordPressDraftReadError, read_wordpress_draft_post
+from wilq.connectors.wordpress.client import (
+    WordPressDraftPostReadback,
+    WordPressDraftReadError,
+    _wordpress_draft_value_digest,
+    read_wordpress_draft_post,
+)
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionResult,
     execute_content_wordpress_draft_handoff,
@@ -73,8 +78,11 @@ def wordpress_draft_readback(
                 )
             ],
         )
+    expected_content_digest, expected_acf_digest, verification_blocker = (
+        _wordpress_draft_verification(execution, readback)
+    )
     return ContentWordPressDraftReadback(
-        status="available",
+        status="blocked" if verification_blocker is not None else "available",
         wordpress_post_id=readback.post_id,
         post_status=readback.status,
         title=readback.title,
@@ -85,7 +93,64 @@ def wordpress_draft_readback(
         content_word_count=readback.content_word_count,
         acf_field_count=readback.acf_field_count,
         acf_field_names=readback.acf_field_names,
+        content_digest=readback.content_digest,
+        expected_content_digest=expected_content_digest,
+        acf_digest=readback.acf_digest,
+        expected_acf_digest=expected_acf_digest,
+        verification_status="blocked" if verification_blocker is not None else "verified",
+        blockers=[verification_blocker] if verification_blocker is not None else [],
     )
+
+
+def _wordpress_draft_verification(
+    execution: ContentWordPressDraftExecutionResult,
+    readback: WordPressDraftPostReadback,
+) -> tuple[str | None, str | None, ContentWordPressDraftReadbackBlocker | None]:
+    if readback.status != "draft":
+        return None, None, ContentWordPressDraftReadbackBlocker(
+            code="wordpress_draft_status_mismatch",
+            label="Odczyt nie potwierdził statusu draft",
+            reason="Utworzony obiekt WordPress nie ma już statusu draft.",
+            next_step=(
+                "Nie uznawaj wyniku za zweryfikowany. Sprawdź obiekt po ID i jego audit zmian."
+            ),
+        )
+    payload = execution.payload
+    if payload is None or payload.authoring_mode == "acf_flexible_content":
+        return None, None, ContentWordPressDraftReadbackBlocker(
+            code="wordpress_draft_verification_unavailable",
+            label="Brakuje payloadu do porównania treści szkicu",
+            reason=(
+                "WILQ nie ma dokładnej wysłanej wartości treści wymaganej do porównania digestu."
+            ),
+            next_step=(
+                "Nie traktuj samego ID jako potwierdzenia. Użyj create-only ActionObject "
+                "z weryfikacją dokładnego payloadu."
+            ),
+        )
+    expected_content = payload.content_html or payload.content_markdown
+    if not expected_content:
+        return None, None, ContentWordPressDraftReadbackBlocker(
+            code="wordpress_draft_verification_unavailable",
+            label="Brakuje treści do porównania szkicu",
+            reason="Wynik wykonania nie zawiera wartości wysłanej do pola content WordPress.",
+            next_step="Przygotuj nową, dokładnie powiązaną akcję create-only.",
+        )
+    expected_content_digest = _wordpress_draft_value_digest(expected_content)
+    if readback.content_digest != expected_content_digest:
+        return expected_content_digest, None, ContentWordPressDraftReadbackBlocker(
+            code="wordpress_draft_content_mismatch",
+            label="Treść szkicu WordPress różni się od wysłanego payloadu",
+            reason=(
+                "Digest pola content odczytanego z WordPress nie zgadza się z digestem "
+                "dokładnej treści wysłanej przez WILQ."
+            ),
+            next_step=(
+                "Nie ponawiaj zapisu automatycznie. Sprawdź szkic po ID i przygotuj nową, "
+                "osobno zatwierdzoną akcję."
+            ),
+        )
+    return expected_content_digest, None, None
 
 
 def wordpress_draft_activation_missing_step(

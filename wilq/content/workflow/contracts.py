@@ -303,6 +303,10 @@ class ContentWordPressDraftReadbackBlocker(BaseModel):
     code: Literal[
         "missing_wordpress_post_id",
         "wordpress_draft_read_failed",
+        "wordpress_draft_status_mismatch",
+        "wordpress_draft_content_mismatch",
+        "wordpress_draft_acf_mismatch",
+        "wordpress_draft_verification_unavailable",
     ]
     label: str
     reason: str
@@ -322,6 +326,11 @@ class ContentWordPressDraftReadback(BaseModel):
     content_word_count: int | None = None
     acf_field_count: int | None = None
     acf_field_names: list[str] = Field(default_factory=list)
+    content_digest: str = ""
+    expected_content_digest: str | None = None
+    acf_digest: str = ""
+    expected_acf_digest: str | None = None
+    verification_status: Literal["verified", "blocked"] = "blocked"
     blockers: list[ContentWordPressDraftReadbackBlocker] = Field(default_factory=list)
 
 

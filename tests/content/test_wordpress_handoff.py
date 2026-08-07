@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from wilq.connectors.wordpress.client import WordPressDraftVerificationError
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import (
     ContentWordPressDraftAuditEnvelope,
@@ -366,6 +367,49 @@ def test_wordpress_draft_execution_live_mode_uses_explicit_adapter_only() -> Non
     assert result.external_write_attempted is True
     assert result.wordpress_post_id == "123"
     assert created_payload_titles == ["BDO dla firm: co sprawdzić"]
+
+
+def test_wordpress_draft_execution_blocks_created_draft_with_failed_verification() -> None:
+    handoff_result = build_content_wordpress_draft_handoff(
+        item=_item(),
+        draft_package=_draft_package(),
+        human_review=_review(),
+        audit=_audit(),
+    )
+    assert handoff_result.handoff is not None
+
+    def create_draft(_payload) -> str:  # type: ignore[no-untyped-def]
+        raise WordPressDraftVerificationError(
+            "Utworzono szkic WordPress, ale odczyt nie potwierdził zgodności zapisanej treści.",
+            post_id="123",
+            code="wordpress_draft_content_mismatch",
+            expected_digest="a" * 64,
+            observed_digest="b" * 64,
+        )
+
+    result = execute_content_wordpress_draft_handoff(
+        handoff=handoff_result.handoff,
+        draft_package=_draft_package(),
+        mode="live",
+        live_write_enabled=True,
+        create_draft=create_draft,
+        action_apply_authorized=True,
+        write_authorization=ContentWordPressDraftWriteAuthorization(
+            action_id="act_prepare_wordpress_draft_handoff",
+            preview_audit_id="audit_preview_123",
+            review_audit_id="audit_review_123",
+            confirmation_audit_id="audit_confirm_123",
+            confirmed_by="wilku",
+        ),
+        write_authorization_verified=True,
+    )
+
+    assert result.status == "blocked"
+    assert result.wordpress_post_id == "123"
+    assert result.external_write_attempted is True
+    assert [blocker.code for blocker in result.blockers] == [
+        "wordpress_draft_verification_failed"
+    ]
 
 
 def test_acf_page_never_falls_back_to_the_content_draft_payload() -> None:

@@ -29,6 +29,7 @@ ContentWordPressDraftExecutionBlockerCode = Literal[
     "invalid_write_authorization",
     "revision_section_overrides_mismatch",
     "acf_authoring_payload_required",
+    "wordpress_draft_verification_failed",
     "live_adapter_failed",
 ]
 
@@ -193,27 +194,13 @@ def execute_content_wordpress_draft_handoff(
     try:
         wordpress_post_id = create_draft(payload)
     except Exception as exc:  # pragma: no cover - adapter failures are integration-specific
-        return ContentWordPressDraftExecutionResult(
-            status="blocked",
+        return _failed_wordpress_draft_creation(
+            exc,
             mode=mode,
             revision_binding=handoff.revision_binding,
-            boundary=_execution_boundary(
-                live_write_enabled=live_write_enabled,
-                create_draft=create_draft,
-            ),
             payload=payload,
-            external_write_attempted=True,
-            blockers=[
-                _blocker(
-                    "live_adapter_failed",
-                    "Adapter WordPress zwrócił błąd",
-                    _adapter_error_reason(exc),
-                    (
-                        "Nie ponawiaj zapisu automatycznie. Sprawdź konfigurację "
-                        "WordPress i wróć do podglądu szkicu."
-                    ),
-                )
-            ],
+            live_write_enabled=live_write_enabled,
+            create_draft=create_draft,
         )
     return ContentWordPressDraftExecutionResult(
         status="created",
@@ -226,6 +213,56 @@ def execute_content_wordpress_draft_handoff(
         payload=payload,
         wordpress_post_id=wordpress_post_id,
         external_write_attempted=True,
+    )
+
+
+def _failed_wordpress_draft_creation(
+    exc: Exception,
+    *,
+    mode: ContentWordPressDraftExecutionMode,
+    revision_binding: ContentDraftRevisionBinding | None,
+    payload: ContentWordPressDraftPayload,
+    live_write_enabled: bool,
+    create_draft: Callable[[ContentWordPressDraftPayload], str],
+) -> ContentWordPressDraftExecutionResult:
+    verification_code = getattr(exc, "code", None)
+    verification_failed = (
+        isinstance(verification_code, str) and verification_code.startswith("wordpress_draft_")
+    )
+    failed_post_id = getattr(exc, "post_id", None)
+    return ContentWordPressDraftExecutionResult(
+        status="blocked",
+        mode=mode,
+        revision_binding=revision_binding,
+        boundary=_execution_boundary(
+            live_write_enabled=live_write_enabled,
+            create_draft=create_draft,
+        ),
+        payload=payload,
+        wordpress_post_id=failed_post_id if isinstance(failed_post_id, str) else None,
+        external_write_attempted=True,
+        blockers=[
+            _blocker(
+                (
+                    "wordpress_draft_verification_failed"
+                    if verification_failed
+                    else "live_adapter_failed"
+                ),
+                (
+                    "Nie potwierdzono treści utworzonego szkicu WordPress"
+                    if verification_failed
+                    else "Adapter WordPress zwrócił błąd"
+                ),
+                _adapter_error_reason(exc),
+                (
+                    "Nie ponawiaj zapisu automatycznie. Sprawdź utworzony szkic po ID i "
+                    "przygotuj nową, osobno zatwierdzoną akcję."
+                    if verification_failed
+                    else "Nie ponawiaj zapisu automatycznie. Sprawdź konfigurację WordPress "
+                    "i wróć do podglądu szkicu."
+                ),
+            )
+        ],
     )
 
 

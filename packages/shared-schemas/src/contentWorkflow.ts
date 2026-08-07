@@ -2259,7 +2259,14 @@ export const ContentWordPressDraftExecutionResultSchema = z.object({
 });
 
 export const ContentWordPressDraftReadbackBlockerSchema = z.object({
-  code: z.enum(["missing_wordpress_post_id", "wordpress_draft_read_failed"]),
+  code: z.enum([
+    "missing_wordpress_post_id",
+    "wordpress_draft_read_failed",
+    "wordpress_draft_status_mismatch",
+    "wordpress_draft_content_mismatch",
+    "wordpress_draft_acf_mismatch",
+    "wordpress_draft_verification_unavailable"
+  ]),
   label: z.string(),
   reason: z.string(),
   next_step: z.string()
@@ -2278,6 +2285,11 @@ export const ContentWordPressDraftReadbackSchema = z.object({
   content_word_count: z.number().nullable().optional(),
   acf_field_count: z.number().nullable().optional(),
   acf_field_names: z.array(z.string()).default([]),
+  content_digest: z.string(),
+  expected_content_digest: z.string().nullable().optional(),
+  acf_digest: z.string(),
+  expected_acf_digest: z.string().nullable().optional(),
+  verification_status: z.enum(["verified", "blocked"]),
   blockers: z.array(ContentWordPressDraftReadbackBlockerSchema).default([])
 });
 

@@ -99,6 +99,8 @@ class WordPressDraftPostReadback:
     content_word_count: int | None
     acf_field_count: int | None
     acf_field_names: list[str]
+    content_digest: str
+    acf_digest: str
     edit_link: str = ""
 
 
@@ -176,6 +178,25 @@ class WordPressDraftWriteError(RuntimeError):
     def __init__(self, public_message: str) -> None:
         super().__init__(public_message)
         self.public_message = public_message
+
+
+class WordPressDraftVerificationError(WordPressDraftWriteError):
+    """A create reached WordPress but its stored payload could not be proven exact."""
+
+    def __init__(
+        self,
+        public_message: str,
+        *,
+        post_id: str,
+        code: str,
+        expected_digest: str | None = None,
+        observed_digest: str | None = None,
+    ) -> None:
+        super().__init__(public_message)
+        self.post_id = post_id
+        self.code = code
+        self.expected_digest = expected_digest
+        self.observed_digest = observed_digest
 
 
 class WordPressDraftReadError(RuntimeError):
@@ -474,6 +495,9 @@ def create_wordpress_draft_post(
     ):
         raise WordPressDraftWriteError("Adapter blokuje publikację i destrukcyjne aktualizacje.")
 
+    content = getattr(payload, "content_html", None) or getattr(
+        payload, "content_markdown", ""
+    )
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
     auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
@@ -486,8 +510,7 @@ def create_wordpress_draft_post(
                 json={
                     "status": "draft",
                     "title": getattr(payload, "title", ""),
-                    "content": getattr(payload, "content_html", None)
-                    or getattr(payload, "content_markdown", ""),
+                    "content": content,
                 },
             )
             response.raise_for_status()
@@ -497,11 +520,16 @@ def create_wordpress_draft_post(
             raise WordPressDraftWriteError(
                 f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
             ) from exc
+        return _verified_created_draft_post_id(
+            response,
+            connector_id=connector_id,
+            endpoint="posts",
+            http_client=client,
+            expected_content=content,
+        )
     finally:
         if owns_client:
             client.close()
-
-    return _created_draft_post_id(response)
 
 
 def create_wordpress_acf_draft(
@@ -576,11 +604,16 @@ def create_wordpress_acf_draft(
             raise WordPressDraftWriteError(
                 f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
             ) from exc
+        return _verified_created_draft_post_id(
+            response,
+            connector_id=connector_id,
+            endpoint=endpoint,
+            http_client=client,
+            expected_acf=normalized_acf,
+        )
     finally:
         if owns_client:
             client.close()
-
-    return _created_draft_post_id(response)
 
 
 def read_wordpress_draft_post(
@@ -660,9 +693,7 @@ def read_wordpress_draft_discard_readback(
         endpoint=endpoint,
         http_client=http_client,
     )
-    raw_content = payload.get("content")
-    content = raw_content.get("raw") if isinstance(raw_content, dict) else ""
-    acf = payload.get("acf") if isinstance(payload.get("acf"), dict) else {}
+    content, acf = _wordpress_draft_values(payload)
     raw_title = payload.get("title")
     title = wordpress_title(payload)
     if not title and isinstance(raw_title, dict):
@@ -822,6 +853,34 @@ def _read_wordpress_draft_payload(
 def _wordpress_draft_value_digest(value: object) -> str:
     encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _acf_sent_subset_matches(observed: object, sent: object) -> bool:
+    """Prove every sent ACF value survived while allowing readback-only fields."""
+
+    if isinstance(sent, dict):
+        return isinstance(observed, dict) and all(
+            key in observed and _acf_sent_subset_matches(observed[key], value)
+            for key, value in sent.items()
+        )
+    if isinstance(sent, list):
+        return (
+            isinstance(observed, list)
+            and len(observed) == len(sent)
+            and all(
+                _acf_sent_subset_matches(observed_item, sent_item)
+                for observed_item, sent_item in zip(observed, sent, strict=True)
+            )
+        )
+    return _wordpress_draft_value_digest(observed) == _wordpress_draft_value_digest(sent)
+
+
+def _wordpress_draft_values(payload: dict[str, object]) -> tuple[object, dict[object, object]]:
+    raw_content = payload.get("content")
+    content = raw_content.get("raw") if isinstance(raw_content, dict) else ""
+    raw_acf = payload.get("acf")
+    acf = raw_acf if isinstance(raw_acf, dict) else {}
+    return content, acf
 
 
 def read_wordpress_authoring_content(
@@ -1085,6 +1144,64 @@ def _created_draft_post_id(response: httpx.Response) -> str:
     return str(post_id)
 
 
+def _verified_created_draft_post_id(
+    response: httpx.Response,
+    *,
+    connector_id: str,
+    endpoint: str,
+    http_client: httpx.Client,
+    expected_content: object | None = None,
+    expected_acf: object | None = None,
+) -> str:
+    post_id = _created_draft_post_id(response)
+    expected_value = expected_content if expected_content is not None else expected_acf
+    expected_digest = _wordpress_draft_value_digest(expected_value)
+    try:
+        payload = _read_wordpress_draft_payload(
+            post_id,
+            connector_id=connector_id,
+            endpoint=endpoint,
+            http_client=http_client,
+        )
+    except (WordPressDraftReadError, ValueError) as exc:
+        raise WordPressDraftVerificationError(
+            "Utworzono szkic WordPress, ale nie udało się odczytać zapisanej treści "
+            "do weryfikacji.",
+            post_id=post_id,
+            code="wordpress_draft_read_failed",
+            expected_digest=expected_digest,
+        ) from exc
+    if payload.get("status") != "draft":
+        raise WordPressDraftVerificationError(
+            "Utworzono obiekt WordPress, ale odczyt nie potwierdził statusu draft.",
+            post_id=post_id,
+            code="wordpress_draft_status_mismatch",
+            expected_digest=expected_digest,
+        )
+    observed_content, observed_acf = _wordpress_draft_values(payload)
+    observed_value = observed_content if expected_content is not None else observed_acf
+    observed_digest = _wordpress_draft_value_digest(observed_value)
+    matches = (
+        observed_digest == expected_digest
+        if expected_content is not None
+        else _acf_sent_subset_matches(observed_acf, expected_acf)
+    )
+    if not matches:
+        mismatch_code = (
+            "wordpress_draft_content_mismatch"
+            if expected_content is not None
+            else "wordpress_draft_acf_mismatch"
+        )
+        raise WordPressDraftVerificationError(
+            "Utworzono szkic WordPress, ale odczyt nie potwierdził zgodności zapisanej treści.",
+            post_id=post_id,
+            code=mismatch_code,
+            expected_digest=expected_digest,
+            observed_digest=observed_digest,
+        )
+    return post_id
+
+
 def _draft_post_readback(
     response: httpx.Response,
     requested_post_id: str,
@@ -1095,6 +1212,7 @@ def _draft_post_readback(
     if not isinstance(body, dict):
         raise WordPressDraftReadError("WordPress zwrócił nieprawidłową odpowiedź szkicu.")
     post_id = body.get("id")
+    content, acf = _wordpress_draft_values(body)
     content_dimensions = content_inventory(body.get("content"))
     acf_dimensions = acf_inventory(body.get("acf"))
     acf_names = _json_string_list(acf_dimensions.get("acf_field_names_json"))
@@ -1115,6 +1233,8 @@ def _draft_post_readback(
         content_word_count=content_word_count,
         acf_field_count=acf_field_count,
         acf_field_names=acf_names,
+        content_digest=_wordpress_draft_value_digest(content),
+        acf_digest=_wordpress_draft_value_digest(acf),
     )
 
 

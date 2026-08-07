@@ -45,21 +45,62 @@ def test_create_wordpress_draft_post_posts_draft_only_payload(
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        body = request.read().decode()
-        assert request.method == "POST"
-        assert str(request.url) == (
-            "https://ekologus.dev.proudsite.pl/wp-json/wp/v2/posts?_fields=id%2Cstatus%2Clink"
+        if request.method == "POST":
+            body = request.read().decode()
+            assert str(request.url) == (
+                "https://ekologus.dev.proudsite.pl/wp-json/wp/v2/posts?_fields=id%2Cstatus%2Clink"
+            )
+            assert '"status":"draft"' in body
+            assert '"title":"Testowy szkic"' in body
+            return httpx.Response(201, json={"id": 321, "status": "draft"})
+        assert request.method == "GET"
+        assert request.url.path == "/wp-json/wp/v2/posts/321"
+        return httpx.Response(
+            200,
+            json={
+                "id": 321,
+                "status": "draft",
+                "title": {"raw": "Testowy szkic"},
+                "content": {"raw": "# Testowy szkic\n\nTreść do sprawdzenia."},
+                "acf": {},
+            },
         )
-        assert '"status":"draft"' in body
-        assert '"title":"Testowy szkic"' in body
-        return httpx.Response(201, json={"id": 321, "status": "draft"})
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
 
     post_id = create_wordpress_draft_post(_payload(), http_client=client)
 
     assert post_id == "321"
-    assert len(requests) == 1
+    assert [request.method for request in requests] == ["POST", "GET"]
+
+
+def test_create_wordpress_draft_post_blocks_mismatched_content_readback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "POST":
+            return httpx.Response(201, json={"id": 321, "status": "draft"})
+        return httpx.Response(
+            200,
+            json={
+                "id": 321,
+                "status": "draft",
+                "title": {"raw": "Testowy szkic"},
+                "content": {"raw": "<p>Inna treść zapisana przez WordPress.</p>"},
+                "acf": {},
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    with pytest.raises(WordPressDraftWriteError, match="nie potwierdził zgodności"):
+        create_wordpress_draft_post(_payload(), http_client=client)
+
+    assert [request.method for request in requests] == ["POST", "GET"]
 
 
 def test_create_wordpress_draft_post_blocks_non_draft_vendor_response(
@@ -307,11 +348,25 @@ def test_create_wordpress_acf_draft_uses_live_schema_before_create(
                 200,
                 json={"endpoints": [{"methods": ["POST"], "args": {"acf": schema}}]},
             )
-        body = json.loads(request.content)
-        assert request.method == "POST"
-        assert body["status"] == "draft"
-        assert body["acf"]["flexible-home"][0]["img"] is None
-        return httpx.Response(201, json={"id": 322, "status": "draft"})
+        if request.method == "POST":
+            body = json.loads(request.content)
+            assert body["status"] == "draft"
+            assert body["acf"]["flexible-home"][0]["img"] is None
+            return httpx.Response(201, json={"id": 322, "status": "draft"})
+        assert request.method == "GET"
+        assert request.url.path == "/wp-json/wp/v2/uslugi/322"
+        return httpx.Response(
+            200,
+            json={
+                "id": 322,
+                "status": "draft",
+                "title": {"raw": "Test ACF"},
+                "content": {"raw": ""},
+                "acf": {
+                    "flexible-home": [{"acf_fc_layout": "hero", "img": None}]
+                },
+            },
+        )
 
     draft_id = create_wordpress_acf_draft(
         SimpleNamespace(
@@ -330,7 +385,149 @@ def test_create_wordpress_acf_draft_uses_live_schema_before_create(
     )
 
     assert draft_id == "322"
-    assert [request.method for request in requests] == ["OPTIONS", "POST"]
+    assert [request.method for request in requests] == ["OPTIONS", "POST", "GET"]
+
+
+def test_create_wordpress_acf_draft_accepts_additional_readback_fields(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+    schema = {
+        "type": "object",
+        "properties": {
+            "flexible-home": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "acf_fc_layout": {"type": "string"},
+                        "img": {"type": ["integer", "null"]},
+                    },
+                },
+            }
+        },
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "OPTIONS":
+            return httpx.Response(
+                200,
+                json={"endpoints": [{"methods": ["POST"], "args": {"acf": schema}}]},
+            )
+        if request.method == "POST":
+            body = json.loads(request.content)
+            assert body["acf"] == {
+                "flexible-home": [{"acf_fc_layout": "hero", "img": None}]
+            }
+            return httpx.Response(201, json={"id": 322, "status": "draft"})
+        return httpx.Response(
+            200,
+            json={
+                "id": 322,
+                "status": "draft",
+                "title": {"raw": "Test ACF"},
+                "content": {"raw": ""},
+                "acf": {
+                    "flexible-home": [
+                        {
+                            "acf_fc_layout": "hero",
+                            "img": None,
+                            "background": "default",
+                        }
+                    ]
+                },
+            },
+        )
+
+    draft_id = create_wordpress_acf_draft(
+        SimpleNamespace(
+            connector="wordpress_ekologus",
+            endpoint="uslugi",
+            post_status="draft",
+            create_only=True,
+            publish_allowed=False,
+            update_allowed=False,
+            delete_allowed=False,
+            title="Test ACF",
+            acf={"flexible-home": [{"acf_fc_layout": "hero", "img": None}]},
+        ),
+        action_apply_authorized=True,
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert draft_id == "322"
+    assert [request.method for request in requests] == ["OPTIONS", "POST", "GET"]
+
+
+def test_create_wordpress_acf_draft_blocks_mismatched_acf_readback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+    schema = {
+        "type": "object",
+        "properties": {
+            "flexible-home": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "acf_fc_layout": {"type": "string"},
+                        "content": {"type": "string"},
+                    },
+                },
+            }
+        },
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "OPTIONS":
+            return httpx.Response(
+                200,
+                json={"endpoints": [{"methods": ["POST"], "args": {"acf": schema}}]},
+            )
+        if request.method == "POST":
+            return httpx.Response(201, json={"id": 322, "status": "draft"})
+        return httpx.Response(
+            200,
+            json={
+                "id": 322,
+                "status": "draft",
+                "title": {"raw": "Test ACF"},
+                "content": {"raw": ""},
+                "acf": {
+                    "flexible-home": [
+                        {"acf_fc_layout": "hero", "content": "Inna treść"}
+                    ]
+                },
+            },
+        )
+
+    with pytest.raises(WordPressDraftWriteError, match="nie potwierdził zgodności"):
+        create_wordpress_acf_draft(
+            SimpleNamespace(
+                connector="wordpress_ekologus",
+                endpoint="uslugi",
+                post_status="draft",
+                create_only=True,
+                publish_allowed=False,
+                update_allowed=False,
+                delete_allowed=False,
+                title="Test ACF",
+                acf={
+                    "flexible-home": [
+                        {"acf_fc_layout": "hero", "content": "Oczekiwana treść"}
+                    ]
+                },
+            ),
+            action_apply_authorized=True,
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+
+    assert [request.method for request in requests] == ["OPTIONS", "POST", "GET"]
 
 
 def test_create_wordpress_acf_draft_names_schema_read_stage_on_rest_error(

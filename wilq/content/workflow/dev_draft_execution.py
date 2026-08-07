@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from wilq.connectors.wordpress.client import (
+    WordPressDraftVerificationError,
     WordPressDraftWriteError,
     create_wordpress_acf_draft,
     create_wordpress_draft_post,
@@ -46,6 +47,24 @@ def execute_content_target_draft_action(
                 payload,
                 connector_id=action.connector,
             )
+    except WordPressDraftVerificationError as error:
+        return {
+            "adapter": CONTENT_DEV_DRAFT_MUTATION_ADAPTER,
+            "connector": action.connector,
+            "allowed_operation": "create_wordpress_draft",
+            "endpoint": payload.endpoint,
+            "post_status": payload.post_status,
+            "created_draft_id": error.post_id,
+            "external_write_attempted": True,
+            "verification_status": "blocked",
+            "verification_blocker_code": error.code,
+            "expected_digest": error.expected_digest,
+            "observed_digest": error.observed_digest,
+            "publish_allowed": False,
+            "update_allowed": False,
+            "delete_allowed": False,
+            "redacted": True,
+        }, [error.public_message]
     except (ValueError, WordPressDraftWriteError) as error:
         return None, [str(error)]
     return {
@@ -56,6 +75,7 @@ def execute_content_target_draft_action(
         "post_status": payload.post_status,
         "created_draft_id": draft_id,
         "external_write_attempted": True,
+        "verification_status": "verified",
         "publish_allowed": False,
         "update_allowed": False,
         "delete_allowed": False,
