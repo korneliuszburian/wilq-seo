@@ -756,9 +756,16 @@ def trash_wordpress_draft(
         raise WordPressDraftWriteError(
             "WordPress nie potwierdził przeniesienia szkicu do kosza."
         ) from exc
-    if not isinstance(payload, dict) or payload.get("deleted") is not True:
+    if not isinstance(payload, dict):
         raise WordPressDraftWriteError("WordPress nie potwierdził przeniesienia szkicu do kosza.")
-    return current.post_id
+    if payload.get("deleted") is True:
+        return current.post_id
+    response_id = str(payload.get("id") or "")
+    if response_id == current.post_id and payload.get("status") == "trash":
+        # WordPress REST returns the trashed post object for DELETE force=false
+        # on this dev installation, rather than {"deleted": true}.
+        return current.post_id
+    raise WordPressDraftWriteError("WordPress nie potwierdził przeniesienia szkicu do kosza.")
 
 
 def _read_wordpress_draft_payload(

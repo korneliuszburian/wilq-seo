@@ -87,6 +87,11 @@ def test_discard_executor_preserves_fingerprint_and_reports_only_trashed_id(
         }
     )
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setattr(
+        dev_draft_discard_action,
+        "read_wordpress_draft_discard_readback",
+        lambda *_args, **_kwargs: _readback(),
+    )
     calls: list[dict[str, str]] = []
 
     def trash(**kwargs: str) -> str:
@@ -109,6 +114,47 @@ def test_discard_executor_preserves_fingerprint_and_reports_only_trashed_id(
             "expected_acf_digest": "b" * 64,
         }
     ]
+
+
+def test_discard_executor_reconciles_existing_trash_without_a_second_write(
+    monkeypatch,
+) -> None:
+    action = _origin_action().model_copy(
+        update={
+            "id": "act_content_dev_draft_discard_reconcile",
+            "payload": {
+                "action_type": dev_draft_discard_action.CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
+                "draft_discard_target": {
+                    "post_id": "1930",
+                    "endpoint": "posts",
+                    "modified_gmt": "2026-08-05T13:21:33",
+                    "content_digest": "a" * 64,
+                    "acf_digest": "b" * 64,
+                },
+            },
+        }
+    )
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setattr(
+        dev_draft_discard_action,
+        "read_wordpress_draft_discard_readback",
+        lambda *_args, **_kwargs: _readback().__class__(
+            **{**_readback().__dict__, "status": "trash"}
+        ),
+    )
+    monkeypatch.setattr(
+        dev_draft_discard_action,
+        "trash_wordpress_draft",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("must not write twice")),
+    )
+
+    result, errors = dev_draft_discard_action.execute_content_dev_draft_discard_action(action)
+
+    assert errors == []
+    assert result is not None
+    assert result["trashed_draft_id"] == "1930"
+    assert result["reconciled_existing_trash"] is True
+    assert result["external_write_attempted"] is False
 
 
 def test_discard_preview_card_names_exact_target_and_recoverable_operation() -> None:

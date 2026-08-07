@@ -173,6 +173,24 @@ def execute_content_dev_draft_discard_action(
     if any(not isinstance(target.get(key), str) or not target[key] for key in required):
         return None, ["Akcja wycofania szkicu ma niekompletny fingerprint targetu."]
     try:
+        current = read_wordpress_draft_discard_readback(
+            target["post_id"],
+            endpoint=target["endpoint"],
+        )
+        if current.status == "trash":
+            return {
+                "adapter": "content_dev_draft_discard_execution_boundary",
+                "connector": action.connector,
+                "allowed_operation": "trash_wordpress_dev_draft",
+                "trashed_draft_id": current.post_id,
+                "external_write_attempted": False,
+                "reconciled_existing_trash": True,
+                "publish_allowed": False,
+                "update_allowed": False,
+                "force_delete_allowed": False,
+                "recoverable_operation": True,
+                "redacted": True,
+            }, []
         post_id = trash_wordpress_draft(
             post_id=target["post_id"],
             endpoint=target["endpoint"],
@@ -188,6 +206,7 @@ def execute_content_dev_draft_discard_action(
         "allowed_operation": "trash_wordpress_dev_draft",
         "trashed_draft_id": post_id,
         "external_write_attempted": True,
+        "reconciled_existing_trash": False,
         "publish_allowed": False,
         "update_allowed": False,
         "force_delete_allowed": False,

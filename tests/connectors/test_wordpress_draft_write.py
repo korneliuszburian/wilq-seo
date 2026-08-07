@@ -154,6 +154,42 @@ def test_trash_wordpress_draft_blocks_changed_payload_before_delete(
     assert [request.method for request in requests] == ["GET"]
 
 
+def test_trash_wordpress_draft_accepts_wordpress_trashed_post_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "id": 1930,
+                    "status": "draft",
+                    "title": {"rendered": "BDO – wadliwy szkic"},
+                    "modified_gmt": "2026-08-05T13:21:33",
+                    "content": {"raw": "<h1>BDO</h1>"},
+                    "acf": {"flexible-news": []},
+                },
+            )
+        return httpx.Response(200, json={"id": 1930, "status": "trash"})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    observed = read_wordpress_draft_discard_readback("1930", http_client=client)
+
+    assert (
+        trash_wordpress_draft(
+            post_id="1930",
+            endpoint="posts",
+            expected_modified_gmt=observed.modified_gmt,
+            expected_content_digest=observed.content_digest,
+            expected_acf_digest=observed.acf_digest,
+            http_client=client,
+        )
+        == "1930"
+    )
+
+
 def test_create_wordpress_draft_post_keeps_only_safe_rest_error_diagnostics(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
