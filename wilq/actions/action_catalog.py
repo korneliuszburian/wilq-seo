@@ -64,6 +64,7 @@ from wilq.actions.wordpress_handoff import (
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.workflow.dev_draft_action import load_content_target_draft_action
+from wilq.content.workflow.dev_draft_discard_action import load_content_dev_draft_discard_action
 from wilq.content.workflow.new_page_draft_action import load_new_page_draft_action
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import ActionObject, ConnectorRefreshRun, ConnectorRefreshStatus, MetricFact
@@ -131,6 +132,7 @@ def get_action(action_id: str) -> ActionObject | None:
         return action.model_copy(deep=True)
     return (
         load_content_target_draft_action(action_id)
+        or load_content_dev_draft_discard_action(action_id)
         or load_new_page_draft_action(action_id)
         or _action_registry().get(action_id)
     )

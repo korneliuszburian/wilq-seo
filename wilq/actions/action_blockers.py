@@ -5,6 +5,7 @@ from typing import Any, Literal
 
 from wilq.actions.metric_utils import unique_values
 from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.dev_draft_discard_action import CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE
 from wilq.content.workflow.new_page_draft_action import CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
 from wilq.schemas import (
     ActionApplyRequest,
@@ -148,7 +149,9 @@ def action_apply_preflight_blockers(
         event.event_type in {"apply_succeeded", "action_apply_completed"}
         for event in action.audit_events
     ):
-        blockers.append("Ta akcja utworzyła już szkic na dev i nie może zostać wykonana ponownie.")
+        blockers.append(
+            "Ta akcja wykonała już operację na szkicu dev i nie może zostać wykonana ponownie."
+        )
     if action.validation_status != "valid":
         blockers.append("Akcja musi być sprawdzona w WILQ przed zapisem zmian.")
     if action.mode != ActionMode.apply:
@@ -219,6 +222,7 @@ def _runtime_blockers(action: ActionObject) -> list[str]:
 def _is_content_dev_draft_action(action: ActionObject) -> bool:
     return action.payload.get("action_type") in {
         CONTENT_DEV_DRAFT_ACTION_TYPE,
+        CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
         CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
     }
 

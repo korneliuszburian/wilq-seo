@@ -36,6 +36,10 @@ from wilq.actions.localo.visibility import (
 from wilq.actions.validation_copy import missing, wrong
 from wilq.connectors.registry import get_connector_status
 from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.dev_draft_discard_action import (
+    CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
+    CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
+)
 from wilq.content.workflow.new_page_draft_action import CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.new_page_draft_validation import (
     validate_new_page_draft_action_payload,
@@ -153,6 +157,10 @@ def _connector_payload_validator(
         ): validate_content_dev_draft_action_payload,
         (
             "wordpress_ekologus",
+            CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
+        ): validate_content_dev_draft_discard_action_payload,
+        (
+            "wordpress_ekologus",
             CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
         ): validate_new_page_draft_action_payload,
     }.get((connector_id, action_type))
@@ -189,6 +197,43 @@ def validate_content_dev_draft_action_payload(payload: dict[str, Any]) -> list[s
     preview = payload.get("payload_preview")
     if not isinstance(preview, list) or len(preview) != 1 or not isinstance(preview[0], dict):
         errors.append(missing("Szkic dev", "jednej pozycji podglądu"))
+    return errors
+
+
+def validate_content_dev_draft_discard_action_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("mode") != "dev_draft_trash_only":
+        errors.append(wrong("Wycofanie szkicu dev", "musi pozostać w trybie dev_draft_trash_only"))
+    if payload.get("preview_contract") != CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT:
+        errors.append(missing("Wycofanie szkicu dev", "kontraktu dokładnego podglądu"))
+    if payload.get("allowed_operation") != "trash_wordpress_dev_draft":
+        errors.append(wrong("Wycofanie szkicu dev", "może jedynie przenieść szkic do kosza"))
+    if payload.get("recoverable_operation") is not True or payload.get("destructive") is not False:
+        errors.append(wrong("Wycofanie szkicu dev", "musi pozostać odzyskiwalne"))
+    if payload.get("apply_allowed") is not True or payload.get("api_mutation_ready") is not True:
+        errors.append(wrong("Wycofanie szkicu dev", "wymaga jawnej gotowości apply"))
+    target = payload.get("draft_discard_target")
+    if not isinstance(target, dict):
+        errors.append(missing("Wycofanie szkicu dev", "dokładnego targetu"))
+    else:
+        for key in (
+            "post_id",
+            "endpoint",
+            "title",
+            "modified_gmt",
+            "content_digest",
+            "acf_digest",
+            "origin_action_id",
+        ):
+            if not isinstance(target.get(key), str) or not target[key]:
+                errors.append(missing("Wycofanie szkicu dev", f"pola {key}"))
+        if target.get("endpoint") not in {"posts", "pages", "uslugi"}:
+            errors.append(wrong("Wycofanie szkicu dev", "wskazuje nieobsługiwany typ treści"))
+        if not isinstance(target.get("defect_codes"), list) or not target["defect_codes"]:
+            errors.append(missing("Wycofanie szkicu dev", "potwierdzonych problemów"))
+    preview = payload.get("payload_preview")
+    if not isinstance(preview, list) or len(preview) != 1 or not isinstance(preview[0], dict):
+        errors.append(missing("Wycofanie szkicu dev", "jednej pozycji podglądu"))
     return errors
 
 

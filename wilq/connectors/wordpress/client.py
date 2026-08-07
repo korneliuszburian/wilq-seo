@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
@@ -99,6 +100,23 @@ class WordPressDraftPostReadback:
     acf_field_count: int | None
     acf_field_names: list[str]
     edit_link: str = ""
+
+
+@dataclass(frozen=True)
+class WordPressDraftDiscardReadback:
+    """Identity required to move one known dev draft to the WordPress trash.
+
+    The hashes bind a cleanup action to the exact draft payload without
+    retaining the draft body in local action/audit storage.
+    """
+
+    post_id: str
+    endpoint: str
+    status: str
+    title: str
+    modified_gmt: str
+    content_digest: str
+    acf_digest: str
 
 
 @dataclass(frozen=True)
@@ -332,8 +350,10 @@ def _normalize_acf_for_create(value: object, schema: dict[str, object]) -> objec
     allowed_types = _schema_types(selected_schema)
     allowed_values = selected_schema.get("enum")
     empty_value_is_invalid = isinstance(allowed_values, list) and "" not in allowed_values
-    if value == "" and "null" in allowed_types and (
-        "string" not in allowed_types or empty_value_is_invalid
+    if (
+        value == ""
+        and "null" in allowed_types
+        and ("string" not in allowed_types or empty_value_is_invalid)
     ):
         if isinstance(allowed_values, list) and None not in allowed_values:
             # ACF's schema sometimes advertises ``null`` in ``type`` while
@@ -452,9 +472,7 @@ def create_wordpress_draft_post(
     if getattr(payload, "publish_allowed", True) or getattr(
         payload, "destructive_update_allowed", True
     ):
-        raise WordPressDraftWriteError(
-            "Adapter blokuje publikację i destrukcyjne aktualizacje."
-        )
+        raise WordPressDraftWriteError("Adapter blokuje publikację i destrukcyjne aktualizacje.")
 
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
@@ -496,9 +514,7 @@ def create_wordpress_acf_draft(
     """Create one dev-only ACF draft after the ActionObject apply boundary."""
 
     if action_apply_authorized is not True:
-        raise WordPressDraftWriteError(
-            "Utworzenie szkicu ACF wymaga autoryzacji ActionObject."
-        )
+        raise WordPressDraftWriteError("Utworzenie szkicu ACF wymaga autoryzacji ActionObject.")
     credentials = _wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
@@ -513,9 +529,10 @@ def create_wordpress_acf_draft(
         )
     if getattr(payload, "connector", connector_id) != connector_id:
         raise WordPressDraftWriteError("Payload szkicu nie pasuje do connectora WordPress.")
-    if getattr(payload, "post_status", None) != "draft" or getattr(
-        payload, "create_only", None
-    ) is not True:
+    if (
+        getattr(payload, "post_status", None) != "draft"
+        or getattr(payload, "create_only", None) is not True
+    ):
         raise WordPressDraftWriteError("Adapter może utworzyć wyłącznie nowy szkic WordPress.")
     if any(
         getattr(payload, field, True) is not False
@@ -578,9 +595,7 @@ def read_wordpress_draft_post(
         raise WordPressDraftReadError("WILQ nie zna tego connectora WordPress.")
     missing = _missing_credentials(connector_id, credentials)
     if missing:
-        raise WordPressDraftReadError(
-            "Brakuje konfiguracji WordPress wymaganej do odczytu szkicu."
-        )
+        raise WordPressDraftReadError("Brakuje konfiguracji WordPress wymaganej do odczytu szkicu.")
     normalized_post_id = str(post_id).strip()
     if not normalized_post_id:
         raise WordPressDraftReadError("Brakuje ID szkicu WordPress do odczytu.")
@@ -623,6 +638,183 @@ def read_wordpress_draft_post(
         credentials.base_url,
         normalized_endpoint,
     )
+
+
+def read_wordpress_draft_discard_readback(
+    post_id: str,
+    *,
+    connector_id: str = "wordpress_ekologus",
+    endpoint: str = "posts",
+    http_client: httpx.Client | None = None,
+) -> WordPressDraftDiscardReadback:
+    """Read a redacted identity for a draft-cleanup ActionObject.
+
+    This is deliberately narrower than a content readback: callers receive
+    only stable identifiers and digests, never the WordPress body or ACF
+    values that the digest represents.
+    """
+
+    payload = _read_wordpress_draft_payload(
+        post_id,
+        connector_id=connector_id,
+        endpoint=endpoint,
+        http_client=http_client,
+    )
+    raw_content = payload.get("content")
+    content = raw_content.get("raw") if isinstance(raw_content, dict) else ""
+    acf = payload.get("acf") if isinstance(payload.get("acf"), dict) else {}
+    raw_title = payload.get("title")
+    title = wordpress_title(payload)
+    if not title and isinstance(raw_title, dict):
+        raw_title_value = raw_title.get("raw")
+        title = clean_metadata_text(raw_title_value) if isinstance(raw_title_value, str) else ""
+    return WordPressDraftDiscardReadback(
+        post_id=str(payload.get("id") or post_id),
+        endpoint=endpoint.strip().strip("/"),
+        status=str(payload.get("status") or ""),
+        title=title,
+        modified_gmt=str(payload.get("modified_gmt") or ""),
+        content_digest=_wordpress_draft_value_digest(content),
+        acf_digest=_wordpress_draft_value_digest(acf),
+    )
+
+
+def trash_wordpress_draft(
+    *,
+    post_id: str,
+    endpoint: str,
+    expected_modified_gmt: str,
+    expected_content_digest: str,
+    expected_acf_digest: str,
+    connector_id: str = "wordpress_ekologus",
+    http_client: httpx.Client | None = None,
+) -> str:
+    """Move one exact unchanged dev draft to WordPress trash, never force-delete it."""
+
+    current = read_wordpress_draft_discard_readback(
+        post_id,
+        connector_id=connector_id,
+        endpoint=endpoint,
+        http_client=http_client,
+    )
+    if current.status != "draft":
+        raise WordPressDraftWriteError(
+            "Można wycofać wyłącznie obiekt WordPress ze statusem draft."
+        )
+    if (
+        current.modified_gmt != expected_modified_gmt
+        or current.content_digest != expected_content_digest
+        or current.acf_digest != expected_acf_digest
+    ):
+        raise WordPressDraftWriteError(
+            "Szkic WordPress zmienił się po podglądzie; przeniesienie do kosza zablokowano."
+        )
+
+    credentials = _wordpress_credentials(connector_id)
+    if credentials is None:
+        raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
+    missing = _missing_credentials(connector_id, credentials)
+    if missing:
+        raise WordPressDraftWriteError(
+            "Brakuje konfiguracji WordPress wymaganej do wycofania szkicu."
+        )
+    normalized_endpoint = endpoint.strip().strip("/")
+    if normalized_endpoint not in WORDPRESS_AUTHORING_REST_ENDPOINTS:
+        raise WordPressDraftWriteError("Nieobsługiwany typ treści WordPress.")
+
+    owns_client = http_client is None
+    client = http_client or httpx.Client(timeout=30)
+    auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
+    try:
+        try:
+            response = client.delete(
+                urljoin(
+                    credentials.base_url or "",
+                    f"wp-json/wp/v2/{normalized_endpoint}/{current.post_id}",
+                ),
+                auth=auth,
+                params={"force": "false"},
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise _wordpress_draft_write_http_error(
+                exc.response,
+                operation="przeniesienie szkicu do kosza",
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise WordPressDraftWriteError(
+                "Połączenie WordPress przerwało przeniesienie szkicu do kosza "
+                f"({type(exc).__name__})."
+            ) from exc
+    finally:
+        if owns_client:
+            client.close()
+
+    try:
+        payload = response.json()
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise WordPressDraftWriteError(
+            "WordPress nie potwierdził przeniesienia szkicu do kosza."
+        ) from exc
+    if not isinstance(payload, dict) or payload.get("deleted") is not True:
+        raise WordPressDraftWriteError("WordPress nie potwierdził przeniesienia szkicu do kosza.")
+    return current.post_id
+
+
+def _read_wordpress_draft_payload(
+    post_id: str,
+    *,
+    connector_id: str,
+    endpoint: str,
+    http_client: httpx.Client | None,
+) -> dict[str, Any]:
+    credentials = _wordpress_credentials(connector_id)
+    if credentials is None:
+        raise WordPressDraftReadError("WILQ nie zna tego connectora WordPress.")
+    missing = _missing_credentials(connector_id, credentials)
+    if missing:
+        raise WordPressDraftReadError("Brakuje konfiguracji WordPress wymaganej do odczytu szkicu.")
+    normalized_post_id = str(post_id).strip()
+    if not normalized_post_id:
+        raise WordPressDraftReadError("Brakuje ID szkicu WordPress do odczytu.")
+    normalized_endpoint = endpoint.strip().strip("/")
+    if normalized_endpoint not in WORDPRESS_AUTHORING_REST_ENDPOINTS:
+        raise WordPressDraftReadError("Nieobsługiwany typ treści WordPress.")
+
+    owns_client = http_client is None
+    client = http_client or httpx.Client(timeout=30)
+    auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
+    try:
+        try:
+            response = client.get(
+                urljoin(
+                    credentials.base_url or "",
+                    f"wp-json/wp/v2/{normalized_endpoint}/{normalized_post_id}",
+                ),
+                auth=auth,
+                params={"context": "edit", "_fields": WORDPRESS_READ_FIELDS},
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise WordPressDraftReadError(
+                f"WordPress odrzucił odczyt szkicu HTTP {exc.response.status_code}."
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise WordPressDraftReadError(
+                f"Połączenie WordPress przerwało odczyt szkicu ({type(exc).__name__})."
+            ) from exc
+    finally:
+        if owns_client:
+            client.close()
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise WordPressDraftReadError("WordPress nie zwrócił obiektu szkicu.")
+    return payload
+
+
+def _wordpress_draft_value_digest(value: object) -> str:
+    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return sha256(encoded.encode("utf-8")).hexdigest()
 
 
 def read_wordpress_authoring_content(
@@ -825,8 +1017,7 @@ def _material_from_rest_item(
         content_summary=content_dimensions.get("content_summary", "")
         or summary_text_limited(text, 240),
         content_word_count=(
-            _optional_int(content_dimensions.get("content_word_count"))
-            or len(text.split())
+            _optional_int(content_dimensions.get("content_word_count")) or len(text.split())
             if text
             else None
         ),
@@ -834,9 +1025,7 @@ def _material_from_rest_item(
         acf_field_names=_json_string_list(acf_dimensions.get("acf_field_names_json")),
         acf_section_headings=_json_string_list(acf_dimensions.get("acf_section_headings_json")),
         modified_gmt=str(item.get("modified_gmt") or ""),
-        extraction_region=(
-            "wordpress_rest.content" if source else "wordpress_rest.acf"
-        ),
+        extraction_region=("wordpress_rest.content" if source else "wordpress_rest.acf"),
         material_confidence="source_bound",
         source_field_lineage=["wordpress_rest.content", "wordpress_rest.acf"],
     )
@@ -885,9 +1074,7 @@ def _created_draft_post_id(response: httpx.Response) -> str:
     if post_id is None:
         raise WordPressDraftWriteError("WordPress nie zwrócił ID utworzonego szkicu.")
     if body.get("status") != "draft":
-        raise WordPressDraftWriteError(
-            "WordPress nie potwierdził, że utworzony wpis jest szkicem."
-        )
+        raise WordPressDraftWriteError("WordPress nie potwierdził, że utworzony wpis jest szkicem.")
     return str(post_id)
 
 

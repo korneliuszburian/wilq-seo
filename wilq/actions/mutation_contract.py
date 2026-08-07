@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.dev_draft_discard_action import (
+    CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
+    CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
+)
 from wilq.content.workflow.dev_draft_execution import CONTENT_DEV_DRAFT_MUTATION_ADAPTER
 from wilq.content.workflow.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
@@ -16,6 +20,35 @@ def mutation_apply_contract(
     mutation_adapter: str | None,
 ) -> ActionMutationApplyContract | None:
     action_type = action.payload.get("action_type")
+    if action_type == CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE:
+        return ActionMutationApplyContract(
+            action_id=action.id,
+            action_type=action_type,
+            connector=action.connector,
+            allowed_operation="trash_wordpress_dev_draft",
+            draft_only=True,
+            publication_allowed=False,
+            destructive_allowed=False,
+            adapter_status="implemented" if mutation_adapter is not None else "not_implemented",
+            required_env_flags=["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
+            required_input_contracts=[CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT],
+            required_audit_events=[
+                "action_preview_generated",
+                "human_review_*",
+                "action_apply_confirmed",
+                "action_impact_check_completed",
+            ],
+            blocked_outputs=[
+                "wordpress_publish",
+                "wordpress_update_existing_post",
+                "wordpress_force_delete_post",
+                "production_write",
+            ],
+            operator_summary=(
+                "Ta akcja przenosi wyłącznie jeden niezmieniony szkic dev do kosza. "
+                "Nie publikuje, nie aktualizuje ani nie usuwa obiektu trwale."
+            ),
+        )
     if action_type in {
         CONTENT_DEV_DRAFT_ACTION_TYPE,
         CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
@@ -101,6 +134,11 @@ def supported_mutation_adapter(action: ActionObject) -> str | None:
         and action.connector == "wordpress_ekologus"
     ):
         return CONTENT_DEV_DRAFT_MUTATION_ADAPTER
+    if (
+        action.payload.get("action_type") == CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE
+        and action.connector == "wordpress_ekologus"
+    ):
+        return "content_dev_draft_discard_execution_boundary"
     if (
         action.payload.get("action_type") == CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
         and action.connector == "wordpress_ekologus"

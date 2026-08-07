@@ -12,7 +12,9 @@ from wilq.connectors.wordpress.client import (
     _normalize_acf_for_create,
     create_wordpress_acf_draft,
     create_wordpress_draft_post,
+    read_wordpress_draft_discard_readback,
     read_wordpress_draft_post,
+    trash_wordpress_draft,
 )
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftPayload
 
@@ -76,6 +78,80 @@ def test_create_wordpress_draft_post_blocks_non_draft_vendor_response(
     assert exc_info.value.public_message == (
         "WordPress nie potwierdził, że utworzony wpis jest szkicem."
     )
+
+
+def test_trash_wordpress_draft_rechecks_exact_draft_and_never_force_deletes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "id": 1930,
+                    "status": "draft",
+                    "title": {"rendered": "BDO – wadliwy szkic"},
+                    "modified_gmt": "2026-08-05T13:21:33",
+                    "content": {"raw": "<h1>BDO</h1>"},
+                    "acf": {"flexible-news": []},
+                },
+            )
+        assert request.method == "DELETE"
+        assert request.url.params.get("force") == "false"
+        return httpx.Response(200, json={"deleted": True, "previous": {"id": 1930}})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    observed = read_wordpress_draft_discard_readback("1930", http_client=client)
+
+    trashed = trash_wordpress_draft(
+        post_id="1930",
+        endpoint="posts",
+        expected_modified_gmt=observed.modified_gmt,
+        expected_content_digest=observed.content_digest,
+        expected_acf_digest=observed.acf_digest,
+        http_client=client,
+    )
+
+    assert trashed == "1930"
+    assert [request.method for request in requests] == ["GET", "GET", "DELETE"]
+
+
+def test_trash_wordpress_draft_blocks_changed_payload_before_delete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "id": 1930,
+                "status": "draft",
+                "title": {"rendered": "BDO – zmieniony szkic"},
+                "modified_gmt": "2026-08-05T14:00:00",
+                "content": {"raw": "<p>Nowa treść</p>"},
+                "acf": {"flexible-news": []},
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(WordPressDraftWriteError, match="zmienił się po podglądzie"):
+        trash_wordpress_draft(
+            post_id="1930",
+            endpoint="posts",
+            expected_modified_gmt="2026-08-05T13:21:33",
+            expected_content_digest="a" * 64,
+            expected_acf_digest="b" * 64,
+            http_client=client,
+        )
+
+    assert [request.method for request in requests] == ["GET"]
 
 
 def test_create_wordpress_draft_post_keeps_only_safe_rest_error_diagnostics(
@@ -251,8 +327,7 @@ def test_create_wordpress_acf_draft_names_schema_read_stage_on_rest_error(
         )
 
     assert exc_info.value.public_message == (
-        "WordPress odrzucił odczyt schematu ACF HTTP 403. "
-        "(endpoint: uslugi; kod: rest_forbidden)"
+        "WordPress odrzucił odczyt schematu ACF HTTP 403. (endpoint: uslugi; kod: rest_forbidden)"
     )
     assert "secret-value" not in exc_info.value.public_message
 

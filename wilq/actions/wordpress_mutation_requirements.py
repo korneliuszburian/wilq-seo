@@ -116,9 +116,7 @@ def wordpress_draft_apply_capability(
         # back to the live planner projection when no such proposal exists.
         list_revisions = getattr(workflow_store, "list_draft_revisions", None)
         latest_revision = (
-            list_revisions(binding.work_item_id)[-1:]
-            if callable(list_revisions)
-            else []
+            list_revisions(binding.work_item_id)[-1:] if callable(list_revisions) else []
         )
         revision_bound_proposal = (
             proposal_store.latest_for_planning_digest(
@@ -322,10 +320,7 @@ def _revision_bound_action_chain(
             )
         ]
     resolved_events = [event for event in chain_events if event is not None]
-    if any(
-        wordpress_draft_binding_from_audit_event(event) != binding
-        for event in resolved_events
-    ):
+    if any(wordpress_draft_binding_from_audit_event(event) != binding for event in resolved_events):
         return None, [
             _apply_blocker(
                 "wordpress_action_chain_binding_mismatch",
@@ -373,9 +368,7 @@ def _revision_bound_action_chain(
     if preview is None:
         raise RuntimeError("Preview disappeared after complete ActionObject chain check.")
     if not (
-        preview.created_at <= review.created_at
-        <= confirmation.created_at
-        <= impact.created_at
+        preview.created_at <= review.created_at <= confirmation.created_at <= impact.created_at
     ):
         return None, [
             _apply_blocker(
@@ -423,6 +416,12 @@ def execute_supported_wordpress_mutation_adapter(
     mutation_adapter: str,
     wordpress_capability: WordPressDraftApplyCapability | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
+    if mutation_adapter == "content_dev_draft_discard_execution_boundary":
+        from wilq.content.workflow.dev_draft_discard_action import (
+            execute_content_dev_draft_discard_action,
+        )
+
+        return execute_content_dev_draft_discard_action(action)
     if mutation_adapter == "content_dev_draft_execution_boundary":
         from wilq.content.workflow.dev_draft_execution import (
             execute_content_target_draft_action,
@@ -676,6 +675,8 @@ def wordpress_draft_write_readiness_requirements(
             evidence="ready" if authorization_ready else "missing",
         ),
     ]
+
+
 def _requirement(
     *,
     code: str,

@@ -198,6 +198,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "wordpress_draft_update",
             "wordpress_draft_handoff",
             "content_dev_draft_create",
+            "content_dev_draft_discard",
             "content_new_page_dev_draft_create",
             "service_profile_knowledge_promotion_review",
             "service_profile_private_proposal_promotion_review",
