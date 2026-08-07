@@ -659,9 +659,18 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(await screen.findByTestId("content-review-workspace")).toBeInTheDocument();
-    expect(screen.getByTestId("content-full-page-preview")).toBeInTheDocument();
+    const decisionPanel = screen.getByTestId("content-review-decision-panel");
+    const fullPagePreview = screen.getByTestId("content-full-page-preview");
+    expect(decisionPanel.compareDocumentPosition(fullPagePreview)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    const advisory = screen.getByTestId("content-review-advisory");
+    expect(advisory.tagName).toBe("DETAILS");
+    expect(advisory).toHaveAttribute("open");
+    expect(advisory).toHaveTextContent("Weryfikacja i poprawki");
     expect(screen.getByText("Szczegóły tej wersji")).toBeInTheDocument();
-    expect(screen.getByTestId("content-document-lineage")).toHaveTextContent("Pochodzenie źródeł dokumentu");
+    const lineage = screen.getByTestId("content-document-lineage");
+    expect(lineage).toHaveTextContent("Pochodzenie źródeł dokumentu");
+    expect(advisory).toContainElement(lineage);
+    expect(advisory).toContainElement(screen.getByTestId("content-semantic-review"));
     expect(screen.getByText("Sprawdź nową wersję")).toBeInTheDocument();
     expect(screen.queryByLabelText("Stan pipeline’u")).not.toBeInTheDocument();
     expect(screen.queryByText(/zatwierdź plan/i)).not.toBeInTheDocument();
@@ -751,6 +760,10 @@ describe("ContentWorkflowSurface", () => {
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1&review=1", defaultPendingMinMs: 0 })} client={client} />);
 
+    const integrityPanel = await screen.findByTestId("content-editorial-integrity");
+    expect(screen.getByTestId("content-review-advisory")).toContainElement(
+      integrityPanel
+    );
     fireEvent.click(await screen.findByRole("button", { name: "Sprawdź zmiany względem wersji bazowej" }));
     await waitFor(() => expect(getContentWorkItemEditorialIntegrity).toHaveBeenCalledWith(revision.work_item_id, revision.revision_id));
     expect(await screen.findByText("Twarda integralność zachowana")).toBeInTheDocument();
@@ -830,6 +843,7 @@ describe("ContentWorkflowSurface", () => {
     render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&view=review", defaultPendingMinMs: 0 })} client={client} />);
 
     const repair = await screen.findByTestId("content-revision-repair");
+    expect(screen.getByTestId("content-review-advisory")).toContainElement(repair);
     expect(repair).toHaveTextContent("Uwagi marketera: Ta wersja wymaga opisanych poprawek.");
     const repairButton = screen.getByRole("button", { name: "Przygotuj poprawkę" });
     await waitFor(() => expect(repairButton).toBeEnabled());

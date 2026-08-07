@@ -382,7 +382,52 @@ function ContentReviewWorkspace({
         <p className="mt-3 text-sm leading-6 text-slate-700">Przeczytaj przygotowany tekst i sprawdź materiały, na których go oparto. Zatwierdzenie dotyczy wyłącznie tej wersji tekstu — nie publikuje niczego.</p>
       </section>
       <section className="mt-4 rounded-2xl border border-line bg-white p-4 shadow-sm lg:p-5">
-        {completeRevision ? <ContentFullPagePreview revision={completeRevision} /> : (
+        {completeRevision ? (
+          <>
+            <ReviewDecisionPanel
+              revision={completeRevision}
+              matchingReview={matchingReview}
+              hasOperatorIdentity={Boolean(operatorLabel)}
+              decision={decision}
+              notes={notes}
+              canSubmit={canSubmit}
+              reviewAvailable={reviewAvailable}
+              isPending={reviewMutation.isPending}
+              error={reviewMutation.error}
+              result={reviewMutation.data}
+              onDecisionChange={setDecision}
+              onNotesChange={setNotes}
+              onSubmit={submitReview}
+              onReloadCurrent={() => {
+                void queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workspace.work_item_id, "selected-workspace"] });
+              }}
+              onReturnToText={() => onReturnToText(workspace.work_item_id)}
+            />
+            <div className="mt-5">
+              <ContentFullPagePreview revision={completeRevision} />
+            </div>
+            <details
+              open
+              className="mt-5 rounded-xl border border-line bg-slate-50 p-4 text-slate-700"
+              data-testid="content-review-advisory"
+            >
+              <summary className="cursor-pointer font-semibold text-ink">Weryfikacja i poprawki</summary>
+              <ContentDocumentLineageDisclosure workspace={workspace} />
+              <ContentSemanticReviewPanel
+                workItemId={workspace.work_item_id}
+                revisionId={completeRevision.revision_id}
+              />
+              <ContentRevisionRepairPanel
+                workspace={workspace}
+                operatorLabel={operatorLabel}
+                onChanged={() => {
+                  void queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workspace.work_item_id, "selected-workspace"] });
+                }}
+              />
+              {completeRevision.base_revision_id ? <ContentEditorialIntegrityReport workItemId={workspace.work_item_id} revisionId={completeRevision.revision_id} /> : null}
+            </details>
+          </>
+        ) : (
           <div data-testid="content-review-blocker">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Stan review</p>
             <h2 className="mt-2 text-lg font-semibold text-ink">Pełna rewizja HTML — niegotowa do review</h2>
@@ -391,36 +436,6 @@ function ContentReviewWorkspace({
             </p>
           </div>
         )}
-        {completeRevision ? (
-          <><ContentDocumentLineageDisclosure workspace={workspace} /><ContentSemanticReviewPanel
-            workItemId={workspace.work_item_id}
-            revisionId={completeRevision.revision_id}
-          /><ReviewDecisionPanel
-            revision={completeRevision}
-            matchingReview={matchingReview}
-            hasOperatorIdentity={Boolean(operatorLabel)}
-            decision={decision}
-            notes={notes}
-            canSubmit={canSubmit}
-            reviewAvailable={reviewAvailable}
-            isPending={reviewMutation.isPending}
-            error={reviewMutation.error}
-            result={reviewMutation.data}
-            onDecisionChange={setDecision}
-            onNotesChange={setNotes}
-            onSubmit={submitReview}
-            onReloadCurrent={() => {
-              void queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workspace.work_item_id, "selected-workspace"] });
-            }}
-            onReturnToText={() => onReturnToText(workspace.work_item_id)}
-          /><ContentRevisionRepairPanel
-            workspace={workspace}
-            operatorLabel={operatorLabel}
-            onChanged={() => {
-              void queryClient.invalidateQueries({ queryKey: ["content-workflow", "work-item", workspace.work_item_id, "selected-workspace"] });
-            }}
-          />{completeRevision.base_revision_id ? <ContentEditorialIntegrityReport workItemId={workspace.work_item_id} revisionId={completeRevision.revision_id} /> : null}</>
-        ) : null}
       </section>
       <details className="mt-4 rounded-xl border border-line bg-white p-4 text-sm text-slate-700">
         <summary className="cursor-pointer font-semibold text-ink">Szczegóły, źródła i ograniczenia</summary>
