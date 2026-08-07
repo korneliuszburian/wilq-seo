@@ -17,7 +17,11 @@ test.describe("WILQ marketer content workspace", () => {
 
     await page.goto("/content-workflow");
 
-    await expect(page.getByRole("heading", { name: "Tworzenie i odświeżanie treści" })).toBeVisible();
+    // The first entry render after a cold API start can exceed the default
+    // expect timeout when verify.sh runs this suite right after the full
+    // backend gate on a loaded workstation. Wait for the actual entry heading
+    // with a longer bound; the button assertions below stay on the default.
+    await expect(page.getByRole("heading", { name: "Tworzenie i odświeżanie treści" })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("button", { name: /Wybierz stronę/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /Zacznij od briefu/ })).toBeVisible();
     expect(queueRequests).toBe(0);
