@@ -214,14 +214,15 @@ def snapshot_for_work_item_or_404(
         # while the operator is only opening the workspace.
         generated_planning_proposal = None
     else:
+        # This is a read-only projection. Proposal creation belongs exclusively
+        # to POST /planning-proposals; the reader only attaches an exact,
+        # persisted proposal that is ready for the current planning input.
         generated_response = read_content_planning_proposal(
             snapshot=snapshot,
             store=proposal_store,
         )
         generated_planning_proposal = (
-            generated_response.proposal
-            if generated_response.status in {"ready", "idempotent", "created"}
-            else None
+            generated_response.proposal if generated_response.status == "ready" else None
         )
     if generated_planning_proposal is not None:
         snapshot = build_snapshot(generated_planning_proposal)

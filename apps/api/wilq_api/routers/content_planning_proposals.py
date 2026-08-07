@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
 from uuid import uuid4
 
 from fastapi import APIRouter
@@ -31,7 +30,13 @@ from wilq.content.planning.generated_proposal_contracts import (
 )
 from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
+    PlanningEnqueueOutcome,
     content_planning_proposal_store,
+)
+from wilq.content.planning.generation_claim_store import (
+    ContentPlanningGenerationClaimStore,
+    PlanningGenerationClaimFinalStatus,
+    content_planning_generation_claim_store,
 )
 from wilq.content.planning.runtime_contract import planning_codex_timeout_seconds
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
@@ -47,8 +52,6 @@ _PLANNING_GENERATION_EXECUTOR = ThreadPoolExecutor(
     max_workers=2,
     thread_name_prefix="wilq-content-plan",
 )
-_PLANNING_ACTIVE_KEYS: set[tuple[str, str, str]] = set()
-_PLANNING_ACTIVE_KEYS_LOCK = Lock()
 # Planning is queued and polled by the API, so this deadline is not a browser
 # request budget.  Keep the model turn bounded at three minutes; larger real
 # pages can need more structured-output search, while a timeout remains a
@@ -275,47 +278,92 @@ def register_content_planning_proposal_routes(
                 ],
                 safe_next_step="Poczekaj kilka sekund i odśwież stan planu.",
             )
-        if outcome in {"queued", "existing"} and _claim_planning_job(
-            work_item_id,
-            request.service_card_id,
-            request.expected_planning_input_digest,
-        ):
-            try:
-                _PLANNING_GENERATION_EXECUTOR.submit(
-                    _run_queued_planning_generation,
-                    work_item_id,
-                    request,
-                    snapshot,
-                )
-            except Exception as error:
-                _release_planning_job(
-                    work_item_id,
-                    request.service_card_id,
-                    request.expected_planning_input_digest,
-                )
-                result = _planning_generation_failure_response(
-                    work_item_id=work_item_id,
-                    service_card_id=request.service_card_id,
-                    planning_input_digest=request.expected_planning_input_digest,
-                    input_summary=_queued_input_summary(
-                        store=store,
-                        work_item_id=work_item_id,
-                        service_card_id=request.service_card_id,
-                        planning_input_digest=request.expected_planning_input_digest,
-                    ),
-                    error=error,
-                )
-                _save_terminal_response_safely(store, result)
+        return _schedule_queued_planning_generation(
+            outcome=outcome,
+            result=result,
+            work_item_id=work_item_id,
+            request=request,
+            snapshot_loader=snapshot_loader,
+            store=store,
+        )
+
+
+def _schedule_queued_planning_generation(
+    *,
+    outcome: PlanningEnqueueOutcome,
+    result: ContentPlanningProposalResponse,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    snapshot_loader: ContentPlanningSnapshotLoader,
+    store: ContentPlanningProposalStore,
+) -> ContentPlanningProposalResponse:
+    if outcome not in {"queued", "existing"}:
         return result
+    claim_store = content_planning_generation_claim_store()
+    claim_owner = (
+        result.runtime.run_id
+        if result.runtime is not None and result.runtime.run_id is not None
+        else f"planning_generation_{uuid4().hex}"
+    )
+    claim_outcome = claim_store.claim(
+        work_item_id=work_item_id,
+        service_card_id=request.service_card_id,
+        planning_input_digest=request.expected_planning_input_digest,
+        claim_owner=claim_owner,
+    )
+    if claim_outcome != "acquired":
+        return result
+    try:
+        _PLANNING_GENERATION_EXECUTOR.submit(
+            _run_queued_planning_generation,
+            work_item_id,
+            request,
+            snapshot_loader,
+            claim_store,
+            claim_owner,
+        )
+    except Exception as error:
+        result = _planning_generation_failure_response(
+            work_item_id=work_item_id,
+            service_card_id=request.service_card_id,
+            planning_input_digest=request.expected_planning_input_digest,
+            input_summary=_queued_input_summary(
+                store=store,
+                work_item_id=work_item_id,
+                service_card_id=request.service_card_id,
+                planning_input_digest=request.expected_planning_input_digest,
+            ),
+            error=error,
+        )
+        _save_terminal_response_safely(
+            store,
+            result,
+            job_planning_input_digest=request.expected_planning_input_digest,
+        )
+        claim_store.finish(
+            work_item_id=work_item_id,
+            service_card_id=request.service_card_id,
+            planning_input_digest=request.expected_planning_input_digest,
+            claim_owner=claim_owner,
+            status="failed",
+        )
+    return result
 
 
 def _run_queued_planning_generation(
     work_item_id: str,
     request: ContentPlanningProposalRequest,
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    snapshot_loader: ContentPlanningSnapshotLoader,
+    claim_store: ContentPlanningGenerationClaimStore,
+    claim_owner: str,
 ) -> None:
     store = content_planning_proposal_store()
+    claim_status: PlanningGenerationClaimFinalStatus = "failed"
     try:
+        # The request digest is the immutable guard. Rebuild the snapshot in
+        # the worker so a context change between enqueue and execution becomes
+        # a typed stale response before Codex starts.
+        snapshot = snapshot_loader(work_item_id)
         result = generate_content_planning_proposal(
             snapshot=snapshot,
             request=request,
@@ -337,46 +385,35 @@ def _run_queued_planning_generation(
             error=error,
         )
     try:
-        _save_terminal_response_safely(store, result)
-    finally:
-        _release_planning_job(
-            work_item_id,
-            request.service_card_id,
-            request.expected_planning_input_digest,
+        _save_terminal_response_safely(
+            store,
+            result,
+            job_planning_input_digest=request.expected_planning_input_digest,
         )
-
-
-def _claim_planning_job(
-    work_item_id: str,
-    service_card_id: str,
-    planning_input_digest: str,
-) -> bool:
-    key = (work_item_id, service_card_id, planning_input_digest)
-    with _PLANNING_ACTIVE_KEYS_LOCK:
-        if key in _PLANNING_ACTIVE_KEYS:
-            return False
-        _PLANNING_ACTIVE_KEYS.add(key)
-    return True
-
-
-def _release_planning_job(
-    work_item_id: str,
-    service_card_id: str,
-    planning_input_digest: str,
-) -> None:
-    with _PLANNING_ACTIVE_KEYS_LOCK:
-        _PLANNING_ACTIVE_KEYS.discard(
-            (work_item_id, service_card_id, planning_input_digest)
+        if result.status in {"created", "idempotent", "ready"}:
+            claim_status = "finished"
+    finally:
+        claim_store.finish(
+            work_item_id=work_item_id,
+            service_card_id=request.service_card_id,
+            planning_input_digest=request.expected_planning_input_digest,
+            claim_owner=claim_owner,
+            status=claim_status,
         )
 
 
 def _save_terminal_response_safely(
     store: ContentPlanningProposalStore,
     response: ContentPlanningProposalResponse,
+    *,
+    job_planning_input_digest: str,
 ) -> None:
     """Never turn a durable-job failure into an unhandled route/thread error."""
     try:
-        store.save_terminal_response(response)
+        store.save_terminal_response(
+            response,
+            job_planning_input_digest=job_planning_input_digest,
+        )
     except Exception:
         # The queued row remains recoverable by stale-job retry. The typed
         # failure is still returned to the caller when this runs in the route.

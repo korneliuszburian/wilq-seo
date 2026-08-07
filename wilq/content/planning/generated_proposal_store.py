@@ -152,7 +152,7 @@ class ContentPlanningProposalStore:
                 ).fetchone()
         finally:
             connection.close()
-        if row is None or row["status"] not in {"queued", "failed"}:
+        if row is None or row["status"] not in {"queued", "blocked", "failed", "stale"}:
             return None
         response = ContentPlanningProposalResponse.model_validate(json.loads(row["payload_json"]))
         if row["status"] == "queued" and _job_is_stale(row["updated_at"]):
@@ -176,7 +176,8 @@ class ContentPlanningProposalStore:
                 query = """
                     SELECT payload_json, status, updated_at
                     FROM content_planning_generation_jobs
-                    WHERE work_item_id = ? AND status IN ('queued', 'failed')
+                    WHERE work_item_id = ?
+                      AND status IN ('queued', 'blocked', 'failed', 'stale')
                 """
                 parameters: list[str] = [work_item_id]
                 if service_card_id is not None:
@@ -353,13 +354,23 @@ class ContentPlanningProposalStore:
             )
         return "queued"
 
-    def save_terminal_response(self, response: ContentPlanningProposalResponse) -> None:
+    def save_terminal_response(
+        self,
+        response: ContentPlanningProposalResponse,
+        *,
+        job_planning_input_digest: str | None = None,
+    ) -> None:
         if response.service_card_id is None:
             return
         payload = redact_mapping(response.model_dump(mode="json"))
-        status = "failed" if response.status in {"failed", "blocked", "stale"} else "finished"
+        status = (
+            response.status
+            if response.status in {"blocked", "failed", "stale"}
+            else "finished"
+        )
+        exact_job_digest = job_planning_input_digest or response.planning_input_digest
         with self._connect() as connection:
-            if response.planning_input_digest is None:
+            if exact_job_digest is None:
                 connection.execute(
                     """
                     UPDATE content_planning_generation_jobs
@@ -385,7 +396,7 @@ class ContentPlanningProposalStore:
                         json.dumps(payload, ensure_ascii=False, sort_keys=True),
                         response.work_item_id,
                         response.service_card_id,
-                        response.planning_input_digest,
+                        exact_job_digest,
                     ),
                 )
 
