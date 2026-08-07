@@ -5,6 +5,7 @@ from wilq.content.knowledge.work_item_service_profile import (
     build_content_work_item_service_profile_context,
 )
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.schemas import MetricFact
 
 
 def test_homepage_projects_typed_service_profile_binding_with_review_requirement() -> None:
@@ -58,6 +59,41 @@ def test_unbound_work_item_is_a_blocker_not_a_free_text_service_guess() -> None:
     assert context.source_connectors == []
     assert context.missing_contracts
     assert "typed karty usługi" in context.reason
+
+
+def test_gsc_query_candidate_does_not_expose_service_claims_or_cta() -> None:
+    page = "https://www.ekologus.pl/kariera/"
+    context = build_content_work_item_service_profile_context(
+        ContentWorkItem(
+            id="content_work_item_career",
+            topic="Kariera w Ekologus",
+            source_public_url=page,
+            final_canonical_url=page,
+            evidence_ids=["ev_gsc_career_bdo"],
+            source_connectors=["google_search_console"],
+            metric_facts=[
+                MetricFact(
+                    name="impressions",
+                    value=12,
+                    period="last_28_days",
+                    source_connector="google_search_console",
+                    evidence_id="ev_gsc_career_bdo",
+                    dimensions={"page": page, "query": "bdo ewidencja odpadów"},
+                )
+            ],
+        )
+    )
+
+    assert context.binding_status == "unbound"
+    assert context.service_card_id is None
+    assert context.allowed_claims == []
+    assert context.claims_needing_review == []
+    assert context.cta_patterns == []
+    assert context.source_fact_ids == []
+    assert any(
+        candidate.service_card_id == "ekologus_service_bdo_reporting"
+        for candidate in context.service_candidates
+    )
 
 
 def test_two_exact_pages_use_one_normalized_service_candidate_contract() -> None:

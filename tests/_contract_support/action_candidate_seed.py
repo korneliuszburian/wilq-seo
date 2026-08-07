@@ -28,6 +28,21 @@ def save_action_candidate_metric_facts() -> None:
         )
 
 
+def save_content_workflow_service_page_metric_facts() -> None:
+    """Replace the argument-page seed with an exact service page for workflow tests."""
+    detailed_facts_by_run = {
+        "refresh_google_search_console_action_test": _service_page_gsc_candidate_facts(),
+        "refresh_wordpress_ekologus_action_test": _service_page_wordpress_candidate_facts(),
+    }
+    for run in _candidate_refresh_runs():
+        detailed_facts = detailed_facts_by_run.get(run.id)
+        if detailed_facts is not None:
+            metric_store().save_connector_refresh_metrics(
+                run,
+                detailed_facts=detailed_facts,
+            )
+
+
 def _candidate_refresh_runs() -> list[ConnectorRefreshRun]:
     return [
         ConnectorRefreshRun(
@@ -136,6 +151,61 @@ def _wordpress_candidate_facts() -> list[VendorMetricFact]:
                 "content_type": "pages",
                 "object_id": "42",
                 "content_url": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+                "status": "publish",
+                "modified_gmt": "2026-06-15T10:00:00",
+            },
+        ),
+        VendorMetricFact(
+            name="content_object_seen",
+            value=1,
+            dimensions={
+                "connector_id": "wordpress_ekologus",
+                "site_kind": "primary",
+                "content_type": "pages",
+                "object_id": "84",
+                "content_url": "https://www.ekologus.pl/audyt-srodowiskowy/",
+                "title": "Audyt środowiskowy",
+                "status": "publish",
+                "modified_gmt": "2026-06-16T10:00:00",
+            },
+        ),
+    ]
+
+
+def _service_page_gsc_candidate_facts() -> list[VendorMetricFact]:
+    bdo_dimensions = {
+        "query": "bdo ewidencja odpadów",
+        "page": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+    }
+    audyt_dimensions = {
+        "query": "audyt środowiskowy",
+        "page": "https://www.ekologus.pl/audyt-srodowiskowy/",
+    }
+    return [
+        VendorMetricFact(name="clicks", value=12, dimensions=bdo_dimensions),
+        VendorMetricFact(name="impressions", value=120, dimensions=bdo_dimensions),
+        VendorMetricFact(name="ctr", value=0.1, dimensions=bdo_dimensions),
+        VendorMetricFact(name="average_position", value=2.1, dimensions=bdo_dimensions),
+        VendorMetricFact(name="clicks", value=2, dimensions=audyt_dimensions),
+        VendorMetricFact(name="impressions", value=88, dimensions=audyt_dimensions),
+    ]
+
+
+def _service_page_wordpress_candidate_facts() -> list[VendorMetricFact]:
+    return [
+        VendorMetricFact(
+            name="content_object_seen",
+            value=1,
+            dimensions={
+                "connector_id": "wordpress_ekologus",
+                "site_kind": "primary",
+                "content_type": "pages",
+                "object_id": "42",
+                "content_url": (
+                    "https://www.ekologus.pl/"
+                    "bdo-co-musi-wiedziec-przedsiebiorca/"
+                ),
+                "title": "BDO – co musi wiedzieć przedsiębiorca?",
                 "status": "publish",
                 "modified_gmt": "2026-06-15T10:00:00",
             },

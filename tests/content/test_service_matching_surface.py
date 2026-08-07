@@ -1,7 +1,11 @@
 import pytest
 
-from wilq.content.knowledge.cards import match_content_knowledge_cards
+from wilq.content.knowledge.cards import (
+    match_content_knowledge_cards,
+    select_content_knowledge_service_card,
+)
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.schemas import MetricFact
 
 
 def test_article_navigation_copy_does_not_bind_a_service_card() -> None:
@@ -23,6 +27,8 @@ def test_article_navigation_copy_does_not_bind_a_service_card() -> None:
             "Nawigacja: doradztwo środowiskowe i outsourcing ekologiczny. "
             "Treść artykułu dotyczy planów inwestycyjnych."
         ),
+        wordpress_content_source_kind="wordpress_rest",
+        wordpress_content_extraction_region="wordpress_rest.content",
         wordpress_title_or_h1=(
             "Czy przygotowane wieloletnie plany inwestycyjne z zakresu gospodarki "
             "odpadami spełniają nowe wymagania prawne?"
@@ -44,6 +50,44 @@ def test_article_navigation_copy_does_not_bind_a_service_card() -> None:
         != "ekologus_service_environmental_consulting_outsourcing"
         for candidate in match.service_candidates
     )
+
+
+def test_gsc_service_query_is_only_a_reviewable_candidate_for_a_career_page() -> None:
+    page = "https://www.ekologus.pl/kariera/"
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_career",
+            topic="Kariera w Ekologus",
+            source_public_url=page,
+            final_canonical_url=page,
+            evidence_ids=["ev_gsc_career_bdo"],
+            source_connectors=["google_search_console"],
+            metric_facts=[
+                MetricFact(
+                    name="impressions",
+                    value=12,
+                    period="last_28_days",
+                    source_connector="google_search_console",
+                    evidence_id="ev_gsc_career_bdo",
+                    dimensions={"page": page, "query": "bdo ewidencja odpadów"},
+                )
+            ],
+        )
+    )
+
+    assert match.service_card is None
+    assert any(
+        candidate.card.id == "ekologus_service_bdo_reporting"
+        for candidate in match.service_candidates
+    )
+
+    selected = select_content_knowledge_service_card(
+        match, "ekologus_service_bdo_reporting"
+    )
+
+    assert selected.service_card is not None
+    assert selected.service_card.id == "ekologus_service_bdo_reporting"
+    assert "missing_service_card" not in {blocker.code for blocker in selected.blockers}
 
 
 def test_inflected_page_topic_matches_service_fit_stem() -> None:
@@ -71,7 +115,7 @@ def test_inflected_page_topic_matches_service_fit_stem() -> None:
     )
 
 
-def test_inflected_documentation_query_exposes_reviewable_service_candidate() -> None:
+def test_non_service_page_body_does_not_expose_a_service_candidate() -> None:
     match = match_content_knowledge_cards(
         ContentWorkItem(
             id="content_work_item_integrated_permit_analysis",
@@ -89,9 +133,9 @@ def test_inflected_documentation_query_exposes_reviewable_service_candidate() ->
         )
     )
 
-    assert any(
-        candidate.card.id == "ekologus_service_environmental_compliance_audit"
-        and "dokumentacja" in candidate.matched_terms
+    assert match.service_card is None
+    assert all(
+        candidate.card.id != "ekologus_service_environmental_compliance_audit"
         for candidate in match.service_candidates
     )
 

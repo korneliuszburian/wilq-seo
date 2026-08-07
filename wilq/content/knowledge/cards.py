@@ -7,6 +7,10 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.content.knowledge.matching_surface import (
+    build_content_knowledge_matching_surface,
+    service_card_has_exact_url,
+)
 from wilq.content.knowledge.source_facts import (
     ContentKnowledgeLifecycleStatus,
     ContentSourceFact,
@@ -478,60 +482,29 @@ def content_knowledge_production_depth_readiness(
 
 def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCardMatch:
     cards = list(ekologus_content_knowledge_cards())
-    exact_urls = {
-        normalize_search_text(url)
-        for url in (item.source_public_url, item.final_canonical_url)
-        if url
-    }
-    text_values: list[object] = [
-        item.topic,
-        item.wordpress_title_or_h1,
-        item.source_public_url,
-        item.final_canonical_url,
-        item.intended_final_url,
-        *(
-            str(fact.dimensions.get("query") or "")
-            for fact in item.metric_facts
-        ),
-        *_homepage_match_markers(item),
-        *item.evidence_ids,
-        *item.source_connectors,
-    ]
     # Rendered HTML commonly contains navigation, related-content and footer
-    # headings from unrelated services. Trust the full body only when the
-    # selected URL is itself an exact service landing from a card's source
-    # lineage; otherwise title, URL and query demand are the bounded surface.
-    exact_service_urls = {
-        normalize_search_text(lineage)
-        for card in cards
-        if card.card_type == "service"
-        for lineage in card.source_lineage
-        if lineage.startswith("http")
-    }
-    if (
-        exact_urls & exact_service_urls
-        or item.wordpress_content_extraction_region == "wordpress_rest.content"
-    ):
-        text_values.append(item.wordpress_content_text)
-    text = _search_text(text_values)
-    priority_text = _search_text(
-        [
-            item.topic,
-            item.wordpress_title_or_h1,
-            item.source_public_url,
-            item.final_canonical_url,
-            item.intended_final_url,
-            *(str(fact.dimensions.get("query") or "") for fact in item.metric_facts),
-        ]
-    )
+    # headings from unrelated services. GSC queries describe demand, not what
+    # the page is. The matching surface keeps both inputs away from auto-binding.
+    surface = build_content_knowledge_matching_surface(item, cards)
     service_candidates = _matching_service_candidates(
         cards,
-        text,
-        exact_urls=exact_urls,
-        priority_text=priority_text,
+        surface.service_candidate_text,
+        exact_urls=surface.exact_urls,
+        priority_text=surface.priority_text,
     )
     service_cards = [candidate.card for candidate in service_candidates]
-    cta_cards = _matching_cards(cards, text, "cta_pattern")
+    auto_bound_service_card = next(
+        (
+            candidate.card
+            for candidate in service_candidates
+            if any(
+                normalized_term_matches(term, surface.page_text)
+                for term in candidate.matched_terms
+            )
+        ),
+        None,
+    )
+    cta_cards = _matching_cards(cards, surface.page_text, "cta_pattern")
     claim_policy_cards = [
         card
         for card in cards
@@ -547,7 +520,7 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
     ]
     match = ContentKnowledgeCardMatch(
         work_item_id=item.id,
-        service_card=service_cards[0] if service_cards else None,
+        service_card=auto_bound_service_card,
         recommended_service_card_id=service_cards[0].id if service_cards else None,
         service_candidates=service_candidates,
         buyer_problem_cards=service_cards,
@@ -594,7 +567,10 @@ def select_content_knowledge_service_card(
                 "blockers": [*match.blockers, stale_blocker],
             }
         )
-    return match.model_copy(update={"service_card": selected})
+    selected_match = match.model_copy(update={"service_card": selected})
+    return selected_match.model_copy(
+        update={"blockers": content_knowledge_card_blockers(selected_match)}
+    )
 
 
 def content_knowledge_card_blockers(
@@ -796,11 +772,7 @@ def _matching_service_candidates(
         )
 
     def rank(candidate: ContentKnowledgeServiceCandidate) -> tuple[int, int, int, int, float]:
-        exact_url = any(
-            normalize_search_text(lineage) in normalized_urls
-            for lineage in candidate.card.source_lineage
-            if lineage.startswith("http")
-        )
+        exact_url = service_card_has_exact_url(candidate.card, normalized_urls)
         priority_matches = [
             term
             for term in candidate.matched_terms
@@ -834,11 +806,7 @@ def _service_match_is_specific(
     reasonably specific term; multi-term matches already carry stronger intent
     than a generic word such as ``decyzje``.
     """
-    if any(
-        normalize_search_text(lineage) in normalized_urls
-        for lineage in card.source_lineage
-        if lineage.startswith("http")
-    ):
+    if service_card_has_exact_url(card, normalized_urls):
         return True
     if len(matched_terms) >= 2:
         return True
@@ -892,32 +860,8 @@ def _blocker(
     )
 
 
-def _search_text(values: Iterable[object]) -> str:
-    return normalize_search_text(" ".join(str(value) for value in values if value))
-
-
 def _normalized_broad_service_terms() -> frozenset[str]:
     return frozenset(normalize_search_text(term) for term in BROAD_SERVICE_FIT_TERMS)
-
-
-def _homepage_match_markers(item: ContentWorkItem) -> list[str]:
-    root_urls = {
-        "https://ekologus.pl",
-        "https://ekologus.pl/",
-        "https://www.ekologus.pl",
-        "https://www.ekologus.pl/",
-    }
-    item_urls = {
-        str(url).strip().lower().rstrip("/") for url in (
-            item.source_public_url,
-            item.final_canonical_url,
-            item.intended_final_url,
-        )
-        if url
-    }
-    if item_urls & {url.rstrip("/") for url in root_urls}:
-        return ["homepage_overview"]
-    return []
 
 
 def _slug(value: str) -> str:
