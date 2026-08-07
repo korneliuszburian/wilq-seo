@@ -44,6 +44,7 @@ class ContentDocumentWorkspaceSourceSnapshot(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     status: Literal["available", "partial", "unavailable"]
+    status_label: str
     title: str | None = None
     url: str | None = None
     extraction_method: str | None = None
@@ -243,6 +244,7 @@ def _source_snapshot(
     if material is None or material.status != "ready":
         return ContentDocumentWorkspaceSourceSnapshot(
             status="unavailable",
+            status_label="materiał niedostępny",
             title=context.source_public.title,
             url=context.source_public.url,
             reason="Aktualny materiał publicznej strony nie jest dostępny do odczytu.",
@@ -257,6 +259,7 @@ def _source_snapshot(
     status: Literal["available", "partial", "unavailable"] = "available" if text else "partial"
     return ContentDocumentWorkspaceSourceSnapshot(
         status=status,
+        status_label="materiał dostępny" if text else "materiał częściowy",
         title=material.title or context.source_public.title,
         url=material.url,
         extraction_method=material.extraction_region or material.source_kind,

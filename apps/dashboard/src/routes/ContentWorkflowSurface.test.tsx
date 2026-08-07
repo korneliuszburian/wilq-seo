@@ -142,6 +142,7 @@ describe("ContentWorkflowSurface", () => {
 
   it("does not claim that a document exists when the workspace has no revision", async () => {
     const noDocument = contentDocumentWorkspace();
+    noDocument.source_snapshot.status_label = "Materiał dostępny według API";
     noDocument.canonical_document = {
       status: "not_created",
       revision_id: null,
@@ -180,6 +181,8 @@ describe("ContentWorkflowSurface", () => {
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("content-document-state")).toHaveTextContent("Nowa wersja nie została jeszcze przygotowana");
+    expect(screen.getByText("Materiał obecnej strony").parentElement).toHaveTextContent("Materiał dostępny według API");
+    expect(screen.getByText("Nowy dokument").parentElement).toHaveTextContent("Nowa wersja nie została jeszcze przygotowana");
     expect(screen.getByText(/Nie ma jeszcze zapisanej wersji dokumentu/)).toBeInTheDocument();
     expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
@@ -1004,6 +1007,7 @@ function contentDocumentWorkspace(
     service_label: "BDO i sprawozdawczość środowiskowa",
     source_snapshot: {
       status: "available",
+      status_label: "materiał dostępny",
       title: "Aktualny materiał BDO",
       url: "https://ekologus.pl/bdo/",
       extraction_method: "wordpress_rest.content",

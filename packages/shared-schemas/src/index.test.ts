@@ -432,6 +432,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
     service_label: "BDO",
     source_snapshot: {
       status: "available",
+      status_label: "materiał dostępny",
       title: "BDO",
       url: "https://ekologus.pl/bdo/",
       extraction_method: "wordpress_rest.content",
@@ -487,6 +488,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
     expect(parsed.workspace?.regulatory_review_candidates).toEqual([
       expect.objectContaining({ candidate_id: "bdo_sanctions_2026_08_02_r3" })
     ]);
+    expect(parsed.workspace?.source_snapshot.status_label).toBe("materiał dostępny");
     expect(
       ContentSelectedWorkspaceSchema.safeParse({
         status: "missing",

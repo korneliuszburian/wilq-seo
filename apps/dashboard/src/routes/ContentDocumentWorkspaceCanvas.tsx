@@ -117,8 +117,8 @@ export function ContentDocumentWorkspaceCanvas({
         </aside>
         <aside className="order-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kontekst pracy</p>
-          <StatusCard label="Materiał obecnej strony" value={sourceStatus(workspace.source_snapshot.status)} />
-          <StatusCard label="Nowy dokument" value={documentStatus(workspace.canonical_document.status)} />
+          <StatusCard label="Materiał obecnej strony" value={workspace.source_snapshot.status_label} />
+          <StatusCard label="Nowy dokument" value={workspace.canonical_document.label} />
           {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
             <ContentApprovedHtmlPackage
               workItemId={workspace.work_item_id}
@@ -894,12 +894,4 @@ function ComparisonSide({ label, heading, excerpt, empty }: { label: string; hea
 
 function comparisonLabel(status: "same_heading" | "source_only" | "document_only") {
   return { same_heading: "ten sam nagłówek", source_only: "tylko na obecnej stronie", document_only: "tylko w nowej wersji" }[status];
-}
-
-function sourceStatus(status: "available" | "partial" | "unavailable") {
-  return { available: "materiał dostępny", partial: "materiał częściowy", unavailable: "materiał niedostępny" }[status];
-}
-
-function documentStatus(status: "not_created" | "unreviewed" | "needs_changes" | "approved" | "rejected" | "deferred") {
-  return { not_created: "nie utworzono", unreviewed: "czeka na review", needs_changes: "wymaga zmian", approved: "zatwierdzony", rejected: "odrzucony", deferred: "odłożony" }[status];
 }

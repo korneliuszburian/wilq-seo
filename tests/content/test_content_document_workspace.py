@@ -63,6 +63,7 @@ def test_document_workspace_keeps_public_source_visible_when_no_revision_exists(
 
     assert workspace is not None
     assert workspace.source_snapshot.status == "available"
+    assert workspace.source_snapshot.status_label == "materiał dostępny"
     assert workspace.source_snapshot.lead == "Pierwszy akapit obecnej strony."
     assert workspace.source_snapshot.evidence_ids == ["ev_wp_bdo"]
     assert workspace.source_snapshot.caveats == [
@@ -81,6 +82,36 @@ def test_document_workspace_keeps_public_source_visible_when_no_revision_exists(
     assert workspace.document_lineage.knowledge_cards == []
     assert workspace.next_action.kind == "prepare_document"
     assert workspace.next_action.label == "Przygotuj nową wersję"
+
+
+def test_source_snapshot_projects_api_owned_label_for_each_status() -> None:
+    context = SimpleNamespace(
+        source_public=SimpleNamespace(
+            url=SOURCE_URL,
+            title="BDO dla firm",
+            reason="Publiczny materiał jest dostępny.",
+            material=SimpleNamespace(evidence_ids=["ev_wp_bdo"]),
+        )
+    )
+    available_material = ContentInventoryMaterialResponse(
+        status="ready",
+        url=SOURCE_URL,
+        source_kind="wordpress_rest",
+        content_text="Aktualny materiał strony.",
+    )
+    partial_material = available_material.model_copy(update={"content_text": None})
+
+    snapshots = [
+        workspace_module._source_snapshot(context, available_material),
+        workspace_module._source_snapshot(context, partial_material),
+        workspace_module._source_snapshot(context, None),
+    ]
+
+    assert [(snapshot.status, snapshot.status_label) for snapshot in snapshots] == [
+        ("available", "materiał dostępny"),
+        ("partial", "materiał częściowy"),
+        ("unavailable", "materiał niedostępny"),
+    ]
 
 
 def test_document_workspace_projects_one_repair_action_after_human_changes() -> None:
@@ -284,6 +315,9 @@ def test_document_workspace_fails_closed_for_unrecorded_lineage_and_incomplete_s
     for status in ("unavailable", "partial"):
         source = workspace_module.ContentDocumentWorkspaceSourceSnapshot(
             status=status,
+            status_label=(
+                "materiał niedostępny" if status == "unavailable" else "materiał częściowy"
+            ),
             reason="Źródło nie ma kompletnej struktury.",
         )
         comparison = workspace_module._comparison(source, revision)

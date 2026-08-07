@@ -418,6 +418,7 @@ export const ContentDocumentWorkspaceSourceSectionSchema = z.object({
 
 export const ContentDocumentWorkspaceSourceSnapshotSchema = z.object({
   status: z.enum(["available", "partial", "unavailable"]),
+  status_label: z.string(),
   title: z.string().nullable().optional(),
   url: z.string().nullable().optional(),
   extraction_method: z.string().nullable().optional(),
