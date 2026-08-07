@@ -17,6 +17,7 @@ from wilq.content.planning.decisions import (
     slug,
     wordpress_match_tile,
 )
+from wilq.content.preflight.marketer_view import build_content_marketer_decision
 from wilq.schemas import ContentDecisionItem, MetricFact, OpportunityDomain, TacticalQueueItem
 
 
@@ -125,6 +126,60 @@ def test_content_decision_create_candidate_is_blocked_until_inventory_review() -
         metrics,
         "missing",
     )
+
+
+def test_content_decision_merge_or_create_is_blocked_until_inventory_review() -> None:
+    assert content_decision_status("merge_create_after_inventory_check") == "blocked"
+
+
+def test_missing_inventory_multi_query_decision_is_blocked_for_marketer() -> None:
+    page = "https://www.ekologus.pl/niepotwierdzony-temat/"
+    items = [
+        TacticalQueueItem(
+            id=f"queue_content_missing_{index}",
+            title="Niepotwierdzony temat",
+            domain=OpportunityDomain.gsc_seo,
+            intent="content_refresh",
+            priority=20,
+            source_connectors=["google_search_console", "wordpress_ekologus"],
+            evidence_ids=[f"ev_content_missing_{index}"],
+            metric_facts=[
+                _metric_fact(
+                    "impressions",
+                    100 - index,
+                    query=query,
+                    page=page,
+                )
+            ],
+            diagnosis="GSC pokazuje popyt, ale WordPress nie potwierdza strony.",
+            next_step="Sprawdź inventory WordPress.",
+            dimensions={
+                "page": page,
+                "query": query,
+                "wordpress_match": "missing",
+                "gsc_page_query_count": "2",
+            },
+        )
+        for index, query in enumerate(
+            ("raport środowiskowy", "raportowanie środowiskowe")
+        )
+    ]
+
+    decisions = gsc_content_decisions(
+        items,
+        knowledge_card_ids=("card_gsc_seo_content_playbook",),
+        expert_rule_ids=("seo_query_page_matrix_v1",),
+    )
+
+    assert len(decisions) == 1
+    decision = decisions[0]
+    marketer_decision = build_content_marketer_decision(decisions, [])
+    assert decision.wordpress_match == "missing"
+    assert decision.query_count == 2
+    assert decision.decision_type == "merge_create_after_inventory_check"
+    assert decision.status == "blocked"
+    assert marketer_decision is not None
+    assert marketer_decision.status == "blocked"
 
 
 def test_content_decision_sort_key_places_ready_high_priority_first() -> None:

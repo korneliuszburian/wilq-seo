@@ -342,7 +342,11 @@ def primary_query(metric_facts: list[MetricFact], queries: list[str]) -> str | N
 def content_decision_status(
     decision_type: ContentDecisionType,
 ) -> Literal["ready", "blocked"]:
-    if decision_type in {"inventory_check_before_create", "block_as_tracking_not_content"}:
+    if decision_type in {
+        "merge_create_after_inventory_check",
+        "inventory_check_before_create",
+        "block_as_tracking_not_content",
+    }:
         return "blocked"
     return "ready"
 
