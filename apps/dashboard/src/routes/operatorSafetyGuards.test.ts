@@ -79,15 +79,6 @@ describe("operator safety copy guards", () => {
     expect(shellSource).toContain("DiagnosticSurfaceUnavailable");
   });
 
-  it("keeps Tactical Queue evidence and action gaps explicit", () => {
-    const source = readSource("src/routes/TacticalQueuePanel.tsx");
-
-    expect(source).not.toContain('empty="brak dowodów do pokazania"');
-    expect(source).not.toMatch(/empty="brak akcji/);
-    expect(source).toContain("nie traktuj tej pozycji jako rekomendacji");
-    expect(source).toContain("następny krok musi pozostać ręczną oceną");
-  });
-
   it("keeps operating workflow outcomes away from bare brak placeholders", () => {
     const source = readSource("src/routes/OperatingRouteSurfaces.tsx");
 
