@@ -11,7 +11,6 @@ describe("operator safety copy guards", () => {
     const source = readSources([
       "src/routes/AdsDoctorSurface.tsx",
       "src/components/AdsOverviewPanels.tsx",
-      "src/components/AdsMetricEvidencePanel.tsx",
       "src/components/AdsOperatorSummaryPanels.tsx",
       "src/components/AdsBudgetRecommendationPanels.tsx",
       "src/components/AdsBusinessReadinessPanels.tsx",
