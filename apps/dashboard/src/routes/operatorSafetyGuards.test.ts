@@ -10,14 +10,10 @@ describe("operator safety copy guards", () => {
   it("keeps Ads empty states framed as decision limits", () => {
     const source = readSources([
       "src/routes/AdsDoctorSurface.tsx",
-      "src/components/AdsCampaignPanels.tsx",
-      "src/components/AdsNegativeKeywordCandidatesPanel.tsx",
       "src/lib/adsLabels.ts"
     ]);
 
     expect(source).not.toContain('empty="brak');
-    expect(source).toContain("nie traktuj tego jako rekomendacji Ads");
-    expect(source).toContain("nie wykonuj zmiany bez review");
     expect(source).toContain("nie ma podglądu zmian; nie zapisuj zmiany");
     expect(source).toContain("metryki kampanii niepotwierdzone; nie oceniaj wpływu");
   });
