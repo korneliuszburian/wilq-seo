@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-from wilq.content.workflow.contracts import ContentWordPressDraftWriteReadinessResponse
+from wilq.content.workflow.contracts import (
+    ContentWordPressDraftReadback,
+    ContentWordPressDraftWriteReadinessResponse,
+)
 from wilq.schemas import (
+    ActionCreatedWordPressDraftReadback,
     ActionMutationApplyContract,
     ActionMutationAuditRecord,
     ActionMutationReadinessBlocker,
@@ -23,6 +27,7 @@ def build_mutation_readiness_response(
     target: dict[str, str | None],
     operator_next_step: str,
     latest_mutation_audit: ActionMutationAuditRecord | None,
+    last_created_draft: ContentWordPressDraftReadback | None,
 ) -> ActionMutationReadinessResponse:
     ready_to_request_apply = not blockers
     return ActionMutationReadinessResponse(
@@ -65,4 +70,20 @@ def build_mutation_readiness_response(
         latest_mutation_audit_status=(
             latest_mutation_audit.status if latest_mutation_audit is not None else None
         ),
+        last_created_draft=_created_draft_readback(last_created_draft),
+    )
+
+
+def _created_draft_readback(
+    readback: ContentWordPressDraftReadback | None,
+) -> ActionCreatedWordPressDraftReadback | None:
+    if readback is None or readback.wordpress_post_id is None:
+        return None
+    return ActionCreatedWordPressDraftReadback(
+        wordpress_post_id=readback.wordpress_post_id,
+        link=readback.link,
+        edit_link=readback.edit_link,
+        modified_gmt=readback.modified_gmt,
+        content_digest=readback.content_digest,
+        verification_status=readback.verification_status,
     )

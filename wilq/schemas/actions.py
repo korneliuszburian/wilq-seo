@@ -99,6 +99,19 @@ class ActionMutationApplyContract(BaseModel):
     operator_summary: str
 
 
+class ActionCreatedWordPressDraftReadback(BaseModel):
+    """Redacted identity and verification state of one created draft."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    wordpress_post_id: str = Field(min_length=1)
+    link: str = ""
+    edit_link: str = ""
+    modified_gmt: str = ""
+    content_digest: str = ""
+    verification_status: Literal["verified", "blocked"] = "blocked"
+
+
 class ActionMutationReadinessResponse(BaseModel):
     response_type: Literal["action_mutation_readiness"] = "action_mutation_readiness"
     contract: Literal["action_mutation_readiness_v1"] = "action_mutation_readiness_v1"
@@ -137,6 +150,7 @@ class ActionMutationReadinessResponse(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     latest_mutation_audit_id: str | None = None
     latest_mutation_audit_status: Literal["blocked", "applied", "failed"] | None = None
+    last_created_draft: ActionCreatedWordPressDraftReadback | None = None
 
 
 class ActionMutationReadinessSummaryResponse(BaseModel):

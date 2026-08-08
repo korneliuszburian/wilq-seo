@@ -88,6 +88,89 @@ describe("ActionPanels", () => {
     expect(screen.queryByText(/Adapter:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Zdarzenie audytu:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Próba zmiany:/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Utworzono szkic")).not.toBeInTheDocument();
+  });
+
+  it("shows where the verified WordPress draft was created", () => {
+    render(
+      <ActionReviewGatePanel
+        action={
+          {
+            id: "act_apply_wordpress_draft_handoff",
+            title: "Przekaż szkic na dev",
+            domain: "wordpress",
+            connector: "wordpress_ekologus",
+            connector_label: "WordPress",
+            mode: "apply",
+            mode_label: "zapis",
+            risk: "medium",
+            risk_label: "średnie ryzyko",
+            status: "applied",
+            status_label: "zastosowano",
+            evidence_ids: [],
+            evidence_summary_label: "",
+            metrics: [],
+            human_diagnosis: "Szkic utworzony.",
+            recommended_reason: "",
+            validation_status: "valid",
+            validation_status_label: "poprawna",
+            review_gate: {
+              status: "ready_to_apply",
+              status_label: "gotowe",
+              operator_checklist_labels: [],
+              apply_blocker_summary_label: "brak blokad",
+              confirmation_required: true,
+              apply_allowed: true,
+              last_confirmation_summary: "Potwierdzono.",
+              last_mutation_audit_summary: "applied",
+              last_mutation_audit_status_label: "zastosowano",
+              last_mutation_attempted: true,
+              last_mutation_attempted_label: "wykonano zapis",
+              last_mutation_adapter_reached_label: "adapter osiągnięty",
+              last_external_write_attempted_label: "wykonano zapis",
+              last_mutation_adapter_label: "WordPress",
+              last_mutation_audit_trace_label: "ślad zapisany",
+              last_mutation_blocker_summary_label: "brak blokad"
+            },
+            preview_cards: [],
+            payload: {},
+            audit_events: []
+          } as unknown as ActionObject
+        }
+        lastCreatedDraft={{
+          wordpress_post_id: "1275",
+          link: "https://ekologus.dev.proudsite.pl/?p=1275",
+          edit_link:
+            "https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=1275&action=edit",
+          modified_gmt: "2026-08-08T10:15:00",
+          content_digest: "a".repeat(64),
+          verification_status: "verified"
+        }}
+      />
+    );
+
+    expect(screen.getByText("Utworzono szkic")).toBeInTheDocument();
+    expect(screen.getByText("post_id: 1275")).toBeInTheDocument();
+    expect(screen.getByText("modified_gmt: 2026-08-08T10:15:00")).toBeInTheDocument();
+    expect(screen.getByText("Potwierdzenie digestu: zweryfikowany")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Szkic nie jest publicznie widoczny do czasu publikacji (poza zakresem WILQ)."
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Otwórz link publiczny" })).toHaveAttribute(
+      "href",
+      "https://ekologus.dev.proudsite.pl/?p=1275"
+    );
+    expect(screen.getByRole("link", { name: "Otwórz w edytorze WordPress" }))
+      .toHaveAttribute(
+        "href",
+        "https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=1275&action=edit"
+      );
+    expect(screen.getByRole("link", { name: "Otwórz w edytorze WordPress" }))
+      .toHaveAttribute("target", "_blank");
+    expect(screen.getByRole("link", { name: "Otwórz w edytorze WordPress" }))
+      .toHaveAttribute("rel", "noreferrer");
   });
 
   it("uses the action evidence summary as visible proof context", () => {

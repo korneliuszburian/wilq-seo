@@ -281,6 +281,17 @@ export const ActionMutationApplyContractSchema = z.object({
   operator_summary: z.string()
 });
 
+export const ActionCreatedWordPressDraftReadbackSchema = z
+  .object({
+    wordpress_post_id: z.string().min(1),
+    link: z.string().default(""),
+    edit_link: z.string().default(""),
+    modified_gmt: z.string().default(""),
+    content_digest: z.string().default(""),
+    verification_status: z.enum(["verified", "blocked"]).default("blocked")
+  })
+  .strict();
+
 export const ActionMutationReadinessResponseSchema = z.object({
   response_type: z.literal("action_mutation_readiness"),
   contract: z.literal("action_mutation_readiness_v1"),
@@ -318,7 +329,8 @@ export const ActionMutationReadinessResponseSchema = z.object({
   evidence_ids: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()).default([]),
   latest_mutation_audit_id: z.string().nullable().optional(),
-  latest_mutation_audit_status: z.enum(["blocked", "applied", "failed"]).nullable().optional()
+  latest_mutation_audit_status: z.enum(["blocked", "applied", "failed"]).nullable().optional(),
+  last_created_draft: ActionCreatedWordPressDraftReadbackSchema.nullable().optional()
 });
 
 export const ActionMutationReadinessSummaryResponseSchema = z.object({
@@ -451,6 +463,9 @@ export type ActionPreviewCardViewModel = z.infer<typeof ActionPreviewCardViewMod
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema>;
 export type ActionMutationAuditRecord = z.infer<typeof ActionMutationAuditRecordSchema>;
+export type ActionCreatedWordPressDraftReadback = z.infer<
+  typeof ActionCreatedWordPressDraftReadbackSchema
+>;
 export type ActionMutationReadinessResponse = z.infer<typeof ActionMutationReadinessResponseSchema>;
 export type ActionMutationReadinessSummaryResponse = z.infer<
   typeof ActionMutationReadinessSummaryResponseSchema

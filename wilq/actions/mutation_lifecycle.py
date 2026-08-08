@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from wilq.actions.wordpress_draft_readback import last_created_wordpress_draft_readback
+from wilq.content.workflow.contracts import ContentWordPressDraftActivationPacketResponse
 from wilq.schemas import (
     ActionMutationAuditRecord,
     ActionMutationReadinessBlocker,
@@ -26,7 +28,9 @@ ImpactStatus = Callable[[AuditEvent | None], str | None]
 EvidenceLabel = Callable[[list[str]], str]
 MutationAdapter = Callable[[ActionObject], str | None]
 WordPressReadiness = Callable[[ActionObject], object | None]
-WordPressActivationPacket = Callable[[ActionObject], object | None]
+WordPressActivationPacket = Callable[
+    [ActionObject], ContentWordPressDraftActivationPacketResponse | None
+]
 RequirementsBuilder = Callable[..., list[ActionMutationReadinessRequirement]]
 BlockersBuilder = Callable[
     [list[ActionMutationReadinessRequirement]], list[ActionMutationReadinessBlocker]
@@ -70,17 +74,18 @@ def mutation_readiness_action(
     evidence_label: EvidenceLabel,
     preview_items: PreviewItems,
 ) -> ActionMutationReadinessResponse:
+    mutation_audits = persisted_mutation_audits(action.id)
     action = with_review_gate(
         action,
         persisted_audit_events(action.id),
-        persisted_mutation_audits(action.id),
+        mutation_audits,
     )
     connector = connector_status(action.connector)
     adapter = mutation_adapter(action)
     latest_preview = latest_preview_event(action.audit_events)
     latest_confirmation = latest_confirmation_event(action.audit_events)
     latest_impact_check = latest_impact_check_event(action.audit_events)
-    latest_audit = latest_mutation_audit(persisted_mutation_audits(action.id))
+    latest_audit = latest_mutation_audit(mutation_audits)
     wordpress_readiness = wordpress_draft_readiness(action)
     activation_packet = wordpress_activation_packet(action)
     requirements = base_requirements(
@@ -133,4 +138,5 @@ def mutation_readiness_action(
         target=readiness_target,
         operator_next_step=operator_next_step(action, readiness_blockers),
         latest_mutation_audit=latest_audit,
+        last_created_draft=last_created_wordpress_draft_readback(action, mutation_audits),
     )

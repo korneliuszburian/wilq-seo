@@ -1886,10 +1886,19 @@ describe("ActionMutationReadinessResponseSchema", () => {
       risk: "medium",
       validation_status: "valid",
       write_authorization_status: "blocked_outside_action_apply",
+      last_created_draft: {
+        wordpress_post_id: "1275",
+        link: "https://ekologus.dev.proudsite.pl/?p=1275",
+        edit_link: "https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=1275&action=edit",
+        modified_gmt: "2026-08-08T10:15:00",
+        content_digest: "a".repeat(64),
+        verification_status: "verified"
+      },
       operator_next_step: "Użyj kanonicznej akcji apply."
     });
 
     expect(parsed.write_authorization_status).toBe("blocked_outside_action_apply");
+    expect(parsed.last_created_draft?.edit_link).toContain("post=1275");
     expect(parsed.vendor_write_possible).toBe(false);
     expect(parsed.would_attempt_vendor_write).toBe(false);
   });

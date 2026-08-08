@@ -79,7 +79,10 @@ function ActionDetail({
           Tu wykonujesz bezpieczną część pracy: sprawdzenie, podgląd, review i potwierdzenie.
           Zapis zmian pozostaje blokowany, dopóki WILQ nie ma pełnej ścieżki zgody i audytu.
         </p>
-        <ActionReviewGatePanel action={action} />
+        <ActionReviewGatePanel
+          action={action}
+          lastCreatedDraft={mutationReadiness?.last_created_draft}
+        />
         <ActionHumanReviewControls action={action} />
         <ActionPreviewControls action={action} />
         <ActionValidationControls action={action} />

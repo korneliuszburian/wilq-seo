@@ -1,6 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ContentNewPageDraftBindingSchema } from "@wilq/shared-schemas";
+import {
+  ContentNewPageDraftBindingSchema,
+  type ActionCreatedWordPressDraftReadback
+} from "@wilq/shared-schemas";
 import type { z } from "zod";
 import { useState } from "react";
 import {
@@ -479,7 +482,13 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
   );
 }
 
-export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
+export function ActionReviewGatePanel({
+  action,
+  lastCreatedDraft
+}: {
+  action: ActionObject;
+  lastCreatedDraft?: ActionCreatedWordPressDraftReadback | null;
+}) {
   const gate = action.review_gate;
   return (
     <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-xs">
@@ -532,8 +541,65 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           />
         </div>
       ) : null}
+      <ActionCreatedDraftReadbackPanel draft={lastCreatedDraft} />
     </div>
   );
+}
+
+function ActionCreatedDraftReadbackPanel({
+  draft
+}: {
+  draft?: ActionCreatedWordPressDraftReadback | null;
+}) {
+  if (!draft) return null;
+  const publicHref = safeExternalHref(draft.link);
+  const editHref = safeExternalHref(draft.edit_link);
+  const digestLabel = draft.verification_status === "verified" ? "zweryfikowany" : "zablokowany";
+
+  return (
+    <div className="mt-3 rounded-md border border-success/30 bg-success/5 p-3 text-slate-700">
+      <div className="font-semibold text-success">Utworzono szkic</div>
+      <div className="mt-2 grid gap-2 md:grid-cols-2">
+        <div>post_id: {draft.wordpress_post_id}</div>
+        <div>modified_gmt: {draft.modified_gmt || "brak w readbacku"}</div>
+        <div>Potwierdzenie digestu: {digestLabel}</div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {publicHref ? (
+          <a
+            href={publicHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-9 items-center rounded-md border border-line bg-white px-3 py-2 font-medium text-action hover:bg-slate-50"
+          >
+            Otwórz link publiczny
+          </a>
+        ) : null}
+        {editHref ? (
+          <a
+            href={editHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-9 items-center rounded-md bg-action px-3 py-2 font-medium text-white hover:bg-action/90"
+          >
+            Otwórz w edytorze WordPress
+          </a>
+        ) : null}
+      </div>
+      <p className="mt-2 leading-5 text-slate-600">
+        Szkic nie jest publicznie widoczny do czasu publikacji (poza zakresem WILQ).
+      </p>
+    </div>
+  );
+}
+
+function safeExternalHref(value: string): string | null {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 function actionReviewGateSummary(gate: ActionObject["review_gate"]) {

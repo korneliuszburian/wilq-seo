@@ -13,11 +13,16 @@ from apps.api.wilq_api.main import app
 from wilq.actions.service import apply_action
 from wilq.actions.wordpress_mutation_requirements import WordPressDraftApplyCapability
 from wilq.cli import app as cli_app
+from wilq.connectors.wordpress.client import (
+    WordPressDraftPostReadback,
+    _wordpress_draft_value_digest,
+)
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionBoundary,
     ContentWordPressDraftExecutionResult,
+    ContentWordPressDraftPayload,
     ContentWordPressDraftWriteAuthorization,
 )
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
@@ -107,6 +112,26 @@ def _seed_approved_revision_binding(
         planning_digest=revision.planning_digest,
         approval_decision_id=reviewed.review.decision_id,
         final_canonical_url=revision.final_canonical_url,
+    )
+
+
+def _save_applied_wordpress_mutation_audit(binding: ContentDraftRevisionBinding) -> None:
+    local_state_store().save_action_mutation_audit(
+        ActionMutationAuditRecord(
+            id=f"mutation_readback_{binding.revision_id}",
+            action_id="act_apply_wordpress_draft_handoff",
+            connector="wordpress_ekologus",
+            action_type="wordpress_draft_handoff",
+            status="applied",
+            adapter_reached=True,
+            external_write_attempted=True,
+            mutation_attempted=True,
+            mutation_adapter="wordpress_draft_execution_boundary",
+            actor="operator_test",
+            audit_event_id=f"audit_readback_{binding.revision_id}",
+            wordpress_draft_binding=binding,
+            summary="Utworzono jeden szkic WordPress.",
+        )
     )
 
 
@@ -457,6 +482,99 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
     )
     assert "Claim Ledger" in target_blocker["reason"]
     assert "draft package" in target_blocker["next_step"]
+
+
+def test_action_mutation_readiness_exposes_exact_created_draft_readback(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "created_draft_readback.sqlite3"))
+    binding = _seed_approved_revision_binding(
+        work_item_id="work_item_created_readback",
+        draft_package_id="draft_package_created_readback",
+        final_canonical_url="https://ekologus.pl/created-readback/",
+    )
+    expected_html = "<p>Dokładna utworzona treść.</p>"
+    content_digest = _wordpress_draft_value_digest(expected_html)
+    execution = ContentWordPressDraftExecutionResult(
+        status="created",
+        mode="live",
+        boundary=ContentWordPressDraftExecutionBoundary(
+            live_write_enabled=True,
+            live_adapter_configured=True,
+        ),
+        payload=ContentWordPressDraftPayload(
+            title="Utworzony szkic",
+            content_markdown="Dokładna utworzona treść.",
+            content_html=expected_html,
+            authoring_mode="the_content",
+            final_canonical_url=binding.final_canonical_url,
+        ),
+        revision_binding=binding,
+        wordpress_post_id="1275",
+        external_write_attempted=True,
+    )
+    content_workflow_store().save_wordpress_draft_execution(binding.work_item_id, execution)
+    _save_applied_wordpress_mutation_audit(binding)
+
+    def readback(post_id: str) -> WordPressDraftPostReadback:
+        assert post_id == "1275"
+        return WordPressDraftPostReadback(
+            post_id=post_id,
+            endpoint="posts",
+            status="draft",
+            title="Utworzony szkic",
+            link="https://ekologus.dev.proudsite.pl/?p=1275",
+            edit_link=(
+                "https://ekologus.dev.proudsite.pl/"
+                "wp-admin/post.php?post=1275&action=edit"
+            ),
+            modified_gmt="2026-08-08T10:15:00",
+            content_summary="Treść nie może trafić do action response.",
+            content_word_count=3,
+            acf_field_count=0,
+            acf_field_names=[],
+            content_digest=content_digest,
+            acf_digest=_wordpress_draft_value_digest({}),
+        )
+
+    monkeypatch.setattr(
+        "wilq.content.workflow.stage_activation.read_wordpress_draft_post",
+        readback,
+    )
+
+    data = _get_mutation_readiness("act_apply_wordpress_draft_handoff")
+
+    assert data["last_created_draft"] == {
+        "wordpress_post_id": "1275",
+        "link": "https://ekologus.dev.proudsite.pl/?p=1275",
+        "edit_link": (
+            "https://ekologus.dev.proudsite.pl/"
+            "wp-admin/post.php?post=1275&action=edit"
+        ),
+        "modified_gmt": "2026-08-08T10:15:00",
+        "content_digest": content_digest,
+        "verification_status": "verified",
+    }
+    assert "content_summary" not in data["last_created_draft"]
+    assert "acf_field_names" not in data["last_created_draft"]
+
+
+def test_action_mutation_readiness_has_no_created_draft_without_exact_execution(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "missing_draft_readback.sqlite3"))
+    binding = _seed_approved_revision_binding(
+        work_item_id="work_item_missing_readback",
+        draft_package_id="draft_package_missing_readback",
+        final_canonical_url="https://ekologus.pl/missing-readback/",
+    )
+    _save_applied_wordpress_mutation_audit(binding)
+
+    data = _get_mutation_readiness("act_apply_wordpress_draft_handoff")
+
+    assert data["last_created_draft"] is None
 
 
 def test_wordpress_apply_action_blocks_payload_before_vendor_write(
