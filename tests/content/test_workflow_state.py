@@ -79,6 +79,19 @@ def test_work_item_claim_ledger_preserves_source_connectors() -> None:
     ]
 
 
+def test_work_item_claim_ledger_blocks_decision_without_evidence() -> None:
+    item = _base_item(evidence_ids=[])
+
+    ledger = content_claim_ledger_from_work_item(item)
+
+    assert len(ledger.entries) == 1
+    assert ledger.entries[0].claim_text == "Decyzja nie ma dowodów"
+    assert ledger.entries[0].status == "blocked"
+    assert ledger.entries[0].reason == (
+        "Brak evidence dla tego work itemu; nie można potwierdzić twierdzeń."
+    )
+
+
 def test_work_item_claim_ledger_uses_marketer_useful_claims() -> None:
     item = _base_item(topic='SEO: odśwież lub scal "ekologus" (24 zapytań)')
 

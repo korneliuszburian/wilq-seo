@@ -22,6 +22,7 @@ from wilq.storage.schema_versions import (
 
 PlanningEnqueueOutcome = Literal["queued", "existing", "in_flight"]
 GeneratedProposalSaveOutcome = Literal["created", "idempotent", "replaced"]
+PlanningTerminalSaveOutcome = Literal["saved", "claim_stale", "ignored"]
 
 _PROPOSAL_INPUT_SELECTS = {
     "content_planning_proposals": """
@@ -359,9 +360,10 @@ class ContentPlanningProposalStore:
         response: ContentPlanningProposalResponse,
         *,
         job_planning_input_digest: str | None = None,
-    ) -> None:
+        claim_version: int | None = None,
+    ) -> PlanningTerminalSaveOutcome:
         if response.service_card_id is None:
-            return
+            return "ignored"
         payload = redact_mapping(response.model_dump(mode="json"))
         status = (
             response.status
@@ -370,8 +372,44 @@ class ContentPlanningProposalStore:
         )
         exact_job_digest = job_planning_input_digest or response.planning_input_digest
         with self._connect() as connection:
+            if claim_version is not None:
+                if exact_job_digest is None:
+                    raise ValueError("Fenced terminal save requires an exact job digest.")
+                if not _table_exists(
+                    connection, "content_planning_generation_claims"
+                ):
+                    return "claim_stale"
+                updated = connection.execute(
+                    """
+                    UPDATE content_planning_generation_jobs
+                    SET status = ?, payload_json = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE work_item_id = ? AND service_card_id = ?
+                      AND planning_input_digest = ?
+                      AND EXISTS (
+                        SELECT 1
+                        FROM content_planning_generation_claims AS claim
+                        WHERE claim.work_item_id = ?
+                          AND claim.service_card_id = ?
+                          AND claim.planning_input_digest = ?
+                          AND claim.claim_version = ?
+                          AND claim.status = 'claimed'
+                      )
+                    """,
+                    (
+                        status,
+                        json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                        response.work_item_id,
+                        response.service_card_id,
+                        exact_job_digest,
+                        response.work_item_id,
+                        response.service_card_id,
+                        exact_job_digest,
+                        claim_version,
+                    ),
+                )
+                return "saved" if updated.rowcount == 1 else "claim_stale"
             if exact_job_digest is None:
-                connection.execute(
+                updated = connection.execute(
                     """
                     UPDATE content_planning_generation_jobs
                     SET status = ?, payload_json = ?, updated_at = CURRENT_TIMESTAMP
@@ -385,7 +423,7 @@ class ContentPlanningProposalStore:
                     ),
                 )
             else:
-                connection.execute(
+                updated = connection.execute(
                     """
                     UPDATE content_planning_generation_jobs
                     SET status = ?, payload_json = ?, updated_at = CURRENT_TIMESTAMP
@@ -399,6 +437,7 @@ class ContentPlanningProposalStore:
                         exact_job_digest,
                     ),
                 )
+        return "saved" if updated.rowcount > 0 else "ignored"
 
     def save_generated(
         self,
@@ -698,6 +737,7 @@ def _validate_generated_proposal(
 
 __all__ = [
     "ContentPlanningProposalStore",
+    "PlanningTerminalSaveOutcome",
     "PlanningEnqueueOutcome",
     "content_planning_proposal_store",
 ]

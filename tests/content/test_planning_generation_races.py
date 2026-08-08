@@ -30,9 +30,13 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalRequest,
     ContentPlanningProposalResponse,
 )
-from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
+from wilq.content.planning.generated_proposal_store import (
+    ContentPlanningProposalStore,
+    content_planning_proposal_store,
+)
 from wilq.content.planning.generation_claim_store import (
     ContentPlanningGenerationClaimStore,
+    PlanningGenerationClaim,
 )
 from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
 from wilq.content.workflow.catalog import inventory_work_item_id
@@ -89,12 +93,12 @@ def test_two_parallel_posts_submit_one_worker_and_reclaim_crashed_claim_after_tt
     claim_outcomes: list[str] = []
     durable_claim = claim_store.claim
 
-    def synchronized_claim(**kwargs: str) -> str:
+    def synchronized_claim(**kwargs: str) -> PlanningGenerationClaim:
         claim_barrier.wait(timeout=5)
-        outcome = durable_claim(**kwargs)
+        claim = durable_claim(**kwargs)
         with outcome_lock:
-            claim_outcomes.append(outcome)
-        return outcome
+            claim_outcomes.append(claim.outcome)
+        return claim
 
     monkeypatch.setattr(claim_store, "claim", synchronized_claim)
     monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
@@ -155,7 +159,7 @@ def test_worker_reloads_digest_before_codex_and_finishes_matching_claim(
             safe_next_step="Plan jest przygotowywany.",
         )
 
-    _enqueue_and_claim(
+    stale_claim_version = _enqueue_and_claim(
         response=queued_response("planning_stale_context"),
         claim_store=claim_store,
         claim_owner="worker-stale",
@@ -182,6 +186,7 @@ def test_worker_reloads_digest_before_codex_and_finishes_matching_claim(
         lambda _work_item_id: changed_snapshot,
         claim_store,
         "worker-stale",
+        stale_claim_version,
     )
 
     stale = store.queued_response(BDO_WORK_ITEM_ID, service_card_id, expected_digest)
@@ -192,7 +197,7 @@ def test_worker_reloads_digest_before_codex_and_finishes_matching_claim(
     assert runtime.calls == 0
     assert _planning_claim_status(store.path) == "failed"
 
-    _enqueue_and_claim(
+    current_claim_version = _enqueue_and_claim(
         response=queued_response("planning_current_context"),
         claim_store=claim_store,
         claim_owner="worker-current",
@@ -203,11 +208,114 @@ def test_worker_reloads_digest_before_codex_and_finishes_matching_claim(
         lambda _work_item_id: original_snapshot,
         claim_store,
         "worker-current",
+        current_claim_version,
     )
 
     assert runtime.calls == 1
     assert store.for_input(BDO_WORK_ITEM_ID, service_card_id, expected_digest) is not None
     assert _planning_claim_status(store.path) == "finished"
+
+
+def test_reclaimed_claim_fences_late_terminal_write_and_keeps_newer_result(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "planning.sqlite3"
+    store = ContentPlanningProposalStore(path)
+    work_item_id = "content_work_item_race"
+    service_card_id = "service_bdo"
+    digest = "a" * 64
+    queued = ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        safe_next_step="Poczekaj na wynik.",
+    )
+    assert store.enqueue_pending(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        response=queued,
+    ) == "queued"
+    _create_legacy_claim_table(path)
+
+    now = datetime(2026, 8, 7, 12, tzinfo=UTC)
+    clock = SimpleNamespace(current=now)
+    claim_store = ContentPlanningGenerationClaimStore(
+        path,
+        clock=lambda: cast(datetime, clock.current),
+    )
+    claim_a = claim_store.claim(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        claim_owner="worker-a",
+    )
+    assert claim_a.outcome == "acquired"
+    assert claim_a.claim_version == 1
+
+    clock.current = now + timedelta(seconds=planning_job_stale_after_seconds() + 1)
+    claim_b = claim_store.claim(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        claim_owner="worker-b",
+    )
+    assert claim_b.outcome == "acquired"
+    assert claim_b.claim_version == 2
+
+    worker_b_result = _failed_terminal_response(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        label="Wynik workera B",
+    )
+    assert store.save_terminal_response(
+        worker_b_result,
+        job_planning_input_digest=digest,
+        claim_version=claim_b.claim_version,
+    ) == "saved"
+
+    late_worker_a_result = _failed_terminal_response(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        label="Spóźniony wynik workera A",
+    )
+    stale = planning_router._save_terminal_response_safely(
+        store,
+        late_worker_a_result,
+        job_planning_input_digest=digest,
+        claim_version=claim_a.claim_version,
+    )
+
+    assert stale.status == "blocked"
+    assert stale.blockers[0].code == "generation_claim_stale"
+    persisted = store.queued_response(work_item_id, service_card_id, digest)
+    assert persisted is not None
+    assert persisted.blockers[0].label == "Wynik workera B"
+    assert claim_store.finish(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        claim_owner="worker-b",
+        claim_version=claim_b.claim_version,
+        status="failed",
+    )
+    assert not claim_store.finish(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        claim_owner="worker-a",
+        claim_version=claim_a.claim_version,
+        status="failed",
+    )
+    with sqlite3.connect(path) as connection:
+        columns = {
+            str(row[1])
+            for row in connection.execute(
+                "PRAGMA table_info(content_planning_generation_claims)"
+            )
+        }
+    assert "claim_version" in columns
 
 
 def test_snapshot_and_selected_workspace_reads_do_not_create_planning_jobs(
@@ -287,7 +395,7 @@ def _enqueue_and_claim(
     response: ContentPlanningProposalResponse,
     claim_store: ContentPlanningGenerationClaimStore,
     claim_owner: str,
-) -> None:
+) -> int:
     service_card_id = response.service_card_id
     digest = response.planning_input_digest
     assert service_card_id is not None
@@ -299,12 +407,55 @@ def _enqueue_and_claim(
         planning_input_digest=digest,
         response=response,
     ) == "queued"
-    assert claim_store.claim(
+    claim = claim_store.claim(
         work_item_id=BDO_WORK_ITEM_ID,
         service_card_id=service_card_id,
         planning_input_digest=digest,
         claim_owner=claim_owner,
-    ) == "acquired"
+    )
+    assert claim.outcome == "acquired"
+    return claim.claim_version
+
+
+def _failed_terminal_response(
+    *,
+    work_item_id: str,
+    service_card_id: str,
+    label: str,
+) -> ContentPlanningProposalResponse:
+    return ContentPlanningProposalResponse(
+        status="failed",
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        blockers=[
+            {
+                "code": "runtime_failed",
+                "label": label,
+                "reason": "Kontrolowany wynik testowego workera.",
+                "next_step": "Sprawdź zachowany wynik.",
+            }
+        ],
+        safe_next_step="Sprawdź zachowany wynik.",
+    )
+
+
+def _create_legacy_claim_table(path: Path) -> None:
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE content_planning_generation_claims (
+              claim_key TEXT PRIMARY KEY,
+              work_item_id TEXT NOT NULL,
+              service_card_id TEXT NOT NULL,
+              planning_input_digest TEXT NOT NULL,
+              status TEXT NOT NULL CHECK (status IN ('claimed', 'finished', 'failed')),
+              claim_owner TEXT NOT NULL,
+              claimed_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
+              UNIQUE (work_item_id, service_card_id, planning_input_digest)
+            )
+            """
+        )
 
 
 def _planning_generation_job_count(path: Path) -> int:

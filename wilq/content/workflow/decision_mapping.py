@@ -8,7 +8,11 @@ from wilq.content.canonical.urls import (
     content_normalized_path,
     content_url_host,
 )
-from wilq.content.claims.ledger import ContentClaimLedger, content_claim_entry
+from wilq.content.claims.ledger import (
+    ContentClaimLedger,
+    ContentClaimLedgerEntry,
+    content_claim_entry,
+)
 from wilq.content.inventory.records import ContentInventoryRecord
 from wilq.content.knowledge.source_facts import ekologus_source_fact_registry
 from wilq.content.workflow.models import (
@@ -84,6 +88,26 @@ def content_inventory_record_from_decision(
 
 
 def content_claim_ledger_from_work_item(item: ContentWorkItem) -> ContentClaimLedger:
+    if not item.evidence_ids:
+        return ContentClaimLedger(
+            id=f"claim_ledger_{item.id}",
+            work_item_id=item.id,
+            reviewed_by="wilku",
+            entries=[
+                ContentClaimLedgerEntry(
+                    id=f"claim_missing_evidence_{item.id}",
+                    claim_text="Decyzja nie ma dowodów",
+                    claim_type="service_claim",
+                    status="blocked",
+                    required=True,
+                    source_connectors=item.source_connectors,
+                    reason=(
+                        "Brak evidence dla tego work itemu; nie można potwierdzić "
+                        "twierdzeń."
+                    ),
+                )
+            ],
+        )
     evidence_id = item.evidence_ids[0]
     return ContentClaimLedger(
         id=f"claim_ledger_{item.id}",

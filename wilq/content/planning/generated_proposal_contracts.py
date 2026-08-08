@@ -37,6 +37,7 @@ ContentPlanningProposalBlockerCode = Literal[
     "stale_input",
     "runtime_blocked",
     "runtime_failed",
+    "generation_claim_stale",
     "invalid_structured_output",
     "quality_gate_failed",
     "lineage_mismatch",

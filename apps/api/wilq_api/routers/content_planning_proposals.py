@@ -305,13 +305,13 @@ def _schedule_queued_planning_generation(
         if result.runtime is not None and result.runtime.run_id is not None
         else f"planning_generation_{uuid4().hex}"
     )
-    claim_outcome = claim_store.claim(
+    claim = claim_store.claim(
         work_item_id=work_item_id,
         service_card_id=request.service_card_id,
         planning_input_digest=request.expected_planning_input_digest,
         claim_owner=claim_owner,
     )
-    if claim_outcome != "acquired":
+    if claim.outcome != "acquired":
         return result
     try:
         _PLANNING_GENERATION_EXECUTOR.submit(
@@ -321,6 +321,7 @@ def _schedule_queued_planning_generation(
             snapshot_loader,
             claim_store,
             claim_owner,
+            claim.claim_version,
         )
     except Exception as error:
         result = _planning_generation_failure_response(
@@ -335,16 +336,18 @@ def _schedule_queued_planning_generation(
             ),
             error=error,
         )
-        _save_terminal_response_safely(
+        result = _save_terminal_response_safely(
             store,
             result,
             job_planning_input_digest=request.expected_planning_input_digest,
+            claim_version=claim.claim_version,
         )
         claim_store.finish(
             work_item_id=work_item_id,
             service_card_id=request.service_card_id,
             planning_input_digest=request.expected_planning_input_digest,
             claim_owner=claim_owner,
+            claim_version=claim.claim_version,
             status="failed",
         )
     return result
@@ -356,7 +359,8 @@ def _run_queued_planning_generation(
     snapshot_loader: ContentPlanningSnapshotLoader,
     claim_store: ContentPlanningGenerationClaimStore,
     claim_owner: str,
-) -> None:
+    claim_version: int,
+) -> ContentPlanningProposalResponse:
     store = content_planning_proposal_store()
     claim_status: PlanningGenerationClaimFinalStatus = "failed"
     try:
@@ -385,12 +389,13 @@ def _run_queued_planning_generation(
             error=error,
         )
     try:
-        _save_terminal_response_safely(
+        terminal_response = _save_terminal_response_safely(
             store,
             result,
             job_planning_input_digest=request.expected_planning_input_digest,
+            claim_version=claim_version,
         )
-        if result.status in {"created", "idempotent", "ready"}:
+        if terminal_response.status in {"created", "idempotent", "ready"}:
             claim_status = "finished"
     finally:
         claim_store.finish(
@@ -398,8 +403,10 @@ def _run_queued_planning_generation(
             service_card_id=request.service_card_id,
             planning_input_digest=request.expected_planning_input_digest,
             claim_owner=claim_owner,
+            claim_version=claim_version,
             status=claim_status,
         )
+    return terminal_response
 
 
 def _save_terminal_response_safely(
@@ -407,17 +414,46 @@ def _save_terminal_response_safely(
     response: ContentPlanningProposalResponse,
     *,
     job_planning_input_digest: str,
-) -> None:
+    claim_version: int,
+) -> ContentPlanningProposalResponse:
     """Never turn a durable-job failure into an unhandled route/thread error."""
     try:
-        store.save_terminal_response(
+        outcome = store.save_terminal_response(
             response,
             job_planning_input_digest=job_planning_input_digest,
+            claim_version=claim_version,
         )
     except Exception:
         # The queued row remains recoverable by stale-job retry. The typed
         # failure is still returned to the caller when this runs in the route.
-        return
+        return response
+    if outcome == "claim_stale":
+        return _planning_generation_claim_stale_response(response)
+    return response
+
+
+def _planning_generation_claim_stale_response(
+    response: ContentPlanningProposalResponse,
+) -> ContentPlanningProposalResponse:
+    blocker = ContentPlanningProposalBlocker(
+        code="generation_claim_stale",
+        label="Wynik pochodzi z nieaktualnej próby",
+        reason=(
+            "Nowszy worker przejął wygasły claim; spóźniony wynik tej próby "
+            "został odrzucony."
+        ),
+        next_step="Poczekaj na wynik bieżącej próby i odśwież stan planu.",
+    )
+    return ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=response.work_item_id,
+        service_card_id=response.service_card_id,
+        planning_input_digest=response.planning_input_digest,
+        input_summary=response.input_summary,
+        runtime=response.runtime,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
 
 
 def _planning_generation_failure_response(
