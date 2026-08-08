@@ -16,6 +16,7 @@ from pydantic import (
 
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY, LocalAuditTrustLevel
 from wilq.content.canonical.urls import content_is_safe_public_url
+from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.workflow.content_html import validate_content_html
 from wilq.content.workflow.new_page import ContentNewPageDocumentIdentity
 from wilq.content.workflow.revision_binding import (
@@ -387,6 +388,7 @@ class ContentDraftRevision(BaseModel):
     official_source_references: list[ContentDraftRevisionOfficialSourceReference] = Field(
         default_factory=list
     )
+    claim_ledger: ContentClaimLedger | None = None
     proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
     correction_reason: ContentDraftRevisionCorrectionReason | None = None
     publish_ready: Literal[False] = False

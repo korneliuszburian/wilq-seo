@@ -20,6 +20,7 @@ def register_content_selected_workspace_route(router: APIRouter) -> None:
                 steps=snapshot.operator_steps,
             ),
             revision_context_current=snapshot.revision_workspace.context_current,
+            item=snapshot.preflight.item,
         )
 
     router.add_api_route(

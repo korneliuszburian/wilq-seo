@@ -5,15 +5,58 @@ from types import SimpleNamespace
 
 import wilq.content.workflow.document_lineage as lineage_module
 import wilq.content.workflow.document_workspace as workspace_module
+import wilq.content.workflow.selected_workspace as selected_workspace_module
 from wilq.content.workflow.catalog import ContentInventoryMaterialResponse
+from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.operator_steps import (
+    ContentWorkflowOperatorFacts,
+    build_content_workflow_operator_journey,
+)
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
+    ContentDraftRevisionPageAssets,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,
 )
 
 WORK_ITEM_ID = "content_work_item_bdo"
 SOURCE_URL = "https://www.ekologus.pl/bdo/"
+
+
+def _full_revision() -> ContentDraftRevision:
+    return ContentDraftRevision(
+        schema_version="wilq_content_draft_revision_v2",
+        revision_id="content_revision_bdo_full",
+        work_item_id=WORK_ITEM_ID,
+        revision_number=2,
+        content_digest="a" * 64,
+        draft_package_id="content_draft_bdo",
+        draft_package_digest="b" * 64,
+        planning_digest="c" * 64,
+        planning_input_digest="d" * 64,
+        service_card_id="ekologus_service_bdo_reporting",
+        service_digest="e" * 64,
+        inventory_digest="f" * 64,
+        final_canonical_url=SOURCE_URL,
+        title="BDO",
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="BDO",
+            meta_title="BDO dla firm",
+            meta_description="Sprawdź obowiązki BDO swojej firmy.",
+            h1="BDO dla firm",
+            lead="Sprawdź obowiązki swojej firmy.",
+        ),
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="section_bdo",
+                heading="Zakres",
+                body_markdown="Sprawdź zakres obowiązków.",
+                evidence_ids=["ev_wp_bdo"],
+            )
+        ],
+        created_by="wilku",
+        created_at=datetime.now(UTC),
+    )
 
 
 def test_document_workspace_keeps_public_source_visible_when_no_revision_exists(
@@ -82,6 +125,119 @@ def test_document_workspace_keeps_public_source_visible_when_no_revision_exists(
     assert workspace.document_lineage.knowledge_cards == []
     assert workspace.next_action.kind == "prepare_document"
     assert workspace.next_action.label == "Przygotuj nową wersję"
+
+
+def test_document_workspace_projects_claim_ledger_onto_full_revision(
+    monkeypatch,
+) -> None:
+    context = SimpleNamespace(
+        work_kind="refresh_existing",
+        service=SimpleNamespace(label="BDO i sprawozdawczość środowiskowa"),
+        source_public=SimpleNamespace(
+            url=SOURCE_URL,
+            title="BDO dla firm",
+            reason="Publiczny materiał jest dostępny.",
+            material=SimpleNamespace(evidence_ids=["ev_wp_bdo"]),
+        ),
+    )
+    material = ContentInventoryMaterialResponse(
+        status="ready",
+        url=SOURCE_URL,
+        source_kind="wordpress_rest",
+        title="BDO dla firm",
+        content_text="Aktualny materiał strony.",
+        evidence_id="ev_wp_bdo",
+    )
+    revision = _full_revision()
+    item = ContentWorkItem(
+        id=WORK_ITEM_ID,
+        topic="BDO dla firm",
+        evidence_ids=["ev_wp_bdo"],
+        source_connectors=["wordpress_ekologus"],
+    )
+    monkeypatch.setattr(workspace_module, "build_content_decision_context", lambda _id: context)
+    monkeypatch.setattr(workspace_module, "read_content_inventory_material", lambda _url: material)
+    monkeypatch.setattr(workspace_module, "_regulatory_review_candidates", lambda _revision: [])
+    monkeypatch.setattr(
+        workspace_module,
+        "content_workflow_store",
+        lambda: SimpleNamespace(
+            load_draft_revision_state=lambda _work_item_id: SimpleNamespace(
+                status="unreviewed",
+                latest_revision=revision,
+            )
+        ),
+    )
+
+    monkeypatch.setattr(
+        selected_workspace_module,
+        "build_content_document_workspace",
+        workspace_module.build_content_document_workspace,
+    )
+
+    selected = selected_workspace_module.build_content_selected_workspace(
+        WORK_ITEM_ID,
+        operator_journey=build_content_workflow_operator_journey(
+            ContentWorkflowOperatorFacts(
+                sales_brief_present=True,
+                sales_brief_signal_status="strong",
+                sales_brief_signal_reason="Źródła są gotowe.",
+                sales_brief_safe_next_step="Przejdź do planu sekcji.",
+                sales_brief_blocker=None,
+                section_map_present=True,
+                section_map_blocker=None,
+                section_map_safe_next_step="Przejdź do szkicu.",
+                structured_contract_present=True,
+                structured_contract_blocker=None,
+                structured_contract_safe_next_step="Sprawdź szkic.",
+                revision_workspace_status="unreviewed",
+            )
+        ),
+        item=item,
+    )
+
+    assert selected.status == "ready"
+    workspace = selected.workspace
+    assert workspace is not None
+    projected_revision = workspace.canonical_document.revision
+    assert projected_revision is not None
+    assert projected_revision.claim_ledger is not None
+    assert projected_revision.claim_ledger.work_item_id == WORK_ITEM_ID
+    assert projected_revision.claim_ledger.entries
+    assert projected_revision.claim_ledger.entries[0].evidence_ids == ["ev_wp_bdo"]
+    assert revision.claim_ledger is None
+
+
+def test_document_workspace_keeps_legacy_revision_without_claim_ledger() -> None:
+    revision = ContentDraftRevision(
+        revision_id="content_revision_bdo_legacy",
+        work_item_id=WORK_ITEM_ID,
+        revision_number=1,
+        content_digest="a" * 64,
+        draft_package_id="content_draft_bdo",
+        draft_package_digest="b" * 64,
+        final_canonical_url=SOURCE_URL,
+        title="BDO",
+        sections=[
+            ContentDraftRevisionSection(
+                heading="Zakres",
+                body_markdown="Sprawdź zakres obowiązków.",
+            )
+        ],
+        created_by="wilku",
+        created_at=datetime.now(UTC),
+    )
+    item = ContentWorkItem(
+        id=WORK_ITEM_ID,
+        topic="BDO dla firm",
+        evidence_ids=["ev_wp_bdo"],
+        source_connectors=["wordpress_ekologus"],
+    )
+
+    projected = workspace_module._revision_with_claim_ledger(revision, item=item)
+
+    assert projected is revision
+    assert projected.claim_ledger is None
 
 
 def test_source_snapshot_projects_api_owned_label_for_each_status() -> None:

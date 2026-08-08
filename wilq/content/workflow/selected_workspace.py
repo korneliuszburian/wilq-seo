@@ -8,6 +8,7 @@ from wilq.content.workflow.document_workspace import (
     ContentDocumentWorkspace,
     build_content_document_workspace,
 )
+from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.operator_steps import ContentWorkflowOperatorJourney
 
 
@@ -44,10 +45,12 @@ def build_content_selected_workspace(
     work_item_id: str,
     *,
     operator_journey: ContentWorkflowOperatorJourney,
+    item: ContentWorkItem | None = None,
 ) -> ContentSelectedWorkspace:
     return build_content_selected_workspace_with_context(
         work_item_id,
         operator_journey=operator_journey,
+        item=item,
     )
 
 
@@ -56,15 +59,23 @@ def build_content_selected_workspace_with_context(
     *,
     operator_journey: ContentWorkflowOperatorJourney,
     revision_context_current: bool | None = None,
+    item: ContentWorkItem | None = None,
 ) -> ContentSelectedWorkspace:
-    workspace = (
-        build_content_document_workspace(work_item_id)
-        if revision_context_current is None
-        else build_content_document_workspace(
+    if revision_context_current is None and item is None:
+        workspace = build_content_document_workspace(work_item_id)
+    elif revision_context_current is None:
+        workspace = build_content_document_workspace(work_item_id, item=item)
+    elif item is None:
+        workspace = build_content_document_workspace(
             work_item_id,
             revision_context_current=revision_context_current,
         )
-    )
+    else:
+        workspace = build_content_document_workspace(
+            work_item_id,
+            revision_context_current=revision_context_current,
+            item=item,
+        )
     if workspace is None:
         return ContentSelectedWorkspace(
             status="missing",

@@ -18,10 +18,12 @@ from wilq.content.workflow.decision_context import (
     ContentDecisionContext,
     build_content_decision_context,
 )
+from wilq.content.workflow.decision_mapping import content_claim_ledger_from_work_item
 from wilq.content.workflow.document_lineage import (
     ContentDocumentWorkspaceDocumentLineage,
     build_content_document_lineage,
 )
+from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
@@ -171,6 +173,7 @@ def build_content_document_workspace(
     work_item_id: str,
     *,
     revision_context_current: bool | None = None,
+    item: ContentWorkItem | None = None,
 ) -> ContentDocumentWorkspace | None:
     """Build a source-first workspace without planning, generation or delivery reads."""
 
@@ -184,10 +187,11 @@ def build_content_document_workspace(
     )
     source_snapshot = _source_snapshot(context, source)
     revision_state = content_workflow_store().load_draft_revision_state(work_item_id)
+    revision = _revision_with_claim_ledger(revision_state.latest_revision, item=item)
     document = _canonical_document(
         revision_state.status,
-        revision_state.latest_revision,
-            getattr(revision_state, "latest_review", None),
+        revision,
+        getattr(revision_state, "latest_review", None),
     )
     document = _document_for_current_context(
         document,
@@ -199,14 +203,14 @@ def build_content_document_workspace(
         service_label=context.service.label,
         source_snapshot=source_snapshot,
         canonical_document=document,
-        document_lineage=build_content_document_lineage(revision_state.latest_revision),
-        comparison=_comparison(source_snapshot, revision_state.latest_revision),
+        document_lineage=build_content_document_lineage(revision),
+        comparison=_comparison(source_snapshot, revision),
         next_action=_next_action(
             document,
             revision_context_current=revision_context_current,
         ),
         regulatory_review_candidates=_regulatory_review_candidates(
-            revision_state.latest_revision
+            revision
         ),
         secondary_disclosures=[
             (
@@ -218,6 +222,25 @@ def build_content_document_workspace(
                 "Gutenberga ani the_content."
             ),
         ],
+    )
+
+
+def _revision_with_claim_ledger(
+    revision: ContentDraftRevision | None,
+    *,
+    item: ContentWorkItem | None,
+) -> ContentDraftRevision | None:
+    if (
+        revision is None
+        or item is None
+        or revision.schema_version != "wilq_content_draft_revision_v2"
+        or revision.page_assets is None
+    ):
+        return revision
+    if revision.work_item_id != item.id:
+        raise ValueError("Claim ledger work item must match the exact draft revision.")
+    return revision.model_copy(
+        update={"claim_ledger": content_claim_ledger_from_work_item(item)}
     )
 
 

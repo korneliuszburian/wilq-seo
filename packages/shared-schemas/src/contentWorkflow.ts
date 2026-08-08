@@ -2790,6 +2790,7 @@ export const ContentDraftRevisionSchema = z.object({
   cta_blocks: z.array(ContentDraftRevisionCtaBlockSchema).default([]),
   internal_links: z.array(ContentDraftRevisionInternalLinkSchema).default([]),
   official_source_references: z.array(ContentDraftRevisionOfficialSourceReferenceSchema).default([]),
+  claim_ledger: ContentClaimLedgerSchema.nullable().optional(),
   proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
   correction_reason: z.enum(["canonical_html_alignment", "official_source_lineage_rebase"]).nullable().optional(),
   publish_ready: z.literal(false),

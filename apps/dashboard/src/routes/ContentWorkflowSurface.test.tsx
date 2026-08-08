@@ -723,6 +723,79 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
   });
 
+  it("shows claim evidence statuses inside the review advisory", async () => {
+    const revision: ContentDraftRevision = {
+      ...savedFullDraftRevision(),
+      claim_ledger: {
+        id: "claim_ledger_content_work_item_bdo",
+        work_item_id: "content_work_item_bdo",
+        reviewed_by: "wilku",
+        entries: [{
+          id: "claim_service_bdo",
+          claim_text: "Ekologus pomaga firmom sprawdzić obowiązki BDO.",
+          claim_type: "service_claim",
+          status: "allowed_with_evidence",
+          strength: "strong",
+          required: true,
+          evidence_ids: ["ev_wp_bdo"],
+          source_connectors: ["wordpress_ekologus"],
+          reason: "Twierdzenie ma przypisany dowód.",
+          reviewer_id: "wilku"
+        }, {
+          id: "claim_seo_result",
+          claim_text: "Odświeżenie tekstu poprawi pozycje SEO.",
+          claim_type: "seo_claim",
+          status: "blocked_until_measurement",
+          strength: "strong",
+          required: false,
+          evidence_ids: [],
+          source_connectors: ["google_search_console"],
+          reason: "Twierdzenie wymaga zakończonego pomiaru.",
+          reviewer_id: null
+        }, {
+          id: "claim_legal_review",
+          claim_text: "Każda firma musi zarejestrować się w BDO.",
+          claim_type: "legal_requirement_claim",
+          status: "needs_human_review",
+          strength: "weak",
+          required: false,
+          evidence_ids: [],
+          source_connectors: [],
+          reason: "Twierdzenie wymaga decyzji człowieka.",
+          reviewer_id: null
+        }]
+      }
+    };
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(
+      selectedWorkspace(contentDocumentWorkspace(revision))
+    );
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&view=review", defaultPendingMinMs: 0 })} client={client} />);
+
+    const ledger = await screen.findByTestId("content-claim-ledger");
+    expect(screen.getByTestId("content-review-advisory")).toContainElement(ledger);
+    expect(ledger).toHaveTextContent("Twierdzenia i dowody");
+    expect(ledger).toHaveTextContent("Ekologus pomaga firmom sprawdzić obowiązki BDO.");
+    expect(ledger).toHaveTextContent("z dowodem");
+    expect(ledger).toHaveTextContent("blokuje");
+    expect(ledger).toHaveTextContent("brak dowodu");
+    expect(ledger).toHaveTextContent("Źródła: wordpress_ekologus · Dowody: 1");
+  });
+
+  it("keeps the claim section hidden for revisions without a ledger", async () => {
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(
+      selectedWorkspace(contentDocumentWorkspace(savedFullDraftRevision()))
+    );
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&view=review", defaultPendingMinMs: 0 })} client={client} />);
+
+    await screen.findByTestId("content-review-advisory");
+    expect(screen.queryByTestId("content-claim-ledger")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Twierdzenia i dowody" })).not.toBeInTheDocument();
+  });
+
   it("downloads only the exact approved revision as a read-only HTML package", async () => {
     const revision = savedFullDraftRevision();
     const review = savedDraftRevisionReview(revision, "approved");

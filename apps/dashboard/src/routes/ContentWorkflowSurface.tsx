@@ -407,6 +407,7 @@ function ContentReviewWorkspace({
               data-testid="content-review-advisory"
             >
               <summary className="cursor-pointer font-semibold text-ink">Weryfikacja i poprawki</summary>
+              <ContentClaimLedgerPanel revision={completeRevision} />
               <ContentDocumentLineageDisclosure workspace={workspace} />
               <ContentSemanticReviewPanel
                 workItemId={workspace.work_item_id}
@@ -438,6 +439,49 @@ function ContentReviewWorkspace({
       </details>
     </main>
   );
+}
+
+function ContentClaimLedgerPanel({ revision }: { revision: ContentDraftRevision }) {
+  const ledger = revision.claim_ledger;
+  if (!ledger) return null;
+  return (
+    <section className="mt-4 rounded-xl border border-line bg-white p-4" data-testid="content-claim-ledger">
+      <h2 className="text-base font-semibold text-ink">Twierdzenia i dowody</h2>
+      <ul className="mt-3 space-y-3">
+        {ledger.entries.map((entry) => (
+          <li key={entry.id} className="rounded-lg border border-line p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p className="font-medium text-ink">{entry.claim_text}</p>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                {contentClaimStatusLabel(entry.status)}
+              </span>
+            </div>
+            <p className="mt-2 text-xs leading-5 text-slate-600">
+              Źródła: {entry.source_connectors.length > 0 ? entry.source_connectors.join(", ") : "brak"}
+              {" · "}Dowody: {entry.evidence_ids.length}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function contentClaimStatusLabel(
+  status: NonNullable<ContentDraftRevision["claim_ledger"]>["entries"][number]["status"]
+) {
+  switch (status) {
+    case "allowed_with_evidence":
+      return "z dowodem";
+    case "blocked":
+    case "blocked_until_measurement":
+      return "blokuje";
+    case "allowed_general":
+    case "needs_human_review":
+      return "brak dowodu";
+    default:
+      return status satisfies never;
+  }
 }
 
 function ContentReviewRoute({

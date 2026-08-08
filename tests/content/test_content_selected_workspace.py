@@ -9,6 +9,7 @@ from apps.api.wilq_api.routers.content_selected_workspace import (
     register_content_selected_workspace_route,
 )
 from wilq.content.workflow.document_workspace import ContentDocumentWorkspace
+from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.operator_steps import (
     ContentDraftRevisionWorkspaceStatus,
     ContentWorkflowOperatorFacts,
@@ -60,11 +61,18 @@ def test_selected_workspace_passes_current_revision_context_to_document_workspac
         next_action=type("Action", (), {"label": "Przygotuj świeżą wersję"})(),
     )
     seen: dict[str, object] = {}
+    item = ContentWorkItem(id="content_work_item_bdo", topic="BDO")
 
-    def build(work_item_id: str, *, revision_context_current: bool):
+    def build(
+        work_item_id: str,
+        *,
+        revision_context_current: bool,
+        item: ContentWorkItem,
+    ):
         seen.update(
             work_item_id=work_item_id,
             revision_context_current=revision_context_current,
+            item=item,
         )
         return expected
 
@@ -78,17 +86,20 @@ def test_selected_workspace_passes_current_revision_context_to_document_workspac
         "content_work_item_bdo",
         operator_journey=_operator_journey(),
         revision_context_current=False,
+        item=item,
     )
 
     assert response.workspace is expected
     assert seen == {
         "work_item_id": "content_work_item_bdo",
         "revision_context_current": False,
+        "item": item,
     }
 
 
 def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -> None:
     journey = _operator_journey()
+    item = ContentWorkItem(id="content_work_item_missing", topic="Brakujący temat")
     monkeypatch.setattr(
         selected_workspace_router,
         "snapshot_for_work_item_or_404",
@@ -97,6 +108,7 @@ def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -
             (),
             {
                 "revision_workspace": type("Revision", (), {"context_current": True})(),
+                "preflight": type("Preflight", (), {"item": item})(),
                 "current_step_id": journey.current_step_id,
                 "operator_steps": journey.steps,
             },
@@ -107,11 +119,13 @@ def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -
         *,
         operator_journey: ContentWorkflowOperatorJourney,
         revision_context_current: bool,
+        item: ContentWorkItem,
     ):
         return selected_workspace_module.build_content_selected_workspace_with_context(
             work_item_id,
             operator_journey=operator_journey,
             revision_context_current=revision_context_current,
+            item=item,
         )
 
     monkeypatch.setattr(
