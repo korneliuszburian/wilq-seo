@@ -46,7 +46,7 @@ from apps.api.wilq_api.routers.content_target_discovery import (
 from apps.api.wilq_api.routers.content_target_mapping import (
     register_content_target_mapping_route,
 )
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 
 ContentModelSnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]
 

@@ -13,13 +13,13 @@ from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_authoring import (
     build_content_wordpress_authoring_payload_preview,
 )
-from wilq.content.workflow.api import (
+from wilq.content.workflow.workspace.api import (
     build_content_work_item_wordpress_authoring_payload_preview_response,
 )
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
 )
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionSection,

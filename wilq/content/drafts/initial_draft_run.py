@@ -18,7 +18,7 @@ from wilq.codex.model_policy import (
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.codex.safety import assess_codex_prompt
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping

@@ -13,7 +13,7 @@ from wilq.connectors.wordpress.client import (
     WordPressDraftWriteError,
     create_wordpress_acf_draft,
 )
-from wilq.content.workflow.acf_clone_projection import (
+from wilq.content.workflow.target.acf_clone_projection import (
     ContentAcfClonePlan,
     ContentAcfCloneReplacement,
     compile_acf_clone_payload,

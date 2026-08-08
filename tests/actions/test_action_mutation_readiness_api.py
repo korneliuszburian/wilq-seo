@@ -25,13 +25,13 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftPayload,
     ContentWordPressDraftWriteAuthorization,
 )
-from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionReviewCommand,
     ContentDraftRevisionSection,
 )
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.store.store import content_workflow_store
 from wilq.schemas import (
     ActionApplyRequest,
     ActionMode,
@@ -358,7 +358,7 @@ def test_wordpress_apply_reconciliation_reads_draft_and_never_retries_write(
     assert write_attempts == []
 
     monkeypatch.setattr(
-        "wilq.content.workflow.store.WORDPRESS_APPLY_RECONCILIATION_MIN_AGE_SECONDS",
+        "wilq.content.workflow.store.store.WORDPRESS_APPLY_RECONCILIATION_MIN_AGE_SECONDS",
         0,
     )
     result = CliRunner().invoke(cli_app, cli_args)
@@ -539,7 +539,7 @@ def test_action_mutation_readiness_exposes_exact_created_draft_readback(
         )
 
     monkeypatch.setattr(
-        "wilq.content.workflow.stage_activation.read_wordpress_draft_post",
+        "wilq.content.workflow.pipeline_steps.stage_activation.read_wordpress_draft_post",
         readback,
     )
 
@@ -913,7 +913,7 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
         lambda: SimpleNamespace(),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.store.content_workflow_store",
+        "wilq.content.workflow.store.store.content_workflow_store",
         lambda: SimpleNamespace(
             load_draft_revision_state=lambda _work_item_id: SimpleNamespace(),
             load_planning_decisions=lambda _work_item_id: [],
@@ -927,7 +927,7 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
         ),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.api.build_content_work_item_diagnostics_snapshot_response_for_work_item",
+        "wilq.content.workflow.workspace.api.build_content_work_item_diagnostics_snapshot_response_for_work_item",
         lambda _diagnostics, _work_item_id, **_kwargs: snapshot,
     )
     monkeypatch.setattr(
@@ -1054,7 +1054,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
         lambda: SimpleNamespace(),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.store.content_workflow_store",
+        "wilq.content.workflow.store.store.content_workflow_store",
         lambda: SimpleNamespace(
             load_draft_revision_state=lambda _id: SimpleNamespace(),
             load_planning_decisions=lambda _id: [],
@@ -1068,7 +1068,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
         ),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.api.build_content_work_item_diagnostics_snapshot_response_for_work_item",
+        "wilq.content.workflow.workspace.api.build_content_work_item_diagnostics_snapshot_response_for_work_item",
         lambda *_args, **_kwargs: snapshot,
     )
     monkeypatch.setattr(

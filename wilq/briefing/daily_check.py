@@ -35,7 +35,7 @@ from wilq.briefing.ga4_diagnostics import (
 )
 from wilq.briefing.recommendation_log import list_recommendation_logs
 from wilq.content.enrichment.opportunity import build_content_opportunity_enrichment
-from wilq.content.workflow.queue import (
+from wilq.content.workflow.pipeline_steps.queue import (
     ContentWorkItemQueueResponse,
     build_content_work_item_queue_response,
 )

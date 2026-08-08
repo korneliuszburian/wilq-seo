@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
-from wilq.content.workflow.dev_draft_discard_action import (
+from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
     CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
 )
-from wilq.content.workflow.dev_draft_execution import CONTENT_DEV_DRAFT_MUTATION_ADAPTER
-from wilq.content.workflow.new_page_draft_action import (
+from wilq.content.workflow.target.dev_draft_execution import CONTENT_DEV_DRAFT_MUTATION_ADAPTER
+from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
 )
-from wilq.content.workflow.new_page_draft_executor import (
+from wilq.content.workflow.target.new_page_draft_executor import (
     CONTENT_NEW_PAGE_DRAFT_MUTATION_ADAPTER,
 )
 from wilq.schemas import ActionMutationApplyContract, ActionObject

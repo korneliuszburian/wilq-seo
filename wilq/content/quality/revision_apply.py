@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from wilq.content.drafts.structured_generation import StructuredDraftOutput
 from wilq.content.quality.review import ContentQualityReview
 from wilq.content.quality.revision import ContentRevisionPlan
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 
 ContentRevisionApplicationStatus = Literal["blocked", "applied"]
 ContentRevisionApplicationBlockerCode = Literal[

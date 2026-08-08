@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from wilq.content.workflow.contracts import ContentWordPressDraftReadback
-from wilq.content.workflow.stage_activation import wordpress_draft_readback
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.contracts.contracts import ContentWordPressDraftReadback
+from wilq.content.workflow.pipeline_steps.stage_activation import wordpress_draft_readback
+from wilq.content.workflow.store.store import content_workflow_store
 from wilq.schemas import ActionMutationAuditRecord, ActionObject
 
 

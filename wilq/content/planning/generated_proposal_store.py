@@ -10,7 +10,7 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.schemas import CodexRun
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path

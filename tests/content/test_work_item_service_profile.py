@@ -4,7 +4,7 @@ from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
     build_content_work_item_service_profile_context,
 )
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.schemas import MetricFact
 
 

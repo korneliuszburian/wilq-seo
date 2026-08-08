@@ -5,7 +5,7 @@ from wilq.actions.payload_readiness import (
     payload_apply_allowed,
     payload_preview_items,
 )
-from wilq.content.workflow.new_page_draft_action import (
+from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
 )
 from wilq.schemas import (

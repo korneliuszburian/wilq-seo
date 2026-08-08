@@ -3,8 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from wilq.content.handoff.html_package import build_content_revision_html_package
-from wilq.content.workflow.contracts import ContentRevisionHtmlPackageResponse
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.contracts.contracts import ContentRevisionHtmlPackageResponse
+from wilq.content.workflow.store.store import content_workflow_store
 
 
 def register_content_revision_html_package_route(

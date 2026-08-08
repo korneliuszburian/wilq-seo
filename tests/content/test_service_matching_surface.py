@@ -4,7 +4,7 @@ from wilq.content.knowledge.cards import (
     match_content_knowledge_cards,
     select_content_knowledge_service_card,
 )
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.schemas import MetricFact
 
 

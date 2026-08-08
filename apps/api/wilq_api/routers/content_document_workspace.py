@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from wilq.content.workflow.document_workspace import (
+from wilq.content.workflow.workspace.document_workspace import (
     ContentDocumentWorkspace,
     build_content_document_workspace,
 )

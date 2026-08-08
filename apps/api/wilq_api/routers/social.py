@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Query
 from fastapi.responses import JSONResponse
 
 from wilq.connectors.registry import list_connector_statuses
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.store.store import content_workflow_store
 from wilq.schemas.core import utc_now
 from wilq.social.history import (
     SocialHistoryImportAudit,

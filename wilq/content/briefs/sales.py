@@ -25,7 +25,7 @@ from wilq.content.knowledge.cards import (
 )
 from wilq.content.knowledge.source_facts import ekologus_source_fact_registry
 from wilq.content.preflight.workflow import ContentPreflightVerdict
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 
 if TYPE_CHECKING:
     from wilq.content.enrichment.opportunity import ContentOpportunityEnrichment

@@ -9,9 +9,9 @@ from wilq.content.handoff.wordpress import (
     ContentWordPressDraftHandoffBlocker,
     ContentWordPressDraftHandoffResult,
 )
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
     ContentDraftRevisionState,

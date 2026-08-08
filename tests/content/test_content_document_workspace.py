@@ -3,16 +3,16 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-import wilq.content.workflow.document_lineage as lineage_module
-import wilq.content.workflow.document_workspace as workspace_module
-import wilq.content.workflow.selected_workspace as selected_workspace_module
-from wilq.content.workflow.catalog import ContentInventoryMaterialResponse
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.operator_steps import (
+import wilq.content.workflow.workspace.document_lineage as lineage_module
+import wilq.content.workflow.workspace.document_workspace as workspace_module
+import wilq.content.workflow.workspace.selected_workspace as selected_workspace_module
+from wilq.content.workflow.workspace.catalog import ContentInventoryMaterialResponse
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.pipeline_steps.operator_steps import (
     ContentWorkflowOperatorFacts,
     build_content_workflow_operator_journey,
 )
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionReview,

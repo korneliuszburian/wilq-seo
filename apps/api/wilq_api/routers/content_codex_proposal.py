@@ -17,8 +17,8 @@ from wilq.content.drafts.codex_section_proposal_contracts import (
 from wilq.content.planning.dynamic_input import ContentPlanningInput, build_content_planning_input
 from wilq.content.planning.generated_proposal import with_explicit_content_service_selection
 from wilq.content.quality.semantic_review_store import content_semantic_review_store
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.store.store import content_workflow_store
 from wilq.storage.local_state import local_state_store
 
 ContentSnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]

@@ -11,8 +11,8 @@ from wilq.content.handoff.revision_document_renderer import (
     revision_document_markdown,
 )
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
-from wilq.content.workflow.delivery_projection import wordpress_post_content_html
-from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.workspace.delivery_projection import wordpress_post_content_html
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 
 ContentWordPressDraftExecutionMode = Literal["dry_run", "live"]
 ContentWordPressDraftExecutionStatus = Literal["dry_run_ready", "created", "blocked"]

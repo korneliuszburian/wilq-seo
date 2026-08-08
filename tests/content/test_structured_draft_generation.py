@@ -25,7 +25,7 @@ from wilq.content.enrichment.opportunity import (
 from wilq.content.inventory.records import ContentInventoryRecord, resolve_content_inventory
 from wilq.content.knowledge.cards import match_content_knowledge_cards
 from wilq.content.preflight.workflow import build_content_preflight_verdict
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 
 
 def _item(**overrides: object) -> ContentWorkItem:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from wilq.content.workflow.contracts import ContentWordPressDraftActivationPacketResponse
+from wilq.content.workflow.contracts.contracts import ContentWordPressDraftActivationPacketResponse
 from wilq.schemas import ActionObject
 
 PreviewItems = Callable[[dict[str, Any]], list[dict[str, Any]]]

@@ -5,7 +5,7 @@ from hashlib import sha256
 from types import SimpleNamespace
 from typing import Literal
 
-import wilq.content.workflow.target_discovery as discovery_module
+import wilq.content.workflow.target.target_discovery as discovery_module
 from wilq.connectors.wordpress.acf_relationship_observation import (
     WordPressAcfRelationshipObservation,
 )

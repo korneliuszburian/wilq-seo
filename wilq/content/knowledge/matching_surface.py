@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from wilq.content.knowledge.text_matching import normalize_search_text
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 
 
 class ServiceCardMatchingSource(Protocol):

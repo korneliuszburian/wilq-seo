@@ -4,11 +4,11 @@ from types import SimpleNamespace
 from typing import cast
 
 from apps.api.wilq_api.routers.content_workflow import _validate_review_evidence
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionReviewRequest,
     ContentWorkItemWorkflowSnapshotResponse,
 )
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 
 def test_revision_review_accepts_lineage_from_all_page_assets() -> None:

@@ -17,17 +17,17 @@ from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or
 from tests.content.dynamic_planning_test_support import configure_planning_harness
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
 from wilq.content.drafts.package import ContentDraftPackage
-from wilq.content.workflow.contracts import ContentWorkItemStructuredDraftGenerationRequest
-from wilq.content.workflow.queue import build_content_work_item_queue_response
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.contracts.contracts import ContentWorkItemStructuredDraftGenerationRequest
+from wilq.content.workflow.pipeline_steps.queue import build_content_work_item_queue_response
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionReviewCommand,
     content_draft_package_digest,
 )
-from wilq.content.workflow.stage_drafts import (
+from wilq.content.workflow.pipeline_steps.stage_drafts import (
     build_content_work_item_structured_draft_generation_response,
 )
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.store.store import content_workflow_store
 from wilq.schemas import (
     ActionMode,
     ActionObject,

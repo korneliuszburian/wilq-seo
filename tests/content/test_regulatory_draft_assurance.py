@@ -25,8 +25,8 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     regulatory_requirement_assertion_errors,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.revisions import ContentDraftRevisionPageAssets
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import ContentDraftRevisionPageAssets
 from wilq.schemas import CodexRun
 
 

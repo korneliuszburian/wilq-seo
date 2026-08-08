@@ -3,18 +3,18 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from wilq.actions.service import clear_action_list_cache
-from wilq.content.workflow.dev_draft_action import (
+from wilq.content.workflow.target.dev_draft_action import (
     ContentTargetDraftActionCommand,
     create_content_target_draft_action,
     persist_content_target_draft_action,
 )
-from wilq.content.workflow.revisions import ContentDraftRevision
-from wilq.content.workflow.store import ContentWorkflowStore, content_workflow_store
-from wilq.content.workflow.target_discovery import (
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
+from wilq.content.workflow.target.target_discovery import (
     ContentTargetDiscovery,
     build_content_target_discovery,
 )
-from wilq.content.workflow.target_mapping import (
+from wilq.content.workflow.target.target_mapping import (
     ContentTargetDraftPreview,
     ContentTargetMappingConfirmation,
     ContentTargetMappingConfirmationCommand,

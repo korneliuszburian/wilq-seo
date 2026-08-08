@@ -6,7 +6,7 @@ from wilq.actions.wordpress_mutation_requirements import (
     wordpress_draft_write_readiness,
     wordpress_draft_write_readiness_requirements,
 )
-from wilq.content.workflow.contracts import ContentWordPressDraftWriteReadinessResponse
+from wilq.content.workflow.contracts.contracts import ContentWordPressDraftWriteReadinessResponse
 from wilq.schemas import ActionMode, ActionMutationReadinessBlocker, ActionObject
 
 
@@ -90,11 +90,11 @@ def test_wordpress_activation_packet_reuses_cached_diagnostics(monkeypatch) -> N
         lambda **_: (_ for _ in ()).throw(AssertionError("uncached diagnostics build")),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.api.build_content_work_item_diagnostics_snapshot_response",
+        "wilq.content.workflow.workspace.api.build_content_work_item_diagnostics_snapshot_response",
         lambda diagnostics: snapshot if diagnostics is sentinel else None,
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.api.build_content_wordpress_draft_activation_packet_response",
+        "wilq.content.workflow.workspace.api.build_content_wordpress_draft_activation_packet_response",
         lambda selected_snapshot, *, action_id: (selected_snapshot, action_id),
     )
 

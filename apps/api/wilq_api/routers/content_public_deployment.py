@@ -16,13 +16,13 @@ from wilq.content.measurement.window import (
     ContentMeasurementWindow,
     content_measurement_window_outcome_allowed,
 )
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentPublicDeploymentConfirmationResponse,
     ContentPublicDeploymentReadResponse,
 )
-from wilq.content.workflow.revisions import ContentDraftRevision
-from wilq.content.workflow.store import content_workflow_store
-from wilq.content.workflow.store_public_deployment import (
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.store.store import content_workflow_store
+from wilq.content.workflow.store.store_public_deployment import (
     public_deployment,
     save_public_deployment,
 )

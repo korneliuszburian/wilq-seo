@@ -16,7 +16,7 @@ from wilq.content.knowledge.service_profile import (
     content_service_profile_response,
 )
 from wilq.content.knowledge.source_facts import ContentKnowledgeLifecycleStatus
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 
 ContentWorkItemServiceProfileBindingStatus = Literal["not_evaluated", "bound", "unbound"]
 ContentWorkItemServiceProfileDecisionStatus = Literal[

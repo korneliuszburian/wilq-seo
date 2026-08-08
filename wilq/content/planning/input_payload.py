@@ -19,8 +19,8 @@ from wilq.content.planning.input_sources import (
 )
 from wilq.content.planning.internal_link_candidates import ContentPlanningInternalLinkCandidate
 from wilq.content.regulatory.policy import ContentRegulatoryCoverage
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 
 def refresh_planning_payload(

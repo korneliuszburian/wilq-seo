@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from wilq.content.workflow.planning import ContentPlanningSection
-from wilq.content.workflow.revisions import ContentDraftRevisionSection
+from wilq.content.workflow.decisions.planning import ContentPlanningSection
+from wilq.content.workflow.documents.revisions import ContentDraftRevisionSection
 
 
 def draftable_planning_sections(

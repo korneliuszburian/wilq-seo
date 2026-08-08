@@ -9,7 +9,7 @@ from urllib.parse import unquote, urlparse
 from wilq.content.canonical.metric_dimensions import metric_dimensions_match_landing
 from wilq.content.canonical.urls import content_decision_url_semantics
 from wilq.content.inventory.gates import content_inventory_gate_status
-from wilq.content.workflow.demand_evidence import content_query_is_planning_signal
+from wilq.content.workflow.decisions.demand_evidence import content_query_is_planning_signal
 from wilq.schemas import (
     ActionRisk,
     ContentDecisionItem,

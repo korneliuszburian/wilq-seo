@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 
 from apps.api.wilq_api.routers import content_snapshot
 from wilq.content.canonical.redacted_landing import build_redacted_landing_reference
-from wilq.content.workflow.ads_demand_source import content_diagnostics_with_ads_refresh
+from wilq.content.workflow.decisions.ads_demand_source import content_diagnostics_with_ads_refresh
 from wilq.schemas import (
     ConnectorRefreshMode,
     ConnectorRefreshRun,

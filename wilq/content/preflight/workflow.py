@@ -8,7 +8,7 @@ from wilq.content.inventory.records import (
     ContentInventoryResolution,
     ContentInventoryResolutionStatus,
 )
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 
 ContentPreflightVerdictStatus = Literal[
     "blocked",

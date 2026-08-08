@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from wilq.content.workflow.models import ContentMeasurementWindowStatus
+from wilq.content.workflow.contracts.models import ContentMeasurementWindowStatus
 
 ContentMeasurementMetric = Literal[
     "gsc_clicks",

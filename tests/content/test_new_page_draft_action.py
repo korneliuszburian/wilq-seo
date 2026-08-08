@@ -11,16 +11,16 @@ from wilq.actions.mutation_contract import (
 )
 from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import get_action
-from wilq.content.workflow.new_page_apply_capability import new_page_apply_binding
-from wilq.content.workflow.new_page_document import ContentNewPageDeliveryReadiness
-from wilq.content.workflow.new_page_draft_action import (
+from wilq.content.workflow.target.new_page_apply_capability import new_page_apply_binding
+from wilq.content.workflow.target.new_page_document import ContentNewPageDeliveryReadiness
+from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
     ContentNewPageDraftActionCommand,
     create_new_page_draft_action,
     load_new_page_draft_action,
     persist_new_page_draft_action,
 )
-from wilq.content.workflow.new_page_draft_payload import (
+from wilq.content.workflow.target.new_page_draft_payload import (
     build_new_page_dev_draft_write_payload,
 )
 from wilq.schemas import (

@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 from wilq.social.history import SocialHistoryInventory
 
 SocialReusePlatform = Literal["linkedin", "facebook"]

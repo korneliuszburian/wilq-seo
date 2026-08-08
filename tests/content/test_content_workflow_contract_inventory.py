@@ -27,11 +27,11 @@ from wilq.content.regulatory.source_reviews import (
     ContentRegulatorySourceReviewList,
 )
 from wilq.content.regulatory.source_snapshots import ContentRegulatorySourceSnapshotReadResponse
-from wilq.content.workflow.api import (
+from wilq.content.workflow.workspace.api import (
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
 )
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionReviewResponse,
     ContentDraftRevisionSaveResponse,
     ContentEditorialIntegrityReport,
@@ -40,20 +40,20 @@ from wilq.content.workflow.contracts import (
     ContentRevisionHtmlPackageResponse,
     ContentWorkItemLearningProposalResponse,
 )
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.new_page import (
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.target.new_page import (
     ContentNewPageBriefWorkspace,
     ContentNewPageFoundationResult,
 )
-from wilq.content.workflow.new_page_document import (
+from wilq.content.workflow.target.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     ContentNewPageDeliveryReadiness,
 )
-from wilq.content.workflow.new_page_revision import ContentNewPageRevisionReviewResponse
-from wilq.content.workflow.new_page_topics import ContentNewPageTopicRecommendations
-from wilq.content.workflow.selected_workspace import ContentSelectedWorkspace
-from wilq.content.workflow.target_discovery import ContentTargetDiscovery
-from wilq.content.workflow.target_mapping import (
+from wilq.content.workflow.target.new_page_revision import ContentNewPageRevisionReviewResponse
+from wilq.content.workflow.target.new_page_topics import ContentNewPageTopicRecommendations
+from wilq.content.workflow.workspace.selected_workspace import ContentSelectedWorkspace
+from wilq.content.workflow.target.target_discovery import ContentTargetDiscovery
+from wilq.content.workflow.target.target_mapping import (
     ContentTargetDraftPreview,
     ContentTargetMappingConfirmationResult,
     ContentTargetMappingPreview,

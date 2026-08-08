@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 
 def regulatory_section_repair_modes(

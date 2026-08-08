@@ -9,7 +9,7 @@ import pytest
 from typer.testing import CliRunner
 
 from wilq.cli import app as cli_app
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.storage.local_state import LocalStateStore
 from wilq.storage.metric_store import DuckDbMetricStore
 from wilq.storage.recovery import (

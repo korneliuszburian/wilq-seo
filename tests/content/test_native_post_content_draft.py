@@ -1,13 +1,14 @@
 from datetime import UTC, datetime
 
-from wilq.content.workflow import dev_draft_action, dev_draft_execution
-from wilq.content.workflow.revisions import (
+import wilq.content.workflow.target.dev_draft_action as dev_draft_action
+import wilq.content.workflow.target.dev_draft_execution as dev_draft_execution
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,
 )
-from wilq.content.workflow.target_discovery import (
+from wilq.content.workflow.target.target_discovery import (
     ContentTargetAuthoringLayout,
     ContentTargetAuthoringSurface,
     ContentTargetContract,
@@ -15,7 +16,7 @@ from wilq.content.workflow.target_discovery import (
     ContentTargetDiscoveryTarget,
     ContentTargetObservationEvidence,
 )
-from wilq.content.workflow.target_mapping import (
+from wilq.content.workflow.target.target_mapping import (
     ContentTargetMappingConfirmationCommand,
     ContentTargetMappingFieldBinding,
     ContentTargetMappingSelection,

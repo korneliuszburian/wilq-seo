@@ -15,7 +15,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirementCoverage,
     ContentRegulatoryReviewCandidate,
 )
-from wilq.content.workflow.demand_evidence import ContentSearchDemandRow
+from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandRow
 
 
 class ContentPlanningInputSummary(BaseModel):

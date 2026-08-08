@@ -5,17 +5,17 @@ from collections.abc import Callable
 from fastapi import APIRouter
 
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
-from wilq.content.workflow.api import (
+from wilq.content.workflow.workspace.api import (
     build_content_wordpress_draft_activation_packet_response,
     build_content_wordpress_draft_write_readiness_response,
 )
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.store.store import content_workflow_store
 
 ContentSnapshot = (
     ContentWorkItemBrowserWorkflowSnapshotResponse | ContentWorkItemWorkflowSnapshotResponse

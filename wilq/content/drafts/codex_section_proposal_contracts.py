@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.quality.review import ContentQualityReview
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 ContentCodexSectionProposalStatus = Literal[
     "created",

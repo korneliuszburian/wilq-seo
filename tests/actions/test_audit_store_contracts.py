@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from wilq.actions import audit_store
-from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.schemas import (
     ActionMutationAuditRecord,
     ActionObject,

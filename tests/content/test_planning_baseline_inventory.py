@@ -4,7 +4,7 @@ from wilq.content.briefs.sales import (
     ContentSalesBriefOperationsContext,
     ContentSalesBriefSignalQuality,
 )
-from wilq.content.workflow.planning import _baseline_inventory_disposition
+from wilq.content.workflow.decisions.planning import _baseline_inventory_disposition
 
 
 def _brief(mode: str) -> ContentSalesBrief:

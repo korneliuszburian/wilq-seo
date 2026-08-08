@@ -11,7 +11,7 @@ from apps.api.wilq_api.routers import content_snapshot
 from apps.api.wilq_api.routers.content_workflow_http import (
     project_content_work_item_browser_snapshot,
 )
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentWorkItemBrowserWorkflowSnapshotResponse,
 )
 

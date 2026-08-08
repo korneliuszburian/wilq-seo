@@ -12,8 +12,9 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionResult,
     ContentWordPressDraftPayload,
 )
-from wilq.content.workflow import dev_draft_execution, stage_activation
-from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
+import wilq.content.workflow.pipeline_steps.stage_activation as stage_activation
+import wilq.content.workflow.target.dev_draft_execution as dev_draft_execution
+from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 
 
 def _wordpress_env(monkeypatch: pytest.MonkeyPatch) -> None:

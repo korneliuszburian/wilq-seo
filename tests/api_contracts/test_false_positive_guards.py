@@ -15,7 +15,7 @@ from wilq.content.enrichment.opportunity import (
     ContentOpportunityMeasurementBaseline,
     build_content_opportunity_enrichment,
 )
-from wilq.content.workflow.queue import (
+from wilq.content.workflow.pipeline_steps.queue import (
     ContentWorkItemQueueBlocker,
     ContentWorkItemQueueCandidate,
     ContentWorkItemQueueResponse,

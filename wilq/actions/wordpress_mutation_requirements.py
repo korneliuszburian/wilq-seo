@@ -16,14 +16,14 @@ from wilq.content.handoff.wordpress_execution import (
 )
 from wilq.content.planning.generated_proposal import read_content_planning_proposal
 from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
 )
-from wilq.content.workflow.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
-from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
-from wilq.content.workflow.stage_write_readiness import (
+from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.pipeline_steps.stage_write_readiness import (
     wordpress_draft_binding_from_audit_event,
     wordpress_draft_write_authorization_verified,
 )
@@ -78,10 +78,10 @@ def wordpress_draft_apply_capability(
         ]
 
     from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
-    from wilq.content.workflow.api import (
+    from wilq.content.workflow.workspace.api import (
         build_content_work_item_diagnostics_snapshot_response_for_work_item,
     )
-    from wilq.content.workflow.store import content_workflow_store
+    from wilq.content.workflow.store.store import content_workflow_store
 
     diagnostics = build_content_diagnostics_cached()
     workflow_store = content_workflow_store()
@@ -417,13 +417,13 @@ def execute_supported_wordpress_mutation_adapter(
     wordpress_capability: WordPressDraftApplyCapability | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     if mutation_adapter == "content_dev_draft_discard_execution_boundary":
-        from wilq.content.workflow.dev_draft_discard_action import (
+        from wilq.content.workflow.target.dev_draft_discard_action import (
             execute_content_dev_draft_discard_action,
         )
 
         return execute_content_dev_draft_discard_action(action)
     if mutation_adapter == "content_dev_draft_execution_boundary":
-        from wilq.content.workflow.dev_draft_execution import (
+        from wilq.content.workflow.target.dev_draft_execution import (
             execute_content_target_draft_action,
         )
 
@@ -470,7 +470,7 @@ def wordpress_draft_write_readiness(
 ) -> ContentWordPressDraftWriteReadinessResponse | None:
     if action.id != "act_apply_wordpress_draft_handoff":
         return None
-    from wilq.content.workflow.api import build_content_wordpress_draft_write_readiness_response
+    from wilq.content.workflow.workspace.api import build_content_wordpress_draft_write_readiness_response
 
     return build_content_wordpress_draft_write_readiness_response(action_id=action.id)
 
@@ -481,11 +481,11 @@ def wordpress_draft_activation_packet(
     if action.id != "act_apply_wordpress_draft_handoff":
         return None
     from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
-    from wilq.content.workflow.api import (
+    from wilq.content.workflow.workspace.api import (
         build_content_wordpress_draft_activation_packet_response,
         build_content_work_item_diagnostics_snapshot_response,
     )
-    from wilq.content.workflow.store import content_workflow_store
+    from wilq.content.workflow.store.store import content_workflow_store
 
     diagnostics = build_content_diagnostics_cached()
     initial_snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
@@ -644,7 +644,7 @@ def wordpress_draft_write_readiness_requirements(
         return []
     readiness = wordpress_draft_readiness
     if readiness is None:
-        from wilq.content.workflow.api import build_content_wordpress_draft_write_readiness_response
+        from wilq.content.workflow.workspace.api import build_content_wordpress_draft_write_readiness_response
 
         readiness = build_content_wordpress_draft_write_readiness_response(action_id=action.id)
     authorization_ready = readiness.suggested_write_authorization is not None

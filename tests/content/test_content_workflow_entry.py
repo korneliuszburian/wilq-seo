@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import wilq.content.workflow.entry as entry_module
+import wilq.content.workflow.pipeline_steps.entry as entry_module
 
 
 def _candidate(

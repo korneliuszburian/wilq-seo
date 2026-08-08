@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from wilq.connectors.wordpress.client import WordPressDraftDiscardReadback
-from wilq.content.workflow import dev_draft_discard_action
+import wilq.content.workflow.target.dev_draft_discard_action as dev_draft_discard_action
 from wilq.schemas import ActionMode, ActionObject, ActionRisk, ActionStatus, OpportunityDomain
 
 

@@ -6,15 +6,15 @@ import httpx
 import pytest
 
 from wilq.connectors.wordpress.client import WordPressCredentials, WordPressDraftWriteError
-from wilq.content.workflow.new_page_document import ContentNewPageDeliveryReadiness
-from wilq.content.workflow.new_page_draft_action import (
+from wilq.content.workflow.target.new_page_document import ContentNewPageDeliveryReadiness
+from wilq.content.workflow.target.new_page_draft_action import (
     ContentNewPageDraftActionCommand,
     create_new_page_draft_action,
 )
-from wilq.content.workflow.new_page_draft_execution import create_new_page_dev_draft
-from wilq.content.workflow.new_page_draft_executor import execute_new_page_draft_action
-from wilq.content.workflow.new_page_draft_payload import ContentNewPageDevDraftWritePayload
-from wilq.content.workflow.new_page_revision_binding import ContentNewPageDraftBinding
+from wilq.content.workflow.target.new_page_draft_execution import create_new_page_dev_draft
+from wilq.content.workflow.target.new_page_draft_executor import execute_new_page_draft_action
+from wilq.content.workflow.target.new_page_draft_payload import ContentNewPageDevDraftWritePayload
+from wilq.content.workflow.target.new_page_revision_binding import ContentNewPageDraftBinding
 
 
 def _payload() -> ContentNewPageDevDraftWritePayload:
@@ -39,7 +39,7 @@ def _payload() -> ContentNewPageDevDraftWritePayload:
 
 def test_new_page_execution_writes_only_one_authorized_dev_page_draft(monkeypatch) -> None:
     monkeypatch.setattr(
-        "wilq.content.workflow.new_page_draft_execution._wordpress_credentials",
+        "wilq.content.workflow.target.new_page_draft_execution._wordpress_credentials",
         lambda connector_id: WordPressCredentials(
             base_url="https://ekologus.dev.proudsite.pl/",
             public_url=None,
@@ -49,7 +49,7 @@ def test_new_page_execution_writes_only_one_authorized_dev_page_draft(monkeypatc
         ),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.new_page_draft_execution._missing_credentials",
+        "wilq.content.workflow.target.new_page_draft_execution._missing_credentials",
         lambda connector_id, credentials: [],
     )
     seen: list[httpx.Request] = []
@@ -108,7 +108,7 @@ def test_new_page_executor_stops_before_store_or_transport_when_env_is_disabled(
         ),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.new_page_draft_executor._dev_draft_writes_enabled",
+        "wilq.content.workflow.target.new_page_draft_executor._dev_draft_writes_enabled",
         lambda: False,
     )
 

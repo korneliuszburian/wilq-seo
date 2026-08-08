@@ -13,7 +13,7 @@ from wilq.content.claims.ledger import (
     publish_ready_claims,
 )
 from wilq.content.preflight.workflow import ContentPreflightVerdict
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 
 ContentDraftPackageBlockerCode = Literal[
     "preflight_not_draft_allowed",

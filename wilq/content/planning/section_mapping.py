@@ -11,7 +11,7 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelSection,
 )
 from wilq.content.planning.input_sources import ContentPlanningInventorySection
-from wilq.content.workflow.planning import (
+from wilq.content.workflow.decisions.planning import (
     ContentPlanningInventoryMapping,
     ContentPlanningProposal,
     ContentPlanningSection,

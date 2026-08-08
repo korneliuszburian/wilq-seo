@@ -38,7 +38,7 @@ from wilq.content.knowledge.source_facts import (
     ContentSourceFactRegistry,
     ekologus_source_fact_registry,
 )
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.evidence.registry import (
     SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID,
     get_evidence,

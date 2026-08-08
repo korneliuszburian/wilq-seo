@@ -20,8 +20,8 @@ from wilq.content.claims.ledger import (
 )
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.workflow.models import ContentWorkItem, content_workflow_blockers
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.contracts.models import ContentWorkItem, content_workflow_blockers
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 StructuredDraftGenerationBlockerCode = Literal[
     "missing_evidence",

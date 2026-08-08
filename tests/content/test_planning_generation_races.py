@@ -39,7 +39,7 @@ from wilq.content.planning.generation_claim_store import (
     PlanningGenerationClaim,
 )
 from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
-from wilq.content.workflow.catalog import inventory_work_item_id
+from wilq.content.workflow.workspace.catalog import inventory_work_item_id
 
 BDO_WORK_ITEM_ID = inventory_work_item_id(
     "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"

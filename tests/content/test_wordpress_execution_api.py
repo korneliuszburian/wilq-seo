@@ -17,13 +17,13 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftWriteAuthorization,
     execute_content_wordpress_draft_handoff,
 )
-from wilq.content.workflow.api import (
+from wilq.content.workflow.workspace.api import (
     build_content_wordpress_draft_activation_packet_response,
     build_content_wordpress_draft_write_readiness_response,
     build_content_work_item_wordpress_draft_execution_response,
 )
-from wilq.content.workflow.contracts import ContentWorkItemWordPressDraftExecutionRequest
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWordPressDraftExecutionRequest
+from wilq.content.workflow.store.store import content_workflow_store
 from wilq.schemas import AuditEvent
 from wilq.storage.local_state import local_state_store
 
@@ -393,7 +393,7 @@ def test_wordpress_execution_api_rejects_persisted_prepare_authorization(
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_write.sqlite3"))
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
     monkeypatch.setattr(
-        "wilq.content.workflow.api.execute_content_wordpress_draft_handoff",
+        "wilq.content.workflow.workspace.api.execute_content_wordpress_draft_handoff",
         capture_execution,
     )
     _persist_write_authorization_events()

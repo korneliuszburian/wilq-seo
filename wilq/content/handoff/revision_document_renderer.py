@@ -5,7 +5,7 @@ from typing import cast
 from markdown_it import MarkdownIt
 
 from wilq.content.canonical.urls import content_is_safe_public_url
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 _WORDPRESS_MARKDOWN = MarkdownIt("commonmark", {"html": False, "linkify": False})
 

@@ -15,7 +15,7 @@ from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sect
 from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 
 class _RegulatorySectionPatch(BaseModel):

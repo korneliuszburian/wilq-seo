@@ -18,8 +18,8 @@ from wilq.content.planning.generated_proposal_contracts import (
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.input_sources import ContentPlanningSourceAssessment
-from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
-from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
+from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal, ContentPlanningSection
 from wilq.schemas import CodexRun
 
 

@@ -13,14 +13,14 @@ from apps.api.wilq_api.routers.content_workflow import (
     _validate_canonical_html_alignment,
     _validate_revision_sections,
 )
-from wilq.content.workflow.content_html import content_html_from_markdown
-from wilq.content.workflow.contracts import ContentDraftRevisionSaveRequest
-from wilq.content.workflow.revision_children import build_child_draft_revision_command
-from wilq.content.workflow.revision_persistence import (
+from wilq.content.workflow.documents.content_html import content_html_from_markdown
+from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
+from wilq.content.workflow.documents.revision_children import build_child_draft_revision_command
+from wilq.content.workflow.documents.revision_persistence import (
     build_stored_draft_revision,
     draft_revision_content_digest,
 )
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionPageAssets,
@@ -28,7 +28,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionSection,
     ContentDraftRevisionSourceProvenance,
 )
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.store.store import ContentWorkflowStore
 
 
 def _command(

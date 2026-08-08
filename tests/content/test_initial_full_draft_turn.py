@@ -12,8 +12,8 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryDocumentAssertion,
     ContentRegulatoryRequirement,
 )
-from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 
 def _approved_access_fact() -> ContentSourceFact:

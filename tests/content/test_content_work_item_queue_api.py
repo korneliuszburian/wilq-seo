@@ -9,8 +9,8 @@ from wilq.briefing.content_diagnostics import (
 )
 from wilq.briefing.tactical_queue import build_gsc_content_tactical_items
 from wilq.connectors.vendor import VendorMetricFact
-from wilq.content.workflow import api as workflow_api
-from wilq.content.workflow.queue import (
+import wilq.content.workflow.workspace.api as workflow_api
+from wilq.content.workflow.pipeline_steps.queue import (
     build_content_work_item_queue_candidate,
     build_content_work_item_queue_response,
 )
@@ -101,7 +101,7 @@ def test_queue_can_include_selected_inventory_work_item_not_in_recommendation_qu
         next_step="Przejdź do planu odświeżenia.",
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.queue.inventory_decision_for_work_item",
+        "wilq.content.workflow.pipeline_steps.queue.inventory_decision_for_work_item",
         lambda work_item_id, **_kwargs: selected_decision if work_item_id == inventory_id else None,
     )
     diagnostics = ContentDiagnosticsResponse.model_construct(

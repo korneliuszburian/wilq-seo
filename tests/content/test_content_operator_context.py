@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers.content_workflow import router
-from wilq.content.workflow.operator import ContentOperatorContext, content_operator_context
+from wilq.content.workflow.pipeline_steps.operator import ContentOperatorContext, content_operator_context
 
 
 def test_content_operator_context_is_deterministic_read_only_route_metadata() -> None:

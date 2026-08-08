@@ -26,13 +26,13 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
-from wilq.content.workflow.new_page import (
+from wilq.content.workflow.target.new_page import (
     ContentNewPageBrief,
     ContentNewPageOverlapGuard,
     ContentNewPagePlanningFoundation,
     build_new_page_document_identity,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal, ContentPlanningSection
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore

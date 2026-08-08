@@ -2,8 +2,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from wilq.content.workflow.new_page import ContentNewPageBriefInput, build_new_page_brief
-from wilq.content.workflow.new_page_topics import (
+from wilq.content.workflow.target.new_page import ContentNewPageBriefInput, build_new_page_brief
+from wilq.content.workflow.target.new_page_topics import (
     build_new_page_topic_recommendations,
     resolve_new_page_topic_candidate,
 )

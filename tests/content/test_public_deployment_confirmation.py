@@ -12,9 +12,9 @@ from wilq.content.measurement.deployment import (
     ContentPublicDeploymentConfirmationCommand,
     confirm_public_deployment,
 )
-from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
-from wilq.content.workflow.store import content_workflow_store
-from wilq.content.workflow.store_public_deployment import (
+from wilq.content.workflow.documents.revisions import ContentDraftRevision, ContentDraftRevisionReview
+from wilq.content.workflow.store.store import content_workflow_store
+from wilq.content.workflow.store.store_public_deployment import (
     public_deployment,
     save_public_deployment,
 )

@@ -4,13 +4,13 @@ from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
 import apps.api.wilq_api.routers.content_selected_workspace as selected_workspace_router
-import wilq.content.workflow.selected_workspace as selected_workspace_module
+import wilq.content.workflow.workspace.selected_workspace as selected_workspace_module
 from apps.api.wilq_api.routers.content_selected_workspace import (
     register_content_selected_workspace_route,
 )
-from wilq.content.workflow.document_workspace import ContentDocumentWorkspace
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.operator_steps import (
+from wilq.content.workflow.workspace.document_workspace import ContentDocumentWorkspace
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.pipeline_steps.operator_steps import (
     ContentDraftRevisionWorkspaceStatus,
     ContentWorkflowOperatorFacts,
     ContentWorkflowOperatorJourney,

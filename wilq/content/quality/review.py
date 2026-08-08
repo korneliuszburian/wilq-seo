@@ -13,8 +13,8 @@ from wilq.content.claims.ledger import (
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.drafts.structured_generation import StructuredDraftOutput
 from wilq.content.inventory.records import ContentInventoryDuplicateRisk
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 ContentQualityVerdict = Literal[
     "blocked",

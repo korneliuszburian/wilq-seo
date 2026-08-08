@@ -18,7 +18,7 @@ from wilq.content.planning.new_page_proposal import (
     generate_new_page_planning_proposal,
     queue_new_page_planning_proposal,
 )
-from wilq.content.workflow.new_page import (
+from wilq.content.workflow.target.new_page import (
     ContentNewPageBrief,
     ContentNewPageBriefInput,
     ContentNewPageFoundationCommand,

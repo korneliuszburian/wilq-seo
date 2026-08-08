@@ -1,4 +1,4 @@
-from wilq.content.workflow.query_section_intent import assign_query_to_sections
+from wilq.content.workflow.decisions.query_section_intent import assign_query_to_sections
 
 
 def test_intent_assignment_separates_definition_applicability_and_obligations() -> None:

@@ -18,12 +18,12 @@ from wilq.content.knowledge.work_item_service_profile import (
 )
 from wilq.content.planning import input_sources
 from wilq.content.planning.dynamic_input import build_content_planning_input_from_components
-from wilq.content.workflow.demand_evidence import (
+from wilq.content.workflow.decisions.demand_evidence import (
     ContentSearchDemandEvidence,
     ContentSearchDemandRow,
 )
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.schemas import ContentFreshnessAssessment, Evidence, FreshnessState, MetricFact
 
 PAGE = "https://www.ekologus.pl/usluga/"

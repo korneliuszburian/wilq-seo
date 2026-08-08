@@ -9,7 +9,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     regulatory_requirement_assertion_errors,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 
 def document_scope_errors(

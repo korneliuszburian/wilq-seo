@@ -29,13 +29,13 @@ from wilq.content.planning.new_page_proposal import (
     queue_new_page_planning_proposal,
     terminalize_new_page_planning_claim,
 )
-from wilq.content.workflow.catalog import build_content_inventory_catalog_cached
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.workspace.catalog import build_content_inventory_catalog_cached
+from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
     ContentDraftRevisionPublicConflictCode,
     ContentDraftRevisionReviewRequest,
 )
-from wilq.content.workflow.new_page import (
+from wilq.content.workflow.target.new_page import (
     ContentNewPageBrief,
     ContentNewPageBriefInput,
     ContentNewPageBriefWorkspace,
@@ -47,31 +47,31 @@ from wilq.content.workflow.new_page import (
     build_new_page_planning_foundation,
     new_page_service_card,
 )
-from wilq.content.workflow.new_page_document import (
+from wilq.content.workflow.target.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     ContentNewPageDeliveryReadiness,
     ContentNewPageDocumentReviewPrerequisiteConflict,
     build_new_page_canonical_document_workspace,
     build_new_page_delivery_readiness,
 )
-from wilq.content.workflow.new_page_draft_action import (
+from wilq.content.workflow.target.new_page_draft_action import (
     ContentNewPageDraftActionCommand,
     create_new_page_draft_action,
     persist_new_page_draft_action,
 )
-from wilq.content.workflow.new_page_initial_draft import generate_new_page_initial_draft
-from wilq.content.workflow.new_page_revision import (
+from wilq.content.workflow.target.new_page_initial_draft import generate_new_page_initial_draft
+from wilq.content.workflow.target.new_page_revision import (
     ContentNewPageRevisionReviewResponse,
     review_new_page_revision,
 )
-from wilq.content.workflow.new_page_topics import (
+from wilq.content.workflow.target.new_page_topics import (
     ContentNewPageTopicRecommendations,
     build_new_page_topic_recommendations,
     resolve_new_page_topic_candidate,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.store import content_workflow_store
-from wilq.content.workflow.store_new_page import new_page_brief_store
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.store.store import content_workflow_store
+from wilq.content.workflow.store.store_new_page import new_page_brief_store
 from wilq.schemas import ActionObject
 from wilq.storage.local_state import local_state_store
 

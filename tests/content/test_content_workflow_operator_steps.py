@@ -8,8 +8,8 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
-from wilq.content.workflow.operator_steps import (
+from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.pipeline_steps.operator_steps import (
     CONTENT_WORKFLOW_OPERATOR_STEP_ORDER,
     ContentDraftRevisionWorkspaceStatus,
     ContentWorkflowOperatorFacts,
@@ -19,7 +19,7 @@ from wilq.content.workflow.operator_steps import (
     ContentWorkflowSalesBriefSignalStatus,
     build_content_workflow_operator_journey,
 )
-from wilq.content.workflow.planning import (
+from wilq.content.workflow.decisions.planning import (
     ContentPlanningDecision,
     ContentPlanningProposal,
     ContentPlanningSection,

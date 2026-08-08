@@ -50,7 +50,7 @@ from wilq.actions.service_profile import (
 from wilq.actions.social import social_draft_input_preview_cards
 from wilq.actions.wordpress_preview import wordpress_draft_handoff_preview_cards
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
-from wilq.content.workflow.dev_draft_discard_action import (
+from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
     content_dev_draft_discard_preview_cards,
 )

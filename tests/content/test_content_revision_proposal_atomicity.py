@@ -6,14 +6,14 @@ from pathlib import Path
 import pytest
 
 from wilq.content.drafts.initial_draft_run import initial_draft_context_digest
-from wilq.content.workflow.codex_revision_commit import current_initial_draft_context_guard
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.codex_revision_commit import current_initial_draft_context_guard
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionProposalSectionLineage,
     ContentDraftRevisionSection,
 )
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore

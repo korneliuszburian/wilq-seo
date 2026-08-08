@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
-from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
-from wilq.content.workflow.target_discovery import (
+from wilq.content.workflow.documents.revisions import ContentDraftRevision, ContentDraftRevisionReview
+from wilq.content.workflow.target.target_discovery import (
     ContentTargetAuthoringLayout,
     ContentTargetAuthoringSurface,
     ContentTargetContract,
@@ -9,7 +9,7 @@ from wilq.content.workflow.target_discovery import (
     ContentTargetDiscoveryTarget,
     ContentTargetObservationEvidence,
 )
-from wilq.content.workflow.target_mapping import build_content_target_mapping_preview
+from wilq.content.workflow.target.target_mapping import build_content_target_mapping_preview
 
 
 def test_observed_acf_without_an_exact_write_profile_cannot_reach_mapping() -> None:

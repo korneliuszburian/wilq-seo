@@ -11,12 +11,12 @@ from pydantic import ValidationError
 
 from apps.api.wilq_api.routers import content_workflow as content_workflow_router
 from apps.api.wilq_api.routers.content_workflow import _revision_conflict_response
-from wilq.content.workflow.codex_revision_commit import (
+from wilq.content.workflow.documents.codex_revision_commit import (
     ContentDraftRevisionContext,
     current_editor_draft_context_guard,
 )
-from wilq.content.workflow.contracts import ContentDraftRevisionSaveRequest
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionReviewCommand,
@@ -24,7 +24,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionState,
     ContentDraftRevisionWriteResult,
 )
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.store.store import ContentWorkflowStore
 
 
 def test_draft_revisions_remain_append_only_and_queryable_after_reopen(

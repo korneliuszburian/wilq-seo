@@ -45,8 +45,8 @@ from wilq.content.quality.semantic_review_turn import (
     semantic_review_output_schema,
     semantic_review_turn_request,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import ContentDraftRevision, ContentDraftRevisionSection
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore, local_state_store
 

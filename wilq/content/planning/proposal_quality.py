@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_contracts import ContentPlanningModelOutput
 from wilq.content.planning.section_mapping import build_inventory_mapping
-from wilq.content.workflow.planning import (
+from wilq.content.workflow.decisions.planning import (
     ContentPlanningInventoryMapping,
     ContentPlanningProposal,
 )

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from wilq.content.workflow.target_discovery import (
+from wilq.content.workflow.target.target_discovery import (
     ContentTargetAuthoringLayout,
     ContentTargetAuthoringSurface,
     ContentTargetContract,
     ContentTargetObservationEvidence,
 )
-from wilq.content.workflow.target_mapping import (
+from wilq.content.workflow.target.target_mapping import (
     ContentTargetMappingComponent,
     ContentTargetMappingConfirmationCommand,
     ContentTargetMappingFieldBinding,

@@ -13,9 +13,9 @@ from wilq.content.planning.internal_link_candidates import (
     load_content_internal_link_candidates,
 )
 from wilq.content.regulatory.policy import ContentRegulatoryCoverage
-from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.schemas import MetricFact
 from wilq.storage.metric_store import DuckDbMetricStore
 

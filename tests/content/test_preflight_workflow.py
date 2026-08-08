@@ -4,7 +4,7 @@ from _marketer_language import assert_marketer_text_has_no_workflow_jargon
 
 from wilq.content.inventory.records import ContentInventoryRecord, resolve_content_inventory
 from wilq.content.preflight.workflow import build_content_preflight_verdict
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 
 
 def _item(**overrides: object) -> ContentWorkItem:

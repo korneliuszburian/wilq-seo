@@ -35,16 +35,16 @@ from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
     content_planning_proposal_store,
 )
-from wilq.content.workflow.codex_revision_commit import current_initial_draft_context_guard
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.codex_revision_commit import current_initial_draft_context_guard
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionWriteResult,
     content_draft_package_digest,
 )
-from wilq.content.workflow.store import ContentWorkflowStore, content_workflow_store
+from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import local_state_store

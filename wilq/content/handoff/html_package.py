@@ -4,11 +4,11 @@ import json
 from html import escape
 
 from wilq.content.handoff.revision_document_renderer import revision_document_html
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentRevisionHtmlPackageManifest,
     ContentRevisionHtmlPackageResponse,
 )
-from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionReview
+from wilq.content.workflow.documents.revisions import ContentDraftRevision, ContentDraftRevisionReview
 
 _DELIVERY_CAVEAT = (
     "To jest materiał do odbioru zatwierdzonej treści. "

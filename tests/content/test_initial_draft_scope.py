@@ -38,8 +38,8 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryDocumentAssertion,
     ContentRegulatoryRequirement,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
-from wilq.content.workflow.revisions import ContentDraftRevisionPageAssets
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal, ContentPlanningSection
+from wilq.content.workflow.documents.revisions import ContentDraftRevisionPageAssets
 
 
 @pytest.mark.parametrize(

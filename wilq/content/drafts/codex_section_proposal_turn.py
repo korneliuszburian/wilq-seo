@@ -6,8 +6,8 @@ from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 _INSTRUCTION = (
     "Przygotuj po polsku roboczą propozycję zmian wyłącznie dla sekcji wskazanych "

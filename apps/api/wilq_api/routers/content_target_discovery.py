@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from wilq.content.workflow.target_discovery import (
+from wilq.content.workflow.target.target_discovery import (
     ContentTargetDiscovery,
     build_content_target_discovery,
 )

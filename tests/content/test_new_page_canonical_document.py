@@ -9,27 +9,27 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
 )
-from wilq.content.workflow.contracts import ContentDraftRevisionReviewRequest
-from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
-from wilq.content.workflow.new_page import (
+from wilq.content.workflow.contracts.contracts import ContentDraftRevisionReviewRequest
+from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.target.new_page import (
     ContentNewPageBriefInput,
     ContentNewPagePlanningFoundation,
     build_new_page_brief,
     build_new_page_document_identity,
 )
-from wilq.content.workflow.new_page_document import (
+from wilq.content.workflow.target.new_page_document import (
     ContentNewPageCanonicalDocumentWorkspace,
     ContentNewPageDeliveryReadiness,
     build_new_page_canonical_document_workspace,
     build_new_page_delivery_readiness,
 )
-from wilq.content.workflow.new_page_initial_draft import generate_new_page_initial_draft
-from wilq.content.workflow.new_page_revision import (
+from wilq.content.workflow.target.new_page_initial_draft import generate_new_page_initial_draft
+from wilq.content.workflow.target.new_page_revision import (
     append_new_page_initial_revision,
     review_new_page_revision,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore

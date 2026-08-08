@@ -7,8 +7,8 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import social as social_router
-from wilq.content.workflow.revisions import ContentDraftRevision
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.social.history import (
     audit_social_history_metadata_payload,
     build_social_history_inventory,

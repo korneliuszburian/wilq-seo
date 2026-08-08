@@ -20,7 +20,7 @@ from wilq.connectors.localo.oauth import (
 from wilq.connectors.refresh import run_connector_refresh
 from wilq.connectors.registry import list_connector_statuses
 from wilq.connectors.wordpress.client import WordPressDraftReadError, read_wordpress_draft_post
-from wilq.content.workflow.store import (
+from wilq.content.workflow.store.store import (
     WordPressRevisionApplyClaimFinalStatus,
     content_workflow_store,
 )

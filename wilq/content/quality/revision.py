@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.quality.review import ContentQualityReview, ContentRevisionInstruction
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 
 ContentRevisionPlanStatus = Literal["blocked", "ready", "no_changes_needed"]
 ContentRevisionPlanBlockerCode = Literal[

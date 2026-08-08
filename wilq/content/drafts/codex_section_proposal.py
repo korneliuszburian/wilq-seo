@@ -45,15 +45,15 @@ from wilq.content.drafts.structured_generation import (
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.review import ContentQualityReview, build_content_quality_review
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.revision_children import build_child_draft_revision_command
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.documents.revision_children import build_child_draft_revision_command
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionProposalCtaLineage,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionProposalSectionLineage,
 )
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore

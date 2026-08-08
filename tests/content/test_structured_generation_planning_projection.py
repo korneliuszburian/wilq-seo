@@ -3,7 +3,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationInput,
     contract_for_planning_proposal,
 )
-from wilq.content.workflow.planning import (
+from wilq.content.workflow.decisions.planning import (
     ContentPlanningPageAssets,
     ContentPlanningProposal,
     ContentPlanningSection,

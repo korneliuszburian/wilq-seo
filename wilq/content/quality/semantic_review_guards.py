@@ -7,8 +7,8 @@ from wilq.content.drafts.initial_full_draft_scope import (
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.semantic_review_contracts import ContentSemanticDimension
-from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 _SEMANTIC_STOPWORDS = frozenset(
     {

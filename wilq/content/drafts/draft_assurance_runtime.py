@@ -27,7 +27,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryProfile,
     regulatory_draft_assurance_constraints,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore

@@ -53,9 +53,9 @@ from wilq.content.planning.dynamic_input import (
 from wilq.content.planning.generated_proposal import (
     with_explicit_content_service_selection,
 )
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionWriteResult,
     content_draft_package_digest,

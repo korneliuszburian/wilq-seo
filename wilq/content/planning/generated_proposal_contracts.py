@@ -10,7 +10,7 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInputSummary,
 )
 from wilq.content.regulatory.policy import regulatory_requirement_assertion_errors
-from wilq.content.workflow.planning import (
+from wilq.content.workflow.decisions.planning import (
     ContentPlanningConditionalHypothesis,
     ContentPlanningCtaBlock,
     ContentPlanningFaqItem,

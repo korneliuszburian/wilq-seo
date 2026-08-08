@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
 
 from wilq.content.quality.editorial_integrity import build_content_editorial_integrity_report
-from wilq.content.workflow.content_html import content_html_from_markdown
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.content_html import content_html_from_markdown
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,

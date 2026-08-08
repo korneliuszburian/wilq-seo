@@ -7,17 +7,17 @@ from fastapi.responses import JSONResponse
 
 from wilq.content.planning.dynamic_input import build_content_planning_input
 from wilq.content.planning.generated_proposal import with_explicit_content_service_selection
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
     ContentDraftRevisionPublicConflictCode,
     ContentDraftRevisionSaveResponse,
     ContentOfficialSourceLineageRebaseRequest,
     ContentWorkItemWorkflowSnapshotResponse,
 )
-from wilq.content.workflow.official_source_lineage import (
+from wilq.content.workflow.documents.official_source_lineage import (
     build_official_source_lineage_rebase_command,
 )
-from wilq.content.workflow.official_source_lineage_store import (
+from wilq.content.workflow.documents.official_source_lineage_store import (
     content_official_source_lineage_store,
 )
 

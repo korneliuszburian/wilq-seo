@@ -1,6 +1,6 @@
 import pytest
 
-from wilq.content.workflow.delivery_projection import wordpress_post_content_html
+from wilq.content.workflow.workspace.delivery_projection import wordpress_post_content_html
 
 
 def test_wordpress_post_content_rejects_document_without_leading_h1() -> None:

@@ -12,9 +12,9 @@ from wilq.content.review.human import (
     content_human_review_allows_wordpress_handoff,
     content_human_review_blockers,
 )
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
-from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.documents.revisions import ContentDraftRevision, ContentDraftRevisionSection
 
 ContentWordPressDraftActor = Literal["wilku", "system", "codex"]
 ContentWordPressDraftHandoffStatus = Literal["prepared"]

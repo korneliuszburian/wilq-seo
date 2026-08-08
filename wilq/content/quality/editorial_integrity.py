@@ -6,7 +6,7 @@ from hashlib import sha256
 from html.parser import HTMLParser
 from typing import Literal
 
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentEditorialIntegrityHumanReview,
     ContentEditorialIntegrityReport,
     ContentEditorialIntegrityRevision,
@@ -16,7 +16,7 @@ from wilq.content.workflow.contracts import (
     ContentProtectedContentUnit,
     ContentRepresentationAlignment,
 )
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,

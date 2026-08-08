@@ -3,10 +3,10 @@ from types import SimpleNamespace
 
 import httpx
 
-import wilq.content.workflow.catalog as catalog_module
+import wilq.content.workflow.workspace.catalog as catalog_module
 from wilq.connectors.wordpress.client import WordPressCredentials, read_wordpress_content_material
 from wilq.content.planning.decisions import content_decision_work_item_id_for_url
-from wilq.content.workflow.catalog import (
+from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
     bind_content_inventory_item,
@@ -14,7 +14,7 @@ from wilq.content.workflow.catalog import (
     inventory_metric_facts,
     inventory_work_item_id,
 )
-from wilq.content.workflow.inventory_binding import inventory_decision_for_work_item
+from wilq.content.workflow.decisions.inventory_binding import inventory_decision_for_work_item
 from wilq.schemas import MetricFact
 
 
@@ -48,7 +48,7 @@ def test_inventory_catalog_deduplicates_urls_and_keeps_acf_headings(monkeypatch)
         SimpleNamespace(name="clicks", dimensions={"content_url": "https://ignored"}),
     ]
     monkeypatch.setattr(
-        "wilq.content.workflow.catalog.metric_store",
+        "wilq.content.workflow.workspace.catalog.metric_store",
         lambda: SimpleNamespace(
             list_metric_facts=lambda *_args, **_kwargs: rows
         ),
@@ -83,7 +83,7 @@ def test_inventory_catalog_excludes_non_public_hosts(monkeypatch):
         ),
     ]
     monkeypatch.setattr(
-        "wilq.content.workflow.catalog.metric_store",
+        "wilq.content.workflow.workspace.catalog.metric_store",
         lambda: SimpleNamespace(list_metric_facts=lambda *_args, **_kwargs: rows),
     )
 
@@ -590,7 +590,7 @@ def test_inventory_binding_is_stable_and_evidence_bound(monkeypatch):
         collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.catalog.metric_store",
+        "wilq.content.workflow.workspace.catalog.metric_store",
         lambda: SimpleNamespace(
             list_metric_facts=lambda *_args, **_kwargs: [row],
             list_metric_facts_for_content_url=lambda *_args, **_kwargs: [],
@@ -615,14 +615,14 @@ def test_inventory_binding_resolves_public_material_for_url_only_row(monkeypatch
         collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.catalog.metric_store",
+        "wilq.content.workflow.workspace.catalog.metric_store",
         lambda: SimpleNamespace(
             list_metric_facts=lambda *_args, **_kwargs: [row],
             list_metric_facts_for_content_url=lambda *_args, **_kwargs: [],
         ),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.catalog.read_content_inventory_material",
+        "wilq.content.workflow.workspace.catalog.read_content_inventory_material",
         lambda _url, *, catalog: SimpleNamespace(
             status="ready",
             content_text="pełny materiał",
@@ -670,15 +670,15 @@ def test_inventory_decision_reuses_the_current_catalog_for_material_read(monkeyp
 
     seen_catalogs = []
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",
+        "wilq.content.workflow.decisions.inventory_binding.build_content_inventory_catalog",
         catalog_reader,
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.inventory_metric_facts",
+        "wilq.content.workflow.decisions.inventory_binding.inventory_metric_facts",
         lambda *_args, **_kwargs: [],
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.read_content_inventory_material",
+        "wilq.content.workflow.decisions.inventory_binding.read_content_inventory_material",
         lambda _url, *, catalog: seen_catalogs.append(catalog) or SimpleNamespace(
             status="blocked",
             content_text=None,
@@ -718,11 +718,11 @@ def test_inventory_decision_resolves_the_canonical_diagnostics_work_item_id(
         collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",
+        "wilq.content.workflow.decisions.inventory_binding.build_content_inventory_catalog",
         lambda: ContentInventoryCatalogResponse(total_count=1, items=[item]),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.inventory_metric_facts",
+        "wilq.content.workflow.decisions.inventory_binding.inventory_metric_facts",
         lambda *_args, **_kwargs: [],
     )
 
@@ -755,11 +755,11 @@ def test_inventory_decision_retains_exact_ga4_landing_facts_for_planning(monkeyp
         collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",
+        "wilq.content.workflow.decisions.inventory_binding.build_content_inventory_catalog",
         lambda: ContentInventoryCatalogResponse(total_count=1, items=[item]),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.inventory_metric_facts",
+        "wilq.content.workflow.decisions.inventory_binding.inventory_metric_facts",
         lambda *_args, **_kwargs: [
             MetricFact(
                 name="clicks",
@@ -880,15 +880,15 @@ def test_inventory_decision_metadata_only_skips_live_material(monkeypatch):
         collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",
+        "wilq.content.workflow.decisions.inventory_binding.build_content_inventory_catalog",
         lambda: ContentInventoryCatalogResponse(total_count=1, items=[item]),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.inventory_metric_facts",
+        "wilq.content.workflow.decisions.inventory_binding.inventory_metric_facts",
         lambda *_args, **_kwargs: [],
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.read_content_inventory_material",
+        "wilq.content.workflow.decisions.inventory_binding.read_content_inventory_material",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("metadata-only decision must not read live material")
         ),
@@ -920,15 +920,15 @@ def test_inventory_decision_keeps_rest_bound_acf_only_material_visible(monkeypat
         collected_at=datetime(2026, 7, 17, tzinfo=UTC),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.build_content_inventory_catalog",
+        "wilq.content.workflow.decisions.inventory_binding.build_content_inventory_catalog",
         lambda: ContentInventoryCatalogResponse(total_count=1, items=[item]),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.inventory_metric_facts",
+        "wilq.content.workflow.decisions.inventory_binding.inventory_metric_facts",
         lambda *_args, **_kwargs: [],
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.inventory_binding.read_content_inventory_material",
+        "wilq.content.workflow.decisions.inventory_binding.read_content_inventory_material",
         lambda _url, *, catalog: SimpleNamespace(
             status="ready",
             content_text="",

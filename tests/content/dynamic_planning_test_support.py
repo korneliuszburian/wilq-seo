@@ -22,10 +22,10 @@ from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
 )
 from wilq.content.regulatory import policy as regulatory_policy
-from wilq.content.workflow import api as workflow_api
-from wilq.content.workflow import catalog as inventory_catalog
-from wilq.content.workflow import inventory_binding
-from wilq.content.workflow.catalog import (
+import wilq.content.workflow.workspace.api as workflow_api
+import wilq.content.workflow.workspace.catalog as inventory_catalog
+import wilq.content.workflow.decisions.inventory_binding as inventory_binding
+from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
     ContentInventoryCoverage,

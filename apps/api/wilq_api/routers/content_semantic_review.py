@@ -35,9 +35,9 @@ from wilq.content.quality.semantic_run_state import (
     effective_deadline,
     transition_codex_run_if_status,
 )
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.revisions import ContentDraftRevision
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.store.store import content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore, local_state_store

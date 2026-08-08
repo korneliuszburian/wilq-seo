@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionSection,
 )
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.store.store import ContentWorkflowStore
 
 
 def _command(

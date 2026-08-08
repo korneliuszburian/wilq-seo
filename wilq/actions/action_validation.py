@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.registry import get_connector_status
-from wilq.content.workflow.new_page_draft_action import (
+from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
 )
 from wilq.schemas import (

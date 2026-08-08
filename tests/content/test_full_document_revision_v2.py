@@ -22,18 +22,18 @@ from wilq.content.handoff.wordpress_execution import (
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.workflow.contracts import ContentDraftRevisionSaveRequest
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.new_page import ContentNewPageDocumentIdentity
-from wilq.content.workflow.official_source_lineage import (
+from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.target.new_page import ContentNewPageDocumentIdentity
+from wilq.content.workflow.documents.official_source_lineage import (
     build_official_source_lineage_rebase_command,
 )
-from wilq.content.workflow.official_source_lineage_store import (
+from wilq.content.workflow.documents.official_source_lineage_store import (
     ContentOfficialSourceLineageStore,
 )
-from wilq.content.workflow.revision_children import build_child_draft_revision_command
-from wilq.content.workflow.revision_persistence import draft_revision_content_digest
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.revision_children import build_child_draft_revision_command
+from wilq.content.workflow.documents.revision_persistence import draft_revision_content_digest
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionOfficialSourceReference,
@@ -42,7 +42,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionReviewCommand,
     content_draft_package_digest,
 )
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.store.store import ContentWorkflowStore
 
 
 def test_full_document_v2_round_trips_and_renders_without_losing_assets(
@@ -270,7 +270,7 @@ def test_official_source_lineage_rebase_appends_an_exact_bdo_like_child(
         regulatory_requirement_ids=["bdo_reporting"],
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.official_source_lineage.official_source_references_for_planning_input",
+        "wilq.content.workflow.documents.official_source_lineage.official_source_references_for_planning_input",
         lambda _input: [reference],
     )
     planning_input = ContentPlanningInput.model_construct(

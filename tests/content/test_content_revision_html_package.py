@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_revision_html_package
 from wilq.content.handoff.html_package import build_content_revision_html_package
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionPageAssets,

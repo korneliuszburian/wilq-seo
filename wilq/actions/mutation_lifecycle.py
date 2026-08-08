@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from wilq.actions.wordpress_draft_readback import last_created_wordpress_draft_readback
-from wilq.content.workflow.contracts import ContentWordPressDraftActivationPacketResponse
+from wilq.content.workflow.contracts.contracts import ContentWordPressDraftActivationPacketResponse
 from wilq.schemas import (
     ActionMutationAuditRecord,
     ActionMutationReadinessBlocker,

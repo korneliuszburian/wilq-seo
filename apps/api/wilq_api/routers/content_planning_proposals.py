@@ -39,8 +39,8 @@ from wilq.content.planning.generation_claim_store import (
     content_planning_generation_claim_store,
 )
 from wilq.content.planning.runtime_contract import planning_codex_timeout_seconds
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.store.store import content_workflow_store
 from wilq.storage.local_state import local_state_store
 
 ContentPlanningSnapshotLoader = Callable[

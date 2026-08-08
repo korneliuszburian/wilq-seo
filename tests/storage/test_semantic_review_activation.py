@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from wilq.content.workflow.store import ContentWorkflowStore
+from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.storage.local_state import LocalStateStore
 from wilq.storage.metric_store import DuckDbMetricStore
 from wilq.storage.recovery import storage_proof

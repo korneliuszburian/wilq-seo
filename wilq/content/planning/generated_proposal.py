@@ -49,8 +49,8 @@ from wilq.content.planning.section_mapping import (
     build_inventory_mapping,
     canonicalize_model_inventory_headings,
 )
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.planning import (
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.decisions.planning import (
     ContentPlanningDecision,
     ContentPlanningInventoryMapping,
     ContentPlanningProposal,

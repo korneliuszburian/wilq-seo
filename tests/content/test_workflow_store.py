@@ -6,8 +6,8 @@ from pathlib import Path
 
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.review.human import ContentHumanReview
-from wilq.content.workflow import store as workflow_store_module
-from wilq.content.workflow.store import ContentWorkflowStore
+import wilq.content.workflow.store.store as workflow_store_module
+from wilq.content.workflow.store.store import ContentWorkflowStore
 
 
 def test_content_workflow_store_persists_human_review(tmp_path: Path) -> None:

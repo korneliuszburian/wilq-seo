@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 from wilq.content.canonical.redacted_landing import build_redacted_landing_reference
 from wilq.content.drafts.package import ContentDraftPackage, ContentDraftSection
-from wilq.content.workflow.demand_evidence import (
+from wilq.content.workflow.decisions.demand_evidence import (
     ContentSearchDemandEvidence,
     build_content_search_demand_evidence,
 )

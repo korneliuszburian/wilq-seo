@@ -19,8 +19,8 @@ from wilq.content.handoff.wordpress_execution import (
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.review.human import ContentHumanReview
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionSection,

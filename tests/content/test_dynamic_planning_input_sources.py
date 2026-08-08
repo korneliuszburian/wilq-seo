@@ -38,12 +38,12 @@ from wilq.content.planning.input_sources import (
     build_source_facts,
     usable_query_portfolio,
 )
-from wilq.content.workflow.demand_evidence import (
+from wilq.content.workflow.decisions.demand_evidence import (
     ContentSearchDemandEvidence,
     ContentSearchDemandRow,
 )
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.schemas import (
     ConnectorCoveredWindow,
     ConnectorQualityState,

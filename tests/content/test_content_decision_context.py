@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-import wilq.content.workflow.decision_context as decision_context_module
+import wilq.content.workflow.pipeline_steps.decision_context as decision_context_module
 from apps.api.wilq_api.routers import content_decision_context as decision_context_route
-from wilq.content.workflow.catalog import (
+from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
     ContentInventoryMaterialResponse,

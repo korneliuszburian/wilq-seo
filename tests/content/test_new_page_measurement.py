@@ -7,11 +7,11 @@ import pytest
 
 from apps.api.wilq_api.routers import content_workflow as workflow_router
 from wilq.content.measurement.deployment import ContentPublicDeployment
-from wilq.content.workflow.contracts import ContentWorkItemMeasurementCommand
-from wilq.content.workflow.new_page import ContentNewPageDocumentIdentity
-from wilq.content.workflow.revisions import ContentDraftRevision
-from wilq.content.workflow.store import content_workflow_store
-from wilq.content.workflow.store_public_deployment import save_public_deployment
+from wilq.content.workflow.contracts.contracts import ContentWorkItemMeasurementCommand
+from wilq.content.workflow.target.new_page import ContentNewPageDocumentIdentity
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.store.store import content_workflow_store
+from wilq.content.workflow.store.store_public_deployment import save_public_deployment
 from wilq.schemas import MetricFact
 
 

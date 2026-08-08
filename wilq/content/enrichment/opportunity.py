@@ -9,8 +9,8 @@ from wilq.content.canonical.urls import (
     content_normalized_path,
     content_url_host,
 )
-from wilq.content.workflow.decision_mapping import content_work_item_from_decision
-from wilq.content.workflow.queue import (
+from wilq.content.workflow.decisions.decision_mapping import content_work_item_from_decision
+from wilq.content.workflow.pipeline_steps.queue import (
     ContentQueueRecommendedMode,
     ContentWorkItemQueueCandidate,
     ContentWorkItemQueueResponse,
@@ -116,7 +116,7 @@ def build_content_opportunity_enrichment_response(
         # diagnostics decision ID. Resolve that alias through the same
         # evidence-bound inventory seam used by the workflow snapshot instead
         # of making the browser lose its selected page at enrichment time.
-        from wilq.content.workflow.inventory_binding import (
+        from wilq.content.workflow.decisions.inventory_binding import (
             inventory_decision_for_work_item,
         )
 

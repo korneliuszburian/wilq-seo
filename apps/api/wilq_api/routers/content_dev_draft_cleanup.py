@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from wilq.actions.service import clear_action_list_cache
-from wilq.content.workflow.dev_draft_discard_action import (
+from wilq.content.workflow.target.dev_draft_discard_action import (
     ContentDevDraftDiscardActionCommand,
     create_content_dev_draft_discard_action,
     persist_content_dev_draft_discard_action,

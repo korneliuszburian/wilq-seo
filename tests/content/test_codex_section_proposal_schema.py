@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from wilq.content.drafts.codex_section_proposal_schema import _section_schema_for_heading
-from wilq.content.workflow.revisions import ContentDraftRevisionSection
+from wilq.content.workflow.documents.revisions import ContentDraftRevisionSection
 
 
 def test_selected_section_schema_allows_only_claims_grounded_in_its_evidence() -> None:

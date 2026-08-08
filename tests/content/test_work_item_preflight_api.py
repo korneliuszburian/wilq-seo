@@ -17,26 +17,26 @@ from wilq.content.knowledge.cards import (
     ContentKnowledgeCardMatch,
     ekologus_seed_content_knowledge_cards,
 )
-from wilq.content.workflow.api import (
+from wilq.content.workflow.workspace.api import (
     build_content_work_item_diagnostics_snapshot_response,
     build_content_work_item_snapshot_audit_response,
     build_content_work_item_snapshot_human_review_response,
 )
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemPreflightRequest,
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
     ContentWorkItemWordPressDraftHandoffRequest,
 )
-from wilq.content.workflow.stage_preparation import (
+from wilq.content.workflow.pipeline_steps.stage_preparation import (
     build_content_work_item_preflight_response,
 )
-from wilq.content.workflow.stage_review import (
+from wilq.content.workflow.pipeline_steps.stage_review import (
     build_content_work_item_human_review_response,
     build_content_work_item_wordpress_draft_handoff_response,
 )
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.store.store import content_workflow_store
 
 
 def _item(**overrides: object) -> dict[str, object]:

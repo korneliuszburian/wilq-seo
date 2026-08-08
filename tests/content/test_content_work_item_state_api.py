@@ -7,7 +7,7 @@ from apps.api.wilq_api.routers.content_snapshot import (
     snapshot_for_work_item_or_blocked_or_404,
 )
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
-from wilq.content.workflow.queue import build_content_work_item_queue_response
+from wilq.content.workflow.pipeline_steps.queue import build_content_work_item_queue_response
 
 
 def test_blocked_queue_item_returns_typed_blocked_snapshot_without_fake_workflow(

@@ -27,8 +27,8 @@ from wilq.content.regulatory.policy import (
     regulatory_content_coverage,
     regulatory_coverage_gap,
 )
-from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
-from wilq.content.workflow.new_page import (
+from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.target.new_page import (
     ContentNewPageBrief,
     ContentNewPageOverlapGuard,
     ContentNewPagePlanningFoundation,

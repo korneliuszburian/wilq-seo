@@ -17,7 +17,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     ContentRegulatoryRequirementCoverage,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 
 def _planning_input() -> ContentPlanningInput:

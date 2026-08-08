@@ -20,7 +20,7 @@ from wilq.content.drafts.initial_full_draft_turn import (
 from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory.policy import ContentRegulatoryRequirement
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 
 def repair_regulatory_assertions(

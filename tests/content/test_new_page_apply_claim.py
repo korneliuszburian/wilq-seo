@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from wilq.content.workflow.new_page_revision_binding import ContentNewPageDraftBinding
-from wilq.content.workflow.store_new_page_apply import NewPageApplyClaimStore
+from wilq.content.workflow.target.new_page_revision_binding import ContentNewPageDraftBinding
+from wilq.content.workflow.store.store_new_page_apply import NewPageApplyClaimStore
 from wilq.schemas import ActionApplyRequest, ActionMutationAuditRecord, AuditEvent
 
 
@@ -45,11 +45,11 @@ def test_new_page_claim_finalization_is_atomic_and_idempotent(monkeypatch, tmp_p
         revision_digest=binding.revision_digest,
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.store_new_page_apply.latest_draft_revision",
+        "wilq.content.workflow.store.store_new_page_apply.latest_draft_revision",
         lambda connection, work_item_id: revision,
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.store_new_page_apply.latest_draft_revision_review",
+        "wilq.content.workflow.store.store_new_page_apply.latest_draft_revision_review",
         lambda connection, revision_id: review,
     )
     store = NewPageApplyClaimStore(tmp_path / "claims.sqlite3")

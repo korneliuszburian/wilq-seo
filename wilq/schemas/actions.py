@@ -5,8 +5,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from wilq.content.workflow.new_page_revision_binding import ContentNewPageDraftBinding
-from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.target.new_page_revision_binding import ContentNewPageDraftBinding
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.operator_labels import blocker_count_label, impact_comparison_summary_label
 
 from .core import ActionMode, ActionRisk, ActionStatus, MetricFact, OpportunityDomain, utc_now

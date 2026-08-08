@@ -24,12 +24,12 @@ from wilq.content.planning.dynamic_input import (
 from wilq.content.planning.generated_proposal import (
     with_explicit_content_service_selection,
 )
-from wilq.content.workflow.codex_revision_commit import (
+from wilq.content.workflow.documents.codex_revision_commit import (
     ContentDraftRevisionContext,
     current_editor_draft_context_guard,
 )
-from wilq.content.workflow.content_html import content_html_from_markdown
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.documents.content_html import content_html_from_markdown
+from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
     ContentDraftRevisionPublicConflictCode,
     ContentDraftRevisionReviewRequest,
@@ -44,13 +44,13 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
-from wilq.content.workflow.entry import (
+from wilq.content.workflow.pipeline_steps.entry import (
     ContentWorkflowEntryResponse,
     build_content_workflow_entry,
 )
-from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.planning import ContentPlanningWorkspace
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.decisions.planning import ContentPlanningWorkspace
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionConflict,
@@ -58,11 +58,11 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionSection,
     content_draft_package_digest,
 )
-from wilq.content.workflow.stage_measurement import (
+from wilq.content.workflow.pipeline_steps.stage_measurement import (
     build_content_work_item_learning_proposal_response,
     build_content_work_item_measurement_outcome_response,
 )
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.store.store import content_workflow_store
 
 router = APIRouter()
 
@@ -331,7 +331,7 @@ def content_work_item_measurement_window(
         load_content_measurement_facts,
     )
     from wilq.content.measurement.window import content_measurement_window_outcome_blockers
-    from wilq.content.workflow.store_public_deployment import public_deployment
+    from wilq.content.workflow.store.store_public_deployment import public_deployment
 
     store = content_workflow_store()
     revision = next(

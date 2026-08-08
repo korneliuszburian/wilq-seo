@@ -18,7 +18,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryProfile,
     ContentRegulatoryRequirement,
 )
-from wilq.content.workflow.new_page import (
+from wilq.content.workflow.target.new_page import (
     ContentNewPageBrief,
     ContentNewPageBriefInput,
     ContentNewPageFoundationCommand,

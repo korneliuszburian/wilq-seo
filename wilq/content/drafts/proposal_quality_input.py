@@ -10,8 +10,8 @@ from wilq.content.drafts.structured_generation import (
 )
 from wilq.content.inventory.records import ContentInventoryDuplicateRisk
 from wilq.content.quality.review import ContentQualityReview
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 
 def persisted_selected_sections_quality_input(

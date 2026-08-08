@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentStructuredGenerationReadiness,
     ContentStructuredGenerationReadinessBlocker,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 
 _BROWSER_METRIC_FACT_LIMIT = 12
 

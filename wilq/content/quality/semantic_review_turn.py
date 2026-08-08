@@ -11,8 +11,8 @@ from wilq.content.quality.semantic_review_contracts import (
     CONTENT_SEMANTIC_DIMENSIONS,
     ContentSemanticReviewModelOutput,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 _INSTRUCTION = (
     "Wykonaj po polsku advisory semantic review dokładnej rewizji strony. "

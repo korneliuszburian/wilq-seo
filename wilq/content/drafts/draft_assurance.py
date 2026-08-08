@@ -25,7 +25,7 @@ from wilq.content.regulatory.policy import (
     regulatory_content_profile,
     regulatory_draft_assurance_constraints,
 )
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 ContentDraftAssuranceStatus = Literal["passed", "failed", "not_applicable"]
 ContentDraftAssuranceCheckStatus = Literal["pass", "fail"]

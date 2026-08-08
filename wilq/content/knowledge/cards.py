@@ -21,7 +21,7 @@ from wilq.content.knowledge.text_matching import (
     normalize_search_text,
     normalized_term_matches,
 )
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID
 
 ContentKnowledgeCardType = Literal[

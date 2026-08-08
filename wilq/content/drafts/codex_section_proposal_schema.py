@@ -5,7 +5,7 @@ from copy import deepcopy
 from typing import cast
 
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionCtaBlock,
     ContentDraftRevisionSection,

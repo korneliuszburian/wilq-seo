@@ -18,8 +18,8 @@ from wilq.content.planning.proposal_quality import (
     proposal_quality_errors,
     remapped_proposal_projection,
 )
-from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 
 def read_content_planning_proposal(

@@ -8,7 +8,7 @@ from apps.api.wilq_api.main import app
 from tests.content.test_new_page_draft_action import _command, _ready_readiness
 from wilq.actions import apply_lifecycle
 from wilq.actions import service as action_service
-from wilq.content.workflow.new_page_draft_action import (
+from wilq.content.workflow.target.new_page_draft_action import (
     create_new_page_draft_action,
     persist_new_page_draft_action,
 )

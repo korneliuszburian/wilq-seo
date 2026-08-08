@@ -19,14 +19,14 @@ from tests.content.test_work_item_preflight_api import (
     _post_wordpress_handoff,
     _sales_brief_seed,
 )
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemSalesBriefRequest,
 )
-from wilq.content.workflow.stage_drafts import (
+from wilq.content.workflow.pipeline_steps.stage_drafts import (
     build_content_work_item_draft_package_response,
 )
-from wilq.content.workflow.stage_preparation import (
+from wilq.content.workflow.pipeline_steps.stage_preparation import (
     build_content_work_item_sales_brief_response,
 )
 

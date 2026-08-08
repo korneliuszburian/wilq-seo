@@ -467,7 +467,7 @@ def test_queue_persists_proposal_evidence_ids(tmp_path, monkeypatch) -> None:
 def test_expired_initial_draft_cannot_complete_atomic_append(tmp_path) -> None:
     import pytest
 
-    from wilq.content.workflow.codex_revision_commit import codex_completion_state
+    from wilq.content.workflow.documents.codex_revision_commit import codex_completion_state
 
     store = LocalStateStore(tmp_path / "state.sqlite3")
     now = datetime.now(UTC)
@@ -491,7 +491,7 @@ def test_expired_initial_draft_cannot_complete_atomic_append(tmp_path) -> None:
 
 
 def test_completed_initial_draft_replay_is_idempotent_after_deadline(tmp_path) -> None:
-    from wilq.content.workflow.codex_revision_commit import codex_completion_state
+    from wilq.content.workflow.documents.codex_revision_commit import codex_completion_state
 
     store = LocalStateStore(tmp_path / "state.sqlite3")
     now = datetime.now(UTC)

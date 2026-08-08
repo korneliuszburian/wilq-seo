@@ -10,7 +10,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryDocumentAssertion,
     ContentRegulatoryRequirement,
 )
-from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
 
 
 def test_planning_turn_exposes_server_owned_regulatory_document_assertions() -> None:

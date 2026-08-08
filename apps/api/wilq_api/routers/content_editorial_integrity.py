@@ -3,8 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from wilq.content.quality.editorial_integrity import build_content_editorial_integrity_report
-from wilq.content.workflow.contracts import ContentEditorialIntegrityReport
-from wilq.content.workflow.store import content_workflow_store
+from wilq.content.workflow.contracts.contracts import ContentEditorialIntegrityReport
+from wilq.content.workflow.store.store import content_workflow_store
 
 
 def register_content_editorial_integrity_route(router: APIRouter) -> None:

@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.canonical.landing_identity import LandingPageCandidate, match_landing_page
 from wilq.content.canonical.urls import content_is_safe_public_url
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 from wilq.schemas import MetricFact
 
 

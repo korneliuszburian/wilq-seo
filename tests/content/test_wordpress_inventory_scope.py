@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from wilq.content.workflow.catalog import build_content_inventory_catalog
+from wilq.content.workflow.workspace.catalog import build_content_inventory_catalog
 
 
 @pytest.mark.parametrize(
@@ -28,7 +28,7 @@ def test_inventory_catalog_excludes_commerce_rest_rows(monkeypatch, url):
         collected_at=datetime(2026, 8, 3, tzinfo=UTC),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.catalog.metric_store",
+        "wilq.content.workflow.workspace.catalog.metric_store",
         lambda: SimpleNamespace(list_metric_facts=lambda *_args, **_kwargs: [row]),
     )
 
@@ -61,7 +61,7 @@ def test_inventory_catalog_excludes_commerce_sitemap_entries(monkeypatch):
         ),
     ]
     monkeypatch.setattr(
-        "wilq.content.workflow.catalog.metric_store",
+        "wilq.content.workflow.workspace.catalog.metric_store",
         lambda: SimpleNamespace(list_metric_facts=lambda *_args, **_kwargs: rows),
     )
 

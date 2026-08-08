@@ -22,8 +22,8 @@ from wilq.content.quality.semantic_review_store import (
     SemanticReviewDeadlineExpired,
 )
 from wilq.content.quality.semantic_run_state import transition_codex_run_if_status
-from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.content.workflow.revisions import ContentDraftRevision
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore
 

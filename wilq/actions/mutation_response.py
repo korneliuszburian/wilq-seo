@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from wilq.content.workflow.contracts import (
+from wilq.content.workflow.contracts.contracts import (
     ContentWordPressDraftReadback,
     ContentWordPressDraftWriteReadinessResponse,
 )

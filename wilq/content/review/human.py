@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from wilq.content.claims.ledger import ContentClaimLedger, claim_ledger_blockers
 from wilq.content.drafts.package import ContentDraftPackage
-from wilq.content.workflow.models import ContentHumanReviewStatus, ContentWorkItem
+from wilq.content.workflow.contracts.models import ContentHumanReviewStatus, ContentWorkItem
 
 ContentHumanReviewStage = Literal[
     "sales_brief",

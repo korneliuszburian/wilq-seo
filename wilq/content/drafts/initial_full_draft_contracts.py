@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
-from wilq.content.workflow.revisions import (
+from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionPageAssets,
     validate_no_inline_link,

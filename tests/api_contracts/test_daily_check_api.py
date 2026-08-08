@@ -2,7 +2,7 @@
 
 from tests._contract_support.api_client import client
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
-from wilq.content.workflow.queue import build_content_work_item_queue_response
+from wilq.content.workflow.pipeline_steps.queue import build_content_work_item_queue_response
 
 
 def test_daily_check_returns_traceable_operator_queue() -> None:

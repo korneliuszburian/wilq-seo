@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from wilq.content.workflow.decision_context import (
+from wilq.content.workflow.pipeline_steps.decision_context import (
     ContentDecisionContext,
     build_content_decision_context,
 )
