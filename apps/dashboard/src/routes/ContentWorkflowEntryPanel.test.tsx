@@ -29,6 +29,10 @@ const entry: ContentWorkflowEntryResponse = {
     work_item_id: "content_work_item_bdo",
     title: "BDO dla firm",
     url: "https://www.ekologus.pl/bdo/",
+    decision_mode: "refresh",
+    decision_label: "odśwież istniejącą treść",
+    decision_action: "do_it_now",
+    blockers: [],
     reason: "Strona wymaga sprawdzenia na podstawie danych GSC.",
     facts: [{ label: "Wyświetlenia GSC", value: "107" }]
   }],
@@ -89,10 +93,29 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(screen.getAllByText("Odśwież istniejącą stronę")).toHaveLength(2);
     expect(screen.getByText("Utwórz nową stronę")).toBeInTheDocument();
     expect(screen.getByText("Wyświetlenia GSC")).toBeInTheDocument();
+    expect(screen.getByText("Zrób teraz: odśwież istniejącą treść")).toBeInTheDocument();
     expect(screen.queryByText(/808 adresów/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /otwórz stronę/i }));
     expect(props.onSelectWorkItem).toHaveBeenCalledWith("content_work_item_bdo");
+  });
+
+  it("shows a blocked decision and the first blocker on the recommendation card", () => {
+    renderEntry({
+      entry: {
+        ...entry,
+        recommendations: [{
+          ...entry.recommendations[0],
+          decision_mode: "block",
+          decision_label: "wstrzymaj pracę",
+          decision_action: "wait_or_block",
+          blockers: [{ code: "missing_evidence", label: "aktualnych danych GSC" }]
+        }]
+      }
+    });
+
+    expect(screen.getByText("Nie teraz: aktualnych danych GSC")).toBeInTheDocument();
+    expect(screen.getByText("Brakuje: aktualnych danych GSC")).toBeInTheDocument();
   });
 
   it("keeps the catalog and new-page brief behind explicit choices", () => {

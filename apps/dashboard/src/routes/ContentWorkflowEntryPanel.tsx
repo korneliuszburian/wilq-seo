@@ -151,18 +151,29 @@ function ContentWorkflowIntentStart({
           </div>
           {entry.recommendations.length ? (
             <div className="mt-4 grid gap-4 lg:grid-cols-3">
-              {entry.recommendations.map((recommendation) => (
-                <article key={recommendation.work_item_id} className="flex min-h-60 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_42px_-34px_rgba(15,23,42,0.5)]">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.13em] text-action">Proponowana praca</p>
-                  <h3 className="mt-3 text-lg font-semibold leading-6 text-ink">{recommendation.title}</h3>
-                  <p className="mt-2 line-clamp-2 text-xs text-slate-500">{recommendation.url}</p>
-                  <p className="mt-4 text-sm leading-6 text-slate-700">{recommendation.reason}</p>
-                  <dl className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
-                    {recommendation.facts.map((fact) => <div key={fact.label}><dt className="font-semibold text-slate-500">{fact.label}</dt><dd className="mt-0.5 text-slate-700">{fact.value}</dd></div>)}
-                  </dl>
-                  <button type="button" className="mt-auto pt-5 text-left text-sm font-semibold text-action hover:text-action/80" onClick={() => onSelectWorkItem(recommendation.work_item_id)}>Otwórz stronę <span aria-hidden="true">→</span></button>
-                </article>
-              ))}
+              {entry.recommendations.map((recommendation) => {
+                const firstBlocker = recommendation.blockers[0];
+                const doItNow = recommendation.decision_action === "do_it_now";
+                const decisionLabel = recommendation.decision_mode === "block" && firstBlocker
+                  ? firstBlocker.label
+                  : recommendation.decision_label;
+                return (
+                  <article key={recommendation.work_item_id} className="flex min-h-60 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_42px_-34px_rgba(15,23,42,0.5)]">
+                    <p className={`rounded-lg border px-3 py-2 text-sm font-semibold ${doItNow ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-wait/30 bg-wait/10 text-wait"}`}>
+                      {doItNow ? "Zrób teraz" : "Nie teraz"}: {decisionLabel}
+                    </p>
+                    {firstBlocker ? <p className="mt-2 text-xs font-semibold leading-5 text-wait">Brakuje: {firstBlocker.label}</p> : null}
+                    <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.13em] text-action">Proponowana praca</p>
+                    <h3 className="mt-3 text-lg font-semibold leading-6 text-ink">{recommendation.title}</h3>
+                    <p className="mt-2 line-clamp-2 text-xs text-slate-500">{recommendation.url}</p>
+                    <p className="mt-4 text-sm leading-6 text-slate-700">{recommendation.reason}</p>
+                    <dl className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
+                      {recommendation.facts.map((fact) => <div key={fact.label}><dt className="font-semibold text-slate-500">{fact.label}</dt><dd className="mt-0.5 text-slate-700">{fact.value}</dd></div>)}
+                    </dl>
+                    <button type="button" className="mt-auto pt-5 text-left text-sm font-semibold text-action hover:text-action/80" onClick={() => onSelectWorkItem(recommendation.work_item_id)}>Otwórz stronę <span aria-hidden="true">→</span></button>
+                  </article>
+                );
+              })}
             </div>
           ) : <ContentWorkflowEmptyRecommendations diagnostics={diagnostics} onSourcesRefreshed={onSourcesRefreshed} />}
         </section>

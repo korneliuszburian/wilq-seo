@@ -11,13 +11,18 @@ def _candidate(
     impressions: int | None = None,
     title: str | None = None,
     reason: str | None = None,
+    recommended_mode: str = "refresh",
+    recommended_mode_label: str = "odśwież istniejącą treść",
+    blockers: list[SimpleNamespace] | None = None,
 ) -> SimpleNamespace:
     return SimpleNamespace(
         work_item_id=f"content_work_item_{index}",
         title=f"Strona {index}" if title is None else title,
         source_public_url=f"https://www.ekologus.pl/strona-{index}/",
         final_canonical_url=None,
-        recommended_mode="refresh",
+        recommended_mode=recommended_mode,
+        recommended_mode_label=recommended_mode_label,
+        blockers=[] if blockers is None else blockers,
         reason=f"Powód {index} pochodzi z danych strony." if reason is None else reason,
         page_inventory=SimpleNamespace(
             title_or_h1=f"Publiczna strona {index}" if title is None else title
@@ -30,11 +35,59 @@ def _candidate(
     )
 
 
+def test_recommendation_marks_an_unblocked_refresh_as_work_to_do_now() -> None:
+    recommendation = entry_module._recommendation(_candidate(index=1))
+
+    assert recommendation.decision_mode == "refresh"
+    assert recommendation.decision_label == "odśwież istniejącą treść"
+    assert recommendation.decision_action == "do_it_now"
+    assert recommendation.blockers == []
+
+
+def test_recommendation_projects_a_blocked_decision_and_its_blocker() -> None:
+    recommendation = entry_module._recommendation(
+        _candidate(
+            index=1,
+            recommended_mode="block",
+            recommended_mode_label="wstrzymaj pracę",
+            blockers=[
+                SimpleNamespace(
+                    code="missing_evidence",
+                    label="aktualnych danych GSC",
+                )
+            ],
+        )
+    )
+
+    assert recommendation.decision_action == "wait_or_block"
+    assert recommendation.blockers[0].code == "missing_evidence"
+    assert recommendation.blockers[0].label == "aktualnych danych GSC"
+
+
 def test_entry_limits_recommendations_and_does_not_read_inventory_without_search(
     monkeypatch,
 ) -> None:
     candidates = [
-        _candidate(index=index, impressions=100 if index == 1 else None)
+        _candidate(
+            index=index,
+            impressions=100 if index == 1 else None,
+            recommended_mode="block" if index == 2 else "refresh",
+            recommended_mode_label=(
+                "wstrzymaj — najpierw sprawdź"
+                if index == 2
+                else "odśwież istniejącą treść"
+            ),
+            blockers=(
+                [
+                    SimpleNamespace(
+                        code="missing_evidence",
+                        label="aktualnych danych GSC",
+                    )
+                ]
+                if index == 2
+                else None
+            ),
+        )
         for index in range(1, 6)
     ]
     monkeypatch.setattr(entry_module, "build_content_diagnostics_cached", lambda: object())
@@ -65,6 +118,8 @@ def test_entry_limits_recommendations_and_does_not_read_inventory_without_search
         label="Główne zapytanie",
         value="operat wodnoprawny",
     )
+    assert response.recommendations[1].decision_action == "wait_or_block"
+    assert response.recommendations[1].blockers[0].label == "aktualnych danych GSC"
     assert response.recommendations[1].title == "Publiczna strona 2"
     assert response.recommendations[1].facts == [
         entry_module.ContentWorkflowEntryFact(

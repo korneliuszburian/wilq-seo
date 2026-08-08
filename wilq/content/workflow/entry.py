@@ -29,12 +29,23 @@ class ContentWorkflowEntryFact(BaseModel):
     value: str
 
 
+class ContentWorkflowEntryBlocker(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str
+    label: str
+
+
 class ContentWorkflowEntryRecommendation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     work_item_id: str
     title: str
     url: str
+    decision_mode: str
+    decision_label: str
+    decision_action: Literal["do_it_now", "wait_or_block"]
+    blockers: list[ContentWorkflowEntryBlocker] = Field(default_factory=list)
     reason: str
     facts: list[ContentWorkflowEntryFact] = Field(default_factory=list)
 
@@ -83,7 +94,6 @@ def build_content_workflow_entry(*, search: str | None = None) -> ContentWorkflo
             for candidate in queue.candidates
             if (
                 candidate.source_public_url
-                and candidate.recommended_mode != "block"
                 and candidate.reason.strip()
             )
         ][:3],
@@ -98,6 +108,18 @@ def _recommendation(candidate: ContentWorkItemQueueCandidate) -> ContentWorkflow
         work_item_id=candidate.work_item_id,
         title=_recommendation_title(candidate),
         url=candidate.source_public_url or candidate.final_canonical_url or "",
+        decision_mode=candidate.recommended_mode,
+        decision_label=candidate.recommended_mode_label,
+        decision_action=(
+            "do_it_now"
+            if candidate.recommended_mode in {"refresh", "merge", "create"}
+            and not candidate.blockers
+            else "wait_or_block"
+        ),
+        blockers=[
+            ContentWorkflowEntryBlocker(code=blocker.code, label=blocker.label)
+            for blocker in candidate.blockers
+        ],
         reason=candidate.reason.strip(),
         facts=_facts(candidate),
     )

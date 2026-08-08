@@ -595,10 +595,19 @@ export const ContentWorkflowEntryFactSchema = z.object({
   value: z.string().min(1)
 });
 
+export const ContentWorkflowEntryBlockerSchema = z.object({
+  code: z.string().min(1),
+  label: z.string().min(1)
+});
+
 export const ContentWorkflowEntryRecommendationSchema = z.object({
   work_item_id: z.string().min(1),
   title: z.string().min(1),
   url: z.string().url(),
+  decision_mode: z.string().min(1),
+  decision_label: z.string().min(1),
+  decision_action: z.enum(["do_it_now", "wait_or_block"]),
+  blockers: z.array(ContentWorkflowEntryBlockerSchema).default([]),
   reason: z.string().min(1),
   facts: z.array(ContentWorkflowEntryFactSchema).default([])
 });
