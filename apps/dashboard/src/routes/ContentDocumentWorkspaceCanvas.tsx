@@ -98,27 +98,15 @@ export function ContentDocumentWorkspaceCanvas({
         <Tab active={view === "comparison"} onClick={() => setView("comparison")}>Porównanie</Tab>
       </nav>
 
-      <section className="mt-4 grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_18rem]">
-        <section className="order-1 min-w-0 rounded-2xl border border-line bg-white p-5 shadow-sm lg:p-7 xl:order-2" data-testid="content-workspace-canvas">
+      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
+        <section className="min-w-0 rounded-2xl border border-line bg-white p-5 shadow-sm lg:p-7" data-testid="content-workspace-canvas">
           {view === "source" ? <CurrentSource workspace={workspace} /> : null}
           {view === "document" ? <CanonicalDocument workspace={workspace} /> : null}
           {view === "comparison" ? <Comparison workspace={workspace} /> : null}
         </section>
-        <aside className="order-2 rounded-2xl border border-line bg-white p-4 shadow-sm xl:order-1" aria-label="Struktura strony">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Struktura strony</p>
-          <p className="mt-2 text-sm leading-6 text-slate-700">{outlineLead(view)}</p>
-          <ol className="mt-4 space-y-2">
-            {outline(view, workspace).map((label, index) => (
-              <li key={`${label}-${index}`} className="rounded-lg bg-slate-50 px-3 py-2 text-sm leading-5 text-slate-700">
-                <span className="mr-2 font-semibold text-slate-500">{index + 1}.</span>{label}
-              </li>
-            ))}
-          </ol>
-        </aside>
-        <aside className="order-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kontekst pracy</p>
+        <aside className="rounded-2xl border border-line bg-white p-4 shadow-sm" aria-label="Szczegóły i dev">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Szczegóły i dev</p>
           <StatusCard label="Materiał obecnej strony" value={workspace.source_snapshot.status_label} />
-          <StatusCard label="Nowy dokument" value={workspace.canonical_document.label} />
           {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
             <ContentApprovedHtmlPackage
               workItemId={workspace.work_item_id}
@@ -831,16 +819,6 @@ function Tab({ active, children, onClick }: { active: boolean; children: string;
 
 function StatusCard({ label, value }: { label: string; value: string }) {
   return <div className="mt-4 rounded-xl bg-slate-50 p-3"><p className="text-sm font-semibold text-ink">{label}</p><p className="mt-1 text-sm text-slate-700">{value}</p></div>;
-}
-
-function outlineLead(view: View) {
-  return { source: "To, co jest dziś widoczne na publicznej stronie.", document: "Układ przygotowanej wersji dokumentu.", comparison: "Elementy dostępne do uczciwego zestawienia." }[view];
-}
-
-function outline(view: View, workspace: ContentDocumentWorkspace): string[] {
-  if (view === "source") return workspace.source_snapshot.ordered_sections.map((section) => section.heading);
-  if (view === "document") return workspace.canonical_document.preview?.sections.map((section) => section.heading) ?? [workspace.canonical_document.label];
-  return workspace.comparison.items.map((item) => item.document_heading ?? item.source_heading ?? "Element bez nazwy");
 }
 
 function CurrentSource({ workspace }: { workspace: ContentDocumentWorkspace }) {

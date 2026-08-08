@@ -182,7 +182,9 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("content-document-state")).toHaveTextContent("Nowa wersja nie została jeszcze przygotowana");
     expect(screen.getByText("Materiał obecnej strony").parentElement).toHaveTextContent("Materiał dostępny według API");
-    expect(screen.getByText("Nowy dokument").parentElement).toHaveTextContent("Nowa wersja nie została jeszcze przygotowana");
+    expect(screen.queryByText("Nowy dokument")).not.toBeInTheDocument();
+    expect(screen.queryByText("Struktura strony")).not.toBeInTheDocument();
+    expect(screen.getByText("Szczegóły i dev")).toBeInTheDocument();
     expect(screen.getByText(/Nie ma jeszcze zapisanej wersji dokumentu/)).toBeInTheDocument();
     expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
