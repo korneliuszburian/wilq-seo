@@ -1,8 +1,34 @@
-# Current Delivery State — 2026-08-06
+# Current Delivery State — 2026-08-08
 
 Przeczytaj przed zmianą Content Ops, dashboardu `/content-workflow`, kontraktu
 ACF albo dev-draft delivery. Git i Beads zachowują historię zakończonych
 slice’ów; ten dokument opisuje wyłącznie bieżący stan operacyjny.
+
+## Production-ready drive (2026-08-08)
+
+Po 33 commitach od `a783efe0` (18 slice'ów Q1-Q18 + 15 PRD) stan jest stabilny
+i `scripts/verify.sh` przechodzi w pełni (1612 testów backend, 19 E2E, build):
+
+- **Decyzyjność**: decyzja bez potwierdzonego inventory jest `blocked`; GA4 exact
+  landing wchodzi do decyzji; Ahrefs jest `used` przy exact GSC/WordPress
+  cross-source match; Ads/Planner mają pełny exact mapping; Merchant/Localo
+  uczciwie `not_applicable` dla stron usług. Karta entry pokazuje „Zrób teraz /
+  Nie rób / Brakuje" z blockerami (blocked kandydaci nie są ukrywani).
+- **ACF/full page**: pełny create-only draft zachowuje wszystkie layouty, sibling
+  fields, media i repeatery (9-layout falsifier); readback z subset-match digestem;
+  brak `acf_clone_plan` = blocker; partial clone zablokowany.
+- **WordPress delivery**: readback po create dowodzi digestu (content exact,
+  ACF subset); legacy handoff stripuje H1; po apply operator widzi „Utworzono
+  szkic" z edit_link i potwierdzeniem digestu.
+- **Dashboard (6 powierzchni)**: Dzisiaj, Treści i SEO, Reklamy i pomiar,
+  Produkty, Lokalnie, Akcje. Kolejka → Dzisiaj redirect. Review workspace
+  decision-first z advisory w disclosure; workspace dokumentu 2-kolumnowy;
+  każda metryka ma źródło, okres, freshness, evidence; next_action widoczny w
+  każdym stanie. 776 linii zombie (BriefWorkflowSurface, OpportunitiesSurface)
+  usuniętych.
+- **Stabilność**: durable planning claims (SQLite), editor stale-context guard,
+  atomic new-page apply, DuckDB transakcje, atomic refresh enqueue,
+  deterministyczne race falsifiery.
 
 ## Decyzja na dziś
 
