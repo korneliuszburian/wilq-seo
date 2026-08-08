@@ -271,7 +271,7 @@ def build_source_assessments(
     brief: ContentSalesBrief,
     demand: ContentSearchDemandEvidence,
     service_lifecycle: str,
-    ahrefs_exact_match: bool = False,
+    ahrefs_matched_evidence_ids: set[str],
 ) -> list[ContentPlanningSourceAssessment]:
     fact_kinds = {fact.source_connector for fact in brief.source_facts}
     fact_evidence = _fact_evidence_by_connector(brief)
@@ -340,7 +340,7 @@ def build_source_assessments(
         _ahrefs_source_assessment(
             freshness=freshness,
             evidence_ids=fact_evidence.get("ahrefs", []),
-            exact_match=ahrefs_exact_match,
+            matched_evidence_ids=ahrefs_matched_evidence_ids,
         ),
         _assessment(
             "keyword_planner",
@@ -501,24 +501,32 @@ def _ahrefs_source_assessment(
     *,
     freshness: ContentFreshnessAssessment,
     evidence_ids: list[str],
-    exact_match: bool,
+    matched_evidence_ids: set[str],
 ) -> ContentPlanningSourceAssessment:
-    status = _available_status(evidence_ids, ["ahrefs"], freshness)
-    if status == "used" and not exact_match:
-        status = "blocked"
-    reason = (
-        "Ahrefs ma dokładny, cross-source sygnał (GSC/WordPress) dla tej strony. "
-        "Potwierdza on powiązanie gap factu z tą samą stroną, nie metrykę ruchu."
-        if status == "used"
-        else "Ahrefs ma evidence, ale źródło jest nieświeże i nie zasila planu."
-        if status == "stale"
-        else "Ahrefs ma dane, ale bez exact cross-source matchu nie zasila planu."
-        if status == "blocked" and not exact_match
-        else "Ahrefs ma exact cross-source match, ale connector jest zablokowany."
-        if status == "blocked"
-        else "Brak dokładnego, cross-source sygnału Ahrefs dla tej strony."
+    exact_evidence_ids = [
+        evidence_id for evidence_id in evidence_ids if evidence_id in matched_evidence_ids
+    ]
+    status = (
+        "missing"
+        if not evidence_ids
+        else "blocked"
+        if not exact_evidence_ids
+        else _available_status(exact_evidence_ids, ["ahrefs"], freshness)
     )
-    return _assessment("ahrefs", status, reason, evidence_ids)
+    reason = (
+        "Tylko fakty Ahrefs z dokładnym cross-source matchem GSC/WordPress zasilają "
+        "plan; potwierdzają powiązanie gap factu z tą samą stroną, nie metrykę ruchu."
+        if status == "used"
+        else "Ahrefs ma exact-matched fakty, ale źródło jest nieświeże i nie zasila planu."
+        if status == "stale"
+        else "Ahrefs ma dane, ale tylko exact-matched fakty zasilają plan; żaden fakt "
+        "nie ma exact cross-source matchu."
+        if status == "blocked" and not exact_evidence_ids
+        else "Ahrefs ma exact-matched fakty, ale connector jest zablokowany."
+        if status == "blocked"
+        else "Brak danych Ahrefs dla tej strony."
+    )
+    return _assessment("ahrefs", status, reason, exact_evidence_ids)
 
 
 def _conditional_assessments(
@@ -555,6 +563,8 @@ def build_source_facts(
     brief: ContentSalesBrief,
     assessments: list[ContentPlanningSourceAssessment],
     service_profile: ContentWorkItemServiceProfileContext | None = None,
+    *,
+    ahrefs_matched_evidence_ids: set[str],
 ) -> list[ContentPlanningSourceFact]:
     statuses = {assessment.source: assessment.status for assessment in assessments}
     facts = [
@@ -569,6 +579,10 @@ def build_source_facts(
         )
         for index, fact in enumerate(brief.source_facts, start=1)
         if fact.source_connector not in _QUERY_PORTFOLIO_CONNECTORS
+        and (
+            fact.source_connector != "ahrefs"
+            or fact.evidence_id in ahrefs_matched_evidence_ids
+        )
         and (
             (source := _ASSESSMENT_SOURCE_BY_CONNECTOR.get(fact.source_connector)) is None
             or statuses.get(source) == "used"

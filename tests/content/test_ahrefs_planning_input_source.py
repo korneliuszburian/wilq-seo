@@ -107,12 +107,111 @@ def test_ahrefs_gap_source_is_used_only_with_exact_gsc_cross_source_match(
         if item.source == "ahrefs"
     )
     assert assessment.status == expected_status
-    assert assessment.evidence_ids == ["ev_ahrefs_gap"]
     if expected_status == "used":
-        assert "dokładny, cross-source sygnał" in assessment.reason
+        assert assessment.evidence_ids == ["ev_ahrefs_gap"]
+        assert "dokładnym cross-source matchem" in assessment.reason
         assert "nie metrykę ruchu" in assessment.reason
     else:
-        assert "bez exact cross-source matchu" in assessment.reason
+        assert assessment.evidence_ids == []
+        assert "żaden fakt nie ma exact cross-source matchu" in assessment.reason
+
+
+def test_ahrefs_source_facts_include_only_exact_matched_gap_fact(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        input_sources,
+        "list_evidence_by_ids",
+        lambda _: [
+            Evidence(
+                id="ev_wp",
+                source_connector="wordpress_ekologus",
+                source_type="metric_fact",
+                source_id="wp_page",
+                freshness=FreshnessState(state="fresh"),
+                summary="Publiczne inventory WordPress.",
+            )
+        ],
+    )
+    matched_fact = MetricFact(
+        name="ahrefs_content_gap_count",
+        value=1,
+        period="current",
+        source_connector="ahrefs",
+        evidence_id="ev_ahrefs_matched",
+        dimensions={
+            "gap_type": "content_gap",
+            "keyword": "gospodarka odpadami",
+            "competitor_domain": "example.com",
+        },
+    )
+    unmatched_fact = MetricFact(
+        name="ahrefs_content_gap_count",
+        value=1,
+        period="current",
+        source_connector="ahrefs",
+        evidence_id="ev_ahrefs_unmatched",
+        dimensions={
+            "gap_type": "content_gap",
+            "keyword": "audyt środowiskowy",
+            "competitor_domain": "example.com",
+        },
+    )
+    item = _work_item(
+        metric_facts=[
+            matched_fact,
+            unmatched_fact,
+            MetricFact(
+                name="impressions",
+                value=10,
+                period="last_28_days",
+                source_connector="google_search_console",
+                evidence_id="ev_gsc_cross_source",
+                dimensions={"query": "gospodarka odpadami", "page": PAGE},
+            ),
+        ]
+    )
+
+    result = build_content_planning_input_from_components(
+        item=item,
+        service_profile=_service_profile(),
+        inventory_resolution=_inventory_resolution(),
+        brief=_brief(matched_fact, unmatched_fact),
+        draft=ContentDraftPackage.model_construct(),
+        baseline_proposal=ContentPlanningProposal.model_construct(
+            search_demand=_demand(),
+            cta_direction="Opisz sytuację firmy.",
+        ),
+        freshness=ContentFreshnessAssessment(
+            state="fresh",
+            requires_refresh=False,
+            summary="Źródła są aktualne.",
+            next_step="Użyj aktualnych źródeł.",
+        ),
+        claim_ledger=ContentClaimLedger(id="claim_ledger", work_item_id=item.id),
+        service_card_id="service_card",
+    )
+
+    assert result.planning_input is not None
+    assessment = next(
+        assessment
+        for assessment in result.planning_input.source_assessments
+        if assessment.source == "ahrefs"
+    )
+    assert assessment.status == "used"
+    assert assessment.evidence_ids == [matched_fact.evidence_id]
+    ahrefs_source_facts = [
+        fact
+        for fact in result.planning_input.source_facts
+        if fact.source_connector == "ahrefs"
+    ]
+    assert [fact.evidence_ids for fact in ahrefs_source_facts] == [
+        [matched_fact.evidence_id]
+    ]
+    assert all(
+        unmatched_fact.evidence_id not in fact.evidence_ids
+        for fact in result.planning_input.source_facts
+    )
 
 
 def _work_item(*, metric_facts: list[MetricFact]) -> ContentWorkItem:
@@ -174,7 +273,7 @@ def _service_profile() -> ContentWorkItemServiceProfileContext:
     )
 
 
-def _brief(ahrefs_fact: MetricFact) -> ContentSalesBrief:
+def _brief(*ahrefs_facts: MetricFact) -> ContentSalesBrief:
     return ContentSalesBrief.model_construct(
         final_canonical_url=PAGE,
         target_reader="Firma",
@@ -185,8 +284,9 @@ def _brief(ahrefs_fact: MetricFact) -> ContentSalesBrief:
             ContentSalesBriefSourceFact(
                 evidence_id=ahrefs_fact.evidence_id,
                 source_connector="ahrefs",
-                summary="Ahrefs wskazuje lukę dla frazy gospodarka odpadami.",
+                summary=f"Ahrefs wskazuje lukę dla frazy {ahrefs_fact.dimensions['keyword']}.",
             )
+            for ahrefs_fact in ahrefs_facts
         ],
         knowledge_card_ids=["service_card"],
         measurement_plan=ContentSalesBriefMeasurementPlan.model_construct(

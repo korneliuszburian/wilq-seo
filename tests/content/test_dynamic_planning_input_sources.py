@@ -295,6 +295,7 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
         brief=brief,
         demand=demand,
         service_lifecycle="approved_current",
+        ahrefs_matched_evidence_ids=set(),
     )
     statuses = {assessment.source: assessment.status for assessment in assessments}
     assert statuses["wordpress"] == "used"
@@ -337,6 +338,7 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
         brief=brief,
         demand=blocked_ads,
         service_lifecycle="approved_current",
+        ahrefs_matched_evidence_ids=set(),
     )
     ads_assessment = next(
         assessment
@@ -385,13 +387,21 @@ def test_ga4_settling_unverified_is_not_used_in_planning(
             brief=brief,
             demand=demand,
             service_lifecycle="approved_current",
+            ahrefs_matched_evidence_ids=set(),
         )
         if item.source == "ga4"
     )
 
     assert assessment.status == "blocked"
     assert assessment.evidence_ids == ["ev_ga4"]
-    assert build_source_facts(brief, [assessment]).__len__() == 0
+    assert (
+        build_source_facts(
+            brief,
+            [assessment],
+            ahrefs_matched_evidence_ids=set(),
+        ).__len__()
+        == 0
+    )
 
 
 def test_refresh_suppresses_generic_blocked_source_when_service_review_is_required(
@@ -465,6 +475,7 @@ def test_ads_source_assessment_explains_service_review_blocker(
         brief=brief,
         demand=demand,
         service_lifecycle="approved_current",
+        ahrefs_matched_evidence_ids=set(),
     )
     ads = next(assessment for assessment in assessments if assessment.source == "google_ads")
 
@@ -510,6 +521,7 @@ def test_ads_source_assessment_explains_unresolved_service_binding(
             brief=brief,
             demand=demand,
             service_lifecycle="approved_current",
+            ahrefs_matched_evidence_ids=set(),
         )
         if assessment.source == "google_ads"
     )
@@ -587,6 +599,7 @@ def test_source_quality_is_part_of_planning_lineage_and_digest(
         brief=brief,
         demand=baseline.search_demand,
         service_lifecycle="approved_current",
+        ahrefs_matched_evidence_ids=set(),
     )
     gsc = next(assessment for assessment in assessments if assessment.source == "gsc")
     assert gsc.refresh_run_id == "refresh-gsc-1"
@@ -715,7 +728,12 @@ def test_service_profile_projection_uses_the_approved_fact_summary() -> None:
         )
     ]
 
-    facts = build_source_facts(brief, assessments, service_profile)
+    facts = build_source_facts(
+        brief,
+        assessments,
+        service_profile,
+        ahrefs_matched_evidence_ids=set(),
+    )
 
     profile_fact = next(fact for fact in facts if fact.source_fact_ids)
     assert profile_fact.summary.startswith("Publiczny artykuł Ekologus")

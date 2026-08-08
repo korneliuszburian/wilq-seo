@@ -418,22 +418,26 @@ def _resolved_inventory_section_headings(
     return [section.heading for section in inventory.sections]
 
 
-def _has_exact_ahrefs_cross_source_match(item: ContentWorkItem) -> bool:
+def _exact_ahrefs_matched_evidence_ids(item: ContentWorkItem) -> set[str]:
     gap_facts = [
         fact
         for fact in item.metric_facts
         if fact.source_connector == "ahrefs" and fact.name in AHREFS_GAP_FACT_NAMES
     ]
+    gap_evidence_ids = {fact.evidence_id for fact in gap_facts}
     candidates = ahrefs_cross_source_candidate_rows(
         gap_facts,
         item.metric_facts,
         limit=None,
     )
-    return any(
-        candidate.gsc_cross_check.strength == "exact"
-        or candidate.wordpress_cross_check.strength == "exact"
+    return {
+        evidence_id
         for candidate in candidates
-    )
+        if candidate.gsc_cross_check.strength == "exact"
+        or candidate.wordpress_cross_check.strength == "exact"
+        for evidence_id in candidate.evidence_ids
+        if evidence_id in gap_evidence_ids
+    }
 
 
 def build_content_planning_input_from_components(
@@ -457,6 +461,7 @@ def build_content_planning_input_from_components(
     if candidate is None:
         return ContentPlanningInputBuildResult(blockers=[_foundation_blocker()])
     inventory = build_planning_inventory(item, inventory_resolution)
+    ahrefs_matched_evidence_ids = _exact_ahrefs_matched_evidence_ids(item)
     source_assessments = build_source_assessments(
         item=item,
         inventory=inventory,
@@ -465,7 +470,7 @@ def build_content_planning_input_from_components(
         brief=brief,
         demand=baseline_proposal.search_demand,
         service_lifecycle=candidate.lifecycle_status,
-        ahrefs_exact_match=_has_exact_ahrefs_cross_source_match(item),
+        ahrefs_matched_evidence_ids=ahrefs_matched_evidence_ids,
     )
     regulatory_coverage = regulatory_content_coverage(
         service_card_id=candidate.service_card_id,
@@ -481,7 +486,12 @@ def build_content_planning_input_from_components(
         regulatory_coverage=regulatory_coverage,
     )
     source_facts = [
-        *build_source_facts(brief, source_assessments, service_profile),
+        *build_source_facts(
+            brief,
+            source_assessments,
+            service_profile,
+            ahrefs_matched_evidence_ids=ahrefs_matched_evidence_ids,
+        ),
         *regulatory_planning_source_facts(
             regulatory_coverage,
             knowledge_card_ids=service_profile.knowledge_card_ids,
