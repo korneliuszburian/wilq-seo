@@ -444,16 +444,28 @@ function ContentReviewWorkspace({
 function ContentClaimLedgerPanel({ revision }: { revision: ContentDraftRevision }) {
   const ledger = revision.claim_ledger;
   if (!ledger) return null;
+  const entries = [...ledger.entries].sort((left, right) => {
+    const leftBlocked = contentClaimStatusLabel(left.status) === "blokuje" ? 0 : 1;
+    const rightBlocked = contentClaimStatusLabel(right.status) === "blokuje" ? 0 : 1;
+    return leftBlocked - rightBlocked;
+  });
   return (
     <section className="mt-4 rounded-xl border border-line bg-white p-4" data-testid="content-claim-ledger">
       <h2 className="text-base font-semibold text-ink">Twierdzenia i dowody</h2>
       <ul className="mt-3 space-y-3">
-        {ledger.entries.map((entry) => (
+        {entries.map((entry) => (
           <li key={entry.id} className="rounded-lg border border-line p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <p className="font-medium text-ink">{entry.claim_text}</p>
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                {contentClaimStatusLabel(entry.status)}
+              <span className="flex flex-wrap items-center gap-1.5">
+                {entry.required ? (
+                  <span className="rounded-full bg-wait/15 px-2.5 py-1 text-xs font-semibold text-ink">
+                    wymagane
+                  </span>
+                ) : null}
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                  {contentClaimStatusLabel(entry.status)}
+                </span>
               </span>
             </div>
             <p className="mt-2 text-xs leading-5 text-slate-600">
