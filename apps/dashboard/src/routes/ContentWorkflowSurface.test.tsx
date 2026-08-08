@@ -781,6 +781,8 @@ describe("ContentWorkflowSurface", () => {
     expect(ledger).toHaveTextContent("blokuje");
     expect(ledger).toHaveTextContent("brak dowodu");
     expect(ledger).toHaveTextContent("Źródła: wordpress_ekologus · Dowody: 1");
+    expect(ledger).toHaveTextContent("Twierdzenie wymaga zakończonego pomiaru.");
+    expect(ledger).toHaveTextContent("Twierdzenie wymaga decyzji człowieka.");
   });
 
   it("keeps the claim section hidden for revisions without a ledger", async () => {

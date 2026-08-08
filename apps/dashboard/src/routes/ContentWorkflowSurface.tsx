@@ -460,6 +460,9 @@ function ContentClaimLedgerPanel({ revision }: { revision: ContentDraftRevision 
               Źródła: {entry.source_connectors.length > 0 ? entry.source_connectors.join(", ") : "brak"}
               {" · "}Dowody: {entry.evidence_ids.length}
             </p>
+            {entry.reason ? (
+              <p className="mt-2 text-sm leading-5 text-slate-700">{entry.reason}</p>
+            ) : null}
           </li>
         ))}
       </ul>
