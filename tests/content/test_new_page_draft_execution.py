@@ -64,13 +64,18 @@ def test_new_page_execution_writes_only_one_authorized_dev_page_draft(monkeypatc
         )
     )
     try:
-        assert (
-            create_new_page_dev_draft(_payload(), action_apply_authorized=True, http_client=client)
-            == "41"
+        result = create_new_page_dev_draft(
+            _payload(), action_apply_authorized=True, http_client=client
         )
     finally:
         client.close()
     assert seen[0].url.path == "/wp-json/wp/v2/pages"
+    assert result.wordpress_post_id == "41"
+    assert result.status == "draft"
+    assert result.link == "https://dev/draft"
+    assert result.edit_link == (
+        "https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=41&action=edit"
+    )
     body = json.loads(seen[0].content)
     assert body["status"] == "draft"
     assert body["content"] == "<h1>Dokumentacja</h1>"

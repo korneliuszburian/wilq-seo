@@ -43,7 +43,7 @@ def execute_new_page_draft_action(action: ActionObject) -> tuple[dict[str, Any] 
         return None, ["Dokładna rewizja nowej strony nie jest już dostępna."]
     try:
         payload = build_new_page_dev_draft_write_payload(revision, binding)
-        draft_id = create_new_page_dev_draft(payload, action_apply_authorized=True)
+        draft = create_new_page_dev_draft(payload, action_apply_authorized=True)
     except ValueError as error:
         return None, [str(error)]
     return {
@@ -52,7 +52,11 @@ def execute_new_page_draft_action(action: ActionObject) -> tuple[dict[str, Any] 
         "allowed_operation": "create_wordpress_draft",
         "endpoint": payload.endpoint,
         "post_status": payload.post_status,
-        "created_draft_id": draft_id,
+        "created_draft_id": draft.wordpress_post_id,
+        "wordpress_post_id": draft.wordpress_post_id,
+        "status": draft.status,
+        "link": draft.link,
+        "edit_link": draft.edit_link,
         "external_write_attempted": True,
         "publish_allowed": False,
         "update_allowed": False,

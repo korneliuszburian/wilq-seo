@@ -6,8 +6,9 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
 from tests.content.test_new_page_draft_action import _command, _ready_readiness
-from wilq.actions import apply_lifecycle
+from wilq.actions import apply_lifecycle, wordpress_draft_readback
 from wilq.actions import service as action_service
+from wilq.content.workflow.store.store_new_page_apply import NewPageApplyPersistedResult
 from wilq.content.workflow.target.new_page_draft_action import (
     create_new_page_draft_action,
     persist_new_page_draft_action,
@@ -25,6 +26,7 @@ class _ClaimStore:
     def __init__(self) -> None:
         self.claims: list[tuple[str, str]] = []
         self.finished: list[tuple[str, str, str, str, dict | None]] = []
+        self.persisted_result: NewPageApplyPersistedResult | None = None
 
     def claim_new_page_revision_apply(self, binding, *, action_id: str, claimed_by: str) -> str:
         self.claims.append((binding.revision_id, action_id))
@@ -48,6 +50,16 @@ class _ClaimStore:
                 adapter_result,
             )
         )
+        if status == "applied" and adapter_result is not None:
+            self.persisted_result = NewPageApplyPersistedResult(
+                wordpress_post_id=str(adapter_result["wordpress_post_id"]),
+                status=str(adapter_result["status"]),
+                link=str(adapter_result.get("link") or ""),
+                edit_link=str(adapter_result.get("edit_link") or ""),
+            )
+
+    def result_for_action(self, action_id: str) -> NewPageApplyPersistedResult | None:
+        return self.persisted_result
 
 
 def _configured_connector() -> SimpleNamespace:
@@ -56,6 +68,14 @@ def _configured_connector() -> SimpleNamespace:
         label="WordPress Ekologus",
         status=SimpleNamespace(value="configured"),
     )
+
+
+def test_uncertain_new_page_apply_claim_has_typed_recovery_blocker() -> None:
+    blocker = apply_lifecycle._new_page_apply_claim_blocker("uncertain")
+
+    assert blocker.code == "new_page_revision_apply_result_uncertain"
+    assert "duplikat" in blocker.reason
+    assert "nie ponawiaj" in blocker.next_step
 
 
 def test_new_page_action_requires_the_full_lifecycle_before_one_exact_dev_draft(
@@ -72,6 +92,13 @@ def test_new_page_action_requires_the_full_lifecycle_before_one_exact_dev_draft(
                 "adapter": "content_new_page_draft_execution_boundary",
                 "external_write_attempted": True,
                 "created_draft_id": "draft_42",
+                "wordpress_post_id": "42",
+                "status": "draft",
+                "link": "https://ekologus.dev.proudsite.pl/?p=42",
+                "edit_link": (
+                    "https://ekologus.dev.proudsite.pl/wp-admin/"
+                    "post.php?post=42&action=edit"
+                ),
             },
             [],
         )
@@ -82,6 +109,9 @@ def test_new_page_action_requires_the_full_lifecycle_before_one_exact_dev_draft(
         lambda _: _configured_connector(),
     )
     monkeypatch.setattr(apply_lifecycle, "new_page_apply_claim_store", lambda: claim_store)
+    monkeypatch.setattr(
+        wordpress_draft_readback, "new_page_apply_claim_store", lambda: claim_store
+    )
     monkeypatch.setattr(apply_lifecycle, "execute_new_page_draft_action", execute)
 
     binding = action.payload["new_page_draft_binding"]
@@ -150,6 +180,9 @@ def test_new_page_action_rejects_a_changed_apply_binding_before_claim_or_executo
         lambda _: _configured_connector(),
     )
     monkeypatch.setattr(apply_lifecycle, "new_page_apply_claim_store", lambda: claim_store)
+    monkeypatch.setattr(
+        wordpress_draft_readback, "new_page_apply_claim_store", lambda: claim_store
+    )
     monkeypatch.setattr(
         apply_lifecycle,
         "execute_new_page_draft_action",
@@ -245,6 +278,9 @@ def test_new_page_action_is_reachable_through_the_public_actions_lifecycle(
     )
     monkeypatch.setattr(apply_lifecycle, "new_page_apply_claim_store", lambda: claim_store)
     monkeypatch.setattr(
+        wordpress_draft_readback, "new_page_apply_claim_store", lambda: claim_store
+    )
+    monkeypatch.setattr(
         apply_lifecycle,
         "execute_new_page_draft_action",
         lambda _: (
@@ -252,6 +288,13 @@ def test_new_page_action_is_reachable_through_the_public_actions_lifecycle(
                 "adapter": "content_new_page_draft_execution_boundary",
                 "external_write_attempted": True,
                 "created_draft_id": "draft_42",
+                "wordpress_post_id": "42",
+                "status": "draft",
+                "link": "https://ekologus.dev.proudsite.pl/?p=42",
+                "edit_link": (
+                    "https://ekologus.dev.proudsite.pl/wp-admin/"
+                    "post.php?post=42&action=edit"
+                ),
             },
             [],
         ),
@@ -295,3 +338,15 @@ def test_new_page_action_is_reachable_through_the_public_actions_lifecycle(
     assert response.json()["mutation_audit"]["new_page_draft_binding"] == binding
     assert claim_store.finished[0][:2] == (binding["revision_id"], "applied")
     assert claim_store.finished[0][4] == response.json()["adapter_result"]
+    recovered = wordpress_draft_readback.last_created_wordpress_draft_readback(
+        action, []
+    )
+    assert recovered is not None
+    assert recovered.wordpress_post_id == "42"
+    assert recovered.post_status == "draft"
+    assert recovered.link == "https://ekologus.dev.proudsite.pl/?p=42"
+    assert recovered.edit_link == (
+        "https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=42&action=edit"
+    )
+    assert recovered.verification_status == "blocked"
+    assert recovered.blockers[0].code == "wordpress_draft_verification_unavailable"

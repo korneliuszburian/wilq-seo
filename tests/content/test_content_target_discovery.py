@@ -211,6 +211,38 @@ def test_target_discovery_identifies_native_post_content_without_inventing_acf(
     assert surface.layouts[0].fields == ["title", "content_html"]
 
 
+def test_native_post_content_get_is_limited_to_https_dev_host(monkeypatch) -> None:
+    requested: list[str] = []
+
+    def observed_get(url: str, **_kwargs):
+        requested.append(url)
+        return SimpleNamespace(
+            raise_for_status=lambda: None,
+            json=lambda: {"content": {"rendered": "<p>Treść dev</p>"}},
+        )
+
+    monkeypatch.setattr(discovery_module.httpx, "get", observed_get)
+    allowed = _page(
+        "https://ekologus.dev.proudsite.pl/bdo/", content_type="post"
+    )
+    foreign = allowed.model_copy(update={"link": "https://attacker.example/bdo/"})
+    insecure = allowed.model_copy(
+        update={"link": "http://ekologus.dev.proudsite.pl/bdo/"}
+    )
+    with_userinfo = allowed.model_copy(
+        update={"link": "https://user:password@ekologus.dev.proudsite.pl/bdo/"}
+    )
+
+    assert discovery_module._native_post_content_observed(foreign) is False
+    assert discovery_module._native_post_content_observed(insecure) is False
+    assert discovery_module._native_post_content_observed(with_userinfo) is False
+    assert requested == []
+    assert discovery_module._native_post_content_observed(allowed) is True
+    assert requested == [
+        "https://ekologus.dev.proudsite.pl/wp-json/wp/v2/posts/346"
+    ]
+
+
 def test_target_discovery_exposes_observed_acf_relationships_without_making_them_writable(
     monkeypatch,
 ) -> None:

@@ -24,6 +24,7 @@ from wilq.connectors.wordpress.authoring import (
     WordPressAuthoringProfile,
     build_wordpress_authoring_profile,
 )
+from wilq.connectors.wordpress.client import WORDPRESS_DEV_HOSTS
 from wilq.content.workflow.decisions.inventory_binding import inventory_decision_for_work_item
 from wilq.schemas import utc_now
 
@@ -613,7 +614,13 @@ def _native_post_content_observed(item: WordPressAuthoringDevContentObject) -> b
     """Observe core post content without retaining it or inferring a surface from type."""
 
     parsed = urlparse(item.link)
-    if not parsed.scheme or not parsed.netloc or not item.post_id:
+    if (
+        parsed.scheme != "https"
+        or parsed.netloc.lower() not in WORDPRESS_DEV_HOSTS
+        or parsed.username is not None
+        or parsed.password is not None
+        or not item.post_id
+    ):
         return False
     try:
         response = httpx.get(

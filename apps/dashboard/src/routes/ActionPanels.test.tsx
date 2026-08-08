@@ -227,6 +227,45 @@ describe("ActionPanels", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not render links for foreign, insecure, or credential-bearing URLs", () => {
+    render(
+      <ActionReviewGatePanel
+        action={{
+          review_gate: {
+            status: "ready_to_apply",
+            operator_checklist_labels: [],
+            apply_blocker_summary_label: "brak blokad",
+            confirmation_required: true,
+            apply_allowed: true,
+            last_confirmation_summary: null,
+            last_mutation_audit_summary: null
+          }
+        } as unknown as ActionObject}
+        lastCreatedDraft={{
+          wordpress_post_id: "1275",
+          post_status: "draft",
+          readback_status: "blocked",
+          blocker_code: "wordpress_draft_verification_unavailable",
+          blocker_label: "Treść wymaga sprawdzenia",
+          link: "https://attacker.example/?p=1275",
+          edit_link: (
+            "http://user:password@ekologus.dev.proudsite.pl/"
+            + "wp-admin/post.php?post=1275&action=edit"
+          ),
+          modified_gmt: "",
+          content_digest: "",
+          verification_status: "blocked"
+        }}
+      />
+    );
+
+    expect(screen.getByText("post_id: 1275")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Otwórz link publiczny" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Otwórz w edytorze WordPress" }))
+      .not.toBeInTheDocument();
+  });
+
   it("uses the action evidence summary as visible proof context", () => {
     renderWithQueryClient(
       <ActionFocus

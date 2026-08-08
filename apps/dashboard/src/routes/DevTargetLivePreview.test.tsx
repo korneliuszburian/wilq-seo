@@ -21,7 +21,7 @@ describe("DevTargetLivePreview", () => {
     expect(screen.getByTitle("Referencyjny podgląd strony dev"))
       .toHaveAttribute("src", "https://ekologus.dev.proudsite.pl/");
     expect(screen.getByTitle("Referencyjny podgląd strony dev"))
-      .toHaveAttribute("sandbox", "allow-same-origin allow-scripts");
+      .toHaveAttribute("sandbox", "allow-same-origin");
 
     fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
 

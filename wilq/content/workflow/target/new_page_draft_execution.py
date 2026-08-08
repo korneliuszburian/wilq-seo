@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -12,8 +13,17 @@ from wilq.connectors.wordpress.client import (
     _created_draft_post_id,
     _missing_credentials,
     _wordpress_credentials,
+    _wordpress_edit_link,
 )
 from wilq.content.workflow.target.new_page_draft_payload import ContentNewPageDevDraftWritePayload
+
+
+@dataclass(frozen=True)
+class ContentNewPageDevDraftCreated:
+    wordpress_post_id: str
+    status: str
+    link: str
+    edit_link: str
 
 
 def create_new_page_dev_draft(
@@ -21,7 +31,7 @@ def create_new_page_dev_draft(
     *,
     action_apply_authorized: bool,
     http_client: httpx.Client | None = None,
-) -> str:
+) -> ContentNewPageDevDraftCreated:
     """Write exactly one dev draft; callers cannot publish, update, or delete."""
     if action_apply_authorized is not True:
         raise WordPressDraftWriteError("Utworzenie szkicu wymaga autoryzacji ActionObject.")
@@ -63,4 +73,11 @@ def create_new_page_dev_draft(
     finally:
         if owns_client:
             client.close()
-    return _created_draft_post_id(response)
+    post_id = _created_draft_post_id(response)
+    body = response.json()
+    return ContentNewPageDevDraftCreated(
+        wordpress_post_id=post_id,
+        status=str(body.get("status") or "") if isinstance(body, dict) else "",
+        link=str(body.get("link") or "") if isinstance(body, dict) else "",
+        edit_link=_wordpress_edit_link(credentials.base_url, post_id),
+    )

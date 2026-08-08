@@ -324,30 +324,49 @@ def _new_page_apply_claim_blocker(
             "new_page_revision_apply_in_progress",
             "Zapis tej nowej strony już trwa",
             "Inne żądanie przejęło tę samą approved rewizję przed adapterem.",
+            "Poczekaj na wynik pierwszego zapisu i odśwież stan akcji.",
         ),
         "applied": (
             "new_page_revision_already_applied",
             "Ta rewizja nowej strony została już przekazana do WordPress",
             "Jednorazowa zgoda dla exact rewizji została już wykorzystana.",
+            "Użyj odzyskanego szkicu albo przygotuj i zatwierdź nową rewizję.",
         ),
         "failed": (
             "new_page_revision_apply_consent_consumed",
             "Poprzednia próba zużyła zgodę tej rewizji",
             "Nie można powtarzać starej rewizji po nieudanej lub niepewnej próbie.",
+            (
+                "Zapisz nową wersję, wykonaj nowe review i utwórz nową akcję przed "
+                "kolejną próbą."
+            ),
+        ),
+        "uncertain": (
+            "new_page_revision_apply_result_uncertain",
+            "Wynik poprzedniego zapisu jest niepewny",
+            (
+                "Claim ma stan applied, ale nie zawiera odzyskiwalnego ID ani linku szkicu. "
+                "Ponowienie mogłoby utworzyć duplikat."
+            ),
+            (
+                "Sprawdź WordPress dev i audit tej akcji, rozstrzygnij, czy szkic istnieje, "
+                "i nie ponawiaj tej samej exact rewizji."
+            ),
         ),
         "not_current": (
             "new_page_revision_not_current_at_apply",
             "Rewizja nowej strony nie jest już aktualna",
             "Binding nie odpowiada najnowszej approved rewizji w lokalnym store.",
+            (
+                "Odśwież nową stronę, zapisz i zatwierdź aktualną rewizję, potem utwórz "
+                "nową akcję."
+            ),
         ),
     }
-    code, label, reason = messages.get(claim_result, messages["not_current"])
+    code, label, reason, next_step = messages.get(claim_result, messages["not_current"])
     return ActionWordPressDraftApplyBlocker(
         code=code,
         label=label,
         reason=reason,
-        next_step=(
-            "Odśwież nową stronę, zapisz i zatwierdź aktualną rewizję, "
-            "potem utwórz nową akcję."
-        ),
+        next_step=next_step,
     )

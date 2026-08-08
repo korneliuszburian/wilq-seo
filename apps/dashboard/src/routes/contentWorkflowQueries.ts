@@ -108,11 +108,15 @@ export function useContentRevisionPublicDeployment(
   });
 }
 
-export function useContentPlanningProposal(workItemId: string): ContentPlanningProposalQuery {
+export function useContentPlanningProposal(
+  workItemId: string,
+  enabled = true
+): ContentPlanningProposalQuery {
   return useQuery({
     queryKey: ["content-workflow", "work-item", workItemId, "planning-proposal"],
     queryFn: () => getContentWorkItemPlanningProposal(workItemId),
     staleTime: 5_000,
+    enabled,
     refetchInterval: (query) =>
       query.state.data?.status === "generating" ? 1500 : false
   });

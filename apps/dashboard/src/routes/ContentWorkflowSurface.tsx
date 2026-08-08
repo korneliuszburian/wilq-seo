@@ -258,6 +258,7 @@ function ContentWorkflowRouteState({
       <ContentTextWorkspace
         workItemId={selectedWorkItemId}
         selectedWorkspace={selectedWorkspace}
+        requestedBy={operatorLabel ?? "operator_local_dashboard"}
         onOpenReview={onOpenReview}
       />
     );
@@ -280,10 +281,12 @@ function ContentWorkflowEntryFailure({ onRetry }: { onRetry: () => void }) {
 function ContentTextWorkspace({
   workItemId,
   selectedWorkspace,
+  requestedBy,
   onOpenReview
 }: {
   workItemId: string;
   selectedWorkspace: ContentSelectedWorkspaceQuery;
+  requestedBy: string;
   onOpenReview: (workItemId: string) => void;
 }) {
   if (selectedWorkspace.isLoading) {
@@ -297,6 +300,7 @@ function ContentTextWorkspace({
   return <ContentDocumentWorkspaceCanvas
     workspace={workspace}
     operatorJourney={selectedWorkspace.data.operator_journey}
+    requestedBy={requestedBy}
     onOpenReview={() => onOpenReview(workItemId)}
   />;
 }

@@ -612,7 +612,25 @@ function ActionCreatedDraftReadbackPanel({
 function safeExternalHref(value: string): string | null {
   try {
     const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:" ? value : null;
+    const hostname = url.hostname.toLowerCase();
+    const developmentHosts = new Set([
+      "ekologus.dev.proudsite.pl",
+      "localhost",
+      "127.0.0.1"
+    ]);
+    const productionHosts = new Set(["www.ekologus.pl", "ekologus.pl"]);
+    const isAllowedHost = developmentHosts.has(hostname) || productionHosts.has(hostname);
+    const isAllowedProtocol =
+      url.protocol === "https:" || (url.protocol === "http:" && developmentHosts.has(hostname));
+    if (
+      !isAllowedHost ||
+      !isAllowedProtocol ||
+      url.username.length > 0 ||
+      url.password.length > 0
+    ) {
+      return null;
+    }
+    return url.href;
   } catch {
     return null;
   }

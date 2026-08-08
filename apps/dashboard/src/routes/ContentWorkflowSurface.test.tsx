@@ -20,6 +20,7 @@ import {
   getContentOperatorContext,
   getContentDiagnostics,
   postContentWorkItemInitialDraft,
+  postContentWorkItemPlanningProposal,
   postContentRegulatorySourceFactProposalReview,
   postContentWorkItemOfficialSourceLineageRebase,
   postContentWorkItemRevisionRepairProposal,
@@ -57,6 +58,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentOperatorContext: vi.fn(),
     getContentDiagnostics: vi.fn(),
     postContentWorkItemInitialDraft: vi.fn(),
+    postContentWorkItemPlanningProposal: vi.fn(),
     postContentRegulatorySourceFactProposalReview: vi.fn(),
     postContentWorkItemOfficialSourceLineageRebase: vi.fn(),
     postContentWorkItemRevisionRepairProposal: vi.fn(),
@@ -102,6 +104,13 @@ describe("ContentWorkflowSurface", () => {
       measurement_window_result: { window: null, blockers: [] }
     } as never);
     vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
+    vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValue({
+      status: "blocked",
+      work_item_id: "content_work_item_bdo",
+      blockers: [],
+      safe_next_step: "Najpierw odczytaj aktualne wejście planu.",
+      publish_ready: false
+    } as never);
     vi.mocked(postContentWorkItemOfficialSourceLineageRebase).mockResolvedValue({
       status: "created",
       revision: savedFullDraftRevision(),
@@ -140,7 +149,7 @@ describe("ContentWorkflowSurface", () => {
     vi.unstubAllGlobals();
   });
 
-  it("does not claim that a document exists when the workspace has no revision", async () => {
+  it("runs plan polling and initial-draft polling before refreshing the selected workspace", async () => {
     const noDocument = contentDocumentWorkspace();
     noDocument.source_snapshot.status_label = "Materiał dostępny według API";
     noDocument.canonical_document = {
@@ -169,7 +178,63 @@ describe("ContentWorkflowSurface", () => {
       label: "Przygotuj nową wersję",
       reason: "Przygotowanie dokumentu jest kolejnym krokiem."
     };
-    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(noDocument));
+    const readyPlan = {
+      status: "ready",
+      work_item_id: "content_work_item_bdo",
+      service_card_id: "ekologus_service_bdo_reporting",
+      planning_input_digest: "f".repeat(64),
+      proposal: {
+        proposal_id: "content_planning_proposal_bdo",
+        planning_digest: "a".repeat(64),
+        planning_input_digest: "f".repeat(64)
+      },
+      blockers: [],
+      safe_next_step: "Przygotuj pełny dokument.",
+      publish_ready: false
+    } as never;
+    vi.mocked(getContentWorkItemPlanningProposal)
+      .mockResolvedValueOnce({
+        status: "not_generated",
+        work_item_id: "content_work_item_bdo",
+        service_card_id: "ekologus_service_bdo_reporting",
+        planning_input_digest: "f".repeat(64),
+        proposal: null,
+        blockers: [],
+        safe_next_step: "Przygotuj plan.",
+        publish_ready: false
+      } as never)
+      .mockResolvedValue(readyPlan);
+    vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValue({
+      status: "generating",
+      work_item_id: "content_work_item_bdo",
+      service_card_id: "ekologus_service_bdo_reporting",
+      planning_input_digest: "f".repeat(64),
+      proposal: null,
+      blockers: [],
+      safe_next_step: "Plan jest przygotowywany.",
+      publish_ready: false
+    } as never);
+    vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue({
+      status: "generating",
+      work_item_id: "content_work_item_bdo",
+      proposal_id: "content_planning_proposal_bdo",
+      run_id: "codex_initial_draft_pending",
+      revision: null,
+      blockers: [{
+        code: "generation_in_progress",
+        label: "Pełny tekst jest przygotowywany",
+        reason: "WILQ pracuje na dokładnym planie.",
+        next_step: "Poczekaj na wynik."
+      }],
+      safe_next_step: "Poczekaj na wynik.",
+      publish_ready: false
+    } as never);
+    vi.mocked(getContentWorkItemInitialDraft).mockResolvedValue(
+      initialDraftResponse(savedFullDraftRevision())
+    );
+    vi.mocked(getContentSelectedWorkspace)
+      .mockResolvedValueOnce(selectedWorkspace(noDocument))
+      .mockResolvedValue(selectedWorkspace(contentDocumentWorkspace(savedFullDraftRevision())));
 
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -187,9 +252,33 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Szczegóły i dev")).toBeInTheDocument();
     expect(screen.getByText(/Nie ma jeszcze zapisanej wersji dokumentu/)).toBeInTheDocument();
     expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Przygotuj nową wersję" }));
-    expect(screen.getByRole("heading", { name: "Nowa wersja nie została jeszcze przygotowana" })).toBeInTheDocument();
-  });
+    await waitFor(() => expect(getContentWorkItemPlanningProposal).toHaveBeenCalledTimes(1));
+    const prepare = screen.getByRole("button", { name: "Przygotuj nową wersję" });
+    await waitFor(() => expect(prepare).toBeEnabled());
+    fireEvent.click(prepare);
+    await waitFor(() => expect(postContentWorkItemPlanningProposal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        service_card_id: "ekologus_service_bdo_reporting",
+        expected_planning_input_digest: "f".repeat(64),
+        requested_by: "wilku"
+      }),
+      "content_work_item_bdo"
+    ));
+    await waitFor(() => expect(postContentWorkItemInitialDraft).toHaveBeenCalledWith({
+      expected_proposal_id: "content_planning_proposal_bdo",
+      expected_planning_digest: "a".repeat(64),
+      expected_planning_input_digest: "f".repeat(64),
+      requested_by: "wilku"
+    }, "content_work_item_bdo"), { timeout: 5_000 });
+    expect(await screen.findByText(
+      "Pełna odpowiedź sekcji 1 oparta na planie i dowodach.",
+      {},
+      { timeout: 5_000 }
+    )).toBeInTheDocument();
+    expect(getContentWorkItemPlanningProposal).toHaveBeenCalledTimes(2);
+    expect(getContentWorkItemInitialDraft).toHaveBeenCalled();
+    expect(getContentSelectedWorkspace).toHaveBeenCalledTimes(2);
+  }, 10_000);
 
   it("shows an explanation without a button when there is no safe next action", async () => {
     const workspace = contentDocumentWorkspace();

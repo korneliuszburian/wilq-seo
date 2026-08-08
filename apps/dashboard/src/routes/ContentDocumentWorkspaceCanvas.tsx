@@ -3,16 +3,23 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   type ContentDocumentWorkspace,
+  type ContentInitialDraftResponse,
+  type ContentPlanningProposalResponse,
   type ContentSelectedWorkspace,
   type ContentTargetDiscovery,
   type ContentTargetDraftPreview,
   type ContentTargetMappingPreview,
+  getContentWorkItemInitialDraft,
+  getContentWorkItemPlanningProposal,
+  postContentWorkItemInitialDraft,
+  postContentWorkItemPlanningProposal,
   postContentRevisionTargetDraftAction,
   postContentRevisionTargetMappingConfirmation
 } from "../lib/api";
 import {
   useContentRevisionTargetMapping,
   useContentRevisionTargetDraftPreview,
+  useContentPlanningProposal,
   useContentTargetDiscovery
 } from "./contentWorkflowQueries";
 import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
@@ -24,10 +31,12 @@ type View = "source" | "document" | "comparison";
 export function ContentDocumentWorkspaceCanvas({
   workspace,
   operatorJourney,
+  requestedBy,
   onOpenReview
 }: {
   workspace: ContentDocumentWorkspace;
   operatorJourney: ContentSelectedWorkspace["operator_journey"];
+  requestedBy: string;
   onOpenReview: () => void;
 }) {
   const hasDocument = Boolean(workspace.canonical_document.preview);
@@ -55,8 +64,7 @@ export function ContentDocumentWorkspaceCanvas({
   );
   const nextActionHandler = actionForNextStep(
     workspace.next_action.kind,
-    onOpenReview,
-    () => setView("document")
+    onOpenReview
   );
   const distinctNoActionReason = workspace.next_action.kind === "none" &&
     workspace.next_action.reason !== workspace.canonical_document.reason;
@@ -85,7 +93,13 @@ export function ContentDocumentWorkspaceCanvas({
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Stan nowej wersji</p>
             <p className="mt-2 text-base font-semibold text-ink">{workspace.canonical_document.label}</p>
             <p className="mt-1 text-sm leading-5 text-slate-700">{workspace.canonical_document.reason}</p>
-            {nextActionHandler ? (
+            {workspace.next_action.kind === "prepare_document" ? (
+              <ContentDocumentPreparationAction
+                workspace={workspace}
+                requestedBy={requestedBy}
+                onPrepared={() => setView("document")}
+              />
+            ) : nextActionHandler ? (
               <button type="button" className="mt-3 w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-white" onClick={nextActionHandler}>
                 {workspace.next_action.label}
               </button>
@@ -720,7 +734,7 @@ export function DevTargetLivePreview({ url }: { url: string }) {
             <iframe
               className="mt-3 min-h-0 flex-1 rounded-md border border-line bg-white"
               referrerPolicy="no-referrer"
-              sandbox="allow-same-origin allow-scripts"
+              sandbox="allow-same-origin"
               src={url}
               title="Referencyjny podgląd strony dev"
             />
@@ -731,17 +745,180 @@ export function DevTargetLivePreview({ url }: { url: string }) {
   );
 }
 
+type DocumentPreparationPhase = "idle" | "planning" | "drafting" | "complete";
+
+function ContentDocumentPreparationAction({
+  workspace,
+  requestedBy,
+  onPrepared
+}: {
+  workspace: ContentDocumentWorkspace;
+  requestedBy: string;
+  onPrepared: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [phase, setPhase] = useState<DocumentPreparationPhase>("idle");
+  const [message, setMessage] = useState<string | null>(null);
+  const planning = useContentPlanningProposal(workspace.work_item_id, true);
+  const preparationMutation = useMutation({
+    mutationFn: async () => {
+      setPhase("planning");
+      let planningResponse = planning.data ?? (await planning.refetch()).data;
+      if (!planningResponse) {
+        throw new Error("Nie udało się odczytać aktualnego wejścia planu.");
+      }
+      if (
+        !planningResponseCanCreateDraft(planningResponse) &&
+        planningResponse.status !== "generating"
+      ) {
+        if (!planningResponse.service_card_id || !planningResponse.planning_input_digest) {
+          throw new Error(planningResponse.safe_next_step);
+        }
+        planningResponse = await postContentWorkItemPlanningProposal({
+          service_card_id: planningResponse.service_card_id,
+          expected_planning_input_digest: planningResponse.planning_input_digest,
+          requested_by: requestedBy,
+          operator_hint: "",
+          regenerate_stale_mapping: false,
+          regenerate_after_review: false
+        }, workspace.work_item_id);
+      }
+      planningResponse = await pollPlanningResponse(
+        planningResponse,
+        workspace.work_item_id
+      );
+      if (!planningResponseCanCreateDraft(planningResponse)) {
+        throw new Error(planningResponse.safe_next_step);
+      }
+      const proposal = planningResponse.proposal;
+      if (
+        !proposal?.proposal_id ||
+        !proposal.planning_digest ||
+        !proposal.planning_input_digest
+      ) {
+        throw new Error(planningResponse.safe_next_step);
+      }
+      setPhase("drafting");
+      const initialResponse = await postContentWorkItemInitialDraft({
+        expected_proposal_id: proposal.proposal_id,
+        expected_planning_digest: proposal.planning_digest,
+        expected_planning_input_digest: proposal.planning_input_digest,
+        requested_by: requestedBy
+      }, workspace.work_item_id);
+      const completedDraft = await pollInitialDraftResponse(
+        initialResponse,
+        workspace.work_item_id
+      );
+      if (completedDraft.status !== "created") {
+        throw new Error(completedDraft.safe_next_step);
+      }
+      return completedDraft;
+    },
+    onSuccess: () => {
+      setPhase("complete");
+      void queryClient.refetchQueries({
+        queryKey: [
+          "content-workflow",
+          "work-item",
+          workspace.work_item_id,
+          "selected-workspace"
+        ]
+      }).then(onPrepared);
+    },
+    onError: (error) => {
+      setPhase("idle");
+      setMessage(error instanceof Error ? error.message : "Nie udało się przygotować dokumentu.");
+    }
+  });
+  const pending = phase !== "idle";
+  const label = phase === "planning"
+    ? "Przygotowuję plan…"
+    : phase === "drafting"
+      ? "Przygotowuję dokument…"
+      : phase === "complete"
+        ? "Odświeżam dokument…"
+        : workspace.next_action.label;
+
+  return (
+    <>
+      <button
+        type="button"
+        className="mt-3 w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={pending || planning.isPending}
+        onClick={() => {
+          setMessage(null);
+          preparationMutation.mutate();
+        }}
+      >
+        {label}
+      </button>
+      {message ? <p className="mt-3 text-sm leading-5 text-wait">{message}</p> : null}
+    </>
+  );
+}
+
+function planningResponseCanCreateDraft(response: ContentPlanningProposalResponse): boolean {
+  return (
+    ["created", "idempotent", "ready"].includes(response.status) &&
+    Boolean(
+      response.proposal?.proposal_id &&
+      response.proposal.planning_digest &&
+      response.proposal.planning_input_digest
+    )
+  );
+}
+
+const DOCUMENT_PREPARATION_POLL_LIMIT = 200;
+
+async function pollPlanningResponse(
+  initial: ContentPlanningProposalResponse,
+  workItemId: string
+): Promise<ContentPlanningProposalResponse> {
+  let response = initial;
+  for (
+    let attempt = 0;
+    response.status === "generating" && attempt < DOCUMENT_PREPARATION_POLL_LIMIT;
+    attempt += 1
+  ) {
+    await waitForDocumentPreparationPoll(response.retry_after_seconds);
+    response = await getContentWorkItemPlanningProposal(workItemId);
+  }
+  return response;
+}
+
+async function pollInitialDraftResponse(
+  initial: ContentInitialDraftResponse,
+  workItemId: string
+): Promise<ContentInitialDraftResponse> {
+  let response = initial;
+  for (
+    let attempt = 0;
+    response.status === "generating" && attempt < DOCUMENT_PREPARATION_POLL_LIMIT;
+    attempt += 1
+  ) {
+    await waitForDocumentPreparationPoll(
+      response.blockers[0]?.retry_after_seconds
+    );
+    response = await getContentWorkItemInitialDraft(workItemId);
+  }
+  return response;
+}
+
+function waitForDocumentPreparationPoll(retryAfterSeconds?: number | null): Promise<void> {
+  const delayMs = Math.max(1, retryAfterSeconds ?? 1.5) * 1_000;
+  return new Promise((resolve) => window.setTimeout(resolve, delayMs));
+}
+
 function actionForNextStep(
   kind: ContentDocumentWorkspace["next_action"]["kind"],
-  onOpenReview: () => void,
-  onOpenDocument: () => void
+  onOpenReview: () => void
 ): (() => void) | null {
   switch (kind) {
     case "open_review":
     case "repair_document":
       return onOpenReview;
     case "prepare_document":
-      return onOpenDocument;
+      return null;
     case "none":
       return null;
     default:

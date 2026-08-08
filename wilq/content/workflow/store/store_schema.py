@@ -258,6 +258,7 @@ _CONTENT_WORKFLOW_SCHEMA = (
       revision_digest TEXT NOT NULL,
       action_id TEXT NOT NULL,
       status TEXT NOT NULL CHECK (status IN ('claimed', 'applied', 'failed')),
+      result_json TEXT,
       claimed_by TEXT NOT NULL,
       claimed_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -275,6 +276,7 @@ def ensure_content_workflow_schema(connection: sqlite3.Connection) -> None:
     for statement in _CONTENT_WORKFLOW_SCHEMA:
         connection.execute(statement)
     _ensure_content_human_review_updated_at(connection)
+    _ensure_content_new_page_apply_result_json(connection)
     ensure_sqlite_schema_version(connection)
 
 
@@ -302,4 +304,18 @@ def _ensure_content_human_review_updated_at(connection: sqlite3.Connection) -> N
         )
         migrated = True
     if migrated:
+        connection.commit()
+
+
+def _ensure_content_new_page_apply_result_json(connection: sqlite3.Connection) -> None:
+    columns = {
+        str(row[1])
+        for row in connection.execute(
+            "PRAGMA table_info(content_new_page_revision_apply_claims)"
+        )
+    }
+    if "result_json" not in columns:
+        connection.execute(
+            "ALTER TABLE content_new_page_revision_apply_claims ADD COLUMN result_json TEXT"
+        )
         connection.commit()
