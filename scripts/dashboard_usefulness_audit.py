@@ -184,15 +184,16 @@ SURFACES: tuple[SurfaceSpec, ...] = (
     SurfaceSpec(
         "opportunities",
         "/opportunities",
-        "Szanse",
+        "Szanse (retired)",
         "registry",
-        "production",
+        "technical",
         "/api/opportunities",
         requires_evidence=False,
         requires_source_connector=False,
         reference_next_step=(
-            "Użyj jako rejestr szans po Centrum pracy; decyzję uruchamiaj "
-            "przez powiązaną akcję i dowody."
+            "Kolejka została wycofana z nawigacji (PRD-4); /opportunities "
+            "przekierowuje do /command-center (Dzisiaj). Audyt nie wymaga "
+            "tej powierzchni jako produkcyjnej."
         ),
         demo_priority=75,
     ),
