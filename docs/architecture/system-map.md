@@ -110,39 +110,59 @@ kontrakt (`wilq/schemas/` + `packages/shared-schemas/`).
 
 ```text
 apps/api/wilq_api/routers/        — 30+ routerów, 124 endpointy
-wilq/content/workflow/            — operator journey, revisions, workspace,
-                                    target discovery/mapping, store
+wilq/content/workflow/            — fazy: pipeline_steps, documents, decisions,
+                                    workspace, target, store, contracts
 wilq/content/planning/            — input_sources, dynamic_input, proposals
 wilq/content/drafts/              — draft package, structured generation
 wilq/content/quality/             — semantic review, editorial integrity
 wilq/content/handoff/             — dev draft handoff (create-only)
-wilq/briefing/                    — diagnostics (ads, merchant, ahrefs, ga4),
-                                    command center, tactical queue
-wilq/actions/                     — ActionObject lifecycle + mutation readiness
-wilq/connectors/                  — google_ads, wordpress, ahrefs, merchant,
-                                    localo, gsc, ga4 (read-only adaptery)
+wilq/content/knowledge/           — service_profile/ (core, review, claims),
+                                    karty wiedzy, source facts
+wilq/briefing/                    — podkatalogi per-domena: ads/ (core,
+                                    search_terms, campaigns, budget,
+                                    custom_segments, negative_keywords,
+                                    operator_summary, labels), merchant/,
+                                    command_center/, ahrefs/, ga4/, localo/,
+                                    tactical_queue/ (facade w korzeniu)
+wilq/actions/                     — ActionObject lifecycle; content_refresh/
+                                    (core, queue, review, delivery, store)
+wilq/connectors/                  — google_ads/ (client transport + campaigns,
+                                    search_terms, budget, reports), wordpress,
+                                    ahrefs, merchant, localo, gsc, ga4
+wilq/schemas/                     — ads/ (contracts, diagnostics, optimizer,
+                                    business, custom_segments, labels),
+                                    actions, core, codex
 wilq/storage/                     — SQLite state, DuckDB metrics, schema v.
 wilq/audit/                       — event stream, identity
-wilq/codex/                       — app-server seam (run ledger, context pack)
-apps/dashboard/src/routes/        — 6 powierzchni + Zaplecze (Wiedza, Źródła)
+wilq/codex/                       — app-server seam: app_server, prompts
+                                    (wersjonowany prompt registry), safety
+                                    (dry-run + redaction), model_policy,
+                                    runtime_status; CodexRun ledger z kosztem
+apps/dashboard/src/routes/        — 6 powierzchni + Zaplecze (Wiedza, Źródła,
+                                    Uruchomienia AI)
 apps/dashboard/src/components/    — panele prezentacji
 packages/shared-schemas/src/      — kontrakt Zod (jedyna prawda dla UI)
 .agents/skills/wilq-*/            — 13 operator skills (API-owned)
 scripts/                          — verify.sh, test.sh, quality.sh, security.sh
 ```
 
-## 7. Największe pliki — znane hotspoty (renowacja FAZA 2)
+## 7. Hotspoty — stan po renowacji (2026-08-08)
 
-- `wilq/briefing/ads_diagnostics.py` 6265 linii — do rozbicia per-decyzja
-- `wilq/briefing/merchant_diagnostics.py` 3342
-- `wilq/briefing/command_center.py` 2751
-- `wilq/connectors/google_ads/client.py` 2579
-- `wilq/briefing/ahrefs_diagnostics.py` 2199
-- `wilq/schemas/ads.py` 2137
-- `wilq/actions/content_refresh.py` 2052
-- `apps/dashboard/src/routes/GenericSurface.tsx` 1608
-- `apps/dashboard/src/routes/MerchantDiagnosticSurface.tsx` 1215
-- `apps/dashboard/src/lib/api.ts` 1069
+Wszystkie duże pliki z oryginalnej mapy zostały zdekomponowane
+(behavior-preserving, facade + statyczne __all__ + monkeypatch forwarding,
+AST-identyczne przeniesienia, zero duplikacji):
+
+- ads_diagnostics 6265 → 34 (12 modułów w ads/)
+- merchant_diagnostics 3342 → 64 (6 modułów w merchant/)
+- command_center 2751 → 79 (8 modułów w command_center/)
+- google_ads/client 2579 → 776 (transport + 5 modułów)
+- ahrefs_diagnostics 2199 → 112 (7 modułów w ahrefs/)
+- schemas/ads 2137 → pakiet (8 modułów)
+- actions/content_refresh 2052 → pakiet (6 modułów)
+- service_profile 1513 → 102, tactical_queue 1390 → 106,
+  ga4_diagnostics 1323 → 98, localo_diagnostics 1278 → 69
+- GenericSurface.tsx 1608, MerchantDiagnosticSurface.tsx 1215,
+  api.ts 1069 — do dekompozycji w kolejnej rundzie (dashboard)
 
 ## 8. Bezpieczeństwo i granice (nie negocjowalne)
 
