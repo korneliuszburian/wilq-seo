@@ -1888,6 +1888,10 @@ describe("ActionMutationReadinessResponseSchema", () => {
       write_authorization_status: "blocked_outside_action_apply",
       last_created_draft: {
         wordpress_post_id: "1275",
+        post_status: "draft",
+        readback_status: "available",
+        blocker_code: null,
+        blocker_label: "",
         link: "https://ekologus.dev.proudsite.pl/?p=1275",
         edit_link: "https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=1275&action=edit",
         modified_gmt: "2026-08-08T10:15:00",
@@ -1898,6 +1902,8 @@ describe("ActionMutationReadinessResponseSchema", () => {
     });
 
     expect(parsed.write_authorization_status).toBe("blocked_outside_action_apply");
+    expect(parsed.last_created_draft?.post_status).toBe("draft");
+    expect(parsed.last_created_draft?.readback_status).toBe("available");
     expect(parsed.last_created_draft?.edit_link).toContain("post=1275");
     expect(parsed.vendor_write_possible).toBe(false);
     expect(parsed.would_attempt_vendor_write).toBe(false);

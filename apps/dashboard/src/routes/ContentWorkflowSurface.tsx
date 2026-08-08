@@ -445,9 +445,7 @@ function ContentClaimLedgerPanel({ revision }: { revision: ContentDraftRevision 
   const ledger = revision.claim_ledger;
   if (!ledger) return null;
   const entries = [...ledger.entries].sort((left, right) => {
-    const leftBlocked = contentClaimStatusLabel(left.status) === "blokuje" ? 0 : 1;
-    const rightBlocked = contentClaimStatusLabel(right.status) === "blokuje" ? 0 : 1;
-    return leftBlocked - rightBlocked;
+    return contentClaimStatusPriority(left.status) - contentClaimStatusPriority(right.status);
   });
   return (
     <section className="mt-4 rounded-xl border border-line bg-white p-4" data-testid="content-claim-ledger">
@@ -482,8 +480,26 @@ function ContentClaimLedgerPanel({ revision }: { revision: ContentDraftRevision 
   );
 }
 
+type ContentClaimStatus = NonNullable<
+  ContentDraftRevision["claim_ledger"]
+>["entries"][number]["status"];
+
+function contentClaimStatusPriority(status: ContentClaimStatus) {
+  switch (status) {
+    case "blocked":
+    case "blocked_until_measurement":
+    case "needs_human_review":
+      return 0;
+    case "allowed_with_evidence":
+    case "allowed_general":
+      return 1;
+    default:
+      return status satisfies never;
+  }
+}
+
 function contentClaimStatusLabel(
-  status: NonNullable<ContentDraftRevision["claim_ledger"]>["entries"][number]["status"]
+  status: ContentClaimStatus
 ) {
   switch (status) {
     case "allowed_with_evidence":
@@ -492,8 +508,9 @@ function contentClaimStatusLabel(
     case "blocked_until_measurement":
       return "blokuje";
     case "allowed_general":
-    case "needs_human_review":
       return "brak dowodu";
+    case "needs_human_review":
+      return "wymaga decyzji człowieka";
     default:
       return status satisfies never;
   }

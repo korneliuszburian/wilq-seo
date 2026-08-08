@@ -79,8 +79,13 @@ def _created_draft_readback(
 ) -> ActionCreatedWordPressDraftReadback | None:
     if readback is None or readback.wordpress_post_id is None:
         return None
+    blocker = readback.blockers[0] if readback.blockers else None
     return ActionCreatedWordPressDraftReadback(
         wordpress_post_id=readback.wordpress_post_id,
+        post_status=readback.post_status,
+        readback_status=readback.status,
+        blocker_code=blocker.code if blocker is not None else None,
+        blocker_label=blocker.label if blocker is not None else "",
         link=readback.link,
         edit_link=readback.edit_link,
         modified_gmt=readback.modified_gmt,

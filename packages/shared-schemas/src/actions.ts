@@ -284,6 +284,10 @@ export const ActionMutationApplyContractSchema = z.object({
 export const ActionCreatedWordPressDraftReadbackSchema = z
   .object({
     wordpress_post_id: z.string().min(1),
+    post_status: z.string().default(""),
+    readback_status: z.enum(["available", "blocked"]).default("blocked"),
+    blocker_code: z.string().nullable().optional(),
+    blocker_label: z.string().default(""),
     link: z.string().default(""),
     edit_link: z.string().default(""),
     modified_gmt: z.string().default(""),

@@ -139,6 +139,10 @@ describe("ActionPanels", () => {
         }
         lastCreatedDraft={{
           wordpress_post_id: "1275",
+          post_status: "draft",
+          readback_status: "available",
+          blocker_code: null,
+          blocker_label: "",
           link: "https://ekologus.dev.proudsite.pl/?p=1275",
           edit_link:
             "https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=1275&action=edit",
@@ -150,6 +154,7 @@ describe("ActionPanels", () => {
     );
 
     expect(screen.getByText("Utworzono szkic")).toBeInTheDocument();
+    expect(screen.getByText("Utworzono szkic")).toHaveClass("text-success");
     expect(screen.getByText("post_id: 1275")).toBeInTheDocument();
     expect(screen.getByText("modified_gmt: 2026-08-08T10:15:00")).toBeInTheDocument();
     expect(screen.getByText("Potwierdzenie digestu: zweryfikowany")).toBeInTheDocument();
@@ -171,6 +176,55 @@ describe("ActionPanels", () => {
       .toHaveAttribute("target", "_blank");
     expect(screen.getByRole("link", { name: "Otwórz w edytorze WordPress" }))
       .toHaveAttribute("rel", "noreferrer");
+  });
+
+  it("warns when the WordPress readback reports a published post", () => {
+    render(
+      <ActionReviewGatePanel
+        action={
+          {
+            review_gate: {
+              status: "ready_to_apply",
+              operator_checklist_labels: [],
+              apply_blocker_summary_label: "brak blokad",
+              confirmation_required: true,
+              apply_allowed: true,
+              last_confirmation_summary: null,
+              last_mutation_audit_summary: null
+            }
+          } as unknown as ActionObject
+        }
+        lastCreatedDraft={{
+          wordpress_post_id: "1275",
+          post_status: "publish",
+          readback_status: "blocked",
+          blocker_code: "wordpress_draft_status_mismatch",
+          blocker_label: "Odczyt nie potwierdził statusu draft",
+          link: "https://ekologus.dev.proudsite.pl/?p=1275",
+          edit_link:
+            "https://ekologus.dev.proudsite.pl/wp-admin/post.php?post=1275&action=edit",
+          modified_gmt: "2026-08-08T10:15:00",
+          content_digest: "a".repeat(64),
+          verification_status: "blocked"
+        }}
+      />
+    );
+
+    expect(screen.queryByText("Utworzono szkic")).not.toBeInTheDocument();
+    expect(screen.getByText("Status szkicu wymaga sprawdzenia")).toHaveClass("text-risk");
+    expect(
+      screen.getByText(
+        "Szkic ma status: publish — sprawdź, zanim założysz, że nie jest publiczny."
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Szkic nie jest publicznie widoczny do czasu publikacji (poza zakresem WILQ)."
+      )
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Blokada odczytu: Odczyt nie potwierdził statusu draft")
+    ).toBeInTheDocument();
   });
 
   it("uses the action evidence summary as visible proof context", () => {

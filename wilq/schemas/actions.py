@@ -105,6 +105,10 @@ class ActionCreatedWordPressDraftReadback(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     wordpress_post_id: str = Field(min_length=1)
+    post_status: str = ""
+    readback_status: Literal["available", "blocked"] = "blocked"
+    blocker_code: str | None = None
+    blocker_label: str = ""
     link: str = ""
     edit_link: str = ""
     modified_gmt: str = ""

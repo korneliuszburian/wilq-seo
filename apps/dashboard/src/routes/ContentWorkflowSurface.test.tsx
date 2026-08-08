@@ -779,15 +779,16 @@ describe("ContentWorkflowSurface", () => {
     expect(ledger).toHaveTextContent("Ekologus pomaga firmom sprawdzić obowiązki BDO.");
     expect(ledger).toHaveTextContent("z dowodem");
     expect(ledger).toHaveTextContent("blokuje");
-    expect(ledger).toHaveTextContent("brak dowodu");
+    expect(ledger).toHaveTextContent("wymaga decyzji człowieka");
+    expect(ledger).not.toHaveTextContent("brak dowodu");
     expect(ledger).toHaveTextContent("Źródła: wordpress_ekologus · Dowody: 1");
     expect(ledger).toHaveTextContent("Twierdzenie wymaga zakończonego pomiaru.");
     expect(ledger).toHaveTextContent("Twierdzenie wymaga decyzji człowieka.");
     expect(ledger).toHaveTextContent("wymagane");
     const items = within(ledger).getAllByRole("listitem");
     expect(items[0]).toHaveTextContent("blokuje");
-    expect(items[1]).toHaveTextContent("z dowodem");
-    expect(items[2]).toHaveTextContent("brak dowodu");
+    expect(items[1]).toHaveTextContent("wymaga decyzji człowieka");
+    expect(items[2]).toHaveTextContent("z dowodem");
   });
 
   it("keeps the claim section hidden for revisions without a ledger", async () => {

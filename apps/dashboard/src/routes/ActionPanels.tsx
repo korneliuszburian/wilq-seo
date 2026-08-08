@@ -555,10 +555,21 @@ function ActionCreatedDraftReadbackPanel({
   const publicHref = safeExternalHref(draft.link);
   const editHref = safeExternalHref(draft.edit_link);
   const digestLabel = draft.verification_status === "verified" ? "zweryfikowany" : "zablokowany";
+  const isVerifiedDraft =
+    draft.readback_status === "available" &&
+    draft.post_status === "draft" &&
+    draft.verification_status === "verified";
+  const postStatusLabel = draft.post_status || "brak potwierdzonego statusu";
 
   return (
-    <div className="mt-3 rounded-md border border-success/30 bg-success/5 p-3 text-slate-700">
-      <div className="font-semibold text-success">Utworzono szkic</div>
+    <div
+      className={`mt-3 rounded-md border p-3 text-slate-700 ${
+        isVerifiedDraft ? "border-success/30 bg-success/5" : "border-risk/30 bg-risk/5"
+      }`}
+    >
+      <div className={`font-semibold ${isVerifiedDraft ? "text-success" : "text-risk"}`}>
+        {isVerifiedDraft ? "Utworzono szkic" : "Status szkicu wymaga sprawdzenia"}
+      </div>
       <div className="mt-2 grid gap-2 md:grid-cols-2">
         <div>post_id: {draft.wordpress_post_id}</div>
         <div>modified_gmt: {draft.modified_gmt || "brak w readbacku"}</div>
@@ -587,8 +598,13 @@ function ActionCreatedDraftReadbackPanel({
         ) : null}
       </div>
       <p className="mt-2 leading-5 text-slate-600">
-        Szkic nie jest publicznie widoczny do czasu publikacji (poza zakresem WILQ).
+        {isVerifiedDraft
+          ? "Szkic nie jest publicznie widoczny do czasu publikacji (poza zakresem WILQ)."
+          : `Szkic ma status: ${postStatusLabel} — sprawdź, zanim założysz, że nie jest publiczny.`}
       </p>
+      {!isVerifiedDraft && draft.blocker_label ? (
+        <p className="mt-2 leading-5 text-risk">Blokada odczytu: {draft.blocker_label}</p>
+      ) : null}
     </div>
   );
 }
