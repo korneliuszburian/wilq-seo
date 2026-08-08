@@ -258,7 +258,6 @@ function ContentWorkflowRouteState({
       <ContentTextWorkspace
         workItemId={selectedWorkItemId}
         selectedWorkspace={selectedWorkspace}
-        operatorLabel={operatorLabel}
         onOpenReview={onOpenReview}
       />
     );
@@ -281,12 +280,10 @@ function ContentWorkflowEntryFailure({ onRetry }: { onRetry: () => void }) {
 function ContentTextWorkspace({
   workItemId,
   selectedWorkspace,
-  operatorLabel,
   onOpenReview
 }: {
   workItemId: string;
   selectedWorkspace: ContentSelectedWorkspaceQuery;
-  operatorLabel: string | null;
   onOpenReview: (workItemId: string) => void;
 }) {
   if (selectedWorkspace.isLoading) {
