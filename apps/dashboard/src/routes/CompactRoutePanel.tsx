@@ -94,18 +94,6 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
     ],
     safeRoute: "/command-center"
   },
-  "/codex-runs": {
-    title: "Uruchomienia Codex",
-    description:
-      "Miejsce na historię pracy operatora i sprawdzenia jakości odpowiedzi. Domyślny widok nie pokazuje roboczych poleceń ani pełnych danych technicznych.",
-    status: "częściowo dostępne przez zapisane wyniki sprawdzeń",
-    nextStep:
-      "Sprawdź ostatni zapis postępu, jeśli potrzebujesz potwierdzenia ostatniego przebiegu.",
-    blockers: [
-      "nie ma osobnego widoku historii uruchomień z oczyszczonymi poleceniami roboczymi",
-      "nie ma finalnego podziału na potwierdzenie dla marketera i widok techniczny operatora"
-    ]
-  },
   "/security": {
     title: "Bezpieczeństwo",
     description:

@@ -76,8 +76,16 @@ const MerchantDiagnosticSurface = lazy(() =>
     default: module.MerchantDiagnosticSurface
   }))
 );
+const CodexRunsSurface = lazy(() =>
+  import("./CodexRunsSurface").then((module) => ({ default: module.CodexRunsSurface }))
+);
 
 const dedicatedRouteRenderers: Record<string, () => ReactNode> = {
+  "/codex-runs": () => (
+    <LazyRoute>
+      <CodexRunsSurface />
+    </LazyRoute>
+  ),
   "/ads-doctor": () => (
     <LazyRoute fallback={<AdsRouteLoadingShell />}>
       <AdsDoctorSurface />

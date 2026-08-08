@@ -514,8 +514,16 @@ class CodexRun(BaseModel):
     hook: str | None = None
     source: str | None = None
     status: Literal["started", "completed", "failed", "blocked"]
+    model: str | None = None
+    model_reasoning_effort: str | None = None
+    prompt_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    prompt_template_id: str | None = None
+    token_usage_input: int | None = Field(default=None, ge=0)
+    token_usage_output: int | None = Field(default=None, ge=0)
+    cost_estimate_pln: float | None = Field(default=None, ge=0)
     used_endpoints: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     proposal_id: str | None = None
     planning_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")

@@ -13,6 +13,7 @@ import {
   AdsDiagnosticsResponseSchema,
   AhrefsDiagnosticsResponseSchema,
   CommandCenterResponseSchema,
+  CodexRunSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
   ContentOfficialSourceLineageRebaseRequestSchema,
@@ -109,6 +110,7 @@ import {
   type AdsDiagnosticsResponse,
   type AhrefsDiagnosticsResponse,
   type CommandCenterResponse,
+  type CodexRun,
   type ContentInitialDraftRequest,
   type ContentInitialDraftResponse,
   type ContentOfficialSourceLineageRebaseRequest,
@@ -847,6 +849,10 @@ export function getConnectors(): Promise<ConnectorStatus[]> {
   return apiGet("/api/connectors", z.array(ConnectorStatusSchema));
 }
 
+export function getCodexRuns(): Promise<CodexRun[]> {
+  return apiGet("/api/codex/runs", z.array(CodexRunSchema));
+}
+
 export function refreshConnector(connectorId: string): Promise<ConnectorRefreshRun> {
   return apiPost(
     `/api/connectors/${encodeURIComponent(connectorId)}/refresh`,
@@ -986,6 +992,7 @@ export type {
   AdsDiagnosticsResponse,
   AhrefsDiagnosticsResponse,
   CommandCenterResponse,
+  CodexRun,
   ContentDiagnosticsResponse,
   ContentDocumentWorkspace,
   ContentSelectedWorkspace,

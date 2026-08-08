@@ -51,6 +51,34 @@ export const AuditEventSchema = z.object({
   redacted: z.boolean()
 });
 
+export const CodexRunSchema = z.object({
+  id: z.string(),
+  skill: z.string().nullable().optional(),
+  hook: z.string().nullable().optional(),
+  source: z.string().nullable().optional(),
+  status: z.enum(["started", "completed", "failed", "blocked"]),
+  model: z.string().nullable().optional(),
+  model_reasoning_effort: z.string().nullable().optional(),
+  prompt_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  prompt_template_id: z.string().nullable().optional(),
+  token_usage_input: z.number().int().nonnegative().nullable().optional(),
+  token_usage_output: z.number().int().nonnegative().nullable().optional(),
+  cost_estimate_pln: z.number().nonnegative().nullable().optional(),
+  used_endpoints: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  source_material_ids: z.array(z.string()).default([]),
+  action_ids: z.array(z.string()).default([]),
+  proposal_id: z.string().nullable().optional(),
+  planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  initial_draft_context_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  initial_draft_base_revision_id: z.string().nullable().optional(),
+  started_at: z.string(),
+  deadline_at: z.string().nullable().optional(),
+  completed_at: z.string().nullable().optional(),
+  error: z.string().nullable().optional()
+});
+
 export const ActionReviewOutcomeSchema = z.enum([
   "approved_for_prepare",
   "needs_changes",
@@ -464,6 +492,7 @@ export const ActionApplyRequestSchema = z
   });
 
 export type ActionPreviewCardViewModel = z.infer<typeof ActionPreviewCardViewModelSchema>;
+export type CodexRun = z.infer<typeof CodexRunSchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema>;
 export type ActionMutationAuditRecord = z.infer<typeof ActionMutationAuditRecordSchema>;

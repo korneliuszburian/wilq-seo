@@ -43,11 +43,13 @@ describe("surface registry", () => {
     ]);
     expect(secondarySurfaceRoutes.map((route) => route.path)).toEqual([
       "/knowledge",
-      "/settings"
+      "/settings",
+      "/codex-runs"
     ]);
     expect(secondarySurfaceRoutes.map((route) => route.label)).toEqual([
       "Wiedza",
-      "Źródła"
+      "Źródła",
+      "Uruchomienia AI"
     ]);
 
     for (const route of [...primarySurfaceRoutes, ...secondarySurfaceRoutes]) {
@@ -69,11 +71,24 @@ describe("surface registry", () => {
       "/workflows",
       "/ga4",
       "/system",
-      "/security",
-      "/codex-runs"
+      "/security"
     ]) {
       expect(visiblePaths.has(path)).toBe(false);
     }
+  });
+
+  it("exposes AI runs as a production admin surface in Zaplecze", () => {
+    const codexRuns = surfaceRoutes.find((route) => route.path === "/codex-runs");
+
+    expect(codexRuns).toMatchObject({
+      label: "Uruchomienia AI",
+      family: "workflow",
+      status: "production",
+      mode: "admin",
+      navGroup: "secondary",
+      ownerPersona: "developer_audit"
+    });
+    expect(codexRuns?.icon).toBeDefined();
   });
 
   it("keeps placeholder, experimental and technical surfaces out of primary marketer navigation", () => {

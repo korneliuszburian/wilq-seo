@@ -11,10 +11,17 @@ from hashlib import sha256
 from typing import Literal
 from uuid import uuid4
 
+from wilq.codex.model_policy import (
+    configured_codex_model,
+    configured_codex_reasoning_effort,
+)
+from wilq.codex.prompts import resolve_prompt_template
+from wilq.codex.safety import assess_codex_prompt
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
 from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
+from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import LocalStateStore
 
 
@@ -50,6 +57,75 @@ class InitialDraftClaimContext:
             and self.context_digest == context_digest
             and self.base_revision_id == base_revision_id
         )
+
+
+@dataclass(frozen=True, slots=True)
+class _InitialDraftRunMetadata:
+    model: str | None
+    model_reasoning_effort: str | None
+    prompt_digest: str
+    prompt_template_id: str
+
+
+def _initial_draft_run_metadata(prompt: str | None = None) -> _InitialDraftRunMetadata:
+    prompt_template = resolve_prompt_template("content_initial_draft")
+    effective_prompt = prompt or prompt_template.render(regulatory_draft_directive="")
+    safety = assess_codex_prompt(effective_prompt, dry_run=False)
+    if not safety.allowed:
+        raise ValueError(f"Unsafe initial draft prompt: {safety.reason}")
+    return _InitialDraftRunMetadata(
+        model=configured_codex_model(),
+        model_reasoning_effort=configured_codex_reasoning_effort(),
+        prompt_digest=safety.prompt_digest,
+        prompt_template_id=prompt_template.registry_id,
+    )
+
+
+def _enrich_started_initial_draft_run(
+    run_store: LocalStateStore,
+    run: CodexRun,
+    *,
+    metadata: _InitialDraftRunMetadata,
+    source_material_ids: list[str],
+) -> CodexRun:
+    update = {
+        "model": metadata.model,
+        "model_reasoning_effort": metadata.model_reasoning_effort,
+        "prompt_digest": metadata.prompt_digest,
+        "prompt_template_id": metadata.prompt_template_id,
+        "source_material_ids": list(dict.fromkeys(source_material_ids)),
+    }
+    if not hasattr(run_store, "_connect"):
+        return run_store.save_codex_run(run.model_copy(update=update))
+    with run_store._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT payload_json FROM codex_runs WHERE id = ?",
+            (run.id,),
+        ).fetchone()
+        if row is None:
+            raise ValueError("initial draft queued run is no longer executable")
+        current = CodexRun.model_validate_json(row["payload_json"])
+        if current.status != "started":
+            raise ValueError("initial draft queued run is no longer executable")
+        enriched = CodexRun.model_validate(
+            redact_mapping(current.model_copy(update=update).model_dump(mode="json"))
+        )
+        cursor = connection.execute(
+            "UPDATE codex_runs SET payload_json = ? WHERE id = ? AND payload_json = ?",
+            (
+                json.dumps(
+                    enriched.model_dump(mode="json"),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+                run.id,
+                row["payload_json"],
+            ),
+        )
+        if cursor.rowcount != 1:
+            raise ValueError("initial draft queued run is no longer executable")
+        return enriched
 
 
 LEGACY_INITIAL_DRAFT_TIMEOUT_SECONDS = 900.0
@@ -228,6 +304,7 @@ def claim_initial_draft_run(
     planning_digest: str,
     planning_input_digest: str,
     evidence_ids: list[str],
+    source_material_ids: list[str] | None = None,
     timeout_seconds: float,
     context_digest: str,
     expected_base_revision_id: str | None,
@@ -278,14 +355,20 @@ def claim_initial_draft_run(
                 if _expire_claim_if_needed(connection, run, row["payload_json"]):
                     continue
                 return InitialDraftClaim(run=run, newly_claimed=False)
+        metadata = _initial_draft_run_metadata()
         run = CodexRun(
             id=f"codex_content_initial_draft_{uuid4().hex}",
             skill="wilq-content-operator",
             hook="content_initial_full_draft",
             source="wilq_api",
             status="started",
+            model=metadata.model,
+            model_reasoning_effort=metadata.model_reasoning_effort,
+            prompt_digest=metadata.prompt_digest,
+            prompt_template_id=metadata.prompt_template_id,
             used_endpoints=[endpoint],
             evidence_ids=list(dict.fromkeys(evidence_ids)),
+            source_material_ids=list(dict.fromkeys(source_material_ids or [])),
             proposal_id=proposal_id,
             planning_digest=planning_digest,
             planning_input_digest=planning_input_digest,
@@ -344,12 +427,15 @@ def start_initial_draft_run(
     *,
     work_item_id: str,
     evidence_ids: list[str],
+    source_material_ids: list[str] | None = None,
     proposal_id: str,
     planning_input_digest: str,
     planning_digest: str | None = None,
     context_digest: str | None = None,
     run_id: str | None = None,
+    prompt: str | None = None,
 ) -> CodexRun:
+    metadata = _initial_draft_run_metadata(prompt)
     if run_id is not None:
         existing = next(
             (item for item in run_store.list_codex_runs() if item.id == run_id),
@@ -367,7 +453,12 @@ def start_initial_draft_run(
             )
         ):
             raise ValueError("initial draft queued run lineage does not match proposal")
-        return existing
+        return _enrich_started_initial_draft_run(
+            run_store,
+            existing,
+            metadata=metadata,
+            source_material_ids=source_material_ids or [],
+        )
     return run_store.save_codex_run(
         CodexRun(
             id=run_id or f"codex_content_initial_draft_{uuid4().hex}",
@@ -375,8 +466,13 @@ def start_initial_draft_run(
             hook="content_initial_full_draft",
             source="wilq_api",
             status="started",
+            model=metadata.model,
+            model_reasoning_effort=metadata.model_reasoning_effort,
+            prompt_digest=metadata.prompt_digest,
+            prompt_template_id=metadata.prompt_template_id,
             used_endpoints=[f"/api/content/work-items/{work_item_id}/initial-draft"],
             evidence_ids=evidence_ids,
+            source_material_ids=list(dict.fromkeys(source_material_ids or [])),
             proposal_id=proposal_id,
             planning_digest=planning_digest,
             planning_input_digest=planning_input_digest,

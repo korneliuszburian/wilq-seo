@@ -314,14 +314,15 @@ export const surfaceRoutes = [
   },
   {
     path: "/codex-runs",
-    label: "Codex runs",
-    family: "technical",
-    status: "technical",
-    mode: "technical",
-    navGroup: "hidden",
+    label: "Uruchomienia AI",
+    family: "workflow",
+    status: "production",
+    mode: "admin",
+    navGroup: "secondary",
     generated: true,
     ownerPersona: "developer_audit",
-    firstScreenIntent: "Technical audit of Codex runs, never primary marketer workflow."
+    firstScreenIntent: "Audytować koszt, model, lineage i wynik uruchomień AI bez surowych promptów.",
+    icon: Boxes
   },
   {
     path: "/security",

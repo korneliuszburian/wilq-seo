@@ -3,7 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Protocol, cast
 
-from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
+from wilq.codex.app_server import (
+    CodexAppServerClientProtocol,
+    CodexAppServerStructuredTurnRequest,
+    CodexAppServerTurnResult,
+)
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import (
@@ -116,18 +120,25 @@ def generate_initial_full_draft(
     proposal_id = prepared.proposal.proposal_id
     if proposal_id is None:
         raise RuntimeError("Prepared initial draft is missing its generated proposal ID.")
+    turn_request = initial_full_draft_turn_request(
+        planning_input=prepared.planning_input,
+        proposal=prepared.proposal,
+        generation_contract=prepared.generation_contract,
+    )
     run = start_initial_draft_run(
         run_store,
         work_item_id=prepared.planning_input.work_item_id,
         evidence_ids=prepared.planning_input.evidence_ids,
+        source_material_ids=prepared.proposal.source_material_ids,
         proposal_id=proposal_id,
         planning_digest=prepared.proposal.planning_digest,
         planning_input_digest=prepared.planning_input.planning_input_digest,
         context_digest=context_digest
         or _initial_draft_context_digest(snapshot, prepared),
         run_id=run_id,
+        prompt=turn_request.instruction,
     )
-    runtime_result = _execute_runtime(prepared, client, run, run_store)
+    runtime_result = _execute_runtime(prepared, client, run, run_store, turn_request)
     if isinstance(runtime_result, ContentInitialDraftResponse):
         return runtime_result
     output, trace = runtime_result
@@ -524,15 +535,10 @@ def _execute_runtime(
     client: CodexAppServerClientProtocol,
     run: CodexRun,
     run_store: LocalStateStore,
+    turn_request: CodexAppServerStructuredTurnRequest,
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | ContentInitialDraftResponse:
     try:
-        result = client.run_structured_turn(
-            initial_full_draft_turn_request(
-                planning_input=inputs.planning_input,
-                proposal=inputs.proposal,
-                generation_contract=inputs.generation_contract,
-            )
-        )
+        result = client.run_structured_turn(turn_request)
     except Exception:
         result = CodexAppServerTurnResult(status="failed")
     trace = _runtime_trace(result)

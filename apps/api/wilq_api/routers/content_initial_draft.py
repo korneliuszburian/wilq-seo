@@ -276,6 +276,7 @@ def _queue_initial_draft(
         planning_digest=proposal.planning_digest,
         planning_input_digest=planning_input_digest,
         evidence_ids=list(getattr(proposal, "evidence_ids", [])),
+        source_material_ids=list(getattr(proposal, "source_material_ids", [])),
         timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
         context_digest=context_digest,
         expected_base_revision_id=base_revision_id,

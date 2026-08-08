@@ -115,6 +115,28 @@ def test_redaction_preserves_valid_planning_binding_but_not_token_like_values() 
     assert redacted["summary"] == "[REDACTED]"
 
 
+def test_redaction_preserves_codex_cost_usage_and_prompt_digest() -> None:
+    redacted = redact_mapping(
+        {
+            "prompt_digest": "a" * 64,
+            "prompt_template_id": "content_initial_draft@v1",
+            "token_usage_input": 1200,
+            "token_usage_output": 450,
+            "cost_estimate_pln": 1.2345,
+            "source_material_ids": ["source_material_bdo"],
+        }
+    )
+
+    assert redacted == {
+        "prompt_digest": "a" * 64,
+        "prompt_template_id": "content_initial_draft@v1",
+        "token_usage_input": 1200,
+        "token_usage_output": 450,
+        "cost_estimate_pln": 1.2345,
+        "source_material_ids": ["source_material_bdo"],
+    }
+
+
 def test_redaction_preserves_exact_acf_source_digest_for_clone_lineage() -> None:
     redacted = redact_mapping(
         {
