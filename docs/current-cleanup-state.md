@@ -13,7 +13,8 @@ i `scripts/verify.sh` przechodzi w pełni (1612 testów backend, 19 E2E, build):
   landing wchodzi do decyzji; Ahrefs jest `used` przy exact GSC/WordPress
   cross-source match; Ads/Planner mają pełny exact mapping; Merchant/Localo
   uczciwie `not_applicable` dla stron usług. Karta entry pokazuje „Zrób teraz /
-  Nie rób / Brakuje" z blockerami (blocked kandydaci nie są ukrywani).
+  Nie rób / Brakuje" z blockerami (blocked kandydaci nie są ukrywani) i okresem
+  metryk; review pokazuje claim ledger (które twierdzenia mają dowody i dlaczego).
 - **ACF/full page**: pełny create-only draft zachowuje wszystkie layouty, sibling
   fields, media i repeatery (9-layout falsifier); readback z subset-match digestem;
   brak `acf_clone_plan` = blocker; partial clone zablokowany.
