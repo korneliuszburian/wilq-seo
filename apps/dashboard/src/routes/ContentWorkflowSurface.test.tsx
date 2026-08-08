@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -911,6 +911,26 @@ describe("ContentWorkflowSurface", () => {
     );
     expect(screen.queryByRole("button", { name: "Zatwierdź tekst" })).not.toBeInTheDocument();
     expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
+  });
+
+  it("renders the five-step operator journey with exactly one current step and its blocker", async () => {
+    const workspace = contentDocumentWorkspace(savedFullDraftRevision());
+    workspace.canonical_document.status = "approved";
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace, false));
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })} client={client} />);
+
+    const journey = await screen.findByTestId("content-operator-journey");
+    const steps = within(journey).getAllByRole("listitem");
+    expect(steps).toHaveLength(5);
+    expect(steps.map((step) => step.getAttribute("data-phase"))).toEqual([
+      "complete", "complete", "complete", "complete", "current"
+    ]);
+    expect(steps.filter((step) => step.getAttribute("data-phase") === "current")).toHaveLength(1);
+    expect(within(steps[4]).getByText("Szkic na devie")).toBeInTheDocument();
+    expect(within(steps[4]).getByText("Brakuje bezpiecznego przekazania zatwierdzonej wersji")).toBeInTheDocument();
+    expect(within(steps[4]).getByText("Najpierw przygotuj bezpieczne przekazanie tej samej wersji.")).toBeInTheDocument();
   });
 
 });
