@@ -12,7 +12,9 @@ from apps.api.wilq_api.routers.content_snapshot import (
 from apps.api.wilq_api.routers.content_workflow_http import (
     project_content_work_item_browser_snapshot,
 )
-from wilq.content.workflow.contracts.contracts import ContentWorkItemStructuredDraftGenerationRequest
+from wilq.content.workflow.contracts.contracts import (
+    ContentWorkItemStructuredDraftGenerationRequest,
+)
 from wilq.content.workflow.pipeline_steps.stage_drafts import (
     build_content_work_item_structured_draft_generation_response,
 )

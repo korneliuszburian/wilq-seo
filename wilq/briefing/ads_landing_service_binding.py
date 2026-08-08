@@ -8,8 +8,8 @@ from wilq.content.canonical.landing_identity import build_landing_page_identity
 from wilq.content.knowledge.work_item_service_profile import (
     build_content_work_item_service_profile_context,
 )
-from wilq.content.workflow.workspace.catalog import build_content_inventory_catalog
 from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.workspace.catalog import build_content_inventory_catalog
 from wilq.schemas import AdsLandingServiceBinding
 
 

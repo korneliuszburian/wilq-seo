@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from _marketer_language import assert_marketer_text_has_no_workflow_jargon
 
-from wilq.content.workflow.decisions.decision_mapping import content_claim_ledger_from_work_item
 from wilq.content.workflow.contracts.models import (
     ContentWorkItem,
     content_workflow_action_allowed,
     content_workflow_blockers,
 )
+from wilq.content.workflow.decisions.decision_mapping import content_claim_ledger_from_work_item
 
 
 def _base_item(**overrides: object) -> ContentWorkItem:

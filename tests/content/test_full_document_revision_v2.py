@@ -24,7 +24,6 @@ from wilq.content.handoff.wordpress_execution import (
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
 from wilq.content.workflow.contracts.models import ContentWorkItem
-from wilq.content.workflow.target.new_page import ContentNewPageDocumentIdentity
 from wilq.content.workflow.documents.official_source_lineage import (
     build_official_source_lineage_rebase_command,
 )
@@ -43,6 +42,7 @@ from wilq.content.workflow.documents.revisions import (
     content_draft_package_digest,
 )
 from wilq.content.workflow.store.store import ContentWorkflowStore
+from wilq.content.workflow.target.new_page import ContentNewPageDocumentIdentity
 
 
 def test_full_document_v2_round_trips_and_renders_without_losing_assets(

@@ -6,6 +6,7 @@ import httpx
 import wilq.content.workflow.workspace.catalog as catalog_module
 from wilq.connectors.wordpress.client import WordPressCredentials, read_wordpress_content_material
 from wilq.content.planning.decisions import content_decision_work_item_id_for_url
+from wilq.content.workflow.decisions.inventory_binding import inventory_decision_for_work_item
 from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
@@ -14,7 +15,6 @@ from wilq.content.workflow.workspace.catalog import (
     inventory_metric_facts,
     inventory_work_item_id,
 )
-from wilq.content.workflow.decisions.inventory_binding import inventory_decision_for_work_item
 from wilq.schemas import MetricFact
 
 

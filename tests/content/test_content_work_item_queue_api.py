@@ -3,13 +3,13 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import wilq.briefing.content_diagnostics as content_diagnostics_module
+import wilq.content.workflow.workspace.api as workflow_api
 from wilq.briefing.content_diagnostics import (
     build_content_diagnostics,
     build_content_diagnostics_cached,
 )
 from wilq.briefing.tactical_queue import build_gsc_content_tactical_items
 from wilq.connectors.vendor import VendorMetricFact
-import wilq.content.workflow.workspace.api as workflow_api
 from wilq.content.workflow.pipeline_steps.queue import (
     build_content_work_item_queue_candidate,
     build_content_work_item_queue_response,

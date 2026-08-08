@@ -24,8 +24,8 @@ from wilq.content.inventory.records import ContentInventoryRecord, resolve_conte
 from wilq.content.knowledge.cards import match_content_knowledge_cards
 from wilq.content.knowledge.source_facts import ContentSourceFact, ContentSourceFactRegistry
 from wilq.content.preflight.workflow import build_content_preflight_verdict
-from wilq.content.workflow.decisions.decision_mapping import content_sales_brief_seed_from_decision
 from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.decisions.decision_mapping import content_sales_brief_seed_from_decision
 from wilq.schemas import ContentDecisionItem
 
 

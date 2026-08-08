@@ -15,13 +15,15 @@ from tests.content.structured_generation_fixtures import (
     _sales_brief,
     _structured_output,
 )
-from wilq.content.workflow.workspace.api import build_content_work_item_quality_review_response
 from wilq.content.workflow.contracts.contracts import (
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemQualityReviewRequest,
     ContentWorkItemWordPressDraftExecutionRequest,
 )
-from wilq.content.workflow.pipeline_steps.stage_review import build_content_work_item_human_review_response
+from wilq.content.workflow.pipeline_steps.stage_review import (
+    build_content_work_item_human_review_response,
+)
+from wilq.content.workflow.workspace.api import build_content_work_item_quality_review_response
 
 
 def test_adversarial_quality_review_blocks_forbidden_guarantee_claim() -> None:

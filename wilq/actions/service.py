@@ -233,10 +233,12 @@ from wilq.actions.wordpress_preview import (
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.registry import get_connector_status
+from wilq.content.workflow.store.store import (
+    content_workflow_store as action_content_workflow_store,
+)
 from wilq.content.workflow.target.dev_draft_action import (
     refresh_content_target_draft_action,
 )
-from wilq.content.workflow.store.store import content_workflow_store as action_content_workflow_store
 from wilq.operator_labels import (
     blocker_count_label,
     evidence_count_label,

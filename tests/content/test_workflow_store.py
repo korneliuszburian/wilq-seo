@@ -4,9 +4,9 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
+import wilq.content.workflow.store.store as workflow_store_module
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.review.human import ContentHumanReview
-import wilq.content.workflow.store.store as workflow_store_module
 from wilq.content.workflow.store.store import ContentWorkflowStore
 
 

@@ -18,15 +18,15 @@ from wilq.actions.payload_readiness import (
     payload_apply_allowed,
     payload_preview_items,
 )
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.store.store import WordPressRevisionApplyClaimResult
+from wilq.content.workflow.store.store_new_page_apply import new_page_apply_claim_store
 from wilq.content.workflow.target.new_page_apply_capability import new_page_apply_binding
 from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
 )
 from wilq.content.workflow.target.new_page_draft_executor import execute_new_page_draft_action
 from wilq.content.workflow.target.new_page_revision_binding import ContentNewPageDraftBinding
-from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
-from wilq.content.workflow.store.store import WordPressRevisionApplyClaimResult
-from wilq.content.workflow.store.store_new_page_apply import new_page_apply_claim_store
 from wilq.schemas import (
     ActionApplyRequest,
     ActionApplyResult,

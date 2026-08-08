@@ -13,8 +13,8 @@ from apps.api.wilq_api.routers.content_workflow import (
     _validate_canonical_html_alignment,
     _validate_revision_sections,
 )
-from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
+from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.documents.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.documents.revision_persistence import (
     build_stored_draft_revision,

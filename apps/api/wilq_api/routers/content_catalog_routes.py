@@ -22,11 +22,14 @@ from wilq.content.knowledge.service_profile import (
     content_service_profile_response,
 )
 from wilq.content.knowledge.source_facts import ekologus_seed_source_facts
+from wilq.content.workflow.pipeline_steps.operator import (
+    ContentOperatorContext,
+    content_operator_context,
+)
 from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogResponse,
     build_content_inventory_catalog_cached,
 )
-from wilq.content.workflow.pipeline_steps.operator import ContentOperatorContext, content_operator_context
 
 
 def register_content_catalog_routes(router: APIRouter) -> None:

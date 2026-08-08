@@ -15,9 +15,9 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     content_planning_inventory_digest,
 )
-from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionCtaBlock,

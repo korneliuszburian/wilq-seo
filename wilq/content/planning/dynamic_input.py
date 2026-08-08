@@ -49,21 +49,21 @@ from wilq.content.regulatory.policy import (
     regulatory_coverage_gap,
     regulatory_review_candidates,
 )
+from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.decisions.demand_evidence import (
     ContentSearchDemandEvidence,
     build_content_search_demand_evidence,
 )
-from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningProposal,
+    build_content_planning_proposal,
+)
 from wilq.content.workflow.target.new_page import (
     ContentNewPageBrief,
     ContentNewPageDocumentIdentity,
     ContentNewPageOverlapGuard,
     ContentNewPagePlanningFoundation,
     build_new_page_document_identity,
-)
-from wilq.content.workflow.decisions.planning import (
-    ContentPlanningProposal,
-    build_content_planning_proposal,
 )
 from wilq.schemas import ContentFreshnessAssessment
 

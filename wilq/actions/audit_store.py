@@ -8,8 +8,8 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from wilq.actions.operator_labels import action_mutation_audit_status_label
-from wilq.content.workflow.target.new_page_revision_binding import ContentNewPageDraftBinding
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.target.new_page_revision_binding import ContentNewPageDraftBinding
 from wilq.operator_labels import impact_comparison_summary_label
 from wilq.schemas import (
     ActionMutationAuditRecord,

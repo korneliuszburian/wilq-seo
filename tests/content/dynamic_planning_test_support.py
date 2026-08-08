@@ -9,6 +9,9 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+import wilq.content.workflow.decisions.inventory_binding as inventory_binding
+import wilq.content.workflow.workspace.api as workflow_api
+import wilq.content.workflow.workspace.catalog as inventory_catalog
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_initial_draft as initial_draft_router
 from apps.api.wilq_api.routers import content_planning_proposals as planning_router
@@ -22,9 +25,6 @@ from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
 )
 from wilq.content.regulatory import policy as regulatory_policy
-import wilq.content.workflow.workspace.api as workflow_api
-import wilq.content.workflow.workspace.catalog as inventory_catalog
-import wilq.content.workflow.decisions.inventory_binding as inventory_binding
 from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,

@@ -11,7 +11,10 @@ from wilq.content.planning.section_mapping import (
     build_inventory_mapping,
     canonicalize_model_inventory_headings,
 )
-from wilq.content.workflow.decisions.planning import _planning_reader_question, _planning_section_purpose
+from wilq.content.workflow.decisions.planning import (
+    _planning_reader_question,
+    _planning_section_purpose,
+)
 
 
 def test_the_content_baseline_uses_source_honest_purpose_and_reader_question() -> None:

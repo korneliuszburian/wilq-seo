@@ -9,6 +9,13 @@ import pytest
 from pydantic import ValidationError
 
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningDecision,
+    ContentPlanningProposal,
+    ContentPlanningSection,
+    ContentPlanningWorkspace,
+    build_content_planning_workspace,
+)
 from wilq.content.workflow.pipeline_steps.operator_steps import (
     CONTENT_WORKFLOW_OPERATOR_STEP_ORDER,
     ContentDraftRevisionWorkspaceStatus,
@@ -18,13 +25,6 @@ from wilq.content.workflow.pipeline_steps.operator_steps import (
     ContentWorkflowOperatorStepPhase,
     ContentWorkflowSalesBriefSignalStatus,
     build_content_workflow_operator_journey,
-)
-from wilq.content.workflow.decisions.planning import (
-    ContentPlanningDecision,
-    ContentPlanningProposal,
-    ContentPlanningSection,
-    ContentPlanningWorkspace,
-    build_content_planning_workspace,
 )
 
 

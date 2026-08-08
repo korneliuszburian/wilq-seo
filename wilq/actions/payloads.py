@@ -40,7 +40,9 @@ from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
     CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
 )
-from wilq.content.workflow.target.new_page_draft_action import CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.target.new_page_draft_action import (
+    CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
+)
 from wilq.content.workflow.target.new_page_draft_validation import (
     validate_new_page_draft_action_payload,
 )

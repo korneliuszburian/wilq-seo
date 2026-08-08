@@ -29,12 +29,14 @@ from wilq.content.planning.new_page_proposal import (
     queue_new_page_planning_proposal,
     terminalize_new_page_planning_claim,
 )
-from wilq.content.workflow.workspace.catalog import build_content_inventory_catalog_cached
 from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
     ContentDraftRevisionPublicConflictCode,
     ContentDraftRevisionReviewRequest,
 )
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.store.store import content_workflow_store
+from wilq.content.workflow.store.store_new_page import new_page_brief_store
 from wilq.content.workflow.target.new_page import (
     ContentNewPageBrief,
     ContentNewPageBriefInput,
@@ -69,9 +71,7 @@ from wilq.content.workflow.target.new_page_topics import (
     build_new_page_topic_recommendations,
     resolve_new_page_topic_candidate,
 )
-from wilq.content.workflow.decisions.planning import ContentPlanningProposal
-from wilq.content.workflow.store.store import content_workflow_store
-from wilq.content.workflow.store.store_new_page import new_page_brief_store
+from wilq.content.workflow.workspace.catalog import build_content_inventory_catalog_cached
 from wilq.schemas import ActionObject
 from wilq.storage.local_state import local_state_store
 

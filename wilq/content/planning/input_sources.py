@@ -12,12 +12,12 @@ from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
+from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.decisions.demand_evidence import (
     ContentAcceptedLandingMatchTier,
     ContentSearchDemandEvidence,
     ContentSearchDemandRow,
 )
-from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.evidence.registry import list_evidence_by_ids
 from wilq.schemas import (
     ConnectorCoveredWindow,

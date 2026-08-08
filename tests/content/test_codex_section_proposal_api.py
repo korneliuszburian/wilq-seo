@@ -16,7 +16,10 @@ from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentCodexSectionProposalRequest,
     ContentCodexSectionProposalResponse,
 )
-from wilq.content.workflow.documents.revisions import ContentDraftRevision, ContentDraftRevisionSection
+from wilq.content.workflow.documents.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionSection,
+)
 
 
 @pytest.mark.parametrize("review_status", ["unreviewed", "approved"])

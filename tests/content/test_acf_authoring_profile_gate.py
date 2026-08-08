@@ -1,6 +1,9 @@
 from datetime import UTC, datetime
 
-from wilq.content.workflow.documents.revisions import ContentDraftRevision, ContentDraftRevisionReview
+from wilq.content.workflow.documents.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionReview,
+)
 from wilq.content.workflow.target.target_discovery import (
     ContentTargetAuthoringLayout,
     ContentTargetAuthoringSurface,

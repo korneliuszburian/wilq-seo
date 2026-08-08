@@ -12,9 +12,9 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftOutputSection,
     StructuredDraftSectionInput,
 )
-from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionCtaBlock,

@@ -6,7 +6,9 @@ from pathlib import Path
 import pytest
 
 from wilq.content.drafts.initial_draft_run import initial_draft_context_digest
-from wilq.content.workflow.documents.codex_revision_commit import current_initial_draft_context_guard
+from wilq.content.workflow.documents.codex_revision_commit import (
+    current_initial_draft_context_guard,
+)
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionProposalMetadata,

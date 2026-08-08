@@ -7,8 +7,8 @@ from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
     _cta_patterns,
 )
-from wilq.content.workflow.workspace.api import _gate_candidate_on_service_binding
 from wilq.content.workflow.pipeline_steps.queue import ContentWorkItemQueueCandidate
+from wilq.content.workflow.workspace.api import _gate_candidate_on_service_binding
 
 
 def test_unbound_service_candidate_cannot_look_plan_ready() -> None:

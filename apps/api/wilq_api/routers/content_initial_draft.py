@@ -35,9 +35,11 @@ from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
     content_planning_proposal_store,
 )
-from wilq.content.workflow.documents.codex_revision_commit import current_initial_draft_context_guard
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.codex_revision_commit import (
+    current_initial_draft_context_guard,
+)
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,

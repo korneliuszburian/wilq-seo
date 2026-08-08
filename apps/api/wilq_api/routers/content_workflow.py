@@ -24,11 +24,6 @@ from wilq.content.planning.dynamic_input import (
 from wilq.content.planning.generated_proposal import (
     with_explicit_content_service_selection,
 )
-from wilq.content.workflow.documents.codex_revision_commit import (
-    ContentDraftRevisionContext,
-    current_editor_draft_context_guard,
-)
-from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
     ContentDraftRevisionPublicConflictCode,
@@ -44,12 +39,13 @@ from wilq.content.workflow.contracts.contracts import (
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
-from wilq.content.workflow.pipeline_steps.entry import (
-    ContentWorkflowEntryResponse,
-    build_content_workflow_entry,
-)
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.decisions.planning import ContentPlanningWorkspace
+from wilq.content.workflow.documents.codex_revision_commit import (
+    ContentDraftRevisionContext,
+    current_editor_draft_context_guard,
+)
+from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
@@ -57,6 +53,10 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionReviewCommand,
     ContentDraftRevisionSection,
     content_draft_package_digest,
+)
+from wilq.content.workflow.pipeline_steps.entry import (
+    ContentWorkflowEntryResponse,
+    build_content_workflow_entry,
 )
 from wilq.content.workflow.pipeline_steps.stage_measurement import (
     build_content_work_item_learning_proposal_response,

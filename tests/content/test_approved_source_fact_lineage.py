@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from wilq.content.knowledge.source_facts import ContentSourceFact, ContentSourceFactRegistry
 import wilq.content.workflow.decisions.decision_mapping as decision_mapping
+from wilq.content.knowledge.source_facts import ContentSourceFact, ContentSourceFactRegistry
 from wilq.content.workflow.decisions.decision_mapping import content_sales_brief_seed_from_decision
 from wilq.schemas import ContentDecisionItem
 

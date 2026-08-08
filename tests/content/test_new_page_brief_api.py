@@ -9,9 +9,9 @@ import apps.api.wilq_api.routers.content_new_page_brief as new_page_router_modul
 import wilq.content.workflow.target.new_page as new_page_module
 from apps.api.wilq_api.routers.content_workflow import router
 from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
-from wilq.content.workflow.workspace.catalog import (
-    ContentInventoryCatalogItem,
-    ContentInventoryCatalogResponse,
+from wilq.content.workflow.documents.revisions import (
+    ContentDraftRevisionConflict,
+    ContentDraftRevisionReviewResult,
 )
 from wilq.content.workflow.target.new_page import (
     ContentNewPageBriefInput,
@@ -23,11 +23,13 @@ from wilq.content.workflow.target.new_page_document import (
     ContentNewPageDeliveryReadiness,
     ContentNewPageDocumentReviewPrerequisiteConflict,
 )
-from wilq.content.workflow.target.new_page_draft_action import CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
+from wilq.content.workflow.target.new_page_draft_action import (
+    CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
+)
 from wilq.content.workflow.target.new_page_topics import ContentNewPageTopicRecommendations
-from wilq.content.workflow.documents.revisions import (
-    ContentDraftRevisionConflict,
-    ContentDraftRevisionReviewResult,
+from wilq.content.workflow.workspace.catalog import (
+    ContentInventoryCatalogItem,
+    ContentInventoryCatalogResponse,
 )
 
 

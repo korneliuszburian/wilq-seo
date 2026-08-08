@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from wilq.content.workflow.target.new_page_revision_binding import ContentNewPageDraftBinding
 from wilq.content.workflow.store.store_new_page_apply import NewPageApplyClaimStore
+from wilq.content.workflow.target.new_page_revision_binding import ContentNewPageDraftBinding
 from wilq.schemas import ActionApplyRequest, ActionMutationAuditRecord, AuditEvent
 
 

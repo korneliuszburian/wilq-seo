@@ -11,6 +11,8 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.workflow.contracts.contracts import ContentDraftRevisionReviewRequest
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.content.workflow.target.new_page import (
     ContentNewPageBriefInput,
     ContentNewPagePlanningFoundation,
@@ -28,8 +30,6 @@ from wilq.content.workflow.target.new_page_revision import (
     append_new_page_initial_revision,
     review_new_page_revision,
 )
-from wilq.content.workflow.decisions.planning import ContentPlanningProposal
-from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore

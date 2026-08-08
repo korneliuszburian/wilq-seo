@@ -18,7 +18,6 @@ from tests.content.test_work_item_preflight_api import (
     _sales_brief_seed,
 )
 from wilq.content.quality.review import _draft_package_findings
-from wilq.content.workflow.workspace.api import build_content_work_item_quality_review_response
 from wilq.content.workflow.contracts.contracts import (
     ContentWorkItemQualityReviewRequest,
     ContentWorkItemStructuredDraftGenerationRequest,
@@ -26,6 +25,7 @@ from wilq.content.workflow.contracts.contracts import (
 from wilq.content.workflow.pipeline_steps.stage_drafts import (
     build_content_work_item_structured_draft_generation_response,
 )
+from wilq.content.workflow.workspace.api import build_content_work_item_quality_review_response
 
 
 def test_content_quality_review_accepts_evidence_bound_draft() -> None:

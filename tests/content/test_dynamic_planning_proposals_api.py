@@ -47,7 +47,6 @@ from wilq.content.planning.runtime_contract import (
     planning_codex_timeout_seconds,
     planning_job_stale_after_seconds,
 )
-from wilq.content.workflow.workspace.catalog import inventory_work_item_id
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningDecision,
@@ -55,6 +54,7 @@ from wilq.content.workflow.decisions.planning import (
     ContentPlanningSection,
 )
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.workspace.catalog import inventory_work_item_id
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import local_state_store
 

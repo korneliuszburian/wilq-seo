@@ -8,7 +8,6 @@ import wilq.content.workflow.workspace.selected_workspace as selected_workspace_
 from apps.api.wilq_api.routers.content_selected_workspace import (
     register_content_selected_workspace_route,
 )
-from wilq.content.workflow.workspace.document_workspace import ContentDocumentWorkspace
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.pipeline_steps.operator_steps import (
     ContentDraftRevisionWorkspaceStatus,
@@ -16,6 +15,7 @@ from wilq.content.workflow.pipeline_steps.operator_steps import (
     ContentWorkflowOperatorJourney,
     build_content_workflow_operator_journey,
 )
+from wilq.content.workflow.workspace.document_workspace import ContentDocumentWorkspace
 
 
 def test_selected_workspace_keeps_exact_missing_state_out_of_catalogue_fallback(

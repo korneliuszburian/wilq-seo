@@ -27,10 +27,6 @@ from wilq.content.regulatory.source_reviews import (
     ContentRegulatorySourceReviewList,
 )
 from wilq.content.regulatory.source_snapshots import ContentRegulatorySourceSnapshotReadResponse
-from wilq.content.workflow.workspace.api import (
-    ContentWorkItemMeasurementOutcomeResponse,
-    ContentWorkItemMeasurementWindowResponse,
-)
 from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionReviewResponse,
     ContentDraftRevisionSaveResponse,
@@ -51,13 +47,17 @@ from wilq.content.workflow.target.new_page_document import (
 )
 from wilq.content.workflow.target.new_page_revision import ContentNewPageRevisionReviewResponse
 from wilq.content.workflow.target.new_page_topics import ContentNewPageTopicRecommendations
-from wilq.content.workflow.workspace.selected_workspace import ContentSelectedWorkspace
 from wilq.content.workflow.target.target_discovery import ContentTargetDiscovery
 from wilq.content.workflow.target.target_mapping import (
     ContentTargetDraftPreview,
     ContentTargetMappingConfirmationResult,
     ContentTargetMappingPreview,
 )
+from wilq.content.workflow.workspace.api import (
+    ContentWorkItemMeasurementOutcomeResponse,
+    ContentWorkItemMeasurementWindowResponse,
+)
+from wilq.content.workflow.workspace.selected_workspace import ContentSelectedWorkspace
 from wilq.schemas import ActionObject, MetricFact
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
