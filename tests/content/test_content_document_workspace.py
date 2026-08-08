@@ -3,21 +3,27 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
+from fastapi import APIRouter
+
+import apps.api.wilq_api.routers.content_document_workspace as document_workspace_router
 import wilq.content.workflow.workspace.document_lineage as lineage_module
 import wilq.content.workflow.workspace.document_workspace as workspace_module
 import wilq.content.workflow.workspace.selected_workspace as selected_workspace_module
-from wilq.content.workflow.workspace.catalog import ContentInventoryMaterialResponse
-from wilq.content.workflow.contracts.models import ContentWorkItem
-from wilq.content.workflow.pipeline_steps.operator_steps import (
-    ContentWorkflowOperatorFacts,
-    build_content_workflow_operator_journey,
+from apps.api.wilq_api.routers.content_document_workspace import (
+    register_content_document_workspace_route,
 )
+from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,
 )
+from wilq.content.workflow.pipeline_steps.operator_steps import (
+    ContentWorkflowOperatorFacts,
+    build_content_workflow_operator_journey,
+)
+from wilq.content.workflow.workspace.catalog import ContentInventoryMaterialResponse
 
 WORK_ITEM_ID = "content_work_item_bdo"
 SOURCE_URL = "https://www.ekologus.pl/bdo/"
@@ -238,6 +244,103 @@ def test_document_workspace_keeps_legacy_revision_without_claim_ledger() -> None
 
     assert projected is revision
     assert projected.claim_ledger is None
+
+
+def test_document_workspace_route_projects_ledger_only_for_full_revision(
+    monkeypatch,
+) -> None:
+    legacy_work_item_id = "content_work_item_bdo_legacy"
+    context = SimpleNamespace(
+        work_kind="refresh_existing",
+        service=SimpleNamespace(label="BDO i sprawozdawczość środowiskowa"),
+        source_public=SimpleNamespace(
+            url=SOURCE_URL,
+            title="BDO dla firm",
+            reason="Publiczny materiał jest dostępny.",
+            material=SimpleNamespace(evidence_ids=["ev_wp_bdo"]),
+        ),
+    )
+    material = ContentInventoryMaterialResponse(
+        status="ready",
+        url=SOURCE_URL,
+        source_kind="wordpress_rest",
+        title="BDO dla firm",
+        content_text="Aktualny materiał strony.",
+        evidence_id="ev_wp_bdo",
+    )
+    legacy_revision = ContentDraftRevision(
+        revision_id="content_revision_bdo_legacy_route",
+        work_item_id=legacy_work_item_id,
+        revision_number=1,
+        content_digest="a" * 64,
+        draft_package_id="content_draft_bdo_legacy",
+        draft_package_digest="b" * 64,
+        final_canonical_url=SOURCE_URL,
+        title="BDO",
+        sections=[
+            ContentDraftRevisionSection(
+                heading="Zakres",
+                body_markdown="Sprawdź zakres obowiązków.",
+            )
+        ],
+        created_by="wilku",
+        created_at=datetime.now(UTC),
+    )
+    revisions = {
+        WORK_ITEM_ID: _full_revision(),
+        legacy_work_item_id: legacy_revision,
+    }
+    items = {
+        work_item_id: ContentWorkItem(
+            id=work_item_id,
+            topic="BDO dla firm",
+            evidence_ids=["ev_wp_bdo"],
+            source_connectors=["wordpress_ekologus"],
+        )
+        for work_item_id in revisions
+    }
+    monkeypatch.setattr(workspace_module, "build_content_decision_context", lambda _id: context)
+    monkeypatch.setattr(workspace_module, "read_content_inventory_material", lambda _url: material)
+    monkeypatch.setattr(workspace_module, "_regulatory_review_candidates", lambda _revision: [])
+    monkeypatch.setattr(
+        workspace_module,
+        "content_workflow_store",
+        lambda: SimpleNamespace(
+            load_draft_revision_state=lambda work_item_id: SimpleNamespace(
+                status="unreviewed",
+                latest_revision=revisions[work_item_id],
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        document_workspace_router,
+        "snapshot_for_work_item_or_404",
+        lambda work_item_id: SimpleNamespace(
+            revision_workspace=SimpleNamespace(context_current=False),
+            preflight=SimpleNamespace(item=items[work_item_id]),
+        ),
+    )
+    router = APIRouter()
+    register_content_document_workspace_route(router)
+    endpoint = next(
+        route.endpoint
+        for route in router.routes
+        if getattr(route, "path", "").endswith("/document-workspace")
+    )
+    full_workspace = endpoint(WORK_ITEM_ID)
+    legacy_workspace = endpoint(legacy_work_item_id)
+
+    full_revision = full_workspace.canonical_document.revision
+    assert full_revision is not None
+    assert full_revision.claim_ledger is not None
+    assert full_revision.claim_ledger.work_item_id == WORK_ITEM_ID
+    assert full_revision.claim_ledger.entries
+    assert full_revision.claim_ledger.entries[0].evidence_ids == ["ev_wp_bdo"]
+    assert full_workspace.service_label == "BDO i sprawozdawczość środowiskowa"
+    assert full_workspace.next_action.label == "Przygotuj świeżą wersję"
+    projected_legacy_revision = legacy_workspace.canonical_document.revision
+    assert projected_legacy_revision is not None
+    assert projected_legacy_revision.claim_ledger is None
 
 
 def test_source_snapshot_projects_api_owned_label_for_each_status() -> None:
