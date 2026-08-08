@@ -34,7 +34,12 @@ from wilq.briefing.merchant.products import (  # noqa: F401
 )
 from wilq.briefing.merchant.shared import _latest_connector_refresh  # noqa: F401
 
-__all__ = _core.__all__
+__all__ = [
+    "MerchantDiagnosticsCacheEntry",
+    "build_merchant_diagnostics",
+    "build_merchant_diagnostics_cached",
+    "clear_merchant_diagnostics_cache",
+]
 
 _FORWARD_TARGETS = (
     _core,

@@ -555,6 +555,10 @@ def test_action_mutation_readiness_exposes_exact_created_draft_readback(
         "modified_gmt": "2026-08-08T10:15:00",
         "content_digest": content_digest,
         "verification_status": "verified",
+        "post_status": "draft",
+        "readback_status": "available",
+        "blocker_code": None,
+        "blocker_label": "",
     }
     assert "content_summary" not in data["last_created_draft"]
     assert "acf_field_names" not in data["last_created_draft"]
