@@ -9,6 +9,9 @@ def _candidate(
     *,
     index: int,
     impressions: int | None = None,
+    clicks: int | None = None,
+    comparison_status: str = "not_available",
+    comparison_periods: list[str] | None = None,
     title: str | None = None,
     reason: str | None = None,
     recommended_mode: str = "refresh",
@@ -29,8 +32,10 @@ def _candidate(
         ),
         search_metrics=SimpleNamespace(
             impressions=impressions,
-            clicks=None,
+            clicks=clicks,
             primary_query="operat wodnoprawny" if index == 1 else None,
+            comparison_status=comparison_status,
+            comparison_periods=[] if comparison_periods is None else comparison_periods,
         ),
     )
 
@@ -62,6 +67,30 @@ def test_recommendation_projects_a_blocked_decision_and_its_blocker() -> None:
     assert recommendation.decision_action == "wait_or_block"
     assert recommendation.blockers[0].code == "missing_evidence"
     assert recommendation.blockers[0].label == "aktualnych danych GSC"
+
+
+def test_gsc_facts_show_the_latest_available_comparison_period_only() -> None:
+    facts_with_period = entry_module._facts(
+        _candidate(
+            index=2,
+            impressions=120,
+            clicks=8,
+            comparison_status="available",
+            comparison_periods=[
+                "2026-06-01/2026-06-30",
+                "2026-07-01/2026-07-31",
+            ],
+        )
+    )
+    facts_without_period = entry_module._facts(
+        _candidate(index=2, impressions=120, comparison_status="available")
+    )
+
+    assert [fact.period_label for fact in facts_with_period] == [
+        "od 2026-07-01 do 2026-07-31",
+        "od 2026-07-01 do 2026-07-31",
+    ]
+    assert facts_without_period[0].period_label == ""
 
 
 def test_entry_limits_recommendations_and_does_not_read_inventory_without_search(

@@ -592,7 +592,8 @@ export const ContentWorkflowEntryModeSchema = z.object({
 
 export const ContentWorkflowEntryFactSchema = z.object({
   label: z.string().min(1),
-  value: z.string().min(1)
+  value: z.string().min(1),
+  period_label: z.string().default("")
 });
 
 export const ContentWorkflowEntryBlockerSchema = z.object({

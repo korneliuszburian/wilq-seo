@@ -168,7 +168,7 @@ function ContentWorkflowIntentStart({
                     <p className="mt-2 line-clamp-2 text-xs text-slate-500">{recommendation.url}</p>
                     <p className="mt-4 text-sm leading-6 text-slate-700">{recommendation.reason}</p>
                     <dl className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
-                      {recommendation.facts.map((fact) => <div key={fact.label}><dt className="font-semibold text-slate-500">{fact.label}</dt><dd className="mt-0.5 text-slate-700">{fact.value}</dd></div>)}
+                      {recommendation.facts.map((fact) => <div key={fact.label}><dt className="font-semibold text-slate-500">{fact.label}{fact.period_label ? ` (${fact.period_label})` : ""}</dt><dd className="mt-0.5 text-slate-700">{fact.value}</dd></div>)}
                     </dl>
                     <button type="button" className="mt-auto pt-5 text-left text-sm font-semibold text-action hover:text-action/80" onClick={() => onSelectWorkItem(recommendation.work_item_id)}>Otwórz stronę <span aria-hidden="true">→</span></button>
                   </article>

@@ -34,7 +34,7 @@ const entry: ContentWorkflowEntryResponse = {
     decision_action: "do_it_now",
     blockers: [],
     reason: "Strona wymaga sprawdzenia na podstawie danych GSC.",
-    facts: [{ label: "Wyświetlenia GSC", value: "107" }]
+    facts: [{ label: "Wyświetlenia GSC", value: "107", period_label: "od 2026-07-01 do 2026-07-31" }]
   }],
   search_query: null,
   search_results: [],
@@ -92,7 +92,7 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(screen.getByRole("heading", { name: "Co chcesz zrobić?" })).toBeInTheDocument();
     expect(screen.getAllByText("Odśwież istniejącą stronę")).toHaveLength(2);
     expect(screen.getByText("Utwórz nową stronę")).toBeInTheDocument();
-    expect(screen.getByText("Wyświetlenia GSC")).toBeInTheDocument();
+    expect(screen.getByText("Wyświetlenia GSC (od 2026-07-01 do 2026-07-31)")).toBeInTheDocument();
     expect(screen.getByText("Zrób teraz: odśwież istniejącą treść")).toBeInTheDocument();
     expect(screen.queryByText(/808 adresów/i)).not.toBeInTheDocument();
 

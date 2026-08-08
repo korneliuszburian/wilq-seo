@@ -11,6 +11,7 @@ from wilq.content.workflow.queue import (
     ContentWorkItemQueueCandidate,
     build_content_work_item_queue_response,
 )
+from wilq.schemas.core import _metric_period_label
 
 
 class ContentWorkflowEntryMode(BaseModel):
@@ -27,6 +28,7 @@ class ContentWorkflowEntryFact(BaseModel):
 
     label: str
     value: str
+    period_label: str = ""
 
 
 class ContentWorkflowEntryBlocker(BaseModel):
@@ -140,15 +142,28 @@ def _recommendation_title(candidate: ContentWorkItemQueueCandidate) -> str:
 
 def _facts(candidate: ContentWorkItemQueueCandidate) -> list[ContentWorkflowEntryFact]:
     metrics = candidate.search_metrics
+    period_label = (
+        _metric_period_label(metrics.comparison_periods[-1])
+        if metrics.comparison_status == "available" and metrics.comparison_periods
+        else ""
+    )
     facts: list[ContentWorkflowEntryFact] = []
     if metrics.impressions is not None:
         facts.append(
             ContentWorkflowEntryFact(
-                label="Wyświetlenia GSC", value=str(metrics.impressions)
+                label="Wyświetlenia GSC",
+                value=str(metrics.impressions),
+                period_label=period_label,
             )
         )
     if metrics.clicks is not None:
-        facts.append(ContentWorkflowEntryFact(label="Kliknięcia GSC", value=str(metrics.clicks)))
+        facts.append(
+            ContentWorkflowEntryFact(
+                label="Kliknięcia GSC",
+                value=str(metrics.clicks),
+                period_label=period_label,
+            )
+        )
     if metrics.primary_query:
         facts.append(
             ContentWorkflowEntryFact(
