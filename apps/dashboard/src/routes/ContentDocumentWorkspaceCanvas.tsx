@@ -29,8 +29,6 @@ export function ContentDocumentWorkspaceCanvas({
   workspace: ContentDocumentWorkspace;
   operatorJourney: ContentSelectedWorkspace["operator_journey"];
   onOpenReview: () => void;
-  operatorLabel?: string | null;
-  onWorkspaceChanged?: () => void;
 }) {
   const hasDocument = Boolean(workspace.canonical_document.preview);
   const [view, setView] = useState<View>(() => hasDocument ? "document" : "source");

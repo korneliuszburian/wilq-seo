@@ -301,8 +301,6 @@ function ContentTextWorkspace({
     workspace={workspace}
     operatorJourney={selectedWorkspace.data.operator_journey}
     onOpenReview={() => onOpenReview(workItemId)}
-    operatorLabel={operatorLabel}
-    onWorkspaceChanged={() => void selectedWorkspace.refetch()}
   />;
 }
 
