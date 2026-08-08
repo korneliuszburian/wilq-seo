@@ -530,22 +530,31 @@ Use these before adding endpoints:
 
 - Daily cockpit: `GET /api/dashboard/command-center`
 - Content diagnostics: `GET /api/content/diagnostics`
-- Content preflight: `GET /api/content/preflight`
-- Content queue: `GET /api/content/work-items/queue`
-- Content work item snapshot/enrichment: see `getContentWorkItemSnapshot()` and
-  `getContentWorkItemEnrichment()` in `apps/dashboard/src/lib/api.ts`
+- Content workflow entry: `GET /api/content/workflow-entry`
+- Content operator context: `GET /api/content/operator-context`
+- Content inventory catalog: `GET /api/content/inventory/catalog`
+- Selected workspace (existing page): `GET /api/content/work-items/{id}/selected-workspace`
+- Target discovery (dev object): `GET /api/content/work-items/{id}/target-discovery`
+- Target mapping: `GET /api/content/work-items/{id}/target-mapping`,
+  `POST /api/content/work-items/{id}/target-mapping/confirmation`
+- Planning proposals: `POST /api/content/work-items/{id}/planning-proposals`,
+  `GET /api/content/work-items/{id}/planning-proposals`
 - Content revisions: `POST /api/content/work-items/{id}/draft-revisions`,
   `POST /api/content/work-items/{id}/draft-revisions/{revision_id}/review`
-- WordPress authoring profile: `GET /api/content/wordpress/authoring-profile`
-- WordPress draft readiness/activation packet: `getContentWordPressDraftWriteReadiness()`,
-  `getContentWordPressDraftActivationPacket()`
+- WordPress draft write readiness/activation packet (legacy read-only):
+  `GET /api/content/wordpress/draft-write-readiness`,
+  `GET /api/content/wordpress/draft-activation-packet`
+- Dev draft discard (create-only cleanup): `POST /api/content/dev-drafts/discard-action`
 - Knowledge/service profile: `GET /api/content/service-profile`,
   `GET /api/content/knowledge-cards`
-- GSC/SEO content signals are currently inside content diagnostics/preflight.
+- GSC/SEO content signals are inside content diagnostics/preflight.
 - Ahrefs: `GET /api/ahrefs/diagnostics`
 - Source health: `GET /api/connectors`,
   `POST /api/connectors/{connector}/refresh`
-- Actions: `GET /api/actions`, `GET /api/actions/{id}`, validate/preview/review/confirm endpoints
+- Actions: `GET /api/actions`, `GET /api/actions/{id}`, validate/preview/review/confirm endpoints,
+  mutation readiness `GET /api/actions/{id}/mutation-readiness`
+- The dashboard consumes every response through `apps/dashboard/src/lib/api.ts` with
+  zod parsing; it never re-derives workflow state or approval.
 
 ## Second Opinion Packet Requirements
 
