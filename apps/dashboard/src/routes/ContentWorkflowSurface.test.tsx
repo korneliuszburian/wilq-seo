@@ -187,8 +187,31 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Szczegóły i dev")).toBeInTheDocument();
     expect(screen.getByText(/Nie ma jeszcze zapisanej wersji dokumentu/)).toBeInTheDocument();
     expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Nowa wersja" }));
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj nową wersję" }));
     expect(screen.getByRole("heading", { name: "Nowa wersja nie została jeszcze przygotowana" })).toBeInTheDocument();
+  });
+
+  it("shows an explanation without a button when there is no safe next action", async () => {
+    const workspace = contentDocumentWorkspace();
+    workspace.canonical_document.reason = "Dokument jest dostępny tylko do odczytu.";
+    workspace.next_action = {
+      kind: "none",
+      label: "Brak kolejnej bezpiecznej akcji",
+      reason: "Dalszy krok wymaga najpierw nowej decyzji człowieka."
+    };
+    vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
+
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const documentState = await screen.findByTestId("content-document-state");
+    expect(documentState).toHaveTextContent("Dalszy krok wymaga najpierw nowej decyzji człowieka.");
+    expect(screen.queryByRole("button", { name: "Brak kolejnej bezpiecznej akcji" })).not.toBeInTheDocument();
   });
 
   it("opens an existing prepared text before the source so the marketer can review the actual deliverable", async () => {
@@ -842,7 +865,11 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentSelectedWorkspace).mockResolvedValue(selectedWorkspace(workspace));
 
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&view=review", defaultPendingMinMs: 0 })} client={client} />);
+    render(<App appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo&text=1", defaultPendingMinMs: 0 })} client={client} />);
+
+    const nextAction = await screen.findByTestId("content-document-state");
+    expect(nextAction).toContainElement(screen.getByRole("button", { name: "Przygotuj poprawkę" }));
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj poprawkę" }));
 
     const repair = await screen.findByTestId("content-revision-repair");
     expect(screen.getByTestId("content-review-advisory")).toContainElement(repair);

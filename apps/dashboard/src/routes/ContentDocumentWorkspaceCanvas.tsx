@@ -55,7 +55,13 @@ export function ContentDocumentWorkspaceCanvas({
     workspace.canonical_document.revision_id ?? null,
     draftPreviewOpen && devDraftCanOpen
   );
-  const hasReviewAction = workspace.next_action.kind === "open_review";
+  const nextActionHandler = actionForNextStep(
+    workspace.next_action.kind,
+    onOpenReview,
+    () => setView("document")
+  );
+  const distinctNoActionReason = workspace.next_action.kind === "none" &&
+    workspace.next_action.reason !== workspace.canonical_document.reason;
 
   return (
     <main className="mx-auto max-w-[92rem] px-4 py-5 lg:px-8" data-testid="content-text-workspace">
@@ -81,10 +87,13 @@ export function ContentDocumentWorkspaceCanvas({
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-wait">Stan nowej wersji</p>
             <p className="mt-2 text-base font-semibold text-ink">{workspace.canonical_document.label}</p>
             <p className="mt-1 text-sm leading-5 text-slate-700">{workspace.canonical_document.reason}</p>
-            {hasReviewAction ? (
-              <button type="button" className="mt-3 w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-white" onClick={onOpenReview}>
+            {nextActionHandler ? (
+              <button type="button" className="mt-3 w-full rounded-md bg-action px-3 py-2 text-sm font-semibold text-white" onClick={nextActionHandler}>
                 {workspace.next_action.label}
               </button>
+            ) : null}
+            {distinctNoActionReason ? (
+              <p className="mt-3 rounded-md border border-line bg-white p-3 text-sm leading-5 text-slate-700">{workspace.next_action.reason}</p>
             ) : null}
           </section>
         </div>
@@ -722,6 +731,24 @@ export function DevTargetLivePreview({ url }: { url: string }) {
       ) : null}
     </>
   );
+}
+
+function actionForNextStep(
+  kind: ContentDocumentWorkspace["next_action"]["kind"],
+  onOpenReview: () => void,
+  onOpenDocument: () => void
+): (() => void) | null {
+  switch (kind) {
+    case "open_review":
+    case "repair_document":
+      return onOpenReview;
+    case "prepare_document":
+      return onOpenDocument;
+    case "none":
+      return null;
+    default:
+      return kind satisfies never;
+  }
 }
 
 function ComponentMappingList({
