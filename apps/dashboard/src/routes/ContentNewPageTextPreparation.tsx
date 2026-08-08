@@ -8,7 +8,7 @@ import {
   type ContentNewPagePlanningProposalWorkspace
 } from "../lib/api";
 import { textPreparationRecovery } from "./contentTextPreparationCopy";
-import { PlanningEvidenceDetails } from "./ContentTextPreparationPanel";
+import { PlanningEvidenceDetails } from "./PlanningEvidenceDetails";
 
 type NewPageProposal = NonNullable<
   NonNullable<ContentNewPagePlanningProposalWorkspace["proposal_status"]>["proposal"]
