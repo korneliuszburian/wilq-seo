@@ -15,10 +15,6 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { Shell } from "../components/Shell";
 import { LoadingBand } from "../components/OperatorPrimitives";
 import { queryClient } from "../lib/queryClient";
-import {
-  BriefWorkflowSurface,
-  briefSurfaceConfigs
-} from "./BriefWorkflowSurface";
 import { CommandCenter } from "./CommandCenterRoute";
 import {
   ActionDetailSurface,
@@ -168,8 +164,6 @@ function AdsRouteLoadingShell() {
 function renderGeneratedRoute(path: string) {
   const dedicatedRenderer = dedicatedRouteRenderers[path];
   if (dedicatedRenderer) return dedicatedRenderer();
-  const briefConfig = briefSurfaceConfigs[path];
-  if (briefConfig) return <BriefWorkflowSurface config={briefConfig} />;
   return <GenericSurface routeName={path} />;
 }
 
