@@ -26,6 +26,32 @@ from wilq.storage.metric_store import _connect_with_retry, metric_store
 client = TestClient(app)
 
 
+@pytest.mark.parametrize(
+    ("period", "expected_label"),
+    [
+        ("last_28_days", "ostatnie 28 dni"),
+        ("connector_refresh", "okres odświeżenia źródła"),
+        ("current", "bieżący"),
+        ("2026-07-01/2026-07-28", "od 2026-07-01 do 2026-07-28"),
+        ("custom_period", "custom_period"),
+    ],
+)
+def test_metric_fact_fills_marketer_readable_source_and_period_labels(
+    period: str,
+    expected_label: str,
+) -> None:
+    fact = MetricFact(
+        name="clicks",
+        value=12,
+        period=period,
+        source_connector="google_search_console",
+        evidence_id="ev_metric_fact_labels",
+    )
+
+    assert fact.source_connector_label == "Google Search Console"
+    assert fact.period_label == expected_label
+
+
 def test_local_storage_paths_are_private(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     state_dir = tmp_path / "state"
     state_path = state_dir / "wilq.sqlite3"
@@ -141,7 +167,9 @@ def test_metrics_api_exposes_metric_store_status_and_facts(
             "metric_label": "autorytet domeny",
             "value": 31,
             "period": "connector_refresh",
+            "period_label": "okres odświeżenia źródła",
             "source_connector": "ahrefs",
+            "source_connector_label": "Ahrefs",
             "evidence_id": refresh_response.json()["evidence_ids"][-1],
             "dimensions": {},
             "dimension_labels": {},

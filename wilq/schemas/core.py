@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Any, Literal
 
@@ -356,7 +356,9 @@ class MetricFact(BaseModel):
     metric_label: str = ""
     value: float | int | str
     period: str
+    period_label: str = ""
     source_connector: str
+    source_connector_label: str = ""
     evidence_id: str
     dimensions: dict[str, str] = Field(default_factory=dict)
     dimension_labels: dict[str, str] = Field(default_factory=dict)
@@ -376,6 +378,10 @@ class MetricFact(BaseModel):
     def fill_dimension_labels(self) -> MetricFact:
         if not self.metric_label:
             self.metric_label = metric_fact_label(self.name, self.source_connector)
+        if not self.source_connector_label:
+            self.source_connector_label = source_connector_label(self.source_connector)
+        if not self.period_label:
+            self.period_label = _metric_period_label(self.period)
         if not self.dimension_labels:
             self.dimension_labels = {key: _metric_dimension_label(key) for key in self.dimensions}
         if not self.dimension_value_labels:
@@ -394,6 +400,37 @@ class MetricStoreStatus(BaseModel):
     metric_fact_count: int
     connector_count: int
     refresh_run_count: int
+
+
+def _metric_period_label(period: str) -> str:
+    value = period.strip()
+    labels = {
+        "connector_refresh": "okres odświeżenia źródła",
+        "current": "bieżący",
+    }
+    if value in labels:
+        return labels[value]
+
+    days_value = ""
+    if value.startswith("last_") and value.endswith("_days"):
+        days_value = value.removeprefix("last_").removesuffix("_days")
+    elif value.startswith("last_") and value.endswith("d"):
+        days_value = value.removeprefix("last_").removesuffix("d")
+    elif value.endswith("d"):
+        days_value = value.removesuffix("d")
+    if days_value.isdigit() and int(days_value) > 0:
+        days = int(days_value)
+        return "ostatni dzień" if days == 1 else f"ostatnie {days} dni"
+
+    try:
+        start_value, end_value = value.split("/", maxsplit=1)
+        start = date.fromisoformat(start_value)
+        end = date.fromisoformat(end_value)
+    except ValueError:
+        return period
+    if start.isoformat() != start_value or end.isoformat() != end_value or start > end:
+        return period
+    return f"od {start.isoformat()} do {end.isoformat()}"
 
 
 def _metric_dimension_label(value: str) -> str:

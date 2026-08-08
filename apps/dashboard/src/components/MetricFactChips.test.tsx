@@ -13,7 +13,9 @@ describe("MetricFactChips", () => {
             metric_label: "Zmiany konkurencji",
             value: 0,
             period: "localo_mcp_read",
+            period_label: "odczyt Localo",
             source_connector: "localo",
+            source_connector_label: "Localo",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {
               contract: "competitor_visibility",
@@ -38,6 +40,8 @@ describe("MetricFactChips", () => {
     );
 
     expect(screen.getByText(/Zmiany konkurencji/)).toBeInTheDocument();
+    expect(screen.getByText("Źródło: Localo")).toBeInTheDocument();
+    expect(screen.getByText("Okres: odczyt Localo")).toBeInTheDocument();
     expect(screen.getByText(/obszar: widoczność konkurencji/)).toBeInTheDocument();
     expect(screen.getByText(/zakres: aktywne miejsca/)).toBeInTheDocument();
     expect(screen.getByText("Dane: odświeżone 1h temu")).toBeInTheDocument();
@@ -58,7 +62,9 @@ describe("MetricFactChips", () => {
             metric_label: "",
             value: 69420,
             period: "localo_mcp_read",
+            period_label: "",
             source_connector: "localo",
+            source_connector_label: "",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {},
             dimension_labels: {},
@@ -74,6 +80,8 @@ describe("MetricFactChips", () => {
     );
 
     expect(screen.getByText(/Metryka bez etykiety/)).toBeInTheDocument();
+    expect(screen.getByText("Źródło: localo")).toBeInTheDocument();
+    expect(screen.getByText("Okres: localo_mcp_read")).toBeInTheDocument();
     expect(screen.queryByText(/Łączny wolumen fraz/)).not.toBeInTheDocument();
     expect(screen.queryByText(/localo_total_keyword_volume/)).not.toBeInTheDocument();
   });
@@ -87,7 +95,9 @@ describe("MetricFactChips", () => {
             metric_label: "Zmiany konkurencji",
             value: 0,
             period: "localo_mcp_read",
+            period_label: "odczyt Localo",
             source_connector: "localo",
+            source_connector_label: "Localo",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {
               contract: "competitor_visibility"
@@ -121,7 +131,9 @@ describe("MetricFactChips", () => {
               metric_label: "Aktywne lokalizacje",
               value: 4,
               period: "localo_mcp_read",
+              period_label: "odczyt Localo",
               source_connector: "localo",
+              source_connector_label: "Localo",
               evidence_id: "ev_refresh_localo_test",
               dimensions: {
                 contract: "place_inventory",
@@ -164,7 +176,9 @@ describe("MetricFactChips", () => {
             metric_label: "średnia pozycja w siatce",
             value: 3,
             period: "localo_mcp_read",
+            period_label: "odczyt Localo",
             source_connector: "localo",
+            source_connector_label: "Localo",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {
               contract: "local_rankings",
@@ -194,6 +208,8 @@ describe("MetricFactChips", () => {
     expect(within(container).getByText("Dane: odświeżone 8h temu")).toBeInTheDocument();
     expect(container.textContent).not.toContain(" / obszar:");
     expect(container.textContent).not.toContain(" / odświeżone");
+    expect(container.textContent).not.toContain("3Źródło");
+    expect(container.textContent).not.toContain("LocaloOkres");
     expect(container.textContent).not.toContain("3obszar");
     expect(container.textContent).not.toContain("miejscaDane");
   });
@@ -207,7 +223,9 @@ describe("MetricFactChips", () => {
             metric_label: "średnia widoczność",
             value: 52.8261,
             period: "localo_mcp_read",
+            period_label: "odczyt Localo",
             source_connector: "localo",
+            source_connector_label: "Localo",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {},
             dimension_labels: {},
@@ -235,7 +253,9 @@ describe("MetricFactChips", () => {
             metric_label: "sesje z zaangażowaniem",
             value: 14,
             period: "last_28d",
+            period_label: "ostatnie 28 dni",
             source_connector: "google_analytics_4",
+            source_connector_label: "GA4",
             evidence_id: "ev_refresh_ga4_test",
             dimensions: {},
             dimension_labels: {},

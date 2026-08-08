@@ -78,6 +78,7 @@ import {
   ContentPreflightResponseSchema,
   ConnectorRefreshStateSchema,
   KnowledgeTaxonomyEntrySchema,
+  MetricFactSchema,
   MetricStoreStatusSchema,
   AdsOperatorSummarySchema,
   MerchantDiagnosticsResponseSchema,
@@ -123,6 +124,21 @@ describe("MetricStoreStatusSchema", () => {
       connector_count: 4,
       refresh_run_count: 7
     }).success).toBe(false);
+  });
+});
+
+describe("MetricFactSchema", () => {
+  it("defaults marketer-facing source and period labels for older payloads", () => {
+    const fact = MetricFactSchema.parse({
+      name: "clicks",
+      value: 12,
+      period: "last_28_days",
+      source_connector: "google_search_console",
+      evidence_id: "ev_metric_fact_labels"
+    });
+
+    expect(fact.source_connector_label).toBe("");
+    expect(fact.period_label).toBe("");
   });
 });
 

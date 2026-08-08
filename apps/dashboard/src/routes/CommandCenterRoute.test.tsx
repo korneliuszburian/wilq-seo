@@ -75,11 +75,13 @@ const commandCenterFixture: CommandCenterResponse = {
           metric_label: "Zgłoszenia problemów",
           value: 15,
           period: "connector_refresh",
+          period_label: "",
           source_connector: "google_merchant_center",
+          source_connector_label: "",
           evidence_id: "ev_refresh_merchant_feed",
           dimensions: {},
           dimension_labels: {},
-          dimension_value_labels: {}
+          dimension_value_labels: {},
         }
       ],
       co_widzimy:
@@ -136,7 +138,9 @@ const commandCenterFixture: CommandCenterResponse = {
           metric_label: "Kliknięcia",
           value: 138,
           period: "connector_refresh",
+          period_label: "",
           source_connector: "google_search_console",
+          source_connector_label: "",
           evidence_id: "ev_refresh_gsc",
           dimensions: {},
           dimension_labels: {},

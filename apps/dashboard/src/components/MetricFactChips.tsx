@@ -14,6 +14,20 @@ export function MetricFactChips({ facts }: { facts: MetricFact[] }) {
               {metricFactLabel(fact)}: {formatMetricFactValue(fact)}
             </span>
             {" "}
+            {fact.source_connector_label || fact.source_connector ? (
+              <span>
+                <span className="rounded bg-white px-1.5 py-0.5 text-slate-600">
+                  Źródło: {fact.source_connector_label || fact.source_connector}
+                </span>{" "}
+              </span>
+            ) : null}
+            {fact.period_label || fact.period ? (
+              <span>
+                <span className="rounded bg-white px-1.5 py-0.5 text-slate-600">
+                  Okres: {fact.period_label || fact.period}
+                </span>{" "}
+              </span>
+            ) : null}
             {dimensionChips.map(({ key, label, value }) => (
               <span key={`${metricFactKey(fact, index)}-${key}`}>
                 <span className="rounded bg-white px-1.5 py-0.5 text-slate-600">
