@@ -82,6 +82,8 @@ describe("operator safety copy guards", () => {
   it("keeps API labels out of StatusBadge visual state values", () => {
     const routeSources = [
       "src/routes/ActionPanels.tsx",
+      "src/routes/ActionPanels/GatePanel.tsx",
+      "src/routes/ActionPanels/ReviewControls.tsx",
       "src/routes/DetailPanels.tsx",
       "src/routes/Ga4DiagnosticSurface.tsx",
       "src/routes/KnowledgePanels.tsx",
