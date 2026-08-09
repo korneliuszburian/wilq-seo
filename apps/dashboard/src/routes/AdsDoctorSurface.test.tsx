@@ -4,7 +4,14 @@ import { describe, expect, it } from "vitest";
 
 describe("AdsDoctorSurface", () => {
   it("ads doctor route renders live metric-backed diagnostics", () => {
-    const routeSource = readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8");
+    const routeSource = [
+      "src/routes/AdsDoctorSurface.tsx",
+      "src/routes/AdsDoctorSections/AdsDiagnosticsLoadingState.tsx",
+      "src/routes/AdsDoctorSections/CompactDiagnosticCard.tsx",
+      "src/routes/AdsDoctorSections/MeasurementFirstBanner.tsx",
+      "src/routes/AdsDoctorSections/SafeWorkModes.tsx",
+      "src/routes/AdsDoctorSections/formatters.ts"
+    ].map((path) => readFileSync(path, "utf8")).join("\n");
     expect(routeSource).toContain('title="Reklamy i pomiar"');
     expect(routeSource).toContain("Najpierw pomiar");
     expect(routeSource).toContain("Kolejka diagnostyczna");

@@ -8,7 +8,14 @@ const routeSource = [
   "ContentWorkflowSections/ReviewWorkspaceSection.tsx"
 ].map((path) => readFileSync(resolve(__dirname, path), "utf8")).join("\n");
 const querySource = readFileSync(resolve(__dirname, "contentWorkflowQueries.ts"), "utf8");
-const entrySource = readFileSync(resolve(__dirname, "ContentWorkflowEntryPanel.tsx"), "utf8");
+const entrySource = [
+  "ContentWorkflowEntryPanel.tsx",
+  "ContentWorkflowEntryPanelSections/CanonicalDocument.tsx",
+  "ContentWorkflowEntryPanelSections/Flows.tsx",
+  "ContentWorkflowEntryPanelSections/IntentCards.tsx",
+  "ContentWorkflowEntryPanelSections/NewPageBrief.tsx",
+  "ContentWorkflowEntryPanelSections/Shared.tsx"
+].map((path) => readFileSync(resolve(__dirname, path), "utf8")).join("\n");
 const contentApiSource = readFileSync(resolve(__dirname, "../lib/api/content.ts"), "utf8");
 const actionRouteSource = readFileSync(resolve(__dirname, "DetailPanels.tsx"), "utf8");
 const actionQuerySource = readFileSync(resolve(__dirname, "actionDetailQueries.ts"), "utf8");

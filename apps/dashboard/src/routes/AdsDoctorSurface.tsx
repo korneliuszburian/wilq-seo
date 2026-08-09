@@ -1,25 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
 import {
-  AlertTriangle,
   BarChart3,
   CheckCircle2,
-  CircleSlash,
   Gauge,
   LineChart,
   Megaphone,
-  MousePointerClick,
   RefreshCw,
   ShieldAlert,
-  Sparkles,
-  Target
+  Sparkles
 } from "lucide-react";
 
 import {
-  ActionObject,
-  AdsDiagnosticsResponse,
-  DemandGenReadinessContract,
-  Ga4DiagnosticsResponse,
   getActions,
   getAdsDiagnosticsSummary,
   getDemandGenDiagnostics,
@@ -36,8 +27,19 @@ import {
   SourceFreshnessStrip,
   StatusPill
 } from "../components/DashboardMockupPrimitives";
-
-type AdsDecision = AdsDiagnosticsResponse["decision_queue"][number];
+import { AdsDiagnosticsLoadingState } from "./AdsDoctorSections/AdsDiagnosticsLoadingState";
+import { CompactDiagnosticCard } from "./AdsDoctorSections/CompactDiagnosticCard";
+import { MeasurementFirstBanner } from "./AdsDoctorSections/MeasurementFirstBanner";
+import { SafeWorkModes } from "./AdsDoctorSections/SafeWorkModes";
+import {
+  dateLabel,
+  formatCost,
+  metricTileValue,
+  pickPrimaryDecision,
+  priorityFromDecision,
+  riskFromDecision,
+  uniqueLabels
+} from "./AdsDoctorSections/formatters";
 
 export function AdsDoctorSurface() {
   const diagnostics = useQuery({
@@ -289,276 +291,4 @@ export function AdsDoctorSurface() {
       />
     </main>
   );
-}
-
-function AdsDiagnosticsLoadingState() {
-  return (
-    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <DashboardToolbar
-        title="Reklamy i pomiar"
-        description="WILQ pobiera źródłowe dane Ads. Nie pokazuję rekomendacji, dopóki odczyt nie wróci."
-        dateLabel="Dzisiaj"
-      />
-      <section className="rounded-md border border-amber-200 bg-amber-50 p-5 shadow-sm">
-        <div className="text-sm font-semibold text-amber-900">Odczyt Ads w toku</div>
-        <p className="mt-2 text-sm leading-6 text-amber-800">
-          Zapis zmian i wnioski o ROAS, przychodzie, waste oraz konwersjach pozostają zablokowane
-          do czasu potwierdzenia danych.
-        </p>
-      </section>
-    </main>
-  );
-}
-
-function MeasurementFirstBanner({
-  data,
-  ga4Data,
-  demandGenData
-}: {
-  data: AdsDiagnosticsResponse;
-  ga4Data: Ga4DiagnosticsResponse | null;
-  demandGenData: DemandGenReadinessContract | null;
-}) {
-  const ga4Blockers = ga4Data?.operator_summary.blocked_claim_labels ?? [];
-  const adsMissing = data.operator_summary.missing_read_contract_labels;
-  const demandGenMissing = demandGenData?.missing_read_contract_labels ?? [];
-  const blockers = uniqueLabels([...ga4Blockers, ...adsMissing, ...demandGenMissing]).slice(0, 4);
-
-  return (
-    <section className="my-5 overflow-hidden rounded-md border border-red-200 bg-red-50 shadow-sm">
-      <div className="grid gap-0 lg:grid-cols-[1.1fr_1fr]">
-        <div className="border-b border-red-200 p-4 lg:border-b-0 lg:border-r">
-          <div className="flex items-start gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-risk">
-              <AlertTriangle aria-hidden="true" size={20} />
-            </span>
-            <div>
-              <div className="text-sm font-semibold uppercase tracking-normal text-risk">
-                Najpierw pomiar
-              </div>
-              <h2 className="mt-1 text-lg font-semibold text-ink">
-                ROAS, przychód, waste i konwersje są zablokowane do czasu potwierdzenia danych.
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
-                {ga4Data?.conversion_readiness_contract.summary ?? data.strict_instruction}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="p-4">
-          <div className="text-sm font-semibold text-ink">Co blokuje wniosek</div>
-          <div className="mt-3 grid gap-2">
-            {blockers.length > 0 ? (
-              blockers.map((blocker) => (
-                <div key={blocker} className="flex items-center gap-2 text-sm text-slate-700">
-                  <CircleSlash aria-hidden="true" size={16} className="shrink-0 text-risk" />
-                  <span>{blocker}</span>
-                </div>
-              ))
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <CircleSlash aria-hidden="true" size={16} className="shrink-0 text-risk" />
-                <span>Brak jawnej bramki pomiaru w odczycie. Zatrzymaj wnioski i sprawdź źródła.</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SafeWorkModes({
-  data,
-  ga4Data,
-  demandGenData,
-  actions,
-  actionsPending
-}: {
-  data: AdsDiagnosticsResponse;
-  ga4Data: Ga4DiagnosticsResponse | null;
-  demandGenData: DemandGenReadinessContract | null;
-  actions: ActionObject[];
-  actionsPending: boolean;
-}) {
-  const summary = data.operator_summary;
-
-  return (
-    <section className="overflow-hidden rounded-md border border-line bg-white shadow-sm">
-      <div className="border-b border-line px-4 py-3">
-        <h2 className="text-base font-semibold text-ink">Bezpieczne tryby pracy</h2>
-        <p className="mt-1 text-sm leading-5 text-slate-600">
-          WILQ pokazuje review i podglądy. Nie zapisuje zmian w Ads ani nie odblokowuje obietnic bez bramek.
-        </p>
-      </div>
-      <div className="divide-y divide-line">
-        <ModeRow
-          icon={<MousePointerClick aria-hidden="true" size={16} />}
-          title="Review Ads"
-          detail={`${summary.ready_area_count} gotowe obszary, ${summary.blocked_area_count} blokady`}
-          statusLabel={summary.operator_review_gate_summary_label || "wymaga review"}
-          href="/actions"
-        />
-        <ModeRow
-          icon={<Gauge aria-hidden="true" size={16} />}
-          title="Sprawdź pomiar GA4"
-          detail={ga4Data?.freshness_assessment.next_step ?? "Brak odczytu GA4 w tym widoku"}
-          statusLabel={ga4Data?.action_summary_label ?? "sprawdź GA4"}
-          href="/ga4"
-        />
-        <ModeRow
-          icon={<Sparkles aria-hidden="true" size={16} />}
-          title="Demand Gen tylko do gotowości"
-          detail={demandGenData?.next_step ?? "Brak kontraktu Demand Gen"}
-          statusLabel={demandGenData?.action_summary_label ?? "review-only"}
-          href="/ads-doctor/demand-gen"
-        />
-        <ModeRow
-          icon={<Target aria-hidden="true" size={16} />}
-          title="ActionObject"
-          detail={
-            actionsPending
-              ? "WILQ wczytuje kolejkę bezpiecznych akcji. Zapis pozostaje zablokowany."
-              : actions.length > 0
-              ? actions[0].human_diagnosis || actions[0].recommended_reason
-              : "Brak akcji dla tej powierzchni"
-          }
-          statusLabel={actionsPending ? "wczytywanie" : data.action_summary_label}
-          href={actions[0] ? `/actions/${actions[0].id}` : "/actions"}
-        />
-      </div>
-    </section>
-  );
-}
-
-function ModeRow({
-  icon,
-  title,
-  detail,
-  statusLabel,
-  href
-}: {
-  icon: ReactNode;
-  title: string;
-  detail: string;
-  statusLabel: string;
-  href: string;
-}) {
-  return (
-    <a href={href} className="grid gap-2 px-4 py-3 hover:bg-slate-50 sm:grid-cols-[1fr_auto]">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-blue-50 text-action">
-          {icon}
-        </span>
-        <span>
-          <span className="block text-sm font-semibold text-ink">{title}</span>
-          <span className="mt-0.5 line-clamp-2 block text-sm leading-5 text-slate-600">{detail}</span>
-        </span>
-      </div>
-      <StatusPill label={statusLabel} tone="blue" />
-    </a>
-  );
-}
-
-function CompactDiagnosticCard({
-  icon,
-  title,
-  statusLabel,
-  summary,
-  facts,
-  nextStep,
-  tone
-}: {
-  icon: ReactNode;
-  title: string;
-  statusLabel: string;
-  summary: string;
-  facts: string[];
-  nextStep: string;
-  tone: "blue" | "red" | "purple";
-}) {
-  const toneClasses = {
-    blue: "bg-blue-50 text-action",
-    red: "bg-red-50 text-risk",
-    purple: "bg-violet-50 text-violet-700"
-  };
-
-  return (
-    <article className="overflow-hidden rounded-md border border-line bg-white shadow-sm">
-      <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className={`flex size-8 items-center justify-center rounded-md ${toneClasses[tone]}`}>
-            {icon}
-          </span>
-          <h2 className="text-base font-semibold text-ink">{title}</h2>
-        </div>
-        <StatusPill label={statusLabel} tone={tone === "red" ? "red" : tone} />
-      </div>
-      <div className="p-4">
-        <p className="line-clamp-4 text-sm leading-6 text-slate-700">{summary}</p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          {facts.map((fact) => (
-            <div key={fact} className="rounded-md border border-line bg-slate-50 px-3 py-2 text-sm font-medium text-ink">
-              {fact}
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 border-t border-line pt-3 text-sm leading-6 text-slate-700">
-          <span className="font-semibold text-ink">Następny krok: </span>
-          {nextStep}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function pickPrimaryDecision(data: AdsDiagnosticsResponse) {
-  const topIds = data.operator_summary.top_decision_ids;
-  return (
-    topIds.map((id) => data.decision_queue.find((decision) => decision.id === id)).find(Boolean) ??
-    data.decision_queue[0]
-  );
-}
-
-function priorityFromDecision(decision: AdsDecision): "P1" | "P2" | "P3" | "-" {
-  if (decision.status === "blocked" || decision.priority <= 20) return "P1";
-  if (decision.priority <= 40) return "P2";
-  if (decision.priority <= 70) return "P3";
-  return "-";
-}
-
-function riskFromDecision(risk: AdsDecision["risk"]): "low" | "medium" | "high" | "blocked" {
-  if (risk === "critical") return "high";
-  return risk;
-}
-
-function uniqueLabels(values: string[]) {
-  return Array.from(new Set(values.filter((value) => value.trim().length > 0)));
-}
-
-function metricTileValue(data: DemandGenReadinessContract | null, key: string) {
-  const value = data?.metric_tiles[key];
-  if (value === undefined) return `${key}: brak`;
-  return `${key}: ${value}`;
-}
-
-function formatCost(totalCostMicros: number, currencyCode?: string | null) {
-  const value = totalCostMicros / 1_000_000;
-  const formatted = new Intl.NumberFormat("pl-PL", {
-    maximumFractionDigits: 2,
-    style: currencyCode ? "currency" : "decimal",
-    currency: currencyCode ?? undefined
-  }).format(value);
-  return `koszt ${formatted}`;
-}
-
-function dateLabel(value?: string | null) {
-  if (!value) return "Dzisiaj";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Dzisiaj";
-  return new Intl.DateTimeFormat("pl-PL", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  }).format(date);
 }
