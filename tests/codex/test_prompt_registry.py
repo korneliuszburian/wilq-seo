@@ -9,11 +9,11 @@ from wilq.codex.safety import assess_codex_prompt
 
 
 def test_prompt_registry_resolves_versioned_template_and_rejects_unknown_id() -> None:
-    template = resolve_prompt_template("content_initial_draft@v1")
+    template = resolve_prompt_template("content_initial_draft@v2")
 
     assert template.id == "content_initial_draft"
-    assert template.version == 1
-    assert template.registry_id == "content_initial_draft@v1"
+    assert template.version == 2
+    assert template.registry_id == "content_initial_draft@v2"
     assert len(CODEX_PROMPT_TEMPLATES) == 3
     assert "publish_ready=false" in template.render(regulatory_draft_directive="")
     with pytest.raises(KeyError, match="Unknown Codex prompt template"):
