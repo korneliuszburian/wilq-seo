@@ -55,12 +55,13 @@ describe("GenericSurface", () => {
   });
 
   it("explains missing connector status as a readiness blocker", () => {
-    const source = readFileSync("src/routes/GenericSurface.tsx", "utf8");
+    const settingsSource = readFileSync("src/routes/SettingsSections.tsx", "utf8");
+    const genericSource = readFileSync("src/routes/GenericSurface.tsx", "utf8");
 
-    expect(source).toContain(
+    expect(settingsSource).toContain(
       "WILQ nie ma statusu źródeł danych; odśwież integracje przed oceną gotowości."
     );
-    expect(source).not.toMatch(/BlockerNotice message="Brak statusu/);
+    expect(genericSource).not.toMatch(/BlockerNotice message="Brak statusu/);
   });
 
   it("explains hidden Ads placeholders with a safe workflow route", () => {
