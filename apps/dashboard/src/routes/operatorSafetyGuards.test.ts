@@ -73,7 +73,10 @@ describe("operator safety copy guards", () => {
   });
 
   it("keeps operating workflow outcomes away from bare brak placeholders", () => {
-    const source = readSource("src/routes/OperatingRouteSurfaces.tsx");
+    const source = readSources([
+      "src/routes/OperatingRouteSurfaces.tsx",
+      "src/routes/OperatingRouteSections/WorkflowsSurfaceSection.tsx"
+    ]);
 
     expect(source).not.toContain('WILQ ma {count || "brak"}');
     expect(source).not.toContain("WILQ ma brak");
@@ -86,6 +89,8 @@ describe("operator safety copy guards", () => {
       "src/routes/ActionPanels/GatePanel.tsx",
       "src/routes/ActionPanels/ReviewControls.tsx",
       "src/routes/DetailPanels.tsx",
+      "src/routes/DetailPanelsSections/DecisionHeroSection.tsx",
+      "src/routes/DetailPanelsSections/MutationReadinessSection.tsx",
       "src/routes/Ga4DiagnosticSurface.tsx",
       "src/routes/Ga4Sections/OperatorSummarySection.tsx",
       "src/routes/KnowledgePanels.tsx",

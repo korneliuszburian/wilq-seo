@@ -65,11 +65,13 @@ describe("Ga4DiagnosticSurface", () => {
 
   it("keeps the GA4 measurement contract typed and review-only", () => {
     const routeSource = readFileSync("src/routes/Ga4DiagnosticSurface.tsx", "utf8");
+    const operatorSource = readFileSync("src/routes/Ga4Sections/OperatorSummarySection.tsx", "utf8");
+    const reviewSource = readFileSync("src/routes/Ga4Sections/ReviewActionsSection.tsx", "utf8");
     expect(routeSource).toContain("action.preview_cards");
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("data.evidence_summary_label");
-    expect(routeSource).toContain("conversionReadiness.missing_read_contract_summary_label");
-    expect(routeSource).toContain(
+    expect(operatorSource).toContain("conversionReadiness.missing_read_contract_summary_label");
+    expect(reviewSource).toContain(
       "WILQ nie podał etykiety akcji; nie traktuj tej decyzji jako gotowej do działania"
     );
     expect(routeSource).not.toContain('empty="brak"');
