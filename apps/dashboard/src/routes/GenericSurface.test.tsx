@@ -55,7 +55,7 @@ describe("GenericSurface", () => {
   });
 
   it("explains missing connector status as a readiness blocker", () => {
-    const settingsSource = readFileSync("src/routes/SettingsSections.tsx", "utf8");
+    const settingsSource = readFileSync("src/routes/SettingsSections/BodySection.tsx", "utf8");
     const genericSource = readFileSync("src/routes/GenericSurface.tsx", "utf8");
 
     expect(settingsSource).toContain(
