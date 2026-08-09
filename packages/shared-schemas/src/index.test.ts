@@ -2595,7 +2595,9 @@ describe("ContentQualityFindingSchema", () => {
     for (const code of [
       "required_claim_missing",
       "sales_brief_signal_review_required",
-      "sales_brief_signal_thin"
+      "sales_brief_signal_thin",
+      "thin_section",
+      "wall_of_text"
     ]) {
       expect(
         ContentQualityFindingSchema.safeParse({

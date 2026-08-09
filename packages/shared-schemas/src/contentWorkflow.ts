@@ -1974,6 +1974,8 @@ export const ContentQualityFindingCodeSchema = z.enum([
   "missing_measurement_window",
   "sales_brief_signal_review_required",
   "sales_brief_signal_thin",
+  "thin_section",
+  "wall_of_text",
   "weak_cta",
   "missing_service_fit",
   "missing_search_intent",

@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import Literal
+from typing import Literal, NamedTuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.briefs.sales import ContentSalesBrief
-from wilq.content.claims.ledger import (
-    ContentClaimLedger,
-    claim_ledger_blockers,
-)
+from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.drafts.structured_generation import StructuredDraftOutput
 from wilq.content.inventory.records import ContentInventoryDuplicateRisk
+from wilq.content.quality import review_evidence, review_findings
+from wilq.content.quality.reading_quality import revision_readability_issues, weak_cta
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
@@ -43,6 +41,8 @@ ContentQualityFindingCode = Literal[
     "measurement_window_pending_publication",
     "sales_brief_signal_review_required",
     "sales_brief_signal_thin",
+    "thin_section",
+    "wall_of_text",
     "weak_cta",
     "missing_service_fit",
     "missing_search_intent",
@@ -113,6 +113,21 @@ class ContentQualityReview(BaseModel):
     safe_next_step: str
 
 
+class _ContentQualityDimensions(NamedTuple):
+    evidence_coverage: ContentQualityDimension
+    claim_safety: ContentQualityDimension
+    duplicate_risk: ContentQualityDimension
+    usefulness: ContentQualityDimension
+    service_fit: ContentQualityDimension
+    search_intent_fit: ContentQualityDimension
+    buyer_problem_fit: ContentQualityDimension
+    cta_quality: ContentQualityDimension
+    factual_precision: ContentQualityDimension
+    polish_language_quality: ContentQualityDimension
+    internal_link_fit: ContentQualityDimension
+    measurement_readiness: ContentQualityDimension
+
+
 def build_content_quality_review(
     *,
     item: ContentWorkItem,
@@ -147,6 +162,7 @@ def build_content_quality_review(
         ),
         *_brief_fit_findings(sales_brief=sales_brief),
         *_measurement_findings(item=item, revision=revision),
+        *_revision_readability_findings(item=item, revision=revision),
     ]
     blockers = [finding for finding in findings if finding.severity == "blocker"]
     needs_changes = [finding for finding in findings if finding.severity == "needs_changes"]
@@ -160,7 +176,10 @@ def build_content_quality_review(
     else:
         verdict = "ready_for_human_review"
 
-    evidence_ids = _review_evidence_ids(item, draft_package, structured_output, claim_ledger)
+    evidence_ids = review_evidence.review_evidence_ids(
+        item, draft_package, structured_output, claim_ledger
+    )
+    dimensions = _quality_dimensions(findings)
     return ContentQualityReview(
         review_id=(
             f"quality_review_{item.id}"
@@ -171,6 +190,31 @@ def build_content_quality_review(
         draft_package_id=None if draft_package is None else draft_package.id,
         revision_digest=None if revision is None else revision.content_digest,
         verdict=verdict,
+        evidence_coverage=dimensions.evidence_coverage,
+        claim_safety=dimensions.claim_safety,
+        duplicate_risk=dimensions.duplicate_risk,
+        usefulness=dimensions.usefulness,
+        service_fit=dimensions.service_fit,
+        search_intent_fit=dimensions.search_intent_fit,
+        buyer_problem_fit=dimensions.buyer_problem_fit,
+        cta_quality=dimensions.cta_quality,
+        factual_precision=dimensions.factual_precision,
+        polish_language_quality=dimensions.polish_language_quality,
+        internal_link_fit=dimensions.internal_link_fit,
+        measurement_readiness=dimensions.measurement_readiness,
+        blockers=blockers,
+        findings=findings,
+        revision_instructions=_revision_instructions(findings),
+        evidence_ids=evidence_ids,
+        source_connectors=item.source_connectors,
+        safe_next_step=_safe_next_step(verdict, blockers, needs_changes),
+    )
+
+
+def _quality_dimensions(
+    findings: list[ContentQualityFinding],
+) -> _ContentQualityDimensions:
+    return _ContentQualityDimensions(
         evidence_coverage=_dimension(
             "Pokrycie dowodami",
             findings,
@@ -180,9 +224,7 @@ def build_content_quality_review(
                 "unknown_evidence_reference",
                 "sales_brief_signal_thin",
             },
-            needs_change_codes={
-                "sales_brief_signal_review_required",
-            },
+            needs_change_codes={"sales_brief_signal_review_required"},
         ),
         claim_safety=_dimension(
             "Bezpieczeństwo twierdzeń",
@@ -208,6 +250,8 @@ def build_content_quality_review(
             blocked_codes={"sales_brief_signal_thin"},
             needs_change_codes={
                 "sales_brief_signal_review_required",
+                "thin_section",
+                "wall_of_text",
                 "weak_cta",
                 "missing_buyer_problem",
                 "missing_service_fit",
@@ -253,12 +297,6 @@ def build_content_quality_review(
             findings,
             blocked_codes={"missing_measurement_window"},
         ),
-        blockers=blockers,
-        findings=findings,
-        revision_instructions=_revision_instructions(findings),
-        evidence_ids=evidence_ids,
-        source_connectors=item.source_connectors,
-        safe_next_step=_safe_next_step(verdict, blockers, needs_changes),
     )
 
 
@@ -332,119 +370,13 @@ def _structured_output_findings(
     structured_output: StructuredDraftOutput | None,
     revision: ContentDraftRevision | None = None,
 ) -> list[ContentQualityFinding]:
-    if structured_output is None:
-        if revision is not None and revision.schema_version == "wilq_content_draft_revision_v2":
-            return []
-        return [
-            _finding(
-                "missing_structured_output",
-                "blocker",
-                "Brakuje ustrukturyzowanego szkicu",
-                "Ocena jakości przed sprawdzeniem człowieka wymaga szkicu z runtime WILQ.",
-                "Wygeneruj szkic przez WILQ Structured Outputs po przejściu bramek.",
-                evidence_ids=item.evidence_ids,
-                source_connectors=item.source_connectors,
-            )
-        ]
-    findings: list[ContentQualityFinding] = []
-    if structured_output.language != "pl-PL":
-        findings.append(
-            _finding(
-                "non_polish_language",
-                "blocker",
-                "Szkic nie jest po polsku",
-                "Wilku pracuje po polsku, a szkic musi być gotowy do polskiego review.",
-                "Wygeneruj szkic ponownie w języku polskim.",
-                evidence_ids=item.evidence_ids,
-                source_connectors=item.source_connectors,
-            )
-        )
-    if not structured_output.source_facts_used:
-        findings.append(
-            _finding(
-                "section_missing_evidence",
-                "blocker",
-                "Szkic nie wskazuje użytych dowodów",
-                "Nie wolno przekazać szkicu, którego źródła nie są jawne.",
-                "Wygeneruj szkic ponownie z mapą dowodów.",
-                source_connectors=item.source_connectors,
-            )
-        )
-    for section in structured_output.sections:
-        if section.evidence_ids:
-            continue
-        findings.append(
-            _finding(
-                "section_missing_evidence",
-                "blocker",
-                "Sekcja szkicu nie ma dowodów",
-                "Każda sekcja szkicu musi wskazywać użyte dowody.",
-                "Uzupełnij dowody dla sekcji albo usuń sekcję.",
-                affected_section=section.heading,
-                source_connectors=item.source_connectors,
-            )
-        )
-
-    unknown_evidence = _structured_output_evidence_ids(structured_output).difference(
-        _allowed_evidence_ids(item, draft_package)
+    return review_findings.structured_output_findings(
+        item=item,
+        draft_package=draft_package,
+        structured_output=structured_output,
+        revision=revision,
+        finding=_finding,
     )
-    if unknown_evidence:
-        findings.append(
-            _finding(
-                "unknown_evidence_reference",
-                "blocker",
-                "Szkic wskazuje obcy dowód",
-                "Szkic może korzystać tylko z dowodów przekazanych przez WILQ gates.",
-                "Usuń obce dowody: " + ", ".join(sorted(unknown_evidence)),
-                evidence_ids=sorted(unknown_evidence),
-                source_connectors=item.source_connectors,
-            )
-        )
-    if draft_package is not None:
-        missing_forbidden_claims = sorted(
-            set(draft_package.claims_removed_or_blocked).difference(
-                structured_output.forbidden_claims_avoided
-            )
-        )
-        if missing_forbidden_claims:
-            findings.append(
-                _finding(
-                    "missing_forbidden_claim_acknowledgement",
-                    "blocker",
-                    "Szkic nie potwierdza uniknięcia zakazanych claimów",
-                    "Ocena jakości wymaga jawnego potwierdzenia, że claimy usunięte "
-                    "z kontraktu nie trafiły do szkicu.",
-                    "Uzupełnij listę unikniętych claimów: "
-                    + "; ".join(missing_forbidden_claims),
-                    evidence_ids=item.evidence_ids,
-                    source_connectors=item.source_connectors,
-                )
-            )
-    if _weak_cta(structured_output.cta):
-        findings.append(
-            _finding(
-                "weak_cta",
-                "needs_changes",
-                "CTA jest za słabe albo puste",
-                "Treść ma prowadzić do bezpiecznego następnego kroku dla klienta.",
-                "Dopisz konkretne CTA bez obietnicy wyniku.",
-                evidence_ids=item.evidence_ids,
-                source_connectors=item.source_connectors,
-            )
-        )
-    if not structured_output.internal_links:
-        findings.append(
-            _finding(
-                "missing_internal_links",
-                "needs_changes",
-                "Brakuje linkowania wewnętrznego",
-                "Szkic powinien wskazać bezpieczne linki wewnętrzne do dalszej ścieżki.",
-                "Dodaj linki wewnętrzne z briefu albo oznacz brak jako decyzję człowieka.",
-                evidence_ids=item.evidence_ids,
-                source_connectors=item.source_connectors,
-            )
-        )
-    return findings
 
 
 def _claim_findings(
@@ -454,129 +386,13 @@ def _claim_findings(
     structured_output: StructuredDraftOutput | None,
     revision: ContentDraftRevision | None = None,
 ) -> list[ContentQualityFinding]:
-    if claim_ledger is None:
-        return [
-            _finding(
-                "missing_claim_ledger",
-                "blocker",
-                "Brakuje sprawdzenia twierdzeń",
-                "Szkic nie może przejść jakości bez listy dozwolonych i zablokowanych twierdzeń.",
-                "Zbuduj claim ledger przed oceną jakości.",
-                evidence_ids=item.evidence_ids,
-                source_connectors=item.source_connectors,
-            )
-        ]
-    findings: list[ContentQualityFinding] = []
-    ledger_blockers = claim_ledger_blockers(claim_ledger)
-    if revision is not None and revision.schema_version == "wilq_content_draft_revision_v2":
-        used_claim_ids = {
-            claim_id
-            for section in revision.sections
-            for claim_id in section.claim_ids
-        }
-        ledger_blockers = [
-            blocker for blocker in ledger_blockers if blocker.claim_id in used_claim_ids
-        ]
-    if ledger_blockers:
-        findings.append(
-            _finding(
-                "claim_ledger_blocks_quality",
-                "blocker",
-                "Sprawdzenie twierdzeń blokuje szkic",
-                "Ryzykowne albo niezweryfikowane twierdzenia muszą zostać usunięte.",
-                "Rozwiąż claim ledger przed oceną jakości.",
-                evidence_ids=_unique(
-                    entry.evidence_ids for entry in claim_ledger.entries
-                ),
-                source_connectors=item.source_connectors,
-            )
-        )
-    if structured_output is None:
-        return findings
-
-    blocked_claim_texts = {
-        entry.claim_text
-        for blocker in ledger_blockers
-        for entry in claim_ledger.entries
-        if entry.id == blocker.claim_id
-    }
-    used_claims = {
-        claim
-        for section in structured_output.sections
-        for claim in section.claims_used
-        if claim
-    }
-    ledger_claim_texts = {entry.claim_text for entry in claim_ledger.entries}
-    unsupported_claims = sorted(used_claims.difference(ledger_claim_texts))
-    if unsupported_claims:
-        findings.append(
-            _finding(
-                "unsupported_claim_used",
-                "blocker",
-                "Szkic używa twierdzenia spoza rejestru",
-                "Każde twierdzenie użyte przez model musi istnieć w Claim Ledger.",
-                "Usuń albo dodaj do Claim Ledger po review: "
-                + "; ".join(unsupported_claims),
-                source_connectors=item.source_connectors,
-            )
-        )
-    leaked_claims = sorted(used_claims.intersection(blocked_claim_texts))
-    if leaked_claims:
-        findings.append(
-            _finding(
-                "forbidden_claim_used",
-                "blocker",
-                "Szkic używa zablokowanego twierdzenia",
-                "Zablokowane claimy nie mogą pojawić się w treści.",
-                "Usuń zablokowane twierdzenia: " + "; ".join(leaked_claims),
-                source_connectors=item.source_connectors,
-            )
-        )
-    required_claims = sorted(
-        entry.claim_text
-        for entry in claim_ledger.entries
-        if entry.required
-        and entry.status in {"allowed_with_evidence", "allowed_general"}
-        and entry.claim_text not in used_claims
+    return review_findings.claim_findings(
+        item=item,
+        claim_ledger=claim_ledger,
+        structured_output=structured_output,
+        revision=revision,
+        finding=_finding,
     )
-    if required_claims:
-        findings.append(
-            _finding(
-                "required_claim_missing",
-                "blocker",
-                "Szkic pomija wymagany claim",
-                "Claim Ledger oznacza te twierdzenia jako wymagane do pokrycia w szkicu.",
-                "Dodaj wymagane twierdzenia do właściwej sekcji albo zmień Claim Ledger: "
-                + "; ".join(required_claims),
-                source_connectors=item.source_connectors,
-            )
-        )
-    claim_evidence_by_text = {
-        entry.claim_text: set(entry.evidence_ids)
-        for entry in claim_ledger.entries
-        if entry.status == "allowed_with_evidence" and entry.evidence_ids
-    }
-    for section in structured_output.sections:
-        section_evidence = set(section.evidence_ids)
-        for claim in section.claims_used:
-            required_evidence = claim_evidence_by_text.get(claim)
-            if not required_evidence or required_evidence.issubset(section_evidence):
-                continue
-            missing_evidence = sorted(required_evidence.difference(section_evidence))
-            findings.append(
-                _finding(
-                    "claim_missing_required_evidence",
-                    "blocker",
-                    "Twierdzenie nie ma wymaganych dowodów w sekcji",
-                    "Sekcja używa claimu z Claim Ledger, ale nie wskazuje wszystkich "
-                    "dowodów wymaganych dla tego twierdzenia.",
-                    "Dodaj wymagane dowody do sekcji albo usuń claim: " + claim,
-                    affected_section=section.heading,
-                    evidence_ids=missing_evidence,
-                    source_connectors=item.source_connectors,
-                )
-            )
-    return findings
 
 
 def _duplicate_findings(
@@ -728,6 +544,25 @@ def _measurement_findings(
     ]
 
 
+def _revision_readability_findings(
+    *, item: ContentWorkItem, revision: ContentDraftRevision | None
+) -> list[ContentQualityFinding]:
+    if revision is None or revision.schema_version != "wilq_content_draft_revision_v2":
+        return []
+    return [
+        _finding(
+            issue.code,
+            "needs_changes",
+            issue.label,
+            issue.reason,
+            issue.next_step,
+            affected_section=issue.affected_section,
+            source_connectors=item.source_connectors,
+        )
+        for issue in revision_readability_issues(revision.sections)
+    ]
+
+
 def _dimension(
     label: str,
     findings: list[ContentQualityFinding],
@@ -818,60 +653,4 @@ def _finding(
 
 
 def _weak_cta(cta: str) -> bool:
-    normalized = cta.strip().lower()
-    return not normalized or normalized in {"kliknij tutaj", "skontaktuj się", "czytaj dalej"}
-
-
-def _allowed_evidence_ids(
-    item: ContentWorkItem,
-    draft_package: ContentDraftPackage | None,
-) -> set[str]:
-    values = set(item.evidence_ids)
-    if draft_package is None:
-        return {value for value in values if value}
-    for section in draft_package.sections:
-        values.update(section.evidence_ids)
-    for mapping in draft_package.section_to_evidence_map:
-        values.update(mapping.evidence_ids)
-    return {value for value in values if value}
-
-
-def _structured_output_evidence_ids(output: StructuredDraftOutput) -> set[str]:
-    values = set(output.source_facts_used)
-    for section in output.sections:
-        values.update(section.evidence_ids)
-    return {value for value in values if value}
-
-
-def _review_evidence_ids(
-    item: ContentWorkItem,
-    draft_package: ContentDraftPackage | None,
-    structured_output: StructuredDraftOutput | None,
-    claim_ledger: ContentClaimLedger | None,
-) -> list[str]:
-    values: list[object] = [*item.evidence_ids]
-    if draft_package is not None:
-        values.extend(
-            evidence_id
-            for section in draft_package.sections
-            for evidence_id in section.evidence_ids
-        )
-    if structured_output is not None:
-        values.extend(_structured_output_evidence_ids(structured_output))
-    if claim_ledger is not None:
-        values.extend(
-            evidence_id for entry in claim_ledger.entries for evidence_id in entry.evidence_ids
-        )
-    return _unique(values)
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        if isinstance(value, list):
-            unique_values.extend(_unique(value))
-            continue
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
+    return weak_cta(cta)
