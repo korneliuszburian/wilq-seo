@@ -63,7 +63,15 @@ describe("MerchantDiagnosticSurface", () => {
   });
 
   it("keeps the Merchant operator contract typed and disclosure-safe", () => {
-    const routeSource = readFileSync("src/routes/MerchantDiagnosticSurface.tsx", "utf8");
+    const routeSource = [
+      "src/routes/MerchantDiagnosticSurface.tsx",
+      "src/routes/MerchantSections/FeedSafetySection.tsx",
+      "src/routes/MerchantSections/OperatorSummarySection.tsx",
+      "src/routes/MerchantSections/ProductSections.tsx",
+      "src/routes/MerchantSections/ReviewActionsSections.tsx"
+    ]
+      .map((path) => readFileSync(path, "utf8"))
+      .join("\n");
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("summary.action_summary_label");
     expect(routeSource).toContain("decision.action_summary_label");

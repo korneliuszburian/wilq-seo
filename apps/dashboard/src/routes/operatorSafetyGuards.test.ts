@@ -20,15 +20,17 @@ describe("operator safety copy guards", () => {
 
   it("keeps Merchant sample and count gaps framed as decision limits", () => {
     const source = readSource("src/routes/MerchantDiagnosticSurface.tsx");
+    const merchantSections = readSource("src/routes/MerchantSections/OperatorSummarySection.tsx");
 
     expect(source).not.toContain('??\n    "brak"');
     expect(source).not.toContain('"brak próbek"');
     expect(source).not.toContain('"brak tytułów"');
     expect(source).not.toContain("brak wymaganej ścieżki rozwiązania");
-    expect(source).toContain("ścieżka rozwiązania niepotwierdzona w Merchant");
-    expect(source).toContain("status nieznany");
-    expect(source).toContain("WILQ nie podał próbek produktów; sprawdź Merchant przed edycją");
-    expect(source).toContain(
+    expect(merchantSections).toContain("ścieżka rozwiązania niepotwierdzona w Merchant");
+    expect(merchantSections).toContain("status nieznany");
+    const productSections = readSource("src/routes/MerchantSections/ProductSections.tsx");
+    expect(productSections).toContain("WILQ nie podał próbek produktów; sprawdź Merchant przed edycją");
+    expect(productSections).toContain(
       "WILQ nie podał tytułów próbek; identyfikuj produkt w Merchant przed oceną"
     );
   });
