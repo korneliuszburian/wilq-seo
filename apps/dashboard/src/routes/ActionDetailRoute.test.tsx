@@ -2174,6 +2174,7 @@ describe("Action detail route", () => {
 
   it("keeps action detail labels sourced from API payload labels", () => {
     const source = readFileSync("src/routes/DetailPanels.tsx", "utf8");
+    const mutationSource = readFileSync("src/routes/DetailPanelsSections/MutationReadinessSection.tsx", "utf8");
     const actionPanelsSource = readFileSync("src/routes/ActionPanels/GatePanel.tsx", "utf8");
 
     expect(source).not.toContain("from \"./marketingLabels\"");
@@ -2192,7 +2193,7 @@ describe("Action detail route", () => {
     expect(source).not.toContain("ActionPayloadPreviewSummary");
     expect(source).not.toContain("PayloadPreviewCard");
     expect(source).toContain("ActionChangePreviewSummary");
-    expect(source).toContain("action.preview_cards");
+    expect(mutationSource).toContain("action.preview_cards");
     expect(actionPanelsSource).toContain("gate.last_mutation_attempted_label");
     expect(actionPanelsSource).toContain("gate.last_mutation_adapter_label");
     expect(actionPanelsSource).toContain("gate.last_mutation_audit_trace_label");

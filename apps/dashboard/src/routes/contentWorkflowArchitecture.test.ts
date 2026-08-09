@@ -2,7 +2,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const routeSource = readFileSync(resolve(__dirname, "ContentWorkflowSurface.tsx"), "utf8");
+const routeSource = [
+  "ContentWorkflowSurface.tsx",
+  "ContentWorkflowSections/TextWorkspaceSection.tsx",
+  "ContentWorkflowSections/ReviewWorkspaceSection.tsx"
+].map((path) => readFileSync(resolve(__dirname, path), "utf8")).join("\n");
 const querySource = readFileSync(resolve(__dirname, "contentWorkflowQueries.ts"), "utf8");
 const entrySource = readFileSync(resolve(__dirname, "ContentWorkflowEntryPanel.tsx"), "utf8");
 const contentApiSource = readFileSync(resolve(__dirname, "../lib/api/content.ts"), "utf8");

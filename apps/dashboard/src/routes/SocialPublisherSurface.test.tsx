@@ -4,7 +4,13 @@ import { describe, expect, it } from "vitest";
 
 describe("SocialPublisherSurface", () => {
   it("keeps social publishing review-only and history/dedupe blocked", () => {
-    const routeSource = readFileSync("src/routes/SocialPublisherSurface.tsx", "utf8");
+    const routeSource = [
+      "src/routes/SocialPublisherSurface.tsx",
+      "src/routes/SocialSections/HistorySection.tsx",
+      "src/routes/SocialSections/ReuseProposalsSection.tsx",
+      "src/routes/SocialSections/Shared.tsx",
+      "src/routes/SocialSections/SummarySection.tsx"
+    ].map((path) => readFileSync(path, "utf8")).join("\n");
     expect(routeSource).toContain("Social jest tylko do review");
     expect(routeSource).toContain("Historia social blokuje brak powtórek");
     expect(routeSource).toContain("getSocialPublisherContextPack");
