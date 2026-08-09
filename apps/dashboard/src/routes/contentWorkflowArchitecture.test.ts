@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const routeSource = readFileSync(resolve(__dirname, "ContentWorkflowSurface.tsx"), "utf8");
 const querySource = readFileSync(resolve(__dirname, "contentWorkflowQueries.ts"), "utf8");
 const entrySource = readFileSync(resolve(__dirname, "ContentWorkflowEntryPanel.tsx"), "utf8");
-const contentApiSource = readFileSync(resolve(__dirname, "../lib/api.ts"), "utf8");
+const contentApiSource = readFileSync(resolve(__dirname, "../lib/api/content.ts"), "utf8");
 const actionRouteSource = readFileSync(resolve(__dirname, "DetailPanels.tsx"), "utf8");
 const actionQuerySource = readFileSync(resolve(__dirname, "actionDetailQueries.ts"), "utf8");
 
