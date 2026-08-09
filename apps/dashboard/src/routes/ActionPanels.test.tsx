@@ -358,7 +358,7 @@ describe("ActionPanels", () => {
   });
 
   it("keeps review badge state separate from visible review copy", () => {
-    const source = readFileSync("src/routes/ActionPanels.tsx", "utf8");
+    const source = readFileSync("src/routes/ActionPanels/ReviewControls.tsx", "utf8");
     expect(source).toContain(
       "action.review_gate.last_review_outcome_label ?? action.review_gate.status_label"
     );
@@ -377,7 +377,7 @@ describe("ActionPanels", () => {
   });
 
   it("keeps effect checks in plain comparison language", () => {
-    const source = readFileSync("src/routes/ActionPanels.tsx", "utf8");
+    const source = readFileSync("src/routes/ActionPanels/ValidationApplyControls.tsx", "utf8");
     expect(source).toContain("porównanie wyników sprzed zmiany i po zmianie");
     expect(source).not.toContain("okno efektu");
     expect(source).not.toContain("Zapisuje okno");
@@ -385,7 +385,14 @@ describe("ActionPanels", () => {
   });
 
   it("uses self-defending empty states instead of bare brak placeholders", () => {
-    const source = readFileSync("src/routes/ActionPanels.tsx", "utf8");
+    const source = [
+      "src/routes/ActionPanels.tsx",
+      "src/routes/ActionPanels/PreviewControls.tsx",
+      "src/routes/ActionPanels/ValidationApplyControls.tsx",
+      "src/routes/ActionPanels/GatePanel.tsx"
+    ]
+      .map((path) => readFileSync(path, "utf8"))
+      .join("\n");
     expect(source).not.toContain('empty="brak etykiety dowodów z WILQ"');
     expect(source).not.toContain('empty="brak blokad podglądu"');
     expect(source).not.toContain('empty="brak dodatkowych warunków"');

@@ -2174,7 +2174,7 @@ describe("Action detail route", () => {
 
   it("keeps action detail labels sourced from API payload labels", () => {
     const source = readFileSync("src/routes/DetailPanels.tsx", "utf8");
-    const actionPanelsSource = readFileSync("src/routes/ActionPanels.tsx", "utf8");
+    const actionPanelsSource = readFileSync("src/routes/ActionPanels/GatePanel.tsx", "utf8");
 
     expect(source).not.toContain("from \"./marketingLabels\"");
     expect(source).not.toContain("adsMissingReadContractLabel");
