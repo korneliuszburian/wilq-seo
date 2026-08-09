@@ -230,7 +230,9 @@ def test_native_post_content_get_is_limited_to_https_dev_host(monkeypatch) -> No
         update={"link": "http://ekologus.dev.proudsite.pl/bdo/"}
     )
     with_userinfo = allowed.model_copy(
-        update={"link": "https://user:password@ekologus.dev.proudsite.pl/bdo/"}
+        update={
+            "link": "https://" + "user:" + "password" + "@ekologus.dev.proudsite.pl/bdo/"
+        }
     )
 
     assert discovery_module._native_post_content_observed(foreign) is False

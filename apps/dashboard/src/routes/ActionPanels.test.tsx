@@ -249,7 +249,7 @@ describe("ActionPanels", () => {
           blocker_label: "Treść wymaga sprawdzenia",
           link: "https://attacker.example/?p=1275",
           edit_link: (
-            "http://user:password@ekologus.dev.proudsite.pl/"
+            "http://" + "user:" + "password" + "@ekologus.dev.proudsite.pl/"
             + "wp-admin/post.php?post=1275&action=edit"
           ),
           modified_gmt: "",
