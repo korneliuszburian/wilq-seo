@@ -65,6 +65,6 @@ def test_initial_draft_run_records_exact_prompt_policy_and_materials(
 
     assert run.model == "gpt-5.6-sol"
     assert run.model_reasoning_effort == "xhigh"
-    assert run.prompt_template_id == "content_initial_draft@v1"
+    assert run.prompt_template_id == "content_initial_draft@v2"
     assert run.prompt_digest == sha256(prompt.encode("utf-8")).hexdigest()
     assert run.source_material_ids == ["source_material_bdo"]

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
+from wilq.codex.prompts import resolve_prompt_template
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
@@ -14,6 +15,28 @@ from wilq.content.regulatory.policy import (
 )
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+
+
+def test_initial_draft_v2_prompt_preserves_copy_and_source_fact_rules() -> None:
+    template = resolve_prompt_template("content_initial_draft@v2")
+
+    instruction = template.render(regulatory_draft_directive=" REGULATORY_DIRECTIVE")
+
+    for planning_field in (
+        "target_reader",
+        "buyer_problem",
+        "buyer_trigger",
+        "search_intent",
+        "angle",
+        "value_proposition",
+        "reader_question",
+        "cta_direction",
+        "baseline_cta_direction",
+    ):
+        assert planning_field in instruction
+    assert "Source facts służą wyłącznie do ustalenia treści" in instruction
+    assert "nie powtarzaj tego samego twierdzenia" in instruction
+    assert instruction.endswith("REGULATORY_DIRECTIVE")
 
 
 def _approved_access_fact() -> ContentSourceFact:
