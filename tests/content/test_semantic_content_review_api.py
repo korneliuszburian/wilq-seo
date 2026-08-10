@@ -166,12 +166,79 @@ def test_semantic_quality_guards_cannot_waive_missing_cta_query_or_repetition() 
     assert {finding.dimension for finding in guarded.findings} == {
         "conversion_clarity",
         "repetition",
+        "answer_directness",
     }
     assert all(
         item.status == "needs_changes"
         for item in guarded.dimensions
-        if item.dimension in {"conversion_clarity", "repetition"}
+        if item.dimension
+        in {"conversion_clarity", "repetition", "answer_directness"}
     )
+
+
+def test_semantic_quality_guards_cannot_pass_working_note_or_duplicate_paragraph() -> None:
+    revision = ContentDraftRevision.model_construct(
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="section_read_01",
+                heading="Kto musi złożyć wniosek",
+                body_markdown=(
+                    "Według dostarczonej instrukcji BDO sprawozdania składa się do 15 marca. "
+                    "Treść wymaga weryfikacji przez człowieka przed wykorzystaniem."
+                ),
+                evidence_ids=["ev_exact"],
+            ),
+            ContentDraftRevisionSection(
+                section_id="section_read_02",
+                heading="Jak prowadzić ewidencję",
+                body_markdown=(
+                    "Kartę Przekazania Odpadów sporządza przekazujący posiadacz przed "
+                    "rozpoczęciem transportu.\n\n"
+                    "Karta Przekazania Odpadów (KPO) jest sporządzana przez przekazującego "
+                    "posiadacza odpadów przed rozpoczęciem transportu."
+                ),
+                evidence_ids=["ev_exact"],
+            ),
+        ],
+        cta_blocks=[],
+    )
+    output = ContentSemanticReviewModelOutput.model_construct(
+        dimensions=[
+            ContentSemanticDimensionAssessment(
+                dimension=dimension,
+                status="strong",
+                reason="OK",
+                affected_targets=["whole_document"],
+            )
+            for dimension in CONTENT_SEMANTIC_DIMENSIONS
+        ],
+        findings=[],
+    )
+
+    guarded = _apply_deterministic_quality_guards(
+        _SemanticInputs(
+            revision=revision,
+            planning_input=ContentPlanningInput.model_construct(),
+            proposal=ContentPlanningProposal.model_construct(
+                sections=[
+                    SimpleNamespace(section_id="section_read_01", query_terms=[]),
+                    SimpleNamespace(section_id="section_read_02", query_terms=[]),
+                ]
+            ),
+        ),
+        output,
+    )
+
+    guards_by_target = {
+        finding.affected_targets[0]: finding.dimension for finding in guarded.findings
+    }
+    assert guards_by_target["section_read_01"] in {
+        "credibility",
+        "answer_directness",
+        "logical_flow",
+    }
+    assert guards_by_target["section_read_02"] == "repetition"
+    assert any(finding.dimension == "credibility" for finding in guarded.findings)
 
 
 def test_queued_semantic_run_is_visible_before_worker_preflight() -> None:

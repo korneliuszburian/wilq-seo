@@ -2597,7 +2597,9 @@ describe("ContentQualityFindingSchema", () => {
       "sales_brief_signal_review_required",
       "sales_brief_signal_thin",
       "thin_section",
-      "wall_of_text"
+      "wall_of_text",
+      "working_note",
+      "duplicate_paragraph"
     ]) {
       expect(
         ContentQualityFindingSchema.safeParse({

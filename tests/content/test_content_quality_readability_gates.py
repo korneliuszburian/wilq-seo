@@ -18,10 +18,8 @@ from wilq.content.workflow.documents.revisions import (
 def test_twelve_word_v2_section_is_not_thin() -> None:
     review = _review(
         _revision(
-            
-                "Ta sekcja jasno wyjaśnia klientowi zakres działania i prowadzi go do "
-                "decyzji."
-            
+            "Ta sekcja jasno wyjaśnia klientowi zakres działania i prowadzi go do "
+            "decyzji."
         )
     )
 
@@ -66,7 +64,75 @@ def test_v2_review_flags_one_oversized_paragraph_and_ignores_short_paragraph() -
 def test_legacy_review_without_revision_emits_no_readability_findings() -> None:
     review = _review(None)
 
-    assert {"thin_section", "wall_of_text"}.isdisjoint(_finding_codes(review))
+    assert {
+        "thin_section",
+        "wall_of_text",
+        "working_note",
+        "duplicate_paragraph",
+    }.isdisjoint(_finding_codes(review))
+
+
+def test_v2_review_flags_a_source_working_note_in_a_section() -> None:
+    review = _review(
+        _revision(
+            "Zgodnie z treścią źródła obowiązek aktualizacji wpisu w terminie 30 dni "
+            "od dnia zmiany. Treść wymaga weryfikacji przez człowieka przed "
+            "wykorzystaniem."
+        )
+    )
+
+    working_note_findings = [
+        finding for finding in review.findings if finding.code == "working_note"
+    ]
+    assert len(working_note_findings) == 1
+    assert working_note_findings[0].severity == "needs_changes"
+    assert working_note_findings[0].affected_section == "Pierwsza sekcja"
+    assert review.usefulness.status == "needs_changes"
+
+
+def test_v2_review_ignores_a_section_without_a_working_note() -> None:
+    review = _review(
+        _revision(
+            "Obowiązek wpisu może dotyczyć podmiotów wytwarzających odpady. "
+            "Zakres obowiązku zależy od rodzaju prowadzonej działalności."
+        )
+    )
+
+    assert "working_note" not in _finding_codes(review)
+
+
+def test_v2_review_flags_a_duplicate_paragraph_inside_a_section() -> None:
+    first = (
+        "Wpis do Rejestru-BDO może dotyczyć podmiotów wytwarzających odpady "
+        "oraz podmiotów wprowadzających produkty w opakowaniach."
+    )
+    second = (
+        "Wpis do Rejestru-BDO może dotyczyć podmiotów wytwarzających odpady "
+        "oraz podmiotów wprowadzających produkty w opakowaniach oraz opony."
+    )
+    review = _review(_revision(f"{first}\n\n{second}"))
+
+    duplicate_findings = [
+        finding for finding in review.findings if finding.code == "duplicate_paragraph"
+    ]
+    assert len(duplicate_findings) == 1
+    assert duplicate_findings[0].severity == "needs_changes"
+    assert duplicate_findings[0].affected_section == "Pierwsza sekcja"
+    assert review.usefulness.status == "needs_changes"
+
+
+def test_v2_review_ignores_distinct_paragraphs_in_a_section() -> None:
+    first = (
+        "Obowiązek wpisu może dotyczyć podmiotów wytwarzających odpady lub "
+        "prowadzących ich ewidencję."
+    )
+    second = (
+        "Zakres obowiązku zależy od rodzaju prowadzonej działalności, dlatego "
+        "należy sprawdzić go w odpowiednich przepisach."
+    )
+    review = _review(_revision(f"{first}\n\n{second}"))
+
+    assert "duplicate_paragraph" not in _finding_codes(review)
 
 
 @pytest.mark.parametrize(
@@ -145,6 +211,28 @@ def _revision(
         content_digest="a" * 64,
         sections=sections,
     )
+
+
+def test_turn_advisory_findings_include_reading_gates_even_without_review() -> None:
+    from wilq.content.drafts.codex_section_proposal_turn import (
+        _advisory_findings,
+    )
+
+    revision = _revision(
+        "Treść wymaga weryfikacji przez człowieka przed wykorzystaniem.",
+    )
+    findings = _advisory_findings(
+        None,
+        base_revision=revision,
+        selected_headings=["Pierwsza sekcja"],
+        selected_cta_ids=[],
+    )
+
+    assert any(
+        finding["finding_id"].startswith("readability_working_note_")
+        for finding in findings
+    )
+    assert findings
 
 
 def _finding_codes(review: ContentQualityReview) -> set[str]:

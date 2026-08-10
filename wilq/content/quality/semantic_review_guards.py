@@ -6,9 +6,13 @@ from wilq.content.drafts.initial_full_draft_scope import (
     bind_draftable_planning_sections,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.quality.reading_quality import revision_readability_issues
 from wilq.content.quality.semantic_review_contracts import ContentSemanticDimension
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
-from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.documents.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionSection,
+)
 
 _SEMANTIC_STOPWORDS = frozenset(
     {
@@ -97,6 +101,45 @@ def _semantic_tokens(value: str) -> set[str]:
     }
 
 
+def readability_quality_issues(
+    revision: ContentDraftRevision,
+) -> list[tuple[ContentSemanticDimension, str, str]]:
+    """Map deterministic reading-quality gates into semantic review findings.
+
+    Keeps working notes, duplicated paragraphs, thin sections and text walls
+    from passing a semantic review as strong when the text still fails the
+    deterministic reading gates. Findings feed the next Codex proposal turn,
+    so a repair run cannot repeat the same drafting defects.
+    """
+
+    dimension_by_code: dict[str, ContentSemanticDimension] = {
+        "thin_section": "answer_directness",
+        "wall_of_text": "logical_flow",
+        "working_note": "credibility",
+        "duplicate_paragraph": "repetition",
+    }
+    return [
+        (
+            dimension_by_code[issue.code],
+            str(section.section_id)
+            if (section := _section_by_heading(revision, issue.affected_section)) is not None
+            else "whole_document",
+            issue.reason,
+        )
+        for issue in revision_readability_issues(revision.sections)
+    ]
+
+
+def _section_by_heading(
+    revision: ContentDraftRevision,
+    heading: str,
+) -> ContentDraftRevisionSection | None:
+    return next(
+        (section for section in revision.sections if section.heading == heading),
+        None,
+    )
+
+
 def repetition_quality_issues(
     section_bodies: dict[str, str],
 ) -> list[tuple[ContentSemanticDimension, str, str]]:
@@ -136,4 +179,8 @@ def repetition_quality_issues(
     return issues
 
 
-__all__ = ["regulatory_quality_issues", "repetition_quality_issues"]
+__all__ = [
+    "regulatory_quality_issues",
+    "repetition_quality_issues",
+    "readability_quality_issues",
+]

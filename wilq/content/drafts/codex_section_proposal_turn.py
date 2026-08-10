@@ -5,6 +5,7 @@ import json
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.quality.reading_quality import revision_readability_issues
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
@@ -78,8 +79,9 @@ def codex_turn_request(
                 for cta in base_revision.cta_blocks
                 if cta.cta_id in selected_cta_ids
             },
-            "advisory_findings_for_selected_components": _selected_findings(
+            "advisory_findings_for_selected_components": _advisory_findings(
                 semantic_review,
+                base_revision=base_revision,
                 selected_headings=selected_headings,
                 selected_cta_ids=selected_cta_ids,
             ),
@@ -190,6 +192,71 @@ def _selected_regulatory_facts(
 
 
 __all__ = ["codex_turn_request"]
+
+
+def _advisory_findings(
+    review: ContentSemanticReview | None,
+    *,
+    base_revision: ContentDraftRevision,
+    selected_headings: list[str],
+    selected_cta_ids: list[str],
+) -> list[dict[str, object]]:
+    findings = _selected_findings(
+        review,
+        selected_headings=selected_headings,
+        selected_cta_ids=selected_cta_ids,
+    )
+    deterministic = _readability_findings(
+        base_revision,
+        selected_headings=selected_headings,
+    )
+    seen: set[tuple[str, ...]] = {
+        _finding_targets(item) for item in findings
+    }
+    return findings + [
+        finding
+        for finding in deterministic
+        if _finding_targets(finding) not in seen
+    ]
+
+
+def _finding_targets(finding: dict[str, object]) -> tuple[str, ...]:
+    targets = finding.get("affected_targets")
+    if isinstance(targets, list):
+        return tuple(str(target) for target in targets)
+    return ()
+
+
+def _readability_findings(
+    revision: ContentDraftRevision,
+    *,
+    selected_headings: list[str],
+) -> list[dict[str, object]]:
+    """Expose deterministic reading-quality gates to a repair turn.
+
+    Scope the model to the chosen sections but never let it silently repeat a
+    working note, duplicated paragraph, thin section or text wall that the
+    review layer already rejected deterministically.
+    """
+
+    selected = set(selected_headings)
+    return [
+        {
+            "finding_id": f"readability_{issue.code}_{index:02d}",
+            "instruction": issue.next_step,
+            "reason": issue.reason,
+            "affected_targets": [issue.affected_section],
+            "evidence_ids": [],
+        }
+        for index, issue in enumerate(
+            [
+                issue
+                for issue in revision_readability_issues(revision.sections)
+                if issue.affected_section in selected
+            ],
+            start=1,
+        )
+    ]
 
 
 def _selected_findings(

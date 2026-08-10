@@ -24,6 +24,7 @@ from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticReviewResponse,
 )
 from wilq.content.quality.semantic_review_guards import (
+    readability_quality_issues,
     regulatory_quality_issues,
     repetition_quality_issues,
 )
@@ -436,6 +437,7 @@ def _apply_deterministic_quality_guards(
         )
     )
     issues.extend(repetition_quality_issues(section_bodies))
+    issues.extend(readability_quality_issues(revision=inputs.revision))
     grouped: dict[ContentSemanticDimension, tuple[list[str], str]] = {}
     for dimension, target, reason in issues:
         targets, previous_reason = grouped.get(dimension, ([], reason))
