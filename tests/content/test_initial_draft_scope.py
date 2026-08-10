@@ -4,7 +4,8 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from wilq.codex.app_server import CodexAppServerTurnResult
-from wilq.content.drafts import initial_full_draft
+from wilq.content.drafts import initial_draft_assurance_repair, initial_full_draft
+from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
 from wilq.content.drafts.generated_claim_safety import GeneratedClaimSafetyIssue
 from wilq.content.drafts.initial_draft_validation import document_scope_errors
 from wilq.content.drafts.initial_full_draft import _planning_input_blocker
@@ -634,6 +635,105 @@ def test_semantic_fallback_preserves_every_requirement_bound_to_replaced_section
     assert repaired[0].sections[0].body_markdown == "\n\n".join(
         [fact.extracted_fact, companion_fact.extracted_fact]
     )
+
+
+def test_assurance_repair_reaches_a_bounded_fixed_point_across_new_failures(
+    monkeypatch,
+) -> None:
+    proposal, planning_input, output, _, _ = _regulatory_repair_fixture()
+    proposal = proposal.model_copy(
+        update={
+            "sections": [
+                proposal.sections[0].model_copy(
+                    update={
+                        "section_id": f"section_{requirement_id}",
+                        "regulatory_requirement_ids": [requirement_id],
+                    }
+                )
+                for requirement_id in (
+                    "bdo_exemptions",
+                    "registration_scope",
+                    "records_and_kpo",
+                )
+            ]
+        }
+    )
+    failures = [
+        ContentDraftAssuranceFailure(
+            code="draft_assurance_failed",
+            label="Pierwsza kontrola nie przeszła",
+            reason="Krytyk wskazał pierwsze wymaganie.",
+            next_step="Popraw wymaganie.",
+            source_codes=["requirement:bdo_exemptions"],
+            repair_reasons={"requirement:bdo_exemptions": "overbroad_claim"},
+        ),
+        ContentDraftAssuranceFailure(
+            code="draft_assurance_failed",
+            label="Druga kontrola nie przeszła",
+            reason="Krytyk wskazał kolejne wymaganie.",
+            next_step="Popraw wymaganie.",
+            source_codes=["requirement:registration_scope"],
+            repair_reasons={"requirement:registration_scope": "missing_scope"},
+        ),
+        ContentDraftAssuranceFailure(
+            code="draft_assurance_failed",
+            label="Trzecia kontrola nie przeszła",
+            reason="Krytyk wskazał ostatnie wymaganie.",
+            next_step="Popraw wymaganie.",
+            source_codes=["requirement:records_and_kpo"],
+            repair_reasons={"requirement:records_and_kpo": "missing_scope"},
+        ),
+    ]
+    assured = [failures[1], failures[2], None]
+    repair_modes: list[bool] = []
+    assurance_outputs: list[ContentInitialDraftModelOutput] = []
+
+    def repair(**kwargs):
+        force_deterministic = kwargs.get("force_deterministic_replace", False)
+        repair_modes.append(force_deterministic)
+        candidate = kwargs["output"]
+        repaired = candidate.model_copy(
+            update={
+                "sections": [
+                    candidate.sections[0].model_copy(
+                        update={
+                            "body_markdown": (
+                                candidate.sections[0].body_markdown
+                                + f"\n\nNaprawa {len(repair_modes)}."
+                            )
+                        }
+                    )
+                ]
+            }
+        )
+        return repaired, kwargs.get("trace", SimpleNamespace(status="completed"))
+
+    def assure(candidate, _trace):
+        assurance_outputs.append(candidate)
+        return assured.pop(0)
+
+    monkeypatch.setattr(
+        initial_draft_assurance_repair,
+        "repair_regulatory_assertions",
+        repair,
+    )
+
+    repaired, _, assurance, blocker = initial_draft_assurance_repair.repair_after_assurance_failure(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        trace=SimpleNamespace(status="completed"),
+        assurance=failures[0],
+        client=SimpleNamespace(),
+        assure_draft=assure,
+        output_blocker=lambda _candidate: None,
+    )
+
+    assert blocker is None
+    assert assurance is None
+    assert repair_modes == [False, True, True]
+    assert len(assurance_outputs) == 3
+    assert repaired.sections[0].body_markdown.endswith("Naprawa 3.")
 
 
 def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() -> None:

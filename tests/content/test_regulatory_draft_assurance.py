@@ -4,8 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from wilq.codex.app_server import CodexAppServerTurnResult
-from wilq.content.drafts import draft_assurance_runtime, initial_full_draft
-from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts import draft_assurance_runtime, initial_draft_assurance_repair
 from wilq.content.drafts.draft_assurance import (
     ContentDraftAssuranceModelOutput,
     draft_assurance_output_schema,
@@ -557,31 +556,16 @@ def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypa
         lambda _planning_input: profile,
     )
     store = RunStore()
-    writer_run = CodexRun(
-        id="codex_writer",
-        skill="wilq-content-operator",
-        hook="content_initial_full_draft",
-        source="wilq_api",
-        status="started",
-    )
-    result = initial_full_draft._assure_regulated_draft(
-        inputs=initial_full_draft._InitialDraftInputs(
-            planning_input=planning_input,
-            proposal=type(
-                "Proposal",
-                (),
-                {"proposal_id": "proposal-1", "sections": _proposal().sections},
-            )(),
-            generation_contract=object(),
-        ),
+    result = initial_draft_assurance_repair.assure_regulated_draft(
+        planning_input=planning_input,
+        proposal=type(
+            "Proposal",
+            (),
+            {"proposal_id": "proposal-1", "sections": _proposal().sections},
+        )(),
         output=output,
         client=Client(),
-        writer_run=writer_run,
-        writer_trace=ContentCodexRuntimeTrace(status="completed"),
         run_store=store,
-        snapshot=SimpleNamespace(
-            preflight=SimpleNamespace(item=SimpleNamespace(id="content_work_item_regulated"))
-        ),
     )
 
     assert result.code == "draft_assurance_failed"
