@@ -177,18 +177,14 @@ def build_content_workflow_operator_journey(
                 phase=scope_phase,
                 readiness=_scope_readiness(facts),
                 status_label=_scope_status_label(facts),
-                summary=(
-                    "Strona, intencja, usługa i ograniczenia twierdzeń są zebrane w jednym briefie."
-                    if scope_complete
-                    else "Najpierw trzeba ustalić bezpieczny zakres pracy nad treścią."
-                ),
+                summary=_scope_summary(scope_complete=scope_complete),
                 can_open=scope_phase != "pending",
                 can_submit=False,
                 blocker=scope_blocker,
-                safe_next_step=(
-                    facts.sales_brief_safe_next_step
-                    if not scope_complete or section_map_complete
-                    else "Uruchom generowanie planu — mapa sekcji zostanie wyliczona automatycznie."
+                safe_next_step=_scope_safe_next_step(
+                    facts,
+                    scope_complete=scope_complete,
+                    section_map_complete=section_map_complete,
                 ),
             ),
             ContentWorkflowOperatorStep(
@@ -201,24 +197,18 @@ def build_content_workflow_operator_journey(
                     if section_map_complete
                     else ("czeka na zakres" if not scope_complete else "plan sekcji zablokowany")
                 ),
-                summary=(
-                    "Sekcje szkicu mają cel i mapę dowodów."
-                    if section_map_complete
-                    else (
-                        "Plan sekcji pozostaje zablokowany do domknięcia zakresu i celu."
-                        if not scope_complete
-                        else "Nie ma jeszcze bezpiecznego planu sekcji i dowodów."
-                    )
+                summary=_section_map_summary(
+                    facts,
+                    scope_complete=scope_complete,
+                    section_map_complete=section_map_complete,
                 ),
                 can_open=section_map_phase != "pending",
                 can_submit=False,
                 blocker=section_map_blocker,
-                safe_next_step=(
-                    facts.sales_brief_safe_next_step
-                    if not scope_complete
-                    else facts.section_map_safe_next_step
-                    if not section_map_complete
-                    else "Mapa sekcji została wyliczona automatycznie. Przejdź do szkicu treści."
+                safe_next_step=_section_map_safe_next_step(
+                    facts,
+                    scope_complete=scope_complete,
+                    section_map_complete=section_map_complete,
                 ),
             ),
             ContentWorkflowOperatorStep(
@@ -235,20 +225,10 @@ def build_content_workflow_operator_journey(
                     scope_complete=scope_complete,
                     section_map_complete=section_map_complete,
                 ),
-                summary=(
-                    _draft_summary(facts.revision_workspace_status)
-                    if section_map_complete and facts.structured_contract_present
-                    else (
-                        "Szkic pozostaje zablokowany do domknięcia zakresu i celu."
-                        if not scope_complete
-                        else (
-                            "Szkic pozostaje zablokowany do domknięcia planu sekcji."
-                            if not section_map_complete
-                            else (
-                                "WILQ nie ma jeszcze bezpiecznego kontraktu przygotowania szkicu."
-                            )
-                        )
-                    )
+                summary=_draft_step_summary(
+                    facts,
+                    scope_complete=scope_complete,
+                    section_map_complete=section_map_complete,
                 ),
                 can_open=draft_phase != "pending",
                 can_submit=(
@@ -441,6 +421,66 @@ def _draft_summary(status: ContentDraftRevisionWorkspaceStatus) -> str:
     if status == "rejected":
         return "Odrzucona wersja nie może iść dalej; dalsza praca wymaga nowej wersji."
     return "Można pracować nad szkicem, ale krok kończy dopiero zapis konkretnej wersji tekstu."
+
+
+def _scope_summary(*, scope_complete: bool) -> str:
+    if scope_complete:
+        return (
+            "Strona, intencja, usługa i ograniczenia twierdzeń są zebrane w jednym briefie."
+        )
+    return "Najpierw trzeba ustalić bezpieczny zakres pracy nad treścią."
+
+
+def _scope_safe_next_step(
+    facts: ContentWorkflowOperatorFacts,
+    *,
+    scope_complete: bool,
+    section_map_complete: bool,
+) -> str:
+    if not scope_complete or section_map_complete:
+        return facts.sales_brief_safe_next_step
+    return "Uruchom generowanie planu — mapa sekcji zostanie wyliczona automatycznie."
+
+
+def _section_map_summary(
+    facts: ContentWorkflowOperatorFacts,
+    *,
+    scope_complete: bool,
+    section_map_complete: bool,
+) -> str:
+    if section_map_complete:
+        return "Sekcje szkicu mają cel i mapę dowodów."
+    if not scope_complete:
+        return "Plan sekcji pozostaje zablokowany do domknięcia zakresu i celu."
+    return "Nie ma jeszcze bezpiecznego planu sekcji i dowodów."
+
+
+def _section_map_safe_next_step(
+    facts: ContentWorkflowOperatorFacts,
+    *,
+    scope_complete: bool,
+    section_map_complete: bool,
+) -> str:
+    if not scope_complete:
+        return facts.sales_brief_safe_next_step
+    if not section_map_complete:
+        return facts.section_map_safe_next_step
+    return "Mapa sekcji została wyliczona automatycznie. Przejdź do szkicu treści."
+
+
+def _draft_step_summary(
+    facts: ContentWorkflowOperatorFacts,
+    *,
+    scope_complete: bool,
+    section_map_complete: bool,
+) -> str:
+    if section_map_complete and facts.structured_contract_present:
+        return _draft_summary(facts.revision_workspace_status)
+    if not scope_complete:
+        return "Szkic pozostaje zablokowany do domknięcia zakresu i celu."
+    if not section_map_complete:
+        return "Szkic pozostaje zablokowany do domknięcia planu sekcji."
+    return "WILQ nie ma jeszcze bezpiecznego kontraktu przygotowania szkicu."
 
 
 def _current_draft_blocker(

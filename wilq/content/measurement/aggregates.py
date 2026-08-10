@@ -100,30 +100,51 @@ def aggregate_exact_page_metric_facts(
             continue
         if not _is_exact_period(fact.period):
             exclusions.append(
-                MeasurementAggregateExclusion(
-                    code="wrong_period",
-                    source_connector=fact.source_connector,
-                    metric_name=fact.name,
-                    period=fact.period,
-                    evidence_ids=[fact.evidence_id],
-                )
+                _row_exclusion("wrong_period", fact, metric_name=fact.name)
             )
             continue
         if fact.name not in _DETAIL_METRICS[fact.source_connector]:
             exclusions.append(
-                MeasurementAggregateExclusion(
-                    code="unrecognized_detail_metric",
-                    source_connector=fact.source_connector,
-                    metric_name=fact.name,
-                    period=fact.period,
-                    evidence_ids=[fact.evidence_id],
+                _row_exclusion(
+                    "unrecognized_detail_metric", fact, metric_name=fact.name
                 )
             )
             continue
         grouped[(fact.source_connector, fact.period)].append(fact)
 
-    # A repeated refresh can cover the same period. Prefer the newest complete
-    # evidence point; only equal-timestamp lineage remains ambiguous.
+    _prefer_newest_evidence_per_group(grouped)
+
+    derived: list[MetricFact] = []
+    for (connector, period), rows in grouped.items():
+        group_derived, group_exclusions = _aggregate_detail_group(
+            connector, period, rows, content_url=content_url
+        )
+        derived.extend(group_derived)
+        exclusions.extend(group_exclusions)
+    passthrough_keys = {
+        (fact.source_connector, fact.name, fact.period) for fact in passthrough
+    }
+    return MeasurementAggregateResult(
+        facts=[
+            *passthrough,
+            *[
+                fact
+                for fact in derived
+                if (fact.source_connector, fact.name, fact.period) not in passthrough_keys
+            ],
+        ],
+        exclusions=_deduplicate_exclusions(exclusions),
+    )
+
+
+def _prefer_newest_evidence_per_group(
+    grouped: dict[tuple[str, str], list[MetricFact]],
+) -> None:
+    """Prefer the newest complete evidence per connector/period pair.
+
+    A repeated refresh can cover the same period.  Only equal-timestamp
+    lineage remains ambiguous and is kept for the typed blocker below.
+    """
     for key, rows in list(grouped.items()):
         by_evidence: dict[str, list[MetricFact]] = defaultdict(list)
         for row in rows:
@@ -153,136 +174,142 @@ def aggregate_exact_page_metric_facts(
             continue
         grouped[key] = by_evidence[newest_evidence[0]]
 
+
+def _aggregate_detail_group(
+    connector: str,
+    period: str,
+    rows: list[MetricFact],
+    *,
+    content_url: str,
+) -> tuple[list[MetricFact], list[MeasurementAggregateExclusion]]:
+    """Aggregate one connector/period group into derived facts and blockers."""
+    evidence_ids = sorted({row.evidence_id for row in rows if row.evidence_id})
+    if len(evidence_ids) != 1:
+        exclusions: list[MeasurementAggregateExclusion] = [
+            _group_exclusion("ambiguous_source_lineage", connector, period, evidence_ids)
+        ]
+        return [], exclusions
+    by_name: dict[str, list[MetricFact]] = defaultdict(list)
+    for row in rows:
+        by_name[row.name].append(row)
+    required_detail_metrics = (
+        {"clicks", "impressions"}
+        if connector == "google_search_console"
+        else {"sessions", "engaged_sessions"}
+    )
+    if not required_detail_metrics.issubset(by_name):
+        return [], [
+            _group_exclusion("insufficient_values", connector, period, evidence_ids)
+        ]
+    if connector == "google_search_console" and {
+        "clicks",
+        "impressions",
+    }.issubset(by_name):
+        by_name.setdefault("ctr", [])
+    if connector == "google_analytics_4" and {
+        "sessions",
+        "engaged_sessions",
+    }.issubset(by_name):
+        by_name.setdefault("engagement_rate", [])
+    impressions = _numeric_sum(by_name.get("impressions", []))
     derived: list[MetricFact] = []
-    for (connector, period), rows in grouped.items():
-        evidence_ids = sorted({row.evidence_id for row in rows if row.evidence_id})
-        if len(evidence_ids) != 1:
-            exclusions.append(
-                MeasurementAggregateExclusion(
-                    code="ambiguous_source_lineage",
-                    source_connector=connector,
-                    metric_name="*",
-                    period=period,
-                    evidence_ids=evidence_ids,
-                )
-            )
-            continue
-        by_name: dict[str, list[MetricFact]] = defaultdict(list)
-        for row in rows:
-            by_name[row.name].append(row)
-        required_detail_metrics = (
-            {"clicks", "impressions"}
-            if connector == "google_search_console"
-            else {"sessions", "engaged_sessions"}
+    exclusions = []
+    for metric_name, metric_rows in by_name.items():
+        value = _derived_metric_value(
+            metric_name, by_name, impressions
         )
-        if not required_detail_metrics.issubset(by_name):
+        if value is None:
+            if metric_name in {"ctr", "engagement_rate", "average_position"}:
+                reason: MeasurementAggregateExclusionCode = "missing_denominator"
+            else:
+                reason = "insufficient_values"
             exclusions.append(
-                MeasurementAggregateExclusion(
-                    code="insufficient_values",
-                    source_connector=connector,
-                    metric_name="*",
-                    period=period,
-                    evidence_ids=evidence_ids,
+                _group_exclusion(
+                    reason, connector, period, evidence_ids, metric_name=metric_name
                 )
             )
             continue
-        if connector == "google_search_console" and {
-            "clicks",
-            "impressions",
-        }.issubset(by_name):
-            by_name.setdefault("ctr", [])
-        if connector == "google_analytics_4" and {
-            "sessions",
-            "engaged_sessions",
-        }.issubset(by_name):
-            by_name.setdefault("engagement_rate", [])
-        impressions = _numeric_sum(by_name.get("impressions", []))
-        for metric_name, metric_rows in by_name.items():
-            value: float | None
-            if metric_name in _SUM_METRICS:
-                value = _numeric_sum(metric_rows)
-            elif metric_name in {"ctr", "engagement_rate"}:
-                denominator = impressions if metric_name == "ctr" else _numeric_sum(
-                    by_name.get("sessions", [])
-                )
-                numerator = (
-                    _numeric_sum(by_name.get("clicks", []))
-                    if metric_name == "ctr"
-                    else _numeric_sum(by_name.get("engaged_sessions", []))
-                )
-                if denominator is None or denominator == 0 or numerator is None:
-                    exclusions.append(
-                        MeasurementAggregateExclusion(
-                            code="missing_denominator",
-                            source_connector=connector,
-                            metric_name=metric_name,
-                            period=period,
-                            evidence_ids=evidence_ids,
-                        )
-                    )
-                    continue
-                value = numerator / denominator
-            elif metric_name == "average_position":
-                value = _weighted_average(metric_rows, by_name.get("impressions", []))
-                if value is None:
-                    exclusions.append(
-                        MeasurementAggregateExclusion(
-                            code="missing_denominator",
-                            source_connector=connector,
-                            metric_name=metric_name,
-                            period=period,
-                            evidence_ids=evidence_ids,
-                        )
-                    )
-                    continue
-            else:
-                continue
-            if value is None:
-                exclusions.append(
-                    MeasurementAggregateExclusion(
-                        code="insufficient_values",
-                        source_connector=connector,
-                        metric_name=metric_name,
-                        period=period,
-                        evidence_ids=evidence_ids,
-                    )
-                )
-                continue
-            url_dimension = "page" if connector == "google_search_console" else "landing_page"
-            derived.append(
-                MetricFact(
-                    name=metric_name,
-                    value=value,
-                    period=period,
-                    source_connector=connector,
-                    evidence_id=evidence_ids[0],
-                    dimensions={url_dimension: content_url},
-                    unit=(
-                        metric_rows[0].unit
-                        if metric_rows
-                        else "ratio"
-                        if metric_name in {"ctr", "engagement_rate"}
-                        else None
-                    ),
-                    collected_at=max(
-                        (row.collected_at for row in metric_rows if row.collected_at is not None),
-                        default=None,
-                    ),
-                )
+        url_dimension = "page" if connector == "google_search_console" else "landing_page"
+        derived.append(
+            MetricFact(
+                name=metric_name,
+                value=value,
+                period=period,
+                source_connector=connector,
+                evidence_id=evidence_ids[0],
+                dimensions={url_dimension: content_url},
+                unit=(
+                    metric_rows[0].unit
+                    if metric_rows
+                    else "ratio"
+                    if metric_name in {"ctr", "engagement_rate"}
+                    else None
+                ),
+                collected_at=max(
+                    (row.collected_at for row in metric_rows if row.collected_at is not None),
+                    default=None,
+                ),
             )
-    passthrough_keys = {
-        (fact.source_connector, fact.name, fact.period) for fact in passthrough
-    }
-    return MeasurementAggregateResult(
-        facts=[
-            *passthrough,
-            *[
-                fact
-                for fact in derived
-                if (fact.source_connector, fact.name, fact.period) not in passthrough_keys
-            ],
-        ],
-        exclusions=_deduplicate_exclusions(exclusions),
+        )
+    return derived, exclusions
+
+
+def _derived_metric_value(
+    metric_name: str,
+    by_name: dict[str, list[MetricFact]],
+    impressions: float | None,
+) -> float | None:
+    """Compute one derived metric; ``None`` means the row cannot be derived."""
+    if metric_name in _SUM_METRICS:
+        return _numeric_sum(by_name.get(metric_name, []))
+    if metric_name in {"ctr", "engagement_rate"}:
+        denominator = impressions if metric_name == "ctr" else _numeric_sum(
+            by_name.get("sessions", [])
+        )
+        numerator = (
+            _numeric_sum(by_name.get("clicks", []))
+            if metric_name == "ctr"
+            else _numeric_sum(by_name.get("engaged_sessions", []))
+        )
+        if denominator is None or denominator == 0 or numerator is None:
+            return None
+        return numerator / denominator
+    if metric_name == "average_position":
+        return _weighted_average(
+            by_name.get(metric_name, []), by_name.get("impressions", [])
+        )
+    return None
+
+
+def _row_exclusion(
+    code: MeasurementAggregateExclusionCode,
+    fact: MetricFact,
+    *,
+    metric_name: str,
+) -> MeasurementAggregateExclusion:
+    return MeasurementAggregateExclusion(
+        code=code,
+        source_connector=fact.source_connector,
+        metric_name=metric_name,
+        period=fact.period,
+        evidence_ids=[fact.evidence_id],
+    )
+
+
+def _group_exclusion(
+    code: MeasurementAggregateExclusionCode,
+    connector: str,
+    period: str,
+    evidence_ids: list[str],
+    *,
+    metric_name: str = "*",
+) -> MeasurementAggregateExclusion:
+    return MeasurementAggregateExclusion(
+        code=code,
+        source_connector=connector,
+        metric_name=metric_name,
+        period=period,
+        evidence_ids=evidence_ids,
     )
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass, field
 from typing import Literal
 
 from wilq.content.planning.decisions import (
@@ -8,7 +9,9 @@ from wilq.content.planning.decisions import (
     content_decision_work_item_id_for_url,
 )
 from wilq.content.workflow.workspace.catalog import (
+    ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
+    ContentInventoryMaterialResponse,
     build_content_inventory_catalog_cached,
     inventory_metric_facts,
     inventory_work_item_id,
@@ -20,6 +23,80 @@ from wilq.schemas import ActionRisk, ContentDecisionItem
 def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
     """Keep the existing test seam while using the shared short-lived cache."""
     return build_content_inventory_catalog_cached()
+
+
+@dataclass(frozen=True)
+class ResolvedInventoryMaterial:
+    """One narrowed view of the inventory material for the decision item.
+
+    ``ready`` is the single source of readiness; all source fields are
+    already narrowed to their ready/fallback value so callers never repeat
+    the ``material is not None`` guard.
+    """
+
+    ready: bool
+    content_text: str | None = None
+    content_summary: str | None = None
+    content_word_count: int | None = None
+    section_headings: list[str] = field(default_factory=list)
+    acf_headings: list[str] = field(default_factory=list)
+    acf_fields: list[str] = field(default_factory=list)
+    source_kind: str | None = None
+    extraction_region: str | None = None
+    material_confidence: str | None = None
+    source_field_lineage: list[str] = field(default_factory=list)
+
+
+def resolve_inventory_material(
+    item: ContentInventoryCatalogItem,
+    material: ContentInventoryMaterialResponse | None,
+) -> ResolvedInventoryMaterial:
+    """Resolve material fields onto the catalog item with one narrowed view.
+
+    A REST-bound page can legitimately keep its body in exposed ACF fields
+    while ``the_content`` is empty (for example a flexible homepage).  The
+    live source is still resolved and must be surfaced to the workflow; an
+    empty body remains an honest downstream drafting constraint rather than
+    silently downgrading the page to stale inventory metadata.
+    """
+    ready = (
+        material is not None
+        and material.status == "ready"
+        and (
+            bool(material.content_text)
+            or bool(material.acf_field_names)
+            or bool(material.acf_section_headings)
+            or material.source_kind == "wordpress_rest"
+        )
+    )
+    if not ready or material is None:
+        return ResolvedInventoryMaterial(
+            ready=False,
+            content_summary=item.content_summary,
+            content_word_count=item.content_word_count,
+            section_headings=item.acf_section_headings or item.section_headings,
+            acf_headings=item.acf_section_headings,
+            acf_fields=item.acf_field_names,
+            source_field_lineage=[],
+        )
+    return ResolvedInventoryMaterial(
+        ready=True,
+        content_text=material.content_text or None,
+        content_summary=material.content_summary,
+        content_word_count=material.content_word_count,
+        section_headings=(
+            material.acf_section_headings
+            or material.section_headings
+            or item.acf_section_headings
+            or item.section_headings
+        ),
+        acf_headings=material.acf_section_headings,
+        acf_fields=material.acf_field_names,
+        source_kind=material.source_kind,
+        extraction_region=material.extraction_region,
+        material_confidence=material.material_confidence,
+        source_field_lineage=material.source_field_lineage,
+    )
 
 
 def inventory_decision_for_work_item(
@@ -46,54 +123,14 @@ def inventory_decision_for_work_item(
         if read_material
         else None
     )
-    # A REST-bound page can legitimately keep its body in exposed ACF fields
-    # while ``the_content`` is empty (for example a flexible homepage).  The
-    # live source is still resolved and must be surfaced to the workflow; an
-    # empty body remains an honest downstream drafting constraint rather than
-    # silently downgrading the page to stale inventory metadata.
-    material_ready = (
-        material is not None
-        and material.status == "ready"
-        and (
-            bool(material.content_text)
-            or bool(material.acf_field_names)
-            or bool(material.acf_section_headings)
-            or material.source_kind == "wordpress_rest"
-        )
-    )
-    content_text = (
-        material.content_text
-        if material_ready and material is not None and material.content_text
-        else None
-    )
-    content_summary = (
-        material.content_summary
-        if material_ready and material is not None
-        else item.content_summary
-    )
-    content_word_count = (
-        material.content_word_count
-        if material_ready and material is not None
-        else item.content_word_count
-    )
-    section_headings = (
-        material.acf_section_headings
-        or material.section_headings
-        or item.acf_section_headings
-        or item.section_headings
-        if material_ready and material is not None
-        else item.acf_section_headings or item.section_headings
-    )
-    acf_headings = (
-        material.acf_section_headings
-        if material_ready and material is not None
-        else item.acf_section_headings
-    )
-    acf_fields = (
-        material.acf_field_names
-        if material_ready and material is not None
-        else item.acf_field_names
-    )
+    resolved = resolve_inventory_material(item, material)
+    content_text = resolved.content_text
+    content_summary = resolved.content_summary
+    content_word_count = resolved.content_word_count
+    section_headings = resolved.section_headings
+    acf_headings = resolved.acf_headings
+    acf_fields = resolved.acf_fields
+    material_ready = resolved.ready
     all_metric_facts = inventory_metric_facts(item.url, item.path)
     facts = [
         fact for fact in all_metric_facts if fact.source_connector == "google_search_console"
@@ -138,24 +175,10 @@ def inventory_decision_for_work_item(
         wordpress_section_inventory_status="available" if section_headings else "missing",
         wordpress_content_summary=content_summary,
         wordpress_content_text=content_text,
-        wordpress_content_source_kind=(
-            material.source_kind if material_ready and material is not None else None
-        ),
-        wordpress_content_extraction_region=(
-            material.extraction_region
-            if material_ready and material is not None
-            else None
-        ),
-        wordpress_content_material_confidence=(
-            material.material_confidence
-            if material_ready and material is not None
-            else None
-        ),
-        wordpress_content_source_field_lineage=(
-            material.source_field_lineage
-            if material_ready and material is not None
-            else []
-        ),
+        wordpress_content_source_kind=resolved.source_kind,
+        wordpress_content_extraction_region=resolved.extraction_region,
+        wordpress_content_material_confidence=resolved.material_confidence,
+        wordpress_content_source_field_lineage=resolved.source_field_lineage,
         wordpress_content_word_count=content_word_count,
         wordpress_content_inventory_status=(
             "available" if content_summary or content_text else "missing"
@@ -213,4 +236,8 @@ def _unique(values: Iterable[str]) -> list[str]:
     return output
 
 
-__all__ = ["inventory_decision_for_work_item"]
+__all__ = [
+    "inventory_decision_for_work_item",
+    "resolve_inventory_material",
+    "ResolvedInventoryMaterial",
+]
