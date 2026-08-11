@@ -6,12 +6,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal, cast
 
-from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionBoundary,
     ContentWordPressDraftExecutionResult,
 )
-from wilq.content.quality.review import ContentQualityReview
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.decisions.planning import ContentPlanningDecision
 from wilq.content.workflow.documents.codex_revision_commit import (
@@ -37,6 +35,7 @@ from wilq.content.workflow.documents.revisions import (
 )
 from wilq.content.workflow.documents.store_measurement import MeasurementStoreMixin
 from wilq.content.workflow.documents.store_revision_review import record_draft_revision_review
+from wilq.content.workflow.store.store_evidence import _EvidenceStoreMixin
 from wilq.content.workflow.store.store_queries import (
     binding_is_current_and_approved as _binding_is_current_and_approved,
 )
@@ -77,6 +76,7 @@ from wilq.content.workflow.store.store_queries import (
     wordpress_revision_apply_in_progress as _wordpress_revision_apply_in_progress,
 )
 from wilq.content.workflow.store.store_schema import ensure_content_workflow_schema
+from wilq.content.workflow.store.store_social_reuse import _SocialReuseStoreMixin
 from wilq.content.workflow.target.target_mapping import (
     ContentTargetMappingConfirmation,
     ContentTargetMappingConfirmationCommand,
@@ -87,7 +87,6 @@ from wilq.content.workflow.target.target_mapping import (
 from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent, CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
-from wilq.social.reuse import SocialReuseProposal, SocialReuseReview
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
 
@@ -389,6 +388,32 @@ def _latest_target_mapping_confirmation(
     )
 
 
+def _record_wordpress_revision_apply_started(
+    connection: sqlite3.Connection,
+    *,
+    binding: ContentDraftRevisionBinding,
+    action_id: str,
+    claimed_by: str,
+    claim_key: str,
+) -> None:
+    started = AuditEvent(
+        id=f"audit_{action_id}_apply_started_{claim_key[:12]}",
+        action_id=action_id,
+        event_type="action_apply_started",
+        event_type_label="Rozpoczęto zapis dokładnej wersji",
+        actor=claimed_by,
+        summary=(
+            "Zarezerwowano jednorazową zgodę przed wywołaniem adaptera "
+            "WordPress. Wynik zapisu nie jest jeszcze znany."
+        ),
+        details={
+            "wordpress_draft_binding": binding.model_dump(mode="json"),
+            "apply_claim_status": "claimed",
+        },
+    )
+    _upsert_audit_event(connection, started)
+
+
 class _WordPressApplyStoreMixin(_StoreConnectionMixin):
     def claim_wordpress_revision_apply(
         self,
@@ -444,22 +469,13 @@ class _WordPressApplyStoreMixin(_StoreConnectionMixin):
                 ),
             )
             if inserted.rowcount == 1:
-                started = AuditEvent(
-                    id=f"audit_{action_id}_apply_started_{claim_key[:12]}",
+                _record_wordpress_revision_apply_started(
+                    connection,
+                    binding=binding,
                     action_id=action_id,
-                    event_type="action_apply_started",
-                    event_type_label="Rozpoczęto zapis dokładnej wersji",
-                    actor=claimed_by,
-                    summary=(
-                        "Zarezerwowano jednorazową zgodę przed wywołaniem adaptera "
-                        "WordPress. Wynik zapisu nie jest jeszcze znany."
-                    ),
-                    details={
-                        "wordpress_draft_binding": binding.model_dump(mode="json"),
-                        "apply_claim_status": "claimed",
-                    },
+                    claimed_by=claimed_by,
+                    claim_key=claim_key,
                 )
-                _upsert_audit_event(connection, started)
                 return "acquired"
             row = connection.execute(
                 """
@@ -665,385 +681,13 @@ class _ReviewStoreMixin(_StoreConnectionMixin):
         return redacted
 
 
-class _SocialReuseStoreMixin(_StoreConnectionMixin):
-    def save_social_reuse_proposal(self, proposal: SocialReuseProposal) -> SocialReuseProposal:
-        redacted = SocialReuseProposal.model_validate(
-            redact_mapping(proposal.model_dump(mode="json"))
-        )
-        with self._connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO social_reuse_proposals (
-                  proposal_id, work_item_id, platform, source_revision_id,
-                  source_revision_digest, proposal_digest, created_at, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(work_item_id, platform, source_revision_id, source_revision_digest)
-                DO NOTHING
-                """,
-                (
-                    redacted.proposal_id,
-                    redacted.work_item_id,
-                    redacted.platform,
-                    redacted.source_revision_id,
-                    redacted.source_revision_digest,
-                    redacted.proposal_digest,
-                    redacted.created_at.isoformat(),
-                    _model_json(redacted),
-                ),
-            )
-            row = connection.execute(
-                """
-                SELECT payload_json
-                FROM social_reuse_proposals
-                WHERE work_item_id = ? AND platform = ?
-                  AND source_revision_id = ? AND source_revision_digest = ?
-                LIMIT 1
-                """,
-                (
-                    redacted.work_item_id,
-                    redacted.platform,
-                    redacted.source_revision_id,
-                    redacted.source_revision_digest,
-                ),
-            ).fetchone()
-        if row is None:
-            raise RuntimeError("Social reuse proposal was not persisted.")
-        return SocialReuseProposal.model_validate(json.loads(cast(str, row["payload_json"])))
-
-    def get_social_reuse_proposal(self, proposal_id: str) -> SocialReuseProposal | None:
-        with self._connect() as connection:
-            row = connection.execute(
-                "SELECT payload_json FROM social_reuse_proposals WHERE proposal_id = ? LIMIT 1",
-                (proposal_id,),
-            ).fetchone()
-            if row is None:
-                row = connection.execute(
-                    "SELECT payload_json FROM social_reuse_child_proposals "
-                    "WHERE proposal_id = ? LIMIT 1",
-                    (proposal_id,),
-                ).fetchone()
-        if row is None:
-            return None
-        return SocialReuseProposal.model_validate(json.loads(cast(str, row["payload_json"])))
-
-    def list_social_reuse_proposals(
-        self,
-        work_item_id: str | None = None,
-    ) -> list[SocialReuseProposal]:
-        with self._connect() as connection:
-            if work_item_id is None:
-                rows = connection.execute(
-                    """
-                    SELECT created_at, payload_json FROM social_reuse_proposals
-                    UNION ALL
-                    SELECT created_at, payload_json FROM social_reuse_child_proposals
-                    ORDER BY created_at DESC
-                    """
-                ).fetchall()
-            else:
-                rows = connection.execute(
-                    """
-                    SELECT created_at, payload_json FROM social_reuse_proposals
-                    WHERE work_item_id = ?
-                    UNION ALL
-                    SELECT created_at, payload_json FROM social_reuse_child_proposals
-                    WHERE work_item_id = ?
-                    ORDER BY created_at DESC
-                    """,
-                    (work_item_id, work_item_id),
-                ).fetchall()
-        return [
-            SocialReuseProposal.model_validate(json.loads(cast(str, row["payload_json"])))
-            for row in rows
-        ]
-
-    def next_social_reuse_child_number(self, parent_proposal_id: str) -> int:
-        with self._connect() as connection:
-            row = connection.execute(
-                """
-                SELECT COALESCE(MAX(proposal_number), 1) AS current_number
-                FROM social_reuse_child_proposals WHERE parent_proposal_id = ?
-                """,
-                (parent_proposal_id,),
-            ).fetchone()
-        return int(row["current_number"]) + 1 if row is not None else 2
-
-    def save_social_reuse_child_proposal(
-        self,
-        proposal: SocialReuseProposal,
-    ) -> SocialReuseProposal:
-        if proposal.parent_proposal_id is None or proposal.proposal_number < 2:
-            raise ValueError("Child social reuse proposal requires a parent and number >= 2.")
-        redacted = SocialReuseProposal.model_validate(
-            redact_mapping(proposal.model_dump(mode="json"))
-        )
-        with self._connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO social_reuse_child_proposals (
-                  proposal_id, parent_proposal_id, work_item_id, platform,
-                  source_revision_id, source_revision_digest, proposal_digest,
-                  proposal_number, created_at, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(proposal_id) DO NOTHING
-                """,
-                (
-                    redacted.proposal_id,
-                    redacted.parent_proposal_id,
-                    redacted.work_item_id,
-                    redacted.platform,
-                    redacted.source_revision_id,
-                    redacted.source_revision_digest,
-                    redacted.proposal_digest,
-                    redacted.proposal_number,
-                    redacted.created_at.isoformat(),
-                    _model_json(redacted),
-                ),
-            )
-            row = connection.execute(
-                "SELECT payload_json FROM social_reuse_child_proposals "
-                "WHERE proposal_id = ? LIMIT 1",
-                (redacted.proposal_id,),
-            ).fetchone()
-        if row is None:
-            raise RuntimeError("Child social reuse proposal was not persisted.")
-        return SocialReuseProposal.model_validate(json.loads(cast(str, row["payload_json"])))
-
-    def latest_social_reuse_review(self, proposal_id: str) -> SocialReuseReview | None:
-        with self._connect() as connection:
-            row = connection.execute(
-                """
-                SELECT payload_json FROM social_reuse_reviews
-                WHERE proposal_id = ? ORDER BY review_number DESC LIMIT 1
-                """,
-                (proposal_id,),
-            ).fetchone()
-        if row is None:
-            return None
-        return SocialReuseReview.model_validate(json.loads(cast(str, row["payload_json"])))
-
-    def save_social_reuse_review(self, review: SocialReuseReview) -> SocialReuseReview:
-        redacted = SocialReuseReview.model_validate(
-            redact_mapping(review.model_dump(mode="json"))
-        )
-        with self._connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO social_reuse_reviews (
-                  review_id, proposal_id, proposal_digest, review_number,
-                  created_at, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(proposal_id, proposal_digest, review_number) DO NOTHING
-                """,
-                (
-                    redacted.review_id,
-                    redacted.proposal_id,
-                    redacted.proposal_digest,
-                    redacted.review_number,
-                    redacted.created_at.isoformat(),
-                    _model_json(redacted),
-                ),
-            )
-            row = connection.execute(
-                """
-                SELECT payload_json FROM social_reuse_reviews
-                WHERE proposal_id = ? AND proposal_digest = ? AND review_number = ?
-                LIMIT 1
-                """,
-                (
-                    redacted.proposal_id,
-                    redacted.proposal_digest,
-                    redacted.review_number,
-                ),
-            ).fetchone()
-        if row is None:
-            raise RuntimeError("Social reuse review was not persisted.")
-        return SocialReuseReview.model_validate(json.loads(cast(str, row["payload_json"])))
-
-    def latest_human_review(self, work_item_id: str) -> ContentHumanReview | None:
-        with self._connect() as connection:
-            row = connection.execute(
-                """
-                SELECT payload_json FROM content_human_reviews
-                WHERE work_item_id = ?
-                ORDER BY updated_at DESC, id DESC
-                LIMIT 1
-                """,
-                (work_item_id,),
-            ).fetchone()
-        if row is None:
-            return None
-        return ContentHumanReview.model_validate(json.loads(cast(str, row["payload_json"])))
-
-    def save_audit(
-        self,
-        audit: ContentWordPressDraftAuditEnvelope,
-    ) -> ContentWordPressDraftAuditEnvelope:
-        redacted = ContentWordPressDraftAuditEnvelope.model_validate(
-            redact_mapping(audit.model_dump(mode="json"))
-        )
-        with self._connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO content_workflow_audits (audit_id, human_review_id, payload_json)
-                VALUES (?, ?, ?)
-                ON CONFLICT(audit_id) DO UPDATE SET
-                  human_review_id = excluded.human_review_id,
-                  payload_json = excluded.payload_json
-                """,
-                (
-                    redacted.audit_id,
-                    redacted.human_review_id,
-                    _model_json(redacted),
-                ),
-            )
-        return redacted
-
-    def latest_audit_for_review(
-        self,
-        human_review_id: str,
-    ) -> ContentWordPressDraftAuditEnvelope | None:
-        with self._connect() as connection:
-            row = connection.execute(
-                """
-                SELECT payload_json FROM content_workflow_audits
-                WHERE human_review_id = ?
-                ORDER BY audit_id DESC
-                LIMIT 1
-                """,
-                (human_review_id,),
-            ).fetchone()
-        if row is None:
-            return None
-        return ContentWordPressDraftAuditEnvelope.model_validate(
-            json.loads(cast(str, row["payload_json"]))
-        )
-
-    def save_quality_review(self, review: ContentQualityReview) -> ContentQualityReview:
-        redacted = ContentQualityReview.model_validate(
-            redact_mapping(review.model_dump(mode="json"))
-        )
-        with self._connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO content_quality_reviews (review_id, work_item_id, payload_json)
-                VALUES (?, ?, ?)
-                ON CONFLICT(review_id) DO UPDATE SET
-                  work_item_id = excluded.work_item_id,
-                  payload_json = excluded.payload_json
-                """,
-                (
-                    redacted.review_id,
-                    redacted.work_item_id,
-                    _model_json(redacted),
-                ),
-            )
-        return redacted
-
-    def latest_quality_review(self, work_item_id: str) -> ContentQualityReview | None:
-        with self._connect() as connection:
-            row = connection.execute(
-                """
-                SELECT payload_json FROM content_quality_reviews
-                WHERE work_item_id = ?
-                ORDER BY review_id DESC
-                LIMIT 1
-                """,
-                (work_item_id,),
-            ).fetchone()
-        if row is None:
-            return None
-        return ContentQualityReview.model_validate(json.loads(cast(str, row["payload_json"])))
-
-    def save_wordpress_draft_execution(
-        self,
-        work_item_id: str,
-        result: ContentWordPressDraftExecutionResult,
-    ) -> ContentWordPressDraftExecutionResult:
-        redacted = ContentWordPressDraftExecutionResult.model_validate(
-            redact_mapping(result.model_dump(mode="json"))
-        )
-        with self._connect() as connection:
-            if redacted.revision_binding is not None:
-                binding = redacted.revision_binding
-                connection.execute(
-                    """
-                    INSERT INTO content_wordpress_draft_execution_history
-                      (work_item_id, handoff_id, revision_id, revision_digest, payload_json)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(work_item_id, handoff_id, revision_id, revision_digest)
-                    DO UPDATE SET payload_json = excluded.payload_json
-                    """,
-                    (
-                        work_item_id,
-                        binding.handoff_id,
-                        binding.revision_id,
-                        binding.content_digest,
-                        _model_json(redacted),
-                    ),
-                )
-            else:
-                # Preserve readable v1/history rows that predate exact bindings.
-                connection.execute(
-                    """
-                    INSERT INTO content_wordpress_draft_executions (work_item_id, payload_json)
-                    VALUES (?, ?)
-                    ON CONFLICT(work_item_id) DO UPDATE SET payload_json = excluded.payload_json
-                    """,
-                    (work_item_id, _model_json(redacted)),
-                )
-        return redacted
-
-    def latest_wordpress_draft_execution(
-        self,
-        work_item_id: str,
-        *,
-        handoff_id: str | None = None,
-        revision_id: str | None = None,
-        revision_digest: str | None = None,
-    ) -> ContentWordPressDraftExecutionResult | None:
-        binding_values = (handoff_id, revision_id, revision_digest)
-        # A caller that starts an exact lookup must provide the complete
-        # binding. Never fall back to a work-item-wide legacy execution for a
-        # partially specified revision, since that could unlock measurement
-        # for a different document.
-        if any(value is not None for value in binding_values) and not all(
-            value for value in binding_values
-        ):
-            return None
-        with self._connect() as connection:
-            if handoff_id and revision_id and revision_digest:
-                row = connection.execute(
-                    """
-                    SELECT payload_json FROM content_wordpress_draft_execution_history
-                    WHERE work_item_id = ? AND handoff_id = ? AND revision_id = ?
-                      AND revision_digest = ?
-                    LIMIT 1
-                    """,
-                    (work_item_id, handoff_id, revision_id, revision_digest),
-                ).fetchone()
-            else:
-                row = connection.execute(
-                    """
-                    SELECT payload_json FROM content_wordpress_draft_executions
-                    WHERE work_item_id = ?
-                    LIMIT 1
-                    """,
-                    (work_item_id,),
-                ).fetchone()
-        if row is None:
-            return None
-        return ContentWordPressDraftExecutionResult.model_validate(
-            json.loads(cast(str, row["payload_json"]))
-        )
-
-
 class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
     _TargetMappingConfirmationStoreMixin,
     _WordPressApplyStoreMixin,
     _ReviewStoreMixin,
     _SocialReuseStoreMixin,
+    _EvidenceStoreMixin,
     MeasurementStoreMixin,
 ):
     def __init__(self, path: Path) -> None:
