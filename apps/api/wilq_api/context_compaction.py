@@ -322,9 +322,7 @@ def compact_connector_status_for_operator_context(
         ),
         "capabilities": compact_capabilities,
         "capability_count": sum(
-            1
-            for key in ("read", "write")
-            if compact_capabilities.get(key) is True
+            1 for key in ("read", "write") if compact_capabilities.get(key) is True
         )
         + (1 if supported_actions else 0),
         "supported_action_count": (
@@ -334,6 +332,70 @@ def compact_connector_status_for_operator_context(
             f"Źródło danych {dumped.get('label') or dumped.get('id')}: "
             f"{status_label}; {freshness_label}."
         ),
+    }
+
+
+def _connector_readiness_row_for_context(
+    dumped: dict[str, Any],
+    scoped_connector_ids: set[str] | None = None,
+) -> dict[str, Any] | None:
+    connector_id = str(dumped.get("id") or "")
+    if scoped_connector_ids is not None and connector_id not in scoped_connector_ids:
+        return None
+    status = str(dumped.get("status") or "unknown")
+    configured = bool(dumped.get("configured"))
+    product_scope = str(dumped.get("product_scope") or "production")
+    active_for_daily_work = bool(dumped.get("active_for_daily_work", True))
+    if product_scope == "runtime" or (
+        product_scope == "optional_disabled" and not active_for_daily_work
+    ):
+        return {
+            "connector_id": connector_id,
+            "label": dumped.get("label"),
+            "status": "not_applicable",
+            "blocker_code": None,
+            "configured": configured,
+            "read_available": False,
+            "freshness_state": "not_applicable",
+            "missing_credentials": [],
+            "effect": "nie jest źródłem marketingowym dla tego consumer'a",
+        }
+    capabilities = dumped.get("capabilities")
+    read_available = bool(capabilities.get("read")) if isinstance(capabilities, dict) else False
+    freshness = dumped.get("freshness")
+    freshness_state = (
+        str(freshness.get("state") or "unknown") if isinstance(freshness, dict) else "unknown"
+    )
+    missing_credentials = dumped.get("missing_credentials")
+    has_missing_credentials = isinstance(missing_credentials, list) and bool(missing_credentials)
+    if has_missing_credentials or status == "missing_credentials":
+        readiness_status = "blocked"
+        blocker_code = "missing_credentials"
+        effect = "decyzje wymagające tego źródła pozostają zablokowane"
+    elif not configured or not read_available:
+        readiness_status = "blocked"
+        blocker_code = "read_unavailable"
+        effect = "nie wolno opierać decyzji na tym źródle"
+    elif freshness_state != "fresh":
+        readiness_status = "blocked"
+        blocker_code = "stale_or_unknown_source"
+        effect = "metryki i wnioski z tego źródła wymagają odświeżenia"
+    else:
+        readiness_status = "ready"
+        blocker_code = None
+        effect = "źródło może zasilać decyzje w tym kontekście"
+    return {
+        "connector_id": connector_id,
+        "label": dumped.get("label"),
+        "status": readiness_status,
+        "blocker_code": blocker_code,
+        "configured": configured,
+        "read_available": read_available,
+        "freshness_state": freshness_state,
+        "missing_credentials": (
+            missing_credentials if isinstance(missing_credentials, list) else []
+        ),
+        "effect": effect,
     }
 
 
@@ -354,73 +416,10 @@ def connector_readiness_for_context(
             if isinstance(connector, ConnectorStatus)
             else dict(connector)
         )
-        connector_id = str(dumped.get("id") or "")
-        if scoped_connector_ids is not None and connector_id not in scoped_connector_ids:
+        row = _connector_readiness_row_for_context(dumped, scoped_connector_ids)
+        if row is None:
             continue
-        status = str(dumped.get("status") or "unknown")
-        configured = bool(dumped.get("configured"))
-        product_scope = str(dumped.get("product_scope") or "production")
-        active_for_daily_work = bool(dumped.get("active_for_daily_work", True))
-        if product_scope == "runtime" or (
-            product_scope == "optional_disabled" and not active_for_daily_work
-        ):
-            rows.append(
-                {
-                    "connector_id": connector_id,
-                    "label": dumped.get("label"),
-                    "status": "not_applicable",
-                    "blocker_code": None,
-                    "configured": configured,
-                    "read_available": False,
-                    "freshness_state": "not_applicable",
-                    "missing_credentials": [],
-                    "effect": "nie jest źródłem marketingowym dla tego consumer'a",
-                }
-            )
-            continue
-        capabilities = dumped.get("capabilities")
-        read_available = bool(capabilities.get("read")) if isinstance(capabilities, dict) else False
-        freshness = dumped.get("freshness")
-        freshness_state = (
-            str(freshness.get("state") or "unknown")
-            if isinstance(freshness, dict)
-            else "unknown"
-        )
-        missing_credentials = dumped.get("missing_credentials")
-        has_missing_credentials = isinstance(missing_credentials, list) and bool(
-            missing_credentials
-        )
-        if has_missing_credentials or status == "missing_credentials":
-            readiness_status = "blocked"
-            blocker_code = "missing_credentials"
-            effect = "decyzje wymagające tego źródła pozostają zablokowane"
-        elif not configured or not read_available:
-            readiness_status = "blocked"
-            blocker_code = "read_unavailable"
-            effect = "nie wolno opierać decyzji na tym źródle"
-        elif freshness_state != "fresh":
-            readiness_status = "blocked"
-            blocker_code = "stale_or_unknown_source"
-            effect = "metryki i wnioski z tego źródła wymagają odświeżenia"
-        else:
-            readiness_status = "ready"
-            blocker_code = None
-            effect = "źródło może zasilać decyzje w tym kontekście"
-        rows.append(
-            {
-                "connector_id": connector_id,
-                "label": dumped.get("label"),
-                "status": readiness_status,
-                "blocker_code": blocker_code,
-                "configured": configured,
-                "read_available": read_available,
-                "freshness_state": freshness_state,
-                "missing_credentials": (
-                    missing_credentials if isinstance(missing_credentials, list) else []
-                ),
-                "effect": effect,
-            }
-        )
+        rows.append(row)
     blocked = [row for row in rows if row["status"] == "blocked"]
     ready = [row for row in rows if row["status"] == "ready"]
     not_applicable = [row for row in rows if row["status"] == "not_applicable"]
