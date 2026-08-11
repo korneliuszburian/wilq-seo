@@ -14,6 +14,7 @@ from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
 from wilq.content.planning.dynamic_input import (
+    ContentPlanningInput,
     ContentPlanningInputSummary,
     content_planning_input_summary,
 )
@@ -52,6 +53,8 @@ _PLANNING_GENERATION_EXECUTOR = ThreadPoolExecutor(
     max_workers=2,
     thread_name_prefix="wilq-content-plan",
 )
+
+
 # Planning is queued and polled by the API, so this deadline is not a browser
 # request budget.  Keep the model turn bounded at three minutes; larger real
 # pages can need more structured-output search, while a timeout remains a
@@ -82,14 +85,9 @@ def register_content_planning_proposal_routes(
     def content_work_item_planning_proposal_status(
         work_item_id: str,
     ) -> ContentPlanningProposalResponse:
-        snapshot = snapshot_loader(work_item_id)
-        response = read_content_planning_proposal(
-            snapshot=snapshot,
-            store=content_planning_proposal_store(),
-        )
-        return with_current_planning_workspace(
-            response,
-            content_workflow_store().load_planning_decisions(work_item_id),
+        return _get_content_work_item_planning_proposal_status(
+            work_item_id=work_item_id,
+            snapshot_loader=snapshot_loader,
         )
 
     @router.post(
@@ -104,188 +102,348 @@ def register_content_planning_proposal_routes(
         work_item_id: str,
         request: ContentPlanningProposalRequest,
     ) -> ContentPlanningProposalResponse | JSONResponse:
-        store = content_planning_proposal_store()
-        if not any(
-            card.id == request.service_card_id and card.card_type == "service"
-            for card in ekologus_content_knowledge_cards()
-        ):
-            unknown = ContentPlanningProposalResponse(
-                status="blocked",
-                work_item_id=work_item_id,
-                service_card_id=request.service_card_id,
-                blockers=[
-                    ContentPlanningProposalBlocker(
-                        code="unknown_service_card",
-                        label="Nieznana karta usługi",
-                        reason="Wybrana karta nie istnieje w aktualnym katalogu usług WILQ.",
-                        next_step="Wybierz kartę usługi zwróconą dla tego work itemu.",
-                    )
-                ],
-                safe_next_step="Wybierz kartę usługi zwróconą dla tego work itemu.",
-            )
-            return JSONResponse(status_code=422, content=unknown.model_dump(mode="json"))
-        if request.expected_planning_input_digest == "0" * 64:
-            stale = ContentPlanningProposalResponse(
-                status="stale",
-                work_item_id=work_item_id,
-                service_card_id=request.service_card_id,
-                blockers=[
-                    ContentPlanningProposalBlocker(
-                        code="stale_input",
-                        label="Wejście planu jest nieaktualne",
-                        reason="Pusty digest nie może reprezentować bieżącego wejścia planowania.",
-                        next_step="Odśwież stan planu i użyj aktualnego digestu.",
-                    )
-                ],
-                safe_next_step="Odśwież stan planu i użyj aktualnego digestu.",
-            )
-            return JSONResponse(status_code=409, content=stale.model_dump(mode="json"))
-        snapshot: ContentWorkItemWorkflowSnapshotResponse | None = None
-        existing = store.for_input(
-            work_item_id,
-            request.service_card_id,
-            request.expected_planning_input_digest,
+        return _generate_content_work_item_planning_proposal(
+            work_item_id=work_item_id,
+            request=request,
+            snapshot_loader=snapshot_loader,
         )
-        if existing is not None:
-            snapshot = snapshot_loader(work_item_id)
-            current = read_content_planning_proposal(
-                snapshot=snapshot,
-                store=store,
-            )
-            current_is_exact_input = (
-                current.work_item_id == work_item_id
-                and current.service_card_id == request.service_card_id
-                and current.planning_input_digest == request.expected_planning_input_digest
-            )
-            current_has_existing_proposal = (
-                current.proposal is not None
-                and current.proposal.proposal_id == existing.proposal_id
-                and current.proposal.planning_digest == existing.planning_digest
-                and current.proposal.planning_input_digest == existing.planning_input_digest
-            )
-            current_is_exact_existing = current_is_exact_input and current_has_existing_proposal
-            stale_mapping = current_is_exact_existing and current.status == "stale" and any(
-                blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
-                for blocker in current.blockers
-            )
-            if stale_mapping or request.regenerate_after_review:
-                # The server has already proved that this is the same exact
-                # proposal and input. A stale inventory map or a review-bound
-                # plan repair deliberately replaces only this exact lineage.
-                request = request.model_copy(update={"regenerate_stale_mapping": True})
-            elif current_is_exact_existing and current.status in {"created", "idempotent", "ready"}:
-                return current.model_copy(
-                    update={
-                        "status": "idempotent",
-                        "safe_next_step": (
-                            "Plan już istnieje dla tego exact wejścia; odczytano wersję "
-                            "bez ponownego uruchamiania Codexa."
-                        ),
-                    }
+
+
+def _get_content_work_item_planning_proposal_status(
+    *,
+    work_item_id: str,
+    snapshot_loader: ContentPlanningSnapshotLoader,
+) -> ContentPlanningProposalResponse:
+    snapshot = snapshot_loader(work_item_id)
+    response = read_content_planning_proposal(
+        snapshot=snapshot,
+        store=content_planning_proposal_store(),
+    )
+    return with_current_planning_workspace(
+        response,
+        content_workflow_store().load_planning_decisions(work_item_id),
+    )
+
+
+def _generate_content_work_item_planning_proposal(
+    *,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    snapshot_loader: ContentPlanningSnapshotLoader,
+) -> ContentPlanningProposalResponse | JSONResponse:
+    store = content_planning_proposal_store()
+    unknown_response = _unknown_service_card_response(
+        work_item_id=work_item_id,
+        request=request,
+    )
+    if unknown_response is not None:
+        return unknown_response
+    planning_input, request, early_response = _prepare_planning_generation(
+        work_item_id=work_item_id,
+        request=request,
+        snapshot_loader=snapshot_loader,
+        store=store,
+    )
+    if early_response is not None:
+        return early_response
+    return _enqueue_planning_generation(
+        planning_input=planning_input,
+        work_item_id=work_item_id,
+        request=request,
+        snapshot_loader=snapshot_loader,
+        store=store,
+    )
+
+
+def _unknown_service_card_response(
+    *,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+) -> JSONResponse | None:
+    if not any(
+        card.id == request.service_card_id and card.card_type == "service"
+        for card in ekologus_content_knowledge_cards()
+    ):
+        unknown = ContentPlanningProposalResponse(
+            status="blocked",
+            work_item_id=work_item_id,
+            service_card_id=request.service_card_id,
+            blockers=[
+                ContentPlanningProposalBlocker(
+                    code="unknown_service_card",
+                    label="Nieznana karta usługi",
+                    reason="Wybrana karta nie istnieje w aktualnym katalogu usług WILQ.",
+                    next_step="Wybierz kartę usługi zwróconą dla tego work itemu.",
                 )
-            elif not current_is_exact_existing:
-                # Never promote a historical proposal over the current typed
-                # state: stale and quality-blocked reads are already the safe
-                # response for this command.
-                return current
-            elif not request.regenerate_after_review:
-                # A current quality blocker is actionable only after an
-                # explicit new generation path, never through idempotency.
-                return current
-        if snapshot is None:
-            try:
-                snapshot = snapshot_loader(work_item_id)
-            except Exception as error:
-                return _planning_generation_failure_response(
+            ],
+            safe_next_step="Wybierz kartę usługi zwróconą dla tego work itemu.",
+        )
+        return JSONResponse(status_code=422, content=unknown.model_dump(mode="json"))
+    return None
+
+
+def _prepare_planning_generation(
+    *,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    snapshot_loader: ContentPlanningSnapshotLoader,
+    store: ContentPlanningProposalStore,
+) -> tuple[
+    ContentPlanningInput | None,
+    ContentPlanningProposalRequest,
+    ContentPlanningProposalResponse | JSONResponse | None,
+]:
+    zero_digest_response = _zero_digest_response(
+        work_item_id=work_item_id,
+        request=request,
+    )
+    if zero_digest_response is not None:
+        return None, request, zero_digest_response
+    snapshot, request, existing_response = _existing_planning_generation_state(
+        work_item_id=work_item_id,
+        request=request,
+        snapshot_loader=snapshot_loader,
+        store=store,
+    )
+    if existing_response is not None:
+        return None, request, existing_response
+    if snapshot is None:
+        try:
+            snapshot = snapshot_loader(work_item_id)
+        except Exception as error:
+            return (
+                None,
+                request,
+                _planning_generation_failure_response(
                     work_item_id=work_item_id,
                     service_card_id=request.service_card_id,
                     planning_input_digest=request.expected_planning_input_digest,
                     input_summary=None,
                     error=error,
-                )
-        planning_input, early_response = _prepare_generation(
-            snapshot=snapshot,
-            request=request,
-            store=store,
-        )
-        if early_response is not None:
-            return early_response
-        if planning_input is None:
-            return _planning_generation_failure_response(
+                ),
+            )
+    planning_input, early_response = _prepare_generation(
+        snapshot=snapshot,
+        request=request,
+        store=store,
+    )
+    if early_response is not None:
+        return None, request, early_response
+    if planning_input is None:
+        return (
+            None,
+            request,
+            _planning_generation_failure_response(
                 work_item_id=work_item_id,
                 service_card_id=request.service_card_id,
                 planning_input_digest=request.expected_planning_input_digest,
                 input_summary=None,
                 error=RuntimeError("Planning preparation returned no input or blocker."),
-            )
-        # A changed digest is the normal re-plan path after fresh metrics,
-        # inventory or knowledge arrive.  The command accepts only the exact
-        # snapshot validated above; once queued, the worker must not rebuild a
-        # potentially hanging prerequisite before it can begin or fail.
-        result = ContentPlanningProposalResponse(
-            status="generating",
-            work_item_id=planning_input.work_item_id,
-            service_card_id=request.service_card_id,
-            planning_input_digest=planning_input.planning_input_digest,
-            input_summary=content_planning_input_summary(planning_input),
-            runtime=ContentCodexRuntimeTrace(
-                status="not_started",
-                run_id=f"planning_generation_{uuid4().hex}",
             ),
-            safe_next_step="Plan jest przygotowywany; ten widok odświeży się po zakończeniu.",
         )
-        outcome = store.enqueue_pending(
+    return planning_input, request, None
+
+
+def _zero_digest_response(
+    *,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+) -> JSONResponse | None:
+    if request.expected_planning_input_digest == "0" * 64:
+        stale = ContentPlanningProposalResponse(
+            status="stale",
             work_item_id=work_item_id,
             service_card_id=request.service_card_id,
-            planning_input_digest=request.expected_planning_input_digest,
-            response=result,
+            blockers=[
+                ContentPlanningProposalBlocker(
+                    code="stale_input",
+                    label="Wejście planu jest nieaktualne",
+                    reason="Pusty digest nie może reprezentować bieżącego wejścia planowania.",
+                    next_step="Odśwież stan planu i użyj aktualnego digestu.",
+                )
+            ],
+            safe_next_step="Odśwież stan planu i użyj aktualnego digestu.",
         )
-        if outcome == "existing":
-            queued = store.queued_response(
-                work_item_id,
-                request.service_card_id,
-                request.expected_planning_input_digest,
-            )
-            if queued is not None:
-                result = queued
-        if outcome == "in_flight":
-            active = store.active_generation_response(
-                work_item_id,
-                request.service_card_id,
-                excluding_digest=request.expected_planning_input_digest,
-            )
-            result = ContentPlanningProposalResponse(
-                status="blocked",
-                work_item_id=work_item_id,
-                service_card_id=request.service_card_id,
-                runtime=active.runtime if active is not None else result.runtime,
-                retry_after_seconds=5,
-                blockers=[
-                    ContentPlanningProposalBlocker(
-                        code="runtime_blocked",
-                        label="Plan jest już przygotowywany",
-                        reason=(
-                            "Dla tej strony i usługi działa już generowanie z innego "
-                            "dokładnego wejścia. Nie uruchamiamy równoległego turnu Codexa."
-                        ),
-                        next_step="Poczekaj na zakończenie bieżącej próby i odśwież stan planu.",
-                        source_codes=[
-                            active.runtime.run_id
-                            if active is not None and active.runtime.run_id
-                            else "planning_generation_in_flight"
-                        ],
-                    )
-                ],
-                safe_next_step="Poczekaj kilka sekund i odśwież stan planu.",
-            )
-        return _schedule_queued_planning_generation(
-            outcome=outcome,
-            result=result,
+        return JSONResponse(status_code=409, content=stale.model_dump(mode="json"))
+    return None
+
+
+def _existing_planning_generation_state(
+    *,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    snapshot_loader: ContentPlanningSnapshotLoader,
+    store: ContentPlanningProposalStore,
+) -> tuple[
+    ContentWorkItemWorkflowSnapshotResponse | None,
+    ContentPlanningProposalRequest,
+    ContentPlanningProposalResponse | None,
+]:
+    existing = store.for_input(
+        work_item_id,
+        request.service_card_id,
+        request.expected_planning_input_digest,
+    )
+    if existing is None:
+        return None, request, None
+    snapshot = snapshot_loader(work_item_id)
+    current = read_content_planning_proposal(
+        snapshot=snapshot,
+        store=store,
+    )
+    current_is_exact_input = (
+        current.work_item_id == work_item_id
+        and current.service_card_id == request.service_card_id
+        and current.planning_input_digest == request.expected_planning_input_digest
+    )
+    current_has_existing_proposal = (
+        current.proposal is not None
+        and current.proposal.proposal_id == existing.proposal_id
+        and current.proposal.planning_digest == existing.planning_digest
+        and current.proposal.planning_input_digest == existing.planning_input_digest
+    )
+    current_is_exact_existing = current_is_exact_input and current_has_existing_proposal
+    stale_mapping = (
+        current_is_exact_existing
+        and current.status == "stale"
+        and any(
+            blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
+            for blocker in current.blockers
+        )
+    )
+    if stale_mapping or request.regenerate_after_review:
+        # The server has already proved that this is the same exact
+        # proposal and input. A stale inventory map or a review-bound
+        # plan repair deliberately replaces only this exact lineage.
+        request = request.model_copy(update={"regenerate_stale_mapping": True})
+    elif current_is_exact_existing and current.status in {"created", "idempotent", "ready"}:
+        return (
+            snapshot,
+            request,
+            current.model_copy(
+                update={
+                    "status": "idempotent",
+                    "safe_next_step": (
+                        "Plan już istnieje dla tego exact wejścia; odczytano wersję "
+                        "bez ponownego uruchamiania Codexa."
+                    ),
+                }
+            ),
+        )
+    elif not current_is_exact_existing:
+        # Never promote a historical proposal over the current typed
+        # state: stale and quality-blocked reads are already the safe
+        # response for this command.
+        return snapshot, request, current
+    elif not request.regenerate_after_review:
+        # A current quality blocker is actionable only after an
+        # explicit new generation path, never through idempotency.
+        return snapshot, request, current
+    return snapshot, request, None
+
+
+def _enqueue_planning_generation(
+    *,
+    planning_input: ContentPlanningInput,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    snapshot_loader: ContentPlanningSnapshotLoader,
+    store: ContentPlanningProposalStore,
+) -> ContentPlanningProposalResponse:
+    # A changed digest is the normal re-plan path after fresh metrics,
+    # inventory or knowledge arrive.  The command accepts only the exact
+    # snapshot validated above; once queued, the worker must not rebuild a
+    # potentially hanging prerequisite before it can begin or fail.
+    result = _planning_generation_generating_response(
+        planning_input=planning_input,
+        request=request,
+    )
+    outcome = store.enqueue_pending(
+        work_item_id=work_item_id,
+        service_card_id=request.service_card_id,
+        planning_input_digest=request.expected_planning_input_digest,
+        response=result,
+    )
+    if outcome == "existing":
+        queued = store.queued_response(
+            work_item_id,
+            request.service_card_id,
+            request.expected_planning_input_digest,
+        )
+        if queued is not None:
+            result = queued
+    if outcome == "in_flight":
+        active = store.active_generation_response(
+            work_item_id,
+            request.service_card_id,
+            excluding_digest=request.expected_planning_input_digest,
+        )
+        result = _planning_generation_in_flight_response(
             work_item_id=work_item_id,
             request=request,
-            snapshot_loader=snapshot_loader,
-            store=store,
+            result=result,
+            active=active,
         )
+    return _schedule_queued_planning_generation(
+        outcome=outcome,
+        result=result,
+        work_item_id=work_item_id,
+        request=request,
+        snapshot_loader=snapshot_loader,
+        store=store,
+    )
+
+
+def _planning_generation_generating_response(
+    *,
+    planning_input: ContentPlanningInput,
+    request: ContentPlanningProposalRequest,
+) -> ContentPlanningProposalResponse:
+    return ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id=planning_input.work_item_id,
+        service_card_id=request.service_card_id,
+        planning_input_digest=planning_input.planning_input_digest,
+        input_summary=content_planning_input_summary(planning_input),
+        runtime=ContentCodexRuntimeTrace(
+            status="not_started",
+            run_id=f"planning_generation_{uuid4().hex}",
+        ),
+        safe_next_step="Plan jest przygotowywany; ten widok odświeży się po zakończeniu.",
+    )
+
+
+def _planning_generation_in_flight_response(
+    *,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    result: ContentPlanningProposalResponse,
+    active: ContentPlanningProposalResponse | None,
+) -> ContentPlanningProposalResponse:
+    return ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        service_card_id=request.service_card_id,
+        runtime=active.runtime if active is not None else result.runtime,
+        retry_after_seconds=5,
+        blockers=[
+            ContentPlanningProposalBlocker(
+                code="runtime_blocked",
+                label="Plan jest już przygotowywany",
+                reason=(
+                    "Dla tej strony i usługi działa już generowanie z innego "
+                    "dokładnego wejścia. Nie uruchamiamy równoległego turnu Codexa."
+                ),
+                next_step="Poczekaj na zakończenie bieżącej próby i odśwież stan planu.",
+                source_codes=[
+                    active.runtime.run_id
+                    if active is not None and active.runtime.run_id
+                    else "planning_generation_in_flight"
+                ],
+            )
+        ],
+        safe_next_step="Poczekaj kilka sekund i odśwież stan planu.",
+    )
 
 
 def _schedule_queued_planning_generation(
@@ -438,10 +596,7 @@ def _planning_generation_claim_stale_response(
     blocker = ContentPlanningProposalBlocker(
         code="generation_claim_stale",
         label="Wynik pochodzi z nieaktualnej próby",
-        reason=(
-            "Nowszy worker przejął wygasły claim; spóźniony wynik tej próby "
-            "został odrzucony."
-        ),
+        reason=("Nowszy worker przejął wygasły claim; spóźniony wynik tej próby został odrzucony."),
         next_step="Poczekaj na wynik bieżącej próby i odśwież stan planu.",
     )
     return ContentPlanningProposalResponse(
