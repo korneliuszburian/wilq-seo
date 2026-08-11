@@ -15,6 +15,7 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionReview,
 )
 from wilq.content.workflow.target.target_discovery import (
+    ContentTargetAuthoringSurface,
     ContentTargetContract,
     ContentTargetDiscovery,
     ContentTargetObservationEvidence,
@@ -445,45 +446,45 @@ def validate_content_target_mapping_confirmation(
     elif surface.kind != "acf_flexible_content":
         raise ValueError("Zakres wybranych elementów jest dostępny wyłącznie dla ACF.")
     elif any(components[component_id].kind != "rich_text" for component_id in selections):
-        raise ValueError(
-            "Zakres wybranych elementów ACF może obejmować wyłącznie sekcje treści."
-        )
-    observed_section_indexes = any(
-        layout.section_index is not None for layout in surface.layouts
-    )
+        raise ValueError("Zakres wybranych elementów ACF może obejmować wyłącznie sekcje treści.")
+    observed_section_indexes = any(layout.section_index is not None for layout in surface.layouts)
     for component_id, selection in selections.items():
         component = components[component_id]
-        if surface.kind == "acf_flexible_content":
-            if observed_section_indexes:
-                if selection.target_section_index is None:
-                    raise ValueError("Mapowanie ACF musi wskazać dokładną pozycję sekcji.")
-                layout = next(
-                    (
-                        candidate
-                        for candidate in surface.layouts
-                        if candidate.section_index == selection.target_section_index
-                    ),
-                    None,
-                )
-                if layout is not None and layout.name != selection.layout_name:
-                    layout = None
-            else:
-                if selection.target_section_index is not None:
-                    raise ValueError("Historyczny odczyt ACF nie zawiera pozycji wskazanej sekcji.")
-                layout = next(
-                    (
-                        candidate
-                        for candidate in surface.layouts
-                        if candidate.name == selection.layout_name
-                    ),
-                    None,
-                )
-            target_fields = (
-                set(layout.writable_fields or layout.fields) if layout is not None else None
+        target_fields = _target_fields_for_mapping_selection(
+            surface=surface,
+            selection=selection,
+            observed_section_indexes=observed_section_indexes,
+        )
+        _validate_mapping_selection_field_bindings(
+            component=component,
+            selection=selection,
+            target_fields=target_fields,
+        )
+
+
+def _target_fields_for_mapping_selection(
+    *,
+    surface: ContentTargetAuthoringSurface,
+    selection: ContentTargetMappingSelection,
+    observed_section_indexes: bool,
+) -> set[str]:
+    if surface.kind == "acf_flexible_content":
+        if observed_section_indexes:
+            if selection.target_section_index is None:
+                raise ValueError("Mapowanie ACF musi wskazać dokładną pozycję sekcji.")
+            layout = next(
+                (
+                    candidate
+                    for candidate in surface.layouts
+                    if candidate.section_index == selection.target_section_index
+                ),
+                None,
             )
+            if layout is not None and layout.name != selection.layout_name:
+                layout = None
         else:
             if selection.target_section_index is not None:
-                raise ValueError("Treść wpisu WordPress nie wskazuje pozycji sekcji ACF.")
+                raise ValueError("Historyczny odczyt ACF nie zawiera pozycji wskazanej sekcji.")
             layout = next(
                 (
                     candidate
@@ -492,22 +493,38 @@ def validate_content_target_mapping_confirmation(
                 ),
                 None,
             )
-            target_fields = set(layout.fields) if layout is not None else None
-        if target_fields is None:
-            raise ValueError("Wybrana sekcja nie należy do odczytanego układu targetu.")
-        expected_source_fields = {field.key for field in component.source_fields}
-        actual_source_fields = {binding.source_field for binding in selection.field_bindings}
-        if actual_source_fields != expected_source_fields:
-            raise ValueError("Mapowanie musi wskazać każde pole elementu dokumentu dokładnie raz.")
-        if any(binding.target_field not in target_fields for binding in selection.field_bindings):
-            raise ValueError("Wybrane pole nie należy do odczytanego layoutu targetu.")
-        target_field_names = [binding.target_field for binding in selection.field_bindings]
-        has_repeated_target = len(target_field_names) != len(set(target_field_names))
-        if has_repeated_target and not _is_rich_text_html_mapping(component, selection):
-            raise ValueError(
-                "Jedno pole targetu może przyjąć dwa źródła wyłącznie jako "
-                "połączoną sekcję rich text."
-            )
+        target_fields = set(layout.writable_fields or layout.fields) if layout is not None else None
+    else:
+        if selection.target_section_index is not None:
+            raise ValueError("Treść wpisu WordPress nie wskazuje pozycji sekcji ACF.")
+        layout = next(
+            (candidate for candidate in surface.layouts if candidate.name == selection.layout_name),
+            None,
+        )
+        target_fields = set(layout.fields) if layout is not None else None
+    if target_fields is None:
+        raise ValueError("Wybrana sekcja nie należy do odczytanego układu targetu.")
+    return target_fields
+
+
+def _validate_mapping_selection_field_bindings(
+    *,
+    component: ContentTargetMappingComponent,
+    selection: ContentTargetMappingSelection,
+    target_fields: set[str],
+) -> None:
+    expected_source_fields = {field.key for field in component.source_fields}
+    actual_source_fields = {binding.source_field for binding in selection.field_bindings}
+    if actual_source_fields != expected_source_fields:
+        raise ValueError("Mapowanie musi wskazać każde pole elementu dokumentu dokładnie raz.")
+    if any(binding.target_field not in target_fields for binding in selection.field_bindings):
+        raise ValueError("Wybrane pole nie należy do odczytanego layoutu targetu.")
+    target_field_names = [binding.target_field for binding in selection.field_bindings]
+    has_repeated_target = len(target_field_names) != len(set(target_field_names))
+    if has_repeated_target and not _is_rich_text_html_mapping(component, selection):
+        raise ValueError(
+            "Jedno pole targetu może przyjąć dwa źródła wyłącznie jako połączoną sekcję rich text."
+        )
 
 
 def new_content_target_mapping_confirmation(
