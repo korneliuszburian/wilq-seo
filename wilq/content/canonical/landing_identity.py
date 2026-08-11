@@ -78,6 +78,10 @@ class LandingPageResolution(BaseModel):
     candidates: list[LandingPageCandidateMatch] = Field(default_factory=list)
 
 
+class _InvalidSchemeError(Exception):
+    pass
+
+
 def build_landing_page_identity(
     value: str | None,
     *,
@@ -102,60 +106,37 @@ def build_landing_page_identity(
         return LandingPageIdentity(status="invalid")
 
     path_only = not bool(parsed.netloc)
-    normalized_scheme_value = (parsed.scheme or reference.scheme).casefold() or None
-    if normalized_scheme_value not in {"http", "https", None}:
+    try:
+        scheme = _normalized_scheme(parsed.scheme, reference.scheme)
+    except _InvalidSchemeError:
         return LandingPageIdentity(status="invalid")
-    normalized_scheme = cast(
-        Literal["http", "https"] | None,
-        normalized_scheme_value,
-    )
-    raw_host = parsed_host.casefold().rstrip(".") if parsed_host else None
-    if raw_host is None and reference_host:
-        raw_host = reference_host.casefold().rstrip(".")
+    raw_host = _raw_host(parsed_host, reference_host)
     if raw_host is None and not parsed.path.startswith("/"):
         return LandingPageIdentity(status="invalid")
-    if raw_host and normalized_scheme is None:
+    if raw_host and scheme is None:
         return LandingPageIdentity(status="invalid")
 
     normalized_host = _HOST_ALIASES.get(raw_host, raw_host) if raw_host else None
     explicit_port = parsed_port if parsed.netloc else reference_port
-    normalized_port = explicit_port or _default_port(normalized_scheme)
+    normalized_port = explicit_port or _default_port(scheme)
     host_alias_applied = bool(raw_host and normalized_host != raw_host)
     normalized_path = parsed.path.rstrip("/") or "/"
     if not normalized_path.startswith("/"):
         return LandingPageIdentity(status="invalid")
 
-    functional_pairs: list[tuple[str, str]] = []
-    removed_tracking_parameters: list[str] = []
-    for name, parameter_value in parse_qsl(parsed.query, keep_blank_values=True):
-        if _is_tracking_parameter(name):
-            removed_tracking_parameters.append(name)
-        else:
-            functional_pairs.append((name, parameter_value))
-    functional_query = urlencode(functional_pairs, doseq=True) or None
-    removed_tracking_parameters = list(
-        dict.fromkeys(sorted(name.casefold() for name in removed_tracking_parameters))
+    functional_query, removed_tracking_parameters = _functional_query_split(parsed.query)
+    canonical_url = _canonical_url_for(
+        scheme=scheme,
+        normalized_host=normalized_host,
+        normalized_port=normalized_port,
+        normalized_path=normalized_path,
+        functional_query=functional_query,
     )
-
-    if normalized_host:
-        default_port = _default_port(normalized_scheme)
-        port_suffix = (
-            f":{normalized_port}"
-            if normalized_port is not None and normalized_port != default_port
-            else ""
-        )
-        canonical_url = (
-            f"{normalized_scheme}://{normalized_host}{port_suffix}{normalized_path}"
-        )
-    else:
-        canonical_url = normalized_path
-    if functional_query:
-        canonical_url = f"{canonical_url}?{functional_query}"
 
     return LandingPageIdentity(
         status="resolved",
         canonical_url=canonical_url,
-        normalized_scheme=normalized_scheme,
+        normalized_scheme=scheme,
         normalized_host=normalized_host,
         normalized_port=normalized_port,
         normalized_path=normalized_path,
@@ -164,6 +145,63 @@ def build_landing_page_identity(
         host_alias_applied=host_alias_applied,
         path_only=path_only,
     )
+
+
+def _normalized_scheme(
+    parsed_scheme: str, reference_scheme: str
+) -> Literal["http", "https"] | None:
+    normalized = (parsed_scheme or reference_scheme).casefold() or None
+    if normalized not in {"http", "https", None}:
+        raise _InvalidSchemeError
+    return cast(Literal["http", "https"] | None, normalized)
+
+
+def _raw_host(parsed_host: str | None, reference_host: str | None) -> str | None:
+    if parsed_host:
+        return parsed_host.casefold().rstrip(".")
+    if reference_host:
+        return reference_host.casefold().rstrip(".")
+    return None
+
+
+def _functional_query_split(
+    raw_query: str,
+) -> tuple[str | None, list[str]]:
+    functional_pairs: list[tuple[str, str]] = []
+    removed_tracking_parameters: list[str] = []
+    for name, parameter_value in parse_qsl(raw_query, keep_blank_values=True):
+        if _is_tracking_parameter(name):
+            removed_tracking_parameters.append(name)
+        else:
+            functional_pairs.append((name, parameter_value))
+    functional_query = urlencode(functional_pairs, doseq=True) or None
+    removed_tracking_parameters = list(
+        dict.fromkeys(sorted(name.casefold() for name in removed_tracking_parameters))
+    )
+    return functional_query, removed_tracking_parameters
+
+
+def _canonical_url_for(
+    *,
+    scheme: Literal["http", "https"] | None,
+    normalized_host: str | None,
+    normalized_port: int | None,
+    normalized_path: str,
+    functional_query: str | None,
+) -> str:
+    if normalized_host:
+        default_port = _default_port(scheme)
+        port_suffix = (
+            f":{normalized_port}"
+            if normalized_port is not None and normalized_port != default_port
+            else ""
+        )
+        canonical_url = f"{scheme}://{normalized_host}{port_suffix}{normalized_path}"
+    else:
+        canonical_url = normalized_path
+    if functional_query:
+        canonical_url = f"{canonical_url}?{functional_query}"
+    return canonical_url
 
 
 def match_landing_page(
@@ -195,10 +233,7 @@ def match_landing_page(
         return _candidate_match(candidate.candidate_id, "path_only", False, True, identity)
     if expected.host_alias_applied or identity.host_alias_applied:
         return _candidate_match(candidate.candidate_id, "host_alias", True, False, identity)
-    if (
-        expected.removed_tracking_parameters
-        or identity.removed_tracking_parameters
-    ):
+    if expected.removed_tracking_parameters or identity.removed_tracking_parameters:
         return _candidate_match(
             candidate.candidate_id,
             "tracking_only",
