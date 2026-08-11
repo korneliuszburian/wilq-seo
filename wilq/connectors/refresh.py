@@ -35,17 +35,11 @@ from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
 
-def _quality_contract(
+def _connector_settlement_state_and_caveats(
     connector_id: str,
     summary: dict[str, float | int | str],
-) -> tuple[ConnectorCoveredWindow, ConnectorSettlementState, ConnectorQualityState]:
-    date_start = summary.get("date_start")
-    date_end = summary.get("date_end")
-    completeness = summary.get("detail_data_completeness") or summary.get(
-        "aggregate_data_completeness"
-    )
-    truncated = summary.get("query_page_rows_truncated")
-    cap = str(truncated) if truncated is not None else None
+    cap: str | None,
+) -> tuple[ConnectorSettlementState, str | None, list[str]]:
     caveats: list[str] = []
     if cap == "true":
         caveats.append("Szczegóły źródła osiągnęły limit wierszy.")
@@ -76,7 +70,17 @@ def _quality_contract(
         settlement = ConnectorSettlementState.settled
     else:
         settlement = ConnectorSettlementState.unknown
-    quality = (
+    return settlement, cap, caveats
+
+
+def _connector_quality_state(
+    connector_id: str,
+    cap: str | None,
+    completeness: float | int | str | None,
+    date_start: float | int | str | None,
+    date_end: float | int | str | None,
+) -> ConnectorQualityState:
+    return (
         ConnectorQualityState.partial
         if cap in {"true", "place_detail_limit"} or completeness == "partial_possible"
         else (
@@ -89,54 +93,86 @@ def _quality_contract(
             )
         )
     )
-    return (
-        ConnectorCoveredWindow(
-            date_start=date_start if isinstance(date_start, str) else None,
-            date_end=date_end if isinstance(date_end, str) else None,
-            completeness=str(completeness) if completeness is not None else None,
-            cap_or_truncation=cap,
-            cadence=(
-                "manual_lag_1_snapshot"
-                if connector_id == "ahrefs"
-                else "trailing_30_days"
-                if connector_id == "localo"
-                else None
-            ),
-            coverage_scope=(
-                "domain_snapshot"
-                if connector_id == "ahrefs"
-                else "active_places"
-                if connector_id == "localo"
-                else None
-            ),
-            coverage_count=(
-                int(summary["localo_active_place_count"])
-                if connector_id == "localo"
-                and isinstance(summary.get("localo_active_place_count"), (int, float))
-                else None
-            ),
-            requested_count=(
-                int(summary["localo_requested_place_count"])
-                if connector_id == "localo"
-                and isinstance(summary.get("localo_requested_place_count"), (int, float))
-                else None
-            ),
-            covered_count=(
-                int(summary["localo_covered_place_count"])
-                if connector_id == "localo"
-                and isinstance(summary.get("localo_covered_place_count"), (int, float))
-                else None
-            ),
-            proxy_source=(
-                str(summary["localo_proxy_source"])
-                if connector_id == "localo" and summary.get("localo_proxy_source")
-                else None
-            ),
-            interpretation_caveats=caveats,
+
+
+def _connector_covered_window(
+    connector_id: str,
+    summary: dict[str, float | int | str],
+    date_start: float | int | str | None,
+    date_end: float | int | str | None,
+    completeness: float | int | str | None,
+    cap: str | None,
+    caveats: list[str],
+) -> ConnectorCoveredWindow:
+    return ConnectorCoveredWindow(
+        date_start=date_start if isinstance(date_start, str) else None,
+        date_end=date_end if isinstance(date_end, str) else None,
+        completeness=str(completeness) if completeness is not None else None,
+        cap_or_truncation=cap,
+        cadence=(
+            "manual_lag_1_snapshot"
+            if connector_id == "ahrefs"
+            else "trailing_30_days"
+            if connector_id == "localo"
+            else None
         ),
-        settlement,
-        quality,
+        coverage_scope=(
+            "domain_snapshot"
+            if connector_id == "ahrefs"
+            else "active_places"
+            if connector_id == "localo"
+            else None
+        ),
+        coverage_count=(
+            int(summary["localo_active_place_count"])
+            if connector_id == "localo"
+            and isinstance(summary.get("localo_active_place_count"), (int, float))
+            else None
+        ),
+        requested_count=(
+            int(summary["localo_requested_place_count"])
+            if connector_id == "localo"
+            and isinstance(summary.get("localo_requested_place_count"), (int, float))
+            else None
+        ),
+        covered_count=(
+            int(summary["localo_covered_place_count"])
+            if connector_id == "localo"
+            and isinstance(summary.get("localo_covered_place_count"), (int, float))
+            else None
+        ),
+        proxy_source=(
+            str(summary["localo_proxy_source"])
+            if connector_id == "localo" and summary.get("localo_proxy_source")
+            else None
+        ),
+        interpretation_caveats=caveats,
     )
+
+
+def _quality_contract(
+    connector_id: str,
+    summary: dict[str, float | int | str],
+) -> tuple[ConnectorCoveredWindow, ConnectorSettlementState, ConnectorQualityState]:
+    date_start = summary.get("date_start")
+    date_end = summary.get("date_end")
+    completeness = summary.get("detail_data_completeness") or summary.get(
+        "aggregate_data_completeness"
+    )
+    truncated = summary.get("query_page_rows_truncated")
+    cap = str(truncated) if truncated is not None else None
+    settlement, cap, caveats = _connector_settlement_state_and_caveats(connector_id, summary, cap)
+    quality = _connector_quality_state(connector_id, cap, completeness, date_start, date_end)
+    covered_window = _connector_covered_window(
+        connector_id,
+        summary,
+        date_start,
+        date_end,
+        completeness,
+        cap,
+        caveats,
+    )
+    return covered_window, settlement, quality
 
 
 def run_connector_refresh(
@@ -238,7 +274,7 @@ def queue_connector_refresh(
             checked_credentials=connector.required_env,
             metrics_persisted=False,
             summary="Odczyt źródła dodany do kolejki read-only.",
-        )
+        ),
     )
 
 
