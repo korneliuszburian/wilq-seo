@@ -11,6 +11,7 @@ from wilq.actions.google_ads.business_context import (
     ads_int_env,
 )
 from wilq.actions.google_ads.campaign_triage import (
+    CampaignTargetContext,
     campaign_review_gates,
     campaign_review_priority,
     campaign_review_reason,
@@ -96,6 +97,8 @@ def campaign_review_action_from_metric_facts(
         google_ads_facts=google_ads_facts,
         campaign_review_payload=payload,
     )
+
+
 CAMPAIGN_REVIEW_BLOCKED_CLAIMS = [
     "skalowanie budżetu",
     "zmiana budżetu",
@@ -134,6 +137,26 @@ CAMPAIGN_REVIEW_REQUIRED_VALIDATION = [
 def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     subject = "Przegląd kampanii Google Ads"
+    _validate_campaign_candidates(payload, errors, subject)
+    if not payload.get("evidence_ids"):
+        errors.append(missing_evidence(subject))
+    _validate_measurement_plan(payload, errors, subject)
+    if payload.get("apply_allowed") is not False:
+        errors.append(no_write(subject))
+    if payload.get("destructive") is not False:
+        errors.append(no_destructive_change(subject))
+    if not _validate_required_validation(payload, errors, subject):
+        return errors
+    if not _validate_budget_preview_items(payload, errors, subject):
+        return errors
+    return errors
+
+
+def _validate_campaign_candidates(
+    payload: dict[str, Any],
+    errors: list[str],
+    subject: str,
+) -> None:
     if not payload.get("campaign_candidates"):
         errors.append(missing(subject, "kampanii do sprawdzenia opartych na dowodach"))
     for index, candidate in enumerate(payload.get("campaign_candidates", [])):
@@ -154,8 +177,13 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(missing(candidate_subject, "listy sprawdzeń człowieka"))
         if not isinstance(candidate.get("target_context"), dict):
             errors.append(missing(candidate_subject, "kontekstu celu kampanii"))
-    if not payload.get("evidence_ids"):
-        errors.append(missing_evidence(subject))
+
+
+def _validate_measurement_plan(
+    payload: dict[str, Any],
+    errors: list[str],
+    subject: str,
+) -> None:
     measurement_plan = payload.get("measurement_plan")
     if not isinstance(measurement_plan, dict):
         errors.append(missing(subject, "planu pomiaru zmiany"))
@@ -172,21 +200,32 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(missing(subject, "potwierdzenia ręcznego wykonania"))
         if measurement_plan.get("success_claim_allowed") is not False:
             errors.append(no_write(subject))
-    if payload.get("apply_allowed") is not False:
-        errors.append(no_write(subject))
-    if payload.get("destructive") is not False:
-        errors.append(no_destructive_change(subject))
+
+
+def _validate_required_validation(
+    payload: dict[str, Any],
+    errors: list[str],
+    subject: str,
+) -> bool:
     required_validation = payload.get("required_validation")
     if not isinstance(required_validation, list):
         errors.append(missing(subject, "listy wymaganych sprawdzeń"))
-        return errors
+        return False
     for required_check in CAMPAIGN_REVIEW_REQUIRED_VALIDATION:
         if required_check not in required_validation:
             errors.append(missing_review_check(subject))
+    return True
+
+
+def _validate_budget_preview_items(
+    payload: dict[str, Any],
+    errors: list[str],
+    subject: str,
+) -> bool:
     preview_items = payload.get("budget_payload_preview")
     if not isinstance(preview_items, list):
         errors.append(missing(subject, "podglądu zmian budżetu"))
-        return errors
+        return False
     candidates_with_budget = [
         candidate
         for candidate in payload.get("campaign_candidates", [])
@@ -223,7 +262,7 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(no_api_write(f"{item_subject}, sprawdzenie bezpieczeństwa"))
         if safety_review.get("destructive") is not False:
             errors.append(no_destructive_change(f"{item_subject}, sprawdzenie bezpieczeństwa"))
-    return errors
+    return True
 
 
 def campaign_review_payload_from_metric_facts(
@@ -389,6 +428,49 @@ def _campaign_candidate(
         source_metric_names=source_metric_names,
         evidence_ids=evidence_ids,
     )
+    return _campaign_candidate_payload(
+        campaign_id=campaign_id,
+        campaign_name=campaign_name,
+        campaign_status=campaign_status,
+        advertising_channel_type=advertising_channel_type,
+        review_score=review_score,
+        target_context=target_context,
+        clicks=clicks,
+        impressions=impressions,
+        cost_micros=cost_micros,
+        conversions=conversions,
+        conversion_value=conversion_value,
+        missing_metrics=missing_metrics,
+        budget_amount_micros=budget_amount_micros,
+        has_recommended_budget=has_recommended_budget,
+        recommended_budget_amount_micros=recommended_budget_amount_micros,
+        budget_payload_preview=budget_payload_preview,
+        source_metric_names=source_metric_names,
+        evidence_ids=evidence_ids,
+    )
+
+
+def _campaign_candidate_payload(
+    *,
+    campaign_id: str | None,
+    campaign_name: str,
+    campaign_status: str | None,
+    advertising_channel_type: str | None,
+    review_score: int,
+    target_context: CampaignTargetContext,
+    clicks: int | None,
+    impressions: int | None,
+    cost_micros: int | None,
+    conversions: float | None,
+    conversion_value: float | None,
+    missing_metrics: list[str],
+    budget_amount_micros: int | None,
+    has_recommended_budget: bool | None,
+    recommended_budget_amount_micros: int | None,
+    budget_payload_preview: dict[str, Any],
+    source_metric_names: list[str],
+    evidence_ids: list[str],
+) -> dict[str, Any]:
     return {
         "campaign_id": campaign_id,
         "campaign_name": campaign_name,
