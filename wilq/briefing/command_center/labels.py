@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from wilq.operator_labels import route_cta_label, route_operator_label, source_connector_label
 from wilq.schemas import ConnectorStatus, DecisionState
 
@@ -110,82 +112,70 @@ def _localo_claims_phrase(claims: list[str]) -> str:
     return f"{', '.join(values[:-1])} i {values[-1]}"
 
 
+_METRIC_TILE_PHRASES: dict[str, tuple[str, str, str] | Callable[[float | int | str], str]] = {
+    "produkty": ("produkt", "produkty", "produktów"),
+    "typy problemów": ("typ problemu", "typy problemów", "typów problemów"),
+    "zgłoszenia": ("zgłoszenie problemu", "zgłoszenia problemów", "zgłoszeń problemów"),
+    "decyzje": ("decyzja", "decyzje", "decyzji"),
+    "blokady": ("blokada", "blokady", "blokad"),
+    "zapytania i adresy z GSC": (
+        "zapytanie i adres z GSC",
+        "zapytania i adresy z GSC",
+        "zapytań i adresów z GSC",
+    ),
+    "dopasowania WordPress": (
+        "dopasowanie WordPress",
+        "dopasowania WordPress",
+        "dopasowań WordPress",
+    ),
+    "wyświetlenia": ("wyświetlenie", "wyświetlenia", "wyświetleń"),
+    "kliknięcia": ("kliknięcie", "kliknięcia", "kliknięć"),
+    "ocena Ahrefs": ("ocena Ahrefs", "oceny Ahrefs", "ocen Ahrefs"),
+    "rekordy Ahrefs": ("rekord Ahrefs", "rekordy Ahrefs", "rekordów Ahrefs"),
+    "luki Ahrefs": ("luka Ahrefs", "luki Ahrefs", "luk Ahrefs"),
+    "luki linków": ("luka linków", "luki linków", "luk linków"),
+    "kampanie": ("kampania", "kampanie", "kampanii"),
+    "zapytania": ("wyszukiwane hasło", "wyszukiwane hasła", "wyszukiwanych haseł"),
+    "koszt": lambda value: f"koszt {value}",
+    "konwersje": ("konwersja", "konwersje", "konwersji"),
+    "wartość konwersji": lambda value: f"wartość konwersji {value}",
+    "podgląd budżetu": (
+        "budżet do sprawdzenia",
+        "budżety do sprawdzenia",
+        "budżetów do sprawdzenia",
+    ),
+    "rekomendacje": ("rekomendacja", "rekomendacje", "rekomendacji"),
+    "wykluczenia": ("wykluczenie", "wykluczenia", "wykluczeń"),
+    "segmenty": ("segment", "segmenty", "segmentów"),
+    "wskaźniki do sprawdzenia": (
+        "wiersz wskaźników kampanii",
+        "wiersze wskaźników kampanii",
+        "wierszy wskaźników kampanii",
+    ),
+    "wiersze kosztu pozyskania celu": (
+        "wiersz kosztu pozyskania celu",
+        "wiersze kosztu pozyskania celu",
+        "wierszy kosztu pozyskania celu",
+    ),
+    "wiersze zwrotu z reklam": (
+        "wiersz zwrotu z reklam",
+        "wiersze zwrotu z reklam",
+        "wierszy zwrotu z reklam",
+    ),
+}
+
+
 def _metric_tiles_sentence(metric_tiles: dict[str, float | int | str]) -> str:
     return ", ".join(_metric_tile_phrase(label, value) for label, value in metric_tiles.items())
 
 
 def _metric_tile_phrase(label: str, value: float | int | str) -> str:
-    if label == "produkty":
-        return _count_phrase(value, "produkt", "produkty", "produktów")
-    if label == "typy problemów":
-        return _count_phrase(value, "typ problemu", "typy problemów", "typów problemów")
-    if label == "zgłoszenia":
-        return _count_phrase(
-            value, "zgłoszenie problemu", "zgłoszenia problemów", "zgłoszeń problemów"
-        )
-    if label == "decyzje":
-        return _count_phrase(value, "decyzja", "decyzje", "decyzji")
-    if label == "blokady":
-        return _count_phrase(value, "blokada", "blokady", "blokad")
-    if label == "zapytania i adresy z GSC":
-        return _count_phrase(
-            value, "zapytanie i adres z GSC", "zapytania i adresy z GSC", "zapytań i adresów z GSC"
-        )
-    if label == "dopasowania WordPress":
-        return _count_phrase(
-            value, "dopasowanie WordPress", "dopasowania WordPress", "dopasowań WordPress"
-        )
-    if label == "wyświetlenia":
-        return _count_phrase(value, "wyświetlenie", "wyświetlenia", "wyświetleń")
-    if label == "kliknięcia":
-        return _count_phrase(value, "kliknięcie", "kliknięcia", "kliknięć")
-    if label == "ocena Ahrefs":
-        return _count_phrase(value, "ocena Ahrefs", "oceny Ahrefs", "ocen Ahrefs")
-    if label == "rekordy Ahrefs":
-        return _count_phrase(value, "rekord Ahrefs", "rekordy Ahrefs", "rekordów Ahrefs")
-    if label == "luki Ahrefs":
-        return _count_phrase(value, "luka Ahrefs", "luki Ahrefs", "luk Ahrefs")
-    if label == "luki linków":
-        return _count_phrase(value, "luka linków", "luki linków", "luk linków")
-    if label == "kampanie":
-        return _count_phrase(value, "kampania", "kampanie", "kampanii")
-    if label == "zapytania":
-        return _count_phrase(value, "wyszukiwane hasło", "wyszukiwane hasła", "wyszukiwanych haseł")
-    if label == "koszt":
-        return f"koszt {value}"
-    if label == "konwersje":
-        return _count_phrase(value, "konwersja", "konwersje", "konwersji")
-    if label == "wartość konwersji":
-        return f"wartość konwersji {value}"
-    if label == "podgląd budżetu":
-        return _count_phrase(
-            value, "budżet do sprawdzenia", "budżety do sprawdzenia", "budżetów do sprawdzenia"
-        )
-    if label == "rekomendacje":
-        return _count_phrase(value, "rekomendacja", "rekomendacje", "rekomendacji")
-    if label == "wykluczenia":
-        return _count_phrase(value, "wykluczenie", "wykluczenia", "wykluczeń")
-    if label == "segmenty":
-        return _count_phrase(value, "segment", "segmenty", "segmentów")
-    if label == "wskaźniki do sprawdzenia":
-        return _count_phrase(
-            value,
-            "wiersz wskaźników kampanii",
-            "wiersze wskaźników kampanii",
-            "wierszy wskaźników kampanii",
-        )
-    if label == "wiersze kosztu pozyskania celu":
-        return _count_phrase(
-            value,
-            "wiersz kosztu pozyskania celu",
-            "wiersze kosztu pozyskania celu",
-            "wierszy kosztu pozyskania celu",
-        )
-    if label == "wiersze zwrotu z reklam":
-        return _count_phrase(
-            value, "wiersz zwrotu z reklam", "wiersze zwrotu z reklam", "wierszy zwrotu z reklam"
-        )
-    return f"{label}: {value}"
+    phrase = _METRIC_TILE_PHRASES.get(label)
+    if phrase is None:
+        return f"{label}: {value}"
+    if isinstance(phrase, tuple):
+        return _count_phrase(value, *phrase)
+    return phrase(value)
 
 
 def _count_phrase(value: float | int | str, one: str, few: str, many: str) -> str:
