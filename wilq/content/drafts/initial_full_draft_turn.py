@@ -70,8 +70,7 @@ def initial_full_draft_turn_request(
             "generation_constraints": generation_contract.model_input.model_dump(mode="json"),
             "document_scope": {
                 "included_section_ids": [
-                    section.section_id
-                    for section in draftable_planning_sections(proposal.sections)
+                    section.section_id for section in draftable_planning_sections(proposal.sections)
                 ],
                 "excluded_section_ids": [
                     section.section_id
@@ -172,6 +171,67 @@ def regulatory_assertion_repair_turn_request(
     )
 
 
+def readability_repair_turn_request(
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    candidate: ContentInitialDraftModelOutput,
+    issues: list[tuple[str, str, str]],
+) -> CodexAppServerStructuredTurnRequest:
+    candidate_section_ids = {section.section_id for section in candidate.sections}
+    affected_section_ids = list(
+        dict.fromkeys(
+            section_id for _, section_id, _ in issues if section_id in candidate_section_ids
+        )
+    )
+    if not affected_section_ids:
+        raise ValueError("Readability repair requires an affected candidate section.")
+    return CodexAppServerStructuredTurnRequest(
+        instruction=(
+            "Napraw wyłącznie body_markdown sekcji wskazanych w polu issues. Usuń notatki "
+            "robocze, meta-komentarze i powtórzone akapity, podziel ściany tekstu oraz rozwiń "
+            "zbyt krótkie odpowiedzi. Każdy patch musi usuwać dokładny problem opisany w jego "
+            "reason. Zachowaj znaczenie, fakty, zakres i ton tekstu dla czytelnika. Nie dotykaj "
+            "innych sekcji, nagłówków, page assets, FAQ, CTA ani linków. Zwróć dokładnie po "
+            "jednym patchu dla każdego dozwolonego section_id. Użyj replace dla pełnej "
+            "poprawionej treści sekcji albo append wyłącznie do uzupełnienia zbyt krótkiej "
+            "sekcji. Nie dodawaj nowych notatek roboczych ani informacji wymagających "
+            "weryfikacji. Zwróć wyłącznie JSON zgodny ze schema."
+        ),
+        application_context=json.dumps(
+            {
+                "operation": "repair_initial_draft_readability",
+                "work_item_id": planning_input.work_item_id,
+                "proposal_id": proposal.proposal_id,
+                "affected_section_ids": affected_section_ids,
+                "do_not_approve": True,
+                "do_not_write_vendor": True,
+                "publish_ready": False,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        untrusted_context=json.dumps(
+            {
+                "candidate_document": candidate.model_dump(mode="json"),
+                "issues": [
+                    {
+                        "code": code,
+                        "affected_section_id": section_id,
+                        "reason": reason,
+                    }
+                    for code, section_id, reason in issues
+                ],
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        output_schema=_regulatory_assertion_repair_output_schema(affected_section_ids),
+    )
+
+
 def _missing_assertions_for_repair(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
@@ -213,6 +273,8 @@ def _regulatory_assertion_repair_output_schema(section_ids: list[str]) -> dict[s
     sections["minItems"] = len(section_ids)
     sections["maxItems"] = len(section_ids)
     return schema
+
+
 def compact_initial_draft_planning_input(
     planning_input: ContentPlanningInput,
 ) -> dict[str, object]:
@@ -241,11 +303,7 @@ def compact_initial_draft_planning_input(
         for assessment in assessments:
             if isinstance(assessment, dict):
                 compact_assessments.append(
-                    {
-                        key: value
-                        for key, value in assessment.items()
-                        if key in assessment_keys
-                    }
+                    {key: value for key, value in assessment.items() if key in assessment_keys}
                 )
             else:
                 compact_assessments.append(assessment)
@@ -266,11 +324,7 @@ def compact_initial_draft_planning_input(
         for comparison in comparisons:
             if isinstance(comparison, dict):
                 compact_comparisons.append(
-                    {
-                        key: value
-                        for key, value in comparison.items()
-                        if key in comparison_keys
-                    }
+                    {key: value for key, value in comparison.items() if key in comparison_keys}
                 )
             else:
                 compact_comparisons.append(comparison)
@@ -332,15 +386,13 @@ def initial_full_draft_output_schema(
     heading["enum"] = [item.heading for item in draftable_sections]
     _set_array_size(properties, "faq", len(proposal.faq))
     question = _mapping(faq, "question")
-    question["enum"] = [item.question for item in proposal.faq] or [
-        "__WILQ_EMPTY_ARRAY_ONLY__"
-    ]
+    question["enum"] = [item.question for item in proposal.faq] or ["__WILQ_EMPTY_ARRAY_ONLY__"]
     _set_array_size(properties, "cta_blocks", len(proposal.cta_blocks))
     _set_array_size(properties, "internal_links", len(proposal.internal_links))
     target_url = _mapping(link, "target_url")
-    target_url["enum"] = [
-        item.target_url for item in proposal.internal_links
-    ] or ["__WILQ_EMPTY_ARRAY_ONLY__"]
+    target_url["enum"] = [item.target_url for item in proposal.internal_links] or [
+        "__WILQ_EMPTY_ARRAY_ONLY__"
+    ]
     return schema
 
 

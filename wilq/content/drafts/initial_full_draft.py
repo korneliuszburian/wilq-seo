@@ -9,6 +9,7 @@ from wilq.codex.app_server import (
     CodexAppServerTurnResult,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
 )
@@ -23,6 +24,9 @@ from wilq.content.drafts.initial_draft_assurance_repair import (
 from wilq.content.drafts.initial_draft_persistence import (
     InitialDraftRevisionStore,
     persist_initial_draft,
+)
+from wilq.content.drafts.initial_draft_readability import (
+    assure_readability_and_repair,
 )
 from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
@@ -68,6 +72,16 @@ class _InitialDraftInputs:
     proposal: ContentPlanningProposal
     generation_contract: StructuredDraftGenerationContract
     base_revision_id: str | None = None
+
+
+_InitialDraftPrePersistResult = (
+    tuple[
+        ContentInitialDraftModelOutput,
+        ContentCodexRuntimeTrace,
+        ContentDraftAssuranceReceipt | None,
+    ]
+    | ContentInitialDraftResponse
+)
 
 
 def _initial_draft_context_digest(
@@ -128,6 +142,43 @@ def generate_initial_full_draft(
     if isinstance(runtime_result, ContentInitialDraftResponse):
         return runtime_result
     output, trace = runtime_result
+    prepared_output = _prepare_initial_draft_for_persistence(
+        snapshot=snapshot,
+        prepared=prepared,
+        output=output,
+        trace=trace,
+        client=client,
+        run=run,
+        run_store=run_store,
+    )
+    if isinstance(prepared_output, ContentInitialDraftResponse):
+        return prepared_output
+    output, trace, assurance = prepared_output
+    return persist_initial_draft(
+        snapshot=snapshot,
+        request=request,
+        planning_input=prepared.planning_input,
+        proposal=prepared.proposal,
+        base_revision_id=prepared.base_revision_id,
+        output=output,
+        run=run,
+        trace=trace,
+        workflow_store=workflow_store,
+        run_store=run_store,
+        regulatory_assurance=assurance,
+    )
+
+
+def _prepare_initial_draft_for_persistence(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    prepared: _InitialDraftInputs,
+    output: ContentInitialDraftModelOutput,
+    trace: ContentCodexRuntimeTrace,
+    client: CodexAppServerClientProtocol,
+    run: CodexRun,
+    run_store: LocalStateStore,
+) -> _InitialDraftPrePersistResult:
     output, trace, blocker = repair_initial_output_blocker(
         planning_input=prepared.planning_input,
         proposal=prepared.proposal,
@@ -179,19 +230,24 @@ def generate_initial_full_draft(
             blocker=blocker,
             run_store=run_store,
         )
-    return persist_initial_draft(
-        snapshot=snapshot,
-        request=request,
+    output, trace, blocker = assure_readability_and_repair(
         planning_input=prepared.planning_input,
         proposal=prepared.proposal,
-        base_revision_id=prepared.base_revision_id,
         output=output,
-        run=run,
         trace=trace,
-        workflow_store=workflow_store,
+        client=client,
         run_store=run_store,
-        regulatory_assurance=assurance,
     )
+    if blocker is not None:
+        return _finish_blocked_draft(
+            snapshot=snapshot,
+            proposal=prepared.proposal,
+            run=run,
+            trace=trace,
+            blocker=blocker,
+            run_store=run_store,
+        )
+    return output, trace, assurance
 
 
 def _finish_blocked_draft(

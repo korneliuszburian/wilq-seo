@@ -13,9 +13,7 @@ from wilq.content.workflow.documents.revisions import (
     validate_plain_internal_link_anchor,
 )
 
-ContentInitialDraftStatus = Literal[
-    "generating", "created", "blocked", "failed", "conflict"
-]
+ContentInitialDraftStatus = Literal["generating", "created", "blocked", "failed", "conflict"]
 ContentInitialDraftBlockerCode = Literal[
     "planning_not_ready",
     "draft_not_started",
@@ -43,6 +41,7 @@ ContentInitialDraftBlockerCode = Literal[
     "draft_assurance_failed",
     "draft_assurance_runtime_failed",
     "draft_assurance_invalid_output",
+    "readability_gate_failed",
     "revision_conflict",
     "persistence_failed",
     "generation_in_progress",
