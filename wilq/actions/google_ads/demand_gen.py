@@ -64,6 +64,8 @@ def demand_gen_readiness_action(
         validation_status="not_validated",
         created_by="system_metric_seed",
     )
+
+
 DEMAND_GEN_READINESS_REVIEW_ACTION_TYPE = "google_ads_demand_gen_readiness_review"
 DEMAND_GEN_READINESS_REVIEW_PREVIEW_CONTRACT = "demand_gen_readiness_review_preview_v1"
 DEMAND_GEN_READINESS_REVIEW_OPERATION_TYPE = "DemandGenReadinessReview"
@@ -179,36 +181,12 @@ def demand_gen_readiness_action_from_metric_facts(
     demand_gen_campaign_mode_review_rows = demand_gen_campaign_mode_review_rows_from_campaigns(
         demand_gen_rows
     )
-    if (
-        demand_gen_contract_has_ready_fact(
-            google_ads_facts,
-            status_fact_name=DEMAND_GEN_AD_READ_STATUS_FACT,
-            row_count_fact_name=DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
-        )
-        or demand_gen_ad_group_ad_rows
-    ):
-        available_read_contracts.append(DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT)
-        missing_read_contracts = [
-            contract
-            for contract in missing_read_contracts
-            if contract != DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT
-        ]
-    if (
-        demand_gen_contract_has_ready_fact(
-            google_ads_facts,
-            status_fact_name=DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
-            row_count_fact_name=DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
-        )
-        or demand_gen_creative_asset_rows
-    ):
-        available_read_contracts.append(DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT)
-        missing_read_contracts = [
-            contract
-            for contract in missing_read_contracts
-            if contract != DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT
-        ]
-    available_read_contracts.extend(
-        [DEMAND_GEN_LANDING_QUALITY_CONTRACT, DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT]
+    available_read_contracts, missing_read_contracts = _resolve_demand_gen_read_contracts(
+        google_ads_facts=google_ads_facts,
+        demand_gen_ad_group_ad_rows=demand_gen_ad_group_ad_rows,
+        demand_gen_creative_asset_rows=demand_gen_creative_asset_rows,
+        available_read_contracts=available_read_contracts,
+        missing_read_contracts=missing_read_contracts,
     )
     payload = demand_gen_readiness_review_payload(
         campaign_rows_evaluated=len(campaign_rows),
@@ -242,6 +220,48 @@ def demand_gen_readiness_action_from_metric_facts(
         evidence_ids=evidence_ids,
         action_metrics=action_metrics,
     )
+
+
+def _resolve_demand_gen_read_contracts(
+    *,
+    google_ads_facts: list[MetricFact],
+    demand_gen_ad_group_ad_rows: list[DemandGenAdGroupAdRow],
+    demand_gen_creative_asset_rows: list[DemandGenCreativeAssetRow],
+    available_read_contracts: list[str],
+    missing_read_contracts: list[str],
+) -> tuple[list[str], list[str]]:
+    if (
+        demand_gen_contract_has_ready_fact(
+            google_ads_facts,
+            status_fact_name=DEMAND_GEN_AD_READ_STATUS_FACT,
+            row_count_fact_name=DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
+        )
+        or demand_gen_ad_group_ad_rows
+    ):
+        available_read_contracts.append(DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT)
+        missing_read_contracts = [
+            contract
+            for contract in missing_read_contracts
+            if contract != DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT
+        ]
+    if (
+        demand_gen_contract_has_ready_fact(
+            google_ads_facts,
+            status_fact_name=DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
+            row_count_fact_name=DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
+        )
+        or demand_gen_creative_asset_rows
+    ):
+        available_read_contracts.append(DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT)
+        missing_read_contracts = [
+            contract
+            for contract in missing_read_contracts
+            if contract != DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT
+        ]
+    available_read_contracts.extend(
+        [DEMAND_GEN_LANDING_QUALITY_CONTRACT, DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT]
+    )
+    return available_read_contracts, missing_read_contracts
 
 
 def _campaign_context_rows_from_metric_facts(facts: list[MetricFact]) -> list[dict[str, Any]]:
@@ -284,8 +304,7 @@ def _campaign_channel_counts_from_context_rows(rows: list[dict[str, Any]]) -> di
     counts: dict[str, int] = {}
     for campaign_row in rows:
         channel = (
-            str(campaign_row.get("advertising_channel_type") or "UNKNOWN").strip()
-            or "UNKNOWN"
+            str(campaign_row.get("advertising_channel_type") or "UNKNOWN").strip() or "UNKNOWN"
         )
         counts[channel] = counts.get(channel, 0) + 1
     return dict(sorted(counts.items()))
@@ -411,6 +430,34 @@ def demand_gen_readiness_review_payload(
 def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     subject = "Przegląd gotowości Demand Gen"
+    _validate_demand_gen_readiness_top_level_contracts(
+        payload=payload,
+        errors=errors,
+        subject=subject,
+    )
+    _validate_demand_gen_readiness_required_validation(
+        payload=payload,
+        errors=errors,
+        subject=subject,
+    )
+    _validate_demand_gen_readiness_blocked_claims(
+        payload=payload,
+        errors=errors,
+        subject=subject,
+    )
+    return _validate_demand_gen_readiness_payload_previews(
+        payload=payload,
+        errors=errors,
+        subject=subject,
+    )
+
+
+def _validate_demand_gen_readiness_top_level_contracts(
+    *,
+    payload: dict[str, Any],
+    errors: list[str],
+    subject: str,
+) -> None:
     if payload.get("connector") != "google_ads":
         errors.append(wrong(subject, "dotyczy tylko Google Ads"))
     if payload.get("mode") != "prepare_only":
@@ -431,6 +478,14 @@ def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> lis
         errors.append(missing(subject, "listy dostępnych odczytów"))
     if not isinstance(payload.get("missing_read_contracts"), list):
         errors.append(missing(subject, "listy brakujących odczytów"))
+
+
+def _validate_demand_gen_readiness_required_validation(
+    *,
+    payload: dict[str, Any],
+    errors: list[str],
+    subject: str,
+) -> None:
     required_validation = payload.get("required_validation")
     if not isinstance(required_validation, list):
         errors.append(missing(subject, "listy wymaganych sprawdzeń"))
@@ -438,6 +493,14 @@ def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> lis
         for required_check in DEMAND_GEN_READINESS_REQUIRED_VALIDATION:
             if required_check not in required_validation:
                 errors.append(missing_review_check(subject))
+
+
+def _validate_demand_gen_readiness_blocked_claims(
+    *,
+    payload: dict[str, Any],
+    errors: list[str],
+    subject: str,
+) -> None:
     blocked_claims = payload.get("blocked_claims")
     if not isinstance(blocked_claims, list):
         errors.append(missing(subject, "listy zakazanych obietnic"))
@@ -445,6 +508,14 @@ def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> lis
         for claim in DEMAND_GEN_READINESS_BLOCKED_CLAIMS:
             if claim not in blocked_claims:
                 errors.append(missing(subject, f"blokady obietnicy: {claim}"))
+
+
+def _validate_demand_gen_readiness_payload_previews(
+    *,
+    payload: dict[str, Any],
+    errors: list[str],
+    subject: str,
+) -> list[str]:
     previews = payload.get("payload_preview")
     if not isinstance(previews, list) or not previews:
         errors.append(missing(subject, "podglądu sprawdzenia"))
