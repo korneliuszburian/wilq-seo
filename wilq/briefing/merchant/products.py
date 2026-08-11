@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, TypedDict
 
 from wilq.briefing.merchant_labels import merchant_preview_contract_label
 from wilq.schemas import (
@@ -42,6 +42,18 @@ from .shared import (
     _text_metric_value,
     _unique,
 )
+
+
+class _ProductPerformanceReadinessFields(TypedDict):
+    merchant_sample_count: int
+    ads_product_fact_count: int
+    ga4_product_fact_count: int
+    current_read_contracts: list[str]
+    required_read_contracts: list[str]
+    missing_read_contracts: list[str]
+    join_key_candidates: list[str]
+    sample_product_ids: list[str]
+    blocked_claims: list[str]
 
 
 def _merchant_product_sample_readiness(
@@ -159,110 +171,13 @@ def _merchant_product_performance_readiness(
     ga4_product_facts = _product_scoped_metric_facts(
         product_metric_facts_by_connector.get(GA4_CONNECTOR_ID, [])
     )
-    ads_facts_by_product_id = _metric_facts_by_product_id(ads_product_facts)
-    ga4_facts_by_product_id = _metric_facts_by_product_id(ga4_product_facts)
-
-    performance_rows: list[MerchantProductPerformanceRow] = []
-    for product_id in sample_product_ids:
-        ads_facts = _facts_for_product_id(ads_facts_by_product_id, product_id)
-        ga4_facts = _facts_for_product_id(ga4_facts_by_product_id, product_id)
-        if not ads_facts and not ga4_facts:
-            continue
-        sample_context = _sample_context_for_product_id(sample_context_map, product_id)
-        price_fact = _metric_fact_by_name(ads_facts, ["shopping_product_price_micros"])
-        row = MerchantProductPerformanceRow(
-            product_id=product_id,
-            sample_title=sample_title_map.get(product_id),
-            issue_type=sample_context.issue_type if sample_context is not None else None,
-            issue_type_label=_merchant_display_label(sample_context.issue_type)
-            if sample_context is not None
-            else None,
-            affected_attribute=(
-                sample_context.affected_attribute if sample_context is not None else None
-            ),
-            affected_attribute_label=_merchant_display_label(
-                sample_context.affected_attribute or "atrybut nieznany"
-            )
-            if sample_context is not None
-            else None,
-            country=sample_context.country if sample_context is not None else None,
-            reporting_context=(
-                sample_context.reporting_context if sample_context is not None else None
-            ),
-            reporting_context_label=_merchant_reporting_context_label(
-                sample_context.reporting_context
-            )
-            if sample_context is not None
-            else None,
-            source_connectors=_unique(fact.source_connector for fact in [*ads_facts, *ga4_facts]),
-            evidence_ids=_unique(fact.evidence_id for fact in [*ads_facts, *ga4_facts]),
-            ads_product_title=_dimension_value(ads_facts, ["product_title"]),
-            ads_product_status=_text_metric_value(
-                ads_facts,
-                ["shopping_product_status"],
-            )
-            or _dimension_value(ads_facts, ["product_status"]),
-            ads_product_availability=_text_metric_value(
-                ads_facts,
-                ["shopping_product_availability"],
-            )
-            or _dimension_value(ads_facts, ["product_availability"]),
-            ads_product_price_micros=_int_metric_value(
-                ads_facts,
-                ["shopping_product_price_micros"],
-            ),
-            ads_product_currency_code=_dimension_value(ads_facts, ["currency_code"]),
-            ads_product_price_collected_at=(
-                price_fact.collected_at if price_fact is not None else None
-            ),
-            ads_product_previous_price_micros=_int_previous_metric_value(price_fact),
-            ads_product_previous_price_collected_at=(
-                price_fact.previous_collected_at if price_fact is not None else None
-            ),
-            ads_product_previous_price_evidence_id=(
-                price_fact.previous_evidence_id if price_fact is not None else None
-            ),
-            ads_product_price_delta_micros=_int_delta_metric_value(price_fact),
-            ads_product_price_delta_percent=_delta_percent_metric_value(price_fact),
-            ads_clicks=_int_metric_value(
-                ads_facts,
-                ["clicks", "product_clicks", "shopping_product_clicks"],
-            ),
-            ads_cost_micros=_int_metric_value(
-                ads_facts,
-                ["cost_micros", "product_cost_micros", "shopping_product_cost_micros"],
-            ),
-            ads_conversions=_float_metric_value(
-                ads_facts,
-                ["conversions", "product_conversions", "shopping_product_conversions"],
-            ),
-            ads_conversion_value=_float_metric_value(
-                ads_facts,
-                [
-                    "conversion_value",
-                    "conversions_value",
-                    "product_conversion_value",
-                    "shopping_product_conversion_value",
-                ],
-            ),
-            ga4_ecommerce_purchases=_float_metric_value(
-                ga4_facts,
-                ["ecommerce_purchases", "item_purchases", "item_purchase_quantity"],
-            ),
-            ga4_purchase_revenue=_float_metric_value(
-                ga4_facts,
-                ["purchase_revenue", "item_revenue", "item_purchase_revenue"],
-            ),
-        )
-        missing_metrics = _missing_product_performance_metrics(row)
-        performance_rows.append(
-            row.model_copy(
-                update={
-                    "missing_metrics": missing_metrics,
-                    "blocked_claims": MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
-                }
-            )
-        )
+    performance_rows = _product_performance_rows(
+        sample_product_ids,
+        sample_title_map,
+        sample_context_map,
+        ads_product_facts,
+        ga4_product_facts,
+    )
 
     current_read_contracts = ["merchant_aggregate_product_statuses"]
     if ads_product_performance_facts:
@@ -274,66 +189,203 @@ def _merchant_product_performance_readiness(
     if ga4_product_facts:
         current_read_contracts.append("ga4_item_metric_facts")
     missing_read_contracts = _merchant_product_performance_missing_read_contracts(
-        sample_product_ids=sample_product_ids,
-        current_read_contracts=current_read_contracts,
+        sample_product_ids=sample_product_ids, current_read_contracts=current_read_contracts
+    )
+    readiness_fields: _ProductPerformanceReadinessFields = {
+        "merchant_sample_count": len(sample_product_ids),
+        "ads_product_fact_count": len(ads_product_facts),
+        "ga4_product_fact_count": len(ga4_product_facts),
+        "current_read_contracts": current_read_contracts,
+        "required_read_contracts": MERCHANT_PRODUCT_PERFORMANCE_REQUIRED_READ_CONTRACTS,
+        "missing_read_contracts": missing_read_contracts,
+        "join_key_candidates": PRODUCT_JOIN_DIMENSION_KEYS,
+        "sample_product_ids": sample_product_ids[:20],
+        "blocked_claims": MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
+    }
+    if performance_rows:
+        return _joined_product_performance_readiness(
+            performance_rows, merchant_evidence_ids, readiness_fields
+        )
+    return _blocked_product_performance_readiness(
+        sample_product_ids,
+        merchant_evidence_ids,
+        ads_product_facts,
+        ga4_product_facts,
+        ads_shopping_contract_ready,
+        ads_shopping_lookback_days,
+        readiness_fields,
     )
 
-    if performance_rows:
-        rows_with_metrics = [
-            row for row in performance_rows if _has_product_performance_metric(row)
-        ]
-        if rows_with_metrics:
-            status: Literal["ready", "blocked"] = "ready"
-            summary = (
-                "WILQ ma dopasowane fakty produktu dla części próbek Merchant. "
-                "To wspiera przegląd produktu z metrykami Ads/GA4, ale nie oznacza "
-                "automatycznej naprawy pliku produktowego ani efektu po zmianie."
-            )
-            next_step = (
-                "Użyj wierszy produktu do ustalenia kolejności przeglądu. Do obietnic o efekcie "
-                "naprawy potrzebny jest osobny audyt sprzed i po zmianie."
-            )
-        else:
-            status = "blocked"
-            summary = (
-                "WILQ ma dopasowany stan produktu z Ads dla części próbek Merchant, "
-                "ale nie ma jeszcze metryk skuteczności Ads/GA4 dla tych produktów."
-            )
-            next_step = (
-                "Użyj wierszy stanu produktu tylko do potwierdzenia dopasowania produktów. "
-                "Zwrot z reklam "
-                "na poziomie produktu, odzyskany przychód i efekt naprawy pozostają zablokowane "
-                "do czasu metryk skuteczności albo audytu sprzed i po zmianie."
-            )
-        return MerchantProductPerformanceReadiness(
-            status=status,
-            joined_product_count=len(performance_rows),
-            merchant_sample_count=len(sample_product_ids),
-            ads_product_fact_count=len(ads_product_facts),
-            ga4_product_fact_count=len(ga4_product_facts),
-            current_read_contracts=current_read_contracts,
-            required_read_contracts=MERCHANT_PRODUCT_PERFORMANCE_REQUIRED_READ_CONTRACTS,
-            missing_read_contracts=missing_read_contracts,
-            join_key_candidates=PRODUCT_JOIN_DIMENSION_KEYS,
-            sample_product_ids=sample_product_ids[:20],
-            performance_rows=performance_rows[:20],
-            source_connectors=_unique(
-                [
-                    MERCHANT_CONNECTOR_ID,
-                    *(connector for row in performance_rows for connector in row.source_connectors),
-                ]
-            ),
-            evidence_ids=_unique(
-                [
-                    *merchant_evidence_ids,
-                    *(evidence_id for row in performance_rows for evidence_id in row.evidence_ids),
-                ]
-            ),
-            summary=summary,
-            next_step=next_step,
-            blocked_claims=MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
-        )
 
+def _product_performance_rows(
+    sample_product_ids: list[str],
+    sample_title_map: dict[str, str],
+    sample_context_map: dict[str, MerchantIssueCluster],
+    ads_product_facts: list[MetricFact],
+    ga4_product_facts: list[MetricFact],
+) -> list[MerchantProductPerformanceRow]:
+    ads_facts_by_product_id = _metric_facts_by_product_id(ads_product_facts)
+    ga4_facts_by_product_id = _metric_facts_by_product_id(ga4_product_facts)
+    performance_rows: list[MerchantProductPerformanceRow] = []
+    for product_id in sample_product_ids:
+        ads_facts = _facts_for_product_id(ads_facts_by_product_id, product_id)
+        ga4_facts = _facts_for_product_id(ga4_facts_by_product_id, product_id)
+        if not ads_facts and not ga4_facts:
+            continue
+        performance_rows.append(
+            _product_performance_row(
+                product_id,
+                sample_title_map.get(product_id),
+                _sample_context_for_product_id(sample_context_map, product_id),
+                ads_facts,
+                ga4_facts,
+            )
+        )
+    return performance_rows
+
+
+def _product_performance_row(
+    product_id: str,
+    sample_title: str | None,
+    sample_context: MerchantIssueCluster | None,
+    ads_facts: list[MetricFact],
+    ga4_facts: list[MetricFact],
+) -> MerchantProductPerformanceRow:
+    price_fact = _metric_fact_by_name(ads_facts, ["shopping_product_price_micros"])
+    row = MerchantProductPerformanceRow(
+        product_id=product_id,
+        sample_title=sample_title,
+        issue_type=sample_context.issue_type if sample_context is not None else None,
+        issue_type_label=_merchant_display_label(sample_context.issue_type)
+        if sample_context is not None
+        else None,
+        affected_attribute=sample_context.affected_attribute
+        if sample_context is not None
+        else None,
+        affected_attribute_label=_merchant_display_label(
+            sample_context.affected_attribute or "atrybut nieznany"
+        )
+        if sample_context is not None
+        else None,
+        country=sample_context.country if sample_context is not None else None,
+        reporting_context=sample_context.reporting_context if sample_context is not None else None,
+        reporting_context_label=_merchant_reporting_context_label(sample_context.reporting_context)
+        if sample_context is not None
+        else None,
+        source_connectors=_unique(fact.source_connector for fact in [*ads_facts, *ga4_facts]),
+        evidence_ids=_unique(fact.evidence_id for fact in [*ads_facts, *ga4_facts]),
+        ads_product_title=_dimension_value(ads_facts, ["product_title"]),
+        ads_product_status=_text_metric_value(ads_facts, ["shopping_product_status"])
+        or _dimension_value(ads_facts, ["product_status"]),
+        ads_product_availability=_text_metric_value(ads_facts, ["shopping_product_availability"])
+        or _dimension_value(ads_facts, ["product_availability"]),
+        ads_product_price_micros=_int_metric_value(ads_facts, ["shopping_product_price_micros"]),
+        ads_product_currency_code=_dimension_value(ads_facts, ["currency_code"]),
+        ads_product_price_collected_at=(
+            price_fact.collected_at if price_fact is not None else None
+        ),
+        ads_product_previous_price_micros=_int_previous_metric_value(price_fact),
+        ads_product_previous_price_collected_at=(
+            price_fact.previous_collected_at if price_fact is not None else None
+        ),
+        ads_product_previous_price_evidence_id=(
+            price_fact.previous_evidence_id if price_fact is not None else None
+        ),
+        ads_product_price_delta_micros=_int_delta_metric_value(price_fact),
+        ads_product_price_delta_percent=_delta_percent_metric_value(price_fact),
+        ads_clicks=_int_metric_value(
+            ads_facts, ["clicks", "product_clicks", "shopping_product_clicks"]
+        ),
+        ads_cost_micros=_int_metric_value(
+            ads_facts, ["cost_micros", "product_cost_micros", "shopping_product_cost_micros"]
+        ),
+        ads_conversions=_float_metric_value(
+            ads_facts, ["conversions", "product_conversions", "shopping_product_conversions"]
+        ),
+        ads_conversion_value=_float_metric_value(
+            ads_facts,
+            [
+                "conversion_value",
+                "conversions_value",
+                "product_conversion_value",
+                "shopping_product_conversion_value",
+            ],
+        ),
+        ga4_ecommerce_purchases=_float_metric_value(
+            ga4_facts, ["ecommerce_purchases", "item_purchases", "item_purchase_quantity"]
+        ),
+        ga4_purchase_revenue=_float_metric_value(
+            ga4_facts, ["purchase_revenue", "item_revenue", "item_purchase_revenue"]
+        ),
+    )
+    return row.model_copy(
+        update={
+            "missing_metrics": _missing_product_performance_metrics(row),
+            "blocked_claims": MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
+        }
+    )
+
+
+def _joined_product_performance_readiness(
+    performance_rows: list[MerchantProductPerformanceRow],
+    merchant_evidence_ids: list[str],
+    readiness_fields: _ProductPerformanceReadinessFields,
+) -> MerchantProductPerformanceReadiness:
+    rows_with_metrics = [row for row in performance_rows if _has_product_performance_metric(row)]
+    if rows_with_metrics:
+        status: Literal["ready", "blocked"] = "ready"
+        summary = (
+            "WILQ ma dopasowane fakty produktu dla części próbek Merchant. "
+            "To wspiera przegląd produktu z metrykami Ads/GA4, ale nie oznacza "
+            "automatycznej naprawy pliku produktowego ani efektu po zmianie."
+        )
+        next_step = (
+            "Użyj wierszy produktu do ustalenia kolejności przeglądu. Do obietnic o efekcie "
+            "naprawy potrzebny jest osobny audyt sprzed i po zmianie."
+        )
+    else:
+        status = "blocked"
+        summary = (
+            "WILQ ma dopasowany stan produktu z Ads dla części próbek Merchant, "
+            "ale nie ma jeszcze metryk skuteczności Ads/GA4 dla tych produktów."
+        )
+        next_step = (
+            "Użyj wierszy stanu produktu tylko do potwierdzenia dopasowania produktów. "
+            "Zwrot z reklam "
+            "na poziomie produktu, odzyskany przychód i efekt naprawy pozostają zablokowane "
+            "do czasu metryk skuteczności albo audytu sprzed i po zmianie."
+        )
+    return MerchantProductPerformanceReadiness(
+        **readiness_fields,
+        status=status,
+        joined_product_count=len(performance_rows),
+        performance_rows=performance_rows[:20],
+        source_connectors=_unique(
+            [
+                MERCHANT_CONNECTOR_ID,
+                *(connector for row in performance_rows for connector in row.source_connectors),
+            ]
+        ),
+        evidence_ids=_unique(
+            [
+                *merchant_evidence_ids,
+                *(evidence_id for row in performance_rows for evidence_id in row.evidence_ids),
+            ]
+        ),
+        summary=summary,
+        next_step=next_step,
+    )
+
+
+def _blocked_product_performance_readiness(
+    sample_product_ids: list[str],
+    merchant_evidence_ids: list[str],
+    ads_product_facts: list[MetricFact],
+    ga4_product_facts: list[MetricFact],
+    ads_shopping_contract_ready: bool,
+    ads_shopping_lookback_days: int | None,
+    readiness_fields: _ProductPerformanceReadinessFields,
+) -> MerchantProductPerformanceReadiness:
     blocked_reason = _product_performance_blocked_reason(
         sample_product_ids=sample_product_ids,
         ads_product_facts=ads_product_facts,
@@ -349,16 +401,9 @@ def _merchant_product_performance_readiness(
         ads_shopping_lookback_days=ads_shopping_lookback_days,
     )
     return MerchantProductPerformanceReadiness(
+        **readiness_fields,
         status="blocked",
         joined_product_count=0,
-        merchant_sample_count=len(sample_product_ids),
-        ads_product_fact_count=len(ads_product_facts),
-        ga4_product_fact_count=len(ga4_product_facts),
-        current_read_contracts=current_read_contracts,
-        required_read_contracts=MERCHANT_PRODUCT_PERFORMANCE_REQUIRED_READ_CONTRACTS,
-        missing_read_contracts=missing_read_contracts,
-        join_key_candidates=PRODUCT_JOIN_DIMENSION_KEYS,
-        sample_product_ids=sample_product_ids[:20],
         source_connectors=_unique(
             [
                 MERCHANT_CONNECTOR_ID,
@@ -375,7 +420,6 @@ def _merchant_product_performance_readiness(
         ),
         summary=blocked_reason,
         next_step=next_step,
-        blocked_claims=MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
     )
 
 
