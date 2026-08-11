@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, TypedDict
 from urllib.parse import unquote, urlparse
 
 from wilq.content.canonical.metric_dimensions import metric_dimensions_match_landing
@@ -41,6 +41,98 @@ class ContentDecisionMetrics:
     best_average_position: float | None
 
 
+_InventoryStatus = Literal["available", "missing"]
+
+
+class _WordPressInventoryItemFields(TypedDict):
+    normalized_page_path: str | None
+    wordpress_match: str
+    wordpress_match_confidence: str | None
+    wordpress_title_or_h1: str | None
+    wordpress_inventory_source: str | None
+    wordpress_modified_gmt: str | None
+    wordpress_section_headings: list[str]
+    wordpress_section_count: int | None
+    wordpress_section_inventory_status: _InventoryStatus
+    wordpress_content_summary: str | None
+    wordpress_content_word_count: int | None
+    wordpress_content_inventory_status: _InventoryStatus
+    wordpress_content_inventory_note: str | None
+    wordpress_block_names: list[str]
+    wordpress_block_count: int | None
+    wordpress_acf_section_inventory_status: _InventoryStatus
+    wordpress_acf_section_inventory_note: str | None
+    wordpress_acf_section_headings: list[str]
+    wordpress_acf_section_count: int | None
+
+
+@dataclass(frozen=True)
+class _WordPressInventoryDimensions:
+    match: str
+    match_confidence: str | None
+    title_or_h1: str | None
+    inventory_source: str | None
+    modified_gmt: str | None
+    section_headings: list[str]
+    section_count: int | None
+    section_inventory_status: _InventoryStatus
+    content_summary: str | None
+    content_word_count: int | None
+    content_inventory_status: _InventoryStatus
+    content_inventory_note: str | None
+    block_names: list[str]
+    block_count: int | None
+    acf_section_headings: list[str]
+    acf_section_count: int | None
+    acf_section_inventory_status: _InventoryStatus
+    acf_section_inventory_note: str | None
+    content_url: str | None
+    requested_path: str | None
+
+    def item_fields(self) -> _WordPressInventoryItemFields:
+        return {
+            "normalized_page_path": self.requested_path,
+            "wordpress_match": self.match,
+            "wordpress_match_confidence": self.match_confidence,
+            "wordpress_title_or_h1": self.title_or_h1,
+            "wordpress_inventory_source": self.inventory_source,
+            "wordpress_modified_gmt": self.modified_gmt,
+            "wordpress_section_headings": self.section_headings,
+            "wordpress_section_count": self.section_count,
+            "wordpress_section_inventory_status": self.section_inventory_status,
+            "wordpress_content_summary": self.content_summary,
+            "wordpress_content_word_count": self.content_word_count,
+            "wordpress_content_inventory_status": self.content_inventory_status,
+            "wordpress_content_inventory_note": self.content_inventory_note,
+            "wordpress_block_names": self.block_names,
+            "wordpress_block_count": self.block_count,
+            "wordpress_acf_section_inventory_status": self.acf_section_inventory_status,
+            "wordpress_acf_section_inventory_note": self.acf_section_inventory_note,
+            "wordpress_acf_section_headings": self.acf_section_headings,
+            "wordpress_acf_section_count": self.acf_section_count,
+        }
+
+
+@dataclass(frozen=True)
+class _ContentDecisionPresentation:
+    decision_type: ContentDecisionType
+    title: str
+    summary: str
+    next_step: str
+    rationale: str
+
+
+@dataclass(frozen=True)
+class _ContentDecisionCollections:
+    source_connectors: list[str]
+    evidence_ids: list[str]
+    metric_facts: list[MetricFact]
+    action_ids: list[str]
+    knowledge_card_ids: list[str]
+    expert_rule_ids: list[str]
+    blocked_claims: list[str]
+
+
 def gsc_content_decisions(
     items: list[TacticalQueueItem],
     *,
@@ -49,9 +141,7 @@ def gsc_content_decisions(
     expert_rule_ids: tuple[str, ...],
 ) -> list[ContentDecisionItem]:
     ga4_metric_facts = [
-        fact
-        for fact in all_metric_facts
-        if fact.source_connector == "google_analytics_4"
+        fact for fact in all_metric_facts if fact.source_connector == "google_analytics_4"
     ]
     page_groups: dict[str, list[TacticalQueueItem]] = {}
     for item in _unique_tactical_items(items):
@@ -63,250 +153,277 @@ def gsc_content_decisions(
 
     decisions: list[ContentDecisionItem] = []
     for page, page_items in page_groups.items():
-        first = page_items[0]
-        wordpress_match = first.dimensions.get("wordpress_match", "missing")
-        query_count = int_dimension(first, "gsc_page_query_count", len(page_items))
-        wordpress_title_or_h1 = first.dimensions.get("wordpress_title_or_h1") or None
-        wordpress_section_headings = wordpress_section_headings_from_dimensions(
-            first.dimensions.get("wordpress_section_headings_json")
-        )
-        wordpress_section_count = optional_int_text(
-            first.dimensions.get("wordpress_section_heading_count")
-        )
-        wordpress_acf_section_headings = wordpress_section_headings_from_dimensions(
-            first.dimensions.get("wordpress_acf_section_headings_json")
-        )
-        wordpress_acf_section_count = optional_int_text(
-            first.dimensions.get("wordpress_acf_section_count")
-        )
-        wordpress_content_summary = first.dimensions.get("wordpress_content_summary") or None
-        wordpress_content_word_count = optional_int_text(
-            first.dimensions.get("wordpress_content_word_count")
-        )
-        wordpress_content_inventory_status: Literal["available", "missing"] = (
-            "available" if wordpress_content_summary else "missing"
-        )
-        wordpress_content_inventory_note = (
-            None
-            if wordpress_content_summary
-            else (
-                "WordPress REST nie wystawia bezpiecznego skrótu aktualnej treści "
-                "dla tej strony. WILQ widzi publiczne H2/H3, ale pełny body/ACF "
-                "wymaga osobnego read-only kontraktu albo exportu."
-            )
-        )
-        wordpress_block_names = json_string_list_from_dimensions(
-            first.dimensions.get("wordpress_block_names_json"),
-            limit=16,
-        )
-        wordpress_block_count = optional_int_text(
-            first.dimensions.get("wordpress_block_name_count")
-        )
-        wordpress_section_inventory_status: Literal["available", "missing"] = (
-            "available" if wordpress_section_headings else "missing"
-        )
-        wordpress_acf_section_inventory_status: Literal["available", "missing"] = (
-            "available" if wordpress_acf_section_headings else "missing"
-        )
-        wordpress_acf_section_inventory_note = (
-            None
-            if wordpress_acf_section_headings
-            else (
-                "Nie wykryto sekcji ACF/flexible content; aktualna treść jest "
-                "czytana z the_content. WILQ nie udaje dodatkowego układu "
-                "edytora WordPress, którego źródło nie potwierdza."
-                if wordpress_content_summary
-                else "Brakuje read-only kontraktu aktualnych wierszy "
-                "ACF/flexible content dla tej strony. WILQ widzi publiczne "
-                "nagłówki HTML, ale nie udaje pełnego układu edytora WordPress."
-            )
-        )
-        queries = _unique(
-            item.dimensions.get("query") for item in page_items if item.dimensions.get("query")
-        )
-        item_metric_facts = _unique_metric_facts(
-            fact for item in page_items for fact in item.metric_facts
-        )
-        wordpress_content_url = first.dimensions.get("wordpress_content_url")
-        metrics = content_decision_metrics(item_metric_facts, queries)
-        decision_type: ContentDecisionType
-        if wordpress_match == "found":
-            decision_type = "refresh_or_merge"
-            title = content_decision_title(decision_type, page, query_count, metrics)
-            summary = content_decision_summary(
-                decision_type,
-                metrics,
-                wordpress_match,
-                wordpress_title_or_h1=wordpress_title_or_h1,
-                wordpress_section_headings=wordpress_section_headings,
-            )
-            section_step = (
-                "Porównaj widoczne sekcje WordPress z zapytaniami GSC, sprawdź CTA "
-                "i dopiero potem zdecyduj: odświeżyć, scalić albo zostawić."
-                if wordpress_section_headings
-                else "Otwórz aktualny adres WordPress i sprawdź istniejące H1, sekcje "
-                "ACF/flexible content oraz CTA."
-            )
-            next_step = (
-                f"{section_step} Nie przygotowuj rewrite ani scalenia z samego "
-                "zapytania GSC."
-            )
-            rationale = (
-                "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje "
-                "to do przeglądu konkretnej strony zamiast tworzenia nowej treści "
-                "albo abstrakcyjnego zadania z samego query."
-            )
-        elif query_count > 1:
-            decision_type = "merge_create_after_inventory_check"
-            title = content_decision_title(decision_type, page, query_count, metrics)
-            summary = content_decision_summary(
-                decision_type,
-                metrics,
-                wordpress_match,
-                wordpress_title_or_h1=wordpress_title_or_h1,
-                wordpress_section_headings=wordpress_section_headings,
-            )
-            next_step = (
-                "Sprawdź publiczny URL, spis strony i duplikaty w WordPress. Dopiero potem "
-                "wybierz scalenie, nową treść albo przywrócenie."
-            )
-            rationale = (
-                "Wiele zapytań prowadzi do jednego URL, ale spis treści nie potwierdza "
-                "strony, więc nowy plan treści bez kontroli grozi duplikacją."
-            )
-        else:
-            decision_type = "inventory_check_before_create"
-            title = content_decision_title(decision_type, page, query_count, metrics)
-            summary = content_decision_summary(
-                decision_type,
-                metrics,
-                wordpress_match,
-                wordpress_title_or_h1=wordpress_title_or_h1,
-                wordpress_section_headings=wordpress_section_headings,
-            )
-            next_step = (
-                "Najpierw potwierdź, czy URL istnieje w WordPress lub sitemap. "
-                "Jeśli nie istnieje, przygotuj plan treści dopiero po kontroli duplikatów."
-            )
-            rationale = (
-                "GSC pokazuje popyt, ale spis treści WordPress nie potwierdza URL, "
-                "więc WILQ blokuje automatyczne tworzenie nowej treści."
-            )
-        url_semantics = content_decision_url_semantics(
-            source_url=page,
-            wordpress_content_url=wordpress_content_url,
-        )
-        exact_ga4_metric_facts = _exact_ga4_metric_facts_for_decision(
-            ga4_metric_facts,
-            page=page,
-            final_canonical_url=url_semantics["final_canonical_url"],
-        )
-        decision_metric_facts = [
-            *sorted(
-                item_metric_facts,
-                key=lambda fact: not content_query_is_planning_signal(
-                    fact.dimensions.get("query", "")
-                ),
-            )[:8],
-            *exact_ga4_metric_facts,
-        ]
-        gate_status = content_inventory_gate_status(
-            decision_type=decision_type,
-            wordpress_match=wordpress_match,
-        )
         decisions.append(
-            ContentDecisionItem(
-                id=f"content_decision_{slug(page)}",
-                decision_type=decision_type,
-                status=content_decision_status(decision_type),
-                title=title,
-                summary=summary,
-                priority=content_decision_priority(
-                    decision_type,
-                    metrics,
-                    query_count,
-                ),
-                metric_tiles=content_decision_metric_tiles(
-                    decision_type,
-                    metrics,
-                    query_count,
-                    wordpress_match,
-                    wordpress_section_count=wordpress_section_count,
-                    wordpress_section_inventory_status=wordpress_section_inventory_status,
-                ),
-                page=page,
-                normalized_page_path=first.dimensions.get("wordpress_requested_path"),
-                queries=queries,
-                query_count=query_count,
-                primary_query=metrics.primary_query,
-                total_clicks=metrics.total_clicks,
-                total_impressions=metrics.total_impressions,
-                aggregate_ctr=metrics.aggregate_ctr,
-                best_average_position=metrics.best_average_position,
-                wordpress_match=wordpress_match,
-                wordpress_match_confidence=first.dimensions.get("wordpress_match_confidence"),
-                wordpress_title_or_h1=wordpress_title_or_h1,
-                wordpress_inventory_source=first.dimensions.get("wordpress_inventory_source"),
-                wordpress_modified_gmt=first.dimensions.get("wordpress_modified_gmt"),
-                wordpress_section_headings=wordpress_section_headings,
-                wordpress_section_count=wordpress_section_count,
-                wordpress_section_inventory_status=wordpress_section_inventory_status,
-                wordpress_content_summary=wordpress_content_summary,
-                wordpress_content_word_count=wordpress_content_word_count,
-                wordpress_content_inventory_status=wordpress_content_inventory_status,
-                wordpress_content_inventory_note=wordpress_content_inventory_note,
-                wordpress_block_names=wordpress_block_names,
-                wordpress_block_count=wordpress_block_count,
-                wordpress_acf_section_inventory_status=wordpress_acf_section_inventory_status,
-                wordpress_acf_section_inventory_note=wordpress_acf_section_inventory_note,
-                wordpress_acf_section_headings=wordpress_acf_section_headings,
-                wordpress_acf_section_count=wordpress_acf_section_count,
-                source_public_url=url_semantics["source_public_url"],
-                preview_url=url_semantics["preview_url"],
-                intended_final_url=url_semantics["intended_final_url"],
-                final_canonical_url=url_semantics["final_canonical_url"],
-                inventory_gate_status=gate_status["inventory_gate_status"],
-                canonical_gate_status=gate_status["canonical_gate_status"],
-                duplicate_gate_status=gate_status["duplicate_gate_status"],
-                content_gate_summary=gate_status["content_gate_summary"],
-                source_connectors=_unique(
-                    [
-                        *(
-                            connector
-                            for item in page_items
-                            for connector in item.source_connectors
-                        ),
-                        *(fact.source_connector for fact in exact_ga4_metric_facts),
-                    ]
-                ),
-                evidence_ids=_unique(
-                    [
-                        *(
-                            evidence_id
-                            for item in page_items
-                            for evidence_id in item.evidence_ids
-                        ),
-                        *(fact.evidence_id for fact in exact_ga4_metric_facts),
-                    ]
-                ),
-                metric_facts=decision_metric_facts,
-                action_ids=_unique(
-                    action_id
-                    for item in page_items
-                    for action_id in item.action_ids
-                    if action_id in CONTENT_REFRESH_ACTION_IDS
-                ),
-                knowledge_card_ids=list(knowledge_card_ids),
-                expert_rule_ids=list(expert_rule_ids),
-                blocked_claims=_unique(
-                    claim for item in page_items for claim in item.blocked_claims
-                ),
-                rationale=rationale,
-                next_step=next_step,
-                risk=ActionRisk.medium if wordpress_match == "missing" else ActionRisk.low,
+            _build_gsc_content_decision_item(
+                page,
+                page_items,
+                ga4_metric_facts=ga4_metric_facts,
+                knowledge_card_ids=knowledge_card_ids,
+                expert_rule_ids=expert_rule_ids,
             )
         )
     return decisions
+
+
+def _read_wordpress_inventory_dimensions(
+    first: TacticalQueueItem,
+) -> _WordPressInventoryDimensions:
+    dimensions = first.dimensions
+    match = dimensions.get("wordpress_match", "missing")
+    title_or_h1 = dimensions.get("wordpress_title_or_h1") or None
+    section_headings = wordpress_section_headings_from_dimensions(
+        dimensions.get("wordpress_section_headings_json")
+    )
+    section_count = optional_int_text(dimensions.get("wordpress_section_heading_count"))
+    acf_section_headings = wordpress_section_headings_from_dimensions(
+        dimensions.get("wordpress_acf_section_headings_json")
+    )
+    acf_section_count = optional_int_text(dimensions.get("wordpress_acf_section_count"))
+    content_summary = dimensions.get("wordpress_content_summary") or None
+    content_word_count = optional_int_text(dimensions.get("wordpress_content_word_count"))
+    content_inventory_status: _InventoryStatus = "available" if content_summary else "missing"
+    content_inventory_note = (
+        None
+        if content_summary
+        else (
+            "WordPress REST nie wystawia bezpiecznego skrótu aktualnej treści "
+            "dla tej strony. WILQ widzi publiczne H2/H3, ale pełny body/ACF "
+            "wymaga osobnego read-only kontraktu albo exportu."
+        )
+    )
+    block_names = json_string_list_from_dimensions(
+        dimensions.get("wordpress_block_names_json"),
+        limit=16,
+    )
+    block_count = optional_int_text(dimensions.get("wordpress_block_name_count"))
+    section_inventory_status: _InventoryStatus = "available" if section_headings else "missing"
+    acf_section_inventory_status: _InventoryStatus = (
+        "available" if acf_section_headings else "missing"
+    )
+    acf_section_inventory_note = (
+        None
+        if acf_section_headings
+        else (
+            "Nie wykryto sekcji ACF/flexible content; aktualna treść jest "
+            "czytana z the_content. WILQ nie udaje dodatkowego układu "
+            "edytora WordPress, którego źródło nie potwierdza."
+            if content_summary
+            else "Brakuje read-only kontraktu aktualnych wierszy "
+            "ACF/flexible content dla tej strony. WILQ widzi publiczne "
+            "nagłówki HTML, ale nie udaje pełnego układu edytora WordPress."
+        )
+    )
+    return _WordPressInventoryDimensions(
+        match=match,
+        match_confidence=dimensions.get("wordpress_match_confidence"),
+        title_or_h1=title_or_h1,
+        inventory_source=dimensions.get("wordpress_inventory_source"),
+        modified_gmt=dimensions.get("wordpress_modified_gmt"),
+        section_headings=section_headings,
+        section_count=section_count,
+        section_inventory_status=section_inventory_status,
+        content_summary=content_summary,
+        content_word_count=content_word_count,
+        content_inventory_status=content_inventory_status,
+        content_inventory_note=content_inventory_note,
+        block_names=block_names,
+        block_count=block_count,
+        acf_section_headings=acf_section_headings,
+        acf_section_count=acf_section_count,
+        acf_section_inventory_status=acf_section_inventory_status,
+        acf_section_inventory_note=acf_section_inventory_note,
+        content_url=dimensions.get("wordpress_content_url"),
+        requested_path=dimensions.get("wordpress_requested_path"),
+    )
+
+
+def _choose_gsc_content_decision(
+    *,
+    page: str,
+    query_count: int,
+    metrics: ContentDecisionMetrics,
+    inventory: _WordPressInventoryDimensions,
+) -> _ContentDecisionPresentation:
+    decision_type: ContentDecisionType
+    if inventory.match == "found":
+        decision_type = "refresh_or_merge"
+        section_step = (
+            "Porównaj widoczne sekcje WordPress z zapytaniami GSC, sprawdź CTA "
+            "i dopiero potem zdecyduj: odświeżyć, scalić albo zostawić."
+            if inventory.section_headings
+            else "Otwórz aktualny adres WordPress i sprawdź istniejące H1, sekcje "
+            "ACF/flexible content oraz CTA."
+        )
+        next_step = f"{section_step} Nie przygotowuj rewrite ani scalenia z samego zapytania GSC."
+        rationale = (
+            "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje "
+            "to do przeglądu konkretnej strony zamiast tworzenia nowej treści "
+            "albo abstrakcyjnego zadania z samego query."
+        )
+    elif query_count > 1:
+        decision_type = "merge_create_after_inventory_check"
+        next_step = (
+            "Sprawdź publiczny URL, spis strony i duplikaty w WordPress. Dopiero potem "
+            "wybierz scalenie, nową treść albo przywrócenie."
+        )
+        rationale = (
+            "Wiele zapytań prowadzi do jednego URL, ale spis treści nie potwierdza "
+            "strony, więc nowy plan treści bez kontroli grozi duplikacją."
+        )
+    else:
+        decision_type = "inventory_check_before_create"
+        next_step = (
+            "Najpierw potwierdź, czy URL istnieje w WordPress lub sitemap. "
+            "Jeśli nie istnieje, przygotuj plan treści dopiero po kontroli duplikatów."
+        )
+        rationale = (
+            "GSC pokazuje popyt, ale spis treści WordPress nie potwierdza URL, "
+            "więc WILQ blokuje automatyczne tworzenie nowej treści."
+        )
+    return _ContentDecisionPresentation(
+        decision_type=decision_type,
+        title=content_decision_title(decision_type, page, query_count, metrics),
+        summary=content_decision_summary(
+            decision_type,
+            metrics,
+            inventory.match,
+            wordpress_title_or_h1=inventory.title_or_h1,
+            wordpress_section_headings=inventory.section_headings,
+        ),
+        next_step=next_step,
+        rationale=rationale,
+    )
+
+
+def _gsc_content_decision_collections(
+    page_items: list[TacticalQueueItem],
+    *,
+    item_metric_facts: list[MetricFact],
+    exact_ga4_metric_facts: list[MetricFact],
+    knowledge_card_ids: tuple[str, ...],
+    expert_rule_ids: tuple[str, ...],
+) -> _ContentDecisionCollections:
+    decision_metric_facts = [
+        *sorted(
+            item_metric_facts,
+            key=lambda fact: not content_query_is_planning_signal(fact.dimensions.get("query", "")),
+        )[:8],
+        *exact_ga4_metric_facts,
+    ]
+    return _ContentDecisionCollections(
+        source_connectors=_unique(
+            [
+                *(connector for item in page_items for connector in item.source_connectors),
+                *(fact.source_connector for fact in exact_ga4_metric_facts),
+            ]
+        ),
+        evidence_ids=_unique(
+            [
+                *(evidence_id for item in page_items for evidence_id in item.evidence_ids),
+                *(fact.evidence_id for fact in exact_ga4_metric_facts),
+            ]
+        ),
+        metric_facts=decision_metric_facts,
+        action_ids=_unique(
+            action_id
+            for item in page_items
+            for action_id in item.action_ids
+            if action_id in CONTENT_REFRESH_ACTION_IDS
+        ),
+        knowledge_card_ids=list(knowledge_card_ids),
+        expert_rule_ids=list(expert_rule_ids),
+        blocked_claims=_unique(claim for item in page_items for claim in item.blocked_claims),
+    )
+
+
+def _build_gsc_content_decision_item(
+    page: str,
+    page_items: list[TacticalQueueItem],
+    *,
+    ga4_metric_facts: list[MetricFact],
+    knowledge_card_ids: tuple[str, ...],
+    expert_rule_ids: tuple[str, ...],
+) -> ContentDecisionItem:
+    first = page_items[0]
+    inventory = _read_wordpress_inventory_dimensions(first)
+    query_count = int_dimension(first, "gsc_page_query_count", len(page_items))
+    queries = _unique(
+        item.dimensions.get("query") for item in page_items if item.dimensions.get("query")
+    )
+    item_metric_facts = _unique_metric_facts(
+        fact for item in page_items for fact in item.metric_facts
+    )
+    metrics = content_decision_metrics(item_metric_facts, queries)
+    presentation = _choose_gsc_content_decision(
+        page=page,
+        query_count=query_count,
+        metrics=metrics,
+        inventory=inventory,
+    )
+    url_semantics = content_decision_url_semantics(
+        source_url=page,
+        wordpress_content_url=inventory.content_url,
+    )
+    exact_ga4_metric_facts = _exact_ga4_metric_facts_for_decision(
+        ga4_metric_facts,
+        page=page,
+        final_canonical_url=url_semantics["final_canonical_url"],
+    )
+    collections = _gsc_content_decision_collections(
+        page_items,
+        item_metric_facts=item_metric_facts,
+        exact_ga4_metric_facts=exact_ga4_metric_facts,
+        knowledge_card_ids=knowledge_card_ids,
+        expert_rule_ids=expert_rule_ids,
+    )
+    gate_status = content_inventory_gate_status(
+        decision_type=presentation.decision_type,
+        wordpress_match=inventory.match,
+    )
+    return ContentDecisionItem(
+        id=f"content_decision_{slug(page)}",
+        decision_type=presentation.decision_type,
+        status=content_decision_status(presentation.decision_type),
+        title=presentation.title,
+        summary=presentation.summary,
+        priority=content_decision_priority(
+            presentation.decision_type,
+            metrics,
+            query_count,
+        ),
+        metric_tiles=content_decision_metric_tiles(
+            presentation.decision_type,
+            metrics,
+            query_count,
+            inventory.match,
+            wordpress_section_count=inventory.section_count,
+            wordpress_section_inventory_status=inventory.section_inventory_status,
+        ),
+        page=page,
+        queries=queries,
+        query_count=query_count,
+        primary_query=metrics.primary_query,
+        total_clicks=metrics.total_clicks,
+        total_impressions=metrics.total_impressions,
+        aggregate_ctr=metrics.aggregate_ctr,
+        best_average_position=metrics.best_average_position,
+        source_connectors=collections.source_connectors,
+        evidence_ids=collections.evidence_ids,
+        metric_facts=collections.metric_facts,
+        action_ids=collections.action_ids,
+        knowledge_card_ids=collections.knowledge_card_ids,
+        expert_rule_ids=collections.expert_rule_ids,
+        blocked_claims=collections.blocked_claims,
+        rationale=presentation.rationale,
+        next_step=presentation.next_step,
+        risk=ActionRisk.medium if inventory.match == "missing" else ActionRisk.low,
+        source_public_url=url_semantics["source_public_url"],
+        preview_url=url_semantics["preview_url"],
+        intended_final_url=url_semantics["intended_final_url"],
+        final_canonical_url=url_semantics["final_canonical_url"],
+        **inventory.item_fields(),
+        **gate_status,
+    )
 
 
 def content_decision_metrics(
