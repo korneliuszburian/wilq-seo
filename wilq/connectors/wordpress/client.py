@@ -614,15 +614,12 @@ def create_wordpress_draft_post(
             client.close()
 
 
-def create_wordpress_acf_draft(
+def _wordpress_acf_draft_preconditions(
     payload: object,
     *,
-    connector_id: str = "wordpress_ekologus",
-    action_apply_authorized: bool = False,
-    http_client: httpx.Client | None = None,
-) -> str:
-    """Create one dev-only ACF draft after the ActionObject apply boundary."""
-
+    connector_id: str,
+    action_apply_authorized: bool,
+) -> tuple[WordPressCredentials, str, str, dict[object, object]]:
     if action_apply_authorized is not True:
         raise WordPressDraftWriteError("Utworzenie szkicu ACF wymaga autoryzacji ActionObject.")
     credentials = _wordpress_credentials(connector_id)
@@ -658,27 +655,61 @@ def create_wordpress_acf_draft(
     acf = getattr(payload, "acf", None)
     if not isinstance(title, str) or not title.strip() or not isinstance(acf, dict) or not acf:
         raise WordPressDraftWriteError("Payload szkicu ACF nie zawiera kompletnej treści.")
+    return credentials, endpoint, title, acf
+
+
+def _validated_normalized_acf_for_create(
+    client: httpx.Client,
+    *,
+    credentials: WordPressCredentials,
+    endpoint: str,
+    auth: httpx.BasicAuth,
+    acf: dict[object, object],
+) -> dict[object, object]:
+    acf_schema = _acf_create_schema(
+        client,
+        base_url=credentials.base_url or "",
+        endpoint=endpoint,
+        auth=auth,
+    )
+    schema_problems = _validate_acf_for_create(acf, acf_schema)
+    if schema_problems:
+        raise WordPressDraftWriteError(
+            f"Payload szkicu ACF nie pasuje do schematu zapisu ({'; '.join(schema_problems[:8])})."
+        )
+    normalized_acf = _normalize_acf_for_create(acf, acf_schema)
+    if not isinstance(normalized_acf, dict):
+        raise WordPressDraftWriteError("Schemat ACF nie potwierdził obiektu szkicu.")
+    return normalized_acf
+
+
+def create_wordpress_acf_draft(
+    payload: object,
+    *,
+    connector_id: str = "wordpress_ekologus",
+    action_apply_authorized: bool = False,
+    http_client: httpx.Client | None = None,
+) -> str:
+    """Create one dev-only ACF draft after the ActionObject apply boundary."""
+
+    credentials, endpoint, title, acf = _wordpress_acf_draft_preconditions(
+        payload,
+        connector_id=connector_id,
+        action_apply_authorized=action_apply_authorized,
+    )
 
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
     auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
     try:
         try:
-            acf_schema = _acf_create_schema(
+            normalized_acf = _validated_normalized_acf_for_create(
                 client,
-                base_url=credentials.base_url or "",
+                credentials=credentials,
                 endpoint=endpoint,
                 auth=auth,
+                acf=acf,
             )
-            schema_problems = _validate_acf_for_create(acf, acf_schema)
-            if schema_problems:
-                raise WordPressDraftWriteError(
-                    "Payload szkicu ACF nie pasuje do schematu zapisu "
-                    f"({'; '.join(schema_problems[:8])})."
-                )
-            normalized_acf = _normalize_acf_for_create(acf, acf_schema)
-            if not isinstance(normalized_acf, dict):
-                raise WordPressDraftWriteError("Schemat ACF nie potwierdził obiektu szkicu.")
             response = client.post(
                 urljoin(credentials.base_url or "", f"wp-json/wp/v2/{endpoint}"),
                 auth=auth,
