@@ -436,9 +436,7 @@ def _validate_acf_for_create(
         item_schema = selected_schema.get("items")
         if isinstance(item_schema, dict):
             for index, item in enumerate(value):
-                problems.extend(
-                    _validate_acf_for_create(item, item_schema, path=f"{path}.{index}")
-                )
+                problems.extend(_validate_acf_for_create(item, item_schema, path=f"{path}.{index}"))
     return problems
 
 
@@ -581,9 +579,7 @@ def create_wordpress_draft_post(
     ):
         raise WordPressDraftWriteError("Adapter blokuje publikację i destrukcyjne aktualizacje.")
 
-    content = getattr(payload, "content_html", None) or getattr(
-        payload, "content_markdown", ""
-    )
+    content = getattr(payload, "content_html", None) or getattr(payload, "content_markdown", "")
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
     auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
@@ -1043,6 +1039,77 @@ def read_wordpress_authoring_content(
     ]
 
 
+def _read_wordpress_material_from_rest(
+    client: httpx.Client,
+    *,
+    requested_url: str,
+    requested_path: str,
+    slug: str,
+    read_base_url: str,
+    auth: httpx.BasicAuth | None,
+    rest_context: str,
+) -> WordPressContentMaterial | None:
+    for content_type in WORDPRESS_CONTENT_TYPES:
+        try:
+            response = client.get(
+                urljoin(read_base_url, f"wp-json/wp/v2/{content_type}"),
+                auth=auth,
+                params={
+                    "slug": slug,
+                    "context": rest_context,
+                    "_fields": WORDPRESS_READ_FIELDS,
+                    # The front page has no slug. Fetch the bounded first
+                    # page of objects so a configured WordPress front-page
+                    # record can be resolved by its exact canonical link
+                    # instead of silently falling back to rendered HTML.
+                    **({"per_page": WORDPRESS_CONTENT_PER_PAGE} if requested_path == "/" else {}),
+                },
+            )
+            response.raise_for_status()
+        except httpx.HTTPError:
+            continue
+        for item in response.json() if isinstance(response.json(), list) else []:
+            if not isinstance(item, dict):
+                continue
+            link = str(item.get("link") or "")
+            link_path = urlparse(link).path.rstrip("/") or "/"
+            if link_path != requested_path:
+                continue
+            return _material_from_rest_item(item, requested_url=requested_url)
+    return None
+
+
+def _read_wordpress_material_from_html(
+    client: httpx.Client, *, url: str
+) -> WordPressContentMaterial:
+    response = client.get(url, timeout=20)
+    response.raise_for_status()
+    parser = _HtmlMetadataParser()
+    parser.feed(response.text[:200_000])
+    text = clean_metadata_text(" ".join(parser.main_text_chunks))
+    if not text:
+        raise WordPressDraftReadError("WordPress nie wystawił widocznego materiału treści.")
+    return WordPressContentMaterial(
+        url=url,
+        source_kind="rendered_html",
+        title=clean_metadata_text(parser.title or parser.h1),
+        content_text=text,
+        content_summary=summary_text_limited(text, 240),
+        content_word_count=len(text.split()),
+        section_headings=[
+            clean_metadata_text(value)
+            for value in parser.section_headings
+            if clean_metadata_text(value)
+        ],
+        acf_field_names=[],
+        acf_section_headings=[],
+        modified_gmt="",
+        extraction_region="main_or_article_visible_text",
+        material_confidence="review_required",
+        source_field_lineage=["public_html.main_or_article"],
+    )
+
+
 def read_wordpress_content_material(
     url: str,
     connector_id: str = "wordpress_ekologus",
@@ -1080,64 +1147,18 @@ def read_wordpress_content_material(
             read_base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}/"
             auth = None
             rest_context = "view"
-        for content_type in WORDPRESS_CONTENT_TYPES:
-            try:
-                response = client.get(
-                    urljoin(read_base_url, f"wp-json/wp/v2/{content_type}"),
-                    auth=auth,
-                    params={
-                        "slug": slug,
-                        "context": rest_context,
-                        "_fields": WORDPRESS_READ_FIELDS,
-                        # The front page has no slug. Fetch the bounded first
-                        # page of objects so a configured WordPress front-page
-                        # record can be resolved by its exact canonical link
-                        # instead of silently falling back to rendered HTML.
-                        **(
-                            {"per_page": WORDPRESS_CONTENT_PER_PAGE}
-                            if requested_path == "/"
-                            else {}
-                        ),
-                    },
-                )
-                response.raise_for_status()
-            except httpx.HTTPError:
-                continue
-            for item in response.json() if isinstance(response.json(), list) else []:
-                if not isinstance(item, dict):
-                    continue
-                link = str(item.get("link") or "")
-                link_path = urlparse(link).path.rstrip("/") or "/"
-                if link_path != requested_path:
-                    continue
-                return _material_from_rest_item(item, requested_url=url)
-
-        response = client.get(url, timeout=20)
-        response.raise_for_status()
-        parser = _HtmlMetadataParser()
-        parser.feed(response.text[:200_000])
-        text = clean_metadata_text(" ".join(parser.main_text_chunks))
-        if not text:
-            raise WordPressDraftReadError("WordPress nie wystawił widocznego materiału treści.")
-        return WordPressContentMaterial(
-            url=url,
-            source_kind="rendered_html",
-            title=clean_metadata_text(parser.title or parser.h1),
-            content_text=text,
-            content_summary=summary_text_limited(text, 240),
-            content_word_count=len(text.split()),
-            section_headings=[
-                clean_metadata_text(value)
-                for value in parser.section_headings
-                if clean_metadata_text(value)
-            ],
-            acf_field_names=[],
-            acf_section_headings=[],
-            modified_gmt="",
-            extraction_region="main_or_article_visible_text",
-            material_confidence="review_required",
-            source_field_lineage=["public_html.main_or_article"],
+        material = _read_wordpress_material_from_rest(
+            client,
+            requested_url=url,
+            requested_path=requested_path,
+            slug=slug,
+            read_base_url=read_base_url,
+            auth=auth,
+            rest_context=rest_context,
         )
+        if material is not None:
+            return material
+        return _read_wordpress_material_from_html(client, url=url)
     except httpx.HTTPError as exc:
         raise WordPressDraftReadError("Odczyt materiału WordPress nie powiódł się.") from exc
     finally:
