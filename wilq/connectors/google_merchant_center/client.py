@@ -232,103 +232,140 @@ def _summarize_aggregate_product_statuses(
     statuses = payload.get("aggregateProductStatuses", []) if isinstance(payload, dict) else []
     if not isinstance(statuses, list):
         statuses = []
-    active_count = 0
-    pending_count = 0
-    disapproved_count = 0
-    expiring_count = 0
-    issue_count = 0
-    merchant_action_issue_count = 0
-    merchant_action_product_count = 0
-    disapproved_issue_count = 0
-    demoted_issue_count = 0
-    warning_issue_count = 0
+    aggregate = {
+        "active_products": 0,
+        "pending_products": 0,
+        "disapproved_products": 0,
+        "expiring_products": 0,
+        "item_level_issue_count": 0,
+        "merchant_action_issue_count": 0,
+        "merchant_action_product_count": 0,
+        "disapproved_issue_count": 0,
+        "demoted_issue_count": 0,
+        "warning_issue_count": 0,
+    }
     countries: set[str] = set()
     reporting_contexts: set[str] = set()
     metric_facts: list[VendorMetricFact] = []
     for status in statuses:
         if not isinstance(status, dict):
             continue
-        country = status.get("country")
-        if isinstance(country, str) and country:
-            countries.add(country)
-        reporting_context = status.get("reportingContext")
-        if isinstance(reporting_context, str) and reporting_context:
-            reporting_contexts.add(reporting_context)
-        stats = status.get("stats") or status.get("statistics") or {}
-        if not isinstance(stats, dict):
-            stats = {}
-        status_active_count = _int_metric(stats.get("activeCount") or stats.get("approvedCount"))
-        status_pending_count = _int_metric(stats.get("pendingCount"))
-        status_disapproved_count = _int_metric(stats.get("disapprovedCount"))
-        status_expiring_count = _int_metric(stats.get("expiringCount"))
-        active_count += status_active_count
-        pending_count += status_pending_count
-        disapproved_count += status_disapproved_count
-        expiring_count += status_expiring_count
-        status_dimensions = _status_dimensions(status)
-        if status_dimensions:
-            metric_facts.extend(
-                [
-                    VendorMetricFact("active_products", status_active_count, status_dimensions),
-                    VendorMetricFact("pending_products", status_pending_count, status_dimensions),
-                    VendorMetricFact(
-                        "disapproved_products",
-                        status_disapproved_count,
-                        status_dimensions,
-                    ),
-                    VendorMetricFact("expiring_products", status_expiring_count, status_dimensions),
-                ]
-            )
-        issues = status.get("itemLevelIssues") or status.get("issues") or []
-        if not isinstance(issues, list):
-            continue
-        for issue in issues:
-            if not isinstance(issue, dict):
-                continue
-            issue_count += 1
-            product_count = _int_metric(issue.get("productCount") or issue.get("numProducts"))
-            issue_dimensions = status_dimensions | _issue_dimensions(issue)
-            if issue_dimensions:
-                metric_facts.append(
-                    VendorMetricFact(
-                        "issue_product_count",
-                        product_count,
-                        issue_dimensions,
-                    )
-                )
-                metric_facts.extend(_sample_product_facts(issue, issue_dimensions))
-            if issue.get("resolution") == "MERCHANT_ACTION":
-                merchant_action_issue_count += 1
-                merchant_action_product_count += product_count
-            severity = issue.get("severity")
-            if severity == "DISAPPROVED":
-                disapproved_issue_count += 1
-            elif severity == "DEMOTED":
-                demoted_issue_count += 1
-            elif severity == "NOT_IMPACTED":
-                warning_issue_count += 1
-    total_products = active_count + pending_count + disapproved_count + expiring_count
+        _accumulate_aggregate_product_status(
+            status,
+            countries,
+            reporting_contexts,
+            aggregate,
+            metric_facts,
+        )
+    total_products = (
+        aggregate["active_products"]
+        + aggregate["pending_products"]
+        + aggregate["disapproved_products"]
+        + aggregate["expiring_products"]
+    )
     return (
         {
             "api": "merchant_aggregate_product_statuses",
             "status_group_count": len([status for status in statuses if isinstance(status, dict)]),
             "country_count": len(countries),
             "reporting_context_count": len(reporting_contexts),
-            "active_products": active_count,
-            "pending_products": pending_count,
-            "disapproved_products": disapproved_count,
-            "expiring_products": expiring_count,
+            "active_products": aggregate["active_products"],
+            "pending_products": aggregate["pending_products"],
+            "disapproved_products": aggregate["disapproved_products"],
+            "expiring_products": aggregate["expiring_products"],
             "total_products": total_products,
-            "item_level_issue_count": issue_count,
-            "merchant_action_issue_count": merchant_action_issue_count,
-            "merchant_action_product_count": merchant_action_product_count,
-            "disapproved_issue_count": disapproved_issue_count,
-            "demoted_issue_count": demoted_issue_count,
-            "warning_issue_count": warning_issue_count,
+            "item_level_issue_count": aggregate["item_level_issue_count"],
+            "merchant_action_issue_count": aggregate["merchant_action_issue_count"],
+            "merchant_action_product_count": aggregate["merchant_action_product_count"],
+            "disapproved_issue_count": aggregate["disapproved_issue_count"],
+            "demoted_issue_count": aggregate["demoted_issue_count"],
+            "warning_issue_count": aggregate["warning_issue_count"],
             "next_page_present": 1 if _next_page_present(payload) else 0,
         },
         metric_facts,
     )
+
+
+def _accumulate_aggregate_product_status(
+    status: dict[str, Any],
+    countries: set[str],
+    reporting_contexts: set[str],
+    aggregate: dict[str, int],
+    metric_facts: list[VendorMetricFact],
+) -> None:
+    country = status.get("country")
+    if isinstance(country, str) and country:
+        countries.add(country)
+    reporting_context = status.get("reportingContext")
+    if isinstance(reporting_context, str) and reporting_context:
+        reporting_contexts.add(reporting_context)
+    stats = status.get("stats") or status.get("statistics") or {}
+    if not isinstance(stats, dict):
+        stats = {}
+    status_active_count = _int_metric(stats.get("activeCount") or stats.get("approvedCount"))
+    status_pending_count = _int_metric(stats.get("pendingCount"))
+    status_disapproved_count = _int_metric(stats.get("disapprovedCount"))
+    status_expiring_count = _int_metric(stats.get("expiringCount"))
+    aggregate["active_products"] += status_active_count
+    aggregate["pending_products"] += status_pending_count
+    aggregate["disapproved_products"] += status_disapproved_count
+    aggregate["expiring_products"] += status_expiring_count
+    status_dimensions = _status_dimensions(status)
+    if status_dimensions:
+        metric_facts.extend(
+            [
+                VendorMetricFact("active_products", status_active_count, status_dimensions),
+                VendorMetricFact("pending_products", status_pending_count, status_dimensions),
+                VendorMetricFact(
+                    "disapproved_products",
+                    status_disapproved_count,
+                    status_dimensions,
+                ),
+                VendorMetricFact("expiring_products", status_expiring_count, status_dimensions),
+            ]
+        )
+    issues = status.get("itemLevelIssues") or status.get("issues") or []
+    if not isinstance(issues, list):
+        return
+    for issue in issues:
+        if not isinstance(issue, dict):
+            continue
+        _accumulate_aggregate_product_issue(
+            issue,
+            status_dimensions,
+            aggregate,
+            metric_facts,
+        )
+
+
+def _accumulate_aggregate_product_issue(
+    issue: dict[str, Any],
+    status_dimensions: dict[str, str],
+    aggregate: dict[str, int],
+    metric_facts: list[VendorMetricFact],
+) -> None:
+    aggregate["item_level_issue_count"] += 1
+    product_count = _int_metric(issue.get("productCount") or issue.get("numProducts"))
+    issue_dimensions = status_dimensions | _issue_dimensions(issue)
+    if issue_dimensions:
+        metric_facts.append(
+            VendorMetricFact(
+                "issue_product_count",
+                product_count,
+                issue_dimensions,
+            )
+        )
+        metric_facts.extend(_sample_product_facts(issue, issue_dimensions))
+    if issue.get("resolution") == "MERCHANT_ACTION":
+        aggregate["merchant_action_issue_count"] += 1
+        aggregate["merchant_action_product_count"] += product_count
+    severity = issue.get("severity")
+    if severity == "DISAPPROVED":
+        aggregate["disapproved_issue_count"] += 1
+    elif severity == "DEMOTED":
+        aggregate["demoted_issue_count"] += 1
+    elif severity == "NOT_IMPACTED":
+        aggregate["warning_issue_count"] += 1
 
 
 def _next_page_present(payload: Any) -> bool:
