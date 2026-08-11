@@ -7,23 +7,14 @@ generic SEO tool, or multi-client SaaS.
 
 ## Product boundary
 
-The WILQ API is the product brain. Dashboard routes, Codex operator skills,
+The WILQ API is the product brain: dashboard routes, Codex operator skills,
 connector reads, expert rules, knowledge, opportunities, actions, audit, and
-measurement must consume the same typed contracts.
-
-```text
-dashboard + Codex operator skills
-  -> WILQ API
-  -> domain services, evidence, knowledge, actions, audit, local state
-  -> external marketing systems
-```
+measurement consume the same typed contracts.
 
 - No evidence ID, source connector, and freshness means no recommendation.
   Missing or stale proof becomes a typed blocker, never a guessed metric.
 - WILQ may condense reviewed source material into lineage-preserving knowledge
   cards. Raw private material and business policy do not belong in prompts.
-- Codex may propose an unreviewed revision through the API-owned server seam. It
-  does not own workflow state, approval, ActionObjects, or vendor mutation.
 - Every write-capable path uses an exact, validated ActionObject through
   preview, human review, confirmation, safety checks, execution, and audit.
   Never call a vendor write adapter directly from a route, prompt, or skill.
@@ -37,10 +28,10 @@ dashboard + Codex operator skills
 
 ## Operator experience
 
-Operator-facing dashboard and skill output is Polish, with Polish diacritics.
-Lead with the decision, why it matters, evidence summary, blocker, and next safe
-step. Keep raw payloads, connector traces, audit fields, and technical IDs below
-the fold unless one directly explains a blocker.
+Operator-facing output is Polish, with Polish diacritics. Lead with the
+decision, why it matters, evidence summary, blocker, and next safe step. Keep
+raw payloads, connector traces, audit fields, and technical IDs below the fold
+unless one directly explains a blocker.
 
 - `/content-workflow` is the primary `Treści i SEO` workspace. Extend its
   API-owned journey instead of creating a competing planner or dashboard.
@@ -78,21 +69,14 @@ dumps, credential paths, or campaign text dumps.
 
 ## Context selectors
 
-Load current state only when the task needs it:
-
-1. For durable work, use `bd prime`, inspect the one active Bead, and claim it
-   before writing. Beads owns current task state and handoffs, not product truth.
-2. Read `docs/CONTEXT.md` only when the slice needs the durable authority map.
-3. Load a surface-specific current-state document only when the active Bead
-   links it or the changed boundary cannot be understood from code and tests.
-4. Load the relevant file under `docs/architecture/`, `docs/security/`, or
-   `docs/evals/` only for the boundary being changed.
-
-Do not copy active goals, Beads queues, credential incidents, exact live
-metrics, dated handoffs, route inventories, or evaluation transcripts into
-this file. Replace stale current-state documentation instead of appending
-history. Reusable engineering workflows come from the installed global catalog;
-do not recreate them as repo-local generic skills.
+Load current state only when the task needs it: use `bd prime` for durable work
+(one active Bead, claimed before writing), read `docs/CONTEXT.md` only for the
+durable authority map, and load surface-specific or `docs/architecture/`
+current-state docs only for the boundary being changed. Do not copy active
+goals, Beads queues, credential incidents, live metrics, dated handoffs, route
+inventories, or eval transcripts into this file. Replace stale current-state
+docs instead of appending history. Reusable engineering workflows come from the
+installed global catalog; do not recreate them as repo-local generic skills.
 
 ## Runtime and secrets
 
@@ -136,25 +120,34 @@ tests or encode prose/topology snapshots.
 
 Use Beads for durable tasks, dependencies, blockers, and handoffs; do not create
 parallel Markdown TODO lists. Product truth remains in typed code, current
-authority docs, evidence records, and reviewed knowledge.
-
-Record exact verification and unresolved external blockers in the owned Bead.
-Commit, push, PR, deploy, vendor writes, and credential operations remain
-separate authorities. If publication is not authorized, leave an attributable
-patch and record that state rather than silently publishing.
+authority docs, evidence records, and reviewed knowledge. Record exact
+verification and unresolved external blockers in the owned Bead. Commit, push,
+PR, deploy, vendor writes, and credential operations remain separate
+authorities. If publication is not authorized, leave an attributable patch and
+record that state rather than silently publishing.
 
 ## Execution and review protocol
 
+- **Codex is the implementation executor.** Run it non-interactively with
+  SOL-ULTRA effort and capture the result:
+  `codex exec --ephemeral -m gpt-5.6-sol -c 'model_reasoning_effort="ultra"' -C <workdir> -o <last-message-file> "<task>"`
+  (add `-s read-only` unless the slice explicitly authorizes writes,
+  `--json` for an inspectable trace, `--approve-for-me` only for authorized
+  workspace-write slices). SOL = the `gpt-5.6-sol` model; ultra = its maximum
+  reasoning effort with automatic task delegation.
+- **The opencode agent is the reviewer.** It owns the task contract, delegates
+  execution to Codex, verifies every Codex claim against local evidence
+  (re-run the focused falsifier, inspect the diff), records proof in the
+  active Bead, and decides. Codex proposes; the reviewer verifies and commits.
+- Codex never owns workflow state, approval, Beads, publication, or vendor
+  mutation. A second-opinion pass (e.g. `opencode-second-opinion`) is a
+  read-only advisory layer; the owner runs it and dispositions its findings.
 - Keep WIP at one: exactly one implementation Bead may be `in_progress`. Do
   not claim another Bead to bypass a blocker or to parallelize investigation.
-- This applies regardless of the agent's named role or invoked skill: do not
-  create another Bead for a parallel investigation; a blocked active Bead
-  remains the sole implementation item.
+  This applies regardless of the agent's named role or invoked skill; a
+  blocked active Bead remains the sole implementation item.
 - The active Bead defines the next executable result. Do not create a separate
   execution, reviewer, status, or Markdown planning track.
-- The owner runs the external review layer. The implementation agent does not
-  invoke an independent reviewer or second-opinion workflow unless the owner
-  explicitly delegates that run.
 - When owner-supplied reviewer findings arrive, verify each finding against the
   current fixed point first. Record its disposition in the active Bead; only an
   accepted finding earns an implementation slice.
