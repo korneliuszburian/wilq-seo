@@ -19,6 +19,7 @@ from wilq.content.planning.generated_proposal_store import content_planning_prop
 from wilq.content.workflow.contracts.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
+    ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
@@ -55,28 +56,77 @@ def wordpress_draft_apply_capability(
     WordPressDraftApplyCapability | None,
     list[ActionWordPressDraftApplyBlocker],
 ]:
+    binding, confirmed_by, blockers = _wordpress_draft_apply_preconditions(
+        action,
+        request,
+    )
+    if binding is None or confirmed_by is None:
+        return None, blockers
+    snapshot, blockers = _load_wordpress_draft_apply_snapshot(binding)
+    if snapshot is None:
+        return None, blockers
+    capability_inputs, blockers = _wordpress_draft_apply_capability_inputs(
+        snapshot,
+        binding,
+    )
+    if capability_inputs is None:
+        return None, blockers
+    handoff, draft_package = capability_inputs
+    return _build_wordpress_draft_apply_capability(
+        action,
+        confirmed_by,
+        binding,
+        handoff,
+        draft_package,
+    )
+
+
+def _wordpress_draft_apply_preconditions(
+    action: ActionObject,
+    request: ActionApplyRequest | None,
+) -> tuple[
+    ContentDraftRevisionBinding | None,
+    str | None,
+    list[ActionWordPressDraftApplyBlocker],
+]:
     if action.id != "act_apply_wordpress_draft_handoff":
-        return None, []
+        return None, None, []
     binding = request.wordpress_draft if request is not None else None
     if binding is None:
-        return None, [
-            _apply_blocker(
-                "wordpress_revision_binding_required",
-                "Brakuje dokładnej wersji treści",
-                "Apply WordPress wymaga identyfikatorów zapisanej wersji, paczki i decyzji.",
-                "Wróć do zatwierdzonej wersji w Treści i SEO i ponów podgląd akcji.",
-            )
-        ]
+        return (
+            None,
+            None,
+            [
+                _apply_blocker(
+                    "wordpress_revision_binding_required",
+                    "Brakuje dokładnej wersji treści",
+                    "Apply WordPress wymaga identyfikatorów zapisanej wersji, paczki i decyzji.",
+                    "Wróć do zatwierdzonej wersji w Treści i SEO i ponów podgląd akcji.",
+                )
+            ],
+        )
     if request is None or not request.confirmed_by:
-        return None, [
-            _apply_blocker(
-                "wordpress_action_actor_required",
-                "Brakuje operatora potwierdzającego",
-                "Apply szkicu wymaga jawnego aktora zgodnego z audytem confirm.",
-                "Potwierdź podgląd jako zalogowany operator.",
-            )
-        ]
+        return (
+            None,
+            None,
+            [
+                _apply_blocker(
+                    "wordpress_action_actor_required",
+                    "Brakuje operatora potwierdzającego",
+                    "Apply szkicu wymaga jawnego aktora zgodnego z audytem confirm.",
+                    "Potwierdź podgląd jako zalogowany operator.",
+                )
+            ],
+        )
+    return binding, request.confirmed_by, []
 
+
+def _load_wordpress_draft_apply_snapshot(
+    binding: ContentDraftRevisionBinding,
+) -> tuple[
+    ContentWorkItemWorkflowSnapshotResponse | None,
+    list[ActionWordPressDraftApplyBlocker],
+]:
     from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
     from wilq.content.workflow.store.store import content_workflow_store
     from wilq.content.workflow.workspace.api import (
@@ -102,6 +152,40 @@ def wordpress_draft_apply_capability(
                 "Odśwież Treści i SEO i wybierz aktualny work item.",
             )
         ]
+    generated_planning_proposal, blockers = _reconstruct_wordpress_draft_apply_planning_proposal(
+        snapshot,
+        workflow_store,
+        binding,
+    )
+    if generated_planning_proposal is None:
+        return None, blockers
+    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
+        diagnostics,
+        binding.work_item_id,
+        revision_state=revision_state,
+        planning_decisions=planning_decisions,
+        generated_planning_proposal=generated_planning_proposal,
+    )
+    if snapshot is None:
+        return None, [
+            _apply_blocker(
+                "wordpress_planning_reconstruction_failed",
+                "Nie udało się odtworzyć planu treści",
+                "Nie udało się odtworzyć aktualnego planu dla zapisanej wersji.",
+                "Odśwież workflow i zapisz nową wersję dla aktualnego planu sekcji.",
+            )
+        ]
+    return snapshot, []
+
+
+def _reconstruct_wordpress_draft_apply_planning_proposal(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    workflow_store: object,
+    binding: ContentDraftRevisionBinding,
+) -> tuple[
+    ContentPlanningProposal | None,
+    list[ActionWordPressDraftApplyBlocker],
+]:
     # The action registry is intentionally shared across the dashboard, but
     # the apply boundary must reconstruct the selected work item's exact
     # generated proposal before validating its revision context. Without this
@@ -170,22 +254,16 @@ def wordpress_draft_apply_capability(
                 "Wygeneruj nową wersję planu i ponów handoff.",
             )
         ]
-    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-        diagnostics,
-        binding.work_item_id,
-        revision_state=revision_state,
-        planning_decisions=planning_decisions,
-        generated_planning_proposal=generated_planning_proposal,
-    )
-    if snapshot is None:
-        return None, [
-            _apply_blocker(
-                "wordpress_planning_reconstruction_failed",
-                "Nie udało się odtworzyć planu treści",
-                "Nie udało się odtworzyć aktualnego planu dla zapisanej wersji.",
-                "Odśwież workflow i zapisz nową wersję dla aktualnego planu sekcji.",
-            )
-        ]
+    return generated_planning_proposal, []
+
+
+def _wordpress_draft_apply_capability_inputs(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    binding: ContentDraftRevisionBinding,
+) -> tuple[
+    tuple[ContentWordPressDraftHandoff, ContentDraftPackage] | None,
+    list[ActionWordPressDraftApplyBlocker],
+]:
     draft_package = snapshot.draft_package.draft_package_result.draft_package
     handoff_result = snapshot.wordpress_handoff.handoff_result
     handoff = handoff_result.handoff
@@ -236,11 +314,23 @@ def wordpress_draft_apply_capability(
                 "Wróć do bezpiecznego handoffu create-draft-only.",
             )
         ]
+    return (handoff, draft_package), []
 
+
+def _build_wordpress_draft_apply_capability(
+    action: ActionObject,
+    confirmed_by: str,
+    binding: ContentDraftRevisionBinding,
+    handoff: ContentWordPressDraftHandoff,
+    draft_package: ContentDraftPackage,
+) -> tuple[
+    WordPressDraftApplyCapability | None,
+    list[ActionWordPressDraftApplyBlocker],
+]:
     chain, chain_blockers = _revision_bound_action_chain(
         action.audit_events,
         binding=binding,
-        confirmed_by=request.confirmed_by,
+        confirmed_by=confirmed_by,
     )
     if chain is None:
         return None, chain_blockers
@@ -259,7 +349,7 @@ def wordpress_draft_apply_capability(
         review_audit_id=review.id,
         confirmation_audit_id=confirmation.id,
         impact_audit_id=impact.id,
-        confirmed_by=request.confirmed_by,
+        confirmed_by=confirmed_by,
         wordpress_draft_binding=binding,
     )
     if not wordpress_draft_write_authorization_verified(authorization):
