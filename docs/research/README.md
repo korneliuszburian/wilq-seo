@@ -1,0 +1,1 @@
+- content-quality-standards.md — decyzje source-to-decision dla standardów jakości treści (People-First, E-E-A-T, plain language, CTA, AI disclosure)
