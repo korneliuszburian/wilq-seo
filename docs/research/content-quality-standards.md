@@ -102,7 +102,7 @@ slice'ów z falsifierami (ścieżka: docs/agents/reports/benchmark/ + beads).
 | S1 heading descriptive (nie exaggerating) | **adopt** | prompt mówi, gate nie pilnuje; tani regex/LLM-check | falsifier: heading z „najlepszy/największy" bez źródła → blocker |
 | S1 byline/author (Who) | **lab-test** | wymaga decyzji produktowej (czy Ekologus chce byline); wpływa na kontrakt page_assets | eksperyment: dodać pole author do page_assets + render w pakiecie |
 | S2 automation disclosure (How) | **defer** | disclosure to decyzja Wilku/marketera, nie bramka jakości; pipeline ma już lineage wewnętrznie | brak konsumenta dziś — defer z powodem |
-| S3 sentence-length gate | **adopt** | deterministyczny, tani, zgodny z NN/g; domyka wall_of_text | falsifier: zdanie > 20 słów → issue sentence_length |
+| S3 sentence-length gate | **adopt** | deterministyczny, tani, zgodny z NN/g; domyka wall_of_text | falsifier: zdanie > 20 słów → issue long_sentence |
 | S3 reading level | **defer** | polskie stopnie czytelności nie mają prostego odpowiednika Flescha; ryzyko false positives | brak sprawdzonej polskiej miary — defer |
 | S4 CTA | **adopt (już wdrożone)** | weak_cta + min blocks już istnieją | testy już istnieją (weak_cta) |
 | S5 YMYL | **adopt (już wdrożone)** | regulatory assurance + official_source facts | testy regulatory już istnieją |
@@ -137,3 +137,16 @@ slice'ów z falsifierami (ścieżka: docs/agents/reports/benchmark/ + beads).
 - „9/9 semantic review" nie jest dowodem użyteczności dla czytelnika — wymaga
   benchmarku przed/po (Q34) i realnych metryk (Q35).
 - E-E-A-T nie jest scorem; byline to sygnał zaufania, nie gwarancja rankingu.
+
+## Status wdrożenia (aktualizacja 2026-08-12)
+
+| Decyzja | Slice | Commit | Dowód |
+|---|---|---|---|
+| adopt: sentence-length gate | Q31 | 46730dab | falsifier: 25-word zdanie flagged; <=20 czyste; skróty PL bezpieczne |
+| adopt: heading-exaggeration gate | Q32 | b3f2c901 | falsifier: 'Najlepsza oferta' flagged; neutralne 'gwarancje' czyste; frontend long_sentence |
+| lab-test: byline/author | Q33 | 969f350f | falsifier: accepts byline, rejects inline-link, generation leaves unset, schema excludes |
+| defer: automation disclosure | — | — | jawny reject: decyzja produktowa Wilku, nie bramka jakości |
+| defer: polska miara czytelności | — | — | jawny reject: brak sprawdzonej miary dla pl-PL |
+
+Punkt 1 celu zamknięty: każda luka z research ma slice z focused falsifierem
+albo jawny reject z powodem.
