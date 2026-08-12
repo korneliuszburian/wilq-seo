@@ -22,6 +22,25 @@ _WORKING_NOTE = re.compile(
     r"weryfikacja przez człowieka|zweryfikować przez człowieka)",
     re.IGNORECASE,
 )
+_QUESTION_HEADING_WORD = re.compile(
+    r"^\s*(?:jak|czy|co|kiedy|który|która|które|ile|gdzie|czemu|dlaczego)(?!\w)",
+    re.IGNORECASE,
+)
+_VAGUE_ANSWER_HEDGE = re.compile(
+    r"(?<!\w)(?:może\s+obejmować|w\s+ramach|można\s+przejść|związane\s+z|"
+    r"mogą\s+pozwolić|w\s+zależności|na\s+podstawie\s+można|zakres\s+może)(?!\w)",
+    re.IGNORECASE,
+)
+_CONCRETE_ANSWER_SIGNAL = re.compile(
+    r"(?<!\w)(?:pobiera\s+się\s+przez|najpierw|następnie|krok|polega\s+na|wymaga|"
+    r"składa\s+się\s+z|próbka|analiza\s+laboratoryjna|przepis|norma|decyzja|"
+    r"pozwolenie|sprawozdanie|ewidencja|kpo|rejestr)(?!\w)",
+    re.IGNORECASE,
+)
+_CONCRETE_NUMBER_OR_MEASURE = re.compile(
+    r"(?<!\w)\d+(?:[.,]\d+)?(?:\s*(?:%|mm|cm|m|km|ml|l|g|kg|mg|ha|°c))?(?!\w)",
+    re.IGNORECASE,
+)
 _DUPLICATE_PARAGRAPH_RATIO = 0.8
 _LONG_SENTENCE_WORD_LIMIT = 20
 _POLISH_ABBREVIATIONS = frozenset(
@@ -46,6 +65,7 @@ class RevisionReadabilityIssue:
         "thin_section",
         "wall_of_text",
         "long_sentence",
+        "heading_answer_mismatch",
         "working_note",
         "duplicate_paragraph",
     ]
@@ -103,6 +123,16 @@ def revision_readability_issues(
                     affected_section=section.heading,
                 )
             )
+        if _heading_answer_mismatch(section.heading, section.body_markdown):
+            issues.append(
+                RevisionReadabilityIssue(
+                    code="heading_answer_mismatch",
+                    label="Nagłówek-pyranie nie doczekał się odpowiedzi",
+                    reason="Nagłówek pyta o... ale treść omija odpowiedź ogólnikami.",
+                    next_step=("Rozwiń treść o konkretną odpowiedź na pytanie z nagłówka."),
+                    affected_section=section.heading,
+                )
+            )
         working_note = _first_working_note(section.body_markdown)
         if working_note is not None:
             issues.append(
@@ -149,6 +179,17 @@ def _first_working_note(markdown: str) -> str | None:
         if _WORKING_NOTE.search(paragraph) is not None:
             return _paragraph_example(paragraph)
     return None
+
+
+def _heading_answer_mismatch(heading: str, markdown: str) -> bool:
+    if _QUESTION_HEADING_WORD.search(heading) is None:
+        return False
+    if _VAGUE_ANSWER_HEDGE.search(markdown) is None:
+        return False
+    return (
+        _CONCRETE_ANSWER_SIGNAL.search(markdown) is None
+        and _CONCRETE_NUMBER_OR_MEASURE.search(markdown) is None
+    )
 
 
 def _first_duplicate_paragraph(markdown: str) -> str | None:

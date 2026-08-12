@@ -25,10 +25,7 @@ from wilq.content.workflow.documents.revisions import (
 
 def test_twelve_word_v2_section_is_not_thin() -> None:
     review = _review(
-        _revision(
-            "Ta sekcja jasno wyjaśnia klientowi zakres działania i prowadzi go do "
-            "decyzji."
-        )
+        _revision("Ta sekcja jasno wyjaśnia klientowi zakres działania i prowadzi go do decyzji.")
     )
 
     assert "thin_section" not in _finding_codes(review)
@@ -39,15 +36,12 @@ def test_v2_review_flags_only_sections_with_fewer_than_twelve_words() -> None:
         _revision(
             "Krótka odpowiedź nie wyjaśnia klientowi kolejnego kroku.",
             second_body=(
-                "Ta sekcja jasno wyjaśnia klientowi zakres działania i prowadzi go do "
-                "decyzji."
+                "Ta sekcja jasno wyjaśnia klientowi zakres działania i prowadzi go do decyzji."
             ),
         )
     )
 
-    thin_findings = [
-        finding for finding in review.findings if finding.code == "thin_section"
-    ]
+    thin_findings = [finding for finding in review.findings if finding.code == "thin_section"]
     assert len(thin_findings) == 1
     assert thin_findings[0].severity == "needs_changes"
     assert thin_findings[0].affected_section == "Pierwsza sekcja"
@@ -59,9 +53,7 @@ def test_v2_review_flags_one_oversized_paragraph_and_ignores_short_paragraph() -
     short = " ".join(["krótki"] * 20)
     review = _review(_revision(f"{oversized}\n\n{short}", second_body=short))
 
-    wall_findings = [
-        finding for finding in review.findings if finding.code == "wall_of_text"
-    ]
+    wall_findings = [finding for finding in review.findings if finding.code == "wall_of_text"]
     assert len(wall_findings) == 1
     assert wall_findings[0].severity == "needs_changes"
     assert wall_findings[0].affected_section == "Pierwsza sekcja"
@@ -155,6 +147,84 @@ def test_pre_save_readability_gate_flags_a_long_sentence_in_faq_answer() -> None
     ) in issues
 
 
+def test_question_heading_with_only_vague_body_is_flagged() -> None:
+    heading = "Jak pobiera się próbki gleby, ziemi i wód gruntowych do analizy?"
+    vague_body = (
+        "Próbki pobiera się w ramach prac terenowych. Zakres może obejmować glebę, "
+        "ziemię i wody gruntowe. Po ustaleniu zakresu można przejść do dalszych prac."
+    )
+
+    review = _review(_revision(vague_body, heading=heading))
+
+    findings = [finding for finding in review.findings if finding.code == "heading_answer_mismatch"]
+    assert len(findings) == 1
+    assert findings[0].label == "Nagłówek-pyranie nie doczekał się odpowiedzi"
+    assert findings[0].reason == ("Nagłówek pyta o... ale treść omija odpowiedź ogólnikami.")
+    assert findings[0].next_step == ("Rozwiń treść o konkretną odpowiedź na pytanie z nagłówka.")
+    assert findings[0].affected_section == heading
+    assert review.usefulness.status == "needs_changes"
+    assert (
+        "answer_directness",
+        "section_one",
+        "Nagłówek pyta o... ale treść omija odpowiedź ogólnikami.",
+    ) in readability_quality_issues(_revision(vague_body, heading=heading))
+
+
+def test_question_heading_with_concrete_answer_is_not_flagged() -> None:
+    review = _review(
+        _revision(
+            (
+                "W ramach prac próbki pobiera się przez wiercenie w wyznaczonych "
+                "punktach. Następnie materiał trafia na analizę laboratoryjną."
+            ),
+            heading="Jak pobiera się próbki gleby do analizy?",
+        )
+    )
+
+    assert "heading_answer_mismatch" not in _finding_codes(review)
+
+
+def test_non_question_heading_with_vague_body_is_not_flagged() -> None:
+    review = _review(
+        _revision(
+            (
+                "Próbki pobiera się w ramach prac terenowych. Zakres może obejmować "
+                "glebę, ziemię i wody gruntowe. Można przejść do dalszych prac."
+            ),
+            heading="Pobieranie próbek gleby, ziemi i wód gruntowych do analizy",
+        )
+    )
+
+    assert "heading_answer_mismatch" not in _finding_codes(review)
+
+
+def test_pre_save_gate_surfaces_heading_answer_mismatch() -> None:
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Pobieranie próbek gruntu",
+            meta_title="Pobieranie próbek gruntu do analizy",
+            meta_description="Praktyczne informacje o pobieraniu próbek.",
+            h1="Pobieranie próbek gruntu",
+            lead="Przewodnik opisuje prace terenowe i badania gruntu.",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="section_02",
+                heading=("Jak pobiera się próbki gleby, ziemi i wód gruntowych do analizy?"),
+                body_markdown=(
+                    "Próbki pobiera się w ramach prac terenowych. Zakres może obejmować "
+                    "glebę, ziemię i wody gruntowe. Można przejść do dalszych prac."
+                ),
+            )
+        ],
+    )
+
+    assert any(
+        code == "heading_answer_mismatch" and section_id == "section_02"
+        for code, section_id, _ in readability_issues_for_output(output)
+    )
+
+
 def test_legacy_review_without_revision_emits_no_readability_findings() -> None:
     review = _review(None)
 
@@ -162,6 +232,7 @@ def test_legacy_review_without_revision_emits_no_readability_findings() -> None:
         "thin_section",
         "wall_of_text",
         "long_sentence",
+        "heading_answer_mismatch",
         "working_note",
         "duplicate_paragraph",
     }.isdisjoint(_finding_codes(review))
@@ -281,11 +352,12 @@ def _revision(
     body: str,
     *,
     second_body: str | None = None,
+    heading: str = "Pierwsza sekcja",
 ) -> ContentDraftRevision:
     sections = [
         ContentDraftRevisionSection(
             section_id="section_one",
-            heading="Pierwsza sekcja",
+            heading=heading,
             body_markdown=body,
             evidence_ids=["ev_readability"],
         )
@@ -324,8 +396,7 @@ def test_turn_advisory_findings_include_reading_gates_even_without_review() -> N
     )
 
     assert any(
-        finding["finding_id"].startswith("readability_working_note_")
-        for finding in findings
+        finding["finding_id"].startswith("readability_working_note_") for finding in findings
     )
     assert findings
 
