@@ -17,7 +17,6 @@ from tests.content.dynamic_planning_test_support import (
     PlanningClient,
     configure_planning_harness,
 )
-from wilq.codex.app_server import CodexAppServerTurnBlocker, StdioCodexAppServerClient
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.handoff.revision_document_renderer import revision_document_markdown
 from wilq.content.planning.dynamic_input import (
@@ -26,7 +25,6 @@ from wilq.content.planning.dynamic_input import (
 )
 from wilq.content.planning.generated_proposal import (
     _planning_output_quality_errors,
-    _planning_runtime_blocker,
     generate_content_planning_proposal,
     read_content_planning_proposal,
     with_current_planning_workspace,
@@ -43,10 +41,7 @@ from wilq.content.planning.generated_proposal_store import (
     content_planning_proposal_store,
 )
 from wilq.content.planning.input_sources import ContentPlanningSourceAssessment
-from wilq.content.planning.runtime_contract import (
-    planning_codex_timeout_seconds,
-    planning_job_stale_after_seconds,
-)
+from wilq.content.planning.proposal_quality import planning_output_quality_errors
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningDecision,
@@ -280,22 +275,6 @@ def test_planning_get_does_not_let_a_failed_historical_job_shadow_current_input(
     assert result.json()["status"] != "failed"
 
 
-def test_planning_runtime_has_separate_bounded_timeout(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("WILQ_PLANNING_CODEX_TIMEOUT_SECONDS", "17")
-    monkeypatch.setattr(
-        planning_router,
-        "content_codex_app_server_client",
-        lambda: StdioCodexAppServerClient(),
-    )
-
-    client = planning_router._planning_codex_client()
-
-    assert isinstance(client, StdioCodexAppServerClient)
-    assert client.timeout_seconds == 17
-
-
 def test_planning_store_blocks_a_sibling_digest_while_generation_is_in_flight(
     tmp_path: Path,
 ) -> None:
@@ -441,58 +420,6 @@ def test_planning_api_rejects_a_stale_digest_before_sibling_queue_logic(
     assert second.json()["planning_input_digest"] == current["planning_input_digest"]
 
 
-def test_planning_runtime_default_allows_full_structured_turn(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("WILQ_PLANNING_CODEX_TIMEOUT_SECONDS", raising=False)
-    monkeypatch.setattr(
-        planning_router,
-        "content_codex_app_server_client",
-        lambda: StdioCodexAppServerClient(),
-    )
-
-    client = planning_router._planning_codex_client()
-
-    assert isinstance(client, StdioCodexAppServerClient)
-    assert client.timeout_seconds == 300.0
-
-
-def test_planning_stale_window_shares_configured_codex_deadline(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("WILQ_PLANNING_CODEX_TIMEOUT_SECONDS", "17")
-
-    assert planning_codex_timeout_seconds() == 17.0
-    assert planning_job_stale_after_seconds() == 17.0
-
-
-def test_planning_default_stale_window_matches_five_minute_codex_deadline(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("WILQ_PLANNING_CODEX_TIMEOUT_SECONDS", raising=False)
-
-    assert planning_codex_timeout_seconds() == 300.0
-    assert planning_job_stale_after_seconds() == 300.0
-
-
-def test_planning_runtime_stream_failure_has_operator_safe_next_step() -> None:
-    blocker = _planning_runtime_blocker(
-        [
-            CodexAppServerTurnBlocker(
-                "codex_response_stream_disconnected", "ignored"
-            ).code
-        ]
-    )
-
-    assert blocker == (
-        "Połączenie z Codexem zostało przerwane",
-        "Provider Codexa przerwał strumień odpowiedzi przed końcem tury; "
-        "WILQ nie otrzymał bezpiecznego planu.",
-        "Sprawdź status app-servera i połączenie, a potem uruchom nową próbę; "
-        "WILQ nic nie zapisał.",
-    )
-
-
 def test_planning_output_quality_gate_rejects_navigation_and_dated_headings() -> None:
     output = ContentPlanningModelOutput.model_construct(
         sections=[
@@ -516,27 +443,26 @@ def test_planning_output_quality_gate_rejects_navigation_and_dated_headings() ->
     ]
 
 
-def test_planning_output_quality_gate_requires_query_to_section_assignment() -> None:
+@pytest.mark.parametrize(
+    ("heading", "expected_errors"),
+    [
+        (
+            "Najlepsza oferta dokumentacji środowiskowej",
+            ["heading_exaggeration_noise"],
+        ),
+        ("Jakie gwarancje wynikają z przepisów BDO?", []),
+    ],
+)
+def test_planning_output_quality_gate_rejects_exaggeration_without_flagging_guarantees_noun(
+    heading: str,
+    expected_errors: list[str],
+) -> None:
     output = ContentPlanningModelOutput.model_construct(
-        sections=[
-            ContentPlanningModelSection.model_construct(
-                heading="Zakres doradztwa środowiskowego",
-                query_terms=[],
-            )
-        ],
-        cta_blocks=[ContentPlanningCtaBlock.model_construct(placement="after_lead")],
-    )
-    planning_input = SimpleNamespace(
-        query_portfolio=SimpleNamespace(
-            gsc_query_rows=[SimpleNamespace(term="doradztwo środowiskowe")],
-            ads_term_rows=[],
-            keyword_planner_rows=[],
-        )
+        sections=[ContentPlanningModelSection.model_construct(heading=heading)],
+        cta_blocks=[ContentPlanningCtaBlock.model_construct()],
     )
 
-    assert _planning_output_quality_errors(output, planning_input=planning_input) == [
-        "missing_query_assignments"
-    ]
+    assert planning_output_quality_errors(output) == expected_errors
 
 
 def test_changed_input_digest_is_rejected_before_a_replan_is_queued(

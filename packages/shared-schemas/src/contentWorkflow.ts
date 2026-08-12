@@ -1976,6 +1976,7 @@ export const ContentQualityFindingCodeSchema = z.enum([
   "sales_brief_signal_thin",
   "thin_section",
   "wall_of_text",
+  "long_sentence",
   "working_note",
   "duplicate_paragraph",
   "weak_cta",

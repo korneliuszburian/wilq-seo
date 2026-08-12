@@ -27,6 +27,18 @@ _HEADING_NOISE_PATTERNS = (
             re.I,
         ),
     ),
+    (
+        "heading_exaggeration_noise",
+        re.compile(
+            r"(?:\b(?:"
+            r"(?:naj(?:lepsz|większ|tańsz|skuteczniejsz|wyższ|szybsz)|"
+            r"gwarantowan|idealn|jedyn)"
+            r"(?:y|a|e|i|ego|ej|emu|ą|ym|ych|ymi)|zero\s+kosztów|"
+            r"całkowicie\s+bezpieczn(?:y|a|e|i|ego|ej|emu|ą|ym|ych|ymi)"
+            r")\b|\b100\s*%(?!\w))",
+            re.I,
+        ),
+    ),
 )
 
 

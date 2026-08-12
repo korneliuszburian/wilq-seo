@@ -2598,6 +2598,7 @@ describe("ContentQualityFindingSchema", () => {
       "sales_brief_signal_thin",
       "thin_section",
       "wall_of_text",
+      "long_sentence",
       "working_note",
       "duplicate_paragraph"
     ]) {
