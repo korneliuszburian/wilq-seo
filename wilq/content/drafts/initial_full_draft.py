@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Literal
 
 from wilq.codex.app_server import (
     CodexAppServerClientProtocol,
@@ -509,7 +509,12 @@ def _execute_runtime(
             source_codes=[item.code for item in result.blockers],
         )
         status: Literal["blocked", "failed"] = "blocked" if result.status == "blocked" else "failed"
-        finish_initial_draft_run(run_store, run, status=status, error=code)
+        finish_initial_draft_run(
+            run_store,
+            run,
+            status=status,
+            error=safe_initial_draft_run_error(blocker),
+        )
         return ContentInitialDraftResponse(
             status=status,
             work_item_id=inputs.planning_input.work_item_id,
@@ -528,7 +533,12 @@ def _execute_runtime(
             "Wynik nie przeszedł ścisłego schematu pełnej treści WILQ.",
             "Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
         )
-        finish_initial_draft_run(run_store, run, status="blocked", error=blocker.code)
+        finish_initial_draft_run(
+            run_store,
+            run,
+            status="blocked",
+            error=safe_initial_draft_run_error(blocker),
+        )
         return ContentInitialDraftResponse(
             status="blocked",
             work_item_id=inputs.planning_input.work_item_id,
@@ -593,7 +603,9 @@ def _claim_safety_output(
     sections.append(
         StructuredDraftOutputSection(
             heading="Page assets",
-            body_markdown="\n".join(output.page_assets.model_dump(mode="json").values()),
+            body_markdown="\n".join(
+                output.page_assets.model_dump(mode="json", exclude_none=True).values()
+            ),
             evidence_ids=inputs.proposal.evidence_ids,
             claims_used=_claim_texts(global_claim_ids, claim_text_by_id),
         )
@@ -733,7 +745,7 @@ def _planning_input_blocker(
 
 
 def _blocker(
-    code: str,
+    code: ContentInitialDraftBlockerCode,
     label: str,
     reason: str,
     next_step: str,
@@ -741,7 +753,7 @@ def _blocker(
     source_codes: list[str] | None = None,
 ) -> ContentInitialDraftBlocker:
     return ContentInitialDraftBlocker(
-        code=cast(ContentInitialDraftBlockerCode, code),
+        code=code,
         label=label,
         reason=reason,
         next_step=next_step,

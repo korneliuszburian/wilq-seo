@@ -4,7 +4,7 @@ import json
 from copy import deepcopy
 from typing import Literal, cast
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.codex.prompts import resolve_prompt_template
@@ -16,6 +16,7 @@ from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repa
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import validate_no_inline_link
 
 
 class _RegulatorySectionPatch(BaseModel):
@@ -25,12 +26,19 @@ class _RegulatorySectionPatch(BaseModel):
     mode: Literal["append", "replace"]
     body_markdown: str = Field(min_length=1)
 
+    @field_validator("body_markdown")
+    @classmethod
+    def require_visible_text_without_inline_links(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Regulatory repair body cannot be blank.")
+        return validate_no_inline_link(value)
+
 
 class _RegulatoryAssertionRepairOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     sections: list[_RegulatorySectionPatch] = Field(min_length=1)
-    publish_ready: bool = False
+    publish_ready: Literal[False] = False
 
 
 def initial_full_draft_turn_request(

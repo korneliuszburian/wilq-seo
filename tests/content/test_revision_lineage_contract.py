@@ -96,9 +96,9 @@ def test_initial_draft_generation_schema_excludes_byline() -> None:
     )
     schema = initial_full_draft_output_schema(proposal)
 
-    assert "byline" not in schema["$defs"]["ContentDraftRevisionPageAssets"][
-        "properties"
-    ]
+    page_assets_schema = schema["$defs"]["ContentDraftRevisionPageAssets"]
+    assert "byline" not in page_assets_schema["properties"]
+    assert "byline" not in page_assets_schema["required"]
 
 
 def _page_assets_payload() -> dict[str, str]:

@@ -22,6 +22,7 @@ from wilq.content.drafts.initial_draft_run import (
     effective_initial_draft_deadline,
     initial_draft_context_digest,
     revision_matches_initial_draft_context,
+    safe_initial_draft_run_error,
     transition_initial_draft_run_if_status,
 )
 from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
@@ -30,6 +31,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlockerCode,
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
+    parse_content_initial_draft_blocker_code,
 )
 from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
@@ -175,28 +177,6 @@ class _ContextCheckedWorkflowStore:
             raise ValueError("stale_initial_draft_context")
         return _snapshot_initial_draft_context_digest(snapshot, planning.proposal)
 
-_INITIAL_DRAFT_BLOCKER_CODES = {
-    "planning_not_ready",
-    "planning_not_generated",
-    "stale_planning_input",
-    "proposal_mismatch",
-    "revision_already_exists",
-    "missing_generation_contract",
-    "runtime_blocked",
-    "runtime_failed",
-    "invalid_structured_output",
-    "document_scope_mismatch",
-    "generated_claim_blocked",
-    "draft_assurance_failed",
-    "draft_assurance_runtime_failed",
-    "draft_assurance_invalid_output",
-    "revision_conflict",
-    "persistence_failed",
-    "generation_in_progress",
-    "initial_draft_queue_full",
-    "stale_initial_draft_context",
-}
-
 
 def register_content_initial_draft_route(
     router: APIRouter,
@@ -268,9 +248,7 @@ def _queue_initial_draft(
     if proposal_id is None or planning_input_digest is None:
         return _initial_draft_not_started_response(work_item_id, proposal)
     context_digest = _snapshot_initial_draft_context_digest(snapshot, proposal)
-    base_revision_id = getattr(
-        snapshot.revision_workspace.latest_revision, "revision_id", None
-    )
+    base_revision_id = getattr(snapshot.revision_workspace.latest_revision, "revision_id", None)
     claim = claim_initial_draft_run(
         local_state_store(),
         work_item_id=work_item_id,
@@ -313,9 +291,7 @@ def _queue_initial_draft(
             safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
         )
     if not claim.newly_claimed:
-        return _queued_initial_draft_response(
-            work_item_id, proposal_id, run_id, True
-        )
+        return _queued_initial_draft_response(work_item_id, proposal_id, run_id, True)
     try:
         _INITIAL_DRAFT_EXECUTOR.submit(
             _run_queued_initial_draft,
@@ -333,9 +309,7 @@ def _queue_initial_draft(
             error="initial_draft_queue_full",
         )
         return _initial_draft_queue_full_response(work_item_id, proposal_id, run_id)
-    return _queued_initial_draft_response(
-        work_item_id, proposal_id, run_id, False
-    )
+    return _queued_initial_draft_response(work_item_id, proposal_id, run_id, False)
 
 
 def _queued_initial_draft_response(
@@ -421,11 +395,15 @@ def _read_initial_draft_status(
         if needs_current_context
         else unscoped_latest
     )
-    if latest is not None and latest.status == "started" and _run_matches_revision_context(
-        latest,
-        revision,
-        proposal,
-        context_digest=context_digest,
+    if (
+        latest is not None
+        and latest.status == "started"
+        and _run_matches_revision_context(
+            latest,
+            revision,
+            proposal,
+            context_digest=context_digest,
+        )
     ):
         return _queued_initial_draft_response(
             work_item_id,
@@ -581,10 +559,7 @@ def _latest_run_for_proposal(
                 and endpoint in run.used_endpoints
                 and run.proposal_id == proposal.proposal_id
                 and run.planning_input_digest == proposal.planning_input_digest
-                and (
-                    context_digest is None
-                    or run.initial_draft_context_digest == context_digest
-                )
+                and (context_digest is None or run.initial_draft_context_digest == context_digest)
                 and (
                     getattr(run, "planning_digest", None)
                     == getattr(proposal, "planning_digest", None)
@@ -610,8 +585,7 @@ def _legacy_run_matches_revision(
     return bool(
         revision is not None
         and getattr(revision, "planning_digest", None) == proposal.planning_digest
-        and getattr(revision, "planning_input_digest", None)
-        == proposal.planning_input_digest
+        and getattr(revision, "planning_input_digest", None) == proposal.planning_input_digest
         and getattr(metadata, "codex_run_id", None) == run.id
     )
 
@@ -632,8 +606,7 @@ def _canonical_revision_run(
         return None
     if (
         getattr(revision, "planning_digest", None) != proposal.planning_digest
-        or getattr(revision, "planning_input_digest", None)
-        != proposal.planning_input_digest
+        or getattr(revision, "planning_input_digest", None) != proposal.planning_input_digest
     ):
         return None
     if context_digest is not None and not revision_matches_initial_draft_context(
@@ -671,10 +644,7 @@ def _run_matches_revision_context(
     planning_input_digest = proposal.planning_input_digest
     if proposal_id is None or planning_input_digest is None:
         return False
-    if (
-        context_digest is not None
-        and run.initial_draft_context_digest != context_digest
-    ):
+    if context_digest is not None and run.initial_draft_context_digest != context_digest:
         return False
     if revision is None:
         return run.initial_draft_base_revision_id is None
@@ -724,9 +694,7 @@ def _terminal_initial_draft_response(
         ),
         source_codes=source_codes,
         retry_after_seconds=(
-            _INITIAL_DRAFT_QUEUE_RETRY_SECONDS
-            if code == "initial_draft_queue_full"
-            else None
+            _INITIAL_DRAFT_QUEUE_RETRY_SECONDS if code == "initial_draft_queue_full" else None
         ),
     )
     return ContentInitialDraftResponse(
@@ -809,8 +777,7 @@ def _generation_in_progress_blocker() -> ContentInitialDraftBlocker:
         code="generation_in_progress",
         label="Pełny tekst jest przygotowywany",
         reason=(
-            "WILQ pracuje na dokładnym wygenerowanym planie; "
-            "wynik pojawi się w tym samym workflow."
+            "WILQ pracuje na dokładnym wygenerowanym planie; wynik pojawi się w tym samym workflow."
         ),
         next_step="Odśwież etap tekstu za chwilę. Nie uruchamiaj drugiego generowania.",
     )
@@ -851,16 +818,18 @@ def _run_queued_initial_draft(
             None,
         )
         planning = snapshot.planning_workspace
-        if run is None or planning is None or (
-            run.initial_draft_context_digest
-            and run.initial_draft_context_digest
-            != _snapshot_initial_draft_context_digest(snapshot, planning.proposal)
+        if (
+            run is None
+            or planning is None
+            or (
+                run.initial_draft_context_digest
+                and run.initial_draft_context_digest
+                != _snapshot_initial_draft_context_digest(snapshot, planning.proposal)
+            )
         ):
             _mark_initial_draft_run_failed(run_id, RuntimeError("stale_initial_draft_context"))
             return
-        deadline_client = _InitialDraftDeadlineClient(
-            client, run_id, snapshot_loader, work_item_id
-        )
+        deadline_client = _InitialDraftDeadlineClient(client, run_id, snapshot_loader, work_item_id)
         result = generate_initial_full_draft(
             snapshot=snapshot,
             request=request,
@@ -924,17 +893,11 @@ def _persist_terminal_preflight_run(
     run_id: str,
 ) -> None:
     store = local_state_store()
-    status: Literal["failed", "blocked"] = (
-        "failed" if result.status == "failed" else "blocked"
-    )
-    blocker_code = result.blockers[0].code if result.blockers else status
-    existing = next(
-        (run for run in store.list_codex_runs() if run.id == run_id), None
-    )
+    status: Literal["failed", "blocked"] = "failed" if result.status == "failed" else "blocked"
+    run_error = safe_initial_draft_run_error(result.blockers[0]) if result.blockers else status
+    existing = next((run for run in store.list_codex_runs() if run.id == run_id), None)
     if existing is not None:
-        transition_initial_draft_run_if_status(
-            store, existing, status=status, error=blocker_code
-        )
+        transition_initial_draft_run_if_status(store, existing, status=status, error=run_error)
         return
     store.save_codex_run(
         CodexRun(
@@ -943,14 +906,12 @@ def _persist_terminal_preflight_run(
             hook="content_initial_full_draft",
             source="wilq_api",
             status=status,
-            used_endpoints=[
-                f"/api/content/work-items/{snapshot.preflight.item.id}/initial-draft"
-            ],
+            used_endpoints=[f"/api/content/work-items/{snapshot.preflight.item.id}/initial-draft"],
             evidence_ids=[],
             proposal_id=request.expected_proposal_id,
             planning_input_digest=request.expected_planning_input_digest,
             completed_at=utc_now(),
-            error=blocker_code,
+            error=run_error,
         )
     )
 
@@ -959,8 +920,9 @@ def _terminal_blocker_details(
     run: CodexRun,
 ) -> tuple[ContentInitialDraftBlockerCode, list[str]]:
     code, separator, source_text = (run.error or "").partition("|")
-    if code in _INITIAL_DRAFT_BLOCKER_CODES:
-        return code, source_text.split(",") if separator and source_text else []  # type: ignore[return-value]
+    parsed_code = parse_content_initial_draft_blocker_code(code)
+    if parsed_code is not None:
+        return parsed_code, source_text.split(",") if separator and source_text else []
     return ("runtime_failed" if run.status == "failed" else "runtime_blocked"), []
 
 

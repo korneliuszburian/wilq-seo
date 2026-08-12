@@ -30,6 +30,11 @@ export function ContentFullPagePreview({
       <div className="grid lg:grid-cols-[minmax(0,1fr)_220px]">
       <div className="min-w-0 px-5 py-7 sm:px-8 sm:py-9">
         <h1 className="text-3xl font-semibold leading-tight text-ink">{assets.h1}</h1>
+        {assets.byline ? (
+          <p className="mt-2 text-sm font-medium text-slate-600" data-testid="content-byline">
+            Autor: {assets.byline}
+          </p>
+        ) : null}
         <p className="mt-4 text-base leading-7 text-slate-700">{assets.lead}</p>
         {revision.cta_blocks
           .filter((cta) => cta.placement === "after_lead")

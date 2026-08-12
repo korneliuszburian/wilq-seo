@@ -210,3 +210,138 @@ def test_public_inventory_enriches_posts_and_pages_with_separate_bounded_budgets
     ]
     assert facts[BDO_URL].dimensions["acf_section_headings_json"] == ""
     assert facts[UNSUPPORTED_URL].dimensions["section_headings_json"] == ""
+
+
+def _configure_wordpress_inventory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+
+
+@pytest.mark.parametrize("status_code", [401, 403, 429, 500])
+def test_required_wordpress_rest_failures_never_become_successful_zero_inventory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    status_code: int,
+) -> None:
+    _configure_wordpress_inventory(monkeypatch, tmp_path)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/wp-json/wp/v2/posts":
+            return httpx.Response(status_code)
+        return httpx.Response(200, json=[])
+
+    result = refresh_wordpress_content_inventory(
+        "wordpress_ekologus",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.failed
+    assert result.external_call_attempted is True
+    assert result.vendor_data_collected is False
+    assert result.metric_summary == {}
+    assert result.metric_facts == []
+    assert str(status_code) in result.errors[0]
+
+
+def test_absent_wordpress_content_type_endpoint_is_the_only_rest_zero_absence(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _configure_wordpress_inventory(monkeypatch, tmp_path)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/wp-json/wp/v2/uslugi":
+            return httpx.Response(404)
+        if request.url.path.startswith("/wp-json/wp/v2/"):
+            return httpx.Response(200, json=[])
+        if request.url.path == "/wp-sitemap.xml":
+            return _xml_response("<urlset></urlset>")
+        return httpx.Response(404)
+
+    result = refresh_wordpress_content_inventory(
+        "wordpress_ekologus",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.vendor_data_collected is True
+    assert result.metric_summary["content_object_count"] == 0
+    assert result.metric_summary["inventory_coverage_status"] == "complete"
+
+
+@pytest.mark.parametrize(
+    ("headers", "body"),
+    [
+        ({"content-type": "application/json"}, "{"),
+        ({"content-type": "text/html"}, "<html>upstream error</html>"),
+    ],
+)
+def test_successful_wordpress_rest_response_requires_valid_json_contract(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    headers: dict[str, str],
+    body: str,
+) -> None:
+    _configure_wordpress_inventory(monkeypatch, tmp_path)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/wp-json/wp/v2/posts":
+            return httpx.Response(200, headers=headers, text=body)
+        return httpx.Response(200, json=[])
+
+    result = refresh_wordpress_content_inventory(
+        "wordpress_ekologus",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.failed
+    assert result.vendor_data_collected is False
+    assert result.errors == [
+        "WordPress wordpress_ekologus content inventory invalid_response_payload."
+    ]
+
+
+def test_failed_child_sitemap_is_retained_as_partial_inventory_coverage(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _configure_wordpress_inventory(monkeypatch, tmp_path)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith("/wp-json/wp/v2/"):
+            return httpx.Response(200, json=[])
+        if request.url.path == "/wp-sitemap.xml":
+            return _xml_response(
+                "<sitemapindex>"
+                "<sitemap><loc>https://www.ekologus.pl/failed.xml</loc></sitemap>"
+                "<sitemap><loc>https://www.ekologus.pl/valid.xml</loc></sitemap>"
+                "</sitemapindex>"
+            )
+        if request.url.path == "/failed.xml":
+            return httpx.Response(500)
+        if request.url.path == "/valid.xml":
+            return _xml_response(
+                "<urlset><url><loc>https://www.ekologus.pl/valid-page/</loc></url></urlset>"
+            )
+        return httpx.Response(404)
+
+    result = refresh_wordpress_content_inventory(
+        "wordpress_ekologus",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.metric_summary["sitemap_url_count"] == 1
+    assert result.metric_summary["sitemap_coverage_status"] == "partial"
+    assert result.metric_summary["inventory_coverage_status"] == "partial"
+    assert result.metric_summary["aggregate_data_completeness"] == "partial_possible"

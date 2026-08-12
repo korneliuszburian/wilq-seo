@@ -17,6 +17,10 @@ from apps.api.wilq_api.routers.content_workflow_http import (
 )
 from wilq.content.drafts.package import ContentDraftPackage, ContentDraftSection
 from wilq.content.measurement.deployment import ContentPublicDeployment
+from wilq.content.measurement.read_contracts import (
+    ContentMeasurementReadResponse,
+    build_content_measurement_read,
+)
 from wilq.content.planning.dynamic_input import (
     build_content_planning_input,
     content_planning_inventory_digest,
@@ -54,7 +58,6 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionSection,
     content_draft_package_digest,
 )
-from wilq.content.measurement.read_contracts import ContentMeasurementReadResponse
 from wilq.content.workflow.pipeline_steps.entry import (
     ContentWorkflowEntryResponse,
     build_content_workflow_entry,
@@ -321,22 +324,32 @@ def content_work_item_draft_revision_review(
 
 
 @router.get(
-    "/api/content/work-items/{work_item_id}/measurement",
+    "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/measurement",
     response_model=ContentMeasurementReadResponse,
 )
 def content_work_item_measurement_read(
     work_item_id: str,
+    revision_id: str,
 ) -> ContentMeasurementReadResponse:
-    from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
-    from wilq.content.measurement.read_contracts import build_content_measurement_read
+    from wilq.content.workflow.store.store_public_deployment import public_deployment
 
-    snapshot = snapshot_for_work_item_or_404(work_item_id)
-    content_url = snapshot.preflight.item.final_canonical_url or (
-        snapshot.preflight.item.source_public_url or ""
+    store = content_workflow_store()
+    revision = next(
+        (
+            candidate
+            for candidate in store.list_draft_revisions(work_item_id)
+            if candidate.revision_id == revision_id
+        ),
+        None,
     )
+    if revision is None:
+        raise HTTPException(status_code=404, detail="Nie znaleziono wskazanej rewizji dokumentu.")
+    deployment = public_deployment(store, work_item_id=work_item_id, revision_id=revision_id)
     return build_content_measurement_read(
         work_item_id=work_item_id,
-        content_url=content_url,
+        revision_id=revision_id,
+        revision_digest=revision.content_digest,
+        deployment=deployment,
     )
 
 

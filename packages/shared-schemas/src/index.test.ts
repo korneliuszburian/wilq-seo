@@ -12,6 +12,7 @@ import {
   ContentWorkItemLearningProposalRequestSchema,
   ContentWorkItemLearningProposalResponseSchema,
   ContentWorkItemMeasurementWindowResponseSchema,
+  ContentMeasurementReadResponseSchema,
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemSalesBriefResponseSchema,
   ContentWorkItemSnapshotAuditRequestSchema,
@@ -32,12 +33,14 @@ import {
   ContentServiceProfileCoverageGapSchema,
   ContentWorkItemQualityReviewRequestSchema,
   ContentQualityFindingSchema,
+  ContentQualityFindingCodeSchema,
   ContentWorkItemSchema,
   ContentClaimLedgerSchema,
   ContentClaimReferenceSchema,
   ContentDraftPackageSchema,
   ContentDraftRevisionProposalMetadataSchema,
   ContentDraftRevisionSchema,
+  ContentDraftRevisionPageAssetsSchema,
   ContentDraftRevisionConflictSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
   ContentNewPagePlanningProposalWorkspaceSchema,
@@ -55,6 +58,7 @@ import {
   ContentDraftRevisionWorkspaceSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
+  ContentPlanningPageAssetsSchema,
   ContentRevisionRepairProposalRequestSchema,
   ContentKnowledgeCardSchema,
   ContentTargetDiscoverySchema,
@@ -2591,6 +2595,41 @@ describe("ContentTargetMappingPreviewSchema", () => {
 });
 
 describe("ContentQualityFindingSchema", () => {
+  it("keeps the browser enum exhaustive with the Python quality contract", () => {
+    expect(ContentQualityFindingCodeSchema.options).toEqual([
+      "missing_draft_package",
+      "draft_package_mismatch",
+      "draft_package_marked_publish_ready",
+      "missing_structured_output",
+      "section_missing_evidence",
+      "unknown_evidence_reference",
+      "missing_claim_ledger",
+      "claim_ledger_blocks_quality",
+      "unsupported_claim_used",
+      "forbidden_claim_used",
+      "claim_missing_required_evidence",
+      "required_claim_missing",
+      "missing_forbidden_claim_acknowledgement",
+      "duplicate_risk_not_clear",
+      "missing_measurement_window",
+      "measurement_window_pending_publication",
+      "sales_brief_signal_review_required",
+      "sales_brief_signal_thin",
+      "thin_section",
+      "wall_of_text",
+      "long_sentence",
+      "heading_answer_mismatch",
+      "working_note",
+      "duplicate_paragraph",
+      "weak_cta",
+      "missing_service_fit",
+      "missing_search_intent",
+      "missing_buyer_problem",
+      "missing_internal_links",
+      "non_polish_language"
+    ]);
+  });
+
   it("accepts backend-owned quality review signal and claim finding codes", () => {
     for (const code of [
       "required_claim_missing",
@@ -2599,6 +2638,7 @@ describe("ContentQualityFindingSchema", () => {
       "thin_section",
       "wall_of_text",
       "long_sentence",
+      "heading_answer_mismatch",
       "working_note",
       "duplicate_paragraph"
     ]) {
@@ -2614,6 +2654,96 @@ describe("ContentQualityFindingSchema", () => {
         }).success
       ).toBe(true);
     }
+  });
+});
+
+describe("ContentMeasurementReadResponseSchema", () => {
+  it("keeps exact deployment, comparison periods, reasons, and evidence connectors", () => {
+    const parsed = ContentMeasurementReadResponseSchema.parse({
+      status: "available",
+      reason: "Dwa okresy są porównywalne.",
+      safe_next_step: "Przeczytaj evidence.",
+      work_item_id: "content_work_item_bdo",
+      revision_id: "revision_bdo",
+      revision_digest: "a".repeat(64),
+      deployment_id: "deployment_bdo",
+      content_url: "https://www.ekologus.pl/bdo/",
+      publication_evidence_id: "ev_publication",
+      publication_source_connector: "wordpress_ekologus",
+      rows: [{
+        source_connector: "google_search_console",
+        status: "available",
+        reason: "Kompletna lineage dwóch okresów.",
+        baseline_period: "2026-08-01/2026-08-07",
+        observation_period: "2026-08-08/2026-08-14",
+        metric_names: ["clicks", "impressions"],
+        baseline_values: { clicks: 2, impressions: 92 },
+        observation_values: { clicks: 3, impressions: 113 },
+        evidence_ids: ["ev_baseline", "ev_observation"]
+      }, {
+        source_connector: "google_analytics_4",
+        status: "not_available",
+        reason: "Brakuje drugiego okresu."
+      }],
+      fact_count: 4,
+      source_connectors: ["google_search_console"]
+    });
+
+    expect(parsed.rows[0].baseline_period).toBe("2026-08-01/2026-08-07");
+    expect(parsed.rows[0].reason).toContain("lineage");
+    expect(parsed.source_connectors).toEqual(["google_search_console"]);
+  });
+
+  it("accepts a typed missing-deployment state and rejects an empty URL claim", () => {
+    expect(ContentMeasurementReadResponseSchema.safeParse({
+      status: "blocked",
+      reason: "Brakuje deployment.",
+      safe_next_step: "Potwierdź deployment.",
+      work_item_id: "content_work_item_bdo",
+      revision_id: "revision_bdo",
+      revision_digest: "a".repeat(64)
+    }).success).toBe(true);
+    expect(ContentMeasurementReadResponseSchema.safeParse({
+      status: "blocked",
+      reason: "Brakuje deployment.",
+      safe_next_step: "Potwierdź deployment.",
+      work_item_id: "content_work_item_bdo",
+      revision_id: "revision_bdo",
+      revision_digest: "a".repeat(64),
+      content_url: ""
+    }).success).toBe(false);
+  });
+});
+
+describe("content byline browser contracts", () => {
+  it("accepts nullable editor-owned bylines and rejects links or blanks", () => {
+    const revisionAssets = {
+      wordpress_title: "BDO dla firm",
+      meta_title: "BDO dla firm — Ekologus",
+      meta_description: "Opis strony.",
+      h1: "BDO dla firm",
+      lead: "Sprawdź obowiązki.",
+      byline: "Ekspert Ekologus"
+    };
+    expect(ContentDraftRevisionPageAssetsSchema.parse(revisionAssets).byline).toBe(
+      "Ekspert Ekologus"
+    );
+    expect(ContentDraftRevisionPageAssetsSchema.safeParse({
+      ...revisionAssets,
+      byline: null
+    }).success).toBe(true);
+    expect(ContentDraftRevisionPageAssetsSchema.safeParse({
+      ...revisionAssets,
+      byline: "[Ekspert](https://example.com)"
+    }).success).toBe(false);
+    expect(ContentPlanningPageAssetsSchema.safeParse({
+      title: "BDO",
+      h1: "BDO",
+      lead: "Lead",
+      meta_title: "Meta",
+      meta_description: "Opis",
+      byline: "   "
+    }).success).toBe(false);
   });
 });
 

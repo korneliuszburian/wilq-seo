@@ -14,6 +14,7 @@ from wilq.connectors.wordpress.inventory import (
     WORDPRESS_CONTENT_PER_PAGE,
     WORDPRESS_CONTENT_TYPES,
     WORDPRESS_READ_FIELDS,
+    WordPressInventoryPayloadError,
     _HtmlMetadataParser,
     acf_inventory,
     content_inventory,
@@ -535,6 +536,8 @@ def refresh_wordpress_content_inventory(
             return _http_failure_result(connector_id, exc)
         except httpx.HTTPError as exc:
             return _transport_failure_result(connector_id, exc)
+        except WordPressInventoryPayloadError:
+            return _payload_failure_result(connector_id)
     finally:
         if owns_client:
             client.close()
@@ -1465,6 +1468,16 @@ def _transport_failure_result(connector_id: str, exc: httpx.HTTPError) -> Vendor
         summary=f"WordPress content inventory failed: {type(exc).__name__}.",
         external_call_attempted=True,
         errors=[f"WordPress {connector_id} content inventory {type(exc).__name__}."],
+    )
+
+
+def _payload_failure_result(connector_id: str) -> VendorReadResult:
+    return VendorReadResult(
+        status=ConnectorRefreshStatus.failed,
+        summary="WordPress content inventory failed schema validation.",
+        external_call_attempted=True,
+        vendor_data_collected=False,
+        errors=[f"WordPress {connector_id} content inventory invalid_response_payload."],
     )
 
 

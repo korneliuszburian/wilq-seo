@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import get_args
 
 import pytest
 
@@ -19,6 +21,7 @@ from wilq.actions.service_profile import (
 )
 from wilq.briefing.content_diagnostics import build_content_diagnostics, build_content_preflight
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
+from wilq.content.quality.review import ContentQualityFindingCode
 from wilq.schemas import (
     ActionPreviewCardViewModel,
     ActionRisk,
@@ -31,6 +34,19 @@ from wilq.schemas import (
 )
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
+
+
+def test_quality_finding_codes_match_the_shared_browser_enum_exhaustively() -> None:
+    source = Path("packages/shared-schemas/src/contentWorkflow.ts").read_text()
+    match = re.search(
+        r"export const ContentQualityFindingCodeSchema = z\.enum\(\[(.*?)\]\);",
+        source,
+        re.DOTALL,
+    )
+
+    assert match is not None
+    browser_codes = re.findall(r'"([a-z0-9_]+)"', match.group(1))
+    assert browser_codes == list(get_args(ContentQualityFindingCode))
 
 
 def test_content_strategist_context_pack_preserves_reviewed_draft_preview(

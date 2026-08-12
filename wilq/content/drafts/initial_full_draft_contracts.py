@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 import re
-from typing import Literal
+from typing import Literal, get_args
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.planning.dynamic_input import ContentPlanningInputBlockerCode
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionPageAssets,
@@ -16,21 +25,11 @@ from wilq.content.workflow.documents.revisions import (
 
 ContentInitialDraftStatus = Literal["generating", "created", "blocked", "failed", "conflict"]
 ContentInitialDraftBlockerCode = Literal[
+    ContentPlanningInputBlockerCode,
     "planning_not_ready",
     "draft_not_started",
     "planning_not_generated",
     "stale_planning_input",
-    "unknown_service_card",
-    "service_selection_not_confirmed",
-    "service_card_not_approved",
-    "missing_approved_service_fact",
-    "service_context_mismatch",
-    "missing_planning_foundation",
-    "missing_wordpress_section_inventory",
-    "missing_wordpress_full_inventory",
-    "wordpress_material_review_required",
-    "stale_planning_sources",
-    "blocked_planning_sources",
     "proposal_mismatch",
     "revision_already_exists",
     "missing_generation_contract",
@@ -50,6 +49,23 @@ ContentInitialDraftBlockerCode = Literal[
     "initial_draft_queue_full",
     "stale_initial_draft_context",
 ]
+CONTENT_INITIAL_DRAFT_BLOCKER_CODES = frozenset(
+    str(code) for code in get_args(ContentInitialDraftBlockerCode)
+)
+_CONTENT_INITIAL_DRAFT_BLOCKER_CODE_ADAPTER: TypeAdapter[
+    ContentInitialDraftBlockerCode
+] = TypeAdapter(ContentInitialDraftBlockerCode)
+
+
+def parse_content_initial_draft_blocker_code(
+    value: str,
+) -> ContentInitialDraftBlockerCode | None:
+    """Validate persisted blocker identity against the public contract."""
+
+    try:
+        return _CONTENT_INITIAL_DRAFT_BLOCKER_CODE_ADAPTER.validate_python(value)
+    except ValidationError:
+        return None
 
 
 class ContentInitialDraftRequest(BaseModel):
@@ -206,6 +222,7 @@ class ContentInitialDraftResponse(BaseModel):
 
 
 __all__ = [
+    "CONTENT_INITIAL_DRAFT_BLOCKER_CODES",
     "ContentInitialDraftBlocker",
     "ContentInitialDraftBlockerCode",
     "ContentInitialDraftCtaOutput",
@@ -215,4 +232,5 @@ __all__ = [
     "ContentInitialDraftRequest",
     "ContentInitialDraftResponse",
     "ContentInitialDraftSectionOutput",
+    "parse_content_initial_draft_blocker_code",
 ]

@@ -12,6 +12,7 @@ from wilq.connectors.vendor import VendorReadResult
 from wilq.schemas import (
     ConnectorRefreshMode,
     ConnectorRefreshRequest,
+    ConnectorRefreshRun,
     ConnectorRefreshStatus,
     ConnectorStatusValue,
 )
@@ -104,3 +105,62 @@ def test_parallel_queue_reuses_one_run_and_only_one_worker_claims_it(
 
     assert vendor_call_count == 1
     assert len(local_state_store().list_connector_refresh_runs(connector_id="google_ads")) == 1
+
+
+def test_async_refresh_terminalizes_unexpected_vendor_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    saved = []
+    queued_run = ConnectorRefreshRun(
+        id="refresh_wordpress_exception",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.queued,
+        summary="queued",
+    )
+
+    class FakeLocalState:
+        def save_connector_refresh_run(self, run):
+            saved.append(run)
+            return run
+
+    class FakeMetricStore:
+        def save_connector_refresh_metrics(self, *_args, **_kwargs) -> None:
+            return None
+
+    monkeypatch.setattr(refresh_module, "local_state_store", lambda: FakeLocalState())
+    monkeypatch.setattr(refresh_module, "get_connector_refresh_run", lambda _run_id: queued_run)
+    monkeypatch.setattr(
+        refresh_module,
+        "claim_queued_connector_refresh_run",
+        lambda _store, run: saved.append(run) or run,
+    )
+    monkeypatch.setattr(refresh_module, "metric_store", lambda: FakeMetricStore())
+    monkeypatch.setattr(
+        refresh_module,
+        "get_connector_status",
+        lambda _connector_id: SimpleNamespace(
+            status=ConnectorStatusValue.configured,
+            configured=True,
+            missing_credentials=[],
+        ),
+    )
+
+    def explode(**_kwargs: object) -> VendorReadResult:
+        raise RuntimeError("credential-value-must-not-leak")
+
+    monkeypatch.setattr(refresh_module, "_refresh_result", explode)
+
+    completed = refresh_module.complete_queued_connector_refresh(
+        queued_run.id,
+        queued_run.connector_id,
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+    )
+
+    assert completed is not None
+    assert completed.status == ConnectorRefreshStatus.failed
+    assert completed.completed_at is not None
+    assert completed.vendor_data_collected is False
+    assert completed.errors == ["connector_refresh_failed:RuntimeError"]
+    assert "credential-value" not in completed.model_dump_json()
+    assert saved[-1].status == ConnectorRefreshStatus.failed

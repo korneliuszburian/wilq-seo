@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from html.parser import HTMLParser
-from typing import Any, cast
+from typing import Any, Literal, cast
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -45,6 +45,19 @@ class _SitemapFetchResult:
     source_count: int
     returned_count: int
     truncated: bool
+    coverage_status: Literal["complete", "partial", "unavailable", "not_applicable"]
+
+
+@dataclass(frozen=True)
+class _SitemapParseResult:
+    objects: list[dict[str, str]]
+    source_count: int
+    truncated: bool
+    partial: bool
+
+
+class WordPressInventoryPayloadError(ValueError):
+    """A successful WordPress response did not satisfy the read contract."""
 
 
 def fetch_content_inventory(
@@ -83,6 +96,10 @@ def fetch_content_inventory(
         for summary in summaries.values()
         if summary["latest_modified_gmt"]
     ]
+    inventory_coverage_status = _inventory_coverage_status(
+        sitemap_result,
+        public_sitemap_result,
+    )
     metric_summary: dict[str, float | int | str] = {
         "api": "wordpress_rest_and_sitemap_content_inventory",
         "connector_id": connector_id,
@@ -95,11 +112,17 @@ def fetch_content_inventory(
         "sitemap_url_returned_count": sitemap_result.returned_count,
         "sitemap_url_truncated": sitemap_result.truncated,
         "sitemap_url_limit": WORDPRESS_SITEMAP_URL_LIMIT,
+        "sitemap_coverage_status": sitemap_result.coverage_status,
         "public_sitemap_url_count": len(public_sitemap_objects),
         "public_sitemap_url_source_count": public_sitemap_result.source_count,
         "public_sitemap_url_returned_count": public_sitemap_result.returned_count,
         "public_sitemap_url_truncated": public_sitemap_result.truncated,
         "public_sitemap_url_limit": WORDPRESS_SITEMAP_URL_LIMIT,
+        "public_sitemap_coverage_status": public_sitemap_result.coverage_status,
+        "inventory_coverage_status": inventory_coverage_status,
+        "aggregate_data_completeness": (
+            "complete" if inventory_coverage_status == "complete" else "partial_possible"
+        ),
         "latest_modified_gmt": max(latest_values) if latest_values else "",
         "latest_post_modified_gmt": str(summaries["posts"]["latest_modified_gmt"]),
         "latest_page_modified_gmt": str(summaries["pages"]["latest_modified_gmt"]),
@@ -266,7 +289,13 @@ def _fetch_public_sitemap_objects(
     priority_urls: list[str],
 ) -> _SitemapFetchResult:
     if not public_url or _normalize_base_url(public_url) == _normalize_base_url(base_url):
-        return _SitemapFetchResult(objects=[], source_count=0, returned_count=0, truncated=False)
+        return _SitemapFetchResult(
+            objects=[],
+            source_count=0,
+            returned_count=0,
+            truncated=False,
+            coverage_status="not_applicable",
+        )
     base_hosts = {_host(base_url)}
     sitemap_result = _fetch_sitemap_objects_with_coverage(
         client, public_url, enrich_metadata=False
@@ -315,6 +344,7 @@ def _fetch_public_sitemap_objects(
         ),
         returned_count=len(objects),
         truncated=sitemap_result.truncated,
+        coverage_status=sitemap_result.coverage_status,
     )
 
 
@@ -377,12 +407,10 @@ def _fetch_public_rest_objects(
                     timeout=WORDPRESS_METADATA_TIMEOUT_SECONDS,
                 )
                 response.raise_for_status()
-            except httpx.HTTPError:
+                payload = _json_object_list(response)
+            except (httpx.HTTPError, WordPressInventoryPayloadError):
                 continue
-            payload = response.json()
-            for item in payload if isinstance(payload, list) else []:
-                if not isinstance(item, dict):
-                    continue
+            for item in payload:
                 content_url = item.get("link")
                 if (
                     not isinstance(content_url, str)
@@ -425,6 +453,7 @@ def _fetch_sitemap_objects_with_coverage(
     *,
     enrich_metadata: bool = True,
 ) -> _SitemapFetchResult:
+    suppressed_failure = False
     for sitemap_path in WORDPRESS_SITEMAP_PATHS:
         try:
             response = client.get(urljoin(base_url, sitemap_path))
@@ -432,22 +461,33 @@ def _fetch_sitemap_objects_with_coverage(
                 continue
             response.raise_for_status()
         except httpx.HTTPError:
+            suppressed_failure = True
             continue
-        sitemap_objects = _sitemap_objects_from_xml(client, response.text)
-        if sitemap_objects:
-            limited = sitemap_objects[:WORDPRESS_SITEMAP_URL_LIMIT]
-            objects = (
-                _enrich_sitemap_objects_with_page_metadata(client, limited)
-                if enrich_metadata
-                else limited
-            )
-            return _SitemapFetchResult(
-                objects=objects,
-                source_count=len(sitemap_objects),
-                returned_count=len(objects),
-                truncated=len(sitemap_objects) > len(objects),
-            )
-    return _SitemapFetchResult(objects=[], source_count=0, returned_count=0, truncated=False)
+        try:
+            parsed = _sitemap_objects_from_xml(client, response.text)
+        except ElementTree.ParseError:
+            suppressed_failure = True
+            continue
+        objects = (
+            _enrich_sitemap_objects_with_page_metadata(client, parsed.objects)
+            if enrich_metadata
+            else parsed.objects
+        )
+        partial = suppressed_failure or parsed.partial
+        return _SitemapFetchResult(
+            objects=objects,
+            source_count=parsed.source_count,
+            returned_count=len(objects),
+            truncated=parsed.truncated,
+            coverage_status="partial" if partial else "complete",
+        )
+    return _SitemapFetchResult(
+        objects=[],
+        source_count=0,
+        returned_count=0,
+        truncated=False,
+        coverage_status="unavailable",
+    )
 
 
 def _enrich_sitemap_objects_with_page_metadata(
@@ -529,37 +569,63 @@ def _fetch_public_page_metadata(client: httpx.Client, url: str) -> dict[str, str
     }
 
 
-def _sitemap_objects_from_xml(client: httpx.Client, xml_text: str) -> list[dict[str, str]]:
+def _sitemap_objects_from_xml(
+    client: httpx.Client,
+    xml_text: str,
+) -> _SitemapParseResult:
     entries = _parse_sitemap_xml(xml_text)
     child_sitemaps = [entry for entry in entries if entry["kind"] == "sitemap"]
     if not child_sitemaps:
-        return [sitemap_url_object(entry) for entry in entries if entry["kind"] == "url"][
-            :WORDPRESS_SITEMAP_URL_LIMIT
-        ]
+        urls = [sitemap_url_object(entry) for entry in entries if entry["kind"] == "url"]
+        return _SitemapParseResult(
+            objects=urls[:WORDPRESS_SITEMAP_URL_LIMIT],
+            source_count=len(urls),
+            truncated=len(urls) > WORDPRESS_SITEMAP_URL_LIMIT,
+            partial=False,
+        )
     objects: list[dict[str, str]] = []
+    partial = len(child_sitemaps) > WORDPRESS_SITEMAP_CHILD_LIMIT
+    source_count = 0
     for sitemap in child_sitemaps[:WORDPRESS_SITEMAP_CHILD_LIMIT]:
         metadata_group = sitemap_group_for_url(sitemap["loc"])
         try:
             response = client.get(sitemap["loc"])
             response.raise_for_status()
         except httpx.HTTPError:
+            partial = True
             continue
-        child_entries = _parse_sitemap_xml(response.text)
-        objects.extend(
+        try:
+            child_entries = _parse_sitemap_xml(response.text)
+        except ElementTree.ParseError:
+            partial = True
+            continue
+        child_objects = [
             sitemap_url_object(entry, metadata_group=metadata_group)
             for entry in child_entries
             if entry["kind"] == "url"
-        )
-        if len(objects) >= WORDPRESS_SITEMAP_URL_LIMIT:
-            return objects[:WORDPRESS_SITEMAP_URL_LIMIT]
-    return objects
+        ]
+        source_count += len(child_objects)
+        remaining = WORDPRESS_SITEMAP_URL_LIMIT - len(objects)
+        objects.extend(child_objects[:remaining])
+        if len(child_objects) > remaining:
+            return _SitemapParseResult(
+                objects=objects,
+                source_count=source_count,
+                truncated=True,
+                partial=partial,
+            )
+    return _SitemapParseResult(
+        objects=objects,
+        source_count=source_count,
+        truncated=len(child_sitemaps) > WORDPRESS_SITEMAP_CHILD_LIMIT,
+        partial=partial,
+    )
 
 
 def _parse_sitemap_xml(xml_text: str) -> list[dict[str, str]]:
-    try:
-        root = ElementTree.fromstring(xml_text)
-    except ElementTree.ParseError:
-        return []
+    root = ElementTree.fromstring(xml_text)
+    if _local_name(root.tag) not in {"urlset", "sitemapindex"}:
+        raise ElementTree.ParseError("Unexpected sitemap root element.")
     entries: list[dict[str, str]] = []
     for element in root:
         tag = _local_name(element.tag)
@@ -610,15 +676,14 @@ def _fetch_content_type_summary(
         auth=auth,
         params=cast(httpx.QueryParams, {**params, "page": 1}),
     )
-    try:
-        response.raise_for_status()
-    except httpx.HTTPError:
+    if response.status_code == 404:
         return {
             "total": 0,
             "latest_modified_gmt": "",
             "objects": [],
         }
-    payload = response.json()
+    response.raise_for_status()
+    payload = _json_object_list(response)
     objects = _content_objects(payload)
     total_pages = _header_int(response.headers.get("X-WP-TotalPages"))
     # WordPress REST is paginated even when the total count is available. Fetch
@@ -630,7 +695,7 @@ def _fetch_content_type_summary(
             params=cast(httpx.QueryParams, {**params, "page": page}),
         )
         page_response.raise_for_status()
-        page_payload = page_response.json()
+        page_payload = _json_object_list(page_response)
         page_objects = _content_objects(page_payload)
         if not page_objects:
             break
@@ -640,6 +705,44 @@ def _fetch_content_type_summary(
         "latest_modified_gmt": _latest_modified(objects),
         "objects": objects,
     }
+
+
+def _json_object_list(response: httpx.Response) -> list[dict[str, Any]]:
+    content_type = response.headers.get("content-type", "").casefold()
+    if "json" not in content_type:
+        raise WordPressInventoryPayloadError(
+            "WordPress inventory response has a non-JSON content type."
+        )
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise WordPressInventoryPayloadError(
+            "WordPress inventory response contains malformed JSON."
+        ) from exc
+    if not isinstance(payload, list) or any(not isinstance(item, dict) for item in payload):
+        raise WordPressInventoryPayloadError(
+            "WordPress inventory response must be a list of objects."
+        )
+    return payload
+
+
+def _inventory_coverage_status(
+    sitemap: _SitemapFetchResult,
+    public_sitemap: _SitemapFetchResult,
+) -> Literal["complete", "partial", "unavailable"]:
+    relevant = [
+        result
+        for result in (sitemap, public_sitemap)
+        if result.coverage_status != "not_applicable"
+    ]
+    if not relevant or all(result.coverage_status == "unavailable" for result in relevant):
+        return "unavailable"
+    if any(
+        result.coverage_status in {"partial", "unavailable"} or result.truncated
+        for result in relevant
+    ):
+        return "partial"
+    return "complete"
 
 
 def _header_int(value: str | None) -> int:

@@ -1,8 +1,11 @@
 from types import SimpleNamespace
+from typing import get_args
 
 import pytest
+from fastapi import FastAPI
 from pydantic import BaseModel, ValidationError
 
+from apps.api.wilq_api.routers import content_initial_draft
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.drafts import initial_draft_assurance_repair, initial_full_draft
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
@@ -11,6 +14,7 @@ from wilq.content.drafts.initial_draft_validation import document_scope_errors
 from wilq.content.drafts.initial_full_draft import _planning_input_blocker
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
+    ContentInitialDraftBlockerCode,
     ContentInitialDraftCtaOutput,
     ContentInitialDraftFaqOutput,
     ContentInitialDraftModelOutput,
@@ -32,6 +36,7 @@ from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
+    ContentPlanningInputBlockerCode,
     ContentPlanningInputBuildResult,
 )
 from wilq.content.regulatory.policy import (
@@ -379,20 +384,113 @@ def _regulatory_repair_fixture() -> tuple[
 
 def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts() -> None:
     proposal, planning_input, output, fact, related_fact = _regulatory_repair_fixture()
+    model_calls = 0
 
     class DuplicatePatchClient:
         def run_structured_turn(self, _request):
+            nonlocal model_calls
+            model_calls += 1
             return CodexAppServerTurnResult(
                 status="completed",
                 output_text=(
                     '{"sections":['
-                    '{"section_id":"section_keep","mode":"append",'
+                    '{"section_id":"section_keep","mode":"replace",'
                     '"body_markdown":"Pierwsza wersja."},'
-                    '{"section_id":"section_keep","mode":"append",'
+                    '{"section_id":"section_keep","mode":"replace",'
                     '"body_markdown":"Druga wersja."}'
                     "]}"
                 ),
             )
+
+    repaired = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        blocker=ContentInitialDraftBlocker(
+            code="draft_assurance_failed",
+            label="Brakuje wymaganego pojęcia.",
+            reason="Wymaganie nie występuje w dokumencie.",
+            next_step="Uzupełnij dokument.",
+            source_codes=["requirement:bdo_exemptions"],
+        ),
+        repair_reasons={"requirement:bdo_exemptions": "overbroad_claim"},
+        client=DuplicatePatchClient(),
+    )
+
+    assert repaired is not None
+    assert model_calls == 1
+    repaired_output, trace = repaired
+    assert trace.status == "completed"
+    assert fact.extracted_fact in repaired_output.sections[0].body_markdown
+    assert related_fact.extracted_fact in repaired_output.sections[0].body_markdown
+
+
+@pytest.mark.parametrize(
+    "invalid_payload",
+    [
+        (
+            '{"sections":[{"section_id":"section_keep","mode":"replace",'
+            '"body_markdown":"[Nieufny link](https://example.com)"}]}'
+        ),
+        (
+            '{"sections":[{"section_id":"section_keep","mode":"replace",'
+            '"body_markdown":"Treść warunkowa."}],"publish_ready":true}'
+        ),
+    ],
+)
+def test_regulatory_repair_rejects_invalid_model_patch_contract(
+    invalid_payload: str,
+) -> None:
+    proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
+    output = output.model_copy(
+        update={
+            "sections": [
+                output.sections[0].model_copy(
+                    update={"body_markdown": "Każda firma zawsze podlega BDO."}
+                )
+            ]
+        }
+    )
+
+    class InvalidPatchClient:
+        def run_structured_turn(self, _request):
+            return CodexAppServerTurnResult(
+                status="completed",
+                output_text=invalid_payload,
+            )
+
+    repaired = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        blocker=ContentInitialDraftBlocker(
+            code="draft_assurance_failed",
+            label="Twierdzenie wymaga poprawy.",
+            reason="Krytyk wykrył nadmierny zakres.",
+            next_step="Popraw dokument.",
+            source_codes=["requirement:bdo_exemptions"],
+        ),
+        repair_reasons={"requirement:bdo_exemptions": "overbroad_claim"},
+        client=InvalidPatchClient(),
+    )
+
+    assert repaired is not None
+    assert "Nieufny link" not in repaired[0].sections[0].body_markdown
+    assert "Każda firma zawsze podlega BDO." not in repaired[0].sections[0].body_markdown
+    assert fact.extracted_fact in repaired[0].sections[0].body_markdown
+    ContentInitialDraftModelOutput.model_validate(repaired[0].model_dump(mode="json"))
+
+
+def test_regulatory_fallback_revalidates_the_complete_patched_document() -> None:
+    proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
+    invalid_fact = fact.model_copy(update={"extracted_fact": "[Nieufny link](https://example.com)"})
+    planning_input = planning_input.model_copy(
+        update={
+            "regulatory_coverage": planning_input.regulatory_coverage.model_copy(
+                update={"source_facts": [invalid_fact]}
+            )
+        }
+    )
 
     repaired = repair_regulatory_assertions(
         planning_input=planning_input,
@@ -405,14 +503,10 @@ def test_regulatory_repair_falls_back_from_a_duplicate_patch_to_approved_facts()
             next_step="Uzupełnij dokument.",
             source_codes=["requirement:bdo_exemptions"],
         ),
-        client=DuplicatePatchClient(),
+        client=SimpleNamespace(),
     )
 
-    assert repaired is not None
-    repaired_output, trace = repaired
-    assert trace.status == "completed"
-    assert fact.extracted_fact in repaired_output.sections[0].body_markdown
-    assert related_fact.extracted_fact in repaired_output.sections[0].body_markdown
+    assert repaired is None
 
 
 def test_regulatory_scope_repair_uses_approved_facts_without_a_second_model_turn() -> None:
@@ -779,6 +873,12 @@ def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None
     ]
 
 
+def test_initial_draft_blocker_contract_contains_every_planning_blocker_code() -> None:
+    assert set(get_args(ContentPlanningInputBlockerCode)) <= set(
+        get_args(ContentInitialDraftBlockerCode)
+    )
+
+
 def test_initial_draft_preserves_source_material_review_blocker() -> None:
     blocker = _planning_input_blocker(
         [
@@ -852,4 +952,77 @@ def test_initial_draft_reuses_exact_service_binding_from_generated_plan(
         "service_card_id": proposal.service_card_id,
         "input_snapshot": selected_snapshot,
         "input_service_card_id": proposal.service_card_id,
+    }
+
+
+def test_initial_draft_route_returns_emitted_regulatory_planning_blocker(
+    monkeypatch,
+) -> None:
+    proposal = _proposal_with_review_required_inventory()
+    snapshot = SimpleNamespace(
+        planning_workspace=SimpleNamespace(
+            section_map_current=True,
+            proposal=proposal,
+        ),
+        revision_workspace=SimpleNamespace(latest_revision=None, context_current=True),
+        preflight=SimpleNamespace(item=SimpleNamespace(id=proposal.work_item_id)),
+    )
+    selected_snapshot = object()
+    monkeypatch.setattr(
+        initial_full_draft,
+        "with_explicit_content_service_selection",
+        lambda _snapshot, _service_card_id: selected_snapshot,
+    )
+    monkeypatch.setattr(
+        initial_full_draft,
+        "build_content_planning_input",
+        lambda _snapshot, *, service_card_id: ContentPlanningInputBuildResult(
+            blockers=[
+                ContentPlanningInputBlocker(
+                    code="missing_regulatory_source_coverage",
+                    label="Brakuje pokrycia źródłem urzędowym",
+                    reason="Profil regulacyjny nie ma zatwierdzonego źródła.",
+                    next_step="Zatwierdź dokładne źródło urzędowe.",
+                )
+            ]
+        ),
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_codex_app_server_client",
+        lambda: SimpleNamespace(),
+    )
+    monkeypatch.setattr(content_initial_draft, "content_workflow_store", lambda: object())
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: object())
+    app = FastAPI()
+    content_initial_draft.register_content_initial_draft_route(
+        app,
+        snapshot_loader=lambda _work_item_id: snapshot,
+    )
+
+    route = next(
+        route
+        for route in app.routes
+        if getattr(route, "path", "") == "/api/content/work-items/{work_item_id}/initial-draft"
+        and "POST" in getattr(route, "methods", set())
+    )
+    result = route.endpoint(
+        proposal.work_item_id,
+        ContentInitialDraftRequest(
+            expected_proposal_id=proposal.proposal_id,
+            expected_planning_digest=proposal.planning_digest,
+            expected_planning_input_digest=proposal.planning_input_digest,
+            requested_by="wilku",
+        ),
+    )
+    body = result.model_dump(mode="json")
+
+    assert body["status"] == "blocked"
+    assert body["blockers"][0] == {
+        "code": "missing_regulatory_source_coverage",
+        "label": "Brakuje pokrycia źródłem urzędowym",
+        "reason": "Profil regulacyjny nie ma zatwierdzonego źródła.",
+        "next_step": "Zatwierdź dokładne źródło urzędowe.",
+        "source_codes": ["missing_regulatory_source_coverage"],
+        "retry_after_seconds": None,
     }

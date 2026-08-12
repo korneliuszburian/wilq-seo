@@ -6,6 +6,7 @@ import {
   postContentWorkItemMeasurementWindow,
   type ContentPublicDeploymentReadResponse
 } from "../lib/api";
+import { useContentRevisionMeasurement } from "./contentWorkflowQueries";
 
 export function ContentMeasurementPanel({
   workItemId,
@@ -17,6 +18,11 @@ export function ContentMeasurementPanel({
   state: ContentPublicDeploymentReadResponse;
 }) {
   const queryClient = useQueryClient();
+  const measurement = useContentRevisionMeasurement(
+    workItemId,
+    revisionId,
+    Boolean(state.deployment)
+  );
   const refresh = () => void queryClient.invalidateQueries({
     queryKey: [
       "content-workflow",
@@ -63,6 +69,7 @@ export function ContentMeasurementPanel({
   return (
     <section className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700" data-testid="content-measurement-panel">
       <p className="font-semibold text-ink">Pomiar i wnioski</p>
+      <ExactMeasurementRead measurement={measurement} />
       {!window ? (
         <>
           <p className="mt-2 leading-6">
@@ -131,6 +138,75 @@ export function ContentMeasurementPanel({
       </p>
     </section>
   );
+}
+
+function ExactMeasurementRead({
+  measurement
+}: {
+  measurement: ReturnType<typeof useContentRevisionMeasurement>;
+}) {
+  if (measurement.isPending) {
+    return <p className="mt-2 leading-6">Wczytuję rzeczywiste metryki tej rewizji…</p>;
+  }
+  if (measurement.isError || !measurement.data) {
+    return (
+      <p className="mt-2 leading-6 text-wait">
+        Nie udało się odczytać metryk tej dokładnej rewizji.
+      </p>
+    );
+  }
+  const read = measurement.data;
+  if (read.status !== "available") {
+    return (
+      <section className="mt-3 rounded-lg bg-slate-50 p-3" data-testid="content-measurement-read">
+        <p className="font-semibold text-ink">Rzeczywiste metryki: jeszcze niedostępne</p>
+        <p className="mt-2 leading-6">{read.reason}</p>
+        <p className="mt-1 leading-6 text-slate-600">{read.safe_next_step}</p>
+      </section>
+    );
+  }
+  return (
+    <section className="mt-3 rounded-lg bg-emerald-50 p-3" data-testid="content-measurement-read">
+      <p className="font-semibold text-ink">Rzeczywiste metryki opublikowanej rewizji</p>
+      <p className="mt-1 break-all text-xs text-slate-600">{read.content_url}</p>
+      {read.rows.map((row) => (
+        <div key={row.source_connector} className="mt-3 border-t border-emerald-100 pt-3">
+          <p className="font-semibold text-ink">{connectorLabel(row.source_connector)}</p>
+          {row.status === "available" ? (
+            <>
+              <p className="mt-1 text-xs text-slate-600">
+                {row.baseline_period} → {row.observation_period}
+              </p>
+              <ul className="mt-2 space-y-1">
+                {row.metric_names.map((metric) => (
+                  <li key={metric}>
+                    {measurementMetricLabel(row.source_connector, metric)}: {formatMetricValue(row.baseline_values[metric])} → {formatMetricValue(row.observation_values[metric])}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          <p className="mt-2 text-xs leading-5 text-slate-600">{row.reason}</p>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function measurementMetricLabel(connector: string, metric: string): string {
+  return metricLabel(
+    connector === "google_search_console"
+      ? `gsc_${metric}`
+      : connector === "google_analytics_4"
+        ? `ga4_${metric}`
+        : metric
+  );
+}
+
+function formatMetricValue(value: number | undefined): string {
+  return value == null ? "brak" : new Intl.NumberFormat("pl-PL", {
+    maximumFractionDigits: 2
+  }).format(value);
 }
 
 function MeasurementEvidence({

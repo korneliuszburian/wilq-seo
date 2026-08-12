@@ -88,3 +88,13 @@ def test_new_page_measurement_uses_persisted_deployment_without_a_diagnostics_sn
     assert response.updated_item.measurement_window_id == (
         "measurement_window_deployment_new_page_measurement"
     )
+
+    measurement_read = workflow_router.content_work_item_measurement_read(
+        work_item_id,
+        revision.revision_id,
+    )
+
+    assert measurement_read.status == "not_available"
+    assert measurement_read.revision_id == revision.revision_id
+    assert measurement_read.deployment_id == deployment.deployment_id
+    assert measurement_read.content_url == deployment.public_url

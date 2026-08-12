@@ -186,7 +186,7 @@ def run_connector_refresh(
     refresh_request = request or ConnectorRefreshRequest()
     started_at = utc_now()
     run_id = f"refresh_{connector_id}_{uuid4().hex[:12]}"
-    result = _refresh_result(
+    result = _safe_refresh_result(
         connector_id=connector_id,
         request=refresh_request,
         connector_status=connector.status,
@@ -297,7 +297,7 @@ def complete_queued_connector_refresh(
     claimed_run = claim_queued_connector_refresh_run(local_state_store(), running_run)
     if claimed_run is None:
         return None
-    result = _refresh_result(
+    result = _safe_refresh_result(
         connector_id=connector_id,
         request=request,
         connector_status=connector.status,
@@ -305,6 +305,32 @@ def complete_queued_connector_refresh(
         missing_credentials=connector.missing_credentials,
     )
     return _persist_refresh_result(claimed_run, result)
+
+
+def _safe_refresh_result(
+    *,
+    connector_id: str,
+    request: ConnectorRefreshRequest,
+    connector_status: ConnectorStatusValue,
+    configured: bool,
+    missing_credentials: list[str],
+) -> VendorReadResult:
+    try:
+        return _refresh_result(
+            connector_id=connector_id,
+            request=request,
+            connector_status=connector_status,
+            configured=configured,
+            missing_credentials=missing_credentials,
+        )
+    except Exception as error:
+        return VendorReadResult(
+            status=ConnectorRefreshStatus.failed,
+            summary="Odczyt źródła zakończył się kontrolowanym błędem.",
+            external_call_attempted=request.mode == ConnectorRefreshMode.vendor_read,
+            vendor_data_collected=False,
+            errors=[f"connector_refresh_failed:{type(error).__name__}"],
+        )
 
 
 def _persist_refresh_result(

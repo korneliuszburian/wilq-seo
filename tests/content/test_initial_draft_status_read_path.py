@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -761,3 +762,75 @@ def test_initial_draft_status_exposes_safe_document_gate_details(monkeypatch) ->
     assert body["blockers"][0]["source_codes"] == [
         "regulatory_document_assertion:bdo_kpo:before_transport"
     ]
+
+
+@pytest.mark.parametrize(
+    ("blocker_code", "source_code"),
+    [
+        ("readability_gate_failed", "working_note"),
+        ("readability_repair_failed", "readability_repair_turn_failed"),
+    ],
+)
+def test_initial_draft_status_preserves_persisted_readability_blocker_identity(
+    monkeypatch,
+    blocker_code: str,
+    source_code: str,
+) -> None:
+    app = FastAPI()
+    endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
+    proposal = SimpleNamespace(
+        proposal_id="proposal",
+        planning_input_digest="1" * 64,
+        service_card_id="service",
+        generation_status="codex_generated",
+    )
+    run = SimpleNamespace(
+        hook="content_initial_full_draft",
+        used_endpoints=[endpoint],
+        started_at=datetime(2026, 8, 12, tzinfo=UTC),
+        status="blocked",
+        id="readability-run",
+        error=f"{blocker_code}|{source_code}",
+        proposal_id="proposal",
+        planning_input_digest="1" * 64,
+    )
+
+    class LocalState:
+        def list_codex_runs(self):
+            return [run]
+
+    class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return proposal
+
+    class WorkflowStore:
+        def load_draft_revision_state(self, _work_item_id: str):
+            return SimpleNamespace(latest_revision=None)
+
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_planning_proposal_store",
+        lambda: ProposalStore(),
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_workflow_store",
+        lambda: WorkflowStore(),
+    )
+    content_initial_draft.register_content_initial_draft_route(
+        app,
+        snapshot_loader=lambda _work_item_id: (_ for _ in ()).throw(AssertionError()),
+    )
+
+    route = next(
+        route
+        for route in app.routes
+        if getattr(route, "path", "")
+        == "/api/content/work-items/{work_item_id}/initial-draft"
+        and "GET" in getattr(route, "methods", set())
+    )
+    body = route.endpoint("content_work_item_bdo").model_dump(mode="json")
+
+    assert body["blockers"][0]["code"] == blocker_code
+    assert body["blockers"][0]["source_codes"] == [source_code]

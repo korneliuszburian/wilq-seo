@@ -273,12 +273,24 @@ def _inventory_coverage() -> ContentInventoryCoverage:
     if latest is None:
         return ContentInventoryCoverage()
     summary = latest.metric_summary
+    explicit_status = summary.get("inventory_coverage_status")
     values = _coverage_values(summary)
     source_count, returned_count, public_sitemap_returned_count = values[:3]
     public_sitemap_source_count, public_sitemap_returned = values[3:5]
     public_sitemap_limit, public_sitemap_truncated, limit, truncated = values[5:]
-    if not all(isinstance(value, int) for value in (source_count, returned_count, limit)):
+    if explicit_status not in {"complete", "partial"} or not all(
+        isinstance(value, int) for value in (source_count, returned_count, limit)
+    ):
         return _unknown_inventory_coverage(summary, values)
+    if explicit_status == "partial":
+        return _unknown_inventory_coverage(
+            summary,
+            values,
+            caveat=(
+                "Ostatni odczyt sitemap był częściowy albo niedostępny; "
+                "nie traktuj inventory jako pełnego."
+            ),
+        )
     public_coverage_unknown = (
         public_sitemap_source_count is not None
         and public_sitemap_returned is not None
@@ -309,17 +321,23 @@ def _coverage_values(summary: dict[str, Any]) -> tuple[Any, ...]:
 
 
 def _unknown_inventory_coverage(
-    summary: dict[str, Any], values: tuple[Any, ...]
+    summary: dict[str, Any],
+    values: tuple[Any, ...],
+    *,
+    caveat: str = (
+        "Ostatni lub starszy odczyt nie zapisał jednoznacznego coverage; "
+        "nie traktuj inventory jako pełnego."
+    ),
 ) -> ContentInventoryCoverage:
     public_source, public_returned, public_limit, public_truncated = values[3:7]
     return ContentInventoryCoverage(
         status="unknown",
-        returned_count=int(summary.get("sitemap_url_count", 0) or 0),
+        returned_count=_coverage_int(summary.get("sitemap_url_count")) or 0,
         public_sitemap_source_count=_coverage_int(public_source),
         public_sitemap_returned_count=_coverage_int(public_returned),
         public_sitemap_limit=_coverage_int(public_limit),
         public_sitemap_truncated=public_truncated if isinstance(public_truncated, bool) else None,
-        caveat="Ostatni odczyt nie zapisał liczników coverage; nie traktuj inventory jako pełnego.",
+        caveat=caveat,
     )
 
 

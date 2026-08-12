@@ -7,6 +7,7 @@ import {
   getContentRevisionTargetMapping,
   getContentRevisionTargetDraftPreview,
   getContentRevisionPublicDeployment,
+  getContentWorkItemMeasurement,
   getContentWorkflowEntry,
   getContentDiagnostics,
   getContentInventoryCatalog,
@@ -16,6 +17,7 @@ import {
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
   type ContentPublicDeploymentReadResponse,
+  type ContentMeasurementReadResponse,
   type ContentWorkflowEntryResponse,
   type ContentDiagnosticsResponse,
   type ContentInventoryCatalogResponse,
@@ -29,6 +31,7 @@ export type ContentTargetDiscoveryQuery = UseQueryResult<ContentTargetDiscovery,
 export type ContentTargetMappingPreviewQuery = UseQueryResult<ContentTargetMappingPreview, Error>;
 export type ContentTargetDraftPreviewQuery = UseQueryResult<ContentTargetDraftPreview, Error>;
 export type ContentPublicDeploymentQuery = UseQueryResult<ContentPublicDeploymentReadResponse, Error>;
+export type ContentMeasurementReadQuery = UseQueryResult<ContentMeasurementReadResponse, Error>;
 export type ContentWorkflowEntryQuery = UseQueryResult<ContentWorkflowEntryResponse, Error>;
 export type ContentDiagnosticsQuery = UseQueryResult<ContentDiagnosticsResponse, Error>;
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
@@ -103,6 +106,26 @@ export function useContentRevisionPublicDeployment(
       "public-deployment"
     ],
     queryFn: () => getContentRevisionPublicDeployment(workItemId, revisionId ?? ""),
+    staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
+    enabled: Boolean(enabled && revisionId)
+  });
+}
+
+export function useContentRevisionMeasurement(
+  workItemId: string,
+  revisionId: string | null,
+  enabled: boolean
+): ContentMeasurementReadQuery {
+  return useQuery({
+    queryKey: [
+      "content-workflow",
+      "work-item",
+      workItemId,
+      "draft-revisions",
+      revisionId,
+      "measurement"
+    ],
+    queryFn: () => getContentWorkItemMeasurement(workItemId, revisionId ?? ""),
     staleTime: READ_ONLY_WORKFLOW_STALE_TIME_MS,
     enabled: Boolean(enabled && revisionId)
   });

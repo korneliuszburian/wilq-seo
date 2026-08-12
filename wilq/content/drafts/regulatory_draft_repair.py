@@ -42,6 +42,8 @@ def repair_regulatory_assertions(
     ]
     if blocker.code not in {"document_scope_mismatch", "draft_assurance_failed"} or not missing:
         return None
+    expected_modes = regulatory_section_repair_modes(proposal, missing, repair_reasons or {})
+    fallback_requires_replacement = "replace" in expected_modes.values()
     if blocker.code == "document_scope_mismatch" or force_deterministic_replace:
         return _grounded_repair_fallback(
             planning_input,
@@ -61,19 +63,48 @@ def repair_regulatory_assertions(
             )
         )
     except Exception:
-        return _grounded_repair_fallback(planning_input, proposal, output, missing)
+        return _grounded_repair_fallback(
+            planning_input,
+            proposal,
+            output,
+            missing,
+            replace_semantic_requirements=fallback_requires_replacement,
+        )
     if result.status != "completed" or result.output_text is None:
-        return _grounded_repair_fallback(planning_input, proposal, output, missing)
+        return _grounded_repair_fallback(
+            planning_input,
+            proposal,
+            output,
+            missing,
+            replace_semantic_requirements=fallback_requires_replacement,
+        )
     try:
         patch = _RegulatoryAssertionRepairOutput.model_validate_json(result.output_text)
     except ValueError:
-        return _grounded_repair_fallback(planning_input, proposal, output, missing)
+        return _grounded_repair_fallback(
+            planning_input,
+            proposal,
+            output,
+            missing,
+            replace_semantic_requirements=fallback_requires_replacement,
+        )
     patches = {item.section_id: item for item in patch.sections}
     if len(patches) != len(patch.sections):
-        return _grounded_repair_fallback(planning_input, proposal, output, missing)
-    expected_modes = regulatory_section_repair_modes(proposal, missing, repair_reasons or {})
+        return _grounded_repair_fallback(
+            planning_input,
+            proposal,
+            output,
+            missing,
+            replace_semantic_requirements=fallback_requires_replacement,
+        )
     if {section_id: item.mode for section_id, item in patches.items()} != expected_modes:
-        return _grounded_repair_fallback(planning_input, proposal, output, missing)
+        return _grounded_repair_fallback(
+            planning_input,
+            proposal,
+            output,
+            missing,
+            replace_semantic_requirements=fallback_requires_replacement,
+        )
     patched = output.model_copy(
         update={
             "sections": [
@@ -89,15 +120,25 @@ def repair_regulatory_assertions(
             ]
         }
     )
-    return (
-        ground_unmet_regulatory_assertions(
-            patched,
+    try:
+        validated_patch = ContentInitialDraftModelOutput.model_validate(
+            patched.model_dump(mode="json")
+        )
+        grounded = ground_unmet_regulatory_assertions(
+            validated_patch,
             planning_input=planning_input,
             proposal=proposal,
             missing_codes=missing,
-        ),
-        _runtime_trace(result),
-    )
+        )
+    except ValueError:
+        return _grounded_repair_fallback(
+            planning_input,
+            proposal,
+            output,
+            missing,
+            replace_semantic_requirements=fallback_requires_replacement,
+        )
+    return grounded, _runtime_trace(result)
 
 
 def _apply_patch(existing: str, patch: object | None) -> str:
@@ -124,13 +165,16 @@ def _grounded_repair_fallback(
     *,
     replace_semantic_requirements: bool = False,
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | None:
-    grounded = ground_unmet_regulatory_assertions(
-        output,
-        planning_input=planning_input,
-        proposal=proposal,
-        missing_codes=missing,
-        replace_semantic_requirements=replace_semantic_requirements,
-    )
+    try:
+        grounded = ground_unmet_regulatory_assertions(
+            output,
+            planning_input=planning_input,
+            proposal=proposal,
+            missing_codes=missing,
+            replace_semantic_requirements=replace_semantic_requirements,
+        )
+    except ValueError:
+        return None
     if grounded == output:
         return None
     return grounded, ContentCodexRuntimeTrace(status="completed")
@@ -201,7 +245,7 @@ def ground_unmet_regulatory_assertions(
         additions.setdefault(target, []).extend(facts)
     if not additions and not replacements:
         return output
-    return output.model_copy(
+    patched = output.model_copy(
         update={
             "sections": [
                 section.model_copy(
@@ -217,6 +261,7 @@ def ground_unmet_regulatory_assertions(
             ]
         }
     )
+    return ContentInitialDraftModelOutput.model_validate(patched.model_dump(mode="json"))
 
 
 def _grounded_section_body(

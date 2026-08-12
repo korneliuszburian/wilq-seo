@@ -210,7 +210,7 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ): ContentWorkItemMeasurementWindowResponse,
     (
         "GET",
-        "/api/content/work-items/{work_item_id}/measurement",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/measurement",
     ): ContentMeasurementReadResponse,
     (
         "POST",

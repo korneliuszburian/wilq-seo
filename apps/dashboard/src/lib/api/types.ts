@@ -64,6 +64,7 @@ export type {
   ContentOperatorContext,
   ContentWorkItemMeasurementWindowRequest,
   ContentWorkItemMeasurementWindowResponse,
+  ContentMeasurementReadResponse,
   ContentWorkItemMeasurementOutcomeRequest,
   ContentWorkItemMeasurementOutcomeResponse,
   ContentWorkItemLearningProposalRequest,

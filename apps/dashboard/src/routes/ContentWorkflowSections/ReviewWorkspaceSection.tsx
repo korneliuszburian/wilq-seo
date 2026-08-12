@@ -12,6 +12,7 @@ import { ContentApprovedHtmlPackage } from "../ContentApprovedHtmlPackage";
 import { ContentDocumentLineageDisclosure } from "../ContentDocumentWorkspaceCanvas";
 import { ContentEditorialIntegrityReport } from "../ContentEditorialIntegrityReport";
 import { ContentFullPagePreview } from "../ContentFullPagePreview";
+import { ContentPublicDeploymentPanel } from "../ContentPublicDeploymentPanel";
 import { ContentRevisionRepairPanel } from "../ContentRevisionRepairPanel";
 import { ContentSemanticReviewPanel } from "../ContentSemanticReviewPanel";
 import { ContentWorkflowWorkspaceHeader } from "../ContentWorkflowWorkspaceHeader";
@@ -111,6 +112,13 @@ function ContentReviewWorkspace({
             <div className="mt-5">
               <ContentFullPagePreview revision={completeRevision} />
             </div>
+            {matchingReview?.decision === "approved" ? (
+              <ContentPublicDeploymentPanel
+                workItemId={workspace.work_item_id}
+                revisionId={completeRevision.revision_id}
+                revisionDigest={completeRevision.content_digest}
+              />
+            ) : null}
             <details
               open
               className="mt-5 rounded-xl border border-line bg-slate-50 p-4 text-slate-700"

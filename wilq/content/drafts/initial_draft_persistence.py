@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Literal, Protocol, cast
+from typing import Literal, Protocol
 
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
-from wilq.content.drafts.initial_draft_run import finish_initial_draft_run
+from wilq.content.drafts.initial_draft_run import (
+    finish_initial_draft_run,
+    safe_initial_draft_run_error,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftBlockerCode,
@@ -181,7 +184,12 @@ def _finish_failure(
     blocker: ContentInitialDraftBlocker,
 ) -> ContentInitialDraftResponse:
     run_status: Literal["blocked", "failed"] = "failed" if status == "failed" else "blocked"
-    finish_initial_draft_run(run_store, run, status=run_status, error=blocker.code)
+    finish_initial_draft_run(
+        run_store,
+        run,
+        status=run_status,
+        error=safe_initial_draft_run_error(blocker),
+    )
     return ContentInitialDraftResponse(
         status=status,
         work_item_id=snapshot.preflight.item.id,
@@ -194,13 +202,13 @@ def _finish_failure(
 
 
 def _blocker(
-    code: str,
+    code: ContentInitialDraftBlockerCode,
     label: str,
     reason: str,
     next_step: str,
 ) -> ContentInitialDraftBlocker:
     return ContentInitialDraftBlocker(
-        code=cast(ContentInitialDraftBlockerCode, code),
+        code=code,
         label=label,
         reason=reason,
         next_step=next_step,

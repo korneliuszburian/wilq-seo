@@ -51,6 +51,7 @@ import {
   ContentWorkItemLearningProposalResponseSchema,
   ContentWorkItemMeasurementOutcomeRequestSchema,
   ContentWorkItemMeasurementOutcomeResponseSchema,
+  ContentMeasurementReadResponseSchema,
   ContentWorkItemMeasurementWindowRequestSchema,
   ContentWorkItemMeasurementWindowResponseSchema,
   type ActionObject,
@@ -105,6 +106,7 @@ import {
   type ContentWorkItemLearningProposalResponse,
   type ContentWorkItemMeasurementOutcomeRequest,
   type ContentWorkItemMeasurementOutcomeResponse,
+  type ContentMeasurementReadResponse,
   type ContentWorkItemMeasurementWindowRequest,
   type ContentWorkItemMeasurementWindowResponse
 } from "@wilq/shared-schemas";
@@ -197,6 +199,16 @@ export function getContentRevisionPublicDeployment(
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/public-deployment`,
     ContentPublicDeploymentReadResponseSchema
+  );
+}
+
+export function getContentWorkItemMeasurement(
+  workItemId: string,
+  revisionId: string
+): Promise<ContentMeasurementReadResponse> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/measurement`,
+    ContentMeasurementReadResponseSchema
   );
 }
 
@@ -529,4 +541,3 @@ export function postContentWorkItemLearningProposal(
     ContentWorkItemLearningProposalRequestSchema.parse(request)
   );
 }
-

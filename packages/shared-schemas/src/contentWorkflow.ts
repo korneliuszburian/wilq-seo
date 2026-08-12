@@ -1972,6 +1972,7 @@ export const ContentQualityFindingCodeSchema = z.enum([
   "missing_forbidden_claim_acknowledgement",
   "duplicate_risk_not_clear",
   "missing_measurement_window",
+  "measurement_window_pending_publication",
   "sales_brief_signal_review_required",
   "sales_brief_signal_thin",
   "thin_section",
@@ -2411,6 +2412,73 @@ export const ContentMeasurementWindowBuildResultSchema = z.object({
   blockers: z.array(ContentWorkflowBlockerSchema).default([])
 });
 
+export const ContentMeasurementReadRowSchema = z.object({
+  source_connector: z.enum(["google_search_console", "google_analytics_4"]),
+  status: z.enum(["available", "not_available", "ambiguous"]),
+  reason: z.string().min(1),
+  baseline_period: z.string().nullable().optional(),
+  observation_period: z.string().nullable().optional(),
+  metric_names: z.array(z.string()).default([]),
+  baseline_values: z.record(z.string(), z.number()).default({}),
+  observation_values: z.record(z.string(), z.number()).default({}),
+  evidence_ids: z.array(z.string()).default([])
+});
+
+export const ContentMeasurementReadResponseSchema = z.object({
+  status: z.enum(["blocked", "not_available", "available"]),
+  reason: z.string().min(1),
+  safe_next_step: z.string().min(1),
+  work_item_id: z.string().min(1),
+  revision_id: z.string().min(1),
+  revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  deployment_id: z.string().nullable().optional(),
+  content_url: z.string().nullable().optional(),
+  publication_evidence_id: z.string().nullable().optional(),
+  publication_source_connector: z.string().nullable().optional(),
+  rows: z.array(ContentMeasurementReadRowSchema).default([]),
+  fact_count: z.number().int().nonnegative().default(0),
+  source_connectors: z
+    .array(z.enum(["google_search_console", "google_analytics_4"]))
+    .default([])
+}).superRefine((measurement, context) => {
+  const deploymentFields = [
+    measurement.deployment_id,
+    measurement.content_url,
+    measurement.publication_evidence_id,
+    measurement.publication_source_connector
+  ];
+  if (measurement.status === "blocked") {
+    if (
+      deploymentFields.some((value) => value != null) ||
+      measurement.rows.length > 0 ||
+      measurement.fact_count > 0 ||
+      measurement.source_connectors.length > 0
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["status"],
+        message: "blocked measurement cannot claim deployment or metric evidence"
+      });
+    }
+  } else if (deploymentFields.some((value) => value == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["deployment_id"],
+      message: "measurable revision requires exact deployment lineage"
+    });
+  }
+  if (
+    measurement.status === "available" &&
+    !measurement.rows.some((row) => row.status === "available")
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["rows"],
+      message: "available measurement requires an available comparison"
+    });
+  }
+});
+
 export const ContentPublicDeploymentSchema = z.object({
   deployment_id: z.string(),
   work_item_id: z.string(),
@@ -2646,7 +2714,10 @@ export const ContentDraftRevisionPageAssetsSchema = z.object({
   meta_title: z.string().min(1),
   meta_description: z.string().min(1),
   h1: z.string().min(1),
-  lead: z.string().min(1)
+  lead: z.string().min(1),
+  byline: z.string().trim().min(1).refine((value) => !containsInlineLink(value), {
+    message: "byline cannot contain inline links"
+  }).nullable().optional()
 });
 
 export const ContentDraftRevisionFaqItemSchema = z.object({
@@ -2666,7 +2737,7 @@ export const ContentDraftRevisionCtaBlockSchema = z.object({
   claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
 });
 
-const containsInlineLink = (value: string): boolean => {
+function containsInlineLink(value: string): boolean {
   const folded = value.toLowerCase();
   return (
     folded.includes("http://") ||
@@ -2678,7 +2749,7 @@ const containsInlineLink = (value: string): boolean => {
     ["[", "]", "<", ">"].some((character) => value.includes(character)) ||
     value.includes("//")
   );
-};
+}
 
 const isSafePublicContentUrl = (value: string): boolean => {
   const containsControlCharacter = Array.from(value).some((character) => {
@@ -3682,7 +3753,10 @@ export const ContentPlanningPageAssetsSchema = z.object({
   h1: z.string().default(""),
   lead: z.string().default(""),
   meta_title: z.string().default(""),
-  meta_description: z.string().default("")
+  meta_description: z.string().default(""),
+  byline: z.string().trim().min(1).refine((value) => !containsInlineLink(value), {
+    message: "byline cannot contain inline links"
+  }).nullable().optional()
 });
 
 export const ContentPlanningFaqItemSchema = z.object({
@@ -5175,6 +5249,9 @@ export type ContentWordPressDraftActivationPacketResponse = z.infer<
 >;
 export type ContentWorkItemMeasurementWindowResponse = z.infer<
   typeof ContentWorkItemMeasurementWindowResponseSchema
+>;
+export type ContentMeasurementReadResponse = z.infer<
+  typeof ContentMeasurementReadResponseSchema
 >;
 export type ContentPublicDeployment = z.infer<typeof ContentPublicDeploymentSchema>;
 export type ContentPublicDeploymentConfirmationResponse = z.infer<

@@ -8,6 +8,7 @@ import {
   getActionMutationReadiness,
   getActionsMutationReadiness,
   getContentWorkItemSemanticReview,
+  getContentWorkItemMeasurement,
   getContentRegulatorySourceSnapshot,
   postContentRegulatorySourceReview,
   postContentWorkItemInitialDraft,
@@ -379,6 +380,48 @@ describe("content workflow API helpers", () => {
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/api/actions/act%2Funsafe%3Fx%3D1/mutation-readiness"
     ]);
+  });
+
+  it("gets exact-revision measurement through the shared runtime schema", async () => {
+    const fetchMock = vi.fn(async (_url: RequestInfo | URL) => ({
+      ok: true,
+      json: async () => ({
+        status: "available",
+        reason: "Dwa okresy są porównywalne.",
+        safe_next_step: "Przeczytaj evidence.",
+        work_item_id: "work/item",
+        revision_id: "revision?one",
+        revision_digest: "a".repeat(64),
+        deployment_id: "deployment_one",
+        content_url: "https://www.ekologus.pl/bdo/",
+        publication_evidence_id: "ev_publication",
+        publication_source_connector: "wordpress_ekologus",
+        rows: [{
+          source_connector: "google_search_console",
+          status: "available",
+          reason: "Kompletna lineage.",
+          baseline_period: "2026-08-01/2026-08-07",
+          observation_period: "2026-08-08/2026-08-14",
+          metric_names: ["clicks", "impressions"],
+          baseline_values: { clicks: 2, impressions: 92 },
+          observation_values: { clicks: 3, impressions: 113 },
+          evidence_ids: ["ev_baseline", "ev_observation"]
+        }],
+        fact_count: 4,
+        source_connectors: ["google_search_console"]
+      })
+    }) as Response);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const measurement = await getContentWorkItemMeasurement(
+      "work/item",
+      "revision?one"
+    );
+
+    expect(measurement.rows[0]?.observation_values.impressions).toBe(113);
+    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).pathname).toBe(
+      "/api/content/work-items/work%2Fitem/draft-revisions/revision%3Fone/measurement"
+    );
   });
 
   it("keeps the exact WordPress binding in preview and parses a typed apply conflict", async () => {

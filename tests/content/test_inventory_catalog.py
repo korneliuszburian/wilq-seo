@@ -237,6 +237,34 @@ def test_inventory_coverage_does_not_claim_complete_for_legacy_public_cap(monkey
     assert "starszy odczyt" in coverage.caveat
 
 
+def test_partial_sitemap_refresh_never_projects_complete_inventory_coverage(monkeypatch):
+    latest_run = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        metric_summary={
+            "inventory_coverage_status": "partial",
+            "sitemap_url_count": 1,
+            "sitemap_url_source_count": 1,
+            "sitemap_url_returned_count": 1,
+            "sitemap_url_limit": 500,
+            "sitemap_url_truncated": False,
+        },
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: [latest_run]
+        ),
+    )
+
+    coverage = catalog_module._inventory_coverage()
+
+    assert coverage.status == "unknown"
+    assert coverage.returned_count == 1
+    assert "częściowy" in coverage.caveat
+
+
 def test_inventory_metric_facts_do_not_mix_search_refresh_history(monkeypatch):
     page_url = "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
     old_fact = SimpleNamespace(
