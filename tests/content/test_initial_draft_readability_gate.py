@@ -11,8 +11,10 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
 )
-from wilq.content.drafts import initial_full_draft
+from wilq.content.drafts import initial_draft_assurance_repair, initial_full_draft
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
+from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
 from wilq.content.drafts.initial_draft_readability import (
     assure_readability_and_repair,
     readability_issues_for_output,
@@ -30,7 +32,11 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationInput,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.regulatory.policy import ContentRegulatoryCoverage
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryCoverage,
+    ContentRegulatoryDocumentAssertion,
+    ContentRegulatoryRequirement,
+)
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
     ContentPlanningSection,
@@ -70,6 +76,14 @@ _DUPLICATED_CTA_BODY = f"{_CTA_PARAGRAPH}\n\n{_CTA_PARAGRAPH}"
 _BLOCKED_CLAIM_SECTION = (
     "Usługa zapewnia gwarantowane wyniki każdej firmie, niezależnie od zakresu "
     "obowiązków, dokumentacji oraz profilu prowadzonej działalności."
+)
+_REGULATED_DIRTY_SECTION = (
+    f"KPO stosuje się, gdy przekazanie odpadów podlega ewidencji. {_DIRTY_SECTION_ONE}"
+)
+_REGULATED_CLEAN_SECTION = (
+    "KPO stosuje się, gdy przekazanie odpadów podlega ewidencji. "
+    "Przedsiębiorca sprawdza zakres obowiązków, porządkuje dokumenty i planuje "
+    "kolejne działania zgodnie z profilem swojej działalności."
 )
 
 
@@ -175,6 +189,54 @@ def _prepared_inputs() -> initial_full_draft._InitialDraftInputs:
         planning_input=_planning_input(),
         proposal=_proposal(),
         generation_contract=_generation_contract(),
+    )
+
+
+def _regulated_prepared_inputs() -> initial_full_draft._InitialDraftInputs:
+    prepared = _prepared_inputs()
+    requirement = ContentRegulatoryRequirement(
+        id="transport_document",
+        label="Warunek KPO",
+        reason="Treść musi zachować warunek stosowania KPO.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="mentions_kpo",
+                label="Wzmianka o KPO",
+                required_any_of=["KPO"],
+            )
+        ],
+    )
+    return initial_full_draft._InitialDraftInputs(
+        planning_input=prepared.planning_input.model_copy(
+            update={
+                "confirmed_service_card_id": "service_regulated",
+                "regulatory_coverage": ContentRegulatoryCoverage(
+                    profile_id="regulated_profile",
+                    profile_version="1",
+                    requirements=[requirement],
+                ),
+            }
+        ),
+        proposal=prepared.proposal.model_copy(
+            update={
+                "sections": [
+                    prepared.proposal.sections[0].model_copy(
+                        update={"regulatory_requirement_ids": [requirement.id]}
+                    ),
+                    prepared.proposal.sections[1],
+                ]
+            }
+        ),
+        generation_contract=prepared.generation_contract,
+    )
+
+
+def _assurance_receipt(codex_run_id: str) -> ContentDraftAssuranceReceipt:
+    return ContentDraftAssuranceReceipt(
+        status="passed",
+        profile_id="regulated_profile",
+        profile_version="1",
+        codex_run_id=codex_run_id,
     )
 
 
@@ -310,6 +372,83 @@ def _generate_blocked_response(monkeypatch, output, client):
     return response, persistence_calls, finish_calls
 
 
+def _generate_assured_response(
+    monkeypatch,
+    *,
+    output: ContentInitialDraftModelOutput,
+    client: _PatchClient,
+    assurance_results: list[ContentDraftAssuranceReceipt | ContentDraftAssuranceFailure],
+):
+    prepared = _regulated_prepared_inputs()
+    trace = ContentCodexRuntimeTrace(status="completed", turn_id="initial-turn")
+    run = CodexRun.model_construct(
+        id="codex_content_initial_draft_regulatory_readability_gate",
+        status="started",
+    )
+    pending_results = list(assurance_results)
+    assurance_candidates: list[ContentInitialDraftModelOutput] = []
+    persistence_calls: list[dict[str, object]] = []
+    finish_calls: list[dict[str, object]] = []
+
+    def fake_assure_regulated_draft(
+        **kwargs: object,
+    ) -> ContentDraftAssuranceReceipt | ContentDraftAssuranceFailure:
+        assurance_candidates.append(cast(ContentInitialDraftModelOutput, kwargs["output"]))
+        return pending_results.pop(0)
+
+    def fake_persist_initial_draft(**kwargs: object) -> SimpleNamespace:
+        persistence_calls.append(kwargs)
+        return SimpleNamespace(status="created")
+
+    monkeypatch.setattr(initial_full_draft, "_prepare_inputs", lambda *_args: prepared)
+    monkeypatch.setattr(
+        initial_full_draft,
+        "initial_full_draft_turn_request",
+        lambda **_kwargs: SimpleNamespace(instruction="initial draft"),
+    )
+    monkeypatch.setattr(
+        initial_full_draft, "start_initial_draft_run", lambda *_args, **_kwargs: run
+    )
+    monkeypatch.setattr(
+        initial_full_draft,
+        "_execute_runtime",
+        lambda *_args, **_kwargs: (output, trace),
+    )
+    monkeypatch.setattr(
+        initial_full_draft,
+        "assure_regulated_draft",
+        fake_assure_regulated_draft,
+    )
+    monkeypatch.setattr(
+        initial_draft_assurance_repair,
+        "assure_regulated_draft",
+        fake_assure_regulated_draft,
+    )
+    monkeypatch.setattr(
+        initial_full_draft,
+        "finish_initial_draft_run",
+        lambda *_args, **kwargs: finish_calls.append(kwargs),
+    )
+    monkeypatch.setattr(initial_full_draft, "persist_initial_draft", fake_persist_initial_draft)
+    response = initial_full_draft.generate_initial_full_draft(
+        snapshot=SimpleNamespace(
+            preflight=SimpleNamespace(item=SimpleNamespace(id=prepared.planning_input.work_item_id))
+        ),
+        request=ContentInitialDraftRequest(
+            expected_proposal_id=prepared.proposal.proposal_id,
+            expected_planning_digest=prepared.proposal.planning_digest,
+            expected_planning_input_digest=prepared.proposal.planning_input_digest,
+            requested_by="wilku",
+        ),
+        client=client,
+        workflow_store=cast(object, SimpleNamespace()),
+        run_store=cast(object, SimpleNamespace()),
+        context_digest="c" * 64,
+    )
+    assert pending_results == []
+    return response, assurance_candidates, persistence_calls, finish_calls
+
+
 def test_initial_draft_readability_gate_repairs_or_blocks_before_persistence(
     monkeypatch,
 ) -> None:
@@ -384,6 +523,96 @@ def test_initial_draft_readability_gate_repairs_or_blocks_before_persistence(
     assert "working_note" in response.blockers[0].source_codes
     assert persistence_calls == []
     assert len(finish_calls) == 1
+
+
+def test_readability_repair_reassures_and_persists_the_fresh_receipt(monkeypatch) -> None:
+    output = _output(first_body=_REGULATED_DIRTY_SECTION)
+    before_receipt = _assurance_receipt("assurance-before-readability")
+    after_receipt = _assurance_receipt("assurance-after-readability")
+    client = _PatchClient({"section_01": _REGULATED_CLEAN_SECTION})
+
+    response, assurance_candidates, persistence_calls, finish_calls = _generate_assured_response(
+        monkeypatch,
+        output=output,
+        client=client,
+        assurance_results=[before_receipt, after_receipt],
+    )
+
+    assert response.status == "created"
+    assert len(assurance_candidates) == 2
+    assert assurance_candidates[0] is output
+    assert assurance_candidates[1] is not output
+    assert assurance_candidates[1].sections[0].body_markdown == _REGULATED_CLEAN_SECTION
+    assert len(client.requests) == 1
+    assert len(persistence_calls) == 1
+    assert persistence_calls[0]["output"] is assurance_candidates[1]
+    assert persistence_calls[0]["regulatory_assurance"] is after_receipt
+    assert persistence_calls[0]["regulatory_assurance"] is not before_receipt
+    assert finish_calls == []
+
+
+def test_clean_readability_path_keeps_the_initial_assurance_receipt(monkeypatch) -> None:
+    output = _output(first_body=_REGULATED_CLEAN_SECTION)
+    initial_receipt = _assurance_receipt("assurance-clean-output")
+    client = _PatchClient()
+
+    response, assurance_candidates, persistence_calls, finish_calls = _generate_assured_response(
+        monkeypatch,
+        output=output,
+        client=client,
+        assurance_results=[initial_receipt],
+    )
+
+    assert response.status == "created"
+    assert assurance_candidates == [output]
+    assert assurance_candidates[0] is output
+    assert client.requests == []
+    assert len(persistence_calls) == 1
+    assert persistence_calls[0]["output"] is output
+    assert persistence_calls[0]["regulatory_assurance"] is initial_receipt
+    assert finish_calls == []
+
+
+def test_failed_reassurance_after_readability_repair_blocks_without_persistence(
+    monkeypatch,
+) -> None:
+    output = _output(first_body=_REGULATED_DIRTY_SECTION)
+    initial_receipt = _assurance_receipt("assurance-before-failed-reassurance")
+    failure = ContentDraftAssuranceFailure(
+        code="draft_assurance_failed",
+        label="Tekst nie przeszedł ponownej kontroli merytorycznej",
+        reason="Naprawa czytelności zmieniła zakres warunku regulacyjnego.",
+        next_step="Odrzuć wynik i uruchom nową próbę.",
+        source_codes=["requirement:transport_document"],
+        repair_reasons={"requirement:transport_document": "missing_scope"},
+    )
+    client = _PatchClient({"section_01": _REGULATED_CLEAN_SECTION})
+
+    response, assurance_candidates, persistence_calls, finish_calls = _generate_assured_response(
+        monkeypatch,
+        output=output,
+        client=client,
+        assurance_results=[initial_receipt, failure],
+    )
+
+    assert len(assurance_candidates) == 2
+    assert assurance_candidates[0] is output
+    assert assurance_candidates[1].sections[0].body_markdown == _REGULATED_CLEAN_SECTION
+    assert len(client.requests) == 1
+    assert response.status == "blocked"
+    assert response.revision is None
+    assert response.blockers[0].code == failure.code
+    assert response.blockers[0].label == failure.label
+    assert response.blockers[0].reason == failure.reason
+    assert response.blockers[0].next_step == failure.next_step
+    assert response.blockers[0].source_codes == failure.source_codes
+    assert persistence_calls == []
+    assert finish_calls == [
+        {
+            "status": "blocked",
+            "error": "draft_assurance_failed|requirement:transport_document",
+        }
+    ]
 
 
 def test_readability_gate_flags_working_note_in_faq_answer() -> None:
