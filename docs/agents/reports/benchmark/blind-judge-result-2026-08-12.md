@@ -53,3 +53,28 @@ z research: `9/9 semantic review` nie jest dowodem jakości dla czytelnika.
 
 - Żadna z tych treści nie jest opublikowana ani nie ma wyników użytkownika.
 - Blind judge to opinia modelu, nie UAT Wilku ani pomiar CTR/konwersji.
+
+## Follow-up: source-fact grounding (Q40/Q41, 2026-08-13)
+
+W odpowiedzi na finding "generated jest płytszy" dodano:
+- Q40: initial draft dostaje `approved_source_facts_by_section` — model ma konkretne fakty per sekcja od początku.
+- Q41: repair-turn też dostaje source facts dla naprawianych sekcji.
+
+### Pomiar (strona: oferta/pomiary-i-analizy)
+
+| Wersja | Sekcja 01 (słowa) | Sekcja 03 (słowa) | Semantic review |
+|---|---|---|---|
+| rev1 (initial, bez Q40) | 86 | 80 | 9/9 reviewable |
+| rev2 (Q40 initial + repair sec01) | 90 | 80 | needs_changes (2: search_intent FAQ + long_sentence sec02) |
+| rev3 (repair sec03) | 90 | **44** | needs_changes (4: specificity, search_intent, long_sentence, answer_directness) |
+
+### Ustalenia (uczciwe)
+
+1. **Q40 pogłębia initial draft** — sekcja 01 dostała konkret (pomiary emisji/hałasu/próbek, plan remediacji), specificity/completeness strong.
+2. **Q41 (repair per sekcja) destabilizuje** — model naprawia jedną sekcję, przenosząc treść i psując inne (rev3 uciął sekcję 03 do 44 słów). Repair jest dobry do usuwania wad, nie do budowania głębi.
+3. **BDO (regulatory) nie przechodzi świeżej generacji z Q40** — nowy plan ma 9 sekcji ze scalonymi wymaganiami; model gubi dokładną frazę `bdo_full_name`. To capacity limit przy danym planie, nie błąd promptu. (Fix regulatory-exclusion nie zmienił tego.)
+4. **Query coverage deterministycznie bez zmian** (14%→14%) — dostępne source facts pokrywają inne frazy niż zapytania GSC; brakuje faktów dopasowanych do zapytań.
+
+### Wniosek
+
+Source-fact grounding (Q40) jest właściwym kierunkiem i realnie pogłębia initial draft. Jednak **pipeline nie osiągnął jeszcze głębi existing WordPress content** — blind judge nadal wolał current (5/5), a repair-turn nie jest narzędziem do budowania głębi. Zamknięcie luki wymaga: (a) bogatszych source facts dopasowanych do zapytań GSC, (b) initial-draft-only pogłębiania (bez repair na głębię), (c) re-benchmarku z blind judge.
