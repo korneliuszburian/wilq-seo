@@ -56,7 +56,7 @@ _POLISH_ABBREVIATIONS = frozenset(
         "ww.",
     }
 )
-_SENTENCE_TOKEN_WRAPPERS = "\"'()*[]_{}«»‘’‚“”„"
+_SENTENCE_TOKEN_WRAPPERS = "\"'()*[]_{}«»‘’‚“”„"  # nosec B105
 
 
 @dataclass(frozen=True)
