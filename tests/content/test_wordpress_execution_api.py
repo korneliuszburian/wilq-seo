@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers.content_snapshot import (
+    _merge_selected_inventory_fields,
     snapshot_for_default_work_item_or_404,
     snapshot_for_work_item_or_404,
 )
@@ -27,7 +28,7 @@ from wilq.content.workflow.workspace.api import (
     build_content_wordpress_draft_write_readiness_response,
     build_content_work_item_wordpress_draft_execution_response,
 )
-from wilq.schemas import AuditEvent
+from wilq.schemas import AuditEvent, ContentDecisionItem
 from wilq.storage.local_state import local_state_store
 
 
@@ -268,6 +269,37 @@ def test_wordpress_activation_packet_topic_is_consistent_for_selected_scope(
         default_packet["final_canonical_url"],
         default_packet["final_canonical_url"].removeprefix("https://www.ekologus.pl"),
     }
+
+
+def test_merge_selected_inventory_fields_keeps_decision_type_aligned_with_title() -> None:
+    existing = ContentDecisionItem(
+        id="https___www_ekologus_pl_bdo_co_musi_wiedziec_przedsiebiorca",
+        decision_type="merge_create_after_inventory_check",
+        title="Istniejący URL /bdo-co-musi-wiedziec-przedsiebiorca: sprawdź klaster "
+        "bdo przed tworzeniem (1 zapytanie)",
+        summary="Broad queue row.",
+        rationale="Broad diagnostics queue decision.",
+        next_step="Sprawdź istniejącą treść przed decyzją.",
+    )
+    selected = ContentDecisionItem(
+        id="https___www_ekologus_pl_bdo_co_musi_wiedziec_przedsiebiorca",
+        decision_type="refresh_or_merge",
+        title="Istniejący URL /bdo-co-musi-wiedziec-przedsiebiorca: sprawdź "
+        "istniejącą treść (1 zapytanie)",
+        summary="Inventory-bound row.",
+        wordpress_title_or_h1="BDO - CO MUSI WIEDZIEĆ PRZEDSIĘBIORCA? - Ekologus",
+        page="https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        normalized_page_path="/bdo-co-musi-wiedziec-przedsiebiorca/",
+        rationale="Inventory-bound decision for the selected page.",
+        next_step="Sprawdź istniejącą treść przed decyzją.",
+    )
+
+    merged = _merge_selected_inventory_fields(existing, selected)
+
+    assert merged.decision_type == "refresh_or_merge"
+    assert merged.title == selected.title
+    assert merged.wordpress_title_or_h1 == selected.wordpress_title_or_h1
+    assert merged.summary == selected.summary
 
 
 def test_retired_wordpress_activation_packet_route_returns_404(

@@ -76,6 +76,7 @@ _exact_diagnostics_cache_lock = RLock()
 _SELECTED_INVENTORY_FIELDS = (
     "title",
     "summary",
+    "decision_type",
     "wordpress_title_or_h1",
     "wordpress_section_headings",
     "wordpress_section_count",
