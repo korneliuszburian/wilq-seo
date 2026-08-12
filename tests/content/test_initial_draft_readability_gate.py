@@ -23,6 +23,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftCtaOutput,
     ContentInitialDraftFaqOutput,
+    ContentInitialDraftInternalLinkOutput,
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
     ContentInitialDraftSectionOutput,
@@ -52,6 +53,8 @@ _CLEAN_SECTION_TWO = (
     "Następnie firma wyznacza odpowiedzialne osoby, terminy oraz sposób kontroli "
     "kompletności wymaganej dokumentacji."
 )
+_CLEAN_LEAD = "Krótki przewodnik prowadzi przez najważniejsze działania."
+_DIRTY_LEAD = "Treść wymaga weryfikacji przez człowieka przed publikacją."
 _DIRTY_SECTION_ONE = (
     "Ta informacja wymaga weryfikacji przez człowieka przed dalszym użyciem w "
     "gotowej treści przeznaczonej dla klienta."
@@ -112,6 +115,15 @@ class _PatchClient:
             {
                 f"cta:{index}": item["body_markdown"]
                 for index, item in enumerate(candidate["cta_blocks"], start=1)
+            }
+        )
+        bodies.update(
+            {f"page_assets:{field}": value for field, value in candidate["page_assets"].items()}
+        )
+        bodies.update(
+            {
+                f"link:{index}": item["anchor_text"]
+                for index, item in enumerate(candidate["internal_links"], start=1)
             }
         )
         return CodexAppServerTurnResult(
@@ -246,14 +258,16 @@ def _output(
     second_body: str = _CLEAN_SECTION_TWO,
     faq_answer: str | None = None,
     cta_body: str | None = None,
+    lead: str = _CLEAN_LEAD,
+    internal_link_anchor: str | None = None,
 ) -> ContentInitialDraftModelOutput:
-    return ContentInitialDraftModelOutput(
+    output = ContentInitialDraftModelOutput(
         page_assets=ContentDraftRevisionPageAssets(
             wordpress_title="Czytelny przewodnik",
             meta_title="Czytelny przewodnik dla firmy",
             meta_description="Praktyczne kroki dla przedsiębiorcy.",
             h1="Jak uporządkować obowiązki",
-            lead="Krótki przewodnik prowadzi przez najważniejsze działania.",
+            lead=lead,
         ),
         sections=[
             ContentInitialDraftSectionOutput(
@@ -280,6 +294,18 @@ def _output(
         cta_blocks=(
             [ContentInitialDraftCtaOutput(body_markdown=cta_body)] if cta_body is not None else []
         ),
+    )
+    if internal_link_anchor is None:
+        return output
+    return output.model_copy(
+        update={
+            "internal_links": [
+                ContentInitialDraftInternalLinkOutput.model_construct(
+                    target_url="https://www.ekologus.pl/uslugi/",
+                    anchor_text=internal_link_anchor,
+                )
+            ]
+        }
     )
 
 
@@ -626,6 +652,53 @@ def test_readability_gate_flags_working_note_in_faq_answer() -> None:
     assert any(code == "working_note" and section_id == "faq:1" for code, section_id, _ in issues)
 
 
+@pytest.mark.parametrize(
+    "field",
+    ["wordpress_title", "meta_title", "meta_description", "h1", "lead"],
+)
+def test_readability_gate_flags_working_note_in_page_asset(field: str) -> None:
+    output = _output(first_body=_CLEAN_SECTION_ONE)
+    output = output.model_copy(
+        update={"page_assets": output.page_assets.model_copy(update={field: _DIRTY_LEAD})}
+    )
+    issues = readability_issues_for_output(output)
+
+    assert [
+        (code, section_id) for code, section_id, _ in issues if section_id == f"page_assets:{field}"
+    ] == [("working_note", f"page_assets:{field}")]
+
+
+def test_readability_gate_flags_meta_comment_in_internal_link_anchor() -> None:
+    dirty_output = _output(first_body=_CLEAN_SECTION_ONE, internal_link_anchor="[do uzupełnienia]")
+    issues = readability_issues_for_output(dirty_output)
+
+    assert [(code, section_id) for code, section_id, _ in issues if section_id == "link:1"] == [
+        ("working_note", "link:1")
+    ]
+    valid_link = ContentInitialDraftInternalLinkOutput(
+        target_url="https://www.ekologus.pl/uslugi/",
+        anchor_text="Źródło wskazuje dokument",
+    )
+    repairable_output = _output(first_body=_CLEAN_SECTION_ONE).model_copy(
+        update={"internal_links": [valid_link]}
+    )
+    client = _PatchClient({"link:1": "wymagania BDO"})
+
+    repaired, _repaired_trace, blocker = _assure(
+        repairable_output,
+        client,
+        ContentCodexRuntimeTrace(status="completed", turn_id="initial-turn"),
+        _allow_output,
+    )
+
+    assert blocker is None
+    assert repaired.internal_links[0].anchor_text == "wymagania BDO"
+    assert repaired.internal_links[0].target_url == valid_link.target_url
+    assert readability_issues_for_output(repaired) == []
+    application_context = json.loads(client.requests[0].application_context)
+    assert application_context["affected_section_ids"] == ["link:1"]
+
+
 def test_readability_gate_flags_duplicated_paragraph_in_cta_body() -> None:
     issues = readability_issues_for_output(
         _output(
@@ -681,6 +754,33 @@ def test_readability_gate_repairs_faq_answer() -> None:
     assert repair_schema["$defs"]["_RegulatorySectionPatch"]["properties"]["section_id"][
         "enum"
     ] == ["faq:1"]
+
+
+def test_readability_gate_repairs_page_asset_lead() -> None:
+    dirty_output = _output(
+        first_body=_CLEAN_SECTION_ONE,
+        lead=_DIRTY_LEAD,
+    )
+    client = _PatchClient({"page_assets:lead": _CLEAN_LEAD})
+
+    repaired, repaired_trace, blocker = _assure(
+        dirty_output,
+        client,
+        ContentCodexRuntimeTrace(status="completed", turn_id="initial-turn"),
+        _allow_output,
+    )
+
+    assert blocker is None
+    assert repaired.page_assets.lead == _CLEAN_LEAD
+    assert readability_issues_for_output(repaired) == []
+    assert repaired_trace.turn_id == "readability-repair-1"
+    assert len(client.requests) == 1
+    application_context = json.loads(client.requests[0].application_context)
+    assert application_context["affected_section_ids"] == ["page_assets:lead"]
+    repair_schema = client.requests[0].output_schema
+    assert repair_schema["$defs"]["_RegulatorySectionPatch"]["properties"]["section_id"][
+        "enum"
+    ] == ["page_assets:lead"]
 
 
 def test_readability_gate_blocks_dirty_output_before_spending_a_repair_turn() -> None:
@@ -771,7 +871,8 @@ def test_readability_gate_blocks_repaired_claim_before_persistence(
     assert len(finish_calls) == 1
 
 
-def test_initial_draft_section_id_cannot_collide_with_gate_target() -> None:
+@pytest.mark.parametrize("section_id", ["faq:1", "page_assets:x"])
+def test_initial_draft_section_id_cannot_collide_with_gate_target(section_id: str) -> None:
     with pytest.raises(ValueError, match="must not collide with gate target"):
         ContentInitialDraftModelOutput(
             page_assets=ContentDraftRevisionPageAssets(
@@ -783,7 +884,7 @@ def test_initial_draft_section_id_cannot_collide_with_gate_target() -> None:
             ),
             sections=[
                 ContentInitialDraftSectionOutput(
-                    section_id="faq:1",
+                    section_id=section_id,
                     heading="Pierwszy krok",
                     body_markdown=_CLEAN_SECTION_ONE,
                 ),

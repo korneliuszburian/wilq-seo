@@ -182,9 +182,15 @@ def readability_repair_turn_request(
     auxiliary_section_ids = {
         *(f"faq:{index}" for index, _ in enumerate(candidate.faq, start=1)),
         *(f"cta:{index}" for index, _ in enumerate(candidate.cta_blocks, start=1)),
+        "page_assets:wordpress_title",
+        "page_assets:meta_title",
+        "page_assets:meta_description",
+        "page_assets:h1",
+        "page_assets:lead",
+        *(f"link:{index}" for index, _ in enumerate(candidate.internal_links, start=1)),
     }
     if candidate_section_ids & auxiliary_section_ids:
-        raise ValueError("Candidate section IDs collide with FAQ or CTA repair targets.")
+        raise ValueError("Candidate section IDs collide with reserved repair targets.")
     candidate_section_ids.update(auxiliary_section_ids)
     affected_section_ids = list(
         dict.fromkeys(
@@ -198,17 +204,18 @@ def readability_repair_turn_request(
     )
     instruction = (
         (
-            "Napraw wyłącznie body_markdown sekcji, odpowiedzi FAQ lub CTA wskazanych w polu "
-            "issues. Usuń notatki robocze, meta-komentarze i powtórzone akapity, podziel "
-            "ściany tekstu oraz rozwiń zbyt krótkie odpowiedzi. Każdy patch musi usuwać "
-            "dokładny problem opisany w jego reason. Zachowaj znaczenie, fakty, zakres i ton "
-            "tekstu dla czytelnika. Nie dotykaj innych sekcji, nagłówków, page assets, pytań "
-            "FAQ, innych odpowiedzi FAQ, innych CTA ani linków. Dla FAQ i CTA zawsze użyj "
-            "replace. Zwróć dokładnie po jednym patchu dla każdego dozwolonego section_id. "
-            "Dla zwykłej sekcji użyj replace dla pełnej poprawionej treści albo append "
-            "wyłącznie do uzupełnienia zbyt krótkiej sekcji. Nie dodawaj nowych notatek "
-            "roboczych ani informacji wymagających weryfikacji. Zwróć wyłącznie JSON zgodny "
-            "ze schema."
+            "Napraw wyłącznie pola wskazane w issues. Identyfikator zwykłej sekcji oznacza jej "
+            "body_markdown, faq:<index> odpowiedź FAQ, cta:<index> treść CTA, "
+            "page_assets:<field> wskazane pole page assets, a link:<index> anchor_text linku. "
+            "Usuń notatki robocze, meta-komentarze i powtórzone akapity, podziel ściany tekstu "
+            "oraz rozwiń zbyt krótkie odpowiedzi. Każdy patch musi usuwać dokładny problem "
+            "opisany w jego reason. Zachowaj znaczenie, fakty, zakres i ton tekstu dla "
+            "czytelnika. Nie dotykaj żadnych innych pól. Dla FAQ, CTA, page assets i linków "
+            "zawsze użyj replace. Zwróć dokładnie po jednym patchu dla każdego dozwolonego "
+            "section_id. Dla zwykłej sekcji użyj replace dla pełnej poprawionej treści albo "
+            "append wyłącznie do uzupełnienia zbyt krótkiej sekcji. Nie dodawaj nowych notatek "
+            "roboczych ani informacji wymagających weryfikacji. Zwróć wyłącznie JSON zgodny ze "
+            "schema."
         )
         if auxiliary_targets
         else (

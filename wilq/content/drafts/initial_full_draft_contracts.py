@@ -149,7 +149,7 @@ class ContentInitialDraftModelOutput(BaseModel):
         if len(headings) != len(set(headings)):
             raise ValueError("Initial draft headings must be unique.")
         for section_id in section_ids:
-            if re.match(r"^(faq|cta):\d+$", section_id):
+            if re.match(r"^(?:(?:faq|cta):\d+$|(?:page_assets|link):)", section_id):
                 raise ValueError(
                     f"Initial draft section ID must not collide with gate target: {section_id}"
                 )

@@ -10,6 +10,7 @@ from wilq.codex.app_server import (
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
+    ContentInitialDraftInternalLinkOutput,
     ContentInitialDraftModelOutput,
 )
 from wilq.content.drafts.initial_full_draft_turn import (
@@ -21,7 +22,10 @@ from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import revision_readability_issues
 from wilq.content.quality.semantic_review_guards import repetition_quality_issues
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
-from wilq.content.workflow.documents.revisions import ContentDraftRevisionSection
+from wilq.content.workflow.documents.revisions import (
+    ContentDraftRevisionPageAssets,
+    ContentDraftRevisionSection,
+)
 from wilq.storage.local_state import LocalStateStore
 
 ReadabilityIssue = tuple[str, str, str]
@@ -78,7 +82,50 @@ def readability_issues_for_output(
         }
     )
     issues.extend(_mapped_repetition_issues(section_bodies))
+    issues.extend(_reader_visible_short_target_issues(output))
     return issues
+
+
+def _reader_visible_short_target_issues(
+    output: ContentInitialDraftModelOutput,
+) -> list[ReadabilityIssue]:
+    targets = {
+        "page_assets:wordpress_title": output.page_assets.wordpress_title,
+        "page_assets:meta_title": output.page_assets.meta_title,
+        "page_assets:meta_description": output.page_assets.meta_description,
+        "page_assets:h1": output.page_assets.h1,
+        "page_assets:lead": output.page_assets.lead,
+    }
+    targets.update(
+        {
+            f"link:{index}": item.anchor_text
+            for index, item in enumerate(output.internal_links, start=1)
+        }
+    )
+    return [
+        ("working_note", target_id, reason)
+        for target_id, text in targets.items()
+        if (reason := _working_note_reason(target_id, text)) is not None
+    ]
+
+
+def _working_note_reason(target_id: str, text: str) -> str | None:
+    readability_issues = revision_readability_issues(
+        [
+            ContentDraftRevisionSection(
+                section_id=target_id,
+                heading=target_id,
+                body_markdown=text,
+            )
+        ]
+    )
+    for issue in readability_issues:
+        if issue.code == "working_note":
+            return issue.reason
+    for _, affected_section_id, reason in repetition_quality_issues({target_id: text.casefold()}):
+        if affected_section_id == "whole_document":
+            return reason
+    return None
 
 
 def _mapped_revision_readability_issues(
@@ -258,6 +305,7 @@ def _apply_readability_patches(
 ) -> ContentInitialDraftModelOutput:
     patched = output.model_copy(
         update={
+            "page_assets": _patched_page_assets(output.page_assets, patches),
             "sections": [
                 section.model_copy(
                     update={
@@ -291,9 +339,68 @@ def _apply_readability_patches(
                 )
                 for index, item in enumerate(output.cta_blocks, start=1)
             ],
+            "internal_links": _patched_internal_links(output.internal_links, patches),
         }
     )
     return ContentInitialDraftModelOutput.model_validate(patched.model_dump(mode="json"))
+
+
+def _patched_page_assets(
+    page_assets: ContentDraftRevisionPageAssets,
+    patches: dict[str, _RegulatorySectionPatch],
+) -> ContentDraftRevisionPageAssets:
+    return page_assets.model_copy(
+        update={
+            "wordpress_title": _patched_short_target(
+                page_assets.wordpress_title,
+                patches.get("page_assets:wordpress_title"),
+            ),
+            "meta_title": _patched_short_target(
+                page_assets.meta_title,
+                patches.get("page_assets:meta_title"),
+            ),
+            "meta_description": _patched_short_target(
+                page_assets.meta_description,
+                patches.get("page_assets:meta_description"),
+            ),
+            "h1": _patched_short_target(
+                page_assets.h1,
+                patches.get("page_assets:h1"),
+            ),
+            "lead": _patched_short_target(
+                page_assets.lead,
+                patches.get("page_assets:lead"),
+            ),
+        }
+    )
+
+
+def _patched_internal_links(
+    internal_links: list[ContentInitialDraftInternalLinkOutput],
+    patches: dict[str, _RegulatorySectionPatch],
+) -> list[ContentInitialDraftInternalLinkOutput]:
+    return [
+        item.model_copy(
+            update={
+                "anchor_text": _patched_short_target(
+                    item.anchor_text,
+                    patches.get(f"link:{index}"),
+                )
+            }
+        )
+        for index, item in enumerate(internal_links, start=1)
+    ]
+
+
+def _patched_short_target(
+    existing: str,
+    patch: _RegulatorySectionPatch | None,
+) -> str:
+    if patch is None:
+        return existing
+    if patch.mode != "replace":
+        raise ValueError("Page asset and link readability patches must use replace mode.")
+    return patch.body_markdown
 
 
 def _patched_section_body(
