@@ -562,6 +562,14 @@ def _source_facts_by_section(
     ]
     rows: list[dict[str, object]] = []
     for section in draftable_planning_sections(proposal.sections):
+        if section.regulatory_requirement_ids:
+            rows.append(
+                {
+                    "section_id": section.section_id,
+                    "source_facts": [],
+                }
+            )
+            continue
         matched_facts = [
             fact for fact in approved_facts if _source_fact_matches_section(fact, section)
         ]
