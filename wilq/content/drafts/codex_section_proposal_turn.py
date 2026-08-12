@@ -4,10 +4,16 @@ import json
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.content.drafts.codex_section_proposal_schema import proposal_output_schema
+from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_source_facts
+from wilq.content.knowledge.text_matching import (
+    normalize_search_text,
+    normalized_term_matches,
+)
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import revision_readability_issues
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.decisions.planning import ContentPlanningSection
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 _INSTRUCTION = (
@@ -26,6 +32,9 @@ _INSTRUCTION = (
     "wybranej sekcji wszystkie przypisane document_assertions — w tym podmiot, "
     "warunek, wyjątek, termin lub wartość — i oprzyj je wyłącznie na przekazanych "
     "approved_regulatory_facts_for_selected_sections. "
+    "Każdą wybraną sekcję nieregulacyjną oprzyj na dostępnych "
+    "approved_source_facts_for_selected_sections i wykorzystaj przekazane konkretne "
+    "informacje zamiast ogólników. "
     "Każdy finding advisory przekazany w trusted application context musi zostać "
     "rozwiązany w widocznym tekście wybranego komponentu; nie traktuj go jako "
     "ogólnej sugestii ani nie opisuj procesu redakcyjnego. "
@@ -106,6 +115,13 @@ def codex_turn_request(
             ),
             "editable_section_headings": selected_headings,
             "editable_cta_ids": selected_cta_ids,
+            "approved_source_facts_for_selected_sections": (
+                _selected_approved_source_facts(
+                    planning_input,
+                    snapshot,
+                    selected_headings,
+                )
+            ),
             "approved_regulatory_facts_for_selected_sections": _selected_regulatory_facts(
                 planning_input,
                 snapshot,
@@ -191,6 +207,86 @@ def _selected_regulatory_facts(
     ]
 
 
+def _selected_approved_source_facts(
+    planning_input: ContentPlanningInput | None,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    selected_headings: list[str],
+) -> list[dict[str, object]]:
+    if planning_input is None or snapshot.planning_workspace is None:
+        return []
+    proposal = snapshot.planning_workspace.proposal
+    selected = set(selected_headings)
+    approved_facts = _approved_non_regulatory_source_facts(planning_input)
+    fallback_facts = [
+        fact
+        for fact in approved_facts
+        if proposal.service_card_id is not None
+        and fact.target_card_type == "service"
+        and fact.target_card_id == proposal.service_card_id
+    ]
+    selected_facts: dict[str, ContentSourceFact] = {}
+    for section in proposal.sections:
+        if section.heading not in selected:
+            continue
+        matched_facts = [
+            fact for fact in approved_facts if _source_fact_matches_section(fact, section)
+        ]
+        for fact in matched_facts or fallback_facts:
+            selected_facts.setdefault(fact.source_id, fact)
+    return [_approved_source_fact_context(fact) for fact in selected_facts.values()]
+
+
+def _approved_non_regulatory_source_facts(
+    planning_input: ContentPlanningInput,
+) -> list[ContentSourceFact]:
+    allowed_ids = list(
+        dict.fromkeys(
+            source_fact_id
+            for fact in planning_input.source_facts
+            for source_fact_id in fact.source_fact_ids
+        )
+    )
+    if not allowed_ids:
+        return []
+    approved_by_id = {
+        fact.source_id: fact
+        for fact in ekologus_source_facts()
+        if fact.review_status == "approved" and not fact.official_source
+    }
+    return [approved_by_id[source_id] for source_id in allowed_ids if source_id in approved_by_id]
+
+
+def _source_fact_matches_section(
+    fact: ContentSourceFact,
+    section: ContentPlanningSection,
+) -> bool:
+    section_text = normalize_search_text(
+        " ".join(
+            [
+                *section.query_terms,
+                section.heading,
+                section.reader_question,
+                section.purpose,
+            ]
+        )
+    )
+    return any(
+        normalized_term_matches(term, section_text)
+        for term in [*fact.service_fit_terms, *fact.buyer_problem_terms]
+    )
+
+
+def _approved_source_fact_context(fact: ContentSourceFact) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "source_fact_id": fact.source_id,
+        "summary": fact.extracted_fact,
+        "evidence_ids": fact.evidence_ids,
+    }
+    if fact.target_card_type == "service":
+        payload["service_label"] = fact.target_card_title
+    return payload
+
+
 __all__ = ["codex_turn_request"]
 
 
@@ -210,13 +306,9 @@ def _advisory_findings(
         base_revision,
         selected_headings=selected_headings,
     )
-    seen: set[tuple[str, ...]] = {
-        _finding_targets(item) for item in findings
-    }
+    seen: set[tuple[str, ...]] = {_finding_targets(item) for item in findings}
     return findings + [
-        finding
-        for finding in deterministic
-        if _finding_targets(finding) not in seen
+        finding for finding in deterministic if _finding_targets(finding) not in seen
     ]
 
 
