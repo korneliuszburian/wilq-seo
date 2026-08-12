@@ -141,6 +141,15 @@ class ContentInitialDraftModelOutput(BaseModel):
     internal_links: list[ContentInitialDraftInternalLinkOutput] = Field(default_factory=list)
     publish_ready: Literal[False] = False
 
+    @field_validator("page_assets", mode="after")
+    @classmethod
+    def clear_generation_byline(
+        cls, value: ContentDraftRevisionPageAssets
+    ) -> ContentDraftRevisionPageAssets:
+        if value.byline is not None:
+            return value.model_copy(update={"byline": None})
+        return value
+
     @model_validator(mode="after")
     def require_unique_document_targets(self) -> ContentInitialDraftModelOutput:
         section_ids = [item.section_id.strip() for item in self.sections]

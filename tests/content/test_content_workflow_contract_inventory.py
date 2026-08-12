@@ -13,6 +13,7 @@ from wilq.content.drafts.codex_section_proposal_contracts import (
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftResponse
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
+from wilq.content.measurement.read_contracts import ContentMeasurementReadResponse
 from wilq.content.planning.dynamic_input import ContentPlanningInputReadinessResponse
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
@@ -207,6 +208,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/measurement-window",
     ): ContentWorkItemMeasurementWindowResponse,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/measurement",
+    ): ContentMeasurementReadResponse,
     (
         "POST",
         "/api/content/work-items/measurement-outcome",

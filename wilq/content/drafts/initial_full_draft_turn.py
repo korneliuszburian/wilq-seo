@@ -409,6 +409,11 @@ def initial_full_draft_output_schema(
     _require_all_object_properties(schema)
     properties = _mapping(schema, "properties")
     definitions = _mapping(schema, "$defs")
+    page_assets = _properties(_mapping(definitions, "ContentDraftRevisionPageAssets"))
+    page_assets.pop("byline", None)
+    page_assets_required = _mapping(definitions, "ContentDraftRevisionPageAssets").get("required")
+    if isinstance(page_assets_required, list) and "byline" in page_assets_required:
+        page_assets_required.remove("byline")
     section_definition = _mapping(definitions, "ContentInitialDraftSectionOutput")
     section = _properties(section_definition)
     faq = _properties(_mapping(definitions, "ContentInitialDraftFaqOutput"))
