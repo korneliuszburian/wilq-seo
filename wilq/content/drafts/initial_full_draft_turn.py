@@ -179,6 +179,13 @@ def readability_repair_turn_request(
     issues: list[tuple[str, str, str]],
 ) -> CodexAppServerStructuredTurnRequest:
     candidate_section_ids = {section.section_id for section in candidate.sections}
+    auxiliary_section_ids = {
+        *(f"faq:{index}" for index, _ in enumerate(candidate.faq, start=1)),
+        *(f"cta:{index}" for index, _ in enumerate(candidate.cta_blocks, start=1)),
+    }
+    if candidate_section_ids & auxiliary_section_ids:
+        raise ValueError("Candidate section IDs collide with FAQ or CTA repair targets.")
+    candidate_section_ids.update(auxiliary_section_ids)
     affected_section_ids = list(
         dict.fromkeys(
             section_id for _, section_id, _ in issues if section_id in candidate_section_ids
@@ -186,8 +193,25 @@ def readability_repair_turn_request(
     )
     if not affected_section_ids:
         raise ValueError("Readability repair requires an affected candidate section.")
-    return CodexAppServerStructuredTurnRequest(
-        instruction=(
+    auxiliary_targets = any(
+        section_id in auxiliary_section_ids for section_id in affected_section_ids
+    )
+    instruction = (
+        (
+            "Napraw wyłącznie body_markdown sekcji, odpowiedzi FAQ lub CTA wskazanych w polu "
+            "issues. Usuń notatki robocze, meta-komentarze i powtórzone akapity, podziel "
+            "ściany tekstu oraz rozwiń zbyt krótkie odpowiedzi. Każdy patch musi usuwać "
+            "dokładny problem opisany w jego reason. Zachowaj znaczenie, fakty, zakres i ton "
+            "tekstu dla czytelnika. Nie dotykaj innych sekcji, nagłówków, page assets, pytań "
+            "FAQ, innych odpowiedzi FAQ, innych CTA ani linków. Dla FAQ i CTA zawsze użyj "
+            "replace. Zwróć dokładnie po jednym patchu dla każdego dozwolonego section_id. "
+            "Dla zwykłej sekcji użyj replace dla pełnej poprawionej treści albo append "
+            "wyłącznie do uzupełnienia zbyt krótkiej sekcji. Nie dodawaj nowych notatek "
+            "roboczych ani informacji wymagających weryfikacji. Zwróć wyłącznie JSON zgodny "
+            "ze schema."
+        )
+        if auxiliary_targets
+        else (
             "Napraw wyłącznie body_markdown sekcji wskazanych w polu issues. Usuń notatki "
             "robocze, meta-komentarze i powtórzone akapity, podziel ściany tekstu oraz rozwiń "
             "zbyt krótkie odpowiedzi. Każdy patch musi usuwać dokładny problem opisany w jego "
@@ -197,7 +221,10 @@ def readability_repair_turn_request(
             "poprawionej treści sekcji albo append wyłącznie do uzupełnienia zbyt krótkiej "
             "sekcji. Nie dodawaj nowych notatek roboczych ani informacji wymagających "
             "weryfikacji. Zwróć wyłącznie JSON zgodny ze schema."
-        ),
+        )
+    )
+    return CodexAppServerStructuredTurnRequest(
+        instruction=instruction,
         application_context=json.dumps(
             {
                 "operation": "repair_initial_draft_readability",

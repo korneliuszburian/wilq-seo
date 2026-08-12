@@ -31,26 +31,102 @@ _MAX_REPAIR_TURNS = 2
 def readability_issues_for_output(
     output: ContentInitialDraftModelOutput,
 ) -> list[ReadabilityIssue]:
-    revision_sections = [
-        ContentDraftRevisionSection(
-            section_id=section.section_id,
-            heading=section.heading,
-            body_markdown=section.body_markdown,
+    revision_targets = [
+        (
+            section.section_id,
+            ContentDraftRevisionSection(
+                section_id=section.section_id,
+                heading=section.heading,
+                body_markdown=section.body_markdown,
+            ),
         )
         for section in output.sections
     ]
-    section_id_by_heading = {section.heading: section.section_id for section in output.sections}
-    issues: list[ReadabilityIssue] = [
-        (
-            issue.code,
-            section_id_by_heading[issue.affected_section],
-            issue.reason,
+    for index, faq_item in enumerate(output.faq, start=1):
+        section_id = f"faq:{index}"
+        revision_targets.append(
+            (
+                section_id,
+                ContentDraftRevisionSection(
+                    section_id=section_id,
+                    heading=f"FAQ: {faq_item.question}",
+                    body_markdown=faq_item.answer_markdown,
+                ),
+            )
         )
-        for issue in revision_readability_issues(revision_sections)
-    ]
+    for index, cta_item in enumerate(output.cta_blocks, start=1):
+        section_id = f"cta:{index}"
+        revision_targets.append(
+            (
+                section_id,
+                ContentDraftRevisionSection(
+                    section_id=section_id,
+                    heading=f"CTA: {index}",
+                    body_markdown=cta_item.body_markdown,
+                ),
+            )
+        )
+    issues = _mapped_revision_readability_issues(revision_targets)
     section_bodies = {section.section_id: section.body_markdown for section in output.sections}
+    section_bodies.update(
+        {f"faq:{index}": item.answer_markdown for index, item in enumerate(output.faq, start=1)}
+    )
+    section_bodies.update(
+        {
+            f"cta:{index}": item.body_markdown
+            for index, item in enumerate(output.cta_blocks, start=1)
+        }
+    )
     issues.extend(_mapped_repetition_issues(section_bodies))
     return issues
+
+
+def _mapped_revision_readability_issues(
+    revision_targets: list[tuple[str, ContentDraftRevisionSection]],
+) -> list[ReadabilityIssue]:
+    section_ids_by_heading: dict[str, list[str]] = {}
+    for section_id, section in revision_targets:
+        section_ids_by_heading.setdefault(section.heading, []).append(section_id)
+    combined_issues = revision_readability_issues([section for _, section in revision_targets])
+    mapped: list[ReadabilityIssue] = [
+        (issue.code, section_ids_by_heading[issue.affected_section][0], issue.reason)
+        for issue in combined_issues
+        if len(section_ids_by_heading[issue.affected_section]) == 1
+    ]
+    colliding_headings = {
+        heading for heading, section_ids in section_ids_by_heading.items() if len(section_ids) > 1
+    }
+    for section_id, section in revision_targets:
+        if section.heading not in colliding_headings:
+            continue
+        mapped.extend(
+            _readability_issues_for_target(
+                section_id=section_id,
+                heading=section.heading,
+                body_markdown=section.body_markdown,
+            )
+        )
+    return mapped
+
+
+def _readability_issues_for_target(
+    *,
+    section_id: str,
+    heading: str,
+    body_markdown: str,
+) -> list[ReadabilityIssue]:
+    return [
+        (issue.code, section_id, issue.reason)
+        for issue in revision_readability_issues(
+            [
+                ContentDraftRevisionSection(
+                    section_id=section_id,
+                    heading=heading,
+                    body_markdown=body_markdown,
+                )
+            ]
+        )
+    ]
 
 
 def assure_readability_and_repair(
@@ -180,7 +256,29 @@ def _apply_readability_patches(
                     }
                 )
                 for section in output.sections
-            ]
+            ],
+            "faq": [
+                item.model_copy(
+                    update={
+                        "answer_markdown": _patched_auxiliary_body(
+                            item.answer_markdown,
+                            patches.get(f"faq:{index}"),
+                        )
+                    }
+                )
+                for index, item in enumerate(output.faq, start=1)
+            ],
+            "cta_blocks": [
+                item.model_copy(
+                    update={
+                        "body_markdown": _patched_auxiliary_body(
+                            item.body_markdown,
+                            patches.get(f"cta:{index}"),
+                        )
+                    }
+                )
+                for index, item in enumerate(output.cta_blocks, start=1)
+            ],
         }
     )
     return ContentInitialDraftModelOutput.model_validate(patched.model_dump(mode="json"))
@@ -195,6 +293,17 @@ def _patched_section_body(
     if patch.mode == "replace":
         return patch.body_markdown
     return f"{existing}\n\n{patch.body_markdown}"
+
+
+def _patched_auxiliary_body(
+    existing: str,
+    patch: _RegulatorySectionPatch | None,
+) -> str:
+    if patch is None:
+        return existing
+    if patch.mode != "replace":
+        raise ValueError("FAQ and CTA readability patches must use replace mode.")
+    return patch.body_markdown
 
 
 def _readability_blocker(

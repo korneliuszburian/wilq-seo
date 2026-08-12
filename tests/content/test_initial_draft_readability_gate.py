@@ -17,6 +17,8 @@ from wilq.content.drafts.initial_draft_readability import (
 )
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
+    ContentInitialDraftCtaOutput,
+    ContentInitialDraftFaqOutput,
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
     ContentInitialDraftSectionOutput,
@@ -50,6 +52,19 @@ _DIRTY_SECTION_TWO = (
     "Druga informacja wymaga weryfikacji przez człowieka przed przekazaniem tej "
     "sekcji czytelnikowi jako gotowej odpowiedzi."
 )
+_DIRTY_FAQ_ANSWER = (
+    "Ta informacja wymaga weryfikacji przez człowieka przed przekazaniem odpowiedzi "
+    "czytelnikowi zainteresowanemu usługą."
+)
+_CLEAN_FAQ_ANSWER = (
+    "Przedsiębiorca najpierw porządkuje dokumenty, a następnie ustala zakres i terminy "
+    "kolejnych działań."
+)
+_CTA_PARAGRAPH = (
+    "Skontaktuj się z zespołem, aby omówić zakres dokumentacji i zaplanować kolejne "
+    "bezpieczne działania."
+)
+_DUPLICATED_CTA_BODY = f"{_CTA_PARAGRAPH}\n\n{_CTA_PARAGRAPH}"
 _BLOCKED_CLAIM_SECTION = (
     "Usługa zapewnia gwarantowane wyniki każdej firmie, niezależnie od zakresu "
     "obowiązków, dokumentacji oraz profilu prowadzonej działalności."
@@ -71,6 +86,18 @@ class _PatchClient:
         bodies = {
             section["section_id"]: section["body_markdown"] for section in candidate["sections"]
         }
+        bodies.update(
+            {
+                f"faq:{index}": item["answer_markdown"]
+                for index, item in enumerate(candidate["faq"], start=1)
+            }
+        )
+        bodies.update(
+            {
+                f"cta:{index}": item["body_markdown"]
+                for index, item in enumerate(candidate["cta_blocks"], start=1)
+            }
+        )
         return CodexAppServerTurnResult(
             status="completed",
             output_text=json.dumps(
@@ -153,6 +180,8 @@ def _output(
     *,
     first_body: str,
     second_body: str = _CLEAN_SECTION_TWO,
+    faq_answer: str | None = None,
+    cta_body: str | None = None,
 ) -> ContentInitialDraftModelOutput:
     return ContentInitialDraftModelOutput(
         page_assets=ContentDraftRevisionPageAssets(
@@ -174,6 +203,19 @@ def _output(
                 body_markdown=second_body,
             ),
         ],
+        faq=(
+            [
+                ContentInitialDraftFaqOutput(
+                    question="Jak zacząć porządkowanie dokumentacji?",
+                    answer_markdown=faq_answer,
+                )
+            ]
+            if faq_answer is not None
+            else []
+        ),
+        cta_blocks=(
+            [ContentInitialDraftCtaOutput(body_markdown=cta_body)] if cta_body is not None else []
+        ),
     )
 
 
@@ -340,6 +382,59 @@ def test_initial_draft_readability_gate_repairs_or_blocks_before_persistence(
     assert "working_note" in response.blockers[0].source_codes
     assert persistence_calls == []
     assert len(finish_calls) == 1
+
+
+def test_readability_gate_flags_working_note_in_faq_answer() -> None:
+    issues = readability_issues_for_output(
+        _output(
+            first_body=_CLEAN_SECTION_ONE,
+            faq_answer=_DIRTY_FAQ_ANSWER,
+        )
+    )
+
+    assert any(code == "working_note" and section_id == "faq:1" for code, section_id, _ in issues)
+
+
+def test_readability_gate_flags_duplicated_paragraph_in_cta_body() -> None:
+    issues = readability_issues_for_output(
+        _output(
+            first_body=_CLEAN_SECTION_ONE,
+            cta_body=_DUPLICATED_CTA_BODY,
+        )
+    )
+
+    assert any(
+        code == "duplicate_paragraph" and section_id == "cta:1" for code, section_id, _ in issues
+    )
+
+
+def test_readability_gate_repairs_faq_answer() -> None:
+    dirty_output = _output(
+        first_body=_CLEAN_SECTION_ONE,
+        faq_answer=_DIRTY_FAQ_ANSWER,
+    )
+    client = _PatchClient({"faq:1": _CLEAN_FAQ_ANSWER})
+
+    repaired, repaired_trace, blocker = _assure(
+        dirty_output,
+        client,
+        ContentCodexRuntimeTrace(status="completed", turn_id="initial-turn"),
+        _allow_output,
+    )
+
+    assert blocker is None
+    assert repaired.faq[0].answer_markdown == _CLEAN_FAQ_ANSWER
+    assert repaired.faq[0].question == dirty_output.faq[0].question
+    assert repaired.sections == dirty_output.sections
+    assert readability_issues_for_output(repaired) == []
+    assert repaired_trace.turn_id == "readability-repair-1"
+    assert len(client.requests) == 1
+    application_context = json.loads(client.requests[0].application_context)
+    assert application_context["affected_section_ids"] == ["faq:1"]
+    repair_schema = client.requests[0].output_schema
+    assert repair_schema["$defs"]["_RegulatorySectionPatch"]["properties"]["section_id"][
+        "enum"
+    ] == ["faq:1"]
 
 
 def test_readability_gate_blocks_dirty_output_before_spending_a_repair_turn() -> None:
