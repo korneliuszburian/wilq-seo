@@ -27,7 +27,6 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionSection,
 )
-from wilq.storage.local_state import LocalStateStore
 
 ReadabilityIssue = tuple[str, str, str]
 _MAX_REPAIR_TURNS = 2
@@ -196,7 +195,6 @@ def assure_readability_and_repair(
     output: ContentInitialDraftModelOutput,
     trace: ContentCodexRuntimeTrace,
     client: CodexAppServerClientProtocol,
-    run_store: LocalStateStore,
     output_blocker: Callable[[ContentInitialDraftModelOutput], ContentInitialDraftBlocker | None],
 ) -> tuple[
     ContentInitialDraftModelOutput,

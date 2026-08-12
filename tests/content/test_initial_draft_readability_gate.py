@@ -267,7 +267,6 @@ def _assure(
         output=output,
         trace=trace,
         client=client,
-        run_store=cast(object, SimpleNamespace()),
         output_blocker=output_blocker,
     )
 
