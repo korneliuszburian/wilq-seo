@@ -174,6 +174,7 @@ if [ -d apps/dashboard/node_modules ]; then
 
   WILQ_E2E_API_PORT="$dashboard_api_port" WILQ_E2E_DASHBOARD_PORT="$dashboard_dev_port" CI= \
     pnpm --filter @wilq/dashboard exec playwright test --workers=1
+  pnpm --filter @wilq/dashboard test
   pnpm --filter @wilq/dashboard build
 else
   echo "Skipping dashboard e2e/build: node_modules missing. Run pnpm install."
