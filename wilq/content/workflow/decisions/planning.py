@@ -37,6 +37,7 @@ class ContentPlanningPageAssets(BaseModel):
     lead: str = ""
     meta_title: str = ""
     meta_description: str = ""
+    byline: str | None = None
 
 
 class ContentPlanningFaqItem(BaseModel):

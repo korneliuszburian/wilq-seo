@@ -196,12 +196,22 @@ class ContentDraftRevisionPageAssets(BaseModel):
     meta_description: str = Field(min_length=1)
     h1: str = Field(min_length=1)
     lead: str = Field(min_length=1)
+    byline: str | None = None
 
     @field_validator("wordpress_title", "meta_title", "meta_description", "h1", "lead")
     @classmethod
     def require_visible_text(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("Draft revision page assets cannot be blank.")
+        return validate_no_inline_link(value)
+
+    @field_validator("byline")
+    @classmethod
+    def require_valid_byline(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if not value.strip():
+            raise ValueError("Draft revision byline cannot be blank.")
         return validate_no_inline_link(value)
 
 

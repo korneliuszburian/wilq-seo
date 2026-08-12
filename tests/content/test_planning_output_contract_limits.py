@@ -1,8 +1,83 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
+from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_contracts import ContentPlanningModelOutput
+from wilq.content.planning.generated_proposal_turn import content_planning_output_schema
+from wilq.content.workflow.decisions.planning import ContentPlanningPageAssets
+
+
+def test_planning_page_assets_accepts_byline() -> None:
+    page_assets = ContentPlanningPageAssets(byline="Ekspert Ekologus")
+
+    assert page_assets.byline == "Ekspert Ekologus"
+
+
+def test_planning_generation_leaves_byline_unset() -> None:
+    output = ContentPlanningModelOutput.model_validate(
+        {
+            "service_card_id": "ekologus_service_bdo_reporting",
+            "target_reader": "przedsiębiorca",
+            "buyer_problem": "Nie wie, co sprawdzić.",
+            "buyer_trigger": "Przed przygotowaniem obowiązków.",
+            "search_intent": "informational",
+            "angle": "Praktyczny przewodnik",
+            "value_proposition": "Porządkuje pierwszy krok.",
+            "page_assets": {
+                "title": "Tytuł",
+                "h1": "Nagłówek",
+                "lead": "Lead.",
+                "meta_title": "Meta title",
+                "meta_description": "Meta description.",
+                "byline": "Niezweryfikowany autor",
+            },
+            "sections": [
+                {
+                    "heading": "Zakres",
+                    "purpose": "Wyjaśnić zakres.",
+                    "reader_question": "Co sprawdzić?",
+                    "inventory_disposition": "create",
+                    "evidence_ids": ["ev_planning"],
+                }
+            ],
+            "measurement_plan": {
+                "observation_rule": "Porównaj ten sam okres po zmianie.",
+                "success_claim_rule": "Nie twierdź o efekcie bez porównania.",
+            },
+        }
+    )
+
+    assert output.page_assets.byline is None
+
+
+def test_planning_generation_schema_excludes_byline() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        query_portfolio=SimpleNamespace(
+            gsc_query_rows=[],
+            ads_term_rows=[],
+            keyword_planner_rows=[],
+        ),
+        evidence_ids=[],
+        claim_ledger=[],
+        inventory=SimpleNamespace(sections=[]),
+        internal_link_candidates=[],
+        confirmed_service_card_id="ekologus_service_bdo_reporting",
+        regulatory_coverage=SimpleNamespace(requirements=[]),
+        goal="refresh_existing",
+        required_cta_patterns=[],
+        minimum_cta_blocks=1,
+        measurement_metrics=[],
+        measurement_baseline_evidence_ids=[],
+        measurement_observation_rule="Porównaj ten sam okres po zmianie.",
+        measurement_success_claim_rule="Nie twierdź o efekcie bez porównania.",
+        source_assessments=[],
+    )
+    schema = content_planning_output_schema(planning_input)
+
+    assert "byline" not in schema["$defs"]["ContentPlanningPageAssets"]["properties"]
 
 
 def test_planning_model_output_enforces_compactness_caps_at_validation_boundary() -> None:

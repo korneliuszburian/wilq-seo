@@ -7,13 +7,17 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from apps.api.wilq_api.routers.content_workflow import (
     _build_editor_save_command,
     _validate_canonical_html_alignment,
     _validate_revision_sections,
 )
+from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
+from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_output_schema
 from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.documents.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.documents.revision_persistence import (
@@ -29,6 +33,82 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionSourceProvenance,
 )
 from wilq.content.workflow.store.store import ContentWorkflowStore
+
+
+def test_draft_revision_page_assets_accepts_byline() -> None:
+    page_assets = ContentDraftRevisionPageAssets.model_validate(
+        _page_assets_payload() | {"byline": "Ekspert Ekologus"}
+    )
+
+    assert page_assets.byline == "Ekspert Ekologus"
+
+
+def test_draft_revision_page_assets_rejects_inline_link_byline() -> None:
+    payload = _page_assets_payload() | {
+        "byline": "[Ekspert Ekologus](https://www.ekologus.pl/)"
+    }
+
+    with pytest.raises(ValidationError, match="cannot contain inline links"):
+        ContentDraftRevisionPageAssets.model_validate(payload)
+
+
+def test_draft_revision_page_assets_rejects_blank_byline() -> None:
+    payload = _page_assets_payload() | {"byline": "   "}
+
+    with pytest.raises(ValidationError, match="byline cannot be blank"):
+        ContentDraftRevisionPageAssets.model_validate(payload)
+
+
+def test_draft_revision_page_assets_accepts_none_and_missing_byline() -> None:
+    explicit_none = ContentDraftRevisionPageAssets.model_validate(
+        _page_assets_payload() | {"byline": None}
+    )
+    missing = ContentDraftRevisionPageAssets.model_validate(_page_assets_payload())
+
+    assert explicit_none.byline is None
+    assert missing.byline is None
+
+
+def test_initial_draft_generation_leaves_byline_unset() -> None:
+    output = ContentInitialDraftModelOutput.model_validate(
+        {
+            "page_assets": _page_assets_payload()
+            | {"byline": "Niezweryfikowany autor"},
+            "sections": [
+                {
+                    "section_id": "section_scope",
+                    "heading": "Zakres",
+                    "body_markdown": "Treść oparta na dowodzie.",
+                }
+            ],
+        }
+    )
+
+    assert output.page_assets.byline is None
+
+
+def test_initial_draft_generation_schema_excludes_byline() -> None:
+    proposal = ContentPlanningProposal.model_construct(
+        sections=[],
+        faq=[],
+        cta_blocks=[],
+        internal_links=[],
+    )
+    schema = initial_full_draft_output_schema(proposal)
+
+    assert "byline" not in schema["$defs"]["ContentDraftRevisionPageAssets"][
+        "properties"
+    ]
+
+
+def _page_assets_payload() -> dict[str, str]:
+    return {
+        "wordpress_title": "Treść oparta na źródłach",
+        "meta_title": "Treść oparta na źródłach — Ekologus",
+        "meta_description": "Opis oparty na zatwierdzonych faktach.",
+        "h1": "Treść oparta na źródłach",
+        "lead": "Lead oparty na zatwierdzonych faktach.",
+    }
 
 
 def _command(

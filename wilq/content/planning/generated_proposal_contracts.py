@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.planning.dynamic_input import (
@@ -17,9 +17,11 @@ from wilq.content.workflow.decisions.planning import (
     ContentPlanningInternalLink,
     ContentPlanningInventoryDisposition,
     ContentPlanningMeasurementPlan,
-    ContentPlanningPageAssets,
     ContentPlanningProposal,
     ContentPlanningWorkspace,
+)
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningPageAssets as ContentPlanningPageAssetsContract,
 )
 
 ContentPlanningProposalStatus = Literal[
@@ -153,6 +155,26 @@ class ContentPlanningModelSection(BaseModel):
     regulatory_requirement_ids: list[str] = Field(default_factory=list)
 
 
+def _omit_byline_from_generation_schema(schema: dict[str, Any]) -> None:
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        properties.pop("byline", None)
+
+
+class ContentPlanningPageAssets(ContentPlanningPageAssetsContract):
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra=_omit_byline_from_generation_schema,
+    )
+
+    byline: str | None = Field(default=None, exclude=True)
+
+    @field_validator("byline", mode="before")
+    @classmethod
+    def leave_byline_unset(cls, value: object) -> None:
+        return None
+
+
 class ContentPlanningModelOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -174,6 +196,13 @@ class ContentPlanningModelOutput(BaseModel):
     )
     measurement_plan: ContentPlanningMeasurementPlan
     publish_ready: Literal[False] = False
+
+    @field_validator("page_assets", mode="before")
+    @classmethod
+    def accept_planning_page_assets_contract(cls, value: object) -> object:
+        if isinstance(value, ContentPlanningPageAssetsContract):
+            return value.model_dump(mode="python")
+        return value
 
     @model_validator(mode="after")
     def require_unique_section_headings(self) -> ContentPlanningModelOutput:
