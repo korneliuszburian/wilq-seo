@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -147,6 +148,11 @@ class ContentInitialDraftModelOutput(BaseModel):
             raise ValueError("Initial draft section IDs must be unique.")
         if len(headings) != len(set(headings)):
             raise ValueError("Initial draft headings must be unique.")
+        for section_id in section_ids:
+            if re.match(r"^(faq|cta):\d+$", section_id):
+                raise ValueError(
+                    f"Initial draft section ID must not collide with gate target: {section_id}"
+                )
         return self
 
 

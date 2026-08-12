@@ -5,6 +5,8 @@ from collections.abc import Callable
 from types import SimpleNamespace
 from typing import cast
 
+import pytest
+
 from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
@@ -523,3 +525,23 @@ def test_readability_gate_blocks_repaired_claim_before_persistence(
     assert persistence_calls == []
     assert len(persistence_client.requests) == 1
     assert len(finish_calls) == 1
+
+
+def test_initial_draft_section_id_cannot_collide_with_gate_target() -> None:
+    with pytest.raises(ValueError, match="must not collide with gate target"):
+        ContentInitialDraftModelOutput(
+            page_assets=ContentDraftRevisionPageAssets(
+                wordpress_title="Czytelny przewodnik",
+                meta_title="Czytelny przewodnik dla firmy",
+                meta_description="Praktyczne kroki dla przedsiębiorcy.",
+                h1="Jak uporządkować obowiązki",
+                lead="Krótki przewodnik prowadzi przez najważniejsze działania.",
+            ),
+            sections=[
+                ContentInitialDraftSectionOutput(
+                    section_id="faq:1",
+                    heading="Pierwszy krok",
+                    body_markdown=_CLEAN_SECTION_ONE,
+                ),
+            ],
+        )
