@@ -146,7 +146,8 @@ def _generate_content_work_item_planning_proposal(
     )
     if early_response is not None:
         return early_response
-    assert planning_input is not None
+    if planning_input is None:
+        raise RuntimeError("Planning preparation returned no input or blocker.")
     return _enqueue_planning_generation(
         planning_input=planning_input,
         work_item_id=work_item_id,
