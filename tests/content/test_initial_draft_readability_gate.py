@@ -410,6 +410,21 @@ def test_readability_gate_flags_duplicated_paragraph_in_cta_body() -> None:
     )
 
 
+def test_readability_gate_does_not_flag_thin_faq_or_cta() -> None:
+    issues = readability_issues_for_output(
+        _output(
+            first_body=_CLEAN_SECTION_ONE,
+            faq_answer="Krótka odpowiedź.",
+            cta_body="Zapytaj o wycenę.",
+        )
+    )
+
+    assert not any(
+        code == "thin_section" and section_id in {"faq:1", "cta:1"}
+        for code, section_id, _ in issues
+    )
+
+
 def test_readability_gate_repairs_faq_answer() -> None:
     dirty_output = _output(
         first_body=_CLEAN_SECTION_ONE,
