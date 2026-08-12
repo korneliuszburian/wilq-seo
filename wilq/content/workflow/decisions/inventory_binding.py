@@ -6,6 +6,7 @@ from typing import Literal
 
 from wilq.content.planning.decisions import (
     content_decision_metrics,
+    content_decision_title,
     content_decision_work_item_id_for_url,
 )
 from wilq.content.workflow.workspace.catalog import (
@@ -99,14 +100,10 @@ def resolve_inventory_material(
     )
 
 
-def inventory_decision_for_work_item(
+def _inventory_item_for_work_item(
+    catalog: ContentInventoryCatalogResponse,
     work_item_id: str,
-    *,
-    read_material: bool = True,
-    allow_material_pending: bool = False,
-    include_all_metric_facts: bool = False,
-) -> ContentDecisionItem | None:
-    catalog = build_content_inventory_catalog()
+) -> ContentInventoryCatalogItem | None:
     matches = [
         candidate
         for candidate in catalog.items
@@ -115,42 +112,54 @@ def inventory_decision_for_work_item(
     ]
     # The diagnostics queue truncates URL slugs to a bounded ID. Refuse an
     # ambiguous catalog match rather than opening the wrong page.
-    item = matches[0] if len(matches) == 1 else None
+    return matches[0] if len(matches) == 1 else None
+
+
+def _inventory_decision_status(
+    item: ContentInventoryCatalogItem,
+    material_ready: bool,
+    allow_material_pending: bool,
+) -> Literal["ready", "blocked"]:
+    # A selected item may enter the decision view before its heavier material
+    # read finishes. This is not content readiness: later planning stays blocked.
+    if allow_material_pending and not material_ready:
+        return "ready"
+    return "ready" if material_ready or item.material_status != "url_only" else "blocked"
+
+
+def inventory_decision_for_work_item(
+    work_item_id: str,
+    *,
+    read_material: bool = True,
+    allow_material_pending: bool = False,
+    include_all_metric_facts: bool = False,
+) -> ContentDecisionItem | None:
+    catalog = build_content_inventory_catalog()
+    item = _inventory_item_for_work_item(catalog, work_item_id)
     if item is None:
         return None
-    material = (
-        read_content_inventory_material(item.url, catalog=catalog)
-        if read_material
-        else None
-    )
+    material = read_content_inventory_material(item.url, catalog=catalog) if read_material else None
     resolved = resolve_inventory_material(item, material)
     content_text = resolved.content_text
     content_summary = resolved.content_summary
-    content_word_count = resolved.content_word_count
     section_headings = resolved.section_headings
     acf_headings = resolved.acf_headings
     acf_fields = resolved.acf_fields
-    material_ready = resolved.ready
     all_metric_facts = inventory_metric_facts(item.url, item.path)
-    facts = [
-        fact for fact in all_metric_facts if fact.source_connector == "google_search_console"
-    ]
+    facts = [fact for fact in all_metric_facts if fact.source_connector == "google_search_console"]
     queries = _unique(str(fact.dimensions.get("query") or "") for fact in facts)
     metrics = content_decision_metrics(facts, queries)
     evidence_ids = _unique([item.evidence_id, *(fact.evidence_id for fact in all_metric_facts)])
     source_connectors = _unique(
         [item.source_connector, *(fact.source_connector for fact in all_metric_facts)]
     )
-    title = item.title or item.path
-    decision_status: Literal["ready", "blocked"] = (
-        "ready" if material_ready or item.material_status != "url_only" else "blocked"
+    title = content_decision_title(
+        decision_type="refresh_or_merge",
+        page=item.url,
+        query_count=len(queries),
+        metrics=metrics,
     )
-    # An explicitly selected inventory item may enter the decision view before
-    # the heavier WordPress material read finishes. This is not content
-    # readiness: the missing material remains visible on the decision and
-    # snapshot surfaces and still blocks planning/draft generation later.
-    if allow_material_pending and not material_ready:
-        decision_status = "ready"
+    decision_status = _inventory_decision_status(item, resolved.ready, allow_material_pending)
     return ContentDecisionItem(
         id=work_item_id.removeprefix("content_work_item_"),
         decision_type="refresh_or_merge",
@@ -179,7 +188,7 @@ def inventory_decision_for_work_item(
         wordpress_content_extraction_region=resolved.extraction_region,
         wordpress_content_material_confidence=resolved.material_confidence,
         wordpress_content_source_field_lineage=resolved.source_field_lineage,
-        wordpress_content_word_count=content_word_count,
+        wordpress_content_word_count=resolved.content_word_count,
         wordpress_content_inventory_status=(
             "available" if content_summary or content_text else "missing"
         ),
@@ -193,9 +202,7 @@ def inventory_decision_for_work_item(
         ),
         wordpress_acf_section_headings=acf_headings,
         wordpress_acf_field_names=acf_fields,
-        wordpress_acf_section_count=(
-            len(acf_headings) if acf_headings else item.acf_section_count
-        ),
+        wordpress_acf_section_count=(len(acf_headings) if acf_headings else item.acf_section_count),
         source_public_url=item.url,
         intended_final_url=item.url,
         final_canonical_url=item.url,
@@ -208,16 +215,8 @@ def inventory_decision_for_work_item(
         # Keep the bounded GSC preview for the queue, but retain exact GA4
         # landing facts so planning can bind behavior to the selected page.
         metric_facts=[
-            *(
-                facts
-                if include_all_metric_facts
-                else facts[:8]
-            ),
-            *[
-                fact
-                for fact in all_metric_facts
-                if fact.source_connector == "google_analytics_4"
-            ],
+            *(facts if include_all_metric_facts else facts[:8]),
+            *[fact for fact in all_metric_facts if fact.source_connector == "google_analytics_4"],
         ],
         rationale=(
             "Adres został wybrany bezpośrednio z pełnego inventory WordPress, "

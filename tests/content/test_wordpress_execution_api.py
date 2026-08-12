@@ -11,6 +11,9 @@ from apps.api.wilq_api.routers.content_snapshot import (
     snapshot_for_default_work_item_or_404,
     snapshot_for_work_item_or_404,
 )
+from tests._contract_support.action_candidate_seed import (
+    save_content_workflow_service_page_metric_facts,
+)
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import (
@@ -240,6 +243,31 @@ def test_wordpress_activation_packet_can_scope_to_selected_work_item(
     assert selected_packet["work_item_id"] == default_packet["work_item_id"]
     assert selected_packet["topic"] == default_packet["topic"]
     assert selected_packet["external_write_attempted"] is False
+
+
+def test_wordpress_activation_packet_topic_is_consistent_for_selected_scope(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "activation_packet_topic.sqlite3"),
+    )
+    monkeypatch.setenv(
+        "WILQ_METRIC_DB",
+        str(tmp_path / "activation_packet_topic.duckdb"),
+    )
+    save_content_workflow_service_page_metric_facts()
+
+    default_packet = _get_wordpress_activation_packet()
+    selected_packet = _get_wordpress_activation_packet(default_packet["work_item_id"])
+
+    assert selected_packet["topic"] == default_packet["topic"]
+    assert default_packet["topic"].startswith("Istniejący URL")
+    assert default_packet["topic"] not in {
+        default_packet["final_canonical_url"],
+        default_packet["final_canonical_url"].removeprefix("https://www.ekologus.pl"),
+    }
 
 
 def test_retired_wordpress_activation_packet_route_returns_404(
