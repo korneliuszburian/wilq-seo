@@ -7,9 +7,14 @@ from typing import cast
 
 import pytest
 
-from wilq.codex.app_server import (
-    CodexAppServerStructuredTurnRequest,
-    CodexAppServerTurnResult,
+from tests.content.initial_draft_readability_fakes import (
+    BlockedThenPatchClient as _BlockedThenPatchClient,
+)
+from tests.content.initial_draft_readability_fakes import (
+    PatchClient as _PatchClient,
+)
+from tests.content.initial_draft_readability_fakes import (
+    PatchSequenceClient as _PatchSequenceClient,
 )
 from wilq.content.drafts import initial_draft_assurance_repair, initial_full_draft
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
@@ -88,65 +93,6 @@ _REGULATED_CLEAN_SECTION = (
     "Przedsiębiorca sprawdza zakres obowiązków, porządkuje dokumenty i planuje "
     "kolejne działania zgodnie z profilem swojej działalności."
 )
-
-
-class _PatchClient:
-    def __init__(self, replacements: dict[str, str] | None = None) -> None:
-        self.replacements = replacements or {}
-        self.requests: list[CodexAppServerStructuredTurnRequest] = []
-
-    def run_structured_turn(
-        self,
-        request: CodexAppServerStructuredTurnRequest,
-    ) -> CodexAppServerTurnResult:
-        self.requests.append(request)
-        application_context = json.loads(request.application_context)
-        candidate = json.loads(request.untrusted_context)["candidate_document"]
-        bodies = {
-            section["section_id"]: section["body_markdown"] for section in candidate["sections"]
-        }
-        bodies.update(
-            {
-                f"faq:{index}": item["answer_markdown"]
-                for index, item in enumerate(candidate["faq"], start=1)
-            }
-        )
-        bodies.update(
-            {
-                f"cta:{index}": item["body_markdown"]
-                for index, item in enumerate(candidate["cta_blocks"], start=1)
-            }
-        )
-        bodies.update(
-            {f"page_assets:{field}": value for field, value in candidate["page_assets"].items()}
-        )
-        bodies.update(
-            {
-                f"link:{index}": item["anchor_text"]
-                for index, item in enumerate(candidate["internal_links"], start=1)
-            }
-        )
-        return CodexAppServerTurnResult(
-            status="completed",
-            output_text=json.dumps(
-                {
-                    "sections": [
-                        {
-                            "section_id": section_id,
-                            "mode": "replace",
-                            "body_markdown": self.replacements.get(
-                                section_id,
-                                bodies[section_id],
-                            ),
-                        }
-                        for section_id in application_context["affected_section_ids"]
-                    ],
-                    "publish_ready": False,
-                },
-                ensure_ascii=False,
-            ),
-            turn_id=f"readability-repair-{len(self.requests)}",
-        )
 
 
 def _planning_input() -> ContentPlanningInput:
@@ -549,6 +495,68 @@ def test_initial_draft_readability_gate_repairs_or_blocks_before_persistence(
     assert "working_note" in response.blockers[0].source_codes
     assert persistence_calls == []
     assert len(finish_calls) == 1
+
+
+def test_failed_readability_repair_turn_is_terminal_without_persistence(monkeypatch) -> None:
+    dirty_output = _output(
+        first_body=_DIRTY_SECTION_ONE,
+        second_body=_DIRTY_SECTION_TWO,
+    )
+    client = _BlockedThenPatchClient(
+        {
+            "section_01": _CLEAN_SECTION_ONE,
+            "section_02": _CLEAN_SECTION_TWO,
+        }
+    )
+
+    response, persistence_calls, _finish_calls = _generate_blocked_response(
+        monkeypatch,
+        dirty_output,
+        client,
+    )
+
+    assert len(client.requests) == 1
+    assert response.status == "blocked"
+    blocker = response.blockers[0]
+    assert blocker.code == "readability_repair_failed"
+    assert blocker.label == "Naprawa czytelności nie powiodła się"
+    assert blocker.reason.endswith("(status: blocked).")
+    assert "WILQ nie zapisał tekstu" in blocker.next_step
+    assert blocker.source_codes == ["readability_repair_turn_failed"]
+    assert response.runtime.status == "blocked"
+    assert response.runtime.external_call_attempted is True
+    assert persistence_calls == []
+
+
+def test_partial_readability_repair_continues_within_budget() -> None:
+    dirty_output = _output(
+        first_body=_DIRTY_SECTION_ONE,
+        second_body=_DIRTY_SECTION_TWO,
+    )
+    client = _PatchSequenceClient(
+        [
+            {"section_01": _CLEAN_SECTION_ONE},
+            {"section_02": _CLEAN_SECTION_TWO},
+        ]
+    )
+
+    repaired, repaired_trace, blocker = _assure(
+        dirty_output,
+        client,
+        ContentCodexRuntimeTrace(status="completed", turn_id="initial-turn"),
+        _allow_output,
+    )
+
+    assert blocker is None
+    assert repaired.sections[0].body_markdown == _CLEAN_SECTION_ONE
+    assert repaired.sections[1].body_markdown == _CLEAN_SECTION_TWO
+    assert readability_issues_for_output(repaired) == []
+    assert repaired_trace.turn_id == "readability-repair-2"
+    assert len(client.requests) == 2
+    first_turn_context = json.loads(client.requests[0].application_context)
+    second_turn_context = json.loads(client.requests[1].application_context)
+    assert first_turn_context["affected_section_ids"] == ["section_01", "section_02"]
+    assert second_turn_context["affected_section_ids"] == ["section_02"]
 
 
 def test_readability_repair_reassures_and_persists_the_fresh_receipt(monkeypatch) -> None:

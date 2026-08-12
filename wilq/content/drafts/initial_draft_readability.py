@@ -213,10 +213,12 @@ def assure_readability_and_repair(
         _MAX_REPAIR_TURNS,
     )
     for _ in range(repair_budget):
+        candidate = output
+        turn_input_trace = trace
         output, trace = _repair_readability_candidate(
             planning_input=planning_input,
             proposal=proposal,
-            output=output,
+            output=candidate,
             issues=issues,
             client=client,
         )
@@ -224,6 +226,8 @@ def assure_readability_and_repair(
         blocker = output_blocker(output)
         if blocker is not None:
             return output, trace, blocker
+        if output is candidate and trace is not turn_input_trace:
+            return output, trace, _readability_repair_failed_blocker(trace)
         if not issues:
             return output, trace, None
     return output, trace, _readability_blocker(issues)
@@ -437,6 +441,18 @@ def _readability_blocker(
             "nową próbę generowania."
         ),
         source_codes=list(dict.fromkeys(code for code, _, _ in issues)),
+    )
+
+
+def _readability_repair_failed_blocker(
+    trace: ContentCodexRuntimeTrace,
+) -> ContentInitialDraftBlocker:
+    return ContentInitialDraftBlocker(
+        code="readability_repair_failed",
+        label="Naprawa czytelności nie powiodła się",
+        reason=f"Tura naprawy czytelności nie zastosowała poprawki (status: {trace.status}).",
+        next_step="Sprawdź blokadę runtime i uruchom nową próbę; WILQ nie zapisał tekstu.",
+        source_codes=["readability_repair_turn_failed"],
     )
 
 
