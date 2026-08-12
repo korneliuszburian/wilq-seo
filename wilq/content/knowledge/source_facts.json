@@ -805,6 +805,757 @@
         "Redacted evidence-policy proposal z ekologus-ai; używaj jako review-required Service Profile policy, nie jako automatycznej bramki produkcyjnej.",
         "Nie kopiuj raw private text ani szczegółów materiałów z ekologus-ai do publicznych draftów."
       ]
+    },
+    {
+      "source_id": "ekologus_public_doradztwo_2026_08_13_1",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+      "extracted_fact": "W stałej obsłudze gospodarki odpadami Ekologus opracowuje sprawozdania o wytwarzanych odpadach w BDO, przygotowuje karty ewidencji na podstawie zatwierdzonych kart przekazania odpadów i nadzoruje te karty.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.82,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uniknięcia kary",
+        "gwarancja zgodności prawnej",
+        "rozstrzygnięcie obowiązku konkretnej firmy bez review"
+      ],
+      "target_card_id": "ekologus_service_environmental_consulting_outsourcing",
+      "target_card_type": "service",
+      "target_card_title": "Doradztwo i outsourcing środowiskowy",
+      "service_fit_terms": [
+        "outsourcing ekologiczny",
+        "bdo",
+        "odpady"
+      ],
+      "buyer_problem_terms": [
+        "brak uporządkowanej ewidencji odpadów",
+        "nieprzygotowane sprawozdanie BDO"
+      ],
+      "buyer_triggers": [
+        "firma potrzebuje stałej obsługi ewidencji i sprawozdawczości odpadowej"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_doradztwo_2026_08_13_2",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+      "extracted_fact": "Obsługa spraw odpadowych obejmuje także opracowywanie wniosków aktualizacyjnych oraz wniosków o wykreślenie składanych przez system BDO.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.81,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uniknięcia kary",
+        "gwarancja zgodności prawnej",
+        "rozstrzygnięcie obowiązku konkretnej firmy bez review"
+      ],
+      "target_card_id": "ekologus_service_environmental_consulting_outsourcing",
+      "target_card_type": "service",
+      "target_card_title": "Doradztwo i outsourcing środowiskowy",
+      "service_fit_terms": [
+        "outsourcing ekologiczny",
+        "bdo"
+      ],
+      "buyer_problem_terms": [
+        "nieaktualny wpis w BDO",
+        "potrzeba zmiany danych w rejestrze"
+      ],
+      "buyer_triggers": [
+        "potrzebne jest przygotowanie wniosku aktualizacyjnego lub wniosku o wykreślenie przez system BDO"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_doradztwo_2026_08_13_3",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+      "extracted_fact": "W gospodarce opakowaniami i odpadami opakowaniowymi Ekologus wspiera określenie obowiązków przedsiębiorcy, wstępne przygotowanie dokumentacji, wnioski aktualizacyjne oraz roczne sprawozdania w BDO.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.81,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uniknięcia kary",
+        "gwarancja zgodności prawnej",
+        "rozstrzygnięcie obowiązku konkretnej firmy bez review"
+      ],
+      "target_card_id": "ekologus_service_environmental_consulting_outsourcing",
+      "target_card_type": "service",
+      "target_card_title": "Doradztwo i outsourcing środowiskowy",
+      "service_fit_terms": [
+        "outsourcing ekologiczny",
+        "bdo",
+        "opakowani"
+      ],
+      "buyer_problem_terms": [
+        "nieustalony zakres obowiązków opakowaniowych",
+        "brak dokumentacji opakowaniowej"
+      ],
+      "buyer_triggers": [
+        "firma potrzebuje określić obowiązki dotyczące opakowań i przygotować dokumentację"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_doradztwo_2026_08_13_4",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+      "extracted_fact": "Dla emisji pyłów i gazów do powietrza Ekologus sporządza raport do KOBiZE oraz wykazy dotyczące korzystania ze środowiska wraz z wyliczeniem opłaty środowiskowej.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.82,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uniknięcia kary",
+        "gwarancja zgodności prawnej",
+        "rozstrzygnięcie obowiązku konkretnej firmy bez review"
+      ],
+      "target_card_id": "ekologus_service_environmental_consulting_outsourcing",
+      "target_card_type": "service",
+      "target_card_title": "Doradztwo i outsourcing środowiskowy",
+      "service_fit_terms": [
+        "outsourcing ekologiczny",
+        "kobize",
+        "opłaty środowiskowe"
+      ],
+      "buyer_problem_terms": [
+        "brak raportu KOBiZE",
+        "nieobliczona opłata środowiskowa"
+      ],
+      "buyer_triggers": [
+        "zakład emituje pyły lub gazy do powietrza"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_doradztwo_2026_08_13_5",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+      "extracted_fact": "Doradztwo ekologiczne obejmuje konsultacje techniczne i prawne, weryfikację dokumentacji pod kątem wymagań ochrony środowiska, okresowe przeglądy działalności i instalacji, wsparcie przy uzgadnianiu dokumentacji oraz pomoc w naliczaniu opłat środowiskowych.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.8,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uniknięcia kary",
+        "gwarancja zgodności prawnej",
+        "rozstrzygnięcie obowiązku konkretnej firmy bez review"
+      ],
+      "target_card_id": "ekologus_service_environmental_consulting_outsourcing",
+      "target_card_type": "service",
+      "target_card_title": "Doradztwo i outsourcing środowiskowy",
+      "service_fit_terms": [
+        "doradztwo środowiskowe",
+        "outsourcing ekologiczny",
+        "opłaty środowiskowe"
+      ],
+      "buyer_problem_terms": [
+        "dokumentacja wymaga weryfikacji",
+        "brak stałego nadzoru środowiskowego"
+      ],
+      "buyer_triggers": [
+        "firma chce zlecić okresowy przegląd działalności lub instalacji"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_szkolenia_2026_08_13_1",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/szkolenia/",
+      "extracted_fact": "Strona opisuje szkolenia zamknięte dla co najmniej pięciu osób, z programem i formą zajęć przygotowanymi po analizie potrzeb oraz indywidualnie uzgadnianym miejscem i terminem.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.8,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "uczestnik po szkoleniu ma gwarantowaną zgodność",
+        "aktualna cena lub dostępność bez review",
+        "certyfikat bez potwierdzenia oferty"
+      ],
+      "target_card_id": "ekologus_service_environmental_training",
+      "target_card_type": "service",
+      "target_card_title": "Szkolenia środowiskowe",
+      "service_fit_terms": [
+        "szkolenia",
+        "warsztaty"
+      ],
+      "buyer_problem_terms": [
+        "standardowe szkolenie nie odpowiada potrzebom zespołu",
+        "trzeba przeszkolić grupę pracowników"
+      ],
+      "buyer_triggers": [
+        "firma potrzebuje zamkniętego szkolenia dopasowanego do swojej specyfiki"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_szkolenia_2026_08_13_2",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/szkolenia/",
+      "extracted_fact": "Szkolenia z systemów zarządzania obejmują warsztaty dla auditorów laboratoriów według ISO/IEC 17025, zintegrowane systemy ISO 9001 i ISO 14001 oraz system zarządzania energią ISO 50001.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.82,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "uczestnik po szkoleniu ma gwarantowaną zgodność",
+        "aktualna cena lub dostępność bez review",
+        "certyfikat bez potwierdzenia oferty"
+      ],
+      "target_card_id": "ekologus_service_environmental_training",
+      "target_card_type": "service",
+      "target_card_title": "Szkolenia środowiskowe",
+      "service_fit_terms": [
+        "szkolenia",
+        "warsztaty"
+      ],
+      "buyer_problem_terms": [
+        "auditorzy potrzebują doskonalenia",
+        "zespół wdraża system zarządzania"
+      ],
+      "buyer_triggers": [
+        "organizacja przygotowuje auditorów wewnętrznych lub integruje systemy zarządzania"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_szkolenia_2026_08_13_3",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/szkolenia/",
+      "extracted_fact": "Na warsztatach KOBiZE uczestnicy pracują na indywidualnych kontach w bazie, ćwiczą pozyskiwanie i obróbkę danych oraz sporządzanie raportu, a podczas zajęć konsultują sposób wprowadzania danych.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.83,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "uczestnik po szkoleniu ma gwarantowaną zgodność",
+        "aktualna cena lub dostępność bez review",
+        "certyfikat bez potwierdzenia oferty"
+      ],
+      "target_card_id": "ekologus_service_environmental_training",
+      "target_card_type": "service",
+      "target_card_title": "Szkolenia środowiskowe",
+      "service_fit_terms": [
+        "warsztaty",
+        "kobize"
+      ],
+      "buyer_problem_terms": [
+        "zespół nie umie przygotować raportu KOBiZE",
+        "trudność z przygotowaniem danych do raportu"
+      ],
+      "buyer_triggers": [
+        "pracownicy mają samodzielnie sporządzać raporty w bazie KOBiZE"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_szkolenia_2026_08_13_4",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/szkolenia/",
+      "extracted_fact": "Szkolenie o awariach i wyciekach obejmuje prewencję u źródła, ograniczanie rozprzestrzeniania substancji ropopochodnych oraz praktyczne warsztaty postępowania w razie awarii na stanowisku pracy.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.82,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "uczestnik po szkoleniu ma gwarantowaną zgodność",
+        "aktualna cena lub dostępność bez review",
+        "certyfikat bez potwierdzenia oferty"
+      ],
+      "target_card_id": "ekologus_service_environmental_training",
+      "target_card_type": "service",
+      "target_card_title": "Szkolenia środowiskowe",
+      "service_fit_terms": [
+        "szkolenia",
+        "warsztaty"
+      ],
+      "buyer_problem_terms": [
+        "pracownicy nie wiedzą jak reagować na wyciek",
+        "brak praktycznego przygotowania do awarii"
+      ],
+      "buyer_triggers": [
+        "pracownicy mają kontakt z substancjami ropopochodnymi lub chemicznymi"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_szkolenia_2026_08_13_5",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/szkolenia/",
+      "extracted_fact": "Szkolenie REACH i CLP uczy identyfikowania obowiązków firmy, weryfikacji surowców i kart charakterystyki, wymiany informacji w łańcuchu dostaw oraz klasyfikacji i oznakowania substancji i mieszanin.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.82,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "uczestnik po szkoleniu ma gwarantowaną zgodność",
+        "aktualna cena lub dostępność bez review",
+        "certyfikat bez potwierdzenia oferty"
+      ],
+      "target_card_id": "ekologus_service_environmental_training",
+      "target_card_type": "service",
+      "target_card_title": "Szkolenia środowiskowe",
+      "service_fit_terms": [
+        "szkolenia",
+        "reach",
+        "clp"
+      ],
+      "buyer_problem_terms": [
+        "błędy w kartach charakterystyki",
+        "niejasne obowiązki dotyczące chemikaliów"
+      ],
+      "buyer_triggers": [
+        "firma zarządza chemikaliami lub wymienia informacje w łańcuchu dostaw"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_opracowania_dokumentacji_2026_08_13_1",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+      "extracted_fact": "Ekologus przygotowuje specjalistyczne ekspertyzy i dokumentacje przeznaczone do uzyskiwania pozwoleń i decyzji administracyjnych dla działających instalacji oraz nowych inwestycji w zakładach przemysłowych.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.8,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uzyskania pozwolenia wodnoprawnego",
+        "rozstrzygnięcie czy konkretna firma musi mieć pozwolenie bez review",
+        "aktualne terminy, opłaty lub komplet dokumentów bez human review",
+        "pełna interpretacja Prawa wodnego bez człowieka"
+      ],
+      "target_card_id": "ekologus_service_operat_wodnoprawny",
+      "target_card_type": "service",
+      "target_card_title": "Operaty i pozwolenia wodnoprawne",
+      "service_fit_terms": [
+        "operat wodnoprawny",
+        "pozwolenie wodnoprawne"
+      ],
+      "buyer_problem_terms": [
+        "brak dokumentacji do decyzji administracyjnej",
+        "nowa inwestycja wymaga pozwoleń"
+      ],
+      "buyer_triggers": [
+        "zakład uruchamia nową inwestycję lub zmienia działającą instalację"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_opracowania_dokumentacji_2026_08_13_2",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+      "extracted_fact": "Dokumentacja dla instalacji IPPC obejmuje wnioski o pozwolenie zintegrowane, raporty początkowe i końcowe, analizę konieczności wykonania raportu początkowego oraz ocenę stanu środowiska gruntowo-wodnego.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.82,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uzyskania pozwolenia wodnoprawnego",
+        "rozstrzygnięcie czy konkretna firma musi mieć pozwolenie bez review",
+        "aktualne terminy, opłaty lub komplet dokumentów bez human review",
+        "pełna interpretacja Prawa wodnego bez człowieka"
+      ],
+      "target_card_id": "ekologus_service_operat_wodnoprawny",
+      "target_card_type": "service",
+      "target_card_title": "Operaty i pozwolenia wodnoprawne",
+      "service_fit_terms": [
+        "pozwolenie wodnoprawne",
+        "gospodarka wodno-ściekowa"
+      ],
+      "buyer_problem_terms": [
+        "instalacja wymaga dokumentacji IPPC",
+        "trzeba ocenić stan środowiska gruntowo-wodnego"
+      ],
+      "buyer_triggers": [
+        "powstaje, zmienia się albo kończy eksploatację instalacja IPPC"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_opracowania_dokumentacji_2026_08_13_3",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+      "extracted_fact": "Dla nowych inwestycji Ekologus przygotowuje raporty oddziaływania na środowisko ROŚ lub OOŚ oraz karty informacyjne przedsięwzięcia KIP używane w procesie inwestycyjnym.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.81,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uzyskania pozwolenia wodnoprawnego",
+        "rozstrzygnięcie czy konkretna firma musi mieć pozwolenie bez review",
+        "aktualne terminy, opłaty lub komplet dokumentów bez human review",
+        "pełna interpretacja Prawa wodnego bez człowieka"
+      ],
+      "target_card_id": "ekologus_service_operat_wodnoprawny",
+      "target_card_type": "service",
+      "target_card_title": "Operaty i pozwolenia wodnoprawne",
+      "service_fit_terms": [
+        "pozwolenie wodnoprawne",
+        "zgłoszenie wodnoprawne"
+      ],
+      "buyer_problem_terms": [
+        "brak dokumentacji środowiskowej dla inwestycji",
+        "nieprzygotowany raport oddziaływania"
+      ],
+      "buyer_triggers": [
+        "planowane przedsięwzięcie wchodzi w proces inwestycyjno-budowlany"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_opracowania_dokumentacji_2026_08_13_4",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+      "extracted_fact": "Wnioski o pozwolenia sektorowe obejmują gospodarkę wodno-ściekową, emisje gazów i pyłów do powietrza oraz wytwarzanie, magazynowanie i przetwarzanie odpadów.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.82,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uzyskania pozwolenia wodnoprawnego",
+        "rozstrzygnięcie czy konkretna firma musi mieć pozwolenie bez review",
+        "aktualne terminy, opłaty lub komplet dokumentów bez human review",
+        "pełna interpretacja Prawa wodnego bez człowieka"
+      ],
+      "target_card_id": "ekologus_service_operat_wodnoprawny",
+      "target_card_type": "service",
+      "target_card_title": "Operaty i pozwolenia wodnoprawne",
+      "service_fit_terms": [
+        "pozwolenie wodnoprawne",
+        "gospodarka wodno-ściekowa",
+        "ścieki"
+      ],
+      "buyer_problem_terms": [
+        "zakład potrzebuje dokumentacji do pozwolenia sektorowego",
+        "zmiana instalacji wpływa na emisje lub odpady"
+      ],
+      "buyer_triggers": [
+        "zakład przygotowuje dokumentację w obszarze wód, powietrza lub odpadów"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_opracowania_dokumentacji_2026_08_13_5",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+      "extracted_fact": "Ocena stanu środowiska gruntowo-wodnego obejmuje dobór badanych substancji, rozpoznanie warunków hydrogeologicznych, wyznaczenie miejsc i głębokości poboru próbek, odwierty pod nadzorem geologa, akredytowany pobór i analizy laboratoryjne oraz opracowanie wyników i dalszych kroków.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.83,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uzyskania pozwolenia wodnoprawnego",
+        "rozstrzygnięcie czy konkretna firma musi mieć pozwolenie bez review",
+        "aktualne terminy, opłaty lub komplet dokumentów bez human review",
+        "pełna interpretacja Prawa wodnego bez człowieka"
+      ],
+      "target_card_id": "ekologus_service_operat_wodnoprawny",
+      "target_card_type": "service",
+      "target_card_title": "Operaty i pozwolenia wodnoprawne",
+      "service_fit_terms": [
+        "gospodarka wodno-ściekowa",
+        "pobór wód"
+      ],
+      "buyer_problem_terms": [
+        "nieznany stan gleby i wód gruntowych",
+        "brak danych do raportu początkowego lub końcowego"
+      ],
+      "buyer_triggers": [
+        "zakład potrzebuje rozpoznać stan środowiska gruntowo-wodnego wokół instalacji"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_pomiary_i_analizy_2026_08_13_1",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/pomiary-i-analizy/",
+      "extracted_fact": "Ekologus wykonuje akredytowane pomiary emisji pyłów i gazów, pomiary poziomu hałasu oraz akredytowane pobory i badania ziemi, gleby, wód podziemnych, wody, ścieków, odpadów i kompostu we współpracy z akredytowanymi laboratoriami.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.83,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarantowany wynik oczyszczenia",
+        "gwarantowana decyzja urzędu",
+        "gwarantowane bezpieczeństwo terenu"
+      ],
+      "target_card_id": "ekologus_service_remediation_monitoring",
+      "target_card_type": "service",
+      "target_card_title": "Rekultywacje, remediacje i monitoring",
+      "service_fit_terms": [
+        "monitoring",
+        "gleba",
+        "wody podziemne",
+        "próbki"
+      ],
+      "buyer_problem_terms": [
+        "brak wyników badań środowiska",
+        "potrzeba akredytowanego poboru próbek"
+      ],
+      "buyer_triggers": [
+        "zakład potrzebuje pomiarów emisji, hałasu albo badań próbek środowiskowych"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_pomiary_i_analizy_2026_08_13_2",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/pomiary-i-analizy/",
+      "extracted_fact": "Monitoring środowiska obejmuje badanie, analizę i ocenę stanu powietrza, ziemi, gleby oraz wód powierzchniowych i podziemnych, a wyniki są porównywane z wartościami dopuszczalnymi określonymi w decyzjach lub przepisach.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.81,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarantowany wynik oczyszczenia",
+        "gwarantowana decyzja urzędu",
+        "gwarantowane bezpieczeństwo terenu"
+      ],
+      "target_card_id": "ekologus_service_remediation_monitoring",
+      "target_card_type": "service",
+      "target_card_title": "Rekultywacje, remediacje i monitoring",
+      "service_fit_terms": [
+        "monitoring",
+        "gleba",
+        "wody podziemne"
+      ],
+      "buyer_problem_terms": [
+        "brak porównania wyników z wartościami dopuszczalnymi",
+        "nieznany stan komponentów środowiska"
+      ],
+      "buyer_triggers": [
+        "firma potrzebuje oceny stanu środowiska wokół prowadzonej działalności"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_pomiary_i_analizy_2026_08_13_3",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/pomiary-i-analizy/",
+      "extracted_fact": "Strona wskazuje dwa cele monitoringu: uzyskanie decyzji środowiskowej oraz okresowe sprawdzanie stanu środowiska nałożone przez organ w wydanej decyzji.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.8,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarantowany wynik oczyszczenia",
+        "gwarantowana decyzja urzędu",
+        "gwarantowane bezpieczeństwo terenu"
+      ],
+      "target_card_id": "ekologus_service_remediation_monitoring",
+      "target_card_type": "service",
+      "target_card_title": "Rekultywacje, remediacje i monitoring",
+      "service_fit_terms": [
+        "monitoring"
+      ],
+      "buyer_problem_terms": [
+        "decyzja nakłada okresowe pomiary",
+        "potrzebny monitoring do uzyskania decyzji środowiskowej"
+      ],
+      "buyer_triggers": [
+        "organ określił w decyzji zakres okresowego sprawdzania stanu środowiska"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_pomiary_i_analizy_2026_08_13_4",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/pomiary-i-analizy/",
+      "extracted_fact": "Zakres pomiarów emisji pyłów i gazów do powietrza obejmuje pył metodą grawimetryczną, CO, CO2, NOx, NO2 i SO2, związki organiczne analizowane chromatografią gazową, LZO z detekcją FID, frakcje PM2,5–PM10 i metale ciężkie.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.83,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarantowany wynik oczyszczenia",
+        "gwarantowana decyzja urzędu",
+        "gwarantowane bezpieczeństwo terenu"
+      ],
+      "target_card_id": "ekologus_service_remediation_monitoring",
+      "target_card_type": "service",
+      "target_card_title": "Rekultywacje, remediacje i monitoring",
+      "service_fit_terms": [
+        "monitoring"
+      ],
+      "buyer_problem_terms": [
+        "brak pomiarów konkretnych zanieczyszczeń powietrza",
+        "potrzeba analizy emisji instalacji"
+      ],
+      "buyer_triggers": [
+        "zakład potrzebuje pomiaru pyłów, gazów, LZO albo metali ciężkich"
+      ]
+    },
+    {
+      "source_id": "ekologus_public_pomiary_i_analizy_2026_08_13_5",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/pomiary-i-analizy/",
+      "extracted_fact": "Badania środowiska pracy obejmują pył całkowity i respirabilny, stężenia substancji szkodliwych, natężenie oświetlenia i hałasu, wydatek energetyczny, drgania mechaniczne oraz pola elektromagnetyczne.",
+      "scope": "service",
+      "freshness_date": "2026-08-13",
+      "confidence": 0.82,
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarantowany wynik oczyszczenia",
+        "gwarantowana decyzja urzędu",
+        "gwarantowane bezpieczeństwo terenu"
+      ],
+      "target_card_id": "ekologus_service_remediation_monitoring",
+      "target_card_type": "service",
+      "target_card_title": "Rekultywacje, remediacje i monitoring",
+      "service_fit_terms": [
+        "monitoring"
+      ],
+      "buyer_problem_terms": [
+        "brak pomiarów czynników szkodliwych na stanowisku pracy",
+        "potrzeba danych do oceny ryzyka zdrowotnego"
+      ],
+      "buyer_triggers": [
+        "pracodawca potrzebuje pomiarów czynników szkodliwych na stanowiskach pracy"
+      ]
     }
   ]
 }
