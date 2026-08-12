@@ -92,6 +92,10 @@ def _mapped_revision_readability_issues(
         (issue.code, section_ids_by_heading[issue.affected_section][0], issue.reason)
         for issue in combined_issues
         if len(section_ids_by_heading[issue.affected_section]) == 1
+        and _gate_applies_to_target(
+            issue.code,
+            section_ids_by_heading[issue.affected_section][0],
+        )
     ]
     colliding_headings = {
         heading for heading, section_ids in section_ids_by_heading.items() if len(section_ids) > 1
@@ -100,13 +104,21 @@ def _mapped_revision_readability_issues(
         if section.heading not in colliding_headings:
             continue
         mapped.extend(
-            _readability_issues_for_target(
+            issue
+            for issue in _readability_issues_for_target(
                 section_id=section_id,
                 heading=section.heading,
                 body_markdown=section.body_markdown,
             )
+            if _gate_applies_to_target(issue[0], section_id)
         )
     return mapped
+
+
+def _gate_applies_to_target(code: str, section_id: str) -> bool:
+    if section_id.startswith(("faq:", "cta:")):
+        return code != "thin_section"
+    return True
 
 
 def _readability_issues_for_target(
