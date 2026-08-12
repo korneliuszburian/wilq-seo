@@ -383,7 +383,7 @@ describe("content workflow API helpers", () => {
   });
 
   it("gets exact-revision measurement through the shared runtime schema", async () => {
-    const fetchMock = vi.fn(async (_url: RequestInfo | URL) => ({
+    const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => ({
         status: "available",
