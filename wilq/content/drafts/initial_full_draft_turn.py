@@ -208,6 +208,7 @@ def readability_repair_turn_request(
             "body_markdown, faq:<index> odpowiedź FAQ, cta:<index> treść CTA, "
             "page_assets:<field> wskazane pole page assets, a link:<index> anchor_text linku. "
             "Usuń notatki robocze, meta-komentarze i powtórzone akapity, podziel ściany tekstu "
+            "i zbyt długie zdania "
             "oraz rozwiń zbyt krótkie odpowiedzi. Każdy patch musi usuwać dokładny problem "
             "opisany w jego reason. Zachowaj znaczenie, fakty, zakres i ton tekstu dla "
             "czytelnika. Nie dotykaj żadnych innych pól. Dla FAQ, CTA, page assets i linków "
@@ -220,7 +221,8 @@ def readability_repair_turn_request(
         if auxiliary_targets
         else (
             "Napraw wyłącznie body_markdown sekcji wskazanych w polu issues. Usuń notatki "
-            "robocze, meta-komentarze i powtórzone akapity, podziel ściany tekstu oraz rozwiń "
+            "robocze, meta-komentarze i powtórzone akapity, podziel ściany tekstu "
+            "i zbyt długie zdania oraz rozwiń "
             "zbyt krótkie odpowiedzi. Każdy patch musi usuwać dokładny problem opisany w jego "
             "reason. Zachowaj znaczenie, fakty, zakres i ton tekstu dla czytelnika. Nie dotykaj "
             "innych sekcji, nagłówków, page assets, FAQ, CTA ani linków. Zwróć dokładnie po "

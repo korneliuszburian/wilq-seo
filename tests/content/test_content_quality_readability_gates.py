@@ -3,14 +3,22 @@ from __future__ import annotations
 import pytest
 
 from wilq.content.claims.ledger import ContentClaimLedger
+from wilq.content.drafts.initial_draft_readability import readability_issues_for_output
+from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftFaqOutput,
+    ContentInitialDraftModelOutput,
+    ContentInitialDraftSectionOutput,
+)
 from wilq.content.quality.review import (
     ContentQualityReview,
     _weak_cta,
     build_content_quality_review,
 )
+from wilq.content.quality.semantic_review_guards import readability_quality_issues
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
+    ContentDraftRevisionPageAssets,
     ContentDraftRevisionSection,
 )
 
@@ -61,12 +69,99 @@ def test_v2_review_flags_one_oversized_paragraph_and_ignores_short_paragraph() -
     assert "Przykład:" in wall_findings[0].reason
 
 
+def test_v2_review_flags_a_sentence_longer_than_twenty_words() -> None:
+    long_sentence = " ".join(["Pierwsze", *[f"słowo{index}" for index in range(2, 26)]]) + "."
+    review = _review(_revision(long_sentence))
+
+    findings = [finding for finding in review.findings if finding.code == "long_sentence"]
+
+    assert len(findings) == 1
+    assert findings[0].label == "Sekcja zawiera zbyt długie zdanie"
+    assert findings[0].reason == "Zdanie liczy 25 słów (limit: 20)."
+    assert findings[0].next_step == "Podziel długie zdanie na krótsze."
+    assert findings[0].affected_section == "Pierwsza sekcja"
+    assert review.usefulness.status == "needs_changes"
+    assert (
+        "logical_flow",
+        "section_one",
+        "Zdanie liczy 25 słów (limit: 20).",
+    ) in readability_quality_issues(_revision(long_sentence))
+
+
+@pytest.mark.parametrize("terminator", [".", "?", "!"])
+def test_v2_review_ignores_sentences_with_at_most_twenty_words(terminator: str) -> None:
+    first = " ".join(["Pierwsze", *[f"słowo{index}" for index in range(2, 21)]])
+    first = f"{first}{terminator}"
+    second = " ".join(["Drugie", *[f"hasło{index}" for index in range(2, 21)]]) + "."
+    review = _review(_revision(f"{first} {second}"))
+
+    assert "long_sentence" not in _finding_codes(review)
+
+
+def test_v2_review_does_not_split_a_long_sentence_at_polish_abbreviation() -> None:
+    sentence = (
+        "np. To jest przykład bardzo długiego zdania, które nadal wyjaśnia "
+        "czytelnikowi wszystkie istotne warunki procesu oraz kolejne bezpieczne "
+        "działania firmy dzisiaj."
+    )
+    assert len(sentence.split()) == 21
+
+    review = _review(_revision(sentence))
+
+    findings = [finding for finding in review.findings if finding.code == "long_sentence"]
+    assert len(findings) == 1
+    assert findings[0].reason == "Zdanie liczy 21 słów (limit: 20)."
+
+
+def test_pre_save_readability_gate_flags_a_long_sentence_in_faq_answer() -> None:
+    long_answer = (
+        "Przedsiębiorca najpierw zbiera dokumenty, sprawdza obowiązki, ustala terminy, "
+        "wyznacza osoby odpowiedzialne, planuje kontrolę, porządkuje dane oraz "
+        "bezpiecznie wdraża kolejne działania w swojej firmie każdego dnia."
+    )
+    assert len(long_answer.split()) == 25
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Czytelny przewodnik",
+            meta_title="Czytelny przewodnik dla firmy",
+            meta_description="Praktyczne kroki dla przedsiębiorcy.",
+            h1="Jak uporządkować obowiązki",
+            lead="Krótki przewodnik prowadzi przez najważniejsze działania.",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="section_01",
+                heading="Pierwszy krok",
+                body_markdown=(
+                    "Ta sekcja jasno wyjaśnia klientowi zakres działania i prowadzi go do "
+                    "bezpiecznej decyzji."
+                ),
+            )
+        ],
+        faq=[
+            ContentInitialDraftFaqOutput(
+                question="Jak zacząć porządkowanie dokumentacji?",
+                answer_markdown=long_answer,
+            )
+        ],
+    )
+
+    issues = readability_issues_for_output(output)
+
+    assert (
+        "long_sentence",
+        "faq:1",
+        "Zdanie liczy 25 słów (limit: 20).",
+    ) in issues
+
+
 def test_legacy_review_without_revision_emits_no_readability_findings() -> None:
     review = _review(None)
 
     assert {
         "thin_section",
         "wall_of_text",
+        "long_sentence",
         "working_note",
         "duplicate_paragraph",
     }.isdisjoint(_finding_codes(review))

@@ -106,15 +106,16 @@ def readability_quality_issues(
 ) -> list[tuple[ContentSemanticDimension, str, str]]:
     """Map deterministic reading-quality gates into semantic review findings.
 
-    Keeps working notes, duplicated paragraphs, thin sections and text walls
-    from passing a semantic review as strong when the text still fails the
-    deterministic reading gates. Findings feed the next Codex proposal turn,
-    so a repair run cannot repeat the same drafting defects.
+    Keeps working notes, duplicated paragraphs, thin sections, long sentences
+    and text walls from passing a semantic review as strong when the text still
+    fails the deterministic reading gates. Findings feed the next Codex proposal
+    turn, so a repair run cannot repeat the same drafting defects.
     """
 
     dimension_by_code: dict[str, ContentSemanticDimension] = {
         "thin_section": "answer_directness",
         "wall_of_text": "logical_flow",
+        "long_sentence": "logical_flow",
         "working_note": "credibility",
         "duplicate_paragraph": "repetition",
     }

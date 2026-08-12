@@ -23,6 +23,21 @@ _WORKING_NOTE = re.compile(
     re.IGNORECASE,
 )
 _DUPLICATE_PARAGRAPH_RATIO = 0.8
+_LONG_SENTENCE_WORD_LIMIT = 20
+_POLISH_ABBREVIATIONS = frozenset(
+    {
+        "art.",
+        "itd.",
+        "itp.",
+        "m.in.",
+        "np.",
+        "tj.",
+        "tzn.",
+        "ust.",
+        "ww.",
+    }
+)
+_SENTENCE_TOKEN_WRAPPERS = "\"'()*[]_{}«»‘’‚“”„"
 
 
 @dataclass(frozen=True)
@@ -30,6 +45,7 @@ class RevisionReadabilityIssue:
     code: Literal[
         "thin_section",
         "wall_of_text",
+        "long_sentence",
         "working_note",
         "duplicate_paragraph",
     ]
@@ -70,6 +86,20 @@ def revision_readability_issues(
                         f"Przykład: „{_paragraph_example(paragraph)}”"
                     ),
                     next_step="Podziel długi akapit na krótsze części ułatwiające czytanie.",
+                    affected_section=section.heading,
+                )
+            )
+        long_sentence_word_count = _first_long_sentence_word_count(section.body_markdown)
+        if long_sentence_word_count is not None:
+            issues.append(
+                RevisionReadabilityIssue(
+                    code="long_sentence",
+                    label="Sekcja zawiera zbyt długie zdanie",
+                    reason=(
+                        f"Zdanie liczy {long_sentence_word_count} słów "
+                        f"(limit: {_LONG_SENTENCE_WORD_LIMIT})."
+                    ),
+                    next_step="Podziel długie zdanie na krótsze.",
                     affected_section=section.heading,
                 )
             )
@@ -126,8 +156,7 @@ def _first_duplicate_paragraph(markdown: str) -> str | None:
     if len(paragraphs) < 2:
         return None
     normalized = [
-        _MARKDOWN_EMPHASIS.sub("", _MARKDOWN_LINK.sub(r"\1", paragraph))
-        for paragraph in paragraphs
+        _MARKDOWN_EMPHASIS.sub("", _MARKDOWN_LINK.sub(r"\1", paragraph)) for paragraph in paragraphs
     ]
     for index, candidate in enumerate(normalized):
         for other in normalized[index + 1 :]:
@@ -148,6 +177,38 @@ def _first_oversized_paragraph(markdown: str) -> tuple[str, int] | None:
         if word_count > 220:
             return paragraph, word_count
     return None
+
+
+def _first_long_sentence_word_count(markdown: str) -> int | None:
+    tokens = markdown.split()
+    sentence_word_count = 0
+    for index in range(len(tokens)):
+        sentence_word_count += 1
+        if not _token_ends_sentence(tokens, index):
+            continue
+        if sentence_word_count > _LONG_SENTENCE_WORD_LIMIT:
+            return sentence_word_count
+        sentence_word_count = 0
+    if sentence_word_count > _LONG_SENTENCE_WORD_LIMIT:
+        return sentence_word_count
+    return None
+
+
+def _token_ends_sentence(tokens: list[str], index: int) -> bool:
+    token = tokens[index].strip(_SENTENCE_TOKEN_WRAPPERS)
+    if token.endswith(("?", "!")):
+        return True
+    if not token.endswith(".") or token.casefold() in _POLISH_ABBREVIATIONS:
+        return False
+    return index == len(tokens) - 1 or _next_token_starts_with_uppercase(tokens, index)
+
+
+def _next_token_starts_with_uppercase(tokens: list[str], index: int) -> bool:
+    for token in tokens[index + 1 :]:
+        first_letter = next((character for character in token if character.isalpha()), None)
+        if first_letter is not None:
+            return first_letter.isupper()
+    return False
 
 
 def _paragraph_example(paragraph: str) -> str:
