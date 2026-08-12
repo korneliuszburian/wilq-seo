@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
+
 from wilq.content.measurement import evidence as measurement_evidence
 from wilq.content.measurement.read_contracts import build_content_measurement_read
 from wilq.schemas import MetricFact
@@ -26,19 +27,31 @@ def _gsc_facts() -> list[MetricFact]:
 
     return [
         fact(
-            "clicks", 0.0, "2026-08-07/2026-08-07", "ev_baseline",
+            "clicks",
+            0.0,
+            "2026-08-07/2026-08-07",
+            "ev_baseline",
             datetime(2026, 8, 8, tzinfo=UTC),
         ),
         fact(
-            "impressions", 92.0, "2026-08-07/2026-08-07", "ev_baseline",
+            "impressions",
+            92.0,
+            "2026-08-07/2026-08-07",
+            "ev_baseline",
             datetime(2026, 8, 8, tzinfo=UTC),
         ),
         fact(
-            "clicks", 0.0, "2026-08-09/2026-08-09", "ev_observation",
+            "clicks",
+            0.0,
+            "2026-08-09/2026-08-09",
+            "ev_observation",
             datetime(2026, 8, 10, tzinfo=UTC),
         ),
         fact(
-            "impressions", 113.0, "2026-08-09/2026-08-09", "ev_observation",
+            "impressions",
+            113.0,
+            "2026-08-09/2026-08-09",
+            "ev_observation",
             datetime(2026, 8, 10, tzinfo=UTC),
         ),
     ]
@@ -111,9 +124,7 @@ def test_measurement_read_route_returns_typed_contract(monkeypatch) -> None:
         lambda _work_item_id: snapshot,
     )
 
-    client = TestClient(
-        __import__("apps.api.wilq_api.main", fromlist=["app"]).app
-    )
+    client = TestClient(__import__("apps.api.wilq_api.main", fromlist=["app"]).app)
     response = client.get(f"/api/content/work-items/{WORK_ITEM_ID}/measurement")
 
     assert response.status_code == 200
