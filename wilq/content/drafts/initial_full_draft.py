@@ -237,6 +237,7 @@ def _prepare_initial_draft_for_persistence(
         trace=trace,
         client=client,
         run_store=run_store,
+        output_blocker=lambda candidate: _output_blocker(prepared, candidate),
     )
     if blocker is not None:
         return _finish_blocked_draft(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Callable
 
 from wilq.codex.app_server import (
     CodexAppServerClientProtocol,
@@ -60,6 +61,7 @@ def assure_readability_and_repair(
     trace: ContentCodexRuntimeTrace,
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
+    output_blocker: Callable[[ContentInitialDraftModelOutput], ContentInitialDraftBlocker | None],
 ) -> tuple[
     ContentInitialDraftModelOutput,
     ContentCodexRuntimeTrace,
@@ -68,6 +70,9 @@ def assure_readability_and_repair(
     issues = readability_issues_for_output(output)
     if not issues:
         return output, trace, None
+    blocker = output_blocker(output)
+    if blocker is not None:
+        return output, trace, blocker
     repair_budget = min(
         len({section_id for _, section_id, _ in issues}),
         _MAX_REPAIR_TURNS,
@@ -81,6 +86,9 @@ def assure_readability_and_repair(
             client=client,
         )
         issues = readability_issues_for_output(output)
+        blocker = output_blocker(output)
+        if blocker is not None:
+            return output, trace, blocker
         if not issues:
             return output, trace, None
     return output, trace, _readability_blocker(issues)
