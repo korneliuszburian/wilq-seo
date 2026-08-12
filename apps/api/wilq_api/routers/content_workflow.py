@@ -54,6 +54,7 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionSection,
     content_draft_package_digest,
 )
+from wilq.content.measurement.read_contracts import ContentMeasurementReadResponse
 from wilq.content.workflow.pipeline_steps.entry import (
     ContentWorkflowEntryResponse,
     build_content_workflow_entry,
@@ -316,6 +317,26 @@ def content_work_item_draft_revision_review(
         status="recorded" if result.status == "created" else "idempotent",
         review=result.review,
         workspace=refreshed.revision_workspace,
+    )
+
+
+@router.get(
+    "/api/content/work-items/{work_item_id}/measurement",
+    response_model=ContentMeasurementReadResponse,
+)
+def content_work_item_measurement_read(
+    work_item_id: str,
+) -> ContentMeasurementReadResponse:
+    from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
+    from wilq.content.measurement.read_contracts import build_content_measurement_read
+
+    snapshot = snapshot_for_work_item_or_404(work_item_id)
+    content_url = snapshot.preflight.item.final_canonical_url or (
+        snapshot.preflight.item.source_public_url or ""
+    )
+    return build_content_measurement_read(
+        work_item_id=work_item_id,
+        content_url=content_url,
     )
 
 
