@@ -446,7 +446,9 @@ def content_knowledge_production_depth_readiness(
         if _card_lifecycle_status(card) in {"source_backed_review_required", "stale"}
     ]
     production_cards = [
-        card for card in card_list if _card_lifecycle_status(card) == "approved_current"
+        card
+        for card in card_list
+        if _card_lifecycle_status(card) == "approved_current" and card.card_type == "service"
     ]
     blockers: list[str] = []
     if seeded_cards:

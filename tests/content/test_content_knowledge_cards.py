@@ -1435,3 +1435,31 @@ def test_service_profile_source_facts_evidence_is_known() -> None:
     assert evidence.source_connector == "public_site"
     assert evidence.source_type == "compiled_service_profile_source_facts"
     assert "review-required" in evidence.summary
+
+
+def test_production_depth_counts_service_cards_only() -> None:
+    service_card = ContentKnowledgeCard(
+        id="approved_service_card",
+        card_type="service",
+        title="Usługa zatwierdzona",
+        summary="Zatwierdzona usługa Ekologus.",
+        confidence=0.9,
+        lifecycle_status="approved_current",
+        freshness="reviewed_2026-07-02",
+    )
+    non_service_card = ContentKnowledgeCard(
+        id="approved_cta_card",
+        card_type="cta_pattern",
+        title="CTA zatwierdzony",
+        summary="Zatwierdzony CTA pattern.",
+        confidence=0.9,
+        lifecycle_status="approved_current",
+        freshness="reviewed_2026-07-02",
+    )
+
+    readiness = content_knowledge_production_depth_readiness(
+        [service_card, non_service_card]
+    )
+
+    assert readiness.production_depth_card_count == 1
+    assert readiness.ready_for_daily_content is True
