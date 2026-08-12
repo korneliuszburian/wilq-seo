@@ -1,0 +1,529 @@
+{
+  "pages": [
+    {
+      "dimensions": [
+        {
+          "name": "answer_directness",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "completeness",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "logical_flow",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "specificity",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "repetition",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "search_intent_fit",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "buyer_fit",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "credibility",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "conversion_clarity",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        }
+      ],
+      "text_a": "BDO, czyli Baza danych o produktach i opakowaniach oraz o gospodarce odpadami , stanowi podstawowe narzędzie do gromadzenia informacji i danych na temat odpadów. Celem BDO jest elektroniczne prowadzenie rejestru, ewidencji i sprawozdawczości z zakresu gospodarki odpadami od 1 stycznia 2020 r. Poniżej przedstawiamy często zadawane pytania dotyczące BDO: Kto musi złożyć wniosek o wpis do Rejestru? Obowiązek wpisu do Rejestru BDO spoczywa przede wszystkim na przedsiębiorcach, którzy: wytwarzają odpady i prowadzą ich ewidencję, zajmują się transportem odpadów wprowadzają na rynek opakowania, produkty w opakowaniach. >>>Wypełnij ankietę i zobacz czy musisz wpisać się do BDO!<<< Czy ewidencja może być nadal stosowana w formie papierowej? Zgodnie z ustawą z dnia 23 stycznia 2020 r. o zmianie ustawy o odpadach oraz niektórych innych ustaw (Dz.U. 2020 poz. 150) do ustawy z dnia 14 grudnia 2012 r. o odpadach wprowadza się art. 236a, według którego do dnia 30 czerwca 2020 r. możliwe jest prowadzenie dokumentów ewidencji odpadów w formie papierowej, z tym, że prowadzenie karty przekazania odpadów lub karty przekazania odpadów komunalnych w formie papierowej jest dopuszczalne, jeżeli przekazujący odpady wystawi kartę przekazania odpadów lub kartę przekazania odpadów komunalnych w tej formie. Ustawa przewiduje, że dokumenty muszą zostać wprowadzone w formie elektronicznej w terminie do dnia 31 lipca 2020 r. Jakie grożą kary za nieprzestrzeganie przepisów z zakresu BDO? Kary, wynikające z ustawy z dnia 14 grudnia 2012 r. o odpadach (Dz.U. 2013 poz. 21): za brak wniosku o wpis do rejestru, o zmianę wpisu do rejestru lub o wykreślenie z rejestru lub w przypadku złożenia wniosku niezgodny ze stanem faktycznym grozi kara aresztu albo grzywny, za prowadzenie działalności gospodarczej bez wymaganego wpisu do rejestru – administracyjna kara pieniężna od 5 000 zł – 1 000 000 zł , za nieumieszczanie numeru rejestrowego na dokumentach sporządzanych w związku z prowadzoną działalnością – administracyjna kara pieniężna od 5 000 zł – 1 000 000 zł, za transport odpadów bez wpisu do rejestru BDO – administracyjna kara pieniężna od 2 000 – 10 000 zł. Jak zalogować się do systemu BDO? W celu zalogowania do serwisu BDO na stronie https://bdo.mos.gov.pl/ należy wybrać moduł „PRZEJDŹ DO SYSTEMU BDO”, a następnie potwierdzić tożsamość za pomocą Krajowego Węzła Identyfikacji Elektronicznej (KWIE). Użytkownik powinien być zalogowany przez KWIE i powiązany z kontem zarejestrowanego w Rejestrze BDO podmiotu. Powiązanie uzyskuje się po wpisaniu login’u i hasła. W celu ułatwienia dostosowania się do zmian związanych z funkcjonowaniem Rejestru BDO i dla rozwiania wątpliwości pojawiających się przy interpretacji wymagań prawnych, pomocnym narzędziem dla Przedsiębiorców są odpowiednie >>SZKOLENIA<< Dowiedz się więcej w zakresie BDO podczas szkolenia Ekologus Sp. z o.o.: 13 marca 2020 w Bielsku-Białej „Gospodarka opakowaniami, odpadami opakowaniowymi i sprzętem elektronicznym + BDO” Ekologus wykonuje również >>DOKUMENTACJE ŚRODOWISKOWE<< , które są niezbędne do dopełnienia obowiązków ustawy z dnia 20 lipca 2018 r. o zmianie ustawy o odpadach oraz niektórych innych ustaw. Masz pytanie? Skontaktuj się z naszymi ekspertami: Dział Szkoleń: kom.: 48 606 914 909 | e-mail: szkolenia@ekologus.pl Dział Ekspertyzy: kom.: 48 602 758 757 | e-mail: echrobak@ekologus.pl kom.: 48 536 015 115 | e-mail: pok@ekologus.pl kom.: 48 502 210 662 | e-mail: ekspertyzy2@ekologus.pl ⇒ Zobacz ustawę z dnia 23 stycznia 2020 r. o zmianie ustawy o odpadach oraz niektórych innych ustaw ⇐ ⇒ Zobacz instrukcje dla użytkownika Rejestru BDO ⇐ Źródło: https://bdo.mos.gov.pl/",
+      "text_b": "# BDO – co przedsiębiorca musi wiedzieć o rejestracji, ewidencji i sprawozdawczości?\n\nJeśli odpowiadasz w firmie za decyzje środowiskowe, możesz mieć wątpliwości, czy działalność wymaga wpisu do BDO oraz jakie obowiązki dotyczą ewidencji, KPO i sprawozdań. Problem zwykle staje się pilny przed terminem sprawozdawczym, po zmianie danych firmy albo w związku z możliwą kontrolą. Poniższa ścieżka prowadzi od oceny obowiązku rejestracji przez bieżącą obsługę systemu aż po konsekwencje uchybień.\n\nNie masz pewności, czy firma wymaga wpisu, pełnej ewidencji lub konkretnego sprawozdania? Opisz działalność, rodzaje odpadów i obecny status w BDO, aby omówić zakres obowiązków podczas konsultacji.\n\n## Co to jest BDO i do czego służy przedsiębiorcy?\n\nBDO to Baza danych o produktach i opakowaniach oraz o gospodarce odpadami. System służy między innymi do rejestracji podmiotów, prowadzenia ewidencji odpadów oraz składania sprawozdań.\n\nDla osoby odpowiedzialnej za decyzje środowiskowe BDO jest miejscem obsługi kilku powiązanych obowiązków firmy. Sam fakt prowadzenia działalności gospodarczej nie rozstrzyga jednak, czy wpis jest wymagany. Decydują zakres działalności, rodzaje produktów lub opakowań oraz sposób gospodarowania odpadami.\n\n## Kto musi złożyć wniosek o wpis do Rejestru BDO?\n\nWniosek o wpis składają podmioty objęte obowiązkiem rejestracji ze względu na działalność dotyczącą produktu, opakowania albo gospodarki odpadami. Ocena powinna obejmować rzeczywisty model działania firmy, a nie tylko nazwę działalności lub kod PKD.\n\nSprawdź, czy firma wprowadza na rynek określone produkty lub produkty w opakowaniach, prowadzi działalność związaną z odpadami albo wytwarza odpady objęte ewidencją. Znaczenie mają również rodzaj i ilość odpadów oraz sposób ich przekazywania.\n\nJeśli działalność mieści się w zakresie rejestru, wpis powinien poprzedzać czynności objęte tym obowiązkiem. W przypadku kilku miejsc prowadzenia działalności trzeba prawidłowo przypisać zakresy i miejsca w systemie.\n\n## Kiedy firma może korzystać ze zwolnienia lub wyłączenia z BDO?\n\nŹródło BDO rozróżnia podmioty podlegające wpisowi oraz zwolnienie z wpisu; zakres obowiązku zależy od rodzaju działalności i wskazanych w źródle warunków, dlatego nie każdy podmiot ma identyczny obowiązek rejestracji.\n\nOficjalne źródło BDO wskazuje, że brak Internetu lub energii nie jest awarią BDO i nie upoważnia do wystawiania papierowych dokumentów ewidencji odpadów po 30 czerwca 2020 r.\n\n## Jak złożyć wniosek oraz aktualizować dane w Rejestrze BDO?\n\nWpis do Rejestru-BDO nie następuje automatycznie wraz z założeniem firmy. Przedsiębiorca powinien najpierw ustalić, czy zakres jego działalności, wprowadzane produkty lub opakowania albo sposób gospodarowania odpadami powodują obowiązek rejestracji.\n\nWniosek powinien odpowiadać rzeczywistemu zakresowi działalności. Jeżeli po uzyskaniu wpisu zmienią się dane firmy lub obszary objęte obowiązkami BDO, konieczna może być aktualizacja wpisu. W praktyce warto regularnie porównywać dane ujawnione w rejestrze z bieżącą działalnością przedsiębiorstwa.\n\n## Jak prowadzić ewidencję odpadów oraz wystawiać KPO i KPOK?\n\nGdy dane przekazanie odpadów podlega ewidencji z użyciem Karty Przekazania Odpadów (KPO), kartę sporządza przekazujący posiadacz odpadów przed rozpoczęciem transportu.\n\nPrzy określonych operacjach dotyczących odpadów komunalnych stosuje się Kartę Przekazania Odpadów Komunalnych (KPOK). Właściwy rodzaj dokumentu trzeba ustalić osobno dla konkretnego przekazania.\n\nZgodnie z oficjalnym źródłem BDO Kartę Przekazania Odpadów sporządza przekazujący posiadacz odpadów przed rozpoczęciem transportu, gdy dane przekazanie podlega tej ewidencji.\n\nOficjalne źródło BDO wyjaśnia, że przy określonych operacjach odpadów komunalnych stosuje się Kartę Przekazania Odpadów Komunalnych (KPOK), a właściwy dokument trzeba ustalić dla konkretnego przekazania.\n\nOficjalne źródło BDO wskazuje, że brak Internetu lub energii nie jest awarią BDO i nie upoważnia do wystawiania papierowych dokumentów ewidencji odpadów po 30 czerwca 2020 r.\n\n## Jakie sprawozdania BDO składa przedsiębiorca i do kogo?\n\nSprawozdawczość BDO obejmuje różne rodzaje sprawozdań, zależnie od działalności przedsiębiorcy. Co do zasady sprawozdanie za poprzedni rok kalendarzowy składa się do 15 marca. Dla wybranych sprawozdań komunalnych termin upływa 31 stycznia.\n\nWłaściwość organu może zależeć od siedziby przedsiębiorcy albo miejsca prowadzenia działalności. W określonych przypadkach sprawozdanie należy złożyć do właściwego marszałka województwa.\n\n## Jak zalogować się do systemu BDO i nadać właściwe uprawnienia?\n\nDo systemu BDO logujesz się przez login.gov.pl, używając dostępnej metody potwierdzenia tożsamości. Po zalogowaniu dostęp do podmiotu zależy od reprezentacji oraz przypisanych kontu uprawnień.\n\nUżytkownik główny zarządza dostępem do podmiotu i może tworzyć konta użytkowników podrzędnych. Użytkownik podrzędny wykonuje tylko czynności wynikające z nadanej roli i przypisanego zakresu.\n\nPrzed terminem sprawozdania lub planowanym przekazaniem odpadów sprawdź, czy właściwe osoby widzą odpowiednie miejsca prowadzenia działalności i moduły. Samo skuteczne logowanie nie oznacza jeszcze dostępu do wszystkich funkcji podmiotu.\n\n## Jakie kary i konsekwencje mogą wynikać z naruszenia obowiązków BDO?\n\nNaruszenia dotyczące Rejestru-BDO mogą skutkować karą aresztu, grzywny albo administracyjną karą pieniężną. Rodzaj i wysokość sankcji zależą od konkretnego naruszenia oraz jego podstawy prawnej.\n\nZa prowadzenie działalności bez wymaganego wpisu może zostać nałożona administracyjna kara pieniężna od 1 000 zł do 1 000 000 zł. Za transport odpadów bez wymaganego wpisu kara może wynieść od 2 000 zł do 10 000 zł.\n\n## Najczęstsze pytania\n\n### BDO – co to jest i kogo dotyczy?\n\nBDO to Baza danych o produktach i opakowaniach oraz o gospodarce odpadami. Obejmuje podmioty, na które obowiązek rejestracji nakłada zakres działalności związanej między innymi z określonymi produktami, opakowaniami lub odpadami. O wpisie nie przesądza sam fakt prowadzenia firmy.\n\n### Czy każdy przedsiębiorca musi mieć wpis do BDO?\n\nNie. Obowiązek zależy od rodzaju działalności, wprowadzanych produktów lub opakowań oraz rodzaju i ilości wytwarzanych albo przetwarzanych odpadów. Firma może korzystać ze zwolnienia lub wyłączenia tylko po spełnieniu warunków właściwych dla jej sytuacji.\n\n### Kto kontroluje BDO i jakie mogą być konsekwencje uchybień?\n\nRealizację obowiązków mogą sprawdzać właściwe organy w ramach swoich kompetencji, w tym organy ochrony środowiska. Uchybienia mogą prowadzić do wezwania do uzupełnienia danych, odpowiedzialności za wykroczenie albo administracyjnej kary pieniężnej. Rodzaj konsekwencji zależy od konkretnego naruszenia.\n\nPrzygotuj numer rejestrowy BDO, zakres działalności, listę odpadów oraz informację o prowadzonych ewidencjach i złożonych sprawozdaniach. Przekaż te dane do weryfikacji obowiązków i ustalenia kolejnych czynności, bez gwarancji określonego wyniku kontroli.\n\n[Umów konsultację obowiązków BDO](https://www.ekologus.pl/kontakt)"
+    },
+    {
+      "dimensions": [
+        {
+          "name": "answer_directness",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "completeness",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "logical_flow",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "specificity",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "repetition",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "search_intent_fit",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "buyer_fit",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "credibility",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "conversion_clarity",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        }
+      ],
+      "text_a": "Szkolenia z ochrony środowiska obejmują tematykę związaną z wszystkimi komponentami środowiska - powietrzem, wodą, ziemią oraz glebą. Poruszane zagadnienia to m.in.: ochrona powietrza, pozwolenia i standardy emisyjne, gospodarka odpadami i opakowaniami, gospodarka wodno-ściekowa, procesy inwestycyjne, ochrona środowiska gruntowo-wodnego, KOBiZE, opłaty i sprawozdawczość, obowiązki zarządzających składowiskiem odpadów, REACH i CLP, Systemy Zarządzania i BHP. Śledząc najnowsze zmiany legislacyjne i potrzeby rynku na bieżąco aktualizujemy zakres naszych szkoleń. Tematy szkoleń otwartych Tematy szkoleń zamkniętych *Najczęściej zamawiane tematy:* Zagrożenia przy stanowiskach pracy z praktycznym instruktażem wykorzystania zestawów awaryjnych Mentoring Nadzór / doradztwo :) UPRAWNIENIA EKOLOGUS SP. Z.O.O. Jesteśmy jedną z najdłużej działających firm szkoleniowych w Polsce. Szkolimy od 1994 roku. Jesteśmy wpisani na listę firm uprawnionych do szkoleń i wydawania certyfikatów i zaświadczeń - WUP. Byliśmy założycielami Polskiej Izby Firm Szkoleniowych i realizujemy nasze usługi w oparciu o jej standardy. Rejestr Instytucji Szkoleniowych WUP w Katowicach nr ewidencyjny: 2.24/00053 Międzynarodowy certyfikat wg standardów BTEC Szkolenia, Treningi i Doradztwo w rozwoju organizacji Polskiej Izby Firm Szkoleniowych Chcesz uzyskać indywidualną wycenę szkolenia? Skontaktuj się z nami! Napisz do nas szkolenia-zamkniete Szkolenia zamknięte Szkolenia zamknięte prowadzone i dostosowywane są do indywidualnych potrzeb firm . Tematyka szkoleń zamkniętych realizowana jest m.in. z zakresu ochrony środowiska, zintegrowanych systemów zarządzania. Szkolenia proponowane są przy potrzebie przeszkolenia co najmniej 5 osób z danej instytucji i dostosowywane do indywidualnych potrzeb Zamawiającego: w zakresie merytorycznym i formie zajęć - metodologię i formę prowadzenia zajęć dopasowujemy do specyfiki omawianych tematów, a bazowy program szkoleń opracowujemy według specyficznych wymagań Klienta wynikających z przeprowadzonej analizy potrzeb; przy doborze lokalizacji i terminu - miejsce i czas prowadzenia zajęć ustalamy z Klientem indywidualnie - stawiamy na komfort naszych szkoleń' przy ustalaniu kwoty - Klient płaci za realną wielkość zlecenia i faktyczną ilość przeszkolonych osób. system-zarzadzania Szkolenia z systemów zarządzania Szkolenia i warsztaty doskonalące dla auditorów wewnętrznych systemu zarządzania w laboratorium wg ISO/IEC 17025, warsztaty doskonalące dla auditorów wewnętrznych Zintegrowanego Systemu Zarządzania ISO 9001, ISO 14001 oraz PN-N-18001, a także szkolenia z Systemu Zarządzania Energia wg normy 50001. System zarządzania w laboratorium wg ISO/IEC 17025 Cel szkolenia: zapoznanie z wymaganiami normy ISO/IEC 17025 dotyczące auditów wewnętrznych; zdobycie wiedzy na temat audytowania systemów zarządzania, sposobach przeprowadzania auditów wewnętrznych, formułowania i dokumentowania niezgodności, podejścia procesowego, analizy ryzyka. Adresaci: Szkolenie przeznaczone jest dla auditorów oraz kandydatów na auditorów wewnętrznych systemu zarządzania w laboratoriach badawczych pracujących w oparciu o normę PN-EN ISO/IEC 17025, a także pracowników akredytowanych laboratoriów badawczych. Zintegrowany System Zarządzania ISO 9001, ISO 14001 oraz PN-N-18001 Cel szkolenia: zapoznanie z definicjami i wymaganiami normy ISO 14001; zdobycie wiedzy na temat zasad określania znaczących aspektów środowiskowych i ich nadzorowania; zapoznanie z wymaganiami normy ISO 9001; zdobycie wiedzy na temat oceny polityki jakości, spójności celów z polityką oraz określania niezgodności w systemie zarządzania; zapoznanie z wymaganiami normy PN-N-18001; zdobycie wiedzy na temat przygotowania list kontrolnych oraz oceny sytuacji potencjalnych niezgodności. Adresaci: Szkolenie przeznaczone jest dla Pełnomocników ds. Systemów Zarządzania, Auditorów Wewnętrznych, Kadry Kierowniczej. Szkolenie zakończone jest egzaminem, po zdaniu którego uczestnicy otrzymają: CERTYFIKAT AUDITORA WEWNĘTRZNEGO Zintegrowanego Systemu Zarządzania wg normy ISO 9001, ISO 14001 oraz PN-EN-18001. System Zarządzania Energia wg normy 50001 Cel szkolenia: zapoznanie uczestników z wymaganiami normy ISO 50001; omówienie wymagań normy EN ISO 50001 oraz możliwość integracji z innymi systemami zarządzania; przeprowadzenie ćwiczeń dotyczących polityki energetycznej, celów i zadań energetycznych. Adresaci: Norma ISO 50001 kierowana jest dla wszystkich organizacji: pracownicy odpowiedzialni za System Zarządzanie Energią; osoby zainteresowane poprawą wydajności energetycznej kierownictwo wyższego szczebla. raportowanie-kobize Zasady raportowania do Krajowej bazy KOBiZE – warsztaty Cel szkolenia: przećwiczenie praktycznych umiejętności podczas pracy na indywidualnych kontach użytkowników w bazie KOBIZE - zdobycie wiedzy i praktycznych umiejętności w zakresie sporządzania raportów do Krajowej bazy*; zdobycie wiedzy dotyczącej pozyskiwania danych potrzebnych do sporządzenia raportu KOBiZE oraz ich obróbki; możliwość konsultacji w czasie szkolenia i rozwiązania wątpliwości dotyczących sposobu wprowadzania danych do raportu KOBiZE; możliwość wymiany doświadczeń z prowadzącym szkolenie i z innymi uczestnikami szkolenia. Adresaci: osoby zajmujące się ochroną środowiska w przedsiębiorstwach, na terenie których są zlokalizowane instalacje, które są lub mogą być objęte pozwoleniem zintegrowanym; pracownicy sektora MŚ. awaria-wyciek Zasady prewencji i postępowania na wypadek awarii i wycieku substancji ropopochodnych Cel szkolenia: Budowanie świadomości ekologicznej pracowników skutkującej zwróceniem ich uwagi na to, jak duże znaczenie mają działania zapobiegawcze i prewencja u źródła powstania wycieku substancji ropopochodnych pozwalające uniknąć ich dalszego rozprzestrzenienia oraz zanieczyszczenia środowiska. Omówienie sposobów prewencji oraz eliminacji zagrożeń wynikających z awarii i wycieku substancji ropopochodnych na stanowisku pracy. Zaznajomienie z odpowiedzialnością prawną, ewentualnymi karami, jakie niesie ze sobą powstanie szkód środowiskowych. Praktyczne warsztaty z postępowania w przypadku awarii. Adresaci: pracownicy zakładów produkcyjnych, magazynów, mający styczność z substancjami ropopochodnymi, mocnymi kwasami, zasadami; przedsiębiorcy prowadzący działalność, z wykorzystaniem substancji ropopochodnych, stężonych substancji chemicznych; przedsiębiorcy prowadzący działalność, w wyniku której wprowadzane są ścieki do wód i ziemi (w tym ścieki deszczowe); pracownicy laboratoriów chemicznych, stacji benzynowych, stacji serwisowych, funkcjonariusze Staży Pożarnej i Jednostek Ratownictwa Chemicznego. reach-clp Obowiązki przedsiębiorstw w zakresie rozporządzenia REACH i CLP ze szczególnym uwzględnieniem zmian w kartach charakterystyki Cel szkolenia: Uczestnik zdobędzie wiedzę: na temat obowiązków wynikających z rozporządzeń REACH i CLP; jak poprawnie identyfikować, które obowiązki dotyczą działalności swojej firmy i jak je praktycznie realizować; jak zweryfikować swoje surowce pod kątem zgodności z przepisami; w jaki sposób wymieniać informacje w łańcuchu dostaw; skąd zdobywać informacje na temat swoich obowiązków; na temat karty charakterystyki – jej format, wymagania wynikające z przepisów, czy jest poprawnie sporządzona, jak sformułować uwagi o błędach; o metodach wykorzystania w praktyce zasad klasyfikacji mieszanin; jak prawidłowo oznakować substancje i mieszaniny chemiczne. Adresaci: Osoby zajmujące się w przedsiębiorstwie gospodarką chemikaliami oraz kartami charakterystyki. uslugi-rozwojowe Usługi rozwojowe Dla firm z sektora MŚP (mikro, małych i średnich przedsiębiorców) istnieje możliwość dofinansowania naszych usług szkoleniowych i doradczych w ramach Bazy Usług Rozwojowych. Jest to ogólnodostępna, bezpłatna platforma, prowadzona przez Polską Agencję Rozwoju Przedsiębiorczości, na której zamieszczane są usługi rozwojowe organizowane m.in. przez naszą firmę. Dzięki temu przedsiębiorcy mogą ubiegać się o dofinansowanie usług z Europejskiego Funduszu Społecznego w formie refundacji, w wysokości do 80% poniesionych kosztów. Istotną kwestią przy uzyskaniu refundacji jest wielkość przedsiębiorstwa i ilość zatrudnianych pracowników. Przedsiębiorca, który chciałby skorzystać z naszych usług rozwojowych musi skontaktować się z operatorem działającym na terenie swojego województwa, wypełnić wniosek, podpisać umowę, a następnie zgłosić się na usługę przez portal Bazy Usług Rozwojowych oraz wypełnioną kartę zgłoszenia. W 2017 roku nasza firma przeszła pomyślną weryfikację świadczonych usług uzyskując Certyfikat jakości usług szkoleniowo-doradczych według Standardu Usług Szkoleniowo-Rozwojowych Polskiej Izby Firm Szkoleniowych SUS 2.0 wydany przez Dekra Certification Sp. z o.o. Standard ten skoncentrowany jest na czterech obszarach: zarządzanie firmą; sposób świadczenia usług; kompetencje kadr; organizacja i logistyka usług. Posiadamy również wpis do Rejestru Instytucji Szkoleniowych Wojewódzkiego Urzędu Pracy w Katowicach dzięki któremu możemy prowadzić szkolenia dla osób bezrobotnych i poszukujących pracy finansowane ze środków publicznych. Oferowane przez nas usługi rozwojowe to także doradztwo w zakresie ochrony środowiska dotyczące m.in. przeglądu dokumentacji, które posiada Zakład, wymagań prawnych jakie musi spełniać, obiegu dokumentacji środowiskowych, a także mentoring. Istnieje również możliwość przygotowania i przeprowadzenia szkolenia zamkniętego według indywidualnych potrzeb, dla dowolnej grupy pracowników, które będą dofinansowane w ramach Bazy Usług Rozwojowych. Mentoring – oferta kierowana do osób, które skorzystały z naszej oferty szkoleniowej. Stanowi on kolejny etap wsparcia dla pracowników, sprawdzający i pomagający lepiej wdrożyć zdobytą wiedzę w realiach pracy w swoim przedsiębiorstwie. Formuła usługi rozwojowej obejmuje warsztaty w formie analizy odpowiedniej dokumentacji wraz z wyjaśnieniami prowadzącego z możliwością bezpośredniego zadawania pytań w trakcie trwania usługi. Przewidziana jest także dyskusja i analiza zagadnień problemowych (dotyczących tematyki poruszanej w trakcie mentoringu) przedstawianych przez uczestników. Potrzebujesz przegląd spełniania wymagań w zakresie BHP i P.Poż. po zbadaniu stan jakości terenu pod nową inwestycję lub przed sprzedażą / zakupem gruntu? Zobacz ofertę Potrzebujesz analizę wyników lub opracowanie planu remediacji po zbadaniu stan jakości terenu pod nową inwestycję lub przed sprzedażą / zakupem gruntu? Zobacz naszą ofertę remediacji Szkolenia zamknięte prowadzone i dostosowywane są do indywidualnych potrzeb firm. Tematyka szkoleń zamkniętych realizowana jest m.in. z zakresu ochrony środowiska, zintegrowanych systemów zarządzania. Szkolenia proponowane są przy potrzebie przeszkolenia co najmniej 5 osób z danej instytucji i dostosowywane do indywidualnych potrzeb Zamawiającego: w zakresie merytorycznym i formie zajęć – metodologię i formę prowadzenia zajęć dopasowujemy do specyfiki omawianych tematów, a bazowy program szkoleń opracowujemy według specyficznych wymagań Klienta wynikających z przeprowadzonej analizy potrzeb; przy doborze lokalizacji i terminu – miejsce i czas prowadzenia zajęć ustalamy z Klientem indywidualnie – stawiamy na komfort naszych szkoleń; przy ustalaniu kwoty – Klient płaci za realną wielkość zlecenia i faktyczną ilość przeszkolonych osób. Cel szkolenia: przećwiczenie praktycznych umiejętności podczas pracy na indywidualnych kontach użytkowników w bazie KOBIZE – zdobycie wiedzy i praktycznych umiejętności w zakresie sporządzania raportów do Krajowej bazy*; zdobycie wiedzy dotyczącej pozyskiwania danych potrzebnych do sporządzenia raportu KOBiZE oraz ich obróbki; możliwość konsultacji w czasie szkolenia i rozwiązania wątpliwości dotyczących sposobu wprowadzania danych do raportu KOBiZE; możliwość wymiany doświadczeń z prowadzącym szkolenie i z innymi uczestnikami szkolenia. Adresaci: osoby zajmujące się ochroną środowiska w przedsiębiorstwach, na terenie których są zlokalizo",
+      "text_b": "# Szkolenia z ochrony środowiska dla firm\n\nOdpowiadasz za decyzje środowiskowe w firmie i szukasz szkolenia dopasowanego do jej obowiązków? Zacznij od obszaru, którym zajmują się uczestnicy: emisji, odpadów, wody, sprawozdawczości lub innych zagadnień środowiskowych. Następnie określ potrzebny zakres i formę szkolenia.\n\nWiesz już, jakiego szkolenia potrzebuje firma? Opisz obszar obowiązków, poszukiwany zakres i potrzeby uczestników. Przekaż te informacje Ekologus, aby rozpocząć rozmowę o szkoleniu.\n\n## Szkolenia z ochrony środowiska dla firm\n\nSzkolenie możesz dobrać do obowiązków środowiskowych firmy i potrzeb osób, które będą w nim uczestniczyć. To praktyczny punkt wyjścia, gdy w organizacji pojawia się potrzeba uporządkowania wiedzy dotyczącej konkretnego obszaru.\n\nOferta obejmuje różne tematy związane z ochroną środowiska. Dzięki temu nie musisz zaczynać od ogólnego programu. Możesz najpierw wskazać zadania uczestników i zagadnienia, z którymi spotykają się w pracy.\n\n## Zakres tematów: powietrze, emisje, odpady, woda i pozostałe obowiązki\n\nZakres szkolenia może dotyczyć jednego obszaru albo kilku powiązanych obowiązków środowiskowych firmy. Dostępna tematyka obejmuje między innymi:\n\n- powietrze, pozwolenia i emisje,\n- KOBIZE, opłaty i sprawozdawczość,\n- odpady oraz opakowania,\n- wodę i ścieki,\n- inwestycje i glebę,\n- REACH i CLP,\n- systemy zarządzania,\n- BHP.\n\nWybierz obszar odpowiadający zadaniom uczestników. Jeśli ich obowiązki łączą kilka tematów, opisz je razem podczas ustalania zakresu.\n\n## Jak wybrać temat i zakres szkolenia dla firmy\n\nTemat szkolenia wybierz na podstawie rzeczywistych obowiązków organizacji i zadań uczestników. Zacznij od wskazania procesów, dokumentów lub obszarów środowiskowych, którymi zajmuje się zespół.\n\nNastępnie określ, które zagadnienia wymagają omówienia. Pomocne będzie przygotowanie krótkiej listy pytań oraz wskazanie, czy uczestnicy potrzebują szkolenia z jednego tematu, czy z kilku powiązanych obszarów.\n\nPrzy wyborze zakresu opisz także role uczestników i oczekiwaną formę spotkania. Takie informacje ułatwią dalsze omówienie programu z Ekologus.\n\n## Indywidualna wycena szkolenia dopasowanego do potrzeb firmy\n\nWycena szkolenia jest przygotowywana po ustaleniu potrzeb firmy. Przekaż temat, zakres obowiązków uczestników oraz oczekiwaną formę szkolenia.\n\nOpisz również, które zagadnienia mają zostać uwzględnione w programie. Na tej podstawie można omówić zakres szkolenia i przygotować indywidualną wycenę.\n\n## Szkolenia zamknięte dla jednej organizacji\n\nSzkolenie zamknięte jest przeznaczone dla uczestników z jednej organizacji. Taka forma pozwala ustalić temat i zakres na podstawie potrzeb konkretnej firmy.\n\nPrzed rozmową przygotuj informacje o zadaniach uczestników i obszarach, które mają zostać omówione. Wskaż też oczekiwaną formę szkolenia, aby można było doprecyzować propozycję.\n\n## Usługi rozwojowe związane ze szkoleniami\n\nZakres rozmowy może obejmować usługi rozwojowe związane ze szkoleniami. Punktem wyjścia pozostają potrzeby uczestników oraz obszar obowiązków środowiskowych firmy.\n\nPrzekaż Ekologus informacje o oczekiwanym temacie i formie wsparcia. Pozwoli to ustalić, jaki zakres odpowiada sytuacji organizacji.\n\n## Następny krok po wybraniu tematu szkolenia\n\nPo wybraniu tematu przygotuj krótki opis sytuacji firmy. Wymień obszary obowiązków, potrzeby uczestników i oczekiwaną formę szkolenia.\n\nPrzekaż te informacje Ekologus, aby omówić zakres i indywidualną wycenę. Jeśli nie masz jeszcze gotowej listy tematów, zacznij od opisania zadań zespołu związanych z ochroną środowiska.\n\n## Najczęstsze pytania\n\n### Jak wybrać szkolenie z ochrony środowiska dla firmy?\n\nZacznij od obowiązków środowiskowych organizacji i zadań uczestników. Wskaż obszar, którego dotyczy ich praca, na przykład emisje, odpady, wodę lub sprawozdawczość. Następnie określ pytania, oczekiwany zakres i formę szkolenia.\n\n### Czy szkolenia obejmują ochronę środowiska i gospodarkę odpadami?\n\nTak. Tematyka obejmuje ochronę środowiska, w tym odpady i opakowania, a także między innymi emisje, wodę, ścieki, opłaty i sprawozdawczość. Zakres szkolenia można omówić na podstawie potrzeb firmy i obowiązków uczestników.\n\n### Jak uzyskać wycenę szkolenia zamkniętego?\n\nPrzekaż Ekologus temat szkolenia, obszar obowiązków firmy, potrzeby uczestników i oczekiwaną formę. Te informacje pozwolą omówić zakres szkolenia zamkniętego i przygotować indywidualną wycenę.\n\nPrzygotuj krótką listę tematów, zadań uczestników i oczekiwań dotyczących formy szkolenia. Prześlij ją Ekologus, aby omówić zakres oraz indywidualną wycenę.\n\n[Przekaż informacje o szkoleniu](https://www.ekologus.pl/kontakt)"
+    },
+    {
+      "dimensions": [
+        {
+          "name": "answer_directness",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "completeness",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "logical_flow",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "specificity",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "repetition",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "search_intent_fit",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "buyer_fit",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "credibility",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "conversion_clarity",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        }
+      ],
+      "text_a": "EKO-Consulting *Doradztwo, outsourcing, mentoring* Firma oferuje outsourcing ekologiczny opierający się o stałe, profesjonalne doradztwo z zakresu ochrony środowiska. Nieustanne zmiany w przepisach prawa nakładają na firmy szereg obowiązków. Powierzenie stałej obsługi zagadnień związanych z ochroną środowiska firmie Ekologus gwarantuje pewność, że wszystkie aspekty funkcjonowania firmy w danym zakresie będą nadzorowane i dokumentowane terminowo oraz rzetelnie pod względem formalno-prawnym. Sprawozdawczość - BDO, KOBIZE, opłaty - kompleksowo wspieramy w zakresie: Gospodarki odpadami - opracowywanie sprawozdań z wytwarzanych odpadów (w BDO), opracowywanie kart ewidencji odpadów na podstawie zatwierdzonych kart przekazania odpadów w systemie BDO, nadzór nad kartami przekazania odpadów, opracowywanie wniosków aktualizacyjnych oraz wniosków o wykreślenie poprzez system BDO; Gospodarki opakowaniami i odpadami opakowaniowymi - wsparcie w określeniu obowiązków spoczywających na przedsiębiorcy w ramach prowadzonej działalności wraz z wstępnym przygotowaniem dokumentacji środowiskowych, opracowywaniem wniosków aktualizacyjnych oraz rocznych sprawozdań w BDO; Emisji pyłów i gazów do powietrza - sporządzanie raportu do KOBIZE, wykazy z korzystania ze środowiska (wyliczenie opłaty środowiskowej). Korzyści ze współpracy z nami Profesjonalna obsługa oraz doradztwo Brak kosztów związanych z zatrudnianiem i ustawicznym dokształcaniem pracowników odpowiedzialnych za kwestie ochrony środowiska Pewność i gwarancja obsługi przez doświadczony i kompetentnych ekspertów Terminowość oraz rzetelny nadzór formalno-prawny Tekst po lewej stronie Doradztwo ekologiczne Usługi doradcze w zakresie ochrony środowiska świadczone są na terenie całej Polski, o ich jakości i profesjonalizmie świadczą liczne referencje. Czas poświęcany dotąd na śledzenie zmian prawnych, poszukiwanie podwykonawców poszczególnych usług ekologicznych, sporządzanie wymaganych prawem dokumentacji i wniosków oraz kontakty z urzędami i instytucjami kontrolnymi, może zostać przeznaczony na zwiększenie efektywności swojej podstawowej działalności. Konsultacje techniczne i prawne z zakresu ochrony środowiska; Weryfikację dokumentacji pod kątem spełnienia wymagań PO i innych ustaw; Pomoc we wdrażaniu i doskonaleniu Zintegrowanego Systemu Zarządzania; Okresowe przeglądy ekologiczne prowadzonej działalności gospodarczej oraz poszczególnych instalacji przemysłowych; Pomoc w procesie uzgodnieniowym dokumentacji powierzone do wykonania dokumentacji; Pomoc w naliczaniu opłat środowiskowych. Potrzebujesz doradztwa w swojej firmie? Złóż zapytanie i zamów bezpłatną wycenę Złóż zapytanie Potrzebujesz monitoringu stanu środowiska? Wykonujemy akredytowane pomiary badania i analizy ziemi, gleby, wód podziemnych, wody, ścieków, odpadów i kompostu. Zobacz naszą ofertę monitoringu środowiska Potrzebujesz analizę wyników lub opracowanie planu remediacji po zbadaniu stan jakości terenu pod nową inwestycję lub przed sprzedażą / zakupem gruntu? Zobacz naszą ofertę remediacji",
+      "text_b": "# Doradztwo i outsourcing ekologiczny dla firm\n\nZmiany przepisów mogą zwiększać zakres dokumentacji i bieżących obowiązków środowiskowych w firmie. Jeśli odpowiadasz za ochronę środowiska i potrzebujesz stałego wsparcia, uporządkujmy aktualne potrzeby firmy oraz zakres wymaganych działań.\n\nOpisz aktualne obowiązki i potrzeby środowiskowe swojej firmy. Przekaż informacje o dokumentacji, BDO, KOBiZE, opłatach środowiskowych, odpadach lub opakowaniach, które wymagają wsparcia, aby omówić możliwy zakres doradztwa lub outsourcingu.\n\n## Jakie problemy rozwiązuje doradztwo ekologiczne firmy?\n\nDoradztwo ekologiczne pomaga uporządkować obowiązki związane z ochroną środowiska. Obejmuje wsparcie w przygotowaniu dokumentacji oraz w obszarach takich jak BDO, KOBiZE, opłaty środowiskowe, odpady i opakowania.\n\nTo rozwiązanie dla firmy, która potrzebuje profesjonalnego wsparcia, ale nie chce samodzielnie koordynować wszystkich tych tematów. Zakres współpracy można odnieść do aktualnej sytuacji firmy i jej bieżących potrzeb.\n\n## Jak wygląda wsparcie w bieżących obowiązkach ochrony środowiska?\n\nWsparcie obejmuje bieżące działania związane z dokumentacją środowiskową oraz wskazanymi obszarami obowiązków firmy. Możesz omówić zakres dotyczący BDO, KOBiZE, opłat środowiskowych, odpadów i opakowań.\n\nOutsourcing ekologiczny pozwala przekazać te zadania zewnętrznemu wsparciu. Dzięki temu łatwiej ustalić, które tematy wymagają obsługi i jakiego zakresu pomocy potrzebuje osoba odpowiedzialna za ochronę środowiska w firmie.\n\n## Czy doradztwo z zakresu ochrony środowiska odpowiada sytuacji Twojej firmy?\n\nTak, jeśli Twoja firma potrzebuje stałego wsparcia w ochronie środowiska lub chce uporządkować konkretny zakres obowiązków. Dotyczy to między innymi dokumentacji, BDO, KOBiZE, opłat środowiskowych, odpadów i opakowań.\n\nDobrym momentem na rozmowę jest sytuacja, w której zmiany przepisów zwiększają liczbę zadań albo utrudniają samodzielne prowadzenie dokumentacji. Opisz aktualne obowiązki firmy, aby ustalić, jaki zakres doradztwa lub outsourcingu będzie odpowiedni.\n\n## Najczęstsze pytania\n\n### Czym obejmuje się doradztwo ekologiczne dla firmy?\n\nDoradztwo ekologiczne obejmuje wsparcie w dokumentacji środowiskowej oraz w obszarach BDO, KOBiZE, opłat środowiskowych, odpadów i opakowań. Zakres można dopasować do aktualnych obowiązków i potrzeb firmy.\n\n### Kiedy firma może potrzebować outsourcingu ochrony środowiska?\n\nOutsourcing może być potrzebny, gdy firma chce przekazać zewnętrznemu wsparciu bieżące zadania związane z ochroną środowiska. Dotyczy to między innymi dokumentacji, BDO, KOBiZE, opłat środowiskowych, odpadów i opakowań.\n\n### Czy oferta obejmuje wsparcie w obowiązkach środowiskowych przemysłu?\n\nOferta obejmuje doradztwo i outsourcing ekologiczny, dokumentację środowiskową oraz wsparcie w obszarach BDO, KOBiZE, opłat środowiskowych, odpadów i opakowań. Odpowiedni zakres pomocy można ustalić na podstawie aktualnej sytuacji firmy.\n\n[Opisz potrzeby swojej firmy](https://www.ekologus.pl/kontakt)"
+    },
+    {
+      "dimensions": [
+        {
+          "name": "answer_directness",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "completeness",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "logical_flow",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "specificity",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "repetition",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "search_intent_fit",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "buyer_fit",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "credibility",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "conversion_clarity",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        }
+      ],
+      "text_a": "Dokumentacje środowiskowe *- ekspertyzy, raporty, wnioski, pozwolenia zintegrowane* Od 1989 roku Zespół firmy Ekologus Sp. z o.o. przygotowuje Specjalistyczne Ekspertyzy oraz Dokumentacje z zakresu ochrony środowiska, niezbędne do uzyskania pozwoleń i decyzji administracyjnych, wymaganych do prawidłowego prowadzenia instalacji oraz uruchamiania nowych inwestycji w zakładach przemysłowych. Przygotowujemy także dokumentacje dla administracji. Instalacje IPPC wymagające posiadania Pozwolenia Zintegrowanego – PZ: wnioski o wydanie pozwolenia zintegrowanego, raporty początkowe, analizy konieczności wykonania raportu początkowego, raporty końcowe, ocena stanu jakości środowiska gruntowo-wodnego. Nowe inwestycje - Raporty ROŚ (Raport o oddziaływaniu inwestycji na Środowisko) i KIP (Karta Informacyjna Przedsięwzięcia). Istniejące oraz nowe zakłady : pozwolenia sektorowe, tj. pozwolenia wodnoprawne, pozwolenia na wprowadzanie gazów i pyłów do powietrza, pozwolenia na wytwarzanie, magazynowanie i przetwarzanie odpadów, sprawozdawczość i KOBiZE, REACH i CLP oraz inne dokumentacje z zakresu ochrony środowiska wg potrzeb Klientów. Zakłady o zwiększony lub dużym ryzyku wystąpienia awarii przemysłowych. Dokumentacje dla administracji. Tekst po lewej stronie 1. Dokumentacje dla Instalacji IPPC Pozwolenia zintegrowane Od 2002 roku przygotowujemy dokumentacje do uzyskania pozwolenia zintegrowanego dla firm, które wówczas zostały objęte takim obowiązkiem. W kolejnym Rozporządzeniu Ministra Środowiska z dnia 27 sierpnia 2014 roku (Dz. U. 2014, poz. 1169), zostały wymienione wszystkie (dotychczasowe i dodano nowe) rodzaje instalacji mogących powodować znaczne zanieczyszczenie poszczególnych elementów przyrodniczych albo środowiska jako całości, dla których wymagane jest uzyskanie pozwolenia zintegrowanego. Nasz Zespół ekspertów z różnych dziedzin, wykonuje kompleksowe dokumentacje w celu uzyskania pozwoleń zintegrowanych dla nowych instalacji oraz aktualizacje na wprowadzone zmiany dla istniejących instalacji IPPC. Zakres dokumentacji wykonujemy zgodnie z wymaganiami prawnymi określonymi w Ustawie Prawo ochrony środowiska (Dz.U. 2001 Nr 62 poz. 627, z póź. zm. §208 pkt 1oraz pkt 2) Ekologus Sp. z o.o. jest autorem kilkuset wniosków o uzyskanie lub zmianę pozwoleń zintegrowanych wykonanych dla instalacji z grupy największych zakładów przemysłowych w Polsce m.in. z takich branż: chemicznej, petrochemicznej, metalurgicznej, odlewniczej, galwanicznej, szklarskiej, obróbki metali i składowisk odpadów, spożywczej oraz chowu drobiu. 100% opracowanych przez nas wniosków uzyskało pozwolenie zintegrowane. Raport początkowy Ustawa Prawo ochrony środowiska wprowadziła nowy obowiązek dla przedsiębiorstw posiadających instalacje IPPC, czyli wymagające uzyskania pozwolenia zintegrowanego. Mówi ona o tym, iż jeśli eksploatacja instalacji obejmuje wykorzystywanie, produkcję lub uwalnianie substancji powodującej ryzyko oraz występuje możliwość zanieczyszczenia gleby, ziemi lub wód gruntowych na terenie zakładu, jest on zobowiązany wykonać: raport początkowy o stanie zanieczyszczenia gleby, ziemi i wód gruntowych tymi substancjami, zwany dalej „raportem początkowym” (Dz.U. 2001 Nr 62 poz. 627, z póź. zm. §208 pkt 2 podpunkt 4a) Raport końcowy Dla zamykanych instalacji IPPC wykonujemy raporty końcowe wraz z monitoringiem stanu jakości środowiska gruntowo-wodnego na zakres jaki był badany do raportu początkowego. Ustawa POŚ mówi, iż: przed przystąpieniem do zakończenia eksploatacji instalacji, dla której wymagany był raport początkowy, należy przedłożyć właściwemu organowi raport końcowy o stanie końcowym zanieczyszczenia gleby, ziemi i wód gruntowych na terenie zakładu substancjami powodującymi ryzyko, zwany dalej „raportem końcowym” (Dz.U. 2001 Nr 62 poz. 627, z póź. zm. §217b) Ocena stanu jakości środowiska gruntowo-wodnego Spółka Ekologus od 2014 roku rozpoczęła prace związane ze wsparciem zakładów posiadających instalacje IPPC, w zakresie wypełnienia obowiązku prawnego związanego z raportowaniem stanu jakości środowiska gruntowo-wodnego, w tym: Określenie rodzaju substancji jakie powinny być ujęte w raporcie początkowym. Określenie środowiska hydrogeologicznego terenu, na którym zlokalizowany jest zakład. Wyznaczenie ilości i miejsc poboru próbek gleby, ziemi i wód gruntowych oraz głębokości odwiertów. Prowadzenie pod nadzorem uprawnionego geologa odwiertów geośrodowiskowych i akredytowany pobór próbek. Przygotowanie i analizy gleby, ziemi i wody podziemnej w akredytowanym laboratorium. Opracowanie wyników badań i wskazanie jakie dalsze kroki należy podjąć oraz jaki rodzaj dokumentacji należy opracować. Zakres dalszych prac uzależniony jest od występowania przekroczeń dopuszczalnych stężeń w gruncie lub wodach dla badanych substancji: Raport początkowy/końcowy; Ocena występowania znaczącego zagrożenia dla zdrowia ludzi lub stanu środowiska Ocena występowania znaczącego zagrożenia dla zdrowia ludzi lub stanu środowiska Ocena występowania zagrożenia – wykonywana w przypadku wystąpienia przekroczenia zawartości dopuszczalnych w glebie, w ziemi i/lub w wodach gruntowych, substancji powodujących ryzyko dla zdrowia człowieka, wymienionych w załączniku do Rozporządzenia Ministra Środowiska w sprawie sposobu prowadzenia oceny zanieczyszczenia powierzchni ziemi Dz.U.2016 poz. 1395 oraz innych substancji nie wymienionych w ww. Rozporządzeniu a uwalnianych z instalacji IPPC. Tekst po prawej stronie 2. Dokumentacje wymagane dla nowych inwestycji Dokumentacje środowiskowe wymagane w procesie inwestycyjnym muszą zostać wykonane przed uzyskaniem pozwolenia na budowę. Zagadnienia dotyczące ochrony środowiska mają często znaczący wpływ na przebieg procesu inwestycyjno-budowlanego. Już w fazie przedinwestycyjnej należy kompleksowo ocenić planowane przedsięwzięcia inwestycyjne, poczynając od przygotowania dokumentacji inwestycyjnej i zachowania stosownych procedur wynikających z przepisów prawa ochrony środowiska. Raport o oddziaływaniu inwestycji na środowisko (ROŚ lub raport OOŚ) Raport o oddziaływaniu przedsięwzięcia na środowisko powinien zawierać informacje umożliwiające analizę kryteriów wymienionych w art. 62 ust. 1 – poszczególne komponenty środowiska, ryzyko wystąpienia poważnych awarii oraz możliwość i sposoby zapobiegania i zmniejszenia negatywnego oddziaływania przedsięwzięcia na środowisko. Karta informacyjna przedsięwzięcia (KIP) Karta informacyjna przedsięwzięcia jest wymagana w przypadku gdy planowane przedsięwzięcie zalicza się do przedsięwzięć mogących potencjalnie znacząco oddziaływać na środowisko. Jest to grupa przedsięwzięć określonych w §3 Rozporządzenia Rady Ministrów (Dz.U.2019 poz 1839, z póź. zm.) w sprawie przedsięwzięć mogących znacząco oddziaływać na środowisko (określana jako grupa druga). Zgłoszenie braku konieczności sporządzenia raportu oddziaływania na środowisko 3. Wnioski o wydanie pozwoleń sektorowych. Przygotowujemy wnioski do uzyskania pozwoleń na wprowadzanie do środowiska substancji lub energii z następujących zakresów: Gospodarki odpadami Podstawą opracowywania dokumentacji w zakresie gospodarki odpadami jest Ustawa Prawo ochrony środowiska oraz Ustawa o Odpadach. W dniu 20 lipca 2018 roku Ustawą zmieniającą ustawę o Odpadach oraz niektórych innych ustaw (Dz. U. 2018 poz.1592) oraz nowym zapisem w Ustawie prawo ochrony środowiska - § 183 c zostały wprowadzone nowe zmiany nakładające dodatkowe wymogi dla przedsiębiorców dotyczące obowiązku dołączenia do wniosków o wydanie pozwoleń na przetwarzanie i zbieranie odpadów oraz do pozwoleń zintegrowanych nowych załączników. Zgodnie z art. 184 ust.4 ustawy z dnia 27 kwietnia 2001 r. - Prawo ochrony środowiska (Dz. U. z 2018 r. poz. 799, z późn. zm.) do wniosku o wydanie pozwolenia należy dołączyć m.in.: operat przeciwpożarowy spełniający wymagania określone w art. 42 ust. 4b pkt 1 ustawy z dnia 14 grudnia 2012 r. o odpadach oraz w przepisach wydanych na podstawie art. 43 ust. 8 tej ustawy, wykonany przez rzeczoznawcę do spraw zabezpieczeń przeciwpożarowych, o którym mowa w rozdziale 2a ustawy z dnia 24 sierpnia 1991 r. o ochronie przeciwpożarowej (Dz.U. z 2021r. poz. 869) - pkt 5; postanowienie, o którym mowa w art. 42 ust. 4c ustawy z dnia 14 grudnia 2012 r. o odpadach – pkt 6; zaświadczenie o niekaralności prowadzącego instalację (pkt 8). Ekologus przygotowuje następujące rodzaje dokumentacji w zakresie gospodarki odpadami: Wniosek o wydanie pozwolenia na wytwarzanie i przetwarzanie odpadów; Zmiana pozwolenia zintegrowanego w części dotyczącej gospodarki odpadami lub w całości; Operaty przeciwpożarowe, wykonywane przez uprawnionego rzeczoznawcę ds. p.poż. Wniosek na emisje pyłów i gazów Dokumentacje środowiskowe z zakresu ochrony powietrza wymagają specjalistycznego oprogramowania do wykonywania obliczeń rozprzestrzeniania się zanieczyszczeń. W przygotowanej przez Ekologus dokumentacji z zakresu ochrony powietrza oraz w obliczeniach emisji uwzględnione są między innymi: zmiany technologiczne w zakładzie, mających wpływ na sposób odprowadzania pyłów i gazów do środowiska, np. wprowadzenie obiegów zamkniętych, nowe wentylatory, zmiana ilości źródeł, nowe rodzaje źródeł emisji, itd. Dokumentacja zawiera inwentaryzację wszystkich źródeł zlokalizowanych na terenie zakładu, wyznaczenie ilości oraz rodzajów źródeł emitujących te same substancje (wg wcześniejszych danych dostarczonych przez zakład). Ponowne wyznaczenie oddziaływania wszystkich źródeł emisji wraz z obliczeniami rozprzestrzeniania emisji, w tym: przeliczenie rozprzestrzeniania się pyłów i gazów dla całego rejonu Zakładu (wyznaczenie wartości maksymalnych i izolinii na powierzchni terenu i na wysokości w punktach przy zabudowie mieszkaniowej); opracowanie wyników w formie graficznej (izolinie); korekta opisu istniejących źródeł emisji pyłów i gazu. Opracowujemy: Wnioski stanowiące podstawę do uzyskania pozwolenia na wprowadzanie gazów i pyłów do powietrza; Zgłoszenia instalacji nie wymagających pozwolenia. Ochrona przed hałasem do środowiska Dokumentacja z zakresu emisji hałasu do środowiska ma za zadanie aktualizację oddziaływania istniejącego zakładu na klimat akustyczny, po uwzględnieniu nowych źródeł hałasu (z uwzględnieniem aktualnych danych dotyczących źródeł emisji dźwięku z istniejących instalacji zakładu – wg. danych jakie zakład dostarczy nam), w tym: Przeliczenie hałasu dla całego rejonu Zakładu (wyznaczenie izofon i hałasu w punktach przy zabudowie mieszkaniowej); Wykonanie pomiarów tła akustycznego zakładu; Opracowanie wyników w formie graficznej dla dnia i nocy oraz opis. Gospodarka wodno-ściekowa Od 20 września 2017 roku obowiązuje Ustawa o zmianie ustawy Prawo wodne oraz niektórych innych ustaw Dz.U. Nr 2017 poz.1566, która wprowadza nowy Organ Polskie Wody oraz zmienia jego kompetencje, jak również określa nowe zasady raportowania, opłat oraz uzyskiwania zgód na: Wydanie pozwolenia wodnoprawnego lub przyjęcie zgłoszenia wodnoprawnego następują między innymi przed uzyskaniem przez inwestora decyzji o pozwoleniu na budowę i zatwierdzającej projekt budowlany przyznawanej na podstawie prawa budowlanego oraz decyzji o warunkach zabudowy i zagospodarowania terenu wydawanej na podstawie ustawy o planowaniu i zagospodarowaniu przestrzennym. Pozwolenie wodnoprawne jest wymagane między innymi na tzw. usługi wodne oraz szczególne korzystanie z wód (art. 388 projektu ustawy). Obowiązek posiadania pozwolenia wodnoprawnego dotyczy również wytwórcy ścieków przemysłowych zawierających substancje szczególnie szkodliwe dla środowiska wodnego (art. 390 projektu ustawy). Ekologus opracowuje dokumentacje środowiskowe w zakresie gospodarki wodno-ściekowej, wymagające pozwolenia wodnoprawnego na szczególny sposób korzystania ze środowiska: Operaty wodno-prawne będące podstawą do uzyskania pozwoleń m.in. na: wykonanie urządzeń wodnych; pobór wód; wprowadzanie do urządzeń kanalizacyjnych ścieków przemysłowych zawierających substancje szczególnie szkodliwe dla środowiska wodnego; wprowadzani",
+      "text_b": "# Opracowania dokumentacji i ekspertyz środowiskowych\n\nSzukasz właściwej dokumentacji środowiskowej dla swojej firmy? Uporządkuj zakres sprawy i przygotuj informacje potrzebne do rozmowy o ekspertyzie, raporcie, wniosku, pozwoleniu lub operacie wodnoprawnym.\n\nNie wiesz, jaki dokument przygotować? Skontaktuj się z Ekologus, opisz sytuację firmy i przygotuj informacje o planowanej działalności oraz posiadanej dokumentacji. Pomoże to omówić zakres potrzebnego opracowania.\n\n## Jak rozpoznać właściwy rodzaj dokumentacji środowiskowej?\n\nWłaściwy rodzaj dokumentacji zależy od konkretnej sprawy firmy. Na początku określ planowaną działalność, jej zakres oraz element środowiska, którego dotyczy postępowanie.\n\nDokumentacja może przyjąć formę ekspertyzy, raportu, opracowania albo wniosku. W sprawach związanych z gospodarką wodno-ściekową może obejmować także operat wodnoprawny. Rozmowa o stanie faktycznym pozwala uporządkować, jaki zakres informacji jest potrzebny.\n\n## Jakie pozwolenie może wynikać z planowanej działalności?\n\nRodzaj pozwolenia zależy od czynności planowanych przez firmę. W gospodarce wodno-ściekowej operat wodnoprawny może stanowić podstawę do uzyskania pozwolenia między innymi na wykonanie urządzeń wodnych, pobór wód albo wprowadzanie ścieków.\n\nJeżeli sprawa dotyczy szerszego zakresu działalności, potrzebne mogą być również inne opracowania, wnioski lub pozwolenia. Aby ustalić właściwy kierunek, opisz planowaną czynność, miejsce jej wykonywania i dotychczasową dokumentację.\n\n## Jak przygotować wniosek o pozwolenie sektorowe?\n\nWniosek o pozwolenie sektorowe powinien odpowiadać konkretnej działalności i zakresowi sprawy. Przygotowanie zacznij od zebrania informacji o instalacji lub zamierzeniu, prowadzonej działalności oraz wymaganym rodzaju opracowania.\n\nW zależności od sprawy dokumentacja może obejmować ekspertyzę, raport, opracowanie albo operat wodnoprawny. W sprawach wodnoprawnych operat może dotyczyć między innymi wykonania urządzeń wodnych, poboru wód lub wprowadzania ścieków.\n\n## Kiedy warto skonsultować zakres dokumentacji środowiskowej?\n\nSkonsultuj zakres dokumentacji wtedy, gdy nie wiesz, który dokument odpowiada Twojej sprawie. Dotyczy to także sytuacji, w której masz wcześniejsze opracowanie, ale planujesz zmianę działalności albo nie masz pewności, jakie informacje przygotować.\n\nPrzygotuj podstawowy opis firmy, planowanej czynności i posiadanych dokumentów. Takie informacje pomagają uporządkować temat przed wyborem ekspertyzy, raportu, wniosku, pozwolenia albo operatu wodnoprawnego.\n\n## Jakie dokumentacje środowiskowe może przygotować firma?\n\nFirma może przygotować dokumentacje dopasowane do zakresu sprawy środowiskowej. Oferta obejmuje opracowania dotyczące gospodarki wodno-ściekowej, w tym operaty wodnoprawne jako podstawę do uzyskania pozwoleń między innymi na wykonanie urządzeń wodnych, pobór wód oraz wprowadzanie ścieków.\n\nZakres może obejmować także ekspertyzy, raporty i wnioski związane z konkretnym postępowaniem. Ostateczny rodzaj dokumentu zależy od informacji o działalności firmy i celu, który ma spełnić opracowanie.\n\n## Jak sprawdzić, czy potrzebne jest nowe albo zaktualizowane pozwolenie?\n\nSprawdź najpierw, czego dotyczy obecne pozwolenie i czy planowana działalność pozostaje w tym samym zakresie. Porównaj te informacje z planowaną zmianą, na przykład zmianą czynności związanej z poborem wód, urządzeniami wodnymi albo wprowadzaniem ścieków.\n\nJeżeli zakres sprawy się zmienił albo dokumentacja jest nieaktualna, przygotuj posiadane pozwolenia i opis planowanych działań do omówienia. Na tej podstawie można ustalić, czy potrzebne jest nowe opracowanie, aktualizacja dokumentacji lub przygotowanie wniosku.\n\n## Najczęstsze pytania\n\n### Czym różnią się dokumentacja środowiskowa, ekspertyza i opracowanie środowiskowe?\n\nDokumentacja środowiskowa to szersze określenie materiałów przygotowywanych w konkretnej sprawie. Ekspertyza skupia się na ocenie wybranego zagadnienia, a opracowanie porządkuje informacje potrzebne do dalszego postępowania. Właściwa forma zależy od zakresu działalności i celu dokumentu.\n\n### Kiedy potrzebny jest raport początkowy przy pozwoleniu zintegrowanym?\n\nPotrzeba raportu początkowego zależy od konkretnej instalacji, prowadzonej działalności i zakresu postępowania. Aby ustalić, jaki dokument jest potrzebny, przygotuj opis instalacji oraz posiadaną dokumentację i omów zakres sprawy z Ekologus.\n\nPo uporządkowaniu zakresu sprawy skontaktuj się z Ekologus, aby omówić potrzebną dokumentację środowiskową i informacje, które warto przygotować do dalszej rozmowy.\n\n[Skontaktuj się z Ekologus](https://www.ekologus.pl/kontakt)"
+    },
+    {
+      "dimensions": [
+        {
+          "name": "answer_directness",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "completeness",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "logical_flow",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "specificity",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "repetition",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "search_intent_fit",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "buyer_fit",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "credibility",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        },
+        {
+          "name": "conversion_clarity",
+          "text_a": {
+            "score_max": 5,
+            "score_min": 1
+          },
+          "text_b": {
+            "score_max": 5,
+            "score_min": 1
+          }
+        }
+      ],
+      "text_a": "Pomiary, badania i analizy Wykonujemy akredytowane pomiary emisji pyłów i gazów do powietrza, pomiary poziomu hałasu w środowisku, akredytowane pobory i badania ziemi, gleby, wód podziemnych, wody, ścieków, odpadów i kompostu we współpracy z akredytowanymi laboratoriami. Prowadzimy również badania środowiska pracy. Monitoring środowiska Prowadzenie działalności gospodarczej wiąże się z emitowaniem w indywidualnej skali i zakresie zanieczyszczeń do różnych mediów środowiska, tj. do powietrza, ziemi, gleby, wód powierzchniowych i podziemnych. Często te emisje niosą za sobą konieczność uzyskania pozwoleń sektorowych lub pozwolenia zintegrowanego. Monitoring środowiska polega na badaniu, analizie i ocenie stanu jakości różnych komponentów środowiska. Otrzymane wyniki z przeprowadzonych pomiarów porównywane są z wartościami dopuszczalnymi, które określają uzyskane decyzje środowiskowe lub przepisy prawa. Regularne monitorowanie pozwala nadzorować prawidłową pracę instalacji i zareagować na czas przy niekontrolowanych przekroczeniach. W przypadku znaczącego przekroczenia dopuszczalnych standardów emisyjnych lub standardów jakości środowiska albo braku wykonania okresowych pomiarów (wyznaczonych w decyzji środowiskowej) właściwy organ może cofnąć lub ograniczyć pozwolenie, a nawet nałożyć kary finansowe na przedsiębiorcę. Tekst po lewej stronie Monitoring środowiska zewnętrznego Pomiary emisji pyłów i gazów do powietrza pyłu metodą grawimetryczną; gazów odlotowych w zakresie CO, CO2, NOx, NO2, SO2; związków organicznych z analizą pobranych próbek metodą chromatografii gazowej; związków nieorganicznych; lotnych związków organicznych (LZO) z zastosowaniem ciągłej detekcji płomieniowo-jonizacyjnej FID; pyłów o frakcjach PM2,5 - PM10, z zastosowaniem impaktora kaskadowego; metali ciężkich. Pomiary poziomu hałasu w środowisku Badania gleby, ziemi i wód podziemnych Badania wody i ścieków Badania odpadów Prowadzimy akredytowane pobory Pobrane próbki badamy w akredytowanych laboratoriach Skontaktuj się Monitoring środowiska wykonuje się na potrzebę uzyskania decyzji środowiskowej lub w celu realizacji obowiązku okresowego sprawdzania stanu jakości środowiska nałożonego przez organ wydający decyzję Monitoring środowiska pracy Wykonujemy badań i pomiarów czynników szkodliwych na stanowisku pracy niezbędnych do opracowania oceny ryzyka zdrowotnego z zakresu: Zapylenia (pył całkowity i respirabilny), Stężenia substancji szkodliwych, Natężenia oświetlenia, Wydatku energetycznego, Natężenia hałasu, Drgań mechanicznych, Pomiar pól elektromagnetycznych (PEM) Potrzebujesz wykonać pomiar / badania środowiska? Złóż zapytanie i zamów bezpłatną wycenę Złóż zapytanie Potrzebujesz uzyskać lub zmienić pozwolenie m.in.: na wprowadzanie gazów i pyłów do powietrza; wodnoprawne; zintegrowane. Zobacz naszą ofertę dokumentacji środowiskowych Potrzebujesz analizę wyników lub opracowanie planu remediacji po zbadaniu stan jakości terenu pod nową inwestycję lub przed sprzedażą / zakupem gruntu? Zobacz naszą ofertę remediacji",
+      "text_b": "# Pomiary i analizy środowiska dla firm\n\nJeśli odpowiadasz w firmie za decyzje środowiskowe, możesz potrzebować ustalić właściwy zakres pomiarów, poboru próbek i analiz. Poniżej znajdziesz odpowiedzi na pytania, co można zbadać, kiedy dany pomiar jest potrzebny i jak przygotować zakres badań do konkretnej sytuacji.\n\nOpisz Ekologus sytuację swojej firmy, miejsce badania i decyzję, którą chcesz podjąć na podstawie wyników. Wspólnie można wtedy sprawdzić, czy potrzebne są pomiary emisji lub hałasu, pobór próbek gleby albo wód podziemnych i analizy laboratoryjne oraz jaki zakres badań będzie właściwy.\n\n## Jakie pomiary i badania środowiska są potrzebne firmie?\n\nZakres badań zależy od sytuacji firmy i problemu, który chcesz rozpoznać. Pomiary i analizy mogą dotyczyć emisji zanieczyszczeń, hałasu, gleby oraz wód.\n\nJeśli chcesz ocenić stan terenu, badanie może obejmować pobranie próbek gleby lub wód podziemnych. Próbki mogą następnie trafić do analiz laboratoryjnych. Wyniki pomagają uporządkować informacje potrzebne do dalszych decyzji dotyczących terenu.\n\nW przypadku zanieczyszczonego obszaru zakres może obejmować także rozpoznanie problemu i przygotowanie planu remediacji. Najpierw określ, czego chcesz się dowiedzieć i jakiej decyzji mają służyć wyniki. Dopiero potem dobierz konkretne pomiary i badania.\n\n## Co obejmują pomiary emisji, hałasu oraz badania gleby i wód?\n\nPomiary emisji zanieczyszczeń służą sprawdzeniu emisji z danego źródła w zakresie dopasowanym do sytuacji firmy. Badanie może obejmować także pomiary hałasu, jeśli chcesz rozpoznać oddziaływanie akustyczne związane z działalnością.\n\nBadania gleby i wód obejmują pobieranie próbek oraz ich analizy laboratoryjne. W przypadku gleby lub wód podziemnych takie działania pomagają ustalić, czy potrzebne jest dalsze rozpoznanie terenu.\n\nZakres nie powinien być oderwany od konkretnego miejsca i celu badania. Połączenie poboru próbek, analiz laboratoryjnych i interpretacji wyników może pomóc przygotować plan dalszych działań, w tym plan remediacji, gdy sytuacja tego wymaga.\n\n## Jak ustalić zakres pomiaru przed zleceniem badań?\n\nPrzed zleceniem badań opisz miejsce, działalność firmy i pytanie, na które mają odpowiedzieć wyniki. Zastanów się, czy potrzebujesz pomiaru emisji lub hałasu, czy także poboru próbek gleby albo wód podziemnych.\n\nNastępnie określ, jakie informacje są już dostępne i czego w nich brakuje. Taki porządek ułatwia wskazanie zakresu pomiaru, liczby potrzebnych próbek oraz rodzaju analiz laboratoryjnych.\n\nJeśli problem dotyczy zanieczyszczonego terenu, zakres może obejmować również przygotowanie planu remediacji. Omów opis sytuacji przed wyborem badań, aby ustalić działania odpowiadające rzeczywistemu problemowi firmy.\n\n## Najczęstsze pytania\n\n### Jakie pomiary emisji zanieczyszczeń może obejmować badanie?\n\nBadanie może obejmować pomiary emisji zanieczyszczeń z danego źródła oraz pomiary hałasu. Dokładny zakres zależy od sytuacji firmy, miejsca i pytania, na które mają odpowiedzieć wyniki. Przed zleceniem badań warto opisać te elementy, aby ustalić potrzebny zakres pomiaru.\n\n[Opisz sytuację firmy i zakres badań](https://www.ekologus.pl/kontakt)"
+    }
+  ]
+}
