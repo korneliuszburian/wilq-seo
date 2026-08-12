@@ -21,7 +21,7 @@ from wilq.connectors.wordpress.text import (
     wordpress_title,
 )
 
-WORDPRESS_CONTENT_TYPES = ("posts", "pages")
+WORDPRESS_CONTENT_TYPES = ("posts", "pages", "uslugi")
 WORDPRESS_CONTENT_PER_PAGE = 100
 WORDPRESS_READ_FIELDS = (
     "id,status,modified_gmt,date_gmt,link,slug,title,content,acf,template"
@@ -610,7 +610,14 @@ def _fetch_content_type_summary(
         auth=auth,
         params=cast(httpx.QueryParams, {**params, "page": 1}),
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except httpx.HTTPError:
+        return {
+            "total": 0,
+            "latest_modified_gmt": "",
+            "objects": [],
+        }
     payload = response.json()
     objects = _content_objects(payload)
     total_pages = _header_int(response.headers.get("X-WP-TotalPages"))

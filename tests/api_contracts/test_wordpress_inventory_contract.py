@@ -30,7 +30,11 @@ def _public_sitemap_handler() -> Callable[[httpx.Request], httpx.Response]:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "ekologus.dev.proudsite.pl":
             return _dev_response(request)
-        if request.url.path in {"/wp-json/wp/v2/posts", "/wp-json/wp/v2/pages"}:
+        if request.url.path in {
+            "/wp-json/wp/v2/posts",
+            "/wp-json/wp/v2/pages",
+            "/wp-json/wp/v2/uslugi",
+        }:
             return _public_rest_response(request)
         if request.url.path == "/wp-sitemap.xml":
             return httpx.Response(404)
@@ -54,7 +58,11 @@ def _public_sitemap_handler() -> Callable[[httpx.Request], httpx.Response]:
 
 
 def _dev_response(request: httpx.Request) -> httpx.Response:
-    if request.url.path in {"/wp-json/wp/v2/posts", "/wp-json/wp/v2/pages"}:
+    if request.url.path in {
+        "/wp-json/wp/v2/posts",
+        "/wp-json/wp/v2/pages",
+        "/wp-json/wp/v2/uslugi",
+    }:
         return httpx.Response(200, headers={"X-WP-Total": "0"}, json=[])
     return httpx.Response(404)
 
@@ -72,7 +80,7 @@ def _public_rest_response(request: httpx.Request) -> httpx.Response:
             ],
         )
     if (
-        request.url.path.endswith("/pages")
+        request.url.path.endswith("/uslugi")
         and slug == "doradztwo-i-outsourcing-ekologiczny"
     ):
         return httpx.Response(
