@@ -78,3 +78,25 @@ W odpowiedzi na finding "generated jest płytszy" dodano:
 ### Wniosek
 
 Source-fact grounding (Q40) jest właściwym kierunkiem i realnie pogłębia initial draft. Jednak **pipeline nie osiągnął jeszcze głębi existing WordPress content** — blind judge nadal wolał current (5/5), a repair-turn nie jest narzędziem do budowania głębi. Zamknięcie luki wymaga: (a) bogatszych source facts dopasowanych do zapytań GSC, (b) initial-draft-only pogłębiania (bez repair na głębię), (c) re-benchmarku z blind judge.
+
+## Root cause luki głębi (potwierdzony z danych, 2026-08-13)
+
+Mierzalny powód, dla którego blind judge wolał current WordPress:
+
+| Strona | Merytoryczne source facts w wiedzy WILQ | Current WordPress |
+|---|---|---|
+| BDO | 11 | 804 słów, 12 sekcji |
+| Szkolenia | 1 | 1625 słów, 12 sekcji |
+| Doradztwo | 1 | 426 słów, 12 sekcji |
+| Opracowania | 1 | 2001 słów, 12 sekcji |
+| Pomiary | 1 | 430 słów, 12 sekcji |
+
+4 z 5 stron usługowych mają tylko **1 merytoryczny source fact** (np. "oferta obejmuje X, Y, Z").
+Model nie może wygenerować konkretnej, głębokiej treści z 1 ogólnego faktu — może jedynie
+rozwinąć ogólniki. Świeża generacja doradztwa z Q40 dała 9/9 semantic (short ale strong),
+ale tylko 148 słów vs 426 current — semantic review nie nagradza głębi.
+
+**Wniosek:** luka głębi jest luką WIEDZY (source facts), nie promptu. Zamknięcie wymaga
+wzbogacenia knowledge base o szczegółowe fakty per usługa (zakresy, procesy, normy, ceny,
+obowiązki) — to osobny program danych, wykraczający poza prompt/pipeline. Bez tego generowana
+treść pozostanie strukturalnie lepsza, ale merytorycznie płytsza niż existing content.
