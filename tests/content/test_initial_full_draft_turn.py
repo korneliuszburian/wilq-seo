@@ -3,18 +3,27 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
+import pytest
+
+import wilq.content.drafts.initial_full_draft_turn as draft_turn
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
-from wilq.content.knowledge.source_facts import ContentSourceFact
+from wilq.content.knowledge.source_facts import ContentSourceFact, SourceFactReviewStatus
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.planning.input_sources import ContentPlanningInventory
+from wilq.content.planning.input_sources import (
+    ContentPlanningInventory,
+    ContentPlanningSourceFact,
+)
 from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
     ContentRegulatoryDocumentAssertion,
     ContentRegulatoryRequirement,
 )
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
-from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningProposal,
+    ContentPlanningSection,
+)
 
 
 def test_initial_draft_v2_prompt_preserves_copy_and_source_fact_rules() -> None:
@@ -35,6 +44,9 @@ def test_initial_draft_v2_prompt_preserves_copy_and_source_fact_rules() -> None:
     ):
         assert planning_field in instruction
     assert "Source facts służą wyłącznie do ustalenia treści" in instruction
+    assert "approved_source_facts_by_section" in instruction
+    assert "co najmniej jeden konkretny fakt" in instruction
+    assert "Nie dodawaj faktów" in instruction
     assert "nie powtarzaj tego samego twierdzenia" in instruction
     assert instruction.endswith("REGULATORY_DIRECTIVE")
 
@@ -106,6 +118,9 @@ def test_initial_draft_turn_exposes_server_owned_regulatory_assertions() -> None
             SimpleNamespace(
                 section_id="section_access",
                 heading="Dostęp",
+                purpose="Wyjaśnia dostęp do systemu.",
+                reader_question="Kto może nadać dostęp?",
+                query_terms=[],
                 inventory_disposition="rewrite",
                 regulatory_requirement_ids=["access"],
             )
@@ -114,9 +129,7 @@ def test_initial_draft_turn_exposes_server_owned_regulatory_assertions() -> None
         cta_blocks=[],
         internal_links=[],
     )
-    generation_contract = SimpleNamespace(
-        model_input=SimpleNamespace(model_dump=lambda mode: {})
-    )
+    generation_contract = SimpleNamespace(model_input=SimpleNamespace(model_dump=lambda mode: {}))
 
     request = initial_full_draft_turn_request(
         planning_input=planning_input,
@@ -136,7 +149,11 @@ def test_initial_draft_turn_exposes_server_owned_regulatory_assertions() -> None
     assert compact_proposal["planning_digest"] == "b" * 64
     assert "page_assets" not in compact_proposal
     assert compact_proposal["sections"][0]["section_id"] == "section_access"
-    assert json.loads(request.untrusted_context)["approved_regulatory_facts_by_section"] == [
+    untrusted_context = json.loads(request.untrusted_context)
+    assert untrusted_context["approved_source_facts_by_section"] == [
+        {"section_id": "section_access", "source_facts": []}
+    ]
+    assert untrusted_context["approved_regulatory_facts_by_section"] == [
         {
             "section_id": "section_access",
             "requirement_ids": ["access"],
@@ -152,3 +169,231 @@ def test_initial_draft_turn_exposes_server_owned_regulatory_assertions() -> None
     ]
     assert "Source facts służą wyłącznie do ustalenia treści" in request.instruction
     assert "nie powtarzaj tego samego twierdzenia" in request.instruction
+
+
+def _approved_bdo_fact(
+    source_id: str,
+    *,
+    target_card_id: str,
+    target_card_type: str = "evidence_requirement",
+    service_fit_terms: list[str] | None = None,
+    review_status: SourceFactReviewStatus = "approved",
+) -> ContentSourceFact:
+    return ContentSourceFact(
+        source_id=source_id,
+        source_type="public_site",
+        privacy_class="commit_safe",
+        source_url_or_path=f"https://www.ekologus.pl/{source_id}/",
+        extracted_fact=f"Konkretny zatwierdzony fakt BDO: {source_id}.",
+        scope="service",
+        freshness_date="2026-08-01",
+        confidence=1,
+        review_status=review_status,
+        reviewer="wilku",
+        evidence_ids=[f"ev_{source_id}"],
+        source_connectors=["public_site"],
+        target_card_id=target_card_id,
+        target_card_type=target_card_type,
+        target_card_title=(
+            "BDO i sprawozdawczość środowiskowa"
+            if target_card_type == "service"
+            else f"Materiał {source_id}"
+        ),
+        service_fit_terms=service_fit_terms or [],
+    )
+
+
+def _bdo_planning_sections() -> list[ContentPlanningSection]:
+    section_specs = [
+        ("definition", "Co to jest BDO?", ["bdo definicja"]),
+        ("registration", "Kto składa wniosek do BDO?", ["rejestr bdo"]),
+        ("exemptions", "Kiedy firma może korzystać ze zwolnienia?", ["zwolnienia bdo"]),
+        ("updates", "Jak aktualizować dane w rejestrze?", ["aktualizacja bdo"]),
+        ("records", "Jak prowadzić ewidencję odpadów?", ["ewidencja odpadów"]),
+        ("reporting", "Jakie sprawozdania składa firma?", ["sprawozdania bdo"]),
+        ("access", "Jak nadać uprawnienia w systemie?", ["konto bdo"]),
+        ("sanctions", "Jakie konsekwencje wymagają uwagi?", ["kary bdo"]),
+    ]
+    sections = [
+        ContentPlanningSection(
+            section_id=f"section_{section_id}",
+            heading=heading,
+            purpose="Odpowiada na konkretne pytanie przedsiębiorcy.",
+            reader_question=heading,
+            inventory_disposition="rewrite",
+            query_terms=query_terms,
+        )
+        for section_id, heading, query_terms in section_specs
+    ]
+    return [
+        *sections,
+        ContentPlanningSection(
+            section_id="section_archival",
+            heading="Archiwalne wydarzenie",
+            purpose="Wymaga decyzji redakcyjnej.",
+            inventory_disposition="remove_review_required",
+        ),
+    ]
+
+
+@pytest.fixture
+def bdo_source_fact_mapping(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[ContentPlanningInput, ContentPlanningProposal]:
+    service_card_id = "ekologus_service_bdo_reporting"
+    direct_fact = _approved_bdo_fact(
+        "bdo_records_fact",
+        target_card_id="ekologus_evidence_bdo_records",
+        service_fit_terms=["ewidencja odpadów"],
+    )
+    fallback_fact = _approved_bdo_fact(
+        "bdo_service_fallback",
+        target_card_id=service_card_id,
+        target_card_type="service",
+        service_fit_terms=["obsługa raportowa"],
+    )
+    unrelated_facts = [
+        _approved_bdo_fact(
+            f"unrelated_fact_{index:02d}",
+            target_card_id=f"unrelated_card_{index:02d}",
+            service_fit_terms=[f"niepowiązany materiał {index}"],
+        )
+        for index in range(1, 9)
+    ]
+    colliding_non_service_fact = _approved_bdo_fact(
+        "colliding_non_service_fact",
+        target_card_id=service_card_id,
+        service_fit_terms=["niepowiązany materiał kolizyjny"],
+    )
+    review_required_fact = _approved_bdo_fact(
+        "review_required_records_fact",
+        target_card_id="review_required_card",
+        service_fit_terms=["ewidencja odpadów"],
+        review_status="review_required",
+    )
+    planning_facts = [
+        direct_fact,
+        fallback_fact,
+        *unrelated_facts,
+        colliding_non_service_fact,
+        review_required_fact,
+    ]
+    non_allowlisted_fact = _approved_bdo_fact(
+        "non_allowlisted_records_fact",
+        target_card_id="non_allowlisted_card",
+        service_fit_terms=["ewidencja odpadów"],
+    )
+    monkeypatch.setattr(
+        draft_turn,
+        "ekologus_source_facts",
+        lambda: (*planning_facts, non_allowlisted_fact),
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        work_item_id="content_work_item_bdo",
+        planning_input_digest="a" * 64,
+        confirmed_service_card_id=service_card_id,
+        service_label="BDO i sprawozdawczość środowiskowa",
+        inventory=ContentPlanningInventory(status="available"),
+        target_reader="przedsiębiorca",
+        buyer_problem="firma musi uporządkować obowiązki BDO",
+        buyer_trigger="zbliża się termin rozliczenia",
+        search_intent="informational",
+        source_facts=[
+            ContentPlanningSourceFact(
+                fact_id=f"planning_fact_{index:02d}",
+                summary=fact.extracted_fact,
+                source_connector="public_site",
+                evidence_ids=fact.evidence_ids,
+                source_fact_ids=[fact.source_id],
+            )
+            for index, fact in enumerate(planning_facts, start=1)
+        ],
+        source_assessments=[],
+        regulatory_coverage=ContentRegulatoryCoverage(),
+        query_portfolio=ContentSearchDemandEvidence(
+            status="missing",
+            optional_ads_status="not_exactly_mapped",
+            safe_next_step="Brak exact zapytań.",
+        ),
+        measurement_observation_rule="Porównaj zamknięte okresy.",
+        measurement_success_claim_rule="Nie claimuj bez dowodu.",
+        baseline_cta_direction="Opisz sytuację firmy.",
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        work_item_id=planning_input.work_item_id,
+        proposal_id="proposal-bdo",
+        planning_digest="b" * 64,
+        planning_input_digest=planning_input.planning_input_digest,
+        service_card_id=service_card_id,
+        service_label=planning_input.service_label,
+        target_reader=planning_input.target_reader,
+        buyer_problem=planning_input.buyer_problem,
+        buyer_trigger=planning_input.buyer_trigger,
+        search_intent=planning_input.search_intent,
+        cta_direction=planning_input.baseline_cta_direction,
+        sections=_bdo_planning_sections(),
+        faq=[],
+        cta_blocks=[],
+        internal_links=[],
+    )
+    return planning_input, proposal
+
+
+def test_source_facts_by_section_grounds_every_bdo_section(
+    bdo_source_fact_mapping: tuple[ContentPlanningInput, ContentPlanningProposal],
+) -> None:
+    planning_input, proposal = bdo_source_fact_mapping
+
+    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+
+    assert len(planning_input.source_facts) == 12
+    assert len(mapping) == 8
+    assert all(row["source_facts"] for row in mapping)
+    assert "section_archival" not in {row["section_id"] for row in mapping}
+    definition = next(row for row in mapping if row["section_id"] == "section_definition")
+    assert [fact["source_fact_id"] for fact in definition["source_facts"]] == [
+        "bdo_service_fallback"
+    ]
+    mapped_fact_ids = {fact["source_fact_id"] for row in mapping for fact in row["source_facts"]}
+    assert mapped_fact_ids == {"bdo_records_fact", "bdo_service_fallback"}
+
+
+def test_source_facts_by_section_carries_fact_identity_summary_and_evidence(
+    bdo_source_fact_mapping: tuple[ContentPlanningInput, ContentPlanningProposal],
+) -> None:
+    planning_input, proposal = bdo_source_fact_mapping
+
+    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+
+    for row in mapping:
+        for fact in row["source_facts"]:
+            assert {"source_fact_id", "summary", "evidence_ids"} <= set(fact)
+
+
+def test_initial_draft_turn_exposes_approved_source_facts_by_section(
+    bdo_source_fact_mapping: tuple[ContentPlanningInput, ContentPlanningProposal],
+) -> None:
+    planning_input, proposal = bdo_source_fact_mapping
+    generation_contract = SimpleNamespace(model_input=SimpleNamespace(model_dump=lambda mode: {}))
+
+    request = initial_full_draft_turn_request(
+        planning_input=planning_input,
+        proposal=proposal,
+        generation_contract=generation_contract,
+    )
+
+    context = json.loads(request.untrusted_context)
+    assert context["approved_source_facts_by_section"] == (
+        draft_turn._source_facts_by_section(planning_input, proposal)
+    )
+
+
+def test_source_facts_by_section_prefers_direct_term_match_over_fallback(
+    bdo_source_fact_mapping: tuple[ContentPlanningInput, ContentPlanningProposal],
+) -> None:
+    planning_input, proposal = bdo_source_fact_mapping
+
+    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+    records = next(row for row in mapping if row["section_id"] == "section_records")
+
+    assert [fact["source_fact_id"] for fact in records["source_facts"]] == ["bdo_records_fact"]

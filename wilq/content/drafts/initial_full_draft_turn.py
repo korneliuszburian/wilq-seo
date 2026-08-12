@@ -14,8 +14,16 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
+from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_source_facts
+from wilq.content.knowledge.text_matching import (
+    normalize_search_text,
+    normalized_term_matches,
+)
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningProposal,
+    ContentPlanningSection,
+)
 from wilq.content.workflow.documents.revisions import validate_no_inline_link
 
 
@@ -86,6 +94,10 @@ def initial_full_draft_turn_request(
                     if section.inventory_disposition == "remove_review_required"
                 ],
             },
+            "approved_source_facts_by_section": _source_facts_by_section(
+                planning_input,
+                proposal,
+            ),
             "approved_regulatory_facts_by_section": _regulatory_facts_by_section(
                 planning_input,
                 proposal,
@@ -532,6 +544,85 @@ def _regulatory_facts_by_section(
         for section in draftable_planning_sections(proposal.sections)
         if section.regulatory_requirement_ids
     ]
+
+
+def _source_facts_by_section(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> list[dict[str, object]]:
+    """Project approved planning facts onto their concrete draft targets."""
+
+    approved_facts = _approved_planning_source_facts(planning_input)
+    fallback_facts = [
+        fact
+        for fact in approved_facts
+        if proposal.service_card_id is not None
+        and fact.target_card_type == "service"
+        and fact.target_card_id == proposal.service_card_id
+    ]
+    rows: list[dict[str, object]] = []
+    for section in draftable_planning_sections(proposal.sections):
+        matched_facts = [
+            fact for fact in approved_facts if _source_fact_matches_section(fact, section)
+        ]
+        rows.append(
+            {
+                "section_id": section.section_id,
+                "source_facts": [
+                    _source_fact_for_writer(fact) for fact in (matched_facts or fallback_facts)
+                ],
+            }
+        )
+    return rows
+
+
+def _approved_planning_source_facts(
+    planning_input: ContentPlanningInput,
+) -> list[ContentSourceFact]:
+    allowed_ids = list(
+        dict.fromkeys(
+            source_fact_id
+            for fact in planning_input.source_facts
+            for source_fact_id in fact.source_fact_ids
+        )
+    )
+    if not allowed_ids:
+        return []
+    approved_by_id = {
+        fact.source_id: fact for fact in ekologus_source_facts() if fact.review_status == "approved"
+    }
+    return [approved_by_id[source_id] for source_id in allowed_ids if source_id in approved_by_id]
+
+
+def _source_fact_matches_section(
+    fact: ContentSourceFact,
+    section: ContentPlanningSection,
+) -> bool:
+    section_text = normalize_search_text(
+        " ".join(
+            [
+                *section.query_terms,
+                section.heading,
+                section.reader_question,
+                section.purpose,
+            ]
+        )
+    )
+    return any(
+        normalized_term_matches(term, section_text)
+        for term in [*fact.service_fit_terms, *fact.buyer_problem_terms]
+    )
+
+
+def _source_fact_for_writer(fact: ContentSourceFact) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "source_fact_id": fact.source_id,
+        "summary": fact.extracted_fact,
+        "evidence_ids": fact.evidence_ids,
+    }
+    if fact.target_card_type == "service":
+        payload["service_label"] = fact.target_card_title
+    return payload
 
 
 def _properties(definition: dict[str, object]) -> dict[str, object]:
