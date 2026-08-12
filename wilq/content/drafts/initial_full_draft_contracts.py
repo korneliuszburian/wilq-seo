@@ -43,6 +43,7 @@ ContentInitialDraftBlockerCode = Literal[
     "draft_assurance_runtime_failed",
     "draft_assurance_invalid_output",
     "readability_gate_failed",
+    "readability_repair_failed",
     "revision_conflict",
     "persistence_failed",
     "generation_in_progress",

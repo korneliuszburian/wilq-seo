@@ -898,3 +898,29 @@ def test_initial_draft_section_id_cannot_collide_with_gate_target(section_id: st
                 ),
             ],
         )
+
+
+def test_thin_exemption_applies_only_to_numeric_auxiliary_targets() -> None:
+    short_body = "Za krótka odpowiedź."
+    short_output = _output(
+        first_body=_CLEAN_SECTION_ONE,
+        second_body=_CLEAN_SECTION_TWO,
+    )
+    issues = readability_issues_for_output(
+        short_output.model_copy(
+            update={
+                "sections": [
+                    *short_output.sections,
+                    ContentInitialDraftSectionOutput(
+                        section_id="faq:summary",
+                        heading="Fałszywy pseudo-target",
+                        body_markdown=short_body,
+                    ),
+                ]
+            }
+        )
+    )
+
+    assert any(
+        code == "thin_section" and section_id == "faq:summary" for code, section_id, _ in issues
+    )

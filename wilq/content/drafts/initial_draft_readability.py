@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections import Counter
 from collections.abc import Callable
 
@@ -163,7 +164,7 @@ def _mapped_revision_readability_issues(
 
 
 def _gate_applies_to_target(code: str, section_id: str) -> bool:
-    if section_id.startswith(("faq:", "cta:")):
+    if re.match(r"^(?:faq|cta):\d+$", section_id):
         return code != "thin_section"
     return True
 
