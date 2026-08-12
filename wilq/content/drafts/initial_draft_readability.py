@@ -39,7 +39,7 @@ def readability_issues_for_output(
         for section in output.sections
     ]
     section_id_by_heading = {section.heading: section.section_id for section in output.sections}
-    issues = [
+    issues: list[ReadabilityIssue] = [
         (
             issue.code,
             section_id_by_heading[issue.affected_section],
