@@ -7,6 +7,8 @@ only already approved official facts exact for the missing profile requirement.
 
 from __future__ import annotations
 
+import re
+
 from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -19,6 +21,7 @@ from wilq.content.drafts.initial_full_draft_turn import (
 )
 from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.quality.reading_quality import _WORKING_NOTE
 from wilq.content.regulatory.policy import ContentRegulatoryRequirement
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
@@ -188,7 +191,13 @@ def ground_unmet_regulatory_assertions(
     missing_codes: list[str],
     replace_semantic_requirements: bool = False,
 ) -> ContentInitialDraftModelOutput:
-    """Ground unmet assertions with source facts, replacing only failed semantics."""
+    """Ground unmet assertions with source facts, replacing only failed semantics.
+
+    Approved regulatory facts are written for human review and may carry
+    source-attribution prefixes and editorial qualifiers ("Wymaga weryfikacji
+    przez człowieka"). The grounded document is reader-facing, so each fact is
+    projected to document-ready text before it can reach a section body.
+    """
 
     requirement_by_id = {item.id: item for item in planning_input.regulatory_coverage.requirements}
     sections = {item.section_id: item for item in proposal.sections}
@@ -211,13 +220,29 @@ def ground_unmet_regulatory_assertions(
         )
         if assertion is None:
             continue
-        facts = _approved_facts_for_requirement(
-            planning_input,
-            requirement_id=requirement_id,
-            assertion_terms=(
-                None if requirement_id in semantic_requirement_ids else assertion.required_any_of
-            ),
+        semantic_requirement = requirement_id in semantic_requirement_ids
+        protected_terms = (
+            sorted(
+                {
+                    term
+                    for item in requirement.document_assertions
+                    for term in item.required_any_of
+                }
+            )
+            if semantic_requirement
+            else assertion.required_any_of
         )
+        facts = [
+            _document_ready_fact_text(item, protected_terms=protected_terms)
+            for item in _approved_facts_for_requirement(
+                planning_input,
+                requirement_id=requirement_id,
+                assertion_terms=(
+                    None if semantic_requirement else assertion.required_any_of
+                ),
+            )
+        ]
+        facts = list(dict.fromkeys(fact for fact in facts if fact.strip()))
         if not facts:
             continue
         target = next(
@@ -231,15 +256,33 @@ def ground_unmet_regulatory_assertions(
         if target is None:
             continue
         if replace_semantic_requirements and requirement_id in semantic_requirement_ids:
-            replacement_facts = [
-                fact
-                for covered_requirement_id in sections[target].regulatory_requirement_ids
-                for fact in _approved_facts_for_requirement(
-                    planning_input,
-                    requirement_id=covered_requirement_id,
-                    assertion_terms=None,
+            replacement_facts: list[str] = []
+            for covered_requirement_id in sections[target].regulatory_requirement_ids:
+                covered_requirement = requirement_by_id.get(covered_requirement_id)
+                replacement_facts.extend(
+                    _document_ready_fact_text(
+                        fact,
+                        protected_terms=(
+                            sorted(
+                                {
+                                    term
+                                    for item in covered_requirement.document_assertions
+                                    for term in item.required_any_of
+                                }
+                            )
+                            if covered_requirement is not None
+                            else None
+                        ),
+                    )
+                    for fact in _approved_facts_for_requirement(
+                        planning_input,
+                        requirement_id=covered_requirement_id,
+                        assertion_terms=None,
+                    )
                 )
-            ]
+            replacement_facts = list(
+                dict.fromkeys(fact for fact in replacement_facts if fact.strip())
+            )
             replacements.setdefault(target, []).extend(replacement_facts)
             continue
         additions.setdefault(target, []).extend(facts)
@@ -276,6 +319,49 @@ def _grounded_section_body(
     if additions:
         return existing + "\n\n" + "\n\n".join(dict.fromkeys(additions))
     return existing
+
+
+_SOURCE_ATTRIBUTION_PREFIX = re.compile(
+    r"^\s*(?:źródło\s+podaje,\s+że\s+|zgodnie\s+z\s+treścią\s+źródła\s+|"
+    r"według\s+dostarczonej\s+instrukcji\s+\w+\s*,?\s+|"
+    r"zgodnie\s+z\s+oficjalnym\s+źródłem\s+\w+\s*,?\s+|"
+    r"oficjalne\s+źródło\s+\w+\s+(?:wskazuje|wyjaśnia),\s+że\s+|"
+    r"źródło\s+wskazuje,\s+że\s+|źródło\s+\w+\s+rozróżnia\s+)",
+    re.IGNORECASE,
+)
+_SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ])")
+
+
+def _document_ready_fact_text(fact_text: str, *, protected_terms: list[str] | None) -> str:
+    """Project one approved review fact into reader-facing document text.
+
+    Strip source-attribution prefixes and drop editorial qualifier sentences
+    (e.g. "Wymaga weryfikacji przez człowieka") that belong to the review
+    packet, not to the public document. Sentences carrying a required
+    assertion term are never dropped, so grounding stays verifiable.
+    """
+
+    stripped = _SOURCE_ATTRIBUTION_PREFIX.sub("", fact_text).strip()
+    sentences = [
+        sentence.strip()
+        for sentence in _SENTENCE_BOUNDARY.split(stripped)
+        if sentence.strip()
+    ]
+    normalized_terms = [
+        term.casefold().strip() for term in (protected_terms or []) if term.strip()
+    ]
+    kept = [
+        sentence
+        for sentence in sentences
+        if not (
+            _WORKING_NOTE.search(sentence)
+            and not any(term in sentence.casefold() for term in normalized_terms)
+        )
+    ]
+    result = " ".join(kept) if kept else stripped
+    if not result:
+        return result
+    return result[0].upper() + result[1:]
 
 
 def _approved_facts_for_requirement(

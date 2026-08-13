@@ -594,6 +594,125 @@ def test_regulatory_scope_repair_accepts_profile_owned_role_variants_in_approved
     assert document_scope_errors(proposal, repaired[0], regulatory_requirements=[requirement]) == []
 
 
+def test_grounding_projects_facts_without_review_qualifiers_and_attribution() -> None:
+    proposal, planning_input, output, _, _ = _regulatory_repair_fixture()
+    requirement = planning_input.regulatory_coverage.requirements[0]
+    qualified_fact = ContentSourceFact(
+        source_id="regulatory_source_fact_qualified",
+        source_type="legal_update",
+        privacy_class="commit_safe",
+        source_url_or_path="https://bdo.mos.gov.pl/zasady-rejestracji/",
+        extracted_fact=(
+            "Oficjalne źródło BDO wskazuje, że zwolnienie zależy od warunków "
+            "ustawowych. Wymaga weryfikacji przez człowieka przed wykorzystaniem."
+        ),
+        scope="claim_policy",
+        freshness_date="2026-08-02",
+        confidence=1,
+        review_status="approved",
+        reviewer="wilku",
+        evidence_ids=["ev_regulatory_qualified"],
+        source_connectors=["official_regulatory_review"],
+        target_card_id="regulatory_bdo",
+        target_card_type="regulatory_source",
+        target_card_title="Zasady rejestracji BDO",
+        official_source=True,
+        regulatory_profile_id="bdo",
+        regulatory_profile_version="2026-07",
+        regulatory_requirement_ids=[requirement.id],
+        applicable_service_card_ids=[proposal.service_card_id],
+    )
+    planning_input = planning_input.model_copy(
+        update={
+            "regulatory_coverage": ContentRegulatoryCoverage(
+                requirements=[requirement],
+                source_facts=[qualified_fact],
+            )
+        }
+    )
+    missing = document_scope_errors(proposal, output, regulatory_requirements=[requirement])
+
+    repaired = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        blocker=ContentInitialDraftBlocker(
+            code="document_scope_mismatch",
+            label="Brakuje wymaganego pojęcia.",
+            reason="Wymaganie nie występuje w dokumencie.",
+            next_step="Uzupełnij dokument.",
+            source_codes=missing,
+        ),
+        client=SimpleNamespace(),
+    )
+
+    assert repaired is not None
+    body = repaired[0].sections[0].body_markdown
+    assert "Zwolnienie zależy od warunków ustawowych." in body
+    assert "Oficjalne źródło BDO wskazuje" not in body
+    assert "Wymaga weryfikacji przez człowieka" not in body
+    assert document_scope_errors(proposal, repaired[0], regulatory_requirements=[requirement]) == []
+
+
+def test_grounding_never_drops_a_sentence_carrying_the_assertion_term() -> None:
+    proposal, planning_input, output, _, _ = _regulatory_repair_fixture()
+    requirement = planning_input.regulatory_coverage.requirements[0]
+    qualified_fact = ContentSourceFact(
+        source_id="regulatory_source_fact_term_protected",
+        source_type="legal_update",
+        privacy_class="commit_safe",
+        source_url_or_path="https://bdo.mos.gov.pl/zasady-rejestracji/",
+        extracted_fact=(
+            "Oficjalne źródło BDO wskazuje, że zwolnienie zależy od warunków "
+            "ustawowych i wymaga weryfikacji przez człowieka."
+        ),
+        scope="claim_policy",
+        freshness_date="2026-08-02",
+        confidence=1,
+        review_status="approved",
+        reviewer="wilku",
+        evidence_ids=["ev_regulatory_term_protected"],
+        source_connectors=["official_regulatory_review"],
+        target_card_id="regulatory_bdo",
+        target_card_type="regulatory_source",
+        target_card_title="Zasady rejestracji BDO",
+        official_source=True,
+        regulatory_profile_id="bdo",
+        regulatory_profile_version="2026-07",
+        regulatory_requirement_ids=[requirement.id],
+        applicable_service_card_ids=[proposal.service_card_id],
+    )
+    planning_input = planning_input.model_copy(
+        update={
+            "regulatory_coverage": ContentRegulatoryCoverage(
+                requirements=[requirement],
+                source_facts=[qualified_fact],
+            )
+        }
+    )
+    missing = document_scope_errors(proposal, output, regulatory_requirements=[requirement])
+
+    repaired = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        blocker=ContentInitialDraftBlocker(
+            code="document_scope_mismatch",
+            label="Brakuje wymaganego pojęcia.",
+            reason="Wymaganie nie występuje w dokumencie.",
+            next_step="Uzupełnij dokument.",
+            source_codes=missing,
+        ),
+        client=SimpleNamespace(),
+    )
+
+    assert repaired is not None
+    body = repaired[0].sections[0].body_markdown
+    assert "Zwolnienie zależy od warunków ustawowych" in body
+    assert "Oficjalne źródło BDO wskazuje" not in body
+    assert document_scope_errors(proposal, repaired[0], regulatory_requirements=[requirement]) == []
+
+
 def test_regulatory_repair_replaces_an_overbroad_section_when_critic_requires_it() -> None:
     proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
     output = output.model_copy(

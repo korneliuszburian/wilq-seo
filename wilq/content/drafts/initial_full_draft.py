@@ -312,6 +312,26 @@ def _prepare_initial_draft_for_persistence(
         if repaired is not None:
             output, trace = repaired
             blocker = _output_blocker(prepared, output)
+            if blocker is None:
+                output, trace, blocker = assure_readability_and_repair(
+                    planning_input=prepared.planning_input,
+                    proposal=prepared.proposal,
+                    output=output,
+                    trace=trace,
+                    client=client,
+                    output_blocker=lambda candidate: _output_blocker(prepared, candidate),
+                )
+                if blocker is not None:
+                    repaired = repair_regulatory_assertions(
+                        planning_input=prepared.planning_input,
+                        proposal=prepared.proposal,
+                        output=output,
+                        blocker=blocker,
+                        client=client,
+                    )
+                    if repaired is not None:
+                        output, trace = repaired
+                        blocker = _output_blocker(prepared, output)
     if blocker is not None:
         return _finish_blocked_draft(
             snapshot=snapshot,
