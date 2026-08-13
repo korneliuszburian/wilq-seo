@@ -16,6 +16,15 @@ from tests.content.initial_draft_readability_fakes import (
 from tests.content.initial_draft_readability_fakes import (
     PatchSequenceClient as _PatchSequenceClient,
 )
+from tests.content.initial_draft_readability_fakes import (
+    planning_input as _planning_input,
+)
+from tests.content.initial_draft_readability_fakes import (
+    prepared_inputs as _prepared_inputs,
+)
+from tests.content.initial_draft_readability_fakes import (
+    proposal as _proposal,
+)
 from wilq.content.drafts import initial_draft_assurance_repair, initial_full_draft
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
@@ -33,19 +42,10 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
     ContentInitialDraftSectionOutput,
 )
-from wilq.content.drafts.structured_generation import (
-    StructuredDraftGenerationContract,
-    StructuredDraftGenerationInput,
-)
-from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
     ContentRegulatoryDocumentAssertion,
     ContentRegulatoryRequirement,
-)
-from wilq.content.workflow.decisions.planning import (
-    ContentPlanningProposal,
-    ContentPlanningSection,
 )
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionPageAssets
 from wilq.schemas import CodexRun
@@ -77,8 +77,8 @@ _CLEAN_FAQ_ANSWER = (
     "kolejnych działań."
 )
 _CTA_PARAGRAPH = (
-    "Skontaktuj się z zespołem, aby omówić zakres dokumentacji i zaplanować kolejne "
-    "bezpieczne działania."
+    "Skontaktuj się z zespołem, aby przekazać wniosek i raport oraz zaplanować "
+    "kolejne bezpieczne działania."
 )
 _DUPLICATED_CTA_BODY = f"{_CTA_PARAGRAPH}\n\n{_CTA_PARAGRAPH}"
 _BLOCKED_CLAIM_SECTION = (
@@ -93,61 +93,6 @@ _REGULATED_CLEAN_SECTION = (
     "Przedsiębiorca sprawdza zakres obowiązków, porządkuje dokumenty i planuje "
     "kolejne działania zgodnie z profilem swojej działalności."
 )
-
-
-def _planning_input() -> ContentPlanningInput:
-    return ContentPlanningInput.model_construct(
-        work_item_id="content_work_item_readability_gate",
-        planning_input_digest="a" * 64,
-        regulatory_coverage=ContentRegulatoryCoverage(),
-        claim_ledger=[],
-        evidence_ids=["ev_readability_gate"],
-    )
-
-
-def _proposal() -> ContentPlanningProposal:
-    return ContentPlanningProposal.model_construct(
-        work_item_id="content_work_item_readability_gate",
-        proposal_id="content_planning_proposal_readability_gate",
-        planning_digest="b" * 64,
-        planning_input_digest="a" * 64,
-        sections=[
-            ContentPlanningSection(
-                section_id="section_01",
-                heading="Pierwszy krok",
-                purpose="Wyjaśnij pierwszy krok.",
-                evidence_ids=["ev_readability_gate"],
-            ),
-            ContentPlanningSection(
-                section_id="section_02",
-                heading="Drugi krok",
-                purpose="Wyjaśnij drugi krok.",
-                evidence_ids=["ev_readability_gate"],
-            ),
-        ],
-        faq=[],
-        cta_blocks=[],
-        internal_links=[],
-        evidence_ids=["ev_readability_gate"],
-    )
-
-
-def _generation_contract() -> StructuredDraftGenerationContract:
-    return StructuredDraftGenerationContract.model_construct(
-        model_input=StructuredDraftGenerationInput.model_construct(
-            claims_removed_or_blocked=[],
-            removed_or_blocked_claim_markers=[],
-            human_review_questions=[],
-        )
-    )
-
-
-def _prepared_inputs() -> initial_full_draft._InitialDraftInputs:
-    return initial_full_draft._InitialDraftInputs(
-        planning_input=_planning_input(),
-        proposal=_proposal(),
-        generation_contract=_generation_contract(),
-    )
 
 
 def _regulated_prepared_inputs() -> initial_full_draft._InitialDraftInputs:

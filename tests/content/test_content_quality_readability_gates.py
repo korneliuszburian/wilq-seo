@@ -225,6 +225,92 @@ def test_pre_save_gate_surfaces_heading_answer_mismatch() -> None:
     )
 
 
+def test_v2_review_flags_a_vague_answer_phrase_without_concrete_signals() -> None:
+    body = "Prosimy ustalić zakres i zebrać informacje o potrzebach."
+
+    review = _review(_revision(body))
+
+    findings = [finding for finding in review.findings if finding.code == "vague_answer_phrase"]
+    assert len(findings) == 1
+    assert findings[0].label == "Sekcja zawiera ogólnik zamiast odpowiedzi"
+    assert findings[0].reason == (
+        "Treść odsyła do ustalenia zakresu albo zebrania informacji zamiast podać konkret."
+    )
+    assert findings[0].next_step == (
+        "Podaj konkretne obowiązki, dokumenty, terminy albo czynności z source facts."
+    )
+    assert findings[0].affected_section == "Pierwsza sekcja"
+    assert review.usefulness.status == "needs_changes"
+    assert (
+        "answer_directness",
+        "section_one",
+        "Treść odsyła do ustalenia zakresu albo zebrania informacji zamiast podać konkret.",
+    ) in readability_quality_issues(_revision(body))
+
+
+def test_v2_review_treats_adaptation_as_vague_only_in_a_hedging_construction() -> None:
+    hedge_review = _review(
+        _revision("Zakres można dopasować do potrzeb firmy po wspólnej rozmowie.")
+    )
+    action_review = _review(
+        _revision(
+            "Zespół wykorzystuje brief, aby dopasować do potrzeb firmy program spotkania."
+        )
+    )
+
+    assert "vague_answer_phrase" in _finding_codes(hedge_review)
+    assert "vague_answer_phrase" not in _finding_codes(action_review)
+
+
+def test_v2_review_does_not_flag_an_exact_concrete_answer() -> None:
+    review = _review(
+        _revision(
+            "Przygotowujemy wniosek o pozwolenie zintegrowane oraz raport początkowy IPPC."
+        )
+    )
+
+    assert "vague_answer_phrase" not in _finding_codes(review)
+
+
+def test_v2_review_does_not_flag_a_vague_phrase_beside_a_concrete_signal() -> None:
+    review = _review(
+        _revision(
+            "Możemy zebrać informacje i omówić zakres. Przygotowujemy wniosek o "
+            "pozwolenie zintegrowane oraz raport początkowy IPPC."
+        )
+    )
+
+    assert "vague_answer_phrase" not in _finding_codes(review)
+
+
+def test_pre_save_gate_surfaces_a_vague_answer_phrase() -> None:
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Czytelny zakres wsparcia",
+            meta_title="Czytelny zakres wsparcia dla firmy",
+            meta_description="Praktyczne informacje o zakresie wsparcia.",
+            h1="Zakres wsparcia dla firmy",
+            lead="Krótki przewodnik prowadzi przez najważniejsze działania.",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="section_vague",
+                heading="Zakres wsparcia",
+                body_markdown=(
+                    "Możemy omówić zakres podczas rozmowy. Szczegóły pozostają otwarte "
+                    "dla zespołu i klienta."
+                ),
+            )
+        ],
+    )
+
+    assert (
+        "vague_answer_phrase",
+        "section_vague",
+        "Treść odsyła do ustalenia zakresu albo zebrania informacji zamiast podać konkret.",
+    ) in readability_issues_for_output(output)
+
+
 def test_legacy_review_without_revision_emits_no_readability_findings() -> None:
     review = _review(None)
 
@@ -233,6 +319,7 @@ def test_legacy_review_without_revision_emits_no_readability_findings() -> None:
         "wall_of_text",
         "long_sentence",
         "heading_answer_mismatch",
+        "vague_answer_phrase",
         "working_note",
         "duplicate_paragraph",
     }.isdisjoint(_finding_codes(review))

@@ -118,6 +118,7 @@ def readability_quality_issues(
         "wall_of_text": "logical_flow",
         "long_sentence": "logical_flow",
         "heading_answer_mismatch": "answer_directness",
+        "vague_answer_phrase": "answer_directness",
         "working_note": "credibility",
         "duplicate_paragraph": "repetition",
     }

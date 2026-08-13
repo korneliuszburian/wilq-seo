@@ -2619,6 +2619,7 @@ describe("ContentQualityFindingSchema", () => {
       "wall_of_text",
       "long_sentence",
       "heading_answer_mismatch",
+      "vague_answer_phrase",
       "working_note",
       "duplicate_paragraph",
       "weak_cta",
@@ -2639,6 +2640,7 @@ describe("ContentQualityFindingSchema", () => {
       "wall_of_text",
       "long_sentence",
       "heading_answer_mismatch",
+      "vague_answer_phrase",
       "working_note",
       "duplicate_paragraph"
     ]) {

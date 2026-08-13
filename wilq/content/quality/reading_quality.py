@@ -31,6 +31,23 @@ _VAGUE_ANSWER_HEDGE = re.compile(
     r"mogą\s+pozwolić|w\s+zależności|na\s+podstawie\s+można|zakres\s+może)(?!\w)",
     re.IGNORECASE,
 )
+_VAGUE_ANSWER_PHRASE = re.compile(
+    r"(?<!\w)(?:ustalić\s+zakres|zebrać\s+informacje|zebranie\s+informacji|"
+    r"omówienia\s+zakresu|omówić\s+zakres|zależnie\s+od\s+potrzeb|"
+    r"zależnie\s+od\s+sytuacji|osobnego\s+omówienia|początek\s+rozmowy|"
+    r"wstępnie\s+ustalić)(?!\w)",
+    re.IGNORECASE,
+)
+_VAGUE_ANSWER_ADAPTATION_HEDGE = re.compile(
+    r"(?<!\w)(?:można|da\s+się)\s+dopasować\s+do\s+potrzeb(?!\w)",
+    re.IGNORECASE,
+)
+_VAGUE_ANSWER_CONCRETE_SIGNAL = re.compile(
+    r"(?<!\w)(?:wniosek|karta|raport|kobize|bdo|termin|dni|norma|wymaga|numer|"
+    r"rejestr)(?!\w)|(?<!\w)(?:sprawozdan|op(?:l|ł)at|pozwoleni|decyzj|"
+    r"zgłoszen|próbk|pomiar|analiz)\w*(?!\w)|\d",
+    re.IGNORECASE,
+)
 _CONCRETE_ANSWER_SIGNAL = re.compile(
     r"(?<!\w)(?:pobiera\s+się\s+przez|najpierw|następnie|krok|polega\s+na|wymaga|"
     r"składa\s+się\s+z|próbka|analiza\s+laboratoryjna|przepis|norma|decyzja|"
@@ -66,6 +83,7 @@ class RevisionReadabilityIssue:
         "wall_of_text",
         "long_sentence",
         "heading_answer_mismatch",
+        "vague_answer_phrase",
         "working_note",
         "duplicate_paragraph",
     ]
@@ -133,6 +151,8 @@ def revision_readability_issues(
                     affected_section=section.heading,
                 )
             )
+        if _contains_vague_answer_phrase(section.body_markdown):
+            issues.append(_vague_answer_phrase_issue(section.heading))
         working_note = _first_working_note(section.body_markdown)
         if working_note is not None:
             issues.append(
@@ -189,6 +209,28 @@ def _heading_answer_mismatch(heading: str, markdown: str) -> bool:
     return (
         _CONCRETE_ANSWER_SIGNAL.search(markdown) is None
         and _CONCRETE_NUMBER_OR_MEASURE.search(markdown) is None
+    )
+
+
+def _contains_vague_answer_phrase(markdown: str) -> bool:
+    has_vague_marker = (
+        _VAGUE_ANSWER_PHRASE.search(markdown) is not None
+        or _VAGUE_ANSWER_ADAPTATION_HEDGE.search(markdown) is not None
+    )
+    if not has_vague_marker:
+        return False
+    return _VAGUE_ANSWER_CONCRETE_SIGNAL.search(markdown) is None
+
+
+def _vague_answer_phrase_issue(heading: str) -> RevisionReadabilityIssue:
+    return RevisionReadabilityIssue(
+        code="vague_answer_phrase",
+        label="Sekcja zawiera ogólnik zamiast odpowiedzi",
+        reason=(
+            "Treść odsyła do ustalenia zakresu albo zebrania informacji zamiast podać konkret."
+        ),
+        next_step=("Podaj konkretne obowiązki, dokumenty, terminy albo czynności z source facts."),
+        affected_section=heading,
     )
 
 
