@@ -26,6 +26,8 @@ from wilq.content.workflow.decisions.planning import (
 )
 from wilq.content.workflow.documents.revisions import validate_no_inline_link
 
+_MAX_SOURCE_FACTS_PER_SECTION = 4
+
 
 class _RegulatorySectionPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -570,15 +572,15 @@ def _source_facts_by_section(
                 }
             )
             continue
-        matched_facts = [
-            fact for fact in approved_facts if _source_fact_matches_section(fact, section)
-        ]
+        selected_facts = _source_facts_for_section(
+            approved_facts,
+            fallback_facts,
+            section,
+        )
         rows.append(
             {
                 "section_id": section.section_id,
-                "source_facts": [
-                    _source_fact_for_writer(fact) for fact in (matched_facts or fallback_facts)
-                ],
+                "source_facts": [_source_fact_for_writer(fact) for fact in selected_facts],
             }
         )
     return rows
@@ -602,11 +604,47 @@ def _approved_planning_source_facts(
     return [approved_by_id[source_id] for source_id in allowed_ids if source_id in approved_by_id]
 
 
+def _source_facts_for_section(
+    approved_facts: list[ContentSourceFact],
+    fallback_facts: list[ContentSourceFact],
+    section: ContentPlanningSection,
+) -> list[ContentSourceFact]:
+    matched_facts = [fact for fact in approved_facts if _source_fact_matches_section(fact, section)]
+    if matched_facts:
+        return matched_facts[:_MAX_SOURCE_FACTS_PER_SECTION]
+    return sorted(
+        fallback_facts,
+        key=lambda fact: _source_fact_section_overlap_score(fact, section),
+        reverse=True,
+    )[:_MAX_SOURCE_FACTS_PER_SECTION]
+
+
 def _source_fact_matches_section(
     fact: ContentSourceFact,
     section: ContentPlanningSection,
 ) -> bool:
-    section_text = normalize_search_text(
+    section_text = _source_fact_section_text(section)
+    return any(
+        normalized_term_matches(term, section_text)
+        for term in [*fact.service_fit_terms, *fact.buyer_problem_terms]
+    )
+
+
+def _source_fact_section_overlap_score(
+    fact: ContentSourceFact,
+    section: ContentPlanningSection,
+) -> int:
+    section_tokens = set(_source_fact_section_text(section).split())
+    fact_tokens = {
+        token
+        for term in [*fact.service_fit_terms, *fact.buyer_problem_terms]
+        for token in normalize_search_text(term).split()
+    }
+    return len(section_tokens.intersection(fact_tokens))
+
+
+def _source_fact_section_text(section: ContentPlanningSection) -> str:
+    return normalize_search_text(
         " ".join(
             [
                 *section.query_terms,
@@ -615,10 +653,6 @@ def _source_fact_matches_section(
                 section.purpose,
             ]
         )
-    )
-    return any(
-        normalized_term_matches(term, section_text)
-        for term in [*fact.service_fit_terms, *fact.buyer_problem_terms]
     )
 
 

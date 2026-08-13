@@ -184,6 +184,7 @@ def _approved_bdo_fact(
     target_card_id: str,
     target_card_type: str = "evidence_requirement",
     service_fit_terms: list[str] | None = None,
+    buyer_problem_terms: list[str] | None = None,
     review_status: SourceFactReviewStatus = "approved",
 ) -> ContentSourceFact:
     return ContentSourceFact(
@@ -207,6 +208,7 @@ def _approved_bdo_fact(
             else f"Materiał {source_id}"
         ),
         service_fit_terms=service_fit_terms or [],
+        buyer_problem_terms=buyer_problem_terms or [],
     )
 
 
@@ -503,3 +505,130 @@ def test_source_facts_by_section_prefers_direct_term_match_over_fallback(
     records = next(row for row in mapping if row["section_id"] == "section_records")
 
     assert [fact["source_fact_id"] for fact in records["source_facts"]] == ["bdo_records_fact"]
+    assert len(records["source_facts"]) <= 4
+
+
+def test_source_facts_by_section_ranks_and_caps_service_fallback_facts(
+    bdo_source_fact_mapping: tuple[ContentPlanningInput, ContentPlanningProposal],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    planning_input, proposal = bdo_source_fact_mapping
+    service_card_id = planning_input.confirmed_service_card_id
+    fallback_facts = [
+        _approved_bdo_fact(
+            "fallback_unrelated",
+            target_card_id=service_card_id,
+            target_card_type="service",
+            service_fit_terms=["audyt instalacji"],
+        ),
+        _approved_bdo_fact(
+            "fallback_overlap_one",
+            target_card_id=service_card_id,
+            target_card_type="service",
+            service_fit_terms=["zus nip"],
+        ),
+        _approved_bdo_fact(
+            "fallback_overlap_two",
+            target_card_id=service_card_id,
+            target_card_type="service",
+            service_fit_terms=["vat bdo"],
+        ),
+        _approved_bdo_fact(
+            "fallback_overlap_two_tie",
+            target_card_id=service_card_id,
+            target_card_type="service",
+            buyer_problem_terms=["pit zus"],
+        ),
+        _approved_bdo_fact(
+            "fallback_overlap_three",
+            target_card_id=service_card_id,
+            target_card_type="service",
+            buyer_problem_terms=["vat pit bdo"],
+        ),
+        _approved_bdo_fact(
+            "fallback_overlap_four",
+            target_card_id=service_card_id,
+            target_card_type="service",
+            service_fit_terms=["vat pit bdo czy"],
+        ),
+    ]
+    monkeypatch.setattr(draft_turn, "ekologus_source_facts", lambda: tuple(fallback_facts))
+    planning_input = planning_input.model_copy(
+        update={
+            "source_facts": [
+                ContentPlanningSourceFact(
+                    fact_id=f"planning_{fact.source_id}",
+                    summary=fact.extracted_fact,
+                    source_connector=fact.source_connectors[0],
+                    evidence_ids=fact.evidence_ids,
+                    source_fact_ids=[fact.source_id],
+                )
+                for fact in fallback_facts
+            ]
+        }
+    )
+    proposal = proposal.model_copy(
+        update={
+            "sections": [
+                ContentPlanningSection(
+                    section_id="section_acronyms",
+                    heading="Czy BDO ma związek z PIT, VAT i ZUS?",
+                    purpose="Porządkuje skróty istotne dla firmy.",
+                    reader_question="Które skróty są ważne?",
+                    inventory_disposition="rewrite",
+                )
+            ]
+        }
+    )
+
+    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+    selected = mapping[0]["source_facts"]
+
+    assert [fact["source_fact_id"] for fact in selected] == [
+        "fallback_overlap_four",
+        "fallback_overlap_three",
+        "fallback_overlap_two",
+        "fallback_overlap_two_tie",
+    ]
+    assert len(selected) <= 4
+    assert "fallback_unrelated" not in {fact["source_fact_id"] for fact in selected}
+
+
+def test_source_facts_by_section_caps_total_facts_across_sections(
+    bdo_source_fact_mapping: tuple[ContentPlanningInput, ContentPlanningProposal],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    planning_input, proposal = bdo_source_fact_mapping
+    matching_facts = [
+        _approved_bdo_fact(
+            f"shared_match_{index}",
+            target_card_id=f"shared_card_{index}",
+            service_fit_terms=["pytanie przedsiębiorcy"],
+        )
+        for index in range(1, 6)
+    ]
+    monkeypatch.setattr(draft_turn, "ekologus_source_facts", lambda: tuple(matching_facts))
+    planning_input = planning_input.model_copy(
+        update={
+            "source_facts": [
+                ContentPlanningSourceFact(
+                    fact_id=f"planning_{fact.source_id}",
+                    summary=fact.extracted_fact,
+                    source_connector=fact.source_connectors[0],
+                    evidence_ids=fact.evidence_ids,
+                    source_fact_ids=[fact.source_id],
+                )
+                for fact in matching_facts
+            ]
+        }
+    )
+
+    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+    total_facts = sum(len(row["source_facts"]) for row in mapping)
+
+    assert all(
+        [fact["source_fact_id"] for fact in row["source_facts"]]
+        == ["shared_match_1", "shared_match_2", "shared_match_3", "shared_match_4"]
+        for row in mapping
+    )
+    assert total_facts == 4 * len(mapping)
