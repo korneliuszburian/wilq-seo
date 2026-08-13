@@ -611,7 +611,11 @@ def _source_facts_for_section(
 ) -> list[ContentSourceFact]:
     matched_facts = [fact for fact in approved_facts if _source_fact_matches_section(fact, section)]
     if matched_facts:
-        return matched_facts[:_MAX_SOURCE_FACTS_PER_SECTION]
+        return sorted(
+            matched_facts,
+            key=lambda fact: _source_fact_section_overlap_score(fact, section),
+            reverse=True,
+        )[:_MAX_SOURCE_FACTS_PER_SECTION]
     return sorted(
         fallback_facts,
         key=lambda fact: _source_fact_section_overlap_score(fact, section),

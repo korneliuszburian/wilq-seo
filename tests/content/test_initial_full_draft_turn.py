@@ -632,3 +632,75 @@ def test_source_facts_by_section_caps_total_facts_across_sections(
         for row in mapping
     )
     assert total_facts == 4 * len(mapping)
+
+
+def test_source_facts_by_section_ranks_direct_matches_by_section_overlap(
+    bdo_source_fact_mapping: tuple[ContentPlanningInput, ContentPlanningProposal],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Direct matches must rank by section overlap, not registry order.
+
+    A broad fact that appears first in the registry must not displace a
+    specific sub-process fact (opłata środowiskowa) that overlaps the section
+    text more strongly. The generic service fact can still be selected, but
+    the most on-topic facts must lead the four delivered to the writer.
+    """
+    planning_input, proposal = bdo_source_fact_mapping
+    service_card_id = planning_input.confirmed_service_card_id
+    generic_fact = _approved_bdo_fact(
+        "generic_service_fact",
+        target_card_id=service_card_id,
+        target_card_type="service",
+        service_fit_terms=["ewidencja odpadów", "opłata środowiskowa"],
+    )
+    specific_fact = _approved_bdo_fact(
+        "specific_fee_fact",
+        target_card_id=service_card_id,
+        target_card_type="service",
+        service_fit_terms=["opłata środowiskowa", "wykazy korzystania"],
+        buyer_problem_terms=["nieobliczona opłata środowiskowa"],
+    )
+    unrelated_fact = _approved_bdo_fact(
+        "registry_ordered_fact",
+        target_card_id="unrelated_card_registry",
+        service_fit_terms=["sprawozdanie opakowaniowe"],
+    )
+    planning_input = planning_input.model_copy(
+        update={
+            "source_facts": [
+                ContentPlanningSourceFact(
+                    fact_id=f"planning_{fact.source_id}",
+                    summary=fact.extracted_fact,
+                    source_connector=fact.source_connectors[0],
+                    evidence_ids=fact.evidence_ids,
+                    source_fact_ids=[fact.source_id],
+                )
+                for fact in [generic_fact, specific_fact, unrelated_fact]
+            ]
+        }
+    )
+    proposal = proposal.model_copy(
+        update={
+            "sections": [
+                ContentPlanningSection(
+                    section_id="section_environmental_fees",
+                    heading="Jak rozliczyć opłaty środowiskowe i wykazy korzystania?",
+                    purpose="Pomaga firmie rozliczyć opłatę środowiskową.",
+                    reader_question="Jak wyliczyć opłatę środowiskową?",
+                    query_terms=["opłata środowiskowa", "wykazy korzystania"],
+                    inventory_disposition="rewrite",
+                )
+            ]
+        }
+    )
+    monkeypatch.setattr(
+        draft_turn,
+        "ekologus_source_facts",
+        lambda: (generic_fact, specific_fact, unrelated_fact),
+    )
+
+    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+    selected = mapping[0]["source_facts"]
+
+    assert selected[0]["source_fact_id"] == "specific_fee_fact"
+    assert len(selected) <= 4
