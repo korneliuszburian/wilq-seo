@@ -20,7 +20,6 @@ from wilq.content.drafts.generated_claim_safety import (
 )
 from wilq.content.drafts.initial_draft_assurance_repair import (
     assure_and_repair_initial_draft,
-    assure_regulated_draft,
     repair_initial_output_blocker,
 )
 from wilq.content.drafts.initial_draft_persistence import (
@@ -343,13 +342,24 @@ def _prepare_initial_draft_for_persistence(
         )
     if output is assured_output:
         return output, trace, assurance
-    assurance = assure_regulated_draft(
+    output, trace, assurance, blocker = assure_and_repair_initial_draft(
         planning_input=prepared.planning_input,
         proposal=prepared.proposal,
         output=output,
+        trace=trace,
         client=client,
         run_store=run_store,
+        output_blocker=lambda candidate: _output_blocker(prepared, candidate),
     )
+    if blocker is not None:
+        return _finish_blocked_draft(
+            snapshot=snapshot,
+            proposal=prepared.proposal,
+            run=run,
+            trace=trace,
+            blocker=blocker,
+            run_store=run_store,
+        )
     if isinstance(assurance, ContentDraftAssuranceFailure):
         return _finish_assurance_failure(
             snapshot=snapshot,

@@ -333,11 +333,6 @@ def _generate_assured_response(
         lambda *_args, **_kwargs: (output, trace),
     )
     monkeypatch.setattr(
-        initial_full_draft,
-        "assure_regulated_draft",
-        fake_assure_regulated_draft,
-    )
-    monkeypatch.setattr(
         initial_draft_assurance_repair,
         "assure_regulated_draft",
         fake_assure_regulated_draft,
@@ -674,8 +669,6 @@ def test_failed_reassurance_after_readability_repair_blocks_without_persistence(
 
     assert len(assurance_candidates) == 2
     assert assurance_candidates[0] is output
-    assert assurance_candidates[1].sections[0].body_markdown == _REGULATED_CLEAN_SECTION
-    assert len(client.requests) == 1
     assert response.status == "blocked"
     assert response.revision is None
     assert response.blockers[0].code == failure.code
@@ -690,6 +683,43 @@ def test_failed_reassurance_after_readability_repair_blocks_without_persistence(
             "error": "draft_assurance_failed|requirement:transport_document",
         }
     ]
+
+
+def test_reassurance_failure_after_readability_repair_is_grounded_and_reassured(
+    monkeypatch,
+) -> None:
+    output = _output(first_body=_REGULATED_DIRTY_SECTION)
+    initial_receipt = _assurance_receipt("assurance-before-readability")
+    failure = ContentDraftAssuranceFailure(
+        code="draft_assurance_failed",
+        label="Tekst nie przeszedł ponownej kontroli merytorycznej",
+        reason="Naprawa czytelności zmieniła zakres warunku regulacyjnego.",
+        next_step="Odrzuć wynik i uruchom nową próbę.",
+        source_codes=["requirement:transport_document"],
+        repair_reasons={"requirement:transport_document": "missing_scope"},
+    )
+    final_receipt = _assurance_receipt("assurance-after-grounding")
+    client = _PatchClient({"section_01": _CLEAN_SECTION_ONE})
+
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "_regulated_prepared_inputs",
+        _regulated_prepared_inputs_with_kpo_fact,
+    )
+
+    response, assurance_candidates, persistence_calls, finish_calls = _generate_assured_response(
+        monkeypatch,
+        output=output,
+        client=client,
+        assurance_results=[initial_receipt, failure, final_receipt],
+    )
+
+    assert response.status == "created"
+    assert len(assurance_candidates) == 3
+    assert len(persistence_calls) == 1
+    persisted_output = cast(ContentInitialDraftModelOutput, persistence_calls[0]["output"])
+    assert "KPO" in persisted_output.sections[0].body_markdown
+    assert finish_calls == []
 
 
 def test_readability_gate_flags_working_note_in_faq_answer() -> None:
