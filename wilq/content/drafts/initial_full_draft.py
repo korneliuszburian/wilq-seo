@@ -46,6 +46,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
+from wilq.content.drafts.regulatory_draft_repair import repair_regulatory_assertions
 from wilq.content.drafts.regulatory_preflight import regulatory_draft_preflight_errors
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
@@ -300,6 +301,17 @@ def _prepare_initial_draft_for_persistence(
         client=client,
         output_blocker=lambda candidate: _output_blocker(prepared, candidate),
     )
+    if blocker is not None:
+        repaired = repair_regulatory_assertions(
+            planning_input=prepared.planning_input,
+            proposal=prepared.proposal,
+            output=output,
+            blocker=blocker,
+            client=client,
+        )
+        if repaired is not None:
+            output, trace = repaired
+            blocker = _output_blocker(prepared, output)
     if blocker is not None:
         return _finish_blocked_draft(
             snapshot=snapshot,

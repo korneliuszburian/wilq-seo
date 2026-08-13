@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from collections.abc import Callable
 from types import SimpleNamespace
 from typing import cast
@@ -42,6 +43,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
     ContentInitialDraftSectionOutput,
 )
+from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
     ContentRegulatoryDocumentAssertion,
@@ -548,6 +550,103 @@ def test_clean_readability_path_keeps_the_initial_assurance_receipt(monkeypatch)
     assert len(persistence_calls) == 1
     assert persistence_calls[0]["output"] is output
     assert persistence_calls[0]["regulatory_assurance"] is initial_receipt
+    assert finish_calls == []
+
+
+_KPO_FACT_TEXT = (
+    "KPO, czyli Kartę Przekazania Odpadów, sporządza się przed transportem odpadów."
+)
+
+
+def _regulated_prepared_inputs_with_kpo_fact() -> initial_full_draft._InitialDraftInputs:
+    prepared = _prepared_inputs()
+    requirement = ContentRegulatoryRequirement(
+        id="transport_document",
+        label="Warunek KPO",
+        reason="Treść musi zachować warunek stosowania KPO.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="mentions_kpo",
+                label="Wzmianka o KPO",
+                required_any_of=["KPO"],
+            )
+        ],
+    )
+    return initial_full_draft._InitialDraftInputs(
+        planning_input=prepared.planning_input.model_copy(
+            update={
+                "confirmed_service_card_id": "service_regulated",
+                "regulatory_coverage": ContentRegulatoryCoverage(
+                    profile_id="regulated_profile",
+                    profile_version="1",
+                    requirements=[requirement],
+                    source_facts=[
+                        ContentSourceFact(
+                            source_id="regulatory_source_fact_kpo",
+                            source_type="legal_update",
+                            privacy_class="commit_safe",
+                            source_url_or_path="https://bdo.mos.gov.pl/kpo/",
+                            extracted_fact=_KPO_FACT_TEXT,
+                            scope="claim_policy",
+                            freshness_date="2026-08-01",
+                            confidence=1,
+                            review_status="approved",
+                            reviewer="ekspert",
+                            evidence_ids=["ev_kpo"],
+                            source_connectors=["official_regulatory_review"],
+                            target_card_id="regulatory_kpo",
+                            target_card_type="regulatory_source",
+                            target_card_title="Oficjalny opis KPO",
+                            official_source=True,
+                            regulatory_profile_id="regulated_profile",
+                            regulatory_profile_version="1",
+                            regulatory_requirement_ids=["transport_document"],
+                            applicable_service_card_ids=["service_regulated"],
+                        )
+                    ],
+                ),
+            }
+        ),
+        proposal=prepared.proposal.model_copy(
+            update={
+                "sections": [
+                    prepared.proposal.sections[0].model_copy(
+                        update={"regulatory_requirement_ids": [requirement.id]}
+                    ),
+                    prepared.proposal.sections[1],
+                ]
+            }
+        ),
+        generation_contract=prepared.generation_contract,
+    )
+
+
+def test_readability_regression_of_regulatory_terms_is_grounded_before_persistence(
+    monkeypatch,
+) -> None:
+    output = _output(first_body=_REGULATED_DIRTY_SECTION)
+    before_receipt = _assurance_receipt("assurance-before-readability")
+    after_receipt = _assurance_receipt("assurance-after-grounding")
+    client = _PatchClient({"section_01": _CLEAN_SECTION_ONE})
+
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "_regulated_prepared_inputs",
+        _regulated_prepared_inputs_with_kpo_fact,
+    )
+
+    response, assurance_candidates, persistence_calls, finish_calls = _generate_assured_response(
+        monkeypatch,
+        output=output,
+        client=client,
+        assurance_results=[before_receipt, after_receipt],
+    )
+
+    assert response.status == "created"
+    assert len(persistence_calls) == 1
+    persisted_output = cast(ContentInitialDraftModelOutput, persistence_calls[0]["output"])
+    assert "KPO" in persisted_output.sections[0].body_markdown
+    assert _KPO_FACT_TEXT in persisted_output.sections[0].body_markdown
     assert finish_calls == []
 
 
