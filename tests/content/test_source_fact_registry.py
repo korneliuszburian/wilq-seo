@@ -35,8 +35,8 @@ SERVICE_PAGE_FACTS = {
 
 SERVICE_PAGE_DATED_FACT_END = {
     "ekologus_service_environmental_consulting_outsourcing": 24,
-    "ekologus_service_environmental_training": 22,
-    "ekologus_service_operat_wodnoprawny": 23,
+    "ekologus_service_environmental_training": 29,
+    "ekologus_service_operat_wodnoprawny": 24,
     "ekologus_service_remediation_monitoring": 34,
 }
 
