@@ -33,6 +33,7 @@ ContentInitialDraftBlockerCode = Literal[
     "proposal_mismatch",
     "revision_already_exists",
     "missing_generation_contract",
+    "regulatory_preflight_failed",
     "runtime_blocked",
     "runtime_failed",
     "invalid_structured_output",

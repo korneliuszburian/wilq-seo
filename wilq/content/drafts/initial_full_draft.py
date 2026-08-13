@@ -46,6 +46,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
+from wilq.content.drafts.regulatory_preflight import regulatory_draft_preflight_errors
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftOutput,
@@ -464,6 +465,8 @@ def _prepare_inputs(
                 )
             ],
         )
+    if errors := regulatory_draft_preflight_errors(planning_input, proposal):
+        return _regulatory_preflight_blocked(snapshot, proposal, errors)
     generation_contract = contract_for_planning_proposal(
         generation.contract,
         proposal,
@@ -474,6 +477,29 @@ def _prepare_inputs(
         proposal=proposal,
         generation_contract=generation_contract,
         base_revision_id=None if latest_revision is None else latest_revision.revision_id,
+    )
+
+
+def _regulatory_preflight_blocked(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    proposal: ContentPlanningProposal,
+    errors: list[str],
+) -> ContentInitialDraftResponse:
+    requirement_count = len({error.split(":", 3)[2] for error in errors})
+    blocker = _blocker(
+        "regulatory_preflight_failed",
+        "Plan regulacyjny nie spełnia warunków szkicu",
+        (
+            "Zatwierdzony plan nie zapewnia kompletnego, weryfikowalnego pokrycia "
+            "wymagań regulacyjnych (liczba brakujących wymogów: "
+            f"{requirement_count}), więc pełny tekst nie został uruchomiony."
+        ),
+        "Wygeneruj nowy plan z sekcją dla każdego wymogu regulacyjnego, a następnie "
+        "ponów pełny tekst.",
+        source_codes=errors,
+    )
+    return _blocked_response(
+        snapshot, proposal=proposal, status="blocked", blockers=[blocker]
     )
 
 
