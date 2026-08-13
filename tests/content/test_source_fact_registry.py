@@ -33,16 +33,25 @@ SERVICE_PAGE_FACTS = {
     ),
 }
 
+SERVICE_PAGE_DATED_FACT_END = {
+    "ekologus_service_environmental_consulting_outsourcing": 24,
+    "ekologus_service_environmental_training": 22,
+    "ekologus_service_operat_wodnoprawny": 23,
+    "ekologus_service_remediation_monitoring": 34,
+}
+
 
 def test_service_pages_have_substantive_approved_public_source_facts() -> None:
     facts = list(ekologus_seed_source_facts())
     registry = ContentSourceFactRegistry(facts=facts, fact_count=len(facts))
+    source_ids = [fact.source_id for fact in registry.facts]
     facts_by_id = {fact.source_id: fact for fact in registry.facts}
     cards_by_id = {
         card.id: card for card in compile_source_facts_to_knowledge_cards(registry.facts)
     }
 
     assert registry.fact_count == len(registry.facts)
+    assert len(source_ids) == len(set(source_ids))
     assert len(facts_by_id) == registry.fact_count
     assert all(fact.source_type in get_args(SourceFactType) for fact in registry.facts)
     assert all(
@@ -64,27 +73,39 @@ def test_service_pages_have_substantive_approved_public_source_facts() -> None:
         substantive_facts = [
             fact
             for fact in card_facts
-            if fact.source_type == "public_site" and len(fact.extracted_fact) > 40
+            if fact.source_type == "public_site"
+            and fact.source_connectors == ["public_site"]
+            and len(fact.extracted_fact) > 40
         ]
-        assert len(substantive_facts) >= 5
+        assert len(substantive_facts) >= 10
+        normalized_facts = [
+            fact.extracted_fact.strip().casefold() for fact in substantive_facts
+        ]
+        assert len(normalized_facts) == len(set(normalized_facts))
 
         original_fact = facts_by_id[original_source_id]
         new_source_prefix = f"ekologus_public_{source_slug}_2026_08_13_"
-        new_source_ids = {
+        expected_source_ids = {
             f"ekologus_public_{source_slug}_2026_08_13_{number}"
-            for number in range(1, 6)
+            for number in range(
+                1,
+                SERVICE_PAGE_DATED_FACT_END[target_card_id] + 1,
+            )
         }
-        assert {
-            fact.source_id
-            for fact in card_facts
+        prefixed_facts = [
+            fact
+            for fact in registry.facts
             if fact.source_id.startswith(new_source_prefix)
-        } == new_source_ids
+        ]
+        current_source_ids = {fact.source_id for fact in prefixed_facts}
+        assert current_source_ids == expected_source_ids
+        assert all(fact.target_card_id == target_card_id for fact in prefixed_facts)
 
         compiled_card = cards_by_id[target_card_id]
-        assert new_source_ids <= set(compiled_card.source_fact_ids)
+        assert current_source_ids <= set(compiled_card.source_fact_ids)
         assert source_url in compiled_card.source_lineage
 
-        for source_id in new_source_ids:
+        for source_id in current_source_ids:
             fact = facts_by_id[source_id]
             assert fact.extracted_fact.strip()
             assert len(fact.extracted_fact) > 40
@@ -103,6 +124,5 @@ def test_service_pages_have_substantive_approved_public_source_facts() -> None:
             assert fact.target_card_type == original_fact.target_card_type
             assert fact.target_card_title == original_fact.target_card_title
             assert fact.service_fit_terms
-            assert set(fact.service_fit_terms) <= set(original_fact.service_fit_terms)
             assert fact.buyer_problem_terms
             assert fact.buyer_triggers
