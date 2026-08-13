@@ -283,6 +283,42 @@ def test_v2_review_does_not_flag_a_vague_phrase_beside_a_concrete_signal() -> No
     assert "vague_answer_phrase" not in _finding_codes(review)
 
 
+def test_v2_review_flags_a_benefit_heading_without_a_buyer_benefit() -> None:
+    review = _review(
+        _revision(
+            "Wymaga porównania zakresu i zasobów.",
+            heading="Jakie korzyści daje outsourcing?",
+        )
+    )
+
+    assert "vague_answer_phrase" in _finding_codes(review)
+
+
+def test_v2_review_accepts_a_benefit_heading_with_buyer_benefits() -> None:
+    review = _review(
+        _revision(
+            (
+                "Pozwala uniknąć kosztów zatrudniania pracowników i gwarantuje terminowy "
+                "nadzór."
+            ),
+            heading="Jakie korzyści daje outsourcing?",
+        )
+    )
+
+    assert "vague_answer_phrase" not in _finding_codes(review)
+
+
+def test_v2_review_does_not_apply_the_benefit_gate_to_other_headings() -> None:
+    review = _review(
+        _revision(
+            "Wymaga porównania zakresu i zasobów.",
+            heading="Zakres outsourcingu",
+        )
+    )
+
+    assert "vague_answer_phrase" not in _finding_codes(review)
+
+
 def test_pre_save_gate_surfaces_a_vague_answer_phrase() -> None:
     output = ContentInitialDraftModelOutput(
         page_assets=ContentDraftRevisionPageAssets(

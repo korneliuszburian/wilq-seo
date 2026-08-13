@@ -71,7 +71,12 @@ CODEX_PROMPT_TEMPLATES: dict[str, CodexPromptTemplate] = {
             "spoza przekazanych source facts i claim policy. CTA ma pomagać w następnym kroku "
             "bez gwarancji wyniku. "
             "Każdą sekcję oprzyj na faktach przypisanych do jej section_id w "
-            "approved_source_facts_by_section. Jeżeli sekcja ma przypisane fakty, jej "
+            "approved_source_facts_by_section. Jeżeli sekcja dotyczy korzyści, wartości "
+            "albo rezultatu dla firmy, MUSI wymienić co najmniej dwie konkretne korzyści z "
+            "approved_source_facts_by_section (np. uniknięcie kosztów zatrudniania, "
+            "terminowość, pewność obsługi, oszczędność czasu) — sekcja o korzyściach, która "
+            "nie wymienia żadnej konkretnej korzyści, nie przechodzi. Jeżeli sekcja ma "
+            "przypisane fakty, jej "
             "body_markdown MUSI zawierać co najmniej jeden konkretny fakt: opisz wskazane "
             "liczby, obowiązki albo szczegóły usługi zamiast zastępować je ogólnikami. "
             "Nie wymyślaj faktów, których nie ma w przypisanych source facts. "
@@ -137,8 +142,7 @@ CODEX_PROMPT_TEMPLATES: dict[str, CodexPromptTemplate] = {
         version=1,
         label="Propozycja faktu regulacyjnego",
         description=(
-            "Przygotowuje ostrożną propozycję faktu z oficjalnego materiału do review "
-            "człowieka."
+            "Przygotowuje ostrożną propozycję faktu z oficjalnego materiału do review człowieka."
         ),
         template=(
             "Przygotuj po polsku jeden zwięzły, ostrożny fact do human review. "

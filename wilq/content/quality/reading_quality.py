@@ -48,6 +48,16 @@ _VAGUE_ANSWER_CONCRETE_SIGNAL = re.compile(
     r"zgłoszen|próbk|pomiar|analiz)\w*(?!\w)|\d",
     re.IGNORECASE,
 )
+_BENEFIT_HEADING_SIGNAL = re.compile(
+    r"(?<!\w)(?:korzyśc|wartoś|efekt|rezultat|opłacal)\w*(?!\w)|"
+    r"(?<!\w)co\s+zysk\w*(?!\w)",
+    re.IGNORECASE,
+)
+_BENEFIT_BODY_MARKER = re.compile(
+    r"(?<!\w)(?:koszt|zatrudnian|terminow|pewnoś|gwaranc|oszczędn|czas|"
+    r"efektywn|ryzyk|proces|nadz(?:o|ó)r)\w*(?!\w)",
+    re.IGNORECASE,
+)
 _CONCRETE_ANSWER_SIGNAL = re.compile(
     r"(?<!\w)(?:pobiera\s+się\s+przez|najpierw|następnie|krok|polega\s+na|wymaga|"
     r"składa\s+się\s+z|próbka|analiza\s+laboratoryjna|przepis|norma|decyzja|"
@@ -151,7 +161,9 @@ def revision_readability_issues(
                     affected_section=section.heading,
                 )
             )
-        if _contains_vague_answer_phrase(section.body_markdown):
+        if _benefit_heading_without_buyer_benefit(
+            section.heading, section.body_markdown
+        ) or _contains_vague_answer_phrase(section.body_markdown):
             issues.append(_vague_answer_phrase_issue(section.heading))
         working_note = _first_working_note(section.body_markdown)
         if working_note is not None:
@@ -220,6 +232,21 @@ def _contains_vague_answer_phrase(markdown: str) -> bool:
     if not has_vague_marker:
         return False
     return _VAGUE_ANSWER_CONCRETE_SIGNAL.search(markdown) is None
+
+
+def _benefit_heading_without_buyer_benefit(heading: str, markdown: str) -> bool:
+    if _BENEFIT_HEADING_SIGNAL.search(heading) is None:
+        return False
+    return not _has_benefit_or_concrete_signal(markdown)
+
+
+def _has_benefit_or_concrete_signal(markdown: str) -> bool:
+    if _BENEFIT_BODY_MARKER.search(markdown) is not None:
+        return True
+    return any(
+        signal.group(0).casefold() != "wymaga"
+        for signal in _VAGUE_ANSWER_CONCRETE_SIGNAL.finditer(markdown)
+    )
 
 
 def _vague_answer_phrase_issue(heading: str) -> RevisionReadabilityIssue:
