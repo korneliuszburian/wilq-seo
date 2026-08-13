@@ -342,33 +342,78 @@ def _prepare_initial_draft_for_persistence(
         )
     if output is assured_output:
         return output, trace, assurance
-    output, trace, assurance, blocker = assure_and_repair_initial_draft(
-        planning_input=prepared.planning_input,
-        proposal=prepared.proposal,
-        output=output,
-        trace=trace,
-        client=client,
-        run_store=run_store,
-        output_blocker=lambda candidate: _output_blocker(prepared, candidate),
-    )
-    if blocker is not None:
-        return _finish_blocked_draft(
-            snapshot=snapshot,
+    # Grounding inside the assurance repair cycle can reintroduce exact fact
+    # sentences after the readability pass. Alternate assurance and the
+    # readability last-writer with a bounded budget so the persisted document
+    # keeps both exact regulatory concepts and readable prose.
+    for _ in range(2):
+        before_assure = output
+        output, trace, assurance, blocker = assure_and_repair_initial_draft(
+            planning_input=prepared.planning_input,
             proposal=prepared.proposal,
-            run=run,
+            output=output,
             trace=trace,
+            client=client,
+            run_store=run_store,
+            output_blocker=lambda candidate: _output_blocker(prepared, candidate),
+        )
+        if blocker is not None:
+            return _finish_blocked_draft(
+                snapshot=snapshot,
+                proposal=prepared.proposal,
+                run=run,
+                trace=trace,
+                blocker=blocker,
+                run_store=run_store,
+            )
+        if isinstance(assurance, ContentDraftAssuranceFailure):
+            return _finish_assurance_failure(
+                snapshot=snapshot,
+                proposal=prepared.proposal,
+                run=run,
+                trace=trace,
+                run_store=run_store,
+                assurance=assurance,
+            )
+        output, trace, blocker = assure_readability_and_repair(
+            planning_input=prepared.planning_input,
+            proposal=prepared.proposal,
+            output=output,
+            trace=trace,
+            client=client,
+            output_blocker=lambda candidate: _output_blocker(prepared, candidate),
+        )
+        if blocker is None:
+            return output, trace, assurance
+        repaired = repair_regulatory_assertions(
+            planning_input=prepared.planning_input,
+            proposal=prepared.proposal,
+            output=output,
             blocker=blocker,
-            run_store=run_store,
+            client=client,
         )
-    if isinstance(assurance, ContentDraftAssuranceFailure):
-        return _finish_assurance_failure(
-            snapshot=snapshot,
-            proposal=prepared.proposal,
-            run=run,
-            trace=trace,
-            run_store=run_store,
-            assurance=assurance,
-        )
+        if repaired is None:
+            return _finish_blocked_draft(
+                snapshot=snapshot,
+                proposal=prepared.proposal,
+                run=run,
+                trace=trace,
+                blocker=blocker,
+                run_store=run_store,
+            )
+        output, trace = repaired
+        blocker = _output_blocker(prepared, output)
+        if blocker is not None:
+            return _finish_blocked_draft(
+                snapshot=snapshot,
+                proposal=prepared.proposal,
+                run=run,
+                trace=trace,
+                blocker=blocker,
+                run_store=run_store,
+            )
+        if output is before_assure:
+            return output, trace, assurance
     return output, trace, assurance
 
 

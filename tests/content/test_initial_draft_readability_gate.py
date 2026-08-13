@@ -699,6 +699,7 @@ def test_reassurance_failure_after_readability_repair_is_grounded_and_reassured(
         repair_reasons={"requirement:transport_document": "missing_scope"},
     )
     final_receipt = _assurance_receipt("assurance-after-grounding")
+    final_receipt_two = _assurance_receipt("assurance-final-pass")
     client = _PatchClient({"section_01": _CLEAN_SECTION_ONE})
 
     monkeypatch.setattr(
@@ -711,11 +712,11 @@ def test_reassurance_failure_after_readability_repair_is_grounded_and_reassured(
         monkeypatch,
         output=output,
         client=client,
-        assurance_results=[initial_receipt, failure, final_receipt],
+        assurance_results=[initial_receipt, failure, final_receipt, final_receipt_two],
     )
 
     assert response.status == "created"
-    assert len(assurance_candidates) == 3
+    assert len(assurance_candidates) == 4
     assert len(persistence_calls) == 1
     persisted_output = cast(ContentInitialDraftModelOutput, persistence_calls[0]["output"])
     assert "KPO" in persisted_output.sections[0].body_markdown
