@@ -15,7 +15,28 @@ def normalize_search_text(value: str) -> str:
     )
 
 
-def normalized_term_matches(term: str, normalized_search_text: str) -> bool:
+def normalized_term_matches(
+    term: str,
+    normalized_search_text: str,
+) -> bool:
+    """Match exact phrase, then contiguous tokens, then one significant token.
+
+    This precedence keeps the single-token check as a relaxed fallback only.
+    """
+    return _normalized_term_matches(term, normalized_search_text, relaxed=True)
+
+
+def strict_normalized_term_matches(term: str, normalized_search_text: str) -> bool:
+    """Match an exact phrase or contiguous significant-token sequence only."""
+    return _normalized_term_matches(term, normalized_search_text, relaxed=False)
+
+
+def _normalized_term_matches(
+    term: str,
+    normalized_search_text: str,
+    *,
+    relaxed: bool,
+) -> bool:
     normalized_term = normalize_search_text(term)
     if not normalized_term:
         return False
@@ -23,14 +44,21 @@ def normalized_term_matches(term: str, normalized_search_text: str) -> bool:
         return True
     term_tokens = normalized_term.split()
     search_tokens = normalized_search_text.split()
-    if any(len(token) < 5 for token in term_tokens):
-        return False
-    return any(
+    if all(len(token) >= 5 for token in term_tokens) and any(
         all(
             _token_matches(token, search_tokens[start + offset])
             for offset, token in enumerate(term_tokens)
         )
         for start in range(len(search_tokens) - len(term_tokens) + 1)
+    ):
+        return True
+    if not relaxed:
+        return False
+    return any(
+        _token_matches(term_token, search_token)
+        for term_token in term_tokens
+        if len(term_token) >= 5
+        for search_token in search_tokens
     )
 
 
