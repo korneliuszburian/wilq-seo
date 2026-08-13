@@ -97,7 +97,8 @@ def test_fact_proposal_is_exact_human_gated_and_never_persists_raw_source_body(t
                     "id": "bdo_full_name",
                     "label": "pełna nazwa BDO",
                     "required_any_of": [
-                        "Baza danych o produktach i opakowaniach oraz o gospodarce odpadami"
+                        "Baza danych o produktach i opakowaniach oraz o gospodarce odpadami",
+                        "Bazę danych o produktach i opakowaniach oraz o gospodarce odpadami",
                     ],
                 }
             ],

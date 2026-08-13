@@ -2792,7 +2792,7 @@
       "target_card_id": "ekologus_service_environmental_training",
       "target_card_type": "service",
       "target_card_title": "Szkolenia środowiskowe",
-      "service_fit_terms": ["warsztaty KOBiZE", "pozwolenie zintegrowane", "instalacja przemysłowa"],
+      "service_fit_terms": ["warsztaty KOBiZE", "raport do Krajowej bazy"],
       "buyer_problem_terms": ["brak kompetencji KOBiZE", "instalacja może podlegać pozwoleniu zintegrowanemu", "pracownik odpowiada za ochronę środowiska"],
       "buyer_triggers": ["zakład ma instalację przemysłową", "pracownik przygotowuje raport KOBiZE", "firma szkoli specjalistę środowiskowego"]
     },
@@ -3002,7 +3002,7 @@
       "target_card_id": "ekologus_service_environmental_training",
       "target_card_type": "service",
       "target_card_title": "Szkolenia środowiskowe",
-      "service_fit_terms": ["kierownik składowiska odpadów", "obowiązki zarządzającego", "gospodarka odpadami", "sprawozdawczość środowiskowa"],
+      "service_fit_terms": ["kierownik składowiska odpadów", "obowiązki zarządzającego składowiskiem"],
       "buyer_problem_terms": ["nieznane obowiązki zarządzającego składowiskiem", "potrzeba wiedzy odpadowej", "brak przygotowania do sprawozdawczości"],
       "buyer_triggers": ["pracownik zarządza składowiskiem", "zakład szkoli kierownika składowiska", "zespół aktualizuje wiedzę odpadową"]
     },
