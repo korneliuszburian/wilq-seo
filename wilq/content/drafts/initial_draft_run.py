@@ -128,7 +128,7 @@ def _enrich_started_initial_draft_run(
         return enriched
 
 
-LEGACY_INITIAL_DRAFT_TIMEOUT_SECONDS = 900.0
+LEGACY_INITIAL_DRAFT_TIMEOUT_SECONDS = 2400.0
 
 
 def effective_initial_draft_deadline(run: CodexRun) -> datetime:

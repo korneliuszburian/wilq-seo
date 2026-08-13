@@ -98,7 +98,9 @@ class BoundedInitialDraftExecutor:
 
 
 _INITIAL_DRAFT_EXECUTOR = BoundedInitialDraftExecutor(max_workers=2)
-_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 900.0
+# Regulated documents run an independent assurance critic with bounded repair
+# rounds; a full BDO-style pass needs more wall clock than a plain draft.
+_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 2400.0
 _INITIAL_DRAFT_QUEUE_RETRY_SECONDS = 5
 
 
