@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Literal
 
@@ -62,7 +63,10 @@ from wilq.content.planning.generated_proposal import (
 )
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
-from wilq.content.workflow.documents.revisions import content_draft_package_digest
+from wilq.content.workflow.documents.revisions import (
+    content_draft_package_digest,
+    validate_no_inline_link,
+)
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore
 
@@ -83,6 +87,67 @@ _InitialDraftPrePersistResult = (
     ]
     | ContentInitialDraftResponse
 )
+
+_BENEFIT_HEADING_SIGNAL = re.compile(
+    r"(?<!\w)(?:korzyśc|wartoś|efekt|rezultat|opłacal)\w*(?!\w)|"
+    r"(?<!\w)co\s+(?:zysk|daj)\w*(?!\w)",
+    re.IGNORECASE,
+)
+_BENEFIT_BODY_MARKER = re.compile(
+    r"(?<!\w)(?:koszt|zatrudnian|terminow|pewnoś|gwaranc|oszczędn|czas|"
+    r"efektywn|ryzyk)\w*(?!\w)",
+    re.IGNORECASE,
+)
+_BENEFIT_SOURCE_FACT_SIGNAL = re.compile(
+    r"(?<!\w)(?:koszt|zatrudnian|terminow|pewnoś|gwaranc|oszczędn|efektywn)\w*(?!\w)",
+    re.IGNORECASE,
+)
+_BENEFIT_SOURCE_FACT_LIMIT = 2
+
+
+def _benefit_source_fact_text(summary: str) -> str | None:
+    text = summary.strip()
+    if _BENEFIT_SOURCE_FACT_SIGNAL.search(text) is None:
+        return None
+    try:
+        return validate_no_inline_link(text)
+    except ValueError:
+        return None
+
+
+def _enrich_benefit_sections(
+    output: ContentInitialDraftModelOutput,
+    planning_input: ContentPlanningInput,
+) -> ContentInitialDraftModelOutput:
+    benefit_facts = [
+        text
+        for fact in planning_input.source_facts
+        if (text := _benefit_source_fact_text(fact.summary)) is not None
+    ][:_BENEFIT_SOURCE_FACT_LIMIT]
+    if not benefit_facts:
+        return output
+    fact_sentences = [
+        fact if fact.endswith((".", "!", "?")) else f"{fact}." for fact in benefit_facts
+    ]
+    fallback = f"Z korzyści współpracy: {' '.join(fact_sentences)}"
+    sections = []
+    for section in output.sections:
+        if (
+            _BENEFIT_HEADING_SIGNAL.search(section.heading) is not None
+            and _BENEFIT_BODY_MARKER.search(section.body_markdown) is None
+        ):
+            section = section.model_copy(
+                update={"body_markdown": f"{section.body_markdown.rstrip()}\n\n{fallback}"}
+            )
+        sections.append(section)
+    if sections == output.sections:
+        return output
+    return ContentInitialDraftModelOutput.model_validate(
+        {
+            **output.model_dump(mode="python"),
+            "sections": [section.model_dump(mode="python") for section in sections],
+        }
+    )
 
 
 def _initial_draft_context_digest(
@@ -143,6 +208,7 @@ def generate_initial_full_draft(
     if isinstance(runtime_result, ContentInitialDraftResponse):
         return runtime_result
     output, trace = runtime_result
+    output = _enrich_benefit_sections(output, prepared.planning_input)
     prepared_output = _prepare_initial_draft_for_persistence(
         snapshot=snapshot,
         prepared=prepared,

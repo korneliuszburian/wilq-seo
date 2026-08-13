@@ -7,6 +7,12 @@ import pytest
 
 import wilq.content.drafts.initial_full_draft_turn as draft_turn
 from wilq.codex.prompts import resolve_prompt_template
+from wilq.content.drafts import initial_full_draft
+from wilq.content.drafts.initial_draft_readability import readability_issues_for_output
+from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftModelOutput,
+    ContentInitialDraftSectionOutput,
+)
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
 from wilq.content.knowledge.source_facts import ContentSourceFact, SourceFactReviewStatus
 from wilq.content.planning.dynamic_input import ContentPlanningInput
@@ -24,6 +30,7 @@ from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
     ContentPlanningSection,
 )
+from wilq.content.workflow.documents.revisions import ContentDraftRevisionPageAssets
 
 
 def test_initial_draft_v2_prompt_preserves_copy_and_source_fact_rules() -> None:
@@ -368,6 +375,105 @@ def test_source_facts_by_section_carries_fact_identity_summary_and_evidence(
     for row in mapping:
         for fact in row["source_facts"]:
             assert {"source_fact_id", "summary", "evidence_ids"} <= set(fact)
+
+
+def test_enrich_benefit_sections_uses_only_missing_benefit_answers() -> None:
+    benefit_fact = "pozwala uniknąć kosztów zatrudniania pracowników"
+    planning_input = ContentPlanningInput.model_construct(
+        source_facts=[
+            ContentPlanningSourceFact(
+                fact_id="planning_benefit_fact",
+                summary=benefit_fact,
+                source_connector="public_site",
+                evidence_ids=["ev_benefit"],
+            )
+        ]
+    )
+    vague_body = "Może obejmować nadzór nad dokumentacją."
+    existing_benefit_body = "Stała obsługa zapewnia terminowy nadzór nad dokumentacją."
+    non_benefit_body = "Zakres obejmuje nadzór nad dokumentacją."
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Outsourcing środowiskowy",
+            meta_title="Outsourcing środowiskowy dla firm",
+            meta_description="Zakres i korzyści outsourcingu środowiskowego.",
+            h1="Outsourcing środowiskowy",
+            lead="Praktyczny opis stałego wsparcia środowiskowego dla firmy.",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="benefit_missing",
+                heading="Co daje outsourcing?",
+                body_markdown=vague_body,
+            ),
+            ContentInitialDraftSectionOutput(
+                section_id="benefit_present",
+                heading="Co zyskuje firma?",
+                body_markdown=existing_benefit_body,
+            ),
+            ContentInitialDraftSectionOutput(
+                section_id="scope",
+                heading="Zakres outsourcingu",
+                body_markdown=non_benefit_body,
+            ),
+        ],
+    )
+
+    assert any(
+        code == "heading_answer_mismatch" for code, _, _ in readability_issues_for_output(output)
+    )
+    enriched = initial_full_draft._enrich_benefit_sections(output, planning_input)
+
+    assert "Z korzyści współpracy:" in enriched.sections[0].body_markdown
+    assert "koszt" in enriched.sections[0].body_markdown
+    assert benefit_fact in enriched.sections[0].body_markdown
+    assert not any(
+        code == "heading_answer_mismatch" for code, _, _ in readability_issues_for_output(enriched)
+    )
+    assert enriched.sections[1].body_markdown == existing_benefit_body
+    assert enriched.sections[2].body_markdown == non_benefit_body
+    assert output.sections[0].body_markdown == vague_body
+
+
+def test_enrich_benefit_sections_skips_link_bearing_source_fact() -> None:
+    safe_fact = "Terminowy nadzór formalno-prawny ogranicza ryzyko opóźnień."
+    planning_input = ContentPlanningInput.model_construct(
+        source_facts=[
+            ContentPlanningSourceFact(
+                fact_id="planning_link_benefit_fact",
+                summary="Koszt opisano przy [usłudze](https://example.com).",
+                source_connector="public_site",
+                evidence_ids=["ev_link_benefit"],
+            ),
+            ContentPlanningSourceFact(
+                fact_id="planning_safe_benefit_fact",
+                summary=safe_fact,
+                source_connector="public_site",
+                evidence_ids=["ev_safe_benefit"],
+            ),
+        ]
+    )
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Korzyści outsourcingu",
+            meta_title="Korzyści outsourcingu środowiskowego",
+            meta_description="Korzyści stałej obsługi środowiskowej dla firmy.",
+            h1="Korzyści outsourcingu środowiskowego",
+            lead="Praktyczny opis stałego wsparcia środowiskowego dla firmy.",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="benefit_missing",
+                heading="Co daje outsourcing?",
+                body_markdown="Może obejmować nadzór nad dokumentacją.",
+            )
+        ],
+    )
+
+    enriched = initial_full_draft._enrich_benefit_sections(output, planning_input)
+
+    assert safe_fact in enriched.sections[0].body_markdown
+    assert "https://example.com" not in enriched.sections[0].body_markdown
 
 
 def test_initial_draft_turn_exposes_approved_source_facts_by_section(

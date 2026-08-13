@@ -6,6 +6,17 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
 )
+from wilq.content.drafts import initial_full_draft
+from wilq.content.drafts.structured_generation import (
+    StructuredDraftGenerationContract,
+    StructuredDraftGenerationInput,
+)
+from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.regulatory.policy import ContentRegulatoryCoverage
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningProposal,
+    ContentPlanningSection,
+)
 
 
 class PatchClient:
@@ -95,4 +106,67 @@ class PatchSequenceClient(PatchClient):
         return super().run_structured_turn(request)
 
 
-__all__ = ["BlockedThenPatchClient", "PatchClient", "PatchSequenceClient"]
+def planning_input() -> ContentPlanningInput:
+    return ContentPlanningInput.model_construct(
+        work_item_id="content_work_item_readability_gate",
+        planning_input_digest="a" * 64,
+        regulatory_coverage=ContentRegulatoryCoverage(),
+        claim_ledger=[],
+        evidence_ids=["ev_readability_gate"],
+    )
+
+
+def proposal() -> ContentPlanningProposal:
+    return ContentPlanningProposal.model_construct(
+        work_item_id="content_work_item_readability_gate",
+        proposal_id="content_planning_proposal_readability_gate",
+        planning_digest="b" * 64,
+        planning_input_digest="a" * 64,
+        sections=[
+            ContentPlanningSection(
+                section_id="section_01",
+                heading="Pierwszy krok",
+                purpose="Wyjaśnij pierwszy krok.",
+                evidence_ids=["ev_readability_gate"],
+            ),
+            ContentPlanningSection(
+                section_id="section_02",
+                heading="Drugi krok",
+                purpose="Wyjaśnij drugi krok.",
+                evidence_ids=["ev_readability_gate"],
+            ),
+        ],
+        faq=[],
+        cta_blocks=[],
+        internal_links=[],
+        evidence_ids=["ev_readability_gate"],
+    )
+
+
+def generation_contract() -> StructuredDraftGenerationContract:
+    return StructuredDraftGenerationContract.model_construct(
+        model_input=StructuredDraftGenerationInput.model_construct(
+            claims_removed_or_blocked=[],
+            removed_or_blocked_claim_markers=[],
+            human_review_questions=[],
+        )
+    )
+
+
+def prepared_inputs() -> initial_full_draft._InitialDraftInputs:
+    return initial_full_draft._InitialDraftInputs(
+        planning_input=planning_input(),
+        proposal=proposal(),
+        generation_contract=generation_contract(),
+    )
+
+
+__all__ = [
+    "BlockedThenPatchClient",
+    "PatchClient",
+    "PatchSequenceClient",
+    "generation_contract",
+    "planning_input",
+    "prepared_inputs",
+    "proposal",
+]
