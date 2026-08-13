@@ -50,12 +50,12 @@ _VAGUE_ANSWER_CONCRETE_SIGNAL = re.compile(
 )
 _BENEFIT_HEADING_SIGNAL = re.compile(
     r"(?<!\w)(?:korzyśc|wartoś|efekt|rezultat|opłacal)\w*(?!\w)|"
-    r"(?<!\w)co\s+zysk\w*(?!\w)",
+    r"(?<!\w)co\s+(?:zysk|daj)\w*(?!\w)",
     re.IGNORECASE,
 )
 _BENEFIT_BODY_MARKER = re.compile(
     r"(?<!\w)(?:koszt|zatrudnian|terminow|pewnoś|gwaranc|oszczędn|czas|"
-    r"efektywn|ryzyk|proces|nadz(?:o|ó)r)\w*(?!\w)",
+    r"efektywn|ryzyk)\w*(?!\w)",
     re.IGNORECASE,
 )
 _CONCRETE_ANSWER_SIGNAL = re.compile(
@@ -217,6 +217,11 @@ def _heading_answer_mismatch(heading: str, markdown: str) -> bool:
     if _QUESTION_HEADING_WORD.search(heading) is None:
         return False
     if _VAGUE_ANSWER_HEDGE.search(markdown) is None:
+        return False
+    if (
+        _BENEFIT_HEADING_SIGNAL.search(heading) is not None
+        and _BENEFIT_BODY_MARKER.search(markdown) is not None
+    ):
         return False
     return (
         _CONCRETE_ANSWER_SIGNAL.search(markdown) is None

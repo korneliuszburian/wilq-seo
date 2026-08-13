@@ -26,7 +26,7 @@ def canonicalize_model_inventory_headings(
     planning_input: ContentPlanningInput,
     output: ContentPlanningModelOutput,
 ) -> ContentPlanningModelOutput:
-    """Fill omitted inventory references using a conservative deterministic match."""
+    """Canonicalize inventory references into a deterministic one-to-one map."""
     inventory = [section.heading for section in planning_input.inventory.sections]
     inventory_by_id = {
         section.section_id: section.heading for section in planning_input.inventory.sections
@@ -39,6 +39,7 @@ def canonicalize_model_inventory_headings(
     if not inventory:
         return output
     used: set[str] = set()
+    used_inventory_section_ids: set[str] = set()
     sections = []
     changed = False
     for section in output.sections:
@@ -53,29 +54,38 @@ def canonicalize_model_inventory_headings(
             else:
                 sections.append(section)
             continue
-        if section.inventory_section_id in inventory_by_id:
-            heading = inventory_by_id[section.inventory_section_id]
+        inventory_section_id = section.inventory_section_id
+        if inventory_section_id is not None and inventory_section_id in inventory_by_id:
+            if inventory_section_id in used_inventory_section_ids:
+                sections.append(_as_created_section(section))
+                changed = True
+                continue
+            heading = inventory_by_id[inventory_section_id]
             if section.inventory_heading != heading:
-                sections.append(
-                    section.model_copy(update={"inventory_heading": heading})
-                )
+                sections.append(section.model_copy(update={"inventory_heading": heading}))
                 changed = True
             else:
                 sections.append(section)
             used.add(heading)
+            used_inventory_section_ids.add(inventory_section_id)
             continue
         if section.inventory_heading:
             used.add(section.inventory_heading)
             matching_ids = inventory_ids_by_heading.get(section.inventory_heading, [])
-            if len(matching_ids) == 1 and section.inventory_section_id != matching_ids[0]:
-                sections.append(
-                    section.model_copy(
-                        update={"inventory_section_id": matching_ids[0]}
+            if len(matching_ids) == 1:
+                matching_id = matching_ids[0]
+                if matching_id in used_inventory_section_ids:
+                    sections.append(_as_created_section(section))
+                    changed = True
+                    continue
+                used_inventory_section_ids.add(matching_id)
+                if section.inventory_section_id != matching_id:
+                    sections.append(
+                        section.model_copy(update={"inventory_section_id": matching_id})
                     )
-                )
-                changed = True
-            else:
-                sections.append(section)
+                    changed = True
+                    continue
+            sections.append(section)
             continue
         match = _best_inventory_heading(section.heading, inventory, used)
         if match is None:
@@ -85,10 +95,22 @@ def canonicalize_model_inventory_headings(
         update = {"inventory_heading": match}
         if len(matching_ids) == 1:
             update["inventory_section_id"] = matching_ids[0]
+            used_inventory_section_ids.add(matching_ids[0])
         sections.append(section.model_copy(update=update))
         used.add(match)
         changed = True
     return output.model_copy(update={"sections": sections}) if changed else output
+
+
+def _as_created_section(section: ContentPlanningModelSection) -> ContentPlanningModelSection:
+    """Keep model-authored content without assigning one inventory row twice."""
+    return section.model_copy(
+        update={
+            "inventory_disposition": "create",
+            "inventory_heading": None,
+            "inventory_section_id": None,
+        }
+    )
 
 
 def build_inventory_mapping(

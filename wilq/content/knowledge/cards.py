@@ -19,7 +19,7 @@ from wilq.content.knowledge.source_facts import (
 )
 from wilq.content.knowledge.text_matching import (
     normalize_search_text,
-    normalized_term_matches,
+    strict_normalized_term_matches,
 )
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID
@@ -500,7 +500,7 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
             candidate.card
             for candidate in service_candidates
             if any(
-                normalized_term_matches(term, surface.page_text)
+                strict_normalized_term_matches(term, surface.page_text)
                 for term in candidate.matched_terms
             )
         ),
@@ -736,7 +736,7 @@ def _matching_cards(
         for card in cards
         if card.card_type == card_type
         and any(
-            normalized_term_matches(term, search_text)
+            strict_normalized_term_matches(term, search_text)
             for term in card.service_fit_terms
             if normalize_search_text(term) not in _normalized_broad_service_terms()
         )
@@ -761,7 +761,7 @@ def _matching_service_candidates(
             term
             for term in card.service_fit_terms
             if normalize_search_text(term) not in _normalized_broad_service_terms()
-            and normalized_term_matches(term, search_text)
+            and strict_normalized_term_matches(term, search_text)
         ]
         if not matched_terms or not _service_match_is_specific(
             card,
@@ -778,7 +778,7 @@ def _matching_service_candidates(
         priority_matches = [
             term
             for term in candidate.matched_terms
-            if normalized_term_matches(term, normalized_priority_text)
+            if strict_normalized_term_matches(term, normalized_priority_text)
         ]
         strongest_term = max(
             (len(normalize_search_text(term)) for term in priority_matches),

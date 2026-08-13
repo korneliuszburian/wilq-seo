@@ -125,6 +125,7 @@ def _planning_sections() -> list[ContentPlanningSection]:
             heading=_FALLBACK_HEADING,
             purpose="Porządkuje dalsze kroki przedsiębiorcy.",
             reader_question="Od czego zacząć?",
+            query_terms=["Czy BDO ma związek z PIT, VAT i ZUS?"],
         ),
         ContentPlanningSection(
             section_id="section_reporting",
@@ -249,6 +250,90 @@ def test_selected_section_without_match_gets_service_card_fallback_fact(
             "evidence_ids": ["ev_service_fallback_fact"],
             "service_label": "Usługa service_fallback_fact",
         }
+    ]
+
+
+def test_selected_sections_cap_approved_source_facts_per_section(
+    section_repair_context: tuple[
+        ContentPlanningInput,
+        ContentWorkItemWorkflowSnapshotResponse,
+        ContentDraftRevision,
+    ],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, snapshot, revision = section_repair_context
+    direct_facts = [
+        _approved_fact(
+            f"direct_records_fact_{index}",
+            target_card_id="ekologus_evidence_bdo_records",
+            buyer_problem_terms=["ewidencja odpadów"],
+        )
+        for index in range(1, 6)
+    ]
+    fallback_facts = [
+        _approved_fact(
+            "service_fallback_unrelated",
+            target_card_id=_SERVICE_CARD_ID,
+            target_card_type="service",
+            service_fit_terms=["audyt instalacji"],
+        ),
+        _approved_fact(
+            "service_fallback_overlap_one",
+            target_card_id=_SERVICE_CARD_ID,
+            target_card_type="service",
+            service_fit_terms=["zus nip"],
+        ),
+        _approved_fact(
+            "service_fallback_overlap_two",
+            target_card_id=_SERVICE_CARD_ID,
+            target_card_type="service",
+            service_fit_terms=["vat bdo"],
+        ),
+        _approved_fact(
+            "service_fallback_overlap_two_tie",
+            target_card_id=_SERVICE_CARD_ID,
+            target_card_type="service",
+            buyer_problem_terms=["pit zus"],
+        ),
+        _approved_fact(
+            "service_fallback_overlap_three",
+            target_card_id=_SERVICE_CARD_ID,
+            target_card_type="service",
+            buyer_problem_terms=["vat pit bdo"],
+        ),
+        _approved_fact(
+            "service_fallback_overlap_four",
+            target_card_id=_SERVICE_CARD_ID,
+            target_card_type="service",
+            service_fit_terms=["vat pit bdo czy"],
+        ),
+    ]
+    official_fact = next(fact for fact in _source_facts() if fact.official_source)
+    source_facts = [*direct_facts, *fallback_facts, official_fact]
+    monkeypatch.setattr(
+        proposal_turn,
+        "ekologus_source_facts",
+        lambda: tuple(source_facts),
+    )
+    planning_input = _planning_input(source_facts)
+
+    request = proposal_turn.codex_turn_request(
+        snapshot=snapshot,
+        selected_headings=[_DIRECT_HEADING, _FALLBACK_HEADING],
+        base_revision=revision,
+        planning_input=planning_input,
+    )
+
+    context = json.loads(request.untrusted_context)
+    assert _source_fact_ids(context) == [
+        "direct_records_fact_1",
+        "direct_records_fact_2",
+        "direct_records_fact_3",
+        "direct_records_fact_4",
+        "service_fallback_overlap_four",
+        "service_fallback_overlap_three",
+        "service_fallback_overlap_two",
+        "service_fallback_overlap_two_tie",
     ]
 
 

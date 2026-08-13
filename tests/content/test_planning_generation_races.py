@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 import sqlite3
+import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Barrier, Lock
@@ -216,6 +219,94 @@ def test_worker_reloads_digest_before_codex_and_finishes_matching_claim(
     assert _planning_claim_status(store.path) == "finished"
 
 
+def test_review_regeneration_reads_ready_and_unblocks_initial_draft(
+    planning_harness: tuple[TestClient, PlanningClient],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, runtime = planning_harness
+    path = f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    before = client.get(path).json()
+    original_response = _post_and_poll_planning(
+        client,
+        path,
+        _generation_request(
+            before["service_card_id"],
+            before["planning_input_digest"],
+        ),
+    )
+    assert original_response.json()["status"] == "ready"
+    original = original_response.json()["proposal"]
+    original_turn = runtime.run_structured_turn
+
+    def duplicate_inventory_turn(request: Any) -> Any:
+        result = original_turn(request)
+        application_context = json.loads(request.application_context)
+        if application_context["operation"] != "propose_content_plan":
+            return result
+        assert result.output_text is not None
+        output = json.loads(result.output_text)
+        planning_input = json.loads(request.untrusted_context)["planning_input"]
+        inventory_section = planning_input["inventory"]["sections"][0]
+        output["sections"][0].update(
+            {
+                "heading": "Pierwszy zakres odpowiedzi",
+                "inventory_section_id": inventory_section["section_id"],
+                "inventory_heading": inventory_section["heading"],
+            }
+        )
+        output["sections"].append(
+            {
+                **output["sections"][0],
+                "heading": "Dodatkowy zakres odpowiedzi",
+            }
+        )
+        return replace(result, output_text=json.dumps(output, ensure_ascii=False))
+
+    monkeypatch.setattr(runtime, "run_structured_turn", duplicate_inventory_turn)
+    regenerated_response = _post_and_poll_planning(
+        client,
+        path,
+        {
+            **_generation_request(
+                original["service_card_id"],
+                original["planning_input_digest"],
+            ),
+            "operator_hint": "Pogłęb plan po review bez utraty mapy inventory.",
+            "regenerate_after_review": True,
+        },
+    )
+
+    assert regenerated_response.json()["status"] == "ready", json.dumps(
+        regenerated_response.json(), ensure_ascii=False
+    )
+    replacement = regenerated_response.json()["proposal"]
+    assert replacement["proposal_id"] != original["proposal_id"]
+    assert replacement["proposal_version"] == original["proposal_version"] + 1
+    assert replacement["planning_input_digest"] == original["planning_input_digest"]
+    additional = next(
+        section
+        for section in replacement["sections"]
+        if section["heading"] == "Dodatkowy zakres odpowiedzi"
+    )
+    assert additional["inventory_disposition"] == "create"
+    assert additional["inventory_section_id"] is None
+    current = client.get(path).json()
+    assert current["status"] == "ready"
+    assert current["proposal"] == replacement
+
+    draft = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/initial-draft",
+        json={
+            "expected_proposal_id": replacement["proposal_id"],
+            "expected_planning_digest": replacement["planning_digest"],
+            "expected_planning_input_digest": replacement["planning_input_digest"],
+            "requested_by": "wilku",
+        },
+    ).json()
+    assert draft["proposal_id"] == replacement["proposal_id"]
+    assert all(blocker["code"] != "planning_not_ready" for blocker in draft.get("blockers", []))
+
+
 def test_reclaimed_claim_fences_late_terminal_write_and_keeps_newer_result(
     tmp_path: Path,
 ) -> None:
@@ -388,6 +479,20 @@ def _generation_request(service_card_id: str, digest: str) -> dict[str, str]:
         "operator_hint": "Odpowiedz najpierw na najważniejsze pytanie czytelnika.",
         "requested_by": "wilku",
     }
+
+
+def _post_and_poll_planning(
+    client: TestClient,
+    path: str,
+    request: dict[str, object],
+) -> Any:
+    response = client.post(path, json=request)
+    for _ in range(200):
+        if response.json().get("status") != "generating":
+            break
+        time.sleep(0.05)
+        response = client.get(path)
+    return response
 
 
 def _enqueue_and_claim(
