@@ -1,0 +1,33 @@
+{
+  "judge": "Codex SOL-ULTRA (gpt-5.6-sol, read-only)",
+  "method": "blind — text_a/text_b unlabeled; mapping established after scoring",
+  "mapping": {"text_a": "current WordPress", "text_b": "generated WILQ"},
+  "pages": [
+    {"index": 0, "slug": "bdo", "preference": "b", "generated_wins": true},
+    {"index": 1, "slug": "szkolenia", "preference": "b", "generated_wins": true},
+    {"index": 2, "slug": "doradztwo", "preference": "b", "generated_wins": true},
+    {"index": 3, "slug": "opracowania", "preference": "b", "generated_wins": true},
+    {"index": 4, "slug": "pomiary", "preference": "a", "generated_wins": false}
+  ],
+  "dimensions_a": {
+    "0": {"answer_directness": 3, "completeness": 3, "logical_flow": 2, "specificity": 5, "repetition": 4, "search_intent_fit": 4, "buyer_fit": 2, "credibility": 2, "conversion_clarity": 3},
+    "1": {"answer_directness": 2, "completeness": 4, "logical_flow": 1, "specificity": 5, "repetition": 1, "search_intent_fit": 4, "buyer_fit": 4, "credibility": 3, "conversion_clarity": 3},
+    "2": {"answer_directness": 4, "completeness": 4, "logical_flow": 2, "specificity": 5, "repetition": 4, "search_intent_fit": 4, "buyer_fit": 4, "credibility": 3, "conversion_clarity": 4},
+    "3": {"answer_directness": 3, "completeness": 5, "logical_flow": 2, "specificity": 5, "repetition": 3, "search_intent_fit": 4, "buyer_fit": 3, "credibility": 3, "conversion_clarity": 2},
+    "4": {"answer_directness": 4, "completeness": 5, "logical_flow": 3, "specificity": 5, "repetition": 4, "search_intent_fit": 5, "buyer_fit": 4, "credibility": 5, "conversion_clarity": 4}
+  },
+  "dimensions_b": {
+    "0": {"answer_directness": 5, "completeness": 4, "logical_flow": 4, "specificity": 4, "repetition": 4, "search_intent_fit": 5, "buyer_fit": 5, "credibility": 4, "conversion_clarity": 5},
+    "1": {"answer_directness": 4, "completeness": 3, "logical_flow": 4, "specificity": 2, "repetition": 2, "search_intent_fit": 4, "buyer_fit": 4, "credibility": 2, "conversion_clarity": 5},
+    "2": {"answer_directness": 5, "completeness": 5, "logical_flow": 5, "specificity": 5, "repetition": 3, "search_intent_fit": 5, "buyer_fit": 5, "credibility": 4, "conversion_clarity": 5},
+    "3": {"answer_directness": 3, "completeness": 3, "logical_flow": 3, "specificity": 3, "repetition": 3, "search_intent_fit": 4, "buyer_fit": 4, "credibility": 3, "conversion_clarity": 5},
+    "4": {"answer_directness": 5, "completeness": 3, "logical_flow": 5, "specificity": 3, "repetition": 2, "search_intent_fit": 5, "buyer_fit": 4, "credibility": 3, "conversion_clarity": 5}
+  },
+  "reasons": {
+    "0": "B jasno prowadzi przez obowiązki, terminy i sankcje do kontaktu, podczas gdy A jest chaotyczny i oparty na wygasłych terminach z 2020 roku.",
+    "1": "B ułatwia wybór zakresu i przejście do wyceny, choć pozostaje ogólnikowy, a A ginie w zduplikowanej i chaotycznej liście ofert.",
+    "2": "B konkretnie rozróżnia doradztwo od outsourcingu, opisuje zakresy i dane wejściowe oraz prowadzi do jasnego kontaktu.",
+    "3": "B wygrywa czytelną ścieżką wyboru dokumentu i kontaktu, choć traci punkty za ogólniki i niedopasowane odpowiedzi pod kilkoma nagłówkami.",
+    "4": "A wygrywa konkretnymi metodami, badanymi substancjami, zakresem akredytowanych usług i wyjaśnieniem celu monitoringu."
+  }
+}

@@ -37,7 +37,7 @@ from wilq.schemas import (
 from wilq.storage.local_state import local_state_store, state_db_path
 from wilq.storage.metric_store import metric_store
 
-REPORT_DATE = "2026-08-12"
+REPORT_DATE = "2026-08-13"
 REPORT_DIR = Path(__file__).resolve().parents[1] / "docs/agents/reports/benchmark"
 REPORT_PATH = REPORT_DIR / f"content-benchmark-{REPORT_DATE}.json"
 JUDGE_INPUT_PATH = REPORT_DIR / "llm-judge-input.json"
@@ -65,31 +65,31 @@ PAGES = (
         slug="bdo",
         label="BDO – co musi wiedzieć przedsiębiorca",
         url="https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
-        revision_id="content_revision_f4c23cfcd5b6449c83281545b4883e2c",
+        revision_id="content_revision_f40dc60393304cecbb785c900bfc2423",
     ),
     BenchmarkPage(
         slug="szkolenia",
         label="Szkolenia z ochrony środowiska",
         url="https://www.ekologus.pl/oferta/szkolenia/",
-        revision_id="content_revision_66f7eec3ec9646a5a8ed5327a44e3da8",
+        revision_id="content_revision_af6e7c77da764f66b19fa31e2a993a99",
     ),
     BenchmarkPage(
         slug="doradztwo",
         label="Doradztwo i outsourcing ekologiczny",
         url="https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
-        revision_id="content_revision_62ef7b61f6fd4a399a41d3ab33094fc9",
+        revision_id="content_revision_1f2963e9f53042e599d208a4e865be5b",
     ),
     BenchmarkPage(
         slug="opracowania-dokumentacji",
         label="Opracowania dokumentacji i ekspertyz",
         url="https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
-        revision_id="content_revision_b14c7fc23fcc4907aadf24c431cc656a",
+        revision_id="content_revision_c5aa6a9905cb4f468bd7a006e7d060ac",
     ),
     BenchmarkPage(
         slug="pomiary-i-analizy",
         label="Pomiary i analizy środowiska",
         url="https://www.ekologus.pl/oferta/pomiary-i-analizy/",
-        revision_id="content_revision_787c4e52b3f941f3a048a63355e8cf45",
+        revision_id="content_revision_25c6ea6ded714315abf37dfcb1380f92",
     ),
 )
 
