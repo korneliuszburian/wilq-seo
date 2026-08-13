@@ -22,7 +22,10 @@ from wilq.content.drafts.initial_full_draft_turn import (
 from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import _WORKING_NOTE
-from wilq.content.regulatory.policy import ContentRegulatoryRequirement
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryRequirement,
+    regulatory_assertion_matches,
+)
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 
@@ -220,6 +223,31 @@ def ground_unmet_regulatory_assertions(
         )
         if assertion is None:
             continue
+        target = next(
+            (
+                section_id
+                for section_id, section in sections.items()
+                if requirement_id in section.regulatory_requirement_ids
+            ),
+            None,
+        )
+        if target is None:
+            continue
+        current_body = next(
+            (
+                section.body_markdown
+                for section in output.sections
+                if section.section_id == target
+            ),
+            "",
+        )
+        if not replace_semantic_requirements and regulatory_assertion_matches(
+            text=current_body,
+            assertion=assertion,
+        ):
+            # A repair turn between the blocker and grounding already restored
+            # the exact concept; appending the fact again would duplicate it.
+            continue
         semantic_requirement = requirement_id in semantic_requirement_ids
         protected_terms = (
             sorted(
@@ -244,16 +272,6 @@ def ground_unmet_regulatory_assertions(
         ]
         facts = list(dict.fromkeys(fact for fact in facts if fact.strip()))
         if not facts:
-            continue
-        target = next(
-            (
-                section_id
-                for section_id, section in sections.items()
-                if requirement_id in section.regulatory_requirement_ids
-            ),
-            None,
-        )
-        if target is None:
             continue
         if replace_semantic_requirements and requirement_id in semantic_requirement_ids:
             replacement_facts: list[str] = []
@@ -330,15 +348,20 @@ _SOURCE_ATTRIBUTION_PREFIX = re.compile(
     re.IGNORECASE,
 )
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ])")
+_TRAILING_VERIFICATION_CLAUSE = re.compile(
+    r"\s*(?:,?\s*i\s+)?wymagają?\s+weryfikacj[^.]*\.?\s*$",
+    re.IGNORECASE,
+)
 
 
 def _document_ready_fact_text(fact_text: str, *, protected_terms: list[str] | None) -> str:
     """Project one approved review fact into reader-facing document text.
 
-    Strip source-attribution prefixes and drop editorial qualifier sentences
-    (e.g. "Wymaga weryfikacji przez człowieka") that belong to the review
-    packet, not to the public document. Sentences carrying a required
-    assertion term are never dropped, so grounding stays verifiable.
+    Strip source-attribution prefixes, drop editorial qualifier sentences
+    (e.g. "Wymaga weryfikacji przez człowieka") and trailing verification
+    clauses that belong to the review packet, not to the public document.
+    Text carrying a required assertion term is never dropped, so grounding
+    stays verifiable.
     """
 
     stripped = _SOURCE_ATTRIBUTION_PREFIX.sub("", fact_text).strip()
@@ -359,6 +382,11 @@ def _document_ready_fact_text(fact_text: str, *, protected_terms: list[str] | No
         )
     ]
     result = " ".join(kept) if kept else stripped
+    qualifier = _TRAILING_VERIFICATION_CLAUSE.search(result)
+    if qualifier and not any(
+        term in qualifier.group(0).casefold() for term in normalized_terms
+    ):
+        result = result[: qualifier.start()].rstrip(" ,;")
     if not result:
         return result
     return result[0].upper() + result[1:]

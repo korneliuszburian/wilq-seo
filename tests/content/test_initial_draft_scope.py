@@ -594,6 +594,38 @@ def test_regulatory_scope_repair_accepts_profile_owned_role_variants_in_approved
     assert document_scope_errors(proposal, repaired[0], regulatory_requirements=[requirement]) == []
 
 
+def test_grounding_skips_assertions_already_covered_by_repair_turns() -> None:
+    from wilq.content.drafts.regulatory_draft_repair import ground_unmet_regulatory_assertions
+
+    proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
+    output = output.model_copy(
+        update={
+            "sections": [
+                output.sections[0].model_copy(
+                    update={
+                        "body_markdown": (
+                            "Sprawdź obowiązki. Zgodnie z profilem działalności "
+                            "zwolnienie zależy od warunków ustawowych."
+                        )
+                    }
+                )
+            ]
+        }
+    )
+
+    grounded = ground_unmet_regulatory_assertions(
+        output,
+        planning_input=planning_input,
+        proposal=proposal,
+        missing_codes=[
+            "regulatory_document_assertion:bdo_exemptions:bdo_exemption_condition"
+        ],
+    )
+
+    assert grounded.sections[0].body_markdown == output.sections[0].body_markdown
+    assert fact.extracted_fact not in grounded.sections[0].body_markdown
+
+
 def test_grounding_projects_facts_without_review_qualifiers_and_attribution() -> None:
     proposal, planning_input, output, _, _ = _regulatory_repair_fixture()
     requirement = planning_input.regulatory_coverage.requirements[0]
