@@ -2624,7 +2624,7 @@
       "target_card_id": "ekologus_service_operat_wodnoprawny",
       "target_card_type": "service",
       "target_card_title": "Operaty i pozwolenia wodnoprawne",
-      "service_fit_terms": ["ippc", "pozwolenie zintegrowane"],
+      "service_fit_terms": ["ippc"],
       "buyer_problem_terms": ["nowa instalacja IPPC wymaga dokumentacji"],
       "buyer_triggers": ["zakład przygotowuje wniosek o pozwolenie zintegrowane"]
     },
@@ -2813,7 +2813,7 @@
       "target_card_id": "ekologus_service_operat_wodnoprawny",
       "target_card_type": "service",
       "target_card_title": "Operaty i pozwolenia wodnoprawne",
-      "service_fit_terms": ["pozwolenie odpadowe", "gospodarka odpadami"],
+      "service_fit_terms": ["pozwolenie odpadowe"],
       "buyer_problem_terms": ["brak wniosku o pozwolenie dotyczące odpadów"],
       "buyer_triggers": ["zakład planuje wytwarzanie lub przetwarzanie odpadów"]
     },
@@ -2981,7 +2981,7 @@
       "target_card_id": "ekologus_service_operat_wodnoprawny",
       "target_card_type": "service",
       "target_card_title": "Operaty i pozwolenia wodnoprawne",
-      "service_fit_terms": ["ekspertyzy środowiskowe", "dokumentacje środowiskowe", "pozwolenia", "decyzje administracyjne"],
+      "service_fit_terms": ["ekspertyzy środowiskowe", "dokumentacje środowiskowe", "decyzje administracyjne"],
       "buyer_problem_terms": ["brak specjalistycznej dokumentacji potrzebnej do uzyskania pozwolenia lub decyzji administracyjnej"],
       "buyer_triggers": ["zakład przygotowuje wniosek o pozwolenie albo decyzję administracyjną"]
     },
