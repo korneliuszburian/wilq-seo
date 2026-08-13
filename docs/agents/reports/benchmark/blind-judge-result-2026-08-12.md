@@ -100,3 +100,21 @@ ale tylko 148 słów vs 426 current — semantic review nie nagradza głębi.
 wzbogacenia knowledge base o szczegółowe fakty per usługa (zakresy, procesy, normy, ceny,
 obowiązki) — to osobny program danych, wykraczający poza prompt/pipeline. Bez tego generowana
 treść pozostanie strukturalnie lepsza, ale merytorycznie płytsza niż existing content.
+
+## Q42: wzbogacenie source facts z existing WP content (2026-08-13)
+
+Root cause luki głębi (source facts) naprawiony częściowo: dodano 5 konkretnych
+faktów per karta z existing WP content (4 karty usługowe: po 1 -> 6 faktów).
+
+Pomiar (doradztwo, świeża generacja):
+
+| Wersja | Słowa | Semantic |
+|---|---|---|
+| rev19 (Q40, 1 fakt) | 148 | 9/9 |
+| rev21 (Q40+Q42, 6 faktów) | 269 (+82%) | 9/9 strong, 0 findings |
+| current WordPress | 426 | — |
+
+Fakty Q42 realnie pogłębiły treść (KOBiZE, odpadowe, IPPC, pobory, stała obsługa)
+przy zachowaniu 9/9. Generowana treść nadal ~37% krótsza niż current, ale luka
+zmniejszona z ~65% do ~37%. Pełne domknięcie wymaga dalszego wzbogacania wiedzy
+(fakty per podproces) — mechanizm potwierdzony, skala to program danych.
