@@ -22,6 +22,7 @@ def document_scope_errors(
     *,
     regulatory_requirements: list[ContentRegulatoryRequirement] | None = None,
     source_facts_by_section: dict[str, list[str]] | None = None,
+    source_fact_corpus: list[str] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     draftable_sections = draftable_planning_sections(proposal.sections)
@@ -73,7 +74,18 @@ def document_scope_errors(
                 )
     if source_facts_by_section is not None:
         output_by_section_id = {section.section_id: section for section in output.sections}
-        distinctive_tokens = _distinctive_fact_tokens(source_facts_by_section)
+        corpus = (
+            source_fact_corpus
+            if source_fact_corpus is not None
+            else list(
+                dict.fromkeys(
+                    summary
+                    for summaries in source_facts_by_section.values()
+                    for summary in summaries
+                )
+            )
+        )
+        distinctive_tokens = _distinctive_fact_tokens(corpus)
         for section in draftable_sections:
             fact_summaries = source_facts_by_section.get(section.section_id, [])
             if section.regulatory_requirement_ids or not fact_summaries:
@@ -89,23 +101,22 @@ def document_scope_errors(
     return errors
 
 
-def _distinctive_fact_tokens(
-    source_facts_by_section: dict[str, list[str]],
-) -> frozenset[str]:
+def _distinctive_fact_tokens(source_fact_corpus: list[str]) -> frozenset[str]:
     """Return fact tokens that are specific rather than shared boilerplate.
 
     A token that appears in only one or two of the card's fact summaries is a
-    reliable concrete signal (e.g. "impaktor", "grawimetryczna", "FID"), while
-    shared words such as "obejmować", "pomiary" or "emisji" appear across every
-    summary and would let a generic section pass the gate.
+    reliable concrete signal (e.g. "respirabilny", "grawimetryczna", "FID"),
+    while shared words such as "obejmować", "pomiary" or "emisji" appear across
+    every summary and would let a generic section pass the gate. The corpus
+    must be the full card fact set, not the per-section selection, so that
+    words shared by several facts never look distinctive.
     """
 
     counts: dict[str, int] = {}
-    for summaries in source_facts_by_section.values():
-        for summary in summaries:
-            for token in set(normalize_search_text(summary).split()):
-                if len(token) >= 5:
-                    counts[token] = counts.get(token, 0) + 1
+    for summary in source_fact_corpus:
+        for token in set(normalize_search_text(summary).split()):
+            if len(token) >= 5:
+                counts[token] = counts.get(token, 0) + 1
     return frozenset(token for token, count in counts.items() if count <= 2)
 
 
