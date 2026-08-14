@@ -11,7 +11,15 @@ from wilq.codex.app_server import (
 )
 from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
+from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
+from wilq.content.drafts.fact_selection import approved_source_facts_by_section
+from wilq.content.drafts.initial_draft_run import safe_initial_draft_run_error
+from wilq.content.drafts.initial_draft_validation import (
+    document_scope_errors_for_planning_input,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftBlocker,
     ContentInitialDraftBlockerCode,
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
@@ -19,6 +27,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_output_schema
+from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.content.workflow.target.new_page import (
@@ -33,11 +42,17 @@ from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore
 
+_NewPagePrePersistResult = (
+    tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace]
+    | ContentInitialDraftResponse
+)
+
 
 def generate_new_page_initial_draft(
     *,
     brief: ContentNewPageBrief,
     foundation: ContentNewPagePlanningFoundation,
+    planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
     workspace: ContentNewPageCanonicalDocumentWorkspace,
     request: ContentInitialDraftRequest,
@@ -48,7 +63,7 @@ def generate_new_page_initial_draft(
 ) -> ContentInitialDraftResponse:
     if workspace.status != "ready_for_document":
         return _blocked(workspace, proposal, "planning_not_ready", workspace.safe_next_step)
-    if _request_mismatch(proposal, request):
+    if _request_mismatch(planning_input, proposal, request):
         return _blocked(
             workspace, proposal, "proposal_mismatch", "Odśwież dokładny plan przed generowaniem."
         )
@@ -63,10 +78,31 @@ def generate_new_page_initial_draft(
             "Otwórz zapisaną rewizję zamiast tworzyć drugi pierwszy dokument.",
         )
     run = _start_run(proposal, endpoint_path, run_store)
-    execution = _execute_turn(brief, proposal, client, run, run_store, workspace)
+    execution = _execute_turn(
+        brief,
+        planning_input,
+        proposal,
+        client,
+        run,
+        run_store,
+        workspace,
+    )
     if isinstance(execution, ContentInitialDraftResponse):
         return execution
     output, runtime = execution
+    prepared = _prepare_output_for_persistence(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        runtime=runtime,
+        client=client,
+        run=run,
+        run_store=run_store,
+        workspace=workspace,
+    )
+    if isinstance(prepared, ContentInitialDraftResponse):
+        return prepared
+    output, runtime = prepared
     completed = run.model_copy(update={"status": "completed", "completed_at": utc_now()})
     try:
         result = append_new_page_initial_revision(
@@ -113,6 +149,112 @@ def generate_new_page_initial_draft(
     )
 
 
+def _prepare_output_for_persistence(
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+    runtime: ContentCodexRuntimeTrace,
+    client: CodexAppServerClientProtocol,
+    run: CodexRun,
+    run_store: LocalStateStore,
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+) -> _NewPagePrePersistResult:
+    altered = alter_draft_towards_persistence(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        trace=runtime,
+        client=client,
+        run_store=run_store,
+        output_blocker=lambda candidate: _output_blocker(
+            planning_input,
+            proposal,
+            candidate,
+        ),
+    )
+    if altered.status == "blocked":
+        if altered.blocker is None:
+            raise RuntimeError("Blocked new-page draft alteration requires a blocker.")
+        return _finish_quality_blocked(
+            workspace=workspace,
+            proposal=proposal,
+            run=run,
+            runtime=altered.trace or runtime,
+            blocker=altered.blocker,
+            run_store=run_store,
+        )
+    if altered.status == "assurance_failure":
+        assurance = altered.assurance
+        if not isinstance(assurance, ContentDraftAssuranceFailure):
+            raise RuntimeError("Failed new-page draft assurance requires its failure payload.")
+        return _finish_quality_blocked(
+            workspace=workspace,
+            proposal=proposal,
+            run=run,
+            runtime=altered.trace or runtime,
+            blocker=ContentInitialDraftBlocker(
+                code=assurance.code,
+                label=assurance.label,
+                reason=assurance.reason,
+                next_step=assurance.next_step,
+                source_codes=assurance.source_codes,
+            ),
+            run_store=run_store,
+        )
+    if altered.output is None:
+        raise RuntimeError("Ready new-page draft alteration requires an output.")
+    return altered.output, altered.trace or runtime
+
+
+def _output_blocker(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+) -> ContentInitialDraftBlocker | None:
+    errors = document_scope_errors_for_planning_input(
+        planning_input,
+        proposal,
+        output,
+        include_regulatory=False,
+    )
+    if not errors:
+        return None
+    return ContentInitialDraftBlocker(
+        code="document_scope_mismatch",
+        label="Dokument nie odpowiada zatwierdzonemu planowi",
+        reason="Model zmienił strukturę albo plan nie ma kompletnego lineage.",
+        next_step="Odrzuć wynik; nie naprawiaj struktury ręcznie po generowaniu.",
+        source_codes=errors,
+    )
+
+
+def _finish_quality_blocked(
+    *,
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+    proposal: ContentPlanningProposal,
+    run: CodexRun,
+    runtime: ContentCodexRuntimeTrace,
+    blocker: ContentInitialDraftBlocker,
+    run_store: LocalStateStore,
+) -> ContentInitialDraftResponse:
+    _finish_run(
+        run_store,
+        run,
+        status="blocked",
+        error=safe_initial_draft_run_error(blocker),
+    )
+    return ContentInitialDraftResponse(
+        status="blocked",
+        work_item_id=workspace.work_item_id,
+        proposal_id=proposal.proposal_id,
+        run_id=run.id,
+        runtime=runtime,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
+
+
 def _start_run(
     proposal: ContentPlanningProposal, endpoint_path: str, run_store: LocalStateStore
 ) -> CodexRun:
@@ -133,6 +275,7 @@ def _start_run(
 
 def _execute_turn(
     brief: ContentNewPageBrief,
+    planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
     client: CodexAppServerClientProtocol,
     run: CodexRun,
@@ -141,7 +284,7 @@ def _execute_turn(
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | ContentInitialDraftResponse:
     turn: CodexAppServerTurnResult | None
     try:
-        turn = client.run_structured_turn(_turn_request(brief, proposal))
+        turn = client.run_structured_turn(_turn_request(brief, planning_input, proposal))
     except Exception:
         turn = None
     if turn is None or turn.status != "completed" or turn.output_text is None:
@@ -197,14 +340,18 @@ def _finish_run(
 
 
 def _turn_request(
-    brief: ContentNewPageBrief, proposal: ContentPlanningProposal
+    brief: ContentNewPageBrief,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
 ) -> CodexAppServerStructuredTurnRequest:
     return CodexAppServerStructuredTurnRequest(
         instruction=(
             "Napisz po polsku roboczy dokument nowej strony wyłącznie z zatwierdzonego "
             "planu. Nie zakładaj istniejącego URL-a, nie publikuj, nie wykonuj write i "
             "zwróć publish_ready=false. Zachowaj dokładne sekcje, FAQ, CTA i targety "
-            "linków z planu. Zwróć tylko JSON zgodny ze schema."
+            "linków z planu. W każdej sekcji użyj konkretnego zatwierdzonego faktu "
+            "przypisanego w approved_source_facts_by_section, jeśli ta lista nie jest pusta. "
+            "Nie dodawaj faktów spoza przekazanego kontekstu. Zwróć tylko JSON zgodny ze schema."
         ),
         application_context=json.dumps(
             {
@@ -224,6 +371,10 @@ def _turn_request(
                 "document_scope": [
                     item.section_id for item in draftable_planning_sections(proposal.sections)
                 ],
+                "approved_source_facts_by_section": approved_source_facts_by_section(
+                    planning_input,
+                    proposal,
+                ),
             },
             ensure_ascii=False,
             sort_keys=True,
@@ -233,12 +384,18 @@ def _turn_request(
 
 
 def _request_mismatch(
-    proposal: ContentPlanningProposal, request: ContentInitialDraftRequest
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    request: ContentInitialDraftRequest,
 ) -> bool:
     return bool(
         proposal.proposal_id != request.expected_proposal_id
         or proposal.planning_digest != request.expected_planning_digest
         or proposal.planning_input_digest != request.expected_planning_input_digest
+        or planning_input.goal != "new_page"
+        or planning_input.work_item_id != proposal.work_item_id
+        or planning_input.planning_input_digest != request.expected_planning_input_digest
+        or planning_input.confirmed_service_card_id != proposal.service_card_id
     )
 
 

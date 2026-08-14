@@ -15,6 +15,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftResponse,
 )
 from wilq.content.planning.dynamic_input import (
+    ContentPlanningInput,
     ContentPlanningInputReadinessResponse,
     build_new_page_planning_input,
     content_planning_input_readiness,
@@ -333,10 +334,11 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
     def create_new_page_initial_draft(
         brief_id: str, request: ContentInitialDraftRequest
     ) -> ContentInitialDraftResponse:
-        brief, foundation, proposal, workspace = _new_page_draft_inputs(brief_id)
+        brief, foundation, planning_input, proposal, workspace = _new_page_draft_inputs(brief_id)
         return generate_new_page_initial_draft(
             brief=brief,
             foundation=foundation,
+            planning_input=planning_input,
             proposal=proposal,
             workspace=workspace,
             request=request,
@@ -523,6 +525,7 @@ def _new_page_draft_inputs(
 ) -> tuple[
     ContentNewPageBrief,
     ContentNewPagePlanningFoundation,
+    ContentPlanningInput,
     ContentPlanningProposal,
     ContentNewPageCanonicalDocumentWorkspace,
 ]:
@@ -534,7 +537,27 @@ def _new_page_draft_inputs(
     proposal = None if proposal_status is None else proposal_status.proposal
     if brief is None or foundation is None or proposal is None:
         raise HTTPException(status_code=409, detail="Brakuje dokładnego planu nowej strony.")
-    return brief, foundation, proposal, workspace
+    planning_result = build_new_page_planning_input(
+        brief=brief,
+        foundation=foundation,
+        overlap_guard=build_new_page_overlap_guard(
+            brief,
+            catalog=build_content_inventory_catalog_cached(),
+        ),
+        service_card=new_page_service_card(foundation.service_card_id),
+    )
+    planning_input = planning_result.planning_input
+    if (
+        planning_input is None
+        or planning_result.blockers
+        or planning_input.planning_input_digest != proposal.planning_input_digest
+        or planning_input.planning_input_digest != workspace.planning_input_digest
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Wejście do planu nowej strony zmieniło się; odśwież plan przed szkicem.",
+        )
+    return brief, foundation, planning_input, proposal, workspace
 
 
 def _run_new_page_planning_generation(

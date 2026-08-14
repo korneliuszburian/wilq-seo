@@ -1,19 +1,31 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
-from wilq.codex.app_server import CodexAppServerTurnResult
+from wilq.codex.app_server import (
+    CodexAppServerStructuredTurnRequest,
+    CodexAppServerTurnResult,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
+    ContentInitialDraftSectionOutput,
 )
+from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.regulatory.policy import ContentRegulatoryCoverage
 from wilq.content.workflow.contracts.contracts import ContentDraftRevisionReviewRequest
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
-from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningProposal,
+    ContentPlanningSection,
+)
+from wilq.content.workflow.documents.revisions import ContentDraftRevisionPageAssets
 from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.content.workflow.target.new_page import (
+    ContentNewPageBrief,
     ContentNewPageBriefInput,
     ContentNewPagePlanningFoundation,
     build_new_page_brief,
@@ -82,13 +94,13 @@ def _exact_inputs() -> tuple[ContentNewPagePlanningFoundation, ContentPlanningPr
         search_intent=brief.search_intent,
         cta_direction="Poproś o konsultację.",
         sections=[
-            {
-                "section_id": "new_page_section_01",
-                "heading": "Jak przygotować dokumentację",
-                "purpose": "Wyjaśnia pierwszy krok.",
-                "inventory_disposition": "create",
-                "evidence_ids": ["ev_service"],
-            }
+            ContentPlanningSection(
+                section_id="new_page_section_01",
+                heading="Jak przygotować dokumentację",
+                purpose="Wyjaśnia pierwszy krok.",
+                inventory_disposition="create",
+                evidence_ids=["ev_service"],
+            )
         ],
         search_demand=ContentSearchDemandEvidence(
             status="missing",
@@ -99,6 +111,21 @@ def _exact_inputs() -> tuple[ContentNewPagePlanningFoundation, ContentPlanningPr
         source_connectors=["public_site"],
     )
     return foundation, proposal
+
+
+def _planning_input_for_new_page(
+    foundation: ContentNewPagePlanningFoundation,
+    proposal: ContentPlanningProposal,
+) -> ContentPlanningInput:
+    return ContentPlanningInput.model_construct(
+        planning_input_digest=proposal.planning_input_digest,
+        work_item_id=foundation.work_item_id,
+        goal="new_page",
+        confirmed_service_card_id=foundation.service_card_id,
+        regulatory_coverage=ContentRegulatoryCoverage(),
+        source_facts=[],
+        evidence_ids=proposal.evidence_ids,
+    )
 
 
 def test_new_page_canonical_document_uses_exact_generated_plan() -> None:
@@ -177,13 +204,13 @@ def test_new_page_delivery_readiness_fails_closed_before_exact_approval() -> Non
     )
     assert ready.status == "ready_for_action"
 
-    ready = build_new_page_canonical_document_workspace(
+    document_workspace = build_new_page_canonical_document_workspace(
         brief=brief, foundation=foundation, proposal=proposal
     )
-    assert ready is not None
-    assert ready.status == "ready_for_document"
-    assert ready.proposal_id == proposal.proposal_id
-    assert ready.outline[0].section_id == "new_page_section_01"
+    assert document_workspace is not None
+    assert document_workspace.status == "ready_for_document"
+    assert document_workspace.proposal_id == proposal.proposal_id
+    assert document_workspace.outline[0].section_id == "new_page_section_01"
 
 
 def test_new_page_canonical_document_rejects_mismatched_lineage_and_blank_approval() -> None:
@@ -198,6 +225,7 @@ def test_new_page_canonical_document_rejects_mismatched_lineage_and_blank_approv
             proposed_ia_location="Usługi → Dokumentacja środowiskowa",
         )
     ).model_copy(update={"brief_id": foundation.brief_id, "brief_digest": foundation.brief_digest})
+    assert proposal.new_page_document_identity is not None
     mismatched_identity = proposal.new_page_document_identity.model_copy(
         update={"brief_digest": "e" * 64}
     )
@@ -281,7 +309,16 @@ def test_new_page_workspace_requires_exact_generated_plan_and_truthful_top_level
         )
 
 
-def _new_page_append_context(tmp_path):
+def _new_page_append_context(
+    tmp_path: Path,
+) -> tuple[
+    ContentNewPageBrief,
+    ContentNewPagePlanningFoundation,
+    ContentPlanningProposal,
+    ContentInitialDraftModelOutput,
+    ContentWorkflowStore,
+    CodexRun,
+]:
     foundation, proposal = _exact_inputs()
     brief = build_new_page_brief(
         ContentNewPageBriefInput(
@@ -294,19 +331,22 @@ def _new_page_append_context(tmp_path):
         )
     ).model_copy(update={"brief_id": foundation.brief_id, "brief_digest": foundation.brief_digest})
     output = ContentInitialDraftModelOutput(
-        page_assets={
-            "wordpress_title": brief.title,
-            "meta_title": "Dokumentacja środowiskowa | Ekologus",
-            "meta_description": "Przygotuj dokumentację środowiskową inwestycji.",
-            "h1": brief.title,
-            "lead": "Sprawdź pierwszy krok przed rozpoczęciem inwestycji.",
-        },
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title=brief.title,
+            meta_title="Dokumentacja środowiskowa | Ekologus",
+            meta_description="Przygotuj dokumentację środowiskową inwestycji.",
+            h1=brief.title,
+            lead="Sprawdź pierwszy krok przed rozpoczęciem inwestycji.",
+        ),
         sections=[
-            {
-                "section_id": "new_page_section_01",
-                "heading": "Jak przygotować dokumentację",
-                "body_markdown": "Zacznij od sprawdzenia zakresu inwestycji.",
-            }
+            ContentInitialDraftSectionOutput(
+                section_id="new_page_section_01",
+                heading="Jak przygotować dokumentację",
+                body_markdown=(
+                    "Zacznij od sprawdzenia zakresu inwestycji i uporządkowania danych. "
+                    "Następnie zaplanuj dokumenty potrzebne do dalszych prac."
+                ),
+            )
         ],
     )
     store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
@@ -326,7 +366,7 @@ def _new_page_append_context(tmp_path):
     return brief, foundation, proposal, output, store, completed_run
 
 
-def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path) -> None:
+def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path: Path) -> None:
     brief, foundation, proposal, output, store, completed_run = _new_page_append_context(
         tmp_path
     )
@@ -341,7 +381,7 @@ def test_new_page_append_rejects_stale_plan_before_persisting(tmp_path) -> None:
     assert store.load_draft_revision_state(foundation.work_item_id).revision_count == 0
 
 
-def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
+def test_new_page_revision_review_is_exact_bound(tmp_path: Path) -> None:
     brief, foundation, proposal, output, store, completed_run = _new_page_append_context(
         tmp_path
     )
@@ -432,7 +472,7 @@ def test_new_page_revision_review_is_exact_bound(tmp_path) -> None:
         )
 
 
-def test_new_page_generator_appends_only_the_exact_generated_plan(tmp_path) -> None:
+def test_new_page_generator_appends_only_the_exact_generated_plan(tmp_path: Path) -> None:
     brief, foundation, proposal, output, _, _ = _new_page_append_context(tmp_path)
     store = ContentWorkflowStore(tmp_path / "generator.sqlite3")
     workspace = build_new_page_canonical_document_workspace(
@@ -441,7 +481,9 @@ def test_new_page_generator_appends_only_the_exact_generated_plan(tmp_path) -> N
     assert workspace is not None
 
     class FakeClient:
-        def run_structured_turn(self, request):
+        def run_structured_turn(
+            self, request: CodexAppServerStructuredTurnRequest
+        ) -> CodexAppServerTurnResult:
             assert "do_not_write_vendor" in request.application_context
             return CodexAppServerTurnResult(
                 status="completed", output_text=json.dumps(output.model_dump(mode="json"))
@@ -450,6 +492,7 @@ def test_new_page_generator_appends_only_the_exact_generated_plan(tmp_path) -> N
     result = generate_new_page_initial_draft(
         brief=brief,
         foundation=foundation,
+        planning_input=_planning_input_for_new_page(foundation, proposal),
         proposal=proposal,
         workspace=workspace,
         request=ContentInitialDraftRequest(
@@ -470,7 +513,9 @@ def test_new_page_generator_appends_only_the_exact_generated_plan(tmp_path) -> N
     assert result.runtime.status == "completed"
 
 
-def test_new_page_generator_rejects_stale_plan_before_starting_codex(tmp_path) -> None:
+def test_new_page_generator_rejects_stale_plan_before_starting_codex(
+    tmp_path: Path,
+) -> None:
     brief, foundation, proposal, _, _, _ = _new_page_append_context(tmp_path)
     workspace = build_new_page_canonical_document_workspace(
         brief=brief, foundation=foundation, proposal=proposal
@@ -478,13 +523,16 @@ def test_new_page_generator_rejects_stale_plan_before_starting_codex(tmp_path) -
     assert workspace is not None
 
     class NoCallClient:
-        def run_structured_turn(self, request):
+        def run_structured_turn(
+            self, request: CodexAppServerStructuredTurnRequest
+        ) -> CodexAppServerTurnResult:
             raise AssertionError("stale planning binding must not call Codex")
 
     store = ContentWorkflowStore(tmp_path / "stale-generator.sqlite3")
     result = generate_new_page_initial_draft(
         brief=brief,
         foundation=foundation,
+        planning_input=_planning_input_for_new_page(foundation, proposal),
         proposal=proposal,
         workspace=workspace,
         request=ContentInitialDraftRequest(

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import re
 
-from wilq.content.drafts.fact_selection import approved_planning_source_facts
+from wilq.content.drafts.fact_selection import (
+    approved_planning_source_facts,
+    approved_source_facts_by_section,
+)
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
-from wilq.content.drafts.initial_full_draft_turn import _source_facts_by_section
 from wilq.content.knowledge.text_matching import (
     normalize_search_text,
     normalized_term_matches,
@@ -137,7 +139,7 @@ def repair_missing_source_fact_signals(
         for code in missing_codes
         if code.startswith(_MISSING_SOURCE_FACT_SIGNAL_PREFIX)
     }
-    facts_by_section = _source_fact_summaries_by_section(planning_input, proposal)
+    facts_by_section = source_fact_summaries_by_section(planning_input, proposal)
     source_fact_corpus = [
         fact.extracted_fact
         for fact in approved_planning_source_facts(
@@ -191,12 +193,12 @@ def repair_missing_source_fact_signals(
     )
 
 
-def _source_fact_summaries_by_section(
+def source_fact_summaries_by_section(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
 ) -> dict[str, list[str]]:
     projection: dict[str, list[str]] = {}
-    for row in _source_facts_by_section(planning_input, proposal):
+    for row in approved_source_facts_by_section(planning_input, proposal):
         section_id = row.get("section_id")
         source_facts = row.get("source_facts")
         if not isinstance(section_id, str) or not isinstance(source_facts, list):
@@ -218,5 +220,6 @@ __all__ = [
     "distinctive_fact_tokens",
     "document_ready_fact_text",
     "repair_missing_source_fact_signals",
+    "source_fact_summaries_by_section",
     "source_fact_signal_errors",
 ]

@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_source_facts
 from wilq.content.knowledge.text_matching import (
     normalize_search_text,
     normalized_term_matches,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.workflow.decisions.planning import ContentPlanningSection
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningProposal,
+    ContentPlanningSection,
+)
 
 _MAX_SOURCE_FACTS_PER_SECTION = 4
 
@@ -56,6 +60,36 @@ def select_source_fact_contexts_for_section(
         reverse=True,
     )[:_MAX_SOURCE_FACTS_PER_SECTION]
     return [_source_fact_for_writer(fact) for fact in ranked_facts]
+
+
+def approved_source_facts_by_section(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> list[dict[str, object]]:
+    """Project approved planning facts onto their concrete draft targets."""
+
+    approved_facts = approved_planning_source_facts(
+        planning_input,
+        include_official=True,
+    )
+    rows: list[dict[str, object]] = []
+    for section in draftable_planning_sections(proposal.sections):
+        source_facts = (
+            []
+            if section.regulatory_requirement_ids
+            else select_source_fact_contexts_for_section(
+                approved_facts,
+                section=section,
+                service_card_id=proposal.service_card_id,
+            )
+        )
+        rows.append(
+            {
+                "section_id": section.section_id,
+                "source_facts": source_facts,
+            }
+        )
+    return rows
 
 
 def _source_fact_matches_section(
@@ -108,5 +142,6 @@ def _source_fact_for_writer(fact: ContentSourceFact) -> dict[str, object]:
 
 __all__ = [
     "approved_planning_source_facts",
+    "approved_source_facts_by_section",
     "select_source_fact_contexts_for_section",
 ]

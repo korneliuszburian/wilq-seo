@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 from wilq.content.canonical.urls import content_is_safe_public_url
-from wilq.content.drafts.grounding import source_fact_signal_errors
+from wilq.content.drafts.fact_selection import approved_planning_source_facts
+from wilq.content.drafts.grounding import (
+    source_fact_signal_errors,
+    source_fact_summaries_by_section,
+)
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
+from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     regulatory_requirement_assertion_errors,
@@ -92,4 +97,30 @@ def document_scope_errors(
     return errors
 
 
-__all__ = ["document_scope_errors"]
+def document_scope_errors_for_planning_input(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+    *,
+    include_regulatory: bool = True,
+) -> list[str]:
+    """Validate one candidate against exact plan structure and approved facts."""
+
+    return document_scope_errors(
+        proposal,
+        output,
+        regulatory_requirements=(
+            planning_input.regulatory_coverage.requirements if include_regulatory else None
+        ),
+        source_facts_by_section=source_fact_summaries_by_section(planning_input, proposal),
+        source_fact_corpus=[
+            fact.extracted_fact
+            for fact in approved_planning_source_facts(
+                planning_input,
+                include_official=True,
+            )
+        ],
+    )
+
+
+__all__ = ["document_scope_errors", "document_scope_errors_for_planning_input"]
