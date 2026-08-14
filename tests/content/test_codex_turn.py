@@ -1,3 +1,4 @@
+import pytest
 from pydantic import BaseModel, Field
 
 from wilq.codex.app_server import CodexAppServerTurnResult
@@ -48,6 +49,15 @@ def test_shared_trace_mapper_preserves_event_and_usage() -> None:
         item_types=["reasoning", "agentMessage"],
         external_call_attempted=True,
     )
+
+
+def test_shared_mapping_raises_one_consistent_missing_key_message() -> None:
+    with pytest.raises(RuntimeError, match="Codex output schema is missing"):
+        codex_turn.mapping({}, "missing_key")
+    with pytest.raises(RuntimeError, match="Codex output schema is missing"):
+        codex_turn.properties({})
+    with pytest.raises(RuntimeError, match="Codex output schema is missing"):
+        codex_turn.definition({}, "missing")
 
 
 def test_at_least_two_callers_use_the_shared_module() -> None:
