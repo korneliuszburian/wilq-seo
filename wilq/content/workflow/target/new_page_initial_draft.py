@@ -465,8 +465,6 @@ def _blocked(
     runtime: ContentCodexRuntimeTrace | None = None,
     status: Literal["blocked", "failed", "conflict"] = "blocked",
 ) -> ContentInitialDraftResponse:
-    from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
-
     return ContentInitialDraftResponse(
         status=status,
         work_item_id=workspace.work_item_id,

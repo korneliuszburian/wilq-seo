@@ -12,7 +12,6 @@ from wilq.content.drafts import (
     grounding,
     initial_draft_assurance_repair,
     initial_full_draft,
-    initial_full_draft_turn,
 )
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
 from wilq.content.drafts.generated_claim_safety import (
@@ -404,7 +403,7 @@ def test_missing_signal_repair_appends_approved_facts(
     )
 
     assert "impaktorem" in repaired.sections[0].body_markdown
-    projected_rows = initial_full_draft_turn._source_facts_by_section(
+    projected_rows = fact_selection.approved_source_facts_by_section(
         planning_input,
         proposal,
     )

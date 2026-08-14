@@ -20,7 +20,7 @@ _VAGUE_CTA_OPENER = re.compile(
     re.IGNORECASE,
 )
 _WEAK_CTA_LITERALS = frozenset({"kliknij tutaj", "skontaktuj się", "czytaj dalej"})
-_WORKING_NOTE = re.compile(
+WORKING_NOTE = re.compile(
     r"(?:weryfikacj[ieą]? przez człowieka|przed wykorzystaniem|"
     r"wymagają weryfikacj|do weryfikacji|notatk[ae] robocze?|"
     r"weryfikacja przez człowieka|zweryfikować przez człowieka)",
@@ -202,7 +202,7 @@ def weak_cta(cta: str) -> bool:
 
 def _first_working_note(markdown: str) -> str | None:
     for paragraph in markdown.split("\n\n"):
-        if _WORKING_NOTE.search(paragraph) is not None:
+        if WORKING_NOTE.search(paragraph) is not None:
             return _paragraph_example(paragraph)
     return None
 

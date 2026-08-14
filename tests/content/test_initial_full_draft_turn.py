@@ -5,7 +5,6 @@ from types import SimpleNamespace
 
 import pytest
 
-import wilq.content.drafts.initial_full_draft_turn as draft_turn
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.content.drafts import fact_selection, initial_full_draft
 from wilq.content.drafts.initial_draft_readability import readability_issues_for_output
@@ -353,7 +352,7 @@ def test_source_facts_by_section_grounds_every_bdo_section(
 ) -> None:
     planning_input, proposal = bdo_source_fact_mapping
 
-    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+    mapping = fact_selection.approved_source_facts_by_section(planning_input, proposal)
 
     assert len(planning_input.source_facts) == 12
     assert len(mapping) == 8
@@ -372,7 +371,7 @@ def test_source_facts_by_section_carries_fact_identity_summary_and_evidence(
 ) -> None:
     planning_input, proposal = bdo_source_fact_mapping
 
-    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+    mapping = fact_selection.approved_source_facts_by_section(planning_input, proposal)
 
     for row in mapping:
         for fact in row["source_facts"]:
@@ -492,7 +491,7 @@ def test_initial_draft_turn_exposes_approved_source_facts_by_section(
 
     context = json.loads(request.untrusted_context)
     assert context["approved_source_facts_by_section"] == (
-        draft_turn._source_facts_by_section(planning_input, proposal)
+        fact_selection.approved_source_facts_by_section(planning_input, proposal)
     )
 
 
@@ -501,7 +500,7 @@ def test_source_facts_by_section_prefers_direct_term_match_over_fallback(
 ) -> None:
     planning_input, proposal = bdo_source_fact_mapping
 
-    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+    mapping = fact_selection.approved_source_facts_by_section(planning_input, proposal)
     records = next(row for row in mapping if row["section_id"] == "section_records")
 
     assert [fact["source_fact_id"] for fact in records["source_facts"]] == ["bdo_records_fact"]
@@ -581,7 +580,7 @@ def test_source_facts_by_section_ranks_and_caps_service_fallback_facts(
         }
     )
 
-    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+    mapping = fact_selection.approved_source_facts_by_section(planning_input, proposal)
     selected = mapping[0]["source_facts"]
 
     assert [fact["source_fact_id"] for fact in selected] == [
@@ -623,7 +622,7 @@ def test_source_facts_by_section_caps_total_facts_across_sections(
         }
     )
 
-    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+    mapping = fact_selection.approved_source_facts_by_section(planning_input, proposal)
     total_facts = sum(len(row["source_facts"]) for row in mapping)
 
     assert all(
@@ -699,7 +698,7 @@ def test_source_facts_by_section_ranks_direct_matches_by_section_overlap(
         lambda: (generic_fact, specific_fact, unrelated_fact),
     )
 
-    mapping = draft_turn._source_facts_by_section(planning_input, proposal)
+    mapping = fact_selection.approved_source_facts_by_section(planning_input, proposal)
     selected = mapping[0]["source_facts"]
 
     assert selected[0]["source_fact_id"] == "specific_fee_fact"

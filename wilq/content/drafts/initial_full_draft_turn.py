@@ -92,7 +92,7 @@ def initial_full_draft_turn_request(
                     if section.inventory_disposition == "remove_review_required"
                 ],
             },
-            "approved_source_facts_by_section": _source_facts_by_section(
+            "approved_source_facts_by_section": approved_source_facts_by_section(
                 planning_input,
                 proposal,
             ),
@@ -544,15 +544,6 @@ def _regulatory_facts_by_section(
     ]
 
 
-def _source_facts_by_section(
-    planning_input: ContentPlanningInput,
-    proposal: ContentPlanningProposal,
-) -> list[dict[str, object]]:
-    """Compatibility alias for the shared fact-selection projection."""
-
-    return approved_source_facts_by_section(planning_input, proposal)
-
-
 def _set_array_size(properties: dict[str, object], key: str, size: int) -> None:
     field = mapping(properties, key)
     field["minItems"] = size
@@ -560,7 +551,10 @@ def _set_array_size(properties: dict[str, object], key: str, size: int) -> None:
 
 
 __all__ = [
+    "compact_initial_draft_planning_input",
+    "compact_initial_draft_proposal",
     "initial_full_draft_output_schema",
     "initial_full_draft_turn_request",
+    "readability_repair_turn_request",
     "regulatory_assertion_repair_turn_request",
 ]

@@ -5,7 +5,6 @@ import pytest
 from wilq.content.drafts import (
     codex_section_proposal_turn,
     fact_selection,
-    initial_full_draft_turn,
 )
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
@@ -63,7 +62,7 @@ def test_initial_and_section_proposal_fact_builders_rank_the_same_direct_matches
     proposal = SimpleNamespace(service_card_id="service_card", sections=[_SECTION])
     monkeypatch.setattr(fact_selection, "ekologus_source_facts", lambda: tuple(facts))
 
-    initial_contexts = initial_full_draft_turn._source_facts_by_section(planning_input, proposal)[
+    initial_contexts = fact_selection.approved_source_facts_by_section(planning_input, proposal)[
         0
     ]["source_facts"]
     snapshot = SimpleNamespace(planning_workspace=SimpleNamespace(proposal=proposal))
@@ -101,7 +100,7 @@ def test_initial_draft_row_projection_includes_official_facts(
     proposal = SimpleNamespace(service_card_id=None, sections=[_SECTION])
     monkeypatch.setattr(fact_selection, "ekologus_source_facts", lambda: (official,))
 
-    rows = initial_full_draft_turn._source_facts_by_section(planning_input, proposal)
+    rows = fact_selection.approved_source_facts_by_section(planning_input, proposal)
 
     assert _ids(rows[0]["source_facts"]) == ["official"]
 

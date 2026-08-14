@@ -15,7 +15,7 @@ from wilq.content.knowledge.text_matching import (
     normalized_term_matches,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.quality.reading_quality import _WORKING_NOTE
+from wilq.content.quality.reading_quality import WORKING_NOTE
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 _MISSING_SOURCE_FACT_SIGNAL_PREFIX = "missing_source_fact_signal:"
@@ -83,7 +83,7 @@ def document_ready_fact_text(
         sentence
         for sentence in sentences
         if not (
-            _WORKING_NOTE.search(sentence)
+            WORKING_NOTE.search(sentence)
             and not any(term in sentence.casefold() for term in normalized_terms)
         )
     ]
