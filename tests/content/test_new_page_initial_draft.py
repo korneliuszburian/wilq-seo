@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ from wilq.codex.app_server import (
     CodexAppServerTurnResult,
 )
 from wilq.content.drafts import fact_selection
+from wilq.content.drafts.initial_draft_run import transition_initial_draft_run_if_status
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
@@ -343,6 +345,91 @@ def test_new_page_turn_receives_approved_source_facts_by_section(
             ],
         }
     ]
+
+
+def test_new_page_run_record_carries_model_and_prompt_audit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    codex_home = tmp_path / "codex-home"
+    codex_home.mkdir()
+    (codex_home / "config.toml").write_text(
+        'model = "gpt-5.6-sol"\nmodel_reasoning_effort = "ultra"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    case = _draft_case(tmp_path, monkeypatch)
+    client = _InitialDraftClient(_output(_CLEAN_BODY))
+
+    result = _generate(case, client)
+
+    assert result.status == "created"
+    assert result.run_id is not None
+    run = next(
+        run
+        for run in case.run_store.list_codex_runs()
+        if run.id == result.run_id
+    )
+    assert run.model == "gpt-5.6-sol"
+    assert run.model_reasoning_effort == "ultra"
+    assert run.prompt_digest == sha256(client.requests[0].instruction.encode()).hexdigest()
+    assert run.prompt_template_id is not None
+
+
+def test_new_page_finish_is_status_guarded(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _draft_case(tmp_path, monkeypatch)
+
+    class ConcurrentTerminalClient:
+        def run_structured_turn(
+            self, request: CodexAppServerStructuredTurnRequest
+        ) -> CodexAppServerTurnResult:
+            del request
+            started = next(
+                run
+                for run in case.run_store.list_codex_runs()
+                if run.id.startswith("codex_content_new_page_draft_")
+            )
+            assert transition_initial_draft_run_if_status(
+                case.run_store,
+                started,
+                status="failed",
+                error="initial_draft_timeout",
+            ) is not None
+            return CodexAppServerTurnResult(status="blocked")
+
+    result = _generate(case, ConcurrentTerminalClient())
+
+    assert result.status == "blocked"
+    persisted = next(
+        run
+        for run in case.run_store.list_codex_runs()
+        if run.id.startswith("codex_content_new_page_draft_")
+    )
+    assert persisted.status == "failed"
+    assert persisted.error == "initial_draft_timeout"
+
+
+def test_new_page_turn_request_failure_is_typed_without_starting_a_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _draft_case(tmp_path, monkeypatch)
+
+    def fail_source_fact_read() -> tuple[ContentSourceFact, ...]:
+        raise OSError("source fact store unavailable")
+
+    monkeypatch.setattr(fact_selection, "ekologus_source_facts", fail_source_fact_read)
+
+    result = _generate(case, _InitialDraftClient(_output(_CLEAN_BODY)))
+
+    assert result.status == "failed"
+    assert result.run_id is None
+    assert result.runtime.status == "failed"
+    assert result.blockers[0].code == "runtime_failed"
+    assert case.run_store.list_codex_runs() == []
 
 
 def test_new_page_generic_section_is_grounded_before_revision_persistence(

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from typing import Literal
-from uuid import uuid4
 
 from wilq.codex.app_server import (
     CodexAppServerClientProtocol,
@@ -19,7 +18,11 @@ from wilq.content.drafts.generated_claim_safety import (
     generated_claim_blocker,
     generated_claim_safety_issues,
 )
-from wilq.content.drafts.initial_draft_run import safe_initial_draft_run_error
+from wilq.content.drafts.initial_draft_run import (
+    safe_initial_draft_run_error,
+    start_initial_draft_run,
+    transition_initial_draft_run_if_status,
+)
 from wilq.content.drafts.initial_draft_validation import (
     document_scope_errors_for_planning_input,
 )
@@ -87,15 +90,38 @@ def generate_new_page_initial_draft(
             "revision_already_exists",
             "Otwórz zapisaną rewizję zamiast tworzyć drugi pierwszy dokument.",
         )
-    run = _start_run(proposal, endpoint_path, run_store)
+    try:
+        turn_request = _turn_request(brief, planning_input, proposal)
+    except Exception:
+        return _blocked(
+            workspace,
+            proposal,
+            "runtime_failed",
+            "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
+            runtime=ContentCodexRuntimeTrace(status="failed"),
+            status="failed",
+        )
+    run = start_initial_draft_run(
+        run_store,
+        work_item_id=proposal.work_item_id,
+        evidence_ids=proposal.evidence_ids,
+        source_material_ids=proposal.source_material_ids,
+        proposal_id=request.expected_proposal_id,
+        planning_digest=proposal.planning_digest,
+        planning_input_digest=request.expected_planning_input_digest,
+        context_digest=None,
+        run_id_prefix="codex_content_new_page_draft_",
+        hook="content_new_page_initial_draft",
+        endpoint_path=endpoint_path,
+        prompt=turn_request.instruction,
+    )
     execution = _execute_turn(
-        brief,
-        planning_input,
         proposal,
         client,
         run,
         run_store,
         workspace,
+        turn_request,
     )
     if isinstance(execution, ContentInitialDraftResponse):
         return execution
@@ -113,6 +139,33 @@ def generate_new_page_initial_draft(
     if isinstance(prepared, ContentInitialDraftResponse):
         return prepared
     output, runtime = prepared
+    return _persist_new_page_initial_draft(
+        brief=brief,
+        foundation=foundation,
+        proposal=proposal,
+        request=request,
+        output=output,
+        runtime=runtime,
+        run=run,
+        workflow_store=workflow_store,
+        run_store=run_store,
+        workspace=workspace,
+    )
+
+
+def _persist_new_page_initial_draft(
+    *,
+    brief: ContentNewPageBrief,
+    foundation: ContentNewPagePlanningFoundation,
+    proposal: ContentPlanningProposal,
+    request: ContentInitialDraftRequest,
+    output: ContentInitialDraftModelOutput,
+    runtime: ContentCodexRuntimeTrace,
+    run: CodexRun,
+    workflow_store: ContentWorkflowStore,
+    run_store: LocalStateStore,
+    workspace: ContentNewPageCanonicalDocumentWorkspace,
+) -> ContentInitialDraftResponse:
     completed = run.model_copy(update={"status": "completed", "completed_at": utc_now()})
     try:
         result = append_new_page_initial_revision(
@@ -128,7 +181,12 @@ def generate_new_page_initial_draft(
             store=workflow_store,
         )
     except ValueError:
-        _finish_run(run_store, run, status="blocked", error="document_scope_mismatch")
+        transition_initial_draft_run_if_status(
+            run_store,
+            run,
+            status="blocked",
+            error="document_scope_mismatch",
+        )
         return _blocked(
             workspace,
             proposal,
@@ -138,7 +196,12 @@ def generate_new_page_initial_draft(
             runtime,
         )
     if result.revision is None:
-        _finish_run(run_store, run, status="blocked", error="revision_conflict")
+        transition_initial_draft_run_if_status(
+            run_store,
+            run,
+            status="blocked",
+            error="revision_conflict",
+        )
         return _blocked(
             workspace,
             proposal,
@@ -295,7 +358,7 @@ def _finish_quality_blocked(
     blocker: ContentInitialDraftBlocker,
     run_store: LocalStateStore,
 ) -> ContentInitialDraftResponse:
-    _finish_run(
+    transition_initial_draft_run_if_status(
         run_store,
         run,
         status="blocked",
@@ -312,36 +375,17 @@ def _finish_quality_blocked(
     )
 
 
-def _start_run(
-    proposal: ContentPlanningProposal, endpoint_path: str, run_store: LocalStateStore
-) -> CodexRun:
-    return run_store.save_codex_run(
-        CodexRun(
-            id=f"codex_content_new_page_draft_{uuid4().hex}",
-            skill="wilq-content-operator",
-            hook="content_new_page_initial_draft",
-            source="wilq_api",
-            status="started",
-            used_endpoints=[endpoint_path],
-            evidence_ids=proposal.evidence_ids,
-            proposal_id=proposal.proposal_id,
-            planning_input_digest=proposal.planning_input_digest,
-        )
-    )
-
-
 def _execute_turn(
-    brief: ContentNewPageBrief,
-    planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
     client: CodexAppServerClientProtocol,
     run: CodexRun,
     run_store: LocalStateStore,
     workspace: ContentNewPageCanonicalDocumentWorkspace,
+    turn_request: CodexAppServerStructuredTurnRequest,
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | ContentInitialDraftResponse:
     turn: CodexAppServerTurnResult | None
     try:
-        turn = client.run_structured_turn(_turn_request(brief, planning_input, proposal))
+        turn = client.run_structured_turn(turn_request)
     except Exception:
         turn = None
     if turn is None or turn.status != "completed" or turn.output_text is None:
@@ -350,7 +394,7 @@ def _execute_turn(
             if turn is not None and turn.status == "blocked"
             else "runtime_failed"
         )
-        _finish_run(
+        transition_initial_draft_run_if_status(
             run_store,
             run,
             status="blocked" if code == "runtime_blocked" else "failed",
@@ -373,7 +417,12 @@ def _execute_turn(
     try:
         return ContentInitialDraftModelOutput.model_validate_json(turn.output_text), trace
     except ValueError:
-        _finish_run(run_store, run, status="blocked", error="invalid_structured_output")
+        transition_initial_draft_run_if_status(
+            run_store,
+            run,
+            status="blocked",
+            error="invalid_structured_output",
+        )
         return _blocked(
             workspace,
             proposal,
@@ -382,18 +431,6 @@ def _execute_turn(
             run.id,
             trace,
         )
-
-
-def _finish_run(
-    run_store: LocalStateStore,
-    run: CodexRun,
-    *,
-    status: Literal["blocked", "failed"],
-    error: str,
-) -> None:
-    run_store.save_codex_run(
-        run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
-    )
 
 
 def _turn_request(

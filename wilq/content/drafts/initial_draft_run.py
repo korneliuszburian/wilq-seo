@@ -433,6 +433,9 @@ def start_initial_draft_run(
     planning_digest: str | None = None,
     context_digest: str | None = None,
     run_id: str | None = None,
+    run_id_prefix: str | None = None,
+    hook: str | None = None,
+    endpoint_path: str | None = None,
     prompt: str | None = None,
 ) -> CodexRun:
     metadata = _initial_draft_run_metadata(prompt)
@@ -459,18 +462,27 @@ def start_initial_draft_run(
             metadata=metadata,
             source_material_ids=source_material_ids or [],
         )
+    effective_run_id_prefix = (
+        "codex_content_initial_draft_" if run_id_prefix is None else run_id_prefix
+    )
+    effective_hook = "content_initial_full_draft" if hook is None else hook
+    effective_endpoint_path = (
+        f"/api/content/work-items/{work_item_id}/initial-draft"
+        if endpoint_path is None
+        else endpoint_path
+    )
     return run_store.save_codex_run(
         CodexRun(
-            id=run_id or f"codex_content_initial_draft_{uuid4().hex}",
+            id=f"{effective_run_id_prefix}{uuid4().hex}",
             skill="wilq-content-operator",
-            hook="content_initial_full_draft",
+            hook=effective_hook,
             source="wilq_api",
             status="started",
             model=metadata.model,
             model_reasoning_effort=metadata.model_reasoning_effort,
             prompt_digest=metadata.prompt_digest,
             prompt_template_id=metadata.prompt_template_id,
-            used_endpoints=[f"/api/content/work-items/{work_item_id}/initial-draft"],
+            used_endpoints=[effective_endpoint_path],
             evidence_ids=evidence_ids,
             source_material_ids=list(dict.fromkeys(source_material_ids or [])),
             proposal_id=proposal_id,
