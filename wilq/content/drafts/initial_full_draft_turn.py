@@ -10,8 +10,7 @@ from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.content.codex_turn import mapping, properties, require_all_object_properties
 from wilq.content.drafts.fact_selection import (
-    approved_planning_source_facts,
-    select_source_fact_contexts_for_section,
+    approved_source_facts_by_section,
 )
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
@@ -549,34 +548,9 @@ def _source_facts_by_section(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
 ) -> list[dict[str, object]]:
-    """Project approved planning facts onto their concrete draft targets."""
+    """Compatibility alias for the shared fact-selection projection."""
 
-    approved_facts = approved_planning_source_facts(
-        planning_input,
-        include_official=True,
-    )
-    rows: list[dict[str, object]] = []
-    for section in draftable_planning_sections(proposal.sections):
-        if section.regulatory_requirement_ids:
-            rows.append(
-                {
-                    "section_id": section.section_id,
-                    "source_facts": [],
-                }
-            )
-            continue
-        source_fact_contexts = select_source_fact_contexts_for_section(
-            approved_facts,
-            section=section,
-            service_card_id=proposal.service_card_id,
-        )
-        rows.append(
-            {
-                "section_id": section.section_id,
-                "source_facts": source_fact_contexts,
-            }
-        )
-    return rows
+    return approved_source_facts_by_section(planning_input, proposal)
 
 
 def _set_array_size(properties: dict[str, object], key: str, size: int) -> None:
