@@ -9,6 +9,7 @@ from apps.api.wilq_api.routers import content_initial_draft
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.drafts import (
     fact_selection,
+    grounding,
     initial_draft_assurance_repair,
     initial_full_draft,
     initial_full_draft_turn,
@@ -392,7 +393,7 @@ def test_missing_signal_repair_appends_approved_facts(
         lambda: (approved_fact,),
     )
 
-    repaired = initial_draft_assurance_repair.repair_missing_source_fact_signals(
+    repaired = grounding.repair_missing_source_fact_signals(
         planning_input=planning_input,
         proposal=proposal,
         output=output,
