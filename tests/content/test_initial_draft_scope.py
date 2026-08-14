@@ -7,7 +7,11 @@ from pydantic import BaseModel, ValidationError
 
 from apps.api.wilq_api.routers import content_initial_draft
 from wilq.codex.app_server import CodexAppServerTurnResult
-from wilq.content.drafts import initial_draft_assurance_repair, initial_full_draft
+from wilq.content.drafts import (
+    initial_draft_assurance_repair,
+    initial_full_draft,
+    initial_full_draft_turn,
+)
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
 from wilq.content.drafts.generated_claim_safety import GeneratedClaimSafetyIssue
 from wilq.content.drafts.initial_draft_validation import document_scope_errors
@@ -39,6 +43,7 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBlockerCode,
     ContentPlanningInputBuildResult,
 )
+from wilq.content.planning.input_sources import ContentPlanningSourceFact
 from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
     ContentRegulatoryDocumentAssertion,
@@ -258,6 +263,156 @@ def test_document_scope_accepts_the_same_excluded_section_projection() -> None:
     )
 
     assert document_scope_errors(proposal, output) == []
+
+
+_SOURCE_FACT_SIGNAL_SUMMARY = (
+    "Pomiary pyłu frakcji PM2,5 do PM10 wykonuje się impaktorem kaskadowym."
+)
+
+
+def _source_fact_signal_fixture(
+    body_markdown: str,
+    *,
+    regulatory_requirement_ids: list[str] | None = None,
+) -> tuple[ContentPlanningProposal, ContentInitialDraftModelOutput]:
+    proposal = _proposal_with_review_required_inventory()
+    proposal.sections[0] = proposal.sections[0].model_copy(
+        update={
+            "section_id": "section_01",
+            "heading": "Emisje",
+            "regulatory_requirement_ids": regulatory_requirement_ids or [],
+        }
+    )
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Tytuł",
+            meta_title="Meta",
+            meta_description="Opis",
+            h1="Nagłówek",
+            lead="Lead",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="section_01",
+                heading="Emisje",
+                body_markdown=body_markdown,
+            )
+        ],
+        publish_ready=False,
+    )
+    return proposal, output
+
+
+def test_document_scope_flags_section_without_fact_signal() -> None:
+    proposal, output = _source_fact_signal_fixture(
+        "Opisz źródło emisji i przygotuj zakres."
+    )
+
+    errors = document_scope_errors(
+        proposal,
+        output,
+        source_facts_by_section={"section_01": [_SOURCE_FACT_SIGNAL_SUMMARY]},
+    )
+
+    assert "missing_source_fact_signal:section_01" in errors
+
+
+def test_document_scope_passes_when_section_uses_a_fact_token() -> None:
+    proposal, output = _source_fact_signal_fixture(
+        "Opisz źródło emisji impaktorem kaskadowym i przygotuj zakres."
+    )
+
+    errors = document_scope_errors(
+        proposal,
+        output,
+        source_facts_by_section={"section_01": [_SOURCE_FACT_SIGNAL_SUMMARY]},
+    )
+
+    assert "missing_source_fact_signal:section_01" not in errors
+
+
+def test_document_scope_ignores_regulatory_sections_for_signal() -> None:
+    proposal, output = _source_fact_signal_fixture(
+        "Opisz źródło emisji i przygotuj zakres.",
+        regulatory_requirement_ids=["bdo_exemptions"],
+    )
+
+    errors = document_scope_errors(
+        proposal,
+        output,
+        source_facts_by_section={"section_01": []},
+    )
+
+    assert "missing_source_fact_signal:section_01" not in errors
+
+
+def test_missing_signal_repair_appends_approved_facts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proposal, output = _source_fact_signal_fixture(
+        "Opisz źródło emisji i przygotuj zakres."
+    )
+    approved_fact = ContentSourceFact(
+        source_id="approved_measurement_fact",
+        source_type="public_site",
+        privacy_class="commit_safe",
+        source_url_or_path="https://www.ekologus.pl/oferta/pomiary-i-analizy/",
+        extracted_fact=_SOURCE_FACT_SIGNAL_SUMMARY,
+        scope="service",
+        freshness_date="2026-08-13",
+        confidence=1,
+        review_status="approved",
+        reviewer="wilku",
+        evidence_ids=["ev_measurement_fact"],
+        source_connectors=["public_site"],
+        target_card_id=proposal.service_card_id or "",
+        target_card_type="service",
+        target_card_title="Pomiary i analizy",
+        service_fit_terms=["emisje"],
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        work_item_id=proposal.work_item_id,
+        planning_input_digest=proposal.planning_input_digest,
+        confirmed_service_card_id=proposal.service_card_id,
+        source_facts=[
+            ContentPlanningSourceFact(
+                fact_id="planning_measurement_fact",
+                summary=approved_fact.extracted_fact,
+                source_connector="public_site",
+                evidence_ids=approved_fact.evidence_ids,
+                source_fact_ids=[approved_fact.source_id],
+            )
+        ],
+        regulatory_coverage=ContentRegulatoryCoverage(),
+    )
+    monkeypatch.setattr(
+        initial_full_draft_turn,
+        "ekologus_source_facts",
+        lambda: (approved_fact,),
+    )
+
+    repaired = initial_draft_assurance_repair.repair_missing_source_fact_signals(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        missing_codes=["missing_source_fact_signal:section_01"],
+    )
+
+    assert "impaktorem" in repaired.sections[0].body_markdown
+    projected_rows = initial_full_draft_turn._source_facts_by_section(
+        planning_input,
+        proposal,
+    )
+    source_facts_by_section = {
+        row["section_id"]: [fact["summary"] for fact in row["source_facts"]]
+        for row in projected_rows
+    }
+    errors = document_scope_errors(
+        proposal,
+        repaired,
+        source_facts_by_section=source_facts_by_section,
+    )
+    assert "missing_source_fact_signal:section_01" not in errors
 
 
 def test_document_scope_rejects_a_regulatory_topic_without_its_required_concept() -> None:

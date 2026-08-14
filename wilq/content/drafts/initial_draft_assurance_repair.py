@@ -11,11 +11,16 @@ from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
     run_regulatory_draft_assurance,
 )
+from wilq.content.drafts.initial_draft_validation import _body_has_source_fact_signal
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftModelOutput,
 )
-from wilq.content.drafts.regulatory_draft_repair import repair_regulatory_assertions
+from wilq.content.drafts.initial_full_draft_turn import _source_facts_by_section
+from wilq.content.drafts.regulatory_draft_repair import (
+    _document_ready_fact_text,
+    repair_regulatory_assertions,
+)
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.storage.local_state import LocalStateStore
@@ -26,6 +31,86 @@ AssureDraft = Callable[
     AssuranceResult,
 ]
 OutputBlocker = Callable[[ContentInitialDraftModelOutput], ContentInitialDraftBlocker | None]
+_MISSING_SOURCE_FACT_SIGNAL_PREFIX = "missing_source_fact_signal:"
+_MAX_GROUNDING_FACT_PARAGRAPHS = 2
+
+
+def repair_missing_source_fact_signals(
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+    missing_codes: list[str],
+) -> ContentInitialDraftModelOutput:
+    """Append exact approved planning facts to shallow targeted sections."""
+
+    missing_section_ids = {
+        code.removeprefix(_MISSING_SOURCE_FACT_SIGNAL_PREFIX)
+        for code in missing_codes
+        if code.startswith(_MISSING_SOURCE_FACT_SIGNAL_PREFIX)
+    }
+    facts_by_section = _source_fact_summaries_by_section(planning_input, proposal)
+    sections = []
+    for section in output.sections:
+        fact_summaries = facts_by_section.get(section.section_id, [])
+        if (
+            section.section_id not in missing_section_ids
+            or not fact_summaries
+            or _body_has_source_fact_signal(section.body_markdown, fact_summaries)
+        ):
+            sections.append(section)
+            continue
+        document_ready_facts = list(
+            dict.fromkeys(
+                fact_text
+                for summary in fact_summaries
+                if (
+                    fact_text := _document_ready_fact_text(
+                        summary,
+                        protected_terms=None,
+                    ).strip()
+                )
+            )
+        )[:_MAX_GROUNDING_FACT_PARAGRAPHS]
+        patch_text = "\n\n".join(document_ready_facts)
+        if not patch_text or patch_text in section.body_markdown:
+            sections.append(section)
+            continue
+        sections.append(
+            section.model_copy(
+                update={
+                    "body_markdown": f"{section.body_markdown}\n\n{patch_text}",
+                }
+            )
+        )
+    return ContentInitialDraftModelOutput.model_validate(
+        {
+            **output.model_dump(mode="python"),
+            "sections": [section.model_dump(mode="python") for section in sections],
+        }
+    )
+
+
+def _source_fact_summaries_by_section(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> dict[str, list[str]]:
+    projection: dict[str, list[str]] = {}
+    for row in _source_facts_by_section(planning_input, proposal):
+        section_id = row.get("section_id")
+        source_facts = row.get("source_facts")
+        if not isinstance(section_id, str) or not isinstance(source_facts, list):
+            raise ValueError("Invalid source-fact section projection.")
+        summaries: list[str] = []
+        for source_fact in source_facts:
+            if not isinstance(source_fact, dict):
+                raise ValueError("Invalid source-fact section projection.")
+            summary = source_fact.get("summary")
+            if not isinstance(summary, str):
+                raise ValueError("Invalid source-fact section projection.")
+            summaries.append(summary)
+        projection[section_id] = summaries
+    return projection
 
 
 def assure_and_repair_initial_draft(
@@ -97,10 +182,25 @@ def repair_initial_output_blocker(
         blocker=blocker,
         client=client,
     )
-    if repaired is None:
-        return output, trace, blocker
-    output, trace = repaired
-    return output, trace, output_blocker(output)
+    if repaired is not None:
+        output, trace = repaired
+        blocker = output_blocker(output)
+        if blocker is None:
+            return output, trace, None
+    missing_source_fact_codes = [
+        code
+        for code in blocker.source_codes
+        if code.startswith(_MISSING_SOURCE_FACT_SIGNAL_PREFIX)
+    ]
+    if missing_source_fact_codes:
+        output = repair_missing_source_fact_signals(
+            planning_input=planning_input,
+            proposal=proposal,
+            output=output,
+            missing_codes=missing_source_fact_codes,
+        )
+        return output, trace, output_blocker(output)
+    return output, trace, blocker
 
 
 def assure_regulated_draft(
@@ -214,4 +314,5 @@ __all__ = [
     "assure_regulated_draft",
     "repair_after_assurance_failure",
     "repair_initial_output_blocker",
+    "repair_missing_source_fact_signals",
 ]

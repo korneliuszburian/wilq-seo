@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast
 
 from wilq.codex.app_server import (
     CodexAppServerClientProtocol,
@@ -44,7 +44,10 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftResponse,
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
-from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
+from wilq.content.drafts.initial_full_draft_turn import (
+    _source_facts_by_section,
+    initial_full_draft_turn_request,
+)
 from wilq.content.drafts.regulatory_draft_repair import repair_regulatory_assertions
 from wilq.content.drafts.regulatory_preflight import regulatory_draft_preflight_errors
 from wilq.content.drafts.structured_generation import (
@@ -733,10 +736,18 @@ def _output_blocker(
     inputs: _InitialDraftInputs,
     output: ContentInitialDraftModelOutput,
 ) -> ContentInitialDraftBlocker | None:
+    source_facts_by_section = {
+        cast(str, row["section_id"]): [
+            cast(str, source_fact["summary"])
+            for source_fact in cast(list[dict[str, object]], row["source_facts"])
+        ]
+        for row in _source_facts_by_section(inputs.planning_input, inputs.proposal)
+    }
     errors = document_scope_errors(
         inputs.proposal,
         output,
         regulatory_requirements=inputs.planning_input.regulatory_coverage.requirements,
+        source_facts_by_section=source_facts_by_section,
     )
     if errors:
         return _blocker(

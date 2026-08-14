@@ -5,6 +5,10 @@ from __future__ import annotations
 from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
+from wilq.content.knowledge.text_matching import (
+    normalize_search_text,
+    normalized_term_matches,
+)
 from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     regulatory_requirement_assertion_errors,
@@ -17,6 +21,7 @@ def document_scope_errors(
     output: ContentInitialDraftModelOutput,
     *,
     regulatory_requirements: list[ContentRegulatoryRequirement] | None = None,
+    source_facts_by_section: dict[str, list[str]] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     draftable_sections = draftable_planning_sections(proposal.sections)
@@ -66,7 +71,27 @@ def document_scope_errors(
                         text="\n".join(section.body_markdown for section in generated_sections),
                     )
                 )
+    if source_facts_by_section is not None:
+        output_by_section_id = {section.section_id: section for section in output.sections}
+        for section in draftable_sections:
+            fact_summaries = source_facts_by_section.get(section.section_id, [])
+            if section.regulatory_requirement_ids or not fact_summaries:
+                continue
+            generated = output_by_section_id.get(section.section_id)
+            body_markdown = generated.body_markdown if generated is not None else ""
+            if not _body_has_source_fact_signal(body_markdown, fact_summaries):
+                errors.append(f"missing_source_fact_signal:{section.section_id}")
     return errors
+
+
+def _body_has_source_fact_signal(body_markdown: str, fact_summaries: list[str]) -> bool:
+    normalized_body = normalize_search_text(body_markdown)
+    return any(
+        normalized_term_matches(token, normalized_body)
+        for summary in fact_summaries
+        for token in normalize_search_text(summary).split()
+        if len(token) >= 5
+    )
 
 
 __all__ = ["document_scope_errors"]
