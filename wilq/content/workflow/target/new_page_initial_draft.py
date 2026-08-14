@@ -14,6 +14,11 @@ from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
 from wilq.content.drafts.fact_selection import approved_source_facts_by_section
+from wilq.content.drafts.generated_claim_safety import (
+    claim_safety_output,
+    generated_claim_blocker,
+    generated_claim_safety_issues,
+)
 from wilq.content.drafts.initial_draft_run import safe_initial_draft_run_error
 from wilq.content.drafts.initial_draft_validation import (
     document_scope_errors_for_planning_input,
@@ -27,6 +32,11 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_output_schema
+from wilq.content.drafts.structured_generation import (
+    StructuredDraftGenerationContract,
+    StructuredDraftGenerationInput,
+    StructuredDraftSignalQuality,
+)
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.store.store import ContentWorkflowStore
@@ -218,14 +228,61 @@ def _output_blocker(
         output,
         include_regulatory=False,
     )
-    if not errors:
-        return None
-    return ContentInitialDraftBlocker(
-        code="document_scope_mismatch",
-        label="Dokument nie odpowiada zatwierdzonemu planowi",
-        reason="Model zmienił strukturę albo plan nie ma kompletnego lineage.",
-        next_step="Odrzuć wynik; nie naprawiaj struktury ręcznie po generowaniu.",
-        source_codes=errors,
+    if errors:
+        return ContentInitialDraftBlocker(
+            code="document_scope_mismatch",
+            label="Dokument nie odpowiada zatwierdzonemu planowi",
+            reason="Model zmienił strukturę albo plan nie ma kompletnego lineage.",
+            next_step="Odrzuć wynik; nie naprawiaj struktury ręcznie po generowaniu.",
+            source_codes=errors,
+        )
+    generation_contract = _claim_safety_contract(planning_input, proposal, output)
+    issues = generated_claim_safety_issues(
+        claim_safety_output(planning_input, proposal, output, generation_contract),
+        generation_contract,
+    )
+    return generated_claim_blocker(issues) if issues else None
+
+
+def _claim_safety_contract(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+) -> StructuredDraftGenerationContract:
+    return StructuredDraftGenerationContract(
+        model_input=StructuredDraftGenerationInput(
+            work_item_id=planning_input.work_item_id,
+            planning_input_digest=planning_input.planning_input_digest,
+            planning_criteria_version=planning_input.criteria_version,
+            draft_kind="full_draft",
+            title=output.page_assets.wordpress_title,
+            final_canonical_url="",
+            target_reader=proposal.target_reader,
+            buyer_problem=proposal.buyer_problem,
+            buyer_trigger=proposal.buyer_trigger,
+            search_intent=proposal.search_intent,
+            service_fit=proposal.service_label or "",
+            cta_direction=proposal.cta_direction,
+            sales_brief_signal_quality=StructuredDraftSignalQuality(
+                status="review_required",
+                status_label="Nowa strona wymaga review człowieka",
+                reason="Bramka claimów nie nadaje gotowości do publikacji.",
+                evidence_id_count=len(planning_input.evidence_ids),
+                source_connector_count=len(proposal.source_connectors),
+                source_fact_count=len(planning_input.source_facts),
+                missing_evidence_count=0,
+                knowledge_constraint_count=0,
+                review_required_knowledge_card_count=0,
+                measurement_baseline_ready=False,
+                safe_next_step="Przekaż zapisaną rewizję do dokładnego review człowieka.",
+            ),
+            claims_removed_or_blocked=[],
+            removed_or_blocked_claim_markers=[],
+            human_review_questions=[],
+        ),
+        output_schema=initial_full_draft_output_schema(proposal),
+        system_instruction="Sprawdź bezpieczeństwo claimów bez publikacji i bez zapisu.",
+        user_instruction="Oceń wyłącznie przekazany dokument nowej strony.",
     )
 
 

@@ -15,7 +15,10 @@ from wilq.content.drafts import (
     initial_full_draft_turn,
 )
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
-from wilq.content.drafts.generated_claim_safety import GeneratedClaimSafetyIssue
+from wilq.content.drafts.generated_claim_safety import (
+    GeneratedClaimSafetyIssue,
+    generated_claim_blocker,
+)
 from wilq.content.drafts.initial_draft_validation import document_scope_errors
 from wilq.content.drafts.initial_full_draft import _planning_input_blocker
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -77,7 +80,7 @@ def test_initial_draft_model_output_rejects_whitespace_only_content(
 
 
 def test_generated_claim_blocker_names_the_planned_section_without_claim_text() -> None:
-    blocker = initial_full_draft._generated_claim_blocker(
+    blocker = generated_claim_blocker(
         [
             GeneratedClaimSafetyIssue(
                 code="undeclared_high_risk_claim_language",

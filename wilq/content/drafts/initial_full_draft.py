@@ -16,9 +16,9 @@ from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
 )
-from wilq.content.drafts.fact_selection import approved_planning_source_facts
 from wilq.content.drafts.generated_claim_safety import (
-    GeneratedClaimSafetyIssue,
+    claim_safety_output,
+    generated_claim_blocker,
     generated_claim_safety_issues,
 )
 from wilq.content.drafts.initial_draft_persistence import (
@@ -31,7 +31,9 @@ from wilq.content.drafts.initial_draft_run import (
     safe_initial_draft_run_error,
     start_initial_draft_run,
 )
-from wilq.content.drafts.initial_draft_validation import document_scope_errors
+from wilq.content.drafts.initial_draft_validation import (
+    document_scope_errors_for_planning_input,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftBlockerCode,
@@ -40,15 +42,10 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftResponse,
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
-from wilq.content.drafts.initial_full_draft_turn import (
-    _source_facts_by_section,
-    initial_full_draft_turn_request,
-)
+from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
 from wilq.content.drafts.regulatory_preflight import regulatory_draft_preflight_errors
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
-    StructuredDraftOutput,
-    StructuredDraftOutputSection,
     contract_for_planning_proposal,
 )
 from wilq.content.planning.dynamic_input import (
@@ -587,25 +584,10 @@ def _output_blocker(
     inputs: _InitialDraftInputs,
     output: ContentInitialDraftModelOutput,
 ) -> ContentInitialDraftBlocker | None:
-    source_facts_by_section = {
-        cast(str, row["section_id"]): [
-            cast(str, source_fact["summary"])
-            for source_fact in cast(list[dict[str, object]], row["source_facts"])
-        ]
-        for row in _source_facts_by_section(inputs.planning_input, inputs.proposal)
-    }
-    errors = document_scope_errors(
+    errors = document_scope_errors_for_planning_input(
+        inputs.planning_input,
         inputs.proposal,
         output,
-        regulatory_requirements=inputs.planning_input.regulatory_coverage.requirements,
-        source_facts_by_section=source_facts_by_section,
-        source_fact_corpus=[
-            fact.extracted_fact
-            for fact in approved_planning_source_facts(
-                inputs.planning_input,
-                include_official=True,
-            )
-        ],
     )
     if errors:
         return _blocker(
@@ -616,121 +598,17 @@ def _output_blocker(
             source_codes=errors,
         )
     issues = generated_claim_safety_issues(
-        _claim_safety_output(inputs, output),
+        claim_safety_output(
+            inputs.planning_input,
+            inputs.proposal,
+            output,
+            inputs.generation_contract,
+        ),
         inputs.generation_contract,
     )
     if issues:
-        return _generated_claim_blocker(issues)
+        return generated_claim_blocker(issues)
     return None
-
-
-def _generated_claim_blocker(
-    issues: list[GeneratedClaimSafetyIssue],
-) -> ContentInitialDraftBlocker:
-    """Describe the exact planned section without exposing generated prose."""
-
-    headings = list(dict.fromkeys(item.heading.strip() for item in issues if item.heading.strip()))
-    section_detail = f" Sekcje planu: {', '.join(headings[:3])}." if headings else ""
-    return _blocker(
-        "generated_claim_blocked",
-        "Tekst zawiera niedozwoloną obietnicę",
-        "Deterministyczna bramka wykryła blocked claim albo ryzykowny język." + section_detail,
-        "Usuń niedozwolone twierdzenie ze wskazanej sekcji i wygeneruj nową próbę.",
-        source_codes=list(dict.fromkeys(item.code for item in issues)),
-    )
-
-
-def _claim_safety_output(
-    inputs: _InitialDraftInputs,
-    output: ContentInitialDraftModelOutput,
-) -> StructuredDraftOutput:
-    claim_text_by_id = {item.id: item.claim_text for item in inputs.planning_input.claim_ledger}
-    sections: list[StructuredDraftOutputSection] = []
-    draftable_sections = draftable_planning_sections(inputs.proposal.sections)
-    global_claim_ids = [claim_id for item in draftable_sections for claim_id in item.claim_ids]
-    sections.append(
-        StructuredDraftOutputSection(
-            heading="Page assets",
-            body_markdown="\n".join(
-                output.page_assets.model_dump(mode="json", exclude_none=True).values()
-            ),
-            evidence_ids=inputs.proposal.evidence_ids,
-            claims_used=_claim_texts(global_claim_ids, claim_text_by_id),
-        )
-    )
-    for plan, generated in zip(draftable_sections, output.sections, strict=True):
-        sections.append(
-            StructuredDraftOutputSection(
-                heading=generated.heading,
-                body_markdown=generated.body_markdown,
-                evidence_ids=plan.evidence_ids,
-                claims_used=_claim_texts(plan.claim_ids, claim_text_by_id),
-            )
-        )
-    sections.extend(_asset_safety_sections(inputs, output, claim_text_by_id))
-    return StructuredDraftOutput(
-        draft_kind="full_draft",
-        language="pl-PL",
-        title=output.page_assets.wordpress_title,
-        meta_title=output.page_assets.meta_title,
-        meta_description=output.page_assets.meta_description,
-        h1=output.page_assets.h1,
-        sections=sections,
-        faq=[item.answer_markdown for item in output.faq],
-        cta="\n".join(item.body_markdown for item in output.cta_blocks),
-        internal_links=[item.anchor_text for item in output.internal_links],
-        source_facts_used=inputs.planning_input.evidence_ids,
-        claims_needing_review=[],
-        forbidden_claims_avoided=inputs.generation_contract.model_input.claims_removed_or_blocked,
-        human_review_checklist=inputs.generation_contract.model_input.human_review_questions,
-        publish_ready=False,
-    )
-
-
-def _asset_safety_sections(
-    inputs: _InitialDraftInputs,
-    output: ContentInitialDraftModelOutput,
-    claim_text_by_id: dict[str, str],
-) -> list[StructuredDraftOutputSection]:
-    sections: list[StructuredDraftOutputSection] = []
-    for index, (faq_plan, faq_output) in enumerate(
-        zip(inputs.proposal.faq, output.faq, strict=True)
-    ):
-        sections.append(
-            StructuredDraftOutputSection(
-                heading=f"FAQ {index + 1}: {faq_output.question}",
-                body_markdown=faq_output.answer_markdown,
-                evidence_ids=faq_plan.evidence_ids,
-                claims_used=_claim_texts(faq_plan.claim_ids, claim_text_by_id),
-            )
-        )
-    for index, (cta_plan, cta_output) in enumerate(
-        zip(inputs.proposal.cta_blocks, output.cta_blocks, strict=True)
-    ):
-        sections.append(
-            StructuredDraftOutputSection(
-                heading=f"CTA {index + 1}",
-                body_markdown=cta_output.body_markdown,
-                evidence_ids=cta_plan.evidence_ids,
-                claims_used=_claim_texts(cta_plan.claim_ids, claim_text_by_id),
-            )
-        )
-    for index, (link_plan, link_output) in enumerate(
-        zip(inputs.proposal.internal_links, output.internal_links, strict=True)
-    ):
-        sections.append(
-            StructuredDraftOutputSection(
-                heading=f"Link {index + 1}",
-                body_markdown=link_output.anchor_text,
-                evidence_ids=link_plan.evidence_ids,
-                claims_used=_claim_texts(link_plan.claim_ids, claim_text_by_id),
-            )
-        )
-    return sections
-
-
-def _claim_texts(claim_ids: list[str], claim_text_by_id: dict[str, str]) -> list[str]:
-    return [claim_text_by_id[item] for item in claim_ids if item in claim_text_by_id]
 
 
 def _blocked_response(

@@ -127,7 +127,10 @@ class _ReadabilityRepairClient(_InitialDraftClient):
         )
 
 
-def _brief_and_foundation() -> tuple[ContentNewPageBrief, ContentNewPagePlanningFoundation]:
+def _brief_and_foundation(
+    *,
+    service_card_id: str = "service_environment",
+) -> tuple[ContentNewPageBrief, ContentNewPagePlanningFoundation]:
     brief = build_new_page_brief(
         ContentNewPageBriefInput(
             title="Dokumentacja środowiskowa inwestycji",
@@ -144,7 +147,7 @@ def _brief_and_foundation() -> tuple[ContentNewPageBrief, ContentNewPagePlanning
         brief_id=brief.brief_id,
         brief_digest=brief.brief_digest,
         overlap_digest="a" * 64,
-        service_card_id="service_environment",
+        service_card_id=service_card_id,
         service_card_digest="b" * 64,
         service_label="Dokumentacja środowiskowa",
         confirmed_by="Wilku",
@@ -189,6 +192,7 @@ def _planning_input(
                 )
             ],
             regulatory_coverage=ContentRegulatoryCoverage(),
+            claim_ledger=[],
             evidence_ids=source_fact.evidence_ids,
         ),
         source_fact,
@@ -248,8 +252,10 @@ def _proposal(
 def _draft_case(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    *,
+    service_card_id: str = "service_environment",
 ) -> _NewPageDraftCase:
-    brief, foundation = _brief_and_foundation()
+    brief, foundation = _brief_and_foundation(service_card_id=service_card_id)
     planning_input, source_fact = _planning_input(brief, foundation)
     monkeypatch.setattr(fact_selection, "ekologus_source_facts", lambda: (source_fact,))
     proposal = _proposal(brief, foundation, planning_input.planning_input_digest)
@@ -402,3 +408,58 @@ def test_new_page_readability_failure_keeps_terminal_blocker_and_skips_persisten
     assert "working_note" in result.blockers[0].source_codes
     revision_state = case.workflow_store.load_draft_revision_state(case.foundation.work_item_id)
     assert revision_state.revision_count == 0
+
+
+def test_new_page_high_risk_promise_is_blocked_without_persisting_revision(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _draft_case(tmp_path, monkeypatch)
+    revision_count_before = case.workflow_store.load_draft_revision_state(
+        case.foundation.work_item_id
+    ).revision_count
+
+    result = _generate(
+        case,
+        _InitialDraftClient(
+            _output(f"{_CLEAN_BODY} Usługa gwarantuje pełną zgodność z prawem.")
+        ),
+    )
+
+    assert result.status == "blocked"
+    assert result.revision is None
+    assert result.blockers[0].code == "generated_claim_blocked"
+    assert result.blockers[0].source_codes == ["undeclared_high_risk_claim_language"]
+    revision_count_after = case.workflow_store.load_draft_revision_state(
+        case.foundation.work_item_id
+    ).revision_count
+    assert revision_count_after == revision_count_before
+
+
+def test_new_page_empty_regulatory_coverage_skips_assurance_and_findings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _draft_case(
+        tmp_path,
+        monkeypatch,
+        service_card_id="ekologus_service_environmental_compliance_audit",
+    )
+
+    result = _generate(case, _InitialDraftClient(_output(_CLEAN_BODY)))
+
+    assert result.status == "created"
+    assert result.revision is not None
+    metadata = result.revision.proposal_metadata
+    assert metadata is not None
+    assert not any("regulatory" in code for code in metadata.quality_finding_codes)
+    assert metadata.regulatory_assurance_run_id is None
+    assert metadata.regulatory_assurance_criteria_version is None
+    matching_assurance_runs = [
+        run
+        for run in case.run_store.list_codex_runs()
+        if run.hook == "content_regulatory_draft_assurance"
+        and run.proposal_id == case.proposal.proposal_id
+        and run.planning_input_digest == case.planning_input.planning_input_digest
+    ]
+    assert matching_assurance_runs == []
