@@ -1,0 +1,18 @@
+{
+  "judge": "Codex SOL-ULTRA (gpt-5.6-sol)",
+  "method": "blind — text_a/text_b unlabeled; mapping established after scoring",
+  "mapping": {"text_a": "current WordPress", "text_b": "generated WILQ"},
+  "date": "2026-08-14",
+  "pages": [
+    {"index": 0, "slug": "bdo", "preference": "b", "generated_wins": true,
+     "reason": "B prowadzi przez użyteczne obowiązki i kończy jasnym CTA, podczas gdy A opisuje chaotycznie."},
+    {"index": 1, "slug": "szkolenia", "preference": "a", "generated_wins": false,
+     "reason": "A jest chaotyczny, lecz podaje konkretne programy, adresatów, warunki i kwalifikacje, których B nie ma."},
+    {"index": 2, "slug": "doradztwo", "preference": "b", "generated_wins": true,
+     "reason": "B lepiej porządkuje wybór usługi, zakres obowiązków i dane potrzebne do rozpoczęcia współpracy."},
+    {"index": 3, "slug": "opracowania", "preference": "a", "generated_wins": false,
+     "reason": "A wygrywa konkretnymi dokumentami, procedurami i podstawami prawnymi, podczas gdy B jest ogólnikowy."},
+    {"index": 4, "slug": "pomiary", "preference": "a", "generated_wins": false,
+     "reason": "A podaje konkretne badania, metody, parametry, ryzyka i bezpłatną wycenę, a B pozostaje ogólnikowy."}
+  ]
+}

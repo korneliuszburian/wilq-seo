@@ -71,3 +71,18 @@ zakresy i dane wejściowe oraz prowadzi do jasnego kontaktu".
 - `docs/agents/reports/benchmark/llm-judge-input.json` — ślepe wejście sędziego.
 - `docs/agents/reports/benchmark/blind-judge-result-2026-08-13.json` — wyniki sędziego.
 - Poprzedni stan: `blind-judge-result-2026-08-12.md` (current 5/5).
+
+## Follow-up: pomiary re-regeneracja (2026-08-14)
+
+Po pogłębieniu architektury (F4 fact-selection + F2 grounding + F8 new-page parity)
+i odświeżeniu connectorów (GSC + WordPress) zregenerowano pomiary z pełną wiedzą.
+Nowa rewizja 2e58ffaa707646988e9fe7d15f6041f9: 442 słowa (current 371), GSC
+20%→80%, semantic 9/9. Fit terms pomiary (34 faktów) dopasowano do sekcji
+katalogowych.
+
+Blind judge (ponowny, bez etykiet, 2026-08-14): generated na 2/5 (BDO, Doradztwo),
+current na 3/5 (Szkolenia, Opracowania, Pomiary). Pomiary nadal przegrywa — sędzia:
+"A podaje konkretne badania, metody, parametry, ryzyka i bezpłatną wycenę, a B
+pozostaje ogólnikowy". To potwierdza, że blind judge jest zmienny (przebiegi:
+4/5, 2/5, 4/5, 2/5) — pojedynczy przebieg nie jest twardym dowodem. Pomiary
+pozostaje najtrudniejszą stroną (current jest wyjątkowo gęsty konkretami).

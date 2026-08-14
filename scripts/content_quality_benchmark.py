@@ -89,7 +89,7 @@ PAGES = (
         slug="pomiary-i-analizy",
         label="Pomiary i analizy środowiska",
         url="https://www.ekologus.pl/oferta/pomiary-i-analizy/",
-        revision_id="content_revision_25c6ea6ded714315abf37dfcb1380f92",
+        revision_id="content_revision_2e58ffaa707646988e9fe7d15f6041f9",
     ),
 )
 

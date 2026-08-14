@@ -1397,12 +1397,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": [
-        "monitoring",
-        "gleba",
-        "wody podziemne",
-        "próbki"
-      ],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","gazy odlotowe"],
       "buyer_problem_terms": [
         "brak wyników badań środowiska",
         "potrzeba akredytowanego poboru próbek"
@@ -1436,11 +1431,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": [
-        "monitoring",
-        "gleba",
-        "wody podziemne"
-      ],
+      "service_fit_terms": ["pomiary związane z decyzją środowiskową i monitoringiem","monitoring środowiska"],
       "buyer_problem_terms": [
         "brak porównania wyników z wartościami dopuszczalnymi",
         "nieznany stan komponentów środowiska"
@@ -1474,9 +1465,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": [
-        "monitoring"
-      ],
+      "service_fit_terms": ["pomiary związane z decyzją środowiskową i monitoringiem","monitoring środowiska"],
       "buyer_problem_terms": [
         "decyzja nakłada okresowe pomiary",
         "potrzebny monitoring do uzyskania decyzji środowiskowej"
@@ -1510,9 +1499,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": [
-        "monitoring"
-      ],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","gazy odlotowe"],
       "buyer_problem_terms": [
         "brak pomiarów konkretnych zanieczyszczeń powietrza",
         "potrzeba analizy emisji instalacji"
@@ -1546,9 +1533,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": [
-        "monitoring"
-      ],
+      "service_fit_terms": ["pomiary czynników szkodliwych i warunków środowiska pracy","czynniki szkodliwe"],
       "buyer_problem_terms": [
         "brak pomiarów czynników szkodliwych na stanowisku pracy",
         "potrzeba danych do oceny ryzyka zdrowotnego"
@@ -3821,7 +3806,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring emisji", "akredytowane pomiary"],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","akredytowane pomiary emisji"],
       "buyer_problem_terms": ["brak akredytowanych pomiarów emisji instalacji"],
       "buyer_triggers": ["zakład potrzebuje zmierzyć emisję pyłów lub gazów do powietrza"]
     },
@@ -3842,7 +3827,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring powietrza", "pył"],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","pył"],
       "buyer_problem_terms": ["brak pomiaru pyłu w gazach odlotowych"],
       "buyer_triggers": ["instalacja wymaga pomiaru pyłu metodą grawimetryczną"]
     },
@@ -3863,7 +3848,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring powietrza", "co", "co2"],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","gazy odlotowe"],
       "buyer_problem_terms": ["brak pomiaru CO lub CO2 w gazach odlotowych"],
       "buyer_triggers": ["zakład potrzebuje oznaczyć CO i CO2 w emisji instalacji"]
     },
@@ -3884,7 +3869,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring powietrza", "nox", "no2"],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","gazy odlotowe"],
       "buyer_problem_terms": ["brak pomiaru tlenków azotu w emisji"],
       "buyer_triggers": ["instalacja wymaga pomiaru NOx lub NO2 w gazach odlotowych"]
     },
@@ -3905,7 +3890,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring powietrza", "so2"],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","gazy odlotowe"],
       "buyer_problem_terms": ["brak pomiaru SO2 w gazach odlotowych"],
       "buyer_triggers": ["zakład potrzebuje oznaczyć SO2 w emisji instalacji"]
     },
@@ -3926,7 +3911,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring powietrza", "lzo", "fid"],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","LZO"],
       "buyer_problem_terms": ["brak ciągłego pomiaru LZO metodą FID"],
       "buyer_triggers": ["emisja instalacji wymaga pomiaru lotnych związków organicznych"]
     },
@@ -3947,7 +3932,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring powietrza", "pm2,5", "pm10"],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","pył"],
       "buyer_problem_terms": ["brak pomiaru frakcji pyłu PM2,5-PM10"],
       "buyer_triggers": ["zakład potrzebuje rozdzielić frakcje pyłu z użyciem impaktora kaskadowego"]
     },
@@ -3968,7 +3953,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring powietrza", "metale ciężkie"],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","metale ciężkie"],
       "buyer_problem_terms": ["brak oznaczenia metali ciężkich w emisji"],
       "buyer_triggers": ["zakład potrzebuje zbadać metale ciężkie w emisji do powietrza"]
     },
@@ -3989,7 +3974,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring", "hałas w środowisku"],
+      "service_fit_terms": ["pomiary hałasu w środowisku"],
       "buyer_problem_terms": ["brak pomiaru hałasu emitowanego przez zakład"],
       "buyer_triggers": ["działalność zakładu wymaga pomiaru poziomu hałasu w środowisku"]
     },
@@ -4010,7 +3995,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["gleba", "akredytowany pobór próbek"],
+      "service_fit_terms": ["akredytowane pobory i badania ziemi oraz gleby","gleba"],
       "buyer_problem_terms": ["potrzebny akredytowany pobór próbki gleby"],
       "buyer_triggers": ["teren wymaga pobrania i zbadania próbki gleby"]
     },
@@ -4031,7 +4016,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["ziemia", "akredytowany pobór próbek"],
+      "service_fit_terms": ["akredytowane pobory i badania ziemi oraz gleby","ziemia"],
       "buyer_problem_terms": ["potrzebny akredytowany pobór próbki ziemi"],
       "buyer_triggers": ["ocena terenu wymaga pobrania próbki ziemi"]
     },
@@ -4052,7 +4037,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["wody podziemne", "akredytowany pobór próbek"],
+      "service_fit_terms": ["akredytowane pobory i badania wód oraz ścieków","wody podziemne"],
       "buyer_problem_terms": ["potrzebny akredytowany pobór wód podziemnych"],
       "buyer_triggers": ["teren wymaga pobrania i zbadania próbki wód podziemnych"]
     },
@@ -4073,7 +4058,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring", "analizy laboratoryjne"],
+      "service_fit_terms": ["akredytowane pobory i badania ziemi oraz gleby","analizy laboratoryjne"],
       "buyer_problem_terms": ["pobrane próbki wymagają analizy laboratoryjnej"],
       "buyer_triggers": ["firma potrzebuje zbadać pobrane próbki w akredytowanym laboratorium"]
     },
@@ -4094,7 +4079,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring środowiska pracy", "zapylenie"],
+      "service_fit_terms": ["pomiary czynników szkodliwych i warunków środowiska pracy","zapylenie"],
       "buyer_problem_terms": ["brak pomiaru pyłu całkowitego i respirabilnego na stanowisku"],
       "buyer_triggers": ["ocena ryzyka zdrowotnego wymaga pomiaru zapylenia pracowników"]
     },
@@ -4115,7 +4100,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring środowiska pracy", "substancje szkodliwe"],
+      "service_fit_terms": ["pomiary czynników szkodliwych i warunków środowiska pracy","substancje szkodliwe"],
       "buyer_problem_terms": ["brak pomiaru stężenia substancji szkodliwych"],
       "buyer_triggers": ["stanowisko pracy wymaga pomiaru narażenia na substancje szkodliwe"]
     },
@@ -4136,7 +4121,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring środowiska pracy", "oświetlenie"],
+      "service_fit_terms": ["pomiary czynników szkodliwych i warunków środowiska pracy","oświetlenie"],
       "buyer_problem_terms": ["brak pomiaru natężenia oświetlenia"],
       "buyer_triggers": ["ocena stanowiska pracy wymaga pomiaru oświetlenia"]
     },
@@ -4157,7 +4142,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring środowiska pracy", "hałas"],
+      "service_fit_terms": ["pomiary czynników szkodliwych i warunków środowiska pracy","hałas"],
       "buyer_problem_terms": ["brak pomiaru hałasu na stanowisku pracy"],
       "buyer_triggers": ["pracodawca potrzebuje danych o narażeniu pracowników na hałas"]
     },
@@ -4178,7 +4163,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring środowiska pracy", "drgania mechaniczne"],
+      "service_fit_terms": ["pomiary czynników szkodliwych i warunków środowiska pracy","drgania mechaniczne"],
       "buyer_problem_terms": ["brak pomiaru drgań mechanicznych"],
       "buyer_triggers": ["stanowisko pracy naraża pracowników na drgania mechaniczne"]
     },
@@ -4199,7 +4184,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring środowiska pracy", "pem"],
+      "service_fit_terms": ["pomiary czynników szkodliwych i warunków środowiska pracy","pola elektromagnetyczne"],
       "buyer_problem_terms": ["brak pomiaru pól elektromagnetycznych"],
       "buyer_triggers": ["stanowisko pracy wymaga pomiaru pól elektromagnetycznych"]
     },
@@ -4220,7 +4205,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring", "decyzja środowiskowa"],
+      "service_fit_terms": ["pomiary związane z decyzją środowiskową i monitoringiem","decyzja środowiskowa"],
       "buyer_problem_terms": ["potrzebny monitoring do uzyskania decyzji środowiskowej"],
       "buyer_triggers": ["przedsięwzięcie przygotowuje materiał do decyzji środowiskowej"]
     },
@@ -4241,7 +4226,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring", "obowiązek okresowych pomiarów"],
+      "service_fit_terms": ["pomiary związane z decyzją środowiskową i monitoringiem","obowiązek okresowych pomiarów"],
       "buyer_problem_terms": ["decyzja nakłada okresowe sprawdzanie stanu środowiska"],
       "buyer_triggers": ["organ określił w decyzji okresowy zakres monitoringu"]
     },
@@ -4262,7 +4247,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring", "wartości dopuszczalne"],
+      "service_fit_terms": ["pomiary związane z decyzją środowiskową i monitoringiem","wartości dopuszczalne"],
       "buyer_problem_terms": ["brak porównania wyników z wartościami dopuszczalnymi"],
       "buyer_triggers": ["wyniki pomiarów wymagają oceny względem decyzji lub przepisów"]
     },
@@ -4283,7 +4268,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring powietrza", "chromatografia gazowa"],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","chromatografia gazowa"],
       "buyer_problem_terms": ["brak analizy związków organicznych w pobranych próbkach"],
       "buyer_triggers": ["pomiar emisji wymaga analizy związków organicznych metodą chromatografii gazowej"]
     },
@@ -4304,7 +4289,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring powietrza", "związki nieorganiczne"],
+      "service_fit_terms": ["pomiary emisji pyłów i gazów do powietrza","związki nieorganiczne"],
       "buyer_problem_terms": ["brak pomiaru związków nieorganicznych w emisji"],
       "buyer_triggers": ["zakład potrzebuje oznaczyć związki nieorganiczne w emisji do powietrza"]
     },
@@ -4325,7 +4310,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring", "badania wody"],
+      "service_fit_terms": ["akredytowane pobory i badania wód oraz ścieków","badania wody"],
       "buyer_problem_terms": ["potrzebny akredytowany pobór i badanie wody"],
       "buyer_triggers": ["firma potrzebuje pobrać i zbadać próbkę wody"]
     },
@@ -4346,7 +4331,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring", "badania ścieków"],
+      "service_fit_terms": ["akredytowane pobory i badania wód oraz ścieków","badania ścieków"],
       "buyer_problem_terms": ["potrzebny akredytowany pobór i badanie ścieków"],
       "buyer_triggers": ["firma potrzebuje pobrać i zbadać próbkę ścieków"]
     },
@@ -4367,7 +4352,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring", "badania odpadów"],
+      "service_fit_terms": ["akredytowane pobory i badania odpadów oraz kompostu","badania odpadów"],
       "buyer_problem_terms": ["potrzebny akredytowany pobór i badanie odpadów"],
       "buyer_triggers": ["firma potrzebuje pobrać i zbadać próbkę odpadów"]
     },
@@ -4388,7 +4373,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring", "badania kompostu"],
+      "service_fit_terms": ["akredytowane pobory i badania odpadów oraz kompostu","badania kompostu"],
       "buyer_problem_terms": ["potrzebny akredytowany pobór i badanie kompostu"],
       "buyer_triggers": ["firma potrzebuje pobrać i zbadać próbkę kompostu"]
     },
@@ -4409,7 +4394,7 @@
       "target_card_id": "ekologus_service_remediation_monitoring",
       "target_card_type": "service",
       "target_card_title": "Rekultywacje, remediacje i monitoring",
-      "service_fit_terms": ["monitoring środowiska pracy", "wydatek energetyczny"],
+      "service_fit_terms": ["pomiary czynników szkodliwych i warunków środowiska pracy","wydatek energetyczny"],
       "buyer_problem_terms": ["brak określenia wydatku energetycznego na stanowisku pracy"],
       "buyer_triggers": ["ocena ryzyka zdrowotnego wymaga określenia wydatku energetycznego"]
     }

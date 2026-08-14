@@ -47,13 +47,13 @@
       "evidence": {
         "google_search_console": {
           "evidence_ids": [
-            "ev_refresh_refresh_google_search_console_5273e31141da"
+            "ev_refresh_refresh_google_search_console_63e3b1d04dc2"
           ],
           "periods": [
-            "2026-08-11/2026-08-11"
+            "2026-08-12/2026-08-12"
           ],
-          "refresh_completed_at": "2026-08-13T18:29:05.228367+00:00",
-          "refresh_run_id": "refresh_google_search_console_5273e31141da",
+          "refresh_completed_at": "2026-08-14T17:18:32.800633+00:00",
+          "refresh_run_id": "refresh_google_search_console_63e3b1d04dc2",
           "source_connector": "google_search_console"
         },
         "revision": {
@@ -63,8 +63,8 @@
           "revision_id": "content_revision_f40dc60393304cecbb785c900bfc2423"
         },
         "wordpress": {
-          "catalog_collected_at": "2026-08-12T12:20:24.589694+00:00",
-          "evidence_id": "ev_refresh_refresh_wordpress_ekologus_c1bf53879b2a",
+          "catalog_collected_at": "2026-08-14T17:24:13.357990+00:00",
+          "evidence_id": "ev_refresh_refresh_wordpress_ekologus_dda98077a611",
           "extraction_region": "wordpress_rest.content",
           "material_confidence": "source_bound",
           "material_modified_gmt": "2020-02-10T06:54:40",
@@ -106,8 +106,8 @@
         "heading_quality": 0.0,
         "matched_query_count": 2,
         "paragraph_count": 1,
-        "query_coverage": 6.25,
-        "query_term_count": 32,
+        "query_coverage": 8.33,
+        "query_term_count": 24,
         "section_count": 0,
         "uniqueness": 0.0,
         "word_count": 1473,
@@ -118,9 +118,9 @@
         "duplicate_paragraph_pair_count": 0,
         "heading_issue_count": 0,
         "heading_quality": 1.0,
-        "matched_query_count": 1,
+        "matched_query_count": 0,
         "paragraph_count": 18,
-        "query_coverage": 3.13,
+        "query_coverage": 0.0,
         "query_term_count": 0,
         "section_count": 7,
         "uniqueness": 1.0,
@@ -130,13 +130,13 @@
       "evidence": {
         "google_search_console": {
           "evidence_ids": [
-            "ev_refresh_refresh_google_search_console_5273e31141da"
+            "ev_refresh_refresh_google_search_console_63e3b1d04dc2"
           ],
           "periods": [
-            "2026-08-11/2026-08-11"
+            "2026-08-12/2026-08-12"
           ],
-          "refresh_completed_at": "2026-08-13T18:29:05.228367+00:00",
-          "refresh_run_id": "refresh_google_search_console_5273e31141da",
+          "refresh_completed_at": "2026-08-14T17:18:32.800633+00:00",
+          "refresh_run_id": "refresh_google_search_console_63e3b1d04dc2",
           "source_connector": "google_search_console"
         },
         "revision": {
@@ -146,8 +146,8 @@
           "revision_id": "content_revision_af6e7c77da764f66b19fa31e2a993a99"
         },
         "wordpress": {
-          "catalog_collected_at": "2026-08-12T12:20:24.589694+00:00",
-          "evidence_id": "ev_refresh_refresh_wordpress_ekologus_c1bf53879b2a",
+          "catalog_collected_at": "2026-08-14T17:24:13.357990+00:00",
+          "evidence_id": "ev_refresh_refresh_wordpress_ekologus_dda98077a611",
           "extraction_region": "wordpress_rest.acf",
           "material_confidence": "source_bound",
           "material_modified_gmt": "2025-02-10T09:20:10",
@@ -160,10 +160,10 @@
         "duplicate_paragraph_pair_count": 0,
         "heading_issue_count": 0,
         "heading_quality": 1.0,
-        "matched_query_count": 3,
+        "matched_query_count": 2,
         "paragraph_count": 19,
-        "query_coverage": 9.38,
-        "query_term_count": 32,
+        "query_coverage": 8.33,
+        "query_term_count": 24,
         "section_count": 7,
         "uniqueness": 1.0,
         "word_count": 512,
@@ -176,7 +176,7 @@
       "verdict_signals": {
         "duplicate_paragraph": 0,
         "heading_quality": 1,
-        "query_coverage": 1,
+        "query_coverage": 0,
         "uniqueness": 1,
         "working_note_count": 0
       }
@@ -187,10 +187,10 @@
         "duplicate_paragraph_pair_count": 0,
         "heading_issue_count": 0,
         "heading_quality": 0.0,
-        "matched_query_count": 2,
+        "matched_query_count": 3,
         "paragraph_count": 1,
-        "query_coverage": 5.88,
-        "query_term_count": 34,
+        "query_coverage": 9.38,
+        "query_term_count": 32,
         "section_count": 0,
         "uniqueness": 0.0,
         "word_count": 365,
@@ -203,7 +203,7 @@
         "heading_quality": 1.0,
         "matched_query_count": 1,
         "paragraph_count": 26,
-        "query_coverage": 2.94,
+        "query_coverage": 3.12,
         "query_term_count": 0,
         "section_count": 11,
         "uniqueness": 1.0,
@@ -213,13 +213,13 @@
       "evidence": {
         "google_search_console": {
           "evidence_ids": [
-            "ev_refresh_refresh_google_search_console_5273e31141da"
+            "ev_refresh_refresh_google_search_console_63e3b1d04dc2"
           ],
           "periods": [
-            "2026-08-11/2026-08-11"
+            "2026-08-12/2026-08-12"
           ],
-          "refresh_completed_at": "2026-08-13T18:29:05.228367+00:00",
-          "refresh_run_id": "refresh_google_search_console_5273e31141da",
+          "refresh_completed_at": "2026-08-14T17:18:32.800633+00:00",
+          "refresh_run_id": "refresh_google_search_console_63e3b1d04dc2",
           "source_connector": "google_search_console"
         },
         "revision": {
@@ -229,8 +229,8 @@
           "revision_id": "content_revision_1f2963e9f53042e599d208a4e865be5b"
         },
         "wordpress": {
-          "catalog_collected_at": "2026-08-12T12:20:24.589694+00:00",
-          "evidence_id": "ev_refresh_refresh_wordpress_ekologus_c1bf53879b2a",
+          "catalog_collected_at": "2026-08-14T17:24:13.357990+00:00",
+          "evidence_id": "ev_refresh_refresh_wordpress_ekologus_dda98077a611",
           "extraction_region": "wordpress_rest.acf",
           "material_confidence": "source_bound",
           "material_modified_gmt": "2023-07-13T11:10:25",
@@ -243,10 +243,10 @@
         "duplicate_paragraph_pair_count": 0,
         "heading_issue_count": 0,
         "heading_quality": 1.0,
-        "matched_query_count": 3,
+        "matched_query_count": 4,
         "paragraph_count": 27,
-        "query_coverage": 8.82,
-        "query_term_count": 34,
+        "query_coverage": 12.5,
+        "query_term_count": 32,
         "section_count": 11,
         "uniqueness": 1.0,
         "word_count": 814,
@@ -272,8 +272,8 @@
         "heading_quality": 0.0,
         "matched_query_count": 1,
         "paragraph_count": 1,
-        "query_coverage": 25.0,
-        "query_term_count": 4,
+        "query_coverage": 33.33,
+        "query_term_count": 3,
         "section_count": 0,
         "uniqueness": 0.0,
         "word_count": 1519,
@@ -286,7 +286,7 @@
         "heading_quality": 1.0,
         "matched_query_count": -1,
         "paragraph_count": 28,
-        "query_coverage": -25.0,
+        "query_coverage": -33.33,
         "query_term_count": 0,
         "section_count": 9,
         "uniqueness": 1.0,
@@ -296,13 +296,13 @@
       "evidence": {
         "google_search_console": {
           "evidence_ids": [
-            "ev_refresh_refresh_google_search_console_5273e31141da"
+            "ev_refresh_refresh_google_search_console_63e3b1d04dc2"
           ],
           "periods": [
-            "2026-08-11/2026-08-11"
+            "2026-08-12/2026-08-12"
           ],
-          "refresh_completed_at": "2026-08-13T18:29:05.228367+00:00",
-          "refresh_run_id": "refresh_google_search_console_5273e31141da",
+          "refresh_completed_at": "2026-08-14T17:18:32.800633+00:00",
+          "refresh_run_id": "refresh_google_search_console_63e3b1d04dc2",
           "source_connector": "google_search_console"
         },
         "revision": {
@@ -312,8 +312,8 @@
           "revision_id": "content_revision_c5aa6a9905cb4f468bd7a006e7d060ac"
         },
         "wordpress": {
-          "catalog_collected_at": "2026-08-12T12:20:24.589694+00:00",
-          "evidence_id": "ev_refresh_refresh_wordpress_ekologus_c1bf53879b2a",
+          "catalog_collected_at": "2026-08-14T17:24:13.357990+00:00",
+          "evidence_id": "ev_refresh_refresh_wordpress_ekologus_dda98077a611",
           "extraction_region": "wordpress_rest.acf",
           "material_confidence": "source_bound",
           "material_modified_gmt": "2025-06-24T06:36:57",
@@ -329,7 +329,7 @@
         "matched_query_count": 0,
         "paragraph_count": 29,
         "query_coverage": 0.0,
-        "query_term_count": 4,
+        "query_term_count": 3,
         "section_count": 9,
         "uniqueness": 1.0,
         "word_count": 770,
@@ -353,10 +353,10 @@
         "duplicate_paragraph_pair_count": 0,
         "heading_issue_count": 0,
         "heading_quality": 0.0,
-        "matched_query_count": 0,
+        "matched_query_count": 1,
         "paragraph_count": 1,
-        "query_coverage": 0.0,
-        "query_term_count": 4,
+        "query_coverage": 20.0,
+        "query_term_count": 5,
         "section_count": 0,
         "uniqueness": 0.0,
         "word_count": 371,
@@ -368,35 +368,35 @@
         "heading_issue_count": 0,
         "heading_quality": 1.0,
         "matched_query_count": 3,
-        "paragraph_count": 22,
-        "query_coverage": 75.0,
+        "paragraph_count": 18,
+        "query_coverage": 60.0,
         "query_term_count": 0,
-        "section_count": 6,
+        "section_count": 4,
         "uniqueness": 1.0,
-        "word_count": 185,
+        "word_count": 71,
         "working_note_count": 0
       },
       "evidence": {
         "google_search_console": {
           "evidence_ids": [
-            "ev_refresh_refresh_google_search_console_5273e31141da"
+            "ev_refresh_refresh_google_search_console_63e3b1d04dc2"
           ],
           "periods": [
-            "2026-08-11/2026-08-11"
+            "2026-08-12/2026-08-12"
           ],
-          "refresh_completed_at": "2026-08-13T18:29:05.228367+00:00",
-          "refresh_run_id": "refresh_google_search_console_5273e31141da",
+          "refresh_completed_at": "2026-08-14T17:18:32.800633+00:00",
+          "refresh_run_id": "refresh_google_search_console_63e3b1d04dc2",
           "source_connector": "google_search_console"
         },
         "revision": {
-          "content_digest": "9756a6e4a8408f73787d5e6cf3e1d1eab2d251fdbf7ad4eaba9d567233165e66",
-          "created_at": "2026-08-13T18:34:27.373943+00:00",
+          "content_digest": "2a0e0d6da376a0f0391811b7ba28913b00b92acb432d047b9a97937f2d0488e7",
+          "created_at": "2026-08-14T18:18:46.211067+00:00",
           "publish_ready": false,
-          "revision_id": "content_revision_25c6ea6ded714315abf37dfcb1380f92"
+          "revision_id": "content_revision_2e58ffaa707646988e9fe7d15f6041f9"
         },
         "wordpress": {
-          "catalog_collected_at": "2026-08-12T12:20:24.589694+00:00",
-          "evidence_id": "ev_refresh_refresh_wordpress_ekologus_c1bf53879b2a",
+          "catalog_collected_at": "2026-08-14T17:24:13.357990+00:00",
+          "evidence_id": "ev_refresh_refresh_wordpress_ekologus_dda98077a611",
           "extraction_region": "wordpress_rest.acf",
           "material_confidence": "source_bound",
           "material_modified_gmt": "2023-02-08T14:53:56",
@@ -409,13 +409,13 @@
         "duplicate_paragraph_pair_count": 0,
         "heading_issue_count": 0,
         "heading_quality": 1.0,
-        "matched_query_count": 3,
-        "paragraph_count": 23,
-        "query_coverage": 75.0,
-        "query_term_count": 4,
-        "section_count": 6,
+        "matched_query_count": 4,
+        "paragraph_count": 19,
+        "query_coverage": 80.0,
+        "query_term_count": 5,
+        "section_count": 4,
         "uniqueness": 1.0,
-        "word_count": 556,
+        "word_count": 442,
         "working_note_count": 0
       },
       "label": "Pomiary i analizy środowiska",
