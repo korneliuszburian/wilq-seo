@@ -10,6 +10,7 @@ from wilq.codex.app_server import (
     CodexAppServerTurnResult,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
@@ -19,16 +20,9 @@ from wilq.content.drafts.generated_claim_safety import (
     GeneratedClaimSafetyIssue,
     generated_claim_safety_issues,
 )
-from wilq.content.drafts.initial_draft_assurance_repair import (
-    assure_and_repair_initial_draft,
-    repair_initial_output_blocker,
-)
 from wilq.content.drafts.initial_draft_persistence import (
     InitialDraftRevisionStore,
     persist_initial_draft,
-)
-from wilq.content.drafts.initial_draft_readability import (
-    assure_readability_and_repair,
 )
 from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
@@ -49,7 +43,6 @@ from wilq.content.drafts.initial_full_draft_turn import (
     _source_facts_by_section,
     initial_full_draft_turn_request,
 )
-from wilq.content.drafts.regulatory_draft_repair import repair_regulatory_assertions
 from wilq.content.drafts.regulatory_preflight import regulatory_draft_preflight_errors
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
@@ -251,24 +244,7 @@ def _prepare_initial_draft_for_persistence(
     run: CodexRun,
     run_store: LocalStateStore,
 ) -> _InitialDraftPrePersistResult:
-    output, trace, blocker = repair_initial_output_blocker(
-        planning_input=prepared.planning_input,
-        proposal=prepared.proposal,
-        output=output,
-        trace=trace,
-        client=client,
-        output_blocker=lambda candidate: _output_blocker(prepared, candidate),
-    )
-    if blocker is not None:
-        return _finish_blocked_draft(
-            snapshot=snapshot,
-            proposal=prepared.proposal,
-            run=run,
-            trace=trace,
-            blocker=blocker,
-            run_store=run_store,
-        )
-    output, trace, assurance, blocker = assure_and_repair_initial_draft(
+    result = alter_draft_towards_persistence(
         planning_input=prepared.planning_input,
         proposal=prepared.proposal,
         output=output,
@@ -277,148 +253,27 @@ def _prepare_initial_draft_for_persistence(
         run_store=run_store,
         output_blocker=lambda candidate: _output_blocker(prepared, candidate),
     )
-    if blocker is not None:
+    if result.status == "blocked" and result.blocker is not None:
         return _finish_blocked_draft(
             snapshot=snapshot,
             proposal=prepared.proposal,
             run=run,
-            trace=trace,
-            blocker=blocker,
+            trace=result.trace or trace,
+            blocker=result.blocker,
             run_store=run_store,
         )
-    if isinstance(assurance, ContentDraftAssuranceFailure):
+    if result.status == "assurance_failure" and result.assurance is not None:
         return _finish_assurance_failure(
             snapshot=snapshot,
             proposal=prepared.proposal,
             run=run,
-            trace=trace,
+            trace=result.trace or trace,
             run_store=run_store,
-            assurance=assurance,
+            assurance=cast(ContentDraftAssuranceFailure, result.assurance),
         )
-    assured_output = output
-    output, trace, blocker = assure_readability_and_repair(
-        planning_input=prepared.planning_input,
-        proposal=prepared.proposal,
-        output=output,
-        trace=trace,
-        client=client,
-        output_blocker=lambda candidate: _output_blocker(prepared, candidate),
-    )
-    if blocker is not None:
-        repaired = repair_regulatory_assertions(
-            planning_input=prepared.planning_input,
-            proposal=prepared.proposal,
-            output=output,
-            blocker=blocker,
-            client=client,
-        )
-        if repaired is not None:
-            output, trace = repaired
-            blocker = _output_blocker(prepared, output)
-            if blocker is None:
-                output, trace, blocker = assure_readability_and_repair(
-                    planning_input=prepared.planning_input,
-                    proposal=prepared.proposal,
-                    output=output,
-                    trace=trace,
-                    client=client,
-                    output_blocker=lambda candidate: _output_blocker(prepared, candidate),
-                )
-                if blocker is not None:
-                    repaired = repair_regulatory_assertions(
-                        planning_input=prepared.planning_input,
-                        proposal=prepared.proposal,
-                        output=output,
-                        blocker=blocker,
-                        client=client,
-                    )
-                    if repaired is not None:
-                        output, trace = repaired
-                        blocker = _output_blocker(prepared, output)
-    if blocker is not None:
-        return _finish_blocked_draft(
-            snapshot=snapshot,
-            proposal=prepared.proposal,
-            run=run,
-            trace=trace,
-            blocker=blocker,
-            run_store=run_store,
-        )
-    if output is assured_output:
-        return output, trace, assurance
-    # Grounding inside the assurance repair cycle can reintroduce exact fact
-    # sentences after the readability pass. Alternate assurance and the
-    # readability last-writer with a bounded budget so the persisted document
-    # keeps both exact regulatory concepts and readable prose.
-    for _ in range(2):
-        before_assure = output
-        output, trace, assurance, blocker = assure_and_repair_initial_draft(
-            planning_input=prepared.planning_input,
-            proposal=prepared.proposal,
-            output=output,
-            trace=trace,
-            client=client,
-            run_store=run_store,
-            output_blocker=lambda candidate: _output_blocker(prepared, candidate),
-        )
-        if blocker is not None:
-            return _finish_blocked_draft(
-                snapshot=snapshot,
-                proposal=prepared.proposal,
-                run=run,
-                trace=trace,
-                blocker=blocker,
-                run_store=run_store,
-            )
-        if isinstance(assurance, ContentDraftAssuranceFailure):
-            return _finish_assurance_failure(
-                snapshot=snapshot,
-                proposal=prepared.proposal,
-                run=run,
-                trace=trace,
-                run_store=run_store,
-                assurance=assurance,
-            )
-        output, trace, blocker = assure_readability_and_repair(
-            planning_input=prepared.planning_input,
-            proposal=prepared.proposal,
-            output=output,
-            trace=trace,
-            client=client,
-            output_blocker=lambda candidate: _output_blocker(prepared, candidate),
-        )
-        if blocker is None:
-            return output, trace, assurance
-        repaired = repair_regulatory_assertions(
-            planning_input=prepared.planning_input,
-            proposal=prepared.proposal,
-            output=output,
-            blocker=blocker,
-            client=client,
-        )
-        if repaired is None:
-            return _finish_blocked_draft(
-                snapshot=snapshot,
-                proposal=prepared.proposal,
-                run=run,
-                trace=trace,
-                blocker=blocker,
-                run_store=run_store,
-            )
-        output, trace = repaired
-        blocker = _output_blocker(prepared, output)
-        if blocker is not None:
-            return _finish_blocked_draft(
-                snapshot=snapshot,
-                proposal=prepared.proposal,
-                run=run,
-                trace=trace,
-                blocker=blocker,
-                run_store=run_store,
-            )
-        if output is before_assure:
-            return output, trace, assurance
-    return output, trace, assurance
+    if result.output is None or result.trace is None:
+        raise RuntimeError("Draft alternation returned no output or trace.")
+    return result.output, result.trace, cast(ContentDraftAssuranceReceipt | None, result.assurance)
 
 
 def _finish_assurance_failure(

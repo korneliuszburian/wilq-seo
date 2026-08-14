@@ -26,7 +26,11 @@ from tests.content.initial_draft_readability_fakes import (
 from tests.content.initial_draft_readability_fakes import (
     proposal as _proposal,
 )
-from wilq.content.drafts import initial_draft_assurance_repair, initial_full_draft
+from wilq.content.drafts import (
+    draft_alteration,
+    initial_draft_assurance_repair,
+    initial_full_draft,
+)
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
@@ -253,12 +257,12 @@ def _generate_blocked_response(monkeypatch, output, client):
         lambda *_args, **_kwargs: (output, trace),
     )
     monkeypatch.setattr(
-        initial_full_draft,
+        draft_alteration,
         "repair_initial_output_blocker",
         lambda **kwargs: (kwargs["output"], kwargs["trace"], None),
     )
     monkeypatch.setattr(
-        initial_full_draft,
+        draft_alteration,
         "assure_and_repair_initial_draft",
         lambda **kwargs: (kwargs["output"], kwargs["trace"], None, None),
     )
