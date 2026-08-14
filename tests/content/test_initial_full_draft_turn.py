@@ -704,3 +704,19 @@ def test_source_facts_by_section_ranks_direct_matches_by_section_overlap(
 
     assert selected[0]["source_fact_id"] == "specific_fee_fact"
     assert len(selected) <= 4
+
+
+def test_benefit_signals_come_from_one_shared_source() -> None:
+    from wilq.content.drafts import initial_full_draft as ifd
+    from wilq.content.quality import benefit_signal, reading_quality
+
+    assert (
+        ifd.BENEFIT_HEADING_SIGNAL
+        is reading_quality.BENEFIT_HEADING_SIGNAL
+        is benefit_signal.BENEFIT_HEADING_SIGNAL
+    )
+    assert (
+        ifd.BENEFIT_BODY_MARKER
+        is reading_quality.BENEFIT_BODY_MARKER
+        is benefit_signal.BENEFIT_BODY_MARKER
+    )

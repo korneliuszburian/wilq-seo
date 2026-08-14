@@ -6,6 +6,10 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from typing import Literal
 
+from wilq.content.quality.benefit_signal import (
+    BENEFIT_BODY_MARKER,
+    BENEFIT_HEADING_SIGNAL,
+)
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionSection
 
 _WORD = re.compile(r"[\wąćęłńóśźż]+", re.IGNORECASE)
@@ -46,16 +50,6 @@ _VAGUE_ANSWER_CONCRETE_SIGNAL = re.compile(
     r"(?<!\w)(?:wniosek|karta|raport|kobize|bdo|termin|dni|norma|wymaga|numer|"
     r"rejestr)(?!\w)|(?<!\w)(?:sprawozdan|op(?:l|ł)at|pozwoleni|decyzj|"
     r"zgłoszen|próbk|pomiar|analiz)\w*(?!\w)|\d",
-    re.IGNORECASE,
-)
-_BENEFIT_HEADING_SIGNAL = re.compile(
-    r"(?<!\w)(?:korzyśc|wartoś|efekt|rezultat|opłacal)\w*(?!\w)|"
-    r"(?<!\w)co\s+(?:zysk|daj)\w*(?!\w)",
-    re.IGNORECASE,
-)
-_BENEFIT_BODY_MARKER = re.compile(
-    r"(?<!\w)(?:koszt|zatrudnian|terminow|pewnoś|gwaranc|oszczędn|czas|"
-    r"efektywn|ryzyk)\w*(?!\w)",
     re.IGNORECASE,
 )
 _CONCRETE_ANSWER_SIGNAL = re.compile(
@@ -219,8 +213,8 @@ def _heading_answer_mismatch(heading: str, markdown: str) -> bool:
     if _VAGUE_ANSWER_HEDGE.search(markdown) is None:
         return False
     if (
-        _BENEFIT_HEADING_SIGNAL.search(heading) is not None
-        and _BENEFIT_BODY_MARKER.search(markdown) is not None
+        BENEFIT_HEADING_SIGNAL.search(heading) is not None
+        and BENEFIT_BODY_MARKER.search(markdown) is not None
     ):
         return False
     return (
@@ -240,13 +234,13 @@ def _contains_vague_answer_phrase(markdown: str) -> bool:
 
 
 def _benefit_heading_without_buyer_benefit(heading: str, markdown: str) -> bool:
-    if _BENEFIT_HEADING_SIGNAL.search(heading) is None:
+    if BENEFIT_HEADING_SIGNAL.search(heading) is None:
         return False
     return not _has_benefit_or_concrete_signal(markdown)
 
 
 def _has_benefit_or_concrete_signal(markdown: str) -> bool:
-    if _BENEFIT_BODY_MARKER.search(markdown) is not None:
+    if BENEFIT_BODY_MARKER.search(markdown) is not None:
         return True
     return any(
         signal.group(0).casefold() != "wymaga"

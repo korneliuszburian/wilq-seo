@@ -60,6 +60,10 @@ from wilq.content.planning.dynamic_input import (
 from wilq.content.planning.generated_proposal import (
     with_explicit_content_service_selection,
 )
+from wilq.content.quality.benefit_signal import (
+    BENEFIT_BODY_MARKER,
+    BENEFIT_HEADING_SIGNAL,
+)
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revisions import (
@@ -87,16 +91,6 @@ _InitialDraftPrePersistResult = (
     | ContentInitialDraftResponse
 )
 
-_BENEFIT_HEADING_SIGNAL = re.compile(
-    r"(?<!\w)(?:korzyśc|wartoś|efekt|rezultat|opłacal)\w*(?!\w)|"
-    r"(?<!\w)co\s+(?:zysk|daj)\w*(?!\w)",
-    re.IGNORECASE,
-)
-_BENEFIT_BODY_MARKER = re.compile(
-    r"(?<!\w)(?:koszt|zatrudnian|terminow|pewnoś|gwaranc|oszczędn|czas|"
-    r"efektywn|ryzyk)\w*(?!\w)",
-    re.IGNORECASE,
-)
 _BENEFIT_SOURCE_FACT_SIGNAL = re.compile(
     r"(?<!\w)(?:koszt|zatrudnian|terminow|pewnoś|gwaranc|oszczędn|efektywn)\w*(?!\w)",
     re.IGNORECASE,
@@ -132,8 +126,8 @@ def _enrich_benefit_sections(
     sections = []
     for section in output.sections:
         if (
-            _BENEFIT_HEADING_SIGNAL.search(section.heading) is not None
-            and _BENEFIT_BODY_MARKER.search(section.body_markdown) is None
+            BENEFIT_HEADING_SIGNAL.search(section.heading) is not None
+            and BENEFIT_BODY_MARKER.search(section.body_markdown) is None
         ):
             section = section.model_copy(
                 update={"body_markdown": f"{section.body_markdown.rstrip()}\n\n{fallback}"}
