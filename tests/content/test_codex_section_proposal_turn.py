@@ -7,7 +7,12 @@ from typing import cast
 
 import pytest
 
-from wilq.content.drafts import codex_section_proposal_turn as proposal_turn
+from wilq.content.drafts import (
+    codex_section_proposal_turn as proposal_turn,
+)
+from wilq.content.drafts import (
+    fact_selection,
+)
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.input_sources import ContentPlanningSourceFact
@@ -43,7 +48,7 @@ def section_repair_context(
         ),
     ]
     monkeypatch.setattr(
-        proposal_turn,
+        fact_selection,
         "ekologus_source_facts",
         lambda: tuple(registry_facts),
     )
@@ -311,7 +316,7 @@ def test_selected_sections_cap_approved_source_facts_per_section(
     official_fact = next(fact for fact in _source_facts() if fact.official_source)
     source_facts = [*direct_facts, *fallback_facts, official_fact]
     monkeypatch.setattr(
-        proposal_turn,
+        fact_selection,
         "ekologus_source_facts",
         lambda: tuple(source_facts),
     )

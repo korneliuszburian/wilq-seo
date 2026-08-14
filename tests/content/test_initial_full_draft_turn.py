@@ -7,7 +7,7 @@ import pytest
 
 import wilq.content.drafts.initial_full_draft_turn as draft_turn
 from wilq.codex.prompts import resolve_prompt_template
-from wilq.content.drafts import initial_full_draft
+from wilq.content.drafts import fact_selection, initial_full_draft
 from wilq.content.drafts.initial_draft_readability import readability_issues_for_output
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
@@ -293,7 +293,7 @@ def bdo_source_fact_mapping(
         service_fit_terms=["ewidencja odpadów"],
     )
     monkeypatch.setattr(
-        draft_turn,
+        fact_selection,
         "ekologus_source_facts",
         lambda: (*planning_facts, non_allowlisted_fact),
     )
@@ -552,7 +552,7 @@ def test_source_facts_by_section_ranks_and_caps_service_fallback_facts(
             service_fit_terms=["vat pit bdo czy"],
         ),
     ]
-    monkeypatch.setattr(draft_turn, "ekologus_source_facts", lambda: tuple(fallback_facts))
+    monkeypatch.setattr(fact_selection, "ekologus_source_facts", lambda: tuple(fallback_facts))
     planning_input = planning_input.model_copy(
         update={
             "source_facts": [
@@ -607,7 +607,7 @@ def test_source_facts_by_section_caps_total_facts_across_sections(
         )
         for index in range(1, 6)
     ]
-    monkeypatch.setattr(draft_turn, "ekologus_source_facts", lambda: tuple(matching_facts))
+    monkeypatch.setattr(fact_selection, "ekologus_source_facts", lambda: tuple(matching_facts))
     planning_input = planning_input.model_copy(
         update={
             "source_facts": [
@@ -694,7 +694,7 @@ def test_source_facts_by_section_ranks_direct_matches_by_section_overlap(
         }
     )
     monkeypatch.setattr(
-        draft_turn,
+        fact_selection,
         "ekologus_source_facts",
         lambda: (generic_fact, specific_fact, unrelated_fact),
     )

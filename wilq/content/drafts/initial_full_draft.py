@@ -14,6 +14,7 @@ from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
 )
+from wilq.content.drafts.fact_selection import approved_planning_source_facts
 from wilq.content.drafts.generated_claim_safety import (
     GeneratedClaimSafetyIssue,
     generated_claim_safety_issues,
@@ -45,7 +46,6 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import (
-    _approved_planning_source_facts,
     _source_facts_by_section,
     initial_full_draft_turn_request,
 )
@@ -750,7 +750,11 @@ def _output_blocker(
         regulatory_requirements=inputs.planning_input.regulatory_coverage.requirements,
         source_facts_by_section=source_facts_by_section,
         source_fact_corpus=[
-            fact.extracted_fact for fact in _approved_planning_source_facts(inputs.planning_input)
+            fact.extracted_fact
+            for fact in approved_planning_source_facts(
+                inputs.planning_input,
+                include_official=True,
+            )
         ],
     )
     if errors:

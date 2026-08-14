@@ -11,6 +11,7 @@ from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
     run_regulatory_draft_assurance,
 )
+from wilq.content.drafts.fact_selection import approved_planning_source_facts
 from wilq.content.drafts.initial_draft_validation import (
     _body_has_source_fact_signal,
     _distinctive_fact_tokens,
@@ -19,10 +20,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftModelOutput,
 )
-from wilq.content.drafts.initial_full_draft_turn import (
-    _approved_planning_source_facts,
-    _source_facts_by_section,
-)
+from wilq.content.drafts.initial_full_draft_turn import _source_facts_by_section
 from wilq.content.drafts.regulatory_draft_repair import (
     _document_ready_fact_text,
     repair_regulatory_assertions,
@@ -57,7 +55,13 @@ def repair_missing_source_fact_signals(
     }
     facts_by_section = _source_fact_summaries_by_section(planning_input, proposal)
     distinctive_tokens = _distinctive_fact_tokens(
-        [fact.extracted_fact for fact in _approved_planning_source_facts(planning_input)]
+        [
+            fact.extracted_fact
+            for fact in approved_planning_source_facts(
+                planning_input,
+                include_official=True,
+            )
+        ]
     )
     sections = []
     for section in output.sections:
