@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from typing import Literal, cast
 
@@ -60,6 +59,7 @@ from wilq.content.planning.generated_proposal import (
 from wilq.content.quality.benefit_signal import (
     BENEFIT_BODY_MARKER,
     BENEFIT_HEADING_SIGNAL,
+    BENEFIT_SOURCE_FACT_MARKER,
 )
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
@@ -88,16 +88,15 @@ _InitialDraftPrePersistResult = (
     | ContentInitialDraftResponse
 )
 
-_BENEFIT_SOURCE_FACT_SIGNAL = re.compile(
-    r"(?<!\w)(?:koszt|zatrudnian|terminow|pewnoś|gwaranc|oszczędn|efektywn)\w*(?!\w)",
-    re.IGNORECASE,
-)
-_BENEFIT_SOURCE_FACT_LIMIT = 2
+BENEFIT_SOURCE_FACT_LIMIT = 2
+
+
+BENEFIT_SOURCE_FACT_LIMIT = 2
 
 
 def _benefit_source_fact_text(summary: str) -> str | None:
     text = summary.strip()
-    if _BENEFIT_SOURCE_FACT_SIGNAL.search(text) is None:
+    if BENEFIT_SOURCE_FACT_MARKER.search(text) is None:
         return None
     try:
         return validate_no_inline_link(text)
@@ -113,7 +112,7 @@ def _enrich_benefit_sections(
         text
         for fact in planning_input.source_facts
         if (text := _benefit_source_fact_text(fact.summary)) is not None
-    ][:_BENEFIT_SOURCE_FACT_LIMIT]
+    ][:BENEFIT_SOURCE_FACT_LIMIT]
     if not benefit_facts:
         return output
     fact_sentences = [

@@ -21,5 +21,13 @@ BENEFIT_BODY_MARKER = re.compile(
     r"efektywn|ryzyk)\w*(?!\w)",
     re.IGNORECASE,
 )
+BENEFIT_SOURCE_FACT_MARKER = re.compile(
+    r"(?<!\w)(?:koszt|zatrudnian|terminow|pewnoś|gwaranc|oszczędn|efektywn)\w*(?!\w)",
+    re.IGNORECASE,
+)
 
-__all__ = ["BENEFIT_BODY_MARKER", "BENEFIT_HEADING_SIGNAL"]
+__all__ = [
+    "BENEFIT_BODY_MARKER",
+    "BENEFIT_HEADING_SIGNAL",
+    "BENEFIT_SOURCE_FACT_MARKER",
+]

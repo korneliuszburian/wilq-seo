@@ -719,3 +719,18 @@ def test_benefit_signals_come_from_one_shared_source() -> None:
         is reading_quality.BENEFIT_BODY_MARKER
         is benefit_signal.BENEFIT_BODY_MARKER
     )
+    assert ifd.BENEFIT_SOURCE_FACT_MARKER is benefit_signal.BENEFIT_SOURCE_FACT_MARKER
+
+
+def test_benefit_source_fact_marker_is_a_strict_subset_of_body_marker() -> None:
+    from wilq.content.quality import benefit_signal
+
+    subset = benefit_signal.BENEFIT_SOURCE_FACT_MARKER
+    body = benefit_signal.BENEFIT_BODY_MARKER
+
+    assert subset.search("koszt") is not None
+    assert subset.search("terminowość") is not None
+    assert subset.search("ryzyko") is None
+    assert subset.search("czas") is None
+    assert body.search("ryzyko") is not None
+    assert body.search("czas") is not None
