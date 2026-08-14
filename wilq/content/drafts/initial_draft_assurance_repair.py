@@ -11,7 +11,10 @@ from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
     run_regulatory_draft_assurance,
 )
-from wilq.content.drafts.grounding import repair_missing_source_fact_signals
+from wilq.content.drafts.grounding import (
+    _MISSING_SOURCE_FACT_SIGNAL_PREFIX,
+    repair_missing_source_fact_signals,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftModelOutput,
@@ -27,7 +30,6 @@ AssureDraft = Callable[
     AssuranceResult,
 ]
 OutputBlocker = Callable[[ContentInitialDraftModelOutput], ContentInitialDraftBlocker | None]
-_MISSING_SOURCE_FACT_SIGNAL_PREFIX = "missing_source_fact_signal:"
 
 
 def assure_and_repair_initial_draft(
@@ -231,5 +233,4 @@ __all__ = [
     "assure_regulated_draft",
     "repair_after_assurance_failure",
     "repair_initial_output_blocker",
-    "repair_missing_source_fact_signals",
 ]
