@@ -188,6 +188,10 @@ rtk scripts/local_stack.sh status
   rotation bez osobnej zgody i właściwego okna.
 - Nie claimuj produkcji, auth, TLS, multi-tenant, aktualnego prawa, jakości
   retrievalu, efektu marketingowego ani expert acceptance bez dowodu.
+- Gotowość produkcyjna infrastruktury jest mierzona w
+  `docs/architecture/production-readiness-audit.md` (current-state, mapa luk);
+  żaden z wymiarów auth/TLS/tenant-actor/monitoring/HA/backup/rotation nie ma
+  tam statusu PASS bez deployu i dowodu z docelowego środowiska.
 - Nie naprawiaj produktu w skill promptach. Najpierw typed WILQ API/schema/
   view-model, potem dashboard i skill.
 - Martwe artefakty usuwaj dopiero po potwierdzeniu braku referencji.
