@@ -11,6 +11,7 @@ from wilq.codex.app_server import (
 )
 from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.claims.ledger import ContentClaimLedger
+from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_component_proposal_support import (
     component_scope_blocker,
     contract_with_revision_lineage,
@@ -244,7 +245,7 @@ def _execute_runtime(
             blockers=[blocker],
             status="failed",
         )
-    trace = _runtime_trace(result)
+    trace = ContentCodexRuntimeTrace.model_validate(runtime_trace(result).model_dump())
     if result.status != "completed" or result.output_text is None:
         code: ContentCodexSectionProposalBlockerCode = (
             "runtime_blocked" if result.status == "blocked" else "runtime_failed"
@@ -735,17 +736,6 @@ def _proposal_metadata(
             if selected_cta_ids
             else "persisted_selected_sections_and_declared_lineage"
         ),
-    )
-
-
-def _runtime_trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:
-    return ContentCodexRuntimeTrace(
-        status=result.status,
-        thread_id=result.thread_id,
-        turn_id=result.turn_id,
-        event_methods=list(result.event_methods),
-        item_types=list(result.item_types),
-        external_call_attempted=result.external_call_attempted,
     )
 
 

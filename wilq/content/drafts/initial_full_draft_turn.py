@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from typing import Literal, cast
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.codex.prompts import resolve_prompt_template
+from wilq.content.codex_turn import mapping, properties, require_all_object_properties
 from wilq.content.drafts.fact_selection import (
     approved_planning_source_facts,
     select_source_fact_contexts_for_section,
@@ -318,12 +319,12 @@ def _missing_assertions_for_repair(
 
 def _regulatory_assertion_repair_output_schema(section_ids: list[str]) -> dict[str, object]:
     schema = deepcopy(_RegulatoryAssertionRepairOutput.model_json_schema())
-    _require_all_object_properties(schema)
-    definition = _mapping(_mapping(schema, "$defs"), "_RegulatorySectionPatch")
-    section_properties = _mapping(definition, "properties")
-    section_id = _mapping(section_properties, "section_id")
+    require_all_object_properties(schema)
+    schema_definition = mapping(mapping(schema, "$defs"), "_RegulatorySectionPatch")
+    section_properties = mapping(schema_definition, "properties")
+    section_id = mapping(section_properties, "section_id")
     section_id["enum"] = section_ids
-    sections = _mapping(_mapping(schema, "properties"), "sections")
+    sections = mapping(mapping(schema, "properties"), "sections")
     sections["minItems"] = len(section_ids)
     sections["maxItems"] = len(section_ids)
     return schema
@@ -424,31 +425,31 @@ def initial_full_draft_output_schema(
     proposal: ContentPlanningProposal,
 ) -> dict[str, object]:
     schema = deepcopy(ContentInitialDraftModelOutput.model_json_schema())
-    _require_all_object_properties(schema)
-    properties = _mapping(schema, "properties")
-    definitions = _mapping(schema, "$defs")
-    page_assets = _properties(_mapping(definitions, "ContentDraftRevisionPageAssets"))
+    require_all_object_properties(schema)
+    schema_properties = mapping(schema, "properties")
+    definitions = mapping(schema, "$defs")
+    page_assets = properties(mapping(definitions, "ContentDraftRevisionPageAssets"))
     page_assets.pop("byline", None)
-    page_assets_required = _mapping(definitions, "ContentDraftRevisionPageAssets").get("required")
+    page_assets_required = mapping(definitions, "ContentDraftRevisionPageAssets").get("required")
     if isinstance(page_assets_required, list) and "byline" in page_assets_required:
         page_assets_required.remove("byline")
-    section_definition = _mapping(definitions, "ContentInitialDraftSectionOutput")
-    section = _properties(section_definition)
-    faq = _properties(_mapping(definitions, "ContentInitialDraftFaqOutput"))
-    link = _properties(_mapping(definitions, "ContentInitialDraftInternalLinkOutput"))
+    section_definition = mapping(definitions, "ContentInitialDraftSectionOutput")
+    section = properties(section_definition)
+    faq = properties(mapping(definitions, "ContentInitialDraftFaqOutput"))
+    link = properties(mapping(definitions, "ContentInitialDraftInternalLinkOutput"))
 
     draftable_sections = draftable_planning_sections(proposal.sections)
-    _set_array_size(properties, "sections", len(draftable_sections))
-    section_id = _mapping(section, "section_id")
+    _set_array_size(schema_properties, "sections", len(draftable_sections))
+    section_id = mapping(section, "section_id")
     section_id["enum"] = [item.section_id for item in draftable_sections]
-    heading = _mapping(section, "heading")
+    heading = mapping(section, "heading")
     heading["enum"] = [item.heading for item in draftable_sections]
-    _set_array_size(properties, "faq", len(proposal.faq))
-    question = _mapping(faq, "question")
+    _set_array_size(schema_properties, "faq", len(proposal.faq))
+    question = mapping(faq, "question")
     question["enum"] = [item.question for item in proposal.faq] or ["__WILQ_EMPTY_ARRAY_ONLY__"]
-    _set_array_size(properties, "cta_blocks", len(proposal.cta_blocks))
-    _set_array_size(properties, "internal_links", len(proposal.internal_links))
-    target_url = _mapping(link, "target_url")
+    _set_array_size(schema_properties, "cta_blocks", len(proposal.cta_blocks))
+    _set_array_size(schema_properties, "internal_links", len(proposal.internal_links))
+    target_url = mapping(link, "target_url")
     target_url["enum"] = [item.target_url for item in proposal.internal_links] or [
         "__WILQ_EMPTY_ARRAY_ONLY__"
     ]
@@ -578,36 +579,10 @@ def _source_facts_by_section(
     return rows
 
 
-def _properties(definition: dict[str, object]) -> dict[str, object]:
-    return _mapping(definition, "properties")
-
-
-def _mapping(value: dict[str, object], key: str) -> dict[str, object]:
-    nested = value.get(key)
-    if not isinstance(nested, dict):
-        raise RuntimeError(f"Initial draft output schema is missing {key}.")
-    return cast(dict[str, object], nested)
-
-
 def _set_array_size(properties: dict[str, object], key: str, size: int) -> None:
-    field = _mapping(properties, key)
+    field = mapping(properties, key)
     field["minItems"] = size
     field["maxItems"] = size
-
-
-def _require_all_object_properties(value: object) -> None:
-    """Make Pydantic's optional defaults valid for Codex structured output."""
-
-    if isinstance(value, dict):
-        properties = value.get("properties")
-        if isinstance(properties, dict):
-            value["required"] = list(properties)
-        value.pop("default", None)
-        for nested in value.values():
-            _require_all_object_properties(nested)
-    elif isinstance(value, list):
-        for nested in value:
-            _require_all_object_properties(nested)
 
 
 __all__ = [

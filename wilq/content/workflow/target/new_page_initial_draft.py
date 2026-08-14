@@ -9,6 +9,7 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
 )
+from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlockerCode,
@@ -161,10 +162,14 @@ def _execute_turn(
             code,
             "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
             run.id,
-            _runtime_trace(turn),
+            (
+                ContentCodexRuntimeTrace(status="failed")
+                if turn is None
+                else runtime_trace(turn)
+            ),
             status="blocked" if code == "runtime_blocked" else "failed",
         )
-    trace = _runtime_trace(turn)
+    trace = runtime_trace(turn)
     try:
         return ContentInitialDraftModelOutput.model_validate_json(turn.output_text), trace
     except ValueError:
@@ -188,19 +193,6 @@ def _finish_run(
 ) -> None:
     run_store.save_codex_run(
         run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
-    )
-
-
-def _runtime_trace(turn: CodexAppServerTurnResult | None) -> ContentCodexRuntimeTrace:
-    if turn is None:
-        return ContentCodexRuntimeTrace(status="failed")
-    return ContentCodexRuntimeTrace(
-        status=turn.status,
-        thread_id=turn.thread_id,
-        turn_id=turn.turn_id,
-        event_methods=list(turn.event_methods),
-        item_types=list(turn.item_types),
-        external_call_attempted=turn.external_call_attempted,
     )
 
 

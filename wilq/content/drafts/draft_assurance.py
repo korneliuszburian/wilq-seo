@@ -16,6 +16,12 @@ from typing import Final, Literal, cast
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
+from wilq.content.codex_turn import (
+    definition,
+    mapping,
+    properties,
+    require_all_object_properties,
+)
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory.policy import (
@@ -252,13 +258,13 @@ def draft_assurance_output_schema(
     constraints_override: list[ContentRegulatoryClaimConstraint] | None = None,
 ) -> dict[str, object]:
     schema = deepcopy(ContentDraftAssuranceModelOutput.model_json_schema())
-    _require_all_object_properties(schema)
-    checks = _properties(_definition(_mapping(schema, "$defs"), "ContentDraftAssuranceCheckOutput"))
+    require_all_object_properties(schema)
+    checks = properties(definition(mapping(schema, "$defs"), "ContentDraftAssuranceCheckOutput"))
     expected_constraints = constraints_override or regulatory_draft_assurance_constraints(profile)
-    _mapping(checks, "constraint_id")["enum"] = [
+    mapping(checks, "constraint_id")["enum"] = [
         constraint.id for constraint in expected_constraints
     ]
-    check_list = _mapping(_mapping(schema, "properties"), "checks")
+    check_list = mapping(mapping(schema, "properties"), "checks")
     check_list["minItems"] = len(expected_constraints)
     check_list["maxItems"] = len(expected_constraints)
     _restrict_array(
@@ -283,7 +289,7 @@ def draft_assurance_output_schema(
             ]
         }
     elif output is not None:
-        _mapping(checks, "document_section_id")["anyOf"] = [
+        mapping(checks, "document_section_id")["anyOf"] = [
             {"enum": [item.section_id for item in output.sections]},
             {"type": "null"},
         ]
@@ -468,39 +474,8 @@ def _evidence_by_constraint(
     }
 
 
-def _require_all_object_properties(value: object) -> None:
-    if isinstance(value, dict):
-        properties = value.get("properties")
-        if isinstance(properties, dict):
-            value["required"] = list(properties)
-        value.pop("default", None)
-        for nested in value.values():
-            _require_all_object_properties(nested)
-    elif isinstance(value, list):
-        for nested in value:
-            _require_all_object_properties(nested)
-
-
-def _mapping(value: dict[str, object], key: str) -> dict[str, object]:
-    nested = value.get(key)
-    if not isinstance(nested, dict):
-        raise RuntimeError(f"Draft assurance schema is missing {key}.")
-    return cast(dict[str, object], nested)
-
-
-def _definition(definitions: dict[str, object], name: str) -> dict[str, object]:
-    nested = definitions.get(name)
-    if not isinstance(nested, dict):
-        raise RuntimeError(f"Draft assurance schema is missing {name}.")
-    return cast(dict[str, object], nested)
-
-
-def _properties(definition: dict[str, object]) -> dict[str, object]:
-    return _mapping(definition, "properties")
-
-
 def _restrict_array(properties: dict[str, object], key: str, values: list[str]) -> None:
-    field = _mapping(properties, key)
+    field = mapping(properties, key)
     items = field.get("items")
     if not isinstance(items, dict):
         raise RuntimeError(f"Draft assurance schema is missing {key}.items.")

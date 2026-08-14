@@ -4,10 +4,8 @@ import re
 from collections import Counter
 from collections.abc import Callable
 
-from wilq.codex.app_server import (
-    CodexAppServerClientProtocol,
-    CodexAppServerTurnResult,
-)
+from wilq.codex.app_server import CodexAppServerClientProtocol
+from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
@@ -282,7 +280,7 @@ def _repair_readability_candidate(
         )
     except Exception:
         return output, ContentCodexRuntimeTrace(status="failed")
-    trace = _runtime_trace(result)
+    trace = runtime_trace(result)
     if result.status != "completed" or result.output_text is None:
         return output, trace
     try:
@@ -452,17 +450,6 @@ def _readability_repair_failed_blocker(
         reason=f"Tura naprawy czytelności nie zastosowała poprawki (status: {trace.status}).",
         next_step="Sprawdź blokadę runtime i uruchom nową próbę; WILQ nie zapisał tekstu.",
         source_codes=["readability_repair_turn_failed"],
-    )
-
-
-def _runtime_trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:
-    return ContentCodexRuntimeTrace(
-        status=result.status,
-        thread_id=result.thread_id,
-        turn_id=result.turn_id,
-        event_methods=list(result.event_methods),
-        item_types=list(result.item_types),
-        external_call_attempted=result.external_call_attempted,
     )
 
 

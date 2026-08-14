@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from copy import deepcopy
-from typing import cast
 
+from wilq.content.codex_turn import mapping
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
@@ -22,11 +22,11 @@ def proposal_output_schema(
     """Constrain free-form lineage fields to API-owned literal values."""
 
     schema = deepcopy(contract.output_schema)
-    properties = _mapping(schema, "properties")
-    definitions = _mapping(schema, "$defs")
-    section_schema = _mapping(definitions, "StructuredDraftOutputSection")
-    section_properties = _mapping(section_schema, "properties")
-    sections_schema = _mapping(properties, "sections")
+    properties = mapping(schema, "properties")
+    definitions = mapping(schema, "$defs")
+    section_schema = mapping(definitions, "StructuredDraftOutputSection")
+    section_properties = mapping(section_schema, "properties")
+    sections_schema = mapping(properties, "sections")
     selected_cta_ids = selected_cta_ids or []
     base_by_heading = {section.heading: section for section in base_revision.sections}
     evidence_ids = _unique(
@@ -85,15 +85,8 @@ def proposal_output_schema(
     return schema
 
 
-def _mapping(value: dict[str, object], key: str) -> dict[str, object]:
-    nested = value.get(key)
-    if not isinstance(nested, dict):
-        raise RuntimeError(f"Structured output schema is missing {key}.")
-    return cast(dict[str, object], nested)
-
-
 def _set_const(properties: dict[str, object], key: str, value: str) -> None:
-    _mapping(properties, key)["const"] = value
+    mapping(properties, key)["const"] = value
 
 
 def _set_literals(
@@ -103,7 +96,7 @@ def _set_literals(
     *,
     scalar: bool = False,
 ) -> None:
-    field_schema = _mapping(properties, key)
+    field_schema = mapping(properties, key)
     if scalar:
         field_schema["enum"] = _unique(values)
         return
@@ -120,12 +113,12 @@ def _section_schema_for_heading(
     claim_marker_by_id: dict[str, tuple[str, list[str]]],
 ) -> dict[str, object]:
     schema = deepcopy(section_schema)
-    properties = _mapping(schema, "properties")
+    properties = mapping(schema, "properties")
     heading = section.heading
     evidence_ids = _unique(section.evidence_ids)
     _set_const(properties, "heading", heading)
     _set_literals(properties, "evidence_ids", evidence_ids)
-    evidence_schema = _mapping(properties, "evidence_ids")
+    evidence_schema = mapping(properties, "evidence_ids")
     evidence_schema["minItems"] = len(evidence_ids)
     evidence_schema["maxItems"] = len(evidence_ids)
     allowed_claims = _unique(
@@ -134,7 +127,7 @@ def _section_schema_for_heading(
         if claim_id in claim_marker_by_id
         and set(claim_marker_by_id[claim_id][1]).issubset(evidence_ids)
     )
-    claims_schema = _mapping(properties, "claims_used")
+    claims_schema = mapping(properties, "claims_used")
     claims_schema["items"] = {
         "enum": allowed_claims or ["__WILQ_EMPTY_ARRAY_ONLY__"],
         "type": "string",
@@ -151,12 +144,12 @@ def _bind_selected_cta(
 ) -> None:
     """Keep the generic structured output safely scoped to one persisted CTA."""
 
-    _mapping(properties, "cta")["minLength"] = 1
+    mapping(properties, "cta")["minLength"] = 1
     _set_literals(properties, "source_facts_used", _unique(selected_cta.evidence_ids))
-    _mapping(properties, "source_facts_used")["minItems"] = len(selected_cta.evidence_ids)
-    _mapping(properties, "source_facts_used")["maxItems"] = len(selected_cta.evidence_ids)
+    mapping(properties, "source_facts_used")["minItems"] = len(selected_cta.evidence_ids)
+    mapping(properties, "source_facts_used")["maxItems"] = len(selected_cta.evidence_ids)
     for key in ("faq", "internal_links"):
-        field_schema = _mapping(properties, key)
+        field_schema = mapping(properties, key)
         field_schema["minItems"] = 0
         field_schema["maxItems"] = 0
 

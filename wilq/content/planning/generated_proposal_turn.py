@@ -3,10 +3,15 @@ from __future__ import annotations
 import json
 import re
 from copy import deepcopy
-from typing import cast
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.codex.prompts import resolve_prompt_template
+from wilq.content.codex_turn import (
+    definition,
+    mapping,
+    properties,
+    require_all_object_properties,
+)
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
@@ -194,15 +199,15 @@ def content_planning_output_schema(
     planning_input: ContentPlanningInput,
 ) -> dict[str, object]:
     schema = deepcopy(ContentPlanningModelOutput.model_json_schema())
-    _require_all_object_properties(schema)
-    properties = _mapping(schema, "properties")
-    definitions = _mapping(schema, "$defs")
-    section = _definition(definitions, "ContentPlanningModelSection")
-    faq = _definition(definitions, "ContentPlanningFaqItem")
-    cta = _definition(definitions, "ContentPlanningCtaBlock")
-    link = _definition(definitions, "ContentPlanningInternalLink")
-    hypothesis = _definition(definitions, "ContentPlanningConditionalHypothesis")
-    measurement = _definition(definitions, "ContentPlanningMeasurementPlan")
+    require_all_object_properties(schema)
+    schema_properties = mapping(schema, "properties")
+    definitions = mapping(schema, "$defs")
+    section = definition(definitions, "ContentPlanningModelSection")
+    faq = definition(definitions, "ContentPlanningFaqItem")
+    cta = definition(definitions, "ContentPlanningCtaBlock")
+    link = definition(definitions, "ContentPlanningInternalLink")
+    hypothesis = definition(definitions, "ContentPlanningConditionalHypothesis")
+    measurement = definition(definitions, "ContentPlanningMeasurementPlan")
     queries = [
         row.term
         for row in (
@@ -223,82 +228,82 @@ def content_planning_output_schema(
         candidate.target_url for candidate in planning_input.internal_link_candidates
     ]
 
-    _mapping(properties, "service_card_id")["const"] = (
+    mapping(schema_properties, "service_card_id")["const"] = (
         planning_input.confirmed_service_card_id
     )
-    _restrict_array(_properties(section), "query_terms", queries)
-    _restrict_array(_properties(section), "evidence_ids", evidence_ids)
-    _restrict_array(_properties(section), "claim_ids", claim_ids)
+    _restrict_array(properties(section), "query_terms", queries)
+    _restrict_array(properties(section), "evidence_ids", evidence_ids)
+    _restrict_array(properties(section), "claim_ids", claim_ids)
     _restrict_array(
-        _properties(section),
+        properties(section),
         "regulatory_requirement_ids",
         [requirement.id for requirement in planning_input.regulatory_coverage.requirements],
     )
     _restrict_nullable_string(
-        _properties(section),
+        properties(section),
         "inventory_heading",
         inventory_headings,
     )
     _restrict_nullable_string(
-        _properties(section),
+        properties(section),
         "inventory_section_id",
         inventory_section_ids,
     )
     if planning_input.goal == "new_page":
-        _mapping(_properties(section), "inventory_disposition")["const"] = "create"
-        _mapping(_properties(section), "inventory_heading")["const"] = None
-        _mapping(_properties(section), "inventory_section_id")["const"] = None
-    for definition in (faq, cta):
-        _restrict_array(_properties(definition), "evidence_ids", evidence_ids)
-        _restrict_array(_properties(definition), "claim_ids", claim_ids)
+        mapping(properties(section), "inventory_disposition")["const"] = "create"
+        mapping(properties(section), "inventory_heading")["const"] = None
+        mapping(properties(section), "inventory_section_id")["const"] = None
+    for schema_definition in (faq, cta):
+        _restrict_array(properties(schema_definition), "evidence_ids", evidence_ids)
+        _restrict_array(properties(schema_definition), "claim_ids", claim_ids)
     if planning_input.required_cta_patterns:
         _restrict_string(
-            _properties(cta),
+            properties(cta),
             "copy_direction",
             planning_input.required_cta_patterns,
         )
-    _restrict_array(_properties(faq), "query_terms", queries)
-    _restrict_array(_properties(link), "evidence_ids", evidence_ids)
-    _restrict_array(_properties(link), "claim_ids", claim_ids)
-    _restrict_string(_properties(link), "target_url", internal_link_urls)
+    _restrict_array(properties(faq), "query_terms", queries)
+    _restrict_array(properties(link), "evidence_ids", evidence_ids)
+    _restrict_array(properties(link), "claim_ids", claim_ids)
+    _restrict_string(properties(link), "target_url", internal_link_urls)
     _restrict_single_link_candidate_evidence(link, planning_input)
-    _restrict_array(_properties(hypothesis), "evidence_ids", evidence_ids)
+    _restrict_array(properties(hypothesis), "evidence_ids", evidence_ids)
     # Keep the first plan deliberately compact.  The model is producing a
     # reviewable strategy, not the full article; bounded arrays materially
     # reduce structured-output search while still leaving room for a normal
     # service page and its evidence lineage.
-    _cap_array(properties, "sections", 12)
-    _cap_array(properties, "faq", 8)
-    _cap_array(properties, "cta_blocks", 4)
+    _cap_array(schema_properties, "sections", 12)
+    _cap_array(schema_properties, "faq", 8)
+    _cap_array(schema_properties, "cta_blocks", 4)
     # The quality gate already owns this invariant after parsing, but the
     # structured-output boundary must communicate it to Codex as well.  An
     # empty array is schema-valid only when no CTA is required by the exact
     # planning input; otherwise it needlessly burns a run before being
     # rejected downstream.
-    _mapping(properties, "cta_blocks")["minItems"] = planning_input.minimum_cta_blocks
-    _cap_array(properties, "conditional_hypotheses", 4)
+    mapping(schema_properties, "cta_blocks")["minItems"] = planning_input.minimum_cta_blocks
+    _cap_array(schema_properties, "conditional_hypotheses", 4)
     _restrict_array(
-        _properties(measurement),
+        properties(measurement),
         "metrics_to_watch",
         planning_input.measurement_metrics,
     )
     _restrict_array(
-        _properties(measurement),
+        properties(measurement),
         "baseline_evidence_ids",
         planning_input.measurement_baseline_evidence_ids,
     )
-    _mapping(_properties(measurement), "observation_rule")["const"] = (
+    mapping(properties(measurement), "observation_rule")["const"] = (
         planning_input.measurement_observation_rule
     )
-    _mapping(_properties(measurement), "success_claim_rule")["const"] = (
+    mapping(properties(measurement), "success_claim_rule")["const"] = (
         planning_input.measurement_success_claim_rule
     )
     if not any(
         source.status == "used" and source.source in {"google_ads", "social"}
         for source in planning_input.source_assessments
     ):
-        _mapping(properties, "conditional_hypotheses")["maxItems"] = 0
-    _mapping(properties, "internal_links")["maxItems"] = len(internal_link_urls)
+        mapping(schema_properties, "conditional_hypotheses")["maxItems"] = 0
+    mapping(schema_properties, "internal_links")["maxItems"] = len(internal_link_urls)
     return schema
 
 
@@ -317,30 +322,12 @@ def _placement_contract(planning_input: ContentPlanningInput) -> dict[str, objec
     }
 
 
-def _definition(
-    definitions: dict[str, object],
-    name: str,
-) -> dict[str, object]:
-    return _mapping(definitions, name)
-
-
-def _properties(definition: dict[str, object]) -> dict[str, object]:
-    return _mapping(definition, "properties")
-
-
-def _mapping(value: dict[str, object], key: str) -> dict[str, object]:
-    nested = value.get(key)
-    if not isinstance(nested, dict):
-        raise RuntimeError(f"Planning output schema is missing {key}.")
-    return cast(dict[str, object], nested)
-
-
 def _restrict_array(
     properties: dict[str, object],
     key: str,
     values: list[str],
 ) -> None:
-    field = _mapping(properties, key)
+    field = mapping(properties, key)
     unique = list(dict.fromkeys(values))
     if unique:
         field["items"] = {"enum": unique, "type": "string"}
@@ -353,7 +340,7 @@ def _restrict_nullable_string(
     key: str,
     values: list[str],
 ) -> None:
-    field = _mapping(properties, key)
+    field = mapping(properties, key)
     unique = list(dict.fromkeys(values))
     field.clear()
     field["anyOf"] = [
@@ -367,7 +354,7 @@ def _restrict_string(
     key: str,
     values: list[str],
 ) -> None:
-    field = _mapping(properties, key)
+    field = mapping(properties, key)
     if values:
         field["enum"] = list(dict.fromkeys(values))
 
@@ -381,39 +368,17 @@ def _restrict_single_link_candidate_evidence(
     if len(planning_input.internal_link_candidates) != 1:
         return
     _restrict_array(
-        _properties(link_schema),
+        properties(link_schema),
         "evidence_ids",
         planning_input.internal_link_candidates[0].evidence_ids,
     )
 
 
 def _cap_array(properties: dict[str, object], key: str, maximum: int) -> None:
-    field = _mapping(properties, key)
+    field = mapping(properties, key)
     current = field.get("maxItems")
     if not isinstance(current, int) or current > maximum:
         field["maxItems"] = maximum
-
-
-def _require_all_object_properties(value: object) -> None:
-    """Normalize Pydantic's optional defaults for Codex structured output.
-
-    The app-server response-format contract requires every object property in
-    ``required``.  Pydantic omits fields that have a default, even when the
-    model can safely receive those values.  The model must therefore emit its
-    empty lists and fixed review flags explicitly instead of the runtime
-    rejecting the schema before a planning turn starts.
-    """
-
-    if isinstance(value, dict):
-        properties = value.get("properties")
-        if isinstance(properties, dict):
-            value["required"] = list(properties)
-        value.pop("default", None)
-        for nested in value.values():
-            _require_all_object_properties(nested)
-    elif isinstance(value, list):
-        for nested in value:
-            _require_all_object_properties(nested)
 
 
 __all__ = ["content_planning_output_schema", "content_planning_turn_request"]

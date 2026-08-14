@@ -9,7 +9,8 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
+from wilq.codex.app_server import CodexAppServerClientProtocol
+from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.knowledge.cards import (
     match_content_knowledge_cards,
@@ -342,7 +343,7 @@ def _run_planning_turn(
             "Sprawdź status Codexa i uruchom nową próbę; plan nie został zapisany.",
         )
         return None, None, blocker, "failed"
-    trace = _runtime_trace(runtime_result)
+    trace = runtime_trace(runtime_result)
     if runtime_result.status != "completed" or runtime_result.output_text is None:
         status: Literal["blocked", "failed"] = (
             "blocked" if runtime_result.status == "blocked" else "failed"
@@ -839,17 +840,6 @@ def _finish_run(
 ) -> CodexRun:
     return run_store.save_codex_run(
         run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
-    )
-
-
-def _runtime_trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:
-    return ContentCodexRuntimeTrace(
-        status=result.status,
-        thread_id=result.thread_id,
-        turn_id=result.turn_id,
-        event_methods=list(result.event_methods),
-        item_types=list(result.item_types),
-        external_call_attempted=result.external_call_attempted,
     )
 
 

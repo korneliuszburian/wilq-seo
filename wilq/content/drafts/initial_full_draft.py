@@ -9,6 +9,7 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
 )
+from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
@@ -534,7 +535,7 @@ def _execute_runtime(
         result = client.run_structured_turn(turn_request)
     except Exception:
         result = CodexAppServerTurnResult(status="failed")
-    trace = _runtime_trace(result)
+    trace = runtime_trace(result)
     if result.status != "completed" or result.output_text is None:
         code: ContentInitialDraftBlockerCode = (
             "runtime_blocked" if result.status == "blocked" else "runtime_failed"
@@ -736,17 +737,6 @@ def _asset_safety_sections(
 
 def _claim_texts(claim_ids: list[str], claim_text_by_id: dict[str, str]) -> list[str]:
     return [claim_text_by_id[item] for item in claim_ids if item in claim_text_by_id]
-
-
-def _runtime_trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:
-    return ContentCodexRuntimeTrace(
-        status=result.status,
-        thread_id=result.thread_id,
-        turn_id=result.turn_id,
-        event_methods=list(result.event_methods),
-        item_types=list(result.item_types),
-        external_call_attempted=result.external_call_attempted,
-    )
 
 
 def _blocked_response(

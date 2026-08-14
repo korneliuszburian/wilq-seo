@@ -7,7 +7,8 @@ only already approved official facts exact for the missing profile requirement.
 
 from __future__ import annotations
 
-from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
+from wilq.codex.app_server import CodexAppServerClientProtocol
+from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.grounding import document_ready_fact_text
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -142,7 +143,7 @@ def repair_regulatory_assertions(
             missing,
             replace_semantic_requirements=fallback_requires_replacement,
         )
-    return grounded, _runtime_trace(result)
+    return grounded, runtime_trace(result)
 
 
 def _apply_patch(existing: str, patch: object | None) -> str:
@@ -376,17 +377,6 @@ def _assertion_codes_for_missing_requirements(
                     (requirement.id, assertion.id) for assertion in requirement.document_assertions
                 )
     return assertion_codes
-
-
-def _runtime_trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:
-    return ContentCodexRuntimeTrace(
-        status=result.status,
-        thread_id=result.thread_id,
-        turn_id=result.turn_id,
-        event_methods=list(result.event_methods),
-        item_types=list(result.item_types),
-        external_call_attempted=result.external_call_attempted,
-    )
 
 
 __all__ = ["ground_unmet_regulatory_assertions", "repair_regulatory_assertions"]
