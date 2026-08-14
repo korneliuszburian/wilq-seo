@@ -73,24 +73,54 @@ def document_scope_errors(
                 )
     if source_facts_by_section is not None:
         output_by_section_id = {section.section_id: section for section in output.sections}
+        distinctive_tokens = _distinctive_fact_tokens(source_facts_by_section)
         for section in draftable_sections:
             fact_summaries = source_facts_by_section.get(section.section_id, [])
             if section.regulatory_requirement_ids or not fact_summaries:
                 continue
             generated = output_by_section_id.get(section.section_id)
             body_markdown = generated.body_markdown if generated is not None else ""
-            if not _body_has_source_fact_signal(body_markdown, fact_summaries):
+            if not _body_has_source_fact_signal(
+                body_markdown,
+                fact_summaries,
+                distinctive_tokens=distinctive_tokens,
+            ):
                 errors.append(f"missing_source_fact_signal:{section.section_id}")
     return errors
 
 
-def _body_has_source_fact_signal(body_markdown: str, fact_summaries: list[str]) -> bool:
+def _distinctive_fact_tokens(
+    source_facts_by_section: dict[str, list[str]],
+) -> frozenset[str]:
+    """Return fact tokens that are specific rather than shared boilerplate.
+
+    A token that appears in only one or two of the card's fact summaries is a
+    reliable concrete signal (e.g. "impaktor", "grawimetryczna", "FID"), while
+    shared words such as "obejmować", "pomiary" or "emisji" appear across every
+    summary and would let a generic section pass the gate.
+    """
+
+    counts: dict[str, int] = {}
+    for summaries in source_facts_by_section.values():
+        for summary in summaries:
+            for token in set(normalize_search_text(summary).split()):
+                if len(token) >= 5:
+                    counts[token] = counts.get(token, 0) + 1
+    return frozenset(token for token, count in counts.items() if count <= 2)
+
+
+def _body_has_source_fact_signal(
+    body_markdown: str,
+    fact_summaries: list[str],
+    *,
+    distinctive_tokens: frozenset[str],
+) -> bool:
     normalized_body = normalize_search_text(body_markdown)
     return any(
         normalized_term_matches(token, normalized_body)
         for summary in fact_summaries
         for token in normalize_search_text(summary).split()
-        if len(token) >= 5
+        if token in distinctive_tokens
     )
 
 

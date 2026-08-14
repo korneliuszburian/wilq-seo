@@ -11,7 +11,10 @@ from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
     run_regulatory_draft_assurance,
 )
-from wilq.content.drafts.initial_draft_validation import _body_has_source_fact_signal
+from wilq.content.drafts.initial_draft_validation import (
+    _body_has_source_fact_signal,
+    _distinctive_fact_tokens,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftModelOutput,
@@ -50,13 +53,18 @@ def repair_missing_source_fact_signals(
         if code.startswith(_MISSING_SOURCE_FACT_SIGNAL_PREFIX)
     }
     facts_by_section = _source_fact_summaries_by_section(planning_input, proposal)
+    distinctive_tokens = _distinctive_fact_tokens(facts_by_section)
     sections = []
     for section in output.sections:
         fact_summaries = facts_by_section.get(section.section_id, [])
         if (
             section.section_id not in missing_section_ids
             or not fact_summaries
-            or _body_has_source_fact_signal(section.body_markdown, fact_summaries)
+            or _body_has_source_fact_signal(
+                section.body_markdown,
+                fact_summaries,
+                distinctive_tokens=distinctive_tokens,
+            )
         ):
             sections.append(section)
             continue
