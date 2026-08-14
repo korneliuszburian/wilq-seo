@@ -91,9 +91,6 @@ _InitialDraftPrePersistResult = (
 BENEFIT_SOURCE_FACT_LIMIT = 2
 
 
-BENEFIT_SOURCE_FACT_LIMIT = 2
-
-
 def _benefit_source_fact_text(summary: str) -> str | None:
     text = summary.strip()
     if BENEFIT_SOURCE_FACT_MARKER.search(text) is None:

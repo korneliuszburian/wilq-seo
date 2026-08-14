@@ -7,7 +7,12 @@ from wilq.content.codex_turn import require_all_object_properties, runtime_trace
 from wilq.content.drafts import draft_assurance, initial_full_draft_turn
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.planning import generated_proposal_turn
+from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality import semantic_review_turn
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryProfile,
+    ContentRegulatoryRequirement,
+)
 
 
 class _ChildSchema(BaseModel):
@@ -111,6 +116,67 @@ def test_restrict_helpers_are_imported_by_at_least_two_schema_builders() -> None
         )
         for schema_builder in schema_builders
     ) >= 2
+
+
+def test_planning_schema_emits_maxitems_zero_for_empty_query_terms() -> None:
+    from wilq.content.planning.generated_proposal_turn import content_planning_output_schema
+    from wilq.content.planning.input_sources import (
+        ContentPlanningInventory,
+    )
+    from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+
+    planning_input = ContentPlanningInput.model_construct(
+        work_item_id="content_work_item_empty_queries",
+        planning_input_digest="a" * 64,
+        confirmed_service_card_id="ekologus_service_bdo_reporting",
+        inventory=ContentPlanningInventory(status="available"),
+        query_portfolio=ContentSearchDemandEvidence(
+            status="missing",
+            optional_ads_status="not_exactly_mapped",
+            safe_next_step="Brak exact zapytań.",
+        ),
+        measurement_observation_rule="Porównaj zamknięte okresy.",
+        measurement_success_claim_rule="Nie claimuj bez dowodu.",
+        source_assessments=[],
+    )
+
+    schema = content_planning_output_schema(planning_input)
+    section = schema["$defs"]["ContentPlanningModelSection"]["properties"]
+    assert section["query_terms"]["maxItems"] == 0
+    assert section["query_terms"]["items"] == {"type": "string"}
+
+
+def test_assurance_schema_emits_placeholder_enum_for_empty_evidence() -> None:
+    from wilq.content.drafts.draft_assurance import draft_assurance_output_schema
+    from wilq.content.regulatory.policy import (
+        ContentRegulatoryCoverage,
+    )
+
+    profile = ContentRegulatoryProfile(
+        id="bdo",
+        version="2026-07-31-r2",
+        service_card_ids=["ekologus_service_bdo_reporting"],
+        official_source_hosts=["bdo.mos.gov.pl"],
+        max_source_age_days=180,
+        requirements=[
+            ContentRegulatoryRequirement(
+                id="bdo_definition",
+                label="definicja systemu BDO",
+                reason="Wymaga źródła urzędowego.",
+            )
+        ],
+    )
+    schema = draft_assurance_output_schema(
+        profile,
+        ContentRegulatoryCoverage(
+            profile_id="bdo",
+            profile_version="2026-07-31-r2",
+            requirements=profile.requirements,
+        ),
+    )
+
+    checks = schema["$defs"]["ContentDraftAssuranceCheckOutput"]["properties"]
+    assert checks["evidence_ids"]["items"]["enum"] == ["__WILQ_EMPTY_ARRAY_ONLY__"]
 
 
 def test_at_least_two_callers_use_the_shared_module() -> None:
