@@ -149,6 +149,62 @@ def test_repair_missing_source_fact_signals_appends_document_ready_facts(
     assert repaired_again == repaired
 
 
+def test_repair_skips_reappend_when_patch_is_already_in_body(
+    grounding_case: tuple,
+) -> None:
+    planning_input, proposal, output, facts = grounding_case
+    already_grounded = output.model_copy(
+        update={
+            "sections": [
+                output.sections[0].model_copy(
+                    update={
+                        "body_markdown": (
+                            output.sections[0].body_markdown
+                            + "\n\n"
+                            + grounding.document_ready_fact_text(
+                                facts[0].extracted_fact,
+                                protected_terms=None,
+                            ).strip()
+                        )
+                    }
+                )
+            ]
+        }
+    )
+
+    repaired = grounding.repair_missing_source_fact_signals(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=already_grounded,
+        missing_codes=["missing_source_fact_signal:section_01"],
+    )
+
+    assert repaired == already_grounded
+
+
+def test_repair_without_distinctive_tokens_is_idempotent(
+    grounding_case: tuple,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    planning_input, proposal, output, _ = grounding_case
+    monkeypatch.setattr(grounding, "distinctive_fact_tokens", lambda _corpus: frozenset())
+
+    repaired = grounding.repair_missing_source_fact_signals(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        missing_codes=["missing_source_fact_signal:section_01"],
+    )
+    repaired_again = grounding.repair_missing_source_fact_signals(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=repaired,
+        missing_codes=["missing_source_fact_signal:section_01"],
+    )
+
+    assert repaired_again == repaired
+
+
 def test_gate_and_repair_share_one_matcher(
     grounding_case: tuple,
     monkeypatch: pytest.MonkeyPatch,

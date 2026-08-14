@@ -173,7 +173,7 @@ def repair_missing_source_fact_signals(
             )
         )[:_MAX_GROUNDING_FACT_PARAGRAPHS]
         patch_text = "\n\n".join(document_ready_facts)
-        if not patch_text:
+        if not patch_text or patch_text in section.body_markdown:
             sections.append(section)
             continue
         sections.append(

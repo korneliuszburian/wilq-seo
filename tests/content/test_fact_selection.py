@@ -104,3 +104,21 @@ def test_initial_draft_row_projection_includes_official_facts(
     rows = initial_full_draft_turn._source_facts_by_section(planning_input, proposal)
 
     assert _ids(rows[0]["source_facts"]) == ["official"]
+
+
+def test_section_proposal_path_excludes_official_facts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ordinary = _fact("ordinary", 1)
+    official = _fact("official", 1, official=True)
+    planning_input = _planning_input([ordinary, official])
+    proposal = SimpleNamespace(service_card_id="service_card", sections=[_SECTION])
+    monkeypatch.setattr(fact_selection, "ekologus_source_facts", lambda: (official, ordinary))
+
+    contexts = codex_section_proposal_turn._selected_approved_source_facts(
+        planning_input,
+        SimpleNamespace(planning_workspace=SimpleNamespace(proposal=proposal)),
+        [_SECTION.heading],
+    )
+
+    assert _ids(contexts) == ["ordinary"]
