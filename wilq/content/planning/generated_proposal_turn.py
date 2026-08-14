@@ -16,6 +16,7 @@ from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
 )
+from wilq.content.regulatory import turn_context as regulatory_turn_context
 
 # The persisted planning input is intentionally complete: its digest covers
 # every connector row and every lineage edge.  The model envelope is a
@@ -114,16 +115,11 @@ def content_planning_turn_request(
                 "do_not_write_vendor": True,
                 "publish_ready": False,
             },
-            "regulatory_document_assertions": [
-                {
-                    "requirement_id": requirement.id,
-                    "assertion_id": assertion.id,
-                    "label": assertion.label,
-                    "required_any_of": assertion.required_any_of,
-                }
-                for requirement in planning_input.regulatory_coverage.requirements
-                for assertion in requirement.document_assertions
-            ],
+            "regulatory_document_assertions": (
+                regulatory_turn_context.regulatory_document_assertion_context(
+                    planning_input
+                )
+            ),
             "placement_contract": _placement_contract(planning_input),
         },
         ensure_ascii=False,

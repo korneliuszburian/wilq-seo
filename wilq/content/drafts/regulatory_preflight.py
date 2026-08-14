@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.regulatory.policy import (
     regulatory_assertion_matches,
     regulatory_requirement_assertion_errors,
@@ -35,13 +36,10 @@ def regulatory_draft_preflight_errors(
             for section in draftable_sections
             if requirement.id in section.regulatory_requirement_ids
         ]
-        official_facts = [
-            fact
-            for fact in planning_input.regulatory_coverage.source_facts
-            if fact.official_source is True
-            and fact.review_status == "approved"
-            and requirement.id in fact.regulatory_requirement_ids
-        ]
+        official_facts = regulatory_turn_context.approved_regulatory_source_facts(
+            planning_input,
+            {requirement.id},
+        )
         for assertion in requirement.document_assertions:
             if not any(
                 regulatory_assertion_matches(

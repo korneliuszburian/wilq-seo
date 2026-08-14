@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -19,6 +19,7 @@ from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sect
 from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
 )
@@ -61,8 +62,10 @@ def initial_full_draft_turn_request(
             "planning_digest": proposal.planning_digest,
             "planning_input_digest": planning_input.planning_input_digest,
             "service_card_id": planning_input.confirmed_service_card_id,
-            "regulatory_document_assertions": _regulatory_document_assertion_context(
-                planning_input
+            "regulatory_document_assertions": (
+                regulatory_turn_context.regulatory_document_assertion_context(
+                    planning_input
+                )
             ),
             "scope_rules": {
                 "preserve_exact_document_structure": True,
@@ -137,16 +140,19 @@ def regulatory_assertion_repair_turn_request(
         missing_assertion_codes,
         repair_reasons or {},
     )
-    requirement_ids = {item["requirement_id"] for item in assertions}
+    requirement_ids = cast(
+        set[str],
+        {item["requirement_id"] for item in assertions},
+    )
     source_facts = [
         {
             "summary": fact.extracted_fact,
             "requirement_ids": fact.regulatory_requirement_ids,
         }
-        for fact in planning_input.regulatory_coverage.source_facts
-        if fact.official_source
-        and fact.review_status == "approved"
-        and requirement_ids.intersection(fact.regulatory_requirement_ids)
+        for fact in regulatory_turn_context.approved_regulatory_source_facts(
+            planning_input,
+            requirement_ids,
+        )
     ]
     return CodexAppServerStructuredTurnRequest(
         instruction=(
@@ -487,29 +493,21 @@ def _regulatory_draft_directive(
     )
 
 
-def _regulatory_document_assertion_context(
-    planning_input: ContentPlanningInput,
-) -> list[dict[str, object]]:
-    """Expose only server-owned assertion policy to the document writer."""
-
-    return [
-        {
-            "requirement_id": requirement.id,
-            "assertion_id": assertion.id,
-            "label": assertion.label,
-            "required_any_of": assertion.required_any_of,
-        }
-        for requirement in planning_input.regulatory_coverage.requirements
-        for assertion in requirement.document_assertions
-    ]
-
-
 def _regulatory_facts_by_section(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
 ) -> list[dict[str, object]]:
     """Project reviewed official facts next to each regulated document target."""
 
+    requirement_ids = {
+        requirement_id
+        for section in draftable_planning_sections(proposal.sections)
+        for requirement_id in section.regulatory_requirement_ids
+    }
+    approved_facts = regulatory_turn_context.approved_regulatory_source_facts(
+        planning_input,
+        requirement_ids,
+    )
     facts_by_requirement = {
         requirement_id: [
             {
@@ -518,16 +516,10 @@ def _regulatory_facts_by_section(
                 "evidence_ids": fact.evidence_ids,
                 "requirement_ids": fact.regulatory_requirement_ids,
             }
-            for fact in planning_input.regulatory_coverage.source_facts
-            if fact.official_source
-            and fact.review_status == "approved"
-            and requirement_id in fact.regulatory_requirement_ids
+            for fact in approved_facts
+            if requirement_id in fact.regulatory_requirement_ids
         ]
-        for requirement_id in {
-            requirement_id
-            for section in draftable_planning_sections(proposal.sections)
-            for requirement_id in section.regulatory_requirement_ids
-        }
+        for requirement_id in requirement_ids
     }
     return [
         {

@@ -21,6 +21,7 @@ from wilq.content.drafts.initial_full_draft_turn import (
 )
 from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     regulatory_assertion_matches,
@@ -348,11 +349,11 @@ def _approved_facts_for_requirement(
 
     return [
         item.extracted_fact
-        for item in planning_input.regulatory_coverage.source_facts
-        if item.official_source
-        and item.review_status == "approved"
-        and requirement_id in item.regulatory_requirement_ids
-        and (
+        for item in regulatory_turn_context.approved_regulatory_source_facts(
+            planning_input,
+            {requirement_id},
+        )
+        if (
             assertion_terms is None
             or any(term.lower() in item.extracted_fact.lower() for term in assertion_terms)
         )

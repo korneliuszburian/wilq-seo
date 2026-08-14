@@ -11,6 +11,7 @@ from wilq.content.drafts.fact_selection import (
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import revision_readability_issues
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
+from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
@@ -155,6 +156,22 @@ def _selected_regulatory_requirements(
         requirement.id: requirement
         for requirement in planning_input.regulatory_coverage.requirements
     }
+    assertion_context = (
+        regulatory_turn_context.regulatory_document_assertion_context(planning_input)
+    )
+    assertion_context_by_requirement: dict[str, list[dict[str, object]]] = {}
+    assertion_offset = 0
+    for coverage_requirement in planning_input.regulatory_coverage.requirements:
+        next_offset = assertion_offset + len(coverage_requirement.document_assertions)
+        assertion_context_by_requirement[coverage_requirement.id] = [
+            {
+                "id": assertion["assertion_id"],
+                "label": assertion["label"],
+                "required_any_of": assertion["required_any_of"],
+            }
+            for assertion in assertion_context[assertion_offset:next_offset]
+        ]
+        assertion_offset = next_offset
     return [
         {
             "section_id": section.section_id,
@@ -164,8 +181,8 @@ def _selected_regulatory_requirements(
                     "requirement_id": requirement.id,
                     "label": requirement.label,
                     "document_assertions": [
-                        assertion.model_dump(mode="json")
-                        for assertion in requirement.document_assertions
+                        dict(assertion)
+                        for assertion in assertion_context_by_requirement[requirement.id]
                     ],
                 }
                 for requirement_id in section.regulatory_requirement_ids
@@ -198,10 +215,10 @@ def _selected_regulatory_facts(
             "evidence_ids": fact.evidence_ids,
             "requirement_ids": fact.regulatory_requirement_ids,
         }
-        for fact in planning_input.regulatory_coverage.source_facts
-        if fact.official_source
-        and fact.review_status == "approved"
-        and requirement_ids.intersection(fact.regulatory_requirement_ids)
+        for fact in regulatory_turn_context.approved_regulatory_source_facts(
+            planning_input,
+            requirement_ids,
+        )
     ]
 
 
