@@ -7,10 +7,12 @@ from copy import deepcopy
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.content.codex_turn import (
+    cap_array,
     definition,
     mapping,
     properties,
     require_all_object_properties,
+    restrict_array,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_contracts import (
@@ -227,10 +229,10 @@ def content_planning_output_schema(
     mapping(schema_properties, "service_card_id")["const"] = (
         planning_input.confirmed_service_card_id
     )
-    _restrict_array(properties(section), "query_terms", queries)
-    _restrict_array(properties(section), "evidence_ids", evidence_ids)
-    _restrict_array(properties(section), "claim_ids", claim_ids)
-    _restrict_array(
+    restrict_array(properties(section), "query_terms", queries)
+    restrict_array(properties(section), "evidence_ids", evidence_ids)
+    restrict_array(properties(section), "claim_ids", claim_ids)
+    restrict_array(
         properties(section),
         "regulatory_requirement_ids",
         [requirement.id for requirement in planning_input.regulatory_coverage.requirements],
@@ -250,40 +252,40 @@ def content_planning_output_schema(
         mapping(properties(section), "inventory_heading")["const"] = None
         mapping(properties(section), "inventory_section_id")["const"] = None
     for schema_definition in (faq, cta):
-        _restrict_array(properties(schema_definition), "evidence_ids", evidence_ids)
-        _restrict_array(properties(schema_definition), "claim_ids", claim_ids)
+        restrict_array(properties(schema_definition), "evidence_ids", evidence_ids)
+        restrict_array(properties(schema_definition), "claim_ids", claim_ids)
     if planning_input.required_cta_patterns:
         _restrict_string(
             properties(cta),
             "copy_direction",
             planning_input.required_cta_patterns,
         )
-    _restrict_array(properties(faq), "query_terms", queries)
-    _restrict_array(properties(link), "evidence_ids", evidence_ids)
-    _restrict_array(properties(link), "claim_ids", claim_ids)
+    restrict_array(properties(faq), "query_terms", queries)
+    restrict_array(properties(link), "evidence_ids", evidence_ids)
+    restrict_array(properties(link), "claim_ids", claim_ids)
     _restrict_string(properties(link), "target_url", internal_link_urls)
     _restrict_single_link_candidate_evidence(link, planning_input)
-    _restrict_array(properties(hypothesis), "evidence_ids", evidence_ids)
+    restrict_array(properties(hypothesis), "evidence_ids", evidence_ids)
     # Keep the first plan deliberately compact.  The model is producing a
     # reviewable strategy, not the full article; bounded arrays materially
     # reduce structured-output search while still leaving room for a normal
     # service page and its evidence lineage.
-    _cap_array(schema_properties, "sections", 12)
-    _cap_array(schema_properties, "faq", 8)
-    _cap_array(schema_properties, "cta_blocks", 4)
+    cap_array(schema_properties, "sections", 12)
+    cap_array(schema_properties, "faq", 8)
+    cap_array(schema_properties, "cta_blocks", 4)
     # The quality gate already owns this invariant after parsing, but the
     # structured-output boundary must communicate it to Codex as well.  An
     # empty array is schema-valid only when no CTA is required by the exact
     # planning input; otherwise it needlessly burns a run before being
     # rejected downstream.
     mapping(schema_properties, "cta_blocks")["minItems"] = planning_input.minimum_cta_blocks
-    _cap_array(schema_properties, "conditional_hypotheses", 4)
-    _restrict_array(
+    cap_array(schema_properties, "conditional_hypotheses", 4)
+    restrict_array(
         properties(measurement),
         "metrics_to_watch",
         planning_input.measurement_metrics,
     )
-    _restrict_array(
+    restrict_array(
         properties(measurement),
         "baseline_evidence_ids",
         planning_input.measurement_baseline_evidence_ids,
@@ -318,19 +320,6 @@ def _placement_contract(planning_input: ContentPlanningInput) -> dict[str, objec
     }
 
 
-def _restrict_array(
-    properties: dict[str, object],
-    key: str,
-    values: list[str],
-) -> None:
-    field = mapping(properties, key)
-    unique = list(dict.fromkeys(values))
-    if unique:
-        field["items"] = {"enum": unique, "type": "string"}
-    else:
-        field["maxItems"] = 0
-
-
 def _restrict_nullable_string(
     properties: dict[str, object],
     key: str,
@@ -363,18 +352,11 @@ def _restrict_single_link_candidate_evidence(
 
     if len(planning_input.internal_link_candidates) != 1:
         return
-    _restrict_array(
+    restrict_array(
         properties(link_schema),
         "evidence_ids",
         planning_input.internal_link_candidates[0].evidence_ids,
     )
-
-
-def _cap_array(properties: dict[str, object], key: str, maximum: int) -> None:
-    field = mapping(properties, key)
-    current = field.get("maxItems")
-    if not isinstance(current, int) or current > maximum:
-        field["maxItems"] = maximum
 
 
 __all__ = ["content_planning_output_schema", "content_planning_turn_request"]

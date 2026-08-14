@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from typing import cast
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
-from wilq.content.codex_turn import mapping, properties, require_all_object_properties
+from wilq.content.codex_turn import (
+    mapping,
+    properties,
+    require_all_object_properties,
+    restrict_array_with_empty_placeholder,
+)
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.semantic_review_contracts import (
@@ -163,10 +167,25 @@ def semantic_review_output_schema(revision: ContentDraftRevision) -> dict[str, o
     finding = properties(mapping(definitions, "ContentSemanticFindingOutput"))
     allowed_targets = _allowed_targets(revision)
     mapping(dimension, "dimension")["enum"] = list(CONTENT_SEMANTIC_DIMENSIONS)
-    _restrict_array(dimension, "affected_targets", allowed_targets)
+    restrict_array_with_empty_placeholder(
+        dimension,
+        "affected_targets",
+        allowed_targets,
+        missing_items_error_prefix="Semantic review schema",
+    )
     mapping(finding, "dimension")["enum"] = list(CONTENT_SEMANTIC_DIMENSIONS)
-    _restrict_array(finding, "affected_targets", allowed_targets)
-    _restrict_array(finding, "evidence_ids", _revision_evidence_ids(revision))
+    restrict_array_with_empty_placeholder(
+        finding,
+        "affected_targets",
+        allowed_targets,
+        missing_items_error_prefix="Semantic review schema",
+    )
+    restrict_array_with_empty_placeholder(
+        finding,
+        "evidence_ids",
+        _revision_evidence_ids(revision),
+        missing_items_error_prefix="Semantic review schema",
+    )
     return schema
 
 
@@ -319,18 +338,6 @@ def _compact_regulatory_coverage(coverage: dict[str, object]) -> dict[str, objec
         if isinstance(fact, dict)
     ]
     return projected
-
-
-def _restrict_array(
-    properties: dict[str, object],
-    key: str,
-    values: list[str],
-) -> None:
-    array = mapping(properties, key)
-    items = array.get("items")
-    if not isinstance(items, dict):
-        raise RuntimeError(f"Semantic review schema is missing {key}.items.")
-    cast(dict[str, object], items)["enum"] = values or ["__WILQ_EMPTY_ARRAY_ONLY__"]
 
 
 __all__ = ["semantic_review_output_schema", "semantic_review_turn_request"]

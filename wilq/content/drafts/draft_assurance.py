@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from typing import Final, Literal, cast
+from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -21,6 +21,7 @@ from wilq.content.codex_turn import (
     mapping,
     properties,
     require_all_object_properties,
+    restrict_array_with_empty_placeholder,
 )
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.planning.dynamic_input import ContentPlanningInput
@@ -267,10 +268,11 @@ def draft_assurance_output_schema(
     check_list = mapping(mapping(schema, "properties"), "checks")
     check_list["minItems"] = len(expected_constraints)
     check_list["maxItems"] = len(expected_constraints)
-    _restrict_array(
+    restrict_array_with_empty_placeholder(
         checks,
         "evidence_ids",
         coverage.evidence_ids,
+        missing_items_error_prefix="Draft assurance schema",
     )
     if output is not None and proposal is not None:
         section_ids_by_constraint = _section_ids_by_constraint(
@@ -472,14 +474,6 @@ def _evidence_by_constraint(
         )
         for constraint in constraints
     }
-
-
-def _restrict_array(properties: dict[str, object], key: str, values: list[str]) -> None:
-    field = mapping(properties, key)
-    items = field.get("items")
-    if not isinstance(items, dict):
-        raise RuntimeError(f"Draft assurance schema is missing {key}.items.")
-    cast(dict[str, object], items)["enum"] = values or ["__WILQ_EMPTY_ARRAY_ONLY__"]
 
 
 __all__ = [

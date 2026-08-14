@@ -8,7 +8,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.codex.prompts import resolve_prompt_template
-from wilq.content.codex_turn import mapping, properties, require_all_object_properties
+from wilq.content.codex_turn import (
+    mapping,
+    properties,
+    require_all_object_properties,
+    set_array_size,
+)
 from wilq.content.drafts.fact_selection import (
     approved_source_facts_by_section,
 )
@@ -444,16 +449,16 @@ def initial_full_draft_output_schema(
     link = properties(mapping(definitions, "ContentInitialDraftInternalLinkOutput"))
 
     draftable_sections = draftable_planning_sections(proposal.sections)
-    _set_array_size(schema_properties, "sections", len(draftable_sections))
+    set_array_size(schema_properties, "sections", len(draftable_sections))
     section_id = mapping(section, "section_id")
     section_id["enum"] = [item.section_id for item in draftable_sections]
     heading = mapping(section, "heading")
     heading["enum"] = [item.heading for item in draftable_sections]
-    _set_array_size(schema_properties, "faq", len(proposal.faq))
+    set_array_size(schema_properties, "faq", len(proposal.faq))
     question = mapping(faq, "question")
     question["enum"] = [item.question for item in proposal.faq] or ["__WILQ_EMPTY_ARRAY_ONLY__"]
-    _set_array_size(schema_properties, "cta_blocks", len(proposal.cta_blocks))
-    _set_array_size(schema_properties, "internal_links", len(proposal.internal_links))
+    set_array_size(schema_properties, "cta_blocks", len(proposal.cta_blocks))
+    set_array_size(schema_properties, "internal_links", len(proposal.internal_links))
     target_url = mapping(link, "target_url")
     target_url["enum"] = [item.target_url for item in proposal.internal_links] or [
         "__WILQ_EMPTY_ARRAY_ONLY__"
@@ -534,12 +539,6 @@ def _regulatory_facts_by_section(
         for section in draftable_planning_sections(proposal.sections)
         if section.regulatory_requirement_ids
     ]
-
-
-def _set_array_size(properties: dict[str, object], key: str, size: int) -> None:
-    field = mapping(properties, key)
-    field["minItems"] = size
-    field["maxItems"] = size
 
 
 __all__ = [

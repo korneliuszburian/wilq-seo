@@ -60,6 +60,59 @@ def test_shared_mapping_raises_one_consistent_missing_key_message() -> None:
         codex_turn.definition({}, "missing")
 
 
+def test_restrict_array_planning_and_placeholder_semantics_are_both_supported() -> None:
+    planning_array: dict[str, object] = {
+        "type": "array",
+        "items": {"type": "string"},
+    }
+    placeholder_array: dict[str, object] = {
+        "type": "array",
+        "items": {"type": "string"},
+    }
+    schema_properties = {
+        "planning": planning_array,
+        "placeholder": placeholder_array,
+    }
+
+    codex_turn.restrict_array(schema_properties, "planning", [])
+    codex_turn.restrict_array_with_empty_placeholder(
+        schema_properties,
+        "placeholder",
+        [],
+    )
+
+    assert planning_array["maxItems"] == 0
+    assert planning_array["items"] == {"type": "string"}
+    assert "maxItems" not in placeholder_array
+    assert placeholder_array["items"] == {
+        "type": "string",
+        "enum": ["__WILQ_EMPTY_ARRAY_ONLY__"],
+    }
+
+
+def test_restrict_helpers_are_imported_by_at_least_two_schema_builders() -> None:
+    schema_builders = (
+        draft_assurance,
+        initial_full_draft_turn,
+        generated_proposal_turn,
+        semantic_review_turn,
+    )
+    shared_helpers = (
+        codex_turn.restrict_array,
+        codex_turn.restrict_array_with_empty_placeholder,
+        codex_turn.cap_array,
+        codex_turn.set_array_size,
+    )
+
+    assert sum(
+        any(
+            getattr(schema_builder, helper.__name__, None) is helper
+            for helper in shared_helpers
+        )
+        for schema_builder in schema_builders
+    ) >= 2
+
+
 def test_at_least_two_callers_use_the_shared_module() -> None:
     callers = (
         draft_assurance,
