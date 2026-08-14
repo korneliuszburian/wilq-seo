@@ -38,7 +38,7 @@ AssureDraft = Callable[
 ]
 OutputBlocker = Callable[[ContentInitialDraftModelOutput], ContentInitialDraftBlocker | None]
 _MISSING_SOURCE_FACT_SIGNAL_PREFIX = "missing_source_fact_signal:"
-_MAX_GROUNDING_FACT_PARAGRAPHS = 2
+_MAX_GROUNDING_FACT_PARAGRAPHS = 3
 
 
 def repair_missing_source_fact_signals(
