@@ -412,7 +412,7 @@ def test_new_page_finish_is_status_guarded(
     assert persisted.error == "initial_draft_timeout"
 
 
-def test_new_page_turn_request_failure_is_typed_without_starting_a_run(
+def test_new_page_turn_request_failure_is_audited_as_failed_run(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -426,10 +426,16 @@ def test_new_page_turn_request_failure_is_typed_without_starting_a_run(
     result = _generate(case, _InitialDraftClient(_output(_CLEAN_BODY)))
 
     assert result.status == "failed"
-    assert result.run_id is None
+    assert result.run_id is not None
     assert result.runtime.status == "failed"
     assert result.blockers[0].code == "runtime_failed"
-    assert case.run_store.list_codex_runs() == []
+    run = next(
+        run
+        for run in case.run_store.list_codex_runs()
+        if run.id == result.run_id
+    )
+    assert run.status == "failed"
+    assert run.error == "runtime_failed"
 
 
 def test_new_page_generic_section_is_grounded_before_revision_persistence(

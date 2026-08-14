@@ -93,11 +93,32 @@ def generate_new_page_initial_draft(
     try:
         turn_request = _turn_request(brief, planning_input, proposal)
     except Exception:
+        run = start_initial_draft_run(
+            run_store,
+            work_item_id=proposal.work_item_id,
+            evidence_ids=proposal.evidence_ids,
+            source_material_ids=proposal.source_material_ids,
+            proposal_id=request.expected_proposal_id,
+            planning_digest=proposal.planning_digest,
+            planning_input_digest=request.expected_planning_input_digest,
+            context_digest=None,
+            run_id_prefix="codex_content_new_page_draft_",
+            hook="content_new_page_initial_draft",
+            endpoint_path=endpoint_path,
+            prompt=None,
+        )
+        transition_initial_draft_run_if_status(
+            run_store,
+            run,
+            status="failed",
+            error="runtime_failed",
+        )
         return _blocked(
             workspace,
             proposal,
             "runtime_failed",
             "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
+            run_id=run.id,
             runtime=ContentCodexRuntimeTrace(status="failed"),
             status="failed",
         )
