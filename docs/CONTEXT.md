@@ -190,8 +190,12 @@ rtk scripts/local_stack.sh status
   retrievalu, efektu marketingowego ani expert acceptance bez dowodu.
 - Gotowość produkcyjna infrastruktury jest mierzona w
   `docs/architecture/production-readiness-audit.md` (current-state, mapa luk);
-  żaden z wymiarów auth/TLS/tenant-actor/monitoring/HA/backup/rotation nie ma
-  tam statusu PASS bez deployu i dowodu z docelowego środowiska.
+  L4–L8 mają artefakty operacyjne (monitoring, systemd, backup/restore,
+  runbooki) z dowodami w checkoutcie, ale status `PASS` produkcji wymaga
+  deployu i próby (crash/alert/rotacja/restore) na docelowym hoście.
+  Wybór środowiska, modelu auth, TLS i single-user/actor to otwarte decyzje
+  `OWNER` z propozycją w
+  `docs/architecture/production-target-decision.md` (P1–P4).
 - Nie naprawiaj produktu w skill promptach. Najpierw typed WILQ API/schema/
   view-model, potem dashboard i skill.
 - Martwe artefakty usuwaj dopiero po potwierdzeniu braku referencji.
