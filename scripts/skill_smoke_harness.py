@@ -17,6 +17,25 @@ _TOP_LEVEL_ACTION_ID_KEYS = (
 _TOP_LEVEL_VALIDATED_ACTION_ID_KEYS = ("selected_validated_action_ids",)
 
 
+def compact_brief_items(
+    brief: dict[str, Any], connectors: list[str]
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": item.get("id"),
+            "title": item.get("title"),
+            "kind": item.get("kind"),
+            "source_connectors": item.get("source_connectors", []),
+            "evidence_ids": item.get("evidence_ids", []),
+            "action_ids": item.get("action_ids", []),
+            "metric_facts": item.get("metric_facts", []),
+        }
+        for section in brief.get("sections", [])
+        for item in section.get("items", [])
+        if any(connector in connectors for connector in item.get("source_connectors", []))
+    ][:8]
+
+
 def request_json(
     api_base: str,
     method: str,

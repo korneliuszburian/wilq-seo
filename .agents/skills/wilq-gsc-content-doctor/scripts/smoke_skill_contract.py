@@ -15,6 +15,7 @@ from gsc_refresh_contract import read_latest_gsc_refresh_contract
 from gsc_runtime_assertions import validate_gsc_runtime
 
 from scripts.skill_smoke_harness import (
+    compact_brief_items,
     has_polish_metric_source_guardrails,
     request_json,
     require_polish_language,
@@ -75,15 +76,7 @@ def main() -> int:
             "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
         )
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
-    brief_items = [
-        item
-        for section in brief.get("sections", [])
-        for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
-    ][:8]
+    brief_items = compact_brief_items(brief, REQUIRED_CONNECTORS)
     connector_results = [
         status
         for status in pack.get("connector_status", [])

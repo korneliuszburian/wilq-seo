@@ -18,6 +18,7 @@ from localo_refresh_assertions import (  # noqa: E402 - executable script bootst
 from localo_report_compaction import build_localo_smoke_report  # noqa: E402
 
 from scripts.skill_smoke_harness import (  # noqa: E402 - executable script bootstrap
+    compact_brief_items,
     has_polish_metric_source_guardrails,
     request_json,
     validate_action_ids,
@@ -97,12 +98,7 @@ def main() -> int:
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     localo_action_preview_contract: str | None = None
     localo_preview_metric_names: list[str] = []
-    brief_items = [
-        item
-        for section in brief.get("sections", [])
-        for item in section.get("items", [])
-        if REQUIRED_CONNECTORS[0] in item.get("source_connectors", [])
-    ][:8]
+    brief_items = compact_brief_items(brief, REQUIRED_CONNECTORS)
 
     (
         _,

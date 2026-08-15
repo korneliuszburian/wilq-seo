@@ -11,6 +11,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from scripts.skill_smoke_harness import (
+    compact_brief_items,
     has_polish_metric_source_guardrails,
     request_json,
     validate_action_ids,
@@ -59,20 +60,7 @@ def main() -> int:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
-    brief_items = [
-        {
-            "id": item.get("id"),
-            "title": item.get("title"),
-            "kind": item.get("kind"),
-            "source_connectors": item.get("source_connectors", []),
-            "evidence_ids": item.get("evidence_ids", []),
-            "action_ids": item.get("action_ids", []),
-            "metric_facts": item.get("metric_facts", []),
-        }
-        for section in brief.get("sections", [])
-        for item in section.get("items", [])
-        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
-    ][:8]
+    brief_items = compact_brief_items(brief, REQUIRED_CONNECTORS)
 
     connector_results = []
     for connector in REQUIRED_CONNECTORS:
