@@ -459,7 +459,7 @@ def test_content_work_item_queue_blocks_dev_url_as_final_canonical() -> None:
     assert "Adres podglądu albo dev" in candidate.duplicate_canonical_risk_summary
 
 
-def test_content_work_item_queue_blocks_primary_decision_on_stale_sources() -> None:
+def test_content_work_item_queue_blocks_stale_evidence_without_changing_disposition() -> None:
     freshness = ContentFreshnessAssessment(
         state="stale",
         state_label="dane treści wymagają odświeżenia",
@@ -484,6 +484,9 @@ def test_content_work_item_queue_blocks_primary_decision_on_stale_sources() -> N
                 priority=1,
                 source_public_url="https://www.ekologus.pl/",
                 final_canonical_url="https://www.ekologus.pl/",
+                inventory_gate_status="confirmed_current_inventory",
+                canonical_gate_status="resolved",
+                duplicate_gate_status="existing_public_content_requires_refresh_or_merge",
                 source_connectors=["google_search_console", "wordpress_ekologus"],
                 evidence_ids=["ev_gsc_stale", "ev_wp_stale"],
                 rationale="Istniejąca strona ma sygnał do odświeżenia.",
@@ -495,11 +498,11 @@ def test_content_work_item_queue_blocks_primary_decision_on_stale_sources() -> N
     queue = build_content_work_item_queue_response(diagnostics, minimum_actionable_candidates=1)
 
     assert queue.queue_status == "blocked"
-    assert queue.actionable_candidate_count == 0
+    assert queue.actionable_candidate_count == 1
     assert queue.freshness_assessment.state == "stale"
     assert "Źródła tej decyzji wymagają odświeżenia" in {
         blocker.label for blocker in queue.candidates[0].blockers
     }
-    assert queue.candidates[0].recommended_mode == "block"
+    assert queue.candidates[0].recommended_mode == "refresh"
     assert queue.candidates[0].safe_next_step == freshness.next_step
     assert "Dane treści wymagają odświeżenia" in queue.operator_summary

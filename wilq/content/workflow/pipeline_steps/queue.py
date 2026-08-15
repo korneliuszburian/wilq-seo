@@ -46,6 +46,7 @@ _HARD_WORKFLOW_BLOCKERS = {
     "duplicate_gate_not_checked",
     "duplicate_or_canonical_risk",
 }
+_CONTENT_SOURCES_REQUIRE_REFRESH_BLOCKER_CODE = "content_sources_require_refresh"
 
 
 class ContentWorkItemQueueBlocker(BaseModel):
@@ -309,7 +310,8 @@ def _candidate_from_decision(
     )
     preflight = build_content_preflight_verdict(item, inventory_resolution)
     blockers = _candidate_blockers(decision, preflight, freshness_assessment)
-    mode = _recommended_mode(decision, preflight, blockers)
+    disposition_blockers = _disposition_blockers(blockers)
+    mode = _recommended_mode(decision, preflight, disposition_blockers)
     comparisons = compare_exact_page_metric_periods(
         decision.metric_facts,
         content_url=decision.final_canonical_url or decision.page or "",
@@ -329,13 +331,6 @@ def _candidate_from_decision(
         decision,
         content_url=decision.final_canonical_url or decision.page or "",
     )
-    raw_inventory_headings = (
-        decision.wordpress_acf_section_headings
-        if decision.wordpress_acf_section_inventory_status == "available"
-        and decision.wordpress_acf_section_headings
-        else decision.wordpress_section_headings
-    )
-    inventory_headings = _usable_inventory_headings(raw_inventory_headings)
     return ContentWorkItemQueueCandidate(
         work_item_id=item.id,
         decision_id=decision.id,
@@ -345,7 +340,7 @@ def _candidate_from_decision(
         recommended_mode=mode,
         recommended_mode_label=_mode_label(mode),
         status_label=_candidate_status_label(mode, preflight, decision),
-        reason=_candidate_reason(decision, preflight, blockers),
+        reason=_candidate_reason(decision, preflight, disposition_blockers),
         evidence_ids=decision.evidence_ids,
         source_connectors=decision.source_connectors,
         # Persisted decisions may carry labels from an older connector set.
@@ -361,7 +356,9 @@ def _candidate_from_decision(
         preview_url=decision.preview_url,
         preflight_status=preflight.status,
         preflight_status_label=_preflight_status_label(preflight.status),
-        duplicate_canonical_risk_summary=_duplicate_canonical_summary(decision, blockers),
+        duplicate_canonical_risk_summary=_duplicate_canonical_summary(
+            decision, disposition_blockers
+        ),
         measurement_readiness=_measurement_readiness(decision),
         search_metrics=ContentWorkItemQueueSearchMetrics(
             impressions=decision.total_impressions,
@@ -382,31 +379,42 @@ def _candidate_from_decision(
             comparison_evidence_ids=(comparison.evidence_ids if comparison is not None else []),
         ),
         ga4_metrics=ga4_metrics,
-        page_inventory=ContentWorkItemQueuePageInventory(
-            title_or_h1=decision.wordpress_title_or_h1,
-            section_count=len(inventory_headings) if inventory_headings else 0,
-            section_headings=inventory_headings,
-            section_inventory_status="available" if inventory_headings else "missing",
-            content_inventory_status=decision.wordpress_content_inventory_status,
-            content_summary=decision.wordpress_content_summary,
-            content_word_count=decision.wordpress_content_word_count,
-            acf_section_inventory_status=decision.wordpress_acf_section_inventory_status,
-            acf_section_inventory_note=(
-                decision.wordpress_acf_section_inventory_note
-                or (
-                    "Nie wykryto sekcji ACF/flexible content; sekcje planu wynikają "
-                    "z odczytanego the_content."
-                    if decision.wordpress_acf_section_inventory_status == "missing"
-                    and decision.wordpress_content_inventory_status == "available"
-                    else None
-                )
-            ),
-            acf_section_count=decision.wordpress_acf_section_count,
-            acf_section_headings=decision.wordpress_acf_section_headings,
-        ),
+        page_inventory=_page_inventory(decision),
         safe_next_step=_safe_next_step(decision, preflight, blockers),
         freshness_assessment=freshness_assessment,
         blockers=blockers,
+    )
+
+
+def _page_inventory(decision: ContentDecisionItem) -> ContentWorkItemQueuePageInventory:
+    raw_inventory_headings = (
+        decision.wordpress_acf_section_headings
+        if decision.wordpress_acf_section_inventory_status == "available"
+        and decision.wordpress_acf_section_headings
+        else decision.wordpress_section_headings
+    )
+    inventory_headings = _usable_inventory_headings(raw_inventory_headings)
+    return ContentWorkItemQueuePageInventory(
+        title_or_h1=decision.wordpress_title_or_h1,
+        section_count=len(inventory_headings) if inventory_headings else 0,
+        section_headings=inventory_headings,
+        section_inventory_status="available" if inventory_headings else "missing",
+        content_inventory_status=decision.wordpress_content_inventory_status,
+        content_summary=decision.wordpress_content_summary,
+        content_word_count=decision.wordpress_content_word_count,
+        acf_section_inventory_status=decision.wordpress_acf_section_inventory_status,
+        acf_section_inventory_note=(
+            decision.wordpress_acf_section_inventory_note
+            or (
+                "Nie wykryto sekcji ACF/flexible content; sekcje planu wynikają "
+                "z odczytanego the_content."
+                if decision.wordpress_acf_section_inventory_status == "missing"
+                and decision.wordpress_content_inventory_status == "available"
+                else None
+            )
+        ),
+        acf_section_count=decision.wordpress_acf_section_count,
+        acf_section_headings=decision.wordpress_acf_section_headings,
     )
 
 
@@ -511,6 +519,16 @@ def _recommended_mode(
     if decision.decision_type == "review_ahrefs_gap_records":
         return "block"
     return "preserve"
+
+
+def _disposition_blockers(
+    blockers: list[ContentWorkItemQueueBlocker],
+) -> list[ContentWorkItemQueueBlocker]:
+    return [
+        blocker
+        for blocker in blockers
+        if blocker.code != _CONTENT_SOURCES_REQUIRE_REFRESH_BLOCKER_CODE
+    ]
 
 
 def _mode_label(mode: ContentQueueRecommendedMode) -> str:
@@ -666,7 +684,7 @@ def _primary_freshness_blocker(
     if not stale_primary and not missing_primary and not blocked_primary:
         return None
     return ContentWorkItemQueueBlocker(
-        code="content_sources_require_refresh",
+        code=_CONTENT_SOURCES_REQUIRE_REFRESH_BLOCKER_CODE,
         label="Źródła tej decyzji wymagają odświeżenia",
         reason=freshness_assessment.summary,
         next_step=freshness_assessment.next_step,
