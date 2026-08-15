@@ -38,6 +38,7 @@ from wilq.content.workflow.contracts.contracts import (
     ContentWorkItemLearningProposalResponse,
 )
 from wilq.content.workflow.contracts.models import ContentWorkItem
+from wilq.content.workflow.contracts.section_focus import ContentSectionFocusResponse
 from wilq.content.workflow.target.new_page import (
     ContentNewPageBriefWorkspace,
     ContentNewPageFoundationResult,
@@ -152,6 +153,18 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/{work_item_id}/planning-proposals",
     ): ContentPlanningProposalResponse,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/section-focus",
+    ): ContentSectionFocusResponse,
+    (
+        "PUT",
+        "/api/content/work-items/{work_item_id}/section-focus",
+    ): ContentSectionFocusResponse,
+    (
+        "DELETE",
+        "/api/content/work-items/{work_item_id}/section-focus",
+    ): ContentSectionFocusResponse,
     (
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions",

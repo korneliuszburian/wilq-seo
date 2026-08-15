@@ -4,8 +4,9 @@ import sqlite3
 
 import duckdb
 
-SQLITE_SCHEMA_VERSION = 3
+SQLITE_SCHEMA_VERSION = 4
 DUCKDB_SCHEMA_VERSION = 2
+_CONTENT_SECTION_FOCUS_SCHEMA_VERSION = 4
 
 
 def reject_newer_sqlite_schema(connection: sqlite3.Connection) -> None:
@@ -21,8 +22,21 @@ def reject_newer_sqlite_schema(connection: sqlite3.Connection) -> None:
 def ensure_sqlite_schema_version(connection: sqlite3.Connection) -> None:
     row = connection.execute("PRAGMA user_version").fetchone()
     current_version = int(row[0]) if row is not None else 0
-    if current_version < SQLITE_SCHEMA_VERSION:
-        connection.execute(f"PRAGMA user_version = {SQLITE_SCHEMA_VERSION}")
+    target_version = SQLITE_SCHEMA_VERSION
+    if (
+        current_version < _CONTENT_SECTION_FOCUS_SCHEMA_VERSION
+        and SQLITE_SCHEMA_VERSION >= _CONTENT_SECTION_FOCUS_SCHEMA_VERSION
+        and connection.execute(
+            """
+            SELECT 1 FROM sqlite_master
+            WHERE type = 'table' AND name = 'content_section_focus'
+            """
+        ).fetchone()
+        is None
+    ):
+        target_version = _CONTENT_SECTION_FOCUS_SCHEMA_VERSION - 1
+    if current_version < target_version:
+        connection.execute(f"PRAGMA user_version = {target_version}")
 
 
 def reject_newer_duckdb_schema(connection: duckdb.DuckDBPyConnection) -> None:

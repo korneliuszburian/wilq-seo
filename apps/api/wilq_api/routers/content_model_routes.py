@@ -34,6 +34,9 @@ from apps.api.wilq_api.routers.content_regulatory_source_reviews import (
 from apps.api.wilq_api.routers.content_revision_html_package import (
     register_content_revision_html_package_route,
 )
+from apps.api.wilq_api.routers.content_section_focus import (
+    register_content_section_focus_routes,
+)
 from apps.api.wilq_api.routers.content_selected_workspace import (
     register_content_selected_workspace_route,
 )
@@ -66,6 +69,12 @@ def register_content_model_routes(
     register_content_new_page_brief_routes(router)
     register_content_revision_html_package_route(router)
     register_content_planning_proposal_routes(router, snapshot_loader=snapshot_loader)
+    register_content_section_focus_routes(
+        router,
+        planning_workspace_loader=lambda work_item_id: (
+            snapshot_loader(work_item_id).planning_workspace
+        ),
+    )
     register_content_public_deployment_routes(router)
     register_content_semantic_review_routes(router, snapshot_loader=snapshot_loader)
     register_content_target_discovery_route(router)

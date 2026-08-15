@@ -7,6 +7,7 @@ from typing import Any, cast
 
 from wilq.storage.local_state_ads import _AdsReviewStoreMixin
 from wilq.storage.local_state_audit import _AuditStoreMixin
+from wilq.storage.local_state_focus import _SectionFocusStoreMixin
 from wilq.storage.local_state_runs import _model_from_json as _model_from_json
 from wilq.storage.local_state_runs import _model_json as _model_json
 from wilq.storage.local_state_runs import _RunStoreMixin
@@ -34,6 +35,7 @@ class LocalStateStore(
     _RunStoreMixin,
     _AuditStoreMixin,
     _AdsReviewStoreMixin,
+    _SectionFocusStoreMixin,
 ):
     def __init__(self, path: Path) -> None:
         self.path = path
@@ -155,6 +157,15 @@ class LocalStateStore(
               id TEXT PRIMARY KEY,
               connector_id TEXT NOT NULL,
               created_at TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS content_section_focus (
+              work_item_id TEXT PRIMARY KEY,
+              section_id TEXT NOT NULL,
+              planning_digest TEXT,
+              updated_by TEXT,
+              updated_at TEXT NOT NULL,
               payload_json TEXT NOT NULL
             );
             """
