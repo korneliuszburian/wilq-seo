@@ -1,0 +1,30 @@
+{
+  "report_type": "review_packet_manifest_v1",
+  "packet_path": "docs/agents/reports/content-review/paczka-tresci-5-stron-2026-08-12.md",
+  "fixed_point_commit": "0eada7073e637623ca2f24887f40c1908b7957cb",
+  "tree_dirty": true,
+  "dirty_paths": [
+    "docs/agents/reports/content-review/paczka-tresci-5-stron-2026-08-12.manifest.json",
+    "docs/agents/reports/content-review/paczka-tresci-5-stron-2026-08-12.md",
+    "opencode.json",
+    "pyproject.toml",
+    "scripts/build_review_packet_manifest.py",
+    "tests/test_review_packet_manifest.py",
+    "uv.lock"
+  ],
+  "generated_at": "2026-08-15T14:01:35.949557Z",
+  "screenshots": [],
+  "referenced_ids": {
+    "revision_ids": [
+      "content_revision_62ef7b61f6fd4a399a41d3ab33094fc9",
+      "content_revision_66f7eec3ec9646a5a8ed5327a44e3da8",
+      "content_revision_787c4e52b3f941f3a048a63355e8cf45",
+      "content_revision_b14c7fc23fcc4907aadf24c431cc656a",
+      "content_revision_f4c23cfcd5b6449c83281545b4883e2c"
+    ],
+    "work_item_ids": [],
+    "evidence_ids": [],
+    "run_ids": []
+  },
+  "safety_note": "Manifest przypina pakiet review do jednego commitu repozytorium; nie zatwierdza treści ani jej jakości."
+}
