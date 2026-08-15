@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import datetime
 from typing import Any, Literal
 
@@ -56,6 +57,8 @@ class Workflow(BaseModel):
     description: str
     steps: list[WorkflowStep]
     status: Literal["ready", "blocked", "planned"] = "planned"
+    operator_visibility: Literal["admin_health"] = "admin_health"
+    marketer_actionable: Literal[False] = False
     status_label: str | None = None
     route: str | None = None
     route_label: str | None = None
@@ -114,14 +117,65 @@ class WorkflowRun(BaseModel):
     id: str
     workflow_id: str
     status: Literal["queued", "running", "completed", "failed", "blocked"]
+    scope: str | None = None
+    workspace_work_item_id: str | None = None
+    terminal_state: Literal["completed", "failed", "blocked", "pending"] = "pending"
+    operator_visibility: Literal["admin_health", "marketer_work"] = "admin_health"
+    marketer_actionable: bool = False
     status_label: str = ""
     started_at: datetime = Field(default_factory=utc_now)
     completed_at: datetime | None = None
+    updated_at: datetime = Field(default_factory=utc_now)
     input: WorkflowInput = Field(default_factory=WorkflowInput)
     output: WorkflowOutput = Field(default_factory=WorkflowOutput)
 
+    @model_validator(mode="before")
+    @classmethod
+    def hydrate_legacy_context(cls, value: Any) -> Any:
+        if not isinstance(value, Mapping):
+            return value
+
+        hydrated = dict(value)
+        started_at = hydrated.get("started_at") or utc_now()
+        hydrated["started_at"] = started_at
+        if not hydrated.get("updated_at"):
+            hydrated["updated_at"] = hydrated.get("completed_at") or started_at
+
+        parameters = _workflow_run_parameters(hydrated.get("input"))
+        if not _nonblank_string(hydrated.get("scope")):
+            hydrated["scope"] = _first_workflow_run_parameter(
+                parameters,
+                "scope",
+                "scope_label",
+            )
+        if not _nonblank_string(hydrated.get("workspace_work_item_id")):
+            hydrated["workspace_work_item_id"] = _first_workflow_run_parameter(
+                parameters,
+                "workspace_work_item_id",
+                "work_item_id",
+            )
+        return hydrated
+
     @model_validator(mode="after")
     def hydrate_labels(self) -> WorkflowRun:
+        if self.scope is not None:
+            self.scope = self.scope.strip() or None
+        if self.workspace_work_item_id is not None:
+            self.workspace_work_item_id = self.workspace_work_item_id.strip() or None
+        if self.status == "completed":
+            self.terminal_state = "completed"
+        elif self.status == "failed":
+            self.terminal_state = "failed"
+        elif self.status == "blocked":
+            self.terminal_state = "blocked"
+        else:
+            self.terminal_state = "pending"
+        self.marketer_actionable = bool(
+            self.status == "completed" and self.workspace_work_item_id
+        )
+        self.operator_visibility = (
+            "marketer_work" if self.marketer_actionable else "admin_health"
+        )
         if not self.status_label:
             self.status_label = _workflow_run_status_label(self.status)
         return self
@@ -140,6 +194,33 @@ class WorkflowEvidence(BaseModel):
 class WorkflowActionObject(BaseModel):
     workflow_run_id: str
     action_ids: list[str] = Field(default_factory=list)
+
+
+def _workflow_run_parameters(value: Any) -> Mapping[str, Any]:
+    if isinstance(value, WorkflowInput):
+        return value.parameters
+    if not isinstance(value, Mapping):
+        return {}
+    parameters = value.get("parameters")
+    return parameters if isinstance(parameters, Mapping) else {}
+
+
+def _first_workflow_run_parameter(
+    parameters: Mapping[str, Any],
+    *keys: str,
+) -> str | None:
+    for key in keys:
+        value = _nonblank_string(parameters.get(key))
+        if value is not None:
+            return value
+    return None
+
+
+def _nonblank_string(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
 
 
 def _workflow_run_status_label(status: str) -> str:

@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 
 from apps.api.wilq_api.context_daily import compact_content_knowledge_card_for_operator_context
 from apps.api.wilq_api.context_knowledge import content_knowledge_cards_for_skill
+from apps.api.wilq_api.routers import workflows as workflows_router
 from tests._contract_support.action_candidate_seed import seed_action_candidate_metric_facts
 from tests._contract_support.api_client import client
 from wilq.actions.social import social_draft_actions
@@ -25,7 +27,13 @@ from wilq.schemas import (
 from wilq.social.history import SOCIAL_HISTORY_INVENTORY_FILE_ENV, social_history_input_example
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
-from wilq.workflows.models import Workflow, _workflow_run_status_label
+from wilq.workflows.models import (
+    Workflow,
+    WorkflowInput,
+    WorkflowRun,
+    WorkflowRunCreateRequest,
+    _workflow_run_status_label,
+)
 from wilq.workflows.registry import _risk_label as _workflow_risk_label
 from wilq.workflows.registry import _status_label as _workflow_status_label
 
@@ -1181,6 +1189,194 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert "local ranking " + "up" + "lift" not in serialized
     assert "local_ranking_uplift_claim" not in serialized
     assert "GBP performance verdict" not in serialized
+
+
+def test_ready_workflow_definition_is_admin_health_not_marketer_work(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        workflows_router,
+        "list_workflows",
+        lambda: [
+            Workflow(
+                id="ready_definition",
+                label="Gotowa definicja procesu",
+                description="Definicja gotowa administracyjnie.",
+                steps=[],
+                status="ready",
+            )
+        ],
+    )
+
+    ready_workflow = workflows_router.workflows()[0].model_dump(mode="json")
+
+    assert (
+        ready_workflow["status"],
+        ready_workflow["operator_visibility"],
+        ready_workflow["marketer_actionable"],
+    ) == ("ready", "admin_health", False)
+
+
+@pytest.mark.parametrize(
+    ("status", "workspace_work_item_id", "expected"),
+    [
+        ("queued", None, ("pending", "admin_health", False)),
+        ("running", "content_work_item_bdo", ("pending", "admin_health", False)),
+        ("completed", None, ("completed", "admin_health", False)),
+        (
+            "completed",
+            "content_work_item_bdo",
+            ("completed", "marketer_work", True),
+        ),
+        ("failed", "content_work_item_bdo", ("failed", "admin_health", False)),
+        ("blocked", "content_work_item_bdo", ("blocked", "admin_health", False)),
+    ],
+)
+def test_workflow_run_terminal_outcome_controls_marketer_visibility(
+    status: Literal["queued", "running", "completed", "failed", "blocked"],
+    workspace_work_item_id: str | None,
+    expected: tuple[str, str, bool],
+) -> None:
+    completed_at = datetime(2026, 8, 15, 10, 30, tzinfo=UTC)
+    run = WorkflowRun(
+        id=f"run_{status}_{workspace_work_item_id or 'admin'}",
+        workflow_id="gsc_content_doctor",
+        status=status,
+        completed_at=completed_at if status in {"completed", "failed", "blocked"} else None,
+        workspace_work_item_id=workspace_work_item_id,
+    )
+
+    assert (run.terminal_state, run.operator_visibility, run.marketer_actionable) == expected
+
+
+def test_old_queued_workflow_run_stays_stale_and_non_terminal() -> None:
+    started_at = datetime(2025, 1, 2, 9, 15, tzinfo=UTC)
+    run = WorkflowRun.model_validate(
+        {
+            "id": "run_legacy_content_scope",
+            "workflow_id": "gsc_content_doctor",
+            "status": "queued",
+            "started_at": started_at,
+            "input": {
+                "parameters": {
+                    "scope_label": "Odświeżenie strony BDO",
+                    "work_item_id": "content_work_item_bdo",
+                }
+            },
+        }
+    )
+
+    assert (
+        run.updated_at,
+        run.scope,
+        run.workspace_work_item_id,
+        run.terminal_state,
+        run.operator_visibility,
+        run.marketer_actionable,
+    ) == (
+        started_at,
+        "Odświeżenie strony BDO",
+        "content_work_item_bdo",
+        "pending",
+        "admin_health",
+        False,
+    )
+
+
+@pytest.mark.parametrize(
+    ("run_id", "parameters", "expected_scope", "expected_work_item_id"),
+    [
+        ("run_admin_health", {}, "Treści z GSC", None),
+        (
+            "run_content_workspace",
+            {
+                "scope": "  Odświeżenie strony BDO  ",
+                "work_item_id": "  content_work_item_bdo  ",
+            },
+            "Odświeżenie strony BDO",
+            "content_work_item_bdo",
+        ),
+    ],
+)
+def test_create_workflow_run_captures_scope_workspace_and_update_time(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    run_id: str,
+    parameters: dict[str, Any],
+    expected_scope: str,
+    expected_work_item_id: str | None,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / f"{run_id}.sqlite3"))
+    workflow = Workflow(
+        id="gsc_content_doctor",
+        label="Treści z GSC",
+        description="Administracyjna definicja procesu treści.",
+        steps=[],
+        status="ready",
+    )
+    monkeypatch.setattr(workflows_router, "list_workflows", lambda: [workflow])
+
+    created = workflows_router.create_workflow_run(
+        workflow.id,
+        WorkflowRunCreateRequest(
+            id=run_id,
+            input=WorkflowInput(parameters=parameters),
+        ),
+    )
+    detail = workflows_router.workflow_run_detail(run_id)
+    listed = workflows_router.workflow_runs()
+
+    assert [
+        (
+            run.scope,
+            run.workspace_work_item_id,
+            run.terminal_state,
+            run.operator_visibility,
+            run.marketer_actionable,
+            run.updated_at,
+        )
+        for run in (created, detail, listed[0])
+    ] == [
+        (
+            expected_scope,
+            expected_work_item_id,
+            "pending",
+            "admin_health",
+            False,
+            created.started_at,
+        )
+    ] * 3
+
+
+def test_workflow_run_list_uses_explicit_update_time(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "workflow_update_order.sqlite3"))
+    store = local_state_store()
+    store.save_workflow_run(
+        WorkflowRun(
+            id="run_updated_later",
+            workflow_id="daily_command",
+            status="queued",
+            started_at=datetime(2025, 1, 1, tzinfo=UTC),
+            updated_at=datetime(2026, 8, 15, tzinfo=UTC),
+        )
+    )
+    store.save_workflow_run(
+        WorkflowRun(
+            id="run_started_later",
+            workflow_id="daily_command",
+            status="queued",
+            started_at=datetime(2026, 1, 1, tzinfo=UTC),
+            updated_at=datetime(2026, 2, 1, tzinfo=UTC),
+        )
+    )
+
+    assert [run.id for run in store.list_workflow_runs()] == [
+        "run_updated_later",
+        "run_started_later",
+    ]
 
 
 def test_workflow_label_fallbacks_do_not_expose_raw_values() -> None:

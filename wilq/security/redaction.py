@@ -147,6 +147,7 @@ SAFE_IDENTIFIER_KEYS = {
     "wordpress_requested_url_key",
     "workflow_id",
     "workflow_run_id",
+    "workspace_work_item_id",
 }
 SAFE_SECRET_TELEMETRY_KEYS = {
     "access_token_present",

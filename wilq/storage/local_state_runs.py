@@ -42,7 +42,6 @@ class _RunStoreMixin:
     def save_workflow_run(self, run: WorkflowRun) -> WorkflowRun:
         redacted = WorkflowRun.model_validate(redact_mapping(run.model_dump(mode="json")))
         payload_json = _model_json(redacted)
-        updated_at = redacted.completed_at or redacted.started_at
         with self._connect() as connection:
             connection.execute(
                 """
@@ -58,7 +57,7 @@ class _RunStoreMixin:
                     redacted.id,
                     redacted.workflow_id,
                     redacted.status,
-                    updated_at.isoformat(),
+                    redacted.updated_at.isoformat(),
                     payload_json,
                 ),
             )
