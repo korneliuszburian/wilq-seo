@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
@@ -22,7 +24,7 @@ from wilq.social.reuse import (
 
 
 def test_social_reuse_rejects_stale_revision_before_history_or_persistence(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     revision = _revision()
     store = _FakeStore(
@@ -53,7 +55,9 @@ def test_social_reuse_rejects_stale_revision_before_history_or_persistence(
     assert store.saved is None
 
 
-def test_social_reuse_stays_blocked_until_history_is_review_ready(monkeypatch) -> None:
+def test_social_reuse_stays_blocked_until_history_is_review_ready(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     revision = _revision()
     store = _FakeStore(revision, status="approved")
     monkeypatch.setattr(social_router, "content_workflow_store", lambda: store)
@@ -85,7 +89,108 @@ def test_social_reuse_stays_blocked_until_history_is_review_ready(monkeypatch) -
     assert store.saved is None
 
 
-def test_social_reuse_store_is_idempotent_for_exact_revision(tmp_path) -> None:
+def test_social_reuse_blocks_claim_outside_source_revision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    revision = _revision()
+    inventory = build_social_history_inventory(
+        {},
+        {},
+        audit_social_history_metadata_payload(
+            {
+                "items": [
+                    {"channel": "linkedin", **_history_fields("linkedin")},
+                    {"channel": "facebook", **_history_fields("facebook")},
+                ]
+            }
+        ),
+        metadata_source_configured=True,
+    )
+    store = _FakeStore(revision, status="approved")
+    monkeypatch.setattr(social_router, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        social_router,
+        "build_social_history_inventory_from_env",
+        lambda *_args: inventory,
+    )
+
+    response = TestClient(app).post(
+        "/api/social/reuse-proposals",
+        json={
+            "work_item_id": revision.work_item_id,
+            "expected_revision_id": revision.revision_id,
+            "expected_revision_digest": revision.content_digest,
+            "platform": "linkedin",
+            "audience": "przedsiębiorcy",
+            "angle": "konkretny pierwszy krok",
+            "body": "Sprawdź pierwszy krok.",
+            "claim_ids": ["claim_outside_revision"],
+            "measurement_hypothesis": "Obserwujemy wejścia na stronę.",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["status"] == "blocked"
+    assert response.json()["blocker"] == "unsupported_claim_lineage"
+    assert response.json()["next_step"] == (
+        "Social reuse claim_ids must belong to the source revision."
+    )
+    assert store.saved is None
+
+
+def test_social_reuse_accepts_source_claims_with_review_only_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    revision = _revision()
+    inventory = build_social_history_inventory(
+        {},
+        {},
+        audit_social_history_metadata_payload(
+            {
+                "items": [
+                    {"channel": "linkedin", **_history_fields("linkedin")},
+                    {"channel": "facebook", **_history_fields("facebook")},
+                ]
+            }
+        ),
+        metadata_source_configured=True,
+    )
+    store = _FakeStore(revision, status="approved")
+    monkeypatch.setattr(social_router, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        social_router,
+        "build_social_history_inventory_from_env",
+        lambda *_args: inventory,
+    )
+
+    response = TestClient(app).post(
+        "/api/social/reuse-proposals",
+        json={
+            "work_item_id": revision.work_item_id,
+            "expected_revision_id": revision.revision_id,
+            "expected_revision_digest": revision.content_digest,
+            "platform": "linkedin",
+            "audience": "przedsiębiorcy",
+            "angle": "konkretny pierwszy krok",
+            "body": "Sprawdź pierwszy krok.",
+            "claim_ids": ["claim_1"],
+            "measurement_hypothesis": "Obserwujemy wejścia na stronę.",
+        },
+    )
+
+    assert response.status_code == 200, response.json()
+    response_payload = response.json()
+    proposal_payload = response_payload["proposal"]
+    assert response_payload["status"] == "created"
+    assert proposal_payload["source_claim_ids"] == ["claim_1"]
+    assert proposal_payload["status"] == "review_required"
+    assert proposal_payload["publish_allowed"] is False
+    assert {"review_only", "no_vendor_publish"} <= set(proposal_payload["constraints"])
+    assert "reach" not in proposal_payload
+    assert "engagement" not in proposal_payload
+
+
+def test_social_reuse_store_is_idempotent_for_exact_revision(tmp_path: Path) -> None:
     revision = _revision()
     inventory = build_social_history_inventory(
         {},
@@ -123,15 +228,37 @@ def test_social_reuse_store_is_idempotent_for_exact_revision(tmp_path) -> None:
     store = ContentWorkflowStore(tmp_path / "state.sqlite3")
 
     first = store.save_social_reuse_proposal(proposal)
-    second = store.save_social_reuse_proposal(proposal.model_copy(update={"body": "Inny tekst."}))
+    repeated = store.save_social_reuse_proposal(proposal)
+    competing = build_social_reuse_proposal(
+        SocialReuseProposalRequest(
+            work_item_id=revision.work_item_id,
+            expected_revision_id=revision.revision_id,
+            expected_revision_digest=revision.content_digest,
+            platform="linkedin",
+            audience="przedsiębiorcy",
+            angle="inny kąt",
+            body="Inny tekst.",
+            claim_ids=["claim_1"],
+            measurement_hypothesis="Obserwujemy wejścia na stronę.",
+        ),
+        revision,
+        inventory,
+        now=datetime(2026, 7, 19, tzinfo=UTC),
+    )
+    unchanged = store.save_social_reuse_proposal(competing)
 
-    assert first.proposal_digest == second.proposal_digest
-    assert second.body == first.body
+    assert repeated == first
+    assert unchanged == first
+    assert first.proposal_id == repeated.proposal_id == unchanged.proposal_id
+    assert first.proposal_digest == repeated.proposal_digest == unchanged.proposal_digest
+    assert unchanged.body == first.body
     assert store.get_social_reuse_proposal(proposal.proposal_id) == first
     assert store.list_social_reuse_proposals(revision.work_item_id) == [first]
 
 
-def test_social_reuse_read_becomes_stale_when_history_digest_changes(monkeypatch) -> None:
+def test_social_reuse_read_becomes_stale_when_history_digest_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     revision = _revision()
     inventory = build_social_history_inventory(
         {},
@@ -178,7 +305,9 @@ def test_social_reuse_read_becomes_stale_when_history_digest_changes(monkeypatch
     assert response.json()["blocker"] == "social_history_changed"
 
 
-def test_social_reuse_review_records_human_decision_and_is_idempotent(monkeypatch) -> None:
+def test_social_reuse_review_records_human_decision_and_is_idempotent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     revision = _revision()
     inventory = build_social_history_inventory(
         {},
@@ -242,7 +371,9 @@ def test_social_reuse_review_records_human_decision_and_is_idempotent(monkeypatc
     assert repeated.json()["review"]["review_id"] == first.json()["review"]["review_id"]
 
 
-def test_social_reuse_needs_changes_creates_child_proposal(monkeypatch) -> None:
+def test_social_reuse_needs_changes_creates_child_proposal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     revision = _revision()
     inventory = build_social_history_inventory(
         {},
@@ -348,7 +479,7 @@ class _FakeStore:
         self.saved_review: SocialReuseReview | None = None
         self.child_saved: SocialReuseProposal | None = None
 
-    def load_draft_revision_state(self, work_item_id: str):
+    def load_draft_revision_state(self, work_item_id: str) -> SimpleNamespace:
         return SimpleNamespace(
             status=self.status,
             latest_revision=self.revision
@@ -360,10 +491,13 @@ class _FakeStore:
         self.saved = proposal
         return proposal
 
-    def get_social_reuse_proposal(self, proposal_id: str):
+    def get_social_reuse_proposal(
+        self,
+        proposal_id: str,
+    ) -> SocialReuseProposal | None:
         return self.saved if self.saved and self.saved.proposal_id == proposal_id else None
 
-    def latest_social_reuse_review(self, proposal_id: str):
+    def latest_social_reuse_review(self, proposal_id: str) -> SocialReuseReview | None:
         if self.saved_review and self.saved_review.proposal_id == proposal_id:
             return self.saved_review
         return None
