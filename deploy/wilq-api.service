@@ -1,0 +1,40 @@
+# Szablon jednostki: przed instalacją uzupełnij użytkownika, grupę i wszystkie ścieżki.
+[Unit]
+Description=WILQ API
+After=network.target
+Conflicts=wilq-dashboard.service
+
+[Service]
+Type=simple
+# TEMPLATE: zastąp "wilku" kontem wdrożeniowym bez uprawnień administratora.
+User=wilku
+Group=wilku
+
+# TEMPLATE: zastąp każde /opt/wilq ścieżką do repozytorium na serwerze.
+# W jednostce systemowej %h wskazuje dom menedżera, nie konta z User=; literalne % to %%.
+WorkingDirectory=/opt/wilq
+
+# Domyślnie wskaż repozytoryjny plik .env; prefiks "-" pozwala go pominąć.
+# WILQ_ENABLE_SCHEDULER=1 i WILQ_SERVE_DASHBOARD=1 można dodać w tym pliku.
+EnvironmentFile=-/opt/wilq/.env
+Environment=WILQ_API_RELOAD=0
+Environment=UV_NO_CACHE=1
+Environment=UV_NO_SYNC=1
+# TEMPLATE: dopasuj cały PATH; pierwszy katalog ma zawierać także program codex.
+Environment=PATH=/home/wilku/.local/bin:/usr/local/bin:/usr/bin
+
+# TEMPLATE: zastąp /home/wilku/.local/bin/uv bezwzględną ścieżką do uv na serwerze.
+ExecStart=/home/wilku/.local/bin/uv run python -m uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+
+UMask=0077
+ProtectSystem=strict
+# TEMPLATE: utwórz te katalogi z prawami zapisu dla konta wdrożeniowego.
+# Ścieżki WILQ_STATE_DB i WILQ_METRIC_DB muszą pozostać w dozwolonym katalogu stanu.
+ReadWritePaths=/opt/wilq/.local-lab/state /opt/wilq/.local-lab/backup
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
