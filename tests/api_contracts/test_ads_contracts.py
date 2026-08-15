@@ -4539,6 +4539,12 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     assert payload["latest_refresh"]["vendor_data_collected"] is False
     assert payload["freshness_assessment"]["state"] == "blocked"
     assert payload["freshness_assessment"]["requires_refresh"] is True
+    data_readiness = payload["data_readiness"]
+    assert data_readiness["state"] == "failed"
+    assert data_readiness["factual_metric_count"] == 0
+    assert data_readiness["factual_metrics"] == []
+    assert data_readiness["latest_refresh_id"] == payload["latest_refresh"]["id"]
+    assert data_readiness["reason"]
     assert "nie zakończył się pełnym pobraniem metryk" in payload["freshness_assessment"]["summary"]
     assert (
         "uruchom ponownie odczyt danych Google Ads" in payload["freshness_assessment"]["next_step"]

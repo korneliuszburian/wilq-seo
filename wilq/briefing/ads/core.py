@@ -9,6 +9,7 @@ from wilq.briefing.ads_summary_cache import (
     read_ads_summary_cache,
     write_ads_summary_cache,
 )
+from wilq.briefing.diagnostic_readiness import build_diagnostic_data_readiness
 from wilq.connectors.registry import get_connector_status
 from wilq.schemas import (
     ActionObject,
@@ -99,6 +100,19 @@ def build_ads_diagnostics(
     )
     trusted_metric_facts = metric_facts if latest_refresh_collected_data else []
     live_data_available = bool(trusted_metric_facts)
+    data_readiness = build_diagnostic_data_readiness(
+        connector=connector,
+        latest_refresh=latest_refresh,
+        factual_metrics=trusted_metric_facts[:12],
+        factual_metric_count=len(trusted_metric_facts),
+        partial=bool(
+            latest_refresh and latest_refresh.quality_state.value == "partial"
+        ),
+        stale=connector.freshness.state == "stale",
+        partial_coverage_label=(
+            "Pokazane metryki obejmują tylko potwierdzony zakres odczytu Google Ads."
+        ),
+    )
     (
         account_currency_read_contract,
         business_context_read_contract,
@@ -257,6 +271,7 @@ def build_ads_diagnostics(
         connector=connector,
         latest_refresh=latest_refresh,
         live_data_available=live_data_available,
+        data_readiness=data_readiness,
         account_currency_read_contract=account_currency_read_contract,
         campaign_read_contract=campaign_read_contract,
         business_context_read_contract=business_context_read_contract,

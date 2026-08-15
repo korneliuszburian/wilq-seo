@@ -7,7 +7,14 @@ from pydantic import BaseModel, Field, model_validator
 
 from wilq.operator_labels import missing_contract_count_label
 
-from .core import ActionRisk, ConnectorRefreshRun, ConnectorStatus, MetricFact, utc_now
+from .core import (
+    ActionRisk,
+    ConnectorRefreshRun,
+    ConnectorStatus,
+    DiagnosticDataReadiness,
+    MetricFact,
+    utc_now,
+)
 from .marketing import TacticalQueueItem
 
 
@@ -186,6 +193,7 @@ class Ga4DiagnosticsResponse(BaseModel):
     latest_refresh_status_label: str = ""
     live_data_available: bool
     live_data_status_label: str = ""
+    data_readiness: DiagnosticDataReadiness
     landing_group_count: int = 0
     low_engagement_count: int = 0
     wordpress_match_count: int = 0

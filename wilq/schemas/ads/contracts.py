@@ -19,6 +19,7 @@ from ..core import (
     ActionRisk,
     ConnectorRefreshRun,
     ConnectorStatus,
+    DiagnosticDataReadiness,
     MetricFact,
     utc_now,
 )
@@ -325,6 +326,7 @@ class AdsDiagnosticsResponse(BaseModel):
     latest_refresh_status_label: str | None = None
     live_data_status_label: str = ""
     live_data_available: bool
+    data_readiness: DiagnosticDataReadiness
     freshness_assessment: AdsFreshnessAssessment
     aggregation_contract: AdsAggregationContract = Field(
         default_factory=lambda: AdsAggregationContract(

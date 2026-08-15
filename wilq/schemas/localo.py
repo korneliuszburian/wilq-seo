@@ -7,7 +7,14 @@ from pydantic import BaseModel, Field, model_validator
 
 from wilq.operator_labels import missing_contract_count_label
 
-from .core import ActionRisk, ConnectorRefreshRun, ConnectorStatus, MetricFact, utc_now
+from .core import (
+    ActionRisk,
+    ConnectorRefreshRun,
+    ConnectorStatus,
+    DiagnosticDataReadiness,
+    MetricFact,
+    utc_now,
+)
 
 
 class LocaloAccessProbe(BaseModel):
@@ -155,6 +162,7 @@ class LocaloDiagnosticsResponse(BaseModel):
     latest_refresh_status_label: str | None = None
     access_probe: LocaloAccessProbe
     live_data_available: bool
+    data_readiness: DiagnosticDataReadiness
     visibility_fact_count: int = 0
     read_contract_statuses: list[LocaloReadContractStatus] = Field(default_factory=list)
     operator_summary: LocaloOperatorSummary

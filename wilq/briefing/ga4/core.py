@@ -8,6 +8,7 @@ from threading import Lock
 from time import monotonic as monotonic
 
 from wilq.actions.service import list_actions
+from wilq.briefing.diagnostic_readiness import build_diagnostic_data_readiness
 from wilq.briefing.ga4.conversions import _conversion_readiness_contract
 from wilq.briefing.ga4.labels import (
     _ga4_connector_status_label,
@@ -110,6 +111,26 @@ def build_ga4_diagnostics(
         _tracking_readiness_section(latest_refresh, trusted_facts, tactical_items, action_ids),
         _ga4_action_safety_section(latest_refresh, trusted_facts, tactical_items, action_ids),
     ]
+    evidence_ids = _unique(
+        [
+            *(evidence_id for section in sections for evidence_id in section.evidence_ids),
+            *conversion_readiness_contract.evidence_ids,
+        ]
+    )
+    data_readiness = build_diagnostic_data_readiness(
+        connector=connector,
+        latest_refresh=latest_refresh,
+        factual_metrics=trusted_facts[:12],
+        factual_metric_count=len(trusted_facts),
+        evidence_ids=evidence_ids,
+        partial=bool(
+            latest_refresh and latest_refresh.quality_state.value == "partial"
+        ),
+        stale=bool(trusted_facts and freshness_assessment.requires_refresh),
+        partial_coverage_label=(
+            "Pokazane metryki obejmują tylko potwierdzony zakres odczytu GA4."
+        ),
+    )
     response = Ga4DiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
@@ -120,6 +141,7 @@ def build_ga4_diagnostics(
         else "",
         live_data_available=live_data_available,
         live_data_status_label=_ga4_live_data_status_label(live_data_available),
+        data_readiness=data_readiness,
         landing_group_count=max(
             _landing_group_count(trusted_facts),
             _tactical_landing_group_count(tactical_items),
@@ -137,12 +159,7 @@ def build_ga4_diagnostics(
         ),
         decision_queue=decision_queue,
         sections=sections,
-        evidence_ids=_unique(
-            [
-                *(evidence_id for section in sections for evidence_id in section.evidence_ids),
-                *conversion_readiness_contract.evidence_ids,
-            ]
-        ),
+        evidence_ids=evidence_ids,
         action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
         blocker_count=(
             sum(1 for section in sections if section.status == "blocked")

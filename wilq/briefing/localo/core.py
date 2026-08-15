@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from wilq.briefing.diagnostic_readiness import build_diagnostic_data_readiness
 from wilq.briefing.localo.competitors import _localo_decision_queue, _localo_decisions_with_lineage
 from wilq.briefing.localo.labels import (
     _label_localo_access_probe,
@@ -52,6 +53,28 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
     action_ids = _unique(
         action_id for decision in decision_queue for action_id in decision.action_ids
     )
+    evidence_ids = _unique(
+        evidence_id for section in sections for evidence_id in section.evidence_ids
+    )
+    ready_contract_count = sum(
+        1 for contract in read_contract_statuses if contract.status == "ready"
+    )
+    partial = bool(
+        visibility_facts and ready_contract_count < len(read_contract_statuses)
+    )
+    data_readiness = build_diagnostic_data_readiness(
+        connector=connector,
+        latest_refresh=latest_refresh,
+        factual_metrics=visibility_facts[:12],
+        factual_metric_count=len(visibility_facts),
+        evidence_ids=evidence_ids,
+        partial=partial,
+        stale=connector.freshness.state == "stale",
+        partial_coverage_label=(
+            f"Potwierdzone {ready_contract_count} z {len(read_contract_statuses)} "
+            "zakresów danych Localo."
+        ),
+    )
 
     return LocaloDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
@@ -63,6 +86,7 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
         else None,
         access_probe=access_probe,
         live_data_available=live_data_available,
+        data_readiness=data_readiness,
         visibility_fact_count=len(visibility_facts),
         read_contract_statuses=read_contract_statuses,
         operator_summary=_operator_summary(
@@ -73,9 +97,7 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
         ),
         decision_queue=decision_queue,
         sections=sections,
-        evidence_ids=_unique(
-            evidence_id for section in sections for evidence_id in section.evidence_ids
-        ),
+        evidence_ids=evidence_ids,
         action_ids=action_ids,
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )

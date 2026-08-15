@@ -87,6 +87,17 @@ class ConnectorQualityState(StrEnum):
     unknown = "unknown"
 
 
+class DiagnosticDataReadinessState(StrEnum):
+    ready = "ready"
+    partial = "partial"
+    refresh_available = "refresh_available"
+    refresh_running = "refresh_running"
+    unavailable = "unavailable"
+    missing = "missing"
+    blocked = "blocked"
+    failed = "failed"
+
+
 class ConnectorCoveredWindow(BaseModel):
     """Connector-owned reporting window; never infer a universal freshness SLA."""
 
@@ -376,6 +387,23 @@ class MetricFact(BaseModel):
 
     @model_validator(mode="after")
     def fill_dimension_labels(self) -> MetricFact:
+        marketer_context = {
+            "metric_label": "etykieta metryki",
+            "period_label": "etykieta okresu",
+            "source_connector_label": "etykieta źródła",
+            "evidence_id": "identyfikator dowodu",
+        }
+        blank_context = [
+            label
+            for field, label in marketer_context.items()
+            if field in self.model_fields_set and not getattr(self, field).strip()
+        ]
+        if blank_context:
+            raise ValueError(
+                "Fakt metryczny wymaga pełnego kontekstu marketera: "
+                + ", ".join(blank_context)
+                + "."
+            )
         if not self.metric_label:
             self.metric_label = metric_fact_label(self.name, self.source_connector)
         if not self.source_connector_label:
@@ -389,6 +417,53 @@ class MetricFact(BaseModel):
                 key: _metric_dimension_value_label(key, value)
                 for key, value in self.dimensions.items()
             }
+        required_context = {
+            "etykieta metryki": self.metric_label,
+            "etykieta źródła": self.source_connector_label,
+            "etykieta okresu": self.period_label,
+            "identyfikator dowodu": self.evidence_id,
+        }
+        missing_context = [
+            label for label, value in required_context.items() if not value.strip()
+        ]
+        if missing_context:
+            raise ValueError(
+                "Fakt metryczny wymaga pełnego kontekstu marketera: "
+                + ", ".join(missing_context)
+                + "."
+            )
+        return self
+
+
+class DiagnosticDataReadiness(BaseModel):
+    state: DiagnosticDataReadinessState = DiagnosticDataReadinessState.unavailable
+    state_label: str = "Dane wymagają sprawdzenia"
+    reason: str = "WILQ nie potwierdził jeszcze danych potrzebnych do tej decyzji."
+    coverage_label: str = "Brak potwierdzonych metryk do pokazania."
+    refresh_allowed: bool = False
+    safe_next_step: str = "Sprawdź źródło danych przed użyciem metryk w decyzji."
+    factual_metric_count: int = Field(default=0, ge=0)
+    factual_metrics: list[MetricFact] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    connector_id: str
+    connector_label: str = ""
+    latest_refresh_id: str | None = None
+
+    @model_validator(mode="after")
+    def validate_readiness(self) -> DiagnosticDataReadiness:
+        if not self.connector_label:
+            self.connector_label = source_connector_label(self.connector_id)
+        if self.factual_metric_count < len(self.factual_metrics):
+            raise ValueError("Liczba metryk nie może być mniejsza niż pokazany zakres faktów.")
+        if self.state not in {
+            DiagnosticDataReadinessState.ready,
+            DiagnosticDataReadinessState.partial,
+        } and self.factual_metrics:
+            raise ValueError("Niegotowy stan diagnostyczny nie może zwracać metryk jako faktów.")
+        if self.state == DiagnosticDataReadinessState.ready and not self.factual_metrics:
+            raise ValueError("Gotowy stan diagnostyczny wymaga co najmniej jednej metryki.")
+        if self.state == DiagnosticDataReadinessState.partial and not self.factual_metrics:
+            raise ValueError("Częściowy stan diagnostyczny wymaga zaobserwowanych metryk.")
         return self
 
 
@@ -407,6 +482,7 @@ def _metric_period_label(period: str) -> str:
     labels = {
         "connector_refresh": "okres odświeżenia źródła",
         "current": "bieżący",
+        "localo_mcp_read": "ostatni odczyt Localo",
     }
     if value in labels:
         return labels[value]

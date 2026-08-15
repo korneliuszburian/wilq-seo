@@ -623,6 +623,14 @@ def test_ga4_diagnostics_marks_stale_refresh_as_stale_review(
     assert "do odświeżenia" in freshness["summary"]
     assert "odczyt danych GA4" in freshness["next_step"]
     assert "odświeżenia" in payload["operator_summary"]["summary"]
+    data_readiness = payload["data_readiness"]
+    assert data_readiness["state"] == "refresh_available"
+    assert data_readiness["factual_metric_count"] == 0
+    assert data_readiness["factual_metrics"] == []
+    assert data_readiness["latest_refresh_id"] == (
+        "refresh_google_analytics_4_stale_test"
+    )
+    assert "wcześniejszy odczyt" in data_readiness["reason"]
 
 
 def test_ga4_diagnostics_exposes_incomplete_metric_persistence(
@@ -1807,6 +1815,19 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     assert payload["access_probe"]["evidence_summary_label"] == "1 dowód źródłowy"
     assert payload["live_data_available"] is False
     assert payload["visibility_fact_count"] == 0
+    data_readiness = payload["data_readiness"]
+    assert data_readiness["state"] == "refresh_available"
+    assert data_readiness["connector_id"] == "localo"
+    assert data_readiness["latest_refresh_id"] == "refresh_localo_access_ready_diag_test"
+    assert data_readiness["factual_metric_count"] == 0
+    assert data_readiness["factual_metrics"] == []
+    assert data_readiness["evidence_ids"] == [
+        "ev_refresh_refresh_localo_access_ready_diag_test"
+    ]
+    assert data_readiness["state_label"] == "Wymagany odczyt danych"
+    assert data_readiness["reason"]
+    assert data_readiness["coverage_label"] == "Brak potwierdzonych metryk do pokazania."
+    assert "odczyt" in data_readiness["safe_next_step"].lower()
     assert payload["evidence_ids"] == ["ev_refresh_refresh_localo_access_ready_diag_test"]
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     access_decision = decision_by_id["localo_access_ready_wait_for_visibility_facts"]

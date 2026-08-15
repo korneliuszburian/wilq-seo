@@ -117,6 +117,7 @@ from wilq.schemas import (
     AdsSearchTermsReadContract,
     ConnectorRefreshRun,
     ConnectorStatus,
+    DiagnosticDataReadiness,
     MetricFact,
     connector_refresh_has_live_data,
 )
@@ -488,6 +489,7 @@ def _build_ads_diagnostics_response(
     connector: ConnectorStatus,
     latest_refresh: ConnectorRefreshRun | None,
     live_data_available: bool,
+    data_readiness: DiagnosticDataReadiness,
     account_currency_read_contract: AdsAccountCurrencyReadContract,
     campaign_read_contract: AdsCampaignReadContract,
     business_context_read_contract: AdsBusinessContextReadContract,
@@ -515,6 +517,7 @@ def _build_ads_diagnostics_response(
         connector=connector,
         latest_refresh=latest_refresh,
         live_data_available=live_data_available,
+        data_readiness=data_readiness,
         account_currency_read_contract=account_currency_read_contract,
         campaign_read_contract=campaign_read_contract,
         business_context_read_contract=business_context_read_contract,
