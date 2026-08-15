@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from urllib.parse import urlparse
-
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.content.workflow.contracts.contracts import (
     ContentWordPressDraftWriteReadinessBlocker,
@@ -9,20 +7,32 @@ from wilq.content.workflow.contracts.contracts import (
     ContentWordPressExistingDraftUpdateReadinessResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
+from wilq.content.workflow.target.public_to_dev_mapping import (
+    ContentPublicToDevMappingEvidence,
+    build_content_public_to_dev_mapping,
+)
 
 
 def build_content_wordpress_existing_draft_update_readiness_response(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    *,
+    relation_evidence: ContentPublicToDevMappingEvidence | None = None,
 ) -> ContentWordPressExistingDraftUpdateReadinessResponse:
     profile = build_wordpress_authoring_profile("wordpress_ekologus", include_dev_content=True)
     draft = snapshot.draft_package.draft_package_result.draft_package
     source_url = snapshot.preflight.item.source_public_url or ""
-    source_path = urlparse(source_url).path or "/"
+    mapping = build_content_public_to_dev_mapping(
+        source_url,
+        dev_content=profile.dev_content,
+        relation_evidence=relation_evidence,
+    )
     target = next(
         (
             item
             for item in profile.dev_content.items
-            if (urlparse(item.link).path or "/") == source_path
+            if mapping.mapping_status == "exact"
+            and item.post_id == mapping.dev_post_id
+            and item.link == mapping.dev_url
         ),
         None,
     )
@@ -65,18 +75,16 @@ def build_content_wordpress_existing_draft_update_readiness_response(
     )
     return ContentWordPressExistingDraftUpdateReadinessResponse(
         work_item_id=snapshot.preflight.item.id,
-        target_post_id=target.post_id if target is not None else None,
-        target_url=target.link if target is not None else None,
+        target_post_id=mapping.dev_post_id if target is not None else None,
+        target_url=mapping.dev_url if target is not None else None,
         current_state_available=target is not None,
         current_section_count=len(current_sections),
         proposed_section_count=len(draft.sections) if draft is not None else 0,
         section_diff_preview=diff_preview,
         blockers=[blocker],
         operator_next_step=blocker.next_step,
-        evidence_ids=[*snapshot.preflight.item.evidence_ids, *profile.evidence_ids],
+        evidence_ids=mapping.evidence_ids,
         source_connectors=list(
-            dict.fromkeys(
-                [*snapshot.preflight.item.source_connectors, *profile.source_connectors]
-            )
+            dict.fromkeys([*snapshot.preflight.item.source_connectors, *profile.source_connectors])
         ),
     )

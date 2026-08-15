@@ -11,6 +11,7 @@ from wilq.content.canonical.metric_dimensions import metric_dimensions_match_lan
 from wilq.content.knowledge.work_item_service_profile import (
     build_content_work_item_service_profile_context,
 )
+from wilq.content.workflow.contracts.models import ContentDecisionTargetMappingStatus
 from wilq.content.workflow.decisions.decision_mapping import content_work_item_from_decision
 from wilq.content.workflow.decisions.inventory_binding import inventory_decision_for_work_item
 from wilq.content.workflow.pipeline_steps.queue import (
@@ -57,9 +58,6 @@ class ContentDecisionContextSourcePublic(BaseModel):
     label: str
     reason: str
     technical_reason: str | None = None
-
-
-ContentDecisionTargetMappingStatus = Literal["exact", "unverified", "missing"]
 
 
 class ContentDecisionContextAuthoringTarget(BaseModel):

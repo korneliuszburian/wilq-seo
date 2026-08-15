@@ -26,6 +26,7 @@ _PUBLIC_MODULES = (
     "documents.codex_revision_commit",
     "documents.revision_persistence",
     "workspace.delivery_projection",
+    "target.public_to_dev_mapping",
     "target.target_discovery",
     "target.target_mapping_blockers",
     "target.target_mapping_preview_models",

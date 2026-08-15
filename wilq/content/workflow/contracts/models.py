@@ -40,6 +40,7 @@ ContentMeasurementWindowStatus = Literal[
     "ready_for_review",
     "closed",
 ]
+ContentDecisionTargetMappingStatus = Literal["exact", "unverified", "missing"]
 ContentWordPressSectionInventoryStatus = Literal["available", "missing"]
 ContentWorkflowAction = Literal[
     "prepare_sales_brief",
