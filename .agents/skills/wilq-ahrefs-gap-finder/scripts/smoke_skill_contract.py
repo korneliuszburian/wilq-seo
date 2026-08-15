@@ -10,14 +10,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from ahrefs_contract_assertions import validate_ahrefs_contract
 from ahrefs_report import build_report
-from ahrefs_runtime import (
-    collect_action_validations,
-    collect_connector_results,
-    compact_brief_items,
-    validate_polish_instruction,
+from scripts.skill_smoke_harness import (
+    has_polish_metric_source_guardrails,
+    request_json,
+    validate_action_ids as collect_action_validations,
 )
-
-from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
 
 SKILL_NAME = "wilq-ahrefs-gap-finder"
 CONTENT_REFRESH_ACTION_ID = "act_prepare_content_refresh_queue"
@@ -65,9 +62,12 @@ def main() -> int:
     missing_read_contracts = gap_contract.get("missing_read_contracts") or []
     cross_check_status = gap_contract.get("cross_check_status")
     diagnostics_action_ids = ahrefs_diagnostics.get("action_ids") or []
-    action_validations = collect_action_validations(
-        args.api_base, diagnostics_action_ids, request_json, args.timeout_seconds
-    )
+    action_validations = {
+        item["action_id"]: item
+        for item in collect_action_validations(
+            args.api_base, diagnostics_action_ids, label="Ahrefs"
+        )
+    }
     context_action_ids = [
         item.get("id")
         for item in (pack.get("active_action_objects") or [])
@@ -100,10 +100,25 @@ def main() -> int:
         )
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
-    brief_items = compact_brief_items(brief, REQUIRED_CONNECTORS)
-    connector_results = collect_connector_results(args.api_base, REQUIRED_CONNECTORS, request_json)
+    brief_items = [
+        item
+        for section in brief.get("sections", [])
+        for item in section.get("items", [])
+        if any(
+            connector in REQUIRED_CONNECTORS
+            for connector in item.get("source_connectors", [])
+        )
+    ][:8]
+    connector_results = [
+        status
+        for status in pack.get("connector_status", [])
+        if status.get("id") in REQUIRED_CONNECTORS
+    ]
 
-    validate_polish_instruction(pack, has_polish_metric_source_guardrails)
+    if not has_polish_metric_source_guardrails(str(pack.get("strict_instruction", ""))):
+        raise SystemExit(
+            "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
+        )
 
     print(
         json.dumps(

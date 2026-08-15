@@ -10,11 +10,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from custom_segment_assertions import validate_candidate_contract, validate_context_contract
 from custom_segments_report import build_report
-from custom_segments_runtime import (
-    collect_connector_results,
-    compact_brief_items,
-    validate_polish_instruction,
-)
 
 from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
 
@@ -92,9 +87,24 @@ def main() -> int:
     )
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
-    brief_items = compact_brief_items(brief, REQUIRED_CONNECTORS)
-    connector_results = collect_connector_results(args.api_base, REQUIRED_CONNECTORS, request_json)
-    validate_polish_instruction(pack, has_polish_metric_source_guardrails)
+    brief_items = [
+        item
+        for section in brief.get("sections", [])
+        for item in section.get("items", [])
+        if any(
+            connector in REQUIRED_CONNECTORS
+            for connector in item.get("source_connectors", [])
+        )
+    ][:8]
+    connector_results = [
+        status
+        for status in pack.get("connector_status", [])
+        if status.get("id") in REQUIRED_CONNECTORS
+    ]
+    if not has_polish_metric_source_guardrails(str(pack.get("strict_instruction", ""))):
+        raise SystemExit(
+            "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
+        )
 
     print(
         json.dumps(

@@ -12,7 +12,6 @@ from gsc_decision_parity import validate_gsc_context_parity
 from gsc_freshness_assertions import validate_freshness_and_gsc_contract
 from gsc_marketer_card_assertions import validate_marketer_decision_card
 from gsc_refresh_contract import read_latest_gsc_refresh_contract
-from gsc_report_compaction import compact_gsc_brief_items, compact_gsc_connector_statuses
 from gsc_runtime_assertions import validate_gsc_runtime
 
 from scripts.skill_smoke_harness import (
@@ -75,16 +74,29 @@ def main() -> int:
         raise SystemExit(
             "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
         )
+    brief = request_json(args.api_base, "GET", "/api/marketing/brief")
+    brief_items = [
+        item
+        for section in brief.get("sections", [])
+        for item in section.get("items", [])
+        if any(
+            connector in REQUIRED_CONNECTORS
+            for connector in item.get("source_connectors", [])
+        )
+    ][:8]
+    connector_results = [
+        status
+        for status in pack.get("connector_status", [])
+        if status.get("id") in REQUIRED_CONNECTORS
+    ]
     print(
         json.dumps(
             {
                 "skill": SKILL_NAME,
                 "api_base": args.api_base,
                 "health": health.get("status"),
-                "required_connectors": compact_gsc_connector_statuses(
-                    args.api_base, REQUIRED_CONNECTORS
-                ),
-                "brief_items": compact_gsc_brief_items(args.api_base, REQUIRED_CONNECTORS),
+                "required_connectors": connector_results,
+                "brief_items": brief_items,
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),

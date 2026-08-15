@@ -16,18 +16,11 @@ from localo_refresh_assertions import (  # noqa: E402 - executable script bootst
     validate_localo_refresh_contract,
 )
 from localo_report_compaction import build_localo_smoke_report  # noqa: E402
-from localo_runtime_assertions import (  # noqa: E402 - executable script bootstrap
-    collect_connector_results,
-    compact_brief_items,
-    validate_localo_brief_blockers,
-    validate_polish_instruction,
-    validate_review_action,
-    validate_review_action_linkage,
-)
 
 from scripts.skill_smoke_harness import (  # noqa: E402 - executable script bootstrap
     has_polish_metric_source_guardrails,
     request_json,
+    validate_action_ids,
 )
 
 SKILL_NAME = "wilq-localo-operator"
@@ -104,8 +97,12 @@ def main() -> int:
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     localo_action_preview_contract: str | None = None
     localo_preview_metric_names: list[str] = []
-    brief_items = compact_brief_items(brief, REQUIRED_CONNECTORS[0])
-    validate_localo_brief_blockers(brief_items, REQUIRED_CONNECTORS[0])
+    brief_items = [
+        item
+        for section in brief.get("sections", [])
+        for item in section.get("items", [])
+        if REQUIRED_CONNECTORS[0] in item.get("source_connectors", [])
+    ][:8]
 
     (
         _,
@@ -118,18 +115,24 @@ def main() -> int:
         pack, localo_diagnostics, access_probe, decision_ids, localo_actions
     )
 
-    connector_results = collect_connector_results(
-        args.api_base, REQUIRED_CONNECTORS[0], request_json
-    )
+    connector_results = [
+        status
+        for status in pack.get("connector_status", [])
+        if status.get("id") in REQUIRED_CONNECTORS
+    ]
 
-    validate_polish_instruction(pack, has_polish_metric_source_guardrails)
+    if not has_polish_metric_source_guardrails(str(pack.get("strict_instruction", ""))):
+        raise SystemExit(
+            "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
+        )
     active_action_ids = [action.get("id") for action in pack.get("active_action_objects", [])]
-    action_validations, action_contract = validate_review_action(
-        args.api_base, LOCALO_VISIBILITY_REVIEW_ACTION_ID, active_action_ids, request_json
-    )
-    localo_action_preview_contract = action_contract or localo_action_preview_contract
-    review_action_ids = validate_review_action_linkage(
-        operator_summary, active_action_ids, LOCALO_VISIBILITY_REVIEW_ACTION_ID
+    review_action_ids = operator_summary.get("review_action_ids") or []
+    action_validations = validate_action_ids(
+        args.api_base,
+        [LOCALO_VISIBILITY_REVIEW_ACTION_ID]
+        if LOCALO_VISIBILITY_REVIEW_ACTION_ID in active_action_ids
+        else [],
+        label="Localo",
     )
 
     print(

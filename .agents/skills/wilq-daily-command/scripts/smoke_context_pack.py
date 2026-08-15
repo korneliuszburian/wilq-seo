@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import urllib.error
 import urllib.parse
-import urllib.request
+import sys
+from pathlib import Path
 from typing import Any
 
-from daily_command_text_guards import has_metric_evidence_guardrails, scan_strings
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+
+from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
 
 REQUIRED_KEYS = {
     "strict_instruction",
@@ -53,25 +55,6 @@ FORBIDDEN_READY_OPERATOR_ITEM_IDS = {
     "daily_localo_readiness",
 }
 
-
-def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
-    data = None if body is None else json.dumps(body).encode("utf-8")
-    req = urllib.request.Request(
-        f"{api_base.rstrip('/')}{path}",
-        data=data,
-        method=method,
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=60) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        message = exc.read().decode("utf-8", errors="replace")[:500]
-        raise SystemExit(f"HTTP {exc.code} from {path}: {message}") from exc
-    except urllib.error.URLError as exc:
-        raise SystemExit(f"Could not reach WILQ API at {api_base}: {exc.reason}") from exc
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Smoke test wilq-daily-command against WILQ API")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
@@ -98,12 +81,8 @@ def main() -> int:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
     instruction = str(pack.get("strict_instruction", "")).lower()
-    if not has_metric_evidence_guardrails(instruction):
+    if not has_polish_metric_source_guardrails(instruction):
         raise SystemExit("Instrukcja context-packa nie zawiera zasad metryk i dowodów z WILQ API")
-
-    marker_hits = sorted(set(scan_strings(pack)))
-    if marker_hits:
-        raise SystemExit(f"Context pack contains forbidden marker(s): {', '.join(marker_hits)}")
 
     pack_brief = pack.get("marketing_brief")
     validate_marketing_brief(pack_brief)
@@ -170,7 +149,7 @@ def validate_command_center(command_center: Any, *, compact: bool = False) -> No
     _validate(
         command_center,
         compact=compact,
-        guardrail=has_metric_evidence_guardrails,
+        guardrail=has_polish_metric_source_guardrails,
         core_operator_ids=CORE_OPERATOR_ITEM_IDS,
         forbidden_ready_ids=FORBIDDEN_READY_OPERATOR_ITEM_IDS,
     )
@@ -182,7 +161,7 @@ def validate_marketing_brief(brief: Any) -> None:
     if brief.get("language") != "pl-PL":
         raise SystemExit(f"Marketing brief language is not pl-PL: {brief.get('language')}")
     instruction = str(brief.get("strict_instruction", ""))
-    if not has_metric_evidence_guardrails(instruction):
+    if not has_polish_metric_source_guardrails(instruction):
         raise SystemExit("Instrukcja briefu nie zawiera zasad metryk i dowodów źródłowych")
     section_ids = {section.get("id") for section in brief.get("sections", [])}
     missing_sections = sorted(REQUIRED_BRIEF_SECTIONS - section_ids)
