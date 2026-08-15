@@ -56,7 +56,7 @@ def test_dashboard_unit_is_an_alternative_api_process_with_built_spa() -> None:
     )
     assert "Environment=WILQ_SERVE_DASHBOARD=1" in dashboard_service
     assert (
-        "Environment=WILQ_DASHBOARD_DIST=/opt/wilq/apps/dashboard/dist"
+        "Environment=WILQ_DASHBOARD_DIST=/opt/wilq/apps/dashboard/dist"  # pragma: allowlist secret
         in dashboard_service
     )
     assert "Preferowane wdrożenie: wilq-api.service" in dashboard_unit
