@@ -28,6 +28,7 @@ class JobRunRequest(BaseModel):
 class SchedulerStatus(BaseModel):
     backend: Literal["apscheduler"]
     autostart: bool
+    running: bool
     configured_jobs: int
     enabled_jobs: int
     notes: list[str] = Field(default_factory=list)

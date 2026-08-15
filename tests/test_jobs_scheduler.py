@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import json
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -10,6 +12,7 @@ from typer.testing import CliRunner
 from apps.api.wilq_api.main import app
 from wilq.cli import app as cli_app
 from wilq.connectors.refresh import get_connector_refresh_run, run_connector_refresh
+from wilq.jobs import scheduler as scheduler_module
 from wilq.jobs.registry import VENDOR_READ_CONNECTOR_IDS, list_jobs
 from wilq.jobs.scheduler import run_job
 from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRequest
@@ -18,6 +21,68 @@ client = TestClient(app)
 
 FAKE_JOBS_API_SECRET = "sk-jobs-api-redaction-test"  # pragma: allowlist secret
 FAKE_JOBS_CLI_SECRET = "sk-jobs-cli-redaction-test"  # pragma: allowlist secret
+
+
+@pytest.fixture(autouse=True)
+def stop_scheduler_threads_after_test() -> Iterator[None]:
+    scheduler_module.stop_background_scheduler()
+    try:
+        yield
+    finally:
+        scheduler_module.stop_background_scheduler()
+
+
+@pytest.mark.parametrize("configured", [None, "0", "false"])
+def test_background_scheduler_stays_stopped_when_not_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+    configured: str | None,
+) -> None:
+    if configured is None:
+        monkeypatch.delenv("WILQ_ENABLE_SCHEDULER", raising=False)
+    else:
+        monkeypatch.setenv("WILQ_ENABLE_SCHEDULER", configured)
+
+    assert scheduler_module.start_background_scheduler() is None
+    assert scheduler_module.scheduler_status()["running"] is False
+    assert scheduler_module.scheduler_status()["autostart"] is False
+
+
+@pytest.mark.parametrize("configured", ["1", "TRUE", "Yes", "on", "enabled"])
+def test_background_scheduler_starts_once_and_stops_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+    configured: str,
+) -> None:
+    monkeypatch.setenv("WILQ_ENABLE_SCHEDULER", configured)
+    first = scheduler_module.start_background_scheduler()
+    second = None
+    try:
+        assert first is not None
+        assert scheduler_module.scheduler_status()["running"] is True
+
+        second = scheduler_module.start_background_scheduler()
+
+        assert second is first
+    finally:
+        scheduler_module.stop_background_scheduler()
+        for scheduler in (first, second):
+            if scheduler is not None and scheduler.running:
+                scheduler.shutdown(wait=True)
+
+    assert scheduler_module.scheduler_status()["running"] is False
+
+
+def test_api_lifespan_owns_enabled_scheduler_lifecycle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WILQ_ENABLE_SCHEDULER", "1")
+
+    async def exercise_lifespan() -> None:
+        async with app.router.lifespan_context(app):
+            assert scheduler_module.scheduler_status()["running"] is True
+
+    asyncio.run(exercise_lifespan())
+
+    assert scheduler_module.scheduler_status()["running"] is False
 
 
 def test_configured_vendor_read_job_only_includes_implemented_vendor_adapters() -> None:
@@ -41,6 +106,7 @@ def test_jobs_api_runs_connector_status_probe_without_secret_values(
     assert status_response.status_code == 200
     assert status_response.json()["backend"] == "apscheduler"
     assert status_response.json()["autostart"] is False
+    assert status_response.json()["running"] is False
 
     jobs_response = client.get("/api/jobs")
     assert jobs_response.status_code == 200

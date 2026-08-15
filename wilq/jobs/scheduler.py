@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+from threading import RLock
 from typing import Any, Literal
 from uuid import uuid4
 
@@ -11,17 +13,24 @@ from wilq.jobs.registry import get_job, list_jobs
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus, utc_now
 from wilq.storage.local_state import local_state_store
 
+SCHEDULER_TRUTHY_VALUES = frozenset({"1", "true", "yes", "on", "enabled"})
+
+_active_scheduler: BackgroundScheduler | None = None
+_scheduler_lock = RLock()
+
 
 def scheduler_status() -> dict[str, Any]:
     jobs = list_jobs()
     return {
         "backend": "apscheduler",
         "autostart": False,
+        "running": background_scheduler_running(),
         "configured_jobs": len(jobs),
         "enabled_jobs": sum(1 for job in jobs if job.enabled),
         "notes": [
             "Goal 001 exposes deterministic job definitions and manual run endpoints.",
-            "The background scheduler is not auto-started by the API process.",
+            "The API starts the background scheduler only when WILQ_ENABLE_SCHEDULER is enabled.",
+            "Background scheduler autostart defaults to off.",
         ],
     }
 
@@ -39,6 +48,42 @@ def build_background_scheduler() -> BackgroundScheduler:
                 max_instances=1,
             )
     return scheduler
+
+
+def start_background_scheduler() -> BackgroundScheduler | None:
+    global _active_scheduler
+
+    if not _background_scheduler_enabled():
+        return None
+    with _scheduler_lock:
+        if _active_scheduler is not None and _active_scheduler.running:
+            return _active_scheduler
+        scheduler = build_background_scheduler()
+        scheduler.start()
+        _active_scheduler = scheduler
+        return scheduler
+
+
+def stop_background_scheduler() -> None:
+    global _active_scheduler
+
+    with _scheduler_lock:
+        scheduler = _active_scheduler
+        if scheduler is None:
+            return
+        if scheduler.running:
+            scheduler.shutdown(wait=True)
+        _active_scheduler = None
+
+
+def background_scheduler_running() -> bool:
+    with _scheduler_lock:
+        return bool(_active_scheduler is not None and _active_scheduler.running)
+
+
+def _background_scheduler_enabled() -> bool:
+    configured = os.getenv("WILQ_ENABLE_SCHEDULER")
+    return bool(configured and configured.strip().casefold() in SCHEDULER_TRUTHY_VALUES)
 
 
 def run_job(job_id: str, request: JobRunRequest | None = None) -> JobRun | None:

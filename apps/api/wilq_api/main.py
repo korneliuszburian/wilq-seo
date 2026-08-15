@@ -4,11 +4,16 @@ import ipaddress
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException
+from starlette.responses import Response
+from starlette.staticfiles import StaticFiles
+from starlette.types import Scope
 
 from apps.api.wilq_api import (
     context_daily,
@@ -54,6 +59,7 @@ from wilq.briefing.merchant_diagnostics import (
 )
 from wilq.briefing.tactical_queue import clear_tactical_queue_cache
 from wilq.connectors.registry import list_connector_statuses
+from wilq.jobs.scheduler import start_background_scheduler, stop_background_scheduler
 from wilq.knowledge.operating_map import clear_knowledge_operating_map_cache
 from wilq.opportunities.engine import list_opportunities
 
@@ -64,6 +70,8 @@ DEFAULT_CORS_ORIGINS = (
     "http://127.0.0.1:5373",
 )
 LOCAL_CORS_ORIGIN_REGEX = r"^http://(localhost|127\.0\.0\.1):\d+$"
+DASHBOARD_TRUTHY_VALUES = frozenset({"1", "true", "yes", "on", "enabled"})
+DEFAULT_DASHBOARD_DIST = Path(__file__).resolve().parents[2] / "dashboard" / "dist"
 
 
 def cors_origins() -> list[str]:
@@ -73,16 +81,43 @@ def cors_origins() -> list[str]:
     return [origin.strip() for origin in configured.split(",") if origin.strip()]
 
 
+class DashboardStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        normalized_path = path.lstrip("/")
+        if normalized_path == "api" or normalized_path.startswith("api/"):
+            raise HTTPException(status_code=404)
+        try:
+            return await super().get_response(path, scope)
+        except HTTPException as exc:
+            if exc.status_code != 404:
+                raise
+            if normalized_path == "assets" or normalized_path.startswith("assets/"):
+                raise
+        return await super().get_response("index.html", scope)
+
+
+def mount_dashboard_if_configured(application: FastAPI) -> None:
+    configured = os.getenv("WILQ_SERVE_DASHBOARD")
+    if not configured or configured.strip().casefold() not in DASHBOARD_TRUTHY_VALUES:
+        return
+    configured_dist = os.getenv("WILQ_DASHBOARD_DIST")
+    dist_path = Path(configured_dist) if configured_dist else DEFAULT_DASHBOARD_DIST
+    if not dist_path.is_dir():
+        return
+    application.mount(
+        "/",
+        DashboardStaticFiles(directory=dist_path),
+        name="dashboard",
+    )
 
 
 @asynccontextmanager
 async def wilq_lifespan(_: FastAPI) -> AsyncIterator[None]:
     try:
+        start_background_scheduler()
         yield
     finally:
-        # Optional read models are lazy. Readiness must not spend the first
-        # request's storage/connector budget on unrelated dashboard surfaces.
-        pass
+        stop_background_scheduler()
 
 
 app = FastAPI(title="WILQ Marketing API", version="0.1.0", lifespan=wilq_lifespan)
@@ -201,3 +236,4 @@ app.include_router(create_connectors_router(clear_api_view_model_caches))
 app.include_router(create_jobs_router(clear_api_view_model_caches))
 app.include_router(create_codex_router(context_pack))
 app.include_router(create_demand_gen_router(context_demand_gen.build_readiness_contract))
+mount_dashboard_if_configured(app)
