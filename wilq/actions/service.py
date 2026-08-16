@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from typing import Any, Literal
+from uuid import uuid4
 
 from wilq.actions import action_catalog
 from wilq.actions.action_blockers import (
@@ -97,6 +98,8 @@ from wilq.actions.gate_labels import (
     action_gate_labels,
 )
 from wilq.actions.google_ads.business_context import (
+    ADS_STRATEGY_REVIEW_ACTION_ID,
+    ADS_TARGET_CONFIRMATION_ACTION_ID,
     ads_strategy_review_summary,
 )
 from wilq.actions.google_ads.business_context import (
@@ -265,6 +268,8 @@ from wilq.schemas import (
     ActionReviewResult,
     ActionValidationResult,
     ActionWordPressDraftApplyBlocker,
+    AdsStrategyReviewRecord,
+    AdsTargetGuardrailConfirmation,
     AuditEvent,
 )
 from wilq.storage.local_state import local_state_store
@@ -338,6 +343,20 @@ def record_action_review(
     )
     _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
     _persist_action_audit(result.audit_event)
+    if action.id == ADS_STRATEGY_REVIEW_ACTION_ID:
+        local_state_store().save_ads_strategy_review(
+            AdsStrategyReviewRecord(
+                id=f"ads_strategy_review_{uuid4().hex[:12]}",
+                action_id=action.id,
+                outcome=request.outcome,
+                reviewed_by=result.audit_event.actor,
+                notes=request.notes,
+                checked_items=request.checked_items,
+                blockers=request.blockers,
+                audit_event_id=result.audit_event.id,
+                evidence_ids=action.evidence_ids,
+            )
+        )
     return result
 
 
@@ -397,6 +416,19 @@ def confirm_action(
     )
     _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
     _persist_action_audit(result.audit_event)
+    if action.id == ADS_TARGET_CONFIRMATION_ACTION_ID and result.confirmed:
+        local_state_store().save_ads_target_guardrail_confirmation(
+            AdsTargetGuardrailConfirmation(
+                id=f"ads_target_guardrail_{uuid4().hex[:12]}",
+                action_id=action.id,
+                target_roas=request.target_roas,
+                target_cpa_micros=request.target_cpa_micros,
+                confirmed_by=result.audit_event.actor,
+                notes=request.notes,
+                audit_event_id=result.audit_event.id,
+                evidence_ids=action.evidence_ids,
+            )
+        )
     return result
 
 

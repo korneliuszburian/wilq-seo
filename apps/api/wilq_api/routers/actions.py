@@ -6,10 +6,6 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 
-from wilq.actions.google_ads.business_context import (
-    ADS_STRATEGY_REVIEW_ACTION_ID,
-    ADS_TARGET_CONFIRMATION_ACTION_ID,
-)
 from wilq.actions.service import (
     apply_action,
     confirm_action,
@@ -43,8 +39,6 @@ from wilq.schemas import (
     ActionValidationResult,
     AdsExternalExecutionAcknowledgementRequest,
     AdsExternalObservationRequest,
-    AdsStrategyReviewRecord,
-    AdsTargetGuardrailConfirmation,
     AuditEvent,
 )
 from wilq.storage.local_state import local_state_store
@@ -273,20 +267,6 @@ def _review_action_endpoint(
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = record_action_review(action, request)
-    if action.id == ADS_STRATEGY_REVIEW_ACTION_ID:
-        local_state_store().save_ads_strategy_review(
-            AdsStrategyReviewRecord(
-                id=f"ads_strategy_review_{uuid4().hex[:12]}",
-                action_id=action.id,
-                outcome=request.outcome,
-                reviewed_by=result.audit_event.actor,
-                notes=request.notes,
-                checked_items=request.checked_items,
-                blockers=request.blockers,
-                audit_event_id=result.audit_event.id,
-                evidence_ids=action.evidence_ids,
-            )
-        )
     clear_api_view_model_caches()
     return result
 
@@ -451,19 +431,6 @@ def _confirm_action_endpoint(
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = confirm_action(action, request)
-    if action.id == ADS_TARGET_CONFIRMATION_ACTION_ID and result.confirmed:
-        local_state_store().save_ads_target_guardrail_confirmation(
-            AdsTargetGuardrailConfirmation(
-                id=f"ads_target_guardrail_{uuid4().hex[:12]}",
-                action_id=action.id,
-                target_roas=request.target_roas,
-                target_cpa_micros=request.target_cpa_micros,
-                confirmed_by=result.audit_event.actor,
-                notes=request.notes,
-                audit_event_id=result.audit_event.id,
-                evidence_ids=action.evidence_ids,
-            )
-        )
     clear_api_view_model_caches()
     return result
 
