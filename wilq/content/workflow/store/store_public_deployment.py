@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import AbstractContextManager
 from typing import Protocol, cast
 
 from wilq.content.measurement.deployment import ContentPublicDeployment
@@ -10,7 +11,7 @@ from wilq.storage.model_json import model_json
 
 
 class PublicDeploymentStore(Protocol):
-    def run_transaction(self) -> sqlite3.Connection:
+    def run_transaction(self) -> AbstractContextManager[sqlite3.Connection]:
         ...
 
 
