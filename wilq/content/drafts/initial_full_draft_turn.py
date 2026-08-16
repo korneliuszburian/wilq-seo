@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from typing import Literal, cast
-
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing import cast
 
 from wilq.codex.app_server import CodexAppServerStructuredTurnRequest
 from wilq.codex.prompts import resolve_prompt_template
@@ -21,6 +19,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
+from wilq.content.drafts.regulatory_patch import regulatory_assertion_repair_output_schema
 from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
 from wilq.content.planning.dynamic_input import ContentPlanningInput
@@ -28,29 +27,6 @@ from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
 )
-from wilq.content.workflow.documents.revisions import validate_no_inline_link
-
-
-class _RegulatorySectionPatch(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    section_id: str = Field(min_length=1)
-    mode: Literal["append", "replace"]
-    body_markdown: str = Field(min_length=1)
-
-    @field_validator("body_markdown")
-    @classmethod
-    def require_visible_text_without_inline_links(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("Regulatory repair body cannot be blank.")
-        return validate_no_inline_link(value)
-
-
-class _RegulatoryAssertionRepairOutput(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    sections: list[_RegulatorySectionPatch] = Field(min_length=1)
-    publish_ready: Literal[False] = False
 
 
 def initial_full_draft_turn_request(
@@ -196,7 +172,7 @@ def regulatory_assertion_repair_turn_request(
             sort_keys=True,
             separators=(",", ":"),
         ),
-        output_schema=_regulatory_assertion_repair_output_schema(section_ids),
+        output_schema=regulatory_assertion_repair_output_schema(section_ids),
     )
 
 
@@ -293,7 +269,7 @@ def readability_repair_turn_request(
             sort_keys=True,
             separators=(",", ":"),
         ),
-        output_schema=_regulatory_assertion_repair_output_schema(affected_section_ids),
+        output_schema=regulatory_assertion_repair_output_schema(affected_section_ids),
     )
 
 
@@ -325,19 +301,6 @@ def _missing_assertions_for_repair(
                     if section.section_id not in section_ids:
                         section_ids.append(section.section_id)
     return assertions, section_ids
-
-
-def _regulatory_assertion_repair_output_schema(section_ids: list[str]) -> dict[str, object]:
-    schema = deepcopy(_RegulatoryAssertionRepairOutput.model_json_schema())
-    require_all_object_properties(schema)
-    schema_definition = mapping(mapping(schema, "$defs"), "_RegulatorySectionPatch")
-    section_properties = mapping(schema_definition, "properties")
-    section_id = mapping(section_properties, "section_id")
-    section_id["enum"] = section_ids
-    sections = mapping(mapping(schema, "properties"), "sections")
-    sections["minItems"] = len(section_ids)
-    sections["maxItems"] = len(section_ids)
-    return schema
 
 
 def compact_initial_draft_planning_input(

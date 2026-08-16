@@ -15,9 +15,11 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftModelOutput,
 )
-from wilq.content.drafts.initial_full_draft_turn import (
-    _RegulatoryAssertionRepairOutput,
-    regulatory_assertion_repair_turn_request,
+from wilq.content.drafts.initial_full_draft_turn import regulatory_assertion_repair_turn_request
+from wilq.content.drafts.regulatory_patch import (
+    RegulatoryAssertionRepairOutput,
+    apply_regulatory_patches,
+    validated_patches_by_section,
 )
 from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
 from wilq.content.planning.dynamic_input import ContentPlanningInput
@@ -85,7 +87,7 @@ def repair_regulatory_assertions(
             replace_semantic_requirements=fallback_requires_replacement,
         )
     try:
-        patch = _RegulatoryAssertionRepairOutput.model_validate_json(result.output_text)
+        patch = RegulatoryAssertionRepairOutput.model_validate_json(result.output_text)
     except ValueError:
         return _grounded_repair_fallback(
             planning_input,
@@ -94,8 +96,8 @@ def repair_regulatory_assertions(
             missing,
             replace_semantic_requirements=fallback_requires_replacement,
         )
-    patches = {item.section_id: item for item in patch.sections}
-    if len(patches) != len(patch.sections):
+    patches = validated_patches_by_section(patch, expected_modes=expected_modes)
+    if patches is None:
         return _grounded_repair_fallback(
             planning_input,
             proposal,
@@ -103,33 +105,8 @@ def repair_regulatory_assertions(
             missing,
             replace_semantic_requirements=fallback_requires_replacement,
         )
-    if {section_id: item.mode for section_id, item in patches.items()} != expected_modes:
-        return _grounded_repair_fallback(
-            planning_input,
-            proposal,
-            output,
-            missing,
-            replace_semantic_requirements=fallback_requires_replacement,
-        )
-    patched = output.model_copy(
-        update={
-            "sections": [
-                section.model_copy(
-                    update={
-                        "body_markdown": _apply_patch(
-                            section.body_markdown,
-                            patches.get(section.section_id),
-                        )
-                    }
-                )
-                for section in output.sections
-            ]
-        }
-    )
     try:
-        validated_patch = ContentInitialDraftModelOutput.model_validate(
-            patched.model_dump(mode="json")
-        )
+        validated_patch = apply_regulatory_patches(output, patches)
         grounded = ground_unmet_regulatory_assertions(
             validated_patch,
             planning_input=planning_input,
@@ -145,22 +122,6 @@ def repair_regulatory_assertions(
             replace_semantic_requirements=fallback_requires_replacement,
         )
     return grounded, runtime_trace(result)
-
-
-def _apply_patch(existing: str, patch: object | None) -> str:
-    """Apply the server-authorized append or replacement for one targeted section."""
-
-    if patch is None:
-        return existing
-    mode = getattr(patch, "mode", None)
-    body_markdown = getattr(patch, "body_markdown", None)
-    if not isinstance(body_markdown, str):
-        return existing
-    if mode == "replace":
-        return body_markdown
-    if mode != "append" or body_markdown in existing:
-        return existing
-    return f"{existing}\n\n{body_markdown}"
 
 
 def _grounded_repair_fallback(

@@ -7,22 +7,19 @@ from wilq.codex.app_server import CodexAppServerClientProtocol
 from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.initial_full_draft_contracts import (
-    ContentInitialDraftInternalLinkOutput,
     ContentInitialDraftModelOutput,
 )
-from wilq.content.drafts.initial_full_draft_turn import (
-    _RegulatoryAssertionRepairOutput,
-    _RegulatorySectionPatch,
-    readability_repair_turn_request,
+from wilq.content.drafts.initial_full_draft_turn import readability_repair_turn_request
+from wilq.content.drafts.regulatory_patch import (
+    RegulatoryAssertionRepairOutput,
+    apply_readability_patches,
+    validated_patches_by_section,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import revision_readability_issues
 from wilq.content.quality.semantic_review_guards import repetition_quality_issues
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
-from wilq.content.workflow.documents.revisions import (
-    ContentDraftRevisionPageAssets,
-    ContentDraftRevisionSection,
-)
+from wilq.content.workflow.documents.revisions import ContentDraftRevisionSection
 
 ReadabilityIssue = tuple[str, str, str]
 
@@ -237,146 +234,19 @@ def _repair_readability_candidate(
     if result.status != "completed" or result.output_text is None:
         return output, trace
     try:
-        repair = _RegulatoryAssertionRepairOutput.model_validate_json(result.output_text)
+        repair = RegulatoryAssertionRepairOutput.model_validate_json(result.output_text)
     except ValueError:
         return output, trace
-    patches = {patch.section_id: patch for patch in repair.sections}
-    if (
-        repair.publish_ready
-        or len(patches) != len(repair.sections)
-        or set(patches) != expected_section_ids
-    ):
+    patches = validated_patches_by_section(
+        repair,
+        expected_section_ids=expected_section_ids,
+    )
+    if patches is None:
         return output, trace
     try:
-        return _apply_readability_patches(output, patches), trace
+        return apply_readability_patches(output, patches), trace
     except ValueError:
         return output, trace
-
-
-def _apply_readability_patches(
-    output: ContentInitialDraftModelOutput,
-    patches: dict[str, _RegulatorySectionPatch],
-) -> ContentInitialDraftModelOutput:
-    patched = output.model_copy(
-        update={
-            "page_assets": _patched_page_assets(output.page_assets, patches),
-            "sections": [
-                section.model_copy(
-                    update={
-                        "body_markdown": _patched_section_body(
-                            section.body_markdown,
-                            patches.get(section.section_id),
-                        )
-                    }
-                )
-                for section in output.sections
-            ],
-            "faq": [
-                item.model_copy(
-                    update={
-                        "answer_markdown": _patched_auxiliary_body(
-                            item.answer_markdown,
-                            patches.get(f"faq:{index}"),
-                        )
-                    }
-                )
-                for index, item in enumerate(output.faq, start=1)
-            ],
-            "cta_blocks": [
-                item.model_copy(
-                    update={
-                        "body_markdown": _patched_auxiliary_body(
-                            item.body_markdown,
-                            patches.get(f"cta:{index}"),
-                        )
-                    }
-                )
-                for index, item in enumerate(output.cta_blocks, start=1)
-            ],
-            "internal_links": _patched_internal_links(output.internal_links, patches),
-        }
-    )
-    return ContentInitialDraftModelOutput.model_validate(patched.model_dump(mode="json"))
-
-
-def _patched_page_assets(
-    page_assets: ContentDraftRevisionPageAssets,
-    patches: dict[str, _RegulatorySectionPatch],
-) -> ContentDraftRevisionPageAssets:
-    return page_assets.model_copy(
-        update={
-            "wordpress_title": _patched_short_target(
-                page_assets.wordpress_title,
-                patches.get("page_assets:wordpress_title"),
-            ),
-            "meta_title": _patched_short_target(
-                page_assets.meta_title,
-                patches.get("page_assets:meta_title"),
-            ),
-            "meta_description": _patched_short_target(
-                page_assets.meta_description,
-                patches.get("page_assets:meta_description"),
-            ),
-            "h1": _patched_short_target(
-                page_assets.h1,
-                patches.get("page_assets:h1"),
-            ),
-            "lead": _patched_short_target(
-                page_assets.lead,
-                patches.get("page_assets:lead"),
-            ),
-        }
-    )
-
-
-def _patched_internal_links(
-    internal_links: list[ContentInitialDraftInternalLinkOutput],
-    patches: dict[str, _RegulatorySectionPatch],
-) -> list[ContentInitialDraftInternalLinkOutput]:
-    return [
-        item.model_copy(
-            update={
-                "anchor_text": _patched_short_target(
-                    item.anchor_text,
-                    patches.get(f"link:{index}"),
-                )
-            }
-        )
-        for index, item in enumerate(internal_links, start=1)
-    ]
-
-
-def _patched_short_target(
-    existing: str,
-    patch: _RegulatorySectionPatch | None,
-) -> str:
-    if patch is None:
-        return existing
-    if patch.mode != "replace":
-        raise ValueError("Page asset and link readability patches must use replace mode.")
-    return patch.body_markdown
-
-
-def _patched_section_body(
-    existing: str,
-    patch: _RegulatorySectionPatch | None,
-) -> str:
-    if patch is None:
-        return existing
-    if patch.mode == "replace":
-        return patch.body_markdown
-    return f"{existing}\n\n{patch.body_markdown}"
-
-
-def _patched_auxiliary_body(
-    existing: str,
-    patch: _RegulatorySectionPatch | None,
-) -> str:
-    if patch is None:
-        return existing
-    if patch.mode != "replace":
-        raise ValueError("FAQ and CTA readability patches must use replace mode.")
-    return patch.body_markdown
 
 
 __all__ = ["readability_issues_for_output"]

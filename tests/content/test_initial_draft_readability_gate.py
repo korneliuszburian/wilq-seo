@@ -44,6 +44,11 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
     ContentInitialDraftSectionOutput,
 )
+from wilq.content.drafts.regulatory_patch import (
+    RegulatoryAssertionRepairOutput,
+    apply_readability_patches,
+    validated_patches_by_section,
+)
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
@@ -201,6 +206,42 @@ def _output(
             ]
         }
     )
+
+
+def test_public_patch_application_preserves_readability_document_semantics() -> None:
+    output = _output(
+        first_body=_DIRTY_SECTION_ONE,
+        second_body=_CLEAN_SECTION_TWO,
+    )
+    repair = RegulatoryAssertionRepairOutput(
+        sections=[
+            {
+                "section_id": "section_01",
+                "mode": "replace",
+                "body_markdown": _CLEAN_SECTION_ONE,
+            },
+            {
+                "section_id": "section_02",
+                "mode": "append",
+                "body_markdown": "Dodatkowy krok wymaga potwierdzenia zakresu dokumentacji.",
+            },
+        ],
+        publish_ready=False,
+    )
+    patches = validated_patches_by_section(
+        repair,
+        expected_section_ids={"section_01", "section_02"},
+    )
+
+    assert patches is not None
+    patched = apply_readability_patches(output, patches)
+
+    assert patched.sections[0].body_markdown == _CLEAN_SECTION_ONE
+    assert patched.sections[1].body_markdown == (
+        f"{_CLEAN_SECTION_TWO}\n\n"
+        "Dodatkowy krok wymaga potwierdzenia zakresu dokumentacji."
+    )
+    assert patched.page_assets == output.page_assets
 
 
 def _assure(

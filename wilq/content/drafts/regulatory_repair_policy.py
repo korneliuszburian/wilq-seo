@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
+from wilq.content.drafts.regulatory_patch import RegulatoryPatchMode
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
 
@@ -11,7 +10,7 @@ def regulatory_section_repair_modes(
     proposal: ContentPlanningProposal,
     missing_codes: list[str],
     repair_reasons: dict[str, str],
-) -> dict[str, Literal["append", "replace"]]:
+) -> dict[str, RegulatoryPatchMode]:
     """Choose a safe repair mode from server-owned assurance evidence.
 
     A semantic requirement failure means the existing section cannot be
