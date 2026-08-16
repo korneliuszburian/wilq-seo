@@ -32,8 +32,8 @@ from wilq.content.drafts.grounding import (
 )
 from wilq.content.drafts.initial_draft_readability import (
     ReadabilityIssue,
-    _repair_readability_candidate,
     readability_issues_for_output,
+    repair_readability_candidate,
 )
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
@@ -454,7 +454,7 @@ def assure_readability_and_repair(
     for _ in range(repair_budget):
         candidate = output
         turn_input_trace = trace
-        output, trace = _repair_readability_candidate(
+        output, trace = repair_readability_candidate(
             planning_input=planning_input,
             proposal=proposal,
             output=candidate,

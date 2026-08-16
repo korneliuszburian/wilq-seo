@@ -34,7 +34,11 @@ from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_alteration import assure_readability_and_repair
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
-from wilq.content.drafts.initial_draft_readability import readability_issues_for_output
+from wilq.content.drafts.initial_draft_readability import (
+    apply_readability_patches,
+    readability_issues_for_output,
+    repair_readability_candidate,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftCtaOutput,
@@ -46,7 +50,6 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.drafts.regulatory_patch import (
     RegulatoryAssertionRepairOutput,
-    apply_readability_patches,
     validated_patches_by_section,
 )
 from wilq.content.knowledge.source_facts import ContentSourceFact
@@ -101,6 +104,18 @@ _REGULATED_CLEAN_SECTION = (
     "Przedsiębiorca sprawdza zakres obowiązków, porządkuje dokumenty i planuje "
     "kolejne działania zgodnie z profilem swojej działalności."
 )
+
+
+def test_readability_module_owns_public_gate_and_repair_seam() -> None:
+    import inspect
+
+    from wilq.content.drafts import initial_draft_readability
+
+    assert callable(repair_readability_candidate)
+    assert callable(initial_draft_readability.readability_issues_for_output)
+    assert callable(initial_draft_readability.apply_readability_patches)
+    assert not hasattr(initial_draft_readability, "_repair_readability_candidate")
+    assert "_repair_readability_candidate" not in inspect.getsource(draft_alteration)
 
 
 def _regulated_prepared_inputs() -> initial_full_draft._InitialDraftInputs:
