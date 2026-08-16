@@ -60,3 +60,28 @@ def test_wilku_uat_packet_contains_no_secret_looking_literals() -> None:
 
     for marker in ("sk-", "akia", "password=", "token=", "client_secret", "refresh_token"):
         assert marker not in content, f"Wykryto podejrzany literał: {marker}"
+
+
+DAILY_CHECK_PACKET = (
+    REPOSITORY_ROOT
+    / "docs"
+    / "review-packets"
+    / "2026-08-16-wilku-daily-check"
+    / "PACZKA-DO-OCENY-2026-08-16.md"
+)
+
+
+def test_wilku_daily_check_packet_records_the_live_fail_closed_state() -> None:
+    packet = DAILY_CHECK_PACKET.read_text(encoding="utf-8")
+
+    for marker in (
+        "Werdykt dnia",
+        "4 zablokowane rekomendacje",
+        "blocked",
+        "Brak świeżego odczytu vendorów",
+        "Pytania do Wilku",
+        "vendor_read",
+        "NIE jest UAT",
+        "safe_next_actions=[]",
+    ):
+        assert marker in packet, f"Brak wymaganego elementu pakietu daily-check: {marker}"
