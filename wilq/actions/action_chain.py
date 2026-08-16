@@ -45,10 +45,14 @@ def revision_bound_action_chain[Binding](
                 "Przejdź po kolei przez cztery kroki ActionObject.",
             )
         ]
-    assert preview is not None
-    assert review is not None
-    assert confirmation is not None
-    assert impact is not None
+    if preview is None:
+        raise RuntimeError("Preview disappeared after complete ActionObject chain check.")
+    if review is None:
+        raise RuntimeError("Review disappeared after complete ActionObject chain check.")
+    if confirmation is None:
+        raise RuntimeError("Confirmation disappeared after complete ActionObject chain check.")
+    if impact is None:
+        raise RuntimeError("Impact disappeared after complete ActionObject chain check.")
     resolved_events = [event for event in chain_events if event is not None]
     event_bindings = (
         [binding_from_event(event) for event in resolved_events]
