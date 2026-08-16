@@ -185,8 +185,8 @@ def test_new_page_apply_binding_must_match_the_persisted_action() -> None:
         action,
         ActionApplyRequest(confirm=True, confirmed_by="Wilku", new_page_draft=binding),
     )
-    assert accepted is not None
-    assert blockers == []
+    assert accepted is None
+    assert [blocker.code for blocker in blockers] == ["wordpress_action_chain_incomplete"]
     changed = {**binding, "revision_digest": "f" * 64}
     _, blockers = new_page_apply_binding(
         action,

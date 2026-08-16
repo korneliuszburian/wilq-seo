@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
 
+from wilq.actions.action_chain import revision_bound_action_chain
 from wilq.connectors.wordpress.client import create_wordpress_draft_post
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
@@ -381,101 +382,12 @@ def _revision_bound_action_chain(
     WordPressDraftActionChain | None,
     list[ActionWordPressDraftApplyBlocker],
 ]:
-    latest_events = sorted(events, key=lambda event: event.created_at, reverse=True)
-    preview = _latest_event(latest_events, {"action_preview_generated"})
-    review = next(
-        (event for event in latest_events if event.event_type.startswith("human_review_")),
-        None,
+    return revision_bound_action_chain(
+        events,
+        confirmed_by=confirmed_by,
+        binding_from_event=wordpress_draft_binding_from_audit_event,
+        expected_binding=binding,
     )
-    confirmation = _latest_event(
-        latest_events,
-        {
-            "action_apply_confirmed",
-            "action_confirmation_blocked",
-            "action_apply_confirmation_blocked",
-        },
-    )
-    impact = _latest_event(
-        latest_events,
-        {"action_impact_check_completed", "action_impact_check_blocked"},
-    )
-    chain_events = [preview, review, confirmation, impact]
-    if any(event is None for event in chain_events):
-        return None, [
-            _apply_blocker(
-                "wordpress_action_chain_incomplete",
-                "Brakuje pełnego śladu akcji",
-                "Apply wymaga preview, approved review, confirm i impact dla tej wersji.",
-                "Przejdź po kolei przez cztery kroki ActionObject.",
-            )
-        ]
-    resolved_events = [event for event in chain_events if event is not None]
-    if any(wordpress_draft_binding_from_audit_event(event) != binding for event in resolved_events):
-        return None, [
-            _apply_blocker(
-                "wordpress_action_chain_binding_mismatch",
-                "Ślad akcji dotyczy innej wersji",
-                "Najnowsze preview, review, confirm i impact muszą mieć identyczny binding.",
-                "Ponów cały łańcuch ActionObject dla aktualnej zatwierdzonej wersji.",
-            )
-        ]
-    if review is None or review.event_type != "human_review_approved_for_prepare":
-        return None, [
-            _apply_blocker(
-                "wordpress_action_review_not_approved",
-                "Review ActionObject nie zatwierdza wersji",
-                "Najnowsza decyzja ActionObject dla tej wersji nie jest approved_for_prepare.",
-                "Sprawdź wersję i zapisz zatwierdzające review ActionObject.",
-            )
-        ]
-    if confirmation is None or confirmation.event_type != "action_apply_confirmed":
-        return None, [
-            _apply_blocker(
-                "wordpress_action_confirmation_invalid",
-                "Brakuje ważnego potwierdzenia",
-                "Najnowsze potwierdzenie tej wersji jest zablokowane albo nie istnieje.",
-                "Potwierdź aktualny podgląd jako operator.",
-            )
-        ]
-    if impact is None or impact.event_type != "action_impact_check_completed":
-        return None, [
-            _apply_blocker(
-                "wordpress_action_impact_invalid",
-                "Sprawdzenie efektu jest zablokowane",
-                "Apply wymaga zakończonego impact check dla tej samej wersji.",
-                "Uzupełnij dowody i ponów impact check.",
-            )
-        ]
-    if confirmation.actor != confirmed_by:
-        return None, [
-            _apply_blocker(
-                "wordpress_action_actor_mismatch",
-                "Operator nie pasuje do potwierdzenia",
-                "Osoba wywołująca apply musi być osobą, która potwierdziła podgląd.",
-                "Wykonaj apply jako operator zapisany w confirm.",
-            )
-        ]
-    if preview is None:
-        raise RuntimeError("Preview disappeared after complete ActionObject chain check.")
-    if not (
-        preview.created_at <= review.created_at <= confirmation.created_at <= impact.created_at
-    ):
-        return None, [
-            _apply_blocker(
-                "wordpress_action_chain_order_invalid",
-                "Kroki akcji są nieaktualne",
-                "Preview, review, confirm i impact nie zostały wykonane w wymaganej kolejności.",
-                "Ponów cały łańcuch ActionObject od podglądu.",
-            )
-        ]
-    return (preview, review, confirmation, impact), []
-
-
-def _latest_event(
-    events: list[AuditEvent],
-    event_types: set[str],
-) -> AuditEvent | None:
-    return next((event for event in events if event.event_type in event_types), None)
 
 
 def _apply_blocker(

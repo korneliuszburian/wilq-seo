@@ -248,7 +248,7 @@ def _execute_apply(
     execute_mutation_adapter: ExecuteMutationAdapter,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     if resolved.is_new_page:
-        return execute_new_page_draft_action(action)
+        return execute_new_page_draft_action(action, resolved.capability)
     return execute_mutation_adapter(action, adapter, request, resolved.capability)
 
 

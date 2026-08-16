@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
@@ -85,7 +86,7 @@ def test_new_page_action_requires_the_full_lifecycle_before_one_exact_dev_draft(
     claim_store = _ClaimStore()
     executed: list[str] = []
 
-    def execute(current):
+    def execute(current, capability):
         executed.append(current.id)
         return (
             {
@@ -169,6 +170,69 @@ def test_new_page_action_requires_the_full_lifecycle_before_one_exact_dev_draft(
     ]
 
 
+def test_new_page_action_rejects_stale_confirm_before_claim_or_executor(monkeypatch) -> None:
+    action = create_new_page_draft_action(_ready_readiness(), _command())
+    claim_store = _ClaimStore()
+    executed: list[str] = []
+    monkeypatch.setattr(action_service, "get_connector_status", lambda _: _configured_connector())
+    monkeypatch.setattr(apply_lifecycle, "new_page_apply_claim_store", lambda: claim_store)
+    monkeypatch.setattr(
+        apply_lifecycle,
+        "execute_new_page_draft_action",
+        lambda current, capability: executed.append(current.id) or (None, []),
+    )
+    binding = action.payload["new_page_draft_binding"]
+    assert action_service.validate_action(action).valid
+    action_service.preview_action(action, ActionPreviewRequest(requested_by="Wilku"))
+    action_service.record_action_review(
+        action,
+        ActionReviewRequest(
+            outcome="approved_for_prepare",
+            reviewed_by="Wilku",
+            notes="Zatwierdzam dokładną rewizję nowej strony.",
+        ),
+    )
+    action_service.confirm_action(
+        action,
+        ActionConfirmRequest(
+            confirmed_by="Wilku",
+            notes="Potwierdzam utworzenie jednego szkicu na dev.",
+            preview_acknowledged=True,
+        ),
+    )
+    action_service.impact_check_action(
+        action,
+        ActionImpactCheckRequest(
+            checked_by="Wilku",
+            notes="Kontrola gotowości szkicu zakończona.",
+        ),
+    )
+    preview = next(
+        event
+        for event in action.audit_events
+        if event.event_type == "action_preview_generated"
+    )
+    confirmation = next(
+        event
+        for event in action.audit_events
+        if event.event_type == "action_apply_confirmed"
+    )
+    preview.created_at = confirmation.created_at + timedelta(seconds=1)
+
+    result = action_service.apply_action(
+        action,
+        ActionApplyRequest(confirm=True, confirmed_by="Wilku", new_page_draft=binding),
+    )
+
+    assert result.applied is False
+    assert [blocker.code for blocker in result.wordpress_revision_blockers] == [
+        "wordpress_action_chain_order_invalid"
+    ]
+    assert result.mutation_audit.external_write_attempted is False
+    assert claim_store.claims == []
+    assert executed == []
+
+
 def test_new_page_action_rejects_a_changed_apply_binding_before_claim_or_executor(
     monkeypatch,
 ) -> None:
@@ -186,7 +250,9 @@ def test_new_page_action_rejects_a_changed_apply_binding_before_claim_or_executo
     monkeypatch.setattr(
         apply_lifecycle,
         "execute_new_page_draft_action",
-        lambda _: (_ for _ in ()).throw(AssertionError("executor must not run")),
+        lambda current, capability: (_ for _ in ()).throw(
+            AssertionError("executor must not run")
+        ),
     )
     changed = {**action.payload["new_page_draft_binding"], "revision_digest": "f" * 64}
 
@@ -214,7 +280,7 @@ def test_new_page_action_consumes_its_claim_after_a_failed_executor(monkeypatch)
     monkeypatch.setattr(
         apply_lifecycle,
         "execute_new_page_draft_action",
-        lambda _: (None, ["Adapter dev odmówił utworzenia szkicu."]),
+        lambda current, capability: (None, ["Adapter dev odmówił utworzenia szkicu."]),
     )
     binding = action.payload["new_page_draft_binding"]
     assert action_service.validate_action(action).valid
@@ -283,7 +349,7 @@ def test_new_page_action_is_reachable_through_the_public_actions_lifecycle(
     monkeypatch.setattr(
         apply_lifecycle,
         "execute_new_page_draft_action",
-        lambda _: (
+        lambda current, capability: (
             {
                 "adapter": "content_new_page_draft_execution_boundary",
                 "external_write_attempted": True,
