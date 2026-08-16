@@ -16,7 +16,15 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalRequest,
     ContentPlanningProposalResponse,
 )
-from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
+from wilq.content.planning.generated_proposal_store import (
+    ContentPlanningProposalStore,
+)
+from wilq.content.planning.generated_proposal_store import (
+    _enqueue as enqueue_response,
+)
+from wilq.content.planning.generated_proposal_store import (
+    _enqueue_pending as enqueue_pending,
+)
 from wilq.content.planning.input_sources import ContentPlanningSourceAssessment
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal, ContentPlanningSection
@@ -185,6 +193,66 @@ def test_enqueue_requeues_stale_job(tmp_path: Path, pending: bool) -> None:
             (response.work_item_id, response.service_card_id, response.planning_input_digest),
         ).fetchone()
     assert persisted == ("queued",)
+
+
+@pytest.mark.parametrize(
+    ("initial_status", "expected_outcome"),
+    [
+        (None, "queued"),
+        ("queued", "existing"),
+        ("in_flight", "in_flight"),
+        ("finished", "finished"),
+    ],
+)
+def test_enqueue_entrypoints_have_identical_outcomes(
+    tmp_path: Path,
+    initial_status: str | None,
+    expected_outcome: str,
+) -> None:
+    response = _generating_response()
+    stores = [
+        ContentPlanningProposalStore(tmp_path / "response.sqlite"),
+        ContentPlanningProposalStore(tmp_path / "pending.sqlite"),
+    ]
+    if initial_status is not None:
+        for store in stores:
+            seed_digest = (
+                "b" * 64 if initial_status == "in_flight" else response.planning_input_digest
+            )
+            seed_response = response.model_copy(update={"planning_input_digest": seed_digest})
+            assert enqueue_pending(
+                store,
+                work_item_id=seed_response.work_item_id,
+                service_card_id=seed_response.service_card_id or "",
+                planning_input_digest=seed_digest or "",
+                response=seed_response,
+            ) == "queued"
+            with sqlite3.connect(store.path) as connection:
+                connection.execute(
+                    """
+                    UPDATE content_planning_generation_jobs
+                    SET status = ?
+                    WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+                    """,
+                    (
+                        "queued" if initial_status == "in_flight" else initial_status,
+                        response.work_item_id,
+                        response.service_card_id,
+                        seed_digest,
+                    ),
+                )
+
+    response_outcome = enqueue_response(stores[0], response)
+    pending_outcome = enqueue_pending(
+        stores[1],
+        work_item_id=response.work_item_id,
+        service_card_id=response.service_card_id or "",
+        planning_input_digest=response.planning_input_digest or "",
+        response=response,
+    )
+
+    assert response_outcome == expected_outcome
+    assert pending_outcome == response_outcome
 
 
 def test_planning_status_ignores_a_historical_failed_job_for_another_exact_input(

@@ -381,61 +381,13 @@ def _enqueue(
 ) -> PlanningEnqueueOutcome:
     if response.planning_input_digest is None or response.service_card_id is None:
         raise ValueError("Queued planning requires an exact service and input digest.")
-    payload = redact_mapping(response.model_dump(mode="json"))
-    with store._connect() as connection:
-        connection.execute("BEGIN IMMEDIATE")
-        row = connection.execute(
-            """
-                SELECT status, updated_at FROM content_planning_generation_jobs
-                WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
-                LIMIT 1
-                """,
-            (response.work_item_id, response.service_card_id, response.planning_input_digest),
-        ).fetchone()
-        if row is not None and row["status"] == "finished":
-            return "finished"
-        if row is not None and row["status"] == "queued" and not _job_is_stale(row["updated_at"]):
-            return "existing"
-        sibling = connection.execute(
-            """
-                SELECT planning_input_digest, updated_at
-                FROM content_planning_generation_jobs
-                WHERE work_item_id = ? AND service_card_id = ?
-                  AND status = 'queued' AND planning_input_digest != ?
-                ORDER BY updated_at DESC LIMIT 1
-                """,
-            (response.work_item_id, response.service_card_id, response.planning_input_digest),
-        ).fetchone()
-        if sibling is not None and not _job_is_stale(sibling["updated_at"]):
-            return "in_flight"
-        connection.execute(
-            """
-            UPDATE content_planning_generation_jobs
-            SET status = 'stale'
-            WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
-              AND status IN ('failed', 'blocked')
-            """,
-            (response.work_item_id, response.service_card_id, response.planning_input_digest),
-        )
-        connection.execute(
-            """
-                INSERT INTO content_planning_generation_jobs (
-                  work_item_id, service_card_id, planning_input_digest, status,
-                  payload_json, updated_at
-                ) VALUES (?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(work_item_id, service_card_id, planning_input_digest)
-                DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
-                              updated_at = excluded.updated_at
-                WHERE content_planning_generation_jobs.status IN ('queued', 'stale')
-                """,
-            (
-                response.work_item_id,
-                response.service_card_id,
-                response.planning_input_digest,
-                json.dumps(payload, ensure_ascii=False, sort_keys=True),
-            ),
-        )
-    return "queued"
+    return _enqueue_pending(
+        store,
+        work_item_id=response.work_item_id,
+        service_card_id=response.service_card_id,
+        planning_input_digest=response.planning_input_digest,
+        response=response,
+    )
 
 
 def _enqueue_pending(
