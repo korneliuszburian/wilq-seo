@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from typing import cast
+from collections.abc import Iterator
+from contextlib import AbstractContextManager, contextmanager
+from typing import Protocol, cast, runtime_checkable
 
 from pydantic import BaseModel
 
@@ -13,9 +15,24 @@ from wilq.storage.model_json import model_json as _model_json
 from wilq.workflows.models import WorkflowRun
 
 
+@runtime_checkable
+class RunTransactionStore(Protocol):
+    def run_transaction(self) -> AbstractContextManager[sqlite3.Connection]:
+        ...
+
+
+def supports_run_transaction(store: object) -> bool:
+    return isinstance(store, RunTransactionStore)
+
+
 class _RunStoreMixin:
     def _connect(self) -> sqlite3.Connection:
         raise NotImplementedError
+
+    @contextmanager
+    def run_transaction(self) -> Iterator[sqlite3.Connection]:
+        with self._connect() as connection:
+            yield connection
 
     def save_codex_run(self, run: CodexRun) -> CodexRun:
         redacted = CodexRun.model_validate(redact_mapping(run.model_dump(mode="json")))

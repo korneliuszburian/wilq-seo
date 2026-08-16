@@ -19,7 +19,7 @@ def enqueue_connector_refresh_run(
     if redacted.status != ConnectorRefreshStatus.queued:
         raise ValueError("Only queued connector refresh runs can be enqueued")
     payload_json = _run_json(redacted)
-    with store._connect() as connection:
+    with store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
         row = connection.execute(
             """
@@ -60,7 +60,7 @@ def claim_queued_connector_refresh_run(
         raise ValueError("A connector refresh claim must transition to running")
     payload_json = _run_json(redacted)
     updated_at = redacted.completed_at or redacted.started_at
-    with store._connect() as connection:
+    with store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
         cursor = connection.execute(
             """

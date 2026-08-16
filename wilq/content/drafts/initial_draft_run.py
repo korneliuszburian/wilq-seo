@@ -26,6 +26,7 @@ from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import LocalStateStore
+from wilq.storage.local_state_runs import supports_run_transaction
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,9 +102,9 @@ def _enrich_started_initial_draft_run(
     redacted_run = CodexRun.model_validate(
         redact_mapping(run.model_copy(update=update).model_dump(mode="json"))
     )
-    if not hasattr(run_store, "_connect"):
+    if not supports_run_transaction(run_store):
         return run_store.save_codex_run(redacted_run)
-    with run_store._connect() as connection:
+    with run_store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
         row = connection.execute(
             "SELECT payload_json FROM codex_runs WHERE id = ?",
@@ -318,7 +319,7 @@ def claim_initial_draft_run(
 ) -> InitialDraftClaim:
     endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
     run_store.status()
-    with run_store._connect() as connection:
+    with run_store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
         observed_context = _current_context_matches_claim(
             current_context,
@@ -417,7 +418,7 @@ def transition_initial_draft_run_if_status(
     updated = run.model_copy(
         update={"status": status, "completed_at": utc_now(), "error": error}
     )
-    if not hasattr(run_store, "_connect"):
+    if not supports_run_transaction(run_store):
         return run_store.save_codex_run(updated)
     return transition_codex_run_if_status(
         run_store,

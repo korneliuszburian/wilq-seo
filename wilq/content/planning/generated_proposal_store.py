@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, cast
@@ -369,6 +371,11 @@ class ContentPlanningProposalStore:
         ensure_sqlite_schema_version(connection)
         return connection
 
+    @contextmanager
+    def run_transaction(self) -> Iterator[sqlite3.Connection]:
+        with self._connect() as connection:
+            yield connection
+
     def _read_connection(self) -> sqlite3.Connection | None:
         if not self.path.exists():
             return None
@@ -403,7 +410,7 @@ def _enqueue_pending(
     allow_finished_reset: bool = False,
 ) -> PlanningEnqueueOutcome:
     payload = redact_mapping(response.model_dump(mode="json"))
-    with store._connect() as connection:
+    with store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
         row = connection.execute(
             """
@@ -488,7 +495,7 @@ def _save_terminal_response(
     payload = redact_mapping(response.model_dump(mode="json"))
     status = response.status if response.status in {"blocked", "failed", "stale"} else "finished"
     exact_job_digest = job_planning_input_digest
-    with store._connect() as connection:
+    with store.run_transaction() as connection:
         if claim_version is not None:
             if not _table_exists(connection, "content_planning_generation_claims"):
                 return "claim_stale"
@@ -546,7 +553,7 @@ def _save_generated(
     replace_existing_exact_input: bool = False,
 ) -> tuple[GeneratedProposalSaveOutcome, ContentPlanningProposal]:
     _validate_generated_proposal(proposal, completed_run)
-    with store._connect() as connection:
+    with store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
         existing_row = _proposal_row_for_input(
             connection,

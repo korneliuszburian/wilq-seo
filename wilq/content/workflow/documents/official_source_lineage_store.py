@@ -42,7 +42,7 @@ class ContentOfficialSourceLineageStore:
         )
         prepare_codex_completion(redacted_command, None)
         content_digest = draft_revision_content_digest(redacted_command)
-        with ContentWorkflowStore(self.path)._connect() as connection:
+        with ContentWorkflowStore(self.path).run_transaction() as connection:
             connection.execute("BEGIN IMMEDIATE")
             latest = latest_draft_revision(connection, redacted_command.work_item_id)
             latest_review = (

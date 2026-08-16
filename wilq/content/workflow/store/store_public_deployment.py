@@ -10,7 +10,7 @@ from wilq.storage.model_json import model_json
 
 
 class PublicDeploymentStore(Protocol):
-    def _connect(self) -> sqlite3.Connection:
+    def run_transaction(self) -> sqlite3.Connection:
         ...
 
 
@@ -20,7 +20,7 @@ def save_public_deployment(
     redacted = ContentPublicDeployment.model_validate(
         redact_mapping(deployment.model_dump(mode="json"))
     )
-    with store._connect() as connection:
+    with store.run_transaction() as connection:
         connection.execute(
             """
             INSERT INTO content_public_deployments
@@ -60,7 +60,7 @@ def public_deployment(
     revision_id: str,
     revision_digest: str,
 ) -> ContentPublicDeployment | None:
-    with store._connect() as connection:
+    with store.run_transaction() as connection:
         row = connection.execute(
             """
             SELECT payload_json FROM content_public_deployments

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -108,6 +110,11 @@ class _StoreConnectionMixin:
 
     def _connect(self) -> sqlite3.Connection:
         raise NotImplementedError
+
+    @contextmanager
+    def run_transaction(self) -> Iterator[sqlite3.Connection]:
+        with self._connect() as connection:
+            yield connection
 
 
 class _DraftRevisionStoreMixin(_StoreConnectionMixin):

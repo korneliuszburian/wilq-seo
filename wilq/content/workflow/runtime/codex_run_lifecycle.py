@@ -10,6 +10,7 @@ from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import LocalStateStore
+from wilq.storage.local_state_runs import supports_run_transaction
 
 LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS = 180.0
 
@@ -36,7 +37,7 @@ def transition_codex_run_if_status(
     payload_json = json.dumps(
         redacted.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
     )
-    with store._connect() as connection:
+    with store.run_transaction() as connection:
         current = connection.execute(
             "SELECT payload_json FROM codex_runs WHERE id = ?",
             (redacted.id,),
@@ -73,7 +74,7 @@ def finish_codex_run(
 ) -> CodexRun:
     """Terminalize a run through the optimistic transition when available."""
     terminal = terminal_codex_run(run, status=status, error=error)
-    if hasattr(store, "_connect"):
+    if supports_run_transaction(store):
         return transition_codex_run_if_status(store, terminal) or run
     return store.save_codex_run(terminal)
 
