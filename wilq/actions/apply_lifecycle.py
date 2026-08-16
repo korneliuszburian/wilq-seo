@@ -41,7 +41,7 @@ WordPressApplyCapability = Callable[
     ..., tuple[Any, list[ActionWordPressDraftApplyBlocker]]
 ]
 ExecuteMutationAdapter = Callable[
-    [ActionObject, str, ActionApplyRequest | None, Any],
+    [ActionObject, str, Any],
     tuple[dict[str, Any] | None, list[str]],
 ]
 
@@ -114,7 +114,7 @@ def apply_action(
     claim_final_status: str | None = None
     if not errors and adapter is not None:
         adapter_result, adapter_errors = _execute_apply(
-            action, adapter, request, resolved, execute_mutation_adapter
+            action, adapter, resolved, execute_mutation_adapter
         )
         claim_final_status = "failed" if adapter_errors else "applied"
         errors.extend(adapter_errors)
@@ -243,13 +243,12 @@ def _claim_exact_apply(
 def _execute_apply(
     action: ActionObject,
     adapter: str,
-    request: ActionApplyRequest | None,
     resolved: _ApplyCapability,
     execute_mutation_adapter: ExecuteMutationAdapter,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     if resolved.is_new_page:
         return execute_new_page_draft_action(action, resolved.capability)
-    return execute_mutation_adapter(action, adapter, request, resolved.capability)
+    return execute_mutation_adapter(action, adapter, resolved.capability)
 
 
 def _finish_apply_claim(

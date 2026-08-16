@@ -50,19 +50,19 @@ def test_new_page_execution_writes_only_one_authorized_dev_page_draft(monkeypatc
         site_kind="primary",
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.target.new_page_draft_execution._wordpress_credentials",
+        "wilq.content.workflow.target.new_page_draft_execution.wordpress_credentials",
         lambda connector_id: credentials,
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.target.new_page_draft_execution._missing_credentials",
+        "wilq.content.workflow.target.new_page_draft_execution.missing_credentials",
         lambda connector_id, credentials: [],
     )
     monkeypatch.setattr(
-        "wilq.connectors.wordpress.client._wordpress_credentials",
+        "wilq.connectors.wordpress.client.wordpress_credentials",
         lambda connector_id: credentials,
     )
     monkeypatch.setattr(
-        "wilq.connectors.wordpress.client._missing_credentials",
+        "wilq.connectors.wordpress.client.missing_credentials",
         lambda connector_id, credentials: [],
     )
     seen: list[httpx.Request] = []
@@ -116,19 +116,19 @@ def test_new_page_execution_blocks_mismatched_verified_readback(monkeypatch) -> 
         site_kind="primary",
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.target.new_page_draft_execution._wordpress_credentials",
+        "wilq.content.workflow.target.new_page_draft_execution.wordpress_credentials",
         lambda connector_id: credentials,
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.target.new_page_draft_execution._missing_credentials",
+        "wilq.content.workflow.target.new_page_draft_execution.missing_credentials",
         lambda connector_id, credentials: [],
     )
     monkeypatch.setattr(
-        "wilq.connectors.wordpress.client._wordpress_credentials",
+        "wilq.connectors.wordpress.client.wordpress_credentials",
         lambda connector_id: credentials,
     )
     monkeypatch.setattr(
-        "wilq.connectors.wordpress.client._missing_credentials",
+        "wilq.connectors.wordpress.client.missing_credentials",
         lambda connector_id, credentials: [],
     )
     client = httpx.Client(

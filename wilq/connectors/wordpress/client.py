@@ -490,14 +490,14 @@ def refresh_wordpress_content_inventory(
     *,
     http_client: httpx.Client | None = None,
 ) -> VendorReadResult:
-    credentials = _wordpress_credentials(connector_id)
+    credentials = wordpress_credentials(connector_id)
     if credentials is None:
         return VendorReadResult(
             status=ConnectorRefreshStatus.blocked,
             summary=f"WordPress vendor read blocked by unknown connector: {connector_id}.",
             errors=[f"WordPress vendor read blocked by unknown connector: {connector_id}."],
         )
-    missing = _missing_credentials(connector_id, credentials)
+    missing = missing_credentials(connector_id, credentials)
     if missing:
         return VendorReadResult(
             status=ConnectorRefreshStatus.blocked,
@@ -561,14 +561,14 @@ def create_wordpress_draft_post(
     endpoint: str | None = None,
     http_client: httpx.Client | None = None,
 ) -> str:
-    credentials = _wordpress_credentials(connector_id)
+    credentials = wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
     if not wordpress_dev_host_allowed(credentials.base_url):
         raise WordPressDraftWriteError(
             "Adapter szkicu WordPress działa wyłącznie na zatwierdzonym hoście dev."
         )
-    missing = _missing_credentials(connector_id, credentials)
+    missing = missing_credentials(connector_id, credentials)
     if missing:
         raise WordPressDraftWriteError(
             "Brakuje konfiguracji WordPress wymaganej do utworzenia szkicu."
@@ -631,14 +631,14 @@ def _wordpress_acf_draft_preconditions(
 ) -> tuple[WordPressCredentials, str, str, dict[object, object]]:
     if action_apply_authorized is not True:
         raise WordPressDraftWriteError("Utworzenie szkicu ACF wymaga autoryzacji ActionObject.")
-    credentials = _wordpress_credentials(connector_id)
+    credentials = wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
     if not wordpress_dev_host_allowed(credentials.base_url):
         raise WordPressDraftWriteError(
             "Adapter szkicu WordPress działa wyłącznie na zatwierdzonym hoście dev."
         )
-    missing = _missing_credentials(connector_id, credentials)
+    missing = missing_credentials(connector_id, credentials)
     if missing:
         raise WordPressDraftWriteError(
             "Brakuje konfiguracji WordPress wymaganej do utworzenia szkicu."
@@ -751,10 +751,10 @@ def read_wordpress_draft_post(
     endpoint: str = "posts",
     http_client: httpx.Client | None = None,
 ) -> WordPressDraftPostReadback:
-    credentials = _wordpress_credentials(connector_id)
+    credentials = wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressDraftReadError("WILQ nie zna tego connectora WordPress.")
-    missing = _missing_credentials(connector_id, credentials)
+    missing = missing_credentials(connector_id, credentials)
     if missing:
         raise WordPressDraftReadError("Brakuje konfiguracji WordPress wymaganej do odczytu szkicu.")
     normalized_post_id = str(post_id).strip()
@@ -869,10 +869,10 @@ def trash_wordpress_draft(
             "Szkic WordPress zmienił się po podglądzie; przeniesienie do kosza zablokowano."
         )
 
-    credentials = _wordpress_credentials(connector_id)
+    credentials = wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
-    missing = _missing_credentials(connector_id, credentials)
+    missing = missing_credentials(connector_id, credentials)
     if missing:
         raise WordPressDraftWriteError(
             "Brakuje konfiguracji WordPress wymaganej do wycofania szkicu."
@@ -934,10 +934,10 @@ def _read_wordpress_draft_payload(
     endpoint: str,
     http_client: httpx.Client | None,
 ) -> dict[str, Any]:
-    credentials = _wordpress_credentials(connector_id)
+    credentials = wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressDraftReadError("WILQ nie zna tego connectora WordPress.")
-    missing = _missing_credentials(connector_id, credentials)
+    missing = missing_credentials(connector_id, credentials)
     if missing:
         raise WordPressDraftReadError("Brakuje konfiguracji WordPress wymaganej do odczytu szkicu.")
     normalized_post_id = str(post_id).strip()
@@ -1019,10 +1019,10 @@ def read_wordpress_authoring_content(
     limit: int = WORDPRESS_CONTENT_PER_PAGE,
     http_client: httpx.Client | None = None,
 ) -> list[WordPressAuthoringContentReadback]:
-    credentials = _wordpress_credentials(connector_id)
+    credentials = wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressAuthoringReadError("WILQ nie zna tego connectora WordPress.")
-    missing = _missing_credentials(connector_id, credentials)
+    missing = missing_credentials(connector_id, credentials)
     if missing:
         raise WordPressAuthoringReadError(
             "Brakuje konfiguracji WordPress wymaganej do odczytu stron authoringu."
@@ -1165,8 +1165,8 @@ def read_wordpress_content_material(
     """
     if not content_is_safe_public_url(url):
         raise WordPressDraftReadError("WILQ odrzucił adres spoza bezpiecznego inventory.")
-    credentials = _wordpress_credentials(connector_id)
-    if credentials is None or _missing_credentials(connector_id, credentials):
+    credentials = wordpress_credentials(connector_id)
+    if credentials is None or missing_credentials(connector_id, credentials):
         raise WordPressDraftReadError("Brakuje konfiguracji WordPress do odczytu materiału.")
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=20)
@@ -1377,7 +1377,7 @@ def _draft_post_readback(
         status=str(body.get("status") or ""),
         title=wordpress_title(body.get("title")),
         link=str(body.get("link") or ""),
-        edit_link=_wordpress_edit_link(
+        edit_link=wordpress_edit_link(
             credentials_base_url,
             str(post_id) if post_id is not None else requested_post_id,
         ),
@@ -1391,7 +1391,7 @@ def _draft_post_readback(
     )
 
 
-def _wordpress_edit_link(credentials_base_url: str | None, post_id: str) -> str:
+def wordpress_edit_link(credentials_base_url: str | None, post_id: str) -> str:
     parsed = urlparse(credentials_base_url or "")
     if not parsed.scheme or not parsed.netloc or not post_id:
         return ""
@@ -1419,7 +1419,7 @@ def _optional_int(value: str | None) -> int | None:
         return None
 
 
-def _wordpress_credentials(connector_id: str) -> WordPressCredentials | None:
+def wordpress_credentials(connector_id: str) -> WordPressCredentials | None:
     names = WORDPRESS_CONNECTORS.get(connector_id)
     if names is None:
         return None
@@ -1434,7 +1434,7 @@ def _wordpress_credentials(connector_id: str) -> WordPressCredentials | None:
     )
 
 
-def _missing_credentials(
+def missing_credentials(
     connector_id: str,
     credentials: WordPressCredentials,
 ) -> list[str]:

@@ -389,7 +389,7 @@ def test_latest_metric_refresh_uses_completion_time_not_storage_order(monkeypatc
 
 def test_dynamic_material_falls_back_to_rendered_the_content(monkeypatch):
     monkeypatch.setattr(
-        "wilq.connectors.wordpress.client._wordpress_credentials",
+        "wilq.connectors.wordpress.client.wordpress_credentials",
         lambda _connector: WordPressCredentials(
             base_url="https://staging.example/",
             public_url="https://www.ekologus.pl/",
@@ -425,7 +425,7 @@ def test_dynamic_material_falls_back_to_rendered_the_content(monkeypatch):
 
 def test_dynamic_material_reads_public_rest_when_authoring_host_is_dev(monkeypatch):
     monkeypatch.setattr(
-        "wilq.connectors.wordpress.client._wordpress_credentials",
+        "wilq.connectors.wordpress.client.wordpress_credentials",
         lambda _connector: WordPressCredentials(
             base_url="https://ekologus.dev.proudsite.pl/",
             public_url="https://www.ekologus.pl/",
@@ -466,7 +466,7 @@ def test_dynamic_material_reads_public_rest_when_authoring_host_is_dev(monkeypat
 
 def test_dynamic_material_resolves_front_page_from_bounded_rest_collection(monkeypatch):
     monkeypatch.setattr(
-        "wilq.connectors.wordpress.client._wordpress_credentials",
+        "wilq.connectors.wordpress.client.wordpress_credentials",
         lambda _connector: WordPressCredentials(
             base_url="https://ekologus.dev.proudsite.pl/",
             public_url="https://www.ekologus.pl/",
@@ -514,7 +514,7 @@ def test_dynamic_material_resolves_front_page_from_bounded_rest_collection(monke
 
 def test_dynamic_material_uses_sanitized_acf_text_when_the_content_is_empty(monkeypatch):
     monkeypatch.setattr(
-        "wilq.connectors.wordpress.client._wordpress_credentials",
+        "wilq.connectors.wordpress.client.wordpress_credentials",
         lambda _connector: WordPressCredentials(
             base_url="https://staging.example/",
             public_url="https://www.ekologus.pl/",
@@ -566,7 +566,7 @@ def test_dynamic_material_uses_sanitized_acf_text_when_the_content_is_empty(monk
 
 def test_dynamic_material_extracts_the_content_headings_from_rest(monkeypatch):
     monkeypatch.setattr(
-        "wilq.connectors.wordpress.client._wordpress_credentials",
+        "wilq.connectors.wordpress.client.wordpress_credentials",
         lambda _connector: WordPressCredentials(
             base_url="https://staging.example/",
             public_url="https://www.ekologus.pl/",

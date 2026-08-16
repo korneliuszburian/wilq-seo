@@ -38,9 +38,6 @@ from wilq.actions.audit_store import (
     audit_event_has_raw_contract_text as _audit_event_has_raw_contract_text,
 )
 from wilq.actions.audit_store import (
-    audit_event_label as _audit_event_label_impl,
-)
-from wilq.actions.audit_store import (
     audit_event_with_operator_label as _audit_event_with_operator_label_impl,
 )
 from wilq.actions.audit_store import (
@@ -221,7 +218,6 @@ from wilq.actions.review_gate import (
 )
 from wilq.actions.review_lifecycle import record_action_review as record_action_review_lifecycle
 from wilq.actions.wordpress_mutation_requirements import (
-    WordPressDraftApplyCapability,
     execute_supported_wordpress_mutation_adapter,
     wordpress_draft_activation_packet,
     wordpress_draft_apply_capability,
@@ -267,7 +263,6 @@ from wilq.schemas import (
     ActionReviewRequest,
     ActionReviewResult,
     ActionValidationResult,
-    ActionWordPressDraftApplyBlocker,
     AdsStrategyReviewRecord,
     AdsTargetGuardrailConfirmation,
     AuditEvent,
@@ -474,9 +469,9 @@ def apply_action(
         action,
         bound_request,
         review_gate=_action_review_gate,
-        wordpress_apply_capability=_wordpress_draft_apply_capability,
+        wordpress_apply_capability=wordpress_draft_apply_capability,
         mutation_adapter=_supported_mutation_adapter,
-        execute_mutation_adapter=_execute_supported_mutation_adapter,
+        execute_mutation_adapter=execute_supported_wordpress_mutation_adapter,
         connector_status=get_connector_status,
         impact_status=_impact_status_from_event,
         wordpress_apply_claim=workflow_store.claim_wordpress_revision_apply,
@@ -519,14 +514,6 @@ def _stamp_local_audit_identity(
     event.workspace_id = LOCAL_PILOT_AUDIT_IDENTITY.workspace_id
     event.trust_level = LOCAL_PILOT_AUDIT_IDENTITY.trust_level
     event.submitted_actor_label = submitted_actor_label
-
-
-def _wordpress_draft_apply_capability(
-    action: ActionObject,
-    request: ActionApplyRequest | None,
-) -> tuple[WordPressDraftApplyCapability | None, list[ActionWordPressDraftApplyBlocker]]:
-    """Compatibility seam for callers/tests while ownership lives in WordPress requirements."""
-    return wordpress_draft_apply_capability(action, request)
 
 
 def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessResponse:
@@ -582,20 +569,6 @@ def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
 
 def _supported_mutation_adapter(action: ActionObject) -> str | None:
     return _supported_mutation_adapter_impl(action)
-
-
-def _execute_supported_mutation_adapter(
-    action: ActionObject,
-    mutation_adapter: str,
-    request: ActionApplyRequest | None,
-    wordpress_capability: WordPressDraftApplyCapability | None = None,
-) -> tuple[dict[str, Any] | None, list[str]]:
-    _ = request
-    return execute_supported_wordpress_mutation_adapter(
-        action,
-        mutation_adapter,
-        wordpress_capability,
-    )
 
 
 def _mutation_readiness_blockers(
@@ -789,11 +762,6 @@ def _action_operator_checklist(payload: dict[str, Any]) -> list[str]:
 
 def _action_gate_labels(values: Iterable[str]) -> list[str]:
     return action_gate_labels(values)
-
-
-def _action_audit_event_label(event_type: str) -> str:
-    """Compatibility facade for API context compaction callers."""
-    return _audit_event_label_impl(event_type)
 
 
 def _source_connector_label(connector_id: str) -> str:

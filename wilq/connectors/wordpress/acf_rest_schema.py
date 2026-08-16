@@ -8,7 +8,7 @@ from urllib.parse import urljoin
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
-from wilq.connectors.wordpress.client import _missing_credentials, _wordpress_credentials
+from wilq.connectors.wordpress.client import missing_credentials, wordpress_credentials
 
 if TYPE_CHECKING:
     from wilq.connectors.wordpress.authoring import WordPressAuthoringDevContentObject
@@ -80,8 +80,8 @@ def read_wordpress_acf_rest_schema(
             source_ref,
             "WILQ nie obsługuje schematu ACF dla tego typu obiektu dev.",
         )
-    credentials = _wordpress_credentials(connector_id)
-    if credentials is None or _missing_credentials(connector_id, credentials):
+    credentials = wordpress_credentials(connector_id)
+    if credentials is None or missing_credentials(connector_id, credentials):
         return _unavailable_schema(
             root_field,
             source_ref,

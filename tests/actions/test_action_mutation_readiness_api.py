@@ -797,7 +797,7 @@ def test_wordpress_apply_uses_typed_capability_and_dev_adapter(
         )
     monkeypatch.setattr(
         action_service,
-        "_wordpress_draft_apply_capability",
+        "wordpress_draft_apply_capability",
         lambda *_: (capability, []),
     )
     monkeypatch.setattr(
@@ -935,7 +935,7 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
         lambda _authorization: True,
     )
 
-    capability, errors = action_service._wordpress_draft_apply_capability(
+    capability, errors = action_service.wordpress_draft_apply_capability(
         action,
         ActionApplyRequest(
             confirm=True,
@@ -949,7 +949,7 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
     assert capability.write_authorization.review_audit_id == "audit_review_builder"
     assert capability.write_authorization.confirmation_audit_id == "audit_confirm_builder"
 
-    mismatch, mismatch_errors = action_service._wordpress_draft_apply_capability(
+    mismatch, mismatch_errors = action_service.wordpress_draft_apply_capability(
         action,
         ActionApplyRequest(
             confirm=True,

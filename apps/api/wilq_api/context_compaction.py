@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from wilq.actions.service import _action_audit_event_label
+from wilq.actions.audit_store import audit_event_label
 from wilq.operator_labels import (
     connector_refresh_status_label,
     credential_field_count_label,
@@ -53,7 +53,7 @@ def compact_audit_event_for_daily_context(
     if event is None:
         return None
     event_type = event.get("event_type") or "unknown"
-    event_type_label = event.get("event_type_label") or _action_audit_event_label(str(event_type))
+    event_type_label = event.get("event_type_label") or audit_event_label(str(event_type))
     summary = (
         f"Ślad bezpieczeństwa: {event_type_label}. "
         "Szczegóły techniczne są dostępne w szczegółach akcji WILQ."
@@ -75,7 +75,7 @@ def compact_audit_event_for_skill_context(
     if event is None:
         return None
     event_type = event.get("event_type") or "unknown"
-    event_type_label = event.get("event_type_label") or _action_audit_event_label(str(event_type))
+    event_type_label = event.get("event_type_label") or audit_event_label(str(event_type))
     return {
         "id": event.get("id"),
         "action_id": event.get("action_id"),

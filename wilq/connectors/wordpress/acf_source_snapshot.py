@@ -10,8 +10,8 @@ from urllib.parse import urljoin
 import httpx
 
 from wilq.connectors.wordpress.client import (
-    _missing_credentials,
-    _wordpress_credentials,
+    missing_credentials,
+    wordpress_credentials,
 )
 
 _WORDPRESS_ACF_CONTENT_TYPES = {"posts", "pages", "uslugi"}
@@ -46,11 +46,11 @@ def read_wordpress_acf_flexible_snapshot(
 ) -> WordPressAcfFlexibleSnapshot:
     """Read one exact root at apply time; do not persist its raw values."""
 
-    credentials = _wordpress_credentials(connector_id)
+    credentials = wordpress_credentials(connector_id)
     endpoint = content_type.strip().strip("/")
     normalized_id = str(object_id).strip()
     normalized_root = root_field.strip()
-    if credentials is None or _missing_credentials(connector_id, credentials):
+    if credentials is None or missing_credentials(connector_id, credentials):
         raise ValueError("Brakuje konfiguracji WordPress do odczytu układu ACF.")
     if endpoint not in _WORDPRESS_ACF_CONTENT_TYPES or not normalized_id or not normalized_root:
         raise ValueError("Brakuje dokładnego obiektu, typu treści lub pola ACF.")
