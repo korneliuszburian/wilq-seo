@@ -612,7 +612,12 @@ def _run_new_page_planning_generation(
             endpoint_path=f"/api/content/new-page-briefs/{brief_id}/planning-proposal",
         )
         if generated.proposal_status is not None:
-            claim_store.save_terminal_response(generated.proposal_status)
+            if generated.proposal_status.planning_input_digest is None:
+                raise ValueError("Terminalizacja planu wymaga dokładnego digestu wejścia.")
+            claim_store.save_terminal_response(
+                generated.proposal_status,
+                job_planning_input_digest=generated.proposal_status.planning_input_digest,
+            )
     except Exception:
         terminalize_new_page_planning_claim(
             queued_response, claim_store, code="runtime_failed"

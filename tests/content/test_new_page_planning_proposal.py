@@ -354,7 +354,10 @@ def test_new_page_plan_queue_claims_one_exact_run_before_the_worker_starts(
     )
     assert completed.proposal_status is not None
     assert completed.proposal_status.status == "created"
-    store.save_terminal_response(completed.proposal_status)
+    store.save_terminal_response(
+        completed.proposal_status,
+        job_planning_input_digest=completed.proposal_status.planning_input_digest,
+    )
 
     reread = build_new_page_planning_proposal_workspace(
         brief=brief,

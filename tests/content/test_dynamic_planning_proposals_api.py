@@ -261,7 +261,8 @@ def test_planning_get_does_not_let_a_failed_historical_job_shadow_current_input(
                     }
                 ],
             }
-        )
+        ),
+        job_planning_input_digest=historical.planning_input_digest,
     )
 
     result = client.get(

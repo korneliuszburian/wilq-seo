@@ -229,6 +229,8 @@ def terminalize_new_page_planning_claim(
         reason="Bieżące wejście zmieniło się albo przestało być gotowe przed uruchomieniem.",
         next_step="Odśwież wejście i świadomie uruchom nowy plan.",
     )
+    if response.planning_input_digest is None:
+        raise ValueError("Terminalizacja planu wymaga dokładnego digestu wejścia.")
     store.save_terminal_response(
         response.model_copy(
             update={
@@ -236,7 +238,8 @@ def terminalize_new_page_planning_claim(
                 "blockers": [blocker],
                 "safe_next_step": blocker.next_step,
             }
-        )
+        ),
+        job_planning_input_digest=response.planning_input_digest,
     )
 
 

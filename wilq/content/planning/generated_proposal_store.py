@@ -20,7 +20,7 @@ from wilq.storage.schema_versions import (
     reject_newer_sqlite_schema,
 )
 
-PlanningEnqueueOutcome = Literal["queued", "existing", "in_flight"]
+PlanningEnqueueOutcome = Literal["queued", "existing", "in_flight", "finished"]
 GeneratedProposalSaveOutcome = Literal["created", "idempotent", "replaced"]
 PlanningTerminalSaveOutcome = Literal["saved", "claim_stale", "ignored"]
 
@@ -269,7 +269,7 @@ class ContentPlanningProposalStore:
         self,
         response: ContentPlanningProposalResponse,
         *,
-        job_planning_input_digest: str | None = None,
+        job_planning_input_digest: str,
         claim_version: int | None = None,
     ) -> PlanningTerminalSaveOutcome:
         return _save_terminal_response(
@@ -383,6 +383,8 @@ def _enqueue(
                 """,
             (response.work_item_id, response.service_card_id, response.planning_input_digest),
         ).fetchone()
+        if row is not None and row["status"] == "finished":
+            return "finished"
         if row is not None and row["status"] == "queued" and not _job_is_stale(row["updated_at"]):
             return "existing"
         sibling = connection.execute(
@@ -399,6 +401,15 @@ def _enqueue(
             return "in_flight"
         connection.execute(
             """
+            UPDATE content_planning_generation_jobs
+            SET status = 'stale'
+            WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+              AND status IN ('failed', 'blocked')
+            """,
+            (response.work_item_id, response.service_card_id, response.planning_input_digest),
+        )
+        connection.execute(
+            """
                 INSERT INTO content_planning_generation_jobs (
                   work_item_id, service_card_id, planning_input_digest, status,
                   payload_json, updated_at
@@ -406,6 +417,7 @@ def _enqueue(
                 ON CONFLICT(work_item_id, service_card_id, planning_input_digest)
                 DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
                               updated_at = excluded.updated_at
+                WHERE content_planning_generation_jobs.status IN ('queued', 'stale')
                 """,
             (
                 response.work_item_id,
@@ -436,6 +448,8 @@ def _enqueue_pending(
                 """,
             (work_item_id, service_card_id, planning_input_digest),
         ).fetchone()
+        if row is not None and row["status"] == "finished":
+            return "finished"
         if row is not None and row["status"] == "queued" and not _job_is_stale(row["updated_at"]):
             return "existing"
         sibling = connection.execute(
@@ -452,6 +466,15 @@ def _enqueue_pending(
             return "in_flight"
         connection.execute(
             """
+            UPDATE content_planning_generation_jobs
+            SET status = 'stale'
+            WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+              AND status IN ('failed', 'blocked')
+            """,
+            (work_item_id, service_card_id, planning_input_digest),
+        )
+        connection.execute(
+            """
                 INSERT INTO content_planning_generation_jobs (
                   work_item_id, service_card_id, planning_input_digest, status,
                   payload_json, updated_at
@@ -459,6 +482,7 @@ def _enqueue_pending(
                 ON CONFLICT(work_item_id, service_card_id, planning_input_digest)
                 DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
                               updated_at = excluded.updated_at
+                WHERE content_planning_generation_jobs.status IN ('queued', 'stale')
                 """,
             (
                 work_item_id,
@@ -474,18 +498,16 @@ def _save_terminal_response(
     store: ContentPlanningProposalStore,
     response: ContentPlanningProposalResponse,
     *,
-    job_planning_input_digest: str | None = None,
+    job_planning_input_digest: str,
     claim_version: int | None = None,
 ) -> PlanningTerminalSaveOutcome:
     if response.service_card_id is None:
         return "ignored"
     payload = redact_mapping(response.model_dump(mode="json"))
     status = response.status if response.status in {"blocked", "failed", "stale"} else "finished"
-    exact_job_digest = job_planning_input_digest or response.planning_input_digest
+    exact_job_digest = job_planning_input_digest
     with store._connect() as connection:
         if claim_version is not None:
-            if exact_job_digest is None:
-                raise ValueError("Fenced terminal save requires an exact job digest.")
             if not _table_exists(connection, "content_planning_generation_claims"):
                 return "claim_stale"
             updated = connection.execute(
@@ -517,35 +539,20 @@ def _save_terminal_response(
                 ),
             )
             return "saved" if updated.rowcount == 1 else "claim_stale"
-        if exact_job_digest is None:
-            updated = connection.execute(
-                """
-                    UPDATE content_planning_generation_jobs
-                    SET status = ?, payload_json = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE work_item_id = ? AND service_card_id = ? AND status = 'queued'
-                    """,
-                (
-                    status,
-                    json.dumps(payload, ensure_ascii=False, sort_keys=True),
-                    response.work_item_id,
-                    response.service_card_id,
-                ),
-            )
-        else:
-            updated = connection.execute(
-                """
-                    UPDATE content_planning_generation_jobs
-                    SET status = ?, payload_json = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
-                    """,
-                (
-                    status,
-                    json.dumps(payload, ensure_ascii=False, sort_keys=True),
-                    response.work_item_id,
-                    response.service_card_id,
-                    exact_job_digest,
-                ),
-            )
+        updated = connection.execute(
+            """
+                UPDATE content_planning_generation_jobs
+                SET status = ?, payload_json = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+                """,
+            (
+                status,
+                json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                response.work_item_id,
+                response.service_card_id,
+                exact_job_digest,
+            ),
+        )
     return "saved" if updated.rowcount > 0 else "ignored"
 
 

@@ -77,6 +77,116 @@ def _proposal(*, digest: str, service_card_id: str) -> ContentPlanningProposal:
     )
 
 
+def _generating_response(digest: str = "a" * 64) -> ContentPlanningProposalResponse:
+    return ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id="work-item",
+        service_card_id="service-card",
+        planning_input_digest=digest,
+        input_summary=_planning_summary(),
+        safe_next_step="Poczekaj na zakończenie generowania.",
+    )
+
+
+def _enqueue(
+    store: ContentPlanningProposalStore,
+    response: ContentPlanningProposalResponse,
+    *,
+    pending: bool,
+) -> str:
+    if pending:
+        return store.enqueue_pending(
+            work_item_id=response.work_item_id,
+            service_card_id=response.service_card_id or "",
+            planning_input_digest=response.planning_input_digest or "",
+            response=response,
+        )
+    return store.enqueue(response)
+
+
+@pytest.mark.parametrize("pending", [False, True])
+@pytest.mark.parametrize(
+    ("status", "expected_outcome"),
+    [("finished", "finished"), ("failed", "queued"), ("blocked", "queued")],
+)
+def test_enqueue_finished_is_terminal_but_failed_and_blocked_are_retryable(
+    tmp_path: Path,
+    pending: bool,
+    status: str,
+    expected_outcome: str,
+) -> None:
+    store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
+    response = _generating_response()
+    assert _enqueue(store, response, pending=pending) == "queued"
+    with sqlite3.connect(store.path) as connection:
+        connection.execute(
+            """
+            UPDATE content_planning_generation_jobs
+            SET status = ?
+            WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+            """,
+            (
+                status,
+                response.work_item_id,
+                response.service_card_id,
+                response.planning_input_digest,
+            ),
+        )
+
+    with sqlite3.connect(store.path) as connection:
+        before_retry = connection.execute(
+            """
+            SELECT status, payload_json, updated_at
+            FROM content_planning_generation_jobs
+            WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+            """,
+            (response.work_item_id, response.service_card_id, response.planning_input_digest),
+        ).fetchone()
+
+    assert _enqueue(store, response, pending=pending) == expected_outcome
+    with sqlite3.connect(store.path) as connection:
+        persisted = connection.execute(
+            """
+            SELECT status, payload_json, updated_at
+            FROM content_planning_generation_jobs
+            WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+            """,
+            (response.work_item_id, response.service_card_id, response.planning_input_digest),
+        ).fetchone()
+    if status == "finished":
+        assert persisted == before_retry
+    else:
+        assert persisted is not None
+        assert persisted[0] == "queued"
+
+
+@pytest.mark.parametrize("pending", [False, True])
+def test_enqueue_requeues_stale_job(tmp_path: Path, pending: bool) -> None:
+    store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
+    response = _generating_response()
+    assert _enqueue(store, response, pending=pending) == "queued"
+    with sqlite3.connect(store.path) as connection:
+        connection.execute(
+            """
+            UPDATE content_planning_generation_jobs
+            SET status = 'stale'
+            WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+            """,
+            (response.work_item_id, response.service_card_id, response.planning_input_digest),
+        )
+
+    assert _enqueue(store, response, pending=pending) == "queued"
+    with sqlite3.connect(store.path) as connection:
+        persisted = connection.execute(
+            """
+            SELECT status FROM content_planning_generation_jobs
+            WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+            """,
+            (response.work_item_id, response.service_card_id, response.planning_input_digest),
+        ).fetchone()
+    assert persisted == ("queued",)
+
+
 def test_planning_status_ignores_a_historical_failed_job_for_another_exact_input(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -98,7 +208,10 @@ def test_planning_status_ignores_a_historical_failed_job_for_another_exact_input
         ],
         safe_next_step="Odśwież wejście.",
     )
-    store.save_terminal_response(historical)
+    store.save_terminal_response(
+        historical,
+        job_planning_input_digest=historical.planning_input_digest,
+    )
     current = ContentPlanningProposalResponse(
         status="not_generated",
         work_item_id="work-item",
