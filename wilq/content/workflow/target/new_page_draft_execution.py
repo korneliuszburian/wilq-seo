@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from urllib.parse import urlparse
 
 import httpx
 
 from wilq.connectors.wordpress.client import (
-    WORDPRESS_DEV_HOSTS,
     WordPressDraftWriteError,
     _missing_credentials,
     _wordpress_credentials,
@@ -16,6 +14,7 @@ from wilq.connectors.wordpress.client import (
     create_wordpress_draft_post,
     read_wordpress_draft_post,
 )
+from wilq.content.workflow.policies import wordpress_dev_host_allowed
 from wilq.content.workflow.target.new_page_draft_payload import ContentNewPageDevDraftWritePayload
 
 
@@ -39,7 +38,7 @@ def create_new_page_dev_draft(
     credentials = _wordpress_credentials(payload.connector)
     if credentials is None:
         raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
-    if (urlparse(credentials.base_url or "").hostname or "").lower() not in WORDPRESS_DEV_HOSTS:
+    if not wordpress_dev_host_allowed(credentials.base_url):
         raise WordPressDraftWriteError("Adapter szkicu WordPress działa wyłącznie na hoście dev.")
     if _missing_credentials(payload.connector, credentials):
         raise WordPressDraftWriteError(

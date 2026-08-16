@@ -11,11 +11,11 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from wilq.connectors.wordpress.client import WORDPRESS_DEV_HOSTS
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
 )
+from wilq.content.workflow.policies import wordpress_dev_host_allowed
 from wilq.content.workflow.store.store_queries import (
     latest_draft_revision,
     latest_draft_revision_review,
@@ -238,7 +238,7 @@ def _safe_dev_url(value: Any) -> str:
         parsed.scheme != "https"
         or parsed.username is not None
         or parsed.password is not None
-        or (parsed.hostname or "").lower() not in WORDPRESS_DEV_HOSTS
+        or not wordpress_dev_host_allowed(value)
     ):
         return ""
     return parsed.geturl()

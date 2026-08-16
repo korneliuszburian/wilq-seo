@@ -24,8 +24,8 @@ from wilq.connectors.wordpress.authoring import (
     WordPressAuthoringProfile,
     build_wordpress_authoring_profile,
 )
-from wilq.connectors.wordpress.client import WORDPRESS_DEV_HOSTS
 from wilq.content.workflow.decisions.inventory_binding import inventory_decision_for_work_item
+from wilq.content.workflow.policies import wordpress_dev_host_allowed
 from wilq.schemas import utc_now
 
 
@@ -616,7 +616,7 @@ def _native_post_content_observed(item: WordPressAuthoringDevContentObject) -> b
     parsed = urlparse(item.link)
     if (
         parsed.scheme != "https"
-        or parsed.netloc.lower() not in WORDPRESS_DEV_HOSTS
+        or not wordpress_dev_host_allowed(item.link)
         or parsed.username is not None
         or parsed.password is not None
         or not item.post_id

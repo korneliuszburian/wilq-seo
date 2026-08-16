@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from wilq.content.workflow.policies import wordpress_draft_writes_enabled
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.target.new_page_apply_capability import NewPageApplyCapability
 from wilq.content.workflow.target.new_page_draft_action import (
@@ -13,7 +14,6 @@ from wilq.content.workflow.target.new_page_draft_execution import create_new_pag
 from wilq.content.workflow.target.new_page_draft_payload import (
     build_new_page_dev_draft_write_payload,
 )
-from wilq.credentials.runtime import variable_value
 from wilq.schemas import ActionObject
 
 CONTENT_NEW_PAGE_DRAFT_MUTATION_ADAPTER = "content_new_page_draft_execution_boundary"
@@ -67,9 +67,4 @@ def execute_new_page_draft_action(
 
 
 def _dev_draft_writes_enabled() -> bool:
-    return (variable_value("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES") or "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+    return wordpress_draft_writes_enabled()

@@ -184,7 +184,7 @@ from wilq.content.workflow.pipeline_steps.stage_write_readiness import (
 from wilq.content.workflow.pipeline_steps.stage_write_readiness import (
     wordpress_draft_write_authorization_verified as _wordpress_draft_write_authorization_verified,
 )
-from wilq.credentials.runtime import variable_value
+from wilq.content.workflow.policies import wordpress_draft_writes_enabled
 from wilq.schemas import (
     ContentDecisionItem,
     ContentDiagnosticsResponse,
@@ -300,12 +300,7 @@ def build_content_wordpress_draft_write_readiness_response(
 
 
 def _wordpress_draft_writes_enabled() -> bool:
-    return (variable_value("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES") or "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+    return wordpress_draft_writes_enabled()
 
 
 def _wordpress_draft_activation_next_step(

@@ -16,8 +16,8 @@ from wilq.connectors.wordpress.client import (
     read_wordpress_draft_discard_readback,
     trash_wordpress_draft,
 )
+from wilq.content.workflow.policies import wordpress_draft_writes_enabled
 from wilq.content.workflow.target.dev_draft_action import load_content_target_draft_action
-from wilq.credentials.runtime import variable_value
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
@@ -223,12 +223,7 @@ def _origin_action_applied(action_id: str) -> bool:
 
 
 def _dev_draft_writes_enabled() -> bool:
-    return (variable_value("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES") or "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+    return wordpress_draft_writes_enabled()
 
 
 def _target_payload(

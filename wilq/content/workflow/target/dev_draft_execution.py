@@ -8,11 +8,11 @@ from wilq.connectors.wordpress.client import (
     create_wordpress_acf_draft,
     create_wordpress_draft_post,
 )
+from wilq.content.workflow.policies import wordpress_draft_writes_enabled
 from wilq.content.workflow.target.dev_draft_action import (
     CONTENT_DEV_DRAFT_ACTION_TYPE,
     build_content_dev_draft_write_payload,
 )
-from wilq.credentials.runtime import variable_value
 from wilq.schemas import ActionObject
 
 CONTENT_DEV_DRAFT_MUTATION_ADAPTER = "content_dev_draft_execution_boundary"
@@ -84,12 +84,7 @@ def execute_content_target_draft_action(
 
 
 def _dev_draft_writes_enabled() -> bool:
-    return (variable_value("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES") or "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+    return wordpress_draft_writes_enabled()
 
 
 __all__ = [

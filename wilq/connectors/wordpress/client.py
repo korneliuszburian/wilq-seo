@@ -27,6 +27,7 @@ from wilq.connectors.wordpress.text import (
     wordpress_title,
 )
 from wilq.content.canonical.urls import content_is_safe_public_url, content_url_host
+from wilq.content.workflow.policies import wordpress_dev_host_allowed
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
@@ -53,8 +54,6 @@ WORDPRESS_CONNECTORS = {
         "site_kind": "shop",
     },
 }
-WORDPRESS_DEV_HOSTS = {"ekologus.dev.proudsite.pl"}
-
 WORDPRESS_AUTHORING_CONTENT_FIELDS = (
     "id,slug,link,title,status,modified,modified_gmt,template,parent,acf"
 )
@@ -565,7 +564,7 @@ def create_wordpress_draft_post(
     credentials = _wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
-    if (urlparse(credentials.base_url or "").hostname or "").lower() not in WORDPRESS_DEV_HOSTS:
+    if not wordpress_dev_host_allowed(credentials.base_url):
         raise WordPressDraftWriteError(
             "Adapter szkicu WordPress działa wyłącznie na zatwierdzonym hoście dev."
         )
@@ -635,7 +634,7 @@ def _wordpress_acf_draft_preconditions(
     credentials = _wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
-    if (urlparse(credentials.base_url or "").hostname or "").lower() not in WORDPRESS_DEV_HOSTS:
+    if not wordpress_dev_host_allowed(credentials.base_url):
         raise WordPressDraftWriteError(
             "Adapter szkicu WordPress działa wyłącznie na zatwierdzonym hoście dev."
         )

@@ -28,8 +28,10 @@ from wilq.content.workflow.pipeline_steps.stage_write_readiness import (
     wordpress_draft_binding_from_audit_event,
     wordpress_draft_write_authorization_verified,
 )
+from wilq.content.workflow.policies import (
+    wordpress_draft_writes_enabled as _wordpress_draft_writes_enabled,
+)
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
-from wilq.credentials.runtime import variable_value
 from wilq.schemas import (
     ActionApplyRequest,
     ActionMutationReadinessRequirement,
@@ -40,6 +42,10 @@ from wilq.schemas import (
 
 PreviewItems = Callable[[dict[str, Any]], list[dict[str, Any]]]
 WordPressDraftActionChain = tuple[AuditEvent, AuditEvent, AuditEvent, AuditEvent]
+
+
+def wordpress_draft_writes_enabled() -> bool:
+    return _wordpress_draft_writes_enabled()
 
 
 @dataclass(frozen=True)
@@ -402,15 +408,6 @@ def _apply_blocker(
         reason=reason,
         next_step=next_step,
     )
-
-
-def wordpress_draft_writes_enabled() -> bool:
-    return (variable_value("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES") or "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
 
 
 def execute_supported_wordpress_mutation_adapter(
