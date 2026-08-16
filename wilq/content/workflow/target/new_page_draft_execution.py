@@ -3,17 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 import httpx
 
 from wilq.connectors.wordpress.client import (
     WORDPRESS_DEV_HOSTS,
     WordPressDraftWriteError,
-    _created_draft_post_id,
     _missing_credentials,
     _wordpress_credentials,
     _wordpress_edit_link,
+    create_wordpress_draft_post,
+    read_wordpress_draft_post,
 )
 from wilq.content.workflow.target.new_page_draft_payload import ContentNewPageDevDraftWritePayload
 
@@ -52,32 +53,21 @@ def create_new_page_dev_draft(
         or payload.delete_allowed is not False
     ):
         raise WordPressDraftWriteError("Adapter przyjmuje wyłącznie create-only szkic dev.")
-    owns_client = http_client is None
-    client = http_client or httpx.Client(timeout=30)
-    try:
-        response = client.post(
-            urljoin(credentials.base_url or "", f"wp-json/wp/v2/{payload.endpoint}"),
-            auth=httpx.BasicAuth(credentials.username or "", credentials.application_auth or ""),
-            params={"_fields": "id,status,link"},
-            json={"status": "draft", "title": payload.title, "content": payload.content_html},
-        )
-        response.raise_for_status()
-    except httpx.HTTPStatusError as exc:
-        raise WordPressDraftWriteError(
-            f"WordPress odrzucił utworzenie szkicu HTTP {exc.response.status_code}."
-        ) from exc
-    except httpx.HTTPError as exc:
-        raise WordPressDraftWriteError(
-            f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
-        ) from exc
-    finally:
-        if owns_client:
-            client.close()
-    post_id = _created_draft_post_id(response)
-    body = response.json()
+    post_id = create_wordpress_draft_post(
+        payload,
+        connector_id=payload.connector,
+        endpoint=payload.endpoint,
+        http_client=http_client,
+    )
+    readback = read_wordpress_draft_post(
+        post_id,
+        connector_id=payload.connector,
+        endpoint=payload.endpoint,
+        http_client=http_client,
+    )
     return ContentNewPageDevDraftCreated(
         wordpress_post_id=post_id,
-        status=str(body.get("status") or "") if isinstance(body, dict) else "",
-        link=str(body.get("link") or "") if isinstance(body, dict) else "",
-        edit_link=_wordpress_edit_link(credentials.base_url, post_id),
+        status=readback.status,
+        link=readback.link,
+        edit_link=readback.edit_link or _wordpress_edit_link(credentials.base_url, post_id),
     )

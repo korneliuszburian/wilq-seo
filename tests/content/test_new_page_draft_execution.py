@@ -5,7 +5,11 @@ import json
 import httpx
 import pytest
 
-from wilq.connectors.wordpress.client import WordPressCredentials, WordPressDraftWriteError
+from wilq.connectors.wordpress.client import (
+    WordPressCredentials,
+    WordPressDraftVerificationError,
+    WordPressDraftWriteError,
+)
 from wilq.content.workflow.target.new_page_document import ContentNewPageDeliveryReadiness
 from wilq.content.workflow.target.new_page_draft_action import (
     ContentNewPageDraftActionCommand,
@@ -38,30 +42,51 @@ def _payload() -> ContentNewPageDevDraftWritePayload:
 
 
 def test_new_page_execution_writes_only_one_authorized_dev_page_draft(monkeypatch) -> None:
+    credentials = WordPressCredentials(
+        base_url="https://ekologus.dev.proudsite.pl/",
+        public_url=None,
+        username="operator",
+        application_auth="secret",
+        site_kind="primary",
+    )
     monkeypatch.setattr(
         "wilq.content.workflow.target.new_page_draft_execution._wordpress_credentials",
-        lambda connector_id: WordPressCredentials(
-            base_url="https://ekologus.dev.proudsite.pl/",
-            public_url=None,
-            username="operator",
-            application_auth="secret",
-            site_kind="primary",
-        ),
+        lambda connector_id: credentials,
     )
     monkeypatch.setattr(
         "wilq.content.workflow.target.new_page_draft_execution._missing_credentials",
         lambda connector_id, credentials: [],
     )
+    monkeypatch.setattr(
+        "wilq.connectors.wordpress.client._wordpress_credentials",
+        lambda connector_id: credentials,
+    )
+    monkeypatch.setattr(
+        "wilq.connectors.wordpress.client._missing_credentials",
+        lambda connector_id, credentials: [],
+    )
     seen: list[httpx.Request] = []
-    client = httpx.Client(
-        transport=httpx.MockTransport(
-            lambda request: (
-                seen.append(request)
-                or httpx.Response(
-                    201, json={"id": 41, "status": "draft", "link": "https://dev/draft"}
-                )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        if request.method == "POST":
+            return httpx.Response(
+                201, json={"id": 41, "status": "draft", "link": "https://dev/draft"}
             )
+        return httpx.Response(
+            200,
+            json={
+                "id": 41,
+                "status": "draft",
+                "link": "https://dev/draft",
+                "title": {"raw": "Dokumentacja środowiskowa"},
+                "content": {"raw": "<h1>Dokumentacja</h1>"},
+                "acf": {},
+            },
         )
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(handler)
     )
     try:
         result = create_new_page_dev_draft(
@@ -69,6 +94,7 @@ def test_new_page_execution_writes_only_one_authorized_dev_page_draft(monkeypatc
         )
     finally:
         client.close()
+    assert [request.method for request in seen] == ["POST", "GET", "GET"]
     assert seen[0].url.path == "/wp-json/wp/v2/pages"
     assert result.wordpress_post_id == "41"
     assert result.status == "draft"
@@ -79,6 +105,56 @@ def test_new_page_execution_writes_only_one_authorized_dev_page_draft(monkeypatc
     body = json.loads(seen[0].content)
     assert body["status"] == "draft"
     assert body["content"] == "<h1>Dokumentacja</h1>"
+
+
+def test_new_page_execution_blocks_mismatched_verified_readback(monkeypatch) -> None:
+    credentials = WordPressCredentials(
+        base_url="https://ekologus.dev.proudsite.pl/",
+        public_url=None,
+        username="operator",
+        application_auth="secret",
+        site_kind="primary",
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.target.new_page_draft_execution._wordpress_credentials",
+        lambda connector_id: credentials,
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.target.new_page_draft_execution._missing_credentials",
+        lambda connector_id, credentials: [],
+    )
+    monkeypatch.setattr(
+        "wilq.connectors.wordpress.client._wordpress_credentials",
+        lambda connector_id: credentials,
+    )
+    monkeypatch.setattr(
+        "wilq.connectors.wordpress.client._missing_credentials",
+        lambda connector_id, credentials: [],
+    )
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(
+                201 if request.method == "POST" else 200,
+                json=(
+                    {"id": 41, "status": "draft"}
+                    if request.method == "POST"
+                    else {
+                        "id": 41,
+                        "status": "draft",
+                        "content": {"raw": "<p>Inna treść</p>"},
+                        "acf": {},
+                    }
+                ),
+            )
+        )
+    )
+    try:
+        with pytest.raises(WordPressDraftVerificationError):
+            create_new_page_dev_draft(
+                _payload(), action_apply_authorized=True, http_client=client
+            )
+    finally:
+        client.close()
 
 
 def test_new_page_execution_rejects_missing_action_authorization() -> None:

@@ -559,6 +559,7 @@ def create_wordpress_draft_post(
     payload: object,
     *,
     connector_id: str = "wordpress_ekologus",
+    endpoint: str | None = None,
     http_client: httpx.Client | None = None,
 ) -> str:
     credentials = _wordpress_credentials(connector_id)
@@ -577,10 +578,16 @@ def create_wordpress_draft_post(
         raise WordPressDraftWriteError("Payload szkicu nie pasuje do connectora WordPress.")
     if getattr(payload, "post_status", None) != "draft":
         raise WordPressDraftWriteError("Adapter może utworzyć wyłącznie szkic WordPress.")
-    if getattr(payload, "publish_allowed", True) or getattr(
-        payload, "destructive_update_allowed", True
-    ):
+    destructive_update_allowed = getattr(payload, "destructive_update_allowed", None)
+    if destructive_update_allowed is None:
+        destructive_update_allowed = getattr(payload, "update_allowed", True) or getattr(
+            payload, "delete_allowed", True
+        )
+    if getattr(payload, "publish_allowed", True) or destructive_update_allowed:
         raise WordPressDraftWriteError("Adapter blokuje publikację i destrukcyjne aktualizacje.")
+    normalized_endpoint = (endpoint or "posts").strip().strip("/")
+    if normalized_endpoint not in WORDPRESS_AUTHORING_REST_ENDPOINTS:
+        raise WordPressDraftWriteError("Payload nie wskazuje obsługiwanego typu obiektu dev.")
 
     content = getattr(payload, "content_html", None) or getattr(payload, "content_markdown", "")
     owns_client = http_client is None
@@ -589,7 +596,7 @@ def create_wordpress_draft_post(
     try:
         try:
             response = client.post(
-                urljoin(credentials.base_url or "", "wp-json/wp/v2/posts"),
+                urljoin(credentials.base_url or "", f"wp-json/wp/v2/{normalized_endpoint}"),
                 auth=auth,
                 params={"_fields": "id,status,link"},
                 json={
@@ -608,7 +615,7 @@ def create_wordpress_draft_post(
         return _verified_created_draft_post_id(
             response,
             connector_id=connector_id,
-            endpoint="posts",
+            endpoint=normalized_endpoint,
             http_client=client,
             expected_content=content,
         )
