@@ -39,7 +39,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftModelOutput,
 )
-from wilq.content.drafts.regulatory_draft_repair import repair_regulatory_assertions
+from wilq.content.drafts.regulatory_repair import repair_regulatory_assertions
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.storage.local_state import LocalStateStore

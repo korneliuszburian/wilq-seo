@@ -45,7 +45,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
-from wilq.content.drafts.regulatory_preflight import regulatory_draft_preflight_errors
+from wilq.content.drafts.regulatory_repair import regulatory_draft_preflight_errors
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     contract_for_planning_proposal,

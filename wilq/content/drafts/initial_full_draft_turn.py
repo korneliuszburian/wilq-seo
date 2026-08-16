@@ -19,8 +19,10 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
 )
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
-from wilq.content.drafts.regulatory_patch import regulatory_assertion_repair_output_schema
-from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
+from wilq.content.drafts.regulatory_repair import (
+    regulatory_assertion_repair_output_schema,
+    regulatory_section_repair_modes,
+)
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory import turn_context as regulatory_turn_context
