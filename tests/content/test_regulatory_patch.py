@@ -13,8 +13,12 @@ _REALISTIC_PATCH_OUTPUT_JSON = (
     '"body_markdown":"KPO stosuje się, gdy przekazanie odpadów podlega ewidencji."}'
     '],"publish_ready":false}'
 )
-_LEGACY_PATCH_OUTPUT_DIGEST = "2c0f2c6e99444789cb5674aba85045fc7b7e4fed9f6e8cf315f95a5c5b375c92"  # pragma: allowlist secret
-_LEGACY_TURN_SCHEMA_DIGEST = "0eccc59fd3450b63c6ce80b8a73e6bf9e3b2d9bb853f5345aa1c74d283d60609"  # pragma: allowlist secret
+_LEGACY_PATCH_OUTPUT_DIGEST = (  # pragma: allowlist secret
+    "2c0f2c6e99444789cb5674aba85045fc7b7e4fed9f6e8cf315f95a5c5b375c92"
+)
+_LEGACY_TURN_SCHEMA_DIGEST = (  # pragma: allowlist secret
+    "0eccc59fd3450b63c6ce80b8a73e6bf9e3b2d9bb853f5345aa1c74d283d60609"
+)
 
 
 def test_regulatory_patch_contract_has_one_public_owner() -> None:
