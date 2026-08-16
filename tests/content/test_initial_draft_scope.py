@@ -8,9 +8,9 @@ from pydantic import BaseModel, ValidationError
 from apps.api.wilq_api.routers import content_initial_draft
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.drafts import (
+    draft_alteration,
     fact_selection,
     grounding,
-    initial_draft_assurance_repair,
     initial_full_draft,
 )
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
@@ -308,9 +308,7 @@ def _source_fact_signal_fixture(
 
 
 def test_document_scope_flags_section_without_fact_signal() -> None:
-    proposal, output = _source_fact_signal_fixture(
-        "Opisz źródło emisji i przygotuj zakres."
-    )
+    proposal, output = _source_fact_signal_fixture("Opisz źródło emisji i przygotuj zakres.")
 
     errors = document_scope_errors(
         proposal,
@@ -353,9 +351,7 @@ def test_document_scope_ignores_regulatory_sections_for_signal() -> None:
 def test_missing_signal_repair_appends_approved_facts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    proposal, output = _source_fact_signal_fixture(
-        "Opisz źródło emisji i przygotuj zakres."
-    )
+    proposal, output = _source_fact_signal_fixture("Opisz źródło emisji i przygotuj zakres.")
     approved_fact = ContentSourceFact(
         source_id="approved_measurement_fact",
         source_type="public_site",
@@ -776,9 +772,7 @@ def test_grounding_skips_assertions_already_covered_by_repair_turns() -> None:
         output,
         planning_input=planning_input,
         proposal=proposal,
-        missing_codes=[
-            "regulatory_document_assertion:bdo_exemptions:bdo_exemption_condition"
-        ],
+        missing_codes=["regulatory_document_assertion:bdo_exemptions:bdo_exemption_condition"],
     )
 
     assert grounded.sections[0].body_markdown == output.sections[0].body_markdown
@@ -1117,12 +1111,12 @@ def test_assurance_repair_reaches_a_bounded_fixed_point_across_new_failures(
         return assured.pop(0)
 
     monkeypatch.setattr(
-        initial_draft_assurance_repair,
+        draft_alteration,
         "repair_regulatory_assertions",
         repair,
     )
 
-    repaired, _, assurance, blocker = initial_draft_assurance_repair.repair_after_assurance_failure(
+    repaired, _, assurance, blocker = draft_alteration.repair_after_assurance_failure(
         planning_input=planning_input,
         proposal=proposal,
         output=output,
@@ -1138,6 +1132,63 @@ def test_assurance_repair_reaches_a_bounded_fixed_point_across_new_failures(
     assert repair_modes == [False, True, True]
     assert len(assurance_outputs) == 3
     assert repaired.sections[0].body_markdown.endswith("Naprawa 3.")
+
+
+def test_assurance_repair_does_not_exceed_regulatory_section_budget(
+    monkeypatch,
+) -> None:
+    proposal, planning_input, output, _, _ = _regulatory_repair_fixture()
+    regulatory_section_count = 2
+    proposal = proposal.model_copy(
+        update={
+            "sections": [
+                proposal.sections[0].model_copy(
+                    update={
+                        "section_id": f"section_{index}",
+                        "regulatory_requirement_ids": [f"requirement_{index}"],
+                    }
+                )
+                for index in range(regulatory_section_count)
+            ]
+        }
+    )
+    failure = ContentDraftAssuranceFailure(
+        code="draft_assurance_failed",
+        label="Kontrola nie przeszła",
+        reason="Krytyk nadal wskazuje wymaganie.",
+        next_step="Popraw wymaganie.",
+        source_codes=["requirement:bdo_exemptions"],
+        repair_reasons={"requirement:bdo_exemptions": "overbroad_claim"},
+    )
+    repair_modes: list[bool] = []
+    assurance_outputs: list[ContentInitialDraftModelOutput] = []
+
+    def repair(**kwargs):
+        repair_modes.append(kwargs.get("force_deterministic_replace", False))
+        return kwargs["output"].model_copy(), SimpleNamespace(status="completed")
+
+    def assure(candidate, _trace):
+        assurance_outputs.append(candidate)
+        return failure
+
+    monkeypatch.setattr(draft_alteration, "repair_regulatory_assertions", repair)
+
+    repaired, _, assurance, blocker = draft_alteration.repair_after_assurance_failure(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        trace=SimpleNamespace(status="completed"),
+        assurance=failure,
+        client=SimpleNamespace(),
+        assure_draft=assure,
+        output_blocker=lambda _candidate: None,
+    )
+
+    assert blocker is None
+    assert assurance is failure
+    assert repaired is not output
+    assert repair_modes == [False, True, True]
+    assert len(assurance_outputs) == regulatory_section_count + 1
 
 
 def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() -> None:

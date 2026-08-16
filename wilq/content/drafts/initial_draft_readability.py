@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from collections.abc import Callable
 
 from wilq.codex.app_server import CodexAppServerClientProtocol
 from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.initial_full_draft_contracts import (
-    ContentInitialDraftBlocker,
     ContentInitialDraftInternalLinkOutput,
     ContentInitialDraftModelOutput,
 )
@@ -27,7 +25,6 @@ from wilq.content.workflow.documents.revisions import (
 )
 
 ReadabilityIssue = tuple[str, str, str]
-_MAX_REPAIR_TURNS = 2
 
 
 def readability_issues_for_output(
@@ -184,50 +181,6 @@ def _readability_issues_for_target(
             ]
         )
     ]
-
-
-def assure_readability_and_repair(
-    *,
-    planning_input: ContentPlanningInput,
-    proposal: ContentPlanningProposal,
-    output: ContentInitialDraftModelOutput,
-    trace: ContentCodexRuntimeTrace,
-    client: CodexAppServerClientProtocol,
-    output_blocker: Callable[[ContentInitialDraftModelOutput], ContentInitialDraftBlocker | None],
-) -> tuple[
-    ContentInitialDraftModelOutput,
-    ContentCodexRuntimeTrace,
-    ContentInitialDraftBlocker | None,
-]:
-    issues = readability_issues_for_output(output)
-    if not issues:
-        return output, trace, None
-    blocker = output_blocker(output)
-    if blocker is not None:
-        return output, trace, blocker
-    repair_budget = min(
-        len({section_id for _, section_id, _ in issues}),
-        _MAX_REPAIR_TURNS,
-    )
-    for _ in range(repair_budget):
-        candidate = output
-        turn_input_trace = trace
-        output, trace = _repair_readability_candidate(
-            planning_input=planning_input,
-            proposal=proposal,
-            output=candidate,
-            issues=issues,
-            client=client,
-        )
-        issues = readability_issues_for_output(output)
-        blocker = output_blocker(output)
-        if blocker is not None:
-            return output, trace, blocker
-        if output is candidate and trace is not turn_input_trace:
-            return output, trace, _readability_repair_failed_blocker(trace)
-        if not issues:
-            return output, trace, None
-    return output, trace, _readability_blocker(issues)
 
 
 def _mapped_repetition_issues(
@@ -426,31 +379,4 @@ def _patched_auxiliary_body(
     return patch.body_markdown
 
 
-def _readability_blocker(
-    issues: list[ReadabilityIssue],
-) -> ContentInitialDraftBlocker:
-    return ContentInitialDraftBlocker(
-        code="readability_gate_failed",
-        label="Tekst zawiera notatki robocze lub błędy czytelności",
-        reason="; ".join(f"{section_id}: {reason}" for _, section_id, reason in issues[:3]),
-        next_step=(
-            "Usuń wskazane notatki robocze i błędy czytelności, a następnie uruchom "
-            "nową próbę generowania."
-        ),
-        source_codes=list(dict.fromkeys(code for code, _, _ in issues)),
-    )
-
-
-def _readability_repair_failed_blocker(
-    trace: ContentCodexRuntimeTrace,
-) -> ContentInitialDraftBlocker:
-    return ContentInitialDraftBlocker(
-        code="readability_repair_failed",
-        label="Naprawa czytelności nie powiodła się",
-        reason=f"Tura naprawy czytelności nie zastosowała poprawki (status: {trace.status}).",
-        next_step="Sprawdź blokadę runtime i uruchom nową próbę; WILQ nie zapisał tekstu.",
-        source_codes=["readability_repair_turn_failed"],
-    )
-
-
-__all__ = ["assure_readability_and_repair", "readability_issues_for_output"]
+__all__ = ["readability_issues_for_output"]

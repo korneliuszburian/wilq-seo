@@ -28,16 +28,13 @@ from tests.content.initial_draft_readability_fakes import (
 )
 from wilq.content.drafts import (
     draft_alteration,
-    initial_draft_assurance_repair,
     initial_full_draft,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.draft_alteration import assure_readability_and_repair
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
-from wilq.content.drafts.initial_draft_readability import (
-    assure_readability_and_repair,
-    readability_issues_for_output,
-)
+from wilq.content.drafts.initial_draft_readability import readability_issues_for_output
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftCtaOutput,
@@ -337,7 +334,7 @@ def _generate_assured_response(
         lambda *_args, **_kwargs: (output, trace),
     )
     monkeypatch.setattr(
-        initial_draft_assurance_repair,
+        draft_alteration,
         "assure_regulated_draft",
         fake_assure_regulated_draft,
     )
@@ -552,9 +549,7 @@ def test_clean_readability_path_keeps_the_initial_assurance_receipt(monkeypatch)
     assert finish_calls == []
 
 
-_KPO_FACT_TEXT = (
-    "KPO, czyli Kartę Przekazania Odpadów, sporządza się przed transportem odpadów."
-)
+_KPO_FACT_TEXT = "KPO, czyli Kartę Przekazania Odpadów, sporządza się przed transportem odpadów."
 
 
 def _regulated_prepared_inputs_with_kpo_fact() -> initial_full_draft._InitialDraftInputs:

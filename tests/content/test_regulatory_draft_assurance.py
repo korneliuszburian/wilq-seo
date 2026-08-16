@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from wilq.codex.app_server import CodexAppServerTurnResult
-from wilq.content.drafts import draft_assurance_runtime, initial_draft_assurance_repair
+from wilq.content.drafts import draft_alteration, draft_assurance_runtime
 from wilq.content.drafts.draft_assurance import (
     ContentDraftAssuranceModelOutput,
     draft_assurance_output_schema,
@@ -556,7 +556,7 @@ def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypa
         lambda _planning_input: profile,
     )
     store = RunStore()
-    result = initial_draft_assurance_repair.assure_regulated_draft(
+    result = draft_alteration.assure_regulated_draft(
         planning_input=planning_input,
         proposal=type(
             "Proposal",

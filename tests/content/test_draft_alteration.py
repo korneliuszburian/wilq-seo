@@ -7,6 +7,7 @@ from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftBlocker,
     ContentInitialDraftModelOutput,
     ContentInitialDraftSectionOutput,
 )
@@ -43,6 +44,16 @@ def _receipt() -> ContentDraftAssuranceReceipt:
         profile_id="profile",
         profile_version="1",
         codex_run_id="run",
+    )
+
+
+def _readability_blocker() -> ContentInitialDraftBlocker:
+    return ContentInitialDraftBlocker(
+        code="readability_gate_failed",
+        label="Bramka czytelności",
+        reason="Sekcja wymaga naprawy.",
+        next_step="Popraw.",
+        source_codes=["long_sentence"],
     )
 
 
@@ -111,16 +122,7 @@ def test_alteration_grounds_regulatory_terms_only_after_readability_blocker(
 
     def fake_readability(**kwargs):
         calls.append("readability")
-        from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
-
-        blocker = ContentInitialDraftBlocker(
-            code="readability_gate_failed",
-            label="Bramka czytelności",
-            reason="Sekcja wymaga naprawy.",
-            next_step="Popraw.",
-            source_codes=["long_sentence"],
-        )
-        return kwargs["output"], kwargs["trace"], blocker
+        return kwargs["output"], kwargs["trace"], _readability_blocker()
 
     monkeypatch.setattr(draft_alteration, "assure_readability_and_repair", fake_readability)
 
@@ -150,13 +152,118 @@ def test_alteration_grounds_regulatory_terms_only_after_readability_blocker(
     assert calls.index("regulatory_repair") > calls.index("readability")
 
 
+def test_alteration_preserves_stage_order_and_regulatory_asymmetry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+    readability_calls = 0
+
+    def fake_initial_repair(**kwargs):
+        calls.append("scope")
+        return kwargs["output"], kwargs["trace"], None
+
+    def fake_assure(**kwargs):
+        calls.append("assure")
+        return kwargs["output"], kwargs["trace"], _receipt(), None
+
+    def fake_readability(**kwargs):
+        nonlocal readability_calls
+        readability_calls += 1
+        calls.append("readability")
+        blocker = _readability_blocker() if readability_calls == 1 else None
+        return kwargs["output"], kwargs["trace"], blocker
+
+    def fake_regulatory_repair(**kwargs):
+        calls.append("regulatory")
+        return kwargs["output"].model_copy(), _trace()
+
+    monkeypatch.setattr(draft_alteration, "repair_initial_output_blocker", fake_initial_repair)
+    monkeypatch.setattr(draft_alteration, "assure_and_repair_initial_draft", fake_assure)
+    monkeypatch.setattr(draft_alteration, "assure_readability_and_repair", fake_readability)
+    monkeypatch.setattr(draft_alteration, "repair_regulatory_assertions", fake_regulatory_repair)
+
+    result = alter_draft_towards_persistence(
+        planning_input=SimpleNamespace(),
+        proposal=SimpleNamespace(),
+        output=_output(),
+        trace=_trace(),
+        client=SimpleNamespace(),
+        run_store=SimpleNamespace(),
+        output_blocker=lambda _candidate: None,
+    )
+
+    assert result.status == "ready"
+    assert calls == [
+        "scope",
+        "assure",
+        "readability",
+        "regulatory",
+        "readability",
+        "assure",
+        "readability",
+    ]
+
+
+def test_alteration_uses_two_default_cycles_before_returning_terminal_blocker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assurance_calls = 0
+    readability_calls = 0
+    regulatory_calls = 0
+    terminal_blocker = _readability_blocker()
+
+    monkeypatch.setattr(
+        draft_alteration,
+        "repair_initial_output_blocker",
+        lambda **kwargs: (kwargs["output"], kwargs["trace"], None),
+    )
+
+    def fake_assure(**kwargs):
+        nonlocal assurance_calls
+        assurance_calls += 1
+        return kwargs["output"], kwargs["trace"], _receipt(), None
+
+    def fake_readability(**kwargs):
+        nonlocal readability_calls
+        readability_calls += 1
+        if readability_calls == 1:
+            return kwargs["output"].model_copy(), kwargs["trace"], None
+        return kwargs["output"], kwargs["trace"], terminal_blocker
+
+    def fake_regulatory_repair(**kwargs):
+        nonlocal regulatory_calls
+        regulatory_calls += 1
+        if regulatory_calls == draft_alteration._ALTERNATION_BUDGET:
+            return None
+        return kwargs["output"].model_copy(), _trace()
+
+    monkeypatch.setattr(draft_alteration, "assure_and_repair_initial_draft", fake_assure)
+    monkeypatch.setattr(draft_alteration, "assure_readability_and_repair", fake_readability)
+    monkeypatch.setattr(draft_alteration, "repair_regulatory_assertions", fake_regulatory_repair)
+
+    result = alter_draft_towards_persistence(
+        planning_input=SimpleNamespace(),
+        proposal=SimpleNamespace(),
+        output=_output(),
+        trace=_trace(),
+        client=SimpleNamespace(),
+        run_store=SimpleNamespace(),
+        output_blocker=lambda _candidate: None,
+    )
+
+    assert draft_alteration._ALTERNATION_BUDGET == 2
+    assert assurance_calls == 3
+    assert readability_calls == 3
+    assert regulatory_calls == 2
+    assert result.status == "blocked"
+    assert result.blocker is terminal_blocker
+
+
 def test_alteration_terminates_on_blocker_without_assurance(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     output = _output()
     trace = _trace()
-    from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
-
     blocker = ContentInitialDraftBlocker(
         code="document_scope_mismatch",
         label="Niezgodność zakresu",
