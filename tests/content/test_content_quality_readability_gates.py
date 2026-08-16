@@ -48,6 +48,27 @@ def test_v2_review_flags_only_sections_with_fewer_than_twelve_words() -> None:
     assert review.usefulness.status == "needs_changes"
 
 
+def test_semantic_guard_maps_colliding_heading_to_whole_document() -> None:
+    base_revision = _revision(
+        "Krótka odpowiedź nie wyjaśnia klientowi kolejnego kroku.",
+        heading="Powtórzony nagłówek",
+    )
+    revision = base_revision.model_copy(
+        update={
+            "sections": [
+                base_revision.sections[0],
+                base_revision.sections[0].model_copy(update={"section_id": "section_two"}),
+            ]
+        }
+    )
+
+    assert (
+        "answer_directness",
+        "whole_document",
+        "Sekcja zawiera 7 słów; bramka czytelności wymaga co najmniej 12.",
+    ) in readability_quality_issues(revision)
+
+
 def test_v2_review_flags_one_oversized_paragraph_and_ignores_short_paragraph() -> None:
     oversized = " ".join(["słowo"] * 221)
     short = " ".join(["krótki"] * 20)

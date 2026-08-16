@@ -17,6 +17,7 @@ from wilq.content.drafts.regulatory_patch import (
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import revision_readability_issues
+from wilq.content.quality.section_heading_index import build_section_heading_index
 from wilq.content.quality.semantic_review_guards import repetition_quality_issues
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionSection
@@ -123,24 +124,21 @@ def _working_note_reason(target_id: str, text: str) -> str | None:
 def _mapped_revision_readability_issues(
     revision_targets: list[tuple[str, ContentDraftRevisionSection]],
 ) -> list[ReadabilityIssue]:
-    section_ids_by_heading: dict[str, list[str]] = {}
-    for section_id, section in revision_targets:
-        section_ids_by_heading.setdefault(section.heading, []).append(section_id)
+    section_heading_index = build_section_heading_index(
+        (section_id, section.heading) for section_id, section in revision_targets
+    )
     combined_issues = revision_readability_issues([section for _, section in revision_targets])
     mapped: list[ReadabilityIssue] = [
-        (issue.code, section_ids_by_heading[issue.affected_section][0], issue.reason)
+        (issue.code, section_id, issue.reason)
         for issue in combined_issues
-        if len(section_ids_by_heading[issue.affected_section]) == 1
+        if (section_id := section_heading_index.resolve(issue.affected_section)) is not None
         and _gate_applies_to_target(
             issue.code,
-            section_ids_by_heading[issue.affected_section][0],
+            section_id,
         )
     ]
-    colliding_headings = {
-        heading for heading, section_ids in section_ids_by_heading.items() if len(section_ids) > 1
-    }
     for section_id, section in revision_targets:
-        if section.heading not in colliding_headings:
+        if not section_heading_index.colliding(section.heading):
             continue
         mapped.extend(
             issue

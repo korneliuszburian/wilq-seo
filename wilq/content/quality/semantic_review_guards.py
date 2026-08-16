@@ -7,6 +7,7 @@ from wilq.content.drafts.initial_full_draft_scope import (
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import revision_readability_issues
+from wilq.content.quality.section_heading_index import build_section_heading_index
 from wilq.content.quality.semantic_review_contracts import ContentSemanticDimension
 from wilq.content.quality.working_note import contains_working_note
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
@@ -139,8 +140,12 @@ def _section_by_heading(
     revision: ContentDraftRevision,
     heading: str,
 ) -> ContentDraftRevisionSection | None:
+    index = build_section_heading_index(
+        (str(section.section_id), section.heading) for section in revision.sections
+    )
+    section_id = index.resolve(heading)
     return next(
-        (section for section in revision.sections if section.heading == heading),
+        (section for section in revision.sections if str(section.section_id) == section_id),
         None,
     )
 
