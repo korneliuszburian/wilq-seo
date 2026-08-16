@@ -110,6 +110,15 @@ class ContentPlanningProposalStore:
             connection.close()
         return _proposal_from_row(row)
 
+    def read_latest_or_none_for_input(
+        self,
+        work_item_id: str,
+        service_card_id: str,
+        planning_input_digest: str,
+    ) -> ContentPlanningProposal | None:
+        """Read the latest proposal only when it matches the exact input."""
+        return self.for_input(work_item_id, service_card_id, planning_input_digest)
+
     def latest_for_planning_digest(
         self,
         work_item_id: str,

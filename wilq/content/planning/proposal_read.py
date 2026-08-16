@@ -78,16 +78,18 @@ def read_content_planning_proposal(
                 "input_summary": input_summary,
             }
         )
-    latest = store.for_input(
+    current = store.read_latest_or_none_for_input(
         planning_input.work_item_id,
         service_card_id,
         planning_input.planning_input_digest,
-    ) or store.latest(planning_input.work_item_id)
+    )
+    latest = current or store.latest(planning_input.work_item_id)
     return _response_for_current_proposal(
         planning_input=planning_input,
         service_card_id=service_card_id,
         input_summary=input_summary,
         latest=latest,
+        latest_is_current=current is not None,
     )
 
 
@@ -97,6 +99,7 @@ def _response_for_current_proposal(
     service_card_id: str,
     input_summary: ContentPlanningInputSummary,
     latest: ContentPlanningProposal | None,
+    latest_is_current: bool,
 ) -> ContentPlanningProposalResponse:
     from wilq.content.planning.generated_proposal import (
         _blocked_response,
@@ -114,10 +117,7 @@ def _response_for_current_proposal(
             input_summary=input_summary,
             safe_next_step="Wygeneruj pierwszy plan z aktualnych źródeł.",
         )
-    if (
-        latest.service_card_id != service_card_id
-        or latest.planning_input_digest != planning_input.planning_input_digest
-    ):
+    if not latest_is_current:
         return ContentPlanningProposalResponse(
             status="stale",
             work_item_id=planning_input.work_item_id,

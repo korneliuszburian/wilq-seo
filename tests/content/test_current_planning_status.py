@@ -519,6 +519,11 @@ def test_planning_store_replaces_current_exact_input_without_mutating_history(
     assert outcome == "replaced"
     assert stored_b.proposal_id == "proposal-b"
     assert store.for_input("work-item", "service-a", "a" * 64).proposal_id == "proposal-b"
+    assert (
+        store.read_latest_or_none_for_input("work-item", "service-a", "a" * 64).proposal_id
+        == "proposal-b"
+    )
+    assert store.read_latest_or_none_for_input("work-item", "service-a", "b" * 64) is None
     assert store.latest("work-item", "service-a").proposal_id == "proposal-b"
     with sqlite3.connect(store.path) as connection:
         assert connection.execute(
