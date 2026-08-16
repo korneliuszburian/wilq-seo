@@ -8,6 +8,7 @@ from wilq.content.drafts.initial_full_draft_scope import (
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import revision_readability_issues
 from wilq.content.quality.semantic_review_contracts import ContentSemanticDimension
+from wilq.content.quality.working_note import contains_working_note
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
@@ -165,14 +166,7 @@ def repetition_quality_issues(
                 )
             )
     all_text = "\n".join(section_bodies.values())
-    if any(
-        marker in all_text
-        for marker in (
-            "źródło wskazuje",
-            "informacja wymaga weryfikacji",
-            "[do uzupełnienia]",
-        )
-    ):
+    if contains_working_note(all_text):
         issues.append(
             (
                 "repetition",

@@ -10,6 +10,7 @@ from wilq.content.quality.benefit_signal import (
     BENEFIT_BODY_MARKER,
     BENEFIT_HEADING_SIGNAL,
 )
+from wilq.content.quality.working_note import working_note_pattern
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionSection
 
 _WORD = re.compile(r"[\wąćęłńóśźż]+", re.IGNORECASE)
@@ -20,12 +21,7 @@ _VAGUE_CTA_OPENER = re.compile(
     re.IGNORECASE,
 )
 _WEAK_CTA_LITERALS = frozenset({"kliknij tutaj", "skontaktuj się", "czytaj dalej"})
-WORKING_NOTE = re.compile(
-    r"(?:weryfikacj[ieą]? przez człowieka|przed wykorzystaniem|"
-    r"wymagają weryfikacj|do weryfikacji|notatk[ae] robocze?|"
-    r"weryfikacja przez człowieka|zweryfikować przez człowieka)",
-    re.IGNORECASE,
-)
+WORKING_NOTE = working_note_pattern()
 _QUESTION_HEADING_WORD = re.compile(
     r"^\s*(?:jak|czy|co|kiedy|który|która|które|ile|gdzie|czemu|dlaczego)(?!\w)",
     re.IGNORECASE,

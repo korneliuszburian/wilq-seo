@@ -237,7 +237,13 @@ def test_semantic_quality_guards_cannot_pass_working_note_or_duplicate_paragraph
         "answer_directness",
         "logical_flow",
     }
-    assert guards_by_target["section_read_02"] == "repetition"
+    repetition_finding = next(
+        finding for finding in guarded.findings if finding.dimension == "repetition"
+    )
+    assert set(repetition_finding.affected_targets) == {
+        "whole_document",
+        "section_read_02",
+    }
     assert any(finding.dimension == "credibility" for finding in guarded.findings)
 
 
