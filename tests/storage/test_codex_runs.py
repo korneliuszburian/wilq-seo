@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from hashlib import sha256
 
 from wilq.content.drafts import initial_draft_run
+from wilq.content.drafts.initial_draft_run import _InitialDraftRunMetadata
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore
 
@@ -68,3 +70,78 @@ def test_initial_draft_run_records_exact_prompt_policy_and_materials(
     assert run.prompt_template_id == "content_initial_draft@v2"
     assert run.prompt_digest == sha256(prompt.encode("utf-8")).hexdigest()
     assert run.source_material_ids == ["source_material_bdo"]
+
+
+def test_initial_draft_enrichment_redacts_before_fallback_store() -> None:
+    class FallbackStore:
+        def __init__(self) -> None:
+            self.payload_json: str | None = None
+
+        def save_codex_run(self, run: CodexRun) -> CodexRun:
+            self.payload_json = json.dumps(run.model_dump(mode="json"))
+            return run
+
+    store = FallbackStore()
+    run = CodexRun(
+        id="codex_fallback_redaction",
+        status="started",
+        error="failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
+    )
+
+    initial_draft_run._enrich_started_initial_draft_run(
+        store,
+        run,
+        metadata=_InitialDraftRunMetadata(
+            model=None,
+            model_reasoning_effort=None,
+            prompt_digest="a" * 64,
+            prompt_template_id="content_initial_draft@v2",
+        ),
+        source_material_ids=[],
+    )
+
+    assert store.payload_json is not None
+    assert "sk-testsecretvalue1234567890" not in store.payload_json
+
+
+def test_initial_draft_enrichment_redacts_existing_local_store_payload(tmp_path) -> None:
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    run = CodexRun(
+        id="codex_connect_redaction",
+        status="started",
+        error="failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
+    )
+    with store._connect() as connection:
+        connection.execute(
+            "INSERT INTO codex_runs (id, started_at, payload_json) VALUES (?, ?, ?)",
+            (run.id, run.started_at.isoformat(), json.dumps(run.model_dump(mode="json"))),
+        )
+
+    initial_draft_run._enrich_started_initial_draft_run(
+        store,
+        run,
+        metadata=_InitialDraftRunMetadata(
+            model=None,
+            model_reasoning_effort=None,
+            prompt_digest="a" * 64,
+            prompt_template_id="content_initial_draft@v2",
+        ),
+        source_material_ids=[],
+    )
+
+    stored = store.list_codex_runs()[0]
+    assert stored.error == "failure with [REDACTED]"
+
+
+def test_save_codex_run_redacts_caller_supplied_secret(tmp_path) -> None:
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    run = CodexRun(
+        id="codex_store_redaction",
+        status="started",
+        error="failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
+    )
+
+    saved = store.save_codex_run(run)
+
+    assert saved.error == "failure with [REDACTED]"
+    assert "sk-testsecretvalue1234567890" not in json.dumps(saved.model_dump(mode="json"))

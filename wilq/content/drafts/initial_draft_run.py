@@ -95,8 +95,11 @@ def _enrich_started_initial_draft_run(
         "prompt_template_id": metadata.prompt_template_id,
         "source_material_ids": list(dict.fromkeys(source_material_ids)),
     }
+    redacted_run = CodexRun.model_validate(
+        redact_mapping(run.model_copy(update=update).model_dump(mode="json"))
+    )
     if not hasattr(run_store, "_connect"):
-        return run_store.save_codex_run(run.model_copy(update=update))
+        return run_store.save_codex_run(redacted_run)
     with run_store._connect() as connection:
         connection.execute("BEGIN IMMEDIATE")
         row = connection.execute(
