@@ -8,7 +8,12 @@ from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
 from wilq.content.quality.review import ContentQualityReview
 from wilq.content.review.human import ContentHumanReview
-from wilq.content.workflow.store.store_queries import model_json as _model_json
+from wilq.content.workflow.store.store_queries import (
+    model_json as _model_json,
+)
+from wilq.content.workflow.store.store_queries import (
+    upsert_wordpress_draft_execution as _upsert_wordpress_draft_execution,
+)
 from wilq.security.redaction import redact_mapping
 
 
@@ -120,34 +125,7 @@ class _EvidenceStoreMixin:
             redact_mapping(result.model_dump(mode="json"))
         )
         with self._connect() as connection:
-            if redacted.revision_binding is not None:
-                binding = redacted.revision_binding
-                connection.execute(
-                    """
-                    INSERT INTO content_wordpress_draft_execution_history
-                      (work_item_id, handoff_id, revision_id, revision_digest, payload_json)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(work_item_id, handoff_id, revision_id, revision_digest)
-                    DO UPDATE SET payload_json = excluded.payload_json
-                    """,
-                    (
-                        work_item_id,
-                        binding.handoff_id,
-                        binding.revision_id,
-                        binding.content_digest,
-                        _model_json(redacted),
-                    ),
-                )
-            else:
-                # Preserve readable v1/history rows that predate exact bindings.
-                connection.execute(
-                    """
-                    INSERT INTO content_wordpress_draft_executions (work_item_id, payload_json)
-                    VALUES (?, ?)
-                    ON CONFLICT(work_item_id) DO UPDATE SET payload_json = excluded.payload_json
-                    """,
-                    (work_item_id, _model_json(redacted)),
-                )
+            _upsert_wordpress_draft_execution(connection, work_item_id, redacted)
         return redacted
 
     def latest_wordpress_draft_execution(

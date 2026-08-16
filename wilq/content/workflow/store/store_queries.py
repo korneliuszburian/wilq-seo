@@ -27,6 +27,12 @@ from wilq.content.workflow.target.target_mapping import ContentTargetMappingConf
 from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent
 from wilq.security.redaction import redact_mapping
 from wilq.social.reuse import SocialReuseProposal, SocialReuseReview
+from wilq.storage.local_state_audit import (
+    upsert_action_mutation_audit as _upsert_action_mutation_audit,
+)
+from wilq.storage.local_state_audit import (
+    upsert_audit_event as _upsert_audit_event,
+)
 
 
 def model_json(
@@ -53,45 +59,14 @@ def model_json(
 
 
 def upsert_audit_event(connection: sqlite3.Connection, event: AuditEvent) -> None:
-    redacted = AuditEvent.model_validate(redact_mapping(event.model_dump(mode="json")))
-    connection.execute(
-        """
-        INSERT INTO audit_events (id, action_id, created_at, payload_json)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          action_id = excluded.action_id,
-          created_at = excluded.created_at,
-          payload_json = excluded.payload_json
-        """,
-        (redacted.id, redacted.action_id, redacted.created_at.isoformat(), model_json(redacted)),
-    )
+    _upsert_audit_event(connection, event)
 
 
 def upsert_action_mutation_audit(
     connection: sqlite3.Connection,
     record: ActionMutationAuditRecord,
 ) -> None:
-    redacted = ActionMutationAuditRecord.model_validate(
-        redact_mapping(record.model_dump(mode="json"))
-    )
-    connection.execute(
-        """
-        INSERT INTO action_mutation_audits (id, action_id, status, created_at, payload_json)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          action_id = excluded.action_id,
-          status = excluded.status,
-          created_at = excluded.created_at,
-          payload_json = excluded.payload_json
-        """,
-        (
-            redacted.id,
-            redacted.action_id,
-            redacted.status,
-            redacted.created_at.isoformat(),
-            model_json(redacted),
-        ),
-    )
+    _upsert_action_mutation_audit(connection, record)
 
 
 def upsert_wordpress_draft_execution(

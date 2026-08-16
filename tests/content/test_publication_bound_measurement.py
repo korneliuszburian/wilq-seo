@@ -38,6 +38,7 @@ from wilq.content.workflow.pipeline_steps.stage_measurement import (
 )
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.store.store_public_deployment import save_public_deployment
+from wilq.content.workflow.store.store_queries import upsert_wordpress_draft_execution
 from wilq.schemas import (
     ConnectorRefreshMode,
     ConnectorRefreshRun,
@@ -244,6 +245,58 @@ def test_wordpress_execution_history_is_exactly_revision_bound_and_keeps_v1_read
     store.save_wordpress_draft_execution("legacy-item", legacy)
     assert store.latest_wordpress_draft_execution("legacy-item").wordpress_post_id == "777"
     assert store.latest_wordpress_draft_execution("legacy-item", handoff_id="new-handoff") is None
+
+
+@pytest.mark.parametrize("bound", [True, False])
+def test_wordpress_execution_entrypoints_write_byte_identical_rows(
+    bound: bool,
+    tmp_path: Path,
+) -> None:
+    store = content_workflow_store()
+    store.path = tmp_path / f"execution-entrypoint-{bound}.sqlite3"
+    common = dict(
+        status="created",
+        mode="live",
+        boundary=ContentWordPressDraftExecutionBoundary(
+            live_write_enabled=True,
+            live_adapter_configured=True,
+        ),
+        wordpress_post_id="888",
+        external_write_attempted=True,
+    )
+    result = ContentWordPressDraftExecutionResult(
+        **common,
+        revision_binding=(
+            _execution_binding(
+                revision_id="revision-entrypoint",
+                handoff_id="handoff-entrypoint",
+                digest="1" * 64,
+            )
+            if bound
+            else None
+        ),
+    )
+    work_item_id = result.revision_binding.work_item_id if bound else "legacy-entrypoint"
+
+    store.save_wordpress_draft_execution(work_item_id, result)
+    with store._connect() as connection:
+        table = (
+            "content_wordpress_draft_execution_history"
+            if bound
+            else "content_wordpress_draft_executions"
+        )
+        first_payload = connection.execute(
+            f"SELECT payload_json FROM {table} WHERE work_item_id = ?",
+            (work_item_id,),
+        ).fetchone()["payload_json"]
+        upsert_wordpress_draft_execution(connection, work_item_id, result)
+        rows = connection.execute(
+            f"SELECT payload_json FROM {table} WHERE work_item_id = ?",
+            (work_item_id,),
+        ).fetchall()
+
+    assert len(rows) == 1
+    assert rows[0]["payload_json"] == first_payload
 
 
 def test_measurement_uses_bound_publication_and_server_metrics_only(

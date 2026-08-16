@@ -10,26 +10,61 @@ from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state_runs import _model_from_json, _model_json
 
 
+def upsert_audit_event(connection: sqlite3.Connection, event: AuditEvent) -> AuditEvent:
+    redacted = AuditEvent.model_validate(redact_mapping(event.model_dump(mode="json")))
+    payload_json = _model_json(redacted)
+    connection.execute(
+        """
+        INSERT INTO audit_events (id, action_id, created_at, payload_json)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          action_id = excluded.action_id,
+          created_at = excluded.created_at,
+          payload_json = excluded.payload_json
+        """,
+        (redacted.id, redacted.action_id, redacted.created_at.isoformat(), payload_json),
+    )
+    return redacted
+
+
+def upsert_action_mutation_audit(
+    connection: sqlite3.Connection,
+    record: ActionMutationAuditRecord,
+) -> ActionMutationAuditRecord:
+    redacted = ActionMutationAuditRecord.model_validate(
+        redact_mapping(record.model_dump(mode="json"))
+    )
+    payload_json = _model_json(redacted)
+    connection.execute(
+        """
+        INSERT INTO action_mutation_audits (
+          id, action_id, status, created_at, payload_json
+        )
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          action_id = excluded.action_id,
+          status = excluded.status,
+          created_at = excluded.created_at,
+          payload_json = excluded.payload_json
+        """,
+        (
+            redacted.id,
+            redacted.action_id,
+            redacted.status,
+            redacted.created_at.isoformat(),
+            payload_json,
+        ),
+    )
+    return redacted
+
+
 class _AuditStoreMixin:
     def _connect(self) -> sqlite3.Connection:
         raise NotImplementedError
 
     def save_audit_event(self, event: AuditEvent) -> AuditEvent:
-        redacted = AuditEvent.model_validate(redact_mapping(event.model_dump(mode="json")))
-        payload_json = _model_json(redacted)
         with self._connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO audit_events (id, action_id, created_at, payload_json)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                  action_id = excluded.action_id,
-                  created_at = excluded.created_at,
-                  payload_json = excluded.payload_json
-                """,
-                (redacted.id, redacted.action_id, redacted.created_at.isoformat(), payload_json),
-            )
-        return redacted
+            return upsert_audit_event(connection, event)
 
     def list_audit_events(self, action_id: str | None = None) -> list[AuditEvent]:
         with self._connect() as connection:
@@ -52,32 +87,8 @@ class _AuditStoreMixin:
         self,
         record: ActionMutationAuditRecord,
     ) -> ActionMutationAuditRecord:
-        redacted = ActionMutationAuditRecord.model_validate(
-            redact_mapping(record.model_dump(mode="json"))
-        )
-        payload_json = _model_json(redacted)
         with self._connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO action_mutation_audits (
-                  id, action_id, status, created_at, payload_json
-                )
-                VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                  action_id = excluded.action_id,
-                  status = excluded.status,
-                  created_at = excluded.created_at,
-                  payload_json = excluded.payload_json
-                """,
-                (
-                    redacted.id,
-                    redacted.action_id,
-                    redacted.status,
-                    redacted.created_at.isoformat(),
-                    payload_json,
-                ),
-            )
-        return redacted
+            return upsert_action_mutation_audit(connection, record)
 
     def list_action_mutation_audits(
         self,
