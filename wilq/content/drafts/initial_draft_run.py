@@ -417,6 +417,8 @@ def transition_initial_draft_run_if_status(
     updated = run.model_copy(
         update={"status": status, "completed_at": utc_now(), "error": error}
     )
+    if not hasattr(run_store, "_connect"):
+        return run_store.save_codex_run(updated)
     return transition_codex_run_if_status(
         run_store,
         updated,

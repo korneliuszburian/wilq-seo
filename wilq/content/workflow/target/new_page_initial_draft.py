@@ -8,25 +8,24 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
-from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
-from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
 from wilq.content.drafts.fact_selection import approved_source_facts_by_section
 from wilq.content.drafts.generated_claim_safety import (
     claim_safety_output,
     generated_claim_blocker,
     generated_claim_safety_issues,
 )
+from wilq.content.drafts.initial_draft_pipeline import (
+    InitialDraftPipelineInputs,
+    InitialDraftRunMetadata,
+    generate_initial_draft,
+)
 from wilq.content.drafts.initial_draft_run import (
-    safe_initial_draft_run_error,
-    start_initial_draft_run,
     transition_initial_draft_run_if_status,
 )
 from wilq.content.drafts.initial_draft_runtime import (
     InitialDraftFailureCopy,
-    InitialDraftTurnFailure,
     InitialDraftTurnGoal,
     build_initial_draft_blocker,
-    execute_initial_draft_turn,
     initial_draft_request_mismatch,
 )
 from wilq.content.drafts.initial_draft_validation import (
@@ -118,96 +117,58 @@ def generate_new_page_initial_draft(
             "revision_already_exists",
             "Otwórz zapisaną rewizję zamiast tworzyć drugi pierwszy dokument.",
         )
-    try:
-        turn_request = _turn_request(brief, planning_input, proposal)
-    except Exception:
-        run = start_initial_draft_run(
-            run_store,
-            work_item_id=proposal.work_item_id,
-            evidence_ids=proposal.evidence_ids,
-            source_material_ids=proposal.source_material_ids,
-            proposal_id=request.expected_proposal_id,
-            planning_digest=proposal.planning_digest,
-            planning_input_digest=request.expected_planning_input_digest,
-            context_digest=None,
-            run_id_prefix="codex_content_new_page_draft_",
-            hook="content_new_page_initial_draft",
-            endpoint_path=endpoint_path,
-            prompt=None,
-        )
-        transition_initial_draft_run_if_status(
-            run_store,
-            run,
-            status="failed",
-            error="runtime_failed",
-        )
-        return _blocked(
-            workspace,
-            proposal,
-            "runtime_failed",
-            "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
-            run_id=run.id,
-            runtime=ContentCodexRuntimeTrace(status="failed"),
-            status="failed",
-        )
-    run = start_initial_draft_run(
-        run_store,
-        work_item_id=proposal.work_item_id,
-        evidence_ids=proposal.evidence_ids,
-        source_material_ids=proposal.source_material_ids,
-        proposal_id=request.expected_proposal_id,
-        planning_digest=proposal.planning_digest,
-        planning_input_digest=request.expected_planning_input_digest,
-        context_digest=None,
-        run_id_prefix="codex_content_new_page_draft_",
-        hook="content_new_page_initial_draft",
-        endpoint_path=endpoint_path,
-        prompt=turn_request.instruction,
-    )
-    execution = execute_initial_draft_turn(
-        turn_request=turn_request,
+    return generate_initial_draft(
+        inputs=InitialDraftPipelineInputs(
+            planning_input=planning_input,
+            proposal=proposal,
+            preflight_response=None,
+            turn_request=lambda: _turn_request(brief, planning_input, proposal),
+            turn_goal=_NEW_PAGE_INITIAL_DRAFT_TURN_GOAL,
+            run=InitialDraftRunMetadata(
+                work_item_id=proposal.work_item_id,
+                evidence_ids=proposal.evidence_ids,
+                source_material_ids=proposal.source_material_ids,
+                proposal_id=request.expected_proposal_id,
+                planning_digest=proposal.planning_digest,
+                planning_input_digest=request.expected_planning_input_digest,
+                context_digest=None,
+                endpoint_path=endpoint_path,
+                prompt=None,
+                run_id_prefix="codex_content_new_page_draft_",
+                hook="content_new_page_initial_draft",
+            ),
+            output_blocker=lambda candidate: _output_blocker(
+                planning_input, proposal, candidate
+            ),
+            response=lambda *, status, blocker, run, runtime: _blocked(
+                workspace,
+                proposal,
+                blocker.code,
+                blocker.next_step,
+                run.id,
+                runtime,
+                status=status,
+                blocker=blocker,
+            ),
+            persist=lambda *, output, runtime, run, regulatory_assurance: (
+                _persist_new_page_initial_draft(
+                    brief=brief,
+                    foundation=foundation,
+                    proposal=proposal,
+                    request=request,
+                    output=output,
+                    runtime=runtime,
+                    run=run,
+                    workflow_store=workflow_store,
+                    run_store=run_store,
+                    workspace=workspace,
+                )
+            ),
+            terminal_hook=transition_initial_draft_run_if_status,
+        ),
         client=client,
-        run=run,
-        run_store=run_store,
-        goal=_NEW_PAGE_INITIAL_DRAFT_TURN_GOAL,
-        on_terminal=transition_initial_draft_run_if_status,
-    )
-    if isinstance(execution, InitialDraftTurnFailure):
-        return _blocked(
-            workspace,
-            proposal,
-            execution.blocker.code,
-            execution.blocker.next_step,
-            run.id,
-            execution.trace,
-            status=execution.status,
-            blocker=execution.blocker,
-        )
-    output, runtime = execution
-    prepared = _prepare_output_for_persistence(
-        planning_input=planning_input,
-        proposal=proposal,
-        output=output,
-        runtime=runtime,
-        client=client,
-        run=run,
-        run_store=run_store,
-        workspace=workspace,
-    )
-    if isinstance(prepared, ContentInitialDraftResponse):
-        return prepared
-    output, runtime = prepared
-    return _persist_new_page_initial_draft(
-        brief=brief,
-        foundation=foundation,
-        proposal=proposal,
-        request=request,
-        output=output,
-        runtime=runtime,
-        run=run,
         workflow_store=workflow_store,
         run_store=run_store,
-        workspace=workspace,
     )
 
 
@@ -280,64 +241,6 @@ def _persist_new_page_initial_draft(
     )
 
 
-def _prepare_output_for_persistence(
-    *,
-    planning_input: ContentPlanningInput,
-    proposal: ContentPlanningProposal,
-    output: ContentInitialDraftModelOutput,
-    runtime: ContentCodexRuntimeTrace,
-    client: CodexAppServerClientProtocol,
-    run: CodexRun,
-    run_store: LocalStateStore,
-    workspace: ContentNewPageCanonicalDocumentWorkspace,
-) -> _NewPagePrePersistResult:
-    altered = alter_draft_towards_persistence(
-        planning_input=planning_input,
-        proposal=proposal,
-        output=output,
-        trace=runtime,
-        client=client,
-        run_store=run_store,
-        output_blocker=lambda candidate: _output_blocker(
-            planning_input,
-            proposal,
-            candidate,
-        ),
-    )
-    if altered.status == "blocked":
-        if altered.blocker is None:
-            raise RuntimeError("Blocked new-page draft alteration requires a blocker.")
-        return _finish_quality_blocked(
-            workspace=workspace,
-            proposal=proposal,
-            run=run,
-            runtime=altered.trace or runtime,
-            blocker=altered.blocker,
-            run_store=run_store,
-        )
-    if altered.status == "assurance_failure":
-        assurance = altered.assurance
-        if not isinstance(assurance, ContentDraftAssuranceFailure):
-            raise RuntimeError("Failed new-page draft assurance requires its failure payload.")
-        return _finish_quality_blocked(
-            workspace=workspace,
-            proposal=proposal,
-            run=run,
-            runtime=altered.trace or runtime,
-            blocker=ContentInitialDraftBlocker(
-                code=assurance.code,
-                label=assurance.label,
-                reason=assurance.reason,
-                next_step=assurance.next_step,
-                source_codes=assurance.source_codes,
-            ),
-            run_store=run_store,
-        )
-    if altered.output is None:
-        raise RuntimeError("Ready new-page draft alteration requires an output.")
-    return altered.output, altered.trace or runtime
-
-
 def _output_blocker(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
@@ -404,32 +307,6 @@ def _claim_safety_contract(
         output_schema=initial_full_draft_output_schema(proposal),
         system_instruction="Sprawdź bezpieczeństwo claimów bez publikacji i bez zapisu.",
         user_instruction="Oceń wyłącznie przekazany dokument nowej strony.",
-    )
-
-
-def _finish_quality_blocked(
-    *,
-    workspace: ContentNewPageCanonicalDocumentWorkspace,
-    proposal: ContentPlanningProposal,
-    run: CodexRun,
-    runtime: ContentCodexRuntimeTrace,
-    blocker: ContentInitialDraftBlocker,
-    run_store: LocalStateStore,
-) -> ContentInitialDraftResponse:
-    transition_initial_draft_run_if_status(
-        run_store,
-        run,
-        status="blocked",
-        error=safe_initial_draft_run_error(blocker),
-    )
-    return ContentInitialDraftResponse(
-        status="blocked",
-        work_item_id=workspace.work_item_id,
-        proposal_id=proposal.proposal_id,
-        run_id=run.id,
-        runtime=runtime,
-        blockers=[blocker],
-        safe_next_step=blocker.next_step,
     )
 
 

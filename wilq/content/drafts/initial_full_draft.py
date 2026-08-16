@@ -1,18 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Literal
 
 from wilq.codex.app_server import (
     CodexAppServerClientProtocol,
     CodexAppServerStructuredTurnRequest,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
-from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
-from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
-from wilq.content.drafts.draft_assurance_runtime import (
-    ContentDraftAssuranceFailure,
-)
 from wilq.content.drafts.generated_claim_safety import (
     claim_safety_output,
     generated_claim_blocker,
@@ -22,10 +17,14 @@ from wilq.content.drafts.initial_draft_persistence import (
     InitialDraftRevisionStore,
     persist_initial_draft,
 )
+from wilq.content.drafts.initial_draft_pipeline import (
+    InitialDraftPipelineInputs,
+    InitialDraftRunMetadata,
+    generate_initial_draft,
+)
 from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
     initial_draft_context_digest,
-    safe_initial_draft_run_error,
     start_initial_draft_run,
 )
 from wilq.content.drafts.initial_draft_runtime import (
@@ -85,15 +84,6 @@ class _InitialDraftInputs:
     generation_contract: StructuredDraftGenerationContract
     base_revision_id: str | None = None
 
-
-_InitialDraftPrePersistResult = (
-    tuple[
-        ContentInitialDraftModelOutput,
-        ContentCodexRuntimeTrace,
-        ContentDraftAssuranceReceipt | None,
-    ]
-    | ContentInitialDraftResponse
-)
 
 BENEFIT_SOURCE_FACT_LIMIT = 2
 
@@ -194,144 +184,64 @@ def generate_initial_full_draft(
         return prepared
     if (proposal_id := prepared.proposal.proposal_id) is None:
         raise RuntimeError("Prepared initial draft is missing its generated proposal ID.")
-    turn_request = initial_full_draft_turn_request(
-        planning_input=prepared.planning_input,
-        proposal=prepared.proposal,
-        generation_contract=prepared.generation_contract,
-    )
-    run = start_initial_draft_run(
-        run_store,
-        work_item_id=prepared.planning_input.work_item_id,
-        evidence_ids=prepared.planning_input.evidence_ids,
-        source_material_ids=prepared.proposal.source_material_ids,
-        proposal_id=proposal_id,
-        planning_digest=prepared.proposal.planning_digest,
-        planning_input_digest=prepared.planning_input.planning_input_digest,
-        context_digest=context_digest or _initial_draft_context_digest(snapshot, prepared),
-        run_id=run_id,
-        prompt=turn_request.instruction,
-    )
-    runtime_result = _execute_runtime(prepared, client, run, run_store, turn_request)
-    if isinstance(runtime_result, ContentInitialDraftResponse):
-        return runtime_result
-    output, trace = runtime_result
-    output = _enrich_benefit_sections(output, prepared.planning_input)
-    prepared_output = _prepare_initial_draft_for_persistence(
-        snapshot=snapshot,
-        prepared=prepared,
-        output=output,
-        trace=trace,
+    return generate_initial_draft(
+        inputs=InitialDraftPipelineInputs(
+            planning_input=prepared.planning_input,
+            proposal=prepared.proposal,
+            preflight_response=None,
+            turn_request=lambda: initial_full_draft_turn_request(
+                planning_input=prepared.planning_input,
+                proposal=prepared.proposal,
+                generation_contract=prepared.generation_contract,
+            ),
+            turn_goal=_REFRESH_INITIAL_DRAFT_TURN_GOAL,
+            run=InitialDraftRunMetadata(
+                work_item_id=prepared.planning_input.work_item_id,
+                evidence_ids=prepared.planning_input.evidence_ids,
+                source_material_ids=prepared.proposal.source_material_ids,
+                proposal_id=proposal_id,
+                planning_digest=prepared.proposal.planning_digest,
+                planning_input_digest=prepared.planning_input.planning_input_digest,
+                context_digest=context_digest or _initial_draft_context_digest(snapshot, prepared),
+                endpoint_path=None,
+                prompt=None,
+                run_id=run_id,
+            ),
+            output_blocker=lambda candidate: _output_blocker(prepared, candidate),
+            response=lambda *, status, blocker, run, runtime: _blocked_response(
+                snapshot,
+                proposal=prepared.proposal,
+                status=status,
+                run=run,
+                runtime=runtime,
+                blockers=[blocker],
+            ),
+            persist=lambda *, output, runtime, run, regulatory_assurance: persist_initial_draft(
+                snapshot=snapshot,
+                request=request,
+                planning_input=prepared.planning_input,
+                proposal=prepared.proposal,
+                base_revision_id=prepared.base_revision_id,
+                output=output,
+                run=run,
+                trace=runtime,
+                workflow_store=workflow_store,
+                run_store=run_store,
+                regulatory_assurance=regulatory_assurance,
+            ),
+            start_run=start_initial_draft_run,
+            terminal_hook=finish_initial_draft_run,
+            execute_turn=lambda **kwargs: _execute_runtime(
+                prepared,
+                kwargs["client"],
+                kwargs["run"],
+                kwargs["run_store"],
+                kwargs["turn_request"],
+            ),
+        ),
         client=client,
-        run=run,
-        run_store=run_store,
-    )
-    if isinstance(prepared_output, ContentInitialDraftResponse):
-        return prepared_output
-    output, trace, assurance = prepared_output
-    return persist_initial_draft(
-        snapshot=snapshot,
-        request=request,
-        planning_input=prepared.planning_input,
-        proposal=prepared.proposal,
-        base_revision_id=prepared.base_revision_id,
-        output=output,
-        run=run,
-        trace=trace,
         workflow_store=workflow_store,
         run_store=run_store,
-        regulatory_assurance=assurance,
-    )
-
-
-def _prepare_initial_draft_for_persistence(
-    *,
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    prepared: _InitialDraftInputs,
-    output: ContentInitialDraftModelOutput,
-    trace: ContentCodexRuntimeTrace,
-    client: CodexAppServerClientProtocol,
-    run: CodexRun,
-    run_store: LocalStateStore,
-) -> _InitialDraftPrePersistResult:
-    result = alter_draft_towards_persistence(
-        planning_input=prepared.planning_input,
-        proposal=prepared.proposal,
-        output=output,
-        trace=trace,
-        client=client,
-        run_store=run_store,
-        output_blocker=lambda candidate: _output_blocker(prepared, candidate),
-    )
-    if result.status == "blocked" and result.blocker is not None:
-        return _finish_blocked_draft(
-            snapshot=snapshot,
-            proposal=prepared.proposal,
-            run=run,
-            trace=result.trace or trace,
-            blocker=result.blocker,
-            run_store=run_store,
-        )
-    if result.status == "assurance_failure" and result.assurance is not None:
-        return _finish_assurance_failure(
-            snapshot=snapshot,
-            proposal=prepared.proposal,
-            run=run,
-            trace=result.trace or trace,
-            run_store=run_store,
-            assurance=cast(ContentDraftAssuranceFailure, result.assurance),
-        )
-    if result.output is None or result.trace is None:
-        raise RuntimeError("Draft alternation returned no output or trace.")
-    return result.output, result.trace, cast(ContentDraftAssuranceReceipt | None, result.assurance)
-
-
-def _finish_assurance_failure(
-    *,
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    proposal: ContentPlanningProposal,
-    run: CodexRun,
-    trace: ContentCodexRuntimeTrace,
-    run_store: LocalStateStore,
-    assurance: ContentDraftAssuranceFailure,
-) -> ContentInitialDraftResponse:
-    return _finish_blocked_draft(
-        snapshot=snapshot,
-        proposal=proposal,
-        run=run,
-        trace=trace,
-        blocker=_blocker(
-            assurance.code,
-            assurance.label,
-            assurance.reason,
-            assurance.next_step,
-            source_codes=assurance.source_codes,
-        ),
-        run_store=run_store,
-    )
-
-
-def _finish_blocked_draft(
-    *,
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    proposal: ContentPlanningProposal,
-    run: CodexRun,
-    trace: ContentCodexRuntimeTrace,
-    blocker: ContentInitialDraftBlocker,
-    run_store: LocalStateStore,
-) -> ContentInitialDraftResponse:
-    finish_initial_draft_run(
-        run_store,
-        run,
-        status="blocked",
-        error=safe_initial_draft_run_error(blocker),
-    )
-    return _blocked_response(
-        snapshot,
-        proposal=proposal,
-        status="blocked",
-        run=run,
-        runtime=trace,
-        blockers=[blocker],
     )
 
 
