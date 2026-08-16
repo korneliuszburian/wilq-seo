@@ -9,6 +9,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftOutput,
 )
+from wilq.content.operator_copy import build_blocker
 
 StructuredDraftPreviewBlockerCode = Literal[
     "missing_output",
@@ -41,20 +42,22 @@ def structured_draft_preview_blockers(
     blockers: list[StructuredDraftPreviewBlocker] = []
     if output is None:
         blockers.append(
-            _blocker(
-                "missing_output",
-                "Brakuje szkicu",
-                "Podgląd wymaga ustrukturyzowanego szkicu z runtime WILQ.",
-                "Najpierw wygeneruj albo wczytaj ustrukturyzowany szkic.",
+            build_blocker(
+                StructuredDraftPreviewBlocker,
+                code="missing_output",
+                label="Brakuje szkicu",
+                reason="Podgląd wymaga ustrukturyzowanego szkicu z runtime WILQ.",
+                next_step="Najpierw wygeneruj albo wczytaj ustrukturyzowany szkic.",
             )
         )
     if contract is None:
         blockers.append(
-            _blocker(
-                "missing_contract",
-                "Brakuje kontraktu szkicu",
-                "Nie można sprawdzić szkicu bez kontraktu, z którego powstał.",
-                "Użyj kontraktu generowania powiązanego z tym szkicem.",
+            build_blocker(
+                StructuredDraftPreviewBlocker,
+                code="missing_contract",
+                label="Brakuje kontraktu szkicu",
+                reason="Nie można sprawdzić szkicu bez kontraktu, z którego powstał.",
+                next_step="Użyj kontraktu generowania powiązanego z tym szkicem.",
             )
         )
     if output is None or contract is None:
@@ -62,21 +65,23 @@ def structured_draft_preview_blockers(
 
     if output.claims_needing_review:
         blockers.append(
-            _blocker(
-                "claims_need_review",
-                "Szkic ma twierdzenia do sprawdzenia",
-                "WILQ nie pokaże szkicu jako gotowego do przekazania, gdy są "
+            build_blocker(
+                StructuredDraftPreviewBlocker,
+                code="claims_need_review",
+                label="Szkic ma twierdzenia do sprawdzenia",
+                reason="WILQ nie pokaże szkicu jako gotowego do przekazania, gdy są "
                 "twierdzenia wymagające decyzji człowieka.",
-                "Usuń albo zatwierdź wskazane twierdzenia przed kolejnym krokiem.",
+                next_step="Usuń albo zatwierdź wskazane twierdzenia przed kolejnym krokiem.",
             )
         )
     if not output.source_facts_used:
         blockers.append(
-            _blocker(
-                "missing_source_facts",
-                "Szkic nie wskazuje użytych dowodów",
-                "Każdy szkic musi pokazać, z których dowodów korzysta.",
-                "Wygeneruj szkic ponownie z mapą dowodów.",
+            build_blocker(
+                StructuredDraftPreviewBlocker,
+                code="missing_source_facts",
+                label="Szkic nie wskazuje użytych dowodów",
+                reason="Każdy szkic musi pokazać, z których dowodów korzysta.",
+                next_step="Wygeneruj szkic ponownie z mapą dowodów.",
             )
         )
 
@@ -85,22 +90,24 @@ def structured_draft_preview_blockers(
     missing_section_evidence = any(not section.evidence_ids for section in output.sections)
     if missing_section_evidence:
         blockers.append(
-            _blocker(
-                "section_missing_evidence",
-                "Sekcja nie ma dowodów",
-                "Każda sekcja szkicu musi zachować powiązanie z dowodami.",
-                "Uzupełnij mapę dowodów dla każdej sekcji.",
+            build_blocker(
+                StructuredDraftPreviewBlocker,
+                code="section_missing_evidence",
+                label="Sekcja nie ma dowodów",
+                reason="Każda sekcja szkicu musi zachować powiązanie z dowodami.",
+                next_step="Uzupełnij mapę dowodów dla każdej sekcji.",
             )
         )
 
     unknown_ids = sorted(referenced_evidence_ids.difference(allowed_evidence_ids))
     if unknown_ids:
         blockers.append(
-            _blocker(
-                "unknown_evidence_reference",
-                "Szkic wskazuje obcy dowód",
-                "Szkic może używać tylko dowodów z kontraktu WILQ.",
-                "Usuń obce dowody ze szkicu: " + ", ".join(unknown_ids),
+            build_blocker(
+                StructuredDraftPreviewBlocker,
+                code="unknown_evidence_reference",
+                label="Szkic wskazuje obcy dowód",
+                reason="Szkic może używać tylko dowodów z kontraktu WILQ.",
+                next_step="Usuń obce dowody ze szkicu: " + ", ".join(unknown_ids),
             )
         )
 
@@ -138,11 +145,12 @@ def _claim_contract_blockers(
     unknown_claims = sorted(used_claims.difference(contract.model_input.claims_allowed))
     if unknown_claims:
         blockers.append(
-            _blocker(
-                "unknown_claim_reference",
-                "Szkic używa claimu spoza kontraktu",
-                "Podgląd może pokazać tylko twierdzenia dopuszczone przez kontrakt WILQ.",
-                "Usuń obce twierdzenia ze szkicu: " + "; ".join(unknown_claims),
+            build_blocker(
+                StructuredDraftPreviewBlocker,
+                code="unknown_claim_reference",
+                label="Szkic używa claimu spoza kontraktu",
+                reason="Podgląd może pokazać tylko twierdzenia dopuszczone przez kontrakt WILQ.",
+                next_step="Usuń obce twierdzenia ze szkicu: " + "; ".join(unknown_claims),
             )
         )
     blockers.extend(_generated_claim_blockers(output, contract))
@@ -153,11 +161,12 @@ def _claim_contract_blockers(
     )
     if missing_required_claims:
         blockers.append(
-            _blocker(
-                "required_claim_missing",
-                "Szkic pomija wymagany claim",
-                "Kontrakt WILQ oznaczył claim jako wymagany do pokrycia w szkicu.",
-                "Dodaj wymagany claim do odpowiedniej sekcji albo zmień Claim Ledger: "
+            build_blocker(
+                StructuredDraftPreviewBlocker,
+                code="required_claim_missing",
+                label="Szkic pomija wymagany claim",
+                reason="Kontrakt WILQ oznaczył claim jako wymagany do pokrycia w szkicu.",
+                next_step="Dodaj wymagany claim do odpowiedniej sekcji albo zmień Claim Ledger: "
                 + "; ".join(missing_required_claims),
             )
         )
@@ -168,12 +177,14 @@ def _claim_contract_blockers(
     )
     if missing_forbidden_claims:
         blockers.append(
-            _blocker(
-                "missing_forbidden_claim_acknowledgement",
-                "Szkic nie potwierdza uniknięcia zakazanych claimów",
-                "Podgląd wymaga jawnego potwierdzenia, że claimy usunięte z kontraktu "
+            build_blocker(
+                StructuredDraftPreviewBlocker,
+                code="missing_forbidden_claim_acknowledgement",
+                label="Szkic nie potwierdza uniknięcia zakazanych claimów",
+                reason="Podgląd wymaga jawnego potwierdzenia, że claimy usunięte z kontraktu "
                 "nie trafiły do szkicu.",
-                "Uzupełnij listę unikniętych claimów: " + "; ".join(missing_forbidden_claims),
+                next_step="Uzupełnij listę unikniętych claimów: "
+                + "; ".join(missing_forbidden_claims),
             )
         )
     blockers.extend(_claim_marker_evidence_blockers(output, contract))
@@ -195,11 +206,12 @@ def _generated_claim_blockers(
         ),
     }
     return [
-        _blocker(
-            issue.code,
-            labels[issue.code],
-            "Treść sekcji nie zgadza się z deklarowanym, dozwolonym lineage claimów.",
-            (
+        build_blocker(
+            StructuredDraftPreviewBlocker,
+            code=issue.code,
+            label=labels[issue.code],
+            reason="Treść sekcji nie zgadza się z deklarowanym, dozwolonym lineage claimów.",
+            next_step=(
                 f'Popraw sekcję "{issue.heading}" i wygeneruj ją ponownie; '
                 "WILQ nie zapisze tego tekstu bez semantycznego review."
             ),
@@ -230,28 +242,17 @@ def _claim_marker_evidence_blockers(
             if not missing:
                 continue
             blockers.append(
-                _blocker(
-                    "claim_missing_required_evidence",
-                    "Claim nie ma wymaganego dowodu w sekcji",
-                    (
+                build_blocker(
+                    StructuredDraftPreviewBlocker,
+                    code="claim_missing_required_evidence",
+                    label="Claim nie ma wymaganego dowodu w sekcji",
+                    reason=(
                         "Szkic używa claimu z Claim Ledger, ale sekcja nie wskazuje "
                         "dowodu przypisanego do tego claimu."
                     ),
-                    (f'Uzupełnij dowody dla claimu "{claim_text}": ' + ", ".join(missing)),
+                    next_step=(
+                        f'Uzupełnij dowody dla claimu "{claim_text}": ' + ", ".join(missing)
+                    ),
                 )
             )
     return blockers
-
-
-def _blocker(
-    code: StructuredDraftPreviewBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> StructuredDraftPreviewBlocker:
-    return StructuredDraftPreviewBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )

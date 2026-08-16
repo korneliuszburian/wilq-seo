@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from copy import deepcopy
 
 from wilq.content.codex_turn import mapping
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
+from wilq.content.operator_copy import unique
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionCtaBlock,
@@ -29,7 +29,7 @@ def proposal_output_schema(
     sections_schema = mapping(properties, "sections")
     selected_cta_ids = selected_cta_ids or []
     base_by_heading = {section.heading: section for section in base_revision.sections}
-    evidence_ids = _unique(
+    evidence_ids = unique(
         evidence_id
         for heading in selected_headings
         for evidence_id in base_by_heading[heading].evidence_ids
@@ -98,10 +98,10 @@ def _set_literals(
 ) -> None:
     field_schema = mapping(properties, key)
     if scalar:
-        field_schema["enum"] = _unique(values)
+        field_schema["enum"] = unique(values)
         return
     field_schema["items"] = {
-        "enum": _unique(values) or ["__WILQ_EMPTY_ARRAY_ONLY__"],
+        "enum": unique(values) or ["__WILQ_EMPTY_ARRAY_ONLY__"],
         "type": "string",
     }
 
@@ -115,13 +115,13 @@ def _section_schema_for_heading(
     schema = deepcopy(section_schema)
     properties = mapping(schema, "properties")
     heading = section.heading
-    evidence_ids = _unique(section.evidence_ids)
+    evidence_ids = unique(section.evidence_ids)
     _set_const(properties, "heading", heading)
     _set_literals(properties, "evidence_ids", evidence_ids)
     evidence_schema = mapping(properties, "evidence_ids")
     evidence_schema["minItems"] = len(evidence_ids)
     evidence_schema["maxItems"] = len(evidence_ids)
-    allowed_claims = _unique(
+    allowed_claims = unique(
         claim_marker_by_id[claim_id][0]
         for claim_id in section.claim_ids
         if claim_id in claim_marker_by_id
@@ -145,22 +145,13 @@ def _bind_selected_cta(
     """Keep the generic structured output safely scoped to one persisted CTA."""
 
     mapping(properties, "cta")["minLength"] = 1
-    _set_literals(properties, "source_facts_used", _unique(selected_cta.evidence_ids))
+    _set_literals(properties, "source_facts_used", unique(selected_cta.evidence_ids))
     mapping(properties, "source_facts_used")["minItems"] = len(selected_cta.evidence_ids)
     mapping(properties, "source_facts_used")["maxItems"] = len(selected_cta.evidence_ids)
     for key in ("faq", "internal_links"):
         field_schema = mapping(properties, key)
         field_schema["minItems"] = 0
         field_schema["maxItems"] = 0
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique:
-            unique.append(text)
-    return unique
 
 
 __all__ = ["proposal_output_schema"]

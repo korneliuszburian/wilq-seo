@@ -9,6 +9,7 @@ from wilq.content.claims.ledger import (
 )
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.drafts.structured_generation import StructuredDraftOutput
+from wilq.content.operator_copy import unique
 from wilq.content.quality import review_evidence
 from wilq.content.quality.reading_quality import weak_cta
 from wilq.content.workflow.contracts.models import ContentWorkItem
@@ -264,7 +265,7 @@ def _ledger_blocker_findings(
             "Sprawdzenie twierdzeń blokuje szkic",
             "Ryzykowne albo niezweryfikowane twierdzenia muszą zostać usunięte.",
             "Rozwiąż claim ledger przed oceną jakości.",
-            evidence_ids=review_evidence.unique(
+            evidence_ids=unique(
                 entry.evidence_ids for entry in claim_ledger.entries
             ),
             source_connectors=item.source_connectors,

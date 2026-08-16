@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.drafts.structured_generation import StructuredDraftOutput
+from wilq.content.operator_copy import unique
 from wilq.content.workflow.contracts.models import ContentWorkItem
 
 
@@ -49,15 +48,3 @@ def review_evidence_ids(
             evidence_id for entry in claim_ledger.entries for evidence_id in entry.evidence_ids
         )
     return unique(values)
-
-
-def unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        if isinstance(value, list):
-            unique_values.extend(unique(value))
-            continue
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

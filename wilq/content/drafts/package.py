@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -12,6 +11,7 @@ from wilq.content.claims.ledger import (
     claim_ledger_blockers,
     publish_ready_claims,
 )
+from wilq.content.operator_copy import build_blocker, unique
 from wilq.content.preflight.workflow import ContentPreflightVerdict
 from wilq.content.workflow.contracts.models import ContentWorkItem
 
@@ -109,9 +109,7 @@ def build_content_draft_package(
             sections=sections,
             section_to_evidence_map=evidence_map,
             claims_used=[entry.claim_text for entry in publish_ready_claims(claim_ledger)],
-            claims_removed_or_blocked=_unique(
-                [*blocked_claims, *sales_brief_forbidden_claims]
-            ),
+            claims_removed_or_blocked=unique([*blocked_claims, *sales_brief_forbidden_claims]),
             human_review_questions=[
                 "Czy szkic brzmi jak Ekologus i nie używa generycznego języka?",
                 "Czy każde twierdzenie sprzedażowe ma dowód albo zostało usunięte?",
@@ -133,64 +131,70 @@ def content_draft_package_blockers(
     blockers: list[ContentDraftPackageBlocker] = []
     if not preflight.draft_allowed:
         blockers.append(
-            _blocker(
-                "preflight_not_draft_allowed",
-                "Sprawdzenie wstępne nie pozwala na szkic",
-                "Paczka szkicu może powstać dopiero po przejściu bramek bezpieczeństwa.",
-                "Doprowadź temat do etapu, w którym szkic jest dozwolony.",
+            build_blocker(
+                ContentDraftPackageBlocker,
+                code="preflight_not_draft_allowed",
+                label="Sprawdzenie wstępne nie pozwala na szkic",
+                reason="Paczka szkicu może powstać dopiero po przejściu bramek bezpieczeństwa.",
+                next_step="Doprowadź temat do etapu, w którym szkic jest dozwolony.",
             )
         )
     if sales_brief is None:
         blockers.append(
-            _blocker(
-                "missing_sales_brief",
-                "Brakuje planu sprzedażowego",
-                "Szkic bez planu sprzedażowego byłby promptową improwizacją.",
-                "Zbuduj i zatwierdź plan sprzedażowy przed szkicem.",
+            build_blocker(
+                ContentDraftPackageBlocker,
+                code="missing_sales_brief",
+                label="Brakuje planu sprzedażowego",
+                reason="Szkic bez planu sprzedażowego byłby promptową improwizacją.",
+                next_step="Zbuduj i zatwierdź plan sprzedażowy przed szkicem.",
             )
         )
     elif sales_brief.work_item_id != item.id:
         blockers.append(
-            _blocker(
-                "sales_brief_mismatch",
-                "Plan dotyczy innego tematu",
-                "Paczka szkicu musi używać planu dla tego samego tematu.",
-                "Podaj plan sprzedażowy przypisany do tego tematu.",
+            build_blocker(
+                ContentDraftPackageBlocker,
+                code="sales_brief_mismatch",
+                label="Plan dotyczy innego tematu",
+                reason="Paczka szkicu musi używać planu dla tego samego tematu.",
+                next_step="Podaj plan sprzedażowy przypisany do tego tematu.",
             )
         )
     if claim_ledger is None:
         blockers.append(
-            _blocker(
-                "missing_claim_ledger",
-                "Brakuje sprawdzenia twierdzeń",
-                "Szkic nie może powstać bez sprawdzenia ryzykownych twierdzeń.",
-                "Zbuduj sprawdzenie twierdzeń przed szkicem.",
+            build_blocker(
+                ContentDraftPackageBlocker,
+                code="missing_claim_ledger",
+                label="Brakuje sprawdzenia twierdzeń",
+                reason="Szkic nie może powstać bez sprawdzenia ryzykownych twierdzeń.",
+                next_step="Zbuduj sprawdzenie twierdzeń przed szkicem.",
             )
         )
     elif claim_ledger.work_item_id != item.id or not claim_ledger_allows_draft(claim_ledger):
         blockers.append(
-            _blocker(
-                "claim_ledger_blocks_draft",
-                "Sprawdzenie twierdzeń blokuje szkic",
-                "Ryzykowne albo niezweryfikowane twierdzenia muszą zostać "
+            build_blocker(
+                ContentDraftPackageBlocker,
+                code="claim_ledger_blocks_draft",
+                label="Sprawdzenie twierdzeń blokuje szkic",
+                reason="Ryzykowne albo niezweryfikowane twierdzenia muszą zostać "
                 "usunięte lub zatwierdzone.",
-                "Rozwiąż sprawdzenie twierdzeń przed paczką szkicu.",
+                next_step="Rozwiąż sprawdzenie twierdzeń przed paczką szkicu.",
             )
         )
     if sales_brief is not None and not sales_brief.source_facts:
         blockers.append(
-            _blocker(
-                "missing_evidence_mapping",
-                "Brakuje mapy dowodów",
-                "Paczka szkicu musi mapować sekcje na dowody.",
-                "Uzupełnij fakty źródłowe w planie sprzedażowym.",
+            build_blocker(
+                ContentDraftPackageBlocker,
+                code="missing_evidence_mapping",
+                label="Brakuje mapy dowodów",
+                reason="Paczka szkicu musi mapować sekcje na dowody.",
+                next_step="Uzupełnij fakty źródłowe w planie sprzedażowym.",
             )
         )
     return blockers
 
 
 def _sections_from_brief(sales_brief: ContentSalesBrief) -> list[ContentDraftSection]:
-    evidence_ids = _unique(fact.evidence_id for fact in sales_brief.source_facts)
+    evidence_ids = unique(fact.evidence_id for fact in sales_brief.source_facts)
     headings = sales_brief.h2_direction or [sales_brief.h1_direction]
     return [
         ContentDraftSection(
@@ -210,26 +214,3 @@ def _section_purpose(heading: str) -> str:
             "uzupełnić albo przepisać."
         )
     return f"Wyjaśnij czytelnikowi, co oznacza temat „{heading}”."
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
-
-
-def _blocker(
-    code: ContentDraftPackageBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentDraftPackageBlocker:
-    return ContentDraftPackageBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )

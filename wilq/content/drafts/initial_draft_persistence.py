@@ -10,9 +10,6 @@ from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
     safe_initial_draft_run_error,
 )
-from wilq.content.drafts.initial_draft_runtime import (
-    build_initial_draft_blocker as _blocker,
-)
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftModelOutput,
@@ -22,6 +19,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 from wilq.content.drafts.initial_full_draft_document import (
     build_initial_draft_revision_command,
 )
+from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
@@ -78,11 +76,12 @@ def persist_initial_draft(
             trace=trace,
             run_store=run_store,
             status="blocked",
-            blocker=_blocker(
-                "document_scope_mismatch",
-                "Nie udało się złożyć bezpiecznego dokumentu",
-                "Plan i pełny output nie tworzą poprawnej rewizji v2.",
-                "Odrzuć wynik i popraw kontrakt wejścia przed ponowną próbą.",
+            blocker=build_blocker(
+                ContentInitialDraftBlocker,
+                code="document_scope_mismatch",
+                label="Nie udało się złożyć bezpiecznego dokumentu",
+                reason="Plan i pełny output nie tworzą poprawnej rewizji v2.",
+                next_step="Odrzuć wynik i popraw kontrakt wejścia przed ponowną próbą.",
             ),
         )
     result = _append_revision(
@@ -104,11 +103,12 @@ def persist_initial_draft(
             trace=trace,
             run_store=run_store,
             status="conflict",
-            blocker=_blocker(
-                "revision_conflict",
-                "Pierwsza wersja powstała równolegle",
-                "WILQ nie nadpisze istniejącej rewizji wynikiem drugiego turnu.",
-                "Odśwież workspace i otwórz już zapisaną wersję.",
+            blocker=build_blocker(
+                ContentInitialDraftBlocker,
+                code="revision_conflict",
+                label="Pierwsza wersja powstała równolegle",
+                reason="WILQ nie nadpisze istniejącej rewizji wynikiem drugiego turnu.",
+                next_step="Odśwież workspace i otwórz już zapisaną wersję.",
             ),
         )
     return ContentInitialDraftResponse(
@@ -150,11 +150,12 @@ def _append_revision(
             trace=trace,
             run_store=run_store,
             status="blocked",
-            blocker=_blocker(
-                "stale_initial_draft_context",
-                "Kontekst szkicu zmienił się",
-                "Bieżący package, adres lub powiązanie usługi zmieniły się przed zapisem.",
-                "Odśwież kontekst i uruchom nową próbę.",
+            blocker=build_blocker(
+                ContentInitialDraftBlocker,
+                code="stale_initial_draft_context",
+                label="Kontekst szkicu zmienił się",
+                reason="Bieżący package, adres lub powiązanie usługi zmieniły się przed zapisem.",
+                next_step="Odśwież kontekst i uruchom nową próbę.",
             ),
         )
     except Exception:
@@ -165,11 +166,14 @@ def _append_revision(
             trace=trace,
             run_store=run_store,
             status="failed",
-            blocker=_blocker(
-                "persistence_failed",
-                "Nie zapisano pełnego tekstu",
-                "Atomowy zapis dokumentu i zakończonego CodexRun nie powiódł się.",
-                "Sprawdź prywatny store i uruchom nową próbę; częściowy tekst nie istnieje.",
+            blocker=build_blocker(
+                ContentInitialDraftBlocker,
+                code="persistence_failed",
+                label="Nie zapisano pełnego tekstu",
+                reason="Atomowy zapis dokumentu i zakończonego CodexRun nie powiódł się.",
+                next_step=(
+                    "Sprawdź prywatny store i uruchom nową próbę; częściowy tekst nie istnieje."
+                ),
             ),
         )
     return result

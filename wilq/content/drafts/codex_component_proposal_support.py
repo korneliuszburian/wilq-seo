@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentCodexSectionProposalBlocker,
-    ContentCodexSectionProposalBlockerCode,
 )
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
@@ -12,6 +9,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftOutputSection,
     StructuredDraftSectionInput,
 )
+from wilq.content.operator_copy import build_blocker, unique
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.documents.content_html import content_html_from_markdown
@@ -52,9 +50,7 @@ def contract_with_revision_lineage(
             continue
         sections[index] = sections[index].model_copy(
             update={
-                "evidence_ids": unique(
-                    [*sections[index].evidence_ids, *base_section.evidence_ids]
-                )
+                "evidence_ids": unique([*sections[index].evidence_ids, *base_section.evidence_ids])
             }
         )
     if selected_cta_ids:
@@ -113,14 +109,15 @@ def component_scope_blocker(
             and output.source_facts_used == selected_cta.evidence_ids
         ):
             return None
-        return blocker(
-            "section_scope_mismatch",
-            "Codex wyszedł poza wybrane CTA",
-            (
+        return build_blocker(
+            ContentCodexSectionProposalBlocker,
+            code="section_scope_mismatch",
+            label="Codex wyszedł poza wybrane CTA",
+            reason=(
                 "Wynik musi zmieniać tylko jedno wskazane wezwanie do działania "
                 "i zachować jego dowody."
             ),
-            "Odrzuć wynik i uruchom propozycję dla aktualnego wyboru.",
+            next_step="Odrzuć wynik i uruchom propozycję dla aktualnego wyboru.",
         )
     output_headings = [section.heading for section in output.sections]
     base_by_heading = {section.heading: section for section in base_revision.sections}
@@ -135,11 +132,12 @@ def component_scope_blocker(
         and evidence_mapping_matches
     ):
         return None
-    return blocker(
-        "section_scope_mismatch",
-        "Codex wyszedł poza wybrane sekcje",
-        "Wynik musi zachować tytuł, wybrane nagłówki, ich kolejność i mapę dowodów.",
-        "Odrzuć wynik i uruchom propozycję dla aktualnego wyboru.",
+    return build_blocker(
+        ContentCodexSectionProposalBlocker,
+        code="section_scope_mismatch",
+        label="Codex wyszedł poza wybrane sekcje",
+        reason="Wynik musi zachować tytuł, wybrane nagłówki, ich kolejność i mapę dowodów.",
+        next_step="Odrzuć wynik i uruchom propozycję dla aktualnego wyboru.",
     )
 
 
@@ -200,23 +198,6 @@ def merge_selected_cta_blocks(
         cta.model_copy(update={"body_markdown": output.cta}) if cta.cta_id in selected else cta
         for cta in base_revision.cta_blocks
     ]
-
-
-def blocker(
-    code: ContentCodexSectionProposalBlockerCode, label: str, reason: str, next_step: str
-) -> ContentCodexSectionProposalBlocker:
-    return ContentCodexSectionProposalBlocker(
-        code=code, label=label, reason=reason, next_step=next_step
-    )
-
-
-def unique(values: Iterable[object]) -> list[str]:
-    result: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in result:
-            result.append(text)
-    return result
 
 
 def proposal_evidence_ids(snapshot: ContentWorkItemWorkflowSnapshotResponse) -> list[str]:

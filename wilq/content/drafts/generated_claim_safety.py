@@ -15,6 +15,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftOutput,
     StructuredDraftOutputSection,
 )
+from wilq.content.operator_copy import unique
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
@@ -154,19 +155,21 @@ def generated_claim_safety_issues(
     review remains mandatory for every generated proposal.
     """
 
-    blocked_claims = _unique(
-        [
+    blocked_claims = unique(
+        value
+        for value in [
             *contract.model_input.claims_removed_or_blocked,
             *(
                 marker.claim_text
                 for marker in contract.model_input.removed_or_blocked_claim_markers
             ),
         ]
+        if value.strip()
     )
     issues: list[GeneratedClaimSafetyIssue] = []
     for section in output.sections:
         normalized_body = _normalize(section.body_markdown)
-        declared_claims = _unique(section.claims_used)
+        declared_claims = unique(value for value in section.claims_used if value.strip())
         for claim in blocked_claims:
             if _normalize(claim) not in normalized_body:
                 continue
@@ -212,10 +215,6 @@ def generated_claim_blocker(
 def _normalize(value: str) -> str:
     normalized = unicodedata.normalize("NFKC", value).casefold()
     return " ".join(re.sub(r"[^\w%]+", " ", normalized).split())
-
-
-def _unique(values: list[str]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value.strip()))
 
 
 __all__ = [

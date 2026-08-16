@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.content.operator_copy import build_blocker
 from wilq.content.quality.review import ContentQualityReview, ContentRevisionInstruction
 from wilq.content.workflow.contracts.models import ContentWorkItem
 
@@ -88,39 +89,43 @@ def _revision_plan_blockers(
 ) -> list[ContentRevisionPlanBlocker]:
     if quality_review is None:
         return [
-            _blocker(
-                "missing_quality_review",
-                "Brakuje oceny jakości",
-                "Plan poprawki musi wynikać z oceny jakości WILQ, nie z wolnego promptu.",
-                "Najpierw uruchom ocenę jakości szkicu.",
+            build_blocker(
+                ContentRevisionPlanBlocker,
+                code="missing_quality_review",
+                label="Brakuje oceny jakości",
+                reason="Plan poprawki musi wynikać z oceny jakości WILQ, nie z wolnego promptu.",
+                next_step="Najpierw uruchom ocenę jakości szkicu.",
             )
         ]
     blockers: list[ContentRevisionPlanBlocker] = []
     if quality_review.work_item_id != item.id:
         blockers.append(
-            _blocker(
-                "quality_review_mismatch",
-                "Ocena dotyczy innego tematu",
-                "Nie wolno poprawiać szkicu na podstawie oceny innego work itemu.",
-                "Użyj oceny jakości przypisanej do aktualnego tematu.",
+            build_blocker(
+                ContentRevisionPlanBlocker,
+                code="quality_review_mismatch",
+                label="Ocena dotyczy innego tematu",
+                reason="Nie wolno poprawiać szkicu na podstawie oceny innego work itemu.",
+                next_step="Użyj oceny jakości przypisanej do aktualnego tematu.",
             )
         )
     if quality_review.verdict == "blocked":
         blockers.append(
-            _blocker(
-                "quality_review_blocked",
-                "Ocena jakości blokuje poprawkę",
-                "Najpierw trzeba usunąć blokady: dowody, claimy, duplikację albo pomiar.",
-                quality_review.safe_next_step,
+            build_blocker(
+                ContentRevisionPlanBlocker,
+                code="quality_review_blocked",
+                label="Ocena jakości blokuje poprawkę",
+                reason="Najpierw trzeba usunąć blokady: dowody, claimy, duplikację albo pomiar.",
+                next_step=quality_review.safe_next_step,
             )
         )
     if quality_review.verdict == "needs_changes" and not quality_review.revision_instructions:
         blockers.append(
-            _blocker(
-                "missing_revision_instructions",
-                "Brakuje instrukcji poprawki",
-                "Nie wolno regenerować szkicu bez ograniczonej listy zmian.",
-                "Wygeneruj ocenę jakości z konkretnymi instrukcjami poprawki.",
+            build_blocker(
+                ContentRevisionPlanBlocker,
+                code="missing_revision_instructions",
+                label="Brakuje instrukcji poprawki",
+                reason="Nie wolno regenerować szkicu bez ograniczonej listy zmian.",
+                next_step="Wygeneruj ocenę jakości z konkretnymi instrukcjami poprawki.",
             )
         )
     return blockers
@@ -149,18 +154,4 @@ def _plan(
         if quality_review is None
         else quality_review.source_connectors,
         safe_next_step=safe_next_step,
-    )
-
-
-def _blocker(
-    code: ContentRevisionPlanBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentRevisionPlanBlocker:
-    return ContentRevisionPlanBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
     )

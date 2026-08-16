@@ -10,6 +10,7 @@ from wilq.codex.app_server import (
     CodexAppServerTurnResult,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import build_content_planning_input
 from wilq.content.quality.semantic_inputs import SemanticInputs
 from wilq.content.quality.semantic_review_contracts import (
@@ -48,6 +49,10 @@ from wilq.storage.local_state import LocalStateStore
 _SemanticInputs = SemanticInputs
 
 
+def _semantic_blocker_code(code: str) -> ContentSemanticBlockerCode:
+    return cast(ContentSemanticBlockerCode, code)
+
+
 def read_content_semantic_review(
     *,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
@@ -59,11 +64,12 @@ def read_content_semantic_review(
         return _blocked(
             snapshot,
             blockers=[
-                _blocker(
-                    "missing_revision",
-                    "Brakuje pełnej wersji do review",
-                    "Review semantyczne wymaga zapisanej exact revision.",
-                    "Najpierw wygeneruj pełny dokument.",
+                build_blocker(
+                    ContentSemanticReviewBlocker,
+                    code=_semantic_blocker_code("missing_revision"),
+                    label="Brakuje pełnej wersji do review",
+                    reason="Review semantyczne wymaga zapisanej exact revision.",
+                    next_step="Najpierw wygeneruj pełny dokument.",
                 )
             ],
         )
@@ -85,11 +91,12 @@ def read_content_semantic_review(
             snapshot,
             revision=revision,
             blockers=[
-                _blocker(
-                    "stale_revision",
-                    "Wybrana rewizja nie jest bieżąca",
-                    "WILQ nie ma exact review dla wskazanej historycznej rewizji.",
-                    "Odśwież workspace i otwórz bieżącą rewizję.",
+                build_blocker(
+                    ContentSemanticReviewBlocker,
+                    code=_semantic_blocker_code("stale_revision"),
+                    label="Wybrana rewizja nie jest bieżąca",
+                    reason="WILQ nie ma exact review dla wskazanej historycznej rewizji.",
+                    next_step="Odśwież workspace i otwórz bieżącą rewizję.",
                 )
             ],
         )
@@ -195,13 +202,21 @@ def _persist_review(
         stored = store.save_generated(review, completed)
     except SemanticReviewDeadlineExpired:
         return _finish_with_blocker(
-            snapshot, inputs.revision, run, trace,
-            _blocker(
-                "runtime_failed", "Przekroczono czas review semantycznego",
-                "Exact deadline minął przed atomowym zapisem wyniku.",
-                "Uruchom nową próbę review dla tej samej exact rewizji.",
+            snapshot,
+            inputs.revision,
+            run,
+            trace,
+            build_blocker(
+                ContentSemanticReviewBlocker,
+                code=_semantic_blocker_code("runtime_failed"),
+                label="Przekroczono czas review semantycznego",
+                reason="Exact deadline minął przed atomowym zapisem wyniku.",
+                next_step="Uruchom nową próbę review dla tej samej exact rewizji.",
                 source_codes=["semantic_review_timeout"],
-            ), run_store, response_status="failed", run_status="failed"
+            ),
+            run_store,
+            response_status="failed",
+            run_status="failed",
         )
     except SemanticReviewStorageActivationRequired:
         return _finish_with_blocker(
@@ -209,26 +224,45 @@ def _persist_review(
         )
     except SemanticReviewConflict:
         return _finish_with_blocker(
-            snapshot, inputs.revision, run, trace,
-            _blocker(
-                "review_conflict", "Review powstał równolegle",
-                "WILQ nie nadpisze immutable review drugim wynikiem.",
-                "Odśwież review widoczne dla bieżącej wersji.",
-            ), run_store, response_status="conflict"
+            snapshot,
+            inputs.revision,
+            run,
+            trace,
+            build_blocker(
+                ContentSemanticReviewBlocker,
+                code=_semantic_blocker_code("review_conflict"),
+                label="Review powstał równolegle",
+                reason="WILQ nie nadpisze immutable review drugim wynikiem.",
+                next_step="Odśwież review widoczne dla bieżącej wersji.",
+            ),
+            run_store,
+            response_status="conflict",
         )
     except Exception:
         return _finish_with_blocker(
-            snapshot, inputs.revision, run, trace,
-            _blocker(
-                "persistence_failed", "Nie zapisano review semantycznego",
-                "Atomowy zapis review i terminalnego CodexRun nie powiódł się.",
-                "Sprawdź prywatny store; częściowe review nie jest dostępne.",
-            ), run_store, response_status="failed", run_status="failed"
+            snapshot,
+            inputs.revision,
+            run,
+            trace,
+            build_blocker(
+                ContentSemanticReviewBlocker,
+                code=_semantic_blocker_code("persistence_failed"),
+                label="Nie zapisano review semantycznego",
+                reason="Atomowy zapis review i terminalnego CodexRun nie powiódł się.",
+                next_step="Sprawdź prywatny store; częściowe review nie jest dostępne.",
+            ),
+            run_store,
+            response_status="failed",
+            run_status="failed",
         )
     return ContentSemanticReviewResponse(
-        status="created", work_item_id=stored.work_item_id,
-        revision_id=stored.revision_id, revision_digest=stored.revision_digest,
-        review=stored, run_id=stored.codex_run_id, runtime=trace,
+        status="created",
+        work_item_id=stored.work_item_id,
+        revision_id=stored.revision_id,
+        revision_digest=stored.revision_digest,
+        review=stored,
+        run_id=stored.codex_run_id,
+        runtime=trace,
         safe_next_step=stored.safe_next_step,
     )
 
@@ -251,11 +285,12 @@ def _prepare_inputs(
             revision=revision,
             status="conflict",
             blockers=[
-                _blocker(
-                    "stale_revision",
-                    "Wybrana wersja nie jest aktualna",
-                    "Revision ID albo digest zmienił się przed review.",
-                    "Odśwież workspace i uruchom review bieżącej wersji.",
+                build_blocker(
+                    ContentSemanticReviewBlocker,
+                    code=_semantic_blocker_code("stale_revision"),
+                    label="Wybrana wersja nie jest aktualna",
+                    reason="Revision ID albo digest zmienił się przed review.",
+                    next_step="Odśwież workspace i uruchom review bieżącej wersji.",
                 )
             ],
         )
@@ -264,11 +299,12 @@ def _prepare_inputs(
             snapshot,
             revision=revision,
             blockers=[
-                _blocker(
-                    "legacy_revision",
-                    "Starsza wersja nie zawiera całej strony",
-                    "Review semantyczne wymaga rewizji v2 z page assets, FAQ i CTA.",
-                    "Utwórz pełny dokument v2 przed review.",
+                build_blocker(
+                    ContentSemanticReviewBlocker,
+                    code=_semantic_blocker_code("legacy_revision"),
+                    label="Starsza wersja nie zawiera całej strony",
+                    reason="Review semantyczne wymaga rewizji v2 z page assets, FAQ i CTA.",
+                    next_step="Utwórz pełny dokument v2 przed review.",
                 )
             ],
         )
@@ -277,11 +313,12 @@ def _prepare_inputs(
             snapshot,
             revision=revision,
             blockers=[
-                _blocker(
-                    "stale_content_context",
-                    "Zmienił się kontekst treści",
-                    "Plan, inventory, usługa, wiedza albo metryki nie odpowiadają rewizji.",
-                    "Zrebasuj dokument na aktualny planning input.",
+                build_blocker(
+                    ContentSemanticReviewBlocker,
+                    code=_semantic_blocker_code("stale_content_context"),
+                    label="Zmienił się kontekst treści",
+                    reason="Plan, inventory, usługa, wiedza albo metryki nie odpowiadają rewizji.",
+                    next_step="Zrebasuj dokument na aktualny planning input.",
                 )
             ],
         )
@@ -350,11 +387,12 @@ def _execute(
         )
     trace = _trace(result)
     if result.external_call_attempted:
-        blocker = _blocker(
-            "runtime_blocked",
-            "Codex próbował wyjść poza review",
-            "App-server zaobserwował próbę narzędzia albo zewnętrznego requestu.",
-            "Odrzuć wynik i sprawdź izolację runtime; WILQ nic nie zapisał.",
+        blocker = build_blocker(
+            ContentSemanticReviewBlocker,
+            code=_semantic_blocker_code("runtime_blocked"),
+            label="Codex próbował wyjść poza review",
+            reason="App-server zaobserwował próbę narzędzia albo zewnętrznego requestu.",
+            next_step="Odrzuć wynik i sprawdź izolację runtime; WILQ nic nie zapisał.",
         )
         _finish_run(run_store, run, status="blocked", error=blocker.code)
         return _blocked(
@@ -368,14 +406,13 @@ def _execute(
         code: ContentSemanticBlockerCode = (
             "runtime_blocked" if result.status == "blocked" else "runtime_failed"
         )
-        status: Literal["blocked", "failed"] = (
-            "blocked" if result.status == "blocked" else "failed"
-        )
-        blocker = _blocker(
-            code,
-            "Codex nie zwrócił review semantycznego",
-            "App-server nie zakończył advisory turnu poprawnym structured output.",
-            "Sprawdź runtime i uruchom nową próbę; WILQ nic nie zapisał.",
+        status: Literal["blocked", "failed"] = "blocked" if result.status == "blocked" else "failed"
+        blocker = build_blocker(
+            ContentSemanticReviewBlocker,
+            code=_semantic_blocker_code(code),
+            label="Codex nie zwrócił review semantycznego",
+            reason="App-server nie zakończył advisory turnu poprawnym structured output.",
+            next_step="Sprawdź runtime i uruchom nową próbę; WILQ nic nie zapisał.",
             source_codes=[item.code for item in result.blockers],
         )
         _finish_run(
@@ -396,11 +433,12 @@ def _execute(
         output = ContentSemanticReviewModelOutput.model_validate_json(result.output_text)
         return _apply_deterministic_quality_guards(inputs, output), trace
     except ValueError:
-        blocker = _blocker(
-            "invalid_structured_output",
-            "Codex zwrócił niepoprawne review",
-            "Wynik nie ocenia dokładnie dziewięciu wymiarów kontraktu WILQ.",
-            "Odrzuć wynik i rozpocznij nowy advisory turn.",
+        blocker = build_blocker(
+            ContentSemanticReviewBlocker,
+            code=_semantic_blocker_code("invalid_structured_output"),
+            label="Codex zwrócił niepoprawne review",
+            reason="Wynik nie ocenia dokładnie dziewięciu wymiarów kontraktu WILQ.",
+            next_step="Odrzuć wynik i rozpocznij nowy advisory turn.",
         )
         _finish_run(run_store, run, status="blocked", error=blocker.code)
         return _blocked(
@@ -475,9 +513,7 @@ def _apply_deterministic_quality_guards(
             ContentSemanticFindingOutput(
                 dimension=dimension,
                 severity=(
-                    "high"
-                    if dimension in {"conversion_clarity", "search_intent_fit"}
-                    else "medium"
+                    "high" if dimension in {"conversion_clarity", "search_intent_fit"} else "medium"
                 ),
                 label="Automatyczna kontrola jakości",
                 reason=reason,
@@ -536,9 +572,7 @@ def _build_review(
         )
         for index, finding in enumerate(output.findings, start=1)
     ]
-    status: Literal["reviewable", "needs_changes"] = (
-        "needs_changes" if findings else "reviewable"
-    )
+    status: Literal["reviewable", "needs_changes"] = "needs_changes" if findings else "reviewable"
     return ContentSemanticReview(
         review_id=review_id,
         work_item_id=inputs.revision.work_item_id,
@@ -581,10 +615,7 @@ def _start_run(
             or queued.hook != "content_semantic_review"
             or queued.planning_input_digest != inputs.revision.planning_input_digest
             or endpoint not in queued.used_endpoints
-            or (
-                queued.deadline_at is not None
-                and utc_now() >= queued.deadline_at
-            )
+            or (queued.deadline_at is not None and utc_now() >= queued.deadline_at)
         ):
             raise ValueError("semantic review queued run is no longer executable")
         return queued
@@ -616,11 +647,12 @@ def _expired_run_response(
         (item for item in store.list_codex_runs() if item.id == run_id),
         None,
     )
-    blocker = _blocker(
-        "runtime_failed",
-        "Próba review wygasła przed uruchomieniem",
-        "WILQ nie wskrzesił zakończonego albo przekroczonego deadline'u runu.",
-        "Uruchom nową próbę review dla tej samej exact rewizji.",
+    blocker = build_blocker(
+        ContentSemanticReviewBlocker,
+        code=_semantic_blocker_code("runtime_failed"),
+        label="Próba review wygasła przed uruchomieniem",
+        reason="WILQ nie wskrzesił zakończonego albo przekroczonego deadline'u runu.",
+        next_step="Uruchom nową próbę review dla tej samej exact rewizji.",
     )
     return _blocked(
         snapshot,
@@ -640,11 +672,12 @@ def _scope_mismatch_response(
     store: LocalStateStore,
     scope_errors: list[str],
 ) -> ContentSemanticReviewResponse:
-    blocker = _blocker(
-        "semantic_scope_mismatch",
-        "Review wyszedł poza dokładną wersję",
-        "Finding wskazuje obcy target, dowód albo niespójny wymiar.",
-        "Odrzuć wynik i uruchom nowy advisory review dla bieżącej rewizji.",
+    blocker = build_blocker(
+        ContentSemanticReviewBlocker,
+        code=_semantic_blocker_code("semantic_scope_mismatch"),
+        label="Review wyszedł poza dokładną wersję",
+        reason="Finding wskazuje obcy target, dowód albo niespójny wymiar.",
+        next_step="Odrzuć wynik i uruchom nowy advisory review dla bieżącej rewizji.",
         source_codes=scope_errors,
     )
     _finish_run(store, run, status="blocked", error=blocker.code)
@@ -655,17 +688,20 @@ def _scope_mismatch_response(
         run=run,
         runtime=trace,
     )
+
+
 def _expired_turn_response(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     inputs: _SemanticInputs,
     run: CodexRun,
     store: LocalStateStore,
 ) -> ContentSemanticReviewResponse:
-    blocker = _blocker(
-        "runtime_failed",
-        "Przekroczono czas review semantycznego",
-        "Exact deadline minął przed rozpoczęciem tury Codexa.",
-        "Uruchom nową próbę review dla tej samej exact rewizji.",
+    blocker = build_blocker(
+        ContentSemanticReviewBlocker,
+        code=_semantic_blocker_code("runtime_failed"),
+        label="Przekroczono czas review semantycznego",
+        reason="Exact deadline minął przed rozpoczęciem tury Codexa.",
+        next_step="Uruchom nową próbę review dla tej samej exact rewizji.",
     )
     _finish_run(store, run, status="failed", error="semantic_review_timeout")
     return _blocked(
@@ -779,22 +815,24 @@ def _blocked(
 
 
 def _missing_revision_blocker() -> ContentSemanticReviewBlocker:
-    return _blocker(
-        "missing_revision",
-        "Brakuje pełnej wersji do review",
-        "Review semantyczne wymaga zapisanej exact revision.",
-        "Najpierw wygeneruj pełny dokument.",
+    return build_blocker(
+        ContentSemanticReviewBlocker,
+        code=_semantic_blocker_code("missing_revision"),
+        label="Brakuje pełnej wersji do review",
+        reason="Review semantyczne wymaga zapisanej exact revision.",
+        next_step="Najpierw wygeneruj pełny dokument.",
     )
 
 
 def _planning_blocker(
     source_codes: Sequence[str] | None = None,
 ) -> ContentSemanticReviewBlocker:
-    return _blocker(
-        "missing_planning_input",
-        "Brakuje aktualnego wejścia strategicznego",
-        "Review musi porównać rewizję z tym samym planem, usługą, inventory i metrykami.",
-        "Odśwież albo wygeneruj aktualny plan przed review semantycznym.",
+    return build_blocker(
+        ContentSemanticReviewBlocker,
+        code=_semantic_blocker_code("missing_planning_input"),
+        label="Brakuje aktualnego wejścia strategicznego",
+        reason="Review musi porównać rewizję z tym samym planem, usługą, inventory i metrykami.",
+        next_step="Odśwież albo wygeneruj aktualny plan przed review semantycznym.",
         source_codes=source_codes,
     )
 
@@ -802,12 +840,13 @@ def _planning_blocker(
 def _source_material_review_blocker(
     source_codes: Sequence[str],
 ) -> ContentSemanticReviewBlocker:
-    return _blocker(
-        "source_material_review_required",
-        "Materiał źródłowy wymaga potwierdzenia",
-        "Rewizja korzysta z publicznego materiału WordPress, którego pochodzenie "
+    return build_blocker(
+        ContentSemanticReviewBlocker,
+        code=_semantic_blocker_code("source_material_review_required"),
+        label="Materiał źródłowy wymaga potwierdzenia",
+        reason="Rewizja korzysta z publicznego materiału WordPress, którego pochodzenie "
         "nie zostało jeszcze zatwierdzone do pełnego dokumentu.",
-        (
+        next_step=(
             "Zakończ kontrolowany import/redakcję i owner review materiału, "
             "potem uruchom review ponownie."
         ),
@@ -816,28 +855,12 @@ def _source_material_review_blocker(
 
 
 def _storage_blocker() -> ContentSemanticReviewBlocker:
-    return _blocker(
-        "storage_activation_required",
-        "Storage review czeka na maintenance window",
-        "Realny local state nie ma jeszcze aktywowanej tabeli immutable semantic review.",
-        "Użyj tymczasowego storage do proof albo zatwierdź backup i maintenance window.",
-    )
-
-
-def _blocker(
-    code: str,
-    label: str,
-    reason: str,
-    next_step: str,
-    *,
-    source_codes: Sequence[str] | None = None,
-) -> ContentSemanticReviewBlocker:
-    return ContentSemanticReviewBlocker(
-        code=cast(ContentSemanticBlockerCode, code),
-        label=label,
-        reason=reason,
-        next_step=next_step,
-        source_codes=list(source_codes or []),
+    return build_blocker(
+        ContentSemanticReviewBlocker,
+        code=_semantic_blocker_code("storage_activation_required"),
+        label="Storage review czeka na maintenance window",
+        reason="Realny local state nie ma jeszcze aktywowanej tabeli immutable semantic review.",
+        next_step="Użyj tymczasowego storage do proof albo zatwierdź backup i maintenance window.",
     )
 
 

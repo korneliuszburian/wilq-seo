@@ -19,6 +19,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
 )
+from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.schemas import CodexRun
@@ -71,12 +72,13 @@ def build_initial_draft_blocker(
 ) -> ContentInitialDraftBlocker:
     """Build the public blocker without changing caller-specific copy."""
 
-    return ContentInitialDraftBlocker(
+    return build_blocker(
+        ContentInitialDraftBlocker,
         code=code,
         label=label,
         reason=reason,
         next_step=next_step,
-        source_codes=source_codes or [],
+        source_codes=source_codes,
     )
 
 
@@ -133,19 +135,16 @@ def execute_initial_draft_turn(
         code: ContentInitialDraftBlockerCode = (
             "runtime_blocked" if turn.status == "blocked" else "runtime_failed"
         )
-        status: Literal["blocked", "failed"] = (
-            "blocked" if code == "runtime_blocked" else "failed"
-        )
+        status: Literal["blocked", "failed"] = "blocked" if code == "runtime_blocked" else "failed"
         copy = goal.runtime_failure
-        blocker = build_initial_draft_blocker(
-            code,
-            copy.label,
-            copy.reason,
-            copy.next_step,
+        blocker = build_blocker(
+            ContentInitialDraftBlocker,
+            code=code,
+            label=copy.label,
+            reason=copy.reason,
+            next_step=copy.next_step,
             source_codes=(
-                [item.code for item in turn.blockers]
-                if goal.include_runtime_source_codes
-                else None
+                [item.code for item in turn.blockers] if goal.include_runtime_source_codes else None
             ),
         )
         error = safe_initial_draft_run_error(blocker)
@@ -160,11 +159,12 @@ def execute_initial_draft_turn(
         return ContentInitialDraftModelOutput.model_validate_json(turn.output_text), trace
     except ValueError:
         copy = goal.invalid_structured_output
-        blocker = build_initial_draft_blocker(
-            "invalid_structured_output",
-            copy.label,
-            copy.reason,
-            copy.next_step,
+        blocker = build_blocker(
+            ContentInitialDraftBlocker,
+            code="invalid_structured_output",
+            label=copy.label,
+            reason=copy.reason,
+            next_step=copy.next_step,
         )
         error = safe_initial_draft_run_error(blocker)
         on_terminal(run_store, run, status="blocked", error=error)

@@ -19,6 +19,7 @@ from wilq.content.claims.ledger import (
     publish_ready_claims,
 )
 from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.contracts.models import ContentWorkItem, content_workflow_blockers
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
@@ -149,9 +150,7 @@ class StructuredDraftGenerationInput(BaseModel):
     knowledge_constraints: list[StructuredDraftKnowledgeConstraint] = Field(default_factory=list)
     sales_brief_signal_quality: StructuredDraftSignalQuality
     claim_markers: list[StructuredDraftClaimMarker] = Field(default_factory=list)
-    removed_or_blocked_claim_markers: list[StructuredDraftClaimMarker] = Field(
-        default_factory=list
-    )
+    removed_or_blocked_claim_markers: list[StructuredDraftClaimMarker] = Field(default_factory=list)
     claims_allowed: list[str] = Field(default_factory=list)
     claims_removed_or_blocked: list[str] = Field(default_factory=list)
     human_review_questions: list[str] = Field(default_factory=list)
@@ -236,11 +235,12 @@ def build_structured_draft_generation_contract(
     if final_canonical_url is None:
         return StructuredDraftGenerationResult(
             blockers=[
-                _blocker(
-                    "missing_final_canonical",
-                    "Brakuje adresu docelowego",
-                    "Generowanie wymaga publicznego adresu docelowego dla treści.",
-                    "Uzupełnij publiczny adres docelowy przed generowaniem.",
+                build_blocker(
+                    StructuredDraftGenerationBlocker,
+                    code="missing_final_canonical",
+                    label="Brakuje adresu docelowego",
+                    reason="Generowanie wymaga publicznego adresu docelowego dla treści.",
+                    next_step="Uzupełnij publiczny adres docelowy przed generowaniem.",
                 )
             ]
         )
@@ -327,9 +327,7 @@ def build_structured_draft_generation_contract(
         human_review_questions=draft_package.human_review_questions,
         measurement_metrics=([] if planning_input is None else planning_input.measurement_metrics),
         measurement_baseline_evidence_ids=(
-            []
-            if planning_input is None
-            else planning_input.measurement_baseline_evidence_ids
+            [] if planning_input is None else planning_input.measurement_baseline_evidence_ids
         ),
         query_portfolio_evidence_ids=(
             [] if planning_input is None else planning_input.query_portfolio.evidence_ids
@@ -437,11 +435,12 @@ def structured_draft_generation_blockers(
     draft_kind: Literal["section_draft", "full_draft"] = "section_draft",
 ) -> list[StructuredDraftGenerationBlocker]:
     blockers: list[StructuredDraftGenerationBlocker] = [
-        _blocker(
-            cast(StructuredDraftGenerationBlockerCode, blocker.code),
-            blocker.label,
-            blocker.reason,
-            blocker.next_step,
+        build_blocker(
+            StructuredDraftGenerationBlocker,
+            code=cast(StructuredDraftGenerationBlockerCode, blocker.code),
+            label=blocker.label,
+            reason=blocker.reason,
+            next_step=blocker.next_step,
         )
         for blocker in content_workflow_blockers(item, "prepare_draft")
         if blocker.code
@@ -464,82 +463,90 @@ def structured_draft_generation_blockers(
     ]
     if draft_package is None:
         blockers.append(
-            _blocker(
-                "missing_draft_package",
-                "Brakuje paczki szkicu",
-                "Model może pisać dopiero z zatwierdzonej paczki szkicu.",
-                "Zbuduj paczkę szkicu po planie sprzedażowym i sprawdzeniu twierdzeń.",
+            build_blocker(
+                StructuredDraftGenerationBlocker,
+                code="missing_draft_package",
+                label="Brakuje paczki szkicu",
+                reason="Model może pisać dopiero z zatwierdzonej paczki szkicu.",
+                next_step="Zbuduj paczkę szkicu po planie sprzedażowym i sprawdzeniu twierdzeń.",
             )
         )
     elif draft_package.work_item_id != item.id or (
         item.draft_package_id is not None and draft_package.id != item.draft_package_id
     ):
         blockers.append(
-            _blocker(
-                "draft_package_mismatch",
-                "Paczka szkicu dotyczy innego tematu",
-                "Generowanie musi używać paczki przypisanej do tego samego tematu.",
-                "Podaj paczkę szkicu dla aktualnego tematu.",
+            build_blocker(
+                StructuredDraftGenerationBlocker,
+                code="draft_package_mismatch",
+                label="Paczka szkicu dotyczy innego tematu",
+                reason="Generowanie musi używać paczki przypisanej do tego samego tematu.",
+                next_step="Podaj paczkę szkicu dla aktualnego tematu.",
             )
         )
     elif draft_package.publish_ready:
         blockers.append(
-            _blocker(
-                "draft_package_marked_publish_ready",
-                "Paczka szkicu ma zły status",
-                "WILQ nie pozwala modelowi oznaczać treści jako gotowej do publikacji.",
-                "Utwórz paczkę szkicu w trybie do sprawdzenia.",
+            build_blocker(
+                StructuredDraftGenerationBlocker,
+                code="draft_package_marked_publish_ready",
+                label="Paczka szkicu ma zły status",
+                reason="WILQ nie pozwala modelowi oznaczać treści jako gotowej do publikacji.",
+                next_step="Utwórz paczkę szkicu w trybie do sprawdzenia.",
             )
         )
 
     if sales_brief is None:
         blockers.append(
-            _blocker(
-                "missing_sales_brief",
-                "Brakuje planu sprzedażowego",
-                "Generowanie bez planu sprzedażowego byłoby promptową improwizacją.",
-                "Zbuduj plan sprzedażowy przed generowaniem treści.",
+            build_blocker(
+                StructuredDraftGenerationBlocker,
+                code="missing_sales_brief",
+                label="Brakuje planu sprzedażowego",
+                reason="Generowanie bez planu sprzedażowego byłoby promptową improwizacją.",
+                next_step="Zbuduj plan sprzedażowy przed generowaniem treści.",
             )
         )
     elif sales_brief.work_item_id != item.id:
         blockers.append(
-            _blocker(
-                "sales_brief_mismatch",
-                "Plan dotyczy innego tematu",
-                "Treść musi wynikać z planu sprzedażowego dla tego samego tematu.",
-                "Podaj plan sprzedażowy przypisany do aktualnego tematu.",
+            build_blocker(
+                StructuredDraftGenerationBlocker,
+                code="sales_brief_mismatch",
+                label="Plan dotyczy innego tematu",
+                reason="Treść musi wynikać z planu sprzedażowego dla tego samego tematu.",
+                next_step="Podaj plan sprzedażowy przypisany do aktualnego tematu.",
             )
         )
-    elif draft_kind == "full_draft" and _sales_brief_has_review_required_knowledge(
-        sales_brief
-    ):
+    elif draft_kind == "full_draft" and _sales_brief_has_review_required_knowledge(sales_brief):
         blockers.append(
-            _blocker(
-                "review_required_knowledge_for_full_draft",
-                "Pełny szkic wymaga zatwierdzonej wiedzy",
-                "Plan sprzedażowy zawiera wiedzę albo ograniczenia, które nadal "
+            build_blocker(
+                StructuredDraftGenerationBlocker,
+                code="review_required_knowledge_for_full_draft",
+                label="Pełny szkic wymaga zatwierdzonej wiedzy",
+                reason="Plan sprzedażowy zawiera wiedzę albo ograniczenia, które nadal "
                 "wymagają review przed pełnym szkicem.",
-                "Zatwierdź karty wiedzy i claimy albo przygotuj tylko szkic sekcji do review.",
+                next_step=(
+                    "Zatwierdź karty wiedzy i claimy albo przygotuj tylko szkic sekcji do review."
+                ),
             )
         )
 
     if claim_ledger is None:
         blockers.append(
-            _blocker(
-                "missing_claim_ledger",
-                "Brakuje sprawdzenia twierdzeń",
-                "Model nie może pisać bez listy dozwolonych i usuniętych twierdzeń.",
-                "Zbuduj sprawdzenie twierdzeń przed generowaniem treści.",
+            build_blocker(
+                StructuredDraftGenerationBlocker,
+                code="missing_claim_ledger",
+                label="Brakuje sprawdzenia twierdzeń",
+                reason="Model nie może pisać bez listy dozwolonych i usuniętych twierdzeń.",
+                next_step="Zbuduj sprawdzenie twierdzeń przed generowaniem treści.",
             )
         )
     elif claim_ledger.work_item_id != item.id or not claim_ledger_allows_draft(claim_ledger):
         blockers.append(
-            _blocker(
-                "claim_ledger_blocks_generation",
-                "Sprawdzenie twierdzeń blokuje generowanie",
-                "Ryzykowne albo niezweryfikowane twierdzenia muszą zostać "
+            build_blocker(
+                StructuredDraftGenerationBlocker,
+                code="claim_ledger_blocks_generation",
+                label="Sprawdzenie twierdzeń blokuje generowanie",
+                reason="Ryzykowne albo niezweryfikowane twierdzenia muszą zostać "
                 "usunięte lub zatwierdzone przed pisaniem.",
-                "Rozwiąż sprawdzenie twierdzeń przed generowaniem treści.",
+                next_step="Rozwiąż sprawdzenie twierdzeń przed generowaniem treści.",
             )
         )
     elif draft_package is not None:
@@ -549,11 +556,12 @@ def structured_draft_generation_blockers(
         )
         if unknown_claims:
             blockers.append(
-                _blocker(
-                    "draft_package_claim_outside_ledger",
-                    "Paczka szkicu używa twierdzenia spoza sprawdzenia",
-                    "Model może dostać tylko twierdzenia dopuszczone w Claim Ledger.",
-                    "Usuń z paczki szkicu obce twierdzenia albo dodaj je do sprawdzenia: "
+                build_blocker(
+                    StructuredDraftGenerationBlocker,
+                    code="draft_package_claim_outside_ledger",
+                    label="Paczka szkicu używa twierdzenia spoza sprawdzenia",
+                    reason="Model może dostać tylko twierdzenia dopuszczone w Claim Ledger.",
+                    next_step="Usuń z paczki szkicu obce twierdzenia albo dodaj je do sprawdzenia: "
                     + "; ".join(unknown_claims),
                 )
             )
@@ -561,20 +569,22 @@ def structured_draft_generation_blockers(
     if draft_package is not None:
         if not draft_package.section_to_evidence_map:
             blockers.append(
-                _blocker(
-                    "missing_evidence_mapping",
-                    "Brakuje mapy dowodów",
-                    "Każda sekcja musi mieć przypisane dowody źródłowe.",
-                    "Uzupełnij mapę sekcji do dowodów przed generowaniem.",
+                build_blocker(
+                    StructuredDraftGenerationBlocker,
+                    code="missing_evidence_mapping",
+                    label="Brakuje mapy dowodów",
+                    reason="Każda sekcja musi mieć przypisane dowody źródłowe.",
+                    next_step="Uzupełnij mapę sekcji do dowodów przed generowaniem.",
                 )
             )
         if not draft_package.human_review_questions:
             blockers.append(
-                _blocker(
-                    "missing_human_review_questions",
-                    "Brakuje pytań do sprawdzenia",
-                    "Wygenerowana treść musi wrócić do człowieka z checklistą.",
-                    "Dodaj pytania kontrolne do paczki szkicu.",
+                build_blocker(
+                    StructuredDraftGenerationBlocker,
+                    code="missing_human_review_questions",
+                    label="Brakuje pytań do sprawdzenia",
+                    reason="Wygenerowana treść musi wrócić do człowieka z checklistą.",
+                    next_step="Dodaj pytania kontrolne do paczki szkicu.",
                 )
             )
     return blockers
@@ -670,18 +680,4 @@ def _user_instruction(model_input: StructuredDraftGenerationInput) -> str:
         f"Jakość sygnału briefu: {model_input.sales_brief_signal_quality.status_label}. "
         "Używaj wyłącznie claimów z claim_markers/claims_allowed. "
         "Zwróć wynik zgodny ze ścisłym schematem."
-    )
-
-
-def _blocker(
-    code: StructuredDraftGenerationBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> StructuredDraftGenerationBlocker:
-    return StructuredDraftGenerationBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
     )

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal, cast
 from uuid import uuid4
@@ -43,6 +42,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftOutput,
 )
+from wilq.content.operator_copy import build_blocker, unique
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.review import ContentQualityReview, build_content_quality_review
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
@@ -232,11 +232,12 @@ def _execute_runtime(
             )
         )
     except Exception:
-        blocker = _blocker(
-            "runtime_failed",
-            "Codex nie zakończył propozycji",
-            "Lokalny app-server zakończył się błędem technicznym bez bezpiecznego wyniku.",
-            "Sprawdź lokalny status Codexa i uruchom nową propozycję; nic nie zapisano.",
+        blocker = build_blocker(
+            ContentCodexSectionProposalBlocker,
+            code="runtime_failed",
+            label="Codex nie zakończył propozycji",
+            reason="Lokalny app-server zakończył się błędem technicznym bez bezpiecznego wyniku.",
+            next_step="Sprawdź lokalny status Codexa i uruchom nową propozycję; nic nie zapisano.",
         )
         return _blocked_response(
             snapshot=snapshot,
@@ -253,11 +254,12 @@ def _execute_runtime(
         code: ContentCodexSectionProposalBlockerCode = (
             "runtime_blocked" if result.status == "blocked" else "runtime_failed"
         )
-        blocker = _blocker(
-            code,
-            "Codex nie zwrócił bezpiecznej propozycji",
-            "App-server nie zakończył turnu poprawnym ustrukturyzowanym wynikiem.",
-            "Sprawdź lokalny runtime i rozpocznij nową propozycję; WILQ nic nie zapisał.",
+        blocker = build_blocker(
+            ContentCodexSectionProposalBlocker,
+            code=code,
+            label="Codex nie zwrócił bezpiecznej propozycji",
+            reason="App-server nie zakończył turnu poprawnym ustrukturyzowanym wynikiem.",
+            next_step="Sprawdź lokalny runtime i rozpocznij nową propozycję; WILQ nic nie zapisał.",
             source_codes=[entry.code for entry in result.blockers],
         )
         run_status: Literal["blocked", "failed"] = (
@@ -289,11 +291,12 @@ def _validate_runtime_call(
     try:
         output = StructuredDraftOutput.model_validate_json(output_text)
     except ValueError:
-        blocker = _blocker(
-            "invalid_structured_output",
-            "Codex zwrócił niepoprawny szkic",
-            "Wynik nie przeszedł ścisłego schematu treści WILQ.",
-            "Odrzuć wynik i uruchom nową propozycję po sprawdzeniu kontraktu.",
+        blocker = build_blocker(
+            ContentCodexSectionProposalBlocker,
+            code="invalid_structured_output",
+            label="Codex zwrócił niepoprawny szkic",
+            reason="Wynik nie przeszedł ścisłego schematu treści WILQ.",
+            next_step="Odrzuć wynik i uruchom nową propozycję po sprawdzeniu kontraktu.",
         )
         return _blocked_response(
             snapshot=snapshot,
@@ -334,14 +337,15 @@ def _validate_runtime_call(
         ),
     )
     if preview_blockers:
-        blocker = _blocker(
-            "proposal_contract_blocked",
-            "Propozycja narusza kontrakt treści",
-            (
+        blocker = build_blocker(
+            ContentCodexSectionProposalBlocker,
+            code="proposal_contract_blocked",
+            label="Propozycja narusza kontrakt treści",
+            reason=(
                 "WILQ wykrył obcy identyfikator, znany blocked claim, "
                 "niezadeklarowaną obietnicę albo brak wymaganego lineage."
             ),
-            preview_blockers[0].next_step,
+            next_step=preview_blockers[0].next_step,
             source_codes=[entry.code for entry in preview_blockers],
         )
         return _blocked_response(
@@ -396,11 +400,12 @@ def _review_runtime_output(
         )
     ).model_copy(update={"review_id": f"proposal_quality_review_{runtime.run.id}"})
     if quality_review.verdict == "blocked":
-        blocker = _blocker(
-            "quality_blocked",
-            "Propozycja nie przeszła kontroli jakości",
-            "WILQ wykrył twardą blokadę w deklarowanej strukturze lub lineage szkicu.",
-            quality_review.safe_next_step,
+        blocker = build_blocker(
+            ContentCodexSectionProposalBlocker,
+            code="quality_blocked",
+            label="Propozycja nie przeszła kontroli jakości",
+            reason="WILQ wykrył twardą blokadę w deklarowanej strukturze lub lineage szkicu.",
+            next_step=quality_review.safe_next_step,
             source_codes=[entry.code for entry in quality_review.blockers],
         )
         return _blocked_response(
@@ -432,11 +437,12 @@ def _persist_proposal(
 ) -> ContentCodexSectionProposalResponse:
     base_revision = inputs.base_revision
     if base_revision.planning_digest is None:
-        blocker = _blocker(
-            "missing_planning_binding",
-            "Wersja nie jest powiązana z zatwierdzonym planem",
-            "Starsza wersja nie wskazuje dokładnego zakresu i mapy sekcji.",
-            "Zapisz nową wersję po zatwierdzeniu aktualnego planu.",
+        blocker = build_blocker(
+            ContentCodexSectionProposalBlocker,
+            code="missing_planning_binding",
+            label="Wersja nie jest powiązana z zatwierdzonym planem",
+            reason="Starsza wersja nie wskazuje dokładnego zakresu i mapy sekcji.",
+            next_step="Zapisz nową wersję po zatwierdzeniu aktualnego planu.",
         )
         return _blocked_response(
             snapshot=snapshot,
@@ -482,11 +488,12 @@ def _persist_proposal(
         completed_codex_run=completed_run,
     )
     if append_result.status == "conflict" or append_result.revision is None:
-        blocker = _blocker(
-            "revision_conflict",
-            "Wersja bazowa zmieniła się podczas generowania",
-            "WILQ nie zapisze propozycji nad nowszą wersją treści.",
-            "Odśwież workspace i uruchom propozycję dla aktualnej wersji.",
+        blocker = build_blocker(
+            ContentCodexSectionProposalBlocker,
+            code="revision_conflict",
+            label="Wersja bazowa zmieniła się podczas generowania",
+            reason="WILQ nie zapisze propozycji nad nowszą wersją treści.",
+            next_step="Odśwież workspace i uruchom propozycję dla aktualnej wersji.",
         )
         return _blocked_response(
             snapshot=snapshot,
@@ -531,11 +538,12 @@ def _proposal_preflight_blockers(
     base_revision = workspace.latest_revision
     if base_revision is None:
         return [
-            _blocker(
-                "missing_base_revision",
-                "Brakuje wersji bazowej",
-                "Codex może przygotować tylko child revision dokładnej zapisanej wersji.",
-                "Najpierw zapisz i sprawdź wersję bazową w workspace treści.",
+            build_blocker(
+                ContentCodexSectionProposalBlocker,
+                code="missing_base_revision",
+                label="Brakuje wersji bazowej",
+                reason="Codex może przygotować tylko child revision dokładnej zapisanej wersji.",
+                next_step="Najpierw zapisz i sprawdź wersję bazową w workspace treści.",
             )
         ]
     if (
@@ -543,29 +551,34 @@ def _proposal_preflight_blockers(
         or request.expected_base_digest != base_revision.content_digest
     ):
         return [
-            _blocker(
-                "stale_base_revision",
-                "Wybrana wersja bazowa nie jest aktualna",
-                "Identyfikator albo digest nie odpowiada najnowszej zapisanej wersji.",
-                "Odśwież workspace i wybierz sekcje z aktualnej wersji.",
+            build_blocker(
+                ContentCodexSectionProposalBlocker,
+                code="stale_base_revision",
+                label="Wybrana wersja bazowa nie jest aktualna",
+                reason="Identyfikator albo digest nie odpowiada najnowszej zapisanej wersji.",
+                next_step="Odśwież workspace i wybierz sekcje z aktualnej wersji.",
             )
         ]
     if not workspace.context_current:
         return [
-            _blocker(
-                "stale_content_context",
-                "Zmienił się plan lub kontekst treści",
-                "Zapisana wersja nie odpowiada już aktualnej paczce planu i dowodów.",
-                "Najpierw zrebasuj wersję na aktualny plan i źródła.",
+            build_blocker(
+                ContentCodexSectionProposalBlocker,
+                code="stale_content_context",
+                label="Zmienił się plan lub kontekst treści",
+                reason="Zapisana wersja nie odpowiada już aktualnej paczce planu i dowodów.",
+                next_step="Najpierw zrebasuj wersję na aktualny plan i źródła.",
             )
         ]
     if workspace.status not in {"needs_changes", "rejected"} or not workspace.can_save:
         return [
-            _blocker(
-                "revision_not_ready_for_proposal",
-                "Ta wersja nie czeka na poprawki",
-                "Codex poprawia tylko aktualną wersję oznaczoną po review jako do zmiany.",
-                "Najpierw zapisz decyzję review albo przejdź do bezpiecznego kolejnego kroku.",
+            build_blocker(
+                ContentCodexSectionProposalBlocker,
+                code="revision_not_ready_for_proposal",
+                label="Ta wersja nie czeka na poprawki",
+                reason="Codex poprawia tylko aktualną wersję oznaczoną po review jako do zmiany.",
+                next_step=(
+                    "Najpierw zapisz decyzję review albo przejdź do bezpiecznego kolejnego kroku."
+                ),
             )
         ]
     contract = snapshot.structured_generation.structured_generation_result.contract
@@ -578,11 +591,12 @@ def _proposal_preflight_blockers(
         or snapshot.claim_ledger is None
     ):
         return [
-            _blocker(
-                "missing_generation_contract",
-                "Brakuje kontraktu generowania",
-                "WILQ nie ma pełnego model inputu, claim ledgeru albo planu sekcji.",
-                "Uzupełnij blokady briefu i claimów przed użyciem Codexa.",
+            build_blocker(
+                ContentCodexSectionProposalBlocker,
+                code="missing_generation_contract",
+                label="Brakuje kontraktu generowania",
+                reason="WILQ nie ma pełnego model inputu, claim ledgeru albo planu sekcji.",
+                next_step="Uzupełnij blokady briefu i claimów przed użyciem Codexa.",
             )
         ]
     selection_blockers = _selected_component_blockers(base_revision, contract, request)
@@ -593,11 +607,12 @@ def _proposal_preflight_blockers(
     ]
     if len(claim_texts) != len(set(claim_texts)):
         return [
-            _blocker(
-                "ambiguous_claim_marker",
-                "Claim Ledger ma niejednoznaczne twierdzenia",
-                "Dwa claimy mają ten sam tekst, więc nie można bezpiecznie zapisać ich ID.",
-                "Ujednoznacznij claimy w Claim Ledger przed generowaniem.",
+            build_blocker(
+                ContentCodexSectionProposalBlocker,
+                code="ambiguous_claim_marker",
+                label="Claim Ledger ma niejednoznaczne twierdzenia",
+                reason="Dwa claimy mają ten sam tekst, więc nie można bezpiecznie zapisać ich ID.",
+                next_step="Ujednoznacznij claimy w Claim Ledger przed generowaniem.",
             )
         ]
     return []
@@ -613,11 +628,12 @@ def _selected_component_blockers(
         if request.selected_cta_ids[0] in known_cta_ids:
             return []
         return [
-            _blocker(
-                "unknown_selected_cta",
-                "Wybrane wezwanie do działania nie należy do aktualnej wersji",
-                "Codex może zmienić tylko CTA zapisane w dokładnej wersji bazowej.",
-                "Odśwież workspace i wybierz aktualne wezwanie do działania.",
+            build_blocker(
+                ContentCodexSectionProposalBlocker,
+                code="unknown_selected_cta",
+                label="Wybrane wezwanie do działania nie należy do aktualnej wersji",
+                reason="Codex może zmienić tylko CTA zapisane w dokładnej wersji bazowej.",
+                next_step="Odśwież workspace i wybierz aktualne wezwanie do działania.",
             )
         ]
     base_headings = {section.heading for section in base_revision.sections}
@@ -628,11 +644,7 @@ def _selected_component_blockers(
     }
     contract_headings = {section.heading for section in contract.model_input.sections}
     unknown = (
-        [
-            section_id
-            for section_id in request.selected_section_ids
-            if section_id not in base_by_id
-        ]
+        [section_id for section_id in request.selected_section_ids if section_id not in base_by_id]
         if request.selected_section_ids
         else [
             heading
@@ -643,11 +655,12 @@ def _selected_component_blockers(
     if not unknown:
         return []
     return [
-        _blocker(
-            "unknown_selected_section",
-            "Wybrana sekcja nie należy do aktualnego planu",
-            "Codex może zmienić tylko sekcje obecne w wersji bazowej i model input WILQ.",
-            "Odśwież mapę sekcji i wybierz aktualne sekcje.",
+        build_blocker(
+            ContentCodexSectionProposalBlocker,
+            code="unknown_selected_section",
+            label="Wybrana sekcja nie należy do aktualnego planu",
+            reason="Codex może zmienić tylko sekcje obecne w wersji bazowej i model input WILQ.",
+            next_step="Odśwież mapę sekcji i wybierz aktualne sekcje.",
         )
     ]
 
@@ -733,7 +746,7 @@ def _proposal_metadata(
             ]
         ),
         quality_verdict=quality_review.verdict,
-        quality_finding_codes=_unique(finding.code for finding in quality_review.findings),
+        quality_finding_codes=unique(finding.code for finding in quality_review.findings),
         review_scope=(
             "persisted_selected_components_and_declared_lineage"
             if selected_cta_ids
@@ -787,32 +800,6 @@ def _finish_run(
     error: str | None = None,
 ) -> CodexRun:
     return save_terminal_codex_run(store, run, status=status, error=error)
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
-
-
-def _blocker(
-    code: ContentCodexSectionProposalBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-    *,
-    source_codes: list[str] | None = None,
-) -> ContentCodexSectionProposalBlocker:
-    return ContentCodexSectionProposalBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-        source_codes=source_codes or [],
-    )
 
 
 __all__ = [

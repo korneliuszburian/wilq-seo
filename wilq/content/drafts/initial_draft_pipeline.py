@@ -104,9 +104,9 @@ class InitialDraftPipelineInputs:
     response: InitialDraftResponseBuilder
     persist: InitialDraftPersistenceAdapter
     base_revision_id: str | None = None
-    output_transform: Callable[
-        [ContentInitialDraftModelOutput], ContentInitialDraftModelOutput
-    ] = lambda output: output
+    output_transform: Callable[[ContentInitialDraftModelOutput], ContentInitialDraftModelOutput] = (
+        lambda output: output
+    )
     start_run: Callable[..., CodexRun] = start_initial_draft_run
     terminal_hook: InitialDraftTerminalHook = finish_initial_draft_run
     execute_turn: Callable[..., Any] = execute_initial_draft_turn
@@ -183,9 +183,7 @@ def generate_initial_draft(
             next_step=assurance.next_step,
             source_codes=assurance.source_codes,
         )
-        return _finish_alteration_block(
-            inputs, run_store, run, blocker, altered.trace or runtime
-        )
+        return _finish_alteration_block(inputs, run_store, run, blocker, altered.trace or runtime)
     if altered.output is None or altered.trace is None:
         raise RuntimeError("Initial draft alteration returned no output or trace.")
     return inputs.persist(
@@ -237,10 +235,17 @@ def _finish_alteration_block(
 
 
 def _runtime_failure_blocker(goal: InitialDraftTurnGoal) -> ContentInitialDraftBlocker:
-    from wilq.content.drafts.initial_draft_runtime import build_initial_draft_blocker
+    from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
+    from wilq.content.operator_copy import build_blocker
 
     copy = goal.runtime_failure
-    return build_initial_draft_blocker("runtime_failed", copy.label, copy.reason, copy.next_step)
+    return build_blocker(
+        ContentInitialDraftBlocker,
+        code="runtime_failed",
+        label=copy.label,
+        reason=copy.reason,
+        next_step=copy.next_step,
+    )
 
 
 __all__ = [

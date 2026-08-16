@@ -181,8 +181,8 @@ def test_section_proposal_conflict_finishes_started_run_as_blocked_without_revis
     )
     monkeypatch.setattr(
         codex_section_proposal,
-        "_blocker",
-        lambda code, *_args, **_kwargs: SimpleNamespace(code=code),
+        "build_blocker",
+        lambda _model, **kwargs: SimpleNamespace(code=kwargs["code"]),
     )
     monkeypatch.setattr(
         codex_section_proposal,

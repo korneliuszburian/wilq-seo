@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.drafts.structured_generation import StructuredDraftOutput
+from wilq.content.operator_copy import build_blocker
 from wilq.content.quality.review import ContentQualityReview
 from wilq.content.quality.revision import ContentRevisionPlan
 from wilq.content.workflow.contracts.models import ContentWorkItem
@@ -110,65 +111,72 @@ def _revision_application_blockers(
     blockers: list[ContentRevisionApplicationBlocker] = []
     if revision_plan is None:
         blockers.append(
-            _blocker(
-                "missing_revision_plan",
-                "Brakuje planu poprawki",
-                "Poprawka musi wynikać z bounded revision plan, nie z wolnej regeneracji.",
-                "Najpierw zbuduj plan poprawki z oceny jakości.",
+            build_blocker(
+                ContentRevisionApplicationBlocker,
+                code="missing_revision_plan",
+                label="Brakuje planu poprawki",
+                reason="Poprawka musi wynikać z bounded revision plan, nie z wolnej regeneracji.",
+                next_step="Najpierw zbuduj plan poprawki z oceny jakości.",
             )
         )
     elif revision_plan.work_item_id != item.id:
         blockers.append(
-            _blocker(
-                "revision_plan_mismatch",
-                "Plan poprawki dotyczy innego tematu",
-                "Nie wolno stosować poprawek między work itemami.",
-                "Użyj planu poprawki przypisanego do aktualnego work itemu.",
+            build_blocker(
+                ContentRevisionApplicationBlocker,
+                code="revision_plan_mismatch",
+                label="Plan poprawki dotyczy innego tematu",
+                reason="Nie wolno stosować poprawek między work itemami.",
+                next_step="Użyj planu poprawki przypisanego do aktualnego work itemu.",
             )
         )
     elif revision_plan.status != "ready" or not revision_plan.draft_revision_allowed:
         blockers.append(
-            _blocker(
-                "revision_plan_not_ready",
-                "Plan poprawki nie pozwala na zmianę",
-                "WILQ może zastosować tylko plan ze statusem ready.",
-                revision_plan.safe_next_step,
+            build_blocker(
+                ContentRevisionApplicationBlocker,
+                code="revision_plan_not_ready",
+                label="Plan poprawki nie pozwala na zmianę",
+                reason="WILQ może zastosować tylko plan ze statusem ready.",
+                next_step=revision_plan.safe_next_step,
             )
         )
     if draft_output is None:
         blockers.append(
-            _blocker(
-                "missing_draft_output",
-                "Brakuje szkicu do poprawki",
-                "Aplikacja poprawki musi działać na konkretnym structured draft.",
-                "Podaj szkic z runtime WILQ przed poprawką.",
+            build_blocker(
+                ContentRevisionApplicationBlocker,
+                code="missing_draft_output",
+                label="Brakuje szkicu do poprawki",
+                reason="Aplikacja poprawki musi działać na konkretnym structured draft.",
+                next_step="Podaj szkic z runtime WILQ przed poprawką.",
             )
         )
     if updated_quality_review is None:
         blockers.append(
-            _blocker(
-                "missing_updated_quality_review",
-                "Brakuje ponownej oceny jakości",
-                "Po poprawce WILQ musi uruchomić quality review jeszcze raz.",
-                "Uruchom ocenę jakości poprawionej wersji przed dalszym etapem.",
+            build_blocker(
+                ContentRevisionApplicationBlocker,
+                code="missing_updated_quality_review",
+                label="Brakuje ponownej oceny jakości",
+                reason="Po poprawce WILQ musi uruchomić quality review jeszcze raz.",
+                next_step="Uruchom ocenę jakości poprawionej wersji przed dalszym etapem.",
             )
         )
     elif updated_quality_review.work_item_id != item.id:
         blockers.append(
-            _blocker(
-                "updated_quality_review_mismatch",
-                "Ponowna ocena dotyczy innego tematu",
-                "Nie wolno odblokować poprawki oceną z innego work itemu.",
-                "Uruchom quality review dla aktualnego work itemu.",
+            build_blocker(
+                ContentRevisionApplicationBlocker,
+                code="updated_quality_review_mismatch",
+                label="Ponowna ocena dotyczy innego tematu",
+                reason="Nie wolno odblokować poprawki oceną z innego work itemu.",
+                next_step="Uruchom quality review dla aktualnego work itemu.",
             )
         )
     elif updated_quality_review.verdict not in {"reviewable", "ready_for_human_review"}:
         blockers.append(
-            _blocker(
-                "updated_quality_review_not_reviewable",
-                "Ponowna ocena nadal wymaga pracy",
-                "Poprawiona wersja nie może iść dalej, dopóki review ma blokady lub zmiany.",
-                updated_quality_review.safe_next_step,
+            build_blocker(
+                ContentRevisionApplicationBlocker,
+                code="updated_quality_review_not_reviewable",
+                label="Ponowna ocena nadal wymaga pracy",
+                reason="Poprawiona wersja nie może iść dalej, dopóki review ma blokady lub zmiany.",
+                next_step=updated_quality_review.safe_next_step,
             )
         )
     return blockers
@@ -237,17 +245,3 @@ def _diff_entries(
             )
         )
     return entries
-
-
-def _blocker(
-    code: ContentRevisionApplicationBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentRevisionApplicationBlocker:
-    return ContentRevisionApplicationBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )

@@ -34,9 +34,6 @@ from wilq.content.drafts.initial_draft_runtime import (
     execute_initial_draft_turn,
     initial_draft_request_mismatch,
 )
-from wilq.content.drafts.initial_draft_runtime import (
-    build_initial_draft_blocker as _blocker,
-)
 from wilq.content.drafts.initial_draft_validation import (
     document_scope_errors_for_planning_input,
 )
@@ -53,6 +50,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     contract_for_planning_proposal,
 )
+from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
@@ -257,11 +255,14 @@ def _prepare_inputs(
             proposal=None if planning is None else planning.proposal,
             status="conflict",
             blockers=[
-                _blocker(
-                    "revision_already_exists",
-                    "Aktualna wersja już istnieje",
-                    "Nowy pełny draft może powstać tylko jako kolejna rewizja aktualnego planu.",
-                    "Otwórz aktualny plan albo pracuj na zapisanej wersji.",
+                build_blocker(
+                    ContentInitialDraftBlocker,
+                    code="revision_already_exists",
+                    label="Aktualna wersja już istnieje",
+                    reason=(
+                        "Nowy pełny draft może powstać tylko jako kolejna rewizja aktualnego planu."
+                    ),
+                    next_step="Otwórz aktualny plan albo pracuj na zapisanej wersji.",
                 )
             ],
         )
@@ -271,14 +272,18 @@ def _prepare_inputs(
             proposal=None if planning is None else planning.proposal,
             status="blocked",
             blockers=[
-                _blocker(
-                    "planning_not_ready",
-                    "Brakuje aktualnego wygenerowanego planu",
-                    (
+                build_blocker(
+                    ContentInitialDraftBlocker,
+                    code="planning_not_ready",
+                    label="Brakuje aktualnego wygenerowanego planu",
+                    reason=(
                         "Pełny tekst wymaga dokładnego wygenerowanego planu "
                         "związanego z bieżącym wejściem."
                     ),
-                    "Odśwież źródła lub wygeneruj aktualny plan, a następnie uruchom pełny tekst.",
+                    next_step=(
+                        "Odśwież źródła lub wygeneruj aktualny plan, a następnie "
+                        "uruchom pełny tekst."
+                    ),
                 )
             ],
         )
@@ -321,11 +326,12 @@ def _prepare_inputs(
             proposal=proposal,
             status="blocked",
             blockers=[
-                _blocker(
-                    "missing_generation_contract",
-                    "Pełny tekst pozostaje zablokowany",
-                    "Kontrakt szkicu odrzucił wiedzę, claims albo foundation.",
-                    "Usuń wskazany blocker bez obchodzenia owner review.",
+                build_blocker(
+                    ContentInitialDraftBlocker,
+                    code="missing_generation_contract",
+                    label="Pełny tekst pozostaje zablokowany",
+                    reason="Kontrakt szkicu odrzucił wiedzę, claims albo foundation.",
+                    next_step="Usuń wskazany blocker bez obchodzenia owner review.",
                     source_codes=[item.code for item in generation.blockers],
                 )
             ],
@@ -351,21 +357,20 @@ def _regulatory_preflight_blocked(
     errors: list[str],
 ) -> ContentInitialDraftResponse:
     requirement_count = len({error.split(":", 3)[2] for error in errors})
-    blocker = _blocker(
-        "regulatory_preflight_failed",
-        "Plan regulacyjny nie spełnia warunków szkicu",
-        (
+    blocker = build_blocker(
+        ContentInitialDraftBlocker,
+        code="regulatory_preflight_failed",
+        label="Plan regulacyjny nie spełnia warunków szkicu",
+        reason=(
             "Zatwierdzony plan nie zapewnia kompletnego, weryfikowalnego pokrycia "
             "wymagań regulacyjnych (liczba brakujących wymogów: "
             f"{requirement_count}), więc pełny tekst nie został uruchomiony."
         ),
-        "Wygeneruj nowy plan z sekcją dla każdego wymogu regulacyjnego, a następnie "
+        next_step="Wygeneruj nowy plan z sekcją dla każdego wymogu regulacyjnego, a następnie "
         "ponów pełny tekst.",
         source_codes=errors,
     )
-    return _blocked_response(
-        snapshot, proposal=proposal, status="blocked", blockers=[blocker]
-    )
+    return _blocked_response(snapshot, proposal=proposal, status="blocked", blockers=[blocker])
 
 
 def _no_draftable_sections(
@@ -377,11 +382,15 @@ def _no_draftable_sections(
         proposal=proposal,
         status="blocked",
         blockers=[
-            _blocker(
-                "document_scope_mismatch",
-                "Plan nie ma sekcji do napisania",
-                "Wszystkie rozpoznane elementy zostały oznaczone do usunięcia lub osobnego review.",
-                (
+            build_blocker(
+                ContentInitialDraftBlocker,
+                code="document_scope_mismatch",
+                label="Plan nie ma sekcji do napisania",
+                reason=(
+                    "Wszystkie rozpoznane elementy zostały oznaczone do usunięcia "
+                    "lub osobnego review."
+                ),
+                next_step=(
                     "Zostaw co najmniej jedną sekcję do tekstu albo zakończ review "
                     "bez generowania draftu."
                 ),
@@ -409,18 +418,20 @@ def _proposal_request_mismatch(
         mode="refresh",
     )
     if mismatch == "planning_not_generated":
-        return _blocker(
-            "planning_not_generated",
-            "Brakuje wygenerowanego planu",
-            "Initial draft nie może powstać z preserve-first baseline bez planu modelowego.",
-            "Wygeneruj aktualny plan i uruchom pełny tekst z widocznego szkicu.",
+        return build_blocker(
+            ContentInitialDraftBlocker,
+            code="planning_not_generated",
+            label="Brakuje wygenerowanego planu",
+            reason="Initial draft nie może powstać z preserve-first baseline bez planu modelowego.",
+            next_step="Wygeneruj aktualny plan i uruchom pełny tekst z widocznego szkicu.",
         )
     if mismatch == "proposal_mismatch":
-        return _blocker(
-            "proposal_mismatch",
-            "Plan zmienił się przed generowaniem",
-            "Żądanie nie wskazuje dokładnej bieżącej wersji planu i jego wejścia.",
-            "Odśwież workspace i uruchom generowanie dla widocznego planu.",
+        return build_blocker(
+            ContentInitialDraftBlocker,
+            code="proposal_mismatch",
+            label="Plan zmienił się przed generowaniem",
+            reason="Żądanie nie wskazuje dokładnej bieżącej wersji planu i jego wejścia.",
+            next_step="Odśwież workspace i uruchom generowanie dla widocznego planu.",
         )
     return None
 
@@ -434,11 +445,12 @@ def _planning_not_generated(
         proposal=proposal,
         status="blocked",
         blockers=[
-            _blocker(
-                "planning_not_generated",
-                "Plan nie wskazuje zatwierdzonej usługi",
-                "Pełny tekst wymaga exact service bindingu z wygenerowanego planu.",
-                "Wygeneruj aktualny plan dla wybranej usługi.",
+            build_blocker(
+                ContentInitialDraftBlocker,
+                code="planning_not_generated",
+                label="Plan nie wskazuje zatwierdzonej usługi",
+                reason="Pełny tekst wymaga exact service bindingu z wygenerowanego planu.",
+                next_step="Wygeneruj aktualny plan dla wybranej usługi.",
             )
         ],
     )
@@ -482,11 +494,12 @@ def _output_blocker(
         output,
     )
     if errors:
-        return _blocker(
-            "document_scope_mismatch",
-            "Dokument nie odpowiada zatwierdzonemu planowi",
-            "Model zmienił strukturę albo plan nie ma kompletnego lineage.",
-            "Odrzuć wynik; nie naprawiaj struktury ręcznie po generowaniu.",
+        return build_blocker(
+            ContentInitialDraftBlocker,
+            code="document_scope_mismatch",
+            label="Dokument nie odpowiada zatwierdzonemu planowi",
+            reason="Model zmienił strukturę albo plan nie ma kompletnego lineage.",
+            next_step="Odrzuć wynik; nie naprawiaj struktury ręcznie po generowaniu.",
             source_codes=errors,
         )
     issues = generated_claim_safety_issues(
@@ -524,11 +537,12 @@ def _blocked_response(
 
 
 def _stale_input_blocker() -> ContentInitialDraftBlocker:
-    return _blocker(
-        "stale_planning_input",
-        "Metryki albo kontekst planu zmieniły się",
-        "Bieżący planning_input_digest nie odpowiada zatwierdzonej wersji.",
-        "Wygeneruj nowy plan przed tworzeniem tekstu.",
+    return build_blocker(
+        ContentInitialDraftBlocker,
+        code="stale_planning_input",
+        label="Metryki albo kontekst planu zmieniły się",
+        reason="Bieżący planning_input_digest nie odpowiada zatwierdzonej wersji.",
+        next_step="Wygeneruj nowy plan przed tworzeniem tekstu.",
     )
 
 
@@ -538,13 +552,14 @@ def _planning_input_blocker(
     """Keep the first actionable planning gate visible at the draft seam."""
     first = blockers[0] if blockers else None
     blocker_code = first.code if first is not None else "stale_planning_input"
-    return _blocker(
-        blocker_code,
-        first.label if first is not None else "Wejście tekstu nie jest aktualne",
-        first.reason
+    return build_blocker(
+        ContentInitialDraftBlocker,
+        code=blocker_code,
+        label=first.label if first is not None else "Wejście tekstu nie jest aktualne",
+        reason=first.reason
         if first is not None
         else "Usługa, wiedza, inventory albo metryki nie przechodzą bieżących bramek.",
-        first.next_step
+        next_step=first.next_step
         if first is not None
         else "Odśwież źródła lub zatwierdzenia i wygeneruj aktualny plan.",
         source_codes=[item.code for item in blockers],

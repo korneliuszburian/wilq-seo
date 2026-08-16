@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
@@ -9,6 +7,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftOutputSection,
 )
 from wilq.content.inventory.records import ContentInventoryDuplicateRisk
+from wilq.content.operator_copy import unique
 from wilq.content.quality.review import ContentQualityReview
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
@@ -55,7 +54,7 @@ def persisted_selected_sections_quality_input(
                 for link in base_revision.internal_links
                 if link.anchor_text.strip()
             ],
-            "source_facts_used": _unique(
+            "source_facts_used": unique(
                 evidence_id for section in sections for evidence_id in section.evidence_ids
             ),
             "human_review_checklist": [],
@@ -77,7 +76,7 @@ def persisted_selected_cta_quality_input(
         for block in base_revision.cta_blocks
         if (output.cta if block.cta_id in selected else block.body_markdown).strip()
     )
-    evidence_ids = _unique(
+    evidence_ids = unique(
         evidence_id
         for block in base_revision.cta_blocks
         if block.cta_id in selected
@@ -160,15 +159,6 @@ def proposal_quality_ledger(
     return ledger.model_copy(
         update={"entries": [entry for entry in ledger.entries if entry.id in allowed_claim_ids]}
     )
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique:
-            unique.append(text)
-    return unique
 
 
 __all__ = [
