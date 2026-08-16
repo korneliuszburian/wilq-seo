@@ -337,6 +337,7 @@ def record_action_review(
         review_gate_labels=_review_gate_with_operator_labels,
     )
     _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    _persist_action_audit(result.audit_event)
     return result
 
 
@@ -344,7 +345,7 @@ def preview_action(
     action: ActionObject,
     request: ActionPreviewRequest | None = None,
 ) -> ActionPreviewResult:
-    return preview_action_lifecycle(
+    result = preview_action_lifecycle(
         action,
         request,
         review_gate=_action_review_gate,
@@ -364,6 +365,8 @@ def preview_action(
         system_readiness_label=_system_readiness_label,
         preview_contract_label=_preview_contract_label,
     )
+    _persist_action_audit(result.audit_event)
+    return result
 
 
 def confirm_action(
@@ -393,6 +396,7 @@ def confirm_action(
         review_gate_labels=_review_gate_with_operator_labels,
     )
     _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    _persist_action_audit(result.audit_event)
     return result
 
 
@@ -417,6 +421,7 @@ def impact_check_action(
         review_gate_labels=_review_gate_with_operator_labels,
     )
     _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    _persist_action_audit(result.audit_event)
     return result
 
 
@@ -453,7 +458,24 @@ def apply_action(
         result.mutation_audit.workspace_id = result.audit_event.workspace_id
         result.mutation_audit.trust_level = result.audit_event.trust_level
         result.mutation_audit.submitted_actor_label = submitted_actor_label
+    _persist_action_audit_pair(result.audit_event, result.mutation_audit)
     return result
+
+
+def persist_action_audit(event: AuditEvent) -> AuditEvent:
+    """Persist an audit event for action-adjacent lifecycle routes."""
+    return _persist_action_audit(event)
+
+
+def _persist_action_audit(event: AuditEvent) -> AuditEvent:
+    return local_state_store().save_audit_event(event)
+
+
+def _persist_action_audit_pair(
+    event: AuditEvent,
+    mutation_audit: ActionMutationAuditRecord,
+) -> tuple[AuditEvent, ActionMutationAuditRecord]:
+    return local_state_store().save_apply_audit_pair(event, mutation_audit)
 
 
 def _stamp_local_audit_identity(

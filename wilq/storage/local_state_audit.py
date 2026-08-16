@@ -67,6 +67,17 @@ class _AuditStoreMixin:
         with self._connect() as connection:
             return upsert_audit_event(connection, event)
 
+    def save_apply_audit_pair(
+        self,
+        event: AuditEvent,
+        mutation_audit: ActionMutationAuditRecord,
+    ) -> tuple[AuditEvent, ActionMutationAuditRecord]:
+        """Persist the apply audit event and mutation record in one transaction."""
+        with self._connect() as connection:
+            persisted_event = upsert_audit_event(connection, event)
+            persisted_mutation_audit = upsert_action_mutation_audit(connection, mutation_audit)
+        return persisted_event, persisted_mutation_audit
+
     def list_audit_events(self, action_id: str | None = None) -> list[AuditEvent]:
         with self._connect() as connection:
             if action_id is None:

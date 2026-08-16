@@ -18,6 +18,7 @@ from wilq.actions.service import (
     list_actions_cached,
     mutation_readiness_action,
     mutation_readiness_actions,
+    persist_action_audit,
     preview_action,
     record_action_review,
     validate_action,
@@ -272,7 +273,6 @@ def _review_action_endpoint(
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = record_action_review(action, request)
-    local_state_store().save_audit_event(result.audit_event)
     if action.id == ADS_STRATEGY_REVIEW_ACTION_ID:
         local_state_store().save_ads_strategy_review(
             AdsStrategyReviewRecord(
@@ -342,7 +342,7 @@ def _acknowledge_external_ads_execution(
             "vendor_write_attempted": False,
         },
     )
-    local_state_store().save_audit_event(event)
+    persist_action_audit(event)
     clear_api_view_model_caches()
     return event
 
@@ -422,7 +422,7 @@ def _record_external_ads_observation(
             "vendor_write_attempted": False,
         },
     )
-    local_state_store().save_audit_event(event)
+    persist_action_audit(event)
     clear_api_view_model_caches()
     return event
 
@@ -437,7 +437,6 @@ def _preview_action_endpoint(
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = preview_action(action, request)
-    local_state_store().save_audit_event(result.audit_event)
     clear_api_view_model_caches()
     return result
 
@@ -452,7 +451,6 @@ def _confirm_action_endpoint(
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = confirm_action(action, request)
-    local_state_store().save_audit_event(result.audit_event)
     if action.id == ADS_TARGET_CONFIRMATION_ACTION_ID and result.confirmed:
         local_state_store().save_ads_target_guardrail_confirmation(
             AdsTargetGuardrailConfirmation(
@@ -480,7 +478,6 @@ def _impact_check_action_endpoint(
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = impact_check_action(action, request)
-    local_state_store().save_audit_event(result.audit_event)
     clear_api_view_model_caches()
     return result
 
@@ -495,8 +492,6 @@ def _apply_action_endpoint(
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = apply_action(action, request)
-    local_state_store().save_audit_event(result.audit_event)
-    local_state_store().save_action_mutation_audit(result.mutation_audit)
     clear_api_view_model_caches()
     if not result.applied:
         raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))
