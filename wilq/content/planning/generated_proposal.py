@@ -58,6 +58,7 @@ from wilq.content.workflow.decisions.planning import (
     ContentPlanningSection,
     build_content_planning_workspace,
 )
+from wilq.content.workflow.runtime.codex_run_lifecycle import save_terminal_codex_run
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore, local_state_store
@@ -838,9 +839,7 @@ def _finish_run(
     status: Literal["blocked", "failed"],
     error: str,
 ) -> CodexRun:
-    return run_store.save_codex_run(
-        run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
-    )
+    return save_terminal_codex_run(run_store, run, status=status, error=error)
 
 
 def _runtime_trace_with_run_id(

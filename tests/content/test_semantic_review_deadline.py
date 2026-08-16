@@ -21,9 +21,13 @@ from wilq.content.quality.semantic_review_store import (
     ContentSemanticReviewStore,
     SemanticReviewDeadlineExpired,
 )
-from wilq.content.quality.semantic_run_state import transition_codex_run_if_status
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.runtime.codex_run_lifecycle import (
+    finish_codex_run,
+    save_terminal_codex_run,
+    transition_codex_run_if_status,
+)
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore
 
@@ -88,6 +92,38 @@ def test_terminal_transition_cannot_overwrite_completed_run(tmp_path) -> None:
     )
     assert transition_codex_run_if_status(store, failed) is None
     assert store.list_codex_runs()[0] == completed
+
+
+@pytest.mark.parametrize("status", ["completed", "failed", "blocked"])
+def test_finish_codex_run_persists_terminal_state(tmp_path, status: str) -> None:
+    store = LocalStateStore(tmp_path / f"{status}.sqlite3")
+    started = CodexRun(id=f"codex_finish_{status}", status="started")
+    store.save_codex_run(started)
+
+    finished = finish_codex_run(store, started, status=status, error=f"err_{status}")
+
+    assert finished.status == status
+    assert finished.completed_at is not None
+    assert finished.error == f"err_{status}"
+    assert store.list_codex_runs() == [finished]
+
+
+def test_save_terminal_codex_run_overwrites_existing_terminal_state(tmp_path) -> None:
+    store = LocalStateStore(tmp_path / "unconditional.sqlite3")
+    started = CodexRun(id="codex_unconditional", status="started")
+    store.save_codex_run(started)
+    first = save_terminal_codex_run(store, started, status="completed")
+
+    overwritten = save_terminal_codex_run(
+        store,
+        first,
+        status="blocked",
+        error="retry_blocked",
+    )
+
+    assert overwritten.status == "blocked"
+    assert overwritten.error == "retry_blocked"
+    assert store.list_codex_runs() == [overwritten]
 
 
 def test_expired_started_run_cannot_commit_review(tmp_path) -> None:

@@ -19,6 +19,9 @@ from wilq.codex.prompts import resolve_prompt_template
 from wilq.codex.safety import assess_codex_prompt
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.runtime.codex_run_lifecycle import (
+    transition_codex_run_if_status,
+)
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
@@ -395,6 +398,8 @@ def finish_initial_draft_run(
     status: Literal["blocked", "failed"],
     error: str,
 ) -> CodexRun | None:
+    if run.status != "started":
+        return None
     return transition_initial_draft_run_if_status(
         run_store, run, status=status, error=error
     )
@@ -409,20 +414,13 @@ def transition_initial_draft_run_if_status(
 ) -> CodexRun | None:
     if run.status != "started":
         return None
-    updated = run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
-    if not hasattr(run_store, "_connect"):
-        return run_store.save_codex_run(updated)
-    with run_store._connect() as connection:
-        connection.execute("BEGIN IMMEDIATE")
-        cursor = connection.execute(
-            "UPDATE codex_runs SET payload_json = ? WHERE id = ? AND payload_json = ?",
-            (
-                json.dumps(updated.model_dump(mode="json"), sort_keys=True, separators=(",", ":")),
-                run.id,
-                json.dumps(run.model_dump(mode="json"), sort_keys=True, separators=(",", ":")),
-            ),
-        )
-        return updated if cursor.rowcount == 1 else None
+    updated = run.model_copy(
+        update={"status": status, "completed_at": utc_now(), "error": error}
+    )
+    return transition_codex_run_if_status(
+        run_store,
+        updated,
+    )
 
 
 def start_initial_draft_run(

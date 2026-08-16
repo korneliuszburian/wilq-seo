@@ -9,11 +9,11 @@ from typing import cast
 from uuid import uuid4
 
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
-from wilq.content.quality.semantic_run_state import effective_deadline
 from wilq.content.workflow.documents.codex_revision_commit import (
     codex_completion_state,
     persist_codex_completion,
 )
+from wilq.content.workflow.runtime.codex_run_lifecycle import effective_deadline
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping

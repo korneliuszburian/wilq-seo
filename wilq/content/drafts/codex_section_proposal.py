@@ -54,9 +54,12 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionProposalSectionLineage,
 )
+from wilq.content.workflow.runtime.codex_run_lifecycle import (
+    save_terminal_codex_run,
+    terminal_codex_run,
+)
 from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
-from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore
 
 
@@ -459,7 +462,7 @@ def _persist_proposal(
         runtime.output,
         inputs.selected_cta_ids,
     )
-    completed_run = _terminal_run(runtime.run, status="completed")
+    completed_run = terminal_codex_run(runtime.run, status="completed")
     append_result = workflow_store.append_draft_revision(
         build_child_draft_revision_command(
             base_revision,
@@ -783,16 +786,7 @@ def _finish_run(
     status: Literal["completed", "failed", "blocked"],
     error: str | None = None,
 ) -> CodexRun:
-    return store.save_codex_run(_terminal_run(run, status=status, error=error))
-
-
-def _terminal_run(
-    run: CodexRun,
-    *,
-    status: Literal["completed", "failed", "blocked"],
-    error: str | None = None,
-) -> CodexRun:
-    return run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
+    return save_terminal_codex_run(store, run, status=status, error=error)
 
 
 def _unique(values: Iterable[object]) -> list[str]:

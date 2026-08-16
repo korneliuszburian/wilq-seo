@@ -35,12 +35,12 @@ from wilq.content.quality.semantic_review_store import (
     SemanticReviewStorageActivationRequired,
 )
 from wilq.content.quality.semantic_review_turn import semantic_review_turn_request
-from wilq.content.quality.semantic_run_state import (
-    runtime_error,
-    transition_codex_run_if_status,
-)
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.runtime.codex_run_lifecycle import (
+    finish_codex_run,
+    runtime_error,
+)
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore
@@ -712,12 +712,7 @@ def _finish_run(
     status: Literal["blocked", "failed"],
     error: str,
 ) -> CodexRun:
-    terminal = run.model_copy(
-        update={"status": status, "completed_at": utc_now(), "error": error}
-    )
-    if hasattr(store, "_connect"):
-        return transition_codex_run_if_status(store, terminal) or run
-    return store.save_codex_run(terminal)
+    return finish_codex_run(store, run, status=status, error=error)
 
 
 def _trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:

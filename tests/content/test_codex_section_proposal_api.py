@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_codex_proposal
+from wilq.content.drafts import codex_section_proposal
 from wilq.content.drafts.codex_section_proposal import propose_content_section_revision
 from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentCodexRuntimeTrace,
@@ -20,6 +21,8 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionSection,
 )
+from wilq.schemas import CodexRun
+from wilq.storage.local_state import LocalStateStore
 
 
 @pytest.mark.parametrize("review_status", ["unreviewed", "approved"])
@@ -140,3 +143,79 @@ def test_legacy_section_proposal_route_remains_retired() -> None:
     )
 
     assert response.status_code == 404
+
+
+def test_section_proposal_conflict_finishes_started_run_as_blocked_without_revision(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_store = LocalStateStore(tmp_path / "state.sqlite3")
+    started = CodexRun(id="codex_section_conflict", status="started")
+    run_store.save_codex_run(started)
+    appended: list[object] = []
+
+    class WorkflowStore:
+        def append_draft_revision(self, command: object, *, completed_codex_run: CodexRun):
+            appended.append(completed_codex_run)
+            return SimpleNamespace(status="conflict", revision=None)
+
+    monkeypatch.setattr(
+        codex_section_proposal,
+        "merge_selected_sections",
+        lambda *_args: [],
+    )
+    monkeypatch.setattr(
+        codex_section_proposal,
+        "merge_selected_cta_blocks",
+        lambda *_args: [],
+    )
+    monkeypatch.setattr(
+        codex_section_proposal,
+        "build_child_draft_revision_command",
+        lambda *_args, **_kwargs: object(),
+    )
+    monkeypatch.setattr(
+        codex_section_proposal,
+        "_proposal_metadata",
+        lambda **_kwargs: object(),
+    )
+    monkeypatch.setattr(
+        codex_section_proposal,
+        "_blocker",
+        lambda code, *_args, **_kwargs: SimpleNamespace(code=code),
+    )
+    monkeypatch.setattr(
+        codex_section_proposal,
+        "_blocked_response",
+        lambda **kwargs: SimpleNamespace(**kwargs),
+    )
+
+    base_revision = SimpleNamespace(
+        planning_digest="planning", revision_id="base", work_item_id="work"
+    )
+    inputs = SimpleNamespace(
+        base_revision=base_revision,
+        selected_headings=["Zakres"],
+        selected_cta_ids=[],
+        contract=SimpleNamespace(),
+    )
+    runtime = SimpleNamespace(
+        run=started,
+        output=SimpleNamespace(),
+        trace=SimpleNamespace(),
+    )
+    response = codex_section_proposal._persist_proposal(
+        snapshot=SimpleNamespace(),
+        request=SimpleNamespace(requested_by="wilku"),
+        inputs=inputs,
+        runtime=runtime,
+        quality_review=SimpleNamespace(),
+        workflow_store=WorkflowStore(),
+        run_store=run_store,
+    )
+
+    assert response.status == "conflict"
+    assert response.run.status == "blocked"
+    assert len(appended) == 1
+    assert appended[0].status == "completed"
+    assert run_store.list_codex_runs()[0].status == "blocked"
