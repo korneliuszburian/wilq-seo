@@ -13,7 +13,14 @@ from wilq.operator_labels import (
 )
 
 from .content import ContentAhrefsCandidateRow
-from .core import ActionRisk, ConnectorRefreshRun, ConnectorStatus, MetricFact, utc_now
+from .core import (
+    ActionRisk,
+    ConnectorRefreshRun,
+    ConnectorStatus,
+    DiagnosticDataReadiness,
+    MetricFact,
+    utc_now,
+)
 
 
 class AhrefsDiagnosticSection(BaseModel):
@@ -244,6 +251,7 @@ class AhrefsDiagnosticsResponse(BaseModel):
     request_budget: AhrefsRequestBudget = Field(default_factory=AhrefsRequestBudget)
     live_data_status_label: str = ""
     live_data_available: bool
+    data_readiness: DiagnosticDataReadiness
     authority_fact_count: int = 0
     gap_fact_count: int = 0
     gap_read_contract: AhrefsGapReadContract

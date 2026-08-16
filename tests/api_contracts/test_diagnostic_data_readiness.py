@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 import wilq.schemas as schemas
@@ -341,3 +343,150 @@ def test_metric_fact_rejects_blank_marketer_context(
 
     with pytest.raises(ValueError, match="pełnego kontekstu marketera"):
         MetricFact(**payload)
+
+
+# --- Ahrefs / Merchant diagnostic wiring (cmrf truth foundation) ---
+
+
+def test_ahrefs_diagnostics_expose_data_readiness_for_observed_facts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from tests._contract_support.env import clear_ahrefs_env
+
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ahrefs_readiness_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ahrefs_readiness_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+    run = ConnectorRefreshRun(
+        id="refresh_ahrefs_readiness_test",
+        connector_id="ahrefs",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_ahrefs_readiness_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={"domain_rating": 42},
+        summary="Ahrefs readiness fixture.",
+    )
+    from wilq.connectors.vendor import VendorMetricFact
+    from wilq.storage.local_state import local_state_store
+    from wilq.storage.metric_store import metric_store
+
+    local_state_store().save_connector_refresh_run(run)
+    metric_store().save_connector_refresh_metrics(
+        run,
+        detailed_facts=[
+            VendorMetricFact(
+                "ahrefs_content_gap_count",
+                1,
+                {
+                    "gap_type": "content_gap",
+                    "keyword": "bdo odpady",
+                    "competitor_domain": "denios.pl",
+                    "target_domain": "ekologus.pl",
+                    "target_keyword_sample_size": "100",
+                    "target_keyword_limit": "1000",
+                },
+                period="ahrefs_gap",
+            ),
+        ],
+    )
+
+    from tests._contract_support.api_client import client
+
+    response = client.get("/api/ahrefs/diagnostics")
+
+    assert response.status_code == 200
+    data_readiness = response.json()["data_readiness"]
+    assert data_readiness["state"] == "ready"
+    assert data_readiness["factual_metric_count"] >= 1
+    assert data_readiness["factual_metrics"]
+    assert data_readiness["evidence_ids"]
+    assert response.json()["live_data_available"] is True
+
+
+def test_ahrefs_diagnostics_without_facts_expose_recovery_readiness(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from tests._contract_support.env import clear_ahrefs_env
+
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ahrefs_empty_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ahrefs_empty_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+
+    from tests._contract_support.api_client import client
+
+    response = client.get("/api/ahrefs/diagnostics")
+
+    assert response.status_code == 200
+    data_readiness = response.json()["data_readiness"]
+    assert data_readiness["state"] in {"refresh_available", "unavailable", "blocked"}
+    assert data_readiness["factual_metric_count"] == 0
+    assert data_readiness["factual_metrics"] == []
+    assert response.json()["live_data_available"] is False
+
+
+def test_merchant_diagnostics_expose_data_readiness_for_trusted_facts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from tests._contract_support.env import clear_google_service_env
+    from wilq.connectors.vendor import VendorMetricFact
+    from wilq.storage.local_state import local_state_store
+    from wilq.storage.metric_store import metric_store
+
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "merchant_readiness_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "merchant_readiness_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    adc_json = tmp_path / "adc.json"
+    adc_json.write_text('{"type":"authorized_user"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(adc_json))
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "5519957373")
+    run = ConnectorRefreshRun(
+        id="refresh_google_merchant_center_readiness_test",
+        connector_id="google_merchant_center",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_merchant_readiness_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={"total_products": 10900, "item_level_issue_count": 23},
+        summary="Merchant readiness fixture.",
+    )
+    local_state_store().save_connector_refresh_run(run)
+    metric_store().save_connector_refresh_metrics(
+        run,
+        detailed_facts=[
+            VendorMetricFact(
+                "issue_product_count",
+                23,
+                {
+                    "issue_type": "availability_updated",
+                    "affected_attribute": "n:availability",
+                    "country": "PL",
+                    "reporting_context": "SHOPPING_ADS",
+                    "severity": "NOT_IMPACTED",
+                    "resolution": "MERCHANT_ACTION",
+                },
+                period="merchant_feed",
+            ),
+        ],
+    )
+
+    from tests._contract_support.api_client import client
+
+    response = client.get("/api/merchant/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    data_readiness = payload["data_readiness"]
+    assert data_readiness["state"] == "ready"
+    assert data_readiness["factual_metric_count"] >= 1
+    assert data_readiness["factual_metrics"]
+    assert payload["live_data_available"] is True

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from time import monotonic
 
 from wilq.actions.service import list_actions
+from wilq.briefing.diagnostic_readiness import build_diagnostic_data_readiness
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.registry import get_connector_status
@@ -157,6 +158,30 @@ def build_merchant_diagnostics(
         action_ids,
     )
     decision_queue = _merchant_decisions_with_lineage(decision_queue)
+    evidence_ids = _unique(
+        [
+            *(evidence_id for section in sections for evidence_id in section.evidence_ids),
+            *(
+                evidence_id
+                for decision in decision_queue
+                for evidence_id in decision.evidence_ids
+            ),
+        ]
+    )
+    data_readiness = build_diagnostic_data_readiness(
+        connector=connector,
+        latest_refresh=latest_refresh,
+        factual_metrics=trusted_facts[:12],
+        factual_metric_count=len(trusted_facts),
+        evidence_ids=evidence_ids,
+        partial=bool(
+            latest_refresh and latest_refresh.quality_state.value == "partial"
+        ),
+        stale=bool(trusted_facts and freshness_assessment.requires_refresh),
+        partial_coverage_label=(
+            "Pokazane metryki obejmują tylko potwierdzony zakres odczytu Merchant Center."
+        ),
+    )
     response = MerchantDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
@@ -167,6 +192,7 @@ def build_merchant_diagnostics(
         else None,
         live_data_available=live_data_available,
         live_data_status_label=_merchant_live_data_status_label(live_data_available),
+        data_readiness=data_readiness,
         product_count=_numeric_metric_or_refresh_summary(
             trusted_facts,
             latest_refresh,
@@ -195,16 +221,7 @@ def build_merchant_diagnostics(
         issue_clusters=issue_clusters,
         decision_queue=decision_queue,
         sections=sections,
-        evidence_ids=_unique(
-            [
-                *(evidence_id for section in sections for evidence_id in section.evidence_ids),
-                *(
-                    evidence_id
-                    for decision in decision_queue
-                    for evidence_id in decision.evidence_ids
-                ),
-            ]
-        ),
+        evidence_ids=evidence_ids,
         action_ids=_unique(
             [
                 *(action_id for section in sections for action_id in section.action_ids),

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from wilq.briefing.diagnostic_readiness import build_diagnostic_data_readiness
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -143,6 +144,24 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
             *labeled_gap_read_contract.source_connectors,
         ]
     )
+    trusted_ahrefs_facts = [
+        *authority_facts,
+        *competitor_read_facts,
+        *gap_facts,
+    ]
+    data_readiness = build_diagnostic_data_readiness(
+        connector=connector,
+        latest_refresh=latest_refresh,
+        factual_metrics=trusted_ahrefs_facts[:12],
+        factual_metric_count=len(trusted_ahrefs_facts),
+        evidence_ids=evidence_ids,
+        partial=bool(
+            latest_refresh and latest_refresh.quality_state.value == "partial"
+        ),
+        partial_coverage_label=(
+            "Pokazane metryki obejmują tylko potwierdzony zakres odczytu Ahrefs."
+        ),
+    )
     return AhrefsDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
@@ -154,6 +173,7 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         request_budget=_ahrefs_request_budget(latest_refresh),
         live_data_status_label=_ahrefs_live_data_status_label(live_data_available),
         live_data_available=live_data_available,
+        data_readiness=data_readiness,
         authority_fact_count=len(authority_facts),
         gap_fact_count=len(gap_facts),
         gap_read_contract=labeled_gap_read_contract,

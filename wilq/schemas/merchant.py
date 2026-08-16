@@ -8,7 +8,14 @@ from pydantic import BaseModel, Field, model_validator
 from wilq.operator_labels import reported_issue_occurrence_count_label
 
 from .actions import ActionPreviewCardViewModel
-from .core import ActionRisk, ConnectorRefreshRun, ConnectorStatus, MetricFact, utc_now
+from .core import (
+    ActionRisk,
+    ConnectorRefreshRun,
+    ConnectorStatus,
+    DiagnosticDataReadiness,
+    MetricFact,
+    utc_now,
+)
 from .marketing import TacticalQueueItem, _marketing_priority_label
 
 
@@ -314,6 +321,7 @@ class MerchantDiagnosticsResponse(BaseModel):
     latest_refresh_status_label: str | None = None
     live_data_available: bool
     live_data_status_label: str = ""
+    data_readiness: DiagnosticDataReadiness
     product_count: int | None = None
     issue_count: int | None = None
     freshness_assessment: MerchantFreshnessAssessment
