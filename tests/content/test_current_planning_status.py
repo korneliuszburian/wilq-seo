@@ -168,6 +168,81 @@ def test_enqueue_finished_is_terminal_but_failed_and_blocked_are_retryable(
         assert persisted[0] == "queued"
 
 
+def test_enqueue_pending_can_reset_finished_only_when_explicitly_allowed(
+    tmp_path: Path,
+) -> None:
+    store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
+    response = _generating_response()
+    assert store.enqueue_pending(
+        work_item_id=response.work_item_id,
+        service_card_id=response.service_card_id or "",
+        planning_input_digest=response.planning_input_digest or "",
+        response=response,
+    ) == "queued"
+    with sqlite3.connect(store.path) as connection:
+        connection.execute(
+            "UPDATE content_planning_generation_jobs SET status = 'finished'"
+            " WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?",
+            (response.work_item_id, response.service_card_id, response.planning_input_digest),
+        )
+
+    assert store.enqueue_pending(
+        work_item_id=response.work_item_id,
+        service_card_id=response.service_card_id or "",
+        planning_input_digest=response.planning_input_digest or "",
+        response=response,
+        allow_finished_reset=True,
+    ) == "queued"
+    with sqlite3.connect(store.path) as connection:
+        persisted = connection.execute(
+            "SELECT status FROM content_planning_generation_jobs"
+            " WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?",
+            (response.work_item_id, response.service_card_id, response.planning_input_digest),
+        ).fetchone()
+    assert persisted == ("queued",)
+
+
+@pytest.mark.parametrize("status", ["failed", "blocked"])
+def test_enqueue_pending_finished_reset_does_not_change_retryable_terminal_states(
+    tmp_path: Path,
+    status: str,
+) -> None:
+    store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
+    response = _generating_response()
+    assert store.enqueue_pending(
+        work_item_id=response.work_item_id,
+        service_card_id=response.service_card_id or "",
+        planning_input_digest=response.planning_input_digest or "",
+        response=response,
+    ) == "queued"
+    with sqlite3.connect(store.path) as connection:
+        connection.execute(
+            "UPDATE content_planning_generation_jobs SET status = ?"
+            " WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?",
+            (
+                status,
+                response.work_item_id,
+                response.service_card_id,
+                response.planning_input_digest,
+            ),
+        )
+
+    assert store.enqueue_pending(
+        work_item_id=response.work_item_id,
+        service_card_id=response.service_card_id or "",
+        planning_input_digest=response.planning_input_digest or "",
+        response=response,
+        allow_finished_reset=True,
+    ) == "queued"
+    with sqlite3.connect(store.path) as connection:
+        persisted = connection.execute(
+            "SELECT status FROM content_planning_generation_jobs"
+            " WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?",
+            (response.work_item_id, response.service_card_id, response.planning_input_digest),
+        ).fetchone()
+    assert persisted == ("queued",)
+
+
 @pytest.mark.parametrize("pending", [False, True])
 def test_enqueue_requeues_stale_job(tmp_path: Path, pending: bool) -> None:
     store = ContentPlanningProposalStore(tmp_path / "state.sqlite")

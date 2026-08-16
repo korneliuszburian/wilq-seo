@@ -365,6 +365,7 @@ def _enqueue_planning_generation(
         service_card_id=request.service_card_id,
         planning_input_digest=request.expected_planning_input_digest,
         response=result,
+        allow_finished_reset=request.regenerate_stale_mapping,
     )
     if outcome == "existing":
         queued = store.queued_response(

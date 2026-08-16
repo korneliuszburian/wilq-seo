@@ -265,6 +265,7 @@ class ContentPlanningProposalStore:
         service_card_id: str,
         planning_input_digest: str,
         response: ContentPlanningProposalResponse,
+        allow_finished_reset: bool = False,
     ) -> PlanningEnqueueOutcome:
         """Persist a request before the expensive snapshot is built."""
         return _enqueue_pending(
@@ -273,6 +274,7 @@ class ContentPlanningProposalStore:
             service_card_id=service_card_id,
             planning_input_digest=planning_input_digest,
             response=response,
+            allow_finished_reset=allow_finished_reset,
         )
 
     def save_terminal_response(
@@ -398,6 +400,7 @@ def _enqueue_pending(
     service_card_id: str,
     planning_input_digest: str,
     response: ContentPlanningProposalResponse,
+    allow_finished_reset: bool = False,
 ) -> PlanningEnqueueOutcome:
     payload = redact_mapping(response.model_dump(mode="json"))
     with store._connect() as connection:
@@ -410,7 +413,11 @@ def _enqueue_pending(
                 """,
             (work_item_id, service_card_id, planning_input_digest),
         ).fetchone()
-        if row is not None and row["status"] == "finished":
+        if (
+            row is not None
+            and row["status"] == "finished"
+            and not allow_finished_reset
+        ):
             return "finished"
         if row is not None and row["status"] == "queued" and not _job_is_stale(row["updated_at"]):
             return "existing"
@@ -435,8 +442,19 @@ def _enqueue_pending(
             """,
             (work_item_id, service_card_id, planning_input_digest),
         )
-        connection.execute(
-            """
+        if allow_finished_reset:
+            upsert_status_fence = """
+                INSERT INTO content_planning_generation_jobs (
+                  work_item_id, service_card_id, planning_input_digest, status,
+                  payload_json, updated_at
+                ) VALUES (?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(work_item_id, service_card_id, planning_input_digest)
+                DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
+                              updated_at = excluded.updated_at
+                WHERE content_planning_generation_jobs.status IN ('queued', 'stale', 'finished')
+                """
+        else:
+            upsert_status_fence = """
                 INSERT INTO content_planning_generation_jobs (
                   work_item_id, service_card_id, planning_input_digest, status,
                   payload_json, updated_at
@@ -445,7 +463,9 @@ def _enqueue_pending(
                 DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
                               updated_at = excluded.updated_at
                 WHERE content_planning_generation_jobs.status IN ('queued', 'stale')
-                """,
+                """
+        connection.execute(
+            upsert_status_fence,
             (
                 work_item_id,
                 service_card_id,
