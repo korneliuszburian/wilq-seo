@@ -98,11 +98,6 @@ def read_content_public_deployment(
     revision_id: str,
 ) -> ContentPublicDeploymentReadResponse:
     store = content_workflow_store()
-    deployment = public_deployment(
-        store,
-        work_item_id=work_item_id,
-        revision_id=revision_id,
-    )
     revision = next(
         (
             candidate
@@ -110,6 +105,16 @@ def read_content_public_deployment(
             if candidate.revision_id == revision_id
         ),
         None,
+    )
+    deployment = (
+        None
+        if revision is None
+        else public_deployment(
+            store,
+            work_item_id=work_item_id,
+            revision_id=revision_id,
+            revision_digest=revision.content_digest,
+        )
     )
     review = (
         None

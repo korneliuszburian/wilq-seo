@@ -182,7 +182,7 @@ def test_measurement_read_route_returns_typed_contract(monkeypatch) -> None:
     )
     monkeypatch.setattr(
         "wilq.content.workflow.store.store_public_deployment.public_deployment",
-        lambda _store, *, work_item_id, revision_id: deployment,
+        lambda _store, *, work_item_id, revision_id, revision_digest: deployment,
     )
 
     result = workflow_router.content_work_item_measurement_read(

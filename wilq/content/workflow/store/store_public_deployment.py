@@ -54,16 +54,20 @@ def save_public_deployment(
 
 
 def public_deployment(
-    store: PublicDeploymentStore, *, work_item_id: str, revision_id: str
+    store: PublicDeploymentStore,
+    *,
+    work_item_id: str,
+    revision_id: str,
+    revision_digest: str,
 ) -> ContentPublicDeployment | None:
     with store._connect() as connection:
         row = connection.execute(
             """
             SELECT payload_json FROM content_public_deployments
-            WHERE work_item_id = ? AND revision_id = ?
+            WHERE work_item_id = ? AND revision_id = ? AND revision_digest = ?
             ORDER BY confirmed_at DESC, rowid DESC LIMIT 1
             """,
-            (work_item_id, revision_id),
+            (work_item_id, revision_id, revision_digest),
         ).fetchone()
     if row is None:
         return None

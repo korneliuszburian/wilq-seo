@@ -344,7 +344,12 @@ def content_work_item_measurement_read(
     )
     if revision is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono wskazanej rewizji dokumentu.")
-    deployment = public_deployment(store, work_item_id=work_item_id, revision_id=revision_id)
+    deployment = public_deployment(
+        store,
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision_digest=revision.content_digest,
+    )
     return build_content_measurement_read(
         work_item_id=work_item_id,
         revision_id=revision_id,
@@ -376,13 +381,14 @@ def content_work_item_measurement_window(
         ),
         None,
     )
-    deployment = public_deployment(
-        store, work_item_id=request.work_item_id, revision_id=request.revision_id
-    )
     if revision is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono wskazanej rewizji dokumentu.")
-    if deployment is not None and deployment.revision_digest != revision.content_digest:
-        deployment = None
+    deployment = public_deployment(
+        store,
+        work_item_id=request.work_item_id,
+        revision_id=request.revision_id,
+        revision_digest=revision.content_digest,
+    )
     result = build_confirmed_deployment_measurement_window(
         deployment=deployment,
         metric_facts=(

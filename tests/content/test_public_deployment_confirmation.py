@@ -73,6 +73,7 @@ def test_public_deployment_requires_the_exact_observed_public_object(
         store,
         work_item_id=revision.work_item_id,
         revision_id=revision.revision_id,
+        revision_digest=revision.content_digest,
     ) == saved
 
     with pytest.raises(ValueError, match="Nie znaleziono potwierdzonego odczytu"):
