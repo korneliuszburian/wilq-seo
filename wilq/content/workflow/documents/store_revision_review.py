@@ -14,12 +14,12 @@ from wilq.content.workflow.store.store_queries import (
     draft_revision_conflict,
     latest_draft_revision,
     latest_draft_revision_review,
-    model_json,
     review_matches_command,
     wordpress_revision_apply_in_progress,
 )
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
+from wilq.storage.model_json import model_json
 
 
 def record_draft_revision_review(

@@ -7,14 +7,7 @@ from typing import Any, cast
 
 from pydantic import BaseModel
 
-from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
-from wilq.content.measurement.deployment import ContentPublicDeployment
-from wilq.content.measurement.learning import ContentLearningProposal
-from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
-from wilq.content.measurement.window import ContentMeasurementWindow
-from wilq.content.quality.review import ContentQualityReview
-from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.decisions.planning import ContentPlanningDecision
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.documents.revisions import (
@@ -23,39 +16,15 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionReview,
     ContentDraftRevisionReviewCommand,
 )
-from wilq.content.workflow.target.target_mapping import ContentTargetMappingConfirmation
 from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent
 from wilq.security.redaction import redact_mapping
-from wilq.social.reuse import SocialReuseProposal, SocialReuseReview
 from wilq.storage.local_state_audit import (
     upsert_action_mutation_audit as _upsert_action_mutation_audit,
 )
 from wilq.storage.local_state_audit import (
     upsert_audit_event as _upsert_audit_event,
 )
-
-
-def model_json(
-    model: (
-        ContentHumanReview
-        | ContentWordPressDraftAuditEnvelope
-        | ContentQualityReview
-        | ContentWordPressDraftExecutionResult
-        | ContentMeasurementWindow
-        | ContentMeasurementOutcomeInterpretation
-        | ContentLearningProposal
-        | ContentPublicDeployment
-        | ContentDraftRevision
-        | ContentDraftRevisionReview
-        | ContentPlanningDecision
-        | ContentTargetMappingConfirmation
-        | AuditEvent
-        | ActionMutationAuditRecord
-        | SocialReuseProposal
-        | SocialReuseReview
-    ),
-) -> str:
-    return json.dumps(model.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+from wilq.storage.model_json import model_json
 
 
 def upsert_audit_event(connection: sqlite3.Connection, event: AuditEvent) -> None:

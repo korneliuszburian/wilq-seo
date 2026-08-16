@@ -14,6 +14,7 @@ from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.schemas import CodexRun
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
+from wilq.storage.model_json import model_json
 from wilq.storage.private_paths import prepare_private_store_path
 from wilq.storage.schema_versions import (
     ensure_sqlite_schema_version,
@@ -449,7 +450,7 @@ def _enqueue_pending(
                 work_item_id,
                 service_card_id,
                 planning_input_digest,
-                json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                model_json(payload),
             ),
         )
     return "queued"
@@ -489,7 +490,7 @@ def _save_terminal_response(
                     """,
                 (
                     status,
-                    json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                    model_json(payload),
                     response.work_item_id,
                     response.service_card_id,
                     exact_job_digest,
@@ -508,7 +509,7 @@ def _save_terminal_response(
                 """,
             (
                 status,
-                json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                model_json(payload),
                 response.work_item_id,
                 response.service_card_id,
                 exact_job_digest,

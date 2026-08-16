@@ -58,9 +58,6 @@ from wilq.content.workflow.store.store_queries import (
     latest_planning_decision as _latest_planning_decision,
 )
 from wilq.content.workflow.store.store_queries import (
-    model_json as _model_json,
-)
-from wilq.content.workflow.store.store_queries import (
     upsert_action_mutation_audit as _upsert_action_mutation_audit,
 )
 from wilq.content.workflow.store.store_queries import (
@@ -88,6 +85,7 @@ from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent, CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
+from wilq.storage.model_json import model_json as _model_json
 from wilq.storage.private_paths import prepare_private_store_path
 
 WordPressRevisionApplyClaimResult = Literal[

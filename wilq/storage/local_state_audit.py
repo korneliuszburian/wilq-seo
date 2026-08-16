@@ -7,7 +7,8 @@ from typing import Any, cast
 
 from wilq.schemas import ActionMutationAuditRecord, AuditEvent
 from wilq.security.redaction import redact_mapping
-from wilq.storage.local_state_runs import _model_from_json, _model_json
+from wilq.storage.local_state_runs import _model_from_json
+from wilq.storage.model_json import model_json as _model_json
 
 
 def upsert_audit_event(connection: sqlite3.Connection, event: AuditEvent) -> AuditEvent:

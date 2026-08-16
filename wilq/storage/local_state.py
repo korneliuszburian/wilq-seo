@@ -9,7 +9,6 @@ from wilq.storage.local_state_ads import _AdsReviewStoreMixin
 from wilq.storage.local_state_audit import _AuditStoreMixin
 from wilq.storage.local_state_focus import _SectionFocusStoreMixin
 from wilq.storage.local_state_runs import _model_from_json as _model_from_json
-from wilq.storage.local_state_runs import _model_json as _model_json
 from wilq.storage.local_state_runs import _RunStoreMixin
 from wilq.storage.private_paths import prepare_private_store_path
 from wilq.storage.schema_versions import (

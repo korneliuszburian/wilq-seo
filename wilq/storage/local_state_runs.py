@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from wilq.jobs.models import JobRun
 from wilq.schemas import CodexRun, ConnectorRefreshRun
 from wilq.security.redaction import redact_mapping
+from wilq.storage.model_json import model_json as _model_json
 from wilq.workflows.models import WorkflowRun
 
 
@@ -183,10 +184,6 @@ class _RunStoreMixin:
         if row is None:
             return None
         return _model_from_json(JobRun, cast(str, row["payload_json"]))
-
-
-def _model_json(model: BaseModel) -> str:
-    return json.dumps(model.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
 
 
 def _model_from_json[ModelT: BaseModel](model_type: type[ModelT], payload_json: str) -> ModelT:

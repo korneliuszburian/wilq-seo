@@ -8,9 +8,9 @@ from typing import cast
 from wilq.content.measurement.learning import ContentLearningProposal
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import ContentMeasurementWindow
-from wilq.content.workflow.store.store_queries import model_json
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
+from wilq.storage.model_json import model_json
 
 
 class MeasurementStoreMixin:

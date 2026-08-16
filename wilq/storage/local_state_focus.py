@@ -5,7 +5,8 @@ from typing import cast
 
 from wilq.content.workflow.contracts.section_focus import ContentSectionFocusRecord
 from wilq.security.redaction import redact_mapping
-from wilq.storage.local_state_runs import _model_from_json, _model_json
+from wilq.storage.local_state_runs import _model_from_json
+from wilq.storage.model_json import model_json as _model_json
 
 
 class _SectionFocusStoreMixin:

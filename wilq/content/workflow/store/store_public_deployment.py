@@ -5,8 +5,8 @@ import sqlite3
 from typing import Protocol, cast
 
 from wilq.content.measurement.deployment import ContentPublicDeployment
-from wilq.content.workflow.store.store_queries import model_json
 from wilq.security.redaction import redact_mapping
+from wilq.storage.model_json import model_json
 
 
 class PublicDeploymentStore(Protocol):

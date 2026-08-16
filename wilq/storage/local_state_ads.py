@@ -7,7 +7,8 @@ from wilq.schemas import (
     AdsStrategyReviewRecord,
     AdsTargetGuardrailConfirmation,
 )
-from wilq.storage.local_state_runs import _model_from_json, _model_json
+from wilq.storage.local_state_runs import _model_from_json
+from wilq.storage.model_json import model_json as _model_json
 
 
 class _AdsReviewStoreMixin:

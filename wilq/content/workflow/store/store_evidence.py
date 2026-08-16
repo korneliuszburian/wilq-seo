@@ -9,12 +9,10 @@ from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecut
 from wilq.content.quality.review import ContentQualityReview
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.store.store_queries import (
-    model_json as _model_json,
-)
-from wilq.content.workflow.store.store_queries import (
     upsert_wordpress_draft_execution as _upsert_wordpress_draft_execution,
 )
 from wilq.security.redaction import redact_mapping
+from wilq.storage.model_json import model_json as _model_json
 
 
 class _EvidenceStoreMixin:

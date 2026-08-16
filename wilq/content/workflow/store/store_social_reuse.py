@@ -4,9 +4,9 @@ import json
 import sqlite3
 from typing import cast
 
-from wilq.content.workflow.store.store_queries import model_json as _model_json
 from wilq.security.redaction import redact_mapping
 from wilq.social.reuse import SocialReuseProposal, SocialReuseReview
+from wilq.storage.model_json import model_json as _model_json
 
 
 class _SocialReuseStoreMixin:
