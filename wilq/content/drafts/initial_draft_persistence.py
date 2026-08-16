@@ -10,9 +10,11 @@ from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
     safe_initial_draft_run_error,
 )
+from wilq.content.drafts.initial_draft_runtime import (
+    build_initial_draft_blocker as _blocker,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
-    ContentInitialDraftBlockerCode,
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
@@ -198,20 +200,6 @@ def _finish_failure(
         runtime=trace,
         blockers=[blocker],
         safe_next_step=blocker.next_step,
-    )
-
-
-def _blocker(
-    code: ContentInitialDraftBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentInitialDraftBlocker:
-    return ContentInitialDraftBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
     )
 
 

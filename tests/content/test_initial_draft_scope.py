@@ -18,6 +18,10 @@ from wilq.content.drafts.generated_claim_safety import (
     GeneratedClaimSafetyIssue,
     generated_claim_blocker,
 )
+from wilq.content.drafts.initial_draft_runtime import (
+    build_initial_draft_blocker,
+    initial_draft_request_mismatch,
+)
 from wilq.content.drafts.initial_draft_validation import document_scope_errors
 from wilq.content.drafts.initial_full_draft import _planning_input_blocker
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -1232,6 +1236,153 @@ def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None
         "missing_approved_service_fact",
         "stale_planning_sources",
     ]
+
+
+@pytest.mark.parametrize(
+    ("code", "label", "reason", "next_step", "source_codes", "expected"),
+    [
+        (
+            "runtime_blocked",
+            "Codex nie zwrócił pełnego tekstu",
+            "App-server nie zakończył turnu poprawnym ustrukturyzowanym dokumentem.",
+            "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
+            ["runtime_timeout"],
+            {
+                "code": "runtime_blocked",
+                "label": "Codex nie zwrócił pełnego tekstu",
+                "reason": (
+                    "App-server nie zakończył turnu poprawnym ustrukturyzowanym dokumentem."
+                ),
+                "next_step": (
+                    "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał."
+                ),
+                "source_codes": ["runtime_timeout"],
+                "retry_after_seconds": None,
+            },
+        ),
+        (
+            "persistence_failed",
+            "Nie zapisano pełnego tekstu",
+            "Atomowy zapis dokumentu i zakończonego CodexRun nie powiódł się.",
+            "Sprawdź prywatny store i uruchom nową próbę; częściowy tekst nie istnieje.",
+            None,
+            {
+                "code": "persistence_failed",
+                "label": "Nie zapisano pełnego tekstu",
+                "reason": "Atomowy zapis dokumentu i zakończonego CodexRun nie powiódł się.",
+                "next_step": (
+                    "Sprawdź prywatny store i uruchom nową próbę; częściowy tekst nie istnieje."
+                ),
+                "source_codes": [],
+                "retry_after_seconds": None,
+            },
+        ),
+        (
+            "runtime_failed",
+            "Nie utworzono dokumentu nowej strony",
+            "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
+            "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
+            None,
+            {
+                "code": "runtime_failed",
+                "label": "Nie utworzono dokumentu nowej strony",
+                "reason": "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
+                "next_step": "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
+                "source_codes": [],
+                "retry_after_seconds": None,
+            },
+        ),
+    ],
+)
+def test_shared_initial_draft_blocker_builder_preserves_frozen_caller_payloads(
+    code: ContentInitialDraftBlockerCode,
+    label: str,
+    reason: str,
+    next_step: str,
+    source_codes: list[str] | None,
+    expected: dict[str, object],
+) -> None:
+    blocker = build_initial_draft_blocker(
+        code,
+        label,
+        reason,
+        next_step,
+        source_codes=source_codes,
+    )
+
+    assert blocker.model_dump(mode="json") == expected
+
+
+def test_initial_draft_mismatch_modes_preserve_distinct_historical_checks() -> None:
+    proposal = _proposal_with_review_required_inventory()
+    request = ContentInitialDraftRequest(
+        expected_proposal_id=proposal.proposal_id or "",
+        expected_planning_digest=proposal.planning_digest,
+        expected_planning_input_digest=proposal.planning_input_digest or "",
+        requested_by="wilku",
+    )
+    refresh_goal_input = ContentPlanningInput.model_construct(
+        goal="refresh_existing",
+        work_item_id=proposal.work_item_id,
+        planning_input_digest=proposal.planning_input_digest,
+        confirmed_service_card_id=proposal.service_card_id,
+    )
+
+    assert (
+        initial_draft_request_mismatch(
+            proposal=proposal,
+            request=request,
+            planning_input=refresh_goal_input,
+            mode="new_page",
+        )
+        == "proposal_mismatch"
+    )
+    assert (
+        initial_draft_request_mismatch(
+            proposal=proposal,
+            request=request,
+            planning_input=refresh_goal_input,
+            mode="refresh",
+        )
+        is None
+    )
+
+    baseline_proposal = proposal.model_copy(update={"generation_status": "baseline"})
+    new_page_input = refresh_goal_input.model_copy(update={"goal": "new_page"})
+
+    assert (
+        initial_draft_request_mismatch(
+            proposal=baseline_proposal,
+            request=request,
+            planning_input=new_page_input,
+            mode="refresh",
+        )
+        == "planning_not_generated"
+    )
+    assert (
+        initial_draft_request_mismatch(
+            proposal=baseline_proposal,
+            request=request,
+            planning_input=new_page_input,
+            mode="new_page",
+        )
+        is None
+    )
+    refresh_blocker = initial_full_draft._proposal_request_mismatch(
+        baseline_proposal,
+        request,
+    )
+    assert refresh_blocker is not None
+    assert refresh_blocker.model_dump(mode="json") == {
+        "code": "planning_not_generated",
+        "label": "Brakuje wygenerowanego planu",
+        "reason": (
+            "Initial draft nie może powstać z preserve-first baseline bez planu modelowego."
+        ),
+        "next_step": "Wygeneruj aktualny plan i uruchom pełny tekst z widocznego szkicu.",
+        "source_codes": [],
+        "retry_after_seconds": None,
+    }
 
 
 def test_initial_draft_blocker_contract_contains_every_planning_blocker_code() -> None:

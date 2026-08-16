@@ -6,9 +6,7 @@ from typing import Literal
 from wilq.codex.app_server import (
     CodexAppServerClientProtocol,
     CodexAppServerStructuredTurnRequest,
-    CodexAppServerTurnResult,
 )
-from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
@@ -22,6 +20,14 @@ from wilq.content.drafts.initial_draft_run import (
     safe_initial_draft_run_error,
     start_initial_draft_run,
     transition_initial_draft_run_if_status,
+)
+from wilq.content.drafts.initial_draft_runtime import (
+    InitialDraftFailureCopy,
+    InitialDraftTurnFailure,
+    InitialDraftTurnGoal,
+    build_initial_draft_blocker,
+    execute_initial_draft_turn,
+    initial_draft_request_mismatch,
 )
 from wilq.content.drafts.initial_draft_validation import (
     document_scope_errors_for_planning_input,
@@ -60,6 +66,20 @@ _NewPagePrePersistResult = (
     | ContentInitialDraftResponse
 )
 
+_NEW_PAGE_INITIAL_DRAFT_TURN_GOAL = InitialDraftTurnGoal(
+    runtime_failure=InitialDraftFailureCopy(
+        label="Nie utworzono dokumentu nowej strony",
+        reason="Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
+        next_step="Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
+    ),
+    invalid_structured_output=InitialDraftFailureCopy(
+        label="Nie utworzono dokumentu nowej strony",
+        reason="Codex zwrócił dokument poza ścisłym kontraktem; nic nie zapisano.",
+        next_step="Codex zwrócił dokument poza ścisłym kontraktem; nic nie zapisano.",
+    ),
+    include_runtime_source_codes=False,
+)
+
 
 def generate_new_page_initial_draft(
     *,
@@ -76,7 +96,15 @@ def generate_new_page_initial_draft(
 ) -> ContentInitialDraftResponse:
     if workspace.status != "ready_for_document":
         return _blocked(workspace, proposal, "planning_not_ready", workspace.safe_next_step)
-    if _request_mismatch(planning_input, proposal, request):
+    if (
+        initial_draft_request_mismatch(
+            proposal=proposal,
+            request=request,
+            planning_input=planning_input,
+            mode="new_page",
+        )
+        is not None
+    ):
         return _blocked(
             workspace, proposal, "proposal_mismatch", "Odśwież dokładny plan przed generowaniem."
         )
@@ -136,16 +164,25 @@ def generate_new_page_initial_draft(
         endpoint_path=endpoint_path,
         prompt=turn_request.instruction,
     )
-    execution = _execute_turn(
-        proposal,
-        client,
-        run,
-        run_store,
-        workspace,
-        turn_request,
+    execution = execute_initial_draft_turn(
+        turn_request=turn_request,
+        client=client,
+        run=run,
+        run_store=run_store,
+        goal=_NEW_PAGE_INITIAL_DRAFT_TURN_GOAL,
+        on_terminal=transition_initial_draft_run_if_status,
     )
-    if isinstance(execution, ContentInitialDraftResponse):
-        return execution
+    if isinstance(execution, InitialDraftTurnFailure):
+        return _blocked(
+            workspace,
+            proposal,
+            execution.blocker.code,
+            execution.blocker.next_step,
+            run.id,
+            execution.trace,
+            status=execution.status,
+            blocker=execution.blocker,
+        )
     output, runtime = execution
     prepared = _prepare_output_for_persistence(
         planning_input=planning_input,
@@ -313,11 +350,11 @@ def _output_blocker(
         include_regulatory=False,
     )
     if errors:
-        return ContentInitialDraftBlocker(
-            code="document_scope_mismatch",
-            label="Dokument nie odpowiada zatwierdzonemu planowi",
-            reason="Model zmienił strukturę albo plan nie ma kompletnego lineage.",
-            next_step="Odrzuć wynik; nie naprawiaj struktury ręcznie po generowaniu.",
+        return build_initial_draft_blocker(
+            "document_scope_mismatch",
+            "Dokument nie odpowiada zatwierdzonemu planowi",
+            "Model zmienił strukturę albo plan nie ma kompletnego lineage.",
+            "Odrzuć wynik; nie naprawiaj struktury ręcznie po generowaniu.",
             source_codes=errors,
         )
     generation_contract = _claim_safety_contract(planning_input, proposal, output)
@@ -396,64 +433,6 @@ def _finish_quality_blocked(
     )
 
 
-def _execute_turn(
-    proposal: ContentPlanningProposal,
-    client: CodexAppServerClientProtocol,
-    run: CodexRun,
-    run_store: LocalStateStore,
-    workspace: ContentNewPageCanonicalDocumentWorkspace,
-    turn_request: CodexAppServerStructuredTurnRequest,
-) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | ContentInitialDraftResponse:
-    turn: CodexAppServerTurnResult | None
-    try:
-        turn = client.run_structured_turn(turn_request)
-    except Exception:
-        turn = None
-    if turn is None or turn.status != "completed" or turn.output_text is None:
-        code: Literal["runtime_blocked", "runtime_failed"] = (
-            "runtime_blocked"
-            if turn is not None and turn.status == "blocked"
-            else "runtime_failed"
-        )
-        transition_initial_draft_run_if_status(
-            run_store,
-            run,
-            status="blocked" if code == "runtime_blocked" else "failed",
-            error=code,
-        )
-        return _blocked(
-            workspace,
-            proposal,
-            code,
-            "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
-            run.id,
-            (
-                ContentCodexRuntimeTrace(status="failed")
-                if turn is None
-                else runtime_trace(turn)
-            ),
-            status="blocked" if code == "runtime_blocked" else "failed",
-        )
-    trace = runtime_trace(turn)
-    try:
-        return ContentInitialDraftModelOutput.model_validate_json(turn.output_text), trace
-    except ValueError:
-        transition_initial_draft_run_if_status(
-            run_store,
-            run,
-            status="blocked",
-            error="invalid_structured_output",
-        )
-        return _blocked(
-            workspace,
-            proposal,
-            "invalid_structured_output",
-            "Codex zwrócił dokument poza ścisłym kontraktem; nic nie zapisano.",
-            run.id,
-            trace,
-        )
-
-
 def _turn_request(
     brief: ContentNewPageBrief,
     planning_input: ContentPlanningInput,
@@ -498,22 +477,6 @@ def _turn_request(
     )
 
 
-def _request_mismatch(
-    planning_input: ContentPlanningInput,
-    proposal: ContentPlanningProposal,
-    request: ContentInitialDraftRequest,
-) -> bool:
-    return bool(
-        proposal.proposal_id != request.expected_proposal_id
-        or proposal.planning_digest != request.expected_planning_digest
-        or proposal.planning_input_digest != request.expected_planning_input_digest
-        or planning_input.goal != "new_page"
-        or planning_input.work_item_id != proposal.work_item_id
-        or planning_input.planning_input_digest != request.expected_planning_input_digest
-        or planning_input.confirmed_service_card_id != proposal.service_card_id
-    )
-
-
 def _blocked(
     workspace: ContentNewPageCanonicalDocumentWorkspace,
     proposal: ContentPlanningProposal,
@@ -522,21 +485,21 @@ def _blocked(
     run_id: str | None = None,
     runtime: ContentCodexRuntimeTrace | None = None,
     status: Literal["blocked", "failed", "conflict"] = "blocked",
+    blocker: ContentInitialDraftBlocker | None = None,
 ) -> ContentInitialDraftResponse:
+    effective_blocker = blocker or build_initial_draft_blocker(
+        code,
+        "Nie utworzono dokumentu nowej strony",
+        next_step,
+        next_step,
+    )
     return ContentInitialDraftResponse(
         status=status,
         work_item_id=workspace.work_item_id,
         proposal_id=proposal.proposal_id,
         run_id=run_id,
         runtime=runtime or ContentCodexRuntimeTrace(status="not_started"),
-        blockers=[
-            ContentInitialDraftBlocker(
-                code=code,
-                label="Nie utworzono dokumentu nowej strony",
-                reason=next_step,
-                next_step=next_step,
-            )
-        ],
+        blockers=[effective_blocker],
         safe_next_step=next_step,
     )
 

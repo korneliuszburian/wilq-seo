@@ -1,15 +1,22 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from wilq.codex.app_server import (
+    CodexAppServerStructuredTurnRequest,
+    CodexAppServerTurnBlocker,
+    CodexAppServerTurnResult,
+)
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.content.drafts import fact_selection, initial_full_draft
 from wilq.content.drafts.initial_draft_readability import readability_issues_for_output
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
+    ContentInitialDraftResponse,
     ContentInitialDraftSectionOutput,
 )
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
@@ -30,6 +37,8 @@ from wilq.content.workflow.decisions.planning import (
     ContentPlanningSection,
 )
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionPageAssets
+from wilq.schemas import CodexRun
+from wilq.storage.local_state import LocalStateStore
 
 
 def test_initial_draft_v2_prompt_preserves_copy_and_source_fact_rules() -> None:
@@ -55,6 +64,74 @@ def test_initial_draft_v2_prompt_preserves_copy_and_source_fact_rules() -> None:
     assert "Nie dodawaj faktów" in instruction
     assert "nie powtarzaj tego samego twierdzenia" in instruction
     assert instruction.endswith("REGULATORY_DIRECTIVE")
+
+
+def test_refresh_runtime_failure_preserves_trace_terminal_status_and_error(
+    tmp_path: Path,
+) -> None:
+    store = LocalStateStore(tmp_path / "initial-draft-runtime.sqlite3")
+    run = store.save_codex_run(CodexRun(id="codex_refresh_failure", status="started"))
+    turn_request = CodexAppServerStructuredTurnRequest(
+        instruction="Napisz dokument.",
+        application_context="{}",
+        untrusted_context="{}",
+        output_schema={},
+    )
+    inputs = initial_full_draft._InitialDraftInputs(
+        planning_input=ContentPlanningInput.model_construct(work_item_id="work-item-refresh"),
+        proposal=ContentPlanningProposal.model_construct(proposal_id="proposal-refresh"),
+        generation_contract=SimpleNamespace(),
+    )
+
+    class BlockedClient:
+        def run_structured_turn(
+            self, request: CodexAppServerStructuredTurnRequest
+        ) -> CodexAppServerTurnResult:
+            assert request is turn_request
+            return CodexAppServerTurnResult(
+                status="blocked",
+                thread_id="thread-refresh",
+                turn_id="turn-refresh",
+                event_methods=("turn/started", "turn/blocked"),
+                item_types=("reasoning",),
+                blockers=(
+                    CodexAppServerTurnBlocker(
+                        code="runtime_timeout",
+                        message="Nie zapisuj surowego komunikatu.",
+                    ),
+                ),
+            )
+
+    result = initial_full_draft._execute_runtime(
+        inputs,
+        BlockedClient(),
+        run,
+        store,
+        turn_request,
+    )
+
+    assert isinstance(result, ContentInitialDraftResponse)
+    assert result.status == "blocked"
+    assert result.runtime.model_dump(mode="json") == {
+        "status": "blocked",
+        "run_id": None,
+        "thread_id": "thread-refresh",
+        "turn_id": "turn-refresh",
+        "event_methods": ["turn/started", "turn/blocked"],
+        "item_types": ["reasoning"],
+        "external_call_attempted": False,
+    }
+    assert result.blockers[0].model_dump(mode="json") == {
+        "code": "runtime_blocked",
+        "label": "Codex nie zwrócił pełnego tekstu",
+        "reason": "App-server nie zakończył turnu poprawnym ustrukturyzowanym dokumentem.",
+        "next_step": "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
+        "source_codes": ["runtime_timeout"],
+        "retry_after_seconds": None,
+    }
+    persisted = next(item for item in store.list_codex_runs() if item.id == run.id)
+    assert persisted.status == "blocked"
+    assert persisted.error == "runtime_blocked|runtime_timeout"
 
 
 def _approved_access_fact() -> ContentSourceFact:

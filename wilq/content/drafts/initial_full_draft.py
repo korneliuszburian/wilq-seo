@@ -6,9 +6,7 @@ from typing import Literal, cast
 from wilq.codex.app_server import (
     CodexAppServerClientProtocol,
     CodexAppServerStructuredTurnRequest,
-    CodexAppServerTurnResult,
 )
-from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
@@ -30,12 +28,21 @@ from wilq.content.drafts.initial_draft_run import (
     safe_initial_draft_run_error,
     start_initial_draft_run,
 )
+from wilq.content.drafts.initial_draft_runtime import (
+    InitialDraftFailureCopy,
+    InitialDraftTurnFailure,
+    InitialDraftTurnGoal,
+    execute_initial_draft_turn,
+    initial_draft_request_mismatch,
+)
+from wilq.content.drafts.initial_draft_runtime import (
+    build_initial_draft_blocker as _blocker,
+)
 from wilq.content.drafts.initial_draft_validation import (
     document_scope_errors_for_planning_input,
 )
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
-    ContentInitialDraftBlockerCode,
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
@@ -89,6 +96,20 @@ _InitialDraftPrePersistResult = (
 )
 
 BENEFIT_SOURCE_FACT_LIMIT = 2
+
+_REFRESH_INITIAL_DRAFT_TURN_GOAL = InitialDraftTurnGoal(
+    runtime_failure=InitialDraftFailureCopy(
+        label="Codex nie zwrócił pełnego tekstu",
+        reason="App-server nie zakończył turnu poprawnym ustrukturyzowanym dokumentem.",
+        next_step="Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
+    ),
+    invalid_structured_output=InitialDraftFailureCopy(
+        label="Codex zwrócił niepoprawny dokument",
+        reason="Wynik nie przeszedł ścisłego schematu pełnej treści WILQ.",
+        next_step="Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
+    ),
+    include_runtime_source_codes=True,
+)
 
 
 def _benefit_source_fact_text(summary: str) -> str | None:
@@ -471,18 +492,20 @@ def _proposal_request_mismatch(
     proposal: ContentPlanningProposal,
     request: ContentInitialDraftRequest,
 ) -> ContentInitialDraftBlocker | None:
-    if proposal.generation_status != "codex_generated" or proposal.proposal_id is None:
+    mismatch = initial_draft_request_mismatch(
+        proposal=proposal,
+        request=request,
+        planning_input=None,
+        mode="refresh",
+    )
+    if mismatch == "planning_not_generated":
         return _blocker(
             "planning_not_generated",
             "Brakuje wygenerowanego planu",
             "Initial draft nie może powstać z preserve-first baseline bez planu modelowego.",
             "Wygeneruj aktualny plan i uruchom pełny tekst z widocznego szkicu.",
         )
-    if (
-        proposal.proposal_id != request.expected_proposal_id
-        or proposal.planning_digest != request.expected_planning_digest
-        or proposal.planning_input_digest != request.expected_planning_input_digest
-    ):
+    if mismatch == "proposal_mismatch":
         return _blocker(
             "proposal_mismatch",
             "Plan zmienił się przed generowaniem",
@@ -518,62 +541,25 @@ def _execute_runtime(
     run_store: LocalStateStore,
     turn_request: CodexAppServerStructuredTurnRequest,
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | ContentInitialDraftResponse:
-    try:
-        result = client.run_structured_turn(turn_request)
-    except Exception:
-        result = CodexAppServerTurnResult(status="failed")
-    trace = runtime_trace(result)
-    if result.status != "completed" or result.output_text is None:
-        code: ContentInitialDraftBlockerCode = (
-            "runtime_blocked" if result.status == "blocked" else "runtime_failed"
-        )
-        blocker = _blocker(
-            code,
-            "Codex nie zwrócił pełnego tekstu",
-            "App-server nie zakończył turnu poprawnym ustrukturyzowanym dokumentem.",
-            "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
-            source_codes=[item.code for item in result.blockers],
-        )
-        status: Literal["blocked", "failed"] = "blocked" if result.status == "blocked" else "failed"
-        finish_initial_draft_run(
-            run_store,
-            run,
-            status=status,
-            error=safe_initial_draft_run_error(blocker),
-        )
+    execution = execute_initial_draft_turn(
+        turn_request=turn_request,
+        client=client,
+        run=run,
+        run_store=run_store,
+        goal=_REFRESH_INITIAL_DRAFT_TURN_GOAL,
+        on_terminal=finish_initial_draft_run,
+    )
+    if isinstance(execution, InitialDraftTurnFailure):
         return ContentInitialDraftResponse(
-            status=status,
+            status=execution.status,
             work_item_id=inputs.planning_input.work_item_id,
             proposal_id=inputs.proposal.proposal_id,
             run_id=run.id,
-            runtime=trace,
-            blockers=[blocker],
-            safe_next_step=blocker.next_step,
+            runtime=execution.trace,
+            blockers=[execution.blocker],
+            safe_next_step=execution.blocker.next_step,
         )
-    try:
-        return ContentInitialDraftModelOutput.model_validate_json(result.output_text), trace
-    except ValueError:
-        blocker = _blocker(
-            "invalid_structured_output",
-            "Codex zwrócił niepoprawny dokument",
-            "Wynik nie przeszedł ścisłego schematu pełnej treści WILQ.",
-            "Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
-        )
-        finish_initial_draft_run(
-            run_store,
-            run,
-            status="blocked",
-            error=safe_initial_draft_run_error(blocker),
-        )
-        return ContentInitialDraftResponse(
-            status="blocked",
-            work_item_id=inputs.planning_input.work_item_id,
-            proposal_id=inputs.proposal.proposal_id,
-            run_id=run.id,
-            runtime=trace,
-            blockers=[blocker],
-            safe_next_step=blocker.next_step,
-        )
+    return execution
 
 
 def _output_blocker(
@@ -652,23 +638,6 @@ def _planning_input_blocker(
         if first is not None
         else "Odśwież źródła lub zatwierdzenia i wygeneruj aktualny plan.",
         source_codes=[item.code for item in blockers],
-    )
-
-
-def _blocker(
-    code: ContentInitialDraftBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-    *,
-    source_codes: list[str] | None = None,
-) -> ContentInitialDraftBlocker:
-    return ContentInitialDraftBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-        source_codes=source_codes or [],
     )
 
 

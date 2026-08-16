@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from hashlib import sha256
 from pathlib import Path
 
@@ -436,6 +436,75 @@ def test_new_page_turn_request_failure_is_audited_as_failed_run(
     )
     assert run.status == "failed"
     assert run.error == "runtime_failed"
+
+
+def test_new_page_runtime_failure_preserves_historical_terminal_payload(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _draft_case(tmp_path, monkeypatch)
+
+    class FailedTurnClient(_InitialDraftClient):
+        def run_structured_turn(
+            self, request: CodexAppServerStructuredTurnRequest
+        ) -> CodexAppServerTurnResult:
+            self.requests.append(request)
+            return CodexAppServerTurnResult(
+                status="failed",
+                thread_id="thread-new-page",
+                turn_id="turn-new-page",
+                event_methods=("turn/started", "turn/failed"),
+                item_types=("reasoning",),
+            )
+
+    result = _generate(case, FailedTurnClient(_output(_CLEAN_BODY)))
+
+    assert result.status == "failed"
+    assert result.runtime.model_dump(mode="json") == {
+        "status": "failed",
+        "run_id": None,
+        "thread_id": "thread-new-page",
+        "turn_id": "turn-new-page",
+        "event_methods": ["turn/started", "turn/failed"],
+        "item_types": ["reasoning"],
+        "external_call_attempted": False,
+    }
+    assert result.blockers[0].model_dump(mode="json") == {
+        "code": "runtime_failed",
+        "label": "Nie utworzono dokumentu nowej strony",
+        "reason": "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
+        "next_step": "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
+        "source_codes": [],
+        "retry_after_seconds": None,
+    }
+    run = next(item for item in case.run_store.list_codex_runs() if item.id == result.run_id)
+    assert run.status == "failed"
+    assert run.error == "runtime_failed"
+
+
+def test_new_page_goal_mismatch_preserves_historical_blocker_copy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _draft_case(tmp_path, monkeypatch)
+    client = _InitialDraftClient(_output(_CLEAN_BODY))
+    case = replace(
+        case,
+        planning_input=case.planning_input.model_copy(update={"goal": "refresh_existing"}),
+    )
+
+    result = _generate(case, client)
+
+    assert result.status == "blocked"
+    assert result.blockers[0].model_dump(mode="json") == {
+        "code": "proposal_mismatch",
+        "label": "Nie utworzono dokumentu nowej strony",
+        "reason": "Odśwież dokładny plan przed generowaniem.",
+        "next_step": "Odśwież dokładny plan przed generowaniem.",
+        "source_codes": [],
+        "retry_after_seconds": None,
+    }
+    assert client.requests == []
 
 
 def test_new_page_generic_section_is_grounded_before_revision_persistence(
