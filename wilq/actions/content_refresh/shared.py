@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from typing import Any
 from urllib.parse import urlparse
 
+from wilq.content.operator_copy import unique_present
 from wilq.schemas import MetricFact
 
 __all__ = [
@@ -62,7 +63,6 @@ __all__ = [
     "_url_host",
     "_candidate_slug_for_page",
     "_slug",
-    "_unique",
 ]
 
 
@@ -347,7 +347,7 @@ def _content_preview_url_semantics(
 def _gsc_metric_snapshot(page_facts: list[MetricFact]) -> dict[str, int | float | str]:
     return {
         "queries": len(
-            _unique(
+            unique_present(
                 fact.dimensions.get("query") for fact in page_facts if fact.dimensions.get("query")
             )
         ),
@@ -806,11 +806,3 @@ def _slug(value: str) -> str:
     return "".join(character if character.isalnum() else "_" for character in value.lower())[
         :96
     ].strip("_")
-
-
-def _unique(items: Iterable[str | None]) -> list[str]:
-    unique_items: list[str] = []
-    for item in items:
-        if item and item not in unique_items:
-            unique_items.append(item)
-    return unique_items

@@ -1,6 +1,7 @@
-from collections.abc import Iterable
-
+from wilq.content.operator_copy import unique
 from wilq.schemas import MetricFact
+
+unique_values = unique
 
 
 def prioritize_action_metrics(
@@ -16,14 +17,6 @@ def prioritize_action_metrics(
         else:
             remaining.append(fact)
     return [*required, *remaining]
-
-
-def unique_values(items: Iterable[str]) -> list[str]:
-    unique_items: list[str] = []
-    for item in items:
-        if item and item not in unique_items:
-            unique_items.append(item)
-    return unique_items
 
 
 def metric_fact_sort_time(fact: MetricFact) -> str:

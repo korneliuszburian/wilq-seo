@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
-from wilq.actions.metric_utils import prioritize_action_metrics, unique_values
+from wilq.actions.metric_utils import prioritize_action_metrics
 from wilq.actions.validation_copy import (
     missing,
     missing_evidence,
@@ -15,6 +15,7 @@ from wilq.actions.validation_copy import (
     wrong,
 )
 from wilq.connectors.refresh import list_connector_refresh_runs
+from wilq.content.operator_copy import unique
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
@@ -138,7 +139,7 @@ def demand_gen_readiness_action_from_metric_facts(
     latest_google_ads_evidence_ids: list[str],
     latest_ga4_evidence_ids: list[str],
 ) -> ActionObject | None:
-    evidence_ids = unique_values(
+    evidence_ids = unique(
         [
             connector_evidence_id("google_ads"),
             connector_evidence_id("google_analytics_4"),
@@ -288,7 +289,7 @@ def _campaign_context_rows_from_metric_facts(facts: list[MetricFact]) -> list[di
                 "cost_micros": _numeric_metric(group_facts, "cost_micros"),
                 "conversions": _numeric_metric(group_facts, "conversions"),
                 "conversion_value": _numeric_metric(group_facts, "conversion_value"),
-                "evidence_ids": unique_values(fact.evidence_id for fact in group_facts),
+                "evidence_ids": unique(fact.evidence_id for fact in group_facts),
             }
         )
     return sorted(
@@ -667,7 +668,7 @@ def demand_gen_campaign_mode_review_rows_from_campaigns(
                 review_status_label=_demand_gen_review_status_label(review_required),
                 reason=reason,
                 reason_label=demand_gen_contract_label(reason),
-                evidence_ids=unique_items(campaign.get("evidence_ids") or []),
+                evidence_ids=unique(campaign.get("evidence_ids") or []),
             )
         )
     return sorted(
@@ -697,14 +698,6 @@ def demand_gen_contract_has_ready_fact(
         elif fact.name == row_count_fact_name:
             row_count_seen = True
     return status_ready or row_count_seen
-
-
-def unique_items(items: Iterable[str]) -> list[str]:
-    unique: list[str] = []
-    for item in items:
-        if item and item not in unique:
-            unique.append(item)
-    return unique
 
 
 def _demand_gen_ad_group_ad_row(facts: list[MetricFact]) -> DemandGenAdGroupAdRow:
@@ -759,7 +752,7 @@ def _demand_gen_landing_quality_row(
         active_users=_int_fact_value(facts, "active_users"),
         sessions=_int_fact_value(facts, "sessions"),
         engagement_rate=engagement_rate,
-        evidence_ids=unique_items(fact.evidence_id for fact in facts if fact.evidence_id),
+        evidence_ids=unique(fact.evidence_id for fact in facts if fact.evidence_id),
     )
 
 

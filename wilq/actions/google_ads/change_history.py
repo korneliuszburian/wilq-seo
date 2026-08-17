@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from typing import Any
 
 from wilq.actions.validation_copy import (
@@ -13,6 +13,7 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
+from wilq.content.operator_copy import unique_present
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -199,7 +200,7 @@ def change_history_impact_payload_from_metric_facts(
         ),
         reverse=True,
     )[:8]
-    evidence_ids = _unique(
+    evidence_ids = unique_present(
         evidence_id for preview in previews for evidence_id in preview.get("evidence_ids", [])
     )
     if not evidence_ids:
@@ -211,7 +212,7 @@ def change_history_impact_payload_from_metric_facts(
         "preview_contract": CHANGE_HISTORY_IMPACT_PREVIEW_CONTRACT,
         "operation_type": CHANGE_HISTORY_IMPACT_OPERATION_TYPE,
         "change_history_preview": previews,
-        "source_metric_names": _unique(
+        "source_metric_names": unique_present(
             metric_name
             for preview in previews
             for metric_name in preview.get("source_metric_names", [])
@@ -322,8 +323,8 @@ def _change_history_impact_preview(
         ],
         "required_validation": CHANGE_HISTORY_IMPACT_REQUIRED_VALIDATION,
         "blocked_claims": CHANGE_HISTORY_IMPACT_BLOCKED_CLAIMS,
-        "source_metric_names": _unique(fact.name for fact in facts),
-        "evidence_ids": _unique(fact.evidence_id for fact in facts),
+        "source_metric_names": unique_present(fact.name for fact in facts),
+        "evidence_ids": unique_present(fact.evidence_id for fact in facts),
         "api_mutation_ready": False,
         "apply_allowed": False,
         "destructive": False,
@@ -332,16 +333,3 @@ def _change_history_impact_preview(
 
 def _slug(value: str) -> str:
     return "".join(character if character.isalnum() else "_" for character in value).strip("_")
-
-
-def _unique(values: Iterable[str | None]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for value in values:
-        if not value:
-            continue
-        if value in seen:
-            continue
-        seen.add(value)
-        result.append(value)
-    return result

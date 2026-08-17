@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
 from typing import Any
 
 from wilq.actions.validation_copy import (
@@ -14,6 +13,7 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
+from wilq.content.operator_copy import unique_present
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -141,7 +141,7 @@ def search_term_ngram_payload_from_metric_facts(
             str(preview.get("ngram") or ""),
         ),
     )[:8]
-    evidence_ids = _unique(
+    evidence_ids = unique_present(
         evidence_id for preview in previews for evidence_id in preview.get("evidence_ids", [])
     )
     if not evidence_ids:
@@ -153,12 +153,12 @@ def search_term_ngram_payload_from_metric_facts(
         "preview_contract": SEARCH_TERM_NGRAM_PREVIEW_CONTRACT,
         "operation_type": SEARCH_TERM_NGRAM_OPERATION_TYPE,
         "ngram_preview": previews,
-        "source_metric_names": _unique(
+        "source_metric_names": unique_present(
             metric_name
             for preview in previews
             for metric_name in preview.get("source_metric_names", [])
         ),
-        "source_search_terms": _unique(
+        "source_search_terms": unique_present(
             term for preview in previews for term in preview.get("sample_search_terms", [])
         ),
         "evidence_ids": evidence_ids,
@@ -263,7 +263,7 @@ def _ngram_preview(
     ngram_size: int,
     facts: list[MetricFact],
 ) -> dict[str, Any]:
-    search_terms = _unique(
+    search_terms = unique_present(
         fact.dimensions.get("search_term") for fact in facts if fact.dimensions.get("search_term")
     )
     return {
@@ -288,8 +288,8 @@ def _ngram_preview(
         ],
         "required_validation": SEARCH_TERM_NGRAM_REQUIRED_VALIDATION,
         "blocked_claims": SEARCH_TERM_NGRAM_BLOCKED_CLAIMS,
-        "source_metric_names": _unique(fact.name for fact in facts),
-        "evidence_ids": _unique(fact.evidence_id for fact in facts),
+        "source_metric_names": unique_present(fact.name for fact in facts),
+        "evidence_ids": unique_present(fact.evidence_id for fact in facts),
         "api_mutation_ready": False,
         "apply_allowed": False,
         "destructive": False,
@@ -329,16 +329,3 @@ def _sum_metric(facts: list[MetricFact], name: str) -> int | float:
 
 def _slug(value: str) -> str:
     return "".join(character if character.isalnum() else "_" for character in value).strip("_")
-
-
-def _unique(values: Iterable[str | None]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for value in values:
-        if not value:
-            continue
-        if value in seen:
-            continue
-        seen.add(value)
-        result.append(value)
-    return result

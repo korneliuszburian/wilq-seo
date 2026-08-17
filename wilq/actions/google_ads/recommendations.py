@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from typing import Any
 
 from wilq.actions.validation_copy import (
@@ -13,6 +13,7 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
+from wilq.content.operator_copy import unique_present
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
@@ -289,7 +290,7 @@ def recommendation_review_payload_from_metric_facts(
             recommendation.get("recommendation_id") or "",
         ),
     )[:12]
-    evidence_ids = _unique(
+    evidence_ids = unique_present(
         evidence_id
         for recommendation in recommendations
         for evidence_id in recommendation.get("evidence_ids", [])
@@ -310,7 +311,7 @@ def recommendation_review_payload_from_metric_facts(
         "recommendations": recommendations,
         "preview_contract": "recommendation_apply_preview_v1",
         "payload_preview": payload_preview,
-        "source_metric_names": _unique(
+        "source_metric_names": unique_present(
             metric_name
             for recommendation in recommendations
             for metric_name in recommendation.get("source_metric_names", [])
@@ -348,8 +349,8 @@ def _recommendation_candidate(
     facts: list[MetricFact],
 ) -> dict[str, Any]:
     first_dimensions = facts[0].dimensions if facts else {}
-    source_metric_names = _unique(fact.name for fact in facts)
-    evidence_ids = _unique(fact.evidence_id for fact in facts)
+    source_metric_names = unique_present(fact.name for fact in facts)
+    evidence_ids = unique_present(fact.evidence_id for fact in facts)
     payload_preview = {
         "id": f"recommendation_apply_preview_{recommendation_id or recommendation_type}",
         "recommendation_id": recommendation_id,
@@ -384,16 +385,3 @@ def _recommendation_candidate(
         "blocked_claims": RECOMMENDATION_REVIEW_BLOCKED_CLAIMS,
         "required_validation": RECOMMENDATION_REVIEW_REQUIRED_VALIDATION,
     }
-
-
-def _unique(values: Iterable[str | None]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for value in values:
-        if not value:
-            continue
-        if value in seen:
-            continue
-        seen.add(value)
-        result.append(value)
-    return result

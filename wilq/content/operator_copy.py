@@ -21,6 +21,18 @@ def unique(values: Iterable[object]) -> list[str]:
     return result
 
 
+def unique_present(values: Iterable[object]) -> list[str]:
+    """Skip falsy values, stringify, deduplicate, and preserve the first occurrence."""
+
+    result: list[str] = []
+    for value in values:
+        if value:
+            text = str(value)
+            if text not in result:
+                result.append(text)
+    return result
+
+
 def build_blocker(  # noqa: UP047
     model: type[Model],
     *,
@@ -46,4 +58,4 @@ def build_blocker(  # noqa: UP047
     return model(**values)
 
 
-__all__ = ["build_blocker", "unique"]
+__all__ = ["build_blocker", "unique", "unique_present"]

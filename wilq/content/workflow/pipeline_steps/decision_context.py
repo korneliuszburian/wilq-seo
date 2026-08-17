@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -11,6 +10,7 @@ from wilq.content.canonical.metric_dimensions import metric_dimensions_match_lan
 from wilq.content.knowledge.work_item_service_profile import (
     build_content_work_item_service_profile_context,
 )
+from wilq.content.operator_copy import unique_present
 from wilq.content.workflow.contracts.models import ContentDecisionTargetMappingStatus
 from wilq.content.workflow.decisions.decision_mapping import content_work_item_from_decision
 from wilq.content.workflow.decisions.inventory_binding import inventory_decision_for_work_item
@@ -318,7 +318,7 @@ def _source_public_context(
 ) -> ContentDecisionContextSourcePublic:
     source_url = _source_url(decision)
     material_status = _material_status(material)
-    evidence_ids = _unique(
+    evidence_ids = unique_present(
         [
             catalog_item.evidence_id if catalog_item is not None else None,
             material.evidence_id if material is not None else None,
@@ -432,7 +432,7 @@ def _observed_material_surfaces(
     surfaces = [mapping[region]] if region in mapping else []
     if material.acf_field_names or material.acf_section_headings:
         surfaces.append("acf_fields_observed")
-    return _unique(surfaces)
+    return unique_present(surfaces)
 
 
 def _authoring_target_context(authoring_target: str) -> ContentDecisionContextAuthoringTarget:
@@ -530,7 +530,7 @@ def _object_readiness(
 def _evidence_readiness(
     freshness: ContentFreshnessAssessment,
 ) -> ContentDecisionContextReadinessAxis:
-    blocker_connectors = _unique(
+    blocker_connectors = unique_present(
         [
             *freshness.stale_connector_ids,
             *freshness.missing_connector_ids,
@@ -676,7 +676,7 @@ def _gsc_signal_evidence_ids(
 ) -> list[str]:
     if source_url is None:
         return []
-    return _unique(
+    return unique_present(
         fact.evidence_id
         for fact in decision.metric_facts
         if fact.source_connector == "google_search_console"
@@ -801,10 +801,6 @@ def _aliases(
             )
         )
     return _unique_aliases(aliases)
-
-
-def _unique(values: Iterable[str | None]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value))
 
 
 def _unique_aliases(
