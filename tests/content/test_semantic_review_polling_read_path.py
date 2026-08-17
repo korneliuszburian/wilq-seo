@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_semantic_review
+from wilq.content.quality import semantic_review_queue
 
 
 def test_active_semantic_review_poll_avoids_heavy_snapshot_loader(monkeypatch) -> None:
@@ -15,8 +16,7 @@ def test_active_semantic_review_poll_avoids_heavy_snapshot_loader(monkeypatch) -
     work_item_id = "content_work_item_bdo"
     revision_id = "content_revision_bdo_full_1"
     endpoint = (
-        f"/api/content/work-items/{work_item_id}/draft-revisions/"
-        f"{revision_id}/semantic-review"
+        f"/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review"
     )
     snapshot_calls = 0
 
@@ -50,11 +50,17 @@ def test_active_semantic_review_poll_avoids_heavy_snapshot_loader(monkeypatch) -
                 )
             )
 
-    monkeypatch.setattr(content_semantic_review, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(semantic_review_queue, "local_state_store", lambda: LocalState())
     monkeypatch.setattr(
-        content_semantic_review,
+        semantic_review_queue,
         "content_workflow_store",
         lambda: RevisionStore(),
+    )
+    monkeypatch.setattr(content_semantic_review, "content_workflow_store", lambda: RevisionStore())
+    monkeypatch.setattr(
+        semantic_review_queue,
+        "content_semantic_review_store",
+        lambda: SimpleNamespace(for_revision=lambda *_args: None),
     )
     content_semantic_review.register_content_semantic_review_routes(
         app,
@@ -75,8 +81,7 @@ def test_failed_semantic_run_remains_visible_after_reload(monkeypatch) -> None:
     work_item_id = "content_work_item_bdo"
     revision_id = "content_revision_bdo_full_1"
     endpoint = (
-        f"/api/content/work-items/{work_item_id}/draft-revisions/"
-        f"{revision_id}/semantic-review"
+        f"/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review"
     )
     failed_run = SimpleNamespace(
         hook="content_semantic_review",
@@ -108,11 +113,17 @@ def test_failed_semantic_run_remains_visible_after_reload(monkeypatch) -> None:
             )
         )
 
-    monkeypatch.setattr(content_semantic_review, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(semantic_review_queue, "local_state_store", lambda: LocalState())
     monkeypatch.setattr(
-        content_semantic_review,
+        semantic_review_queue,
         "content_workflow_store",
         lambda: RevisionStore(),
+    )
+    monkeypatch.setattr(content_semantic_review, "content_workflow_store", lambda: RevisionStore())
+    monkeypatch.setattr(
+        semantic_review_queue,
+        "content_semantic_review_store",
+        lambda: SimpleNamespace(for_revision=lambda *_args: None),
     )
     content_semantic_review.register_content_semantic_review_routes(
         app,
@@ -133,8 +144,7 @@ def test_semantic_review_returns_known_storage_blocker_before_queueing(monkeypat
     work_item_id = "content_work_item_bdo"
     revision_id = "content_revision_bdo_full_1"
     endpoint = (
-        f"/api/content/work-items/{work_item_id}/draft-revisions/"
-        f"{revision_id}/semantic-review"
+        f"/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review"
     )
     sentinel = JSONResponse(status_code=409, content={"status": "blocked"})
     queued = False
@@ -176,7 +186,7 @@ def test_semantic_review_returns_known_storage_blocker_before_queueing(monkeypat
         "generate_content_semantic_review",
         lambda **_kwargs: sentinel,
     )
-    monkeypatch.setattr(content_semantic_review._SEMANTIC_REVIEW_EXECUTOR, "submit", submit)
+    monkeypatch.setattr(semantic_review_queue._SEMANTIC_REVIEW_EXECUTOR, "submit", submit)
     content_semantic_review.register_content_semantic_review_routes(
         app,
         snapshot_loader=lambda _work_item_id: Snapshot(),

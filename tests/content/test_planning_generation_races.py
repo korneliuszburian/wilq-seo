@@ -25,6 +25,7 @@ from tests.content.dynamic_planning_test_support import (
     configure_planning_harness,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.planning import planning_generation_queue
 from wilq.content.planning.dynamic_input import (
     build_content_planning_input,
     content_planning_input_summary,
@@ -104,9 +105,9 @@ def test_two_parallel_posts_submit_one_worker_and_reclaim_crashed_claim_after_tt
         return claim
 
     monkeypatch.setattr(claim_store, "claim", synchronized_claim)
-    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
+    monkeypatch.setattr(planning_generation_queue, "_PLANNING_GENERATION_EXECUTOR", executor)
     monkeypatch.setattr(
-        planning_router,
+        planning_generation_queue,
         "content_planning_generation_claim_store",
         lambda: claim_store,
     )
@@ -176,14 +177,10 @@ def test_worker_reloads_digest_before_codex_and_finishes_matching_claim(
         }
     )
     changed_snapshot = original_snapshot.model_copy(
-        update={
-            "preflight": original_snapshot.preflight.model_copy(
-                update={"item": changed_item}
-            )
-        }
+        update={"preflight": original_snapshot.preflight.model_copy(update={"item": changed_item})}
     )
 
-    planning_router._run_queued_planning_generation(
+    planning_generation_queue.run_queued_planning_generation(
         BDO_WORK_ITEM_ID,
         request,
         lambda _work_item_id: changed_snapshot,
@@ -205,7 +202,7 @@ def test_worker_reloads_digest_before_codex_and_finishes_matching_claim(
         claim_store=claim_store,
         claim_owner="worker-current",
     )
-    planning_router._run_queued_planning_generation(
+    planning_generation_queue.run_queued_planning_generation(
         BDO_WORK_ITEM_ID,
         request,
         lambda _work_item_id: original_snapshot,
@@ -322,12 +319,15 @@ def test_reclaimed_claim_fences_late_terminal_write_and_keeps_newer_result(
         planning_input_digest=digest,
         safe_next_step="Poczekaj na wynik.",
     )
-    assert store.enqueue_pending(
-        work_item_id=work_item_id,
-        service_card_id=service_card_id,
-        planning_input_digest=digest,
-        response=queued,
-    ) == "queued"
+    assert (
+        store.enqueue_pending(
+            work_item_id=work_item_id,
+            service_card_id=service_card_id,
+            planning_input_digest=digest,
+            response=queued,
+        )
+        == "queued"
+    )
     _create_legacy_claim_table(path)
 
     now = datetime(2026, 8, 7, 12, tzinfo=UTC)
@@ -360,18 +360,21 @@ def test_reclaimed_claim_fences_late_terminal_write_and_keeps_newer_result(
         service_card_id=service_card_id,
         label="Wynik workera B",
     )
-    assert store.save_terminal_response(
-        worker_b_result,
-        job_planning_input_digest=digest,
-        claim_version=claim_b.claim_version,
-    ) == "saved"
+    assert (
+        store.save_terminal_response(
+            worker_b_result,
+            job_planning_input_digest=digest,
+            claim_version=claim_b.claim_version,
+        )
+        == "saved"
+    )
 
     late_worker_a_result = _failed_terminal_response(
         work_item_id=work_item_id,
         service_card_id=service_card_id,
         label="Spóźniony wynik workera A",
     )
-    stale = planning_router._save_terminal_response_safely(
+    stale = planning_generation_queue.save_terminal_response_safely(
         store,
         late_worker_a_result,
         job_planning_input_digest=digest,
@@ -402,9 +405,7 @@ def test_reclaimed_claim_fences_late_terminal_write_and_keeps_newer_result(
     with sqlite3.connect(path) as connection:
         columns = {
             str(row[1])
-            for row in connection.execute(
-                "PRAGMA table_info(content_planning_generation_claims)"
-            )
+            for row in connection.execute("PRAGMA table_info(content_planning_generation_claims)")
         }
     assert "claim_version" in columns
 
@@ -440,7 +441,7 @@ def test_snapshot_and_selected_workspace_reads_do_not_create_planning_jobs(
             self.calls += 1
 
     executor = HoldingExecutor()
-    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
+    monkeypatch.setattr(planning_generation_queue, "_PLANNING_GENERATION_EXECUTOR", executor)
     assert planning.service_card_id is not None
     assert planning.planning_input_digest is not None
     planning_post = _planning_endpoint("POST", snapshot=snapshot)
@@ -466,9 +467,7 @@ def _planning_endpoint(method: str, *, snapshot: Any) -> Any:
         snapshot_loader=lambda _work_item_id: snapshot,
     )
     return next(
-        route.endpoint
-        for route in routes.routes
-        if method in getattr(route, "methods", set())
+        route.endpoint for route in routes.routes if method in getattr(route, "methods", set())
     )
 
 
@@ -506,12 +505,15 @@ def _enqueue_and_claim(
     assert service_card_id is not None
     assert digest is not None
     store = content_planning_proposal_store()
-    assert store.enqueue_pending(
-        work_item_id=BDO_WORK_ITEM_ID,
-        service_card_id=service_card_id,
-        planning_input_digest=digest,
-        response=response,
-    ) == "queued"
+    assert (
+        store.enqueue_pending(
+            work_item_id=BDO_WORK_ITEM_ID,
+            service_card_id=service_card_id,
+            planning_input_digest=digest,
+            response=response,
+        )
+        == "queued"
+    )
     claim = claim_store.claim(
         work_item_id=BDO_WORK_ITEM_ID,
         service_card_id=service_card_id,
@@ -573,9 +575,7 @@ def _planning_generation_job_count(path: Path) -> int:
         ).fetchone()
         if table is None:
             return 0
-        row = connection.execute(
-            "SELECT COUNT(*) FROM content_planning_generation_jobs"
-        ).fetchone()
+        row = connection.execute("SELECT COUNT(*) FROM content_planning_generation_jobs").fetchone()
     return 0 if row is None else int(row[0])
 
 

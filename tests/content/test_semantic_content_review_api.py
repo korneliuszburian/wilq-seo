@@ -27,7 +27,7 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     build_content_planning_input,
 )
-from wilq.content.quality import semantic_review_service
+from wilq.content.quality import semantic_review_queue, semantic_review_service
 from wilq.content.quality import semantic_review_store as semantic_review_store_module
 from wilq.content.quality.semantic_review_contracts import (
     CONTENT_SEMANTIC_DIMENSIONS,
@@ -67,7 +67,9 @@ def test_semantic_runtime_uses_a_separate_bounded_timeout(
         lambda: StdioCodexAppServerClient(),
     )
 
-    client = semantic_review_router._semantic_codex_client()
+    client = semantic_review_queue.semantic_codex_client(
+        semantic_review_router.content_codex_app_server_client
+    )
 
     assert isinstance(client, StdioCodexAppServerClient)
     assert client.timeout_seconds == 211.0
@@ -97,7 +99,7 @@ def test_semantic_turn_exposes_exact_allowed_targets_to_the_reviewer() -> None:
                 body_markdown="Zakres jest opisany konkretnie.",
                 evidence_ids=["ev_exact"],
             )
-        ]
+        ],
     )
 
     request = semantic_review_turn_request(
@@ -172,8 +174,7 @@ def test_semantic_quality_guards_cannot_waive_missing_cta_query_or_repetition() 
     assert all(
         item.status == "needs_changes"
         for item in guarded.dimensions
-        if item.dimension
-        in {"conversion_clarity", "repetition", "answer_directness"}
+        if item.dimension in {"conversion_clarity", "repetition", "answer_directness"}
     )
 
 
@@ -215,9 +216,7 @@ def test_semantic_quality_guard_rewrites_existing_finding_and_dimension() -> Non
     )
 
     finding = next(item for item in guarded.findings if item.dimension == "conversion_clarity")
-    assessment = next(
-        item for item in guarded.dimensions if item.dimension == "conversion_clarity"
-    )
+    assessment = next(item for item in guarded.dimensions if item.dimension == "conversion_clarity")
     assert guarded is not output
     assert finding.affected_targets == ["cta_blocks"]
     assert finding.reason == "Brakuje wymaganych bloków CTA z zatwierdzonego planu."
@@ -322,7 +321,7 @@ def test_queued_semantic_run_is_visible_before_worker_preflight() -> None:
         internal_links=[],
     )
 
-    run = semantic_review_router._save_queued_semantic_run(
+    run = semantic_review_queue.save_queued_semantic_run(
         work_item_id=revision.work_item_id,
         revision_id=revision.revision_id,
         revision=revision,
@@ -353,8 +352,8 @@ def test_queued_idempotent_result_terminalizes_the_published_run(monkeypatch) ->
             saved.append(item)
             return item
 
-    monkeypatch.setattr(semantic_review_router, "local_state_store", lambda: Store())
-    semantic_review_router._terminalize_queued_run_from_result(
+    monkeypatch.setattr(semantic_review_queue, "local_state_store", lambda: Store())
+    semantic_review_queue.terminalize_queued_run_from_result(
         run.id,
         SimpleNamespace(status="idempotent", blockers=[]),
     )
@@ -382,7 +381,7 @@ def test_worker_preserves_exact_queued_deadline_and_lineage(tmp_path, monkeypatc
         internal_links=[],
     )
     store = LocalStateStore(tmp_path / "state.sqlite3")
-    queued = semantic_review_router._save_queued_semantic_run(
+    queued = semantic_review_queue.save_queued_semantic_run(
         work_item_id=revision.work_item_id,
         revision_id=revision.revision_id,
         revision=revision,
@@ -399,9 +398,7 @@ def test_worker_preserves_exact_queued_deadline_and_lineage(tmp_path, monkeypatc
         store,
         run_id=queued.id,
     )
-    persisted = next(
-        run for run in store.list_codex_runs() if run.id == queued.id
-    )
+    persisted = next(run for run in store.list_codex_runs() if run.id == queued.id)
 
     assert started.id == queued.id
     assert started.started_at == queued.started_at
@@ -461,13 +458,13 @@ def test_worker_codex_budget_is_limited_by_persisted_absolute_deadline(monkeypat
     )
 
     monkeypatch.setattr(
-        semantic_review_router,
+        semantic_review_queue,
         "local_state_store",
         lambda: SimpleNamespace(list_codex_runs=lambda: [run]),
     )
-    client = semantic_review_router._REAL_STDIO_CODEX_CLIENT(timeout_seconds=211)
+    client = semantic_review_queue._REAL_STDIO_CODEX_CLIENT(timeout_seconds=211)
 
-    bounded = semantic_review_router._client_for_queued_deadline(client, run.id)
+    bounded = semantic_review_queue._client_for_queued_deadline(client, run.id)
 
     assert 0 < bounded.timeout_seconds <= 11
 
@@ -479,8 +476,7 @@ def test_existing_exact_review_wins_over_retry_preflight_and_polling(
     work_item_id = "content_work_item_bdo"
     revision_id = "content_revision_bdo"
     endpoint = (
-        f"/api/content/work-items/{work_item_id}/draft-revisions/"
-        f"{revision_id}/semantic-review"
+        f"/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review"
     )
     revision = SimpleNamespace(
         revision_id=revision_id,
@@ -523,9 +519,14 @@ def test_existing_exact_review_wins_over_retry_preflight_and_polling(
         nonlocal submitted
         submitted = True
 
-    monkeypatch.setattr(semantic_review_router, "content_workflow_store", lambda: RevisionStore())
+    monkeypatch.setattr(semantic_review_queue, "content_workflow_store", lambda: RevisionStore())
     monkeypatch.setattr(
         semantic_review_router,
+        "content_semantic_review_store",
+        lambda: ReviewStore(),
+    )
+    monkeypatch.setattr(
+        semantic_review_queue,
         "content_semantic_review_store",
         lambda: ReviewStore(),
     )
@@ -534,8 +535,17 @@ def test_existing_exact_review_wins_over_retry_preflight_and_polling(
         "local_state_store",
         lambda: SimpleNamespace(list_codex_runs=lambda: []),
     )
-    monkeypatch.setattr(semantic_review_router, "_semantic_codex_client", lambda: FakeClient())
-    monkeypatch.setattr(semantic_review_router._SEMANTIC_REVIEW_EXECUTOR, "submit", submit)
+    monkeypatch.setattr(
+        semantic_review_queue,
+        "local_state_store",
+        lambda: SimpleNamespace(list_codex_runs=lambda: []),
+    )
+    monkeypatch.setattr(
+        semantic_review_router,
+        "content_codex_app_server_client",
+        lambda: FakeClient(),
+    )
+    monkeypatch.setattr(semantic_review_queue._SEMANTIC_REVIEW_EXECUTOR, "submit", submit)
     semantic_review_router.register_content_semantic_review_routes(
         app,
         snapshot_loader=lambda _work_item_id: Snapshot(),
@@ -626,7 +636,7 @@ def test_semantic_turn_rejects_unmapped_draftable_section() -> None:
                 body_markdown="Treść.",
                 evidence_ids=[],
             )
-        ]
+        ],
     )
 
     with pytest.raises(ValueError, match="bind exactly"):
@@ -645,9 +655,7 @@ def test_stale_semantic_run_becomes_terminal_after_deadline(
         hook="content_semantic_review",
         status="started",
         started_at=datetime.now(UTC) - timedelta(seconds=301),
-        used_endpoints=[
-            "/api/content/work-items/work/draft-revisions/revision/semantic-review"
-        ],
+        used_endpoints=["/api/content/work-items/work/draft-revisions/revision/semantic-review"],
     )
     saved: list[CodexRun] = []
 
@@ -659,8 +667,8 @@ def test_stale_semantic_run_becomes_terminal_after_deadline(
             saved.append(run)
             return run
 
-    monkeypatch.setattr(semantic_review_router, "local_state_store", lambda: Store())
-    result = semantic_review_router._latest_semantic_run("work", "revision")
+    monkeypatch.setattr(semantic_review_queue, "local_state_store", lambda: Store())
+    result = semantic_review_queue.latest_semantic_run("work", "revision")
 
     assert result is not None
     assert result.status == "failed"
@@ -679,9 +687,7 @@ def test_semantic_polling_uses_the_run_deadline_not_default_timeout(
         status="started",
         started_at=started,
         deadline_at=started + timedelta(seconds=211),
-        used_endpoints=[
-            "/api/content/work-items/work/draft-revisions/revision/semantic-review"
-        ],
+        used_endpoints=["/api/content/work-items/work/draft-revisions/revision/semantic-review"],
     )
 
     class Store:
@@ -691,9 +697,9 @@ def test_semantic_polling_uses_the_run_deadline_not_default_timeout(
         def save_codex_run(self, run):
             raise AssertionError("run is still within its persisted deadline")
 
-    monkeypatch.setattr(semantic_review_router, "local_state_store", lambda: Store())
+    monkeypatch.setattr(semantic_review_queue, "local_state_store", lambda: Store())
 
-    assert semantic_review_router._latest_semantic_run("work", "revision") is active
+    assert semantic_review_queue.latest_semantic_run("work", "revision") is active
 
 
 def test_semantic_turn_exposes_regulatory_requirement_coverage() -> None:
@@ -701,9 +707,7 @@ def test_semantic_turn_exposes_regulatory_requirement_coverage() -> None:
         regulatory_coverage={
             "profile_id": "bdo_profile",
             "profile_version": "2026-08-03",
-            "requirements": [
-                {"id": "bdo_reporting", "label": "Sprawozdawczość"}
-            ],
+            "requirements": [{"id": "bdo_reporting", "label": "Sprawozdawczość"}],
             "requirement_coverage": [
                 {
                     "requirement_id": "bdo_reporting",
@@ -768,7 +772,7 @@ def test_semantic_payload_keeps_regulatory_lineage_without_duplicate_page_teleme
                     "official_source": True,
                 }
             ],
-        }
+        },
     )
     proposal = ContentPlanningProposal.model_construct(
         sections=[
@@ -793,12 +797,8 @@ def test_semantic_payload_keeps_regulatory_lineage_without_duplicate_page_teleme
         "ev_registration"
     ]
     assert "page_assets" not in compact_proposal
-    assert compact_proposal["sections"][0]["regulatory_requirement_ids"] == [
-        "registration"
-    ]
-    assert "should_not_be_forwarded" not in json.dumps(
-        compact_proposal, ensure_ascii=False
-    )
+    assert compact_proposal["sections"][0]["regulatory_requirement_ids"] == ["registration"]
+    assert "should_not_be_forwarded" not in json.dumps(compact_proposal, ensure_ascii=False)
     revision = ContentDraftRevision.model_construct(
         work_item_id="content_work_item_exact",
         revision_id="content_revision_exact",
@@ -839,9 +839,7 @@ def test_full_draft_model_envelope_is_compact_but_digest_bound(
     compact = compact_initial_draft_planning_input(result.planning_input)
     assert compact["planning_input_digest"] == full["planning_input_digest"]
     assert compact["inventory"] == full["inventory"]
-    assert len(json.dumps(compact, ensure_ascii=False)) < len(
-        json.dumps(full, ensure_ascii=False)
-    )
+    assert len(json.dumps(compact, ensure_ascii=False)) < len(json.dumps(full, ensure_ascii=False))
 
 
 def test_semantic_review_is_exact_persisted_advisory_for_both_services(
@@ -850,9 +848,7 @@ def test_semantic_review_is_exact_persisted_advisory_for_both_services(
     client, runtime = planning_harness
     expected_calls = 0
     for work_item_id in (BDO_WORK_ITEM_ID, OUTSOURCING_WORK_ITEM_ID):
-        proposal = _generate_plan(
-            client, runtime, work_item_id, expected_calls=expected_calls
-        )
+        proposal = _generate_plan(client, runtime, work_item_id, expected_calls=expected_calls)
         expected_calls += 1
         initial = client.post(
             f"/api/content/work-items/{work_item_id}/initial-draft",
@@ -993,9 +989,7 @@ def test_semantic_review_real_store_requires_maintenance_before_model(
     assert blocked.json()["status"] == "blocked"
     assert blocked.json()["blockers"][0]["code"] == "storage_activation_required"
     assert runtime.calls == calls_before
-    read_blocked = client.get(
-        _semantic_review_path(BDO_WORK_ITEM_ID, revision["revision_id"])
-    )
+    read_blocked = client.get(_semantic_review_path(BDO_WORK_ITEM_ID, revision["revision_id"]))
     assert read_blocked.json()["status"] == "blocked"
     assert read_blocked.json()["blockers"][0]["code"] == "storage_activation_required"
     with sqlite3.connect(store_path) as connection:
@@ -1007,10 +1001,7 @@ def test_semantic_review_real_store_requires_maintenance_before_model(
 
 
 def _semantic_review_path(work_item_id: str, revision_id: str) -> str:
-    return (
-        f"/api/content/work-items/{work_item_id}/draft-revisions/"
-        f"{revision_id}/semantic-review"
-    )
+    return f"/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review"
 
 
 def _revision_review_path(work_item_id: str, revision_id: str) -> str:

@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_planning_proposals as planning_router
+from wilq.content.planning import planning_generation_queue
 from wilq.content.planning.dynamic_input import ContentPlanningInputSummary
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalBlocker,
@@ -173,12 +174,15 @@ def test_enqueue_pending_can_reset_finished_only_when_explicitly_allowed(
 ) -> None:
     store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
     response = _generating_response()
-    assert store.enqueue_pending(
-        work_item_id=response.work_item_id,
-        service_card_id=response.service_card_id or "",
-        planning_input_digest=response.planning_input_digest or "",
-        response=response,
-    ) == "queued"
+    assert (
+        store.enqueue_pending(
+            work_item_id=response.work_item_id,
+            service_card_id=response.service_card_id or "",
+            planning_input_digest=response.planning_input_digest or "",
+            response=response,
+        )
+        == "queued"
+    )
     with sqlite3.connect(store.path) as connection:
         connection.execute(
             "UPDATE content_planning_generation_jobs SET status = 'finished'"
@@ -186,13 +190,16 @@ def test_enqueue_pending_can_reset_finished_only_when_explicitly_allowed(
             (response.work_item_id, response.service_card_id, response.planning_input_digest),
         )
 
-    assert store.enqueue_pending(
-        work_item_id=response.work_item_id,
-        service_card_id=response.service_card_id or "",
-        planning_input_digest=response.planning_input_digest or "",
-        response=response,
-        allow_finished_reset=True,
-    ) == "queued"
+    assert (
+        store.enqueue_pending(
+            work_item_id=response.work_item_id,
+            service_card_id=response.service_card_id or "",
+            planning_input_digest=response.planning_input_digest or "",
+            response=response,
+            allow_finished_reset=True,
+        )
+        == "queued"
+    )
     with sqlite3.connect(store.path) as connection:
         persisted = connection.execute(
             "SELECT status FROM content_planning_generation_jobs"
@@ -209,12 +216,15 @@ def test_enqueue_pending_finished_reset_does_not_change_retryable_terminal_state
 ) -> None:
     store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
     response = _generating_response()
-    assert store.enqueue_pending(
-        work_item_id=response.work_item_id,
-        service_card_id=response.service_card_id or "",
-        planning_input_digest=response.planning_input_digest or "",
-        response=response,
-    ) == "queued"
+    assert (
+        store.enqueue_pending(
+            work_item_id=response.work_item_id,
+            service_card_id=response.service_card_id or "",
+            planning_input_digest=response.planning_input_digest or "",
+            response=response,
+        )
+        == "queued"
+    )
     with sqlite3.connect(store.path) as connection:
         connection.execute(
             "UPDATE content_planning_generation_jobs SET status = ?"
@@ -227,13 +237,16 @@ def test_enqueue_pending_finished_reset_does_not_change_retryable_terminal_state
             ),
         )
 
-    assert store.enqueue_pending(
-        work_item_id=response.work_item_id,
-        service_card_id=response.service_card_id or "",
-        planning_input_digest=response.planning_input_digest or "",
-        response=response,
-        allow_finished_reset=True,
-    ) == "queued"
+    assert (
+        store.enqueue_pending(
+            work_item_id=response.work_item_id,
+            service_card_id=response.service_card_id or "",
+            planning_input_digest=response.planning_input_digest or "",
+            response=response,
+            allow_finished_reset=True,
+        )
+        == "queued"
+    )
     with sqlite3.connect(store.path) as connection:
         persisted = connection.execute(
             "SELECT status FROM content_planning_generation_jobs"
@@ -295,13 +308,16 @@ def test_enqueue_entrypoints_have_identical_outcomes(
                 "b" * 64 if initial_status == "in_flight" else response.planning_input_digest
             )
             seed_response = response.model_copy(update={"planning_input_digest": seed_digest})
-            assert enqueue_pending(
-                store,
-                work_item_id=seed_response.work_item_id,
-                service_card_id=seed_response.service_card_id or "",
-                planning_input_digest=seed_digest or "",
-                response=seed_response,
-            ) == "queued"
+            assert (
+                enqueue_pending(
+                    store,
+                    work_item_id=seed_response.work_item_id,
+                    service_card_id=seed_response.service_card_id or "",
+                    planning_input_digest=seed_digest or "",
+                    response=seed_response,
+                )
+                == "queued"
+            )
             with sqlite3.connect(store.path) as connection:
                 connection.execute(
                     """
@@ -456,7 +472,7 @@ def test_planning_post_preserves_current_stale_or_quality_blocked_state(
         lambda: (SimpleNamespace(id="service-a", card_type="service"),),
     )
     monkeypatch.setattr(
-        planning_router,
+        planning_generation_queue,
         "read_content_planning_proposal",
         lambda **_kwargs: current,
     )
@@ -525,7 +541,7 @@ def test_planning_post_regenerates_an_exact_stale_inventory_mapping_without_clie
         lambda: (SimpleNamespace(id="service-a", card_type="service"),),
     )
     monkeypatch.setattr(
-        planning_router,
+        planning_generation_queue,
         "read_content_planning_proposal",
         lambda **_kwargs: current,
     )
@@ -534,7 +550,7 @@ def test_planning_post_regenerates_an_exact_stale_inventory_mapping_without_clie
         preparation_flags.append(kwargs["request"].regenerate_stale_mapping)
         return None, generating
 
-    monkeypatch.setattr(planning_router, "_prepare_generation", prepare)
+    monkeypatch.setattr(planning_generation_queue, "_prepare_generation", prepare)
     planning_router.register_content_planning_proposal_routes(
         app, snapshot_loader=lambda _id: snapshot
     )
@@ -588,7 +604,7 @@ def test_planning_post_regenerates_exact_plan_after_review_with_visible_instruct
         lambda: (SimpleNamespace(id="service-a", card_type="service"),),
     )
     monkeypatch.setattr(
-        planning_router,
+        planning_generation_queue,
         "read_content_planning_proposal",
         lambda **_kwargs: current,
     )
@@ -597,7 +613,7 @@ def test_planning_post_regenerates_exact_plan_after_review_with_visible_instruct
         replacement_flags.append(kwargs["request"].regenerate_after_review)
         return None, generating
 
-    monkeypatch.setattr(planning_router, "_prepare_generation", prepare)
+    monkeypatch.setattr(planning_generation_queue, "_prepare_generation", prepare)
     planning_router.register_content_planning_proposal_routes(
         app, snapshot_loader=lambda _id: snapshot
     )

@@ -14,7 +14,6 @@ import wilq.content.workflow.workspace.api as workflow_api
 import wilq.content.workflow.workspace.catalog as inventory_catalog
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_initial_draft as initial_draft_router
-from apps.api.wilq_api.routers import content_planning_proposals as planning_router
 from apps.api.wilq_api.routers import content_semantic_review as semantic_review_router
 from apps.api.wilq_api.routers import content_snapshot as content_snapshot_router
 from wilq.briefing import content_diagnostics
@@ -746,7 +745,6 @@ def _patch_codex_clients(
     monkeypatch: pytest.MonkeyPatch, runtime: PlanningClient
 ) -> None:
     for router in (
-        planning_router,
         initial_draft_router,
         semantic_review_router,
     ):
@@ -755,3 +753,7 @@ def _patch_codex_clients(
             "content_codex_app_server_client",
             lambda: runtime,
         )
+    monkeypatch.setattr(
+        "apps.api.wilq_api.routers.content_codex_runtime.content_codex_app_server_client",
+        lambda: runtime,
+    )

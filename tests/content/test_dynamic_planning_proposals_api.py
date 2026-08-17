@@ -19,6 +19,7 @@ from tests.content.dynamic_planning_test_support import (
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.handoff.revision_document_renderer import revision_document_markdown
+from wilq.content.planning import planning_generation_queue
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputSummary,
     build_content_planning_input,
@@ -54,9 +55,7 @@ from wilq.schemas import CodexRun
 from wilq.storage.local_state import local_state_store
 
 BDO_URL = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
-OUTSOURCING_URL = (
-    "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
-)
+OUTSOURCING_URL = "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
 BDO_WORK_ITEM_ID = inventory_work_item_id(BDO_URL)
 OUTSOURCING_WORK_ITEM_ID = inventory_work_item_id(OUTSOURCING_URL)
 
@@ -144,8 +143,7 @@ def test_dynamic_planning_proposals_are_two_case_and_idempotent(
     )
     assert generated[BDO_WORK_ITEM_ID]["angle"] != generated[OUTSOURCING_WORK_ITEM_ID]["angle"]
     assert all(
-        proposal["internal_links"][0]["target_url"]
-        == "https://www.ekologus.pl/kontakt"
+        proposal["internal_links"][0]["target_url"] == "https://www.ekologus.pl/kontakt"
         for proposal in generated.values()
     )
     assert generated[BDO_WORK_ITEM_ID]["source_material_ids"]
@@ -162,9 +160,7 @@ def test_dynamic_planning_allows_an_exact_service_without_plan_review(
     client, runtime = planning_harness
     snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
     service_card_id = snapshot["service_profile_context"]["service_card_id"]
-    before = client.get(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
-    ).json()
+    before = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals").json()
     result = _post_planning(
         client,
         BDO_WORK_ITEM_ID,
@@ -175,9 +171,7 @@ def test_dynamic_planning_allows_an_exact_service_without_plan_review(
     assert result.json()["status"] in {"ready", "idempotent"}, result.json()
     assert result.json()["proposal"]["service_card_id"] == service_card_id
     assert runtime.calls == 1
-    current = client.get(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
-    ).json()
+    current = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals").json()
     assert current["status"] == "ready"
     assert current["planning_workspace"]["scope_current"] is False
 
@@ -203,7 +197,7 @@ def test_executor_submission_failure_is_typed_and_retryable(
             raise RuntimeError("executor unavailable")
 
     executor = FailingExecutor()
-    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
+    monkeypatch.setattr(planning_generation_queue, "_PLANNING_GENERATION_EXECUTOR", executor)
     request = _generation_request(service_card_id, digest)
 
     first = client.post(
@@ -215,9 +209,7 @@ def test_executor_submission_failure_is_typed_and_retryable(
     assert first.json()["planning_input_digest"] == digest
     assert first.json()["service_card_id"] == service_card_id
     assert first.json()["blockers"][0]["code"] == "runtime_failed"
-    status = client.get(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
-    )
+    status = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals")
     assert status.json()["status"] == "failed"
     second = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
@@ -234,9 +226,7 @@ def test_planning_get_does_not_let_a_failed_historical_job_shadow_current_input(
     client, _runtime = planning_harness
     snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
     service_card_id = snapshot["service_profile_context"]["service_card_id"]
-    current = client.get(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
-    ).json()
+    current = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals").json()
     current_digest = current["planning_input_digest"]
     old_digest = "f" * 64
     store = content_planning_proposal_store()
@@ -265,9 +255,7 @@ def test_planning_get_does_not_let_a_failed_historical_job_shadow_current_input(
         job_planning_input_digest=historical.planning_input_digest,
     )
 
-    result = client.get(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
-    )
+    result = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals")
 
     assert result.status_code == 200
     assert result.json()["planning_input_digest"] == current_digest
@@ -281,8 +269,16 @@ def test_planning_store_blocks_a_sibling_digest_while_generation_is_in_flight(
 ) -> None:
     store = ContentPlanningProposalStore(tmp_path / "state.sqlite")
     source_names = (
-        "wordpress", "service_profile", "gsc", "ga4", "google_ads",
-        "ahrefs", "keyword_planner", "merchant", "localo", "social",
+        "wordpress",
+        "service_profile",
+        "gsc",
+        "ga4",
+        "google_ads",
+        "ahrefs",
+        "keyword_planner",
+        "merchant",
+        "localo",
+        "social",
     )
     summary = ContentPlanningInputSummary(
         final_canonical_url="https://example.test/page",
@@ -319,18 +315,24 @@ def test_planning_store_blocks_a_sibling_digest_while_generation_is_in_flight(
         }
     )
 
-    assert store.enqueue_pending(
-        work_item_id="work-item",
-        service_card_id="service-card",
-        planning_input_digest="a" * 64,
-        response=first,
-    ) == "queued"
-    assert store.enqueue_pending(
-        work_item_id="work-item",
-        service_card_id="service-card",
-        planning_input_digest="b" * 64,
-        response=second,
-    ) == "in_flight"
+    assert (
+        store.enqueue_pending(
+            work_item_id="work-item",
+            service_card_id="service-card",
+            planning_input_digest="a" * 64,
+            response=first,
+        )
+        == "queued"
+    )
+    assert (
+        store.enqueue_pending(
+            work_item_id="work-item",
+            service_card_id="service-card",
+            planning_input_digest="b" * 64,
+            response=second,
+        )
+        == "in_flight"
+    )
     active = store.active_generation_response(
         "work-item",
         "service-card",
@@ -360,7 +362,7 @@ def test_planning_snapshot_failure_does_not_create_a_generating_job(
         "ekologus_content_knowledge_cards",
         lambda: (SimpleNamespace(id="service-card", card_type="service"),),
     )
-    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
+    monkeypatch.setattr(planning_generation_queue, "_PLANNING_GENERATION_EXECUTOR", executor)
     planning_router.register_content_planning_proposal_routes(
         app,
         snapshot_loader=lambda _work_item_id: (_ for _ in ()).throw(
@@ -381,11 +383,14 @@ def test_planning_snapshot_failure_does_not_create_a_generating_job(
     assert response.json()["status"] == "failed"
     assert response.json()["blockers"][0]["code"] == "runtime_failed"
     assert executor.calls == 0
-    assert store.queued_response(
-        "work-item",
-        "service-card",
-        "a" * 64,
-    ) is None
+    assert (
+        store.queued_response(
+            "work-item",
+            "service-card",
+            "a" * 64,
+        )
+        is None
+    )
 
 
 def test_planning_api_rejects_a_stale_digest_before_sibling_queue_logic(
@@ -395,15 +400,15 @@ def test_planning_api_rejects_a_stale_digest_before_sibling_queue_logic(
     client, _runtime = planning_harness
     snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
     service_card_id = snapshot["service_profile_context"]["service_card_id"]
-    current = client.get(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
-    ).json()
+    current = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals").json()
 
     class HoldingExecutor:
         def submit(self, *_args: Any, **_kwargs: Any) -> None:
             return None
 
-    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", HoldingExecutor())
+    monkeypatch.setattr(
+        planning_generation_queue, "_PLANNING_GENERATION_EXECUTOR", HoldingExecutor()
+    )
     first = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
         json=_generation_request(service_card_id, current["planning_input_digest"]),
@@ -428,7 +433,7 @@ def test_planning_output_quality_gate_rejects_navigation_and_dated_headings() ->
                 heading="Poniżej przedstawiamy często zadawane pytania dotyczące BDO"
             ),
             ContentPlanningModelSection.model_construct(
-                heading='13 marca 2020 „Gospodarka opakowaniami”'
+                heading="13 marca 2020 „Gospodarka opakowaniami”"
             ),
             ContentPlanningModelSection.model_construct(
                 heading="Powiązane materiały o gospodarce odpadami"
@@ -486,7 +491,7 @@ def test_changed_input_digest_is_rejected_before_a_replan_is_queued(
             self.submitted += 1
 
     executor = CaptureExecutor()
-    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
+    monkeypatch.setattr(planning_generation_queue, "_PLANNING_GENERATION_EXECUTOR", executor)
     changed_digest = "f" * 64
     response = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
@@ -680,9 +685,7 @@ def test_initial_full_draft_uses_the_same_atomic_contract_for_both_services(
             section["evidence_ids"] and section["knowledge_card_ids"]
             for section in revision["sections"]
         )
-        assert revision["internal_links"][0]["target_url"] == (
-            "https://www.ekologus.pl/kontakt"
-        )
+        assert revision["internal_links"][0]["target_url"] == ("https://www.ekologus.pl/kontakt")
         rendered = revision_document_markdown(ContentDraftRevision.model_validate(revision))
         assert "[Kontakt z Ekologus](https://www.ekologus.pl/kontakt)" in rendered
         assert runtime.calls == expected_calls + 1
@@ -696,8 +699,9 @@ def test_initial_full_draft_uses_the_same_atomic_contract_for_both_services(
         assert runtime.calls == expected_calls
         revisions[work_item_id] = revision
 
-    assert revisions[BDO_WORK_ITEM_ID]["page_assets"]["h1"] != (
-        revisions[OUTSOURCING_WORK_ITEM_ID]["page_assets"]["h1"]
+    assert (
+        revisions[BDO_WORK_ITEM_ID]["page_assets"]["h1"]
+        != (revisions[OUTSOURCING_WORK_ITEM_ID]["page_assets"]["h1"])
     )
 
 
@@ -734,9 +738,7 @@ def test_initial_full_draft_rejects_unstructured_or_unsafe_links(
         assert result.status_code == 200
         assert result.json()["status"] == "blocked"
         assert result.json()["blockers"][0]["code"] == "invalid_structured_output"
-        assert _snapshot(client, BDO_WORK_ITEM_ID)["revision_workspace"][
-            "latest_revision"
-        ] is None
+        assert _snapshot(client, BDO_WORK_ITEM_ID)["revision_workspace"]["latest_revision"] is None
 
 
 def test_initial_full_draft_runtime_failure_writes_no_partial_revision_and_get_is_model_free(
@@ -804,9 +806,7 @@ def _generate_plan(
         (blocker.get("code"), blocker.get("source_codes"), blocker.get("reason"))
         for blocker in created.json().get("blockers", [])
     ]
-    assert created.json()["proposal"]["input_schema_version"] == (
-        "wilq_content_planning_input_v7"
-    )
+    assert created.json()["proposal"]["input_schema_version"] == ("wilq_content_planning_input_v7")
     repeated = client.post(
         f"/api/content/work-items/{work_item_id}/planning-proposals",
         json=_generation_request(service_card_id, input_digest),
@@ -834,9 +834,7 @@ def _post_planning(
     if response.status_code == 200 and response.json().get("status") == "generating":
         for _ in range(200):
             time.sleep(0.05)
-            response = client.get(
-                f"/api/content/work-items/{work_item_id}/planning-proposals"
-            )
+            response = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
             if response.json().get("status") != "generating":
                 break
     return response

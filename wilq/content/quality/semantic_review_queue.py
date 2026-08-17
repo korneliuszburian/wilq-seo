@@ -1,0 +1,361 @@
+"""Queue, claim, deadline, and terminal policy for semantic review."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
+from os import environ
+from typing import Literal
+
+from wilq.codex.app_server import (
+    CodexAppServerClientProtocol,
+    CodexAppServerStructuredTurnRequest,
+    CodexAppServerTurnResult,
+    StdioCodexAppServerClient,
+)
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.quality.semantic_review_contracts import (
+    ContentSemanticBlockerCode,
+    ContentSemanticReview,
+    ContentSemanticReviewBlocker,
+    ContentSemanticReviewRequest,
+    ContentSemanticReviewResponse,
+)
+from wilq.content.quality.semantic_review_service import generate_content_semantic_review
+from wilq.content.quality.semantic_review_store import content_semantic_review_store
+from wilq.content.quality.semantic_run_state import (
+    effective_deadline,
+    transition_codex_run_if_status,
+)
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.runtime.codex_run_lifecycle import (
+    LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS,
+)
+from wilq.content.workflow.store.store import content_workflow_store
+from wilq.schemas import CodexRun
+from wilq.schemas.core import utc_now
+from wilq.storage.local_state import LocalStateStore, local_state_store
+from wilq.storage.local_state_runs import supports_run_transaction
+
+ContentSemanticSnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]
+SemanticClientFactory = Callable[[], CodexAppServerClientProtocol]
+
+_REAL_STDIO_CODEX_CLIENT = StdioCodexAppServerClient
+_SEMANTIC_REVIEW_EXECUTOR = ThreadPoolExecutor(
+    max_workers=2,
+    thread_name_prefix="wilq-content-review",
+)
+
+
+class _DeadlineAwareSemanticClient:
+    def __init__(self, client: CodexAppServerClientProtocol, run_id: str) -> None:
+        self._client = client
+        self._run_id = run_id
+
+    def run_structured_turn(
+        self, request: CodexAppServerStructuredTurnRequest
+    ) -> CodexAppServerTurnResult:
+        client = (
+            _client_for_queued_deadline(self._client, self._run_id)
+            if isinstance(self._client, _REAL_STDIO_CODEX_CLIENT)
+            else self._client
+        )
+        return client.run_structured_turn(request)
+
+
+def semantic_codex_client(client_factory: SemanticClientFactory) -> CodexAppServerClientProtocol:
+    client = client_factory()
+    if not isinstance(client, _REAL_STDIO_CODEX_CLIENT):
+        return client
+    return _REAL_STDIO_CODEX_CLIENT(timeout_seconds=semantic_timeout_seconds())
+
+
+def semantic_timeout_seconds() -> float:
+    try:
+        configured = float(
+            environ.get(
+                "WILQ_SEMANTIC_REVIEW_CODEX_TIMEOUT_SECONDS",
+                str(LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS),
+            )
+        )
+    except (TypeError, ValueError):
+        configured = LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS
+    return max(5.0, configured)
+
+
+def latest_semantic_run(work_item_id: str, revision_id: str) -> CodexRun | None:
+    endpoint = (
+        f"/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review"
+    )
+    runs = [
+        run
+        for run in local_state_store().list_codex_runs()
+        if run.hook == "content_semantic_review" and endpoint in run.used_endpoints
+    ]
+    latest = max(runs, key=lambda run: run.started_at, default=None)
+    if (
+        latest is not None
+        and latest.status == "started"
+        and utc_now() >= effective_deadline(latest)
+    ):
+        terminal = latest.model_copy(
+            update={
+                "status": "failed",
+                "completed_at": utc_now(),
+                "error": "semantic_review_timeout",
+            }
+        )
+        store = local_state_store()
+        latest = (
+            transition_codex_run_if_status(store, terminal)
+            if supports_run_transaction(store)
+            else store.save_codex_run(terminal)
+        ) or latest
+    return latest
+
+
+def existing_review_response(
+    work_item_id: str,
+    revision_id: str,
+    revision_digest: str,
+    review: ContentSemanticReview,
+    *,
+    status: Literal["idempotent", "ready"],
+) -> ContentSemanticReviewResponse:
+    return ContentSemanticReviewResponse(
+        status=status,
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision_digest=revision_digest,
+        review=review,
+        run_id=review.codex_run_id,
+        safe_next_step=review.safe_next_step,
+    )
+
+
+def read_exact_review_without_snapshot(
+    work_item_id: str, revision_id: str
+) -> ContentSemanticReviewResponse | None:
+    revision = content_workflow_store().load_draft_revision_state(work_item_id).latest_revision
+    if revision is None or revision.revision_id != revision_id:
+        return None
+    review = content_semantic_review_store().for_revision(
+        work_item_id, revision_id, revision.content_digest
+    )
+    if review is None:
+        return None
+    return existing_review_response(
+        work_item_id, revision_id, revision.content_digest, review, status="ready"
+    )
+
+
+def save_queued_semantic_run(
+    *,
+    work_item_id: str,
+    revision_id: str,
+    revision: ContentDraftRevision,
+    run_id: str,
+    store: LocalStateStore,
+) -> CodexRun:
+    return store.save_codex_run(
+        CodexRun(
+            id=run_id,
+            skill="wilq-content-operator",
+            hook="content_semantic_review",
+            source="wilq_api",
+            status="started",
+            used_endpoints=[
+                f"/api/content/work-items/{work_item_id}/draft-revisions/"
+                f"{revision_id}/semantic-review"
+            ],
+            evidence_ids=revision_evidence_ids(revision),
+            planning_input_digest=revision.planning_input_digest,
+            deadline_at=utc_now() + timedelta(seconds=semantic_timeout_seconds()),
+        )
+    )
+
+
+def queue_semantic_review(
+    *,
+    work_item_id: str,
+    revision_id: str,
+    revision: ContentDraftRevision,
+    request: ContentSemanticReviewRequest,
+    client: CodexAppServerClientProtocol,
+    snapshot_loader: ContentSemanticSnapshotLoader,
+) -> ContentSemanticReviewResponse:
+    claim = content_semantic_review_store().claim_run(
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision_digest=revision.content_digest,
+        endpoint=(
+            f"/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review"
+        ),
+        evidence_ids=revision_evidence_ids(revision),
+        planning_input_digest=revision.planning_input_digest,
+        timeout_seconds=semantic_timeout_seconds(),
+    )
+    if claim.review is not None:
+        return existing_review_response(
+            work_item_id, revision_id, revision.content_digest, claim.review, status="idempotent"
+        )
+    if claim.run is None:
+        raise RuntimeError("semantic review claim did not return a run")
+    if not claim.newly_claimed:
+        return generating_response(work_item_id, revision_id, revision.content_digest, claim.run.id)
+    _SEMANTIC_REVIEW_EXECUTOR.submit(
+        run_queued_semantic_review,
+        work_item_id,
+        revision_id,
+        request,
+        client,
+        claim.run.id,
+        snapshot_loader,
+    )
+    return generating_response(work_item_id, revision_id, revision.content_digest, claim.run.id)
+
+
+def generating_response(
+    work_item_id: str, revision_id: str, revision_digest: str | None, run_id: str
+) -> ContentSemanticReviewResponse:
+    return ContentSemanticReviewResponse(
+        status="generating",
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision_digest=revision_digest,
+        run_id=run_id,
+        blockers=[
+            ContentSemanticReviewBlocker(
+                code="generation_in_progress",
+                label="Sprawdzenie tekstu jest przygotowywane",
+                reason=(
+                    "WILQ analizuje dokładną rewizję; wynik pozostanie advisory i wymaga człowieka."
+                ),
+                next_step="Odśwież sprawdzenie za chwilę. Nie uruchamiaj drugiego review.",
+            )
+        ],
+        safe_next_step="Odśwież sprawdzenie za chwilę. Nie uruchamiaj drugiego review.",
+    )
+
+
+def revision_evidence_ids(revision: ContentDraftRevision) -> list[str]:
+    return [
+        *(evidence_id for section in revision.sections for evidence_id in section.evidence_ids),
+        *(evidence_id for faq in revision.faq for evidence_id in faq.evidence_ids),
+        *(evidence_id for cta in revision.cta_blocks for evidence_id in cta.evidence_ids),
+        *(evidence_id for link in revision.internal_links for evidence_id in link.evidence_ids),
+    ]
+
+
+def terminal_run_response(
+    *, work_item_id: str, revision_id: str, revision_digest: str, run: CodexRun
+) -> ContentSemanticReviewResponse:
+    blocked = run.status == "blocked"
+    code: ContentSemanticBlockerCode = "runtime_blocked" if blocked else "runtime_failed"
+    status: Literal["blocked", "failed"] = "blocked" if blocked else "failed"
+    error = getattr(run, "error", None)
+    source_code = None if error is None else error.split(":", 1)[-1]
+    return ContentSemanticReviewResponse(
+        status=status,
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision_digest=revision_digest,
+        run_id=run.id,
+        runtime=ContentCodexRuntimeTrace(status=status),
+        blockers=[
+            ContentSemanticReviewBlocker(
+                code=code,
+                label=(
+                    "Codex zatrzymał sprawdzenie semantyczne"
+                    if blocked
+                    else "Codex nie zakończył sprawdzenia semantycznego"
+                ),
+                reason=(
+                    "Poprzednia próba review została bezpiecznie zatrzymana; "
+                    "tekst nie został zmieniony."
+                    if blocked
+                    else "Poprzednia próba review nie zwróciła poprawnego wyniku; "
+                    "tekst nie został zmieniony."
+                ),
+                next_step="Uruchom nową próbę review dla tej samej exact rewizji.",
+                source_codes=[source_code] if source_code else [],
+            )
+        ],
+        safe_next_step="Uruchom nową próbę review dla tej samej exact rewizji.",
+    )
+
+
+def run_queued_semantic_review(
+    work_item_id: str,
+    revision_id: str,
+    request: ContentSemanticReviewRequest,
+    client: CodexAppServerClientProtocol,
+    run_id: str,
+    snapshot_loader: ContentSemanticSnapshotLoader,
+) -> None:
+    try:
+        result = generate_content_semantic_review(
+            snapshot=snapshot_loader(work_item_id),
+            revision_id=revision_id,
+            request=request,
+            client=_DeadlineAwareSemanticClient(client, run_id),
+            store=content_semantic_review_store(),
+            run_store=local_state_store(),
+            run_id=run_id,
+        )
+        terminalize_queued_run_from_result(run_id, result)
+    except Exception as error:
+        mark_semantic_run_failed(run_id, error)
+
+
+def _client_for_queued_deadline(
+    client: StdioCodexAppServerClient, run_id: str
+) -> StdioCodexAppServerClient:
+    run = next((item for item in local_state_store().list_codex_runs() if item.id == run_id), None)
+    if run is None:
+        return client
+    remaining = (effective_deadline(run) - utc_now()).total_seconds()
+    if remaining <= 0:
+        raise TimeoutError("semantic review deadline expired before Codex turn")
+    return _REAL_STDIO_CODEX_CLIENT(timeout_seconds=min(client.timeout_seconds, remaining))
+
+
+def terminalize_queued_run_from_result(run_id: str, result: ContentSemanticReviewResponse) -> None:
+    store = local_state_store()
+    run = next((item for item in store.list_codex_runs() if item.id == run_id), None)
+    if run is None or run.status != "started":
+        return
+    if result.status in {"created", "idempotent", "ready", "stale"}:
+        status: Literal["completed", "blocked", "failed"] = "completed"
+        error: str | None = None
+    elif result.status == "blocked":
+        status = "blocked"
+        error = result.blockers[0].code if result.blockers else "semantic_review_blocked"
+    else:
+        status = "failed"
+        error = result.blockers[0].code if result.blockers else "semantic_review_failed"
+    terminal = run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
+    if supports_run_transaction(store):
+        transition_codex_run_if_status(store, terminal)
+    else:
+        store.save_codex_run(terminal)
+
+
+def mark_semantic_run_failed(run_id: str, error: Exception) -> None:
+    store = local_state_store()
+    run = next((item for item in store.list_codex_runs() if item.id == run_id), None)
+    if run is None or run.status != "started":
+        return
+    terminal = run.model_copy(
+        update={
+            "status": "failed",
+            "completed_at": utc_now(),
+            "error": f"worker_exception:{type(error).__name__}",
+        }
+    )
+    if supports_run_transaction(store):
+        transition_codex_run_if_status(store, terminal)
+    else:
+        store.save_codex_run(terminal)
