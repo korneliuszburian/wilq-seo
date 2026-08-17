@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_initial_draft
+from wilq.content.drafts import initial_draft_queue
 from wilq.schemas import CodexRun
 
 
@@ -96,7 +97,7 @@ def test_status_uses_current_context_not_a_later_stale_run(monkeypatch) -> None:
         planning_workspace=SimpleNamespace(proposal=proposal),
         revision_workspace=SimpleNamespace(latest_revision=None),
     )
-    current_digest = content_initial_draft._snapshot_initial_draft_context_digest(
+    current_digest = initial_draft_queue.snapshot_initial_draft_context_digest(
         snapshot, proposal
     )
     current = CodexRun(
@@ -184,7 +185,7 @@ def test_status_follows_snapshot_proposal_for_a_context_bound_run(monkeypatch) -
         planning_digest=current_proposal.planning_digest,
         planning_input_digest=current_proposal.planning_input_digest,
         initial_draft_context_digest=(
-            content_initial_draft._snapshot_initial_draft_context_digest(
+            initial_draft_queue.snapshot_initial_draft_context_digest(
                 snapshot,
                 current_proposal,
             )

@@ -7,8 +7,8 @@ from types import SimpleNamespace
 import pytest
 
 from apps.api.wilq_api.routers import content_initial_draft
-from apps.api.wilq_api.routers.content_initial_draft import _can_queue_initial_draft
 from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.content.drafts import initial_draft_queue
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftRequest,
@@ -48,28 +48,28 @@ def _snapshot(
 
 
 def test_existing_revision_never_enters_async_initial_draft_queue() -> None:
-    assert _can_queue_initial_draft(
+    assert initial_draft_queue.can_queue_initial_draft(
         _snapshot(latest_revision=object()),
         _request(),
     ) is False
 
 
 def test_currently_approved_plan_without_revision_can_enter_queue() -> None:
-    assert _can_queue_initial_draft(
+    assert initial_draft_queue.can_queue_initial_draft(
         _snapshot(latest_revision=None),
         _request(),
     ) is True
 
 
 def test_generated_plan_without_human_plan_approval_can_enter_queue() -> None:
-    assert _can_queue_initial_draft(
+    assert initial_draft_queue.can_queue_initial_draft(
         _snapshot(latest_revision=None, scope_current=False),
         _request(),
     ) is True
 
 
 def test_stale_revision_can_enter_refresh_queue_without_overwriting_history() -> None:
-    assert _can_queue_initial_draft(
+    assert initial_draft_queue.can_queue_initial_draft(
         _snapshot(latest_revision=object(), context_current=False),
         _request(),
     ) is True
@@ -88,7 +88,7 @@ def test_preflight_blocker_from_async_queue_is_persisted_for_status_read(monkeyp
             return run
 
     store = Store()
-    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(initial_draft_queue, "local_state_store", lambda: store)
     snapshot = SimpleNamespace(
         preflight=SimpleNamespace(item=SimpleNamespace(id="item-1"))
     )
@@ -122,7 +122,7 @@ def test_preflight_blocker_from_async_queue_is_persisted_for_status_read(monkeyp
 def test_initial_draft_queue_claim_is_durable_and_exact(tmp_path, monkeypatch) -> None:
     store = LocalStateStore(tmp_path / "state.sqlite3")
     submitted = []
-    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(initial_draft_queue, "local_state_store", lambda: store)
     monkeypatch.setattr(
         content_initial_draft,
         "_INITIAL_DRAFT_EXECUTOR",
@@ -173,7 +173,7 @@ def test_initial_draft_queue_ignores_started_run_from_another_proposal(
         )
     )
     submitted = []
-    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(initial_draft_queue, "local_state_store", lambda: store)
     monkeypatch.setattr(
         content_initial_draft,
         "_INITIAL_DRAFT_EXECUTOR",
@@ -223,7 +223,7 @@ def test_initial_draft_queue_full_returns_explicit_blocker_and_terminal_run(
         def submit(self, *_args, **_kwargs):
             raise content_initial_draft.InitialDraftQueueFullError
 
-    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(initial_draft_queue, "local_state_store", lambda: store)
     monkeypatch.setattr(content_initial_draft, "_INITIAL_DRAFT_EXECUTOR", FullExecutor())
     snapshot = _snapshot(latest_revision=None)
 
@@ -418,15 +418,15 @@ def test_queue_rejects_a_snapshot_that_changes_before_its_durable_claim(
     current_snapshot.context_digest = current_context.context_digest
     snapshots = iter([stale_snapshot, current_snapshot])
     submitted = []
-    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(initial_draft_queue, "local_state_store", lambda: store)
     monkeypatch.setattr(
         content_initial_draft,
         "_INITIAL_DRAFT_EXECUTOR",
         SimpleNamespace(submit=lambda fn, *args: submitted.append((fn, args))),
     )
     monkeypatch.setattr(
-        content_initial_draft,
-        "_snapshot_initial_draft_context_digest",
+        initial_draft_queue,
+        "snapshot_initial_draft_context_digest",
         lambda snapshot, _proposal: snapshot.context_digest,
     )
 
@@ -449,7 +449,7 @@ def test_queue_rejects_a_snapshot_that_changes_before_its_durable_claim(
 def test_queue_persists_proposal_evidence_ids(tmp_path, monkeypatch) -> None:
     store = LocalStateStore(tmp_path / "state.sqlite3")
     submitted = []
-    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: store)
+    monkeypatch.setattr(initial_draft_queue, "local_state_store", lambda: store)
     monkeypatch.setattr(
         content_initial_draft,
         "_INITIAL_DRAFT_EXECUTOR",
