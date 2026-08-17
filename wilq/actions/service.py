@@ -30,7 +30,12 @@ from wilq.actions.action_state import (
     with_review_gate as with_review_gate_state,
 )
 from wilq.actions.action_validation import validate_action as validate_action_lifecycle
-from wilq.actions.apply_lifecycle import apply_action as apply_action_lifecycle
+from wilq.actions.apply_lifecycle import (
+    ApplyDependencies,
+)
+from wilq.actions.apply_lifecycle import (
+    apply_action as apply_action_lifecycle,
+)
 from wilq.actions.audit_store import (
     action_audit_summary_for_operator as _action_audit_summary_for_operator,
 )
@@ -456,7 +461,6 @@ def apply_action(
     action: ActionObject,
     request: ActionApplyRequest | None = None,
 ) -> ActionApplyResult:
-    workflow_store = action_content_workflow_store()
     submitted_actor_label = None if request is None else request.confirmed_by
     bound_request = (
         None
@@ -465,9 +469,20 @@ def apply_action(
         if submitted_actor_label is None
         else request.model_copy(update={"confirmed_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id})
     )
-    result = apply_action_lifecycle(
-        action,
-        bound_request,
+    result = apply_action_lifecycle(action, bound_request, dependencies=_apply_dependencies())
+    if submitted_actor_label is not None:
+        _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+        result.mutation_audit.principal_id = result.audit_event.principal_id
+        result.mutation_audit.workspace_id = result.audit_event.workspace_id
+        result.mutation_audit.trust_level = result.audit_event.trust_level
+        result.mutation_audit.submitted_actor_label = submitted_actor_label
+    _persist_action_audit_pair(result.audit_event, result.mutation_audit)
+    return result
+
+
+def _apply_dependencies() -> ApplyDependencies:
+    workflow_store = action_content_workflow_store()
+    return ApplyDependencies(
         review_gate=_action_review_gate,
         wordpress_apply_capability=wordpress_draft_apply_capability,
         mutation_adapter=_supported_mutation_adapter,
@@ -479,14 +494,6 @@ def apply_action(
         status_label=_action_result_status_label,
         audit_event_label=_audit_event_with_operator_label,
     )
-    if submitted_actor_label is not None:
-        _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
-        result.mutation_audit.principal_id = result.audit_event.principal_id
-        result.mutation_audit.workspace_id = result.audit_event.workspace_id
-        result.mutation_audit.trust_level = result.audit_event.trust_level
-        result.mutation_audit.submitted_actor_label = submitted_actor_label
-    _persist_action_audit_pair(result.audit_event, result.mutation_audit)
-    return result
 
 
 def persist_action_audit(event: AuditEvent) -> AuditEvent:

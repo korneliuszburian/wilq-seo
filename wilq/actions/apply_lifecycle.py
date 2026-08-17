@@ -47,6 +47,20 @@ ExecuteMutationAdapter = Callable[
 
 
 @dataclass(frozen=True)
+class ApplyDependencies:
+    review_gate: Callable[[ActionObject], ActionReviewGate]
+    wordpress_apply_capability: WordPressApplyCapability
+    mutation_adapter: Callable[[ActionObject], str | None]
+    execute_mutation_adapter: ExecuteMutationAdapter
+    connector_status: Callable[[str], Any]
+    impact_status: Callable[[Any], str | None]
+    wordpress_apply_claim: Callable[..., WordPressRevisionApplyClaimResult]
+    finish_wordpress_apply_claim: Callable[..., None]
+    status_label: Callable[[str], str]
+    audit_event_label: Callable[[AuditEvent], AuditEvent]
+
+
+@dataclass(frozen=True)
 class _ApplyCapability:
     capability: Any
     blockers: list[ActionWordPressDraftApplyBlocker]
@@ -63,30 +77,23 @@ def apply_action(
     action: ActionObject,
     request: ActionApplyRequest | None = None,
     *,
-    review_gate: Callable[[ActionObject], ActionReviewGate],
-    wordpress_apply_capability: WordPressApplyCapability,
-    mutation_adapter: Callable[[ActionObject], str | None],
-    execute_mutation_adapter: ExecuteMutationAdapter,
-    connector_status: Callable[[str], Any],
-    impact_status: Callable[[Any], str | None],
-    wordpress_apply_claim: Callable[..., WordPressRevisionApplyClaimResult],
-    finish_wordpress_apply_claim: Callable[..., None],
-    status_label: Callable[[str], str],
-    audit_event_label: Callable[[AuditEvent], AuditEvent],
+    dependencies: ApplyDependencies,
 ) -> ActionApplyResult:
     """Run the canonical fail-closed apply lifecycle and preserve mutation audit."""
     errors: list[str] = []
-    resolved = _resolve_apply_capability(action, request, wordpress_apply_capability)
+    resolved = _resolve_apply_capability(
+        action, request, dependencies.wordpress_apply_capability
+    )
     wordpress_revision_blockers = resolved.blockers
     errors.extend(
         f"{blocker.label}: {blocker.reason}" for blocker in wordpress_revision_blockers
     )
     actor = request.confirmed_by if request and request.confirmed_by else "wilq_api"
-    connector = connector_status(action.connector)
+    connector = dependencies.connector_status(action.connector)
     preview = latest_preview_event(action.audit_events)
     confirmation = latest_action_confirmation_event(action.audit_events)
     impact_check = latest_action_impact_check_event(action.audit_events)
-    adapter = mutation_adapter(action)
+    adapter = dependencies.mutation_adapter(action)
     errors.extend(
         action_apply_preflight_blockers(
             action=action,
@@ -94,7 +101,7 @@ def apply_action(
             connector_configured=connector is not None and connector.configured,
             preview_present=preview is not None,
             confirmation_present=confirmation is not None,
-            impact_checked=impact_status(impact_check) == "checked",
+            impact_checked=dependencies.impact_status(impact_check) == "checked",
             mutation_adapter=adapter,
             wordpress_capability_present=resolved.capability is not None,
             payload_apply_allowed=_payload_apply_allowed,
@@ -104,7 +111,7 @@ def apply_action(
     claim = _ApplyClaim()
     if not errors and adapter is not None and resolved.capability is not None:
         claim, claim_blocker = _claim_exact_apply(
-            action, request, actor, resolved, wordpress_apply_claim
+            action, request, actor, resolved, dependencies.wordpress_apply_claim
         )
         if claim_blocker is not None:
             wordpress_revision_blockers.append(claim_blocker)
@@ -114,7 +121,7 @@ def apply_action(
     claim_final_status: str | None = None
     if not errors and adapter is not None:
         adapter_result, adapter_errors = _execute_apply(
-            action, adapter, resolved, execute_mutation_adapter
+            action, adapter, resolved, dependencies.execute_mutation_adapter
         )
         claim_final_status = "failed" if adapter_errors else "applied"
         errors.extend(adapter_errors)
@@ -125,7 +132,7 @@ def apply_action(
     _finish_apply_claim(
         claim,
         claim_final_status,
-        finish_wordpress_apply_claim,
+        dependencies.finish_wordpress_apply_claim,
         audit,
         mutation_audit,
         adapter_result,
@@ -133,26 +140,26 @@ def apply_action(
     action.audit_events.append(audit)
     if errors:
         action.status = ActionStatus.blocked
-        action.review_gate = review_gate(action)
+        action.review_gate = dependencies.review_gate(action)
         return ActionApplyResult(
             action_id=action.id,
             applied=False,
             status="blocked",
-            status_label=status_label("blocked"),
-            audit_event=audit_event_label(audit),
+            status_label=dependencies.status_label("blocked"),
+            audit_event=dependencies.audit_event_label(audit),
             mutation_audit=mutation_audit,
             errors=errors,
             wordpress_revision_blockers=wordpress_revision_blockers,
             adapter_result=adapter_result,
         )
     action.status = ActionStatus.applied
-    action.review_gate = review_gate(action)
+    action.review_gate = dependencies.review_gate(action)
     return ActionApplyResult(
         action_id=action.id,
         applied=True,
         status="applied",
-        status_label=status_label("applied"),
-        audit_event=audit_event_label(audit),
+        status_label=dependencies.status_label("applied"),
+        audit_event=dependencies.audit_event_label(audit),
         mutation_audit=mutation_audit,
         wordpress_revision_blockers=wordpress_revision_blockers,
         adapter_result=adapter_result,

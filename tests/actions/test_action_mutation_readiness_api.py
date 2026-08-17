@@ -10,6 +10,7 @@ from typer.testing import CliRunner
 
 import wilq.actions.service as action_service
 from apps.api.wilq_api.main import app
+from wilq.actions import apply_lifecycle
 from wilq.actions.service import apply_action
 from wilq.actions.wordpress_mutation_requirements import WordPressDraftApplyCapability
 from wilq.cli import app as cli_app
@@ -809,13 +810,14 @@ def test_wordpress_apply_uses_typed_capability_and_dev_adapter(
         lambda _authorization: True,
     )
 
-    result = apply_action(
+    result = apply_lifecycle.apply_action(
         action,
         ActionApplyRequest(
             confirm=True,
             confirmed_by="operator_test",
             wordpress_draft=binding,
         ),
+        dependencies=action_service._apply_dependencies(),
     )
 
     assert result.adapter_result is not None
