@@ -16,6 +16,7 @@ from wilq.content.drafts import fact_selection, initial_full_draft
 from wilq.content.drafts.initial_draft_readability import readability_issues_for_output
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
+    ContentInitialDraftRequest,
     ContentInitialDraftResponse,
     ContentInitialDraftSectionOutput,
 )
@@ -811,3 +812,94 @@ def test_benefit_source_fact_marker_is_a_strict_subset_of_body_marker() -> None:
     assert subset.search("czas") is None
     assert body.search("ryzyko") is not None
     assert body.search("czas") is not None
+
+
+def test_refresh_pipeline_wires_benefit_enrichment_transform(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Falsify the AR2.2 regression where the refresh pipeline dropped enrich."""
+    from types import SimpleNamespace
+
+    from wilq.content.drafts import initial_draft_pipeline
+    from wilq.content.drafts import initial_full_draft as ifd
+    from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
+
+    benefit_fact = "pozwala uniknąć kosztów zatrudniania pracowników"
+    planning_input = ContentPlanningInput.model_construct(
+        work_item_id="work-item-1",
+        planning_input_digest="b" * 64,
+        source_facts=[
+            ContentPlanningSourceFact(
+                fact_id="planning_benefit_fact",
+                summary=benefit_fact,
+                source_connector="public_site",
+                evidence_ids=["ev_benefit"],
+            )
+        ]
+    )
+    proposal = SimpleNamespace(
+        proposal_id="proposal-1",
+        work_item_id="work-item-1",
+        evidence_ids=[],
+        source_material_ids=[],
+        planning_digest="a" * 64,
+        planning_input_digest="b" * 64,
+    )
+    prepared = ifd._InitialDraftInputs(
+        planning_input=planning_input,
+        proposal=proposal,  # type: ignore[arg-type]
+        generation_contract=StructuredDraftGenerationContract.model_construct(),
+    )
+    captured: dict[str, object] = {}
+
+    def fake_prepare(snapshot, request):
+        return prepared
+
+    def fake_pipeline(*, inputs, client, workflow_store, run_store):
+        captured["inputs"] = inputs
+        return None
+
+    monkeypatch.setattr(ifd, "_prepare_inputs", fake_prepare)
+    monkeypatch.setattr(ifd, "generate_initial_draft", fake_pipeline)
+    monkeypatch.setattr(
+        initial_draft_pipeline,
+        "start_initial_draft_run",
+        lambda *args, **kwargs: SimpleNamespace(id="run-1"),
+    )
+    monkeypatch.setattr(ifd, "_initial_draft_context_digest", lambda snapshot, prepared: "c" * 64)
+    request = ContentInitialDraftRequest(
+        expected_proposal_id="proposal-1",
+        expected_planning_digest="a" * 64,
+        expected_planning_input_digest="b" * 64,
+        requested_by="Wilku",
+    )
+
+    result = ifd.generate_initial_full_draft(
+        snapshot=object(),
+        request=request,
+        client=object(),
+        workflow_store=object(),
+        run_store=object(),
+    )
+
+    assert result is None
+    inputs = captured["inputs"]
+    assert isinstance(inputs, initial_draft_pipeline.InitialDraftPipelineInputs)
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Outsourcing środowiskowy",
+            meta_title="Outsourcing środowiskowy dla firm",
+            meta_description="Zakres i korzyści outsourcingu środowiskowego.",
+            h1="Outsourcing środowiskowy",
+            lead="Praktyczny opis stałego wsparcia środowiskowego dla firmy.",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="benefit_missing",
+                heading="Co daje outsourcing?",
+                body_markdown="Może obejmować nadzór nad dokumentacją.",
+            ),
+        ],
+    )
+    transformed = inputs.output_transform(output)  # type: ignore[misc]
+    assert "Z korzyści współpracy:" in transformed.sections[0].body_markdown

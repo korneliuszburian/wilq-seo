@@ -206,6 +206,9 @@ def generate_initial_full_draft(
                 run_id=run_id,
             ),
             output_blocker=lambda candidate: _output_blocker(prepared, candidate),
+            output_transform=lambda output: _enrich_benefit_sections(
+                output, prepared.planning_input
+            ),
             response=lambda *, status, blocker, run, runtime: _blocked_response(
                 snapshot,
                 proposal=prepared.proposal,

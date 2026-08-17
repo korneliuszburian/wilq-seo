@@ -41,6 +41,7 @@ from wilq.content.workflow.store.store import content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore, local_state_store
+from wilq.storage.local_state_runs import supports_run_transaction
 
 _REAL_STDIO_CODEX_CLIENT = StdioCodexAppServerClient
 
@@ -263,7 +264,7 @@ def _latest_semantic_run(work_item_id: str, revision_id: str) -> CodexRun | None
             store = local_state_store()
             latest = (
                 transition_codex_run_if_status(store, terminal)
-                if hasattr(store, "_connect")
+                if supports_run_transaction(store)
                 else store.save_codex_run(terminal)
             ) or latest
     return latest
@@ -540,7 +541,7 @@ def _terminalize_queued_run_from_result(
         status = "failed"
         error = result.blockers[0].code if result.blockers else "semantic_review_failed"
     terminal = run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
-    if hasattr(store, "_connect"):
+    if supports_run_transaction(store):
         transition_codex_run_if_status(store, terminal)
     else:
         store.save_codex_run(terminal)
@@ -558,7 +559,7 @@ def _mark_semantic_run_failed(run_id: str, error: Exception) -> None:
             "error": f"worker_exception:{type(error).__name__}",
         }
     )
-    if hasattr(store, "_connect"):
+    if supports_run_transaction(store):
         transition_codex_run_if_status(store, terminal)
     else:
         store.save_codex_run(terminal)
