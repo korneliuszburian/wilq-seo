@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -10,6 +11,7 @@ from wilq.connectors.wordpress.client import (
     WordPressDraftVerificationError,
     WordPressDraftWriteError,
 )
+from wilq.content.workflow.target.new_page_apply_capability import NewPageApplyCapability
 from wilq.content.workflow.target.new_page_document import ContentNewPageDeliveryReadiness
 from wilq.content.workflow.target.new_page_draft_action import (
     ContentNewPageDraftActionCommand,
@@ -197,3 +199,74 @@ def test_new_page_executor_stops_before_store_or_transport_when_env_is_disabled(
 
     assert result is None
     assert errors == ["Środowisko dev nie zezwala obecnie na utworzenie szkicu WordPress."]
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        WordPressDraftWriteError("Nie udało się utworzyć szkicu WordPress."),
+        WordPressDraftVerificationError(
+            "Nie można potwierdzić dokładnego szkicu WordPress.",
+            post_id="41",
+            code="content_digest_mismatch",
+        ),
+    ],
+)
+def test_new_page_executor_returns_wordpress_transport_errors_as_blockers(
+    monkeypatch, error
+) -> None:
+    action = create_new_page_draft_action(
+        ContentNewPageDeliveryReadiness(
+            status="ready_for_action",
+            work_item_id="content_work_item_new_page",
+            brief_id="brief_1",
+            brief_digest="a" * 64,
+            foundation_id="foundation_1",
+            service_card_id="service_environment",
+            service_card_digest="b" * 64,
+            revision_id="revision_1",
+            revision_digest="c" * 64,
+            allowed_content_types=["page"],
+            authoring_profile_digest="d" * 64,
+            evidence_ids=["ev_authoring"],
+            safe_next_step="Utwórz ActionObject.",
+        ),
+        ContentNewPageDraftActionCommand(
+            expected_revision_digest="c" * 64,
+            expected_authoring_profile_digest="d" * 64,
+            content_type="page",
+            requested_by="Wilku",
+        ),
+    )
+    binding = _payload().binding
+    monkeypatch.setattr(
+        "wilq.content.workflow.target.new_page_draft_executor.content_workflow_store",
+        lambda: type(
+            "Store",
+            (),
+            {
+                "list_draft_revisions": lambda self, _: [
+                    SimpleNamespace(
+                        revision_id=binding.revision_id,
+                        content_digest=binding.revision_digest,
+                    )
+                ]
+            },
+        )(),
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.target.new_page_draft_executor.build_new_page_dev_draft_write_payload",
+        lambda revision, current_binding: _payload(),
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.target.new_page_draft_executor.create_new_page_dev_draft",
+        lambda payload, *, action_apply_authorized: (_ for _ in ()).throw(error),
+    )
+
+    result, errors = execute_new_page_draft_action(
+        action,
+        NewPageApplyCapability(binding=binding, action_chain=object()),
+    )
+
+    assert result is None
+    assert errors == [str(error)]

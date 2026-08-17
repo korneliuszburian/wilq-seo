@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from wilq.connectors.wordpress.client import (
+    WordPressDraftReadError,
+    WordPressDraftWriteError,
+)
 from wilq.content.workflow.policies import wordpress_draft_writes_enabled
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.target.new_page_apply_capability import NewPageApplyCapability
@@ -45,7 +49,7 @@ def execute_new_page_draft_action(
     try:
         payload = build_new_page_dev_draft_write_payload(revision, binding)
         draft = create_new_page_dev_draft(payload, action_apply_authorized=capability is not None)
-    except ValueError as error:
+    except (ValueError, WordPressDraftWriteError, WordPressDraftReadError) as error:
         return None, [str(error)]
     return {
         "adapter": CONTENT_NEW_PAGE_DRAFT_MUTATION_ADAPTER,
