@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
+from wilq.content.operator_copy import unique
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import ConnectorRefreshRun, LocaloReadContractStatus, MetricFact
 
@@ -228,7 +227,7 @@ def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[
         claim for contract, claim in claims_by_contract.items() if contract in missing_contracts
     ]
     claims.extend(["zapis zmian w profilu firmy", "poprawa widoczności lokalnej"])
-    return _unique(claims)
+    return unique(claims)
 
 
 def _localo_visibility_action_ids(visibility_facts: list[MetricFact]) -> list[str]:
@@ -305,13 +304,3 @@ def _bool_or_none(value: float | int | str | None) -> bool | None:
     if numeric_value is None:
         return None
     return bool(numeric_value)
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for value in values:
-        if value and value not in seen:
-            ordered.append(value)
-            seen.add(value)
-    return ordered

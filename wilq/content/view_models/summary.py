@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from wilq.content.canonical.urls import content_decision_has_public_final_canonical
+from wilq.content.operator_copy import unique
 from wilq.content.preflight.marketer_view import (
     content_blocked_claim_labels,
     content_decision_type_summary_label,
@@ -57,23 +56,23 @@ def build_content_operator_summary(
             1 for decision in decisions if decision.wordpress_match == "missing"
         ),
         current_site_match_count=current_site_match_count,
-        decision_type_labels=_unique(
+        decision_type_labels=unique(
             content_decision_type_summary_label(decision.decision_type) for decision in decisions
         ),
-        source_connectors=_unique(
+        source_connectors=unique(
             connector for decision in top_decisions for connector in decision.source_connectors
         ),
-        evidence_ids=_unique(
+        evidence_ids=unique(
             evidence_id for decision in top_decisions for evidence_id in decision.evidence_ids
         ),
         evidence_summary_label=evidence_count_label(
-            _unique(
+            unique(
                 evidence_id for decision in top_decisions for evidence_id in decision.evidence_ids
             )
         ),
         action_ids=action_ids,
         action_summary_label=action_count_label(action_ids),
-        blocked_claims=_unique(claim for section in sections for claim in section.blocked_claims),
+        blocked_claims=unique(claim for section in sections for claim in section.blocked_claims),
         blocked_claim_labels=content_blocked_claim_labels(
             claim for section in sections for claim in section.blocked_claims
         ),
@@ -98,12 +97,3 @@ def content_query_page_count(items: list[TacticalQueueItem]) -> int:
 
 def content_matched_inventory_count(items: list[TacticalQueueItem]) -> int:
     return sum(1 for item in items if item.dimensions.get("wordpress_match") == "found")
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

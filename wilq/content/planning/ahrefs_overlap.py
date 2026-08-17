@@ -11,6 +11,7 @@ from wilq.content.canonical.urls import (
     content_normalized_path,
     content_url_host,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import MetricFact
 
 AhrefsCrossSourceMatchStrength = Literal["exact", "weak", "missing"]
@@ -37,6 +38,7 @@ def ahrefs_gap_mapping_key(
             value(keyword),
         )
     )
+
 
 _STOPWORDS = {
     "dla",
@@ -193,10 +195,7 @@ def _assess_source(
         record
         for record in records
         if bool(set(topic_words) & set(record.topic_words))
-        or (
-            referenced_url_key is not None
-            and referenced_url_key == record.public_url_key
-        )
+        or (referenced_url_key is not None and referenced_url_key == record.public_url_key)
     ]
     return _match("weak", weak_records) if weak_records else AhrefsCrossSourceMatch("missing")
 
@@ -267,11 +266,9 @@ def _match(
     selected = tuple(records)
     return AhrefsCrossSourceMatch(
         strength=strength,
-        matching_labels=tuple(_unique(record.label for record in selected)[:4]),
-        source_connectors=tuple(_unique(record.source_connector for record in selected)),
-        evidence_ids=tuple(
-            _unique(record.evidence_id for record in selected if record.evidence_id)
-        ),
+        matching_labels=tuple(unique(record.label for record in selected)[:4]),
+        source_connectors=tuple(unique(record.source_connector for record in selected)),
+        evidence_ids=tuple(unique(record.evidence_id for record in selected if record.evidence_id)),
     )
 
 
@@ -282,8 +279,7 @@ def _phrase_matches(topic_words: tuple[str, ...], source_words: tuple[str, ...])
         return source_words == topic_words
     width = len(topic_words)
     return any(
-        source_words[index : index + width] == topic_words
-        for index in range(len(source_words))
+        source_words[index : index + width] == topic_words for index in range(len(source_words))
     )
 
 
@@ -303,11 +299,3 @@ def _public_url_key(value: str | None) -> str | None:
     canonical_host = "ekologus.pl" if host in {"ekologus.pl", "www.ekologus.pl"} else host
     path = content_normalized_path(value)
     return f"{canonical_host}{path}" if path else None
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        if value and value not in unique_values:
-            unique_values.append(value)
-    return unique_values

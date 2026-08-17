@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
+from wilq.content.operator_copy import unique
 from wilq.content.preflight.vendor_read import (
     content_blocker_reason,
     refresh_or_connector_evidence_ids,
@@ -69,7 +68,7 @@ def query_page_section(
         ),
         next_step="Otwórz najwyższe priorytety i sprawdź intencję oraz dopasowanie WordPress.",
         source_connectors=["google_search_console"],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *(fact.evidence_id for fact in gsc_facts),
                 *(evidence_id for item in gsc_items for evidence_id in item.evidence_ids),
@@ -151,8 +150,8 @@ def inventory_match_section(
             "Najpierw obsłuż potwierdzone odświeżenia i scalenia; nowe treści "
             "twórz tylko po kontroli duplikacji."
         ),
-        source_connectors=_unique(fact.source_connector for fact in inventory_facts),
-        evidence_ids=_unique(
+        source_connectors=unique(fact.source_connector for fact in inventory_facts),
+        evidence_ids=unique(
             [
                 *(fact.evidence_id for fact in inventory_facts),
                 *(evidence_id for item in matched_items for evidence_id in item.evidence_ids),
@@ -191,7 +190,7 @@ def content_action_safety_section(
         ),
         next_step="Sprawdź `act_prepare_content_refresh_queue` w WILQ i pokaż podgląd zmian.",
         source_connectors=list(content_connector_ids),
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *(
                     evidence_id
@@ -213,12 +212,3 @@ def content_action_safety_section(
         ],
         risk=ActionRisk.medium,
     )
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

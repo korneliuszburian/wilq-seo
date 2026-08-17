@@ -12,6 +12,7 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
+from wilq.content.operator_copy import unique
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
@@ -189,6 +190,8 @@ def ga4_tracking_quality_action_from_metric_facts(
         ga4_action_metrics=action_metrics,
         metric_sentence=metric_sentence(action_metrics),
     )
+
+
 GA4_TRACKING_REQUIRED_BREAKDOWNS = ["landing_page", "source_medium", "campaign_name"]
 
 
@@ -232,7 +235,7 @@ def ga4_tracking_quality_payload_from_metric_facts(facts: list[MetricFact]) -> d
         "connector": "google_analytics_4",
         "mode": "prepare_only",
         "preview_contract": GA4_TRACKING_QUALITY_PREVIEW_CONTRACT,
-        "source_metric_names": _unique(fact.name for fact in facts),
+        "source_metric_names": unique(fact.name for fact in facts),
         "required_breakdowns": GA4_TRACKING_REQUIRED_BREAKDOWNS,
         "required_breakdown_labels": [
             _tracking_dimension_gap_label(value) for value in GA4_TRACKING_REQUIRED_BREAKDOWNS
@@ -296,9 +299,9 @@ def _review_rows(facts: list[MetricFact]) -> list[dict[str, Any]]:
                 blocked_claim_labels=[
                     _blocked_claim_label(value) for value in GA4_TRACKING_BLOCKED_CLAIMS
                 ],
-                evidence_ids=_unique(fact.evidence_id for fact in group),
+                evidence_ids=unique(fact.evidence_id for fact in group),
                 evidence_summary_label=_evidence_summary_label(
-                    _unique(fact.evidence_id for fact in group)
+                    unique(fact.evidence_id for fact in group)
                 ),
                 api_mutation_ready=False,
                 apply_allowed=False,
@@ -406,13 +409,3 @@ def _reason(gaps: Sequence[str]) -> str:
         "To pozwala sprawdzić dopasowanie komunikatu, ale nie odblokowuje obietnic "
         "zwrotu z reklam ani przychodu."
     )
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for value in values:
-        if value and value not in seen:
-            seen.add(value)
-            result.append(value)
-    return result

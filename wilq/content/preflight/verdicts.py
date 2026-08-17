@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import Literal
 
 from wilq.content.canonical.urls import content_decision_final_canonical_url
+from wilq.content.operator_copy import unique
 from wilq.schemas import ContentDecisionItem
 
 ContentPreflightMode = Literal["preserve", "refresh", "merge", "create", "block"]
@@ -39,7 +39,7 @@ def content_preflight_similar_urls(decision: ContentDecisionItem) -> list[str]:
         if row.wordpress_cross_check.strength == "exact"
         for url in row.wordpress_overlap_urls
     )
-    return _unique(url for url in urls if url)
+    return unique(url for url in urls if url)
 
 
 def content_preflight_query_overlap(decision: ContentDecisionItem) -> str:
@@ -61,12 +61,3 @@ def content_preflight_next_step(
     if recommended_mode == "merge":
         return "Najpierw sprawdź duplikaty i zdecyduj, które sekcje scalić."
     return decision.next_step
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Iterable
 from typing import Any, Literal
 
 from wilq.evidence.registry import connector_evidence_id
@@ -172,12 +171,3 @@ def _ads_preview_card_id(kind: str, source_id: str) -> str:
 
 def _ads_preview_row(label: str, value: str) -> ActionPreviewRowViewModel:
     return ActionPreviewRowViewModel(label=label, value=value)
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

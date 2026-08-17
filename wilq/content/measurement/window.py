@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from wilq.content.operator_copy import build_blocker
 from wilq.content.workflow.contracts.models import ContentMeasurementWindowStatus
 
 ContentMeasurementMetric = Literal[
@@ -110,25 +111,12 @@ def content_measurement_window_outcome_blockers(
     if window.status in {"ready_for_review", "closed"} and window.success_claim_allowed:
         return []
     return [
-        _blocker(
-            "measurement_window_not_ready",
-            "Nie wolno jeszcze oceniać efektu",
-            "WILQ może zbierać dane, ale nie może claimować sukcesu albo porażki przed "
+        build_blocker(
+            ContentMeasurementWindowBlocker,
+            code="measurement_window_not_ready",
+            label="Nie wolno jeszcze oceniać efektu",
+            reason="WILQ może zbierać dane, ale nie może claimować sukcesu albo porażki przed "
             "końcem okna obserwacji.",
-            "Wróć do oceny po dacie earliest_verdict_date.",
+            next_step="Wróć do oceny po dacie earliest_verdict_date.",
         )
     ]
-
-
-def _blocker(
-    code: ContentMeasurementWindowBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentMeasurementWindowBlocker:
-    return ContentMeasurementWindowBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )

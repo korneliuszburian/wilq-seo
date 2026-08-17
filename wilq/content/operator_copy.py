@@ -29,6 +29,7 @@ def build_blocker(  # noqa: UP047
     reason: str,
     next_step: str,
     source_codes: Sequence[str] | None = None,
+    **extra_fields: Any,
 ) -> Model:
     """Construct any content blocker model through one typed seam."""
 
@@ -41,6 +42,7 @@ def build_blocker(  # noqa: UP047
     }
     if source_codes is not None and "source_codes" in fields:
         values["source_codes"] = list(source_codes)
+    values.update(extra_fields)
     return model(**values)
 
 

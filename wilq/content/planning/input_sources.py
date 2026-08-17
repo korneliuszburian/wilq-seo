@@ -12,6 +12,7 @@ from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
+from wilq.content.operator_copy import unique
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.decisions.demand_evidence import (
     ContentAcceptedLandingMatchTier,
@@ -26,9 +27,7 @@ from wilq.schemas import (
     ContentFreshnessAssessment,
 )
 
-ContentPlanningSourceStatus = Literal[
-    "used", "not_applicable", "missing", "stale", "blocked"
-]
+ContentPlanningSourceStatus = Literal["used", "not_applicable", "missing", "stale", "blocked"]
 ContentPlanningSourceName = Literal[
     "wordpress",
     "service_profile",
@@ -106,9 +105,7 @@ class ContentPlanningInventory(BaseModel):
                 self.content_status != "not_applicable"
                 or self.acf_section_status != "not_applicable"
             ):
-                raise ValueError(
-                    "Not-applicable inventory requires not-applicable child statuses."
-                )
+                raise ValueError("Not-applicable inventory requires not-applicable child statuses.")
             if any(
                 (
                     self.acf_field_names,
@@ -209,7 +206,7 @@ def build_planning_inventory(
     ]
     wordpress_evidence = list_evidence_by_ids(wordpress_inventory_evidence_ids)
     evidence_ids = [evidence.id for evidence in wordpress_evidence]
-    connectors = _unique([evidence.source_connector for evidence in wordpress_evidence])
+    connectors = unique([evidence.source_connector for evidence in wordpress_evidence])
     if not evidence_ids or not connectors:
         return ContentPlanningInventory(
             status="missing",
@@ -255,9 +252,7 @@ def build_planning_inventory(
         source_connectors=connectors,
         landing_match_tiers=tiers,
         note=(
-            item.wordpress_content_inventory_note
-            or item.wordpress_acf_section_inventory_note
-            or ""
+            item.wordpress_content_inventory_note or item.wordpress_acf_section_inventory_note or ""
         ),
     )
 
@@ -435,9 +430,7 @@ def _source_quality_update(
         "quality_state": freshness.connector_quality_states.get(
             connector_id, ConnectorQualityState.unknown
         ),
-        "interpretation_caveats": freshness.connector_quality_caveats.get(
-            connector_id, []
-        ),
+        "interpretation_caveats": freshness.connector_quality_caveats.get(connector_id, []),
     }
 
 
@@ -448,12 +441,9 @@ def _ads_source_assessment(
     evidence_ids: list[str],
     landing_match_tiers: list[ContentAcceptedLandingMatchTier],
 ) -> ContentPlanningSourceAssessment:
-    service_binding_statuses = {
-        row.service_binding_status for row in demand.ads_term_rows
-    }
+    service_binding_statuses = {row.service_binding_status for row in demand.ads_term_rows}
     service_binding_blocked = bool(
-        service_binding_statuses
-        & {"unbound", "ambiguous", "review_required"}
+        service_binding_statuses & {"unbound", "ambiguous", "review_required"}
     )
     blocked = (
         demand.optional_ads_status == "blocked"
@@ -538,14 +528,20 @@ def _conditional_assessments(
 ) -> list[ContentPlanningSourceAssessment]:
     return [
         _conditional_typed_source(
-            "merchant", "google_merchant_center", fact_kinds, fact_evidence,
+            "merchant",
+            "google_merchant_center",
+            fact_kinds,
+            fact_evidence,
             "wordpress_sklep" in item.source_connectors,
             "Merchant ma evidence, ale bez typed product/page matchu nie zasila planu.",
             "Strona produktowa nie ma dokładnych faktów Merchant.",
             "To nie jest strona produktowa.",
         ),
         _conditional_typed_source(
-            "localo", "localo", fact_kinds, fact_evidence,
+            "localo",
+            "localo",
+            fact_kinds,
+            fact_evidence,
             "lokal" in brief.search_intent.casefold(),
             "Localo ma evidence, ale bez typed lokalnego matchu nie zasila planu.",
             "Lokalna intencja wymaga dokładnego sygnału Localo.",
@@ -579,10 +575,7 @@ def build_source_facts(
         )
         for index, fact in enumerate(brief.source_facts, start=1)
         if fact.source_connector not in _QUERY_PORTFOLIO_CONNECTORS
-        and (
-            fact.source_connector != "ahrefs"
-            or fact.evidence_id in ahrefs_matched_evidence_ids
-        )
+        and (fact.source_connector != "ahrefs" or fact.evidence_id in ahrefs_matched_evidence_ids)
         and (
             (source := _ASSESSMENT_SOURCE_BY_CONNECTOR.get(fact.source_connector)) is None
             or statuses.get(source) == "used"
@@ -658,23 +651,25 @@ def usable_query_portfolio(
         else []
     )
     rows = [*gsc, *ads, *planner]
-    return demand.model_copy(update={
-        "status": "available" if gsc else "missing",
-        "gsc_query_rows": gsc,
-        "ads_term_rows": ads,
-        "keyword_planner_rows": planner,
-        "source_connectors": _unique([row.source_connector for row in rows]),
-        "evidence_ids": _row_evidence(rows),
-        "optional_ads_status": (
-            "blocked"
-            if demand.optional_ads_status == "blocked"
-            else "stale"
-            if demand.optional_ads_status == "stale"
-            else "exact_rows_available"
-            if ads or planner
-            else "not_exactly_mapped"
-        ),
-    })
+    return demand.model_copy(
+        update={
+            "status": "available" if gsc else "missing",
+            "gsc_query_rows": gsc,
+            "ads_term_rows": ads,
+            "keyword_planner_rows": planner,
+            "source_connectors": unique([row.source_connector for row in rows]),
+            "evidence_ids": _row_evidence(rows),
+            "optional_ads_status": (
+                "blocked"
+                if demand.optional_ads_status == "blocked"
+                else "stale"
+                if demand.optional_ads_status == "stale"
+                else "exact_rows_available"
+                if ads or planner
+                else "not_exactly_mapped"
+            ),
+        }
+    )
 
 
 def planning_source_connectors(
@@ -690,7 +685,7 @@ def planning_source_connectors(
         connectors.extend(inventory.source_connectors)
     if assessment_status(assessments, "service_profile") == "used":
         connectors.extend(service_profile.source_connectors)
-    return _unique(connectors)
+    return unique(connectors)
 
 
 def _matching_record(
@@ -726,8 +721,8 @@ def _assessment(
         source=source,
         status=status,
         reason=reason,
-        evidence_ids=_unique(evidence_ids or []),
-        knowledge_card_ids=_unique(knowledge_card_ids or []),
+        evidence_ids=unique(evidence_ids or []),
+        knowledge_card_ids=unique(knowledge_card_ids or []),
         landing_match_tiers=landing_match_tiers or [],
     )
 
@@ -796,11 +791,11 @@ def _fact_evidence_by_connector(brief: ContentSalesBrief) -> dict[str, list[str]
     grouped: dict[str, list[str]] = {}
     for fact in brief.source_facts:
         grouped.setdefault(fact.source_connector, []).append(fact.evidence_id)
-    return {connector: _unique(ids) for connector, ids in grouped.items()}
+    return {connector: unique(ids) for connector, ids in grouped.items()}
 
 
 def _row_evidence(rows: list[ContentSearchDemandRow]) -> list[str]:
-    return _unique([evidence_id for row in rows for evidence_id in row.evidence_ids])
+    return unique([evidence_id for row in rows for evidence_id in row.evidence_ids])
 
 
 def _demand_tiers(rows: list[ContentSearchDemandRow]) -> list[ContentAcceptedLandingMatchTier]:
@@ -812,10 +807,6 @@ def _ordered_tiers(
 ) -> list[ContentAcceptedLandingMatchTier]:
     order = {"exact": 0, "tracking_only": 1, "host_alias": 2}
     return sorted(set(tiers), key=order.__getitem__)
-
-
-def _unique(values: list[str]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value))
 
 
 __all__ = [

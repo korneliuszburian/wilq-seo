@@ -13,6 +13,7 @@ from wilq.briefing.merchant_labels import (
     merchant_resolution_label,
     merchant_severity_label,
 )
+from wilq.content.operator_copy import unique
 from wilq.operator_labels import action_count_label
 from wilq.schemas import (
     ConnectorRefreshRun,
@@ -34,14 +35,13 @@ from .shared import (
     MERCHANT_REQUIRED_VALIDATION_LABELS,
     MERCHANT_SECTION_LABELS,
     _enum_value,
-    _unique,
 )
 
 
 def _merchant_response_with_operator_labels(
     response: MerchantDiagnosticsResponse,
 ) -> MerchantDiagnosticsResponse:
-    response_source_connectors = _unique(
+    response_source_connectors = unique(
         [
             *(
                 connector
@@ -323,7 +323,7 @@ def _merchant_sample_summary_label(count: int) -> str:
 
 
 def _merchant_sample_title_labels(titles: Iterable[str]) -> list[str]:
-    return _unique(title.strip() for title in titles if title.strip())[:6]
+    return unique(title.strip() for title in titles if title.strip())[:6]
 
 
 def _merchant_product_row_title_label(row: MerchantProductPerformanceRow) -> str:
@@ -389,7 +389,7 @@ def _merchant_missing_metric_labels(metrics: Iterable[str]) -> list[str]:
         "ga4_ecommerce_purchases": "zakupy GA4",
         "ga4_purchase_revenue": "przychód GA4",
     }
-    return _unique(
+    return unique(
         labels.get(str(metric), _merchant_display_label(str(metric))) for metric in metrics
     )
 
@@ -414,7 +414,7 @@ def _merchant_risk_label(risk: object) -> str:
 
 
 def _merchant_blocked_claim_labels(claims: Iterable[str]) -> list[str]:
-    return _unique(_merchant_display_label(claim) for claim in claims)
+    return unique(_merchant_display_label(claim) for claim in claims)
 
 
 def _merchant_source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
@@ -423,7 +423,7 @@ def _merchant_source_connector_labels(connector_ids: Iterable[str]) -> list[str]
         GOOGLE_ADS_CONNECTOR_ID: "Google Ads",
         GA4_CONNECTOR_ID: "GA4",
     }
-    return _unique(
+    return unique(
         labels.get(str(connector_id), _merchant_display_label(str(connector_id)))
         for connector_id in connector_ids
     )

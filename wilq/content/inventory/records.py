@@ -10,6 +10,7 @@ from wilq.content.canonical.urls import (
     content_normalized_url,
     content_url_host,
 )
+from wilq.content.operator_copy import build_blocker, unique
 
 ContentInventoryContentStatus = Literal["published", "draft", "private", "unknown"]
 ContentInventoryDuplicateRisk = Literal["unknown", "clear", "review_required", "high"]
@@ -64,21 +65,23 @@ def resolve_content_inventory(
     blockers = _record_blockers(normalized_records)
     if duplicate_risk == "high":
         blockers.append(
-            _blocker(
-                "duplicate_risk_high",
-                "Wysokie ryzyko duplikacji",
-                "Nie wolno tworzyć nowej treści, gdy podobny temat może już istnieć.",
-                    "Najpierw sprawdź podobne adresy i zdecyduj: zachować, odświeżyć albo scalić.",
+            build_blocker(
+                ContentInventoryBlocker,
+                code="duplicate_risk_high",
+                label="Wysokie ryzyko duplikacji",
+                reason="Nie wolno tworzyć nowej treści, gdy podobny temat może już istnieć.",
+                next_step="Najpierw sprawdź podobne adresy i zdecyduj: zachować, odświeżyć albo scalić.",  # noqa: E501
             )
         )
     elif duplicate_risk in {"unknown", "review_required"} and not normalized_records:
         blockers.append(
-            _blocker(
-                "duplicate_risk_unresolved",
-                "Nie sprawdzono duplikacji",
-                "Brak istniejącego rekordu nie oznacza jeszcze, że wolno tworzyć nowy URL.",
-                    "Sprawdź podobne treści, adres docelowy i ryzyko kanibalizacji "
-                    "przed tworzeniem nowej treści.",
+            build_blocker(
+                ContentInventoryBlocker,
+                code="duplicate_risk_unresolved",
+                label="Nie sprawdzono duplikacji",
+                reason="Brak istniejącego rekordu nie oznacza jeszcze, że wolno tworzyć nowy URL.",
+                next_step="Sprawdź podobne treści, adres docelowy i ryzyko kanibalizacji "
+                "przed tworzeniem nowej treści.",
             )
         )
 
@@ -88,10 +91,10 @@ def resolve_content_inventory(
             recommended_mode="block",
             records=normalized_records,
             similar_existing_urls=_public_canonical_urls(normalized_records),
-            source_connectors=_unique(
+            source_connectors=unique(
                 connector for record in normalized_records for connector in record.source_connectors
             ),
-            evidence_ids=_unique(
+            evidence_ids=unique(
                 evidence_id for record in normalized_records for evidence_id in record.evidence_ids
             ),
             blockers=blockers,
@@ -104,10 +107,10 @@ def resolve_content_inventory(
             recommended_mode="preserve",
             records=normalized_records,
             similar_existing_urls=_public_canonical_urls(normalized_records),
-            source_connectors=_unique(
+            source_connectors=unique(
                 connector for record in normalized_records for connector in record.source_connectors
             ),
-            evidence_ids=_unique(
+            evidence_ids=unique(
                 evidence_id for record in normalized_records for evidence_id in record.evidence_ids
             ),
             next_step=(
@@ -132,21 +135,23 @@ def _record_blockers(records: Iterable[ContentInventoryRecord]) -> list[ContentI
         final_url = record.final_canonical_url or record.intended_final_url
         if not final_url:
             blockers.append(
-                _blocker(
-                    "missing_final_canonical",
-                    "Brakuje finalnego adresu",
-                    "Rekord spisu treści nie może zasilać planu bez publicznego adresu docelowego.",
-                    "Ustal publiczny adres docelowy dla istniejącej treści.",
+                build_blocker(
+                    ContentInventoryBlocker,
+                    code="missing_final_canonical",
+                    label="Brakuje finalnego adresu",
+                    reason="Rekord spisu treści nie może zasilać planu bez publicznego adresu docelowego.",  # noqa: E501
+                    next_step="Ustal publiczny adres docelowy dla istniejącej treści.",
                 )
             )
             continue
         if content_url_host(final_url) not in CONTENT_SOURCE_SITE_HOSTS:
             blockers.append(
-                _blocker(
-                    "invalid_final_canonical",
-                    "Nieprawidłowy adres docelowy",
-                    "Adres podglądu albo dev nie może być finalnym adresem SEO.",
-                    "Ustaw publiczny adres Ekologus jako adres docelowy.",
+                build_blocker(
+                    ContentInventoryBlocker,
+                    code="invalid_final_canonical",
+                    label="Nieprawidłowy adres docelowy",
+                    reason="Adres podglądu albo dev nie może być finalnym adresem SEO.",
+                    next_step="Ustaw publiczny adres Ekologus jako adres docelowy.",
                 )
             )
     return blockers
@@ -170,27 +175,4 @@ def _public_canonical_urls(records: Iterable[ContentInventoryRecord]) -> list[st
         final_url = record.final_canonical_url or record.intended_final_url
         if content_url_host(final_url) in CONTENT_SOURCE_SITE_HOSTS:
             urls.append(str(final_url))
-    return _unique(urls)
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
-
-
-def _blocker(
-    code: ContentInventoryBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentInventoryBlocker:
-    return ContentInventoryBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )
+    return unique(urls)

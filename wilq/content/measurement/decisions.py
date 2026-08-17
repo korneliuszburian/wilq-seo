@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionRisk,
     ContentDecisionItem,
@@ -19,17 +20,15 @@ def ga4_tracking_gap_decisions(
 ) -> list[ContentDecisionItem]:
     tracking_gaps = [
         item
-        for item in _unique_tactical_items(items)
+        for item in unique_tactical_items(items)
         if item.domain == OpportunityDomain.ga4 and item.intent == "tracking_gap"
     ]
     if not tracking_gaps:
         return []
-    evidence_ids = _unique(
+    evidence_ids = unique(
         evidence_id for item in tracking_gaps for evidence_id in item.evidence_ids
     )
-    metric_facts = _unique_metric_facts(
-        fact for item in tracking_gaps for fact in item.metric_facts
-    )
+    metric_facts = unique_metric_facts(fact for item in tracking_gaps for fact in item.metric_facts)
     return [
         ContentDecisionItem(
             id="content_decision_ga4_tracking_gap_block",
@@ -45,12 +44,10 @@ def ga4_tracking_gap_decisions(
             source_connectors=["google_analytics_4"],
             evidence_ids=evidence_ids,
             metric_facts=metric_facts[:8],
-            action_ids=_unique(
-                action_id for item in tracking_gaps for action_id in item.action_ids
-            ),
+            action_ids=unique(action_id for item in tracking_gaps for action_id in item.action_ids),
             knowledge_card_ids=list(knowledge_card_ids),
             expert_rule_ids=list(expert_rule_ids),
-            blocked_claims=_unique(
+            blocked_claims=unique(
                 [
                     *(claim for item in tracking_gaps for claim in item.blocked_claims),
                     "przepisanie treści",
@@ -68,23 +65,14 @@ def ga4_tracking_gap_decisions(
     ]
 
 
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
-
-
-def _unique_tactical_items(items: Iterable[TacticalQueueItem]) -> list[TacticalQueueItem]:
+def unique_tactical_items(items: Iterable[TacticalQueueItem]) -> list[TacticalQueueItem]:
     unique_items: dict[str, TacticalQueueItem] = {}
     for item in items:
         unique_items.setdefault(item.id, item)
     return list(unique_items.values())
 
 
-def _unique_metric_facts(values: Iterable[MetricFact]) -> list[MetricFact]:
+def unique_metric_facts(values: Iterable[MetricFact]) -> list[MetricFact]:
     unique_facts: dict[tuple[str, str, tuple[tuple[str, str], ...]], MetricFact] = {}
     for fact in values:
         key = (

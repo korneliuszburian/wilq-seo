@@ -18,10 +18,10 @@ from wilq.briefing.ga4.shared import (
     _refresh_or_connector_evidence_ids,
     _slug,
     _tactical_landing_group_count,
-    _unique,
     _unique_tactical_items,
 )
 from wilq.connectors.refresh import list_connector_refresh_runs
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
@@ -191,7 +191,7 @@ def _tracking_readiness_section(
             "Sprawdź propozycję w WILQ i przygotuj checklistę jakości pomiaru bez zapisu zmian."
         ),
         source_connectors=[GA4_CONNECTOR_ID],
-        evidence_ids=_unique(fact.evidence_id for fact in facts[:20]),
+        evidence_ids=unique(fact.evidence_id for fact in facts[:20]),
         metric_facts=[*dimensioned_facts[:8], *conversion_like_facts[:4]],
         tactical_items=tactical_items[:4],
         action_ids=action_ids,
@@ -300,8 +300,8 @@ def _ga4_decision_queue(
                 source_connectors=item.source_connectors,
                 evidence_ids=item.evidence_ids,
                 metric_facts=item.metric_facts[:8],
-                action_ids=_unique([*item.action_ids, *action_ids]),
-                blocked_claims=_unique(
+                action_ids=unique([*item.action_ids, *action_ids]),
+                blocked_claims=unique(
                     [
                         *item.blocked_claims,
                         "współczynnik konwersji",
@@ -324,10 +324,10 @@ def _ga4_decisions_with_lineage(decisions: list[Ga4DecisionItem]) -> list[Ga4Dec
     return [
         decision.model_copy(
             update={
-                "knowledge_card_ids": _unique(
+                "knowledge_card_ids": unique(
                     [*decision.knowledge_card_ids, *GA4_KNOWLEDGE_CARD_IDS]
                 ),
-                "expert_rule_ids": _unique([*decision.expert_rule_ids, *GA4_EXPERT_RULE_IDS]),
+                "expert_rule_ids": unique([*decision.expert_rule_ids, *GA4_EXPERT_RULE_IDS]),
             }
         )
         for decision in decisions
@@ -396,7 +396,7 @@ def _ga4_decisions_from_dimensioned_facts(
                 source_medium=source_medium,
                 campaign_name=campaign_name,
                 source_connectors=[GA4_CONNECTOR_ID],
-                evidence_ids=_unique(fact.evidence_id for fact in group_facts),
+                evidence_ids=unique(fact.evidence_id for fact in group_facts),
                 metric_facts=group_facts[:8],
                 action_ids=action_ids,
                 blocked_claims=[

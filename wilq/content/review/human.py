@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from wilq.content.claims.ledger import ContentClaimLedger, claim_ledger_blockers
 from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.operator_copy import build_blocker
 from wilq.content.workflow.contracts.models import ContentHumanReviewStatus, ContentWorkItem
 
 ContentHumanReviewStage = Literal[
@@ -89,58 +90,64 @@ def content_human_review_blockers(
     blockers: list[ContentHumanReviewBlocker] = []
     if review is None:
         return [
-            _blocker(
-                "missing_human_review",
-                "Brakuje decyzji człowieka",
-                "Snapshot może pokazać przygotowane etapy, ale nie może udawać "
+            build_blocker(
+                ContentHumanReviewBlocker,
+                code="missing_human_review",
+                label="Brakuje decyzji człowieka",
+                reason="Snapshot może pokazać przygotowane etapy, ale nie może udawać "
                 "zatwierdzenia człowieka.",
-                "Zatwierdź brief, ryzykowne twierdzenia i paczkę szkicu przed "
+                next_step="Zatwierdź brief, ryzykowne twierdzenia i paczkę szkicu przed "
                 "przekazaniem do WordPress.",
             )
         ]
     if review.work_item_id != item.id:
         blockers.append(
-            _blocker(
-                "wrong_work_item",
-                "Sprawdzenie dotyczy innego tematu",
-                "Decyzja człowieka musi dotyczyć tego samego tematu treści.",
-                "Podaj sprawdzenie z poprawnym identyfikatorem tematu.",
+            build_blocker(
+                ContentHumanReviewBlocker,
+                code="wrong_work_item",
+                label="Sprawdzenie dotyczy innego tematu",
+                reason="Decyzja człowieka musi dotyczyć tego samego tematu treści.",
+                next_step="Podaj sprawdzenie z poprawnym identyfikatorem tematu.",
             )
         )
     if not review.reviewed_by.strip():
         blockers.append(
-            _blocker(
-                "missing_reviewer",
-                "Brakuje osoby sprawdzającej",
-                "Sprawdzenie musi mieć konkretną osobę odpowiedzialną za decyzję.",
-                "Uzupełnij osobę sprawdzającą przed zatwierdzeniem.",
+            build_blocker(
+                ContentHumanReviewBlocker,
+                code="missing_reviewer",
+                label="Brakuje osoby sprawdzającej",
+                reason="Sprawdzenie musi mieć konkretną osobę odpowiedzialną za decyzję.",
+                next_step="Uzupełnij osobę sprawdzającą przed zatwierdzeniem.",
             )
         )
     if not review.checked_items:
         blockers.append(
-            _blocker(
-                "missing_checked_items",
-                "Brakuje checklisty sprawdzenia",
-                "Decyzja człowieka musi mówić, co zostało sprawdzone.",
-                "Zapisz checklistę dla briefu, ryzykownych twierdzeń albo szkicu.",
+            build_blocker(
+                ContentHumanReviewBlocker,
+                code="missing_checked_items",
+                label="Brakuje checklisty sprawdzenia",
+                reason="Decyzja człowieka musi mówić, co zostało sprawdzone.",
+                next_step="Zapisz checklistę dla briefu, ryzykownych twierdzeń albo szkicu.",
             )
         )
     if not review.evidence_ids:
         blockers.append(
-            _blocker(
-                "missing_evidence",
-                "Brakuje dowodów sprawdzenia",
-                "Sprawdzenie człowieka nie może opierać się wyłącznie na opinii bez dowodów.",
-                "Powiąż sprawdzenie z dowodami, które sprawdził człowiek.",
+            build_blocker(
+                ContentHumanReviewBlocker,
+                code="missing_evidence",
+                label="Brakuje dowodów sprawdzenia",
+                reason="Sprawdzenie człowieka nie może opierać się wyłącznie na opinii bez dowodów.",  # noqa: E501
+                next_step="Powiąż sprawdzenie z dowodami, które sprawdził człowiek.",
             )
         )
     if review.decision != "approved":
         blockers.append(
-            _blocker(
-                "not_approved",
-                "Sprawdzenie nie zatwierdza dalszego kroku",
-                "Tylko zatwierdzona decyzja może odblokować następny etap procesu.",
-                "Zapisz poprawki albo wróć po nowe zatwierdzenie.",
+            build_blocker(
+                ContentHumanReviewBlocker,
+                code="not_approved",
+                label="Sprawdzenie nie zatwierdza dalszego kroku",
+                reason="Tylko zatwierdzona decyzja może odblokować następny etap procesu.",
+                next_step="Zapisz poprawki albo wróć po nowe zatwierdzenie.",
             )
         )
     blockers.extend(_draft_package_blockers(item, review, draft_package))
@@ -185,11 +192,12 @@ def _draft_package_blockers(
         return []
     if draft_package is None:
         return [
-            _blocker(
-                "missing_draft_package",
-                "Brakuje paczki szkicu do sprawdzenia",
-                "Sprawdzenie szkicu i przekazania do WordPress wymaga konkretnej paczki szkicu.",
-                "Podaj paczkę szkicu przed sprawdzeniem przekazania do WordPress.",
+            build_blocker(
+                ContentHumanReviewBlocker,
+                code="missing_draft_package",
+                label="Brakuje paczki szkicu do sprawdzenia",
+                reason="Sprawdzenie szkicu i przekazania do WordPress wymaga konkretnej paczki szkicu.",  # noqa: E501
+                next_step="Podaj paczkę szkicu przed sprawdzeniem przekazania do WordPress.",
             )
         ]
     blockers: list[ContentHumanReviewBlocker] = []
@@ -198,20 +206,22 @@ def _draft_package_blockers(
         expected_id is not None and draft_package.id != expected_id
     ):
         blockers.append(
-            _blocker(
-                "draft_package_mismatch",
-                "Paczka szkicu nie pasuje do sprawdzenia",
-                "Sprawdzenie człowieka musi dotyczyć paczki szkicu dla tego samego tematu.",
-                "Podaj paczkę szkicu zgodną ze sprawdzeniem i tematem.",
+            build_blocker(
+                ContentHumanReviewBlocker,
+                code="draft_package_mismatch",
+                label="Paczka szkicu nie pasuje do sprawdzenia",
+                reason="Sprawdzenie człowieka musi dotyczyć paczki szkicu dla tego samego tematu.",
+                next_step="Podaj paczkę szkicu zgodną ze sprawdzeniem i tematem.",
             )
         )
     if draft_package.publish_ready:
         blockers.append(
-            _blocker(
-                "draft_package_marked_publish_ready",
-                "Szkic nie może udawać gotowości do publikacji",
-                "Paczka szkicu jest materiałem do sprawdzenia, nie zgodą na publikację.",
-                "Zatrzymaj status publikacji i przeprowadź sprawdzenie człowieka oraz "
+            build_blocker(
+                ContentHumanReviewBlocker,
+                code="draft_package_marked_publish_ready",
+                label="Szkic nie może udawać gotowości do publikacji",
+                reason="Paczka szkicu jest materiałem do sprawdzenia, nie zgodą na publikację.",
+                next_step="Zatrzymaj status publikacji i przeprowadź sprawdzenie człowieka oraz "
                 "przekazanie do WordPress.",
             )
         )
@@ -237,12 +247,13 @@ def _claim_handling_blockers(
     if not missing:
         return []
     return [
-        _blocker(
-            "unhandled_blocked_claims",
-            "Nie rozliczono zablokowanych twierdzeń",
-            "Sprawdzenie musi pokazać, że ryzykowne twierdzenia zostały usunięte, przepisane albo "
+        build_blocker(
+            ContentHumanReviewBlocker,
+            code="unhandled_blocked_claims",
+            label="Nie rozliczono zablokowanych twierdzeń",
+            reason="Sprawdzenie musi pokazać, że ryzykowne twierdzenia zostały usunięte, przepisane albo "  # noqa: E501
             "jawnie obsłużone.",
-            "Uzupełnij listę obsłużonych ryzykownych twierdzeń: " + ", ".join(missing),
+            next_step="Uzupełnij listę obsłużonych ryzykownych twierdzeń: " + ", ".join(missing),
         )
     ]
 
@@ -251,17 +262,3 @@ def _claim_handling_ref(claim_id: str, claim_text: str) -> str:
     if claim_text:
         return claim_text
     return claim_id
-
-
-def _blocker(
-    code: ContentHumanReviewBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentHumanReviewBlocker:
-    return ContentHumanReviewBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )

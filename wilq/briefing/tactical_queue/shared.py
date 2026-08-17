@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import urlparse
@@ -182,11 +181,3 @@ def _normalize_path_only(value: str) -> str:
 
 def _url_host(value: str) -> str:
     return urlparse(value).netloc.lower()
-
-
-def _unique(items: Iterable[str]) -> list[str]:
-    unique_items: list[str] = []
-    for item in items:
-        if item and item not in unique_items:
-            unique_items.append(item)
-    return unique_items

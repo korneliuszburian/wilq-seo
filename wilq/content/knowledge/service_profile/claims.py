@@ -33,9 +33,9 @@ from wilq.content.knowledge.service_profile.shared import (
     _redacted_lineage,
     _safe_next_step,
     _status_label,
-    _unique,
 )
 from wilq.content.knowledge.source_facts import ContentKnowledgeLifecycleStatus, ContentSourceFact
+from wilq.content.operator_copy import unique
 
 
 def _source_fact_coverage_knowledge_status(status: str) -> ContentKnowledgeLifecycleStatus:
@@ -196,7 +196,7 @@ def _private_source_proposal_summary(
             "Brak zatwierdzenia człowieka i reviewed source fact; Service Profile pokazuje "
             "tylko propozycje review, bez promocji do wiedzy produkcyjnej."
         ),
-        proposal_source_labels=_unique(proposal.source_locator_label for proposal in proposals),
+        proposal_source_labels=unique(proposal.source_locator_label for proposal in proposals),
         review_required_proposal_ids=[proposal.proposal_id for proposal in review_required],
         redacted=True,
         safe_next_step=safe_next_step,

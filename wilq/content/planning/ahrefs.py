@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
 
+from wilq.content.operator_copy import unique
 from wilq.content.planning.ahrefs_overlap import (
     AhrefsCrossSourceMatch,
     AhrefsCrossSourceMatcher,
@@ -198,7 +199,7 @@ def _analyse_ahrefs_gap_decision(
     metric_facts: list[MetricFact],
     action_ids: list[str],
 ) -> AhrefsGapDecisionAnalysis | None:
-    all_gap_facts = _unique_metric_facts(
+    all_gap_facts = unique_metric_facts(
         fact
         for fact in metric_facts
         if fact.source_connector == "ahrefs" and fact.name in AHREFS_GAP_FACT_NAMES
@@ -209,7 +210,7 @@ def _analyse_ahrefs_gap_decision(
         return None
 
     gap_counts = _ahrefs_gap_fact_counts(gap_facts)
-    evidence_ids = _unique(fact.evidence_id for fact in gap_facts)
+    evidence_ids = unique(fact.evidence_id for fact in gap_facts)
     scored_facts = _score_ahrefs_gap_facts(gap_facts, metric_facts)
     relevant_scores = [score for score in scored_facts if score.status == "relevant"]
     review_scores = [score for score in scored_facts if score.status == "review"]
@@ -218,7 +219,7 @@ def _analyse_ahrefs_gap_decision(
     display_scores = candidate_scores or scored_facts
     display_facts = [score.fact for score in display_scores[:8]]
     sample_keywords = _ahrefs_gap_sample_keywords([score.fact for score in candidate_scores])
-    competitor_domains = _unique(
+    competitor_domains = unique(
         fact.dimensions.get("competitor_domain")
         for fact in gap_facts
         if fact.dimensions.get("competitor_domain")
@@ -227,16 +228,11 @@ def _analyse_ahrefs_gap_decision(
     if not topic_hint:
         topic_hint = ", ".join(competitor_domains[:4]) if competitor_domains else "brak próbek"
     has_exact_cross_source_match = any(
-        score.gsc_cross_check.strength == "exact"
-        or score.wordpress_cross_check.strength == "exact"
+        score.gsc_cross_check.strength == "exact" or score.wordpress_cross_check.strength == "exact"
         for score in candidate_scores
     )
     content_action_ids = (
-        [
-            action_id
-            for action_id in action_ids
-            if action_id == "act_prepare_content_refresh_queue"
-        ]
+        [action_id for action_id in action_ids if action_id == "act_prepare_content_refresh_queue"]
         if has_exact_cross_source_match
         else []
     )
@@ -397,9 +393,7 @@ def ahrefs_cross_source_candidate_rows(
     limit: int | None = 6,
 ) -> list[ContentAhrefsCandidateRow]:
     scored_facts = _score_ahrefs_gap_facts(gap_facts, all_content_facts)
-    reviewable_scores = [
-        score for score in scored_facts if score.status in {"relevant", "review"}
-    ]
+    reviewable_scores = [score for score in scored_facts if score.status in {"relevant", "review"}]
     selected_scores = reviewable_scores if limit is None else reviewable_scores[:limit]
     return [_ahrefs_candidate_row(score) for score in selected_scores]
 
@@ -446,14 +440,14 @@ def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRo
         ),
         metric_name=fact.name,
         metric_value=fact.value,
-        source_connectors=_unique(
+        source_connectors=unique(
             [
                 fact.source_connector,
                 *gsc_cross_check.source_connectors,
                 *wordpress_cross_check.source_connectors,
             ]
         ),
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 fact.evidence_id,
                 *gsc_cross_check.evidence_ids,
@@ -534,10 +528,7 @@ def _ahrefs_candidate_next_step(score: AhrefsGapFactScore, topic: str) -> str:
     if score.wordpress_cross_check.strength == "exact":
         overlap_labels.append(f"WP: {len(score.wordpress_cross_check.matching_labels)} URL")
     overlap_context = f" Wspólne sygnały: {'; '.join(overlap_labels)}." if overlap_labels else ""
-    if (
-        score.gsc_cross_check.strength == "weak"
-        or score.wordpress_cross_check.strength == "weak"
-    ):
+    if score.gsc_cross_check.strength == "weak" or score.wordpress_cross_check.strength == "weak":
         return (
             f"WILQ widzi tylko słabe podobieństwo dla `{topic}`. Sprawdź ręcznie GSC "
             "i spis WordPress; nie traktuj go jako potwierdzenia popytu ani duplikatu."
@@ -754,21 +745,12 @@ def _normalized_domain(value: str | None) -> str | None:
 
 
 def _ahrefs_gap_sample_keywords(metric_facts: list[MetricFact]) -> list[str]:
-    return _unique(
+    return unique(
         fact.dimensions.get("keyword") for fact in metric_facts if fact.dimensions.get("keyword")
     )[:6]
 
 
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
-
-
-def _unique_metric_facts(values: Iterable[MetricFact]) -> list[MetricFact]:
+def unique_metric_facts(values: Iterable[MetricFact]) -> list[MetricFact]:
     unique_facts: dict[tuple[str, str, tuple[tuple[str, str], ...]], MetricFact] = {}
     for fact in values:
         key = (

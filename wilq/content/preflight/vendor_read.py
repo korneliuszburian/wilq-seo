@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
+from wilq.content.operator_copy import unique
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import source_connector_label
 from wilq.schemas import (
@@ -34,7 +33,7 @@ def content_vendor_read_blocker_decision(
         priority=5,
         metric_tiles={"blokady": 2},
         source_connectors=["google_search_console", "wordpress_ekologus"],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *refresh_or_connector_evidence_ids(
                     latest_refreshes,
@@ -94,12 +93,3 @@ def refresh_or_connector_evidence_ids(
     if latest:
         return latest.evidence_ids
     return [connector_evidence_id(connector_id)]
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

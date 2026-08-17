@@ -94,7 +94,7 @@ def build_impression_share_read_contract(
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(
+            evidence_ids=unique(
                 [*(evidence_id for row in rows for evidence_id in row.evidence_ids)]
                 or fallback_evidence_ids
             ),
@@ -179,7 +179,7 @@ def _impression_share_row(
         search_rank_lost_impression_share=_float_metric_value(
             facts_by_name.get("search_rank_lost_impression_share")
         ),
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        evidence_ids=unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
         blocked_claims=[
@@ -206,8 +206,6 @@ def _float_metric_value(fact: MetricFact | None) -> float | None:
         return float(fact.value)
     except (TypeError, ValueError):
         return None
-
-
 def _unique(values: Iterable[object]) -> list[str]:
     seen: set[str] = set()
     unique_values: list[str] = []
@@ -220,3 +218,6 @@ def _unique(values: Iterable[object]) -> list[str]:
         seen.add(text)
         unique_values.append(text)
     return unique_values
+
+
+unique = _unique

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from wilq.actions.merchant import MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT
 from wilq.briefing.merchant_labels import merchant_preview_contract_label
+from wilq.content.operator_copy import unique
 from wilq.operator_labels import reported_issue_occurrence_count_label
 from wilq.schemas import (
     ActionPreviewCardViewModel,
@@ -53,7 +54,6 @@ from .shared import (
     MERCHANT_SUPPLEMENTAL_FEED_REVIEW_PREVIEW_CONTRACT,
     _numeric_metric,
     _stable_slug,
-    _unique,
 )
 
 
@@ -104,7 +104,7 @@ def _operator_summary(
         top_issue_cluster_ids=[cluster.id for cluster in issue_clusters[:4]],
         top_tactical_item_ids=[item.id for item in top_issue_items],
         reported_issue_occurrences=reported_issue_occurrences,
-        issue_types=_unique(
+        issue_types=unique(
             [
                 *(
                     cluster.issue_type_label or _merchant_display_label(cluster.issue_type)
@@ -119,11 +119,11 @@ def _operator_summary(
                 ),
             ]
         ),
-        source_connectors=_unique(
+        source_connectors=unique(
             connector for decision in decisions[:4] for connector in decision.source_connectors
         )
         or [MERCHANT_CONNECTOR_ID],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *(
                     evidence_id
@@ -138,7 +138,7 @@ def _operator_summary(
             ]
         ),
         action_ids=action_ids,
-        blocked_claims=_unique(claim for section in sections for claim in section.blocked_claims),
+        blocked_claims=unique(claim for section in sections for claim in section.blocked_claims),
     )
 
 
@@ -240,10 +240,10 @@ def _merchant_decisions_with_lineage(
                     for preview in decision.change_preview
                 ],
                 "preview_cards": _merchant_preview_cards(decision.change_preview),
-                "knowledge_card_ids": _unique(
+                "knowledge_card_ids": unique(
                     [*decision.knowledge_card_ids, *MERCHANT_KNOWLEDGE_CARD_IDS]
                 ),
-                "expert_rule_ids": _unique([*decision.expert_rule_ids, *MERCHANT_EXPERT_RULE_IDS]),
+                "expert_rule_ids": unique([*decision.expert_rule_ids, *MERCHANT_EXPERT_RULE_IDS]),
             }
         )
         for decision in decisions
@@ -368,7 +368,7 @@ def _merchant_product_state_review_decision(
             }
         ),
         sample_product_ids=[row.product_id for row in visible_rows],
-        sample_titles=_unique(
+        sample_titles=unique(
             title
             for row in visible_rows
             for title in [row.sample_title or row.ads_product_title]
@@ -480,7 +480,7 @@ def _merchant_supplemental_feed_review_change_preview(
             "human_confirm_before_apply",
             "mutation_audit_required",
         ],
-        "blocked_claims": _unique(
+        "blocked_claims": unique(
             [
                 *MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
                 "nadpisanie głównego pliku produktowego",
@@ -535,7 +535,7 @@ def _merchant_supplemental_feed_review_fields(
         fields.append("availability")
     if row.ads_product_price_micros is not None:
         fields.append("price")
-    return _unique(field for field in fields if field)
+    return unique(field for field in fields if field)
 
 
 def _merchant_decision_cluster_groups(
@@ -620,12 +620,10 @@ def _merchant_decision_from_cluster_group(
             "raporty razem": reported_occurrences,
             "konteksty": len(clusters),
         },
-        sample_product_ids=_unique(
+        sample_product_ids=unique(
             sample_id for cluster in clusters for sample_id in cluster.sample_product_ids
         )[:10],
-        sample_titles=_unique(title for cluster in clusters for title in cluster.sample_titles)[
-            :10
-        ],
+        sample_titles=unique(title for cluster in clusters for title in cluster.sample_titles)[:10],
         change_preview=[
             _merchant_decision_change_preview(
                 cluster=primary_cluster,
@@ -636,27 +634,27 @@ def _merchant_decision_from_cluster_group(
                     "reported_issue_occurrences": reported_occurrences,
                     "reporting_contexts": len(clusters),
                 },
-                sample_product_ids=_unique(
+                sample_product_ids=unique(
                     sample_id for cluster in clusters for sample_id in cluster.sample_product_ids
                 )[:10],
-                sample_titles=_unique(
+                sample_titles=unique(
                     title for cluster in clusters for title in cluster.sample_titles
                 )[:10],
-                evidence_ids=_unique(
+                evidence_ids=unique(
                     evidence_id for cluster in clusters for evidence_id in cluster.evidence_ids
                 ),
             )
         ],
-        source_connectors=_unique(
+        source_connectors=unique(
             connector for cluster in clusters for connector in cluster.source_connectors
         ),
-        evidence_ids=_unique(
+        evidence_ids=unique(
             evidence_id for cluster in clusters for evidence_id in cluster.evidence_ids
         ),
         metric_facts=group_facts[:6],
         action_ids=action_ids
-        or _unique(cluster.action_id for cluster in clusters if cluster.action_id),
-        blocked_claims=_unique(claim for cluster in clusters for claim in cluster.blocked_claims),
+        or unique(cluster.action_id for cluster in clusters if cluster.action_id),
+        blocked_claims=unique(claim for cluster in clusters for claim in cluster.blocked_claims),
         rationale=(
             "To jest jedna decyzja operatorska, bo typ problemu, atrybut, kraj, "
             "status i wymagana ścieżka rozwiązania są takie same. Konteksty "
@@ -924,7 +922,7 @@ def _merchant_aggregate_feed_status_decision(
             }
         ),
         source_connectors=[MERCHANT_CONNECTOR_ID],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *(fact.evidence_id for fact in metric_facts),
                 *_refresh_or_connector_evidence_ids(latest_refresh),

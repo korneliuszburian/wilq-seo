@@ -9,6 +9,7 @@ from wilq.briefing.diagnostic_readiness import build_diagnostic_data_readiness
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.registry import get_connector_status
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionObject,
     ConnectorRefreshRun,
@@ -58,7 +59,6 @@ from .shared import (
     MERCHANT_METRIC_FACT_LIMIT,
     _latest_connector_refresh,
     _merchant_action_ids,
-    _unique,
 )
 
 
@@ -91,8 +91,7 @@ def build_merchant_diagnostics(
     )
     metric_facts = [_merchant_metric_fact_with_labels(fact) for fact in metric_facts]
     live_data_available = bool(metric_facts) and (
-        latest_refresh is None
-        or connector_refresh_has_live_data(latest_refresh)
+        latest_refresh is None or connector_refresh_has_live_data(latest_refresh)
     )
     trusted_facts = metric_facts if live_data_available else []
     tactical_items = [
@@ -158,14 +157,10 @@ def build_merchant_diagnostics(
         action_ids,
     )
     decision_queue = _merchant_decisions_with_lineage(decision_queue)
-    evidence_ids = _unique(
+    evidence_ids = unique(
         [
             *(evidence_id for section in sections for evidence_id in section.evidence_ids),
-            *(
-                evidence_id
-                for decision in decision_queue
-                for evidence_id in decision.evidence_ids
-            ),
+            *(evidence_id for decision in decision_queue for evidence_id in decision.evidence_ids),
         ]
     )
     data_readiness = build_diagnostic_data_readiness(
@@ -174,9 +169,7 @@ def build_merchant_diagnostics(
         factual_metrics=trusted_facts[:12],
         factual_metric_count=len(trusted_facts),
         evidence_ids=evidence_ids,
-        partial=bool(
-            latest_refresh and latest_refresh.quality_state.value == "partial"
-        ),
+        partial=bool(latest_refresh and latest_refresh.quality_state.value == "partial"),
         stale=bool(trusted_facts and freshness_assessment.requires_refresh),
         partial_coverage_label=(
             "Pokazane metryki obejmują tylko potwierdzony zakres odczytu Merchant Center."
@@ -222,7 +215,7 @@ def build_merchant_diagnostics(
         decision_queue=decision_queue,
         sections=sections,
         evidence_ids=evidence_ids,
-        action_ids=_unique(
+        action_ids=unique(
             [
                 *(action_id for section in sections for action_id in section.action_ids),
                 *(action_id for decision in decision_queue for action_id in decision.action_ids),

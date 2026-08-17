@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Literal, TypedDict
 
 from wilq.briefing.merchant_labels import merchant_preview_contract_label
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ConnectorRefreshStatus,
     MerchantDecisionItem,
@@ -40,7 +41,6 @@ from .shared import (
     _latest_connector_refresh,
     _metric_fact_by_name,
     _text_metric_value,
-    _unique,
 )
 
 
@@ -60,10 +60,10 @@ def _merchant_product_sample_readiness(
     issue_clusters: list[MerchantIssueCluster],
     decisions: list[MerchantDecisionItem],
 ) -> MerchantProductSampleReadiness:
-    sample_product_ids = _unique(
+    sample_product_ids = unique(
         sample_id for cluster in issue_clusters for sample_id in cluster.sample_product_ids
     )
-    sample_product_titles = _unique(
+    sample_product_titles = unique(
         title for cluster in issue_clusters for title in cluster.sample_titles
     )
     if sample_product_ids:
@@ -145,7 +145,7 @@ def _merchant_product_performance_readiness(
     sample_product_ids = product_sample_readiness.sample_product_ids
     sample_title_map = _merchant_sample_title_map(issue_clusters)
     sample_context_map = _merchant_sample_context_map(issue_clusters)
-    merchant_evidence_ids = _unique(
+    merchant_evidence_ids = unique(
         evidence_id for cluster in issue_clusters for evidence_id in cluster.evidence_ids
     )
     use_live_contract_status = product_metric_facts_by_connector is None
@@ -272,8 +272,8 @@ def _product_performance_row(
         reporting_context_label=_merchant_reporting_context_label(sample_context.reporting_context)
         if sample_context is not None
         else None,
-        source_connectors=_unique(fact.source_connector for fact in [*ads_facts, *ga4_facts]),
-        evidence_ids=_unique(fact.evidence_id for fact in [*ads_facts, *ga4_facts]),
+        source_connectors=unique(fact.source_connector for fact in [*ads_facts, *ga4_facts]),
+        evidence_ids=unique(fact.evidence_id for fact in [*ads_facts, *ga4_facts]),
         ads_product_title=_dimension_value(ads_facts, ["product_title"]),
         ads_product_status=_text_metric_value(ads_facts, ["shopping_product_status"])
         or _dimension_value(ads_facts, ["product_status"]),
@@ -360,13 +360,13 @@ def _joined_product_performance_readiness(
         status=status,
         joined_product_count=len(performance_rows),
         performance_rows=performance_rows[:20],
-        source_connectors=_unique(
+        source_connectors=unique(
             [
                 MERCHANT_CONNECTOR_ID,
                 *(connector for row in performance_rows for connector in row.source_connectors),
             ]
         ),
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *merchant_evidence_ids,
                 *(evidence_id for row in performance_rows for evidence_id in row.evidence_ids),
@@ -404,14 +404,14 @@ def _blocked_product_performance_readiness(
         **readiness_fields,
         status="blocked",
         joined_product_count=0,
-        source_connectors=_unique(
+        source_connectors=unique(
             [
                 MERCHANT_CONNECTOR_ID,
                 *(fact.source_connector for fact in ads_product_facts),
                 *(fact.source_connector for fact in ga4_product_facts),
             ]
         ),
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *merchant_evidence_ids,
                 *(fact.evidence_id for fact in ads_product_facts),
@@ -809,7 +809,7 @@ def _metric_fact_product_id_aliases(fact: MetricFact) -> list[str]:
         value = fact.dimensions.get(key)
         if value and value.strip():
             aliases.extend(_product_id_aliases(value))
-    return _unique(aliases)
+    return unique(aliases)
 
 
 def _product_id_aliases(value: str) -> list[str]:
@@ -820,7 +820,7 @@ def _product_id_aliases(value: str) -> list[str]:
     aliases = [stripped, resource_id]
     if "~" in resource_id:
         aliases.append(resource_id.rsplit("~", 1)[-1].strip())
-    return [alias for alias in _unique(aliases) if alias]
+    return [alias for alias in unique(aliases) if alias]
 
 
 def _has_product_performance_metric(row: MerchantProductPerformanceRow) -> bool:

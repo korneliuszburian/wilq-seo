@@ -11,6 +11,7 @@ from wilq.content.handoff.revision_document_renderer import (
     revision_document_markdown,
 )
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
+from wilq.content.operator_copy import build_blocker
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.workspace.delivery_projection import wordpress_post_content_html
 
@@ -227,8 +228,8 @@ def _failed_wordpress_draft_creation(
     create_draft: Callable[[ContentWordPressDraftPayload], str],
 ) -> ContentWordPressDraftExecutionResult:
     verification_code = getattr(exc, "code", None)
-    verification_failed = (
-        isinstance(verification_code, str) and verification_code.startswith("wordpress_draft_")
+    verification_failed = isinstance(verification_code, str) and verification_code.startswith(
+        "wordpress_draft_"
     )
     failed_post_id = getattr(exc, "post_id", None)
     return ContentWordPressDraftExecutionResult(
@@ -243,25 +244,20 @@ def _failed_wordpress_draft_creation(
         wordpress_post_id=failed_post_id if isinstance(failed_post_id, str) else None,
         external_write_attempted=True,
         blockers=[
-            _blocker(
-                (
-                    "wordpress_draft_verification_failed"
-                    if verification_failed
-                    else "live_adapter_failed"
-                ),
-                (
-                    "Nie potwierdzono treści utworzonego szkicu WordPress"
-                    if verification_failed
-                    else "Adapter WordPress zwrócił błąd"
-                ),
-                _adapter_error_reason(exc),
-                (
-                    "Nie ponawiaj zapisu automatycznie. Sprawdź utworzony szkic po ID i "
-                    "przygotuj nową, osobno zatwierdzoną akcję."
-                    if verification_failed
-                    else "Nie ponawiaj zapisu automatycznie. Sprawdź konfigurację WordPress "
-                    "i wróć do podglądu szkicu."
-                ),
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="wordpress_draft_verification_failed"
+                if verification_failed
+                else "live_adapter_failed",
+                label="Nie potwierdzono treści utworzonego szkicu WordPress"
+                if verification_failed
+                else "Adapter WordPress zwrócił błąd",
+                reason=_adapter_error_reason(exc),
+                next_step="Nie ponawiaj zapisu automatycznie. Sprawdź utworzony szkic po ID i "
+                "przygotuj nową, osobno zatwierdzoną akcję."
+                if verification_failed
+                else "Nie ponawiaj zapisu automatycznie. Sprawdź konfigurację WordPress "
+                "i wróć do podglądu szkicu.",
             )
         ],
     )
@@ -283,32 +279,35 @@ def content_wordpress_draft_execution_blockers(
     blockers: list[ContentWordPressDraftExecutionBlocker] = []
     if handoff is None:
         blockers.append(
-            _blocker(
-                "missing_handoff",
-                "Brakuje zatwierdzonego przekazania",
-                "Nie można przygotować szkicu WordPress bez zatwierdzonego przekazania.",
-                "Najpierw zatwierdź szkic, zapisz audyt i przygotuj przekazanie do WordPress.",
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="missing_handoff",
+                label="Brakuje zatwierdzonego przekazania",
+                reason="Nie można przygotować szkicu WordPress bez zatwierdzonego przekazania.",
+                next_step="Najpierw zatwierdź szkic, zapisz audyt i przygotuj przekazanie do WordPress.",  # noqa: E501
             )
         )
     if draft_package is None:
         blockers.append(
-            _blocker(
-                "missing_draft_package",
-                "Brakuje paczki szkicu",
-                "WordPress potrzebuje treści szkicu, a nie samego tytułu.",
-                "Przygotuj paczkę szkicu z sekcjami i mapą dowodów.",
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="missing_draft_package",
+                label="Brakuje paczki szkicu",
+                reason="WordPress potrzebuje treści szkicu, a nie samego tytułu.",
+                next_step="Przygotuj paczkę szkicu z sekcjami i mapą dowodów.",
             )
         )
     if handoff is not None and draft_package is not None:
         blockers.extend(_handoff_payload_blockers(handoff, draft_package))
         if handoff.authoring_mode == "acf_flexible_content":
             blockers.append(
-                _blocker(
-                    "acf_authoring_payload_required",
-                    "Ta strona wymaga payloadu ACF",
-                    "WordPress odczytał sekcje Flexible Content; nie wolno wysłać ich "
+                build_blocker(
+                    ContentWordPressDraftExecutionBlocker,
+                    code="acf_authoring_payload_required",
+                    label="Ta strona wymaga payloadu ACF",
+                    reason="WordPress odczytał sekcje Flexible Content; nie wolno wysłać ich "
                     "jako zwykły the_content ani udawać mapowania pól.",
-                    "Uruchom podgląd authoringu ACF i zatwierdź dokładny layout oraz pola.",
+                    next_step="Uruchom podgląd authoringu ACF i zatwierdź dokładny layout oraz pola.",  # noqa: E501
                 )
             )
         if require_exact_section_overrides:
@@ -391,20 +390,22 @@ def _handoff_payload_blockers(
     blockers: list[ContentWordPressDraftExecutionBlocker] = []
     if handoff.draft_package_id != draft_package.id:
         blockers.append(
-            _blocker(
-                "draft_package_mismatch",
-                "Paczka szkicu nie pasuje do przekazania",
-                "Nie można wysłać do WordPress innej paczki szkicu niż ta, którą zatwierdzono.",
-                "Użyj paczki szkicu powiązanej z zatwierdzonym przekazaniem.",
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="draft_package_mismatch",
+                label="Paczka szkicu nie pasuje do przekazania",
+                reason="Nie można wysłać do WordPress innej paczki szkicu niż ta, którą zatwierdzono.",  # noqa: E501
+                next_step="Użyj paczki szkicu powiązanej z zatwierdzonym przekazaniem.",
             )
         )
     if draft_package.publish_ready:
         blockers.append(
-            _blocker(
-                "draft_package_marked_publish_ready",
-                "Szkic nie może udawać publikacji",
-                "Ten krok tworzy wyłącznie szkic w WordPress, nie gotową publikację.",
-                "Zatrzymaj status publikacji i zostaw treść jako szkic do sprawdzenia.",
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="draft_package_marked_publish_ready",
+                label="Szkic nie może udawać publikacji",
+                reason="Ten krok tworzy wyłącznie szkic w WordPress, nie gotową publikację.",
+                next_step="Zatrzymaj status publikacji i zostaw treść jako szkic do sprawdzenia.",
             )
         )
     if (
@@ -413,11 +414,12 @@ def _handoff_payload_blockers(
         or handoff.destructive_update_allowed
     ):
         blockers.append(
-            _blocker(
-                "handoff_not_draft_only",
-                "Przekazanie nie jest bezpiecznym szkicem",
-                "Ten krok może działać tylko na szkicu bez publikacji i bez nadpisywania treści.",
-                "Wróć do kontraktu przekazania i ustaw tryb szkicu bez publikacji.",
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="handoff_not_draft_only",
+                label="Przekazanie nie jest bezpiecznym szkicem",
+                reason="Ten krok może działać tylko na szkicu bez publikacji i bez nadpisywania treści.",  # noqa: E501
+                next_step="Wróć do kontraktu przekazania i ustaw tryb szkicu bez publikacji.",
             )
         )
     return blockers
@@ -443,14 +445,13 @@ def _exact_section_override_blockers(
     ):
         return []
     return [
-        _blocker(
-            "revision_section_overrides_mismatch",
-            "Treść wersji nie pasuje do planu sekcji",
-            (
-                "Zapis wersji wymaga dokładnie wszystkich sekcji w zatwierdzonej "
-                "kolejności i bez pustej treści."
-            ),
-            "Wróć do aktualnej zatwierdzonej wersji i ponów podgląd ActionObject.",
+        build_blocker(
+            ContentWordPressDraftExecutionBlocker,
+            code="revision_section_overrides_mismatch",
+            label="Treść wersji nie pasuje do planu sekcji",
+            reason="Zapis wersji wymaga dokładnie wszystkich sekcji w zatwierdzonej "
+            "kolejności i bez pustej treści.",
+            next_step="Wróć do aktualnej zatwierdzonej wersji i ponów podgląd ActionObject.",
         )
     ]
 
@@ -464,65 +465,58 @@ def _live_write_blockers(
 ) -> list[ContentWordPressDraftExecutionBlocker]:
     if not action_apply_authorized:
         return [
-            _blocker(
-                "action_apply_required",
-                "Zapis wymaga kanonicznej akcji apply",
-                (
-                    "Ten endpoint może przygotować podgląd szkicu, ale nie może "
-                    "samodzielnie uruchamiać adaptera WordPress."
-                ),
-                (
-                    "Użyj trybu dry-run. Realny zapis może wrócić dopiero przez "
-                    "apply-capable ActionObject z preview, review, confirm i audytem."
-                ),
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="action_apply_required",
+                label="Zapis wymaga kanonicznej akcji apply",
+                reason="Ten endpoint może przygotować podgląd szkicu, ale nie może "
+                "samodzielnie uruchamiać adaptera WordPress.",
+                next_step="Użyj trybu dry-run. Realny zapis może wrócić dopiero przez "
+                "apply-capable ActionObject z preview, review, confirm i audytem.",
             )
         ]
     if not live_write_enabled:
         return [
-            _blocker(
-                "live_write_not_enabled",
-                "Zapis do WordPress jest wyłączony",
-                "WILQ przygotował bezpieczny podgląd, ale nie ma zgody na realny zapis.",
-                "Użyj trybu podglądu albo jawnie włącz osobny adapter zapisu szkicu.",
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="live_write_not_enabled",
+                label="Zapis do WordPress jest wyłączony",
+                reason="WILQ przygotował bezpieczny podgląd, ale nie ma zgody na realny zapis.",
+                next_step="Użyj trybu podglądu albo jawnie włącz osobny adapter zapisu szkicu.",
             )
         ]
     if create_draft is None:
         return [
-            _blocker(
-                "missing_live_adapter",
-                "Brakuje adaptera zapisu",
-                "Nie można zapisać szkicu bez adaptera, który tworzy wpis w WordPress.",
-                "Podłącz adapter zapisu szkicu i zostaw publikację wyłączoną.",
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="missing_live_adapter",
+                label="Brakuje adaptera zapisu",
+                reason="Nie można zapisać szkicu bez adaptera, który tworzy wpis w WordPress.",
+                next_step="Podłącz adapter zapisu szkicu i zostaw publikację wyłączoną.",
             )
         ]
     if write_authorization is None or not _write_authorization_complete(write_authorization):
         return [
-            _blocker(
-                "missing_write_authorization",
-                "Brakuje potwierdzenia ścieżki zapisu",
-                (
-                    "Realny szkic WordPress wymaga śladu: podgląd, review, "
-                    "potwierdzenie i osoba potwierdzająca."
-                ),
-                (
-                    "Przejdź przez ActionObject validate, preview, review, "
-                    "confirm i audit przed uruchomieniem zapisu."
-                ),
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="missing_write_authorization",
+                label="Brakuje potwierdzenia ścieżki zapisu",
+                reason="Realny szkic WordPress wymaga śladu: podgląd, review, "
+                "potwierdzenie i osoba potwierdzająca.",
+                next_step="Przejdź przez ActionObject validate, preview, review, "
+                "confirm i audit przed uruchomieniem zapisu.",
             )
         ]
     if not write_authorization_verified:
         return [
-            _blocker(
-                "invalid_write_authorization",
-                "Ślad zgody nie pasuje do audytu",
-                (
-                    "WILQ dostał dane zgody, ale nie potwierdził ich w zapisanych "
-                    "zdarzeniach audytu."
-                ),
-                (
-                    "Wróć do akcji WordPress i zapisz kolejno: podgląd, review, "
-                    "potwierdzenie oraz apply audit."
-                ),
+            build_blocker(
+                ContentWordPressDraftExecutionBlocker,
+                code="invalid_write_authorization",
+                label="Ślad zgody nie pasuje do audytu",
+                reason="WILQ dostał dane zgody, ale nie potwierdził ich w zapisanych "
+                "zdarzeniach audytu.",
+                next_step="Wróć do akcji WordPress i zapisz kolejno: podgląd, review, "
+                "potwierdzenie oraz apply audit.",
             )
         ]
     return []
@@ -602,17 +596,3 @@ def _section_override_map(
 
 def _section_key(value: str) -> str:
     return " ".join(value.strip().casefold().split())
-
-
-def _blocker(
-    code: ContentWordPressDraftExecutionBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentWordPressDraftExecutionBlocker:
-    return ContentWordPressDraftExecutionBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )

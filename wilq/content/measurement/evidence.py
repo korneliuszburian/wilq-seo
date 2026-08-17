@@ -26,6 +26,7 @@ from wilq.content.measurement.window import (
     ContentMeasurementWindowBlocker,
     ContentMeasurementWindowBuildResult,
 )
+from wilq.content.operator_copy import build_blocker
 from wilq.schemas import (
     ConnectorQualityState,
     ConnectorRefreshRun,
@@ -159,11 +160,12 @@ def build_confirmed_deployment_measurement_window(
     if deployment is None:
         return ContentMeasurementWindowBuildResult(
             blockers=[
-                _blocker(
-                    "missing_publication_event",
-                    "Brakuje potwierdzonego publicznego wdrożenia",
-                    "Samo zatwierdzenie dokumentu ani szkic dev nie rozpoczynają pomiaru.",
-                    "Potwierdź publiczne wdrożenie dokładnej rewizji "
+                build_blocker(
+                    ContentMeasurementWindowBlocker,
+                    code="missing_publication_event",
+                    label="Brakuje potwierdzonego publicznego wdrożenia",
+                    reason="Samo zatwierdzenie dokumentu ani szkic dev nie rozpoczynają pomiaru.",
+                    next_step="Potwierdź publiczne wdrożenie dokładnej rewizji "
                     "na podstawie odczytu WordPressa.",
                 )
             ]
@@ -183,11 +185,12 @@ def build_confirmed_deployment_measurement_window(
     if not allowed_metrics:
         return ContentMeasurementWindowBuildResult(
             blockers=[
-                _blocker(
-                    "missing_metric_evidence",
-                    "Brakuje metryk dla opublikowanego adresu",
-                    "WILQ zna publiczne wdrożenie, ale nie ma jednoznacznych danych GSC ani GA4.",
-                    "Odśwież GSC lub GA4 po publikacji i wróć do pomiaru.",
+                build_blocker(
+                    ContentMeasurementWindowBlocker,
+                    code="missing_metric_evidence",
+                    label="Brakuje metryk dla opublikowanego adresu",
+                    reason="WILQ zna publiczne wdrożenie, ale nie ma jednoznacznych danych GSC ani GA4.",  # noqa: E501
+                    next_step="Odśwież GSC lub GA4 po publikacji i wróć do pomiaru.",
                 )
             ]
         )
@@ -407,14 +410,3 @@ def _unique_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
     for fact in facts:
         unique.setdefault(fact.model_dump_json(), fact)
     return list(unique.values())
-
-
-def _blocker(
-    code: str,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentMeasurementWindowBlocker:
-    return ContentMeasurementWindowBlocker.model_validate(
-        {"code": code, "label": label, "reason": reason, "next_step": next_step}
-    )

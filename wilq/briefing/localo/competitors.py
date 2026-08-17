@@ -17,8 +17,8 @@ from wilq.briefing.localo.shared import (
     _localo_visibility_tiles,
     _missing_visibility_contracts,
     _present_contracts,
-    _unique,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionRisk,
     LocaloAccessProbe,
@@ -65,7 +65,7 @@ def _localo_decision_queue(
                 missing_read_contracts=missing_contracts,
                 read_contract_statuses=read_contract_statuses,
                 source_connectors=[LOCALO_CONNECTOR_ID],
-                evidence_ids=_unique(
+                evidence_ids=unique(
                     [*(fact.evidence_id for fact in visibility_facts), *access_probe.evidence_ids]
                 ),
                 metric_facts=visibility_facts[:12],
@@ -159,10 +159,10 @@ def _localo_decisions_with_lineage(
     return [
         _label_localo_decision(decision).model_copy(
             update={
-                "knowledge_card_ids": _unique(
+                "knowledge_card_ids": unique(
                     [*decision.knowledge_card_ids, *LOCALO_KNOWLEDGE_CARD_IDS]
                 ),
-                "expert_rule_ids": _unique([*decision.expert_rule_ids, *LOCALO_EXPERT_RULE_IDS]),
+                "expert_rule_ids": unique([*decision.expert_rule_ids, *LOCALO_EXPERT_RULE_IDS]),
             }
         )
         for decision in decisions

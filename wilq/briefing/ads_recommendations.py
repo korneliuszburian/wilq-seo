@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import Literal
 
 from wilq.actions.google_ads.recommendations import (
@@ -8,6 +7,7 @@ from wilq.actions.google_ads.recommendations import (
     RECOMMENDATION_REVIEW_BLOCKED_CLAIMS,
     RECOMMENDATION_REVIEW_REQUIRED_VALIDATION,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionRisk,
     AdsDiagnosticSection,
@@ -80,7 +80,7 @@ def build_recommendations_read_contract(
     ]
     if rows or read_attempted:
         if rows:
-            types = _unique(
+            types = unique(
                 row.recommendation_type_label or _recommendation_type_label(row.recommendation_type)
                 for row in rows
             )
@@ -120,7 +120,7 @@ def build_recommendations_read_contract(
             ),
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(
+            evidence_ids=unique(
                 [*(evidence_id for row in rows for evidence_id in row.evidence_ids)]
                 or fallback_evidence_ids
             ),
@@ -160,7 +160,7 @@ def _recommendation_operator_review_gates(
 ) -> list[str]:
     if not rows_available:
         return []
-    return _unique(
+    return unique(
         [
             ADS_RECOMMENDATION_HUMAN_REVIEW_GATE,
             *(
@@ -276,8 +276,8 @@ def _recommendation_row(
     recommendation_resource_name = first_dimensions.get("recommendation_resource_name")
     campaign_id = first_dimensions.get("campaign_id")
     campaign_budget_id = first_dimensions.get("campaign_budget_id")
-    row_evidence_ids = _unique(fact.evidence_id for fact in facts)
-    source_metric_names = _unique(fact.name for fact in facts)
+    row_evidence_ids = unique(fact.evidence_id for fact in facts)
+    source_metric_names = unique(fact.name for fact in facts)
     payload_preview = _recommendation_apply_preview(
         recommendation_id=recommendation_id,
         recommendation_resource_name=recommendation_resource_name,
@@ -547,17 +547,3 @@ def _format_micros(value: float | None) -> str | None:
     if value is None:
         return None
     return f"{value / 1_000_000:.2f}"
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    seen: set[str] = set()
-    unique_values: list[str] = []
-    for value in values:
-        if value is None:
-            continue
-        text = str(value)
-        if text in seen:
-            continue
-        seen.add(text)
-        unique_values.append(text)
-    return unique_values

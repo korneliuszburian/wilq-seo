@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from wilq.actions.google_ads.campaign_review import CAMPAIGN_REVIEW_ACTION_ID
 from wilq.actions.google_ads.custom_segments import CUSTOM_SEGMENT_ACTION_ID
 from wilq.actions.google_ads.negative_keywords import NEGATIVE_KEYWORD_ACTION_ID
 from wilq.actions.google_ads.recommendations import RECOMMENDATION_REVIEW_ACTION_ID
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
@@ -227,17 +226,8 @@ def _action_ids_for(
     connector: str,
     domain: OpportunityDomain | None = None,
 ) -> list[str]:
-    return _unique(
+    return unique(
         action.id
         for action in actions
         if action.connector == connector or (domain is not None and action.domain == domain)
     )
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

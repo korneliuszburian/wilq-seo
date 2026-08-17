@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from wilq.content.operator_copy import unique
 from wilq.schemas import MetricFact
 
 from .review import (
@@ -51,7 +52,6 @@ from .shared import (
     _seo_title_direction,
     _short_path,
     _slug,
-    _unique,
 )
 from .store import _wordpress_inventory_urls_by_path
 
@@ -61,7 +61,6 @@ __all__ = [
     "_gsc_content_brief_previews",
     "_ahrefs_content_brief_previews",
 ]
-
 
 
 def _empty_content_brief_preview(
@@ -89,16 +88,11 @@ def _empty_content_brief_preview(
         "decision_options": ["block"],
         "metric_snapshot": {},
         "brief_goal": (
-            "Zablokuj pisanie treści do czasu zebrania danych GSC "
-            "i spisu treści WordPress."
+            "Zablokuj pisanie treści do czasu zebrania danych GSC i spisu treści WordPress."
         ),
         "intent": "brak intencji do pisania bez danych źródłowych",
-        "content_angle": (
-            "Nie przygotowuj tekstu bez potwierdzonego publicznego URL i dowodów."
-        ),
-        "audience": (
-            "Marketer Ekologus sprawdzający gotowość danych przed pracą nad treścią."
-        ),
+        "content_angle": ("Nie przygotowuj tekstu bez potwierdzonego publicznego URL i dowodów."),
+        "audience": ("Marketer Ekologus sprawdzający gotowość danych przed pracą nad treścią."),
         "key_objections": [
             "brak potwierdzonego tematu",
             "brak publicznego URL",
@@ -173,8 +167,8 @@ def content_refresh_payload_from_metric_facts(
         "connector": "wordpress_ekologus",
         "mode": "prepare_only",
         "preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
-        "source_connectors": _unique(fact.source_connector for fact in facts),
-        "source_metric_names": _unique(fact.name for fact in facts),
+        "source_connectors": unique(fact.source_connector for fact in facts),
+        "source_metric_names": unique(fact.name for fact in facts),
         "content_brief_preview": content_brief_preview,
         "content_url_review_contract": content_url_review_contract(),
         "queue_steps": [
@@ -223,7 +217,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
         key=lambda item: _metric_sum(item[1], "impressions"),
         reverse=True,
     )[:4]:
-        queries = _unique(
+        queries = unique(
             fact.dimensions.get("query") for fact in page_facts if fact.dimensions.get("query")
         )
         primary_query = queries[0] if queries else _short_path(page)
@@ -302,8 +296,8 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "required_validation_labels": _content_contract_labels(required_validation),
                 "blocked_claims": CONTENT_BLOCKED_CLAIMS,
                 "blocked_claim_labels": _content_contract_labels(CONTENT_BLOCKED_CLAIMS),
-                "source_connectors": _unique(fact.source_connector for fact in page_facts),
-                "evidence_ids": _unique(fact.evidence_id for fact in page_facts),
+                "source_connectors": unique(fact.source_connector for fact in page_facts),
+                "evidence_ids": unique(fact.evidence_id for fact in page_facts),
                 "apply_allowed": False,
                 "api_mutation_ready": False,
                 "destructive": False,

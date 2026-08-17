@@ -14,6 +14,7 @@ from wilq.briefing.ads_search_contracts import (
     build_search_term_read_contracts,
     build_search_term_review_contracts,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     AdsKeywordMatchContextReadContract,
     AdsKeywordMatchContextRow,
@@ -52,7 +53,6 @@ from .shared import (
     _remove_missing_contract_names,
     _search_term_coverage,
     _search_term_row_sort_key,
-    _unique,
 )
 
 ADS_NGRAM_STOPWORDS = {
@@ -226,7 +226,7 @@ def _search_terms_read_contract(
             operator_review_gates=operator_review_gates,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            evidence_ids=unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             coverage=[
                 _search_term_coverage(
                     window="last_30_days",
@@ -315,7 +315,7 @@ def _search_term_review_summary_contract(
         ),
         allowed_metrics=search_terms_read_contract.allowed_metrics,
         missing_read_contracts=search_terms_read_contract.missing_read_contracts,
-        operator_review_gates=_unique(
+        operator_review_gates=unique(
             ["human_intent_review", *search_terms_read_contract.operator_review_gates]
         ),
         blocked_claims=blocked_claims,
@@ -384,7 +384,7 @@ def _search_term_campaign_review_rows(
                     sum(row.conversions or 0 for row in campaign_rows),
                     6,
                 ),
-                evidence_ids=_unique(
+                evidence_ids=unique(
                     evidence_id for row in campaign_rows for evidence_id in row.evidence_ids
                 ),
                 blocked_claims=[
@@ -464,7 +464,7 @@ def _search_term_metric_row(
         cost_micros=_int_metric_value(facts_by_name.get("search_term_cost_micros")),
         conversions=_float_metric_value(facts_by_name.get("search_term_conversions")),
         conversion_value=_float_metric_value(facts_by_name.get("search_term_conversion_value")),
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        evidence_ids=unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
         blocked_claims=[
@@ -523,7 +523,7 @@ def _search_term_ngram_read_contract(
             ],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            evidence_ids=unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             coverage=search_terms_read_contract.coverage,
             ngram_rows=rows,
             next_step=(
@@ -585,8 +585,8 @@ def _search_term_ngram_row(
     rows: list[AdsSearchTermMetricRow],
 ) -> AdsSearchTermNgramRow:
     metric_facts = _dedupe_metric_facts(fact for row in rows for fact in row.metric_facts)
-    missing_metrics = _unique(metric for row in rows for metric in row.missing_metrics)
-    sample_search_terms = _unique(row.search_term for row in rows)[:3]
+    missing_metrics = unique(metric for row in rows for metric in row.missing_metrics)
+    sample_search_terms = unique(row.search_term for row in rows)[:3]
     return AdsSearchTermNgramRow(
         ngram=ngram,
         ngram_size=ngram_size,
@@ -597,7 +597,7 @@ def _search_term_ngram_row(
         cost_micros=sum(row.cost_micros or 0 for row in rows),
         conversions=round(sum(row.conversions or 0 for row in rows), 6),
         conversion_value=round(sum(row.conversion_value or 0 for row in rows), 6),
-        evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+        evidence_ids=unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
         metric_facts=metric_facts[:12],
         missing_metrics=missing_metrics,
         blocked_claims=[
@@ -683,7 +683,7 @@ def _search_term_safety_read_contract(
             operator_review_gates=["human_intent_review"],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids)
+            evidence_ids=unique(evidence_id for row in rows for evidence_id in row.evidence_ids)
             or _refresh_or_connector_evidence_ids(latest_refresh),
             coverage=[
                 _search_term_coverage(
@@ -790,7 +790,7 @@ def _search_term_safety_row(
         conversion_value_90d=_float_metric_value(
             facts_by_name.get("search_term_90d_conversion_value")
         ),
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        evidence_ids=unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
         blocked_claims=[
@@ -825,7 +825,7 @@ def _keyword_match_context_read_contract(
         "zwrot z reklam",
     ]
     if rows or read_attempted:
-        match_type_labels = _unique(
+        match_type_labels = unique(
             _ads_keyword_match_type_label(row.match_type) for row in rows if row.match_type
         )
         return AdsKeywordMatchContextReadContract(
@@ -848,7 +848,7 @@ def _keyword_match_context_read_contract(
             operator_review_gates=["human_intent_review"],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids)
+            evidence_ids=unique(evidence_id for row in rows for evidence_id in row.evidence_ids)
             or _refresh_or_connector_evidence_ids(latest_refresh),
             context_rows=rows,
             next_step=(
@@ -937,7 +937,7 @@ def _keyword_match_context_row(
         campaign_name=first_dimensions.get("campaign_name"),
         ad_group_id=ad_group_id,
         ad_group_name=first_dimensions.get("ad_group_name"),
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        evidence_ids=unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         blocked_claims=[
             "dodanie wykluczających słów kluczowych",

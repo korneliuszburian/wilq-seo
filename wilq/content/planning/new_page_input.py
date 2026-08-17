@@ -8,10 +8,10 @@ from typing import cast
 from wilq.content.knowledge.cards import ContentKnowledgeCard
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.knowledge.work_item_service_profile import ContentWorkItemServiceCandidate
+from wilq.content.operator_copy import build_blocker, unique
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
-    ContentPlanningInputBlockerCode,
     ContentPlanningInputBuildResult,
 )
 from wilq.content.planning.input_sources import (
@@ -50,28 +50,43 @@ def build_new_page_planning_input(
     if blocker is not None:
         return ContentPlanningInputBuildResult(blockers=[blocker])
     if foundation is None:
-        return ContentPlanningInputBuildResult(blockers=[_blocker(
-            "missing_planning_foundation",
-            "Brakuje zapisanej podstawy planowania",
-            "Nowa strona wymaga exact briefu, kontroli pokrycia i ręcznego wyboru usługi.",
-            "Zapisz podstawę planowania po sprawdzeniu pokrycia serwisu.",
-        )])
+        return ContentPlanningInputBuildResult(
+            blockers=[
+                build_blocker(
+                    ContentPlanningInputBlocker,
+                    code="missing_planning_foundation",
+                    label="Brakuje zapisanej podstawy planowania",
+                    reason="Nowa strona wymaga exact briefu, kontroli pokrycia i ręcznego wyboru usługi.",  # noqa: E501
+                    next_step="Zapisz podstawę planowania po sprawdzeniu pokrycia serwisu.",
+                )
+            ]
+        )
     if service_card is None:
-        return ContentPlanningInputBuildResult(blockers=[_blocker(
-            "service_card_not_approved",
-            "Karta usługi nie jest zatwierdzona",
-            "Wybrana usługa nie ma bieżącej, zatwierdzonej karty wiedzy.",
-            "Wybierz zatwierdzoną kartę usługi i odśwież podstawę planowania.",
-        )])
+        return ContentPlanningInputBuildResult(
+            blockers=[
+                build_blocker(
+                    ContentPlanningInputBlocker,
+                    code="service_card_not_approved",
+                    label="Karta usługi nie jest zatwierdzona",
+                    reason="Wybrana usługa nie ma bieżącej, zatwierdzonej karty wiedzy.",
+                    next_step="Wybierz zatwierdzoną kartę usługi i odśwież podstawę planowania.",
+                )
+            ]
+        )
     registry_facts = tuple(source_facts_loader())
     source_facts = _source_facts(service_card, registry_facts)
     if not source_facts:
-        return ContentPlanningInputBuildResult(blockers=[_blocker(
-            "missing_new_page_service_fact",
-            "Brakuje zatwierdzonego faktu usługi",
-            "Wybrany kontekst usługi nie ma zatwierdzonego faktu źródłowego do użycia w planie.",
-            "Uzupełnij albo zatwierdź fakt źródłowy tej usługi przed planowaniem.",
-        )])
+        return ContentPlanningInputBuildResult(
+            blockers=[
+                build_blocker(
+                    ContentPlanningInputBlocker,
+                    code="missing_new_page_service_fact",
+                    label="Brakuje zatwierdzonego faktu usługi",
+                    reason="Wybrany kontekst usługi nie ma zatwierdzonego faktu źródłowego do użycia w planie.",  # noqa: E501
+                    next_step="Uzupełnij albo zatwierdź fakt źródłowy tej usługi przed planowaniem.",  # noqa: E501
+                )
+            ]
+        )
     regulatory_coverage = regulatory_content_coverage(
         service_card_id=service_card.id,
         source_facts=registry_facts,
@@ -91,23 +106,28 @@ def build_new_page_planning_input(
         source_facts,
         regulatory_coverage,
     )
-    digest = _digest({
-        "schema_name": "wilq_content_planning_input_v7",
-        "criteria_version": "wilq_people_first_planning_v5",
-        "inventory_mapping_policy": "wilq_inventory_mapping_v7",
-        **payload,
-    })
+    digest = _digest(
+        {
+            "schema_name": "wilq_content_planning_input_v7",
+            "criteria_version": "wilq_people_first_planning_v5",
+            "inventory_mapping_policy": "wilq_inventory_mapping_v7",
+            **payload,
+        }
+    )
     return ContentPlanningInputBuildResult(
         planning_input=ContentPlanningInput.model_validate(
             {"planning_input_digest": digest, **payload}
         ),
         blockers=(
-            [_blocker(
-                "missing_regulatory_source_coverage",
-                gap.label,
-                gap.reason,
-                gap.next_step,
-            )]
+            [
+                build_blocker(
+                    ContentPlanningInputBlocker,
+                    code="missing_regulatory_source_coverage",
+                    label=gap.label,
+                    reason=gap.reason,
+                    next_step=gap.next_step,
+                )
+            ]
             if (gap := regulatory_coverage_gap(regulatory_coverage)) is not None
             else []
         ),
@@ -121,11 +141,12 @@ def _current_foundation_blocker(
     service_card: ContentKnowledgeCard | None,
 ) -> ContentPlanningInputBlocker | None:
     if foundation is None:
-        return _blocker(
-            "missing_planning_foundation",
-            "Brakuje zapisanej podstawy planowania",
-            "Nowa strona wymaga exact briefu, kontroli pokrycia i ręcznego wyboru usługi.",
-            "Zapisz podstawę planowania po sprawdzeniu pokrycia serwisu.",
+        return build_blocker(
+            ContentPlanningInputBlocker,
+            code="missing_planning_foundation",
+            label="Brakuje zapisanej podstawy planowania",
+            reason="Nowa strona wymaga exact briefu, kontroli pokrycia i ręcznego wyboru usługi.",
+            next_step="Zapisz podstawę planowania po sprawdzeniu pokrycia serwisu.",
         )
     if (
         foundation.brief_id != brief.brief_id
@@ -133,11 +154,12 @@ def _current_foundation_blocker(
         or foundation.overlap_digest != new_page_overlap_digest(overlap_guard)
         or overlap_guard.disposition != "no_conflict"
     ):
-        return _blocker(
-            "new_page_foundation_stale",
-            "Podstawa planowania nie jest już aktualna",
-            "Brief albo kontrola pokrycia zmieniły się od czasu potwierdzenia podstawy.",
-            "Odczytaj brief, sprawdź pokrycie ponownie i zapisz aktualną podstawę.",
+        return build_blocker(
+            ContentPlanningInputBlocker,
+            code="new_page_foundation_stale",
+            label="Podstawa planowania nie jest już aktualna",
+            reason="Brief albo kontrola pokrycia zmieniły się od czasu potwierdzenia podstawy.",
+            next_step="Odczytaj brief, sprawdź pokrycie ponownie i zapisz aktualną podstawę.",
         )
     if (
         service_card is None
@@ -145,11 +167,12 @@ def _current_foundation_blocker(
         or service_card.lifecycle_status != "approved_current"
         or _digest(service_card.model_dump(mode="json")) != foundation.service_card_digest
     ):
-        return _blocker(
-            "new_page_foundation_stale",
-            "Kontekst usługi nie jest już aktualny",
-            "Zatwierdzony kontekst usługi zmienił się albo nie jest już dostępny do planowania.",
-            "Wybierz ponownie aktualny zatwierdzony kontekst usługi.",
+        return build_blocker(
+            ContentPlanningInputBlocker,
+            code="new_page_foundation_stale",
+            label="Kontekst usługi nie jest już aktualny",
+            reason="Zatwierdzony kontekst usługi zmienił się albo nie jest już dostępny do planowania.",  # noqa: E501
+            next_step="Wybierz ponownie aktualny zatwierdzony kontekst usługi.",
         )
     return None
 
@@ -170,11 +193,13 @@ def _payload(
         match_reasons=["Kontekst usługi został wybrany ręcznie w podstawie planowania."],
         recommended=True,
     )
-    evidence_ids = _unique([
-        *foundation.overlap_evidence_ids,
-        *foundation.service_evidence_ids,
-        *(evidence_id for fact in source_facts for evidence_id in fact.evidence_ids),
-    ])
+    evidence_ids = unique(
+        [
+            *foundation.overlap_evidence_ids,
+            *foundation.service_evidence_ids,
+            *(evidence_id for fact in source_facts for evidence_id in fact.evidence_ids),
+        ]
+    )
     return {
         "work_item_id": foundation.work_item_id,
         "goal": "new_page",
@@ -218,10 +243,12 @@ def _payload(
         ),
         "knowledge_card_ids": [service_card.id],
         "evidence_ids": evidence_ids,
-        "source_connectors": _unique([
-            *service_card.source_connectors,
-            *(fact.source_connector for fact in source_facts),
-        ]),
+        "source_connectors": unique(
+            [
+                *service_card.source_connectors,
+                *(fact.source_connector for fact in source_facts),
+            ]
+        ),
         "baseline_cta_direction": (
             service_card.cta_patterns[0]
             if service_card.cta_patterns
@@ -256,9 +283,9 @@ def _source_assessments(
     service_card: ContentKnowledgeCard,
     source_facts: list[ContentPlanningSourceFact],
 ) -> list[ContentPlanningSourceAssessment]:
-    service_evidence_ids = _unique([
-        evidence_id for fact in source_facts for evidence_id in fact.evidence_ids
-    ])
+    service_evidence_ids = unique(
+        [evidence_id for fact in source_facts for evidence_id in fact.evidence_ids]
+    )
     return [
         ContentPlanningSourceAssessment(
             source=cast(ContentPlanningSourceName, source),
@@ -278,15 +305,6 @@ def _source_assessments(
     ]
 
 
-def _blocker(
-    code: ContentPlanningInputBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentPlanningInputBlocker:
-    return ContentPlanningInputBlocker(code=code, label=label, reason=reason, next_step=next_step)
-
-
 def _digest(payload: object) -> str:
     canonical = json.dumps(
         payload,
@@ -302,10 +320,6 @@ def _json_default(value: object) -> object:
     if hasattr(value, "model_dump"):
         return value.model_dump(mode="json")
     raise TypeError(f"Unsupported planning input value: {type(value).__name__}")
-
-
-def _unique(values: list[str]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value))
 
 
 __all__ = ["build_new_page_planning_input"]

@@ -7,6 +7,7 @@ from wilq.actions.service import list_actions
 from wilq.briefing.localo_labels import localo_metric_fact_label
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import list_connector_statuses
+from wilq.content.operator_copy import unique
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import connector_refresh_status_label, source_connector_label
 from wilq.schemas import (
@@ -171,13 +172,13 @@ def build_marketing_brief(
             items=recommendation_items,
         ),
     ]
-    evidence_ids = _unique(
+    evidence_ids = unique(
         evidence_id
         for section in sections
         for item in section.items
         for evidence_id in item.evidence_ids
     )
-    action_ids = _unique(action.id for action in core_actions)
+    action_ids = unique(action.id for action in core_actions)
     return MarketingBrief(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector_summary=_connector_summary(connectors),
@@ -298,7 +299,7 @@ def _metric_items(metric_facts: list[MetricFact]) -> list[MarketingBriefItem]:
     for index, (connector_id, facts) in enumerate(grouped.items(), start=1):
         prioritized_facts = _prioritize_dimension_facts(facts)
         headline = _metric_headline(connector_id, prioritized_facts)
-        evidence_ids = _unique(fact.evidence_id for fact in prioritized_facts)
+        evidence_ids = unique(fact.evidence_id for fact in prioritized_facts)
         items.append(
             MarketingBriefItem(
                 id=f"brief_metric_{connector_id}",
@@ -873,7 +874,7 @@ def _recommendation_items(
                 kind="recommendation",
                 priority=60,
                 source_connectors=["google_merchant_center"],
-                evidence_ids=_unique(fact.evidence_id for fact in merchant_facts),
+                evidence_ids=unique(fact.evidence_id for fact in merchant_facts),
                 metric_facts=merchant_facts[:6],
                 summary=(
                     "Merchant ma realne metryki produktów i liczby problemów pliku produktowego. "
@@ -897,7 +898,7 @@ def _recommendation_items(
                 kind="recommendation",
                 priority=62,
                 source_connectors=["google_search_console"],
-                evidence_ids=_unique(fact.evidence_id for fact in gsc_facts),
+                evidence_ids=unique(fact.evidence_id for fact in gsc_facts),
                 metric_facts=gsc_facts[:6],
                 summary=(
                     "GSC ma kliknięcia, impressions, CTR i pozycję. Następny krok to "
@@ -1146,14 +1147,6 @@ def _is_probe_only_fact(fact: MetricFact) -> bool:
 
 def _connector_label(connector_id: str) -> str:
     return CONNECTOR_LABELS.get(connector_id, source_connector_label(connector_id))
-
-
-def _unique(items: Iterable[str]) -> list[str]:
-    unique_items: list[str] = []
-    for item in items:
-        if item and item not in unique_items:
-            unique_items.append(item)
-    return unique_items
 
 
 def _connectors_intersect(left: Iterable[str], right: Iterable[str]) -> bool:

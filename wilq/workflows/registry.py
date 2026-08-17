@@ -6,6 +6,7 @@ from typing import Literal
 
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.briefing.daily_runtime import build_daily_command_center
+from wilq.content.operator_copy import unique
 from wilq.operator_labels import route_operator_label
 from wilq.schemas import ActionRisk, DailyDecision
 from wilq.workflows.models import Workflow, WorkflowStep
@@ -234,9 +235,9 @@ def _decision_route_rank(decision: DailyDecision) -> tuple[int, int]:
 
 
 def _daily_command_workflow(decisions: list[DailyDecision]) -> Workflow:
-    evidence_ids = _unique(item for decision in decisions for item in decision.evidence_ids)
-    action_ids = _unique(item for decision in decisions for item in decision.action_ids)
-    source_connectors = _unique(
+    evidence_ids = unique(item for decision in decisions for item in decision.evidence_ids)
+    action_ids = unique(item for decision in decisions for item in decision.action_ids)
+    source_connectors = unique(
         item for decision in decisions for item in decision.source_connectors
     )
     blocked_count = sum(1 for decision in decisions if decision.status == "blocked")
@@ -406,10 +407,6 @@ def _decision_steps(
             output_contract="Polish operator output with no invented metrics or unsafe apply.",
         ),
     ]
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value))
 
 
 def _workflow_sort_key(workflow: Workflow) -> tuple[int, str]:

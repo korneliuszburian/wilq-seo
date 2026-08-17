@@ -6,6 +6,7 @@ from wilq.actions.google_ads.negative_keywords import (
     NEGATIVE_KEYWORD_ACTION_ID,
     NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
 )
+from wilq.content.operator_copy import unique
 from wilq.operator_labels import (
     blocked_claim_count_label,
     missing_contract_count_label,
@@ -43,7 +44,6 @@ from .shared import (
     _search_term_row_sort_key,
     _search_term_safety_key,
     _slug,
-    _unique,
 )
 
 
@@ -125,7 +125,7 @@ def _negative_keywords_read_contract(
         candidates=candidates,
         payload_preview=safe_payload_preview,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             evidence_id
             for candidate in candidates
             for evidence_id in [
@@ -295,7 +295,7 @@ def _negative_keyword_candidates(
                 conversion_value_90d=(safety_row.conversion_value_90d if safety_row else None),
                 evidence_ids=row.evidence_ids,
                 safety_evidence_ids=safety_row.evidence_ids if safety_row else [],
-                keyword_context_evidence_ids=_unique(
+                keyword_context_evidence_ids=unique(
                     evidence_id
                     for context_row in row_keyword_context
                     for evidence_id in context_row.evidence_ids
@@ -410,9 +410,9 @@ def _negative_keyword_change_preview(
     safety_row: AdsSearchTermSafetyRow,
 ) -> AdsNegativeKeywordPayloadPreview:
     safety_evidence_ids = safety_row.evidence_ids
-    evidence_ids = _unique([*row.evidence_ids, *safety_evidence_ids])
+    evidence_ids = unique([*row.evidence_ids, *safety_evidence_ids])
     safety_metric_names = [fact.name for fact in safety_row.metric_facts]
-    source_metric_names = _unique([*(fact.name for fact in row.metric_facts), *safety_metric_names])
+    source_metric_names = unique([*(fact.name for fact in row.metric_facts), *safety_metric_names])
     level: Literal["ad_group", "campaign_review_required"] = (
         "ad_group" if row.ad_group_id else "campaign_review_required"
     )
@@ -480,7 +480,7 @@ def _hydrate_negative_keywords_marketer_labels(
     contract.missing_read_contract_summary_label = missing_contract_count_label(
         contract.missing_read_contracts
     )
-    contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    contract.blocked_claim_labels = unique(contract.blocked_claims)
     contract.blocked_claim_summary_label = blocked_claim_count_label(
         contract.blocked_claim_labels or contract.blocked_claims
     )
@@ -492,7 +492,7 @@ def _hydrate_negative_keywords_marketer_labels(
         candidate.validation_status_label = _ads_validation_status_label(
             candidate.validation_status
         )
-        candidate.blocked_claim_labels = _unique(candidate.blocked_claims)
+        candidate.blocked_claim_labels = unique(candidate.blocked_claims)
         for row in candidate.keyword_context_rows:
             _hydrate_keyword_match_context_row_labels(row)
         if candidate.payload_preview is not None:
@@ -508,7 +508,7 @@ def _hydrate_negative_keyword_payload_preview_labels(
     preview.match_type_label = _ads_keyword_match_type_label(preview.match_type)
     preview.level_label = _ads_negative_keyword_level_label(preview.level)
     preview.required_validation_labels = _ads_review_gate_labels(preview.required_validation)
-    preview.blocked_claim_labels = _unique(preview.blocked_claims)
+    preview.blocked_claim_labels = unique(preview.blocked_claims)
 
 
 def _negative_keyword_preview_card(

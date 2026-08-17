@@ -179,16 +179,5 @@ def _refresh_or_connector_evidence_ids(latest_refresh: ConnectorRefreshRun | Non
     return [connector_evidence_id(GA4_CONNECTOR_ID)]
 
 
-def _unique(values: Iterable[str]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for value in values:
-        if not value or value in seen:
-            continue
-        seen.add(value)
-        result.append(value)
-    return result
-
-
 def _slug(value: str) -> str:
     return "".join(char if char.isalnum() else "_" for char in value.lower()).strip("_")[:96]

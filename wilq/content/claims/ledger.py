@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from wilq.content.operator_copy import build_blocker
+
 ContentClaimType = Literal[
     "service_claim",
     "legal_requirement_claim",
@@ -179,22 +181,24 @@ def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedger
             entry.source_connectors
         ):
             blockers.append(
-                _blocker(
-                    "missing_product_evidence",
-                    entry,
-                    "Brakuje dowodu produktowego",
-                    "Twierdzenie produktowe wymaga dowodu z Merchant albo sklepu.",
-                    "Podłącz dowód produktowy z Merchant/sklepu albo zmień CTA na konsultację.",
+                build_blocker(
+                    ContentClaimLedgerBlocker,
+                    code="missing_product_evidence",
+                    claim_id=entry.id,
+                    label="Brakuje dowodu produktowego",
+                    reason="Twierdzenie produktowe wymaga dowodu z Merchant albo sklepu.",
+                    next_step="Podłącz dowód produktowy z Merchant/sklepu albo zmień CTA na konsultację.",  # noqa: E501
                 )
             )
         if entry.status == "allowed_with_evidence" and not entry.evidence_ids:
             blockers.append(
-                _blocker(
-                    "missing_evidence",
-                    entry,
-                    "Brakuje dowodu dla twierdzenia",
-                    "Twierdzenie oznaczone jako oparte na dowodzie musi mieć podpięty dowód.",
-                    "Podłącz dowód albo obniż status twierdzenia.",
+                build_blocker(
+                    ContentClaimLedgerBlocker,
+                    code="missing_evidence",
+                    claim_id=entry.id,
+                    label="Brakuje dowodu dla twierdzenia",
+                    reason="Twierdzenie oznaczone jako oparte na dowodzie musi mieć podpięty dowód.",  # noqa: E501
+                    next_step="Podłącz dowód albo obniż status twierdzenia.",
                 )
             )
         elif (
@@ -203,54 +207,59 @@ def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedger
             and not entry.evidence_ids
         ):
             blockers.append(
-                _blocker(
-                    "missing_evidence",
-                    entry,
-                    "Brakuje dowodu dla twierdzenia po review",
-                    "Decyzja człowieka nie zastępuje dowodu dla twierdzenia prawnego, "
+                build_blocker(
+                    ContentClaimLedgerBlocker,
+                    code="missing_evidence",
+                    claim_id=entry.id,
+                    label="Brakuje dowodu dla twierdzenia po review",
+                    reason="Decyzja człowieka nie zastępuje dowodu dla twierdzenia prawnego, "
                     "ryzyka albo środowiskowego.",
-                    "Podłącz dowód źródłowy albo zostaw twierdzenie poza szkicem.",
+                    next_step="Podłącz dowód źródłowy albo zostaw twierdzenie poza szkicem.",
                 )
             )
         elif entry.status == "allowed_with_evidence" and not entry.source_connectors:
             blockers.append(
-                _blocker(
-                    "missing_source_connector",
-                    entry,
-                    "Brakuje źródła danych dla twierdzenia",
-                    "Twierdzenie oparte na dowodzie musi wskazywać źródło danych.",
-                    "Podłącz źródło danych dla dowodu albo obniż status twierdzenia.",
+                build_blocker(
+                    ContentClaimLedgerBlocker,
+                    code="missing_source_connector",
+                    claim_id=entry.id,
+                    label="Brakuje źródła danych dla twierdzenia",
+                    reason="Twierdzenie oparte na dowodzie musi wskazywać źródło danych.",
+                    next_step="Podłącz źródło danych dla dowodu albo obniż status twierdzenia.",
                 )
             )
         elif entry.status == "needs_human_review":
             blockers.append(
-                _blocker(
-                    "needs_human_review",
-                    entry,
-                    "Twierdzenie wymaga decyzji człowieka",
-                    "To twierdzenie nie może wejść do gotowego języka szkicu "
+                build_blocker(
+                    ContentClaimLedgerBlocker,
+                    code="needs_human_review",
+                    claim_id=entry.id,
+                    label="Twierdzenie wymaga decyzji człowieka",
+                    reason="To twierdzenie nie może wejść do gotowego języka szkicu "
                     "bez decyzji człowieka.",
-                    "Przekaż twierdzenie do sprawdzenia i zapisz decyzję.",
+                    next_step="Przekaż twierdzenie do sprawdzenia i zapisz decyzję.",
                 )
             )
         elif entry.status == "blocked":
             blockers.append(
-                _blocker(
-                    "blocked_claim",
-                    entry,
-                    "Twierdzenie jest zablokowane",
-                    "To twierdzenie nie może pojawić się jako gotowe zdanie w szkicu.",
-                    "Usuń twierdzenie albo przepisz je na bezpieczną informację edukacyjną.",
+                build_blocker(
+                    ContentClaimLedgerBlocker,
+                    code="blocked_claim",
+                    claim_id=entry.id,
+                    label="Twierdzenie jest zablokowane",
+                    reason="To twierdzenie nie może pojawić się jako gotowe zdanie w szkicu.",
+                    next_step="Usuń twierdzenie albo przepisz je na bezpieczną informację edukacyjną.",  # noqa: E501
                 )
             )
         elif entry.status == "blocked_until_measurement":
             blockers.append(
-                _blocker(
-                    "blocked_until_measurement",
-                    entry,
-                    "Twierdzenie czeka na pomiar",
-                    "Nie wolno twierdzić, że treść dowozi efekt przed końcem okna pomiaru.",
-                    "Zostaw twierdzenie poza szkicem do czasu zamknięcia okna pomiaru.",
+                build_blocker(
+                    ContentClaimLedgerBlocker,
+                    code="blocked_until_measurement",
+                    claim_id=entry.id,
+                    label="Twierdzenie czeka na pomiar",
+                    reason="Nie wolno twierdzić, że treść dowozi efekt przed końcem okna pomiaru.",
+                    next_step="Zostaw twierdzenie poza szkicem do czasu zamknięcia okna pomiaru.",
                 )
             )
     return blockers
@@ -260,62 +269,64 @@ def _entry_consistency_blocker(
     entry: ContentClaimLedgerEntry,
 ) -> ContentClaimLedgerBlocker | None:
     if entry.claim_type == "guarantee_claim" and entry.status != "blocked":
-        return _blocker(
-            "blocked_claim",
-            entry,
-            "Twierdzenie gwarancyjne jest niedozwolone",
-            "Obietnice efektu nie mogą być oznaczone jako gotowe do użycia.",
-            "Usuń gwarancję albo przepisz ją na bezpieczną informację bez obietnicy.",
+        return build_blocker(
+            ContentClaimLedgerBlocker,
+            code="blocked_claim",
+            claim_id=entry.id,
+            label="Twierdzenie gwarancyjne jest niedozwolone",
+            reason="Obietnice efektu nie mogą być oznaczone jako gotowe do użycia.",
+            next_step="Usuń gwarancję albo przepisz ją na bezpieczną informację bez obietnicy.",
         )
     if (
         entry.claim_type in HUMAN_REVIEW_REQUIRED_CLAIM_TYPES
         and entry.status in {"allowed_with_evidence", "allowed_general"}
         and entry.reviewer_id is None
     ):
-        return _blocker(
-            "needs_human_review",
-            entry,
-            "Twierdzenie wymaga decyzji człowieka",
-            "Twierdzenie prawne, ryzyka albo środowiskowe nie może być ogólnie "
+        return build_blocker(
+            ContentClaimLedgerBlocker,
+            code="needs_human_review",
+            claim_id=entry.id,
+            label="Twierdzenie wymaga decyzji człowieka",
+            reason="Twierdzenie prawne, ryzyka albo środowiskowe nie może być ogólnie "
             "dopuszczone bez zapisanej decyzji człowieka.",
-            "Przekaż twierdzenie do review i zapisz osobę zatwierdzającą.",
+            next_step="Przekaż twierdzenie do review i zapisz osobę zatwierdzającą.",
         )
     if (
         entry.claim_type in HUMAN_REVIEW_REQUIRED_CLAIM_TYPES
         and entry.status in {"allowed_with_evidence", "allowed_general"}
         and not entry.evidence_ids
     ):
-        return _blocker(
-            "missing_evidence",
-            entry,
-            "Brakuje dowodu dla twierdzenia po review",
-            "Decyzja człowieka nie zastępuje dowodu dla twierdzenia prawnego, "
+        return build_blocker(
+            ContentClaimLedgerBlocker,
+            code="missing_evidence",
+            claim_id=entry.id,
+            label="Brakuje dowodu dla twierdzenia po review",
+            reason="Decyzja człowieka nie zastępuje dowodu dla twierdzenia prawnego, "
             "ryzyka albo środowiskowego.",
-            "Podłącz dowód źródłowy albo zostaw twierdzenie poza szkicem.",
+            next_step="Podłącz dowód źródłowy albo zostaw twierdzenie poza szkicem.",
         )
-    if (
-        entry.claim_type in MEASUREMENT_REQUIRED_CLAIM_TYPES
-        and entry.status == "allowed_general"
-    ):
-        return _blocker(
-            "blocked_until_measurement",
-            entry,
-            "Twierdzenie czeka na pomiar",
-            "Twierdzenie o SEO, skuteczności albo wyniku biznesowym wymaga "
+    if entry.claim_type in MEASUREMENT_REQUIRED_CLAIM_TYPES and entry.status == "allowed_general":
+        return build_blocker(
+            ContentClaimLedgerBlocker,
+            code="blocked_until_measurement",
+            claim_id=entry.id,
+            label="Twierdzenie czeka na pomiar",
+            reason="Twierdzenie o SEO, skuteczności albo wyniku biznesowym wymaga "
             "dowodu z zakończonego okna pomiaru.",
-            "Zostaw twierdzenie poza szkicem do czasu dostępnego pomiaru.",
+            next_step="Zostaw twierdzenie poza szkicem do czasu dostępnego pomiaru.",
         )
     if (
         entry.claim_type == "service_claim"
         and entry.status == "allowed_general"
         and not entry.evidence_ids
     ):
-        return _blocker(
-            "missing_evidence",
-            entry,
-            "Brakuje dowodu dla twierdzenia usługowego",
-            "Ogólne twierdzenie o usłudze nadal musi mieć źródło, zanim trafi do szkicu.",
-            "Podłącz dowód źródłowy albo zostaw twierdzenie poza szkicem.",
+        return build_blocker(
+            ContentClaimLedgerBlocker,
+            code="missing_evidence",
+            claim_id=entry.id,
+            label="Brakuje dowodu dla twierdzenia usługowego",
+            reason="Ogólne twierdzenie o usłudze nadal musi mieć źródło, zanim trafi do szkicu.",
+            next_step="Podłącz dowód źródłowy albo zostaw twierdzenie poza szkicem.",
         )
     return None
 
@@ -344,22 +355,6 @@ def publish_ready_claims(ledger: ContentClaimLedger) -> list[ContentClaimLedgerE
 
 def _blocked_claim_ids(ledger: ContentClaimLedger) -> set[str]:
     return {blocker.claim_id for blocker in claim_ledger_blockers(ledger)}
-
-
-def _blocker(
-    code: ContentClaimLedgerBlockerCode,
-    entry: ContentClaimLedgerEntry,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentClaimLedgerBlocker:
-    return ContentClaimLedgerBlocker(
-        code=code,
-        claim_id=entry.id,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )
 
 
 def claim_source_connectors_required(entries: Iterable[ContentClaimLedgerEntry]) -> bool:

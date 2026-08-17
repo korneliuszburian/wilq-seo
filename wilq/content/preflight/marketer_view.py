@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 from wilq.actions.content_refresh import content_contract_label
 from wilq.content.canonical.urls import content_decision_final_canonical_url
+from wilq.content.operator_copy import unique
 from wilq.content.planning.decisions import (
     ContentDecisionType,
     format_percent,
@@ -224,7 +225,7 @@ def content_marketer_missing_inputs(
         values.append("kontrola duplikacji i kanibalizacji")
     if not decision.evidence_ids:
         values.append("dowód źródłowy w WILQ")
-    return _unique(values) or ["brak dodatkowych danych przed sprawdzeniem"]
+    return unique(values) or ["brak dodatkowych danych przed sprawdzeniem"]
 
 
 def content_marketer_blocked_claims(claims: Iterable[str]) -> list[str]:
@@ -243,7 +244,7 @@ def content_marketer_blocked_claims(claims: Iterable[str]) -> list[str]:
         "wzrost ruchu": "wzrost ruchu",
         "rekomendacja bez danych źródłowych": "rekomendacja bez danych źródłowych",
     }
-    return _unique(labels.get(claim, "obietnica do sprawdzenia") for claim in claims)
+    return unique(labels.get(claim, "obietnica do sprawdzenia") for claim in claims)
 
 
 def _content_marketer_decision_text(decision: ContentDecisionItem) -> str:
@@ -385,9 +386,7 @@ def _content_marketer_review_question(decision: ContentDecisionItem) -> str:
     if decision.decision_type == "block_as_tracking_not_content":
         return "Czy problem dotyczy pomiaru GA4, czy faktycznie treści na stronie?"
     if decision.decision_type == "review_ahrefs_gap_records":
-        return (
-            f"Czy temat `{topic}` pasuje do oferty Ekologus i ma potwierdzenie poza Ahrefs?"
-        )
+        return f"Czy temat `{topic}` pasuje do oferty Ekologus i ma potwierdzenie poza Ahrefs?"
     return "Czy możemy odświeżyć dane GSC i WordPress przed decyzją?"
 
 
@@ -406,7 +405,7 @@ def _content_marketer_review_next_click(decision: ContentDecisionItem) -> str:
 
 
 def _content_marketer_review_action_ids(decision: ContentDecisionItem) -> list[str]:
-    return _unique(
+    return unique(
         action_id
         for action_id in decision.action_ids
         if action_id == "act_prepare_content_refresh_queue"
@@ -551,12 +550,3 @@ def _content_marketer_measurement_plan(decision: ContentDecisionItem) -> str:
         "Bez okna pomiarowego WILQ nie może twierdzić, że zmiana poprawiła "
         "pozycje, leady albo konwersje."
     )
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

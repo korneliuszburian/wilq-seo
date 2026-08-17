@@ -78,6 +78,7 @@ from wilq.briefing.ads_primary_contracts import build_primary_read_contracts
 from wilq.briefing.ads_response_assembly import build_diagnostics_response
 from wilq.briefing.ads_section_contracts import build_diagnostic_sections
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
+from wilq.content.operator_copy import unique
 from wilq.operator_labels import (
     action_count_label,
     blocked_claim_count_label,
@@ -173,7 +174,6 @@ from .shared import (
     _latest_refresh_has_summary_metric,
     _refresh_or_connector_evidence_ids,
     _remove_missing_contract_names,
-    _unique,
 )
 
 GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID = "act_configure_google_ads_env"
@@ -546,7 +546,7 @@ def _build_ads_diagnostics_response(
         live_data_status_label=_ads_live_data_status_label,
         freshness_assessment=_ads_freshness_assessment,
         operator_summary=_operator_summary,
-        unique=_unique,
+        unique=unique,
     )
 
 
@@ -863,28 +863,28 @@ def _operator_summary(
         total_conversion_value=sum(row.conversion_value or 0.0 for row in campaign_rows),
         ready_area_count=optimizer_readiness_contract.ready_area_count,
         blocked_area_count=optimizer_readiness_contract.blocked_area_count,
-        allowed_metrics=_unique(
+        allowed_metrics=unique(
             metric for decision in top_decisions for metric in decision.allowed_metrics
         ),
-        missing_read_contracts=_unique(
+        missing_read_contracts=unique(
             contract for decision in top_decisions for contract in decision.missing_read_contracts
         ),
-        operator_review_gates=_unique(
+        operator_review_gates=unique(
             gate for decision in top_decisions for gate in decision.operator_review_gates
         ),
-        source_connectors=_unique(
+        source_connectors=unique(
             connector for decision in top_decisions for connector in decision.source_connectors
         ),
-        evidence_ids=_unique(
+        evidence_ids=unique(
             evidence_id for decision in top_decisions for evidence_id in decision.evidence_ids
         ),
-        action_ids=_unique(
+        action_ids=unique(
             action_id for decision in top_decisions for action_id in decision.action_ids
         ),
-        blocked_claims=_unique(
+        blocked_claims=unique(
             claim for decision in top_decisions for claim in decision.blocked_claims
         ),
-        top_blocked_claim_labels=_unique(
+        top_blocked_claim_labels=unique(
             claim for decision in top_decisions for claim in decision.blocked_claims
         )[:5],
     )
@@ -1053,7 +1053,7 @@ def _account_currency_read_contract(
             continue
         currency_facts.append(fact)
         currency_codes.append(currency_code)
-    currency_codes = _unique(currency_codes)
+    currency_codes = unique(currency_codes)
     if len(currency_codes) > 1:
         return AdsAccountCurrencyReadContract(
             status="blocked",
@@ -1072,7 +1072,7 @@ def _account_currency_read_contract(
                 "werdykt zwrotu z reklam",
             ],
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(fact.evidence_id for fact in currency_facts),
+            evidence_ids=unique(fact.evidence_id for fact in currency_facts),
             next_step=(
                 "Rozdziel odczyt na jedno konto i jedną walutę albo potwierdź "
                 "spójność customer.currency_code przed interpretacją kosztów."
@@ -1093,7 +1093,7 @@ def _account_currency_read_contract(
                 "zmiana budżetu",
             ],
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(fact.evidence_id for fact in currency_facts),
+            evidence_ids=unique(fact.evidence_id for fact in currency_facts),
             next_step=(
                 "Pokazuj koszt, koszt kliknięcia i koszt pozyskania celu "
                 "w walucie konta. Nadal nie oceniaj "
@@ -1222,7 +1222,7 @@ def _business_context_read_contract(
     strategy_review = ads_strategy_review_state()
     strategy_review_status = strategy_review.outcome if strategy_review is not None else "missing"
     strategy_review_approved = strategy_review_status == "approved_for_prepare"
-    configured_sources = _unique(
+    configured_sources = unique(
         source
         for source in [
             profit_margin_source,
@@ -1536,10 +1536,10 @@ def _blocked_handoff(
     sections: list[AdsDiagnosticSection],
     action_ids: list[str],
 ) -> AdsBlockedHandoff | None:
-    evidence_ids = _unique(
+    evidence_ids = unique(
         evidence_id for section in sections for evidence_id in section.evidence_ids
     )
-    blocked_claims = _unique(claim for section in sections for claim in section.blocked_claims)
+    blocked_claims = unique(claim for section in sections for claim in section.blocked_claims)
     if live_data_available:
         return None
     return AdsBlockedHandoff(
@@ -1585,8 +1585,8 @@ def _with_ads_section_lineage(section: AdsDiagnosticSection) -> AdsDiagnosticSec
     knowledge_card_ids, expert_rule_ids = ADS_SECTION_LINEAGE.get(section.id, ([], []))
     return section.model_copy(
         update={
-            "knowledge_card_ids": _unique([*section.knowledge_card_ids, *knowledge_card_ids]),
-            "expert_rule_ids": _unique([*section.expert_rule_ids, *expert_rule_ids]),
+            "knowledge_card_ids": unique([*section.knowledge_card_ids, *knowledge_card_ids]),
+            "expert_rule_ids": unique([*section.expert_rule_ids, *expert_rule_ids]),
         }
     )
 
@@ -1600,8 +1600,8 @@ def _with_ads_decision_lineage(
         update={
             "priority": decision_priority(decision),
             "metric_tiles": _ads_decision_metric_tiles(decision, currency_code),
-            "knowledge_card_ids": _unique([*decision.knowledge_card_ids, *knowledge_card_ids]),
-            "expert_rule_ids": _unique([*decision.expert_rule_ids, *expert_rule_ids]),
+            "knowledge_card_ids": unique([*decision.knowledge_card_ids, *knowledge_card_ids]),
+            "expert_rule_ids": unique([*decision.expert_rule_ids, *expert_rule_ids]),
         }
     )
 
@@ -1655,7 +1655,7 @@ def _hydrate_ads_summary_labels(response: AdsDiagnosticsResponse) -> None:
         response,
         missing_contract_labels=_ads_missing_read_contract_labels,
         allowed_metric_labels=_ads_allowed_metric_labels,
-        unique=_unique,
+        unique=unique,
     )
 
 
@@ -1673,7 +1673,7 @@ def _hydrate_ads_decision_labels(
         measurement_plan=_ads_decision_measurement_plan,
         risk_label=_ads_risk_label,
         missing_contract_labels=_ads_missing_read_contract_labels,
-        unique=_unique,
+        unique=unique,
     )
 
 
@@ -1681,7 +1681,7 @@ def _hydrate_ads_surface_labels(response: AdsDiagnosticsResponse) -> None:
     hydrate_surface_labels(
         response,
         status_label=_ads_status_label,
-        unique=_unique,
+        unique=unique,
     )
 
 
@@ -1703,7 +1703,7 @@ def _hydrate_ads_contract_labels(
         change_history=_hydrate_change_history_marketer_labels,
         negative_keywords=_hydrate_negative_keywords_marketer_labels,
         keyword_match_context=_hydrate_keyword_match_context_marketer_labels,
-        unique=_unique,
+        unique=unique,
     )
 
 
@@ -1712,7 +1712,7 @@ def _hydrate_ads_core_contract_labels(response: AdsDiagnosticsResponse) -> None:
     _hydrate_business_context_marketer_labels(response.business_context_read_contract)
     _hydrate_campaign_triage_marketer_labels(response.campaign_triage_read_contract)
     for row in response.derived_kpi_read_contract.kpi_rows:
-        row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_labels = unique(row.blocked_claims)
         row.blocked_claim_summary_label = blocked_claim_count_label(
             row.blocked_claim_labels or row.blocked_claims
         )
@@ -1737,7 +1737,7 @@ def _hydrate_ads_budget_performance_contract_labels(
 
 
 def _hydrate_ads_search_contract_labels(response: AdsDiagnosticsResponse) -> None:
-    response.search_term_review_summary_contract.blocked_claim_labels = _unique(
+    response.search_term_review_summary_contract.blocked_claim_labels = unique(
         response.search_term_review_summary_contract.blocked_claims
     )
     response.search_term_review_summary_contract.blocked_claim_summary_label = (
@@ -1794,7 +1794,7 @@ def _hydrate_business_context_marketer_labels(
     readiness.missing_read_contract_labels = _ads_missing_read_contract_labels(
         readiness.missing_read_contracts
     )
-    readiness.blocked_claim_labels = _unique(readiness.blocked_claims)
+    readiness.blocked_claim_labels = unique(readiness.blocked_claims)
     readiness.action_summary_label = action_count_label(readiness.action_ids)
 
 
@@ -1809,7 +1809,7 @@ def _hydrate_optimizer_readiness_marketer_labels(
     contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
         contract.missing_read_contracts
     )
-    contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    contract.blocked_claim_labels = unique(contract.blocked_claims)
     for item in contract.readiness_items:
         item.label = _ads_optimizer_readiness_item_label(item.id)
         item.status_label = _ads_status_label(item.status)
@@ -1820,4 +1820,4 @@ def _hydrate_optimizer_readiness_marketer_labels(
         item.missing_read_contract_labels = _ads_missing_read_contract_labels(
             item.missing_read_contracts
         )
-        item.blocked_claim_labels = _unique(item.blocked_claims)
+        item.blocked_claim_labels = unique(item.blocked_claims)

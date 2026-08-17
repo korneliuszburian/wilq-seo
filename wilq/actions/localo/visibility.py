@@ -12,6 +12,7 @@ from wilq.actions.validation_copy import (
     wrong,
 )
 from wilq.briefing.localo_labels import localo_metric_fact_label
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -114,6 +115,8 @@ def localo_action_metric_facts(
         if value_facts:
             return value_facts
     return []
+
+
 LOCALO_CLAIMS_BY_MISSING_CONTRACT = {
     "local_rankings": "lokalne pozycje",
     "gbp_visibility": "wyniki profilu firmy w Google",
@@ -142,8 +145,8 @@ def localo_visibility_review_payload_from_metric_facts(
     blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
     review_steps = _review_steps_for_missing_contracts(missing_contracts)
     blocked_scope = _blocked_scope_sentence(missing_contracts)
-    source_metric_names = _unique(fact.name for fact in visibility_facts)
-    evidence_ids = _unique(fact.evidence_id for fact in visibility_facts)
+    source_metric_names = unique(fact.name for fact in visibility_facts)
+    evidence_ids = unique(fact.evidence_id for fact in visibility_facts)
     return {
         "action_type": LOCALO_VISIBILITY_REVIEW_ACTION_TYPE,
         "connector": "localo",
@@ -239,7 +242,7 @@ def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[
         if contract in missing_contracts
     ]
     claims.extend(["zapis zmian w profilu firmy", "poprawa widoczności lokalnej"])
-    return _unique(claims)
+    return unique(claims)
 
 
 def _review_steps_for_missing_contracts(missing_contracts: list[str]) -> list[str]:
@@ -289,14 +292,6 @@ def _localo_action_metric_label(metric_name: str) -> str:
     if metric_name == "localo_reviews_count":
         return "opinie Localo"
     return localo_metric_fact_label(metric_name)
-
-
-def _unique(items: Iterable[str]) -> list[str]:
-    unique_items: list[str] = []
-    for item in items:
-        if item and item not in unique_items:
-            unique_items.append(item)
-    return unique_items
 
 
 def _ordered_contracts(items: Iterable[str]) -> list[str]:

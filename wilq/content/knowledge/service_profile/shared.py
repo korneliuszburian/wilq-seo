@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from wilq.content.knowledge.cards import ContentKnowledgeCard
 from wilq.content.knowledge.private_source_proposals import PrivateSourceProposalScope
 from wilq.content.knowledge.service_profile.contracts import (
@@ -88,11 +86,3 @@ def _redacted_lineage(lineage: list[str]) -> list[str]:
         for item in lineage
         if item.startswith("https://") or item.startswith("docs/") or item.startswith("wilq/")
     ]
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    result: list[str] = []
-    for value in values:
-        if value and value not in result:
-            result.append(value)
-    return result

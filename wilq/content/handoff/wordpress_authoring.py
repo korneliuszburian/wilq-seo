@@ -13,6 +13,7 @@ from wilq.connectors.wordpress.authoring import (
 )
 from wilq.content.drafts.package import ContentDraftPackage, ContentDraftSection
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
+from wilq.content.operator_copy import build_blocker
 
 ContentWordPressMetaWriteStatus = Literal["not_present", "review_required", "mapped"]
 ContentWordPressAuthoringPreviewStatus = Literal["ready", "blocked"]
@@ -95,9 +96,7 @@ class ContentWordPressPageAssetsPreview(BaseModel):
     meta_title: str
     meta_description: str
     meta_write_status: ContentWordPressMetaWriteStatus = "review_required"
-    metadata_blockers: list[ContentWordPressAuthoringPreviewBlocker] = Field(
-        default_factory=list
-    )
+    metadata_blockers: list[ContentWordPressAuthoringPreviewBlocker] = Field(default_factory=list)
 
 
 class ContentWordPressAuthoringPayloadPreviewResult(BaseModel):
@@ -151,21 +150,18 @@ def build_content_wordpress_authoring_payload_preview(
             flexible_content_field_name=profile.acf.flexible_content_field_name,
             page_assets=page_assets,
             blockers=[
-                _blocker(
-                    "acf_flexible_layouts_missing",
-                    "Brakuje layoutów ACF",
-                    "WILQ nie zna layoutu Flexible Content dla szkicu.",
-                    "Najpierw uzupełnij profil authoringu WordPress/ACF.",
+                build_blocker(
+                    ContentWordPressAuthoringPreviewBlocker,
+                    code="acf_flexible_layouts_missing",
+                    label="Brakuje layoutów ACF",
+                    reason="WILQ nie zna layoutu Flexible Content dla szkicu.",
+                    next_step="Najpierw uzupełnij profil authoringu WordPress/ACF.",
                 )
             ],
         )
 
     sections = [_section_payload(layout, section) for section in draft_package.sections]
-    missing_required = [
-        field
-        for section in sections
-        for field in section.missing_required_fields
-    ]
+    missing_required = [field for section in sections for field in section.missing_required_fields]
     if missing_required:
         return ContentWordPressAuthoringPayloadPreviewResult(
             status="blocked",
@@ -173,11 +169,12 @@ def build_content_wordpress_authoring_payload_preview(
             page_assets=page_assets,
             sections=sections,
             blockers=[
-                _blocker(
-                    "acf_layout_field_mapping_incomplete",
-                    "Mapowanie ACF jest niepełne",
-                    "Nie wszystkie wymagane pola layoutu da się wypełnić z paczki szkicu.",
-                    "Dopasuj layout ACF albo uzupełnij paczkę szkicu o brakujące pola.",
+                build_blocker(
+                    ContentWordPressAuthoringPreviewBlocker,
+                    code="acf_layout_field_mapping_incomplete",
+                    label="Mapowanie ACF jest niepełne",
+                    reason="Nie wszystkie wymagane pola layoutu da się wypełnić z paczki szkicu.",
+                    next_step="Dopasuj layout ACF albo uzupełnij paczkę szkicu o brakujące pola.",
                 )
             ],
         )
@@ -208,8 +205,7 @@ def _page_assets_preview(
                 code="missing_wordpress_meta_mapping",
                 label="Meta pola wymagają mapowania WordPress",
                 reason=(
-                    "Tytuł i opis meta są zachowane, ale profil SEO/ACF nie "
-                    "potwierdza pola zapisu."
+                    "Tytuł i opis meta są zachowane, ale profil SEO/ACF nie potwierdza pola zapisu."
                 ),
                 next_step="Przekaż meta ręcznie albo potwierdź dokładne pola profilu WordPress.",
             )
@@ -225,39 +221,43 @@ def _input_blockers(
     blockers: list[ContentWordPressAuthoringPreviewBlocker] = []
     if handoff is None:
         blockers.append(
-            _blocker(
-                "missing_handoff",
-                "Brakuje przekazania WordPress",
-                "Payload ACF może powstać dopiero po zatwierdzonym handoffie.",
-                "Przygotuj handoff szkicu WordPress po review i audycie.",
+            build_blocker(
+                ContentWordPressAuthoringPreviewBlocker,
+                code="missing_handoff",
+                label="Brakuje przekazania WordPress",
+                reason="Payload ACF może powstać dopiero po zatwierdzonym handoffie.",
+                next_step="Przygotuj handoff szkicu WordPress po review i audycie.",
             )
         )
     if draft_package is None:
         blockers.append(
-            _blocker(
-                "missing_draft_package",
-                "Brakuje paczki szkicu",
-                "Payload ACF potrzebuje sekcji, dowodów i tytułu szkicu.",
-                "Przygotuj paczkę szkicu przed mapowaniem na ACF.",
+            build_blocker(
+                ContentWordPressAuthoringPreviewBlocker,
+                code="missing_draft_package",
+                label="Brakuje paczki szkicu",
+                reason="Payload ACF potrzebuje sekcji, dowodów i tytułu szkicu.",
+                next_step="Przygotuj paczkę szkicu przed mapowaniem na ACF.",
             )
         )
     if handoff is not None and draft_package is not None:
         if handoff.draft_package_id != draft_package.id:
             blockers.append(
-                _blocker(
-                    "draft_package_mismatch",
-                    "Paczka szkicu nie pasuje do handoffu",
-                    "Nie można mapować innej paczki niż ta, którą zatwierdzono.",
-                    "Użyj paczki szkicu powiązanej z przekazaniem WordPress.",
+                build_blocker(
+                    ContentWordPressAuthoringPreviewBlocker,
+                    code="draft_package_mismatch",
+                    label="Paczka szkicu nie pasuje do handoffu",
+                    reason="Nie można mapować innej paczki niż ta, którą zatwierdzono.",
+                    next_step="Użyj paczki szkicu powiązanej z przekazaniem WordPress.",
                 )
             )
         if draft_package.publish_ready:
             blockers.append(
-                _blocker(
-                    "draft_package_marked_publish_ready",
-                    "Szkic nie może udawać publikacji",
-                    "Payload ACF jest tylko podglądem szkicu, nie publikacją.",
-                    "Zatrzymaj status publish-ready i zostaw publikację do osobnej decyzji.",
+                build_blocker(
+                    ContentWordPressAuthoringPreviewBlocker,
+                    code="draft_package_marked_publish_ready",
+                    label="Szkic nie może udawać publikacji",
+                    reason="Payload ACF jest tylko podglądem szkicu, nie publikacją.",
+                    next_step="Zatrzymaj status publish-ready i zostaw publikację do osobnej decyzji.",  # noqa: E501
                 )
             )
     return blockers
@@ -269,20 +269,22 @@ def _profile_blockers(
     blockers: list[ContentWordPressAuthoringPreviewBlocker] = []
     if not profile.acf.flexible_content_field_name and not profile.acf.layouts:
         blockers.append(
-            _blocker(
-                "acf_flexible_field_name_missing",
-                "Brakuje nazwy pola Flexible Content",
-                "WILQ musi znać nazwę pola ACF, do którego trafią sekcje.",
-                "Uzupełnij WORDPRESS_EKOLOGUS_ACF_FLEX_FIELD_NAME albo odczytaj profil ACF.",
+            build_blocker(
+                ContentWordPressAuthoringPreviewBlocker,
+                code="acf_flexible_field_name_missing",
+                label="Brakuje nazwy pola Flexible Content",
+                reason="WILQ musi znać nazwę pola ACF, do którego trafią sekcje.",
+                next_step="Uzupełnij WORDPRESS_EKOLOGUS_ACF_FLEX_FIELD_NAME albo odczytaj profil ACF.",  # noqa: E501
             )
         )
     if not profile.acf.layouts:
         blockers.append(
-            _blocker(
-                "acf_flexible_layouts_missing",
-                "Brakuje layoutów ACF Flexible Content",
-                "WILQ nie zna nazw layoutów ani wymaganych pól, więc nie przygotuje payloadu.",
-                "Podaj eksport ACF field groups albo uruchom read-only discovery przez WP-CLI.",
+            build_blocker(
+                ContentWordPressAuthoringPreviewBlocker,
+                code="acf_flexible_layouts_missing",
+                label="Brakuje layoutów ACF Flexible Content",
+                reason="WILQ nie zna nazw layoutów ani wymaganych pól, więc nie przygotuje payloadu.",  # noqa: E501
+                next_step="Podaj eksport ACF field groups albo uruchom read-only discovery przez WP-CLI.",  # noqa: E501
             )
         )
     return blockers
@@ -385,9 +387,7 @@ def _row_candidates(
     if not mapped_fields:
         return []
     row_type: Literal["acf_repeater_row", "acf_flexible_content_row"] = (
-        "acf_flexible_content_row"
-        if field.field_type == "flexible_content"
-        else "acf_repeater_row"
+        "acf_flexible_content_row" if field.field_type == "flexible_content" else "acf_repeater_row"
     )
     label = (
         f"Wiersz do ręcznego przeglądu: {section.heading}"
@@ -475,10 +475,7 @@ def _field_scalar_value(field: WordPressAcfField, section: ContentDraftSection) 
         if nested_value is not None:
             return nested_value
         return None
-    if any(
-        token in haystack
-        for token in ("heading", "headline", "title", "tytul", "naglowek")
-    ):
+    if any(token in haystack for token in ("heading", "headline", "title", "tytul", "naglowek")):
         return section.heading
     if any(token in haystack for token in ("body", "content", "tekst", "opis", "wysiwyg")):
         return _section_body(section)
@@ -536,17 +533,3 @@ def _section_body(section: ContentDraftSection) -> str:
     chunks.extend(section.draft_notes)
     markdown = "\n".join(chunk for chunk in chunks if chunk)
     return str(MarkdownIt("commonmark", {"html": False, "linkify": False}).render(markdown))
-
-
-def _blocker(
-    code: ContentWordPressAuthoringPreviewBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentWordPressAuthoringPreviewBlocker:
-    return ContentWordPressAuthoringPreviewBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )

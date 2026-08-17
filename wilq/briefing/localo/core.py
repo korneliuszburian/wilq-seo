@@ -10,7 +10,7 @@ from wilq.briefing.localo.labels import (
     _localo_refresh_status_label,
 )
 from wilq.briefing.localo.reviews import _operator_connector, _operator_refresh, _operator_summary
-from wilq.briefing.localo.shared import LOCALO_CONNECTOR_ID, _unique
+from wilq.briefing.localo.shared import LOCALO_CONNECTOR_ID
 from wilq.briefing.localo.visibility import (
     _access_probe,
     _latest_relevant_localo_refresh,
@@ -22,6 +22,7 @@ from wilq.briefing.localo.visibility import (
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
+from wilq.content.operator_copy import unique
 from wilq.schemas import LocaloDiagnosticsResponse
 
 
@@ -50,18 +51,16 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
             read_contract_statuses,
         )
     )
-    action_ids = _unique(
+    action_ids = unique(
         action_id for decision in decision_queue for action_id in decision.action_ids
     )
-    evidence_ids = _unique(
+    evidence_ids = unique(
         evidence_id for section in sections for evidence_id in section.evidence_ids
     )
     ready_contract_count = sum(
         1 for contract in read_contract_statuses if contract.status == "ready"
     )
-    partial = bool(
-        visibility_facts and ready_contract_count < len(read_contract_statuses)
-    )
+    partial = bool(visibility_facts and ready_contract_count < len(read_contract_statuses))
     data_readiness = build_diagnostic_data_readiness(
         connector=connector,
         latest_refresh=latest_refresh,

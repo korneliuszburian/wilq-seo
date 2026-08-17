@@ -9,6 +9,7 @@ from wilq.content.canonical.urls import (
     content_normalized_path,
     content_url_host,
 )
+from wilq.content.operator_copy import build_blocker
 from wilq.content.workflow.decisions.decision_mapping import content_work_item_from_decision
 from wilq.content.workflow.pipeline_steps.queue import (
     ContentQueueRecommendedMode,
@@ -159,7 +160,9 @@ def build_content_opportunity_enrichment(
         title=decision.title,
         topic=decision.primary_query or decision.title,
         recommended_mode=(
-            "block" if candidate is None and blockers else candidate.recommended_mode
+            "block"
+            if candidate is None and blockers
+            else candidate.recommended_mode
             if candidate is not None
             else _recommended_mode_from_decision(decision)
         ),
@@ -205,43 +208,51 @@ def _enrichment_blockers(
     blockers: list[ContentOpportunityEnrichmentBlocker] = []
     if not decision.evidence_ids:
         blockers.append(
-            _blocker(
+            build_blocker(
+                ContentOpportunityEnrichmentBlocker,
                 code="missing_evidence",
                 label="Brak dowodów",
                 reason="Nie da się wzbogacić tematu bez evidence IDs z WILQ API.",
                 next_step="Odśwież źródła GSC, WordPress, GA4 albo Ahrefs i wróć do kolejki.",
-                decision=decision,
+                evidence_ids=decision.evidence_ids,
+                source_connectors=decision.source_connectors,
             )
         )
     if not decision.source_connectors:
         blockers.append(
-            _blocker(
+            build_blocker(
+                ContentOpportunityEnrichmentBlocker,
                 code="missing_source_connector",
                 label="Brak źródła danych",
                 reason="Temat nie ma source connectora, więc WILQ nie może uzasadnić wniosku.",
                 next_step="Podłącz lub odśwież connector i nie twórz rekomendacji z promptu.",
-                decision=decision,
+                evidence_ids=decision.evidence_ids,
+                source_connectors=decision.source_connectors,
             )
         )
     final_url = decision.final_canonical_url or decision.intended_final_url
     if final_url is None:
         blockers.append(
-            _blocker(
+            build_blocker(
+                ContentOpportunityEnrichmentBlocker,
                 code="missing_final_canonical",
                 label="Brak finalnego adresu",
                 reason="Nie ma publicznego finalnego URL-a, pod który można budować treść.",
                 next_step="Najpierw ustal publiczny canonical dla tematu.",
-                decision=decision,
+                evidence_ids=decision.evidence_ids,
+                source_connectors=decision.source_connectors,
             )
         )
     elif content_url_host(final_url) not in CONTENT_SOURCE_SITE_HOSTS:
         blockers.append(
-            _blocker(
+            build_blocker(
+                ContentOpportunityEnrichmentBlocker,
                 code="invalid_final_canonical",
                 label="Adres nie jest publicznym canonicalem",
                 reason="Adres dev albo preview nie może być SEO evidence ani targetem treści.",
                 next_step="Ustaw publiczny adres na ekologus.pl albo zablokuj tworzenie treści.",
-                decision=decision,
+                evidence_ids=decision.evidence_ids,
+                source_connectors=decision.source_connectors,
             )
         )
     if candidate is not None:
@@ -258,15 +269,15 @@ def _enrichment_blockers(
         )
     if _service_fit(decision) == "blocked":
         blockers.append(
-            _blocker(
+            build_blocker(
+                ContentOpportunityEnrichmentBlocker,
                 code="missing_service_fit",
                 label="Brak dopasowania do usługi",
                 reason="WILQ nie widzi, jak ten temat mapuje się na usługę Ekologus.",
-                next_step=(
-                    "Dodaj kartę usługi albo zablokuj szkic, "
-                    "zamiast tworzyć ogólny SEO tekst."
-                ),
-                decision=decision,
+                next_step="Dodaj kartę usługi albo zablokuj szkic, "
+                "zamiast tworzyć ogólny SEO tekst.",
+                evidence_ids=decision.evidence_ids,
+                source_connectors=decision.source_connectors,
             )
         )
     return _deduplicate_blockers(blockers)
@@ -524,24 +535,6 @@ def _recommended_mode_from_decision(decision: ContentDecisionItem) -> ContentQue
         "block_until_vendor_read": "block",
     }
     return modes[decision.decision_type]
-
-
-def _blocker(
-    *,
-    code: str,
-    label: str,
-    reason: str,
-    next_step: str,
-    decision: ContentDecisionItem,
-) -> ContentOpportunityEnrichmentBlocker:
-    return ContentOpportunityEnrichmentBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-        evidence_ids=decision.evidence_ids,
-        source_connectors=decision.source_connectors,
-    )
 
 
 def _deduplicate_blockers(

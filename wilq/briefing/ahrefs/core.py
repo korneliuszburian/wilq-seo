@@ -1,4 +1,5 @@
 """Ahrefs diagnostics assembly and operator-facing response construction."""
+
 from __future__ import annotations
 
 from typing import Any, cast
@@ -7,6 +8,7 @@ from wilq.briefing.diagnostic_readiness import build_diagnostic_data_readiness
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
+from wilq.content.operator_copy import unique
 from wilq.operator_labels import evidence_count_label, source_connector_labels
 from wilq.schemas import (
     ActionRisk,
@@ -72,7 +74,6 @@ from .shared import (
     _latest_facts_by_name,
     _latest_relevant_ahrefs_refresh,
     _refresh_or_connector_evidence_ids,
-    _unique,
 )
 
 
@@ -123,21 +124,21 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
     )
     labeled_gap_read_contract = _label_ahrefs_gap_read_contract(gap_read_contract)
 
-    evidence_ids = _unique(
+    evidence_ids = unique(
         [
             *(evidence_id for section in sections for evidence_id in section.evidence_ids),
             *(evidence_id for decision in decision_queue for evidence_id in decision.evidence_ids),
             *labeled_gap_read_contract.evidence_ids,
         ]
     )
-    action_ids = _unique(
+    action_ids = unique(
         [
             *(action_id for section in sections for action_id in section.action_ids),
             *(action_id for decision in decision_queue for action_id in decision.action_ids),
             *labeled_gap_read_contract.action_ids,
         ]
     )
-    response_source_connectors = _unique(
+    response_source_connectors = unique(
         [
             *(connector for section in sections for connector in section.source_connectors),
             *(connector for decision in decision_queue for connector in decision.source_connectors),
@@ -155,9 +156,7 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         factual_metrics=trusted_ahrefs_facts[:12],
         factual_metric_count=len(trusted_ahrefs_facts),
         evidence_ids=evidence_ids,
-        partial=bool(
-            latest_refresh and latest_refresh.quality_state.value == "partial"
-        ),
+        partial=bool(latest_refresh and latest_refresh.quality_state.value == "partial"),
         partial_coverage_label=(
             "Pokazane metryki obejmują tylko potwierdzony zakres odczytu Ahrefs."
         ),
@@ -191,6 +190,7 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         action_ids=action_ids,
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )
+
 
 def _ahrefs_request_budget(
     latest_refresh: ConnectorRefreshRun | None,
@@ -254,9 +254,7 @@ def _ahrefs_request_budget(
             "Luki linków zwrotnych",
             summary,
             status_key="backlink_gap_read_status",
-            requested_calls=(1 + backlink_competitor_calls)
-            if backlink_competitor_calls
-            else 0,
+            requested_calls=(1 + backlink_competitor_calls) if backlink_competitor_calls else 0,
             rows=int(summary.get("backlink_gap_rows", 0)),
             latest_errors=latest_refresh.errors,
         ),
@@ -268,11 +266,9 @@ def _ahrefs_request_budget(
         failed_stages=failed,
         partial=failed > 0,
         stages=stages,
-        summary=(
-            f"Szacowany zakres odczytu: {estimated} wywołań; "
-            f"nieudane etapy: {failed}."
-        ),
+        summary=(f"Szacowany zakres odczytu: {estimated} wywołań; nieudane etapy: {failed}."),
     )
+
 
 def _ahrefs_budget_stage(
     stage_id: str,
@@ -286,8 +282,10 @@ def _ahrefs_budget_stage(
 ) -> AhrefsRequestBudgetStage:
     raw_status = summary.get(status_key) if status_key else None
     if status_key is None:
-        status: AhrefsBudgetStageStatus = "completed" if summary.get("domain_rating") else (
-            "failed" if latest_errors else "not_run"
+        status: AhrefsBudgetStageStatus = (
+            "completed"
+            if summary.get("domain_rating")
+            else ("failed" if latest_errors else "not_run")
         )
     elif isinstance(raw_status, str) and raw_status == "completed":
         status = "completed"
@@ -304,11 +302,9 @@ def _ahrefs_budget_stage(
         status_label=_ahrefs_budget_stage_status_label(status),
         requested_calls=max(0, requested_calls),
         rows=max(0, rows),
-        summary=(
-            f"{requested_calls} wywołań, {rows} wierszy; "
-            f"status: {status}."
-        ),
+        summary=(f"{requested_calls} wywołań, {rows} wierszy; status: {status}."),
     )
+
 
 def _operator_summary(
     decisions: list[AhrefsDecisionItem],
@@ -328,12 +324,8 @@ def _operator_summary(
                 "lub linków zwrotnych wymagają konkretnych danych Ahrefs."
             ),
             next_step=_operator_summary_next_step(gap_read_contract),
-            review_decision_after_review=_ahrefs_review_decision_after_review(
-                gap_read_contract
-            ),
-            review_question_for_operator=_ahrefs_review_question_for_operator(
-                gap_read_contract
-            ),
+            review_decision_after_review=_ahrefs_review_decision_after_review(gap_read_contract),
+            review_question_for_operator=_ahrefs_review_question_for_operator(gap_read_contract),
             review_next_safe_click=_ahrefs_review_next_safe_click(gap_read_contract),
             review_action_ids=list(gap_read_contract.action_ids),
             top_decision_ids=[decision.id for decision in top_decisions],
@@ -350,7 +342,7 @@ def _operator_summary(
                 missing_contracts,
                 _missing_gap_contract_label,
             ),
-            source_connectors=_unique(
+            source_connectors=unique(
                 [
                     *(
                         connector
@@ -360,7 +352,7 @@ def _operator_summary(
                     *gap_read_contract.source_connectors,
                 ]
             ),
-            evidence_ids=_unique(
+            evidence_ids=unique(
                 [
                     *(
                         evidence_id
@@ -370,13 +362,13 @@ def _operator_summary(
                     *gap_read_contract.evidence_ids,
                 ]
             ),
-            action_ids=_unique(
+            action_ids=unique(
                 [
                     *(action_id for decision in top_decisions for action_id in decision.action_ids),
                     *gap_read_contract.action_ids,
                 ]
             ),
-            blocked_claims=_unique(
+            blocked_claims=unique(
                 [
                     *(claim for decision in top_decisions for claim in decision.blocked_claims),
                     *gap_read_contract.blocked_claims,
@@ -384,6 +376,7 @@ def _operator_summary(
             ),
         )
     )
+
 
 def _operator_summary_next_step(gap_read_contract: AhrefsGapReadContract) -> str:
     if gap_read_contract.status == "ready":
@@ -396,6 +389,7 @@ def _operator_summary_next_step(gap_read_contract: AhrefsGapReadContract) -> str
         "Nie twierdź o lukach treści, lukach linków ani wzroście widoczności "
         "bez konkretnych danych Ahrefs."
     )
+
 
 def _ahrefs_review_decision_after_review(
     gap_read_contract: AhrefsGapReadContract,
@@ -419,6 +413,7 @@ def _ahrefs_review_decision_after_review(
         "rekordów Ahrefs."
     )
 
+
 def _ahrefs_review_question_for_operator(
     gap_read_contract: AhrefsGapReadContract,
 ) -> str:
@@ -432,6 +427,7 @@ def _ahrefs_review_question_for_operator(
         "Czy dostępne dane Ahrefs wystarczają tylko do kontekstu autorytetu, "
         "czy najpierw trzeba odświeżyć/uzupełnić rekordy luk treści i linków?"
     )
+
 
 def _ahrefs_review_next_safe_click(gap_read_contract: AhrefsGapReadContract) -> str:
     if AHREFS_CONTENT_REFRESH_ACTION_ID in gap_read_contract.action_ids:
@@ -449,6 +445,7 @@ def _ahrefs_review_next_safe_click(gap_read_contract: AhrefsGapReadContract) -> 
         "Najpierw odśwież lub uzupełnij dane Ahrefs; bez rekordów luk nie ma "
         "bezpiecznego kliknięcia do kolejki treści."
     )
+
 
 def _ahrefs_sections(
     *,
@@ -558,6 +555,7 @@ def _ahrefs_sections(
         risk=ActionRisk.medium,
     )
     return [authority_section, gap_section, safety_section]
+
 
 def _ahrefs_decision_queue(
     *,
@@ -708,7 +706,7 @@ def _ahrefs_decision_queue(
                     _missing_gap_contract_label,
                 ),
                 source_connectors=[AHREFS_CONNECTOR_ID],
-                evidence_ids=_unique(
+                evidence_ids=unique(
                     evidence_id for record in gap_records for evidence_id in record.evidence_ids
                 ),
                 metric_facts=[fact for record in gap_records for fact in record.metric_facts][:12],
@@ -767,20 +765,21 @@ def _ahrefs_decision_queue(
         )
     return decisions
 
+
 def _ahrefs_decisions_with_lineage(
     decisions: list[AhrefsDecisionItem],
 ) -> list[AhrefsDecisionItem]:
     return [
         _label_ahrefs_decision(decision).model_copy(
             update={
-                "knowledge_card_ids": _unique(
+                "knowledge_card_ids": unique(
                     [*decision.knowledge_card_ids, *AHREFS_KNOWLEDGE_CARD_IDS]
                 ),
-                "expert_rule_ids": _unique([*decision.expert_rule_ids, *AHREFS_EXPERT_RULE_IDS]),
+                "expert_rule_ids": unique([*decision.expert_rule_ids, *AHREFS_EXPERT_RULE_IDS]),
             }
         )
         for decision in decisions
     ]
 
-__all__ = ["build_ahrefs_diagnostics"]
 
+__all__ = ["build_ahrefs_diagnostics"]

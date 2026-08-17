@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import (
@@ -9,6 +7,7 @@ from wilq.content.handoff.wordpress import (
     ContentWordPressDraftHandoffBlocker,
     ContentWordPressDraftHandoffResult,
 )
+from wilq.content.operator_copy import build_blocker, unique
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.documents.revisions import (
@@ -96,20 +95,22 @@ def revision_bound_wordpress_draft_handoff_blockers(
 
     if revision is None:
         return [
-            _blocker(
-                "missing_revision",
-                "Brakuje zapisanej wersji treści",
-                "WordPress może otrzymać tylko dokładną zapisaną wersję tekstu.",
-                "Zapisz wersję treści i przekaż ją do sprawdzenia.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="missing_revision",
+                label="Brakuje zapisanej wersji treści",
+                reason="WordPress może otrzymać tylko dokładną zapisaną wersję tekstu.",
+                next_step="Zapisz wersję treści i przekaż ją do sprawdzenia.",
             )
         ]
     if revision_state.status != "approved" or approval is None:
         blockers.append(
-            _blocker(
-                "revision_not_approved",
-                "Wersja nie jest zatwierdzona",
-                "Przekazanie wymaga decyzji zatwierdzającej dokładnie tę wersję tekstu.",
-                "Sprawdź zapisaną wersję i zapisz decyzję człowieka.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="revision_not_approved",
+                label="Wersja nie jest zatwierdzona",
+                reason="Przekazanie wymaga decyzji zatwierdzającej dokładnie tę wersję tekstu.",
+                next_step="Sprawdź zapisaną wersję i zapisz decyzję człowieka.",
             )
         )
 
@@ -117,39 +118,43 @@ def revision_bound_wordpress_draft_handoff_blockers(
 
     if item.canonical_status != "resolved" or not item.final_canonical_url:
         blockers.append(
-            _blocker(
-                "missing_final_canonical",
-                "Brakuje finalnego adresu",
-                "Szkic WordPress wymaga publicznego finalnego adresu Ekologus.",
-                "Ustal publiczny adres Ekologus przed przekazaniem szkicu.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="missing_final_canonical",
+                label="Brakuje finalnego adresu",
+                reason="Szkic WordPress wymaga publicznego finalnego adresu Ekologus.",
+                next_step="Ustal publiczny adres Ekologus przed przekazaniem szkicu.",
             )
         )
     elif content_url_host(item.final_canonical_url) not in CONTENT_SOURCE_SITE_HOSTS:
         blockers.append(
-            _blocker(
-                "invalid_final_canonical",
-                "Adres podglądu nie może być canonical",
-                "Finalny adres szkicu musi prowadzić do publicznego hosta Ekologus.",
-                "Ustaw finalny adres na publiczny adres Ekologus.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="invalid_final_canonical",
+                label="Adres podglądu nie może być canonical",
+                reason="Finalny adres szkicu musi prowadzić do publicznego hosta Ekologus.",
+                next_step="Ustaw finalny adres na publiczny adres Ekologus.",
             )
         )
 
     if draft_package is None:
         blockers.append(
-            _blocker(
-                "missing_draft_package",
-                "Brakuje paczki szkicu",
-                "Nie można potwierdzić planu sekcji zatwierdzonej wersji.",
-                "Odtwórz paczkę szkicu powiązaną z zapisaną wersją.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="missing_draft_package",
+                label="Brakuje paczki szkicu",
+                reason="Nie można potwierdzić planu sekcji zatwierdzonej wersji.",
+                next_step="Odtwórz paczkę szkicu powiązaną z zapisaną wersją.",
             )
         )
     elif draft_package.publish_ready:
         blockers.append(
-            _blocker(
-                "draft_package_marked_publish_ready",
-                "Szkic nie może udawać gotowości do publikacji",
-                "Ten krok może utworzyć wyłącznie szkic WordPress.",
-                "Pozostaw paczkę jako draft-only i przejdź przez bezpieczny zapis.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="draft_package_marked_publish_ready",
+                label="Szkic nie może udawać gotowości do publikacji",
+                reason="Ten krok może utworzyć wyłącznie szkic WordPress.",
+                next_step="Pozostaw paczkę jako draft-only i przejdź przez bezpieczny zapis.",
             )
         )
 
@@ -163,11 +168,12 @@ def revision_bound_wordpress_draft_handoff_blockers(
     )
     if not context_current:
         blockers.append(
-            _blocker(
-                "revision_context_changed",
-                "Kontekst zatwierdzonej wersji zmienił się",
-                "Adres strony albo paczka sekcji nie odpowiada już zatwierdzonej wersji.",
-                "Zapisz i zatwierdź nową wersję dla aktualnego adresu i planu sekcji.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="revision_context_changed",
+                label="Kontekst zatwierdzonej wersji zmienił się",
+                reason="Adres strony albo paczka sekcji nie odpowiada już zatwierdzonej wersji.",
+                next_step="Zapisz i zatwierdź nową wersję dla aktualnego adresu i planu sekcji.",
             )
         )
 
@@ -200,16 +206,9 @@ def _revision_context_is_current(
     if draft_package is None:
         return False
     if revision.schema_version == "wilq_content_draft_revision_v1":
-        return (
-            [
-                (section.heading, section.evidence_ids)
-                for section in revision.sections
-            ]
-            == [
-                (section.heading, section.evidence_ids)
-                for section in draft_package.sections
-            ]
-        )
+        return [(section.heading, section.evidence_ids) for section in revision.sections] == [
+            (section.heading, section.evidence_ids) for section in draft_package.sections
+        ]
     # A v2 revision is the generated full document. Its section map may
     # intentionally replace, merge, or rewrite the preserve-first baseline;
     # the immutable package id/digest above already proves which input it was
@@ -227,11 +226,12 @@ def _planning_binding_blockers(
     if revision.planning_digest is not None:
         return []
     return [
-        _blocker(
-            "missing_planning_binding",
-            "Wersja nie jest powiązana z zatwierdzonym planem",
-            "Starsza wersja nie wskazuje dokładnego zakresu i mapy sekcji.",
-            "Zapisz nową wersję po zatwierdzeniu aktualnego zakresu i planu sekcji.",
+        build_blocker(
+            ContentWordPressDraftHandoffBlocker,
+            code="missing_planning_binding",
+            label="Wersja nie jest powiązana z zatwierdzonym planem",
+            reason="Starsza wersja nie wskazuje dokładnego zakresu i mapy sekcji.",
+            next_step="Zapisz nową wersję po zatwierdzeniu aktualnego zakresu i planu sekcji.",
         )
     ]
 
@@ -243,45 +243,22 @@ def _approval_evidence_blockers(
     if approval is None or set(approval.evidence_ids).issubset(revision_evidence):
         return []
     return [
-        _blocker(
-            "revision_approval_mismatch",
-            "Decyzja nie pasuje do dowodów wersji",
-            "Zatwierdzenie wskazuje dowody spoza dokładnej zapisanej wersji.",
-            "Sprawdź ponownie tę wersję, używając wyłącznie jej powiązanych dowodów.",
+        build_blocker(
+            ContentWordPressDraftHandoffBlocker,
+            code="revision_approval_mismatch",
+            label="Decyzja nie pasuje do dowodów wersji",
+            reason="Zatwierdzenie wskazuje dowody spoza dokładnej zapisanej wersji.",
+            next_step="Sprawdź ponownie tę wersję, używając wyłącznie jej powiązanych dowodów.",
         )
     ]
 
 
 def _revision_evidence_ids(revision: ContentDraftRevision) -> list[str]:
-    return _unique(
+    return unique(
         [
             *(evidence_id for section in revision.sections for evidence_id in section.evidence_ids),
             *(evidence_id for item in revision.faq for evidence_id in item.evidence_ids),
             *(evidence_id for item in revision.cta_blocks for evidence_id in item.evidence_ids),
             *(evidence_id for item in revision.internal_links for evidence_id in item.evidence_ids),
         ]
-    )
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        if value and value not in unique_values:
-            unique_values.append(value)
-    return unique_values
-
-
-def _blocker(
-    code: str,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentWordPressDraftHandoffBlocker:
-    return ContentWordPressDraftHandoffBlocker.model_validate(
-        {
-            "code": code,
-            "label": label,
-            "reason": reason,
-            "next_step": next_step,
-        }
     )

@@ -4,7 +4,7 @@ import json
 import re
 from collections.abc import Iterable
 from hashlib import sha256
-from typing import Literal, cast
+from typing import Literal
 from uuid import uuid4
 
 from pydantic import ValidationError
@@ -19,6 +19,7 @@ from wilq.content.knowledge.cards import (
 from wilq.content.knowledge.work_item_service_profile import (
     build_content_work_item_service_profile_context,
 )
+from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
@@ -30,7 +31,6 @@ from wilq.content.planning.dynamic_input import (
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
     ContentPlanningProposalBlocker,
-    ContentPlanningProposalBlockerCode,
     ContentPlanningProposalRequest,
     ContentPlanningProposalResponse,
 )
@@ -203,11 +203,12 @@ def _prepare_generation(
             service_card_id=request.service_card_id,
             planning_input_digest=None,
             blockers=[
-                _blocker(
-                    "unknown_service_card",
-                    "Usługa nie należy do tego zadania",
-                    "Wybrana karta nie wynika z dokładnego dopasowania strony i wiedzy WILQ.",
-                    "Wybierz jedną z usług pokazanych dla tej strony.",
+                build_blocker(
+                    ContentPlanningProposalBlocker,
+                    code="unknown_service_card",
+                    label="Usługa nie należy do tego zadania",
+                    reason="Wybrana karta nie wynika z dokładnego dopasowania strony i wiedzy WILQ.",  # noqa: E501
+                    next_step="Wybierz jedną z usług pokazanych dla tej strony.",
                 )
             ],
         )
@@ -286,11 +287,12 @@ def _unexpected_planning_input_response(
 
 
 def _unexpected_runtime_blocker() -> ContentPlanningProposalBlocker:
-    return _blocker(
-        "runtime_failed",
-        "Planowanie nie zwróciło kompletnego wejścia",
-        "WILQ nie otrzymał kompletnego stanu potrzebnego do bezpiecznego planowania.",
-        "Odśwież workspace i uruchom nową próbę dopiero po sprawdzeniu blockerów.",
+    return build_blocker(
+        ContentPlanningProposalBlocker,
+        code="runtime_failed",
+        label="Planowanie nie zwróciło kompletnego wejścia",
+        reason="WILQ nie otrzymał kompletnego stanu potrzebnego do bezpiecznego planowania.",
+        next_step="Odśwież workspace i uruchom nową próbę dopiero po sprawdzeniu blockerów.",
     )
 
 
@@ -337,11 +339,12 @@ def _run_planning_turn(
             )
         )
     except Exception:
-        blocker = _blocker(
-            "runtime_failed",
-            "Codex nie zakończył planowania",
-            "Lokalny app-server zakończył się błędem bez wyniku.",
-            "Sprawdź status Codexa i uruchom nową próbę; plan nie został zapisany.",
+        blocker = build_blocker(
+            ContentPlanningProposalBlocker,
+            code="runtime_failed",
+            label="Codex nie zakończył planowania",
+            reason="Lokalny app-server zakończył się błędem bez wyniku.",
+            next_step="Sprawdź status Codexa i uruchom nową próbę; plan nie został zapisany.",
         )
         return None, None, blocker, "failed"
     trace = runtime_trace(runtime_result)
@@ -352,31 +355,34 @@ def _run_planning_turn(
         runtime_blocker = _planning_runtime_blocker(
             [entry.code for entry in runtime_result.blockers]
         )
-        blocker = _blocker(
-            "runtime_blocked" if status == "blocked" else "runtime_failed",
-            runtime_blocker[0],
-            runtime_blocker[1],
-            runtime_blocker[2],
+        blocker = build_blocker(
+            ContentPlanningProposalBlocker,
+            code="runtime_blocked" if status == "blocked" else "runtime_failed",
+            label=runtime_blocker[0],
+            reason=runtime_blocker[1],
+            next_step=runtime_blocker[2],
             source_codes=[entry.code for entry in runtime_result.blockers],
         )
         return None, trace, blocker, status
     try:
         output = ContentPlanningModelOutput.model_validate_json(runtime_result.output_text)
     except ValidationError as error:
-        blocker = _blocker(
-            "invalid_structured_output",
-            "Codex zwrócił niepoprawny plan",
-            "Wynik nie przeszedł ścisłego schematu planowania WILQ.",
-            "Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
+        blocker = build_blocker(
+            ContentPlanningProposalBlocker,
+            code="invalid_structured_output",
+            label="Codex zwrócił niepoprawny plan",
+            reason="Wynik nie przeszedł ścisłego schematu planowania WILQ.",
+            next_step="Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
             source_codes=_validation_source_codes(error),
         )
         return None, trace, blocker, "blocked"
     except ValueError:
-        blocker = _blocker(
-            "invalid_structured_output",
-            "Codex zwrócił niepoprawny plan",
-            "Wynik nie przeszedł ścisłego schematu planowania WILQ.",
-            "Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
+        blocker = build_blocker(
+            ContentPlanningProposalBlocker,
+            code="invalid_structured_output",
+            label="Codex zwrócił niepoprawny plan",
+            reason="Wynik nie przeszedł ścisłego schematu planowania WILQ.",
+            next_step="Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
         )
         return None, trace, blocker, "blocked"
     output = canonicalize_model_inventory_headings(planning_input, output)
@@ -388,8 +394,7 @@ def _run_planning_turn(
             "Plan nie zawiera żadnego bloku CTA wymaganego dla bezpiecznego następnego kroku."
             if "missing_cta" in quality_errors
             else (
-                "Plan nie obejmuje wszystkich zatwierdzonych wzorców CTA dokładnie "
-                "po jednym razie."
+                "Plan nie obejmuje wszystkich zatwierdzonych wzorców CTA dokładnie po jednym razie."
             )
             if "cta_pattern_coverage" in quality_errors
             else "Plan zawiera exact zapytania, ale nie przypisuje żadnego z nich do sekcji."
@@ -402,21 +407,23 @@ def _run_planning_turn(
             else "Plan zawiera nagłówki nawigacyjne, promocyjne albo datowane, "
             "które nie są użyteczną strukturą odpowiedzi dla czytelnika."
         )
-        blocker = _blocker(
-            "quality_gate_failed",
-            "Plan nie przeszedł bramki jakości",
-            quality_reason,
-            "Uruchom nową próbę po oczyszczeniu materiału wejściowego; WILQ nic nie zapisał.",
+        blocker = build_blocker(
+            ContentPlanningProposalBlocker,
+            code="quality_gate_failed",
+            label="Plan nie przeszedł bramki jakości",
+            reason=quality_reason,
+            next_step="Uruchom nową próbę po oczyszczeniu materiału wejściowego; WILQ nic nie zapisał.",  # noqa: E501
             source_codes=quality_errors,
         )
         return None, trace, blocker, "blocked"
     lineage_errors = planning_output_lineage_errors(planning_input, output)
     if lineage_errors:
-        blocker = _blocker(
-            "lineage_mismatch",
-            "Plan używa danych spoza wejścia",
-            "Codex zwrócił zapytanie, dowód, claim albo inventory spoza exact inputu.",
-            "Odrzuć wynik; nie poprawiaj obcego lineage ręcznie.",
+        blocker = build_blocker(
+            ContentPlanningProposalBlocker,
+            code="lineage_mismatch",
+            label="Plan używa danych spoza wejścia",
+            reason="Codex zwrócił zapytanie, dowód, claim albo inventory spoza exact inputu.",
+            next_step="Odrzuć wynik; nie poprawiaj obcego lineage ręcznie.",
             source_codes=lineage_errors,
         )
         return None, trace, blocker, "blocked"
@@ -626,8 +633,7 @@ def _inventory_mapping_has_unresolved_rows(
     proposal: ContentPlanningProposal,
 ) -> bool:
     return any(
-        mapping.status in {"unmapped", "ambiguous"}
-        for mapping in proposal.inventory_mapping
+        mapping.status in {"unmapped", "ambiguous"} for mapping in proposal.inventory_mapping
     )
 
 
@@ -668,11 +674,12 @@ def _persist_generated_proposal(
             replace_existing_exact_input=request.regenerate_stale_mapping,
         )
     except Exception:
-        blocker = _blocker(
-            "persistence_failed",
-            "Nie zapisano planu",
-            "Atomowy zapis planu i zakończonego CodexRun nie powiódł się.",
-            "Sprawdź prywatny store i uruchom nową próbę; częściowy plan nie jest dostępny.",
+        blocker = build_blocker(
+            ContentPlanningProposalBlocker,
+            code="persistence_failed",
+            label="Nie zapisano planu",
+            reason="Atomowy zapis planu i zakończonego CodexRun nie powiódł się.",
+            next_step="Sprawdź prywatny store i uruchom nową próbę; częściowy plan nie jest dostępny.",  # noqa: E501
         )
         _finish_run(run_store, started_run, status="failed", error=blocker.code)
         return _runtime_failure_response(
@@ -920,7 +927,14 @@ def _blocked_from_input(
         planning_input_digest=planning_input_digest,
         input_summary=input_summary,
         blockers=[
-            _blocker(item.code, item.label, item.reason, item.next_step) for item in blockers
+            build_blocker(
+                ContentPlanningProposalBlocker,
+                code=item.code,
+                label=item.label,
+                reason=item.reason,
+                next_step=item.next_step,
+            )
+            for item in blockers
         ],
     )
 
@@ -945,28 +959,12 @@ def _blocked_response(
 
 
 def _stale_input_blocker() -> ContentPlanningProposalBlocker:
-    return _blocker(
-        "stale_input",
-        "Wejście planu zmieniło się",
-        "Inventory, usługa, wiedza albo metryki mają inny exact digest.",
-        "Odśwież dane i uruchom świadomie nową wersję planu.",
-    )
-
-
-def _blocker(
-    code: str,
-    label: str,
-    reason: str,
-    next_step: str,
-    *,
-    source_codes: list[str] | None = None,
-) -> ContentPlanningProposalBlocker:
-    return ContentPlanningProposalBlocker(
-        code=cast(ContentPlanningProposalBlockerCode, code),
-        label=label,
-        reason=reason,
-        next_step=next_step,
-        source_codes=source_codes or [],
+    return build_blocker(
+        ContentPlanningProposalBlocker,
+        code="stale_input",
+        label="Wejście planu zmieniło się",
+        reason="Inventory, usługa, wiedza albo metryki mają inny exact digest.",
+        next_step="Odśwież dane i uruchom świadomie nową wersję planu.",
     )
 
 

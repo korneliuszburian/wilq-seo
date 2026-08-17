@@ -14,8 +14,8 @@ from wilq.briefing.ga4.shared import (
     _landing_group_count,
     _refresh_or_connector_evidence_ids,
     _tactical_landing_group_count,
-    _unique,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
@@ -53,7 +53,7 @@ def _conversion_readiness_contract(
     missing_read_contracts = ["conversion_or_key_event_mapping"]
     if not conversion_like_facts:
         missing_read_contracts.append("conversion_or_key_event_metric_facts")
-    evidence_ids = _unique(
+    evidence_ids = unique(
         [
             *(fact.evidence_id for fact in conversion_like_facts),
             *(fact.evidence_id for fact in dimensioned_facts[:12]),

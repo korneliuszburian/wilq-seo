@@ -21,6 +21,7 @@ from wilq.content.knowledge.text_matching import (
     normalize_search_text,
     strict_normalized_term_matches,
 )
+from wilq.content.operator_copy import build_blocker, unique
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID
 
@@ -104,9 +105,7 @@ class ContentKnowledgeCardMatch(BaseModel):
     work_item_id: str
     service_card: ContentKnowledgeCard | None = None
     recommended_service_card_id: str | None = None
-    service_candidates: list[ContentKnowledgeServiceCandidate] = Field(
-        default_factory=list
-    )
+    service_candidates: list[ContentKnowledgeServiceCandidate] = Field(default_factory=list)
     buyer_problem_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
     cta_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
     claim_policy_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
@@ -371,49 +370,45 @@ def compile_source_facts_to_knowledge_cards(
                 card_type=cast(ContentKnowledgeCardType, first.target_card_type),
                 title=first.target_card_title,
                 summary=_compile_summary(card_facts),
-                service_fit_terms=_unique(
+                service_fit_terms=unique(
                     term for fact in card_facts for term in fact.service_fit_terms
                 ),
-                buyer_problem_terms=_unique(
+                buyer_problem_terms=unique(
                     term for fact in card_facts for term in fact.buyer_problem_terms
                 ),
-                buyer_triggers=_unique(
+                buyer_triggers=unique(
                     trigger for fact in card_facts for trigger in fact.buyer_triggers
                 ),
-                cta_patterns=_unique(
+                cta_patterns=unique(
                     pattern for fact in card_facts for pattern in fact.cta_patterns
                 ),
-                allowed_claims=_unique(
+                allowed_claims=unique(
                     claim for fact in card_facts for claim in fact.allowed_claims
                 ),
                 claims_needing_review=_source_fact_review_claim_rules(card_id, card_facts),
                 forbidden_claims=_source_fact_forbidden_claim_rules(card_id, card_facts),
-                evidence_requirements=_unique(
-                    requirement
-                    for fact in card_facts
-                    for requirement in fact.evidence_requirements
+                evidence_requirements=unique(
+                    requirement for fact in card_facts for requirement in fact.evidence_requirements
                 ),
-                source_lineage=_unique(fact.source_url_or_path for fact in card_facts),
+                source_lineage=unique(fact.source_url_or_path for fact in card_facts),
                 source_fact_ids=[fact.source_id for fact in card_facts],
                 source_material_ids=[
                     source_material_id
                     for fact in card_facts
                     for source_material_id in _source_material_id_for_fact(fact)
                 ],
-                evidence_ids=_unique(
+                evidence_ids=unique(
                     evidence_id
                     for fact in card_facts
                     for evidence_id in _source_fact_evidence_ids(fact)
                 ),
-                source_connectors=_unique(
+                source_connectors=unique(
                     connector for fact in card_facts for connector in fact.source_connectors
                 ),
                 lifecycle_status=lifecycle_status,
                 confidence=min(fact.confidence for fact in card_facts),
                 freshness=f"{freshness_prefix}_{freshness_date}",
-                usage_notes=_unique(
-                    note for fact in card_facts for note in fact.usage_notes
-                )
+                usage_notes=unique(note for fact in card_facts for note in fact.usage_notes)
                 + [
                     "Karta została skompilowana z source facts; nie zastępuje "
                     "live evidence IDs ani source connectors."
@@ -428,7 +423,7 @@ def content_knowledge_cards_response() -> ContentKnowledgeCardsResponse:
     return ContentKnowledgeCardsResponse(
         cards=cards,
         card_count=len(cards),
-        source_lineage=_unique(line for card in cards for line in card.source_lineage),
+        source_lineage=unique(line for card in cards for line in card.source_lineage),
         production_depth_readiness=content_knowledge_production_depth_readiness(cards),
     )
 
@@ -510,16 +505,12 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
     claim_policy_cards = [
         card
         for card in cards
-        if card.claims_needing_review
-        or card.forbidden_claims
-        or card.measurement_sensitive_claims
+        if card.claims_needing_review or card.forbidden_claims or card.measurement_sensitive_claims
     ]
     evidence_requirement_cards = [
         card for card in cards if card.card_type == "evidence_requirement"
     ]
-    measurement_cards = [
-        card for card in cards if card.measurement_sensitive_claims
-    ]
+    measurement_cards = [card for card in cards if card.measurement_sensitive_claims]
     match = ContentKnowledgeCardMatch(
         work_item_id=item.id,
         service_card=auto_bound_service_card,
@@ -552,16 +543,15 @@ def select_content_knowledge_service_card(
         # typed workflow blocker instead of crashing the snapshot endpoint.
         # The current candidates remain visible so the operator can reselect
         # from the new evidence-backed set.
-        stale_blocker = _blocker(
-            "stale_service_selection",
-            "Wybrana wcześniej usługa nie pasuje już do aktualnych danych",
-            (
-                "Odświeżenie źródeł zmieniło kandydatury usług dla tego tematu; "
-                f"zapisany wybór {service_card_id} nie jest już dozwolony."
-            ),
-            "Wybierz usługę ponownie z aktualnej listy kandydatów.",
-            match.work_item_id,
-            "service",
+        stale_blocker = build_blocker(
+            ContentKnowledgeCardBlocker,
+            code="stale_service_selection",
+            label="Wybrana wcześniej usługa nie pasuje już do aktualnych danych",
+            reason="Odświeżenie źródeł zmieniło kandydatury usług dla tego tematu; "
+            f"zapisany wybór {service_card_id} nie jest już dozwolony.",
+            next_step="Wybierz usługę ponownie z aktualnej listy kandydatów.",
+            work_item_id=match.work_item_id,
+            required_card_type="service",
         )
         return match.model_copy(
             update={
@@ -581,48 +571,50 @@ def content_knowledge_card_blockers(
     blockers: list[ContentKnowledgeCardBlocker] = []
     if match.service_card is None:
         blockers.append(
-            _blocker(
-                "missing_service_card",
-                "Brakuje karty usługi",
-                "WILQ nie może przygotować briefu bez typed service card dla tematu.",
-                "Dodaj albo dopasuj kartę usługi Ekologus przed szkicem.",
-                match.work_item_id,
-                "service",
+            build_blocker(
+                ContentKnowledgeCardBlocker,
+                code="missing_service_card",
+                label="Brakuje karty usługi",
+                reason="WILQ nie może przygotować briefu bez typed service card dla tematu.",
+                next_step="Dodaj albo dopasuj kartę usługi Ekologus przed szkicem.",
+                work_item_id=match.work_item_id,
+                required_card_type="service",
             )
         )
-    if not match.cta_cards and not (
-        match.service_card and match.service_card.cta_patterns
-    ):
+    if not match.cta_cards and not (match.service_card and match.service_card.cta_patterns):
         blockers.append(
-            _blocker(
-                "missing_cta_card",
-                "Brakuje karty CTA",
-                "Brief musi wiedzieć, jaki typ wezwania do działania jest bezpieczny.",
-                "Dodaj CTA pattern card albo zablokuj szkic.",
-                match.work_item_id,
-                "cta_pattern",
+            build_blocker(
+                ContentKnowledgeCardBlocker,
+                code="missing_cta_card",
+                label="Brakuje karty CTA",
+                reason="Brief musi wiedzieć, jaki typ wezwania do działania jest bezpieczny.",
+                next_step="Dodaj CTA pattern card albo zablokuj szkic.",
+                work_item_id=match.work_item_id,
+                required_card_type="cta_pattern",
             )
         )
     if not match.claim_policy_cards:
         blockers.append(
-            _blocker(
-                "missing_claim_policy_card",
-                "Brakuje polityki claimów",
-                "Claim gate musi wynikać z typed knowledge card, nie z promptu.",
-                "Dodaj claim policy card przed draftem.",
-                match.work_item_id,
-                "claim_policy",
+            build_blocker(
+                ContentKnowledgeCardBlocker,
+                code="missing_claim_policy_card",
+                label="Brakuje polityki claimów",
+                reason="Claim gate musi wynikać z typed knowledge card, nie z promptu.",
+                next_step="Dodaj claim policy card przed draftem.",
+                work_item_id=match.work_item_id,
+                required_card_type="claim_policy",
             )
         )
     if not match.evidence_requirement_cards:
         blockers.append(
-            _blocker(
-                "missing_evidence_requirement_card",
-                "Brakuje wymagań dowodowych",
-                "WILQ musi wiedzieć, jakie dowody są wymagane i czego nie zastępuje karta.",
-                "Dodaj evidence requirement card.",
-                match.work_item_id,
-                "evidence_requirement",
+            build_blocker(
+                ContentKnowledgeCardBlocker,
+                code="missing_evidence_requirement_card",
+                label="Brakuje wymagań dowodowych",
+                reason="WILQ musi wiedzieć, jakie dowody są wymagane i czego nie zastępuje karta.",
+                next_step="Dodaj evidence requirement card.",
+                work_item_id=match.work_item_id,
+                required_card_type="evidence_requirement",
             )
         )
     return blockers
@@ -635,7 +627,7 @@ def required_content_knowledge_card_ids(match: ContentKnowledgeCardMatch) -> lis
     ids.extend(card.id for card in match.cta_cards[:1])
     ids.extend(card.id for card in match.claim_policy_cards[:1])
     ids.extend(card.id for card in match.evidence_requirement_cards[:1])
-    return _unique(ids)
+    return unique(ids)
 
 
 def _combined_lifecycle_status(
@@ -769,9 +761,7 @@ def _matching_service_candidates(
             normalized_urls,
         ):
             continue
-        candidates.append(
-            ContentKnowledgeServiceCandidate(card=card, matched_terms=matched_terms)
-        )
+        candidates.append(ContentKnowledgeServiceCandidate(card=card, matched_terms=matched_terms))
 
     def rank(candidate: ContentKnowledgeServiceCandidate) -> tuple[int, int, int, int, float]:
         exact_url = service_card_has_exact_url(candidate.card, normalized_urls)
@@ -844,36 +834,9 @@ def _claim_rule(
     )
 
 
-def _blocker(
-    code: str,
-    label: str,
-    reason: str,
-    next_step: str,
-    work_item_id: str | None,
-    required_card_type: ContentKnowledgeCardType,
-) -> ContentKnowledgeCardBlocker:
-    return ContentKnowledgeCardBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-        work_item_id=work_item_id,
-        required_card_type=required_card_type,
-    )
-
-
 def _normalized_broad_service_terms() -> frozenset[str]:
     return frozenset(normalize_search_text(term) for term in BROAD_SERVICE_FIT_TERMS)
 
 
 def _slug(value: str) -> str:
     return "".join(char if char.isalnum() else "_" for char in value.lower()).strip("_")
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    result: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in result:
-            result.append(text)
-    return result

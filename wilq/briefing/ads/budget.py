@@ -10,6 +10,7 @@ from wilq.briefing.ads_derived_kpis import derived_kpi_row, target_triage
 from wilq.briefing.ads_metric_utils import (
     format_money_micros as _format_money_micros,
 )
+from wilq.content.operator_copy import unique
 from wilq.operator_labels import (
     blocked_claim_count_label,
 )
@@ -43,7 +44,6 @@ from .shared import (
     _ads_preview_card_id,
     _ads_preview_row,
     _remove_missing_contract_names,
-    _unique,
 )
 
 
@@ -203,11 +203,11 @@ def _derived_kpi_read_contract(
                 "To są obliczenia z bieżących danych źródłowych, nie ocena opłacalności."
                 f"{target_summary}"
             ),
-            allowed_metrics=_unique(allowed_metrics),
+            allowed_metrics=unique(allowed_metrics),
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(
+            evidence_ids=unique(
                 evidence_id for row in kpi_rows for evidence_id in row.evidence_ids
             ),
             kpi_rows=kpi_rows,
@@ -248,7 +248,7 @@ def _derived_kpi_row(
         ratio=_ratio,
         difference=_difference,
         micros_to_account_units=_micros_to_account_units,
-        unique=_unique,
+        unique=unique,
     )
 
 
@@ -280,7 +280,7 @@ def _hydrate_budget_pacing_marketer_labels(
         row.advertising_channel_type_label = _ads_channel_type_label(row.advertising_channel_type)
         row.budget_period_label = _ads_budget_period_label(row.budget_period)
         row.budget_status_label = _ads_campaign_status_label(row.budget_status)
-        row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_labels = unique(row.blocked_claims)
         row.blocked_claim_summary_label = blocked_claim_count_label(
             row.blocked_claim_labels or row.blocked_claims
         )
@@ -288,7 +288,7 @@ def _hydrate_budget_pacing_marketer_labels(
             _hydrate_budget_payload_preview_labels(row.payload_preview)
             row.preview_card = _budget_preview_card(row.payload_preview, currency_code)
     for shared_budget_row in contract.shared_budget_distribution_rows:
-        shared_budget_row.blocked_claim_labels = _unique(shared_budget_row.blocked_claims)
+        shared_budget_row.blocked_claim_labels = unique(shared_budget_row.blocked_claims)
         shared_budget_row.blocked_claim_summary_label = blocked_claim_count_label(
             shared_budget_row.blocked_claim_labels or shared_budget_row.blocked_claims
         )
@@ -302,7 +302,7 @@ def _hydrate_budget_pacing_marketer_labels(
 def _hydrate_budget_payload_preview_labels(preview: AdsBudgetApplyPreview) -> None:
     preview.operation_type_label = _ads_google_operation_label(preview.operation_type)
     preview.required_validation_labels = _ads_review_gate_labels(preview.required_validation)
-    preview.blocked_claim_labels = _unique(preview.blocked_claims)
+    preview.blocked_claim_labels = unique(preview.blocked_claims)
     safety_review = preview.safety_review
     safety_review.status_label = _ads_status_label(safety_review.status)
     safety_review.missing_requirement_labels = _ads_missing_read_contract_labels(
@@ -311,7 +311,7 @@ def _hydrate_budget_payload_preview_labels(preview: AdsBudgetApplyPreview) -> No
     safety_review.required_validation_labels = _ads_review_gate_labels(
         safety_review.required_validation
     )
-    safety_review.blocked_claim_labels = _unique(safety_review.blocked_claims)
+    safety_review.blocked_claim_labels = unique(safety_review.blocked_claims)
 
 
 def _budget_preview_card(

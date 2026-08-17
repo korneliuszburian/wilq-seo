@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import ContentMeasurementWindow
+from wilq.content.operator_copy import unique
 
 ContentLearningProposalVerdict = Literal[
     "noisy_inconclusive",
@@ -57,8 +58,8 @@ def build_content_learning_proposal(
         verdict=verdict,
         decision_summary=_decision_summary(verdict),
         proposed_learning=_proposed_learning(verdict),
-        evidence_ids=_unique([*window.evidence_ids, *outcome.evidence_ids]),
-        source_connectors=_unique(
+        evidence_ids=unique([*window.evidence_ids, *outcome.evidence_ids]),
+        source_connectors=unique(
             [
                 *outcome.source_connectors,
                 *(
@@ -69,7 +70,7 @@ def build_content_learning_proposal(
             ]
         ),
         metric_fact_ids=outcome.metric_fact_ids,
-        refresh_run_ids=_unique(
+        refresh_run_ids=unique(
             [
                 *outcome.refresh_run_ids,
                 *(
@@ -108,7 +109,3 @@ def _proposed_learning(verdict: ContentLearningProposalVerdict) -> str:
             "pełnej przyczynowości."
         ),
     }[verdict]
-
-
-def _unique(values: list[str]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value))

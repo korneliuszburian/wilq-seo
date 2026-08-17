@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from wilq.actions.action_chain import ActionChain, revision_bound_action_chain
+from wilq.content.operator_copy import build_blocker
 from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
 )
@@ -26,16 +27,48 @@ def new_page_apply_binding(
     if action.payload.get("action_type") != CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE:
         return None, []
     if request is None or request.new_page_draft is None:
-        return None, [_blocker("new_page_revision_binding_required")]
+        return None, [
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="new_page_revision_binding_required",
+                label="Brakuje exact bindingu nowej strony",
+                reason="Apply wymaga tożsamości briefu, foundation, usługi i zatwierdzonej rewizji.",  # noqa: E501
+                next_step="Odśwież akcję i użyj exact bindingu zwróconego przez WILQ.",
+            )
+        ]
     persisted = action.payload.get("new_page_draft_binding")
     if not isinstance(persisted, dict):
-        return None, [_blocker("new_page_action_binding_missing")]
+        return None, [
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="new_page_action_binding_missing",
+                label="Akcja nie zawiera zapisanego bindingu",
+                reason="Nie można odtworzyć exact identity ActionObjectu przed zapisem.",
+                next_step="Odśwież akcję i użyj exact bindingu zwróconego przez WILQ.",
+            )
+        ]
     try:
         expected = ContentNewPageDraftBinding.model_validate(persisted)
     except ValueError:
-        return None, [_blocker("new_page_action_binding_invalid")]
+        return None, [
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="new_page_action_binding_invalid",
+                label="Zapisany binding akcji jest nieprawidłowy",
+                reason="Lokalny ActionObject nie spełnia kontraktu exact lineage.",
+                next_step="Odśwież akcję i użyj exact bindingu zwróconego przez WILQ.",
+            )
+        ]
     if request.new_page_draft != expected:
-        return None, [_blocker("new_page_revision_binding_mismatch")]
+        return None, [
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="new_page_revision_binding_mismatch",
+                label="Binding requestu nie pasuje do akcji",
+                reason="Klient wskazał inną nową stronę, rewizję albo profil authoringu.",
+                next_step="Odśwież akcję i użyj exact bindingu zwróconego przez WILQ.",
+            )
+        ]
     chain, blockers = revision_bound_action_chain(
         action.audit_events,
         confirmed_by=request.confirmed_by or "",
@@ -43,31 +76,3 @@ def new_page_apply_binding(
     if chain is None:
         return None, blockers
     return NewPageApplyCapability(binding=expected, action_chain=chain), []
-
-
-def _blocker(code: str) -> ActionWordPressDraftApplyBlocker:
-    messages = {
-        "new_page_revision_binding_required": (
-            "Brakuje exact bindingu nowej strony",
-            "Apply wymaga tożsamości briefu, foundation, usługi i zatwierdzonej rewizji.",
-        ),
-        "new_page_action_binding_missing": (
-            "Akcja nie zawiera zapisanego bindingu",
-            "Nie można odtworzyć exact identity ActionObjectu przed zapisem.",
-        ),
-        "new_page_action_binding_invalid": (
-            "Zapisany binding akcji jest nieprawidłowy",
-            "Lokalny ActionObject nie spełnia kontraktu exact lineage.",
-        ),
-        "new_page_revision_binding_mismatch": (
-            "Binding requestu nie pasuje do akcji",
-            "Klient wskazał inną nową stronę, rewizję albo profil authoringu.",
-        ),
-    }
-    label, reason = messages[code]
-    return ActionWordPressDraftApplyBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step="Odśwież akcję i użyj exact bindingu zwróconego przez WILQ.",
-    )

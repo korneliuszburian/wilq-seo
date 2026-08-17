@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from wilq.content.operator_copy import unique
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionRisk,
@@ -34,7 +35,6 @@ from .shared import (
     _numeric_metric,
     _pl_count,
     _stable_slug,
-    _unique,
 )
 
 
@@ -51,8 +51,7 @@ def _merchant_freshness_assessment(
             requires_refresh=True,
             summary="Brak zapisanego odczytu danych Merchant Center.",
             next_step=(
-                "Uruchom odczyt danych Merchant przed oceną aktualnego stanu "
-                "pliku produktowego."
+                "Uruchom odczyt danych Merchant przed oceną aktualnego stanu pliku produktowego."
             ),
         )
 
@@ -116,7 +115,7 @@ def _merchant_unknowns(
 ) -> list[MerchantUnknownFact]:
     unknowns: list[MerchantUnknownFact] = []
     if issue_clusters or decisions:
-        sample_ids = _unique(
+        sample_ids = unique(
             sample_id for cluster in issue_clusters for sample_id in cluster.sample_product_ids
         )
         if not sample_ids:
@@ -258,7 +257,7 @@ def _feed_health_section(
         ),
         next_step="Przejdź do kolejki problemów i grupuj je po typie oraz atrybucie.",
         source_connectors=[MERCHANT_CONNECTOR_ID],
-        evidence_ids=_unique(fact.evidence_id for fact in product_facts or facts),
+        evidence_ids=unique(fact.evidence_id for fact in product_facts or facts),
         metric_facts=(product_facts or facts)[:10],
         action_ids=action_ids,
         blocked_claims=[
@@ -338,7 +337,7 @@ def _issue_queue_section(
         ),
         next_step=("Otwórz akcję do sprawdzenia i przygotuj kolejkę przeglądu."),
         source_connectors=[MERCHANT_CONNECTOR_ID],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *(fact.evidence_id for fact in issue_facts),
                 *(evidence_id for item in tactical_items for evidence_id in item.evidence_ids),
@@ -422,7 +421,7 @@ def _merchant_issue_clusters(
                     "produktów ani tytułów."
                 ),
                 source_connectors=[MERCHANT_CONNECTOR_ID],
-                evidence_ids=_unique(fact.evidence_id for fact in group_facts),
+                evidence_ids=unique(fact.evidence_id for fact in group_facts),
                 blocked_claims=[
                     "ponowne zatwierdzenie produktu",
                     "odzyskany przychód",
@@ -470,7 +469,7 @@ def _sample_product_ids_for_cluster(
         and (fact.dimensions.get("resolution") or "") == resolution
         and isinstance(fact.value, str)
     ]
-    return _unique(sample_ids)[:10]
+    return unique(sample_ids)[:10]
 
 
 def _sample_titles_for_cluster(
@@ -496,7 +495,7 @@ def _sample_titles_for_cluster(
         and (fact.dimensions.get("resolution") or "") == resolution
         and isinstance(fact.value, str)
     ]
-    return _unique(sample_titles)[:10]
+    return unique(sample_titles)[:10]
 
 
 def _merchant_attribute_matches(left: str | None, right: str | None) -> bool:

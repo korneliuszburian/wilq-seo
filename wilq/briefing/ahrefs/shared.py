@@ -1,10 +1,11 @@
 """Shared Ahrefs facts, refresh lineage, and collection helpers."""
+
 from __future__ import annotations
 
-from collections.abc import Iterable
 from datetime import datetime
 from typing import Literal
 
+from wilq.content.operator_copy import unique
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ConnectorRefreshRun,
@@ -59,6 +60,7 @@ AHREFS_KNOWLEDGE_CARD_IDS = ["card_ahrefs_content_gap_playbook"]
 
 AHREFS_EXPERT_RULE_IDS = ["content_brief_rules_v1"]
 
+
 def _facts_for_known_refresh_runs(
     metric_facts: list[MetricFact],
     refresh_runs: list[ConnectorRefreshRun],
@@ -83,6 +85,7 @@ def _facts_for_known_refresh_runs(
         return metric_facts
     return [fact for fact in metric_facts if fact.evidence_id in known_evidence_ids]
 
+
 def _latest_gap_refresh(
     refresh_runs: list[ConnectorRefreshRun],
 ) -> ConnectorRefreshRun | None:
@@ -96,6 +99,7 @@ def _latest_gap_refresh(
     ]
     return max(gap_runs, key=recency_key) if gap_runs else None
 
+
 def _cross_check_metric_facts() -> list[MetricFact]:
     facts: list[MetricFact] = []
     for connector_id in AHREFS_CROSS_CHECK_CONNECTOR_IDS:
@@ -106,6 +110,7 @@ def _cross_check_metric_facts() -> list[MetricFact]:
             )
         )
     return facts
+
 
 def _latest_relevant_ahrefs_refresh(
     refresh_runs: list[ConnectorRefreshRun],
@@ -122,6 +127,7 @@ def _latest_relevant_ahrefs_refresh(
         return max(live_vendor_reads, key=recency_key)
     return max(refresh_runs, key=recency_key) if refresh_runs else None
 
+
 def _latest_facts_by_name(
     facts: list[MetricFact],
     names: set[str],
@@ -133,8 +139,10 @@ def _latest_facts_by_name(
         facts_by_name.setdefault(fact.name, fact)
     return list(facts_by_name.values())
 
+
 def _gap_facts(facts: list[MetricFact]) -> list[MetricFact]:
     return [fact for fact in facts if fact.name in AHREFS_GAP_FACT_NAMES]
+
 
 def _ahrefs_snapshot_date(refresh: ConnectorRefreshRun | None) -> str | None:
     if refresh is None:
@@ -142,36 +150,31 @@ def _ahrefs_snapshot_date(refresh: ConnectorRefreshRun | None) -> str | None:
     value = refresh.metric_summary.get("date")
     return str(value) if value else None
 
+
 def _fact_value(facts: list[MetricFact], name: str) -> int | float | str | None:
     for fact in facts:
         if fact.name == name:
             return fact.value
     return None
 
+
 def _clean_metric_tiles(
     tiles: dict[str, int | float | str | None],
 ) -> dict[str, int | float | str]:
     return {key: value for key, value in tiles.items() if value is not None}
 
+
 def _evidence_ids_for_facts_or_refresh(
     facts: list[MetricFact],
     run: ConnectorRefreshRun | None,
 ) -> list[str]:
-    fact_evidence_ids = _unique(fact.evidence_id for fact in facts if fact.evidence_id)
+    fact_evidence_ids = unique(fact.evidence_id for fact in facts if fact.evidence_id)
     if fact_evidence_ids:
         return fact_evidence_ids
     return _refresh_or_connector_evidence_ids(run)
+
 
 def _refresh_or_connector_evidence_ids(run: ConnectorRefreshRun | None) -> list[str]:
     if run and run.evidence_ids:
         return run.evidence_ids
     return [connector_evidence_id(AHREFS_CONNECTOR_ID)]
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
-

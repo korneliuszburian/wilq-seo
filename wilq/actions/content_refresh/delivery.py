@@ -7,6 +7,7 @@ from collections.abc import (
 from typing import Any
 
 from wilq.actions.wordpress_payload_preview import build_wordpress_draft_payload_preview
+from wilq.content.operator_copy import unique
 
 from .review import (
     _content_contract_label,
@@ -29,7 +30,6 @@ from .shared import (
     WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
     _prioritized_content_contract_values,
     _string_list,
-    _unique,
 )
 
 __all__ = [
@@ -55,7 +55,6 @@ __all__ = [
     "_draft_content_blocks",
     "_draft_content_block_label",
 ]
-
 
 
 def content_payload_with_reviewed_wordpress_draft_previews(
@@ -118,7 +117,7 @@ def _wordpress_draft_payload_preview(
             "draft_readiness_review_contract": _draft_readiness_review_contract,
             "wordpress_draft_handoff_contract": _wordpress_draft_handoff_contract,
             "post_publication_measurement_plan": post_publication_measurement_plan,
-            "unique": _unique,
+            "unique": unique,
             "wordpress_draft_operation": _wordpress_draft_operation,
             "content_contract_label": _content_contract_label,
             "content_contract_labels": _content_contract_labels,

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from datetime import datetime
 
 from wilq.briefing.merchant_labels import merchant_metric_fact_label
@@ -274,12 +273,3 @@ def _pl_count(count: int, one: str, few: str, many: str) -> str:
     else:
         form = many
     return f"{count} {form}"
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

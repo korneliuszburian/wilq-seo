@@ -9,6 +9,7 @@ from urllib.parse import unquote, urlparse
 from wilq.content.canonical.metric_dimensions import metric_dimensions_match_landing
 from wilq.content.canonical.urls import content_decision_url_semantics
 from wilq.content.inventory.gates import content_inventory_gate_status
+from wilq.content.operator_copy import unique
 from wilq.content.workflow.decisions.demand_evidence import content_query_is_planning_signal
 from wilq.schemas import (
     ActionRisk,
@@ -144,7 +145,7 @@ def gsc_content_decisions(
         fact for fact in all_metric_facts if fact.source_connector == "google_analytics_4"
     ]
     page_groups: dict[str, list[TacticalQueueItem]] = {}
-    for item in _unique_tactical_items(items):
+    for item in unique_tactical_items(items):
         if item.domain != OpportunityDomain.gsc_seo:
             continue
         page = item.dimensions.get("page")
@@ -311,20 +312,20 @@ def _gsc_content_decision_collections(
         *exact_ga4_metric_facts,
     ]
     return _ContentDecisionCollections(
-        source_connectors=_unique(
+        source_connectors=unique(
             [
                 *(connector for item in page_items for connector in item.source_connectors),
                 *(fact.source_connector for fact in exact_ga4_metric_facts),
             ]
         ),
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *(evidence_id for item in page_items for evidence_id in item.evidence_ids),
                 *(fact.evidence_id for fact in exact_ga4_metric_facts),
             ]
         ),
         metric_facts=decision_metric_facts,
-        action_ids=_unique(
+        action_ids=unique(
             action_id
             for item in page_items
             for action_id in item.action_ids
@@ -332,7 +333,7 @@ def _gsc_content_decision_collections(
         ),
         knowledge_card_ids=list(knowledge_card_ids),
         expert_rule_ids=list(expert_rule_ids),
-        blocked_claims=_unique(claim for item in page_items for claim in item.blocked_claims),
+        blocked_claims=unique(claim for item in page_items for claim in item.blocked_claims),
     )
 
 
@@ -347,10 +348,10 @@ def _build_gsc_content_decision_item(
     first = page_items[0]
     inventory = _read_wordpress_inventory_dimensions(first)
     query_count = int_dimension(first, "gsc_page_query_count", len(page_items))
-    queries = _unique(
+    queries = unique(
         item.dimensions.get("query") for item in page_items if item.dimensions.get("query")
     )
-    item_metric_facts = _unique_metric_facts(
+    item_metric_facts = unique_metric_facts(
         fact for item in page_items for fact in item.metric_facts
     )
     metrics = content_decision_metrics(item_metric_facts, queries)
@@ -765,23 +766,14 @@ def content_decision_work_item_id_for_url(url: str) -> str:
     return f"content_work_item_content_decision_{slug(url)}"
 
 
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
-
-
-def _unique_tactical_items(items: Iterable[TacticalQueueItem]) -> list[TacticalQueueItem]:
+def unique_tactical_items(items: Iterable[TacticalQueueItem]) -> list[TacticalQueueItem]:
     unique_items: dict[str, TacticalQueueItem] = {}
     for item in items:
         unique_items.setdefault(item.id, item)
     return list(unique_items.values())
 
 
-def _unique_metric_facts(values: Iterable[MetricFact]) -> list[MetricFact]:
+def unique_metric_facts(values: Iterable[MetricFact]) -> list[MetricFact]:
     unique_facts: dict[tuple[str, str, tuple[tuple[str, str], ...]], MetricFact] = {}
     for fact in values:
         key = (
@@ -799,8 +791,8 @@ def _exact_ga4_metric_facts_for_decision(
     page: str,
     final_canonical_url: str | None,
 ) -> list[MetricFact]:
-    target_urls = _unique([page, final_canonical_url])
-    return _unique_metric_facts(
+    target_urls = unique([page, final_canonical_url])
+    return unique_metric_facts(
         fact
         for fact in facts
         if any(

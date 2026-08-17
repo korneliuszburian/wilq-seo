@@ -16,6 +16,7 @@ from wilq.content.knowledge.service_profile import (
     content_service_profile_response,
 )
 from wilq.content.knowledge.source_facts import ContentKnowledgeLifecycleStatus
+from wilq.content.operator_copy import unique
 from wilq.content.workflow.contracts.models import ContentWorkItem
 
 ContentWorkItemServiceProfileBindingStatus = Literal["not_evaluated", "bound", "unbound"]
@@ -58,9 +59,7 @@ class ContentWorkItemServiceProfileContext(BaseModel):
     service_status_label: str = ""
     service_selection_confirmed: bool = False
     human_override_review_required: bool = False
-    service_candidates: list[ContentWorkItemServiceCandidate] = Field(
-        default_factory=list
-    )
+    service_candidates: list[ContentWorkItemServiceCandidate] = Field(default_factory=list)
     freshness_label: str = ""
     freshness_as_of: str | None = None
     source_summary_label: str = ""
@@ -125,11 +124,7 @@ def build_content_work_item_service_profile_context(
 
     profile = content_service_profile_response()
     service_section = next(
-        (
-            section
-            for section in profile.service_sections
-            if section.card_id == service_card.id
-        ),
+        (section for section in profile.service_sections if section.card_id == service_card.id),
         None,
     )
     if service_section is None:
@@ -165,7 +160,7 @@ def build_content_work_item_service_profile_context(
         source_summary_label=_source_summary_label(service_section.source_connector_labels),
         allowed_claims=service_section.allowed_claims,
         claims_needing_review=[claim.label for claim in service_section.claims_needing_review],
-        blocked_claims=_unique(
+        blocked_claims=unique(
             [
                 *(claim.label for claim in service_section.forbidden_claims),
                 *(claim.label for claim in service_card.measurement_sensitive_claims),
@@ -247,11 +242,7 @@ def _unbound_context(
 ) -> ContentWorkItemServiceProfileContext:
     blockers = [blocker.label for blocker in match.blockers]
     stale_selection = next(
-        (
-            blocker
-            for blocker in match.blockers
-            if blocker.code == "stale_service_selection"
-        ),
+        (blocker for blocker in match.blockers if blocker.code == "stale_service_selection"),
         None,
     )
     return ContentWorkItemServiceProfileContext(
@@ -395,7 +386,7 @@ def _source_summary_label(source_connectors: list[str]) -> str:
     source_labels = [labels.get(connector, connector) for connector in source_connectors]
     if not source_labels:
         return "Brakuje źródła profilu usługi"
-    return f"Źródło profilu: {', '.join(_unique(source_labels))}"
+    return f"Źródło profilu: {', '.join(unique(source_labels))}"
 
 
 def _missing_contracts(
@@ -409,7 +400,7 @@ def _missing_contracts(
     if service_status == "source_backed_review_required":
         contracts.append("Karta usługi wymaga review przed użyciem w finalnym szkicu.")
     contracts.extend(blocker.label for blocker in match.blockers)
-    return _unique(contracts)
+    return unique(contracts)
 
 
 def _safe_next_step(
@@ -419,7 +410,3 @@ def _safe_next_step(
     if review_action is not None:
         return f"{review_action.label}: {service_section.safe_next_step}"
     return service_section.safe_next_step
-
-
-def _unique(values: list[str]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value))

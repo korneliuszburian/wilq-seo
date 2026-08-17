@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from wilq.content.knowledge.source_facts import ekologus_source_facts
+from wilq.content.operator_copy import unique
 
 REVIEW_DECISIONS = {"approve", "needs_changes", "stale", "reject"}
 REVIEW_DECISION_LABELS = {
@@ -53,22 +54,14 @@ REQUIRED_DECISION_BOOLEAN_FIELDS = {
 }
 PRIVATE_DECISION_BOOLEAN_FIELDS = {
     "data_classes_confirmed": "czy klasy danych prywatnego źródła są poprawne",
-    "source_block_refs_confirmed": (
-        "czy bloki źródła są wystarczające do śladu źródłowego"
-    ),
-    "freshness_status_confirmed": (
-        "czy aktualność prywatnego źródła została potwierdzona"
-    ),
-    "audience_scope_confirmed": (
-        "czy zakres dostępu/audience prywatnego źródła jest poprawny"
-    ),
+    "source_block_refs_confirmed": ("czy bloki źródła są wystarczające do śladu źródłowego"),
+    "freshness_status_confirmed": ("czy aktualność prywatnego źródła została potwierdzona"),
+    "audience_scope_confirmed": ("czy zakres dostępu/audience prywatnego źródła jest poprawny"),
     "retention_decision_confirmed": (
         "czy decyzja retencji została podjęta albo świadomie zablokowana"
     ),
     "deletion_path_confirmed": "czy ścieżka usunięcia/odrzucenia proposal jest jasna",
-    "eval_gates_confirmed": (
-        "czy bramki ewaluacji blokujące ryzykowne twierdzenia są wskazane"
-    ),
+    "eval_gates_confirmed": ("czy bramki ewaluacji blokujące ryzykowne twierdzenia są wskazane"),
 }
 
 
@@ -173,10 +166,7 @@ def build_input_example(
     review_type: str,
 ) -> dict[str, Any]:
     if review_type not in REVIEW_TYPES:
-        raise RuntimeError(
-            "review_type musi mieć wartość "
-            f"{' albo '.join(sorted(REVIEW_TYPES))}"
-        )
+        raise RuntimeError(f"review_type musi mieć wartość {' albo '.join(sorted(REVIEW_TYPES))}")
     profile = live_context.get("service_profile")
     if not isinstance(profile, dict):
         raise RuntimeError("Live Service Profile must be an object")
@@ -188,8 +178,7 @@ def build_input_example(
         action
         for action in raw_list(profile.get("review_actions"))
         if isinstance(action, dict)
-        and str(action.get("review_scope") or "").strip()
-        in review_scopes_for_type(review_type)
+        and str(action.get("review_scope") or "").strip() in review_scopes_for_type(review_type)
     ]
     actions = sorted(
         actions,
@@ -198,10 +187,7 @@ def build_input_example(
             first_review_action_id=first_review_action_id(profile),
         ),
     )
-    decisions = [
-        input_example_decision(action, required_fields_by_action)
-        for action in actions
-    ]
+    decisions = [input_example_decision(action, required_fields_by_action) for action in actions]
     return {
         "review_type": review_type,
         "data_review": "<YYYY-MM-DD>",
@@ -240,8 +226,7 @@ def render_session_card(
     )
     check_command = (
         "rtk uv run python scripts/record_service_profile_review_result.py "
-        f"<plik.json> --review-type {review_type}"
-        + (f" --api-base {api_base}" if api_base else "")
+        f"<plik.json> --review-type {review_type}" + (f" --api-base {api_base}" if api_base else "")
     )
     lines = [
         "# Service Profile review - karta rozmowy",
@@ -346,9 +331,7 @@ def input_example_decision(
             decision[field] = "tak|nie"
         else:
             decision[field] = f"<{field}>"
-    decision["follow_up_beads"] = [
-        "<opcjonalnie: bead albo krótki follow-up dla tej decyzji>"
-    ]
+    decision["follow_up_beads"] = ["<opcjonalnie: bead albo krótki follow-up dla tej decyzji>"]
     return decision
 
 
@@ -363,13 +346,9 @@ def service_profile_target_label(target_card_id: str) -> str:
         "ekologus_service_bdo_reporting": "BDO i sprawozdawczość środowiskowa",
         "ekologus_service_operat_wodnoprawny": "Operat wodnoprawny",
         "ekologus_service_eko_opieka_calendar": "Eko-Opieka i Eko Kalendarz",
-        "ekologus_claim_policy_legal_safety": (
-            "Bezpieczeństwo prawne, poufność i zgody"
-        ),
+        "ekologus_claim_policy_legal_safety": ("Bezpieczeństwo prawne, poufność i zgody"),
         "ekologus_claim_policy_brand_voice": "Styl marki i polityka twierdzeń Ekologus",
-        "ekologus_evidence_policy_source_trace": (
-            "Ślad źródłowy i pakiet dowodów"
-        ),
+        "ekologus_evidence_policy_source_trace": ("Ślad źródłowy i pakiet dowodów"),
     }
     return labels.get(target_card_id, target_card_id or "brak targetu")
 
@@ -420,9 +399,7 @@ def build_review_result_report(
 ) -> dict[str, Any]:
     errors = validate_payload(payload, live_context=live_context)
     if errors:
-        raise RuntimeError(
-            "Niepoprawny wynik Service Profile review:\n- " + "\n- ".join(errors)
-        )
+        raise RuntimeError("Niepoprawny wynik Service Profile review:\n- " + "\n- ".join(errors))
 
     review_type = normalize_review_type(payload.get("review_type"))
     decisions = [
@@ -488,9 +465,7 @@ def build_promotion_readiness_report(
         if decision["decision"] == "approve"
     ]
     review_ready = review_report["overall_status"] == "review_ready_for_promotion_request"
-    row_blockers = [
-        blocker for row in rows for blocker in row["promotion_blockers"]
-    ]
+    row_blockers = [blocker for row in rows for blocker in row["promotion_blockers"]]
     if not rows:
         row_blockers.append("no_approved_review_decisions")
     if not review_ready:
@@ -508,7 +483,7 @@ def build_promotion_readiness_report(
         "production_depth_unlocked": False,
         "raw_private_text_included": False,
         "approved_decision_count": len(rows),
-        "promotion_blockers": _unique(row_blockers),
+        "promotion_blockers": unique(row_blockers),
         "promotion_request_preview": rows,
         "safe_next_step": promotion_readiness_next_step(promotion_request_ready),
         "safety_note": (
@@ -619,7 +594,7 @@ def private_promotion_readiness_row(
         if not row[field]:
             blockers.append(f"missing_{field}")
     row["promotion_ready"] = not blockers
-    row["promotion_blockers"] = _unique(blockers)
+    row["promotion_blockers"] = unique(blockers)
     return row
 
 
@@ -641,7 +616,7 @@ def promotion_row_blockers(row: dict[str, Any]) -> list[str]:
         blockers.append("missing_reviewer")
     if row.get("raw_private_text_included") is True:
         blockers.append("raw_private_text_included")
-    return _unique(blockers)
+    return unique(blockers)
 
 
 def promotion_readiness_next_step(ready: bool) -> str:
@@ -673,10 +648,7 @@ def validate_payload(
 
     review_type = normalize_review_type(payload.get("review_type"))
     if review_type not in REVIEW_TYPES:
-        errors.append(
-            "review_type musi mieć wartość "
-            f"{' albo '.join(sorted(REVIEW_TYPES))}"
-        )
+        errors.append(f"review_type musi mieć wartość {' albo '.join(sorted(REVIEW_TYPES))}")
         review_type = DEFAULT_REVIEW_TYPE
     live_actions = live_review_actions(live_context, review_type=review_type)
     live_action_review_types = live_review_action_types(live_context)
@@ -712,9 +684,7 @@ def validate_payload(
         if review_type == "private_source_proposals":
             for key, label in PRIVATE_DECISION_BOOLEAN_FIELDS.items():
                 if normalize_bool(raw_decision.get(key)) is None:
-                    errors.append(
-                        f"Decyzja #{index}: {label} musi mieć wartość tak albo nie"
-                    )
+                    errors.append(f"Decyzja #{index}: {label} musi mieć wartość tak albo nie")
 
         action_id = str(raw_decision.get("action_id") or "").strip()
         target_card_id = str(raw_decision.get("target_card_id") or "").strip()
@@ -1019,9 +989,7 @@ def live_required_review_fields(
                 {
                     "field": field,
                     "label": str(requirement.get("label") or field).strip(),
-                    "requirement_type": str(
-                        requirement.get("requirement_type") or "text"
-                    ).strip(),
+                    "requirement_type": str(requirement.get("requirement_type") or "text").strip(),
                 }
             )
         fields_by_action[action_id] = tuple(required_fields)
@@ -1288,10 +1256,7 @@ def render_promotion_readiness_markdown(report: dict[str, Any]) -> str:
                 f"- aktualność: `{row['freshness']}`",
                 f"- pewność: `{row['confidence']}`",
                 "- blokery: "
-                + (
-                    ", ".join(f"`{blocker}`" for blocker in row["promotion_blockers"])
-                    or "brak"
-                ),
+                + (", ".join(f"`{blocker}`" for blocker in row["promotion_blockers"]) or "brak"),
                 "",
             ]
         )
@@ -1357,8 +1322,7 @@ def render_markdown(report: dict[str, Any]) -> str:
             lines.append(f"- follow-up: {task}")
         lines.extend(
             [
-                "- Ślad techniczny: "
-                f"`{decision['action_id']}` -> `{decision['target_card_id']}`",
+                f"- Ślad techniczny: `{decision['action_id']}` -> `{decision['target_card_id']}`",
                 "",
             ]
         )
@@ -1399,8 +1363,7 @@ def render_live_provenance(value: Any) -> str:
     if "live_private_review_action_count" in value:
         lines.extend(
             [
-                "- Prywatne akcje review live: "
-                f"`{value.get('live_private_review_action_count')}`",
+                f"- Prywatne akcje review live: `{value.get('live_private_review_action_count')}`",
                 "- Prywatne wiersze podglądu zatwierdzenia live: "
                 f"`{value.get('live_private_promotion_preview_count')}`",
                 "- Prywatne propozycje gotowe do zatwierdzenia: "
@@ -1409,8 +1372,7 @@ def render_live_provenance(value: Any) -> str:
         )
     else:
         lines.append(
-            "- Public review actions live: "
-            f"`{value.get('live_public_review_action_count')}`"
+            f"- Public review actions live: `{value.get('live_public_review_action_count')}`"
         )
         lines.append(
             "- Public promotion preview rows live: "
@@ -1487,14 +1449,6 @@ def list_payload(value: Any) -> list[str]:
 
 def raw_list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
-
-
-def _unique(values: list[str]) -> list[str]:
-    result: list[str] = []
-    for value in values:
-        if value and value not in result:
-            result.append(value)
-    return result
 
 
 def is_blank_or_placeholder(value: Any) -> bool:

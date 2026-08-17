@@ -14,6 +14,7 @@ from wilq.briefing.ads_campaign_optimizer_contracts import (
 from wilq.briefing.ads_metric_utils import (
     format_money_micros as _format_money_micros,
 )
+from wilq.content.operator_copy import unique
 from wilq.operator_labels import (
     action_count_label,
     blocked_claim_count_label,
@@ -64,7 +65,6 @@ from .shared import (
     _format_float,
     _int_metric_value,
     _refresh_or_connector_evidence_ids,
-    _unique,
 )
 
 ADS_RECOMMENDATION_HUMAN_REVIEW_GATE = "human_strategy_review"
@@ -156,7 +156,7 @@ def _campaign_read_contract(
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            evidence_ids=unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             campaign_rows=rows,
             next_step=(
                 "Użyj wierszy kampanii do sprawdzenia aktywności. "
@@ -186,7 +186,7 @@ def _campaign_metric_rows(
     return campaign_metric_rows(
         metric_facts,
         business_context_read_contract,
-        unique=_unique,
+        unique=unique,
         int_metric_value=_int_metric_value,
         float_metric_value=_float_metric_value,
         row_sort_key=_campaign_row_sort_key,
@@ -293,7 +293,7 @@ def _campaign_triage_read_contract(
             missing_read_contracts=business_context_read_contract.missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            evidence_ids=unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             triage_rows=rows,
             action_ids=campaign_review_action_ids,
             next_step=(
@@ -397,7 +397,7 @@ def _campaign_triage_row(
             else None
         ),
         recommendation_count=len(recommendation_rows),
-        recommendation_types=_unique(row.recommendation_type for row in recommendation_rows),
+        recommendation_types=unique(row.recommendation_type for row in recommendation_rows),
         has_budget_apply_preview=has_budget_apply_preview,
         has_recommendation_apply_preview=has_recommendation_apply_preview,
         evidence_ids=evidence_ids,
@@ -412,7 +412,7 @@ def _campaign_triage_row(
             "zapis rekomendacji",
             "zapis zmian kampanii",
         ],
-        human_review_gates=_unique(
+        human_review_gates=unique(
             [
                 *campaign_row.human_review_gates,
                 *(
@@ -448,8 +448,8 @@ def _campaign_triage_source_context(
         source_metric_values.extend(fact.name for fact in recommendation_row.metric_facts)
     if impression_share_row is not None:
         source_metric_values.extend(fact.name for fact in impression_share_row.metric_facts)
-    source_metric_names = _unique(source_metric_values)
-    evidence_ids = _unique(
+    source_metric_names = unique(source_metric_values)
+    evidence_ids = unique(
         [
             *campaign_row.evidence_ids,
             *(kpi_row.evidence_ids if kpi_row is not None else []),
@@ -502,8 +502,8 @@ def _change_impact_readiness_contract(
         _change_impact_readiness_row(change_row, campaign_read_contract.campaign_rows)
         for change_row in change_history_read_contract.change_history_rows
     ]
-    row_missing = _unique(missing for row in rows for missing in row.missing_read_contracts)
-    missing_read_contracts = _unique(
+    row_missing = unique(missing for row in rows for missing in row.missing_read_contracts)
+    missing_read_contracts = unique(
         [
             *(
                 ["change_event_rows"]
@@ -548,7 +548,7 @@ def _change_impact_readiness_contract(
         missing_read_contracts=missing_read_contracts,
         blocked_claims=blocked_claims,
         source_connectors=change_history_read_contract.source_connectors,
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *change_history_read_contract.evidence_ids,
                 *(evidence_id for row in rows for evidence_id in row.evidence_ids),
@@ -594,7 +594,7 @@ def _change_impact_readiness_row(
         current_conversions=getattr(campaign_row, "conversions", None),
         current_conversion_value=getattr(campaign_row, "conversion_value", None),
         missing_read_contracts=missing_read_contracts,
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *change_row.evidence_ids,
                 *(getattr(campaign_row, "evidence_ids", []) if campaign_row else []),
@@ -651,7 +651,7 @@ def _hydrate_campaign_triage_marketer_labels(
         row.missing_read_contract_labels = _ads_missing_read_contract_labels(
             row.missing_read_contracts
         )
-        row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_labels = unique(row.blocked_claims)
         row.action_summary_label = action_count_label(row.action_ids)
 
 
@@ -660,7 +660,7 @@ def _hydrate_recommendations_marketer_labels(
 ) -> None:
     for row in contract.recommendation_rows:
         row.recommendation_type_label = _ads_recommendation_type_label(row.recommendation_type)
-        row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_labels = unique(row.blocked_claims)
         if row.payload_preview is not None:
             _hydrate_recommendation_payload_preview_labels(row.payload_preview)
             row.preview_card = _recommendation_preview_card(row.payload_preview)
@@ -674,7 +674,7 @@ def _hydrate_recommendation_payload_preview_labels(
     preview.recommendation_type_label = _ads_recommendation_type_label(preview.recommendation_type)
     preview.operation_type_label = _ads_google_operation_label(preview.operation_type)
     preview.required_validation_labels = _ads_review_gate_labels(preview.required_validation)
-    preview.blocked_claim_labels = _unique(preview.blocked_claims)
+    preview.blocked_claim_labels = unique(preview.blocked_claims)
 
 
 def _recommendation_preview_card(
@@ -733,7 +733,7 @@ def _hydrate_impression_share_marketer_labels(
     for row in contract.impression_share_rows:
         row.campaign_status_label = _ads_campaign_status_label(row.campaign_status)
         row.advertising_channel_type_label = _ads_channel_type_label(row.advertising_channel_type)
-        row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_labels = unique(row.blocked_claims)
         row.blocked_claim_summary_label = blocked_claim_count_label(
             row.blocked_claim_labels or row.blocked_claims
         )
@@ -747,7 +747,7 @@ def _hydrate_change_history_marketer_labels(
     contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
         contract.missing_read_contracts
     )
-    contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    contract.blocked_claim_labels = unique(contract.blocked_claims)
     for row in contract.change_history_rows:
         row.change_resource_type_label = _ads_change_resource_type_label(row.change_resource_type)
         row.resource_change_operation_label = _ads_resource_change_operation_label(
@@ -760,7 +760,7 @@ def _hydrate_change_history_marketer_labels(
             if row.changed_field_labels
             else f"{row.changed_field_count or 0} pól"
         )
-        row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_labels = unique(row.blocked_claims)
 
 
 def _hydrate_change_impact_marketer_labels(
@@ -771,14 +771,14 @@ def _hydrate_change_impact_marketer_labels(
     contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
         contract.missing_read_contracts
     )
-    contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    contract.blocked_claim_labels = unique(contract.blocked_claims)
     contract.action_summary_label = action_count_label(contract.action_ids)
     for row in contract.readiness_rows:
         row.changed_field_labels = _ads_changed_field_labels(row.changed_fields)
         row.missing_read_contract_labels = _ads_missing_read_contract_labels(
             row.missing_read_contracts
         )
-        row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_labels = unique(row.blocked_claims)
 
 
 def _ads_campaign_status_label(status: object | None) -> str:

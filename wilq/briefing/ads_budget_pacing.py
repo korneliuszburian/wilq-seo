@@ -8,6 +8,7 @@ from wilq.actions.google_ads.campaign_review import (
     CAMPAIGN_REVIEW_ACTION_ID,
     CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionRisk,
     AdsBudgetApplyPreview,
@@ -107,7 +108,7 @@ def build_budget_pacing_read_contract(
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            evidence_ids=unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             budget_rows=rows,
             shared_budget_distribution_rows=shared_budget_distribution_rows,
             payload_preview=payload_preview,
@@ -185,7 +186,7 @@ def _shared_budget_distribution_rows(
                     seven_day_budget_micros,
                 ),
                 campaign_shares=campaign_shares,
-                evidence_ids=_unique(
+                evidence_ids=unique(
                     evidence_id for row in rows for evidence_id in row.evidence_ids
                 ),
                 blocked_claims=CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
@@ -283,8 +284,8 @@ def _budget_pacing_row(
         budget_amount_micros=budget_amount_micros,
         has_recommended_budget=has_recommended_budget,
         recommended_budget_amount_micros=recommended_budget_amount_micros,
-        source_metric_names=_unique(fact.name for fact in facts),
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        source_metric_names=unique(fact.name for fact in facts),
+        evidence_ids=unique(fact.evidence_id for fact in facts),
     )
     return AdsBudgetPacingRow(
         campaign_id=campaign_id,
@@ -302,10 +303,10 @@ def _budget_pacing_row(
         has_recommended_budget=has_recommended_budget,
         recommended_budget_amount_micros=recommended_budget_amount_micros,
         recommended_budget_delta_micros=recommended_budget_delta_micros,
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        evidence_ids=unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         payload_preview=payload_preview,
-        missing_metrics=_unique(missing_metrics),
+        missing_metrics=unique(missing_metrics),
         blocked_claims=CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
     )
 
@@ -417,12 +418,3 @@ def _bool_metric_value(fact: MetricFact | None) -> bool | None:
 def _slug(value: str) -> str:
     normalized = "".join(character.lower() if character.isalnum() else "_" for character in value)
     return "_".join(part for part in normalized.split("_") if part)[:80] or "unknown"
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

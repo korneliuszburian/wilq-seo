@@ -24,8 +24,8 @@ from wilq.briefing.tactical_queue.shared import (
     DEFAULT_TACTICAL_QUEUE_CACHE_SECONDS,
     TACTICAL_QUEUE_LIMIT,
     TacticalQueueCacheEntry,
-    _unique,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import MetricFact, TacticalQueueResponse
 
 _cached_tactical_queue: TacticalQueueCacheEntry | None = None
@@ -115,6 +115,6 @@ def _build_tactical_queue(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         items=items,
         compact_groups=_compact_tactical_groups(items),
-        evidence_ids=_unique(evidence_id for item in items for evidence_id in item.evidence_ids),
-        action_ids=_unique(action_id for item in items for action_id in item.action_ids),
+        evidence_ids=unique(evidence_id for item in items for evidence_id in item.evidence_ids),
+        action_ids=unique(action_id for item in items for action_id in item.action_ids),
     )

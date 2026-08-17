@@ -14,6 +14,7 @@ from wilq.briefing.tactical_queue import (
     is_ahrefs_gap_fact,
     is_reviewable_ahrefs_gap_fact,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     CommandCenterActionPlanItem,
     CommandCenterBriefItem,
@@ -37,7 +38,6 @@ from .shared import (
     LOCALO_COMMAND_CENTER_CONTRACT_ORDER,
     LOCALO_PROBE_METRIC_NAMES,
     MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT,
-    _unique,
 )
 
 
@@ -513,7 +513,7 @@ def _localo_blocked_claims_for_missing_contracts(
         if contract in missing_contracts
     ]
     claims.extend(["zapis zmian w profilu firmy", "poprawa widoczności lokalnej"])
-    return _unique(claims)
+    return unique(claims)
 
 
 def _localo_metric_facts_for_run(
@@ -563,7 +563,7 @@ def _source_connectors_with_evidence(
     source_connectors: Iterable[object],
     evidence_ids: Iterable[object],
 ) -> list[str]:
-    return _unique(
+    return unique(
         [
             *source_connectors,
             *(

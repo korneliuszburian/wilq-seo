@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from typing import Literal
 from urllib.parse import urlparse
 
+from wilq.content.operator_copy import unique
 from wilq.content.planning.ahrefs_overlap import AhrefsCrossSourceMatcher, AhrefsCrossSourceOverlap
 from wilq.schemas import ActionRisk, MetricFact, OpportunityDomain, TacticalQueueItem
 
@@ -77,14 +78,14 @@ def build_ahrefs_gap_items(
                 intent=_intent(gap_type),
                 priority=_priority(gap_type, topic, competitor, index),
                 risk=ActionRisk.medium,
-                source_connectors=_unique(
+                source_connectors=unique(
                     [
                         "ahrefs",
                         *confirmation.gsc.source_connectors,
                         *confirmation.wordpress.source_connectors,
                     ]
                 ),
-                evidence_ids=_unique(
+                evidence_ids=unique(
                     [
                         *(f.evidence_id for f in group_facts),
                         *confirmation.gsc.evidence_ids,
@@ -279,12 +280,17 @@ def _off_topic(keyword: str, source_url: str, public_url: str, competitor: str) 
 
 def _norm(value: str) -> str:
     replacements: dict[str, str | int | None] = {
-        "ą": "a", "ć": "c", "ę": "e", "ł": "l", "ń": "n",
-        "ó": "o", "ś": "s", "ź": "z", "ż": "z",
+        "ą": "a",
+        "ć": "c",
+        "ę": "e",
+        "ł": "l",
+        "ń": "n",
+        "ó": "o",
+        "ś": "s",
+        "ź": "z",
+        "ż": "z",
     }
-    return value.lower().translate(
-        str.maketrans(replacements)
-    )
+    return value.lower().translate(str.maketrans(replacements))
 
 
 def _domain(value: str) -> str:
@@ -298,7 +304,3 @@ def _short_path(value: str) -> str:
 
 def _slug(value: str) -> str:
     return "".join(ch if ch.isalnum() else "_" for ch in _norm(value)).strip("_")[:80] or "rekord"
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value))

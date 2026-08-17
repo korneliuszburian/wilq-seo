@@ -10,8 +10,8 @@ from wilq.briefing.ga4.shared import (
     _refresh_or_connector_evidence_ids,
     _tactical_landing_group_count,
     _tactical_metric_facts,
-    _unique,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
@@ -64,11 +64,11 @@ def _operator_summary(
             1 for decision in decisions if decision.wordpress_match == "missing"
         ),
         conversion_readiness_status=conversion_readiness_contract.status,
-        source_connectors=_unique(
+        source_connectors=unique(
             connector for decision in top_decisions for connector in decision.source_connectors
         )
         or [GA4_CONNECTOR_ID],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *(
                     evidence_id
@@ -79,7 +79,7 @@ def _operator_summary(
             ]
         ),
         action_ids=action_ids,
-        blocked_claims=_unique(
+        blocked_claims=unique(
             [
                 *(claim for section in sections for claim in section.blocked_claims),
                 *conversion_readiness_contract.blocked_claims,
@@ -150,7 +150,7 @@ def _landing_behavior_section(
                 "problem pomiaru od problemu strony."
             ),
             source_connectors=[GA4_CONNECTOR_ID],
-            evidence_ids=_unique(
+            evidence_ids=unique(
                 evidence_id for item in tactical_items for evidence_id in item.evidence_ids
             ),
             metric_facts=_tactical_metric_facts(tactical_items)[:12],
@@ -176,7 +176,7 @@ def _landing_behavior_section(
             "dopasowanie komunikatu."
         ),
         source_connectors=[GA4_CONNECTOR_ID],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [
                 *(fact.evidence_id for fact in dimensioned_facts),
                 *(evidence_id for item in tactical_items for evidence_id in item.evidence_ids),

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Iterable
 from dataclasses import dataclass
 from threading import Lock
 from time import monotonic
 
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
+from wilq.content.operator_copy import unique
 from wilq.expert.rules import list_expert_rule_summaries
 from wilq.knowledge.compilers.playbook_compiler import compile_playbook_cards, list_playbooks
 from wilq.operator_labels import (
@@ -245,11 +245,11 @@ def _binding_from_blueprint(
     ]
     playbook_values = [playbooks[playbook_id] for playbook_id in valid_playbook_ids]
     card_values = [cards[card_id] for card_id in valid_card_ids]
-    blocked_claims = _unique(workflow.blocked_claims)
-    required_evidence = _unique(
+    blocked_claims = unique(workflow.blocked_claims)
+    required_evidence = unique(
         item for playbook in playbook_values for item in playbook.required_evidence
     )
-    source_lineage = _unique(
+    source_lineage = unique(
         [
             *(line for card in card_values for line in card.source_lineage),
             *(playbook.source_path for playbook in playbook_values),
@@ -294,10 +294,6 @@ def _binding_from_blueprint(
         risk=workflow.risk,
         risk_label=workflow.risk_label or "",
     )
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value))
 
 
 def _binding_sort_key(binding: KnowledgeDecisionBinding) -> tuple[int, str]:

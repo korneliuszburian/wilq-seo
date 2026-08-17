@@ -9,6 +9,13 @@ def test_unique_stringifies_skips_empty_and_preserves_first_occurrence() -> None
     assert unique([1, "1", "", None, "x", "x", 2]) == ["1", "None", "x", "2"]
 
 
+def test_unique_matches_string_only_keep_for_string_inputs() -> None:
+    assert unique(["source_a", "source_a", "source_b", ""]) == [
+        "source_a",
+        "source_b",
+    ]
+
+
 def test_build_blocker_preserves_models_with_and_without_source_codes() -> None:
     with_source_codes = build_blocker(
         ContentCodexSectionProposalBlocker,

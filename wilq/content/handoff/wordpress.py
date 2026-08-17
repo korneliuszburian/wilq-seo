@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
 from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.operator_copy import build_blocker, unique
 from wilq.content.review.human import (
     ContentHumanReview,
     content_human_review_allows_wordpress_handoff,
@@ -121,7 +121,7 @@ def build_content_wordpress_draft_handoff(
             final_canonical_url=item.final_canonical_url,
             intended_final_url=item.intended_final_url,
             preview_url=item.preview_url,
-            evidence_ids=_unique([*item.evidence_ids, *draft_package_evidence(draft_package)]),
+            evidence_ids=unique([*item.evidence_ids, *draft_package_evidence(draft_package)]),
         )
     )
 
@@ -169,27 +169,29 @@ def draft_package_evidence(draft_package: ContentDraftPackage) -> list[str]:
     evidence_ids: list[str] = []
     for mapping in draft_package.section_to_evidence_map:
         evidence_ids.extend(mapping.evidence_ids)
-    return _unique(evidence_ids)
+    return unique(evidence_ids)
 
 
 def _final_url_blockers(item: ContentWorkItem) -> list[ContentWordPressDraftHandoffBlocker]:
     if item.canonical_status != "resolved" or not item.final_canonical_url:
         return [
-            _blocker(
-                "missing_final_canonical",
-                "Brakuje finalnego adresu",
-                "Szkic WordPress nie może powstać bez publicznego finalnego adresu.",
-                "Ustal publiczny adres Ekologus przed przekazaniem szkicu.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="missing_final_canonical",
+                label="Brakuje finalnego adresu",
+                reason="Szkic WordPress nie może powstać bez publicznego finalnego adresu.",
+                next_step="Ustal publiczny adres Ekologus przed przekazaniem szkicu.",
             )
         ]
     if content_url_host(item.final_canonical_url) not in CONTENT_SOURCE_SITE_HOSTS:
         return [
-            _blocker(
-                "invalid_final_canonical",
-                "Adres podglądu nie może być canonical",
-                "Adres podglądu ani adres techniczny nie może być finalnym adresem "
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="invalid_final_canonical",
+                label="Adres podglądu nie może być canonical",
+                reason="Adres podglądu ani adres techniczny nie może być finalnym adresem "
                 "szkicu WordPress.",
-                "Ustaw finalny adres na publiczny adres Ekologus.",
+                next_step="Ustaw finalny adres na publiczny adres Ekologus.",
             )
         ]
     return []
@@ -201,11 +203,12 @@ def _draft_package_blockers(
 ) -> list[ContentWordPressDraftHandoffBlocker]:
     if draft_package is None:
         return [
-            _blocker(
-                "missing_draft_package",
-                "Brakuje paczki szkicu",
-                "Przekazanie do WordPress wymaga gotowej paczki szkicu.",
-                "Przygotuj paczkę szkicu przed przekazaniem do WordPress.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="missing_draft_package",
+                label="Brakuje paczki szkicu",
+                reason="Przekazanie do WordPress wymaga gotowej paczki szkicu.",
+                next_step="Przygotuj paczkę szkicu przed przekazaniem do WordPress.",
             )
         ]
     blockers: list[ContentWordPressDraftHandoffBlocker] = []
@@ -213,21 +216,23 @@ def _draft_package_blockers(
         item.draft_package_id is not None and draft_package.id != item.draft_package_id
     ):
         blockers.append(
-            _blocker(
-                "draft_package_mismatch",
-                "Paczka szkicu nie pasuje do tematu",
-                "Przekazanie do WordPress musi używać paczki szkicu dla tego samego tematu.",
-                "Podaj paczkę szkicu zgodną z tematem.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="draft_package_mismatch",
+                label="Paczka szkicu nie pasuje do tematu",
+                reason="Przekazanie do WordPress musi używać paczki szkicu dla tego samego tematu.",
+                next_step="Podaj paczkę szkicu zgodną z tematem.",
             )
         )
     if draft_package.publish_ready:
         blockers.append(
-            _blocker(
-                "draft_package_marked_publish_ready",
-                "Szkic nie może udawać gotowości do publikacji",
-                "Przekazanie do WordPress tworzy wyłącznie szkic; publikacja jest "
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="draft_package_marked_publish_ready",
+                label="Szkic nie może udawać gotowości do publikacji",
+                reason="Przekazanie do WordPress tworzy wyłącznie szkic; publikacja jest "
                 "osobnym procesem.",
-                "Zatrzymaj status publikacji i przejdź przez sprawdzenie człowieka.",
+                next_step="Zatrzymaj status publikacji i przejdź przez sprawdzenie człowieka.",
             )
         )
     return blockers
@@ -240,11 +245,12 @@ def _human_review_blockers(
 ) -> list[ContentWordPressDraftHandoffBlocker]:
     if human_review is None:
         return [
-            _blocker(
-                "missing_human_review",
-                "Brakuje decyzji człowieka",
-                "Przekazanie do WordPress nie może ruszyć bez zatwierdzenia przez człowieka.",
-                "Zatwierdź szkic i ryzykowne twierdzenia przed przekazaniem.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="missing_human_review",
+                label="Brakuje decyzji człowieka",
+                reason="Przekazanie do WordPress nie może ruszyć bez zatwierdzenia przez człowieka.",  # noqa: E501
+                next_step="Zatwierdź szkic i ryzykowne twierdzenia przed przekazaniem.",
             )
         ]
     if not content_human_review_allows_wordpress_handoff(
@@ -258,12 +264,14 @@ def _human_review_blockers(
             draft_package=draft_package,
         )
         return [
-            _blocker(
-                "human_review_not_approved",
-                "Decyzja człowieka nie odblokowuje WordPress",
-                "Sprawdzenie musi mieć zatwierdzenie, checklistę, dowody i obsłużone "
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="human_review_not_approved",
+                label="Decyzja człowieka nie odblokowuje WordPress",
+                reason="Sprawdzenie musi mieć zatwierdzenie, checklistę, dowody i obsłużone "
                 "ryzykowne twierdzenia.",
-                "Rozwiąż sprawdzenie: " + ", ".join(_unique(blocker.label for blocker in details)),
+                next_step="Rozwiąż sprawdzenie: "
+                + ", ".join(unique(blocker.label for blocker in details)),
             )
         ]
     return []
@@ -276,22 +284,24 @@ def _audit_blockers(
 ) -> list[ContentWordPressDraftHandoffBlocker]:
     if audit is None:
         return [
-            _blocker(
-                "missing_audit",
-                "Brakuje audytu",
-                "Każde przekazanie do WordPress musi mieć zapis audytu.",
-                "Zapisz identyfikator audytu, osobę wykonującą, powód, dowody i "
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="missing_audit",
+                label="Brakuje audytu",
+                reason="Każde przekazanie do WordPress musi mieć zapis audytu.",
+                next_step="Zapisz identyfikator audytu, osobę wykonującą, powód, dowody i "
                 "powiązane sprawdzenie.",
             )
         ]
     blockers: list[ContentWordPressDraftHandoffBlocker] = []
     if not audit.evidence_ids:
         blockers.append(
-            _blocker(
-                "missing_audit_evidence",
-                "Audyt nie ma dowodów",
-                "Zapis audytu musi zachować dowody użyte przy decyzji.",
-                "Dodaj dowody do audytu.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="missing_audit_evidence",
+                label="Audyt nie ma dowodów",
+                reason="Zapis audytu musi zachować dowody użyte przy decyzji.",
+                next_step="Dodaj dowody do audytu.",
             )
         )
     else:
@@ -302,53 +312,34 @@ def _audit_blockers(
             and audit_evidence.isdisjoint(human_review.evidence_ids)
         ):
             blockers.append(
-                _blocker(
-                    "audit_evidence_mismatch",
-                    "Audyt nie wskazuje sprawdzonych dowodów",
-                    "Audyt przekazania musi zachować dowody, które sprawdził człowiek.",
-                    "Powiąż audyt z dowodami ze sprawdzenia człowieka.",
+                build_blocker(
+                    ContentWordPressDraftHandoffBlocker,
+                    code="audit_evidence_mismatch",
+                    label="Audyt nie wskazuje sprawdzonych dowodów",
+                    reason="Audyt przekazania musi zachować dowody, które sprawdził człowiek.",
+                    next_step="Powiąż audyt z dowodami ze sprawdzenia człowieka.",
                 )
             )
         if draft_package is not None:
             draft_evidence = set(draft_package_evidence(draft_package))
             if draft_evidence and audit_evidence.isdisjoint(draft_evidence):
                 blockers.append(
-                    _blocker(
-                        "audit_evidence_mismatch",
-                        "Audyt nie wskazuje dowodów szkicu",
-                        "Audyt przekazania musi zachować dowody użyte w paczce szkicu.",
-                        "Powiąż audyt z dowodami z paczki szkicu.",
+                    build_blocker(
+                        ContentWordPressDraftHandoffBlocker,
+                        code="audit_evidence_mismatch",
+                        label="Audyt nie wskazuje dowodów szkicu",
+                        reason="Audyt przekazania musi zachować dowody użyte w paczce szkicu.",
+                        next_step="Powiąż audyt z dowodami z paczki szkicu.",
                     )
                 )
     if human_review is not None and audit.human_review_id != human_review.id:
         blockers.append(
-            _blocker(
-                "audit_human_review_mismatch",
-                "Audyt wskazuje inne sprawdzenie",
-                "Zapis audytu musi wskazywać sprawdzenie człowieka, które odblokowało przekazanie.",
-                "Powiąż audyt z zatwierdzonym sprawdzeniem człowieka.",
+            build_blocker(
+                ContentWordPressDraftHandoffBlocker,
+                code="audit_human_review_mismatch",
+                label="Audyt wskazuje inne sprawdzenie",
+                reason="Zapis audytu musi wskazywać sprawdzenie człowieka, które odblokowało przekazanie.",  # noqa: E501
+                next_step="Powiąż audyt z zatwierdzonym sprawdzeniem człowieka.",
             )
         )
     return blockers
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        if value and value not in unique_values:
-            unique_values.append(value)
-    return unique_values
-
-
-def _blocker(
-    code: ContentWordPressDraftHandoffBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentWordPressDraftHandoffBlocker:
-    return ContentWordPressDraftHandoffBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )

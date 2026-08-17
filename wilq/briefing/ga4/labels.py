@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from wilq.briefing.ga4.shared import GA4_CONNECTOR_ID, _unique
+from wilq.briefing.ga4.shared import GA4_CONNECTOR_ID
+from wilq.content.operator_copy import unique
 from wilq.operator_labels import action_count_label, source_connector_label
 from wilq.schemas import (
     ConnectorRefreshRun,
@@ -239,7 +240,7 @@ def _ga4_source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
         "wordpress_ekologus": "WordPress ekologus.pl",
         "google_search_console": "Google Search Console",
     }
-    return _unique(
+    return unique(
         labels.get(connector_id, source_connector_label(connector_id))
         for connector_id in connector_ids
     )
@@ -330,7 +331,7 @@ def _ga4_blocked_claim_labels(claims: Iterable[str]) -> list[str]:
         "naprawiony pomiar": "pomiar naprawiony",
         "brak w pomiarze": "problem pomiaru",
     }
-    return _unique(labels.get(claim, claim) for claim in claims)
+    return unique(labels.get(claim, claim) for claim in claims)
 
 
 def _enum_value(value: object) -> str:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputSummary,
@@ -8,6 +9,7 @@ from wilq.content.planning.dynamic_input import (
     planning_generation_blockers,
 )
 from wilq.content.planning.generated_proposal_contracts import (
+    ContentPlanningProposalBlocker,
     ContentPlanningProposalResponse,
     regulatory_response_lineage_errors,
 )
@@ -32,7 +34,6 @@ def read_content_planning_proposal(
     from wilq.content.planning.generated_proposal import (
         _blocked_from_input,
         _blocked_response,
-        _blocker,
         with_explicit_content_service_selection,
     )
 
@@ -43,11 +44,12 @@ def read_content_planning_proposal(
             service_card_id=None,
             planning_input_digest=None,
             blockers=[
-                _blocker(
-                    "unknown_service_card",
-                    "Brakuje usługi do planowania",
-                    "Bieżący snapshot nie ma dozwolonej karty usługi.",
-                    "Wybierz work item z dokładnym dopasowaniem Service Profile.",
+                build_blocker(
+                    ContentPlanningProposalBlocker,
+                    code="unknown_service_card",
+                    label="Brakuje usługi do planowania",
+                    reason="Bieżący snapshot nie ma dozwolonej karty usługi.",
+                    next_step="Wybierz work item z dokładnym dopasowaniem Service Profile.",
                 )
             ],
         )
@@ -103,7 +105,6 @@ def _response_for_current_proposal(
 ) -> ContentPlanningProposalResponse:
     from wilq.content.planning.generated_proposal import (
         _blocked_response,
-        _blocker,
         _persisted_runtime_trace,
         _stale_input_blocker,
     )
@@ -135,11 +136,15 @@ def _response_for_current_proposal(
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
             blockers=[
-                _blocker(
-                    "quality_gate_failed",
-                    "Zapisany plan wymaga ponownego wygenerowania",
-                    "Ostatnia wersja nie jest użyteczną strukturą odpowiedzi dla czytelnika.",
-                    "Uruchom plan ponownie; poprzednia wersja nie jest gotowa do review.",
+                build_blocker(
+                    ContentPlanningProposalBlocker,
+                    code="quality_gate_failed",
+                    label="Zapisany plan wymaga ponownego wygenerowania",
+                    reason=(
+                        "Ostatnia wersja nie jest użyteczną strukturą odpowiedzi "
+                        "dla czytelnika."
+                    ),
+                    next_step="Uruchom plan ponownie; poprzednia wersja nie jest gotowa do review.",
                     source_codes=quality_errors,
                 )
             ],
@@ -163,12 +168,18 @@ def _response_for_current_proposal(
             input_summary=input_summary,
             proposal=remapped_proposal_projection(planning_input, latest),
             blockers=[
-                _blocker(
-                    "stale_input",
-                    "Mapa istniejącej strony wymaga odświeżenia",
-                    "Zapisany plan nie zawiera aktualnej, deterministycznej mapy sekcji inventory.",
-                    "Uruchom nową wersję planu; WILQ ponownie przypisze sekcje "
-                    "bez ręcznego mapowania.",
+                build_blocker(
+                    ContentPlanningProposalBlocker,
+                    code="stale_input",
+                    label="Mapa istniejącej strony wymaga odświeżenia",
+                    reason=(
+                        "Zapisany plan nie zawiera aktualnej, deterministycznej "
+                        "mapy sekcji inventory."
+                    ),
+                    next_step=(
+                        "Uruchom nową wersję planu; WILQ ponownie przypisze sekcje "
+                        "bez ręcznego mapowania."
+                    ),
                 )
             ],
             safe_next_step="Uruchom nową wersję planu, aby odświeżyć automatyczną mapę sekcji.",
@@ -195,7 +206,7 @@ def _regulatory_lineage_blocked_response(
     regulatory_errors = regulatory_response_lineage_errors(input_summary, proposal)
     if not regulatory_errors:
         return None
-    from wilq.content.planning.generated_proposal import _blocked_response, _blocker
+    from wilq.content.planning.generated_proposal import _blocked_response
 
     return _blocked_response(
         planning_input.work_item_id,
@@ -203,12 +214,15 @@ def _regulatory_lineage_blocked_response(
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=input_summary,
         blockers=[
-            _blocker(
-                "lineage_mismatch",
-                "Zapisany plan nie ma pełnej lineage źródeł urzędowych",
-                "Wymagania regulacyjne lub ich dokładne dowody nie są zgodne "
-                "z bieżącym profilem planowania.",
-                "Wygeneruj plan ponownie z aktualnych, zatwierdzonych źródeł urzędowych.",
+            build_blocker(
+                ContentPlanningProposalBlocker,
+                code="lineage_mismatch",
+                label="Zapisany plan nie ma pełnej lineage źródeł urzędowych",
+                reason=(
+                    "Wymagania regulacyjne lub ich dokładne dowody nie są zgodne "
+                    "z bieżącym profilem planowania."
+                ),
+                next_step="Wygeneruj plan ponownie z aktualnych, zatwierdzonych źródeł urzędowych.",
                 source_codes=regulatory_errors,
             )
         ],

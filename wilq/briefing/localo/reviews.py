@@ -8,8 +8,8 @@ from wilq.briefing.localo.shared import (
     LOCALO_CONNECTOR_ID,
     _localo_missing_contracts_phrase,
     _missing_contract_ids,
-    _unique,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
@@ -86,17 +86,17 @@ def _operator_summary(
             top_decision_ids=[decision.id for decision in top_decisions],
             access_status=access_probe.status,
             visibility_fact_count=visibility_fact_count,
-            missing_read_contracts=_unique(
+            missing_read_contracts=unique(
                 contract
                 for decision in top_decisions
                 for contract in decision.missing_read_contracts
             ),
             read_contract_statuses=read_contract_statuses,
-            source_connectors=_unique(
+            source_connectors=unique(
                 connector for decision in top_decisions for connector in decision.source_connectors
             )
             or [LOCALO_CONNECTOR_ID],
-            evidence_ids=_unique(
+            evidence_ids=unique(
                 [
                     *(
                         evidence_id
@@ -106,10 +106,10 @@ def _operator_summary(
                     *access_probe.evidence_ids,
                 ]
             ),
-            action_ids=_unique(
+            action_ids=unique(
                 action_id for decision in top_decisions for action_id in decision.action_ids
             ),
-            blocked_claims=_unique(
+            blocked_claims=unique(
                 claim for decision in top_decisions for claim in decision.blocked_claims
             ),
         )
@@ -218,7 +218,7 @@ def _operator_review_next_safe_click(
 
 
 def _operator_review_action_ids(decisions: list[LocaloDecisionItem]) -> list[str]:
-    return _unique(
+    return unique(
         action_id
         for decision in decisions
         for action_id in decision.action_ids

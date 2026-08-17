@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import Literal
 
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionRisk,
     AdsBudgetPacingReadContract,
@@ -27,15 +27,6 @@ from wilq.schemas import (
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
 
 
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
-
-
 def _campaign_review_item(
     campaign_triage_read_contract: AdsCampaignTriageReadContract,
 ) -> AdsOptimizerReadinessItem:
@@ -54,6 +45,7 @@ def _campaign_review_item(
         action_ids=campaign_triage_read_contract.action_ids,
         risk=ActionRisk.medium,
     )
+
 
 def _budget_and_recommendation_item(
     budget_pacing_read_contract: AdsBudgetPacingReadContract,
@@ -113,6 +105,7 @@ def _budget_and_recommendation_item(
         risk=ActionRisk.medium,
     )
 
+
 def _search_terms_item(
     search_term_review_summary_contract: AdsSearchTermReviewSummaryContract,
     search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
@@ -155,6 +148,7 @@ def _search_terms_item(
         action_ids=search_term_ngram_read_contract.action_ids,
         risk=ActionRisk.medium,
     )
+
 
 def _negative_keywords_item(
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
@@ -206,6 +200,7 @@ def _negative_keywords_item(
         risk=ActionRisk.high,
     )
 
+
 def _custom_segments_item(
     custom_segments_read_contract: AdsCustomSegmentsReadContract,
 ) -> AdsOptimizerReadinessItem:
@@ -240,6 +235,7 @@ def _custom_segments_item(
         risk=ActionRisk.medium,
     )
 
+
 def _keyword_planner_item(
     keyword_planner_read_contract: AdsKeywordPlannerReadContract,
 ) -> AdsOptimizerReadinessItem:
@@ -259,6 +255,7 @@ def _keyword_planner_item(
         action_ids=[],
         risk=ActionRisk.medium,
     )
+
 
 def _change_history_item(
     change_history_read_contract: AdsChangeHistoryReadContract,
@@ -282,6 +279,7 @@ def _change_history_item(
         action_ids=change_impact_readiness_contract.action_ids,
         risk=ActionRisk.high,
     )
+
 
 def _apply_safety_item(
     budget_pacing_read_contract: AdsBudgetPacingReadContract,
@@ -335,6 +333,7 @@ def _apply_safety_item(
         ],
         risk=ActionRisk.high,
     )
+
 
 def build_optimizer_readiness_contract(
     campaign_triage_read_contract: AdsCampaignTriageReadContract,
@@ -403,14 +402,14 @@ def build_optimizer_readiness_contract(
         ready_area_count=ready_area_count,
         blocked_area_count=blocked_area_count,
         readiness_items=items,
-        allowed_metrics=_unique([metric for item in items for metric in item.allowed_metrics]),
-        missing_read_contracts=_unique(
+        allowed_metrics=unique([metric for item in items for metric in item.allowed_metrics]),
+        missing_read_contracts=unique(
             [contract for item in items for contract in item.missing_read_contracts]
         ),
-        operator_review_gates=_unique(
+        operator_review_gates=unique(
             [gate for item in items for gate in item.operator_review_gates]
         ),
-        blocked_claims=_unique(
+        blocked_claims=unique(
             [
                 claim
                 for item in items
@@ -423,15 +422,14 @@ def build_optimizer_readiness_contract(
             ]
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-        evidence_ids=_unique([evidence_id for item in items for evidence_id in item.evidence_ids]),
-        action_ids=_unique([action_id for item in items for action_id in item.action_ids]),
+        evidence_ids=unique([evidence_id for item in items for evidence_id in item.evidence_ids]),
+        action_ids=unique([action_id for item in items for action_id in item.action_ids]),
         next_step=(
             "Pracuj od obszarów ready, ale każdy wniosek o zmianie budżetu, "
             "rekomendacji, wykluczeń, segmentów albo wpływie zmian traktuj jako "
             "zablokowany, dopóki odpowiedni odczyt, zapis zmian i audyt nie będą gotowe."
         ),
     )
-
 
 
 def _optimizer_readiness_item(
@@ -457,13 +455,13 @@ def _optimizer_readiness_item(
         status=status,
         summary=summary,
         next_step=next_step,
-        source_contract_ids=_unique(source_contract_ids),
-        allowed_metrics=_unique(allowed_metrics or []),
-        missing_read_contracts=_unique(missing_read_contracts or []),
-        operator_review_gates=_unique(operator_review_gates or []),
-        blocked_claims=_unique(blocked_claims or []),
-        source_connectors=_unique(source_connectors or []),
-        evidence_ids=_unique(evidence_ids or []),
-        action_ids=_unique(action_ids or []),
+        source_contract_ids=unique(source_contract_ids),
+        allowed_metrics=unique(allowed_metrics or []),
+        missing_read_contracts=unique(missing_read_contracts or []),
+        operator_review_gates=unique(operator_review_gates or []),
+        blocked_claims=unique(blocked_claims or []),
+        source_connectors=unique(source_connectors or []),
+        evidence_ids=unique(evidence_ids or []),
+        action_ids=unique(action_ids or []),
         risk=risk,
     )

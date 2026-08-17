@@ -10,6 +10,7 @@ from wilq.content.measurement.window import (
     ContentMeasurementWindow,
     content_measurement_window_outcome_allowed,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import ConnectorQualityState, ConnectorSettlementState
 
 ContentMeasurementOutcomeStatus = Literal[
@@ -84,8 +85,7 @@ def interpret_content_measurement_outcome(
             status="not_ready",
             status_label="Za wcześnie na ocenę efektu",
             conclusion=(
-                "WILQ może zbierać dane, ale nie wolno jeszcze mówić o sukcesie "
-                "ani porażce treści."
+                "WILQ może zbierać dane, ale nie wolno jeszcze mówić o sukcesie ani porażce treści."
             ),
             confidence="none",
             limitations=["Okno obserwacji nie jest jeszcze gotowe do oceny."],
@@ -98,9 +98,7 @@ def interpret_content_measurement_outcome(
             for blocker in _metric_provenance_blockers(metric, window)
         ]
         usable_metrics = [
-            metric
-            for metric in observed_metrics
-            if not _metric_provenance_blockers(metric, window)
+            metric for metric in observed_metrics if not _metric_provenance_blockers(metric, window)
         ]
         if metric_blockers:
             result = _interpretation(
@@ -113,7 +111,7 @@ def interpret_content_measurement_outcome(
                 ),
                 confidence="low",
                 limitations=(
-                    _unique(metric_blockers)
+                    unique(metric_blockers)
                     or [
                         "Brakuje wartości bazowej, wartości po obserwacji albo "
                         "proweniencji metryki."
@@ -221,14 +219,14 @@ def _outcome_provenance(
     metrics: list[ContentMeasurementObservedMetric],
 ) -> _OutcomeProvenance:
     return {
-        "evidence_ids": _unique(
+        "evidence_ids": unique(
             [evidence_id for metric in metrics for evidence_id in metric.evidence_ids]
         ),
-        "source_connectors": _unique([metric.source_connector for metric in metrics]),
-        "metric_fact_ids": _unique(
+        "source_connectors": unique([metric.source_connector for metric in metrics]),
+        "metric_fact_ids": unique(
             [fact_id for metric in metrics for fact_id in metric.metric_fact_ids]
         ),
-        "refresh_run_ids": _unique(
+        "refresh_run_ids": unique(
             [run_id for metric in metrics for run_id in metric.refresh_run_ids]
         ),
     }
@@ -257,9 +255,7 @@ def _metric_provenance_blockers(
         ConnectorQualityState.partial,
         ConnectorQualityState.unverified,
     }:
-        blockers.append(
-            "Jakość źródła nie pozwala na review-bound interpretację tej metryki."
-        )
+        blockers.append("Jakość źródła nie pozwala na review-bound interpretację tej metryki.")
     if metric.settlement_state == ConnectorSettlementState.settling:
         blockers.append("Źródło nadal się stabilizuje; interpretacja jest przedwczesna.")
     if metric.work_item_id != window.work_item_id:
@@ -321,11 +317,3 @@ def _interpretation(
         queue_feedback_allowed=queue_feedback_allowed,
         safe_next_step=safe_next_step,
     )
-
-
-def _unique(values: list[str]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        if value and value not in unique_values:
-            unique_values.append(value)
-    return unique_values

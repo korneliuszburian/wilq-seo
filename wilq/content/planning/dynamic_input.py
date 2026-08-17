@@ -20,6 +20,7 @@ from wilq.content.measurement.aggregates import (
     MeasurementPeriodComparison,
     compare_exact_page_metric_periods,
 )
+from wilq.content.operator_copy import build_blocker, unique
 from wilq.content.planning.ahrefs import (
     AHREFS_GAP_FACT_NAMES,
     ahrefs_cross_source_candidate_rows,
@@ -226,8 +227,7 @@ class ContentPlanningInputReadinessResponse(BaseModel):
                 raise ValueError("New-page document identity must match the planning work item.")
             if (
                 self.new_page_document_identity is not None
-                and
-                self.new_page_document_identity.proposed_ia_location
+                and self.new_page_document_identity.proposed_ia_location
                 != self.input_summary.proposed_ia_location
             ):
                 raise ValueError("New-page document identity must match the planning IA location.")
@@ -397,8 +397,7 @@ def build_content_planning_input(
         claim_ledger=snapshot.claim_ledger,
         service_card_id=service_card_id,
         existing_content_material_reviewed=(
-            snapshot.preflight.item.wordpress_content_material_confidence
-            != "review_required"
+            snapshot.preflight.item.wordpress_content_material_confidence != "review_required"
             or (
                 snapshot.planning_workspace is not None
                 and snapshot.planning_workspace.scope_decision is not None
@@ -547,28 +546,31 @@ def _resolve_service_candidate(
         None,
     )
     if candidate is None:
-        return None, _blocker(
-            "unknown_service_card",
-            "Usługa nie należy do tego work itemu",
-            "Wybrana karta nie wynika z dokładnego dopasowania strony i wiedzy WILQ.",
-            "Wybierz jedną z kandydatur zwróconych przez bieżący snapshot.",
+        return None, build_blocker(
+            ContentPlanningInputBlocker,
+            code="unknown_service_card",
+            label="Usługa nie należy do tego work itemu",
+            reason="Wybrana karta nie wynika z dokładnego dopasowania strony i wiedzy WILQ.",
+            next_step="Wybierz jedną z kandydatur zwróconych przez bieżący snapshot.",
         )
     if service_profile.service_card_id != service_card_id:
-        return None, _blocker(
-            "service_context_mismatch",
-            "Wybór usługi jest nieaktualny",
-            "Bieżący snapshot nie jest jeszcze związany z wybraną kartą usługi.",
-            "Zapisz wybór usługi w review zakresu i odśwież snapshot.",
+        return None, build_blocker(
+            ContentPlanningInputBlocker,
+            code="service_context_mismatch",
+            label="Wybór usługi jest nieaktualny",
+            reason="Bieżący snapshot nie jest jeszcze związany z wybraną kartą usługi.",
+            next_step="Zapisz wybór usługi w review zakresu i odśwież snapshot.",
         )
     return candidate, None
 
 
 def _foundation_blocker() -> ContentPlanningInputBlocker:
-    return _blocker(
-        "missing_planning_foundation",
-        "Brakuje kompletnego wejścia do planu",
-        "Sales Brief, preserve-first package albo plan bazowy jest zablokowany.",
-        "Usuń blokery wiedzy, inventory i briefu przed uruchomieniem Codexa.",
+    return build_blocker(
+        ContentPlanningInputBlocker,
+        code="missing_planning_foundation",
+        label="Brakuje kompletnego wejścia do planu",
+        reason="Sales Brief, preserve-first package albo plan bazowy jest zablokowany.",
+        next_step="Usuń blokery wiedzy, inventory i briefu przed uruchomieniem Codexa.",
     )
 
 
@@ -599,11 +601,12 @@ def _readiness_blockers(
         ),
         *(
             [
-                _blocker(
-                    "missing_regulatory_source_coverage",
-                    regulatory_gap.label,
-                    regulatory_gap.reason,
-                    regulatory_gap.next_step,
+                build_blocker(
+                    ContentPlanningInputBlocker,
+                    code="missing_regulatory_source_coverage",
+                    label=regulatory_gap.label,
+                    reason=regulatory_gap.reason,
+                    next_step=regulatory_gap.next_step,
                 )
             ]
             if regulatory_gap is not None
@@ -619,39 +622,40 @@ def _service_readiness_blockers(
     blockers: list[ContentPlanningInputBlocker] = []
     if not service_profile.service_selection_confirmed:
         blockers.append(
-            _blocker(
-                "service_selection_not_confirmed",
-                "Usługa wymaga potwierdzenia",
-                "Model nie może planować na podstawie domyślnego dopasowania "
+            build_blocker(
+                ContentPlanningInputBlocker,
+                code="service_selection_not_confirmed",
+                label="Usługa wymaga potwierdzenia",
+                reason="Model nie może planować na podstawie domyślnego dopasowania "
                 "bez decyzji człowieka.",
-                "Zatwierdź zakres i wskaż kartę usługi.",
+                next_step="Zatwierdź zakres i wskaż kartę usługi.",
             )
         )
     if service_lifecycle != "approved_current":
         blockers.append(
-            _blocker(
-                "service_card_not_approved",
-                "Karta usługi wymaga owner review",
-                "Plan modelowy nie może użyć karty, która nie ma statusu approved_current.",
-                "Zakończ owner review Service Profile; nie obchodź tej bramki promptem.",
+            build_blocker(
+                ContentPlanningInputBlocker,
+                code="service_card_not_approved",
+                label="Karta usługi wymaga owner review",
+                reason="Plan modelowy nie może użyć karty, która nie ma statusu approved_current.",
+                next_step="Zakończ owner review Service Profile; nie obchodź tej bramki promptem.",
             )
         )
     approved_source_fact_ids = {
-        fact.source_id
-        for fact in ekologus_source_facts()
-        if fact.review_status == "approved"
+        fact.source_id for fact in ekologus_source_facts() if fact.review_status == "approved"
     }
     unresolved_source_fact_ids = sorted(
         set(service_profile.source_fact_ids) - approved_source_fact_ids
     )
     if unresolved_source_fact_ids:
         blockers.append(
-            _blocker(
-                "missing_approved_service_fact",
-                "Brakuje zatwierdzonego faktu usługi",
-                "Karta usługi wskazuje source_fact_id, którego WILQ nie ma w rejestrze approved; "
+            build_blocker(
+                ContentPlanningInputBlocker,
+                code="missing_approved_service_fact",
+                label="Brakuje zatwierdzonego faktu usługi",
+                reason="Karta usługi wskazuje source_fact_id, którego WILQ nie ma w rejestrze approved; "  # noqa: E501
                 "plan nie może użyć generycznego fallbacku jako dowodu.",
-                "Uzupełnij albo zatwierdź dokładny source fact w rejestrze WILQ "
+                next_step="Uzupełnij albo zatwierdź dokładny source fact w rejestrze WILQ "
                 "i odśwież snapshot.",
             )
         )
@@ -665,20 +669,22 @@ def _inventory_readiness_blockers(
     blockers: list[ContentPlanningInputBlocker] = []
     if inventory.status == "missing":
         blockers.append(
-            _blocker(
-                "missing_wordpress_section_inventory",
-                "Brakuje sekcji istniejącej strony",
-                "Refresh wymaga decyzji preserve/merge/rewrite dla inventory WordPress.",
-                "Odśwież publiczny inventory WordPress i wróć do planowania.",
+            build_blocker(
+                ContentPlanningInputBlocker,
+                code="missing_wordpress_section_inventory",
+                label="Brakuje sekcji istniejącej strony",
+                reason="Refresh wymaga decyzji preserve/merge/rewrite dla inventory WordPress.",
+                next_step="Odśwież publiczny inventory WordPress i wróć do planowania.",
             )
         )
     elif inventory.content_status != "available":
         blockers.append(
-            _blocker(
-                "missing_wordpress_full_inventory",
-                "Brakuje pełnej treści istniejącej strony",
-                "Same nagłówki nie wystarczają do bezpiecznej decyzji zachowaj/scal/przepisz.",
-                "Odczytaj aktualną treść główną i układ strony WordPress przed planowaniem.",
+            build_blocker(
+                ContentPlanningInputBlocker,
+                code="missing_wordpress_full_inventory",
+                label="Brakuje pełnej treści istniejącej strony",
+                reason="Same nagłówki nie wystarczają do bezpiecznej decyzji zachowaj/scal/przepisz.",  # noqa: E501
+                next_step="Odczytaj aktualną treść główną i układ strony WordPress przed planowaniem.",  # noqa: E501
             )
         )
     if (
@@ -687,12 +693,13 @@ def _inventory_readiness_blockers(
         and not existing_content_material_reviewed
     ):
         blockers.append(
-            _blocker(
-                "wordpress_material_review_required",
-                "Materiał strony wymaga potwierdzenia",
-                "Treść została odczytana z wyrenderowanego the_content, ale nie ma jeszcze "
+            build_blocker(
+                ContentPlanningInputBlocker,
+                code="wordpress_material_review_required",
+                label="Materiał strony wymaga potwierdzenia",
+                reason="Treść została odczytana z wyrenderowanego the_content, ale nie ma jeszcze "
                 "źródłowo związanej reprezentacji REST/ACF.",
-                "Potwierdź zakres odczytanego materiału albo udostępnij dokładne pola WordPress "
+                next_step="Potwierdź zakres odczytanego materiału albo udostępnij dokładne pola WordPress "  # noqa: E501
                 "przed generowaniem planu.",
             )
         )
@@ -709,27 +716,24 @@ def _source_readiness_blockers(
     stale_sources = [
         assessment.source
         for assessment in source_assessments
-        if (
-            assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES
-            and assessment.status == "stale"
-        )
+        if (assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES and assessment.status == "stale")
     ]
     if stale_sources:
         blockers.append(
-            _blocker(
-                "stale_planning_sources",
-                "Źródła planu nie są świeże",
-                "Dokładnie powiązane źródła wymagają odświeżenia: "
+            build_blocker(
+                ContentPlanningInputBlocker,
+                code="stale_planning_sources",
+                label="Źródła planu nie są świeże",
+                reason="Dokładnie powiązane źródła wymagają odświeżenia: "
                 f"{', '.join(stale_sources)}.",
-                freshness.next_step,
+                next_step=freshness.next_step,
             )
         )
     blocked_sources = [
         assessment.source
         for assessment in source_assessments
         if (
-            assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES
-            and assessment.status == "blocked"
+            assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES and assessment.status == "blocked"
         )
     ]
     if blocked_sources and not (
@@ -737,12 +741,13 @@ def _source_readiness_blockers(
         & {*preceding_blocker_codes, *(blocker.code for blocker in blockers)}
     ):
         blockers.append(
-            _blocker(
-                "blocked_planning_sources",
-                "Źródło wymaga dokładnego powiązania",
-                "Co najmniej jedno dostępne źródło nie ma jeszcze bezpiecznego "
+            build_blocker(
+                ContentPlanningInputBlocker,
+                code="blocked_planning_sources",
+                label="Źródło wymaga dokładnego powiązania",
+                reason="Co najmniej jedno dostępne źródło nie ma jeszcze bezpiecznego "
                 f"powiązania z tą stroną: {', '.join(blocked_sources)}.",
-                "Dodaj typed landing/service match albo usuń niedopasowany fakt z wejścia.",
+                next_step="Dodaj typed landing/service match albo usuń niedopasowany fakt z wejścia.",  # noqa: E501
             )
         )
     return blockers
@@ -799,7 +804,7 @@ def _planning_evidence_ids(
     source_assessments: list[ContentPlanningSourceAssessment],
     claim_ledger: ContentClaimLedger,
 ) -> list[str]:
-    return _unique(
+    return unique(
         [
             *(
                 inventory.evidence_ids
@@ -859,24 +864,6 @@ def _json_default(value: object) -> object:
     if isinstance(value, BaseModel):
         return value.model_dump(mode="json")
     raise TypeError(f"Unsupported planning input value: {type(value).__name__}")
-
-
-def _unique(values: list[str]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value))
-
-
-def _blocker(
-    code: ContentPlanningInputBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentPlanningInputBlocker:
-    return ContentPlanningInputBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-    )
 
 
 __all__ = [

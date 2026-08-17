@@ -20,9 +20,9 @@ from wilq.briefing.localo.shared import (
     _missing_visibility_contracts,
     _present_contracts,
     _refresh_or_connector_evidence_ids,
-    _unique,
 )
 from wilq.briefing.localo_labels import localo_metric_fact_label
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
@@ -215,7 +215,7 @@ def _localo_sections(
             )
         ),
         source_connectors=[LOCALO_CONNECTOR_ID],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             [*(fact.evidence_id for fact in visibility_facts), *access_probe.evidence_ids]
         ),
         metric_facts=visibility_facts[:12],
@@ -269,9 +269,7 @@ def _localo_read_contract_statuses(
                 id=contract,  # type: ignore[arg-type]
                 status="ready" if facts_by_contract.get(contract) else "missing",
                 evidence_kind=_localo_contract_evidence_kind(contract),
-                metric_fact_names=_unique(
-                    fact.name for fact in facts_by_contract.get(contract, [])
-                ),
+                metric_fact_names=unique(fact.name for fact in facts_by_contract.get(contract, [])),
                 blocked_claims=[]
                 if facts_by_contract.get(contract)
                 else _blocked_claims_for_contract(contract),

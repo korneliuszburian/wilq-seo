@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from wilq.content.operator_copy import build_blocker
 from wilq.schemas import ActionWordPressDraftApplyBlocker, AuditEvent
 
 ActionChain = tuple[AuditEvent, AuditEvent, AuditEvent, AuditEvent]
@@ -38,11 +39,12 @@ def revision_bound_action_chain[Binding](
     chain_events = [preview, review, confirmation, impact]
     if any(event is None for event in chain_events):
         return None, [
-            _blocker(
-                "wordpress_action_chain_incomplete",
-                "Brakuje pełnego śladu akcji",
-                "Apply wymaga preview, approved review, confirm i impact dla tej wersji.",
-                "Przejdź po kolei przez cztery kroki ActionObject.",
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="wordpress_action_chain_incomplete",
+                label="Brakuje pełnego śladu akcji",
+                reason="Apply wymaga preview, approved review, confirm i impact dla tej wersji.",
+                next_step="Przejdź po kolei przez cztery kroki ActionObject.",
             )
         ]
     if preview is None:
@@ -61,58 +63,64 @@ def revision_bound_action_chain[Binding](
     )
     if event_bindings and any(binding != expected_binding for binding in event_bindings):
         return None, [
-            _blocker(
-                "wordpress_action_chain_binding_mismatch",
-                "Ślad akcji dotyczy innej wersji",
-                "Najnowsze preview, review, confirm i impact muszą mieć identyczny binding.",
-                "Ponów cały łańcuch ActionObject dla aktualnej zatwierdzonej wersji.",
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="wordpress_action_chain_binding_mismatch",
+                label="Ślad akcji dotyczy innej wersji",
+                reason="Najnowsze preview, review, confirm i impact muszą mieć identyczny binding.",
+                next_step="Ponów cały łańcuch ActionObject dla aktualnej zatwierdzonej wersji.",
             )
         ]
     if review.event_type != "human_review_approved_for_prepare":
         return None, [
-            _blocker(
-                "wordpress_action_review_not_approved",
-                "Review ActionObject nie zatwierdza wersji",
-                "Najnowsza decyzja ActionObject dla tej wersji nie jest approved_for_prepare.",
-                "Sprawdź wersję i zapisz zatwierdzające review ActionObject.",
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="wordpress_action_review_not_approved",
+                label="Review ActionObject nie zatwierdza wersji",
+                reason="Najnowsza decyzja ActionObject dla tej wersji nie jest approved_for_prepare.",  # noqa: E501
+                next_step="Sprawdź wersję i zapisz zatwierdzające review ActionObject.",
             )
         ]
     if confirmation.event_type != "action_apply_confirmed":
         return None, [
-            _blocker(
-                "wordpress_action_confirmation_invalid",
-                "Brakuje ważnego potwierdzenia",
-                "Najnowsze potwierdzenie tej wersji jest zablokowane albo nie istnieje.",
-                "Potwierdź aktualny podgląd jako operator.",
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="wordpress_action_confirmation_invalid",
+                label="Brakuje ważnego potwierdzenia",
+                reason="Najnowsze potwierdzenie tej wersji jest zablokowane albo nie istnieje.",
+                next_step="Potwierdź aktualny podgląd jako operator.",
             )
         ]
     if impact.event_type != "action_impact_check_completed":
         return None, [
-            _blocker(
-                "wordpress_action_impact_invalid",
-                "Sprawdzenie efektu jest zablokowane",
-                "Apply wymaga zakończonego impact check dla tej samej wersji.",
-                "Uzupełnij dowody i ponów impact check.",
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="wordpress_action_impact_invalid",
+                label="Sprawdzenie efektu jest zablokowane",
+                reason="Apply wymaga zakończonego impact check dla tej samej wersji.",
+                next_step="Uzupełnij dowody i ponów impact check.",
             )
         ]
     if confirmation.actor != confirmed_by:
         return None, [
-            _blocker(
-                "wordpress_action_actor_mismatch",
-                "Operator nie pasuje do potwierdzenia",
-                "Osoba wywołująca apply musi być osobą, która potwierdziła podgląd.",
-                "Wykonaj apply jako operator zapisany w confirm.",
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="wordpress_action_actor_mismatch",
+                label="Operator nie pasuje do potwierdzenia",
+                reason="Osoba wywołująca apply musi być osobą, która potwierdziła podgląd.",
+                next_step="Wykonaj apply jako operator zapisany w confirm.",
             )
         ]
     if not (
         preview.created_at <= review.created_at <= confirmation.created_at <= impact.created_at
     ):
         return None, [
-            _blocker(
-                "wordpress_action_chain_order_invalid",
-                "Kroki akcji są nieaktualne",
-                "Preview, review, confirm i impact nie zostały wykonane w wymaganej kolejności.",
-                "Ponów cały łańcuch ActionObject od podglądu.",
+            build_blocker(
+                ActionWordPressDraftApplyBlocker,
+                code="wordpress_action_chain_order_invalid",
+                label="Kroki akcji są nieaktualne",
+                reason="Preview, review, confirm i impact nie zostały wykonane w wymaganej kolejności.",  # noqa: E501
+                next_step="Ponów cały łańcuch ActionObject od podglądu.",
             )
         ]
     return (preview, review, confirmation, impact), []
@@ -120,11 +128,3 @@ def revision_bound_action_chain[Binding](
 
 def _latest_event(events: list[AuditEvent], event_types: set[str]) -> AuditEvent | None:
     return next((event for event in events if event.event_type in event_types), None)
-
-
-def _blocker(
-    code: str, label: str, reason: str, next_step: str
-) -> ActionWordPressDraftApplyBlocker:
-    return ActionWordPressDraftApplyBlocker(
-        code=code, label=label, reason=reason, next_step=next_step
-    )

@@ -7,6 +7,7 @@ from wilq.briefing.merchant_labels import (
     MERCHANT_RESOLUTION_LABELS,
     MERCHANT_SEVERITY_LABELS,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import ActionRisk, MetricFact, OpportunityDomain, TacticalQueueItem
 
 
@@ -64,7 +65,7 @@ def _issue_items(
                 priority=_priority(severity, product_count, index),
                 risk=ActionRisk.medium if resolution == "MERCHANT_ACTION" else ActionRisk.low,
                 source_connectors=["google_merchant_center"],
-                evidence_ids=_unique(f.evidence_id for f in group_facts),
+                evidence_ids=unique(f.evidence_id for f in group_facts),
                 metric_facts=group_facts[:6],
                 dimensions={
                     "country": country,
@@ -114,7 +115,7 @@ def _status_items(
                 priority=45 + index,
                 risk=ActionRisk.medium if disapproved else ActionRisk.low,
                 source_connectors=["google_merchant_center"],
-                evidence_ids=_unique(f.evidence_id for f in group_facts),
+                evidence_ids=unique(f.evidence_id for f in group_facts),
                 metric_facts=group_facts[:6],
                 dimensions={"country": country, "reporting_context": reporting_context},
                 diagnosis=(
@@ -169,7 +170,3 @@ def _priority(severity: str, product_count: float | int | None, index: int) -> i
 
 def _slug(value: str) -> str:
     return "".join(char if char.isalnum() else "_" for char in value).strip("_")[:80]
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    return list(dict.fromkeys(value for value in values if value))

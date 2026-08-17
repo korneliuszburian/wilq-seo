@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from wilq.briefing.localo.shared import LOCALO_CONNECTOR_ID, _unique
+from wilq.briefing.localo.shared import LOCALO_CONNECTOR_ID
 from wilq.briefing.localo_labels import (
     localo_contract_label,
     localo_evidence_label,
     localo_metric_fact_label,
 )
+from wilq.content.operator_copy import unique
 from wilq.operator_labels import source_connector_label
 from wilq.schemas import (
     ConnectorRefreshRun,
@@ -215,7 +216,7 @@ def _localo_source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
     labels = {
         LOCALO_CONNECTOR_ID: "Localo",
     }
-    return _unique(
+    return unique(
         labels.get(connector_id, source_connector_label(connector_id))
         for connector_id in connector_ids
     )

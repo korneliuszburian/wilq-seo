@@ -7,6 +7,7 @@ from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.briefing.tactical_queue import build_tactical_queue
+from wilq.content.operator_copy import unique
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionObject,
@@ -71,7 +72,6 @@ from .shared import (
     _resolve_latest_connector_refresh,
     _risk_rank,
     _tactical_items_for_latest_refresh,
-    _unique,
 )
 
 
@@ -182,7 +182,7 @@ def _ads_item_from_facts(
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_limited_ids(
-            _unique(
+            unique(
                 [
                     *(latest_refresh.evidence_ids if latest_refresh is not None else []),
                     *(fact.evidence_id for fact in facts),
@@ -258,7 +258,7 @@ def _ads_business_context_item_from_facts(
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_limited_ids(
-            _unique(
+            unique(
                 [
                     *(latest_refresh.evidence_ids if latest_refresh is not None else []),
                     *(fact.evidence_id for fact in facts),
@@ -312,7 +312,7 @@ def _merchant_item_from_tactical(
     issue_cluster_count = _merchant_issue_cluster_count(facts)
     decision_count = max(len(merchant_items), min(issue_cluster_count, 8))
     live_data_available = bool(merchant_items or issue_occurrence_count)
-    action_ids = _unique(
+    action_ids = unique(
         [
             *(action_id for item in merchant_items for action_id in item.action_ids),
             *_action_ids_for(actions, connector=GOOGLE_MERCHANT_CONNECTOR_ID),
@@ -357,7 +357,7 @@ def _merchant_item_from_tactical(
         ),
         source_connectors=[GOOGLE_MERCHANT_CONNECTOR_ID],
         evidence_ids=_limited_ids(
-            _unique(
+            unique(
                 [
                     *(evidence_id for item in merchant_items for evidence_id in item.evidence_ids),
                     *(fact.evidence_id for fact in facts),
@@ -374,7 +374,7 @@ def _merchant_item_from_tactical(
             "blokady": 0 if live_data_available else 1,
         },
         blocked_claims=operator_blocked_claims(
-            _unique(claim for item in merchant_items for claim in item.blocked_claims)
+            unique(claim for item in merchant_items for claim in item.blocked_claims)
             or [
                 "ponowne zatwierdzenie produktu",
                 "odzyskany przychód",
@@ -467,7 +467,7 @@ def _content_item_from_tactical(
         "wordpress_sklep",
     ]
     evidence_ids = _limited_ids(
-        _unique(
+        unique(
             [
                 *(fact.evidence_id for fact in ahrefs_gap_facts),
                 *(evidence_id for item in content_items for evidence_id in item.evidence_ids),
@@ -479,7 +479,7 @@ def _content_item_from_tactical(
         base_source_connectors,
         evidence_ids,
     )
-    action_ids = _unique(
+    action_ids = unique(
         [
             *(
                 action_id
@@ -523,7 +523,7 @@ def _content_item_from_tactical(
             **ahrefs_metric_tiles,
             "blokady": 0 if live_data_available else 1,
         },
-        blocked_claims=_unique(claim for item in content_items for claim in item.blocked_claims)
+        blocked_claims=unique(claim for item in content_items for claim in item.blocked_claims)
         or ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
         risk=ActionRisk.low if live_data_available else ActionRisk.medium,
     )
@@ -693,8 +693,8 @@ def _ga4_item_from_tactical(
         ),
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_limited_ids(
-            _unique(evidence_id for item in ga4_items for evidence_id in item.evidence_ids)
-            or _unique(fact.evidence_id for fact in dimensioned_facts)
+            unique(evidence_id for item in ga4_items for evidence_id in item.evidence_ids)
+            or unique(fact.evidence_id for fact in dimensioned_facts)
             or [connector_evidence_id(GA4_CONNECTOR_ID)]
         ),
         action_ids=action_ids,

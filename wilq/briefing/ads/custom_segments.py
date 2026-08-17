@@ -8,6 +8,7 @@ from wilq.actions.google_ads.custom_segments import (
     custom_segment_apply_safety_review,
 )
 from wilq.briefing.ads_candidate_contracts import build_candidate_read_contracts
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionPreviewCardViewModel,
     AdsCustomSegmentApplySafetyReview,
@@ -52,7 +53,6 @@ from .shared import (
     _refresh_or_connector_evidence_ids,
     _search_term_row_sort_key,
     _slug,
-    _unique,
 )
 
 CUSTOM_SEGMENT_OPERATOR_REVIEW_GATES = [
@@ -181,7 +181,7 @@ def _keyword_planner_read_contract(
             ],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            evidence_ids=unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             idea_rows=rows,
             next_step=(
                 "Użyj wzbogacenia jako dodatkowego kontekstu przy segmentach. "
@@ -281,7 +281,7 @@ def _keyword_planner_idea_row(
             facts_by_name.get("keyword_planner_high_top_of_page_bid_micros")
         ),
         source_terms=source_terms,
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        evidence_ids=unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
         blocked_claims=[
@@ -379,7 +379,7 @@ def _custom_segments_read_contract(
         payload_preview=payload_preview,
         audience_forecast_read_contract=audience_forecast_read_contract,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             evidence_id for candidate in candidates for evidence_id in candidate.evidence_ids
         ),
         missing_read_contracts=missing_read_contracts,
@@ -430,7 +430,7 @@ def _custom_segment_audience_forecast_read_contract(
         operator_review_gates=["forecast_or_audience_size", "human_confirm_before_apply"],
         blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-        evidence_ids=_unique(
+        evidence_ids=unique(
             evidence_id for candidate in candidates for evidence_id in candidate.evidence_ids
         ),
         next_step=(
@@ -479,18 +479,18 @@ def _custom_segment_candidates(
         start=1,
     ):
         sorted_rows = sorted(group_rows, key=_search_term_row_sort_key)[:12]
-        source_terms = _unique(row.search_term for row in sorted_rows)[:10]
+        source_terms = unique(row.search_term for row in sorted_rows)[:10]
         if not source_terms:
             continue
         name = _custom_segment_name(campaign_name, index)
         rejected_pairs = rejected_by_group.get((campaign_id, campaign_name), [])
-        rejected_terms = _unique(term for term, _reason in rejected_pairs)
-        rejection_reasons = _unique(f"{term}: {reason}" for term, reason in rejected_pairs)
+        rejected_terms = unique(term for term, _reason in rejected_pairs)
+        rejection_reasons = unique(f"{term}: {reason}" for term, reason in rejected_pairs)
         matched_keyword_planner_ideas = _matching_keyword_planner_ideas(
             source_terms,
             keyword_planner_ideas,
         )
-        evidence_ids = _unique(
+        evidence_ids = unique(
             [
                 *(evidence_id for row in sorted_rows for evidence_id in row.evidence_ids),
                 *(
@@ -539,8 +539,8 @@ def _custom_segment_candidates(
                     "zatwierdź segment przed zapisem zmian",
                 ],
                 source_terms=source_terms,
-                rejected_terms=_unique(rejected_terms)[:12],
-                rejection_reasons=_unique(rejection_reasons)[:12],
+                rejected_terms=unique(rejected_terms)[:12],
+                rejection_reasons=unique(rejection_reasons)[:12],
                 source_quality=_custom_segment_source_quality(
                     source_terms=source_terms,
                     rows=sorted_rows,
@@ -677,7 +677,7 @@ def _custom_segment_review_reason(
         f"wyświetlenia {_search_term_impressions_review_value(rows)}, "
         f"koszt {_search_term_cost_review_value(rows)}, "
         f"{_format_float(float(total_conversions))} konwersji, "
-        f"{len(_unique(rejected_terms))} odrzuconych terminów. "
+        f"{len(unique(rejected_terms))} odrzuconych terminów. "
         "To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania "
         "reklam ani wpływu na kampanię."
     )
@@ -688,8 +688,8 @@ def _custom_segment_source_quality(
     rows: list[AdsSearchTermMetricRow],
     rejected_pairs: list[tuple[str, str]],
 ) -> AdsCustomSegmentSourceQuality:
-    accepted_terms = len(_unique(source_terms))
-    rejected_terms = len(_unique(term for term, _reason in rejected_pairs))
+    accepted_terms = len(unique(source_terms))
+    rejected_terms = len(unique(term for term, _reason in rejected_pairs))
     reason_counts: dict[str, int] = {}
     for _term, reason in rejected_pairs:
         reason_counts[reason] = reason_counts.get(reason, 0) + 1
@@ -726,10 +726,10 @@ def _custom_segment_change_preview(
     campaign_name: str | None,
     keyword_planner_enriched: bool,
 ) -> AdsCustomSegmentPayloadPreview:
-    source_metric_names = _unique(
+    source_metric_names = unique(
         fact.name for fact in metric_facts if fact.name.startswith("search_term_")
     )
-    row_terms = _unique(row.search_term for row in rows)
+    row_terms = unique(row.search_term for row in rows)
     preview_id = f"preview_{candidate_id}"
     return AdsCustomSegmentPayloadPreview(
         id=preview_id,
@@ -795,19 +795,19 @@ def _hydrate_custom_segments_marketer_labels(
     contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
         contract.missing_read_contracts
     )
-    contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    contract.blocked_claim_labels = unique(contract.blocked_claims)
     forecast_contract = contract.audience_forecast_read_contract
     forecast_contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
         forecast_contract.missing_read_contracts
     )
-    forecast_contract.blocked_claim_labels = _unique(forecast_contract.blocked_claims)
+    forecast_contract.blocked_claim_labels = unique(forecast_contract.blocked_claims)
 
     for candidate in contract.candidates:
         candidate.confidence_label = _ads_confidence_label(candidate.confidence)
         candidate.validation_status_label = _ads_validation_status_label(
             candidate.validation_status
         )
-        candidate.blocked_claim_labels = _unique(candidate.blocked_claims)
+        candidate.blocked_claim_labels = unique(candidate.blocked_claims)
         candidate.source_quality.rejection_reason_labels = {
             _custom_segment_rejection_reason_label(reason): count
             for reason, count in candidate.source_quality.rejection_reasons.items()
@@ -820,7 +820,7 @@ def _hydrate_custom_segments_marketer_labels(
         _hydrate_custom_segment_payload_preview_labels(preview)
 
     for row in forecast_contract.forecast_rows:
-        row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_labels = unique(row.blocked_claims)
 
 
 def _custom_segment_preview_card(
@@ -886,7 +886,7 @@ def _hydrate_custom_segment_payload_preview_labels(
     preview: AdsCustomSegmentPayloadPreview,
 ) -> None:
     preview.required_validation_labels = _ads_review_gate_labels(preview.required_validation)
-    preview.blocked_claim_labels = _unique(preview.blocked_claims)
+    preview.blocked_claim_labels = unique(preview.blocked_claims)
     safety_review = preview.safety_review
     safety_review.status_label = _ads_status_label(safety_review.status)
     safety_review.missing_requirement_labels = _ads_missing_read_contract_labels(
@@ -895,10 +895,10 @@ def _hydrate_custom_segment_payload_preview_labels(
     safety_review.required_validation_labels = _ads_review_gate_labels(
         safety_review.required_validation
     )
-    safety_review.blocked_claim_labels = _unique(safety_review.blocked_claims)
+    safety_review.blocked_claim_labels = unique(safety_review.blocked_claims)
     for target in preview.targeting_preview:
         target.required_validation_labels = _ads_review_gate_labels(target.required_validation)
-        target.blocked_claim_labels = _unique(target.blocked_claims)
+        target.blocked_claim_labels = unique(target.blocked_claims)
 
 
 def _custom_segment_rejection_reason_label(reason: str) -> str:

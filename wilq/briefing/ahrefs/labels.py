@@ -1,8 +1,10 @@
 """Polish Ahrefs operator labels."""
+
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     AhrefsDecisionItem,
     AhrefsDiagnosticSection,
@@ -16,7 +18,6 @@ from wilq.schemas import (
 from .shared import (
     AhrefsBudgetStageStatus,
     AhrefsGapType,
-    _unique,
 )
 
 AHREFS_DECISION_TYPE_LABELS = {
@@ -68,6 +69,7 @@ AHREFS_REVIEW_GATE_LABELS = {
     "human_strategy_review": "sprawdzenie strategii przez człowieka",
 }
 
+
 def _ahrefs_budget_stage_status_label(status: AhrefsBudgetStageStatus) -> str:
     return {
         "completed": "zakończony",
@@ -76,6 +78,7 @@ def _ahrefs_budget_stage_status_label(status: AhrefsBudgetStageStatus) -> str:
         "not_run": "nieuruchomiony",
     }[status]
 
+
 def _ahrefs_cross_check_status_label(status: str) -> str:
     labels = {
         "api_backed": "sprawdzenie GSC i WordPress ma dopasowania z API",
@@ -83,6 +86,7 @@ def _ahrefs_cross_check_status_label(status: str) -> str:
         "missing": "brak rekordów Ahrefs do cross-checku",
     }
     return labels.get(status, "cross-check do sprawdzenia")
+
 
 def _gap_fact_value_label(fact: MetricFact) -> str:
     if isinstance(fact.value, int | float):
@@ -121,11 +125,14 @@ def _gap_fact_value_label(fact: MetricFact) -> str:
 
     return f"{_gap_fact_label(fact.name)}: {fact.value}"
 
+
 def _gap_fact_label(name: str) -> str:
     return _ahrefs_metric_fact_label(name)
 
+
 def _ahrefs_gap_record_count_label(count: int) -> str:
     return f"{count} {_ahrefs_count_word(count, 'rekord luk', 'rekordy luk', 'rekordów luk')}"
+
 
 def _ahrefs_count_word(count: int, one: str, few: str, many: str) -> str:
     absolute = abs(count)
@@ -135,11 +142,14 @@ def _ahrefs_count_word(count: int, one: str, few: str, many: str) -> str:
         return few
     return many
 
+
 def _missing_gap_contract_label(contract: str) -> str:
     return _ahrefs_read_contract_label(contract)
 
+
 def _gap_type_label(gap_type: AhrefsGapType) -> str:
     return AHREFS_GAP_TYPE_LABELS[gap_type]
+
 
 def _label_ahrefs_section(section: AhrefsDiagnosticSection) -> AhrefsDiagnosticSection:
     return section.model_copy(
@@ -149,6 +159,7 @@ def _label_ahrefs_section(section: AhrefsDiagnosticSection) -> AhrefsDiagnosticS
         }
     )
 
+
 def _label_ahrefs_decision(decision: AhrefsDecisionItem) -> AhrefsDecisionItem:
     return decision.model_copy(
         update={
@@ -157,6 +168,7 @@ def _label_ahrefs_decision(decision: AhrefsDecisionItem) -> AhrefsDecisionItem:
             "blocked_claim_labels": decision.blocked_claims,
         }
     )
+
 
 def _label_ahrefs_gap_read_contract(
     contract: AhrefsGapReadContract,
@@ -168,6 +180,7 @@ def _label_ahrefs_gap_read_contract(
         }
     )
 
+
 def _label_ahrefs_operator_summary(
     summary: AhrefsOperatorSummary,
 ) -> AhrefsOperatorSummary:
@@ -178,6 +191,7 @@ def _label_ahrefs_operator_summary(
         }
     )
 
+
 def _ahrefs_status_label(status: str) -> str:
     labels = {
         "ready": "gotowe",
@@ -185,6 +199,7 @@ def _ahrefs_status_label(status: str) -> str:
         "missing": "dane Ahrefs niepotwierdzone",
     }
     return labels.get(status, "status Ahrefs do sprawdzenia")
+
 
 def _ahrefs_connector_status_label(status: str) -> str:
     labels = {
@@ -194,13 +209,16 @@ def _ahrefs_connector_status_label(status: str) -> str:
     }
     return labels.get(status, "status źródła do sprawdzenia")
 
+
 def _ahrefs_refresh_status_label(run: ConnectorRefreshRun | object) -> str:
     if not isinstance(run, ConnectorRefreshRun):
         return "status odczytu do sprawdzenia"
     return connector_refresh_run_status_label(run)
 
+
 def _ahrefs_live_data_status_label(live_data_available: bool) -> str:
     return "metryki Ahrefs dostępne" if live_data_available else "brak metryk Ahrefs"
+
 
 def _ahrefs_priority_label(priority: int) -> str:
     if priority <= 10:
@@ -211,26 +229,33 @@ def _ahrefs_priority_label(priority: int) -> str:
         return "średni priorytet"
     return "niski priorytet"
 
+
 def _ahrefs_decision_type_label(value: str) -> str:
     return AHREFS_DECISION_TYPE_LABELS.get(value, "decyzja Ahrefs")
+
 
 def _ahrefs_metric_fact_label(name: str) -> str:
     return AHREFS_METRIC_FACT_LABELS.get(name, "metryka Ahrefs")
 
+
 def _ahrefs_read_contract_label(contract: str) -> str:
     return AHREFS_READ_CONTRACT_LABELS.get(contract, "dane Ahrefs")
+
 
 def _ahrefs_review_gate_label(gate: str) -> str:
     return AHREFS_REVIEW_GATE_LABELS.get(gate, "sprawdzenie przez operatora")
 
+
 def _metric_fact_labels_for_facts(facts: list[MetricFact]) -> dict[str, str]:
     return {fact.name: _ahrefs_metric_fact_label(fact.name) for fact in facts}
+
 
 def _labels_for_values(
     values: Iterable[str],
     labeler: Callable[[str], str],
 ) -> list[str]:
-    return _unique(labeler(value) for value in values)
+    return unique(labeler(value) for value in values)
+
 
 def _ahrefs_read_status_label(status: int | float | str | None) -> str:
     if status == "completed":
@@ -243,6 +268,7 @@ def _ahrefs_read_status_label(status: int | float | str | None) -> str:
         return "status wymaga sprawdzenia"
     return "brak statusu"
 
+
 def _ahrefs_read_mode_label(mode: int | float | str | None) -> str:
     if mode == "subdomains":
         return "subdomeny"
@@ -254,12 +280,14 @@ def _ahrefs_read_mode_label(mode: int | float | str | None) -> str:
         return "zakres wymaga sprawdzenia"
     return "brak zakresu"
 
+
 def _ahrefs_country_label(country: int | float | str | None) -> str:
     if country == "pl":
         return "Polska"
     if country:
         return str(country).upper()
     return "brak kraju"
+
 
 def _ahrefs_metric_value_label(value: int | float | str) -> str:
     if isinstance(value, int):
@@ -269,4 +297,3 @@ def _ahrefs_metric_value_label(value: int | float | str) -> str:
             return f"{int(value):,}".replace(",", " ")
         return f"{value:,.2f}".replace(",", " ").replace(".", ",")
     return str(value)
-

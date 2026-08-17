@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import Any
 
 from wilq.actions.google_ads.budget_safety import budget_apply_safety_review
@@ -28,6 +27,7 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
+from wilq.content.operator_copy import unique
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -284,12 +284,12 @@ def campaign_review_payload_from_metric_facts(
             str(candidate["campaign_name"]),
         ),
     )[:8]
-    evidence_ids = _unique(
+    evidence_ids = unique(
         evidence_id for candidate in candidates for evidence_id in candidate.get("evidence_ids", [])
     )
     if not evidence_ids:
         return None
-    source_metric_names = _unique(
+    source_metric_names = unique(
         metric_name
         for candidate in candidates
         for metric_name in candidate.get("source_metric_names", [])
@@ -299,7 +299,7 @@ def campaign_review_payload_from_metric_facts(
         for candidate in candidates
         if isinstance(candidate.get("budget_payload_preview"), dict)
     ]
-    campaign_ids = _unique(
+    campaign_ids = unique(
         str(candidate["campaign_id"])
         for candidate in candidates
         if candidate.get("campaign_id") is not None
@@ -387,8 +387,8 @@ def _campaign_candidate(
     recommended_budget_amount_micros = _int_metric_value(
         facts_by_name.get("budget_recommended_amount_micros")
     )
-    source_metric_names = _unique(fact.name for fact in facts)
-    evidence_ids = _unique(fact.evidence_id for fact in facts)
+    source_metric_names = unique(fact.name for fact in facts)
+    evidence_ids = unique(fact.evidence_id for fact in facts)
     expected_metrics = [
         "clicks",
         "impressions",
@@ -660,15 +660,6 @@ def _micros_to_account_units(value: float | int | None) -> float | None:
     if value is None:
         return None
     return float(value) / 1_000_000
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    result: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in result:
-            result.append(text)
-    return result
 
 
 def _slug(value: object) -> str:

@@ -61,12 +61,12 @@ def build_change_history_read_contract(
         "zapis zmian kampanii",
     ]
     if rows:
-        resource_types = _unique(
+        resource_types = unique(
             _change_resource_type_label(row.change_resource_type)
             for row in rows
             if row.change_resource_type is not None
         )
-        operations = _unique(
+        operations = unique(
             _resource_change_operation_label(row.resource_change_operation)
             for row in rows
             if row.resource_change_operation is not None
@@ -87,7 +87,7 @@ def build_change_history_read_contract(
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(
+            evidence_ids=unique(
                 [*(evidence_id for row in rows for evidence_id in row.evidence_ids)]
                 or fallback_evidence_ids
             ),
@@ -186,7 +186,7 @@ def _change_history_row(
             facts_by_name.get("change_event_changed_field_count")
         ),
         changed_fields=changed_fields,
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        evidence_ids=unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
         blocked_claims=[
@@ -242,8 +242,6 @@ def _int_metric_value(fact: MetricFact | None) -> int | None:
         return int(float(fact.value))
     except (TypeError, ValueError):
         return None
-
-
 def _unique(values: Iterable[object]) -> list[str]:
     seen: set[str] = set()
     unique_values: list[str] = []
@@ -256,3 +254,6 @@ def _unique(values: Iterable[object]) -> list[str]:
         seen.add(text)
         unique_values.append(text)
     return unique_values
+
+
+unique = _unique

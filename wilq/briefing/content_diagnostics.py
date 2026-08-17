@@ -15,6 +15,7 @@ from wilq.briefing.tactical_queue import (
 )
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
+from wilq.content.operator_copy import unique
 from wilq.content.planning.ahrefs import ahrefs_gap_record_decisions
 from wilq.content.planning.decisions import (
     content_decision_sort_key,
@@ -94,6 +95,8 @@ class _ContentFreshnessQualityFields(TypedDict):
     connector_settlement_states: dict[str, ConnectorSettlementState]
     connector_quality_states: dict[str, ConnectorQualityState]
     connector_quality_caveats: dict[str, list[str]]
+
+
 CONTENT_STALE_AFTER_HOURS = 48
 GSC_CONTENT_KNOWLEDGE_CARD_IDS = (
     "card_gsc_seo_content_playbook",
@@ -208,13 +211,13 @@ def build_content_diagnostics(
         ),
     ]
     sections = [content_section_with_api_labels(section) for section in sections]
-    evidence_ids = _unique(
+    evidence_ids = unique(
         [
             *(evidence_id for section in sections for evidence_id in section.evidence_ids),
             *(evidence_id for decision in decision_queue for evidence_id in decision.evidence_ids),
         ]
     )
-    action_ids = _unique(
+    action_ids = unique(
         [
             *(action_id for section in sections for action_id in section.action_ids),
             *(action_id for decision in decision_queue for action_id in decision.action_ids),
@@ -222,7 +225,7 @@ def build_content_diagnostics(
     )
     query_page_count = content_query_page_count(content_tactical_items)
     matched_inventory_count = content_matched_inventory_count(content_tactical_items)
-    response_source_connectors = _unique(
+    response_source_connectors = unique(
         [
             *(connector for section in sections for connector in section.source_connectors),
             *(connector for decision in decision_queue for connector in decision.source_connectors),
@@ -377,7 +380,7 @@ def build_content_preflight(
     diagnostics = diagnostics or build_content_diagnostics()
     items = [build_content_preflight_item(decision) for decision in diagnostics.decision_queue]
     primary_item = next((item for item in items if item.status != "blocked"), None)
-    source_connectors = _unique(connector for item in items for connector in item.source_connectors)
+    source_connectors = unique(connector for item in items for connector in item.source_connectors)
     return ContentPreflightResponse(
         strict_instruction=(
             "Bramka pisania działa przed planem treści i szkicem. Nie wolno pisać "
@@ -386,7 +389,7 @@ def build_content_preflight(
         ),
         primary_item=primary_item or (items[0] if items else None),
         items=items,
-        evidence_ids=_unique(evidence_id for item in items for evidence_id in item.evidence_ids),
+        evidence_ids=unique(evidence_id for item in items for evidence_id in item.evidence_ids),
         source_connectors=source_connectors,
         source_connector_labels=source_connector_labels(source_connectors),
         blocker_count=sum(1 for item in items if item.status == "blocked"),
@@ -468,7 +471,7 @@ def _content_freshness_assessment(
         if connector_by_id.get(connector_id) is not None
         and connector_by_id[connector_id].freshness.state == "stale"
     ]
-    requiring_refresh_ids = _unique([*missing_ids, *blocked_ids, *stale_ids])
+    requiring_refresh_ids = unique([*missing_ids, *blocked_ids, *stale_ids])
     requiring_refresh_labels = [
         _content_connector_short_label(connector_by_id.get(connector_id), connector_id)
         for connector_id in requiring_refresh_ids
@@ -577,9 +580,7 @@ def _content_freshness_assessment(
         stale_after_hours=CONTENT_STALE_AFTER_HOURS,
         requires_refresh=False,
         **quality_fields,
-        summary=(
-            f"Podstawowe dane treści mieszczą się w progu {CONTENT_STALE_AFTER_HOURS}h."
-        ),
+        summary=(f"Podstawowe dane treści mieszczą się w progu {CONTENT_STALE_AFTER_HOURS}h."),
         next_step="Można użyć content diagnostics do review bez dodatkowego odświeżenia.",
     )
 
@@ -687,10 +688,7 @@ def _gsc_search_analytics_paging_label(
     if row_limit is None or max_rows is None:
         return "Brak potwierdzonej informacji o stronicowaniu zapytań i adresów."
     truncation = "wynik mógł zostać ucięty" if rows_truncated else "wynik nie zgłasza ucięcia"
-    return (
-        f"Paginacja zapytań i adresów: rowLimit={row_limit}, max rows={max_rows}; "
-        f"{truncation}."
-    )
+    return f"Paginacja zapytań i adresów: rowLimit={row_limit}, max rows={max_rows}; {truncation}."
 
 
 def _content_connector_short_label(
@@ -782,26 +780,13 @@ def _content_action_ids(actions: list[ActionObject]) -> list[str]:
     # content action registry. Draft handoff and Service Profile promotion
     # actions belong to their own reviewed workflow seams and must not inflate
     # the queue's single safe next action.
-    return [
-        action.id
-        for action in actions
-        if action.id == "act_prepare_content_refresh_queue"
-    ]
+    return [action.id for action in actions if action.id == "act_prepare_content_refresh_queue"]
 
 
 def _list_actions() -> list[ActionObject]:
     from wilq.actions.service import list_actions_cached
 
     return list_actions_cached()
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
 
 
 def _content_decision_with_api_labels(decision: ContentDecisionItem) -> ContentDecisionItem:

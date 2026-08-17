@@ -1,10 +1,12 @@
 """Ahrefs gap contracts, records, coverage, and cross-checks."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal, cast
 
+from wilq.content.operator_copy import unique
 from wilq.content.planning.ahrefs import ahrefs_cross_source_candidate_rows
 from wilq.content.planning.ahrefs_overlap import ahrefs_gap_mapping_key
 from wilq.schemas import (
@@ -40,7 +42,6 @@ from .shared import (
     _ahrefs_snapshot_date,
     _clean_metric_tiles,
     _evidence_ids_for_facts_or_refresh,
-    _unique,
 )
 
 AHREFS_GAP_READ_CONTRACTS = [
@@ -76,6 +77,7 @@ AHREFS_GAP_TYPES = {
 
 AHREFS_REVIEWABLE_GAP_RECORD_LIMIT = 8
 
+
 @dataclass(frozen=True)
 class AhrefsGapCrossCheck:
     candidates: list[ContentAhrefsCandidateRow]
@@ -85,6 +87,7 @@ class AhrefsGapCrossCheck:
     wordpress_match_count: int
     source_connectors: list[str]
     evidence_ids: list[str]
+
 
 def _ahrefs_gap_read_contract(
     *,
@@ -106,7 +109,7 @@ def _ahrefs_gap_read_contract(
         cross_check.mapping_candidates,
     )
     blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
-    evidence_ids = _unique(
+    evidence_ids = unique(
         [
             *_evidence_ids_for_facts_or_refresh(
                 [*gap_facts, *authority_facts],
@@ -164,7 +167,7 @@ def _ahrefs_gap_read_contract(
             ],
             _ahrefs_review_gate_label,
         ),
-        source_connectors=_unique([AHREFS_CONNECTOR_ID, *cross_check.source_connectors]),
+        source_connectors=unique([AHREFS_CONNECTOR_ID, *cross_check.source_connectors]),
         evidence_ids=evidence_ids,
         action_ids=action_ids,
         gap_records=gap_records,
@@ -190,6 +193,7 @@ def _ahrefs_gap_read_contract(
         ),
         risk=ActionRisk.medium,
     )
+
 
 def _apply_exact_wordpress_cross_checks(
     records: list[AhrefsGapRecord],
@@ -229,6 +233,7 @@ def _apply_exact_wordpress_cross_checks(
         )
     return records
 
+
 def _build_ahrefs_gap_cross_check(
     *,
     gap_facts: list[MetricFact],
@@ -262,6 +267,7 @@ def _build_ahrefs_gap_cross_check(
         evidence_ids=evidence_ids,
     )
 
+
 def _ahrefs_gap_action_ids(
     *,
     gap_records: list[AhrefsGapRecord],
@@ -271,6 +277,7 @@ def _ahrefs_gap_action_ids(
     if gap_records and not missing_contracts and cross_check_status == "api_backed":
         return [AHREFS_CONTENT_REFRESH_ACTION_ID]
     return []
+
 
 def _ahrefs_gap_read_next_step(
     *,
@@ -290,6 +297,7 @@ def _ahrefs_gap_read_next_step(
         )
     return "Połącz luki Ahrefs z GSC i WordPress, potem przygotuj kolejkę sprawdzenia."
 
+
 def _ahrefs_cross_check_trace(
     candidates: Iterable[ContentAhrefsCandidateRow],
 ) -> tuple[list[str], list[str]]:
@@ -300,9 +308,10 @@ def _ahrefs_cross_check_trace(
         if check.strength == "exact"
     ]
     return (
-        _unique(connector for check in exact_checks for connector in check.source_connectors),
-        _unique(evidence_id for check in exact_checks for evidence_id in check.evidence_ids),
+        unique(connector for check in exact_checks for connector in check.source_connectors),
+        unique(evidence_id for check in exact_checks for evidence_id in check.evidence_ids),
     )
+
 
 def _ahrefs_cross_check_status(
     *,
@@ -315,6 +324,7 @@ def _ahrefs_cross_check_status(
     if gsc_match_count or wordpress_match_count:
         return "api_backed"
     return "manual_required"
+
 
 def _ahrefs_cross_check_summary(
     *,
@@ -337,6 +347,7 @@ def _ahrefs_cross_check_summary(
         "nie brief-ready decyzją."
     )
 
+
 def _ahrefs_cross_check_next_step(status: str) -> str:
     if status == "api_backed":
         return (
@@ -344,11 +355,9 @@ def _ahrefs_cross_check_next_step(status: str) -> str:
             "scalenie, obserwacja albo blokada tematu."
         )
     if status == "manual_required":
-        return (
-            "Sprawdź ręcznie GSC i spis WordPress dla tematów Ahrefs przed "
-            "tworzeniem briefu."
-        )
+        return "Sprawdź ręcznie GSC i spis WordPress dla tematów Ahrefs przed tworzeniem briefu."
     return "Najpierw odczytaj rekordy luk Ahrefs, potem sprawdź GSC i WordPress."
+
 
 def _ahrefs_gap_records(
     gap_facts: list[MetricFact],
@@ -422,6 +431,7 @@ def _ahrefs_gap_records(
         )[:AHREFS_REVIEWABLE_GAP_RECORD_LIMIT]
     ]
 
+
 def _ahrefs_gap_record(
     *,
     gap_type: AhrefsGapType,
@@ -464,11 +474,12 @@ def _ahrefs_gap_record(
         coverage_summary=_gap_coverage_summary(facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         metric_fact_labels=_metric_fact_labels_for_facts(facts),
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        evidence_ids=unique(fact.evidence_id for fact in facts),
         blocked_claims=AHREFS_GAP_IMPACT_BLOCKED_CLAIMS,
         next_step=_gap_record_next_step(gap_type),
         risk=ActionRisk.medium,
     )
+
 
 def _gap_mapping_status(
     referenced_public_url: str | None,
@@ -482,13 +493,10 @@ def _gap_mapping_status(
         return "exact"
     return "review_required" if referenced_public_url else "unbound"
 
+
 def _gap_derived_method(facts: list[MetricFact]) -> str:
     derived = next(
-        (
-            fact.dimensions.get("gap_method")
-            for fact in facts
-            if fact.dimensions.get("gap_method")
-        ),
+        (fact.dimensions.get("gap_method") for fact in facts if fact.dimensions.get("gap_method")),
         None,
     )
     return (
@@ -496,6 +504,7 @@ def _gap_derived_method(facts: list[MetricFact]) -> str:
         if isinstance(derived, str)
         else "różnica zbioru słów konkurencji i słów domeny docelowej"
     )
+
 
 def _gap_coverage_summary(facts: list[MetricFact]) -> str:
     sample = next(
@@ -551,10 +560,7 @@ def _gap_coverage_summary(facts: list[MetricFact]) -> str:
         None,
     )
     if refdomain_sample and refdomain_limit:
-        return (
-            f"próbka domen odsyłających: {refdomain_sample}; "
-            f"limit porównania: {refdomain_limit}"
-        )
+        return f"próbka domen odsyłających: {refdomain_sample}; limit porównania: {refdomain_limit}"
     competitor_sample = next(
         (
             fact.dimensions.get("target_competitor_sample_size")
@@ -572,25 +578,20 @@ def _gap_coverage_summary(facts: list[MetricFact]) -> str:
         None,
     )
     if competitor_sample and competitor_limit:
-        return (
-            f"próbka konkurentów: {competitor_sample}; "
-            f"limit porównania: {competitor_limit}"
-        )
+        return f"próbka konkurentów: {competitor_sample}; limit porównania: {competitor_limit}"
     return "zakres próby nie został podany w rekordzie"
+
 
 def _gap_records_coverage_summary(records: list[AhrefsGapRecord]) -> str:
     summaries = list(
-        dict.fromkeys(
-            record.coverage_summary
-            for record in records
-            if record.coverage_summary
-        )
+        dict.fromkeys(record.coverage_summary for record in records if record.coverage_summary)
     )
     if not summaries:
         return "Brak potwierdzonego zakresu próby."
     if len(summaries) == 1:
         return summaries[0]
     return "Zakres rekordów: " + "; ".join(summaries[:3])
+
 
 def _gap_type_for_fact(fact: MetricFact) -> AhrefsGapType:
     configured_type = fact.dimensions.get("gap_type")
@@ -608,12 +609,14 @@ def _gap_type_for_fact(fact: MetricFact) -> AhrefsGapType:
         return "top_page_gap"
     return "content_gap"
 
+
 def _dimension_value(fact: MetricFact, *keys: str) -> str | None:
     for key in keys:
         value = fact.dimensions.get(key)
         if value:
             return value
     return None
+
 
 def _is_record_level_gap_fact(fact: MetricFact) -> bool:
     return (
@@ -641,6 +644,7 @@ def _is_record_level_gap_fact(fact: MetricFact) -> bool:
         is not None
     )
 
+
 def _gap_record_title(
     *,
     gap_type: AhrefsGapType,
@@ -659,6 +663,7 @@ def _gap_record_title(
     }
     return f"{labels[gap_type]}: {anchor}"
 
+
 def _gap_fact_summary(gap_type: AhrefsGapType, facts: list[MetricFact]) -> str:
     sorted_facts = sorted(facts, key=lambda fact: fact.name)
     if len(sorted_facts) > 1:
@@ -666,10 +671,12 @@ def _gap_fact_summary(gap_type: AhrefsGapType, facts: list[MetricFact]) -> str:
         return f"{len(sorted_facts)} {signal_label} Ahrefs typu {_gap_type_label(gap_type)}"
     return ", ".join(_gap_fact_value_label(fact) for fact in sorted_facts)
 
+
 def _missing_gap_contracts_summary(missing_contracts: list[str]) -> str:
     if not missing_contracts:
         return "dane kompletne"
     return ", ".join(_missing_gap_contract_label(contract) for contract in missing_contracts)
+
 
 def _gap_record_next_step(gap_type: AhrefsGapType) -> str:
     if gap_type == "backlink_gap":
@@ -684,6 +691,7 @@ def _gap_record_next_step(gap_type: AhrefsGapType) -> str:
         )
     return "Przejrzyj rekord Ahrefs z operatorem przed jakąkolwiek rekomendacją."
 
+
 def _gap_record_type_priority(gap_type: AhrefsGapType) -> int:
     priorities = {
         "content_gap": 0,
@@ -694,6 +702,7 @@ def _gap_record_type_priority(gap_type: AhrefsGapType) -> int:
     }
     return priorities[gap_type]
 
+
 def _gap_record_id(
     gap_type: AhrefsGapType,
     source_url: str | None,
@@ -703,6 +712,7 @@ def _gap_record_id(
 ) -> str:
     parts = [gap_type, competitor_domain, keyword, referenced_public_url, source_url]
     return f"ahrefs_gap_{_slug('_'.join(part for part in parts if part))}"
+
 
 def _gap_record_tiles(
     gap_records: list[AhrefsGapRecord],
@@ -722,6 +732,7 @@ def _gap_record_tiles(
             "brakujące dane": len(missing_contracts),
         }
     )
+
 
 def _missing_gap_contracts(gap_facts: list[MetricFact]) -> list[str]:
     if not gap_facts:
@@ -755,6 +766,7 @@ def _missing_gap_contracts(gap_facts: list[MetricFact]) -> list[str]:
         missing_contracts.append("ahrefs_gap_coverage")
     return missing_contracts
 
+
 def _gap_coverage_is_expected(gap_facts: list[MetricFact]) -> bool:
     """Only enforce comparison scope when the source declares that scope."""
     return any(
@@ -770,24 +782,28 @@ def _gap_coverage_is_expected(gap_facts: list[MetricFact]) -> bool:
         for fact in gap_facts
     )
 
+
 def _gap_record_has_complete_coverage(record: AhrefsGapRecord) -> bool:
     return bool(record.coverage_summary) and (
         record.coverage_summary != "zakres próby nie został podany w rekordzie"
     )
 
+
 def _available_gap_contracts(missing_contracts: list[str]) -> list[str]:
     return [contract for contract in AHREFS_GAP_READ_CONTRACTS if contract not in missing_contracts]
+
 
 def _allowed_gap_evidence(
     authority_facts: list[MetricFact],
     gap_facts: list[MetricFact],
 ) -> list[str]:
-    return _unique(
+    return unique(
         [
             *(fact.name for fact in authority_facts),
             *(fact.name for fact in gap_facts),
         ]
     )
+
 
 def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[str]:
     claims_by_contract = {
@@ -802,5 +818,4 @@ def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[
         claim for contract, claim in claims_by_contract.items() if contract in missing_contracts
     ]
     claims.extend(AHREFS_GAP_IMPACT_BLOCKED_CLAIMS)
-    return _unique(claims)
-
+    return unique(claims)

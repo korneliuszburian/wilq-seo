@@ -24,6 +24,7 @@ from wilq.content.knowledge.cards import (
     required_content_knowledge_card_ids,
 )
 from wilq.content.knowledge.source_facts import ekologus_source_fact_registry
+from wilq.content.operator_copy import build_blocker, unique
 from wilq.content.preflight.workflow import ContentPreflightVerdict
 from wilq.content.workflow.contracts.models import ContentWorkItem
 
@@ -238,19 +239,15 @@ def build_content_sales_brief(
                 enrichment=enrichment,
                 knowledge_match=knowledge_match,
             ),
-            evidence_ids=_unique([*item.evidence_ids, *preflight.evidence_ids]),
-            source_connectors=_unique(
-                [*item.source_connectors, *preflight.source_connectors]
-            ),
+            evidence_ids=unique([*item.evidence_ids, *preflight.evidence_ids]),
+            source_connectors=unique([*item.source_connectors, *preflight.source_connectors]),
             forbidden_claims=_forbidden_claims(claim_ledger),
             missing_evidence=seed.missing_evidence,
             measurement_plan=ContentSalesBriefMeasurementPlan(
                 measurement_window_id=str(item.measurement_window_id),
                 metrics_to_watch=_metrics_to_watch(enrichment),
                 baseline_source_connectors=(
-                    []
-                    if enrichment is None
-                    else enrichment.measurement_baseline.source_connectors
+                    [] if enrichment is None else enrichment.measurement_baseline.source_connectors
                 ),
                 baseline_evidence_ids=(
                     [] if enrichment is None else enrichment.measurement_baseline.evidence_ids
@@ -302,20 +299,22 @@ def _enrichment_blockers(
 ) -> list[ContentSalesBriefBlocker]:
     if enrichment is None:
         return [
-            _blocker(
-                "missing_enrichment",
-                "Brakuje wzbogacenia tematu",
-                "Sales Brief v2 musi bazować na opportunity enrichment z WILQ API.",
-                "Uruchom enrichment dla work itemu przed briefem.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="missing_enrichment",
+                label="Brakuje wzbogacenia tematu",
+                reason="Sales Brief v2 musi bazować na opportunity enrichment z WILQ API.",
+                next_step="Uruchom enrichment dla work itemu przed briefem.",
             )
         ]
     if enrichment.status != "ready":
         return [
-            _blocker(
-                "enrichment_not_ready",
-                "Wzbogacenie tematu jest zablokowane",
-                "Brief nie może pominąć blockerów enrichmentu.",
-                enrichment.safe_next_step,
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="enrichment_not_ready",
+                label="Wzbogacenie tematu jest zablokowane",
+                reason="Brief nie może pominąć blockerów enrichmentu.",
+                next_step=enrichment.safe_next_step,
             )
         ]
     return []
@@ -326,19 +325,21 @@ def _knowledge_match_blockers(
 ) -> list[ContentSalesBriefBlocker]:
     if knowledge_match is None:
         return [
-            _blocker(
-                "missing_required_knowledge_card",
-                "Brakuje kart wiedzy Ekologus",
-                "Sales Brief v2 wymaga typed knowledge cards dla usługi, CTA, claimów i dowodów.",
-                "Dopasuj karty wiedzy do work itemu przed briefem.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="missing_required_knowledge_card",
+                label="Brakuje kart wiedzy Ekologus",
+                reason="Sales Brief v2 wymaga typed knowledge cards dla usługi, CTA, claimów i dowodów.",  # noqa: E501
+                next_step="Dopasuj karty wiedzy do work itemu przed briefem.",
             )
         ]
     return [
-        _blocker(
-            "missing_required_knowledge_card",
-            blocker.label,
-            blocker.reason,
-            blocker.next_step,
+        build_blocker(
+            ContentSalesBriefBlocker,
+            code="missing_required_knowledge_card",
+            label=blocker.label,
+            reason=blocker.reason,
+            next_step=blocker.next_step,
         )
         for blocker in content_knowledge_card_blockers(knowledge_match)
     ]
@@ -352,38 +353,42 @@ def _preflight_and_evidence_blockers(
     blockers: list[ContentSalesBriefBlocker] = []
     if not preflight.sales_brief_allowed:
         blockers.append(
-            _blocker(
-                "preflight_not_ready",
-                "Preflight nie pozwala na brief",
-                "Sales Brief może powstać dopiero po preflight verdict.",
-                "Rozwiąż blokady preflightu i plan preserve-first.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="preflight_not_ready",
+                label="Preflight nie pozwala na brief",
+                reason="Sales Brief może powstać dopiero po preflight verdict.",
+                next_step="Rozwiąż blokady preflightu i plan preserve-first.",
             )
         )
     if not item.evidence_ids and not preflight.evidence_ids:
         blockers.append(
-            _blocker(
-                "missing_evidence",
-                "Brakuje dowodów",
-                "Brief bez evidence ID byłby promptem, nie kontraktem WILQ.",
-                "Najpierw dodaj evidence IDs z GSC, WordPress, GA4, Ahrefs albo innego źródła.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="missing_evidence",
+                label="Brakuje dowodów",
+                reason="Brief bez evidence ID byłby promptem, nie kontraktem WILQ.",
+                next_step="Najpierw dodaj evidence IDs z GSC, WordPress, GA4, Ahrefs albo innego źródła.",  # noqa: E501
             )
         )
     if not item.source_connectors and not preflight.source_connectors:
         blockers.append(
-            _blocker(
-                "missing_source_connector",
-                "Brakuje źródła danych",
-                "Brief musi wskazywać, z jakich connectorów pochodzi wiedza.",
-                "Podłącz lub wskaż source connector dla tego work itemu.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="missing_source_connector",
+                label="Brakuje źródła danych",
+                reason="Brief musi wskazywać, z jakich connectorów pochodzi wiedza.",
+                next_step="Podłącz lub wskaż source connector dla tego work itemu.",
             )
         )
     if not seed.source_facts:
         blockers.append(
-            _blocker(
-                "missing_source_fact",
-                "Brakuje faktów źródłowych",
-                "Brief musi zawierać konkretne fakty z dowodami, nie tylko kierunek pisania.",
-                "Dodaj source_facts z evidence ID i connector ID.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="missing_source_fact",
+                label="Brakuje faktów źródłowych",
+                reason="Brief musi zawierać konkretne fakty z dowodami, nie tylko kierunek pisania.",  # noqa: E501
+                next_step="Dodaj source_facts z evidence ID i connector ID.",
             )
         )
     return blockers
@@ -395,29 +400,32 @@ def _canonical_and_measurement_blockers(
     blockers: list[ContentSalesBriefBlocker] = []
     if not item.final_canonical_url:
         blockers.append(
-            _blocker(
-                "missing_final_canonical",
-                "Brakuje finalnego adresu",
-                "Brief nie może powstać bez final_canonical_url.",
-                "Ustal publiczny final canonical URL przed briefem.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="missing_final_canonical",
+                label="Brakuje finalnego adresu",
+                reason="Brief nie może powstać bez final_canonical_url.",
+                next_step="Ustal publiczny final canonical URL przed briefem.",
             )
         )
     elif content_url_host(item.final_canonical_url) not in CONTENT_SOURCE_SITE_HOSTS:
         blockers.append(
-            _blocker(
-                "invalid_final_canonical",
-                "Nieprawidłowy canonical",
-                "Dev albo preview URL nie może być finalnym adresem SEO.",
-                "Ustaw final_canonical_url na publiczny adres Ekologus.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="invalid_final_canonical",
+                label="Nieprawidłowy canonical",
+                reason="Dev albo preview URL nie może być finalnym adresem SEO.",
+                next_step="Ustaw final_canonical_url na publiczny adres Ekologus.",
             )
         )
     if item.measurement_window_status == "missing" or not item.measurement_window_id:
         blockers.append(
-            _blocker(
-                "missing_measurement_plan",
-                "Brakuje planu pomiaru",
-                "Nie czekamy na wyniki, ale brief musi od razu wiedzieć, co będzie mierzone.",
-                "Utwórz measurement window przed Sales Brief.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="missing_measurement_plan",
+                label="Brakuje planu pomiaru",
+                reason="Nie czekamy na wyniki, ale brief musi od razu wiedzieć, co będzie mierzone.",  # noqa: E501
+                next_step="Utwórz measurement window przed Sales Brief.",
             )
         )
     return blockers
@@ -540,8 +548,8 @@ def _signal_quality(
     enrichment: ContentOpportunityEnrichment | None,
     knowledge_match: ContentKnowledgeCardMatch | None,
 ) -> ContentSalesBriefSignalQuality:
-    evidence_ids = _unique([*item.evidence_ids, *preflight.evidence_ids])
-    source_connectors = _unique([*item.source_connectors, *preflight.source_connectors])
+    evidence_ids = unique([*item.evidence_ids, *preflight.evidence_ids])
+    source_connectors = unique([*item.source_connectors, *preflight.source_connectors])
     source_facts = seed.source_facts
     missing_evidence_count = len(seed.missing_evidence)
     knowledge_constraints = (
@@ -587,9 +595,7 @@ def _signal_quality(
     else:
         status = "strong"
         status_label = "sygnał mocny do pracy operacyjnej"
-        reason = (
-            "Brief ma wieloźródłowy ślad dowodowy, source facts i gotową bazę pomiaru."
-        )
+        reason = "Brief ma wieloźródłowy ślad dowodowy, source facts i gotową bazę pomiaru."
         safe_next_step = "Można przejść do review briefu i claimów przed szkicem."
 
     return ContentSalesBriefSignalQuality(
@@ -648,8 +654,8 @@ def _source_fact_reference_blockers(
     source_facts: list[ContentSalesBriefSourceFact],
 ) -> list[ContentSalesBriefBlocker]:
     blockers: list[ContentSalesBriefBlocker] = []
-    known_evidence = set(_unique([*item.evidence_ids, *preflight.evidence_ids]))
-    known_connectors = set(_unique([*item.source_connectors, *preflight.source_connectors]))
+    known_evidence = set(unique([*item.evidence_ids, *preflight.evidence_ids]))
+    known_connectors = set(unique([*item.source_connectors, *preflight.source_connectors]))
     unknown_evidence = [
         fact.evidence_id for fact in source_facts if fact.evidence_id not in known_evidence
     ]
@@ -660,20 +666,22 @@ def _source_fact_reference_blockers(
     ]
     if unknown_evidence:
         blockers.append(
-            _blocker(
-                "unknown_source_fact_evidence",
-                "Fakt używa nieznanego dowodu",
-                "Każdy source fact musi wskazywać evidence ID obecne w work itemie albo preflight.",
-                f"Usuń albo podłącz dowody: {', '.join(_unique(unknown_evidence))}.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="unknown_source_fact_evidence",
+                label="Fakt używa nieznanego dowodu",
+                reason="Każdy source fact musi wskazywać evidence ID obecne w work itemie albo preflight.",  # noqa: E501
+                next_step=f"Usuń albo podłącz dowody: {', '.join(unique(unknown_evidence))}.",
             )
         )
     if unknown_connectors:
         blockers.append(
-            _blocker(
-                "unknown_source_fact_connector",
-                "Fakt używa nieznanego connectora",
-                "Każdy source fact musi wskazywać connector obecny w work itemie albo preflight.",
-                f"Usuń albo podłącz connectory: {', '.join(_unique(unknown_connectors))}.",
+            build_blocker(
+                ContentSalesBriefBlocker,
+                code="unknown_source_fact_connector",
+                label="Fakt używa nieznanego connectora",
+                reason="Każdy source fact musi wskazywać connector obecny w work itemie albo preflight.",  # noqa: E501
+                next_step=f"Usuń albo podłącz connectory: {', '.join(unique(unknown_connectors))}.",
             )
         )
     return blockers
@@ -693,18 +701,19 @@ def _product_evidence_blockers(
     text = _search_text(product_signals)
     if not _looks_like_product_cta_or_topic(text):
         return []
-    connectors = set(_unique([*item.source_connectors, *preflight.source_connectors]))
+    connectors = set(unique([*item.source_connectors, *preflight.source_connectors]))
     connectors.update(fact.source_connector for fact in seed.source_facts)
     if connectors & {"google_merchant_center", "wordpress_sklep", "shop_ekologus"}:
         return []
     if any("merchant" in connector or "sklep" in connector for connector in connectors):
         return []
     return [
-        _blocker(
-            "missing_product_evidence",
-            "Brakuje dowodu produktowego",
-            "CTA produktowe albo zakupowe wymaga dowodu z Merchant Center albo sklepu.",
-            "Podłącz Merchant/sklep jako źródło produktu albo zmień CTA na konsultacyjne.",
+        build_blocker(
+            ContentSalesBriefBlocker,
+            code="missing_product_evidence",
+            label="Brakuje dowodu produktowego",
+            reason="CTA produktowe albo zakupowe wymaga dowodu z Merchant Center albo sklepu.",
+            next_step="Podłącz Merchant/sklep jako źródło produktu albo zmień CTA na konsultacyjne.",  # noqa: E501
         )
     ]
 
@@ -743,15 +752,6 @@ def _forbidden_claims(
     return forbidden
 
 
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values
-
-
 def _search_text(values: Iterable[object]) -> str:
     return " ".join(str(value).lower() for value in values if value)
 
@@ -765,18 +765,4 @@ def _looks_like_product_cta_or_topic(text: str) -> bool:
             r"cena|cennik|dostępność|dostepnosc)(?!\w)",
             text.casefold(),
         )
-    )
-
-
-def _blocker(
-    code: ContentSalesBriefBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
-) -> ContentSalesBriefBlocker:
-    return ContentSalesBriefBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
     )

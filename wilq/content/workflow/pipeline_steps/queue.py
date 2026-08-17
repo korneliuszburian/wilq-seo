@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -9,6 +8,7 @@ from wilq.content.canonical.metric_dimensions import metric_dimensions_match_lan
 from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
 from wilq.content.inventory.records import resolve_content_inventory
 from wilq.content.measurement.aggregates import compare_exact_page_metric_periods
+from wilq.content.operator_copy import unique
 from wilq.content.preflight.workflow import (
     ContentPreflightVerdict,
     ContentPreflightVerdictStatus,
@@ -221,12 +221,12 @@ def build_content_work_item_queue_response(
                     "Odśwież GSC, WordPress, GA4 albo Ahrefs i nie twórz sztucznej "
                     "kolejki bez dowodów."
                 ),
-                evidence_ids=_unique(
+                evidence_ids=unique(
                     evidence_id
                     for candidate in candidates
                     for evidence_id in candidate.evidence_ids
                 ),
-                source_connectors=_unique(
+                source_connectors=unique(
                     connector
                     for candidate in candidates
                     for connector in candidate.source_connectors
@@ -249,10 +249,10 @@ def build_content_work_item_queue_response(
         freshness_assessment=diagnostics.freshness_assessment,
         candidates=candidates,
         blockers=blockers,
-        evidence_ids=_unique(
+        evidence_ids=unique(
             evidence_id for candidate in candidates for evidence_id in candidate.evidence_ids
         ),
-        source_connectors=_unique(
+        source_connectors=unique(
             connector for candidate in candidates for connector in candidate.source_connectors
         ),
     )
@@ -273,9 +273,7 @@ def build_selected_content_work_item_queue_response(
     return ContentWorkItemQueueResponse(
         queue_status="blocked" if blockers else "ready",
         candidate_count=1,
-        actionable_candidate_count=(
-            0 if candidate.recommended_mode == "block" else 1
-        ),
+        actionable_candidate_count=(0 if candidate.recommended_mode == "block" else 1),
         minimum_actionable_candidate_count=1,
         operator_summary=(
             "Wybrana strona jest gotowa do sprawdzenia decyzji."
@@ -367,9 +365,7 @@ def _candidate_from_decision(
             best_average_position=decision.best_average_position,
             query_count=decision.query_count,
             primary_query=decision.primary_query,
-            comparison_status=(
-                comparison.status if comparison is not None else "not_available"
-            ),
+            comparison_status=(comparison.status if comparison is not None else "not_available"),
             comparison_reason=(
                 comparison.reason
                 if comparison is not None
@@ -596,8 +592,7 @@ def _measurement_readiness(
             status="blocked",
             label="pomiar zablokowany",
             reason=(
-                "Nie można przygotować okna pomiaru bez publicznego finalnego adresu "
-                "kanonicznego."
+                "Nie można przygotować okna pomiaru bez publicznego finalnego adresu kanonicznego."
             ),
             source_connectors=[],
         )
@@ -648,8 +643,7 @@ def _operator_summary(
 ) -> str:
     if freshness_blocker:
         freshness_label = (
-            f"{freshness_assessment.state_label[:1].upper()}"
-            f"{freshness_assessment.state_label[1:]}"
+            f"{freshness_assessment.state_label[:1].upper()}{freshness_assessment.state_label[1:]}"
         )
         return (
             f"Gotowe do pracy: {actionable_count} z {candidate_count} tematów. "
@@ -716,12 +710,3 @@ def _deduplicate_blockers(
     for blocker in blockers:
         deduplicated.setdefault(blocker.code, blocker)
     return list(deduplicated.values())
-
-
-def _unique(values: Iterable[object]) -> list[str]:
-    unique_values: list[str] = []
-    for value in values:
-        text = str(value)
-        if text and text not in unique_values:
-            unique_values.append(text)
-    return unique_values

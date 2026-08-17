@@ -8,6 +8,7 @@ from wilq.content.inventory.records import (
     ContentInventoryResolution,
     ContentInventoryResolutionStatus,
 )
+from wilq.content.operator_copy import build_blocker
 from wilq.content.workflow.contracts.models import ContentWorkItem
 
 ContentPreflightVerdictStatus = Literal[
@@ -58,8 +59,7 @@ def build_content_preflight_verdict(
             inventory_resolution=inventory_resolution,
             blockers=hard_blockers,
             next_step=(
-                "Najpierw usuń twarde blokady: dowody, źródła, adres docelowy "
-                "albo duplikację."
+                "Najpierw usuń twarde blokady: dowody, źródła, adres docelowy albo duplikację."
             ),
         )
 
@@ -102,21 +102,23 @@ def _source_blockers(item: ContentWorkItem) -> list[ContentPreflightBlocker]:
     blockers: list[ContentPreflightBlocker] = []
     if not item.evidence_ids:
         blockers.append(
-            _blocker(
-                "missing_evidence",
-                "Brakuje dowodów",
-                "WILQ nie może rekomendować pracy nad treścią bez podpiętego dowodu.",
-                "Najpierw odśwież albo podłącz dane dla tego tematu.",
+            build_blocker(
+                ContentPreflightBlocker,
+                code="missing_evidence",
+                label="Brakuje dowodów",
+                reason="WILQ nie może rekomendować pracy nad treścią bez podpiętego dowodu.",
+                next_step="Najpierw odśwież albo podłącz dane dla tego tematu.",
                 blocks_current_stage=True,
             )
         )
     if not item.source_connectors:
         blockers.append(
-            _blocker(
-                "missing_source_connector",
-                "Brakuje źródła danych",
-                "WILQ nie może pisać z samego promptu albo notatki.",
-                "Wskaż źródło danych, z którego pochodzi fakt.",
+            build_blocker(
+                ContentPreflightBlocker,
+                code="missing_source_connector",
+                label="Brakuje źródła danych",
+                reason="WILQ nie może pisać z samego promptu albo notatki.",
+                next_step="Wskaż źródło danych, z którego pochodzi fakt.",
                 blocks_current_stage=True,
             )
         )
@@ -129,11 +131,12 @@ def _inventory_blockers(
     if inventory_resolution.status != "blocked":
         return []
     return [
-        _blocker(
-            blocker.code,
-            blocker.label,
-            blocker.reason,
-            blocker.next_step,
+        build_blocker(
+            ContentPreflightBlocker,
+            code=blocker.code,
+            label=blocker.label,
+            reason=blocker.reason,
+            next_step=blocker.next_step,
             blocks_current_stage=True,
         )
         for blocker in inventory_resolution.blockers
@@ -144,65 +147,72 @@ def _soft_blockers(item: ContentWorkItem) -> list[ContentPreflightBlocker]:
     blockers: list[ContentPreflightBlocker] = []
     if item.preserve_first_plan_status not in {"ready", "approved"}:
         blockers.append(
-            _blocker(
-                "missing_preserve_first_plan",
-                "Brakuje planu dla istniejącej treści",
-                "WILQ musi rozstrzygnąć, czy zachować, odświeżyć, scalić czy tworzyć.",
-                "Przygotuj plan dla istniejącej treści przed planem sprzedażowym.",
+            build_blocker(
+                ContentPreflightBlocker,
+                code="missing_preserve_first_plan",
+                label="Brakuje planu dla istniejącej treści",
+                reason="WILQ musi rozstrzygnąć, czy zachować, odświeżyć, scalić czy tworzyć.",
+                next_step="Przygotuj plan dla istniejącej treści przed planem sprzedażowym.",
             )
         )
     if item.sales_brief_status != "approved" or not item.sales_brief_id:
         blockers.append(
-            _blocker(
-                "missing_sales_brief",
-                "Brakuje zaakceptowanego briefu",
-                "Bez briefu sprzedażowego szkic będzie zbyt łatwo generyczny.",
-                "Przygotuj i zatwierdź plan sprzedażowy.",
+            build_blocker(
+                ContentPreflightBlocker,
+                code="missing_sales_brief",
+                label="Brakuje zaakceptowanego briefu",
+                reason="Bez briefu sprzedażowego szkic będzie zbyt łatwo generyczny.",
+                next_step="Przygotuj i zatwierdź plan sprzedażowy.",
             )
         )
     if item.claim_ledger_status != "approved" or not item.claim_ledger_id:
         blockers.append(
-            _blocker(
-                "missing_claim_ledger",
-                "Brakuje sprawdzenia twierdzeń",
-                "Ryzykowne twierdzenia muszą być sprawdzone przed szkicem.",
-                "Sprawdź i zatwierdź ryzykowne twierdzenia.",
+            build_blocker(
+                ContentPreflightBlocker,
+                code="missing_claim_ledger",
+                label="Brakuje sprawdzenia twierdzeń",
+                reason="Ryzykowne twierdzenia muszą być sprawdzone przed szkicem.",
+                next_step="Sprawdź i zatwierdź ryzykowne twierdzenia.",
             )
         )
     if item.measurement_window_status == "missing" or not item.measurement_window_id:
         blockers.append(
-            _blocker(
-                "missing_measurement_window",
-                "Brakuje planu pomiaru",
-                "Nie czekamy na wyniki, ale musimy wiedzieć, co będziemy mierzyć.",
-                "Utwórz plan pomiaru przed szkicem albo przekazaniem do WordPress.",
+            build_blocker(
+                ContentPreflightBlocker,
+                code="missing_measurement_window",
+                label="Brakuje planu pomiaru",
+                reason="Nie czekamy na wyniki, ale musimy wiedzieć, co będziemy mierzyć.",
+                next_step="Utwórz plan pomiaru przed szkicem albo przekazaniem do WordPress.",
             )
         )
     if item.draft_package_status != "ready" or not item.draft_package_id:
         blockers.append(
-            _blocker(
-                "missing_draft_package",
-                "Brakuje paczki szkicu",
-                "Przekazanie do WordPress wymaga paczki szkicu z dowodami i twierdzeniami.",
-                "Przygotuj paczkę szkicu przed przekazaniem.",
+            build_blocker(
+                ContentPreflightBlocker,
+                code="missing_draft_package",
+                label="Brakuje paczki szkicu",
+                reason="Przekazanie do WordPress wymaga paczki szkicu z dowodami i twierdzeniami.",
+                next_step="Przygotuj paczkę szkicu przed przekazaniem.",
             )
         )
     if item.human_review_status != "approved" or not item.human_review_id:
         blockers.append(
-            _blocker(
-                "missing_human_review",
-                "Brakuje decyzji człowieka",
-                "Szkic nie może trafić do WordPress bez decyzji człowieka.",
-                "Zatwierdź szkic w sprawdzeniu człowieka.",
+            build_blocker(
+                ContentPreflightBlocker,
+                code="missing_human_review",
+                label="Brakuje decyzji człowieka",
+                reason="Szkic nie może trafić do WordPress bez decyzji człowieka.",
+                next_step="Zatwierdź szkic w sprawdzeniu człowieka.",
             )
         )
     if item.audit_status != "recorded" or not item.audit_id:
         blockers.append(
-            _blocker(
-                "missing_audit",
-                "Brakuje audytu",
-                "Każde przekazanie musi zostawić ślad audytowy.",
-                "Zapisz audyt przed utworzeniem szkicu w WordPress.",
+            build_blocker(
+                ContentPreflightBlocker,
+                code="missing_audit",
+                label="Brakuje audytu",
+                reason="Każde przekazanie musi zostawić ślad audytowy.",
+                next_step="Zapisz audyt przed utworzeniem szkicu w WordPress.",
             )
         )
     return blockers
@@ -241,8 +251,7 @@ def _next_step_for_status(
 ) -> str:
     if status == "plan_allowed":
         return (
-            "Przygotuj plan dla istniejącej treści na podstawie spisu treści "
-            "i ryzyka duplikacji."
+            "Przygotuj plan dla istniejącej treści na podstawie spisu treści i ryzyka duplikacji."
         )
     if status == "brief_allowed":
         return "Przygotuj plan sprzedażowy, sprawdzenie twierdzeń i plan pomiaru przed szkicem."
@@ -253,20 +262,3 @@ def _next_step_for_status(
     if inventory_status == "blocked":
         return "Najpierw rozwiąż blokady w spisie treści."
     return "Najpierw rozwiąż blokady sprawdzenia wstępnego."
-
-
-def _blocker(
-    code: str,
-    label: str,
-    reason: str,
-    next_step: str,
-    *,
-    blocks_current_stage: bool = False,
-) -> ContentPreflightBlocker:
-    return ContentPreflightBlocker(
-        code=code,
-        label=label,
-        reason=reason,
-        next_step=next_step,
-        blocks_current_stage=blocks_current_stage,
-    )

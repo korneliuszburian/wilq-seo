@@ -40,9 +40,9 @@ from wilq.briefing.tactical_queue.shared import (
     _normalize_path_key,
     _normalize_url_key,
     _stable_slug,
-    _unique,
     _url_host,
 )
+from wilq.content.operator_copy import unique
 from wilq.content.planning.ahrefs_overlap import AhrefsCrossSourceOverlap
 from wilq.schemas import (
     ActionRisk,
@@ -86,9 +86,7 @@ def _compact_tactical_group_key(item: TacticalQueueItem) -> str:
 def _compact_tactical_group(items: list[TacticalQueueItem]) -> TacticalQueueGroup:
     first = items[0]
     facts = [fact for item in items for fact in item.metric_facts]
-    queries = _unique(
-        query for item in items if (query := item.dimensions.get("query")) is not None
-    )
+    queries = unique(query for item in items if (query := item.dimensions.get("query")) is not None)
     clicks = _sum_metric_facts(facts, "clicks")
     impressions = _sum_metric_facts(facts, "impressions")
     return TacticalQueueGroup(
@@ -109,12 +107,12 @@ def _compact_tactical_group(items: list[TacticalQueueItem]) -> TacticalQueueGrou
         next_step=first.next_step,
         priority=first.priority,
         risk=first.risk,
-        source_connectors=_unique(
+        source_connectors=unique(
             connector for item in items for connector in item.source_connectors
         ),
-        evidence_ids=_unique(evidence_id for item in items for evidence_id in item.evidence_ids),
-        action_ids=_unique(action_id for item in items for action_id in item.action_ids),
-        blocked_claims=_unique(claim for item in items for claim in item.blocked_claims),
+        evidence_ids=unique(evidence_id for item in items for evidence_id in item.evidence_ids),
+        action_ids=unique(action_id for item in items for action_id in item.action_ids),
+        blocked_claims=unique(claim for item in items for claim in item.blocked_claims),
     )
 
 
@@ -125,7 +123,7 @@ def _balanced_tactical_items(
 ) -> list[TacticalQueueItem]:
     sorted_items = sorted(items, key=_tactical_sort_key)
     selected: list[TacticalQueueItem] = []
-    for domain in _unique(item.domain.value for item in sorted_items):
+    for domain in unique(item.domain.value for item in sorted_items):
         domain_items = [item for item in sorted_items if item.domain.value == domain]
         for item in domain_items[:TACTICAL_QUEUE_DOMAIN_FLOOR]:
             if item not in selected:
@@ -184,7 +182,7 @@ def _gsc_content_items(
                 priority=priority,
                 risk=ActionRisk.low,
                 source_connectors=source_connectors,
-                evidence_ids=_unique(fact.evidence_id for fact in item_facts),
+                evidence_ids=unique(fact.evidence_id for fact in item_facts),
                 metric_facts=item_facts,
                 dimensions={
                     "query": query,
@@ -280,7 +278,7 @@ def _ga4_quality_items(
                 priority=priority,
                 risk=ActionRisk.low,
                 source_connectors=source_connectors,
-                evidence_ids=_unique(fact.evidence_id for fact in item_facts),
+                evidence_ids=unique(fact.evidence_id for fact in item_facts),
                 metric_facts=item_facts,
                 dimensions={
                     "landing_page": landing_page,

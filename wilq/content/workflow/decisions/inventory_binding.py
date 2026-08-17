@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Literal
 
+from wilq.content.operator_copy import unique
 from wilq.content.planning.decisions import (
     content_decision_metrics,
     content_decision_title,
@@ -147,10 +147,10 @@ def inventory_decision_for_work_item(
     acf_fields = resolved.acf_fields
     all_metric_facts = inventory_metric_facts(item.url, item.path)
     facts = [fact for fact in all_metric_facts if fact.source_connector == "google_search_console"]
-    queries = _unique(str(fact.dimensions.get("query") or "") for fact in facts)
+    queries = unique(str(fact.dimensions.get("query") or "") for fact in facts)
     metrics = content_decision_metrics(facts, queries)
-    evidence_ids = _unique([item.evidence_id, *(fact.evidence_id for fact in all_metric_facts)])
-    source_connectors = _unique(
+    evidence_ids = unique([item.evidence_id, *(fact.evidence_id for fact in all_metric_facts)])
+    source_connectors = unique(
         [item.source_connector, *(fact.source_connector for fact in all_metric_facts)]
     )
     title = content_decision_title(
@@ -225,14 +225,6 @@ def inventory_decision_for_work_item(
         next_step="Sprawdź dynamiczny materiał, wybierz usługę i wygeneruj plan.",
         risk=ActionRisk.low,
     )
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    output: list[str] = []
-    for value in values:
-        if value and value not in output:
-            output.append(value)
-    return output
 
 
 __all__ = [
