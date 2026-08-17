@@ -14,6 +14,7 @@ from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID
 from wilq.storage.local_state import state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
+from wilq.storage.schema_versions import reject_newer_sqlite_schema
 
 
 class ContentPublicSourceReviewCommand(BaseModel):
@@ -193,6 +194,7 @@ class PublicSourceReviewStore:
     def _connect(self) -> sqlite3.Connection:
         prepare_private_store_path(self.path, normalize_existing_parent=False)
         connection = sqlite3.connect(self.path)
+        reject_newer_sqlite_schema(connection)
         connection.row_factory = sqlite3.Row
         connection.execute(
             """CREATE TABLE IF NOT EXISTS content_public_source_reviews (
@@ -210,6 +212,7 @@ class PublicSourceReviewStore:
             connection = sqlite3.connect(self.path)
         except sqlite3.OperationalError:
             return None
+        reject_newer_sqlite_schema(connection)
         connection.row_factory = sqlite3.Row
         return connection
 

@@ -20,6 +20,7 @@ from wilq.content.regulatory.policy import (
 )
 from wilq.storage.local_state import state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
+from wilq.storage.schema_versions import reject_newer_sqlite_schema
 
 # Official regulatory instructions are commonly PDFs. We persist only their
 # digest and metadata, never the body, but must still read a bounded complete
@@ -200,6 +201,7 @@ class RegulatorySourceSnapshotStore:
     def _connect(self) -> sqlite3.Connection:
         prepare_private_store_path(self.path, normalize_existing_parent=False)
         connection = sqlite3.connect(self.path)
+        reject_newer_sqlite_schema(connection)
         connection.row_factory = sqlite3.Row
         connection.execute(
             """

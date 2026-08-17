@@ -211,3 +211,28 @@ def test_newer_store_versions_are_rejected_before_schema_changes(tmp_path: Path)
         DuckDbMetricStore(metric_path).status()
     with duckdb.connect(str(metric_path), read_only=True) as connection:
         assert connection.execute("SHOW TABLES").fetchall() == [("wilq_schema_metadata",)]
+
+
+def test_standalone_review_stores_reject_newer_schema_before_tables(
+    tmp_path: Path,
+) -> None:
+    from wilq.content.knowledge.private_source_reviews import PrivateSourceReviewStore
+    from wilq.content.knowledge.public_source_reviews import PublicSourceReviewStore
+    from wilq.content.regulatory.source_snapshots import RegulatorySourceSnapshotStore
+
+    for store_type in (
+        PublicSourceReviewStore,
+        PrivateSourceReviewStore,
+        RegulatorySourceSnapshotStore,
+    ):
+        state_path = tmp_path / f"{store_type.__name__}.sqlite3"
+        with sqlite3.connect(state_path) as connection:
+            connection.execute(f"PRAGMA user_version = {SQLITE_SCHEMA_VERSION + 1}")
+
+        with pytest.raises(RuntimeError, match="newer than supported"):
+            store_type(state_path)._connect()
+
+        with sqlite3.connect(state_path) as connection:
+            assert connection.execute(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table'"
+            ).fetchone()[0] == 0
