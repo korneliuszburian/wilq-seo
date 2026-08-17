@@ -855,7 +855,7 @@ def test_refresh_pipeline_wires_benefit_enrichment_transform(
     def fake_prepare(snapshot, request):
         return prepared
 
-    def fake_pipeline(*, inputs, client, workflow_store, run_store):
+    def fake_pipeline(*, inputs, client, run_store):
         captured["inputs"] = inputs
         return None
 

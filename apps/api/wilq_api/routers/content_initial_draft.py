@@ -785,17 +785,6 @@ def _generation_in_progress_blocker() -> ContentInitialDraftBlocker:
     )
 
 
-def _latest_initial_draft_run(work_item_id: str) -> CodexRun | None:
-    endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
-    runs = [
-        run
-        for run in local_state_store().list_codex_runs()
-        if run.hook == "content_initial_full_draft" and endpoint in run.used_endpoints
-    ]
-    latest = max(runs, key=lambda run: run.started_at, default=None)
-    return _expire_stale_initial_draft_run(latest)
-
-
 def _expire_stale_initial_draft_run(run: CodexRun | None) -> CodexRun | None:
     if run is None or run.status != "started":
         return run

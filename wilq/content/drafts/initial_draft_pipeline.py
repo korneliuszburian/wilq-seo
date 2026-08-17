@@ -52,7 +52,6 @@ class InitialDraftRunMetadata:
     planning_input_digest: str
     context_digest: str | None
     endpoint_path: str | None
-    prompt: str | None
     run_id: str | None = None
     run_id_prefix: str | None = None
     hook: str | None = None
@@ -117,7 +116,6 @@ def generate_initial_draft(
     *,
     inputs: InitialDraftPipelineInputs,
     client: CodexAppServerClientProtocol,
-    workflow_store: object,
     run_store: LocalStateStore,
 ) -> ContentInitialDraftResponse:
     """Run the shared initial-draft lifecycle, including every terminal branch."""

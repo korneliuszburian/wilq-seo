@@ -37,6 +37,9 @@ from wilq.content.quality.semantic_run_state import (
 )
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.runtime.codex_run_lifecycle import (
+    LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS,
+)
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -56,9 +59,6 @@ _SEMANTIC_REVIEW_EXECUTOR = ThreadPoolExecutor(
     max_workers=2,
     thread_name_prefix="wilq-content-review",
 )
-_DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS = 180.0
-
-
 class _DeadlineAwareSemanticClient:
     def __init__(self, client: CodexAppServerClientProtocol, run_id: str) -> None:
         self._client = client
@@ -96,11 +96,11 @@ def _semantic_timeout_seconds() -> float:
         configured = float(
             environ.get(
                 "WILQ_SEMANTIC_REVIEW_CODEX_TIMEOUT_SECONDS",
-                str(_DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS),
+                str(LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS),
             )
         )
     except (TypeError, ValueError):
-        configured = _DEFAULT_SEMANTIC_REVIEW_TIMEOUT_SECONDS
+        configured = LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS
     return max(5.0, configured)
 
 

@@ -100,6 +100,7 @@ def save_terminal_codex_run(
     return store.save_codex_run(terminal_codex_run(run, status=status, error=error))
 
 __all__ = [
+    "LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS",
     "effective_deadline",
     "finish_codex_run",
     "runtime_error",

@@ -202,7 +202,6 @@ def generate_initial_full_draft(
                 planning_input_digest=prepared.planning_input.planning_input_digest,
                 context_digest=context_digest or _initial_draft_context_digest(snapshot, prepared),
                 endpoint_path=None,
-                prompt=None,
                 run_id=run_id,
             ),
             output_blocker=lambda candidate: _output_blocker(prepared, candidate),
@@ -241,7 +240,6 @@ def generate_initial_full_draft(
             ),
         ),
         client=client,
-        workflow_store=workflow_store,
         run_store=run_store,
     )
 

@@ -133,7 +133,6 @@ def generate_new_page_initial_draft(
                 planning_input_digest=request.expected_planning_input_digest,
                 context_digest=None,
                 endpoint_path=endpoint_path,
-                prompt=None,
                 run_id_prefix="codex_content_new_page_draft_",
                 hook="content_new_page_initial_draft",
             ),
@@ -167,7 +166,6 @@ def generate_new_page_initial_draft(
             terminal_hook=transition_initial_draft_run_if_status,
         ),
         client=client,
-        workflow_store=workflow_store,
         run_store=run_store,
     )
 
