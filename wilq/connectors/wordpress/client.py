@@ -744,13 +744,13 @@ def create_wordpress_acf_draft(
             client.close()
 
 
-def read_wordpress_draft_post(
+def _read_wordpress_draft_response(
     post_id: str,
     *,
-    connector_id: str = "wordpress_ekologus",
-    endpoint: str = "posts",
-    http_client: httpx.Client | None = None,
-) -> WordPressDraftPostReadback:
+    connector_id: str,
+    endpoint: str,
+    http_client: httpx.Client | None,
+) -> tuple[httpx.Response, WordPressCredentials, str, str]:
     credentials = wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressDraftReadError("WILQ nie zna tego connectora WordPress.")
@@ -775,10 +775,7 @@ def read_wordpress_draft_post(
                     f"wp-json/wp/v2/{normalized_endpoint}/{normalized_post_id}",
                 ),
                 auth=auth,
-                params={
-                    "context": "edit",
-                    "_fields": WORDPRESS_READ_FIELDS,
-                },
+                params={"context": "edit", "_fields": WORDPRESS_READ_FIELDS},
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
@@ -792,7 +789,24 @@ def read_wordpress_draft_post(
     finally:
         if owns_client:
             client.close()
+    return response, credentials, normalized_post_id, normalized_endpoint
 
+
+def read_wordpress_draft_post(
+    post_id: str,
+    *,
+    connector_id: str = "wordpress_ekologus",
+    endpoint: str = "posts",
+    http_client: httpx.Client | None = None,
+) -> WordPressDraftPostReadback:
+    response, credentials, normalized_post_id, normalized_endpoint = (
+        _read_wordpress_draft_response(
+            post_id,
+            connector_id=connector_id,
+            endpoint=endpoint,
+            http_client=http_client,
+        )
+    )
     return _draft_post_readback(
         response,
         normalized_post_id,
@@ -934,44 +948,12 @@ def _read_wordpress_draft_payload(
     endpoint: str,
     http_client: httpx.Client | None,
 ) -> dict[str, Any]:
-    credentials = wordpress_credentials(connector_id)
-    if credentials is None:
-        raise WordPressDraftReadError("WILQ nie zna tego connectora WordPress.")
-    missing = missing_credentials(connector_id, credentials)
-    if missing:
-        raise WordPressDraftReadError("Brakuje konfiguracji WordPress wymaganej do odczytu szkicu.")
-    normalized_post_id = str(post_id).strip()
-    if not normalized_post_id:
-        raise WordPressDraftReadError("Brakuje ID szkicu WordPress do odczytu.")
-    normalized_endpoint = endpoint.strip().strip("/")
-    if normalized_endpoint not in WORDPRESS_AUTHORING_REST_ENDPOINTS:
-        raise WordPressDraftReadError("Nieobsługiwany typ treści WordPress.")
-
-    owns_client = http_client is None
-    client = http_client or httpx.Client(timeout=30)
-    auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
-    try:
-        try:
-            response = client.get(
-                urljoin(
-                    credentials.base_url or "",
-                    f"wp-json/wp/v2/{normalized_endpoint}/{normalized_post_id}",
-                ),
-                auth=auth,
-                params={"context": "edit", "_fields": WORDPRESS_READ_FIELDS},
-            )
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise WordPressDraftReadError(
-                f"WordPress odrzucił odczyt szkicu HTTP {exc.response.status_code}."
-            ) from exc
-        except httpx.HTTPError as exc:
-            raise WordPressDraftReadError(
-                f"Połączenie WordPress przerwało odczyt szkicu ({type(exc).__name__})."
-            ) from exc
-    finally:
-        if owns_client:
-            client.close()
+    response, _, _, _ = _read_wordpress_draft_response(
+        post_id,
+        connector_id=connector_id,
+        endpoint=endpoint,
+        http_client=http_client,
+    )
     payload = response.json()
     if not isinstance(payload, dict):
         raise WordPressDraftReadError("WordPress nie zwrócił obiektu szkicu.")
