@@ -32,6 +32,7 @@ from wilq.content.quality import semantic_review_store as semantic_review_store_
 from wilq.content.quality.semantic_review_contracts import (
     CONTENT_SEMANTIC_DIMENSIONS,
     ContentSemanticDimensionAssessment,
+    ContentSemanticFindingOutput,
     ContentSemanticReview,
     ContentSemanticReviewModelOutput,
 )
@@ -174,6 +175,55 @@ def test_semantic_quality_guards_cannot_waive_missing_cta_query_or_repetition() 
         if item.dimension
         in {"conversion_clarity", "repetition", "answer_directness"}
     )
+
+
+def test_semantic_quality_guard_rewrites_existing_finding_and_dimension() -> None:
+    revision = ContentDraftRevision.model_construct(cta_blocks=[], sections=[])
+    proposal = ContentPlanningProposal.model_construct(
+        cta_blocks=[{"cta_id": "cta_required"}],
+        sections=[],
+    )
+    output = ContentSemanticReviewModelOutput.model_construct(
+        dimensions=[
+            ContentSemanticDimensionAssessment(
+                dimension=dimension,
+                status="strong",
+                reason="OK",
+                affected_targets=["whole_document"],
+            )
+            for dimension in CONTENT_SEMANTIC_DIMENSIONS
+        ],
+        findings=[
+            ContentSemanticFindingOutput(
+                dimension="conversion_clarity",
+                severity="high",
+                label="Automatyczna kontrola jakości",
+                reason="Poprzedni powód.",
+                instruction="Poprzednia instrukcja.",
+                affected_targets=["whole_document"],
+            )
+        ],
+    )
+
+    guarded = _apply_deterministic_quality_guards(
+        _SemanticInputs(
+            revision=revision,
+            planning_input=ContentPlanningInput.model_construct(),
+            proposal=proposal,
+        ),
+        output,
+    )
+
+    finding = next(item for item in guarded.findings if item.dimension == "conversion_clarity")
+    assessment = next(
+        item for item in guarded.dimensions if item.dimension == "conversion_clarity"
+    )
+    assert guarded is not output
+    assert finding.affected_targets == ["cta_blocks"]
+    assert finding.reason == "Brakuje wymaganych bloków CTA z zatwierdzonego planu."
+    assert assessment.status == "needs_changes"
+    assert assessment.affected_targets == ["cta_blocks"]
+    assert assessment.reason == "Brakuje wymaganych bloków CTA z zatwierdzonego planu."
 
 
 def test_semantic_quality_guards_cannot_pass_working_note_or_duplicate_paragraph() -> None:

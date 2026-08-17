@@ -485,6 +485,7 @@ def _apply_deterministic_quality_guards(
     existing = {finding.dimension for finding in output.findings}
     dimensions = list(output.dimensions)
     findings = list(output.findings)
+    changed = False
     for dimension, (targets, reason) in grouped.items():
         if dimension in existing:
             for index, finding in enumerate(findings):
@@ -497,6 +498,17 @@ def _apply_deterministic_quality_guards(
                         }
                     )
                     break
+            for index, assessment in enumerate(dimensions):
+                if assessment.dimension == dimension:
+                    dimensions[index] = assessment.model_copy(
+                        update={
+                            "status": "needs_changes",
+                            "affected_targets": targets,
+                            "reason": reason,
+                        }
+                    )
+                    changed = True
+                    break
             continue
         existing.add(dimension)
         for index, assessment in enumerate(dimensions):
@@ -508,6 +520,7 @@ def _apply_deterministic_quality_guards(
                         "reason": reason,
                     }
                 )
+                changed = True
                 break
         findings.append(
             ContentSemanticFindingOutput(
@@ -522,7 +535,7 @@ def _apply_deterministic_quality_guards(
                 evidence_ids=[],
             )
         )
-    if not issues or len(findings) == len(output.findings):
+    if not issues or not changed:
         return output
     return output.model_copy(update={"dimensions": dimensions, "findings": findings})
 
