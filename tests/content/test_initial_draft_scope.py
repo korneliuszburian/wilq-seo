@@ -42,8 +42,10 @@ from wilq.content.drafts.initial_full_draft_turn import (
     initial_full_draft_output_schema,
     regulatory_assertion_repair_turn_request,
 )
-from wilq.content.drafts.regulatory_draft_repair import repair_regulatory_assertions
-from wilq.content.drafts.regulatory_repair_policy import regulatory_section_repair_modes
+from wilq.content.drafts.regulatory_repair import (
+    regulatory_section_repair_modes,
+    repair_regulatory_assertions,
+)
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
@@ -754,7 +756,7 @@ def test_regulatory_scope_repair_accepts_profile_owned_role_variants_in_approved
 
 
 def test_grounding_skips_assertions_already_covered_by_repair_turns() -> None:
-    from wilq.content.drafts.regulatory_draft_repair import ground_unmet_regulatory_assertions
+    from wilq.content.drafts.regulatory_repair import ground_unmet_regulatory_assertions
 
     proposal, planning_input, output, fact, _ = _regulatory_repair_fixture()
     output = output.model_copy(

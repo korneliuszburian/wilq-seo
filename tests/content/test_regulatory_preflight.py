@@ -4,7 +4,7 @@ import pytest
 
 from wilq.content.drafts import initial_full_draft
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftRequest
-from wilq.content.drafts.regulatory_preflight import (
+from wilq.content.drafts.regulatory_repair import (
     regulatory_draft_preflight_errors,
 )
 from wilq.content.knowledge.source_facts import ContentSourceFact

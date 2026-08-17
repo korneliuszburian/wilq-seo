@@ -9,7 +9,7 @@ import pytest
 from wilq.content.drafts import (
     codex_section_proposal_turn,
     initial_full_draft_turn,
-    regulatory_draft_repair,
+    regulatory_repair,
 )
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
 from wilq.content.knowledge.source_facts import ContentSourceFact, SourceFactReviewStatus
@@ -130,13 +130,13 @@ def test_approved_regulatory_facts_filter_is_shared(
         "approved_regulatory_source_facts",
         shared_filter,
     )
-    assert regulatory_draft_repair._approved_facts_for_requirement(
+    assert regulatory_repair._approved_facts_for_requirement(
         planning_input,
         requirement_id="access",
         assertion_terms=None,
     ) == ["Fakt approved."]
     assert (
-        regulatory_draft_repair._approved_facts_for_requirement(
+        regulatory_repair._approved_facts_for_requirement(
             planning_input,
             requirement_id="access",
             assertion_terms=["nieobecny termin"],
