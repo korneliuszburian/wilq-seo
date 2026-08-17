@@ -24,6 +24,10 @@ from wilq.content.drafts.regulatory_repair import (
     regulatory_section_repair_modes,
 )
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
+from wilq.content.planning.compact_projections import (
+    compact_initial_draft_planning_input,
+    compact_proposal,
+)
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.workflow.decisions.planning import (
@@ -66,7 +70,10 @@ def initial_full_draft_turn_request(
     untrusted_context = json.dumps(
         {
             "planning_input": compact_initial_draft_planning_input(planning_input),
-            "approved_planning_proposal": compact_initial_draft_proposal(proposal),
+            "approved_planning_proposal": compact_proposal(
+                proposal,
+                draftable_sections_only=False,
+            ),
             "generation_constraints": generation_contract.model_input.model_dump(mode="json"),
             "document_scope": {
                 "included_section_ids": [
@@ -305,95 +312,10 @@ def _missing_assertions_for_repair(
     return assertions, section_ids
 
 
-def compact_initial_draft_planning_input(
-    planning_input: ContentPlanningInput,
-) -> dict[str, object]:
-    """Keep draft transport useful without replaying connector bookkeeping.
-
-    This is a model-envelope projection only. The caller still validates and
-    persists against the complete typed planning input and its digest.
-    """
-
-    payload = planning_input.model_dump(mode="json", exclude_none=True)
-    assessments = payload.get("source_assessments")
-    if isinstance(assessments, list):
-        compact_assessments: list[object] = []
-        assessment_keys = {
-            "source",
-            "status",
-            "reason",
-            "landing_match_tiers",
-            "evidence_ids",
-            "knowledge_card_ids",
-            "refresh_run_id",
-            "settlement_state",
-            "quality_state",
-            "interpretation_caveats",
-        }
-        for assessment in assessments:
-            if isinstance(assessment, dict):
-                compact_assessments.append(
-                    {key: value for key, value in assessment.items() if key in assessment_keys}
-                )
-            else:
-                compact_assessments.append(assessment)
-        payload["source_assessments"] = compact_assessments
-
-    comparisons = payload.get("metric_comparisons")
-    if isinstance(comparisons, list):
-        compact_comparisons: list[object] = []
-        comparison_keys = {
-            "source_connector",
-            "status",
-            "baseline_period",
-            "comparison_period",
-            "metric_names",
-            "evidence_ids",
-            "reason",
-        }
-        for comparison in comparisons:
-            if isinstance(comparison, dict):
-                compact_comparisons.append(
-                    {key: value for key, value in comparison.items() if key in comparison_keys}
-                )
-            else:
-                compact_comparisons.append(comparison)
-        payload["metric_comparisons"] = compact_comparisons
-
-    return payload
-
-
 def compact_initial_draft_proposal(
     proposal: ContentPlanningProposal,
 ) -> dict[str, object]:
-    """Keep the writer's editorial contract without replaying page telemetry."""
-
-    payload = proposal.model_dump(mode="json", exclude_none=True)
-    allowed = {
-        "work_item_id",
-        "planning_digest",
-        "proposal_id",
-        "planning_input_digest",
-        "final_canonical_url",
-        "service_card_id",
-        "service_label",
-        "target_reader",
-        "buyer_problem",
-        "buyer_trigger",
-        "search_intent",
-        "angle",
-        "value_proposition",
-        "cta_direction",
-        "sections",
-        "faq",
-        "cta_blocks",
-        "internal_links",
-        "evidence_ids",
-        "source_connectors",
-        "source_material_ids",
-        "knowledge_card_ids",
-    }
-    return {key: value for key, value in payload.items() if key in allowed}
+    return compact_proposal(proposal, draftable_sections_only=False)
 
 
 def initial_full_draft_output_schema(
