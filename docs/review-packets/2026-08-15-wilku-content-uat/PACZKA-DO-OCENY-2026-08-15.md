@@ -29,9 +29,11 @@ Celem tej sesji jest **werdykt Wilku na 5 rewizji**, nie publikacja.
 | Opracowania dokumentacji i ekspertyz | `content_revision_b14c7fc23fcc4907aadf24c431cc656a` | 6 | 2 | 2 | 9/9 strong, 0 findings |
 | Pomiary i analizy środowiska | `content_revision_787c4e52b3f941f3a048a63355e8cf45` | 3 | 1 | 1 | 9/9 strong, 0 findings |
 
-Pełna treść i instrukcja zapisu decyzji: `docs/agents/reports/content-review/paczka-tresci-5-stron-2026-08-12.md`.
-Manifest przypinający pakiet do commitu: `.../paczka-tresci-5-stron-2026-08-12.manifest.json`
-(fixed point: `0eada7073e637623ca2f24887f40c1908b7957cb`).
+Pełna treść i instrukcja zapisu decyzji pozostają retained local artifactem pod
+`docs/agents/reports/content-review/paczka-tresci-5-stron-2026-08-12.md`; nie są
+zależnością tego commitowanego kontraktu UAT. Manifest pięciu rewizji:
+`docs/review-packets/2026-08-15-wilku-content-uat/revision.manifest.json`
+(source fixed point: `0eada7073e637623ca2f24887f40c1908b7957cb`).
 
 ## Rekomendacja WILQ na dziś
 
