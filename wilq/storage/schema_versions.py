@@ -4,13 +4,19 @@ import sqlite3
 
 import duckdb
 
-SQLITE_SCHEMA_VERSION = 5
+SQLITE_SCHEMA_VERSION = 6
 DUCKDB_SCHEMA_VERSION = 2
 _CONTENT_SECTION_FOCUS_SCHEMA_VERSION = 4
 _STOP_TELEMETRY_SCHEMA_VERSION = 5
+_STOP_TELEMETRY_INDEX_SCHEMA_VERSION = 6
 _SQLITE_SCHEMA_MILESTONES = (
-    (_CONTENT_SECTION_FOCUS_SCHEMA_VERSION, "content_section_focus"),
-    (_STOP_TELEMETRY_SCHEMA_VERSION, "codex_stop_events"),
+    (_CONTENT_SECTION_FOCUS_SCHEMA_VERSION, "table", "content_section_focus"),
+    (_STOP_TELEMETRY_SCHEMA_VERSION, "table", "codex_stop_events"),
+    (
+        _STOP_TELEMETRY_INDEX_SCHEMA_VERSION,
+        "index",
+        "idx_codex_stop_events_received_at_id",
+    ),
 )
 
 
@@ -28,17 +34,17 @@ def ensure_sqlite_schema_version(connection: sqlite3.Connection) -> None:
     row = connection.execute("PRAGMA user_version").fetchone()
     current_version = int(row[0]) if row is not None else 0
     target_version = SQLITE_SCHEMA_VERSION
-    for schema_version, required_table in _SQLITE_SCHEMA_MILESTONES:
+    for schema_version, object_type, object_name in _SQLITE_SCHEMA_MILESTONES:
         if current_version >= schema_version or schema_version > SQLITE_SCHEMA_VERSION:
             continue
-        table_exists = connection.execute(
+        object_exists = connection.execute(
             """
             SELECT 1 FROM sqlite_master
-            WHERE type = 'table' AND name = ?
+            WHERE type = ? AND name = ?
             """,
-            (required_table,),
+            (object_type, object_name),
         ).fetchone()
-        if table_exists is None:
+        if object_exists is None:
             target_version = min(target_version, schema_version - 1)
     if current_version < target_version:
         connection.execute(f"PRAGMA user_version = {target_version}")

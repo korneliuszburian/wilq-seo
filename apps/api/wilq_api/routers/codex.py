@@ -4,10 +4,17 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from fastapi import APIRouter, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from apps.api.wilq_api.context_models import ContextPackRequest
-from wilq.codex.stop_telemetry import StopTelemetryEvent, new_stop_telemetry_event
+from wilq.codex.stop_telemetry import (
+    StopTelemetryIntakeAccepted,
+    StopTelemetryReceipt,
+    StopTelemetryUnavailable,
+    intake_stop_telemetry,
+    read_stop_telemetry_health,
+)
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import local_state_store
 
@@ -43,15 +50,42 @@ def create_codex_router(
 
     @router.post(
         "/api/codex/telemetry/stop-events",
-        response_model=StopTelemetryEvent,
+        response_model=StopTelemetryIntakeAccepted,
         status_code=status.HTTP_201_CREATED,
+        responses={
+            status.HTTP_503_SERVICE_UNAVAILABLE: {"model": StopTelemetryUnavailable}
+        },
     )
-    def record_stop_telemetry_event() -> StopTelemetryEvent:
-        event = new_stop_telemetry_event()
-        return local_state_store().append_stop_telemetry_event(event)
+    def record_stop_telemetry_event() -> StopTelemetryIntakeAccepted | JSONResponse:
+        result = intake_stop_telemetry(local_state_store())
+        if isinstance(result, StopTelemetryUnavailable):
+            return _stop_telemetry_unavailable_response(result)
+        return result
+
+    @router.get(
+        "/api/codex/telemetry/health",
+        response_model=StopTelemetryReceipt,
+        responses={
+            status.HTTP_503_SERVICE_UNAVAILABLE: {"model": StopTelemetryUnavailable}
+        },
+    )
+    def stop_telemetry_health() -> StopTelemetryReceipt | JSONResponse:
+        result = read_stop_telemetry_health(local_state_store())
+        if isinstance(result, StopTelemetryUnavailable):
+            return _stop_telemetry_unavailable_response(result)
+        return result
 
     @router.get("/api/codex/runs", response_model=list[CodexRun])
     def codex_runs() -> list[CodexRun]:
         return local_state_store().list_codex_runs()
 
     return router
+
+
+def _stop_telemetry_unavailable_response(
+    error: StopTelemetryUnavailable,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content=error.model_dump(mode="json"),
+    )
