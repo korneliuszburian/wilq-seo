@@ -20,7 +20,7 @@
             "type": "command",
             "command": "cd \"$(git rev-parse --show-toplevel)\" && uv run python .codex/hooks/stop_log.py",
             "timeout": 20,
-            "statusMessage": "Recording WILQ Codex run summary"
+            "statusMessage": "Recording WILQ Stop telemetry"
           }
         ]
       }

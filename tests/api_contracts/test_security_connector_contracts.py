@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,8 @@ from fastapi.testclient import TestClient
 from apps.api.wilq_api.context_compaction import compact_connector_status_for_operator_context
 from apps.api.wilq_api.main import app
 from wilq.connectors.google_auth import GOOGLE_CREDENTIAL_ENV_NAMES
+from wilq.schemas import CodexRun
+from wilq.storage.local_state import LocalStateStore
 
 client = TestClient(app)
 
@@ -301,26 +304,34 @@ def test_system_status_reports_credential_runtime_without_paths_or_filenames() -
     assert "manifest_files" not in credential_runtime
 
 
-def test_codex_run_redacts_token_like_error_values(
+def test_public_codex_run_write_is_retired_without_deserializing_the_body(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "codex_state.sqlite3"))
-    response = client.post(
-        "/api/codex/runs",
-        json={
-            "id": "codex_redaction_test",
-            "status": "failed",
-            "source": "test",
-            "error": "failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
-        },
+    state_path = tmp_path / "codex_state.sqlite3"
+    monkeypatch.setenv("WILQ_STATE_DB", str(state_path))
+    original = LocalStateStore(state_path).save_codex_run(
+        CodexRun(id="codex_collision_test", status="started")
     )
-    assert response.status_code == 200
-    serialized = json.dumps(response.json())
-    assert "sk-testsecretvalue1234567890" not in serialized
-    assert "[REDACTED]" in serialized
-    list_response = client.get("/api/codex/runs")
-    assert list_response.status_code == 200
-    listed = json.dumps(list_response.json())
-    assert "codex_redaction_test" in listed
-    assert "sk-testsecretvalue1234567890" not in listed
+
+    for body in (
+        b'{"id":"codex_collision_test","status":"completed"}',
+        b'{"id":',
+    ):
+        response = client.post(
+            "/api/codex/runs",
+            content=body,
+            headers={"Content-Type": "application/json"},
+        )
+
+        assert response.status_code == 410
+        assert response.json() == {
+            "type": "deprecated_write_blocked",
+            "code": "codex_run_public_write_retired",
+            "successor": "/api/codex/telemetry/stop-events",
+        }
+        assert LocalStateStore(state_path).list_codex_runs() == [original]
+        with sqlite3.connect(state_path) as connection:
+            assert connection.execute(
+                "SELECT COUNT(*) FROM codex_stop_events"
+            ).fetchone()[0] == 0

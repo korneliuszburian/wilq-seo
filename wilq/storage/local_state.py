@@ -10,6 +10,7 @@ from wilq.storage.local_state_audit import _AuditStoreMixin
 from wilq.storage.local_state_focus import _SectionFocusStoreMixin
 from wilq.storage.local_state_runs import _model_from_json as _model_from_json
 from wilq.storage.local_state_runs import _RunStoreMixin
+from wilq.storage.local_state_stop_telemetry import _StopTelemetryStoreMixin
 from wilq.storage.private_paths import prepare_private_store_path
 from wilq.storage.schema_versions import (
     ensure_sqlite_schema_version,
@@ -32,6 +33,7 @@ def local_state_store() -> LocalStateStore:
 
 class LocalStateStore(
     _RunStoreMixin,
+    _StopTelemetryStoreMixin,
     _AuditStoreMixin,
     _AdsReviewStoreMixin,
     _SectionFocusStoreMixin,
@@ -96,6 +98,13 @@ class LocalStateStore(
               id TEXT PRIMARY KEY,
               started_at TEXT NOT NULL,
               payload_json TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS codex_stop_events (
+              id TEXT PRIMARY KEY,
+              received_at TEXT NOT NULL,
+              event_type TEXT NOT NULL CHECK (event_type = 'stop'),
+              contract_version INTEGER NOT NULL CHECK (contract_version >= 1)
             );
 
             CREATE TABLE IF NOT EXISTS workflow_runs (

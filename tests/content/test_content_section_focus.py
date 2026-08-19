@@ -191,7 +191,7 @@ def test_existing_v3_store_gains_additive_section_focus_schema(tmp_path: Path) -
             "SELECT COUNT(*) FROM codex_runs WHERE id = 'legacy_run'"
         ).fetchone()[0]
 
-    assert SQLITE_SCHEMA_VERSION == 4
+    assert SQLITE_SCHEMA_VERSION == 5
     assert schema_version == SQLITE_SCHEMA_VERSION
     assert columns == [
         "work_item_id",
@@ -228,7 +228,10 @@ def test_unrelated_store_cannot_claim_v4_before_focus_table_exists(
 
     assert LocalStateStore(path).get_content_section_focus("work_1") is None
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert (
+            connection.execute("PRAGMA user_version").fetchone()[0]
+            == SQLITE_SCHEMA_VERSION
+        )
         assert connection.execute(
             """
             SELECT COUNT(*) FROM sqlite_master
