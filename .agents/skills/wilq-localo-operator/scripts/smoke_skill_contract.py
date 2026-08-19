@@ -129,6 +129,7 @@ def main() -> int:
         if LOCALO_VISIBILITY_REVIEW_ACTION_ID in active_action_ids
         else [],
         label="Localo",
+        requester=request_json,
     )
 
     print(
