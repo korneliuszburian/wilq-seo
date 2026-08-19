@@ -7,7 +7,7 @@ import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any
+from typing import Any, Protocol
 
 _TOP_LEVEL_ACTION_ID_KEYS = (
     "action_ids",
@@ -15,6 +15,16 @@ _TOP_LEVEL_ACTION_ID_KEYS = (
     "selected_action_ids",
 )
 _TOP_LEVEL_VALIDATED_ACTION_ID_KEYS = ("selected_validated_action_ids",)
+
+
+class ActionValidationRequester(Protocol):
+    def __call__(
+        self,
+        api_base: str,
+        method: str,
+        path: str,
+        body: dict[str, Any] | None = None,
+    ) -> Any: ...
 
 
 def compact_brief_items(
@@ -90,12 +100,16 @@ def require_evidence_sources(
 
 
 def validate_action_ids(
-    api_base: str, action_ids: list[str], *, label: str
+    api_base: str,
+    action_ids: list[str],
+    *,
+    label: str,
+    requester: ActionValidationRequester = request_json,
 ) -> list[dict[str, Any]]:
     validations: list[dict[str, Any]] = []
     for action_id in action_ids:
         quoted_action = urllib.parse.quote(action_id, safe="")
-        validation = request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        validation = requester(api_base, "POST", f"/api/actions/{quoted_action}/validate")
         validations.append(
             {
                 "action_id": validation.get("action_id"),
