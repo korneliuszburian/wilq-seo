@@ -215,6 +215,10 @@ def test_new_page_executor_stops_before_store_or_transport_when_env_is_disabled(
 def test_new_page_executor_returns_wordpress_transport_errors_as_blockers(
     monkeypatch, error
 ) -> None:
+    monkeypatch.setattr(
+        "wilq.content.workflow.target.new_page_draft_executor._dev_draft_writes_enabled",
+        lambda: True,
+    )
     action = create_new_page_draft_action(
         ContentNewPageDeliveryReadiness(
             status="ready_for_action",
@@ -258,9 +262,17 @@ def test_new_page_executor_returns_wordpress_transport_errors_as_blockers(
         "wilq.content.workflow.target.new_page_draft_executor.build_new_page_dev_draft_write_payload",
         lambda revision, current_binding: _payload(),
     )
+    transport_attempts = 0
+
+    def raise_transport_error(_payload, *, action_apply_authorized):
+        nonlocal transport_attempts
+        assert action_apply_authorized is True
+        transport_attempts += 1
+        raise error
+
     monkeypatch.setattr(
         "wilq.content.workflow.target.new_page_draft_executor.create_new_page_dev_draft",
-        lambda payload, *, action_apply_authorized: (_ for _ in ()).throw(error),
+        raise_transport_error,
     )
 
     result, errors = execute_new_page_draft_action(
@@ -270,3 +282,4 @@ def test_new_page_executor_returns_wordpress_transport_errors_as_blockers(
 
     assert result is None
     assert errors == [str(error)]
+    assert transport_attempts == 1
