@@ -107,6 +107,9 @@ class LocalStateStore(
               contract_version INTEGER NOT NULL CHECK (contract_version >= 1)
             );
 
+            CREATE INDEX IF NOT EXISTS idx_codex_stop_events_received_at_id
+            ON codex_stop_events (received_at, id);
+
             CREATE TABLE IF NOT EXISTS workflow_runs (
               id TEXT PRIMARY KEY,
               workflow_id TEXT NOT NULL,
