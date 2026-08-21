@@ -863,14 +863,7 @@ def _persisted_runtime_trace(proposal: ContentPlanningProposal) -> ContentCodexR
 
     if not proposal.codex_run_id:
         return ContentCodexRuntimeTrace(status="not_started")
-    run = next(
-        (
-            item
-            for item in local_state_store().list_codex_runs()
-            if item.id == proposal.codex_run_id
-        ),
-        None,
-    )
+    run = local_state_store().get_codex_run(proposal.codex_run_id)
     if run is None:
         return ContentCodexRuntimeTrace(status="not_started")
     runtime_status: Literal["not_started", "completed", "blocked", "failed"] = (

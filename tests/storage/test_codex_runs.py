@@ -42,6 +42,21 @@ def test_codex_run_round_trip_preserves_ai_trace_fields(tmp_path) -> None:
     assert loaded.source_material_ids == ["source_material_bdo"]
 
 
+def test_get_codex_run_returns_exact_run_or_none(tmp_path) -> None:
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    expected = CodexRun(
+        id="codex_exact_lookup",
+        status="completed",
+        skill="wilq-content-operator",
+        proposal_id="content_planning_proposal_exact_lookup",
+    )
+    store.save_codex_run(CodexRun(id="codex_other_lookup", status="failed"))
+    store.save_codex_run(expected)
+
+    assert store.get_codex_run(expected.id) == expected
+    assert store.get_codex_run("codex_missing_lookup") is None
+
+
 def test_initial_draft_run_records_exact_prompt_policy_and_materials(
     tmp_path, monkeypatch
 ) -> None:

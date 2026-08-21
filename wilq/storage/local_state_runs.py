@@ -57,6 +57,16 @@ class _RunStoreMixin:
             ).fetchall()
         return [_model_from_json(CodexRun, cast(str, row["payload_json"])) for row in rows]
 
+    def get_codex_run(self, run_id: str) -> CodexRun | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json FROM codex_runs WHERE id = ?",
+                (run_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return _model_from_json(CodexRun, cast(str, row["payload_json"]))
+
     def save_workflow_run(self, run: WorkflowRun) -> WorkflowRun:
         redacted = WorkflowRun.model_validate(redact_mapping(run.model_dump(mode="json")))
         payload_json = _model_json(redacted)
