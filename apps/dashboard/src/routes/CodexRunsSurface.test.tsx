@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CodexRunsSurface } from "./CodexRunsSurface";
 
-const runs = vi.hoisted(() => [
-  {
+const fixtures = vi.hoisted(() => {
+  const detail = {
     id: "codex_content_initial_draft_alpha",
     skill: "wilq-content-operator",
     hook: "content_initial_full_draft",
@@ -32,45 +32,56 @@ const runs = vi.hoisted(() => [
     deadline_at: null,
     completed_at: "2026-08-08T10:01:00Z",
     error: null
-  },
-  {
-    id: "codex_regulatory_source_fact_beta",
-    skill: "wilq-content-operator",
-    hook: "content_regulatory_source_fact_proposal",
-    source: "wilq_api",
-    status: "blocked" as const,
-    model: null,
-    model_reasoning_effort: null,
-    prompt_digest: null,
-    prompt_template_id: "regulatory_fact_proposal@v1",
-    token_usage_input: null,
-    token_usage_output: null,
-    cost_estimate_pln: null,
-    used_endpoints: [],
-    evidence_ids: ["ev_regulatory"],
-    source_material_ids: [],
-    action_ids: [],
-    proposal_id: null,
-    planning_digest: null,
-    planning_input_digest: null,
-    initial_draft_context_digest: null,
-    initial_draft_base_revision_id: null,
-    started_at: "2026-08-08T09:00:00Z",
-    deadline_at: null,
-    completed_at: "2026-08-08T09:01:00Z",
-    error: "source_blocked"
-  }
-]);
+  };
+  const summaries = [
+    {
+      id: detail.id,
+      skill: detail.skill,
+      status: detail.status,
+      model: detail.model,
+      prompt_template_id: detail.prompt_template_id,
+      cost_estimate_pln: detail.cost_estimate_pln,
+      source_material_count: 2,
+      started_at: detail.started_at
+    },
+    {
+      id: "codex_regulatory_source_fact_beta",
+      skill: "wilq-content-operator",
+      status: "blocked" as const,
+      model: null,
+      prompt_template_id: "regulatory_fact_proposal@v1",
+      cost_estimate_pln: null,
+      source_material_count: 0,
+      started_at: "2026-08-08T09:00:00Z"
+    }
+  ];
+  return {
+    detail,
+    summaries,
+    historyPage: { items: summaries, total_count: 3, next_cursor: "opaque-page-2" },
+    getCodexRunHistory: vi.fn(),
+    getCodexRun: vi.fn()
+  };
+});
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
-  return { ...actual, getCodexRuns: vi.fn().mockResolvedValue(runs) };
+  return {
+    ...actual,
+    getCodexRunHistory: fixtures.getCodexRunHistory,
+    getCodexRun: fixtures.getCodexRun
+  };
 });
 
 describe("CodexRunsSurface", () => {
+  beforeEach(() => {
+    fixtures.getCodexRunHistory.mockReset().mockResolvedValue(fixtures.historyPage);
+    fixtures.getCodexRun.mockReset().mockResolvedValue(fixtures.detail);
+  });
+
   afterEach(() => cleanup());
 
-  it("renders run cost and material count, then opens full trace details", async () => {
+  it("renders server-page stats and fetches exact detail only after selection", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={queryClient}>
@@ -79,17 +90,57 @@ describe("CodexRunsSurface", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Uruchomienia AI" })).toBeInTheDocument();
+    expect(fixtures.getCodexRunHistory).toHaveBeenCalledWith(50, null);
+    expect(fixtures.getCodexRun).not.toHaveBeenCalled();
+    expect(screen.getByText(/Statystyki dotyczą bieżącej strony: 2 z 3/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Metadane promptu i pełny ślad uruchomienia są dostępne po wybraniu rekordu/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Surowe prompty są dostępne/)).not.toBeInTheDocument();
     const table = screen.getByRole("table");
     expect(within(table).getByText(/1,2345/)).toBeInTheDocument();
     expect(within(table).getByText("2")).toBeInTheDocument();
-    expect(within(table).getByText("content_initial_draft@v1")).toBeInTheDocument();
 
     fireEvent.click(
-      within(table).getByRole("button", { name: /Pokaż szczegóły uruchomienia codex_regu/i })
+      within(table).getByRole("button", { name: /Pokaż szczegóły uruchomienia codex_cont/i })
     );
-    expect(screen.getByText("source_blocked")).toBeInTheDocument();
-    expect(screen.getByText("ev_regulatory")).toBeInTheDocument();
+
+    expect(await screen.findByText("ev_content")).toBeInTheDocument();
+    expect(fixtures.getCodexRun).toHaveBeenCalledWith("codex_content_initial_draft_alpha");
+    expect(fixtures.getCodexRun).toHaveBeenCalledTimes(1);
     expect(screen.queryByText(/raw prompt/i)).not.toBeInTheDocument();
+  });
+
+  it("clears loaded detail before advancing with the opaque server cursor", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const secondPage = {
+      items: [fixtures.summaries[1]],
+      total_count: 3,
+      next_cursor: null
+    };
+    fixtures.getCodexRunHistory.mockImplementation((_limit, requestedCursor) =>
+      Promise.resolve(requestedCursor === null ? fixtures.historyPage : secondPage)
+    );
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CodexRunsSurface />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByRole("heading", { name: "Uruchomienia AI" })).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    fireEvent.click(
+      within(table).getByRole("button", { name: /Pokaż szczegóły uruchomienia codex_cont/i })
+    );
+    expect(await screen.findByText("ev_content")).toBeInTheDocument();
+    expect(fixtures.getCodexRun).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Następna strona" }));
+
+    await waitFor(() => expect(fixtures.getCodexRunHistory).toHaveBeenCalledWith(50, "opaque-page-2"));
+    await waitFor(() => expect(screen.queryByText("ev_content")).not.toBeInTheDocument());
+    expect(fixtures.getCodexRun).toHaveBeenCalledTimes(1);
+    expect(readFileSync("src/lib/api/codex.ts", "utf8")).not.toContain("/api/codex/runs\"");
   });
 
   it("owns the generated route instead of falling back to GenericSurface", () => {
