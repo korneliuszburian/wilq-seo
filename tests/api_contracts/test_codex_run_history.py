@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import sqlite3
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -30,6 +32,19 @@ def _get(path: str, *, params: dict[str, object] | None = None) -> httpx.Respons
             return await client.get(path, params=params)
 
     return asyncio.run(exercise())
+
+
+def _tamper_cursor(cursor: str, *, remove_version: bool = False, **changes: object) -> str:
+    payload_segment, signature_segment = cursor.split(".", maxsplit=1)
+    padding = "=" * (-len(payload_segment) % 4)
+    payload = json.loads(urlsafe_b64decode(f"{payload_segment}{padding}"))
+    if remove_version:
+        payload.pop("version", None)
+    payload.update(changes)
+    tampered_payload = urlsafe_b64encode(
+        json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    ).decode("ascii").rstrip("=")
+    return f"{tampered_payload}.{signature_segment}"
 
 
 def test_run_history_defaults_to_50_and_bounds_explicit_limits(
@@ -80,6 +95,7 @@ def test_run_history_total_count_is_page_independent_and_cursor_ends(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    monkeypatch.setenv("WILQ_CODEX_RUN_HISTORY_CURSOR_SECRET", "test-run-history-key")
     state_path = tmp_path / "codex_history_pages.sqlite3"
     monkeypatch.setenv("WILQ_STATE_DB", str(state_path))
     store = LocalStateStore(state_path)
@@ -136,11 +152,53 @@ def test_run_history_rejects_a_malformed_opaque_cursor(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    monkeypatch.setenv("WILQ_CODEX_RUN_HISTORY_CURSOR_SECRET", "test-run-history-key")
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "codex_history_cursor.sqlite3"))
 
     response = _get(
         "/api/codex/run-history",
         params={"cursor": "not-a-valid-cursor"},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    ("remove_version", "changes"),
+    [
+        (False, {"run_id": "zzzz"}),
+        (False, {"started_at": "2030-01-01T00:00:00+00:00"}),
+        (False, {"version": 2}),
+        (True, {}),
+    ],
+    ids=["run-id", "timestamp", "version", "missing-version"],
+)
+def test_run_history_rejects_semantically_tampered_cursor(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    remove_version: bool,
+    changes: dict[str, object],
+) -> None:
+    monkeypatch.setenv("WILQ_CODEX_RUN_HISTORY_CURSOR_SECRET", "test-run-history-key")
+    state_path = tmp_path / "codex_history_tampered_cursor.sqlite3"
+    monkeypatch.setenv("WILQ_STATE_DB", str(state_path))
+    store = LocalStateStore(state_path)
+    shared_started_at = datetime(2026, 8, 22, 9, 0, tzinfo=UTC)
+    for run_id in ("codex_delta", "codex_charlie", "codex_bravo", "codex_alpha"):
+        store.save_codex_run(
+            CodexRun(id=run_id, status="completed", started_at=shared_started_at)
+        )
+
+    first_page = _get("/api/codex/run-history", params={"limit": 2}).json()
+    tampered_cursor = _tamper_cursor(
+        first_page["next_cursor"],
+        remove_version=remove_version,
+        **changes,
+    )
+
+    response = _get(
+        "/api/codex/run-history",
+        params={"limit": 2, "cursor": tampered_cursor},
     )
 
     assert response.status_code == 422

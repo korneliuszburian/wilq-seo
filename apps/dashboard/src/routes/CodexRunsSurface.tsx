@@ -68,7 +68,7 @@ export function CodexRunsSurface() {
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <DashboardToolbar
         title="Uruchomienia AI"
-        description="Stronicowana historia modeli, kosztów i materiałów źródłowych. Surowe prompty są dostępne dopiero w szczegółach wybranego uruchomienia."
+        description="Stronicowana historia modeli, kosztów i materiałów źródłowych. Metadane promptu i pełny ślad uruchomienia są dostępne po wybraniu rekordu."
         dateLabel="Strona serwerowa"
         onRefresh={() => void historyQuery.refetch()}
       />

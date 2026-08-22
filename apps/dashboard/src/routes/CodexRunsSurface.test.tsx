@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -93,6 +93,10 @@ describe("CodexRunsSurface", () => {
     expect(fixtures.getCodexRunHistory).toHaveBeenCalledWith(50, null);
     expect(fixtures.getCodexRun).not.toHaveBeenCalled();
     expect(screen.getByText(/Statystyki dotyczą bieżącej strony: 2 z 3/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Metadane promptu i pełny ślad uruchomienia są dostępne po wybraniu rekordu/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Surowe prompty są dostępne/)).not.toBeInTheDocument();
     const table = screen.getByRole("table");
     expect(within(table).getByText(/1,2345/)).toBeInTheDocument();
     expect(within(table).getByText("2")).toBeInTheDocument();
@@ -107,8 +111,16 @@ describe("CodexRunsSurface", () => {
     expect(screen.queryByText(/raw prompt/i)).not.toBeInTheDocument();
   });
 
-  it("advances with the opaque server cursor and does not call the legacy list API", async () => {
+  it("clears loaded detail before advancing with the opaque server cursor", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const secondPage = {
+      items: [fixtures.summaries[1]],
+      total_count: 3,
+      next_cursor: null
+    };
+    fixtures.getCodexRunHistory.mockImplementation((_limit, requestedCursor) =>
+      Promise.resolve(requestedCursor === null ? fixtures.historyPage : secondPage)
+    );
     render(
       <QueryClientProvider client={queryClient}>
         <CodexRunsSurface />
@@ -116,9 +128,18 @@ describe("CodexRunsSurface", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Uruchomienia AI" })).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    fireEvent.click(
+      within(table).getByRole("button", { name: /Pokaż szczegóły uruchomienia codex_cont/i })
+    );
+    expect(await screen.findByText("ev_content")).toBeInTheDocument();
+    expect(fixtures.getCodexRun).toHaveBeenCalledTimes(1);
+
     fireEvent.click(screen.getByRole("button", { name: "Następna strona" }));
 
-    expect(fixtures.getCodexRunHistory).toHaveBeenCalledWith(50, "opaque-page-2");
+    await waitFor(() => expect(fixtures.getCodexRunHistory).toHaveBeenCalledWith(50, "opaque-page-2"));
+    await waitFor(() => expect(screen.queryByText("ev_content")).not.toBeInTheDocument());
+    expect(fixtures.getCodexRun).toHaveBeenCalledTimes(1);
     expect(readFileSync("src/lib/api/codex.ts", "utf8")).not.toContain("/api/codex/runs\"");
   });
 
