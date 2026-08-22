@@ -9,15 +9,29 @@ import {
   DenseQueueTable,
   StatusPill
 } from "../components/DashboardMockupPrimitives";
-import { getCodexRuns, type CodexRun } from "../lib/api";
+import { getCodexRun, getCodexRunHistory, type CodexRun } from "../lib/api";
+
+const HISTORY_PAGE_LIMIT = 50;
 
 export function CodexRunsSurface() {
-  const runsQuery = useQuery({ queryKey: ["codex-runs"], queryFn: getCodexRuns });
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [cursorStack, setCursorStack] = useState<Array<string | null>>([]);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
-  const runs = runsQuery.data ?? [];
+  const historyQuery = useQuery({
+    queryKey: ["codex-run-history", cursor],
+    queryFn: () => getCodexRunHistory(HISTORY_PAGE_LIMIT, cursor)
+  });
+  const detailQuery = useQuery({
+    queryKey: ["codex-run-detail", selectedRunId],
+    queryFn: () => getCodexRun(selectedRunId as string),
+    enabled: selectedRunId !== null
+  });
+  const page = historyQuery.data;
+  const runs = page?.items ?? [];
+  const selectedSummary = runs.find((run) => run.id === selectedRunId) ?? null;
 
-  if (runsQuery.isLoading) return <LoadingBand />;
-  if (runsQuery.error) {
+  if (historyQuery.isLoading) return <LoadingBand />;
+  if (historyQuery.error) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
         <h1 className="text-3xl font-semibold text-ink">Uruchomienia AI</h1>
@@ -26,47 +40,64 @@ export function CodexRunsSurface() {
     );
   }
 
-  const selectedRun = runs.find((run) => run.id === selectedRunId) ?? runs[0] ?? null;
   const costValues = runs.flatMap((run) =>
     run.cost_estimate_pln === null || run.cost_estimate_pln === undefined
       ? []
       : [run.cost_estimate_pln]
   );
   const totalCost = costValues.reduce((sum, value) => sum + value, 0);
-  const materialIds = new Set(runs.flatMap((run) => run.source_material_ids));
+  const materialCount = runs.reduce((sum, run) => sum + run.source_material_count, 0);
   const failedRuns = runs.filter((run) => run.status === "failed" || run.status === "blocked");
+
+  function goNext() {
+    if (!page?.next_cursor) return;
+    setCursorStack((stack) => [...stack, cursor]);
+    setCursor(page.next_cursor);
+    setSelectedRunId(null);
+  }
+
+  function goPrevious() {
+    const previous = cursorStack.at(-1);
+    if (previous === undefined) return;
+    setCursorStack((stack) => stack.slice(0, -1));
+    setCursor(previous);
+    setSelectedRunId(null);
+  }
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <DashboardToolbar
         title="Uruchomienia AI"
-        description="Historia modeli, kosztów i materiałów źródłowych użytych przez WILQ. Surowe prompty nie są zapisywane ani wyświetlane."
-        dateLabel="Wszystkie zapisane"
-        onRefresh={() => void runsQuery.refetch()}
+        description="Stronicowana historia modeli, kosztów i materiałów źródłowych. Surowe prompty są dostępne dopiero w szczegółach wybranego uruchomienia."
+        dateLabel="Strona serwerowa"
+        onRefresh={() => void historyQuery.refetch()}
       />
 
+      <p className="mb-3 text-xs text-slate-500">
+        Statystyki dotyczą bieżącej strony: {runs.length} z {page?.total_count ?? 0} uruchomień.
+      </p>
       <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <CompactStatTile
           value={runs.length}
-          label="uruchomień"
+          label="uruchomień na stronie"
           tone="blue"
           icon={<Bot aria-hidden="true" size={22} />}
         />
         <CompactStatTile
           value={costValues.length > 0 ? formatCost(totalCost) : "—"}
-          label="oszacowanego kosztu"
+          label="koszt strony"
           tone="green"
           icon={<CircleDollarSign aria-hidden="true" size={22} />}
         />
         <CompactStatTile
-          value={materialIds.size}
-          label="materiałów źródłowych"
+          value={materialCount}
+          label="materiałów na stronie"
           tone="purple"
           icon={<FileStack aria-hidden="true" size={22} />}
         />
         <CompactStatTile
           value={failedRuns.length}
-          label="zablokowanych lub błędnych"
+          label="błędnych na stronie"
           tone={failedRuns.length > 0 ? "red" : "neutral"}
           icon={<ListChecks aria-hidden="true" size={22} />}
         />
@@ -76,7 +107,7 @@ export function CodexRunsSurface() {
         title="Lista uruchomień"
         rows={runs}
         getRowKey={(run) => run.id}
-        selectedRowKey={selectedRun?.id}
+        selectedRowKey={selectedSummary?.id}
         emptyLabel="Brak zapisanych uruchomień AI"
         columns={[
           {
@@ -110,15 +141,35 @@ export function CodexRunsSurface() {
             render: (run) => run.prompt_template_id ?? "—",
             className: "min-w-48"
           },
-          {
-            key: "materials",
-            header: "Materiały",
-            render: (run) => run.source_material_ids.length
-          }
+          { key: "materials", header: "Materiały", render: (run) => run.source_material_count }
         ]}
       />
 
-      {selectedRun ? <CodexRunDetails run={selectedRun} /> : null}
+      <nav className="mt-5 flex items-center justify-between" aria-label="Historia uruchomień">
+        <button
+          type="button"
+          className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={cursorStack.length === 0}
+          onClick={goPrevious}
+        >
+          Poprzednia strona
+        </button>
+        <span className="text-xs text-slate-500">Limit {HISTORY_PAGE_LIMIT}</span>
+        <button
+          type="button"
+          className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-action disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!page?.next_cursor}
+          onClick={goNext}
+        >
+          Następna strona
+        </button>
+      </nav>
+
+      {selectedRunId && detailQuery.isLoading ? <LoadingBand /> : null}
+      {selectedRunId && detailQuery.error ? (
+        <p className="mt-4 text-sm text-risk">Nie udało się odczytać szczegółów uruchomienia.</p>
+      ) : null}
+      {detailQuery.data ? <CodexRunDetails run={detailQuery.data} /> : null}
     </main>
   );
 }
