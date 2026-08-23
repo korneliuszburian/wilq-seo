@@ -79,6 +79,27 @@ export const CodexRunSchema = z.object({
   error: z.string().nullable().optional()
 });
 
+export const CodexRunHistorySummarySchema = z
+  .object({
+    id: z.string(),
+    skill: z.string().nullable().optional(),
+    status: z.enum(["started", "completed", "failed", "blocked"]),
+    model: z.string().nullable().optional(),
+    prompt_template_id: z.string().nullable().optional(),
+    cost_estimate_pln: z.number().nonnegative().nullable().optional(),
+    source_material_count: z.number().int().nonnegative(),
+    started_at: z.string()
+  })
+  .strict();
+
+export const CodexRunHistoryPageSchema = z
+  .object({
+    items: z.array(CodexRunHistorySummarySchema),
+    total_count: z.number().int().nonnegative(),
+    next_cursor: z.string().nullable().optional()
+  })
+  .strict();
+
 export const ActionReviewOutcomeSchema = z.enum([
   "approved_for_prepare",
   "needs_changes",
@@ -493,6 +514,8 @@ export const ActionApplyRequestSchema = z
 
 export type ActionPreviewCardViewModel = z.infer<typeof ActionPreviewCardViewModelSchema>;
 export type CodexRun = z.infer<typeof CodexRunSchema>;
+export type CodexRunHistorySummary = z.infer<typeof CodexRunHistorySummarySchema>;
+export type CodexRunHistoryPage = z.infer<typeof CodexRunHistoryPageSchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema>;
 export type ActionMutationAuditRecord = z.infer<typeof ActionMutationAuditRecordSchema>;

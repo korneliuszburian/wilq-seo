@@ -4,12 +4,20 @@ import json
 import sqlite3
 from collections.abc import Iterator
 from contextlib import AbstractContextManager, contextmanager
+from datetime import datetime
 from typing import Protocol, cast, runtime_checkable
 
 from pydantic import BaseModel
 
+from wilq.codex.run_history import (
+    CODEX_RUN_HISTORY_DEFAULT_LIMIT,
+    CODEX_RUN_HISTORY_MAX_LIMIT,
+    decode_codex_run_history_cursor,
+    encode_codex_run_history_cursor,
+    summarize_codex_run,
+)
 from wilq.jobs.models import JobRun
-from wilq.schemas import CodexRun, ConnectorRefreshRun
+from wilq.schemas import CodexRun, CodexRunHistoryPage, ConnectorRefreshRun
 from wilq.security.redaction import redact_mapping
 from wilq.storage.model_json import model_json as _model_json
 from wilq.workflows.models import WorkflowRun
@@ -66,6 +74,72 @@ class _RunStoreMixin:
         if row is None:
             return None
         return _model_from_json(CodexRun, cast(str, row["payload_json"]))
+
+    def list_codex_run_history(
+        self,
+        *,
+        limit: int = CODEX_RUN_HISTORY_DEFAULT_LIMIT,
+        cursor: str | None = None,
+    ) -> CodexRunHistoryPage:
+        if not 1 <= limit <= CODEX_RUN_HISTORY_MAX_LIMIT:
+            raise ValueError(
+                f"Codex run history limit must be between 1 and {CODEX_RUN_HISTORY_MAX_LIMIT}"
+            )
+
+        cursor_key = decode_codex_run_history_cursor(cursor) if cursor is not None else None
+        with self._connect() as connection:
+            total_count = cast(
+                int,
+                connection.execute("SELECT COUNT(*) FROM codex_runs").fetchone()[0],
+            )
+            if cursor_key is None:
+                rows = connection.execute(
+                    """
+                    SELECT id, started_at, payload_json
+                    FROM codex_runs
+                    ORDER BY started_at DESC, id DESC
+                    LIMIT ?
+                    """,
+                    (limit + 1,),
+                ).fetchall()
+            else:
+                cursor_started_at = cursor_key.started_at.isoformat()
+                rows = connection.execute(
+                    """
+                    SELECT id, started_at, payload_json
+                    FROM codex_runs
+                    WHERE started_at < ? OR (started_at = ? AND id < ?)
+                    ORDER BY started_at DESC, id DESC
+                    LIMIT ?
+                    """,
+                    (
+                        cursor_started_at,
+                        cursor_started_at,
+                        cursor_key.run_id,
+                        limit + 1,
+                    ),
+                ).fetchall()
+
+        page_rows = rows[:limit]
+        items = [
+            summarize_codex_run(
+                _model_from_json(CodexRun, cast(str, row["payload_json"]))
+            )
+            for row in page_rows
+        ]
+        next_cursor = None
+        if len(rows) > limit:
+            last_row = page_rows[-1]
+            next_cursor = encode_codex_run_history_cursor(
+                started_at=datetime.fromisoformat(cast(str, last_row["started_at"])),
+                run_id=cast(str, last_row["id"]),
+            )
+
+        return CodexRunHistoryPage(
+            items=items,
+            total_count=total_count,
+            next_cursor=next_cursor,
+        )
 
     def save_workflow_run(self, run: WorkflowRun) -> WorkflowRun:
         redacted = WorkflowRun.model_validate(redact_mapping(run.model_dump(mode="json")))
