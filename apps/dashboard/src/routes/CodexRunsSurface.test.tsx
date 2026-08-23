@@ -118,8 +118,12 @@ describe("CodexRunsSurface", () => {
       total_count: 3,
       next_cursor: null
     };
+    const secondDetail = { ...fixtures.detail, id: fixtures.summaries[1].id, evidence_ids: ["ev_regulatory"] };
     fixtures.getCodexRunHistory.mockImplementation((_limit, requestedCursor) =>
       Promise.resolve(requestedCursor === null ? fixtures.historyPage : secondPage)
+    );
+    fixtures.getCodexRun.mockImplementation((runId) =>
+      Promise.resolve(runId === fixtures.summaries[1].id ? secondDetail : fixtures.detail)
     );
     render(
       <QueryClientProvider client={queryClient}>
@@ -140,6 +144,15 @@ describe("CodexRunsSurface", () => {
     await waitFor(() => expect(fixtures.getCodexRunHistory).toHaveBeenCalledWith(50, "opaque-page-2"));
     await waitFor(() => expect(screen.queryByText("ev_content")).not.toBeInTheDocument());
     expect(fixtures.getCodexRun).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(
+      within(screen.getByRole("table")).getByRole("button", {
+        name: /Pokaż szczegóły uruchomienia codex_regu/i
+      })
+    );
+    expect(await screen.findByText("ev_regulatory")).toBeInTheDocument();
+    expect(fixtures.getCodexRun).toHaveBeenCalledWith(fixtures.summaries[1].id);
+    expect(fixtures.getCodexRun).toHaveBeenCalledTimes(2);
     expect(readFileSync("src/lib/api/codex.ts", "utf8")).not.toContain("/api/codex/runs\"");
   });
 

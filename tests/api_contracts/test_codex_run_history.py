@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import sqlite3
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from pathlib import Path
 
 import httpx
@@ -45,6 +47,15 @@ def _tamper_cursor(cursor: str, *, remove_version: bool = False, **changes: obje
         json.dumps(payload, separators=(",", ":")).encode("utf-8")
     ).decode("ascii").rstrip("=")
     return f"{tampered_payload}.{signature_segment}"
+
+
+def _signed_cursor_payload(payload: bytes) -> str:
+    signature = hmac.new(b"test-run-history-key", payload, sha256).digest()
+    return f"{_encode_cursor_segment(payload)}.{_encode_cursor_segment(signature)}"
+
+
+def _encode_cursor_segment(value: bytes) -> str:
+    return urlsafe_b64encode(value).decode("ascii").rstrip("=")
 
 
 def test_run_history_defaults_to_50_and_bounds_explicit_limits(
@@ -202,6 +213,39 @@ def test_run_history_rejects_semantically_tampered_cursor(
     )
 
     assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        b'{"started_at":"2026-08-22T09:00:00+00:00","run_id":"codex_alpha"}',
+        b'{"version":2,"started_at":"2026-08-22T09:00:00+00:00","run_id":"codex_alpha"}',
+        b'{"version":1,"started_at":"2026-08-22T09:00:00","run_id":"codex_alpha"}',
+        b'{"version":1,"started_at":',
+    ],
+    ids=[
+        "signed-missing-version",
+        "signed-unsupported-version",
+        "signed-naive-timestamp",
+        "signed-malformed-json",
+    ],
+)
+def test_run_history_rejects_signed_invalid_cursor_payload(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    payload: bytes,
+) -> None:
+    monkeypatch.setenv("WILQ_CODEX_RUN_HISTORY_CURSOR_SECRET", "test-run-history-key")
+    state_path = tmp_path / "codex_history_signed_invalid_cursor.sqlite3"
+    monkeypatch.setenv("WILQ_STATE_DB", str(state_path))
+
+    response = _get(
+        "/api/codex/run-history",
+        params={"cursor": _signed_cursor_payload(payload)},
+    )
+
+    assert response.status_code == 422
+    assert not state_path.exists()
 
 
 def test_codex_run_detail_round_trips_exactly_and_reads_do_not_mutate_storage(
