@@ -169,6 +169,8 @@ def verify_migration_backup_candidate(
         candidate_directory,
         expected_manifest_sha256,
     )
+    if _file_proof(source) != manifest.source.source_bytes:
+        raise MigrationBackupCandidateError("Migration backup source generation differs")
     source_before = _readback(source, manifest.accepted_inventory)
     source_after = _readback(source, manifest.accepted_inventory)
     if source_before != source_after:
@@ -196,7 +198,7 @@ def restore_migration_backup_candidate(
         candidate_directory,
         expected_manifest_sha256,
     )
-    destination_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    _require_private_restore_parent(destination_path.parent)
     descriptor, staging_name = tempfile.mkstemp(
         dir=destination_path.parent,
         prefix=f".{destination_path.name}.",
@@ -408,7 +410,12 @@ def _candidate_files(candidate_directory: Path) -> tuple[Path, Path]:
         ) from exc
     if directory_mode != 0o700:
         raise MigrationBackupCandidateError("Migration backup candidate directory is not private")
-    entries = {entry.name for entry in candidate_directory.iterdir()}
+    try:
+        entries = {entry.name for entry in candidate_directory.iterdir()}
+    except OSError as exc:
+        raise MigrationBackupCandidateError(
+            "Migration backup candidate directory cannot be inspected"
+        ) from exc
     if entries != {_BACKUP_FILENAME, _MANIFEST_FILENAME}:
         raise MigrationBackupCandidateError("Migration backup candidate files are incomplete")
     backup_path = candidate_directory / _BACKUP_FILENAME
@@ -481,6 +488,20 @@ def _sealed_identity_from_stat(metadata: os.stat_result) -> _SealedFileIdentity:
 def _require_fresh_destination(path: Path) -> None:
     if path.exists() or path.is_symlink():
         raise MigrationBackupCandidateError("Migration backup restore destination must be fresh")
+
+
+def _require_private_restore_parent(path: Path) -> None:
+    try:
+        path.mkdir(mode=0o700, parents=True, exist_ok=True)
+        metadata = path.lstat()
+    except OSError as exc:
+        raise MigrationBackupCandidateError(
+            "Migration backup restore destination parent cannot be inspected"
+        ) from exc
+    if not stat.S_ISDIR(metadata.st_mode) or stat.S_IMODE(metadata.st_mode) != 0o700:
+        raise MigrationBackupCandidateError(
+            "Migration backup restore destination parent must be private"
+        )
 
 
 def _copy_exact_file(source: Path, destination: Path) -> None:

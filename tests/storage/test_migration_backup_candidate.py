@@ -4,6 +4,7 @@ import json
 import os
 import sqlite3
 import stat
+from collections.abc import Iterator
 from hashlib import sha256
 from pathlib import Path
 
@@ -139,6 +140,99 @@ def test_atomic_candidate_binds_exact_source_backup_manifest_and_restore_readbac
     )
 
 
+def test_verification_wraps_candidate_directory_enumeration_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_path = tmp_path / "source" / "wilq.sqlite3"
+    accepted_inventory = _source(source_path)
+    candidate_directory = tmp_path / "candidate"
+    candidate = build_migration_backup_candidate(
+        source_path=source_path,
+        candidate_directory=candidate_directory,
+        accepted_inventory=accepted_inventory,
+    )
+    source_before = source_path.read_bytes()
+    backup_path = candidate_directory / "wilq.sqlite3"
+    manifest_path = candidate_directory / "manifest.json"
+    backup_before = backup_path.read_bytes()
+    manifest_before = manifest_path.read_bytes()
+    original_iterdir = Path.iterdir
+
+    def fail_candidate_enumeration(path: Path) -> Iterator[Path]:
+        if path == candidate_directory:
+            raise OSError("injected candidate directory enumeration failure")
+        return original_iterdir(path)
+
+    monkeypatch.setattr(Path, "iterdir", fail_candidate_enumeration)
+
+    with pytest.raises(MigrationBackupCandidateError, match="directory cannot be inspected"):
+        verify_migration_backup_candidate(
+            source_path=source_path,
+            candidate_directory=candidate_directory,
+            expected_manifest_sha256=candidate.manifest_file.sha256,
+        )
+
+    assert source_path.read_bytes() == source_before
+    assert backup_path.read_bytes() == backup_before
+    assert manifest_path.read_bytes() == manifest_before
+
+
+def test_verification_rejects_a_source_generation_changed_after_candidate_build(
+    tmp_path: Path,
+) -> None:
+    source_path = tmp_path / "source" / "wilq.sqlite3"
+    accepted_inventory = _source(source_path)
+    candidate_directory = tmp_path / "candidate"
+    candidate = build_migration_backup_candidate(
+        source_path=source_path,
+        candidate_directory=candidate_directory,
+        accepted_inventory=accepted_inventory,
+    )
+
+    with sqlite3.connect(source_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO audit_events (id, action_id, created_at, payload_json)
+            VALUES ('audit_after_d2', 'action_after_d2', '2026-08-24', '{}')
+            """
+        )
+    changed_inventory = inspect_sqlite_schema(
+        source_path,
+        application_sha256=APPLICATION_SHA256,
+        seed_sha256=SEED_SHA256,
+        expected_identity_sha256=accepted_inventory.identity.identity_sha256,
+    )
+    assert changed_inventory.identity == accepted_inventory.identity
+    assert changed_inventory.source_bytes != accepted_inventory.source_bytes
+    source_before_verification = source_path.read_bytes()
+    source_metadata_before = _metadata_without_atime(source_path)
+    candidate_paths = (
+        candidate_directory / "wilq.sqlite3",
+        candidate_directory / "manifest.json",
+    )
+    candidate_directory_before = _metadata_without_atime(candidate_directory)
+    candidate_bytes_before = {path.name: path.read_bytes() for path in candidate_paths}
+    candidate_metadata_before = {
+        path.name: _metadata_without_atime(path) for path in candidate_paths
+    }
+
+    with pytest.raises(MigrationBackupCandidateError, match="source generation"):
+        verify_migration_backup_candidate(
+            source_path=source_path,
+            candidate_directory=candidate_directory,
+            expected_manifest_sha256=candidate.manifest_file.sha256,
+        )
+
+    assert source_path.read_bytes() == source_before_verification
+    assert _metadata_without_atime(source_path) == source_metadata_before
+    assert _metadata_without_atime(candidate_directory) == candidate_directory_before
+    assert {path.name: path.read_bytes() for path in candidate_paths} == candidate_bytes_before
+    assert {
+        path.name: _metadata_without_atime(path) for path in candidate_paths
+    } == candidate_metadata_before
+
+
 @pytest.mark.parametrize("tampered_name", ["wilq.sqlite3", "manifest.json"])
 def test_tampered_candidate_fails_verification_and_restore_without_touching_source(
     tmp_path: Path,
@@ -238,6 +332,8 @@ def test_restore_publishes_an_exact_private_copy_only_at_a_fresh_alternate_path(
         accepted_inventory=accepted_inventory,
     )
     restore_path = tmp_path / "restore" / "wilq.sqlite3"
+    restore_path.parent.mkdir(mode=0o700)
+    restore_path.parent.chmod(0o700)
 
     restored = restore_migration_backup_candidate(
         candidate_directory=candidate_directory,
@@ -260,6 +356,43 @@ def test_restore_publishes_an_exact_private_copy_only_at_a_fresh_alternate_path(
             expected_manifest_sha256=candidate.manifest_file.sha256,
         )
     assert restore_path.read_bytes() == source_before
+
+
+def test_restore_rejects_an_existing_non_private_parent_without_mutating_it(
+    tmp_path: Path,
+) -> None:
+    source_path = tmp_path / "source" / "wilq.sqlite3"
+    accepted_inventory = _source(source_path)
+    candidate_directory = tmp_path / "candidate"
+    candidate = build_migration_backup_candidate(
+        source_path=source_path,
+        candidate_directory=candidate_directory,
+        accepted_inventory=accepted_inventory,
+    )
+    source_before = source_path.read_bytes()
+    backup_path = candidate_directory / "wilq.sqlite3"
+    manifest_path = candidate_directory / "manifest.json"
+    backup_before = backup_path.read_bytes()
+    manifest_before = manifest_path.read_bytes()
+    restore_parent = tmp_path / "caller-owned-restore"
+    restore_parent.mkdir()
+    restore_parent.chmod(0o755)
+    parent_before = _metadata_without_atime(restore_parent)
+    restore_path = restore_parent / "wilq.sqlite3"
+
+    with pytest.raises(MigrationBackupCandidateError, match="parent.*private"):
+        restore_migration_backup_candidate(
+            candidate_directory=candidate_directory,
+            destination_path=restore_path,
+            expected_manifest_sha256=candidate.manifest_file.sha256,
+        )
+
+    assert not restore_path.exists()
+    assert _metadata_without_atime(restore_parent) == parent_before
+    assert stat.S_IMODE(restore_parent.stat().st_mode) == 0o755
+    assert source_path.read_bytes() == source_before
+    assert backup_path.read_bytes() == backup_before
+    assert manifest_path.read_bytes() == manifest_before
 
 
 def test_unverified_or_stale_d1_authority_never_creates_a_candidate(
