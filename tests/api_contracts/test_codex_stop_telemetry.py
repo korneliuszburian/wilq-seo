@@ -16,6 +16,7 @@ from wilq.codex.stop_telemetry import (
 )
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore
+from wilq.storage.schema_versions import SQLITE_SCHEMA_VERSION
 
 client = TestClient(app)
 
@@ -63,7 +64,7 @@ def test_stop_intake_owns_identity_and_persists_only_the_minimal_event(
     monkeypatch.setenv("WILQ_STOP_TELEMETRY_RETENTION_DAYS", "7")
     monkeypatch.setenv("WILQ_STOP_TELEMETRY_PURGE_BATCH_SIZE", "2")
     monkeypatch.setenv("WILQ_STOP_TELEMETRY_HIGH_WATERMARK", "10")
-    assert LocalStateStore(state_path).status()["schema_version"] == 6
+    assert LocalStateStore(state_path).status()["schema_version"] == SQLITE_SCHEMA_VERSION
     with sqlite3.connect(state_path) as connection:
         connection.executemany(
             """
@@ -156,7 +157,7 @@ def test_stop_telemetry_health_is_read_only_and_never_purges(
     _clear_stop_telemetry_env(monkeypatch)
     monkeypatch.setenv("WILQ_STOP_TELEMETRY_RETENTION_DAYS", "7")
     monkeypatch.setenv("WILQ_STOP_TELEMETRY_HIGH_WATERMARK", "10")
-    assert LocalStateStore(state_path).status()["schema_version"] == 6
+    assert LocalStateStore(state_path).status()["schema_version"] == SQLITE_SCHEMA_VERSION
     with sqlite3.connect(state_path) as connection:
         connection.execute(
             """

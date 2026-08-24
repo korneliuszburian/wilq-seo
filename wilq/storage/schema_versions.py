@@ -4,11 +4,12 @@ import sqlite3
 
 import duckdb
 
-SQLITE_SCHEMA_VERSION = 6
+SQLITE_SCHEMA_VERSION = 7
 DUCKDB_SCHEMA_VERSION = 2
 _CONTENT_SECTION_FOCUS_SCHEMA_VERSION = 4
 _STOP_TELEMETRY_SCHEMA_VERSION = 5
 _STOP_TELEMETRY_INDEX_SCHEMA_VERSION = 6
+_LEGACY_STOP_RECONCILIATION_SCHEMA_VERSION = 7
 _SQLITE_SCHEMA_MILESTONES = (
     (_CONTENT_SECTION_FOCUS_SCHEMA_VERSION, "table", "content_section_focus"),
     (_STOP_TELEMETRY_SCHEMA_VERSION, "table", "codex_stop_events"),
@@ -16,6 +17,16 @@ _SQLITE_SCHEMA_MILESTONES = (
         _STOP_TELEMETRY_INDEX_SCHEMA_VERSION,
         "index",
         "idx_codex_stop_events_received_at_id",
+    ),
+    (
+        _LEGACY_STOP_RECONCILIATION_SCHEMA_VERSION,
+        "table",
+        "codex_stop_reconciliation_batches",
+    ),
+    (
+        _LEGACY_STOP_RECONCILIATION_SCHEMA_VERSION,
+        "table",
+        "codex_stop_events_legacy",
     ),
 )
 
