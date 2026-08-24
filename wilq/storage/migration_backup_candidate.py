@@ -6,6 +6,7 @@ import shutil
 import sqlite3
 import stat
 import tempfile
+from contextlib import suppress
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -199,14 +200,29 @@ def restore_migration_backup_candidate(
         expected_manifest_sha256,
     )
     _require_private_restore_parent(destination_path.parent)
-    descriptor, staging_name = tempfile.mkstemp(
-        dir=destination_path.parent,
-        prefix=f".{destination_path.name}.",
-        suffix=".staging",
-    )
-    os.close(descriptor)
-    staging_path = Path(staging_name)
-    staging_path.unlink()
+    descriptor: int | None = None
+    staging_path: Path | None = None
+    try:
+        descriptor, staging_name = tempfile.mkstemp(
+            dir=destination_path.parent,
+            prefix=f".{destination_path.name}.",
+            suffix=".staging",
+        )
+        staging_path = Path(staging_name)
+        os.close(descriptor)
+        descriptor = None
+        staging_path.unlink()
+    except OSError as exc:
+        if descriptor is not None:
+            with suppress(OSError):
+                os.close(descriptor)
+        if staging_path is not None:
+            with suppress(OSError):
+                staging_path.unlink(missing_ok=True)
+        raise MigrationBackupCandidateError(
+            "Migration backup restore staging file cannot be prepared"
+        ) from exc
+    assert staging_path is not None
     published = False
     try:
         _copy_exact_file(backup_path, staging_path)

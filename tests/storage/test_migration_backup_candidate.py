@@ -358,6 +358,90 @@ def test_restore_publishes_an_exact_private_copy_only_at_a_fresh_alternate_path(
     assert restore_path.read_bytes() == source_before
 
 
+@pytest.mark.parametrize("failure_point", ["mkstemp", "unlink"])
+def test_restore_staging_preparation_failure_is_typed_and_preserves_owned_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure_point: str,
+) -> None:
+    source_path = tmp_path / "source" / "wilq.sqlite3"
+    accepted_inventory = _source(source_path)
+    candidate_directory = tmp_path / "candidate"
+    candidate = build_migration_backup_candidate(
+        source_path=source_path,
+        candidate_directory=candidate_directory,
+        accepted_inventory=accepted_inventory,
+    )
+    source_before = source_path.read_bytes()
+    source_metadata_before = _metadata_without_atime(source_path)
+    candidate_paths = (
+        candidate_directory / "wilq.sqlite3",
+        candidate_directory / "manifest.json",
+    )
+    candidate_directory_before = _metadata_without_atime(candidate_directory)
+    candidate_bytes_before = {path.name: path.read_bytes() for path in candidate_paths}
+    candidate_metadata_before = {
+        path.name: _metadata_without_atime(path) for path in candidate_paths
+    }
+    restore_parent = tmp_path / "caller-owned-restore"
+    restore_parent.mkdir(mode=0o700)
+    sentinel_path = restore_parent / "caller-owned.txt"
+    sentinel_path.write_text("owned by caller", encoding="utf-8")
+    sentinel_before = sentinel_path.read_bytes()
+    sentinel_metadata_before = _metadata_without_atime(sentinel_path)
+    parent_before = restore_parent.stat()
+    parent_identity_before = (parent_before.st_dev, parent_before.st_ino, parent_before.st_mode)
+    entries_before = {path.name for path in restore_parent.iterdir()}
+    restore_path = restore_parent / "wilq.sqlite3"
+
+    if failure_point == "mkstemp":
+
+        def fail_mkstemp(**_: object) -> tuple[int, str]:
+            raise OSError("injected restore mkstemp failure")
+
+        monkeypatch.setattr(migration_backup_candidate.tempfile, "mkstemp", fail_mkstemp)
+    else:
+        original_unlink = Path.unlink
+        failure_injected = False
+
+        def fail_initial_staging_unlink(path: Path, missing_ok: bool = False) -> None:
+            nonlocal failure_injected
+            is_restore_staging = (
+                path.parent == restore_parent
+                and path.name.startswith(f".{restore_path.name}.")
+                and path.name.endswith(".staging")
+            )
+            if is_restore_staging and not failure_injected:
+                failure_injected = True
+                raise OSError("injected restore staging unlink failure")
+            original_unlink(path, missing_ok=missing_ok)
+
+        monkeypatch.setattr(Path, "unlink", fail_initial_staging_unlink)
+
+    with pytest.raises(MigrationBackupCandidateError, match="staging"):
+        restore_migration_backup_candidate(
+            candidate_directory=candidate_directory,
+            destination_path=restore_path,
+            expected_manifest_sha256=candidate.manifest_file.sha256,
+        )
+
+    assert not restore_path.exists()
+    assert {path.name for path in restore_parent.iterdir()} == entries_before
+    parent_after = restore_parent.stat()
+    assert (parent_after.st_dev, parent_after.st_ino, parent_after.st_mode) == (
+        parent_identity_before
+    )
+    assert sentinel_path.read_bytes() == sentinel_before
+    assert _metadata_without_atime(sentinel_path) == sentinel_metadata_before
+    assert source_path.read_bytes() == source_before
+    assert _metadata_without_atime(source_path) == source_metadata_before
+    assert _metadata_without_atime(candidate_directory) == candidate_directory_before
+    assert {path.name: path.read_bytes() for path in candidate_paths} == candidate_bytes_before
+    assert {
+        path.name: _metadata_without_atime(path) for path in candidate_paths
+    } == candidate_metadata_before
+
+
 def test_restore_rejects_an_existing_non_private_parent_without_mutating_it(
     tmp_path: Path,
 ) -> None:
