@@ -245,6 +245,10 @@ def restore_migration_backup_candidate(
             raise MigrationBackupCandidateError(
                 "Migration backup restore destination must be fresh"
             ) from exc
+        except OSError as exc:
+            raise MigrationBackupCandidateError(
+                "Migration backup restore destination cannot be published"
+            ) from exc
         published = True
         try:
             staging_path.unlink()
@@ -554,9 +558,11 @@ def _copy_exact_file(source: Path, destination: Path) -> None:
             os.fsync(destination_file.fileno())
     except OSError as exc:
         if descriptor is not None:
-            os.close(descriptor)
+            with suppress(OSError):
+                os.close(descriptor)
         if created:
-            destination.unlink(missing_ok=True)
+            with suppress(OSError):
+                destination.unlink(missing_ok=True)
         raise MigrationBackupCandidateError("SQLite candidate file cannot be copied") from exc
 
 
@@ -578,9 +584,11 @@ def _write_private_file(path: Path, payload: bytes) -> None:
             os.fsync(destination.fileno())
     except OSError as exc:
         if descriptor is not None:
-            os.close(descriptor)
+            with suppress(OSError):
+                os.close(descriptor)
         if created:
-            path.unlink(missing_ok=True)
+            with suppress(OSError):
+                path.unlink(missing_ok=True)
         raise MigrationBackupCandidateError("Migration backup manifest cannot be written") from exc
 
 

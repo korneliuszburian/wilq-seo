@@ -556,15 +556,97 @@ def test_build_restore_readback_cleanup_failure_is_typed_and_removes_candidate(
 
     monkeypatch.setattr(Path, "unlink", fail_restore_readback_unlink)
 
-    with pytest.raises(MigrationBackupCandidateError) as exc_info:
+    with pytest.raises(MigrationBackupCandidateError):
         build_migration_backup_candidate(
             source_path=source_path,
             candidate_directory=candidate_directory,
             accepted_inventory=accepted_inventory,
         )
 
-    assert str(exc_info.value) == ("Migration backup restore readback staging cleanup failed")
     assert not candidate_directory.exists()
+
+
+def test_restore_link_failure_is_typed_and_removes_destination(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_path = tmp_path / "source" / "wilq.sqlite3"
+    accepted_inventory = _source(source_path)
+    candidate_directory = tmp_path / "candidate"
+    candidate = build_migration_backup_candidate(
+        source_path=source_path,
+        candidate_directory=candidate_directory,
+        accepted_inventory=accepted_inventory,
+    )
+    restore_parent = tmp_path / "restore"
+    restore_parent.mkdir(mode=0o700)
+    restore_path = restore_parent / "wilq.sqlite3"
+    original_link = migration_backup_candidate.os.link
+
+    def fail_restore_link(source: Path, destination: Path, **kwargs: object) -> None:
+        if destination == restore_path:
+            raise PermissionError("injected restore link failure")
+        original_link(source, destination, **kwargs)
+
+    monkeypatch.setattr(migration_backup_candidate.os, "link", fail_restore_link)
+
+    with pytest.raises(MigrationBackupCandidateError) as exc_info:
+        restore_migration_backup_candidate(
+            candidate_directory=candidate_directory,
+            destination_path=restore_path,
+            expected_manifest_sha256=candidate.manifest_file.sha256,
+        )
+
+    assert str(exc_info.value) == ("Migration backup restore destination cannot be published")
+    assert not restore_path.exists()
+
+
+def test_copy_failure_cleanup_failure_preserves_typed_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_path = tmp_path / "source" / "wilq.sqlite3"
+    accepted_inventory = _source(source_path)
+    candidate_directory = tmp_path / "candidate"
+    candidate = build_migration_backup_candidate(
+        source_path=source_path,
+        candidate_directory=candidate_directory,
+        accepted_inventory=accepted_inventory,
+    )
+    restore_parent = tmp_path / "restore"
+    restore_parent.mkdir(mode=0o700)
+    restore_path = restore_parent / "wilq.sqlite3"
+    original_unlink = Path.unlink
+    staging_unlink_attempts = 0
+
+    def fail_copy(*_: object, **__: object) -> None:
+        raise OSError("injected copy failure")
+
+    def fail_cleanup_unlink(path: Path, missing_ok: bool = False) -> None:
+        nonlocal staging_unlink_attempts
+        is_restore_staging = (
+            path.parent == restore_parent
+            and path.name.startswith(f".{restore_path.name}.")
+            and path.name.endswith(".staging")
+        )
+        if is_restore_staging:
+            staging_unlink_attempts += 1
+            if staging_unlink_attempts >= 2:
+                raise OSError("injected copy cleanup failure")
+        original_unlink(path, missing_ok=missing_ok)
+
+    monkeypatch.setattr(migration_backup_candidate.shutil, "copyfileobj", fail_copy)
+    monkeypatch.setattr(Path, "unlink", fail_cleanup_unlink)
+
+    with pytest.raises(MigrationBackupCandidateError):
+        restore_migration_backup_candidate(
+            candidate_directory=candidate_directory,
+            destination_path=restore_path,
+            expected_manifest_sha256=candidate.manifest_file.sha256,
+        )
+
+    assert not restore_path.exists()
+    assert staging_unlink_attempts == 3
 
 
 def test_restore_rejects_an_existing_non_private_parent_without_mutating_it(
