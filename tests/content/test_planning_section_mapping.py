@@ -157,6 +157,43 @@ def test_unknown_explicit_inventory_heading_becomes_unmapped_create_section() ->
     assert canonical.sections[0].inventory_heading is None
 
 
+def test_unknown_inventory_heading_does_not_turn_remove_review_into_create() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_01",
+                    heading="Czasowe magazynowanie odpadów",
+                    evidence_ids=["ev_wp"],
+                )
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Usunięcie niepotwierdzonego bloku",
+                purpose="Pozostawić decyzję do review.",
+                reader_question="Czy ten blok należy usunąć?",
+                inventory_disposition="remove_review_required",
+                inventory_heading="Nieznany blok z modelu",
+                inventory_section_id=None,
+                evidence_ids=["ev_wp"],
+                query_terms=[],
+                claim_ids=[],
+                regulatory_requirement_ids=[],
+            )
+        ]
+    )
+
+    canonical = canonicalize_model_inventory_headings(planning_input, output)
+
+    assert canonical.sections[0].inventory_disposition == "remove_review_required"
+    assert canonical.sections[0].inventory_section_id is None
+    assert canonical.sections[0].inventory_heading is None
+
+
 def test_fuzzy_mapping_is_one_to_one_and_never_reuses_a_plan_section() -> None:
     planning_input = ContentPlanningInput.model_construct(
         inventory=ContentPlanningInventory(
