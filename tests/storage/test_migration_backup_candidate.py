@@ -442,6 +442,59 @@ def test_restore_staging_preparation_failure_is_typed_and_preserves_owned_paths(
     } == candidate_metadata_before
 
 
+def test_restore_double_cleanup_failure_preserves_typed_error_and_destination_first_order(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_path = tmp_path / "source" / "wilq.sqlite3"
+    accepted_inventory = _source(source_path)
+    candidate_directory = tmp_path / "candidate"
+    candidate = build_migration_backup_candidate(
+        source_path=source_path,
+        candidate_directory=candidate_directory,
+        accepted_inventory=accepted_inventory,
+    )
+    restore_parent = tmp_path / "restore"
+    restore_parent.mkdir(mode=0o700)
+    restore_path = restore_parent / "wilq.sqlite3"
+    original_unlink = Path.unlink
+    original_error = MigrationBackupCandidateError("injected restore sync failure")
+    sync_failed = False
+    cleanup_attempts: list[str] = []
+
+    def fail_directory_sync(_: Path) -> None:
+        nonlocal sync_failed
+        sync_failed = True
+        raise original_error
+
+    def fail_cleanup_unlinks(path: Path, missing_ok: bool = False) -> None:
+        if sync_failed and path == restore_path:
+            cleanup_attempts.append("destination")
+            raise OSError("injected destination cleanup failure")
+        is_restore_staging = (
+            path.parent == restore_parent
+            and path.name.startswith(f".{restore_path.name}.")
+            and path.name.endswith(".staging")
+        )
+        if sync_failed and is_restore_staging:
+            cleanup_attempts.append("staging")
+            raise OSError("injected staging cleanup failure")
+        original_unlink(path, missing_ok=missing_ok)
+
+    monkeypatch.setattr(migration_backup_candidate, "_sync_directory", fail_directory_sync)
+    monkeypatch.setattr(Path, "unlink", fail_cleanup_unlinks)
+
+    with pytest.raises(MigrationBackupCandidateError) as exc_info:
+        restore_migration_backup_candidate(
+            candidate_directory=candidate_directory,
+            destination_path=restore_path,
+            expected_manifest_sha256=candidate.manifest_file.sha256,
+        )
+
+    assert exc_info.value is original_error
+    assert cleanup_attempts == ["destination", "staging"]
+
+
 def test_restore_rejects_an_existing_non_private_parent_without_mutating_it(
     tmp_path: Path,
 ) -> None:

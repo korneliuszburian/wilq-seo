@@ -240,9 +240,11 @@ def restore_migration_backup_candidate(
         staging_path.unlink()
         _sync_directory(destination_path.parent)
     except Exception:
-        staging_path.unlink(missing_ok=True)
         if published:
-            destination_path.unlink(missing_ok=True)
+            with suppress(OSError):
+                destination_path.unlink()
+        with suppress(OSError):
+            staging_path.unlink()
         raise
     return MigrationBackupRestoreReceipt(
         manifest_file=manifest_file,
