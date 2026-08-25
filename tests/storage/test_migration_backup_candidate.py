@@ -15,6 +15,7 @@ from wilq.storage import migration_backup_candidate
 from wilq.storage.local_state import LocalStateStore
 from wilq.storage.migration_backup_candidate import (
     MigrationBackupCandidateError,
+    MigrationBackupCandidateReceipt,
     build_migration_backup_candidate,
     restore_migration_backup_candidate,
     verify_migration_backup_candidate,
@@ -58,6 +59,34 @@ def _source(path: Path) -> SqliteSchemaInventory:
             """
         )
     return _accepted_inventory(path)
+
+
+def _candidate_and_restore_paths(
+    tmp_path: Path,
+) -> tuple[
+    Path,
+    Path,
+    SqliteSchemaInventory,
+    MigrationBackupCandidateReceipt,
+    Path,
+]:
+    source_path = tmp_path / "source" / "wilq.sqlite3"
+    candidate_directory = tmp_path / "candidate"
+    accepted_inventory = _source(source_path)
+    candidate = build_migration_backup_candidate(
+        source_path=source_path,
+        candidate_directory=candidate_directory,
+        accepted_inventory=accepted_inventory,
+    )
+    restore_parent = tmp_path / "restore"
+    restore_parent.mkdir(mode=0o700)
+    return (
+        source_path,
+        candidate_directory,
+        accepted_inventory,
+        candidate,
+        restore_parent / "wilq.sqlite3",
+    )
 
 
 def _file_sha256(path: Path) -> str:
@@ -144,13 +173,8 @@ def test_verification_wraps_candidate_directory_enumeration_failure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
-    candidate_directory = tmp_path / "candidate"
-    candidate = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
+    source_path, candidate_directory, accepted_inventory, candidate, _ = (
+        _candidate_and_restore_paths(tmp_path)
     )
     source_before = source_path.read_bytes()
     backup_path = candidate_directory / "wilq.sqlite3"
@@ -181,13 +205,8 @@ def test_verification_wraps_candidate_directory_enumeration_failure(
 def test_verification_rejects_a_source_generation_changed_after_candidate_build(
     tmp_path: Path,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
-    candidate_directory = tmp_path / "candidate"
-    candidate = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
+    source_path, candidate_directory, accepted_inventory, candidate, _ = (
+        _candidate_and_restore_paths(tmp_path)
     )
 
     with sqlite3.connect(source_path) as connection:
@@ -238,19 +257,13 @@ def test_tampered_candidate_fails_verification_and_restore_without_touching_sour
     tmp_path: Path,
     tampered_name: str,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
+    source_path, candidate_directory, accepted_inventory, receipt, restore_path = (
+        _candidate_and_restore_paths(tmp_path)
+    )
     source_before = source_path.read_bytes()
     source_metadata_before = _metadata_without_atime(source_path)
-    candidate_directory = tmp_path / "candidate"
-    receipt = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
-    )
     tampered_path = candidate_directory / tampered_name
     tampered_path.write_bytes(tampered_path.read_bytes() + b"tampered")
-    restore_path = tmp_path / "restore" / "wilq.sqlite3"
 
     with pytest.raises(MigrationBackupCandidateError):
         verify_migration_backup_candidate(
@@ -278,16 +291,11 @@ def test_candidate_file_alias_is_tampering_even_when_every_byte_matches(
     tampered_name: str,
     alias_kind: str,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
+    source_path, candidate_directory, accepted_inventory, receipt, restore_path = (
+        _candidate_and_restore_paths(tmp_path)
+    )
     source_before = source_path.read_bytes()
     source_metadata_before = _metadata_without_atime(source_path)
-    candidate_directory = tmp_path / "candidate"
-    receipt = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
-    )
     tampered_path = candidate_directory / tampered_name
     alias_target = tmp_path / "aliases" / tampered_name
     alias_target.parent.mkdir()
@@ -297,7 +305,6 @@ def test_candidate_file_alias_is_tampering_even_when_every_byte_matches(
         tampered_path.symlink_to(alias_target)
     else:
         os.link(alias_target, tampered_path)
-    restore_path = tmp_path / "restore" / "wilq.sqlite3"
 
     with pytest.raises(MigrationBackupCandidateError):
         verify_migration_backup_candidate(
@@ -321,19 +328,11 @@ def test_candidate_file_alias_is_tampering_even_when_every_byte_matches(
 def test_restore_publishes_an_exact_private_copy_only_at_a_fresh_alternate_path(
     tmp_path: Path,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
+    source_path, candidate_directory, _, candidate, restore_path = _candidate_and_restore_paths(
+        tmp_path
+    )
     source_before = source_path.read_bytes()
     source_metadata_before = _metadata_without_atime(source_path)
-    candidate_directory = tmp_path / "candidate"
-    candidate = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
-    )
-    restore_path = tmp_path / "restore" / "wilq.sqlite3"
-    restore_path.parent.mkdir(mode=0o700)
-    restore_path.parent.chmod(0o700)
 
     restored = restore_migration_backup_candidate(
         candidate_directory=candidate_directory,
@@ -364,14 +363,7 @@ def test_restore_staging_preparation_failure_is_typed_and_preserves_owned_paths(
     monkeypatch: pytest.MonkeyPatch,
     failure_point: str,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
-    candidate_directory = tmp_path / "candidate"
-    candidate = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
-    )
+    source_path, candidate_directory, _, candidate, _ = _candidate_and_restore_paths(tmp_path)
     source_before = source_path.read_bytes()
     source_metadata_before = _metadata_without_atime(source_path)
     candidate_paths = (
@@ -446,17 +438,8 @@ def test_restore_double_cleanup_failure_preserves_typed_error_and_destination_fi
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
-    candidate_directory = tmp_path / "candidate"
-    candidate = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
-    )
-    restore_parent = tmp_path / "restore"
-    restore_parent.mkdir(mode=0o700)
-    restore_path = restore_parent / "wilq.sqlite3"
+    _, candidate_directory, _, candidate, restore_path = _candidate_and_restore_paths(tmp_path)
+    restore_parent = restore_path.parent
     original_unlink = Path.unlink
     original_error = MigrationBackupCandidateError("injected restore sync failure")
     sync_failed = False
@@ -499,17 +482,8 @@ def test_restore_post_publish_staging_cleanup_failure_is_typed_and_removes_desti
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
-    candidate_directory = tmp_path / "candidate"
-    candidate = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
-    )
-    restore_parent = tmp_path / "restore"
-    restore_parent.mkdir(mode=0o700)
-    restore_path = restore_parent / "wilq.sqlite3"
+    _, candidate_directory, _, candidate, restore_path = _candidate_and_restore_paths(tmp_path)
+    restore_parent = restore_path.parent
     original_unlink = Path.unlink
     staging_unlink_attempts = 0
 
@@ -570,17 +544,7 @@ def test_restore_link_failure_is_typed_and_removes_destination(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
-    candidate_directory = tmp_path / "candidate"
-    candidate = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
-    )
-    restore_parent = tmp_path / "restore"
-    restore_parent.mkdir(mode=0o700)
-    restore_path = restore_parent / "wilq.sqlite3"
+    _, candidate_directory, _, candidate, restore_path = _candidate_and_restore_paths(tmp_path)
     original_link = migration_backup_candidate.os.link
 
     def fail_restore_link(source: Path, destination: Path, **kwargs: object) -> None:
@@ -605,17 +569,8 @@ def test_copy_failure_cleanup_failure_preserves_typed_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
-    candidate_directory = tmp_path / "candidate"
-    candidate = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
-    )
-    restore_parent = tmp_path / "restore"
-    restore_parent.mkdir(mode=0o700)
-    restore_path = restore_parent / "wilq.sqlite3"
+    _, candidate_directory, _, candidate, restore_path = _candidate_and_restore_paths(tmp_path)
+    restore_parent = restore_path.parent
     original_unlink = Path.unlink
     staging_unlink_attempts = 0
 
@@ -652,14 +607,7 @@ def test_copy_failure_cleanup_failure_preserves_typed_error(
 def test_restore_rejects_an_existing_non_private_parent_without_mutating_it(
     tmp_path: Path,
 ) -> None:
-    source_path = tmp_path / "source" / "wilq.sqlite3"
-    accepted_inventory = _source(source_path)
-    candidate_directory = tmp_path / "candidate"
-    candidate = build_migration_backup_candidate(
-        source_path=source_path,
-        candidate_directory=candidate_directory,
-        accepted_inventory=accepted_inventory,
-    )
+    source_path, candidate_directory, _, candidate, _ = _candidate_and_restore_paths(tmp_path)
     source_before = source_path.read_bytes()
     backup_path = candidate_directory / "wilq.sqlite3"
     manifest_path = candidate_directory / "manifest.json"
@@ -912,3 +860,64 @@ def test_candidate_alias_swap_during_d1_readback_fails_closed(
     assert swapped is True
     assert source_path.read_bytes() == source_before
     assert _metadata_without_atime(source_path) == source_metadata_before
+
+
+def test_sealed_payload_close_failure_is_typed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_path = tmp_path / "source" / "wilq.sqlite3"
+    accepted_inventory = _source(source_path)
+    candidate_directory = tmp_path / "candidate"
+    candidate = build_migration_backup_candidate(
+        source_path=source_path,
+        candidate_directory=candidate_directory,
+        accepted_inventory=accepted_inventory,
+    )
+    original_close = os.close
+    close_failed = False
+
+    def fail_first_close(descriptor: int) -> None:
+        nonlocal close_failed
+        if not close_failed:
+            close_failed = True
+            raise OSError("injected sealed payload close failure")
+        original_close(descriptor)
+
+    monkeypatch.setattr(migration_backup_candidate.os, "close", fail_first_close)
+
+    with pytest.raises(MigrationBackupCandidateError, match="descriptor cannot be closed"):
+        verify_migration_backup_candidate(
+            source_path=source_path,
+            candidate_directory=candidate_directory,
+            expected_manifest_sha256=candidate.manifest_file.sha256,
+        )
+
+    assert close_failed
+
+
+def test_staging_chmod_failure_removes_private_staging_directory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_path = tmp_path / "source" / "wilq.sqlite3"
+    accepted_inventory = _source(source_path)
+    candidate_directory = tmp_path / "candidate"
+    original_chmod = Path.chmod
+
+    def fail_staging_chmod(path: Path, mode: int, **kwargs: object) -> None:
+        if path.parent == tmp_path and path.name.startswith(".wilq-migration-backup-"):
+            raise PermissionError("injected staging chmod failure")
+        original_chmod(path, mode, **kwargs)
+
+    monkeypatch.setattr(Path, "chmod", fail_staging_chmod)
+
+    with pytest.raises(MigrationBackupCandidateError, match="staging directory"):
+        build_migration_backup_candidate(
+            source_path=source_path,
+            candidate_directory=candidate_directory,
+            accepted_inventory=accepted_inventory,
+        )
+
+    assert not candidate_directory.exists()
+    assert not list(tmp_path.glob(".wilq-migration-backup-*"))

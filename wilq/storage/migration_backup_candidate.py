@@ -393,14 +393,19 @@ def _require_fresh_candidate_path(path: Path) -> None:
 
 
 def _create_private_staging_directory(parent: Path) -> Path:
+    staging: Path | None = None
     try:
         parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=".wilq-migration-backup-", dir=parent))
+        staging.chmod(0o700)
     except OSError as exc:
+        if staging is not None:
+            shutil.rmtree(staging, ignore_errors=True)
         raise MigrationBackupCandidateError(
             "Migration backup staging directory cannot be created"
         ) from exc
-    staging.chmod(0o700)
+    if staging is None:
+        raise MigrationBackupCandidateError("Migration backup staging directory is unavailable")
     return staging
 
 
@@ -464,6 +469,7 @@ def _candidate_files(candidate_directory: Path) -> tuple[Path, Path]:
 def _read_sealed_payload(path: Path) -> tuple[bytes, _SealedFileIdentity]:
     path_before = _sealed_file_identity(path)
     descriptor: int | None = None
+    operation_error: BaseException | None = None
     try:
         descriptor = os.open(
             path,
@@ -476,15 +482,26 @@ def _read_sealed_payload(path: Path) -> tuple[bytes, _SealedFileIdentity]:
         while chunk := os.read(descriptor, 1024 * 1024):
             chunks.append(chunk)
         descriptor_after = _sealed_identity_from_stat(os.fstat(descriptor))
-    except MigrationBackupCandidateError:
+    except MigrationBackupCandidateError as exc:
+        operation_error = exc
         raise
     except OSError as exc:
+        operation_error = exc
         raise MigrationBackupCandidateError(
             "Migration backup candidate file cannot be read safely"
         ) from exc
+    except BaseException as exc:
+        operation_error = exc
+        raise
     finally:
         if descriptor is not None:
-            os.close(descriptor)
+            try:
+                os.close(descriptor)
+            except OSError as exc:
+                if operation_error is None:
+                    raise MigrationBackupCandidateError(
+                        "Migration backup candidate file descriptor cannot be closed"
+                    ) from exc
     path_after = _sealed_file_identity(path)
     if descriptor_after != path_before or path_after != path_before:
         raise MigrationBackupCandidateError("Migration backup candidate files changed")
