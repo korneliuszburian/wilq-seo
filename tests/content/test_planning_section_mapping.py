@@ -1,3 +1,5 @@
+import pytest
+
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
@@ -114,6 +116,113 @@ def test_created_section_cannot_carry_model_supplied_inventory_identity() -> Non
 
     canonical = canonicalize_model_inventory_headings(planning_input, output)
 
+    assert canonical.sections[0].inventory_section_id is None
+    assert canonical.sections[0].inventory_heading is None
+
+
+def test_unknown_explicit_inventory_heading_becomes_unmapped_create_section() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_01",
+                    heading="Czasowe magazynowanie odpadów",
+                    evidence_ids=["ev_wp"],
+                )
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Magazynowanie a składowanie",
+                purpose="Wyjaśnić różnicę.",
+                reader_question="Czym się różnią?",
+                inventory_disposition="rewrite",
+                inventory_heading=(
+                    "Czym różni się czasowe magazynowanie od składowania odpadów?"
+                ),
+                inventory_section_id=None,
+                evidence_ids=["ev_wp"],
+                query_terms=[],
+                claim_ids=[],
+                regulatory_requirement_ids=[],
+            )
+        ]
+    )
+
+    canonical = canonicalize_model_inventory_headings(planning_input, output)
+
+    assert canonical.sections[0].inventory_disposition == "create"
+    assert canonical.sections[0].inventory_section_id is None
+    assert canonical.sections[0].inventory_heading is None
+
+
+@pytest.mark.parametrize("disposition", ["merge", "preserve", "remove_review_required"])
+def test_unknown_inventory_heading_does_not_turn_non_rewrite_into_create(
+    disposition: str,
+) -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_01",
+                    heading="Czasowe magazynowanie odpadów",
+                    evidence_ids=["ev_wp"],
+                )
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Usunięcie niepotwierdzonego bloku",
+                purpose="Pozostawić decyzję do review.",
+                reader_question="Czy ten blok należy usunąć?",
+                inventory_disposition=disposition,
+                inventory_heading="Nieznany blok z modelu",
+                inventory_section_id=None,
+                evidence_ids=["ev_wp"],
+                query_terms=[],
+                claim_ids=[],
+                regulatory_requirement_ids=[],
+            )
+        ]
+    )
+
+    canonical = canonicalize_model_inventory_headings(planning_input, output)
+
+    assert canonical.sections[0].inventory_disposition == disposition
+    assert canonical.sections[0].inventory_section_id is None
+    assert canonical.sections[0].inventory_heading is None
+
+
+def test_unknown_inventory_heading_is_cleared_when_inventory_is_empty() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(status="missing", sections=[])
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Nowa sekcja",
+                purpose="Odpowiedzieć na pytanie.",
+                reader_question="Co dalej?",
+                inventory_disposition="rewrite",
+                inventory_heading="Obcy heading",
+                inventory_section_id=None,
+                evidence_ids=["ev_wp"],
+                query_terms=[],
+                claim_ids=[],
+                regulatory_requirement_ids=[],
+            )
+        ]
+    )
+
+    canonical = canonicalize_model_inventory_headings(planning_input, output)
+
+    assert canonical.sections[0].inventory_disposition == "rewrite"
     assert canonical.sections[0].inventory_section_id is None
     assert canonical.sections[0].inventory_heading is None
 
