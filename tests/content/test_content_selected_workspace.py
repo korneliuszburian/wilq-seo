@@ -100,10 +100,20 @@ def test_selected_workspace_passes_current_revision_context_to_document_workspac
 def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -> None:
     journey = _operator_journey()
     item = ContentWorkItem(id="content_work_item_missing", topic="Brakujący temat")
-    monkeypatch.setattr(
-        selected_workspace_router,
-        "snapshot_for_work_item_or_404",
-        lambda _id: type(
+    snapshot_calls: list[dict[str, object]] = []
+
+    def load_snapshot(
+        work_item_id: str,
+        *,
+        resolve_planning_proposal: bool,
+    ):
+        snapshot_calls.append(
+            {
+                "work_item_id": work_item_id,
+                "resolve_planning_proposal": resolve_planning_proposal,
+            }
+        )
+        return type(
             "Snapshot",
             (),
             {
@@ -112,8 +122,14 @@ def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -
                 "current_step_id": journey.current_step_id,
                 "operator_steps": journey.steps,
             },
-        )(),
+        )()
+
+    monkeypatch.setattr(
+        selected_workspace_router,
+        "snapshot_for_work_item_or_404",
+        load_snapshot,
     )
+
     def build_selected(
         work_item_id: str,
         *,
@@ -146,6 +162,12 @@ def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -
     )
 
     assert response.status_code == 200
+    assert snapshot_calls == [
+        {
+            "work_item_id": "content_work_item_missing",
+            "resolve_planning_proposal": False,
+        }
+    ]
     assert response.json() == {
         "response_type": "content_selected_workspace",
         "contract_version": "content_selected_workspace_v1",
@@ -155,8 +177,7 @@ def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -
         "workspace": None,
         "reason": "Nie znaleziono istniejącej strony do odświeżenia pod tym dokładnym adresem.",
         "safe_next_step": (
-            "Wróć do wyboru pracy i wybierz istniejącą stronę albo rozpocznij brief "
-            "nowej strony."
+            "Wróć do wyboru pracy i wybierz istniejącą stronę albo rozpocznij brief nowej strony."
         ),
     }
 
@@ -210,8 +231,6 @@ def _operator_journey(
             structured_contract_blocker=None,
             structured_contract_safe_next_step="Przygotuj kontrakt szkicu.",
             revision_workspace_status=revision_status,
-            revision_bound_wordpress_handoff_ready=(
-                revision_bound_wordpress_handoff_ready
-            ),
+            revision_bound_wordpress_handoff_ready=(revision_bound_wordpress_handoff_ready),
         )
     )
