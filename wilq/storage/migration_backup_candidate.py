@@ -222,7 +222,8 @@ def restore_migration_backup_candidate(
         raise MigrationBackupCandidateError(
             "Migration backup restore staging file cannot be prepared"
         ) from exc
-    assert staging_path is not None
+    if staging_path is None:
+        raise MigrationBackupCandidateError("Migration backup restore staging path is unavailable")
     published = False
     try:
         _copy_exact_file(backup_path, staging_path)
