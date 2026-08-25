@@ -126,8 +126,16 @@ def build_migration_backup_candidate(
         _copy_exact_file(backup_path, restore_stage)
         try:
             restore_readback = _readback(restore_stage, accepted_inventory)
-        finally:
+        except Exception:
+            with suppress(OSError):
+                restore_stage.unlink(missing_ok=True)
+            raise
+        try:
             restore_stage.unlink(missing_ok=True)
+        except OSError as exc:
+            raise MigrationBackupCandidateError(
+                "Migration backup restore readback staging cleanup failed"
+            ) from exc
 
         source_after = _readback(source, accepted_inventory)
         if source_after != source_before:
@@ -238,7 +246,12 @@ def restore_migration_backup_candidate(
                 "Migration backup restore destination must be fresh"
             ) from exc
         published = True
-        staging_path.unlink()
+        try:
+            staging_path.unlink()
+        except OSError as exc:
+            raise MigrationBackupCandidateError(
+                "Migration backup restore staging cleanup failed"
+            ) from exc
         _sync_directory(destination_path.parent)
     except Exception:
         if published:
