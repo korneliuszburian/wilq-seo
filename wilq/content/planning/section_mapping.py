@@ -85,6 +85,10 @@ def canonicalize_model_inventory_headings(
                     )
                     changed = True
                     continue
+            if not matching_ids:
+                sections.append(_as_created_section(section))
+                changed = True
+                continue
             sections.append(section)
             continue
         match = _best_inventory_heading(section.heading, inventory, used)

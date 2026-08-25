@@ -118,6 +118,45 @@ def test_created_section_cannot_carry_model_supplied_inventory_identity() -> Non
     assert canonical.sections[0].inventory_heading is None
 
 
+def test_unknown_explicit_inventory_heading_becomes_unmapped_create_section() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_01",
+                    heading="Czasowe magazynowanie odpadów",
+                    evidence_ids=["ev_wp"],
+                )
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Magazynowanie a składowanie",
+                purpose="Wyjaśnić różnicę.",
+                reader_question="Czym się różnią?",
+                inventory_disposition="rewrite",
+                inventory_heading=(
+                    "Czym różni się czasowe magazynowanie od składowania odpadów?"
+                ),
+                inventory_section_id=None,
+                evidence_ids=["ev_wp"],
+                query_terms=[],
+                claim_ids=[],
+                regulatory_requirement_ids=[],
+            )
+        ]
+    )
+
+    canonical = canonicalize_model_inventory_headings(planning_input, output)
+
+    assert canonical.sections[0].inventory_disposition == "create"
+    assert canonical.sections[0].inventory_section_id is None
+    assert canonical.sections[0].inventory_heading is None
+
+
 def test_fuzzy_mapping_is_one_to_one_and_never_reuses_a_plan_section() -> None:
     planning_input = ContentPlanningInput.model_construct(
         inventory=ContentPlanningInventory(
