@@ -23,6 +23,7 @@ REQUIRED_PROJECTION_FILES = (
     "qa/autonomous-adjudication/robot-manifest-v2.jsonl",
 )
 REQUIRED_ARTIFACT_KINDS = {"rendered", "revision", "source_pack"}
+EXPECTED_DISPOSITIONS = {"keep", "noindex", "redirect", "remove"}
 SAFETY_KEYS = {
     "action_apply",
     "actionobject_apply",
@@ -30,12 +31,14 @@ SAFETY_KEYS = {
     "connector_refresh",
     "deployment",
     "env_read",
+    "generation_performed",
     "generation_invoked",
     "live_mutation",
     "live_refresh",
     "model_generation",
     "model_invocation",
     "private_packet_read",
+    "keyword_planner_invented",
     "publish_allowed",
     "publish_ready",
     "refresh_performed",
@@ -80,8 +83,16 @@ def verify_sha_manifest(root: Path) -> dict[str, Any]:
             continue
         relative = relative.removeprefix("./")
         expected.add(relative)
-        path = root / relative
-        if not path.is_file() or sha256(path) != expected_sha:
+        candidate = Path(relative)
+        path = (root / candidate).resolve()
+        safe = (
+            not candidate.is_absolute()
+            and ".." not in candidate.parts
+            and path != root
+            and root in path.parents
+            and not (root / candidate).is_symlink()
+        )
+        if not safe or not path.is_file() or sha256(path) != expected_sha:
             errors.append(relative)
     actual = {
         path.relative_to(root).as_posix()
@@ -131,9 +142,11 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
                 artifact_invalid += 1
                 continue
             target = (base / ref["path"]).resolve()
+            raw_target = base / ref["path"]
             if (
                 target != run_root
                 and run_root not in target.parents
+                or raw_target.is_symlink()
                 or not target.is_file()
                 or ref.get("bytes") != target.stat().st_size
                 or ref.get("sha256") != sha256(target)
@@ -175,11 +188,12 @@ def verify_blockers(run_root: Path) -> dict[str, int]:
                 nonlocal arrays, entries, invalid
                 if isinstance(value, dict):
                     for key, child in value.items():
-                        collection = isinstance(child, list) and (
-                            key == "blockers" or key.endswith("_blockers")
-                        )
+                        blocker_key = key == "blockers" or key.endswith("_blockers")
+                        collection = blocker_key and isinstance(child, list)
                         singular = key == "blocker" and "claim_ledger" in ancestors
-                        if collection:
+                        if blocker_key and not isinstance(child, list):
+                            invalid += 1
+                        elif collection:
                             arrays += 1
                             entries += len(child)
                             for item in child:
@@ -242,6 +256,159 @@ def verify_cta_refs(run_root: Path) -> dict[str, int]:
     }
 
 
+def verify_decision_projection(
+    run_root: Path,
+    robot: list[dict[str, Any]],
+    adjudicated: list[dict[str, Any]],
+) -> dict[str, int]:
+    expected = {row.get("url"): row.get("final_disposition") for row in adjudicated}
+    actual = {row.get("url"): row.get("final_disposition") for row in robot}
+    return {
+        "expected": len(expected),
+        "actual": len(actual),
+        "matching": sum(actual.get(url) == disposition for url, disposition in expected.items()),
+        "missing": len(set(expected) - set(actual)),
+        "unexpected": len(set(actual) - set(expected)),
+        "disposition_mismatch": sum(
+            url in actual and actual[url] != disposition for url, disposition in expected.items()
+        ),
+    }
+
+
+def verify_redirects(
+    run_root: Path,
+    robot: list[dict[str, Any]],
+    adjudicated: list[dict[str, Any]],
+) -> dict[str, int | bool]:
+    expected = {
+        row.get("url"): row for row in adjudicated if row.get("final_disposition") == "redirect"
+    }
+    readback_path = run_root / "qa/autonomous-adjudication/public-readback.jsonl"
+    readback = {
+        row.get("receipt_id"): row for row in load_jsonl(readback_path) if row.get("receipt_id")
+    }
+    redirects = [row for row in robot if row.get("final_disposition") == "redirect"]
+    projection_matches = 0
+    source_resolved = 0
+    target_resolved = 0
+    target_matches = 0
+    for row in redirects:
+        source = expected.get(row.get("url"))
+        if source is not None and (
+            row.get("production_readback_receipt_id")
+            == source.get("production_readback_receipt_id")
+            and row.get("target_readback_receipt_id") == source.get("target_readback_receipt_id")
+        ):
+            projection_matches += 1
+        source_readback = readback.get(row.get("production_readback_receipt_id"))
+        target_readback = readback.get(row.get("target_readback_receipt_id"))
+        if source_readback is not None and source_readback.get("source_url") == row.get("url"):
+            source_resolved += 1
+        if target_readback is None:
+            continue
+        target_resolved += 1
+        target_url = row.get("redirect_target_url")
+        if target_url in {
+            target_readback.get("public_url"),
+            target_readback.get("canonical_url"),
+            target_readback.get("final_url"),
+        } or (
+            source_readback is not None
+            and target_readback.get("receipt_id") == source_readback.get("receipt_id")
+            and target_url
+            in {source_readback.get("canonical_url"), source_readback.get("final_url")}
+        ):
+            target_matches += 1
+    valid = (
+        len(redirects) == len(expected)
+        and projection_matches == len(redirects)
+        and source_resolved == len(redirects)
+        and target_resolved == len(redirects)
+        and target_matches == len(redirects)
+    )
+    return {
+        "expected": len(expected),
+        "actual": len(redirects),
+        "projection_matches": projection_matches,
+        "source_resolved": source_resolved,
+        "target_resolved": target_resolved,
+        "target_url_matches": target_matches,
+        "valid": valid,
+    }
+
+
+def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
+    target_dir = run_root / "target-manifest"
+    targets = load_jsonl(target_dir / "target-manifest.jsonl")
+    bundles = load_jsonl(target_dir / "robot-bundle-manifest.jsonl")
+    by_url = {row.get("url"): row for row in targets}
+    selectors = 0
+    revisions = 0
+    claim_pointers = 0
+    for row in bundles:
+        target_ref = row.get("target_ref") or {}
+        selector = target_ref.get("selector") or {}
+        if (
+            target_ref.get("path") == "target-manifest.jsonl"
+            and selector.get("url") == row.get("url")
+            and selector.get("url") in by_url
+        ):
+            selectors += 1
+        revision_ref = row.get("revision_ref") or {}
+        revision_path = (target_dir / str(revision_ref.get("path", ""))).resolve()
+        if (
+            revision_path.is_file()
+            and not (target_dir / str(revision_ref.get("path", ""))).is_symlink()
+            and revision_ref.get("content_digest") == sha256(revision_path)
+        ):
+            revisions += 1
+        audit_ref = row.get("audit_ref") or {}
+        audit_path = (target_dir / str(audit_ref.get("path", ""))).resolve()
+        if (
+            audit_path == revision_path
+            and audit_path.is_file()
+            and not (target_dir / str(audit_ref.get("path", ""))).is_symlink()
+            and audit_ref.get("json_pointer") == "/claim_ledger"
+        ):
+            revision = json.loads(audit_path.read_text(encoding="utf-8"))
+            if audit_ref.get("claim_ledger_digest") == canonical_digest(
+                revision.get("claim_ledger", [])
+            ):
+                claim_pointers += 1
+    valid = (
+        len(targets) == len(by_url) == len(bundles)
+        and selectors == len(bundles)
+        and revisions == len(bundles)
+        and claim_pointers == len(bundles)
+    )
+    return {
+        "targets": len(targets),
+        "bundles": len(bundles),
+        "selectors": selectors,
+        "revision_refs": revisions,
+        "claim_pointers": claim_pointers,
+        "valid": valid,
+    }
+
+
+def verify_mirrors(run_root: Path) -> dict[str, int]:
+    def comparable(row: dict[str, Any]) -> dict[str, Any]:
+        value = dict(row)
+        value.pop("artifact_base", None)
+        value.pop("manifest_record_sha256", None)
+        return value
+
+    result: dict[str, int] = {}
+    for name in ("keep-content-manifest.jsonl", "robot-manifest-v2.jsonl"):
+        final = load_jsonl(run_root / "final" / name)
+        mirror = load_jsonl(run_root / "qa/autonomous-adjudication" / name)
+        result[name] = sum(
+            comparable(a) == comparable(b) for a, b in zip(final, mirror, strict=True)
+        )
+        result[f"{name}_rows"] = len(final)
+    return result
+
+
 def verify_flags(run_root: Path) -> dict[str, int]:
     true_flags = 0
     files = [
@@ -273,14 +440,37 @@ def verify_flags(run_root: Path) -> dict[str, int]:
     return {"true_flags": true_flags}
 
 
+def verify_delivery_layout(run_root: Path) -> dict[str, Any]:
+    forbidden: list[str] = []
+    for path in run_root.rglob("*"):
+        relative = path.relative_to(run_root).as_posix()
+        if path.is_file() and (
+            path.name.startswith("sol-raw")
+            or path.name.startswith("raw-trace")
+            or path.name.startswith("model-trace")
+        ):
+            forbidden.append(relative)
+        if path.name in {"batch-inputs", "batch_inputs"}:
+            forbidden.append(relative)
+    return {"forbidden_paths": sorted(set(forbidden)), "valid": not forbidden}
+
+
 def verify_counts(run_root: Path) -> dict[str, Any]:
     robot = load_jsonl(run_root / "final/robot-manifest-v2.jsonl")
     keep = load_jsonl(run_root / "final/keep-content-manifest.jsonl")
+    adjudicated = load_jsonl(
+        run_root / "qa/autonomous-adjudication/adjudicated-canonical-ledger.jsonl"
+    )
     claims = load_jsonl(run_root / "qa/autonomous-adjudication/adjudicated-claim-lineage.jsonl")
     counts = Counter(row.get("final_disposition") for row in robot)
+    expected_dispositions = Counter(row.get("final_disposition") for row in adjudicated)
     return {
         "decisions": len(robot),
         "decision_counts": dict(counts),
+        "expected_decisions": len(adjudicated),
+        "expected_decision_counts": dict(expected_dispositions),
+        "decision_projection_matches": dict(counts) == dict(expected_dispositions)
+        and {row.get("url") for row in robot} == {row.get("url") for row in adjudicated},
         "keep": len(keep),
         "claims": len(claims),
         "rendered_claims": sum(row.get("rendered") is True for row in claims),
@@ -306,6 +496,15 @@ def main() -> int:
     blockers = verify_blockers(run_root)
     flags = verify_flags(run_root)
     counts = verify_counts(run_root)
+    robot = load_jsonl(run_root / "final/robot-manifest-v2.jsonl")
+    adjudicated = load_jsonl(
+        run_root / "qa/autonomous-adjudication/adjudicated-canonical-ledger.jsonl"
+    )
+    decision_projection = verify_decision_projection(run_root, robot, adjudicated)
+    redirects = verify_redirects(run_root, robot, adjudicated)
+    target_bundle = verify_target_bundle(run_root)
+    mirrors = verify_mirrors(run_root)
+    delivery_layout = verify_delivery_layout(run_root)
     integrity_ok = (
         all(value["valid"] for value in sha_manifests.values())
         and all(
@@ -318,6 +517,13 @@ def main() -> int:
         and blockers["invalid"] == 0
         and flags["true_flags"] == 0
         and counts["decisions"] == sum(counts["decision_counts"].values())
+        and counts["decision_projection_matches"]
+        and set(counts["decision_counts"]) <= EXPECTED_DISPOSITIONS
+        and redirects["valid"]
+        and target_bundle["valid"]
+        and mirrors["keep-content-manifest.jsonl"] == mirrors["keep-content-manifest.jsonl_rows"]
+        and mirrors["robot-manifest-v2.jsonl"] == mirrors["robot-manifest-v2.jsonl_rows"]
+        and delivery_layout["valid"]
     )
     output = {
         "schema_version": "wilq_content_bundle_verification_v1",
@@ -329,6 +535,11 @@ def main() -> int:
         "blockers": blockers,
         "flags": flags,
         "counts": counts,
+        "decision_projection": decision_projection,
+        "redirects": redirects,
+        "target_bundle": target_bundle,
+        "mirrors": mirrors,
+        "delivery_layout": delivery_layout,
         "safety_scope": "read_only verifier evidence; not a historical global attestation",
     }
     print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
