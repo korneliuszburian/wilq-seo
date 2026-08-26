@@ -13,6 +13,7 @@ import json
 import os
 import re
 import stat
+import subprocess
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,38 @@ EXPECTED_DECISION_COUNTS = {"keep": 57, "noindex": 87, "redirect": 46, "remove":
 EXPECTED_DECISION_ROWS = sum(EXPECTED_DECISION_COUNTS.values())
 EXPECTED_CONTENT_ROWS = 181
 EXPECTED_CLAIM_ROWS = 950
+EXPECTED_COMPLETION_BODY_DIGEST = "f661c4f8478363e8680a34e273a1d293dd125453709d56d27040aa7aa09a7f67"
+EXPECTED_COMPLETION_REQUIREMENT_IDS = (
+    "canonical_decisions",
+    "survivor_page_assets",
+    "connector_lineage",
+    "claim_ledger",
+    "dev_target_readback",
+    "target_identity",
+    "seo_meta_mapping",
+    "acf_writable_mapping",
+    "cta_and_internal_links",
+    "contentdraft_v2_compile",
+    "robot_ready_manifest",
+)
+EXPECTED_COMPLETION_STATUSES = {
+    "canonical_decisions": "complete",
+    "survivor_page_assets": "blocked",
+    "connector_lineage": "complete",
+    "claim_ledger": "blocked",
+    "dev_target_readback": "complete",
+    "target_identity": "partial",
+    "seo_meta_mapping": "partial",
+    "acf_writable_mapping": "blocked",
+    "cta_and_internal_links": "partial",
+    "contentdraft_v2_compile": "blocked",
+    "robot_ready_manifest": "blocked",
+}
+EVIDENCE_REGISTRY_PATH = "qa/autonomous-adjudication/connector-lineage.jsonl"
+EXPECTED_EVIDENCE_REGISTRY_SHA256 = (
+    "d194c7bf8ed258fe4635666da36eed518a588cc2cf72510eba456012fdc8c546"
+)
+EXPECTED_CLAIM_KEY_FIELDS = ("page_url", "claim_id")
 ALLOWED_PYCACHE_FILES = {
     "qa/autonomous-adjudication/__pycache__/adjudicate_canonical.cpython-314.pyc",
     "qa/autonomous-adjudication/__pycache__/attach_connector_context.cpython-314.pyc",
@@ -46,6 +79,46 @@ ALLOWED_PYCACHE_FILES = {
     "review/__pycache__/build_projection_integrity_receipt.cpython-314.pyc",
     "review/__pycache__/normalize_package_blockers.cpython-314.pyc",
 }
+ALLOWED_PYCACHE_SHA256 = dict(
+    (
+        (
+            "qa/autonomous-adjudication/__pycache__/adjudicate_canonical.cpython-314.pyc",
+            "416b818c2991d5f7f2df565650d687883c9c5a7f38e58e2a9a6068c066ae8be4",
+        ),
+        (
+            "qa/autonomous-adjudication/__pycache__/attach_connector_context.cpython-314.pyc",
+            "1f36408119ab6902860170fd753da0f6398b2e519f4c560018a15db6c86a5967",
+        ),
+        (
+            "qa/autonomous-adjudication/__pycache__/build_claim_lineage.cpython-314.pyc",
+            "50577e0f79266e17ffc4cae50117fcb228066d8bf83e3e81c3e90eda6559b626",
+        ),
+        (
+            "qa/autonomous-adjudication/__pycache__/build_completion_audit.cpython-314.pyc",
+            "fbbf837d8f3913283cf953f66d32ceae3629a54d11c0e26b67c6457c9352ad83",
+        ),
+        (
+            "qa/autonomous-adjudication/__pycache__/build_cta_candidate_ledger.cpython-314.pyc",
+            "e587205d88d59981938775ee8ad769a93f19108a21d31ea344189a784ff6b7dd",
+        ),
+        (
+            "qa/autonomous-adjudication/__pycache__/build_robot_manifest.cpython-314.pyc",
+            "8aaf944383bb3d7332e88a6a1f1971eeb485b894f7b19fa4b1b334a19c83239b",
+        ),
+        (
+            "qa/autonomous-adjudication/__pycache__/build_survivor_site_graph.cpython-314.pyc",
+            "f4cb6a054154a4e4f6a11e043a8221c525d148c95d97f2994af9d3037e30df4d",
+        ),
+        (
+            "review/__pycache__/build_projection_integrity_receipt.cpython-314.pyc",
+            "d2e8b24a4005d28156430ccb7121471112c294d72407e789a305af3f6d5c6846",
+        ),
+        (
+            "review/__pycache__/normalize_package_blockers.cpython-314.pyc",
+            "8b38cdc28be9a73b38f801668c2f05594e63fdd69868199a91638bb494c497ca",
+        ),
+    )
+)
 ALLOWED_PYCACHE_DIRS = {
     "qa/autonomous-adjudication/__pycache__",
     "review/__pycache__",
@@ -720,11 +793,32 @@ def verify_redirects(
     }
 
 
+def _resolve_artifact_reference(
+    manifest_path: Path, row: dict[str, Any], kind: str, run_root: Path
+) -> Path | None:
+    refs = row.get("artifact_refs")
+    base_value = row.get("artifact_base", ".")
+    if not isinstance(refs, dict) or not isinstance(base_value, str):
+        return None
+    ref = refs.get(kind)
+    if not isinstance(ref, dict) or not isinstance(ref.get("path"), str):
+        return None
+    if Path(base_value).is_absolute() or Path(ref["path"]).is_absolute():
+        return None
+    try:
+        return _safe_existing_file(manifest_path.parent / base_value / ref["path"], run_root)
+    except (OSError, ValueError):
+        return None
+
+
 def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
     target_dir = run_root / "target-manifest"
-    targets = load_jsonl(target_dir / "target-manifest.jsonl", run_root)
-    bundles = load_jsonl(target_dir / "robot-bundle-manifest.jsonl", run_root)
-    content_rows = load_jsonl(run_root / "final/content-manifest.jsonl", run_root)
+    target_path = target_dir / "target-manifest.jsonl"
+    bundle_path = target_dir / "robot-bundle-manifest.jsonl"
+    content_path = run_root / "final/content-manifest.jsonl"
+    targets = load_jsonl(target_path, run_root)
+    bundles = load_jsonl(bundle_path, run_root)
+    content_rows = load_jsonl(content_path, run_root)
     by_url = {row.get("url"): row for row in targets if isinstance(row.get("url"), str)}
     target_urls = [row.get("url") for row in targets]
     bundle_urls = [row.get("url") for row in bundles]
@@ -737,32 +831,72 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
     claim_pointers = 0
     target_revision_matches = 0
     bundle_safety_fields_valid = 0
+    bundle_blockers_valid = 0
+    target_ref_safety_fields_valid = 0
+    target_content_matches = 0
+    content_by_url = {
+        row.get("url"): row for row in content_rows if isinstance(row.get("url"), str)
+    }
+    for target_row in targets:
+        content = content_by_url.get(target_row.get("url"))
+        if not isinstance(content, dict):
+            continue
+        identity_matches = all(
+            target_row.get(key) == content.get(key)
+            for key in ("url", "slug", "revision_id", "source_pack_id")
+        )
+        artifact_matches = True
+        for kind in REQUIRED_ARTIFACT_KINDS:
+            target_artifact = _resolve_artifact_reference(target_path, target_row, kind, run_root)
+            content_artifact = _resolve_artifact_reference(content_path, content, kind, run_root)
+            target_ref = (target_row.get("artifact_refs") or {}).get(kind)
+            content_ref = (content.get("artifact_refs") or {}).get(kind)
+            artifact_matches = artifact_matches and target_artifact == content_artifact
+            artifact_matches = artifact_matches and isinstance(target_ref, dict)
+            artifact_matches = artifact_matches and isinstance(content_ref, dict)
+            if isinstance(target_ref, dict) and isinstance(content_ref, dict):
+                artifact_matches = artifact_matches and (
+                    target_ref.get("bytes") == content_ref.get("bytes")
+                    and target_ref.get("sha256") == content_ref.get("sha256")
+                )
+        if identity_matches and artifact_matches:
+            target_content_matches += 1
     for row in bundles:
-        target = by_url.get(row.get("url"))
+        bundle_target = by_url.get(row.get("url"))
         if row.get("publish_allowed") is False and row.get("robot_ready") is False:
             bundle_safety_fields_valid += 1
+        blockers = row.get("blockers")
+        if isinstance(blockers, list) and all(_typed_blocker(item) for item in blockers):
+            bundle_blockers_valid += 1
         target_ref = row.get("target_ref") or {}
+        if (
+            isinstance(target_ref, dict)
+            and target_ref.get("publish_allowed") is False
+            and target_ref.get("robot_ready") is False
+        ):
+            target_ref_safety_fields_valid += 1
         selector = target_ref.get("selector") or {}
         if (
             target_ref.get("path") == "target-manifest.jsonl"
             and selector.get("url") == row.get("url")
-            and target is not None
-            and target.get("slug") == row.get("slug")
+            and bundle_target is not None
+            and bundle_target.get("slug") == row.get("slug")
         ):
             selectors += 1
         revision_ref = row.get("revision_ref") or {}
         revision_ref_path = revision_ref.get("path")
         expected_revision_ref = (
-            target.get("artifact_refs", {}).get("revision")
-            if isinstance(target, dict) and isinstance(target.get("artifact_refs"), dict)
+            bundle_target.get("artifact_refs", {}).get("revision")
+            if isinstance(bundle_target, dict)
+            and isinstance(bundle_target.get("artifact_refs"), dict)
             else None
         )
         if (
             isinstance(expected_revision_ref, dict)
             and revision_ref_path == expected_revision_ref.get("path")
             and revision_ref.get("content_digest") == expected_revision_ref.get("sha256")
-            and isinstance(target, dict)
-            and revision_ref.get("revision_id") == target.get("revision_id")
+            and isinstance(bundle_target, dict)
+            and revision_ref.get("revision_id") == bundle_target.get("revision_id")
         ):
             target_revision_matches += 1
         if not isinstance(revision_ref_path, str) or Path(revision_ref_path).is_absolute():
@@ -794,10 +928,10 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
                 revision_valid = revision_valid and revision.get("revision_id") == revision_ref.get(
                     "revision_id"
                 )
-                if target is not None:
-                    revision_valid = revision_valid and revision.get("revision_id") == target.get(
+                if bundle_target is not None:
+                    revision_valid = revision_valid and revision.get(
                         "revision_id"
-                    )
+                    ) == bundle_target.get("revision_id")
             if revision_valid:
                 revisions += 1
         else:
@@ -842,6 +976,9 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
         and claim_pointers == len(bundles)
         and target_revision_matches == len(bundles)
         and bundle_safety_fields_valid == len(bundles)
+        and bundle_blockers_valid == len(bundles)
+        and target_ref_safety_fields_valid == len(bundles)
+        and target_content_matches == len(targets) == EXPECTED_CONTENT_ROWS
     )
     return {
         "targets": len(targets),
@@ -852,6 +989,9 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
         "claim_pointers": claim_pointers,
         "target_revision_matches": target_revision_matches,
         "bundle_safety_fields_valid": bundle_safety_fields_valid,
+        "bundle_blockers_valid": bundle_blockers_valid,
+        "target_ref_safety_fields_valid": target_ref_safety_fields_valid,
+        "target_content_matches": target_content_matches,
         "valid": valid,
     }
 
@@ -990,6 +1130,14 @@ def verify_delivery_layout(run_root: Path) -> dict[str, Any]:
         ):
             forbidden.append(relative)
             continue
+        if "__pycache__" in Path(relative).parts and path.is_file():
+            try:
+                if sha256(path, run_root) != ALLOWED_PYCACHE_SHA256.get(relative):
+                    forbidden.append(relative)
+                    continue
+            except (OSError, ValueError):
+                forbidden.append(relative)
+                continue
         if any(
             part.startswith(("sol-raw", "raw-trace", "model-trace"))
             or part in {"batch-inputs", "batch_inputs"}
@@ -1015,7 +1163,41 @@ def verify_delivery_layout(run_root: Path) -> dict[str, Any]:
     return {"forbidden_paths": sorted(set(forbidden)), "valid": not forbidden}
 
 
-def verify_claim_lineage(run_root: Path) -> dict[str, int]:
+def _registry_evidence_ids(run_root: Path) -> tuple[set[str], bool]:
+    path = run_root / EVIDENCE_REGISTRY_PATH
+    try:
+        if sha256(path, run_root) != EXPECTED_EVIDENCE_REGISTRY_SHA256:
+            return set(), False
+        rows = load_jsonl(path, run_root)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return set(), False
+    evidence_ids: set[str] = set()
+
+    def visit(value: object, key: str | None = None) -> None:
+        if isinstance(value, dict):
+            for child_key, child in value.items():
+                visit(child, child_key)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child, key)
+        elif (
+            key
+            in {
+                "evidence_ids",
+                "decision_evidence_ids",
+                "adjudication_evidence_ids",
+            }
+            and isinstance(value, str)
+            and value
+        ):
+            evidence_ids.add(value)
+
+    for row in rows:
+        visit(row)
+    return evidence_ids, True
+
+
+def verify_claim_lineage(run_root: Path) -> dict[str, Any]:
     path = run_root / "qa/autonomous-adjudication/adjudicated-claim-lineage.jsonl"
     try:
         rows = load_jsonl(path, run_root)
@@ -1028,54 +1210,19 @@ def verify_claim_lineage(run_root: Path) -> dict[str, int]:
             "invalid_types": 1,
             "unknown_evidence_ids": 1,
             "evidence_ids_checked": 0,
+            "invalid_required_fields": 1,
+            "duplicate_claim_keys": 1,
+            "registry_valid": False,
         }
-    known_evidence_ids: set[str] = set()
-
-    def collect_evidence_ids(value: object) -> None:
-        if isinstance(value, dict):
-            for key, child in value.items():
-                if "evidence" in key.lower():
-                    if isinstance(child, str):
-                        known_evidence_ids.add(child)
-                    elif isinstance(child, list):
-                        known_evidence_ids.update(item for item in child if isinstance(item, str))
-                collect_evidence_ids(child)
-        elif isinstance(value, list):
-            for child in value:
-                collect_evidence_ids(child)
-
-    for root_name in ("final", "qa", "target-manifest"):
-        root = run_root / root_name
-        for candidate in root.rglob("*"):
-            if (
-                candidate == path
-                or not candidate.is_file()
-                or candidate.suffix
-                not in {
-                    ".json",
-                    ".jsonl",
-                }
-                or "__pycache__" in candidate.parts
-            ):
-                continue
-            if not _safe_tree_entry(candidate, run_root):
-                continue
-            try:
-                documents = (
-                    load_jsonl(candidate, run_root)
-                    if candidate.suffix == ".jsonl"
-                    else [json.loads(_safe_read_text(candidate, run_root))]
-                )
-            except (OSError, ValueError, json.JSONDecodeError):
-                continue
-            for document in documents:
-                collect_evidence_ids(document)
+    known_evidence_ids, registry_valid = _registry_evidence_ids(run_root)
     rendered_without_evidence = 0
     approved_without_evidence = 0
     approved_without_rendered = 0
     invalid_types = 0
+    invalid_required_fields = 0
     unknown_evidence_ids = 0
     evidence_ids_checked = 0
+    claim_keys: list[tuple[str, str]] = []
     for row in rows:
         evidence_ids = row.get("evidence_ids")
         has_evidence = (
@@ -1088,9 +1235,27 @@ def verify_claim_lineage(run_root: Path) -> dict[str, int]:
             unknown_evidence_ids += sum(
                 isinstance(item, str) and item not in known_evidence_ids for item in evidence_ids
             )
+        for key in EXPECTED_CLAIM_KEY_FIELDS:
+            if not isinstance(row.get(key), str) or not row[key]:
+                invalid_required_fields += 1
+        if not isinstance(row.get("source_pack_id"), str) or not row["source_pack_id"]:
+            invalid_required_fields += 1
+        if not isinstance(row.get("freshness_status"), str) or not row["freshness_status"]:
+            invalid_required_fields += 1
+        if not isinstance(row.get("owner_review_status"), str) or not row["owner_review_status"]:
+            invalid_required_fields += 1
+        if row.get("publish_allowed") is not False:
+            invalid_required_fields += 1
+        approval_blockers = row.get("approval_blockers")
+        if not isinstance(approval_blockers, list) or any(
+            not _typed_blocker(item) for item in approval_blockers
+        ):
+            invalid_required_fields += 1
         for key in ("rendered", "approved_for_rendering"):
-            if key in row and not isinstance(row[key], bool):
+            if not isinstance(row.get(key), bool):
                 invalid_types += 1
+        if isinstance(row.get("page_url"), str) and isinstance(row.get("claim_id"), str):
+            claim_keys.append((row["page_url"], row["claim_id"]))
         if row.get("rendered") is True and not has_evidence:
             rendered_without_evidence += 1
         if row.get("approved_for_rendering") is True:
@@ -1098,6 +1263,7 @@ def verify_claim_lineage(run_root: Path) -> dict[str, int]:
                 approved_without_evidence += 1
             if row.get("rendered") is not True:
                 approved_without_rendered += 1
+    duplicate_claim_keys = len(claim_keys) - len(set(claim_keys))
     return {
         "rows": len(rows),
         "rendered_without_evidence": rendered_without_evidence,
@@ -1106,6 +1272,9 @@ def verify_claim_lineage(run_root: Path) -> dict[str, int]:
         "invalid_types": invalid_types,
         "unknown_evidence_ids": unknown_evidence_ids,
         "evidence_ids_checked": evidence_ids_checked,
+        "invalid_required_fields": invalid_required_fields,
+        "duplicate_claim_keys": duplicate_claim_keys,
+        "registry_valid": registry_valid,
     }
 
 
@@ -1155,20 +1324,31 @@ def verify_completion_state(run_root: Path) -> dict[str, Any]:
         "final/completion-audit.json",
         "qa/autonomous-adjudication/completion-audit.json",
     )
-    valid_files = 0
-    invalid_files = 0
-    invalid_reasons: list[str] = []
+    documents: list[tuple[str, dict[str, Any] | None]] = []
     for relative in paths:
         path = run_root / relative
         try:
             document = json.loads(_safe_read_text(_safe_existing_file(path, run_root), run_root))
         except (OSError, ValueError, json.JSONDecodeError):
+            document = None
+        documents.append((relative, document if isinstance(document, dict) else None))
+    valid_files = 0
+    invalid_files = 0
+    invalid_reasons: list[str] = []
+    expected_ids = set(EXPECTED_COMPLETION_REQUIREMENT_IDS)
+    expected_robot = {
+        "publish_allowed": False,
+        "robot_ready": 0,
+        "target_mapping_bindings": 0,
+        "target_mapping_rows": EXPECTED_DECISION_COUNTS["keep"],
+        "target_mapping_schema_observed": EXPECTED_DECISION_COUNTS["keep"],
+        "target_mapping_values_digest_observed": EXPECTED_DECISION_COUNTS["keep"],
+    }
+    bodies: list[dict[str, Any]] = []
+    for relative, document in documents:
+        if document is None:
             invalid_files += 1
             invalid_reasons.append(f"{relative}:unreadable")
-            continue
-        if not isinstance(document, dict):
-            invalid_files += 1
-            invalid_reasons.append(f"{relative}:object_required")
             continue
         reasons: list[str] = []
         if document.get("goal_complete") is not False:
@@ -1176,26 +1356,53 @@ def verify_completion_state(run_root: Path) -> dict[str, Any]:
         if document.get("publish_allowed") is not False:
             reasons.append("publish_allowed")
         requirements = document.get("requirements")
-        if not isinstance(requirements, list) or len(requirements) != 11:
-            reasons.append("requirements_count")
-            requirements = []
-        by_id = {
-            item.get("id"): item
-            for item in requirements
-            if isinstance(item, dict) and isinstance(item.get("id"), str)
-        }
+        ids = (
+            [
+                item.get("id")
+                for item in requirements
+                if isinstance(item, dict) and isinstance(item.get("id"), str)
+            ]
+            if isinstance(requirements, list)
+            else []
+        )
+        if (
+            not isinstance(requirements, list)
+            or len(requirements) != len(EXPECTED_COMPLETION_REQUIREMENT_IDS)
+            or len(ids) != len(set(ids))
+            or set(ids) != expected_ids
+        ):
+            reasons.append("requirements_shape")
+        by_id = (
+            {
+                item.get("id"): item
+                for item in requirements
+                if isinstance(item, dict) and isinstance(item.get("id"), str)
+            }
+            if isinstance(requirements, list)
+            else {}
+        )
+        for requirement_id, expected_status in EXPECTED_COMPLETION_STATUSES.items():
+            item = by_id.get(requirement_id)
+            if not isinstance(item, dict) or item.get("status") != expected_status:
+                reasons.append(f"status:{requirement_id}")
+            evidence = item.get("evidence") if isinstance(item, dict) else None
+            if not isinstance(evidence, list) or any(
+                not isinstance(value, str) or not value for value in evidence
+            ):
+                reasons.append(f"evidence:{requirement_id}")
+            blockers = item.get("blockers") if isinstance(item, dict) else None
+            if expected_status in {"blocked", "partial"} and (
+                not isinstance(blockers, list)
+                or not blockers
+                or any(not _typed_blocker(value) for value in blockers)
+            ):
+                reasons.append(f"blockers:{requirement_id}")
+            if expected_status == "complete" and blockers is not None:
+                reasons.append(f"blockers:{requirement_id}")
         robot_requirement = by_id.get("robot_ready_manifest")
         robot_proof = (
             robot_requirement.get("proof") if isinstance(robot_requirement, dict) else None
         )
-        expected_robot = {
-            "publish_allowed": False,
-            "robot_ready": 0,
-            "target_mapping_bindings": 0,
-            "target_mapping_rows": EXPECTED_DECISION_COUNTS["keep"],
-            "target_mapping_schema_observed": EXPECTED_DECISION_COUNTS["keep"],
-            "target_mapping_values_digest_observed": EXPECTED_DECISION_COUNTS["keep"],
-        }
         if not isinstance(robot_proof, dict) or any(
             robot_proof.get(key) != value for key, value in expected_robot.items()
         ):
@@ -1217,11 +1424,22 @@ def verify_completion_state(run_root: Path) -> dict[str, Any]:
             or current_mapping.get("missing_work_item") != EXPECTED_DECISION_COUNTS["keep"]
         ):
             reasons.append("contentdraft_v2_compile_proof")
+        body = {
+            "goal_complete": document.get("goal_complete"),
+            "publish_allowed": document.get("publish_allowed"),
+            "requirements": requirements,
+        }
+        bodies.append(body)
+        if canonical_digest(body) != EXPECTED_COMPLETION_BODY_DIGEST:
+            reasons.append("completion_body_digest")
         if reasons:
             invalid_files += 1
             invalid_reasons.extend(f"{relative}:{reason}" for reason in reasons)
         else:
             valid_files += 1
+    if len(bodies) == len(paths) and bodies[0] != bodies[1]:
+        invalid_files += 1
+        invalid_reasons.append("completion_receipts_diverge")
     return {
         "files": len(paths),
         "valid_files": valid_files,
@@ -1229,6 +1447,82 @@ def verify_completion_state(run_root: Path) -> dict[str, Any]:
         "invalid_reasons": invalid_reasons,
         "valid": valid_files == len(paths) and invalid_files == 0,
     }
+
+
+def verify_root_receipt(run_root: Path) -> dict[str, Any]:
+    receipt_path = run_root / "review/projection-integrity-repair-receipt.json"
+    proof_path = run_root / "review/verifier-mutation-proof.json"
+    reasons: list[str] = []
+    try:
+        receipt = json.loads(_safe_read_text(_safe_existing_file(receipt_path, run_root), run_root))
+        mutation = json.loads(_safe_read_text(_safe_existing_file(proof_path, run_root), run_root))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return {"valid": False, "reasons": ["receipt_unreadable"]}
+    try:
+        repository_head = subprocess.run(
+            ["git", "-C", str(Path(__file__).resolve().parents[1]), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        repository_head = None
+    verifier_digest = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    fixed_point = receipt.get("repository_fixed_point")
+    if (
+        not isinstance(fixed_point, dict)
+        or fixed_point.get("head") != repository_head
+        or fixed_point.get("verifier_path") != "scripts/verify_content_bundle.py"
+        or fixed_point.get("verifier_sha256") != verifier_digest
+    ):
+        reasons.append("repository_fixed_point")
+    if receipt.get("status") != "read_only_repaired_incomplete":
+        reasons.append("receipt_status")
+    if receipt.get("checks", {}).get("integrity_checks_pass") is not True:
+        reasons.append("receipt_integrity")
+    if receipt.get("canonical") != {
+        "keep": EXPECTED_DECISION_COUNTS["keep"],
+        "noindex": EXPECTED_DECISION_COUNTS["noindex"],
+        "redirect": EXPECTED_DECISION_COUNTS["redirect"],
+        "remove": EXPECTED_DECISION_COUNTS["remove"],
+        "records": EXPECTED_DECISION_ROWS,
+        "redirect_target_receipts": EXPECTED_DECISION_COUNTS["redirect"],
+        "redirect_target_receipts_missing": 0,
+    }:
+        reasons.append("receipt_canonical")
+    handoff = receipt.get("survivor_handoff")
+    if (
+        not isinstance(handoff, dict)
+        or handoff.get("publish_allowed") is not False
+        or handoff.get("robot_ready") != 0
+    ):
+        reasons.append("receipt_handoff")
+    claims = receipt.get("claims")
+    if not isinstance(claims, dict) or claims.get("rows") != EXPECTED_CLAIM_ROWS:
+        reasons.append("receipt_claims")
+    completion = receipt.get("completion_audit")
+    if not isinstance(completion, dict) or completion.get("goal_complete") is not False:
+        reasons.append("receipt_completion")
+    safety = receipt.get("safety")
+    if not isinstance(safety, dict) or any(value is not False for value in safety.values()):
+        reasons.append("receipt_safety")
+    mutation_ref = receipt.get("verifier_mutation_proof")
+    if (
+        not isinstance(mutation_ref, dict)
+        or mutation_ref.get("path") != "review/verifier-mutation-proof.json"
+        or mutation_ref.get("sha256") != sha256(proof_path, run_root)
+        or mutation_ref.get("status") != "retained_temporary_copy_proof"
+    ):
+        reasons.append("mutation_reference")
+    if (
+        not isinstance(mutation, dict)
+        or mutation.get("all_probes_failed_closed") is not True
+        or mutation.get("original_bundle_status") != "pass"
+        or mutation.get("verifier_commit") != repository_head
+        or mutation.get("verifier_sha256") != verifier_digest
+    ):
+        reasons.append("mutation_proof")
+    return {"valid": not reasons, "reasons": reasons}
 
 
 def main() -> int:
@@ -1279,6 +1573,7 @@ def main() -> int:
     claims = verify_claim_lineage(run_root)
     counts = verify_counts(run_root)
     completion = verify_completion_state(run_root)
+    root_receipt = verify_root_receipt(run_root)
     robot = load_jsonl(run_root / "final/robot-manifest-v2.jsonl", run_root)
     adjudicated = load_jsonl(
         run_root / "qa/autonomous-adjudication/adjudicated-canonical-ledger.jsonl", run_root
@@ -1288,6 +1583,11 @@ def main() -> int:
     target_bundle = verify_target_bundle(run_root)
     mirrors = verify_mirrors(run_root)
     delivery_layout = verify_delivery_layout(run_root)
+    try:
+        _assert_pinned_root(run_root)
+        root_identity_valid = True
+    except ValueError:
+        root_identity_valid = False
     integrity_ok = (
         all(value["valid"] for value in sha_manifests.values())
         and all(
@@ -1305,6 +1605,9 @@ def main() -> int:
         and claims["approved_without_evidence"] == 0
         and claims["approved_without_rendered"] == 0
         and claims["invalid_types"] == 0
+        and claims["invalid_required_fields"] == 0
+        and claims["duplicate_claim_keys"] == 0
+        and claims["registry_valid"]
         and claims["unknown_evidence_ids"] == 0
         and claims["rows"] == EXPECTED_CLAIM_ROWS
         and flags["true_flags"] == 0
@@ -1332,6 +1635,8 @@ def main() -> int:
         and redirects["valid"]
         and target_bundle["valid"]
         and completion["valid"]
+        and root_receipt["valid"]
+        and root_identity_valid
         and mirrors["keep-content-manifest.jsonl"] == mirrors["keep-content-manifest.jsonl_rows"]
         and mirrors["keep-content-manifest.jsonl_rows_match"] == 1
         and mirrors["robot-manifest-v2.jsonl"] == mirrors["robot-manifest-v2.jsonl_rows"]
@@ -1352,6 +1657,8 @@ def main() -> int:
         "flags": flags,
         "counts": counts,
         "completion": completion,
+        "root_receipt": root_receipt,
+        "root_identity_valid": root_identity_valid,
         "decision_projection": decision_projection,
         "redirects": redirects,
         "target_bundle": target_bundle,
