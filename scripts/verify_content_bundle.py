@@ -10,6 +10,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import stat
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -35,12 +37,15 @@ SAFETY_KEYS = {
     "generation_invoked",
     "live_mutation",
     "live_refresh",
+    "manual_lineage_repair",
     "model_generation",
     "model_invocation",
     "private_packet_read",
+    "private_content_packet_read",
     "keyword_planner_invented",
     "publish_allowed",
     "publish_ready",
+    "production_ready",
     "refresh_performed",
     "robot_ready",
     "vendor_write",
@@ -53,8 +58,68 @@ SAFETY_KEYS = {
 }
 
 
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+REQUIRED_SAFETY_FIELDS = {
+    "qa/planning-generation-proof.json": ("safety.manual_lineage_repair",),
+    "qa/autonomous-adjudication/pr18-selected-workspace-runtime-readback.json": (
+        "safety.private_content_packet_read",
+        "interpretation.production_ready",
+    ),
+}
+
+
+def _safe_existing_file(path: Path, run_root: Path) -> Path:
+    """Return a regular, non-symlink file after lexical containment checks."""
+
+    root = run_root.resolve()
+    if run_root.is_symlink():
+        raise ValueError("run_root_is_symlink")
+    candidate = Path(os.path.abspath(path))
+    try:
+        relative = candidate.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("path_outside_run_root") from exc
+    current = root
+    for part in relative.parts:
+        current /= part
+        try:
+            mode = os.lstat(current).st_mode
+        except OSError as exc:
+            raise ValueError("path_unreadable") from exc
+        if stat.S_ISLNK(mode):
+            raise ValueError("symlink_not_allowed")
+    if not stat.S_ISREG(os.lstat(candidate).st_mode):
+        raise ValueError("regular_file_required")
+    return candidate
+
+
+def _safe_tree_entry(path: Path, run_root: Path) -> bool:
+    """Check a tree entry without opening it; symlinks are never trusted."""
+
+    root = run_root.resolve()
+    try:
+        candidate = Path(os.path.abspath(path))
+        relative = candidate.relative_to(root)
+    except (OSError, ValueError):
+        return False
+    current = root
+    for part in relative.parts:
+        current /= part
+        try:
+            mode = os.lstat(current).st_mode
+        except OSError:
+            return False
+        if stat.S_ISLNK(mode):
+            return False
+    return True
+
+
+def _safe_read_text(path: Path, run_root: Path) -> str:
+    return _safe_existing_file(path, run_root).read_text(encoding="utf-8")
+
+
+def sha256(path: Path, run_root: Path | None = None) -> str:
+    safe_path = _safe_existing_file(path, run_root) if run_root is not None else path
+    return hashlib.sha256(safe_path.read_bytes()).hexdigest()
 
 
 def canonical_digest(value: object) -> str:
@@ -63,17 +128,24 @@ def canonical_digest(value: object) -> str:
     ).hexdigest()
 
 
-def load_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+def load_jsonl(path: Path, run_root: Path | None = None) -> list[dict[str, Any]]:
+    text = (
+        _safe_read_text(path, run_root)
+        if run_root is not None
+        else path.read_text(encoding="utf-8")
+    )
+    return [json.loads(line) for line in text.splitlines() if line]
 
 
 def verify_sha_manifest(root: Path) -> dict[str, Any]:
     manifest = root / "SHA256SUMS"
     errors: list[str] = []
     expected: set[str] = set()
-    if not manifest.is_file():
+    try:
+        manifest = _safe_existing_file(manifest, root)
+    except ValueError:
         return {"entries": 0, "valid": False, "errors": ["missing_SHA256SUMS"]}
-    for line in manifest.read_text(encoding="utf-8").splitlines():
+    for line in _safe_read_text(manifest, root).splitlines():
         if not line:
             continue
         try:
@@ -84,27 +156,37 @@ def verify_sha_manifest(root: Path) -> dict[str, Any]:
         relative = relative.removeprefix("./")
         expected.add(relative)
         candidate = Path(relative)
-        path = (root / candidate).resolve()
-        safe = (
-            not candidate.is_absolute()
-            and ".." not in candidate.parts
-            and path != root
-            and root in path.parents
-            and not (root / candidate).is_symlink()
-        )
-        if not safe or not path.is_file() or sha256(path) != expected_sha:
+        try:
+            path = _safe_existing_file(root / candidate, root)
+            valid = sha256(path, root) == expected_sha
+        except ValueError:
+            valid = False
+        if not valid:
             errors.append(relative)
-    actual = {
-        path.relative_to(root).as_posix()
-        for path in root.rglob("*")
-        if path.is_file() and path.name != "SHA256SUMS" and "__pycache__" not in path.parts
-    }
+    actual: set[str] = set()
+    for path in root.rglob("*"):
+        relative = path.relative_to(root).as_posix()
+        if path.is_symlink():
+            errors.append(relative)
+            continue
+        if path.is_file() and path.name != "SHA256SUMS" and "__pycache__" not in path.parts:
+            actual.add(relative)
     errors.extend(sorted(actual - expected))
     return {"entries": len(expected), "valid": not errors and expected == actual, "errors": errors}
 
 
 def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
-    rows = load_jsonl(path)
+    try:
+        rows = load_jsonl(path, run_root)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return {
+            "rows": 0,
+            "self_hash_valid": 0,
+            "self_hash_missing": 0,
+            "self_hash_mismatch": 0,
+            "artifact_checked": 0,
+            "artifact_invalid": 1,
+        }
     self_hash_valid = 0
     self_hash_missing = 0
     self_hash_mismatch = 0
@@ -135,22 +217,20 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
             continue
         if required and set(refs) != REQUIRED_ARTIFACT_KINDS:
             artifact_invalid += 1
-        base = (path.parent / str(row["artifact_base"])).resolve()
+        base = path.parent / str(row["artifact_base"])
         for ref in refs.values():
             artifact_checked += 1
             if not isinstance(ref, dict) or not isinstance(ref.get("path"), str):
                 artifact_invalid += 1
                 continue
-            target = (base / ref["path"]).resolve()
-            raw_target = base / ref["path"]
-            if (
-                target != run_root
-                and run_root not in target.parents
-                or raw_target.is_symlink()
-                or not target.is_file()
-                or ref.get("bytes") != target.stat().st_size
-                or ref.get("sha256") != sha256(target)
-            ):
+            try:
+                target = _safe_existing_file(base / ref["path"], run_root)
+                valid = ref.get("bytes") == os.stat(target).st_size and ref.get("sha256") == sha256(
+                    target, run_root
+                )
+            except (OSError, ValueError):
+                valid = False
+            if not valid:
                 artifact_invalid += 1
     return {
         "rows": len(rows),
@@ -167,6 +247,9 @@ def verify_blockers(run_root: Path) -> dict[str, int]:
     for root_name in ("final", "qa", "target-manifest"):
         root = run_root / root_name
         for path in root.rglob("*"):
+            if not _safe_tree_entry(path, run_root):
+                invalid += 1
+                continue
             if (
                 not path.is_file()
                 or path.name == "SHA256SUMS"
@@ -176,9 +259,9 @@ def verify_blockers(run_root: Path) -> dict[str, int]:
                 continue
             try:
                 documents = (
-                    load_jsonl(path)
+                    load_jsonl(path, run_root)
                     if path.suffix == ".jsonl"
-                    else [json.loads(path.read_text(encoding="utf-8"))]
+                    else [json.loads(_safe_read_text(path, run_root))]
                 )
             except (OSError, json.JSONDecodeError):
                 invalid += 1
@@ -223,16 +306,25 @@ def _typed_blocker(value: object) -> bool:
 
 def verify_cta_refs(run_root: Path) -> dict[str, int]:
     cta = run_root / "qa/autonomous-adjudication/cta-candidate-ledger.jsonl"
-    expected = sha256(cta) if cta.is_file() else None
+    try:
+        cta_path = _safe_existing_file(cta, run_root)
+        expected = sha256(cta_path, run_root)
+    except (OSError, ValueError):
+        cta_path = None
+        expected = None
     checked = missing = invalid = 0
-    documents: list[tuple[Path, dict[str, Any]]] = [
-        (run_root / "final/content-manifest.jsonl", row)
-        for row in load_jsonl(run_root / "final/content-manifest.jsonl")
-    ]
-    documents.extend(
-        (path, json.loads(path.read_text(encoding="utf-8")))
-        for path in sorted((run_root / "final/source-packs").glob("*.json"))
-    )
+    try:
+        documents: list[tuple[Path, dict[str, Any]]] = [
+            (run_root / "final/content-manifest.jsonl", row)
+            for row in load_jsonl(run_root / "final/content-manifest.jsonl", run_root)
+        ]
+        documents.extend(
+            (path, json.loads(_safe_read_text(path, run_root)))
+            for path in sorted((run_root / "final/source-packs").glob("*.json"))
+            if _safe_tree_entry(path, run_root)
+        )
+    except (OSError, ValueError, json.JSONDecodeError):
+        return {"expected": 0, "checked": 0, "valid": 0, "missing": 0, "invalid": 1}
     for owner, document in documents:
         ref = document.get("cta_candidate_ref")
         if not isinstance(ref, dict):
@@ -240,12 +332,15 @@ def verify_cta_refs(run_root: Path) -> dict[str, int]:
             continue
         checked += 1
         base = ref.get("path_base")
-        target = (
-            (owner.parent / base / str(ref.get("path", ""))).resolve()
-            if isinstance(base, str)
-            else None
-        )
-        if expected is None or target != cta.resolve() or ref.get("sha256") != expected:
+        try:
+            target = (
+                _safe_existing_file(owner.parent / base / str(ref.get("path", "")), run_root)
+                if isinstance(base, str)
+                else None
+            )
+        except (OSError, ValueError):
+            target = None
+        if expected is None or target != cta_path or ref.get("sha256") != expected:
             invalid += 1
     return {
         "expected": checked + missing,
@@ -285,7 +380,9 @@ def verify_redirects(
     }
     readback_path = run_root / "qa/autonomous-adjudication/public-readback.jsonl"
     readback = {
-        row.get("receipt_id"): row for row in load_jsonl(readback_path) if row.get("receipt_id")
+        row.get("receipt_id"): row
+        for row in load_jsonl(readback_path, run_root)
+        if row.get("receipt_id")
     }
     redirects = [row for row in robot if row.get("final_disposition") == "redirect"]
     projection_matches = 0
@@ -339,8 +436,8 @@ def verify_redirects(
 
 def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
     target_dir = run_root / "target-manifest"
-    targets = load_jsonl(target_dir / "target-manifest.jsonl")
-    bundles = load_jsonl(target_dir / "robot-bundle-manifest.jsonl")
+    targets = load_jsonl(target_dir / "target-manifest.jsonl", run_root)
+    bundles = load_jsonl(target_dir / "robot-bundle-manifest.jsonl", run_root)
     by_url = {row.get("url"): row for row in targets}
     selectors = 0
     revisions = 0
@@ -355,22 +452,27 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
         ):
             selectors += 1
         revision_ref = row.get("revision_ref") or {}
-        revision_path = (target_dir / str(revision_ref.get("path", ""))).resolve()
-        if (
-            revision_path.is_file()
-            and not (target_dir / str(revision_ref.get("path", ""))).is_symlink()
-            and revision_ref.get("content_digest") == sha256(revision_path)
-        ):
+        try:
+            revision_path = _safe_existing_file(
+                target_dir / str(revision_ref.get("path", "")), run_root
+            )
+            revision_valid = revision_ref.get("content_digest") == sha256(revision_path, run_root)
+        except (OSError, ValueError):
+            revision_path = None
+            revision_valid = False
+        if revision_valid:
             revisions += 1
         audit_ref = row.get("audit_ref") or {}
-        audit_path = (target_dir / str(audit_ref.get("path", ""))).resolve()
+        try:
+            audit_path = _safe_existing_file(target_dir / str(audit_ref.get("path", "")), run_root)
+        except (OSError, ValueError):
+            audit_path = None
         if (
             audit_path == revision_path
-            and audit_path.is_file()
-            and not (target_dir / str(audit_ref.get("path", ""))).is_symlink()
+            and audit_path is not None
             and audit_ref.get("json_pointer") == "/claim_ledger"
         ):
-            revision = json.loads(audit_path.read_text(encoding="utf-8"))
+            revision = json.loads(_safe_read_text(audit_path, run_root))
             if audit_ref.get("claim_ledger_digest") == canonical_digest(
                 revision.get("claim_ledger", [])
             ):
@@ -400,8 +502,8 @@ def verify_mirrors(run_root: Path) -> dict[str, int]:
 
     result: dict[str, int] = {}
     for name in ("keep-content-manifest.jsonl", "robot-manifest-v2.jsonl"):
-        final = load_jsonl(run_root / "final" / name)
-        mirror = load_jsonl(run_root / "qa/autonomous-adjudication" / name)
+        final = load_jsonl(run_root / "final" / name, run_root)
+        mirror = load_jsonl(run_root / "qa/autonomous-adjudication" / name, run_root)
         result[name] = sum(
             comparable(a) == comparable(b) for a, b in zip(final, mirror, strict=True)
         )
@@ -409,12 +511,26 @@ def verify_mirrors(run_root: Path) -> dict[str, int]:
     return result
 
 
+def _read_nested(value: object, dotted_path: str) -> object:
+    current = value
+    for key in dotted_path.split("."):
+        if not isinstance(current, dict) or key not in current:
+            return None
+        current = current[key]
+    return current
+
+
 def verify_flags(run_root: Path) -> dict[str, int]:
     true_flags = 0
+    invalid_paths = 0
+    required_fields = 0
     files = [
         root for name in ("final", "qa", "target-manifest") for root in (run_root / name).rglob("*")
     ]
     for path in files:
+        if not _safe_tree_entry(path, run_root):
+            invalid_paths += 1
+            continue
         if (
             not path.is_file()
             or path.suffix not in {".json", ".jsonl"}
@@ -423,12 +539,18 @@ def verify_flags(run_root: Path) -> dict[str, int]:
             continue
         try:
             documents = (
-                load_jsonl(path)
+                load_jsonl(path, run_root)
                 if path.suffix == ".jsonl"
-                else [json.loads(path.read_text(encoding="utf-8"))]
+                else [json.loads(_safe_read_text(path, run_root))]
             )
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError, json.JSONDecodeError):
+            invalid_paths += 1
             continue
+        relative = path.relative_to(run_root).as_posix()
+        for dotted_path in REQUIRED_SAFETY_FIELDS.get(relative, ()):
+            required_fields += 1
+            if _read_nested(documents[0], dotted_path) is not False:
+                invalid_paths += 1
         stack: list[object] = list(documents)
         while stack:
             value = stack.pop()
@@ -437,7 +559,11 @@ def verify_flags(run_root: Path) -> dict[str, int]:
                 stack.extend(item for item in value.values() if isinstance(item, (dict, list)))
             elif isinstance(value, list):
                 stack.extend(value)
-    return {"true_flags": true_flags}
+    return {
+        "true_flags": true_flags,
+        "invalid_paths": invalid_paths,
+        "required_fields": required_fields,
+    }
 
 
 def verify_delivery_layout(run_root: Path) -> dict[str, Any]:
@@ -456,12 +582,14 @@ def verify_delivery_layout(run_root: Path) -> dict[str, Any]:
 
 
 def verify_counts(run_root: Path) -> dict[str, Any]:
-    robot = load_jsonl(run_root / "final/robot-manifest-v2.jsonl")
-    keep = load_jsonl(run_root / "final/keep-content-manifest.jsonl")
+    robot = load_jsonl(run_root / "final/robot-manifest-v2.jsonl", run_root)
+    keep = load_jsonl(run_root / "final/keep-content-manifest.jsonl", run_root)
     adjudicated = load_jsonl(
-        run_root / "qa/autonomous-adjudication/adjudicated-canonical-ledger.jsonl"
+        run_root / "qa/autonomous-adjudication/adjudicated-canonical-ledger.jsonl", run_root
     )
-    claims = load_jsonl(run_root / "qa/autonomous-adjudication/adjudicated-claim-lineage.jsonl")
+    claims = load_jsonl(
+        run_root / "qa/autonomous-adjudication/adjudicated-claim-lineage.jsonl", run_root
+    )
     counts = Counter(row.get("final_disposition") for row in robot)
     expected_dispositions = Counter(row.get("final_disposition") for row in adjudicated)
     return {
@@ -496,9 +624,9 @@ def main() -> int:
     blockers = verify_blockers(run_root)
     flags = verify_flags(run_root)
     counts = verify_counts(run_root)
-    robot = load_jsonl(run_root / "final/robot-manifest-v2.jsonl")
+    robot = load_jsonl(run_root / "final/robot-manifest-v2.jsonl", run_root)
     adjudicated = load_jsonl(
-        run_root / "qa/autonomous-adjudication/adjudicated-canonical-ledger.jsonl"
+        run_root / "qa/autonomous-adjudication/adjudicated-canonical-ledger.jsonl", run_root
     )
     decision_projection = verify_decision_projection(run_root, robot, adjudicated)
     redirects = verify_redirects(run_root, robot, adjudicated)
@@ -516,8 +644,14 @@ def main() -> int:
         and cta["missing"] == 0
         and blockers["invalid"] == 0
         and flags["true_flags"] == 0
+        and flags["invalid_paths"] == 0
+        and flags["required_fields"] == sum(len(paths) for paths in REQUIRED_SAFETY_FIELDS.values())
         and counts["decisions"] == sum(counts["decision_counts"].values())
         and counts["decision_projection_matches"]
+        and decision_projection["matching"] == decision_projection["expected"]
+        and decision_projection["missing"] == 0
+        and decision_projection["unexpected"] == 0
+        and decision_projection["disposition_mismatch"] == 0
         and set(counts["decision_counts"]) <= EXPECTED_DISPOSITIONS
         and redirects["valid"]
         and target_bundle["valid"]
