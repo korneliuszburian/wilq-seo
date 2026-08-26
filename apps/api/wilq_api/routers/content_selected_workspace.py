@@ -12,7 +12,10 @@ from wilq.content.workflow.workspace.selected_workspace import (
 
 def register_content_selected_workspace_route(router: APIRouter) -> None:
     def content_selected_workspace(work_item_id: str) -> ContentSelectedWorkspace:
-        snapshot = snapshot_for_work_item_or_404(work_item_id)
+        snapshot = snapshot_for_work_item_or_404(
+            work_item_id,
+            resolve_planning_proposal=False,
+        )
         return build_content_selected_workspace_with_context(
             work_item_id,
             operator_journey=ContentWorkflowOperatorJourney(
