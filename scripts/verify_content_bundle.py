@@ -145,7 +145,12 @@ def _safe_read_bytes(path: Path, run_root: Path) -> bytes:
         | getattr(os, "O_NOFOLLOW", 0)
         | getattr(os, "O_CLOEXEC", 0)
     )
-    file_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    file_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+    )
     directory_descriptor = -1
     try:
         directory_descriptor = _open_directory_no_follow(root, directory_flags)
@@ -759,6 +764,28 @@ def verify_mirrors(run_root: Path) -> dict[str, int]:
             comparable(a) == comparable(b) for a, b in zip(final, mirror, strict=True)
         )
         result[f"{name}_rows"] = len(final)
+    final_robot = load_jsonl(run_root / "final/robot-manifest-v2.jsonl", run_root)
+    qa_robot = load_jsonl(run_root / "qa/autonomous-adjudication/robot-manifest-v2.jsonl", run_root)
+    final_keep = load_jsonl(run_root / "final/keep-content-manifest.jsonl", run_root)
+    qa_keep = load_jsonl(
+        run_root / "qa/autonomous-adjudication/keep-content-manifest.jsonl", run_root
+    )
+    final_keep_urls = {
+        row.get("url")
+        for row in final_robot
+        if row.get("final_disposition") == "keep" and isinstance(row.get("url"), str)
+    }
+    qa_keep_urls = {
+        row.get("url")
+        for row in qa_robot
+        if row.get("final_disposition") == "keep" and isinstance(row.get("url"), str)
+    }
+    final_manifest_urls = {row.get("url") for row in final_keep if isinstance(row.get("url"), str)}
+    qa_manifest_urls = {row.get("url") for row in qa_keep if isinstance(row.get("url"), str)}
+    result["keep_owner_set_matches"] = int(
+        final_keep_urls == final_manifest_urls == qa_keep_urls == qa_manifest_urls
+    )
+    result["keep_owner_set_rows"] = len(final_keep_urls)
     return result
 
 
@@ -1033,6 +1060,8 @@ def main() -> int:
         and target_bundle["valid"]
         and mirrors["keep-content-manifest.jsonl"] == mirrors["keep-content-manifest.jsonl_rows"]
         and mirrors["robot-manifest-v2.jsonl"] == mirrors["robot-manifest-v2.jsonl_rows"]
+        and mirrors["keep_owner_set_matches"] == 1
+        and mirrors["keep_owner_set_rows"] == mirrors["keep-content-manifest.jsonl_rows"]
         and delivery_layout["valid"]
     )
     output = {
