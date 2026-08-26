@@ -636,9 +636,12 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
         ):
             if not isinstance(revision, dict):
                 revision = json.loads(_safe_read_text(audit_path, run_root))
+            if not isinstance(revision, dict):
+                continue
+            claim_ledger = revision.get("claim_ledger")
             if (
-                audit_ref.get("claim_ledger_digest")
-                == canonical_digest(revision.get("claim_ledger", []))
+                isinstance(claim_ledger, list)
+                and audit_ref.get("claim_ledger_digest") == canonical_digest(claim_ledger)
                 and revision.get("url") == row.get("url")
                 and revision.get("slug") == row.get("slug")
             ):
@@ -725,13 +728,12 @@ def verify_flags(run_root: Path) -> dict[str, int]:
             value, parent_key = stack.pop()
             if isinstance(value, dict):
                 for key, flag in value.items():
+                    if key == "path" and isinstance(flag, str) and Path(flag).is_absolute():
+                        invalid_paths += 1
                     if key not in SAFETY_KEYS:
                         continue
-                    if (
-                        parent_key == "safety"
-                        or parent_key == "interpretation"
-                        and key == "production_ready"
-                    ) and not isinstance(flag, bool):
+                    count_exception = key == "robot_ready" and parent_key == "proof"
+                    if not count_exception and not isinstance(flag, bool):
                         invalid_paths += 1
                         continue
                     if flag is True:
@@ -783,13 +785,22 @@ def verify_claim_lineage(run_root: Path) -> dict[str, int]:
             "rendered_without_evidence": 1,
             "approved_without_evidence": 1,
             "approved_without_rendered": 1,
+            "invalid_types": 1,
         }
     rendered_without_evidence = 0
     approved_without_evidence = 0
     approved_without_rendered = 0
+    invalid_types = 0
     for row in rows:
         evidence_ids = row.get("evidence_ids")
-        has_evidence = isinstance(evidence_ids, list) and bool(evidence_ids)
+        has_evidence = (
+            isinstance(evidence_ids, list)
+            and bool(evidence_ids)
+            and all(isinstance(evidence_id, str) and evidence_id for evidence_id in evidence_ids)
+        )
+        for key in ("rendered", "approved_for_rendering"):
+            if key in row and not isinstance(row[key], bool):
+                invalid_types += 1
         if row.get("rendered") is True and not has_evidence:
             rendered_without_evidence += 1
         if row.get("approved_for_rendering") is True:
@@ -802,6 +813,7 @@ def verify_claim_lineage(run_root: Path) -> dict[str, int]:
         "rendered_without_evidence": rendered_without_evidence,
         "approved_without_evidence": approved_without_evidence,
         "approved_without_rendered": approved_without_rendered,
+        "invalid_types": invalid_types,
     }
 
 
@@ -902,6 +914,7 @@ def main() -> int:
         and claims["rendered_without_evidence"] == 0
         and claims["approved_without_evidence"] == 0
         and claims["approved_without_rendered"] == 0
+        and claims["invalid_types"] == 0
         and flags["true_flags"] == 0
         and flags["invalid_paths"] == 0
         and flags["required_fields"] == sum(len(paths) for paths in REQUIRED_SAFETY_FIELDS.values())
