@@ -136,11 +136,32 @@ def _safe_read_bytes(path: Path, run_root: Path) -> bytes:
     """Read one regular file through a descriptor opened without symlink follow."""
 
     safe_path = _safe_existing_file(path, run_root)
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    root = run_root.resolve()
+    relative = safe_path.relative_to(root)
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    file_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    directory_descriptor = -1
     try:
-        descriptor = os.open(safe_path, flags)
+        directory_descriptor = os.open(root, directory_flags)
+        for component in relative.parts[:-1]:
+            child_descriptor = os.open(
+                component,
+                directory_flags,
+                dir_fd=directory_descriptor,
+            )
+            os.close(directory_descriptor)
+            directory_descriptor = child_descriptor
+        descriptor = os.open(relative.parts[-1], file_flags, dir_fd=directory_descriptor)
     except OSError as exc:
         raise ValueError("safe_open_failed") from exc
+    finally:
+        if directory_descriptor != -1:
+            os.close(directory_descriptor)
     try:
         metadata = os.fstat(descriptor)
         if not stat.S_ISREG(metadata.st_mode):
@@ -294,7 +315,10 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
                 target = _safe_existing_file(base / ref["path"], run_root)
                 artifact_bytes = _safe_read_bytes(target, run_root)
                 valid = (
-                    ref.get("bytes") == len(artifact_bytes)
+                    kind in REQUIRED_ARTIFACT_KINDS
+                    and target.suffix
+                    == {"rendered": ".md", "revision": ".json", "source_pack": ".json"}.get(kind)
+                    and ref.get("bytes") == len(artifact_bytes)
                     and ref.get("sha256") == hashlib.sha256(artifact_bytes).hexdigest()
                 )
                 if kind == "rendered":
@@ -303,6 +327,10 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
                     document = json.loads(artifact_bytes.decode("utf-8"))
                     artifact_documents[kind] = document
                     valid = valid and document.get("url") == row.get("url")
+                    if kind == "revision":
+                        valid = valid and isinstance(document.get("revision_id"), str)
+                    if kind == "source_pack":
+                        valid = valid and isinstance(document.get("source_pack_id"), str)
                     if row.get("slug") is not None:
                         valid = valid and document.get("slug") == row.get("slug")
                     if kind == "revision" and row.get("revision_id") is not None:
