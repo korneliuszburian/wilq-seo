@@ -1235,6 +1235,10 @@ def verify_claim_lineage(run_root: Path) -> dict[str, Any]:
             unknown_evidence_ids += sum(
                 isinstance(item, str) and item not in known_evidence_ids for item in evidence_ids
             )
+        if not isinstance(evidence_ids, list) or any(
+            not isinstance(item, str) or not item for item in evidence_ids
+        ):
+            invalid_required_fields += 1
         for key in EXPECTED_CLAIM_KEY_FIELDS:
             if not isinstance(row.get(key), str) or not row[key]:
                 invalid_required_fields += 1
