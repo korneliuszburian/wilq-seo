@@ -70,9 +70,9 @@ REQUIRED_SAFETY_FIELDS = {
 def _safe_existing_file(path: Path, run_root: Path) -> Path:
     """Return a regular, non-symlink file after lexical containment checks."""
 
-    root = run_root.resolve()
-    if run_root.is_symlink():
+    if _has_symlink_component(run_root):
         raise ValueError("run_root_is_symlink")
+    root = run_root.resolve()
     candidate = Path(os.path.abspath(path))
     try:
         relative = candidate.relative_to(root)
@@ -92,9 +92,24 @@ def _safe_existing_file(path: Path, run_root: Path) -> Path:
     return candidate
 
 
+def _has_symlink_component(path: Path) -> bool:
+    candidate = Path(os.path.abspath(path))
+    current = Path(candidate.anchor)
+    for part in candidate.parts[1:]:
+        current /= part
+        try:
+            if stat.S_ISLNK(os.lstat(current).st_mode):
+                return True
+        except OSError:
+            return False
+    return False
+
+
 def _safe_tree_entry(path: Path, run_root: Path) -> bool:
     """Check a tree entry without opening it; symlinks are never trusted."""
 
+    if _has_symlink_component(run_root):
+        return False
     root = run_root.resolve()
     try:
         candidate = Path(os.path.abspath(path))
@@ -218,7 +233,9 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
         if required and set(refs) != REQUIRED_ARTIFACT_KINDS:
             artifact_invalid += 1
         base = path.parent / str(row["artifact_base"])
-        for ref in refs.values():
+        artifact_documents: dict[str, dict[str, Any]] = {}
+        rendered_stems: list[str] = []
+        for kind, ref in refs.items():
             artifact_checked += 1
             if not isinstance(ref, dict) or not isinstance(ref.get("path"), str):
                 artifact_invalid += 1
@@ -228,10 +245,41 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
                 valid = ref.get("bytes") == os.stat(target).st_size and ref.get("sha256") == sha256(
                     target, run_root
                 )
+                if kind == "rendered":
+                    rendered_stems.append(target.stem)
+                elif kind in {"revision", "source_pack"}:
+                    document = json.loads(_safe_read_text(target, run_root))
+                    artifact_documents[kind] = document
+                    valid = valid and document.get("url") == row.get("url")
+                    if row.get("slug") is not None:
+                        valid = valid and document.get("slug") == row.get("slug")
+                    if kind == "revision" and row.get("revision_id") is not None:
+                        valid = valid and document.get("revision_id") == row.get("revision_id")
+                    if kind == "source_pack" and row.get("source_pack_id") is not None:
+                        valid = valid and document.get("source_pack_id") == row.get(
+                            "source_pack_id"
+                        )
             except (OSError, ValueError):
                 valid = False
             if not valid:
                 artifact_invalid += 1
+        owner_slug = row.get("slug")
+        if owner_slug is None:
+            owner_slug = next(
+                (
+                    document.get("slug")
+                    for document in artifact_documents.values()
+                    if isinstance(document.get("slug"), str)
+                ),
+                None,
+            )
+        if owner_slug is None or any(stem != owner_slug for stem in rendered_stems):
+            artifact_invalid += 1
+        if any(
+            document.get("slug") != owner_slug or document.get("url") != row.get("url")
+            for document in artifact_documents.values()
+        ):
+            artifact_invalid += 1
     return {
         "rows": len(rows),
         "self_hash_valid": self_hash_valid,
@@ -443,12 +491,14 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
     revisions = 0
     claim_pointers = 0
     for row in bundles:
+        target = by_url.get(row.get("url"))
         target_ref = row.get("target_ref") or {}
         selector = target_ref.get("selector") or {}
         if (
             target_ref.get("path") == "target-manifest.jsonl"
             and selector.get("url") == row.get("url")
-            and selector.get("url") in by_url
+            and target is not None
+            and target.get("slug") == row.get("slug")
         ):
             selectors += 1
         revision_ref = row.get("revision_ref") or {}
@@ -461,7 +511,24 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
             revision_path = None
             revision_valid = False
         if revision_valid:
-            revisions += 1
+            revision: dict[str, Any] | None
+            try:
+                revision = json.loads(_safe_read_text(revision_path, run_root))
+            except (OSError, ValueError, json.JSONDecodeError):
+                revision = None
+                revision_valid = False
+            if isinstance(revision, dict):
+                revision_valid = revision.get("url") == row.get("url") and revision.get(
+                    "slug"
+                ) == row.get("slug")
+                if target is not None:
+                    revision_valid = revision_valid and revision.get("revision_id") == target.get(
+                        "revision_id"
+                    )
+            if revision_valid:
+                revisions += 1
+        else:
+            revision = None
         audit_ref = row.get("audit_ref") or {}
         try:
             audit_path = _safe_existing_file(target_dir / str(audit_ref.get("path", "")), run_root)
@@ -472,9 +539,13 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
             and audit_path is not None
             and audit_ref.get("json_pointer") == "/claim_ledger"
         ):
-            revision = json.loads(_safe_read_text(audit_path, run_root))
-            if audit_ref.get("claim_ledger_digest") == canonical_digest(
-                revision.get("claim_ledger", [])
+            if not isinstance(revision, dict):
+                revision = json.loads(_safe_read_text(audit_path, run_root))
+            if (
+                audit_ref.get("claim_ledger_digest")
+                == canonical_digest(revision.get("claim_ledger", []))
+                and revision.get("url") == row.get("url")
+                and revision.get("slug") == row.get("slug")
             ):
                 claim_pointers += 1
     valid = (
@@ -611,7 +682,36 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("bundle", type=Path)
     args = parser.parse_args()
-    run_root = args.bundle.resolve()
+    if _has_symlink_component(args.bundle):
+        print(
+            json.dumps(
+                {
+                    "schema_version": "wilq_content_bundle_verification_v1",
+                    "status": "fail",
+                    "bundle": str(args.bundle),
+                    "error": "unsafe_bundle_path",
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 1
+    try:
+        run_root = args.bundle.resolve(strict=True)
+    except OSError:
+        print(
+            json.dumps(
+                {
+                    "schema_version": "wilq_content_bundle_verification_v1",
+                    "status": "fail",
+                    "bundle": str(args.bundle),
+                    "error": "bundle_not_found",
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 1
     manifests = {
         str(path.relative_to(run_root)): verify_projection(path, run_root)
         for path in (run_root / relative for relative in REQUIRED_PROJECTION_FILES)
