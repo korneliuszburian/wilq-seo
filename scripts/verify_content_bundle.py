@@ -189,6 +189,24 @@ def _open_directory_no_follow(path: Path, flags: int) -> int:
         raise
 
 
+def _pin_run_root(path: Path) -> Path:
+    if _has_symlink_component(path):
+        raise ValueError("run_root_is_symlink")
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    descriptor = _open_directory_no_follow(path, flags)
+    try:
+        return Path(os.readlink(f"/proc/self/fd/{descriptor}")).resolve(strict=True)
+    except OSError as exc:
+        raise ValueError("run_root_pin_failed") from exc
+    finally:
+        os.close(descriptor)
+
+
 def sha256(path: Path, run_root: Path | None = None) -> str:
     if run_root is None:
         return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -802,7 +820,11 @@ def verify_flags(run_root: Path) -> dict[str, int]:
                             "qa/autonomous-adjudication/completion-audit.json",
                         }
                     )
-                    if not count_exception and not isinstance(flag, bool):
+                    if count_exception:
+                        if not isinstance(flag, int) or isinstance(flag, bool) or flag != 0:
+                            invalid_paths += 1
+                            continue
+                    elif not isinstance(flag, bool):
                         invalid_paths += 1
                         continue
                     if flag is True:
@@ -924,7 +946,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("bundle", type=Path)
     args = parser.parse_args()
-    if _has_symlink_component(args.bundle):
+    try:
+        run_root = _pin_run_root(args.bundle)
+    except ValueError:
         print(
             json.dumps(
                 {
@@ -938,8 +962,6 @@ def main() -> int:
             )
         )
         return 1
-    try:
-        run_root = args.bundle.resolve(strict=True)
     except OSError:
         print(
             json.dumps(
