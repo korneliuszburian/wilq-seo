@@ -194,8 +194,10 @@ def verify_sha_manifest(root: Path) -> dict[str, Any]:
         expected.add(relative)
         candidate = Path(relative)
         try:
-            path = _safe_existing_file(root / candidate, root)
-            valid = sha256(path, root) == expected_sha
+            valid = not candidate.is_absolute()
+            if valid:
+                path = _safe_existing_file(root / candidate, root)
+                valid = sha256(path, root) == expected_sha
         except ValueError:
             valid = False
         if not valid:
@@ -245,7 +247,8 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
                 self_hash_mismatch += 1
         refs = row.get("artifact_refs")
         required = (
-            path.name in {"content-manifest.jsonl", "target-manifest.jsonl"}
+            path.name
+            in {"content-manifest.jsonl", "keep-content-manifest.jsonl", "target-manifest.jsonl"}
             or row.get("final_disposition") == "keep"
         )
         if refs is None:
@@ -262,12 +265,29 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
             for key in ("url", "slug", "revision_id", "source_pack_id")
         ):
             artifact_invalid += 1
-        base = path.parent / str(row["artifact_base"])
+        if path.name == "keep-content-manifest.jsonl" and any(
+            not isinstance(row.get(key), str) or not row[key] for key in ("url", "revision_id")
+        ):
+            artifact_invalid += 1
+        if path.name == "robot-manifest-v2.jsonl" and (
+            not isinstance(row.get("url"), str)
+            or not row["url"]
+            or not isinstance(row.get("final_disposition"), str)
+            or row["final_disposition"] not in EXPECTED_DISPOSITIONS
+        ):
+            artifact_invalid += 1
+        base_value = str(row["artifact_base"])
+        if Path(base_value).is_absolute():
+            artifact_invalid += 1
+        base = path.parent / base_value
         artifact_documents: dict[str, dict[str, Any]] = {}
         rendered_stems: list[str] = []
         for kind, ref in refs.items():
             artifact_checked += 1
             if not isinstance(ref, dict) or not isinstance(ref.get("path"), str):
+                artifact_invalid += 1
+                continue
+            if Path(ref["path"]).is_absolute():
                 artifact_invalid += 1
                 continue
             try:
@@ -412,12 +432,17 @@ def verify_cta_refs(run_root: Path) -> dict[str, int]:
             continue
         checked += 1
         base = ref.get("path_base")
+        ref_path = ref.get("path")
+        if (
+            not isinstance(base, str)
+            or Path(base).is_absolute()
+            or not isinstance(ref_path, str)
+            or Path(ref_path).is_absolute()
+        ):
+            invalid += 1
+            continue
         try:
-            target = (
-                _safe_existing_file(owner.parent / base / str(ref.get("path", "")), run_root)
-                if isinstance(base, str)
-                else None
-            )
+            target = _safe_existing_file(owner.parent / base / ref_path, run_root)
         except (OSError, ValueError):
             target = None
         if expected is None or target != cta_path or ref.get("sha256") != expected:
@@ -556,11 +581,19 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
         ):
             selectors += 1
         revision_ref = row.get("revision_ref") or {}
+        revision_ref_path = revision_ref.get("path")
+        if not isinstance(revision_ref_path, str) or Path(revision_ref_path).is_absolute():
+            revision_path = None
+            revision_valid = False
+        else:
+            revision_path = None
+            revision_valid = False
         try:
-            revision_path = _safe_existing_file(
-                target_dir / str(revision_ref.get("path", "")), run_root
-            )
-            revision_valid = revision_ref.get("content_digest") == sha256(revision_path, run_root)
+            if revision_path is None and isinstance(revision_ref_path, str):
+                revision_path = _safe_existing_file(target_dir / revision_ref_path, run_root)
+                revision_valid = revision_ref.get("content_digest") == sha256(
+                    revision_path, run_root
+                )
         except (OSError, ValueError):
             revision_path = None
             revision_valid = False
@@ -587,8 +620,13 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
         else:
             revision = None
         audit_ref = row.get("audit_ref") or {}
+        audit_ref_path = audit_ref.get("path")
         try:
-            audit_path = _safe_existing_file(target_dir / str(audit_ref.get("path", "")), run_root)
+            audit_path = (
+                _safe_existing_file(target_dir / audit_ref_path, run_root)
+                if isinstance(audit_ref_path, str) and not Path(audit_ref_path).is_absolute()
+                else None
+            )
         except (OSError, ValueError):
             audit_path = None
         if (
@@ -682,14 +720,27 @@ def verify_flags(run_root: Path) -> dict[str, int]:
             required_fields += 1
             if _read_nested(documents[0], dotted_path) is not False:
                 invalid_paths += 1
-        stack: list[object] = list(documents)
+        stack: list[tuple[object, str | None]] = [(document, None) for document in documents]
         while stack:
-            value = stack.pop()
+            value, parent_key = stack.pop()
             if isinstance(value, dict):
-                true_flags += sum(value.get(key) is True for key in SAFETY_KEYS)
-                stack.extend(item for item in value.values() if isinstance(item, (dict, list)))
+                for key, flag in value.items():
+                    if key not in SAFETY_KEYS:
+                        continue
+                    if (
+                        parent_key == "safety"
+                        or parent_key == "interpretation"
+                        and key == "production_ready"
+                    ) and not isinstance(flag, bool):
+                        invalid_paths += 1
+                        continue
+                    if flag is True:
+                        true_flags += 1
+                stack.extend(
+                    (item, key) for key, item in value.items() if isinstance(item, (dict, list))
+                )
             elif isinstance(value, list):
-                stack.extend(value)
+                stack.extend((item, parent_key) for item in value)
     return {
         "true_flags": true_flags,
         "invalid_paths": invalid_paths,
@@ -701,6 +752,13 @@ def verify_delivery_layout(run_root: Path) -> dict[str, Any]:
     forbidden: list[str] = []
     for path in run_root.rglob("*"):
         relative = path.relative_to(run_root).as_posix()
+        if any(
+            part.startswith(("sol-raw", "raw-trace", "model-trace"))
+            or part in {"batch-inputs", "batch_inputs"}
+            for part in Path(relative).parts
+        ):
+            forbidden.append(relative)
+            continue
         if path.is_symlink() or (not path.is_dir() and not path.is_file()):
             forbidden.append(relative)
             continue
@@ -713,6 +771,38 @@ def verify_delivery_layout(run_root: Path) -> dict[str, Any]:
         if path.name in {"batch-inputs", "batch_inputs"}:
             forbidden.append(relative)
     return {"forbidden_paths": sorted(set(forbidden)), "valid": not forbidden}
+
+
+def verify_claim_lineage(run_root: Path) -> dict[str, int]:
+    path = run_root / "qa/autonomous-adjudication/adjudicated-claim-lineage.jsonl"
+    try:
+        rows = load_jsonl(path, run_root)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return {
+            "rows": 0,
+            "rendered_without_evidence": 1,
+            "approved_without_evidence": 1,
+            "approved_without_rendered": 1,
+        }
+    rendered_without_evidence = 0
+    approved_without_evidence = 0
+    approved_without_rendered = 0
+    for row in rows:
+        evidence_ids = row.get("evidence_ids")
+        has_evidence = isinstance(evidence_ids, list) and bool(evidence_ids)
+        if row.get("rendered") is True and not has_evidence:
+            rendered_without_evidence += 1
+        if row.get("approved_for_rendering") is True:
+            if not has_evidence:
+                approved_without_evidence += 1
+            if row.get("rendered") is not True:
+                approved_without_rendered += 1
+    return {
+        "rows": len(rows),
+        "rendered_without_evidence": rendered_without_evidence,
+        "approved_without_evidence": approved_without_evidence,
+        "approved_without_rendered": approved_without_rendered,
+    }
 
 
 def verify_counts(run_root: Path) -> dict[str, Any]:
@@ -788,6 +878,7 @@ def main() -> int:
     cta = verify_cta_refs(run_root)
     blockers = verify_blockers(run_root)
     flags = verify_flags(run_root)
+    claims = verify_claim_lineage(run_root)
     counts = verify_counts(run_root)
     robot = load_jsonl(run_root / "final/robot-manifest-v2.jsonl", run_root)
     adjudicated = load_jsonl(
@@ -808,6 +899,9 @@ def main() -> int:
         and cta["invalid"] == 0
         and cta["missing"] == 0
         and blockers["invalid"] == 0
+        and claims["rendered_without_evidence"] == 0
+        and claims["approved_without_evidence"] == 0
+        and claims["approved_without_rendered"] == 0
         and flags["true_flags"] == 0
         and flags["invalid_paths"] == 0
         and flags["required_fields"] == sum(len(paths) for paths in REQUIRED_SAFETY_FIELDS.values())
@@ -838,6 +932,7 @@ def main() -> int:
         "projections": manifests,
         "cta_refs": cta,
         "blockers": blockers,
+        "claim_lineage": claims,
         "flags": flags,
         "counts": counts,
         "decision_projection": decision_projection,
