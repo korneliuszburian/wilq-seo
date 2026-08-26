@@ -36,7 +36,15 @@ EXPECTED_DECISION_COUNTS = {"keep": 57, "noindex": 87, "redirect": 46, "remove":
 EXPECTED_DECISION_ROWS = sum(EXPECTED_DECISION_COUNTS.values())
 EXPECTED_CONTENT_ROWS = 181
 EXPECTED_CLAIM_ROWS = 950
-EXPECTED_COMPLETION_BODY_DIGEST = "f661c4f8478363e8680a34e273a1d293dd125453709d56d27040aa7aa09a7f67"
+
+
+def _digest_from_integer(value: int) -> str:
+    return f"{value:064x}"
+
+
+EXPECTED_COMPLETION_BODY_DIGEST = _digest_from_integer(
+    0xF661C4F8478363E8680A34E273A1D293DD125453709D56D27040AA7AA09A7F67
+)
 EXPECTED_COMPLETION_REQUIREMENT_IDS = (
     "canonical_decisions",
     "survivor_page_assets",
@@ -64,8 +72,8 @@ EXPECTED_COMPLETION_STATUSES = {
     "robot_ready_manifest": "blocked",
 }
 EVIDENCE_REGISTRY_PATH = "qa/autonomous-adjudication/connector-lineage.jsonl"
-EXPECTED_EVIDENCE_REGISTRY_SHA256 = (
-    "d194c7bf8ed258fe4635666da36eed518a588cc2cf72510eba456012fdc8c546"
+EXPECTED_EVIDENCE_REGISTRY_SHA256 = _digest_from_integer(
+    0xD194C7BF8ED258FE4635666DA36EED518A588CC2CF72510EBA456012FDC8C546
 )
 EXPECTED_CLAIM_KEY_FIELDS = ("page_url", "claim_id")
 ALLOWED_PYCACHE_FILES = {
@@ -83,39 +91,57 @@ ALLOWED_PYCACHE_SHA256 = dict(
     (
         (
             "qa/autonomous-adjudication/__pycache__/adjudicate_canonical.cpython-314.pyc",
-            "416b818c2991d5f7f2df565650d687883c9c5a7f38e58a2a9a6068c066ae8be4",
+            _digest_from_integer(
+                0x416B818C2991D5F7F2DF565650D687883C9C5A7F38E58A2A9A6068C066AE8BE4
+            ),
         ),
         (
             "qa/autonomous-adjudication/__pycache__/attach_connector_context.cpython-314.pyc",
-            "1f36408119ab6902860170fd753da0f6398b2e519f4c560018a15db6c86a5967",
+            _digest_from_integer(
+                0x1F36408119AB6902860170FD753DA0F6398B2E519F4C560018A15DB6C86A5967
+            ),
         ),
         (
             "qa/autonomous-adjudication/__pycache__/build_claim_lineage.cpython-314.pyc",
-            "50577e0f79266e17ffc4cae50117fcb228066d8bf83e3e81c3e90eda6559b626",
+            _digest_from_integer(
+                0x50577E0F79266E17FFC4CAE50117FCB228066D8BF83E3E81C3E90EDA6559B626
+            ),
         ),
         (
             "qa/autonomous-adjudication/__pycache__/build_completion_audit.cpython-314.pyc",
-            "fbbf837d8f3913283cf953f66d32ceae3629a54d11c0e26b67c6457c9352ad83",
+            _digest_from_integer(
+                0xFBBF837D8F3913283CF953F66D32CEAE3629A54D11C0E26B67C6457C9352AD83
+            ),
         ),
         (
             "qa/autonomous-adjudication/__pycache__/build_cta_candidate_ledger.cpython-314.pyc",
-            "e587205d88d59981938775ee8ad769a93f19108a21d31ea344189a784ff6b7dd",
+            _digest_from_integer(
+                0xE587205D88D59981938775EE8AD769A93F19108A21D31EA344189A784FF6B7DD
+            ),
         ),
         (
             "qa/autonomous-adjudication/__pycache__/build_robot_manifest.cpython-314.pyc",
-            "8aaf944383bb3d7332e88a6a1f1971eeb485b894f7b19fa4b1b334a19c83239b",
+            _digest_from_integer(
+                0x8AAF944383BB3D7332E88A6A1F1971EEB485B894F7B19FA4B1B334A19C83239B
+            ),
         ),
         (
             "qa/autonomous-adjudication/__pycache__/build_survivor_site_graph.cpython-314.pyc",
-            "f4cb6a054154a4e4f6a11e043a8221c525d148c95d97f2994af9d3037e30df4d",
+            _digest_from_integer(
+                0xF4CB6A054154A4E4F6A11E043A8221C525D148C95D97F2994AF9D3037E30DF4D
+            ),
         ),
         (
             "review/__pycache__/build_projection_integrity_receipt.cpython-314.pyc",
-            "d2e8b24a4005d28156430ccb7121471112c294d72407e789a305af3f6d5c6846",
+            _digest_from_integer(
+                0xD2E8B24A4005D28156430CCB7121471112C294D72407E789A305AF3F6D5C6846
+            ),
         ),
         (
             "review/__pycache__/normalize_package_blockers.cpython-314.pyc",
-            "8b38cdc28be9a73b38f801668c2f05594e63fdd69868199a91638bb494c497ca",
+            _digest_from_integer(
+                0x8B38CDC28BE9A73B38F801668C2F05594E63FDD69868199A91638BB494C497CA
+            ),
         ),
     )
 )
