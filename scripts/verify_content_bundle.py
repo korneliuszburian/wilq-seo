@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import stat
 from collections import Counter
 from pathlib import Path
@@ -147,7 +148,7 @@ def _safe_read_bytes(path: Path, run_root: Path) -> bytes:
     file_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
     directory_descriptor = -1
     try:
-        directory_descriptor = os.open(root, directory_flags)
+        directory_descriptor = _open_directory_no_follow(root, directory_flags)
         for component in relative.parts[:-1]:
             child_descriptor = os.open(
                 component,
@@ -172,6 +173,20 @@ def _safe_read_bytes(path: Path, run_root: Path) -> bytes:
     finally:
         if descriptor != -1:
             os.close(descriptor)
+
+
+def _open_directory_no_follow(path: Path, flags: int) -> int:
+    candidate = Path(os.path.abspath(path))
+    descriptor = os.open(candidate.anchor, flags)
+    try:
+        for component in candidate.parts[1:]:
+            child_descriptor = os.open(component, flags, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = child_descriptor
+        return descriptor
+    except OSError:
+        os.close(descriptor)
+        raise
 
 
 def sha256(path: Path, run_root: Path | None = None) -> str:
@@ -249,13 +264,20 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
             "self_hash_mismatch": 0,
             "artifact_checked": 0,
             "artifact_invalid": 1,
+            "duplicate_urls": 0,
         }
     self_hash_valid = 0
     self_hash_missing = 0
     self_hash_mismatch = 0
     artifact_checked = 0
     artifact_invalid = 0
+    urls: list[str] = []
     for row in rows:
+        url = row.get("url")
+        if not isinstance(url, str) or not url:
+            artifact_invalid += 1
+        else:
+            urls.append(url)
         expected = row.get("manifest_record_sha256")
         if not isinstance(expected, str):
             self_hash_missing += 1
@@ -323,6 +345,16 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
                 )
                 if kind == "rendered":
                     rendered_stems.append(target.stem)
+                    revision_marker = re.search(
+                        rb"^Rewizja:\s+`([^`]+)`", artifact_bytes, flags=re.MULTILINE
+                    )
+                    valid = valid and revision_marker is not None
+                    if row.get("revision_id") is not None:
+                        valid = (
+                            valid
+                            and revision_marker is not None
+                            and revision_marker.group(1).decode("utf-8") == row.get("revision_id")
+                        )
                 elif kind in {"revision", "source_pack"}:
                     document = json.loads(artifact_bytes.decode("utf-8"))
                     artifact_documents[kind] = document
@@ -367,6 +399,7 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
         "self_hash_mismatch": self_hash_mismatch,
         "artifact_checked": artifact_checked,
         "artifact_invalid": artifact_invalid,
+        "duplicate_urls": len(urls) - len(set(urls)),
     }
 
 
@@ -751,26 +784,36 @@ def verify_flags(run_root: Path) -> dict[str, int]:
             required_fields += 1
             if _read_nested(documents[0], dotted_path) is not False:
                 invalid_paths += 1
-        stack: list[tuple[object, str | None]] = [(document, None) for document in documents]
+        stack: list[tuple[object, tuple[str, ...]]] = [(document, ()) for document in documents]
         while stack:
-            value, parent_key = stack.pop()
+            value, value_path = stack.pop()
             if isinstance(value, dict):
                 for key, flag in value.items():
                     if key == "path" and isinstance(flag, str) and Path(flag).is_absolute():
                         invalid_paths += 1
                     if key not in SAFETY_KEYS:
                         continue
-                    count_exception = key == "robot_ready" and parent_key == "proof"
+                    count_exception = (
+                        key == "robot_ready"
+                        and value_path == ("requirements", "10", "proof")
+                        and relative
+                        in {
+                            "final/completion-audit.json",
+                            "qa/autonomous-adjudication/completion-audit.json",
+                        }
+                    )
                     if not count_exception and not isinstance(flag, bool):
                         invalid_paths += 1
                         continue
                     if flag is True:
                         true_flags += 1
                 stack.extend(
-                    (item, key) for key, item in value.items() if isinstance(item, (dict, list))
+                    (item, value_path + (key,))
+                    for key, item in value.items()
+                    if isinstance(item, (dict, list))
                 )
             elif isinstance(value, list):
-                stack.extend((item, parent_key) for item in value)
+                stack.extend((item, value_path + (str(index),)) for index, item in enumerate(value))
     return {
         "true_flags": true_flags,
         "invalid_paths": invalid_paths,
@@ -785,6 +828,10 @@ def verify_delivery_layout(run_root: Path) -> dict[str, Any]:
         if any(
             part.startswith(("sol-raw", "raw-trace", "model-trace"))
             or part in {"batch-inputs", "batch_inputs"}
+            or part == ".env"
+            or (part.startswith(".env.") and part != ".env.example")
+            or "private" in part.lower()
+            or "packet" in part.lower()
             for part in Path(relative).parts
         ):
             forbidden.append(relative)
@@ -936,6 +983,7 @@ def main() -> int:
             for value in manifests.values()
         )
         and all(value["artifact_invalid"] == 0 for value in manifests.values())
+        and all(value["duplicate_urls"] == 0 for value in manifests.values())
         and cta["invalid"] == 0
         and cta["missing"] == 0
         and blockers["invalid"] == 0
