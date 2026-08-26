@@ -129,12 +129,34 @@ def _safe_tree_entry(path: Path, run_root: Path) -> bool:
 
 
 def _safe_read_text(path: Path, run_root: Path) -> str:
-    return _safe_existing_file(path, run_root).read_text(encoding="utf-8")
+    return _safe_read_bytes(path, run_root).decode("utf-8")
+
+
+def _safe_read_bytes(path: Path, run_root: Path) -> bytes:
+    """Read one regular file through a descriptor opened without symlink follow."""
+
+    safe_path = _safe_existing_file(path, run_root)
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    try:
+        descriptor = os.open(safe_path, flags)
+    except OSError as exc:
+        raise ValueError("safe_open_failed") from exc
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ValueError("regular_file_required")
+        with os.fdopen(descriptor, "rb", closefd=True) as stream:
+            descriptor = -1
+            return stream.read()
+    finally:
+        if descriptor != -1:
+            os.close(descriptor)
 
 
 def sha256(path: Path, run_root: Path | None = None) -> str:
-    safe_path = _safe_existing_file(path, run_root) if run_root is not None else path
-    return hashlib.sha256(safe_path.read_bytes()).hexdigest()
+    if run_root is None:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    return hashlib.sha256(_safe_read_bytes(path, run_root)).hexdigest()
 
 
 def canonical_digest(value: object) -> str:
@@ -182,6 +204,9 @@ def verify_sha_manifest(root: Path) -> dict[str, Any]:
     for path in root.rglob("*"):
         relative = path.relative_to(root).as_posix()
         if path.is_symlink():
+            errors.append(relative)
+            continue
+        if not path.is_dir() and not path.is_file():
             errors.append(relative)
             continue
         if path.is_file() and path.name != "SHA256SUMS" and "__pycache__" not in path.parts:
@@ -232,6 +257,11 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
             continue
         if required and set(refs) != REQUIRED_ARTIFACT_KINDS:
             artifact_invalid += 1
+        if path.name in {"content-manifest.jsonl", "target-manifest.jsonl"} and any(
+            not isinstance(row.get(key), str) or not row[key]
+            for key in ("url", "slug", "revision_id", "source_pack_id")
+        ):
+            artifact_invalid += 1
         base = path.parent / str(row["artifact_base"])
         artifact_documents: dict[str, dict[str, Any]] = {}
         rendered_stems: list[str] = []
@@ -242,13 +272,15 @@ def verify_projection(path: Path, run_root: Path) -> dict[str, int]:
                 continue
             try:
                 target = _safe_existing_file(base / ref["path"], run_root)
-                valid = ref.get("bytes") == os.stat(target).st_size and ref.get("sha256") == sha256(
-                    target, run_root
+                artifact_bytes = _safe_read_bytes(target, run_root)
+                valid = (
+                    ref.get("bytes") == len(artifact_bytes)
+                    and ref.get("sha256") == hashlib.sha256(artifact_bytes).hexdigest()
                 )
                 if kind == "rendered":
                     rendered_stems.append(target.stem)
                 elif kind in {"revision", "source_pack"}:
-                    document = json.loads(_safe_read_text(target, run_root))
+                    document = json.loads(artifact_bytes.decode("utf-8"))
                     artifact_documents[kind] = document
                     valid = valid and document.get("url") == row.get("url")
                     if row.get("slug") is not None:
@@ -404,11 +436,29 @@ def verify_decision_projection(
     robot: list[dict[str, Any]],
     adjudicated: list[dict[str, Any]],
 ) -> dict[str, int]:
-    expected = {row.get("url"): row.get("final_disposition") for row in adjudicated}
-    actual = {row.get("url"): row.get("final_disposition") for row in robot}
+    expected = {
+        row.get("url"): row.get("final_disposition")
+        for row in adjudicated
+        if isinstance(row.get("url"), str)
+    }
+    actual = {
+        row.get("url"): row.get("final_disposition")
+        for row in robot
+        if isinstance(row.get("url"), str)
+    }
+    expected_urls = [row.get("url") for row in adjudicated]
+    actual_urls = [row.get("url") for row in robot]
+    expected_string_urls = {url for url in expected_urls if isinstance(url, str)}
+    actual_string_urls = {url for url in actual_urls if isinstance(url, str)}
     return {
         "expected": len(expected),
         "actual": len(actual),
+        "expected_rows": len(adjudicated),
+        "actual_rows": len(robot),
+        "expected_duplicates": len(expected_urls) - len(expected_string_urls),
+        "actual_duplicates": len(actual_urls) - len(actual_string_urls),
+        "invalid_expected_urls": sum(not isinstance(url, str) or not url for url in expected_urls),
+        "invalid_actual_urls": sum(not isinstance(url, str) or not url for url in actual_urls),
         "matching": sum(actual.get(url) == disposition for url, disposition in expected.items()),
         "missing": len(set(expected) - set(actual)),
         "unexpected": len(set(actual) - set(expected)),
@@ -486,7 +536,11 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
     target_dir = run_root / "target-manifest"
     targets = load_jsonl(target_dir / "target-manifest.jsonl", run_root)
     bundles = load_jsonl(target_dir / "robot-bundle-manifest.jsonl", run_root)
-    by_url = {row.get("url"): row for row in targets}
+    by_url = {row.get("url"): row for row in targets if isinstance(row.get("url"), str)}
+    target_urls = [row.get("url") for row in targets]
+    bundle_urls = [row.get("url") for row in bundles]
+    target_url_set = {url for url in target_urls if isinstance(url, str)}
+    bundle_url_set = {url for url in bundle_urls if isinstance(url, str)}
     selectors = 0
     revisions = 0
     claim_pointers = 0
@@ -521,6 +575,9 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
                 revision_valid = revision.get("url") == row.get("url") and revision.get(
                     "slug"
                 ) == row.get("slug")
+                revision_valid = revision_valid and revision.get("revision_id") == revision_ref.get(
+                    "revision_id"
+                )
                 if target is not None:
                     revision_valid = revision_valid and revision.get("revision_id") == target.get(
                         "revision_id"
@@ -550,6 +607,9 @@ def verify_target_bundle(run_root: Path) -> dict[str, int | bool]:
                 claim_pointers += 1
     valid = (
         len(targets) == len(by_url) == len(bundles)
+        and len(target_url_set) == len(targets)
+        and len(bundle_url_set) == len(bundles)
+        and target_url_set == bundle_url_set
         and selectors == len(bundles)
         and revisions == len(bundles)
         and claim_pointers == len(bundles)
@@ -641,6 +701,9 @@ def verify_delivery_layout(run_root: Path) -> dict[str, Any]:
     forbidden: list[str] = []
     for path in run_root.rglob("*"):
         relative = path.relative_to(run_root).as_posix()
+        if path.is_symlink() or (not path.is_dir() and not path.is_file()):
+            forbidden.append(relative)
+            continue
         if path.is_file() and (
             path.name.startswith("sol-raw")
             or path.name.startswith("raw-trace")
@@ -663,13 +726,15 @@ def verify_counts(run_root: Path) -> dict[str, Any]:
     )
     counts = Counter(row.get("final_disposition") for row in robot)
     expected_dispositions = Counter(row.get("final_disposition") for row in adjudicated)
+    robot_urls = {row.get("url") for row in robot if isinstance(row.get("url"), str)}
+    adjudicated_urls = {row.get("url") for row in adjudicated if isinstance(row.get("url"), str)}
     return {
         "decisions": len(robot),
         "decision_counts": dict(counts),
         "expected_decisions": len(adjudicated),
         "expected_decision_counts": dict(expected_dispositions),
         "decision_projection_matches": dict(counts) == dict(expected_dispositions)
-        and {row.get("url") for row in robot} == {row.get("url") for row in adjudicated},
+        and robot_urls == adjudicated_urls,
         "keep": len(keep),
         "claims": len(claims),
         "rendered_claims": sum(row.get("rendered") is True for row in claims),
@@ -748,6 +813,12 @@ def main() -> int:
         and flags["required_fields"] == sum(len(paths) for paths in REQUIRED_SAFETY_FIELDS.values())
         and counts["decisions"] == sum(counts["decision_counts"].values())
         and counts["decision_projection_matches"]
+        and decision_projection["expected_rows"] == decision_projection["expected"]
+        and decision_projection["actual_rows"] == decision_projection["actual"]
+        and decision_projection["expected_duplicates"] == 0
+        and decision_projection["actual_duplicates"] == 0
+        and decision_projection["invalid_expected_urls"] == 0
+        and decision_projection["invalid_actual_urls"] == 0
         and decision_projection["matching"] == decision_projection["expected"]
         and decision_projection["missing"] == 0
         and decision_projection["unexpected"] == 0
