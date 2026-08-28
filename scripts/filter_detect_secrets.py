@@ -15,14 +15,23 @@ BASE64_HIGH_ENTROPY = "Base64 High Entropy String"
 
 ACF_INVENTORY = "docs/content-acf-inventory-20260828.json"
 AUTHORING_INVENTORY = "docs/content-dev-authoring-inventory-20260828.json"
+KEEP_ELIGIBILITY_CONTEXT = "docs/content-keep-eligibility-context-20260828.json"
+KEEP_ELIGIBILITY = "docs/content-keep-eligibility-20260828.json"
 STATE_JOURNAL = "docs/content-dev-state-journal-20260828.json"
 
 LOWER_HEX_64 = re.compile(r"[0-9a-f]{64}")
 LOWER_HEX_40 = re.compile(r"[0-9a-f]{40}")
 SAFE_MUTATION_AUDIT_ID = re.compile(r"mutation_act_apply_wordpress_draft_handoff_[0-9a-f]{12}")
+SAFE_REGULATORY_EVIDENCE_ID = re.compile(r"ev_regulatory_source_review_[0-9a-f]{24}")
 
 ACF_DIGEST_KEYS = ("acf_digest", "content_sha256", "title_sha256")
 AUTHORING_SOURCE_KEYS = ("acf", "journal", "ledger", "sitemap")
+KEEP_ELIGIBILITY_SOURCE_KEYS = (
+    "authoring_inventory",
+    "canonical_ledger",
+    "context",
+    "state_journal",
+)
 JOURNAL_BINDING_DIGEST_KEYS = (
     "content_digest",
     "draft_package_digest",
@@ -87,7 +96,13 @@ def filter_detect_secrets_results(
 def _allowed_finding_identities(
     relative_path: str, repository_root: Path
 ) -> set[tuple[str, int, str, str]]:
-    if relative_path not in {ACF_INVENTORY, AUTHORING_INVENTORY, STATE_JOURNAL}:
+    if relative_path not in {
+        ACF_INVENTORY,
+        AUTHORING_INVENTORY,
+        KEEP_ELIGIBILITY_CONTEXT,
+        KEEP_ELIGIBILITY,
+        STATE_JOURNAL,
+    }:
         return set()
     try:
         source = (repository_root / relative_path).read_text(encoding="utf-8")
@@ -142,6 +157,43 @@ def _candidate_detector(relative_path: str, path: JsonPath, value: str) -> str |
             and LOWER_HEX_64.fullmatch(value)
         ):
             return HEX_HIGH_ENTROPY
+        return None
+
+    if relative_path == KEEP_ELIGIBILITY_CONTEXT:
+        if path == ("service_bindings", "current_code_source", "sha256") and LOWER_HEX_64.fullmatch(
+            value
+        ):
+            return HEX_HIGH_ENTROPY
+        return None
+
+    if relative_path == KEEP_ELIGIBILITY:
+        source_sha = (
+            len(path) == 3
+            and path[:2] == ("summary", "source_sha256")
+            and path[2] in KEEP_ELIGIBILITY_SOURCE_KEYS
+        )
+        revision_sha = (
+            len(path) == 4
+            and path[0] == "rows"
+            and isinstance(path[1], int)
+            and path[2:] == ("revision", "current_revision_digest")
+        )
+        if (source_sha or revision_sha) and LOWER_HEX_64.fullmatch(value):
+            return HEX_HIGH_ENTROPY
+        if (
+            len(path) == 6
+            and path[0] == "rows"
+            and isinstance(path[1], int)
+            and path[2] == "canonical_lineage"
+            and path[3] == "evidence"
+            and isinstance(path[4], int)
+            and path[5] == "evidence_id"
+            and SAFE_REGULATORY_EVIDENCE_ID.fullmatch(value)
+        ):
+            return BASE64_HIGH_ENTROPY
+        return None
+
+    if relative_path != STATE_JOURNAL:
         return None
 
     if path == ("mutation_audits", 0, "id") and SAFE_MUTATION_AUDIT_ID.fullmatch(value):

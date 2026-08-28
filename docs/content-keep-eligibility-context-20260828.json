@@ -1,0 +1,930 @@
+{
+  "api": {
+    "base_url": "http://127.0.0.1:8000",
+    "health": {
+      "endpoint": "/api/health",
+      "capture_started_at": "2026-08-28T18:47:16.710338Z",
+      "runtime_sha_attestation": "not_exposed_by_health_contract",
+      "runtime_sha_attested": false,
+      "service": "wilq-api",
+      "status": "ok"
+    },
+    "method": "GET",
+    "source_observations": [
+      {
+        "endpoint": "/api/system/status",
+        "capture_started_at": "2026-08-28T18:47:16.710338Z",
+        "read_count": 1,
+        "response_contract": "system_status_unversioned"
+      },
+      {
+        "endpoint": "/api/content/knowledge-cards",
+        "capture_started_at": "2026-08-28T18:47:16.710338Z",
+        "read_count": 1,
+        "response_contract": "ContentKnowledgeCardsResponse"
+      },
+      {
+        "endpoint": "/api/content/service-profile",
+        "capture_started_at": "2026-08-28T18:47:16.710338Z",
+        "read_count": 1,
+        "response_contract": "ContentServiceProfileResponse"
+      },
+      {
+        "endpoint": "/api/content/inventory/catalog",
+        "capture_started_at": "2026-08-28T18:47:16.710338Z",
+        "read_count": 1,
+        "response_contract": "ContentInventoryCatalogResponse"
+      },
+      {
+        "endpoint": "/api/evidence/{evidence_id}",
+        "capture_started_at": "2026-08-28T18:47:16.710338Z",
+        "read_count": 5,
+        "response_contract": "Evidence"
+      }
+    ]
+  },
+  "capture_completed_at": "2026-08-28T18:47:18.011178Z",
+  "capture_started_at": "2026-08-28T18:47:16.710338Z",
+  "connector_evidence": [
+    {
+      "checked_at": "2026-08-27T13:40:51.710964Z",
+      "collected_at": "2026-08-27T13:40:51.710964Z",
+      "connector": "ahrefs",
+      "evidence_id": "ev_refresh_refresh_ahrefs_cd955c67ff83",
+      "freshness_state": "fresh"
+    },
+    {
+      "checked_at": "2026-08-27T13:47:32.285792Z",
+      "collected_at": "2026-08-27T13:47:32.285792Z",
+      "connector": "google_ads",
+      "evidence_id": "ev_refresh_refresh_google_ads_89e654b61fa7",
+      "freshness_state": "fresh"
+    },
+    {
+      "checked_at": "2026-08-26T18:43:47.973041Z",
+      "collected_at": "2026-08-26T18:43:47.973041Z",
+      "connector": "google_analytics_4",
+      "evidence_id": "ev_refresh_refresh_google_analytics_4_a251af59265b",
+      "freshness_state": "fresh"
+    },
+    {
+      "checked_at": "2026-08-26T19:00:58.243214Z",
+      "collected_at": "2026-08-26T19:00:58.243214Z",
+      "connector": "google_search_console",
+      "evidence_id": "ev_refresh_refresh_google_search_console_2dbefdc3501f",
+      "freshness_state": "fresh"
+    },
+    {
+      "checked_at": "2026-08-27T18:54:50.052279Z",
+      "collected_at": "2026-08-27T18:54:50.052279Z",
+      "connector": "wordpress_ekologus",
+      "evidence_id": "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034",
+      "freshness_state": "fresh"
+    }
+  ],
+  "connector_summary": {
+    "api_generated_at": "2026-08-28T18:47:16.837070+00:00",
+    "configured": 9,
+    "endpoint": "/api/system/status",
+    "missing_credentials": 2,
+    "capture_started_at": "2026-08-28T18:47:16.710338Z",
+    "total": 12
+  },
+  "inventory": {
+    "endpoint": "/api/content/inventory/catalog",
+    "capture_started_at": "2026-08-28T18:47:16.710338Z",
+    "rows": [
+      {
+        "current_work_item_id": "content_work_item_inventory_c90528e2454d9f3de03d2394",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_858bdf9610f3c0c38bd30ba7",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/3-kroki-do-bezpiecznego-funkcjonowania-przedsiebiorstwa-w-zgodzie-z-przepisami-w-obszarze-ochrony-srodowiska"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_79ea4e77d1a4a1d446e89551",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/analiza-pozwolen-zintegrowanych"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_6e304ad15c92841ea57fe891",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/badania-obecnosci-radonu"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_5391632ca65d5e8714952a84",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/bdo-co-musi-wiedziec-przedsiebiorca"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_1aafd9a62cb03d2371fe869d",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/bilans-lzo-przekroczenie-standardow-emisyjnych-a-obowiazek-raportowy"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_565d0b5b63212bf94f9abe01",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/czy-kazda-rozbudowa-zakladu-przemyslowego-wymaga-decyzji-srodowiskowej"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_1e1a1d157854063463e14ef3",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/czy-wiesz-ze-zgodnie-z-nowa-norma-iso-45001-masz-obowiazek-reagowac-na-sytuacje-awaryjne"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_dc9a0f9cb70ec6dc1445209d",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/czy-wysokosc-skladowiska-odpadow-liczy-sie-z-warstwa-rekultywacyjna"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_c43b5cd8f53fd88ebce55909",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/czym-jest-europejski-system-ekozarzadzania-i-audytu-emas"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_752e9b111b04dea6af2fb24e",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/czym-jest-goz-i-jakie-sa-jego-zalozenia"
+      },
+      {
+        "current_work_item_id": null,
+        "material_evidence_ids": [],
+        "material_status": null,
+        "metrics_evidence_ids": [],
+        "metrics_status": null,
+        "path": "/czym-kierowac-sie-podczas-kupna-sorbentu-aby-dobrac-go-odpowiednio-do-naszych-potrzeb"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_7362f4c412b9d479b8258199",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/czym-sa-historyczne-zanieczyszczenia-i-jakie-obowiazki-ma-wlasciciel-gruntu"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_6bf6d9660abe78d94e905627",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/diwass-od-2026-roku-co-zmienia-cyfrowy-system-transgranicznego-przemieszczania-odpadow"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_02d6afd78d9571d5e13f4323",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/dlaczego-i-kiedy-nalezy-wykonac-ocene-stanu-jakosci-gleby-ziemi-i-wod-podziemnych"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_b0e6e712968af1a63a4811bb",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/dlaczego-mowimy-o-compliance-czyli-zarzadzaniu-zgodnoscia"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_d6581e28f959da1b2230cb20",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/dlaczego-warto-skorzystac-z-uslug-specjalistow-ds-ochrony-srodowiska"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_aa53e8c75b125733f87eea77",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/dokumentacja-srodowiskowa-w-procesie-inwestycyjnym"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_902efba4332ba6b8a282dca5",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/europejski-zielony-lad-co-to-takiego"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_0454c020b0ddbad0062b3d08",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/informacja-o-opakowaniach-i-odpadach-opakowaniowych-oraz-o-oplacie-produktowej"
+      },
+      {
+        "current_work_item_id": null,
+        "material_evidence_ids": [],
+        "material_status": null,
+        "metrics_evidence_ids": [],
+        "metrics_status": null,
+        "path": "/jak-dobrac-sorbent-do-twojej-branzy-praktyczny-przewodnik-z-produktami"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_12505d6cd934d28ad9943abb",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/jak-postepowac-z-olejami-odpadowymi"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_d204a7fcbafe2a08e69b2efe",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/kip-w-praktyce-inwestycyjnej-najczestsze-bledy-i-ich-konsekwencje"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_6465f425c85c51d3340ba685",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/kompetencje-przyszlosci-w-ochronie-srodowiska-dlaczego-warto-inwestowac-w-szkolenia"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_dc79bc529c30d0d1990e804f",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/kontakt"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_ec667153eddc7df6fca988ee",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/na-jakie-wymogi-prawne-zwiazane-ze-srodowiskiem-przygotowac-sie-w-2026"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_435192d2101285ed2b712c73",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/nagroda-eko-innowator-2024-dla-ekologus"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_56b8fe755bc70e98d134be01",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/nota-prawna"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_398f2bfe8476561d1a1761b7",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/nowe-inwestycje-w-przedsiebiorstwie-brak-wspolpracy-sluzb-ds-rozwoju-ze-sluzbami-ochrony-srodowiska"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_306458343ea1ebef9f8e9a27",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/o-firmie"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_aabe02ba5524dbe04d57c35e",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/o-firmie/kariera"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_11cee287480f63615ea3a9ca",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/obowiazki-pomiarowe-instalacji-wymagajacej-pozwolenia-zintegrowanego-tzw-instalacji-ippc-emisje-pylow-i-gazow-halas-oraz-badania-gleby-ziemi-i-wod-gruntowych"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_e94d16f4942fc190ae3ad00f",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_99fba61c3a83b0dda37c072d",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/ocena-wplywu-projektow-na-srodowisko"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_e68ef64aefdafb59d86cb5f4",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/odpowiedzialnosc-prawna-pracodawcy-za-bhp-i-ochrone-srodowiska"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_72bf7fe65fbe003aa97b6b68",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/oferta/audyty-systemow-zarzadzania"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_7013b77bf18bf7d84a6a4638",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/oferta/bhp-i-p-poz"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_a75c327536cd91c0fd224115",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/oferta/doradztwo-i-outsourcing-ekologiczny"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_d3222323b2e07b4e8ab0d97a",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/oferta/opracowania-dokumentacji-ekspertyz"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_b85db36285cd4a7c8250a444",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/oferta/pomiary-i-analizy"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_81e3c13fcba7336ef7e8ee13",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/oferta/rekultywacje-i-remediacje"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_d5ea0ffee7d23af133b97a0f",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/oferta/szkolenia"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_0e0d14ab0bc8d1e8641087df",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/operat-wodnoprawny-wszystko-co-musisz-wiedziec"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_14976fe95120397ecc9c1514",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/outsourcing-srodowiskowy-elastyczne-rozwiazanie-dla-twojej-firmy"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_f16ca2faa0a44f2dde8c4129",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/planowanie-i-zarzadzanie-strategiczne-latwiej-zaplanowac-trudniej-wdrozyc"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_2842d59fa4dcd3c57a247421",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/planujesz-nowa-inwestycje-produkcyjna-sprawdz-srodowisko-i-inne-wymagania-zanim-zlecisz-projekt-budowlany"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_782763f2a29242c90bacddaa",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/podsumowanie-webinaru-dlaczego-warto-poukladac-procesy-oraz-kwestie-srodowiskowe-w-swojej-firmie"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_3b647b8f0314cd28db904b29",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_033f426604240194acbb9bb2",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/proces-inwestycyjny-w-przedsiewzieciu-budowlanym"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_ac9fa342c0c889677d2fe8cd",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/raport-poczatkowy-i-raport-koncowy"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_db2bef881e530cad83014d99",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/remediacja-czym-jest-na-czym-polega-kiedy-jest-wymagana"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_4374e1694d69ede6e28eed2b",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/rewolucja-w-decyzjach-o-warunkach-zabudowy-co-zmienia-sie-od-2026"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_dad9033c458f0abf423c4c17",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [],
+        "metrics_status": "missing",
+        "path": "/roczne-sprawozdanie-w-bdo-co-sprawdzic-przed-31-grudnia-aby-nie-narazic-sie-na-kary"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_87291abf7b04505d64790dfe",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/rozbudowa-zakladu-a-koniecznosc-uzyskania-decyzji-srodowiskowej"
+      },
+      {
+        "current_work_item_id": null,
+        "material_evidence_ids": [],
+        "material_status": null,
+        "metrics_evidence_ids": [],
+        "metrics_status": null,
+        "path": "/sorbenty-czym-sa-jak-dzialaja-i-dlaczego-warto-je-stosowac"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_f9fc6d1afa732906c93f9e49",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "content_and_structure",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/uzasadnienie-celowosci-sporzadzania-rachunku-kosztow-srodowiskowych-w-przedsiebiorstwach-przemyslowych"
+      },
+      {
+        "current_work_item_id": "content_work_item_inventory_f669ac4fc78ca765ab9c38e7",
+        "material_evidence_ids": [
+          "ev_refresh_refresh_wordpress_ekologus_a0abfaf4b034"
+        ],
+        "material_status": "url_only",
+        "metrics_evidence_ids": [
+          "ev_refresh_refresh_google_search_console_2dbefdc3501f"
+        ],
+        "metrics_status": "available",
+        "path": "/zamkniecie-roku-w-ochronie-srodowiska-jak-uporzadkowac-obowiazki-i-wejsc-spokojnie-w-nowy-rok"
+      }
+    ],
+    "status": "ready"
+  },
+  "safety": {
+    "api_get_only": true,
+    "private_material_read": false,
+    "raw_material_read": false,
+    "raw_values_retained": false,
+    "read_only": true,
+    "refresh": false,
+    "target_context_capture_performed": false,
+    "vendor_read_performed": false,
+    "vendor_write": false
+  },
+  "schema_version": "content_keep_eligibility_context_v1",
+  "service_bindings": {
+    "api_card_endpoint": "/api/content/knowledge-cards",
+    "api_observed_url_count": 0,
+    "current_code_source": {
+      "commit": "441579ea",
+      "map": "ekologus_service_binding_urls",
+      "path": "wilq/content/knowledge/source_facts.py",
+      "sha256": "7b8c34a383498466a47b35a2ea595f124307845823060e6372c7c592f1a16356"
+    },
+    "current_code_url_count": 7,
+    "current_exact_bindings": [
+      {
+        "public_url": "https://www.ekologus.pl/",
+        "service_card_id": "ekologus_service_homepage_overview"
+      },
+      {
+        "public_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        "service_card_id": "ekologus_service_bdo_reporting"
+      },
+      {
+        "public_url": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+        "service_card_id": "ekologus_service_environmental_consulting_outsourcing"
+      },
+      {
+        "public_url": "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+        "service_card_id": "ekologus_service_operat_wodnoprawny"
+      },
+      {
+        "public_url": "https://www.ekologus.pl/oferta/pomiary-i-analizy/",
+        "service_card_id": "ekologus_service_remediation_monitoring"
+      },
+      {
+        "public_url": "https://www.ekologus.pl/oferta/rekultywacje-i-remediacje/",
+        "service_card_id": "ekologus_service_remediation_monitoring"
+      },
+      {
+        "public_url": "https://www.ekologus.pl/oferta/szkolenia/",
+        "service_card_id": "ekologus_service_environmental_training"
+      }
+    ],
+    "journal_predates_exact_binding_commit": true
+  },
+  "service_cards": [
+    {
+      "card_id": "ekologus_service_bdo_reporting",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "freshness": "reviewed_2026-07-01",
+      "lifecycle_status": "approved_current",
+      "source_connectors": [
+        "public_site"
+      ]
+    },
+    {
+      "card_id": "ekologus_service_compliance_audit",
+      "evidence_ids": [
+        "ev_content_approved_source_materials_manifest"
+      ],
+      "freshness": "reviewed_2026-04-28",
+      "lifecycle_status": "approved_current",
+      "source_connectors": [
+        "ekologus_source_materials"
+      ]
+    },
+    {
+      "card_id": "ekologus_service_eko_opieka_calendar",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "freshness": "public_site_review_required_2026-07-01",
+      "lifecycle_status": "source_backed_review_required",
+      "source_connectors": [
+        "ekologus_ai_private_source_catalog"
+      ]
+    },
+    {
+      "card_id": "ekologus_service_environmental_compliance",
+      "evidence_ids": [],
+      "freshness": "seeded_goal_004",
+      "lifecycle_status": "seeded_contract_proof",
+      "source_connectors": [
+        "internal_wilq_contract"
+      ]
+    },
+    {
+      "card_id": "ekologus_service_environmental_compliance_audit",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "freshness": "reviewed_2026-07-01",
+      "lifecycle_status": "approved_current",
+      "source_connectors": [
+        "reviewed_internal"
+      ]
+    },
+    {
+      "card_id": "ekologus_service_environmental_consulting_outsourcing",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "freshness": "reviewed_2026-08-13",
+      "lifecycle_status": "approved_current",
+      "source_connectors": [
+        "public_site"
+      ]
+    },
+    {
+      "card_id": "ekologus_service_environmental_training",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "freshness": "reviewed_2026-08-13",
+      "lifecycle_status": "approved_current",
+      "source_connectors": [
+        "public_site"
+      ]
+    },
+    {
+      "card_id": "ekologus_service_homepage_overview",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "freshness": "reviewed_2026-07-02",
+      "lifecycle_status": "approved_current",
+      "source_connectors": [
+        "public_site"
+      ]
+    },
+    {
+      "card_id": "ekologus_service_operat_wodnoprawny",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "freshness": "reviewed_2026-08-13",
+      "lifecycle_status": "approved_current",
+      "source_connectors": [
+        "public_site"
+      ]
+    },
+    {
+      "card_id": "ekologus_service_remediation_monitoring",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "freshness": "reviewed_2026-08-13",
+      "lifecycle_status": "approved_current",
+      "source_connectors": [
+        "public_site"
+      ]
+    },
+    {
+      "card_id": "ekologus_service_waste_packaging_obligations",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
+      "freshness": "reviewed_2026-07-01",
+      "lifecycle_status": "approved_current",
+      "source_connectors": [
+        "public_site"
+      ]
+    }
+  ],
+  "service_profile": {
+    "api_generated_at": "2026-07-01T00:00:00Z",
+    "approval_readiness": {
+      "approved_current_count": 15,
+      "mutation_allowed": false,
+      "review_required_count": 6,
+      "status": "blocked"
+    },
+    "endpoint": "/api/content/service-profile",
+    "capture_started_at": "2026-08-28T18:47:16.710338Z",
+    "production_depth_readiness": {
+      "production_depth_card_count": 9,
+      "ready_for_daily_content": false,
+      "scope": "all_knowledge_cards",
+      "seeded_card_count": 3,
+      "source_backed_review_required_count": 6,
+      "status": "source_backed_review_required"
+    },
+    "read_only": true,
+    "service_card_count": 11
+  }
+}
