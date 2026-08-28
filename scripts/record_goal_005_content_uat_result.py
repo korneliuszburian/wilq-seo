@@ -502,6 +502,13 @@ def wordpress_draft_activation_step_label(value: Any) -> str:
             "Nie dodawaj kolejnej warstwy technicznej: najpierw domknij "
             "przekazanie szkicu, review, potwierdzenie i audyt."
         ),
+        (
+            "Nie dodawaj kolejnego adaptera: boundary istnieje, a live write "
+            "blokują handoff, paczka szkicu, audyt i env."
+        ): (
+            "Nie dodawaj kolejnej warstwy technicznej: najpierw przygotuj "
+            "paczkę szkicu, domknij przekazanie, review, potwierdzenie i audyt."
+        ),
         "Odblokuj payload apply dopiero po przejściu review i readiness.": (
             "Odblokuj zapis dopiero po review i sprawdzeniu gotowości."
         ),

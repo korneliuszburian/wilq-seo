@@ -14,6 +14,7 @@ from scripts.record_goal_005_content_uat_result import (
     sales_brief_blocker_label,
     sales_brief_trace_from_snapshot,
     select_uat_candidate_id,
+    wordpress_draft_activation_step_label,
 )
 
 
@@ -21,6 +22,19 @@ def test_private_eval_case_labels_include_service_review_labels() -> None:
     assert private_eval_case_labels(
         ["goal_005_private_service_review", "goal_005_service_profile_uat"]
     ) == "review prywatnej propozycji usługi, review użyteczności Service Profile"
+
+
+def test_wordpress_activation_copy_translates_missing_package_step() -> None:
+    raw_step = (
+        "Nie dodawaj kolejnego adaptera: boundary istnieje, a live write "
+        "blokują handoff, paczka szkicu, audyt i env."
+    )
+
+    translated = wordpress_draft_activation_step_label(raw_step)
+
+    assert "Nie dodawaj kolejnej warstwy technicznej" in translated
+    assert "live write" not in translated
+    assert "boundary" not in translated
 
 
 def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
