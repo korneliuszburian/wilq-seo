@@ -17,7 +17,13 @@ from wilq.content.workflow.keep_eligibility import (
 )
 
 OUTPUT_SCHEMA_VERSION = "content_keep_eligibility_v1"
-SOURCE_KEYS = ("authoring_inventory", "state_journal", "canonical_ledger", "context")
+SOURCE_KEYS = (
+    "authoring_inventory",
+    "state_journal",
+    "canonical_ledger",
+    "context",
+    "target_mapping_snapshot",
+)
 
 
 def _digest(*chunks: str) -> str:
@@ -77,6 +83,19 @@ SOURCE_DEFAULTS = {
             "a0aab46b",
         ),
     ),
+    "target_mapping_snapshot": (
+        "docs/content-keep-target-mapping-snapshot-20260828.json",
+        _digest(
+            "a5acb59d",
+            "a9895c78",
+            "dc5b944d",
+            "0952608b",
+            "698288e4",
+            "eafec293",
+            "3c0addef",
+            "aa06a63b",
+        ),
+    ),
 }
 BINDING_SOURCE = {
     "path": "wilq/content/knowledge/source_facts.py",
@@ -107,6 +126,7 @@ EXPECTED_COUNTS = (
     ("source_pack_work_item_binding_count", 0),
     ("existing_generation_identity_count", 9),
     ("typed_target_context_count", 0),
+    ("current_target_mapping_preview_count", 1),
     ("eligible_count", 0),
 )
 EXPECTED_PRIMARY_BLOCKERS = (
@@ -157,6 +177,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 state_journal=_object(payloads["state_journal"], "state journal"),
                 canonical_ledger=_object_list(payloads["canonical_ledger"], "ledger"),
                 context=context,
+                target_mapping_snapshot=_object(
+                    payloads["target_mapping_snapshot"], "target mapping snapshot"
+                ),
                 provenance=provenance,
                 expected_counts=EXPECTED_COUNTS,
                 expected_primary_blocker_counts=EXPECTED_PRIMARY_BLOCKERS,
