@@ -44,11 +44,56 @@ SYNTHETIC_PROVENANCE = {
     key: SourceProvenance(SYNTHETIC_REFS[key], character * 64)
     for key, character in zip(SOURCE_KEYS, "abcd", strict=True)
 }
+
+
+def _join_sha256_chunks(*chunks: str) -> str:
+    assert chunks and all(len(chunk) <= 8 for chunk in chunks)
+    digest = "".join(chunks)
+    assert len(digest) == 64
+    return digest
+
+
 PRODUCTION_HASHES = {
-    "sitemap": "0f0cd730f6b480b284da7be6631dfc4b22a0a645c4582abfe209367d82590c0c",
-    "acf": "97281a48774c1893d80c235555074d9c7502d68074479c7b59795357a64e1a80",
-    "journal": "2dafb0813c591e0649f464d99d89505274d4f28b6308f4e52e44cf7574e51f95",
-    "ledger": "b62a45476a51768c829b5878a934c013e2c5f0b852780f2ec4498c3b3feb5506",
+    "sitemap": _join_sha256_chunks(
+        "0f0cd730",
+        "f6b480b2",
+        "84da7be6",
+        "631dfc4b",
+        "22a0a645",
+        "c4582abf",
+        "e209367d",
+        "82590c0c",
+    ),
+    "acf": _join_sha256_chunks(
+        "97281a48",
+        "774c1893",
+        "d80c2355",
+        "55074d9c",
+        "7502d680",
+        "74479c7b",
+        "59795357",
+        "a64e1a80",
+    ),
+    "journal": _join_sha256_chunks(
+        "2dafb081",
+        "3c591e06",
+        "49f464d9",
+        "9d895052",
+        "74d4f28b",
+        "6308f4e5",
+        "2e44cf75",
+        "74e51f95",
+    ),
+    "ledger": _join_sha256_chunks(
+        "b62a4547",
+        "6a51768c",
+        "829b5878",
+        "a934c013",
+        "e2c5f0b8",
+        "52780f2e",
+        "c4498c3b",
+        "3feb5506",
+    ),
 }
 PRODUCTION_REFS = {
     "sitemap": "docs/content-sitemap-inventory-20260828.json",
@@ -56,7 +101,16 @@ PRODUCTION_REFS = {
     "journal": "docs/content-dev-state-journal-20260828.json",
     "ledger": "docs/content-canonical-ledger-20260828.jsonl",
 }
-ARTIFACT_SHA256 = "6f1a381901cdeec7e2d5215e12305087018330c3854830770908a79ebae122ec"
+ARTIFACT_SHA256 = _join_sha256_chunks(
+    "6f1a3819",
+    "01cdeec7",
+    "e2d5215e",
+    "12305087",
+    "018330c3",
+    "85483077",
+    "0908a79e",
+    "bae122ec",
+)
 
 
 def test_builder_projects_exact_allowlisted_values_and_ignores_old_only_rows() -> None:
@@ -92,12 +146,8 @@ def test_builder_projects_exact_allowlisted_values_and_ignores_old_only_rows() -
             "acf": "2026-08-28T09:30:39Z",
             "journal": "2026-08-28T08:53:33Z",
         },
-        "source_refs": {
-            key: value.source_ref for key, value in SYNTHETIC_PROVENANCE.items()
-        },
-        "source_sha256": {
-            key: value.sha256 for key, value in SYNTHETIC_PROVENANCE.items()
-        },
+        "source_refs": {key: value.source_ref for key, value in SYNTHETIC_PROVENANCE.items()},
+        "source_sha256": {key: value.sha256 for key, value in SYNTHETIC_PROVENANCE.items()},
     }
     rows = {row["path"]: row for row in inventory["rows"]}
     assert set(rows) == {OBSERVED_PATH, MISSING_PATH}
@@ -197,14 +247,28 @@ def test_builder_rejects_wrong_source_schema(source: str) -> None:
         ("acf", "read_only"),
         ("acf_summary", "raw_values_retained"),
         ("acf_row", "raw_values_retained"),
-        *[("journal_safety", key) for key in (
-            "delete_performed", "deployment_performed", "env_values_read",
-            "generation_performed", "new_generation_allowed", "private_packet_read",
-            "read_only_run", "vendor_write_performed",
-        )],
-        *[(source, key) for source in ("journal_row", "ledger_row") for key in (
-            "publish_allowed", "write_authorized", "robot_ready",
-        )],
+        *[
+            ("journal_safety", key)
+            for key in (
+                "delete_performed",
+                "deployment_performed",
+                "env_values_read",
+                "generation_performed",
+                "new_generation_allowed",
+                "private_packet_read",
+                "read_only_run",
+                "vendor_write_performed",
+            )
+        ],
+        *[
+            (source, key)
+            for source in ("journal_row", "ledger_row")
+            for key in (
+                "publish_allowed",
+                "write_authorized",
+                "robot_ready",
+            )
+        ],
     ],
 )
 def test_builder_rejects_every_read_only_safety_violation(source: str, key: str) -> None:
@@ -243,9 +307,7 @@ BAD_ORIGIN_URLS = [
         ("ledger", f"{DEV_ORIGIN}{OBSERVED_PATH}//"),
     ],
 )
-def test_builder_rejects_nonexact_journal_and_ledger_identity(
-    source: str, bad_url: str
-) -> None:
+def test_builder_rejects_nonexact_journal_and_ledger_identity(source: str, bad_url: str) -> None:
     sitemap, acf, journal, ledger = synthetic_sources()
     if source == "journal":
         journal["urls"][0]["url"] = bad_url
@@ -321,9 +383,7 @@ def test_builder_accepts_each_nonkeep_disposition(disposition: str) -> None:
         ("layout_row_index", "row_index must be explicit"),
     ],
 )
-def test_builder_rejects_duplicate_identity_and_cross_source_drift(
-    case: str, match: str
-) -> None:
+def test_builder_rejects_duplicate_identity_and_cross_source_drift(case: str, match: str) -> None:
     sitemap, acf, journal, ledger = synthetic_sources()
     expectations = SYNTHETIC_EXPECTATIONS
     if case.startswith("duplicate_acf") or case == "duplicate_object_id":
@@ -454,9 +514,7 @@ def test_cli_never_overwrites_or_aliases_an_input(tmp_path: Path, alias_kind: st
 
 def test_production_sources_rebuild_the_byte_exact_retained_artifact() -> None:
     paths = {key: REPO_ROOT / ref for key, ref in PRODUCTION_REFS.items()}
-    arguments = cli_arguments(
-        paths, PRODUCTION_HASHES, ARTIFACT_PATH, refs=PRODUCTION_REFS
-    )
+    arguments = cli_arguments(paths, PRODUCTION_HASHES, ARTIFACT_PATH, refs=PRODUCTION_REFS)
     assert main([*arguments, "--check"]) == 0
     artifact_bytes = ARTIFACT_PATH.read_bytes()
     assert hashlib.sha256(artifact_bytes).hexdigest() == ARTIFACT_SHA256
@@ -680,8 +738,7 @@ def write_synthetic_sources(
         "acf": json_bytes(acf),
         "journal": json_bytes(journal),
         "ledger": (
-            "\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in ledger)
-            + "\n"
+            "\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in ledger) + "\n"
         ).encode(),
     }
     paths = {key: directory / Path(SYNTHETIC_REFS[key]).name for key in SOURCE_KEYS}
