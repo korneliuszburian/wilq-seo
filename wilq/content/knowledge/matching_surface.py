@@ -16,6 +16,15 @@ class ServiceCardMatchingSource(Protocol):
     @property
     def service_binding_urls(self) -> list[str]: ...
 
+    @property
+    def evidence_ids(self) -> list[str]: ...
+
+    @property
+    def source_connectors(self) -> list[str]: ...
+
+    @property
+    def freshness(self) -> str: ...
+
 
 @dataclass(frozen=True)
 class ContentKnowledgeMatchingSurface:
@@ -72,6 +81,17 @@ def service_card_has_exact_url(
     return service_card_exact_binding_url(card, normalized_urls) is not None
 
 
+def service_card_has_binding_provenance(card: ServiceCardMatchingSource) -> bool:
+    """Only evidence-backed cards may become a service recommendation."""
+    return bool(
+        card.evidence_ids
+        and all(value.strip() for value in card.evidence_ids)
+        and card.source_connectors
+        and all(value.strip() for value in card.source_connectors)
+        and card.freshness.strip()
+    )
+
+
 def exactly_bound_service_cards[ServiceCardSourceT: ServiceCardMatchingSource](
     cards: Iterable[ServiceCardSourceT],
     normalized_urls: set[str],
@@ -79,7 +99,11 @@ def exactly_bound_service_cards[ServiceCardSourceT: ServiceCardMatchingSource](
     return [
         card
         for card in cards
-        if card.card_type == "service" and service_card_has_exact_url(card, normalized_urls)
+        if (
+            card.card_type == "service"
+            and service_card_has_exact_url(card, normalized_urls)
+            and service_card_has_binding_provenance(card)
+        )
     ]
 
 

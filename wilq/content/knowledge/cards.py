@@ -11,6 +11,7 @@ from wilq.content.knowledge.matching_surface import (
     build_content_knowledge_matching_surface,
     exactly_bound_service_cards,
     service_card_exact_binding_url,
+    service_card_has_binding_provenance,
     service_card_has_exact_url,
 )
 from wilq.content.knowledge.source_facts import (
@@ -498,6 +499,14 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
     exact_service_cards = exactly_bound_service_cards(cards, surface.exact_urls)
     auto_bound_service_card = exact_service_cards[0] if len(exact_service_cards) == 1 else None
     ambiguous_service_binding = len(exact_service_cards) > 1
+    recommended_service_card = next(
+        (
+            card
+            for card in service_cards
+            if service_card_has_binding_provenance(card)
+        ),
+        None,
+    )
     cta_cards = _matching_cards(cards, surface.page_text, "cta_pattern")
     claim_policy_cards = [
         card
@@ -517,8 +526,8 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
             else (
                 auto_bound_service_card.id
                 if auto_bound_service_card is not None
-                else service_cards[0].id
-                if service_cards
+                else recommended_service_card.id
+                if recommended_service_card is not None
                 else None
             )
         ),
@@ -589,6 +598,25 @@ def select_content_knowledge_service_card(
             update={
                 "service_card": None,
                 "blockers": [*match.blockers, stale_blocker],
+            }
+        )
+    if not service_card_has_binding_provenance(selected):
+        provenance_blocker = build_blocker(
+            ContentKnowledgeCardBlocker,
+            code="service_card_provenance_missing",
+            label="Karta usługi nie ma kompletnego śladu źródłowego",
+            reason=(
+                "Nie można przypisać karty usługi bez evidence ID, source connectora "
+                "i informacji o świeżości."
+            ),
+            next_step="Uzupełnij ślad źródłowy albo pozostaw temat do review.",
+            work_item_id=match.work_item_id,
+            required_card_type="service",
+        )
+        return match.model_copy(
+            update={
+                "service_card": None,
+                "blockers": [*match.blockers, provenance_blocker],
             }
         )
     selected_match = match.model_copy(

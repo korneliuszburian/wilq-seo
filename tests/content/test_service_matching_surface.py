@@ -21,6 +21,8 @@ def test_exact_binding_url_binds_with_neutral_page_text(
         summary="Karta testowa dokładnego powiązania.",
         service_fit_terms=["szkolenia specjalistyczne"],
         service_binding_urls=[binding_url],
+        evidence_ids=["ev_service_exact_binding"],
+        source_connectors=["wordpress_ekologus"],
         confidence=0.9,
         freshness="reviewed_2026-08-28",
     )
@@ -62,6 +64,8 @@ def test_ambiguous_exact_binding_is_blocked_without_ranking_a_card(
         title="Pierwsza karta",
         summary="Pierwsza karta testowa.",
         service_binding_urls=[binding_url],
+        evidence_ids=["ev_service_ambiguous_binding"],
+        source_connectors=["wordpress_ekologus"],
         confidence=0.9,
         freshness="reviewed_2026-08-28",
     )
@@ -92,6 +96,49 @@ def test_ambiguous_exact_binding_is_blocked_without_ranking_a_card(
     assert [
         blocker.code for blocker in match.blockers if blocker.code == "ambiguous_service_binding"
     ] == ["ambiguous_service_binding"]
+
+
+@pytest.mark.parametrize("missing_field", ["evidence_ids", "source_connectors", "freshness"])
+def test_exact_binding_without_source_provenance_stays_unbound(
+    missing_field: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    binding_url = "https://www.ekologus.pl/oferta/niezweryfikowana-usluga/"
+    values: dict[str, object] = {
+        "evidence_ids": ["ev_service_provenance"],
+        "source_connectors": ["wordpress_ekologus"],
+        "freshness": "reviewed_2026-08-28",
+    }
+    values[missing_field] = [] if missing_field != "freshness" else ""
+    card = ContentKnowledgeCard(
+        id="service_missing_provenance",
+        card_type="service",
+        title="Niezweryfikowana usługa",
+        summary="Karta bez kompletnego śladu.",
+        service_binding_urls=[binding_url],
+        confidence=0.9,
+        **values,
+    )
+    monkeypatch.setattr(
+        knowledge_cards,
+        "ekologus_content_knowledge_cards",
+        lambda: (card,),
+    )
+
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_missing_provenance",
+            topic="Neutralny temat",
+            source_public_url=binding_url,
+            final_canonical_url=binding_url,
+        )
+    )
+
+    assert match.service_card is None
+    assert match.recommended_service_card_id is None
+    selected = select_content_knowledge_service_card(match, card.id)
+    assert selected.service_card is None
+    assert "service_card_provenance_missing" in {blocker.code for blocker in selected.blockers}
 
 
 @pytest.mark.parametrize(
