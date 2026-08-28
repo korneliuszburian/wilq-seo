@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Protocol
+from urllib.parse import urlsplit, urlunsplit
 
 from wilq.content.knowledge.text_matching import normalize_search_text
 from wilq.content.workflow.contracts.models import ContentWorkItem
@@ -13,7 +14,7 @@ class ServiceCardMatchingSource(Protocol):
     def card_type(self) -> str: ...
 
     @property
-    def source_lineage(self) -> list[str]: ...
+    def service_binding_urls(self) -> list[str]: ...
 
 
 @dataclass(frozen=True)
@@ -29,11 +30,7 @@ def build_content_knowledge_matching_surface(
     cards: Iterable[ServiceCardMatchingSource],
 ) -> ContentKnowledgeMatchingSurface:
     card_list = list(cards)
-    exact_urls = {
-        normalize_search_text(url)
-        for url in (item.source_public_url, item.final_canonical_url)
-        if url
-    }
+    exact_urls = _normalized_binding_urls((item.source_public_url, item.final_canonical_url))
     page_values: list[object] = [
         item.topic,
         item.wordpress_title_or_h1,
@@ -42,16 +39,13 @@ def build_content_knowledge_matching_surface(
         item.intended_final_url,
         *_homepage_match_markers(item),
     ]
-    metric_query_values = [
-        str(fact.dimensions.get("query") or "") for fact in item.metric_facts
-    ]
-    exact_service_urls = {
-        normalize_search_text(lineage)
+    metric_query_values = [str(fact.dimensions.get("query") or "") for fact in item.metric_facts]
+    exact_service_urls = _normalized_binding_urls(
+        binding_url
         for card in card_list
         if card.card_type == "service"
-        for lineage in card.source_lineage
-        if lineage.startswith("http")
-    }
+        for binding_url in card.service_binding_urls
+    )
     if exact_urls & exact_service_urls:
         page_values.append(item.wordpress_content_text)
     return ContentKnowledgeMatchingSurface(
@@ -75,10 +69,77 @@ def service_card_has_exact_url(
     card: ServiceCardMatchingSource,
     normalized_urls: set[str],
 ) -> bool:
-    return any(
-        normalize_search_text(lineage) in normalized_urls
-        for lineage in card.source_lineage
-        if lineage.startswith("http")
+    return service_card_exact_binding_url(card, normalized_urls) is not None
+
+
+def exactly_bound_service_cards[ServiceCardSourceT: ServiceCardMatchingSource](
+    cards: Iterable[ServiceCardSourceT],
+    normalized_urls: set[str],
+) -> list[ServiceCardSourceT]:
+    return [
+        card
+        for card in cards
+        if card.card_type == "service" and service_card_has_exact_url(card, normalized_urls)
+    ]
+
+
+def service_card_exact_binding_url(
+    card: ServiceCardMatchingSource,
+    normalized_urls: set[str],
+) -> str | None:
+    return next(
+        (
+            binding_url
+            for binding_url in card.service_binding_urls
+            if _binding_url_key(binding_url) in normalized_urls
+        ),
+        None,
+    )
+
+
+def _normalized_binding_urls(values: Iterable[str | None]) -> set[str]:
+    return {normalized for value in values if (normalized := _binding_url_key(value))}
+
+
+def _binding_url_key(value: str | None) -> str:
+    if not value:
+        return ""
+    if value != value.strip():
+        return ""
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return ""
+    if (
+        not parsed.scheme
+        or not parsed.netloc
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        return ""
+    try:
+        normalized_host = parsed.hostname.casefold() if parsed.hostname else ""
+        normalized_port = parsed.port
+    except ValueError:
+        return ""
+    if not normalized_host:
+        return ""
+    normalized_host = {
+        "ekologus.pl": "www.ekologus.pl",
+        "www.ekologus.pl": "www.ekologus.pl",
+    }.get(normalized_host, normalized_host)
+    normalized_netloc = normalized_host
+    if normalized_port is not None:
+        normalized_netloc = f"{normalized_netloc}:{normalized_port}"
+    normalized_path = parsed.path.rstrip("/") or "/"
+    return urlunsplit(
+        (
+            parsed.scheme.casefold(),
+            normalized_netloc,
+            normalized_path,
+            parsed.query,
+            parsed.fragment,
+        )
     )
 
 

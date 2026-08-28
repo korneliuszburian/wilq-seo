@@ -1,11 +1,176 @@
 import pytest
 
+from wilq.content.knowledge import cards as knowledge_cards
 from wilq.content.knowledge.cards import (
+    ContentKnowledgeCard,
     match_content_knowledge_cards,
     select_content_knowledge_service_card,
 )
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.schemas import MetricFact
+
+
+def test_exact_binding_url_binds_with_neutral_page_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    binding_url = "https://www.ekologus.pl/oferta/usluga-123/"
+    card = ContentKnowledgeCard(
+        id="service_exact_binding",
+        card_type="service",
+        title="Szkolenia specjalistyczne",
+        summary="Karta testowa dokładnego powiązania.",
+        service_fit_terms=["szkolenia specjalistyczne"],
+        service_binding_urls=[binding_url],
+        confidence=0.9,
+        freshness="reviewed_2026-08-28",
+    )
+    monkeypatch.setattr(
+        knowledge_cards,
+        "ekologus_content_knowledge_cards",
+        lambda: (card,),
+    )
+
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_exact_binding",
+            topic="Neutralny temat",
+            wordpress_title_or_h1="Neutralny tytuł",
+            source_public_url=binding_url,
+            final_canonical_url=binding_url,
+        )
+    )
+
+    assert match.service_card is not None
+    assert match.service_card.id == "service_exact_binding"
+    assert [candidate.card.id for candidate in match.service_candidates] == [
+        "service_exact_binding"
+    ]
+
+    selected = select_content_knowledge_service_card(match, "service_exact_binding")
+
+    assert selected.service_card is not None
+    assert selected.service_card.id == "service_exact_binding"
+
+
+def test_ambiguous_exact_binding_is_blocked_without_ranking_a_card(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    binding_url = "https://www.ekologus.pl/oferta/wspolny-adres/"
+    first = ContentKnowledgeCard(
+        id="service_first_exact_binding",
+        card_type="service",
+        title="Pierwsza karta",
+        summary="Pierwsza karta testowa.",
+        service_binding_urls=[binding_url],
+        confidence=0.9,
+        freshness="reviewed_2026-08-28",
+    )
+    second = first.model_copy(
+        update={
+            "id": "service_second_exact_binding",
+            "title": "Druga karta",
+            "summary": "Druga karta testowa.",
+        }
+    )
+    monkeypatch.setattr(
+        knowledge_cards,
+        "ekologus_content_knowledge_cards",
+        lambda: (first, second),
+    )
+
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_ambiguous_binding",
+            topic="Neutralny temat",
+            source_public_url=binding_url,
+            final_canonical_url=binding_url,
+        )
+    )
+
+    assert match.service_card is None
+    assert match.recommended_service_card_id is None
+    assert [
+        blocker.code for blocker in match.blockers if blocker.code == "ambiguous_service_binding"
+    ] == ["ambiguous_service_binding"]
+
+
+@pytest.mark.parametrize(
+    "item_url",
+    [
+        "https://www.ekologus.pl/oferta/a/b/",
+        "https://www.ekologus.pl/oferta/a-b/?wariant=inny",
+        "https://attacker@www.ekologus.pl/oferta/a-b/",
+        "https://@www.ekologus.pl/oferta/a-b/",
+        "https://:@www.ekologus.pl/oferta/a-b/",
+        " https://www.ekologus.pl/oferta/a-b/ ",
+    ],
+)
+def test_binding_url_comparison_preserves_path_and_query(
+    monkeypatch: pytest.MonkeyPatch,
+    item_url: str,
+) -> None:
+    card = ContentKnowledgeCard(
+        id="service_hyphenated_binding",
+        card_type="service",
+        title="Karta z dokładnym adresem",
+        summary="Karta testowa dokładnego adresu.",
+        service_binding_urls=["https://www.ekologus.pl/oferta/a-b/"],
+        confidence=0.9,
+        freshness="reviewed_2026-08-28",
+    )
+    monkeypatch.setattr(
+        knowledge_cards,
+        "ekologus_content_knowledge_cards",
+        lambda: (card,),
+    )
+
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_different_path",
+            topic="Neutralny temat",
+            source_public_url=item_url,
+            final_canonical_url=item_url,
+        )
+    )
+
+    assert match.service_card is None
+    assert match.service_candidates == []
+
+
+def test_source_lineage_url_does_not_authorize_binding_or_page_body_matching(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lineage_url = "https://www.ekologus.pl/artykul-zrodlowy/"
+    card = ContentKnowledgeCard(
+        id="service_lineage_only",
+        card_type="service",
+        title="Usługa tylko ze źródłem",
+        summary="Karta testowa pochodzenia bez powiązania.",
+        service_fit_terms=["specjalistyczne szkolenia"],
+        source_lineage=[lineage_url],
+        confidence=0.9,
+        freshness="reviewed_2026-08-28",
+    )
+    monkeypatch.setattr(
+        knowledge_cards,
+        "ekologus_content_knowledge_cards",
+        lambda: (card,),
+    )
+
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_lineage_only",
+            topic="Neutralny temat",
+            wordpress_title_or_h1="Neutralny tytuł",
+            source_public_url=lineage_url,
+            final_canonical_url=lineage_url,
+            wordpress_content_text="Specjalistyczne szkolenia dla zespołu.",
+        )
+    )
+
+    assert card.service_binding_urls == []
+    assert match.service_card is None
+    assert match.service_candidates == []
 
 
 def test_article_navigation_copy_does_not_bind_a_service_card() -> None:
@@ -46,8 +211,7 @@ def test_article_navigation_copy_does_not_bind_a_service_card() -> None:
 
     assert match.service_card is None
     assert all(
-        candidate.card.id
-        != "ekologus_service_environmental_consulting_outsourcing"
+        candidate.card.id != "ekologus_service_environmental_consulting_outsourcing"
         for candidate in match.service_candidates
     )
 
@@ -81,9 +245,7 @@ def test_gsc_service_query_is_only_a_reviewable_candidate_for_a_career_page() ->
         for candidate in match.service_candidates
     )
 
-    selected = select_content_knowledge_service_card(
-        match, "ekologus_service_bdo_reporting"
-    )
+    selected = select_content_knowledge_service_card(match, "ekologus_service_bdo_reporting")
 
     assert selected.service_card is not None
     assert selected.service_card.id == "ekologus_service_bdo_reporting"
@@ -140,7 +302,7 @@ def test_non_service_page_body_does_not_expose_a_service_candidate() -> None:
     )
 
 
-def test_specific_page_intent_beats_broad_body_terms() -> None:
+def test_specific_page_intent_is_candidate_only_without_exact_binding() -> None:
     match = match_content_knowledge_cards(
         ContentWorkItem(
             id="content_work_item_operat_page",
@@ -161,8 +323,12 @@ def test_specific_page_intent_beats_broad_body_terms() -> None:
         )
     )
 
-    assert match.service_card is not None
-    assert match.service_card.id == "ekologus_service_operat_wodnoprawny"
+    assert match.service_card is None
+    assert match.buyer_problem_cards == []
+    assert any(
+        candidate.card.id == "ekologus_service_operat_wodnoprawny"
+        for candidate in match.service_candidates
+    )
 
 
 def test_single_short_generic_term_does_not_bind_an_unrelated_service() -> None:
@@ -197,12 +363,36 @@ def test_single_short_generic_term_does_not_bind_an_unrelated_service() -> None:
             "ekologus_service_bdo_reporting",
         ),
         (
+            "https://ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+            "ekologus_service_bdo_reporting",
+        ),
+        (
             "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
             "ekologus_service_environmental_consulting_outsourcing",
         ),
+        (
+            "https://www.ekologus.pl/",
+            "ekologus_service_homepage_overview",
+        ),
+        (
+            "https://www.ekologus.pl/oferta/szkolenia/",
+            "ekologus_service_environmental_training",
+        ),
+        (
+            "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+            "ekologus_service_operat_wodnoprawny",
+        ),
+        (
+            "https://www.ekologus.pl/oferta/pomiary-i-analizy/",
+            "ekologus_service_remediation_monitoring",
+        ),
+        (
+            "https://www.ekologus.pl/oferta/rekultywacje-i-remediacje/",
+            "ekologus_service_remediation_monitoring",
+        ),
     ],
 )
-def test_exact_service_landings_keep_typed_url_lineage(
+def test_observed_exact_service_binding_urls_select_their_card(
     url: str, expected_card_id: str
 ) -> None:
     match = match_content_knowledge_cards(
@@ -219,3 +409,4 @@ def test_exact_service_landings_keep_typed_url_lineage(
 
     assert match.service_card is not None
     assert match.service_card.id == expected_card_id
+    assert match.service_card.service_binding_urls

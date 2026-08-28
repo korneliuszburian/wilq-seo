@@ -603,16 +603,25 @@ def test_source_backed_waste_storage_card_matches_review_required_topic() -> Non
         )
     )
 
-    assert match.blockers == []
-    assert match.service_card is not None
-    assert match.service_card.id == "ekologus_service_waste_packaging_obligations"
-    assert match.service_card.lifecycle_status == "source_backed_review_required"
+    assert match.service_card is None
+    assert "missing_service_card" in {blocker.code for blocker in match.blockers}
+    assert any(
+        candidate.card.id == "ekologus_service_waste_packaging_obligations"
+        for candidate in match.service_candidates
+    )
+
+    selected = select_content_knowledge_service_card(
+        match, "ekologus_service_waste_packaging_obligations"
+    )
+
+    assert selected.service_card is not None
+    assert selected.service_card.lifecycle_status == "source_backed_review_required"
     assert "ekologus_public_waste_packaging_obligations_2026_07_01" in (
-        match.service_card.source_fact_ids
+        selected.service_card.source_fact_ids
     )
     assert any(
         "techniczne zalecenie magazynowania odpadów" in rule.reason
-        for rule in match.service_card.forbidden_claims
+        for rule in selected.service_card.forbidden_claims
     )
 
 
@@ -628,22 +637,32 @@ def test_water_permit_topic_matches_review_required_public_source_card() -> None
         )
     )
 
-    blocker_codes = {blocker.code for blocker in content_knowledge_card_blockers(match)}
-    assert match.service_card is not None
-    assert match.service_card.id == "ekologus_service_operat_wodnoprawny"
-    assert match.service_card.lifecycle_status == "source_backed_review_required"
-    assert "missing_service_card" not in blocker_codes
-    assert "ekologus_public_water_permit_documentation_2026_07_02" in (
-        match.service_card.source_fact_ids
+    assert match.service_card is None
+    assert "missing_service_card" in {
+        blocker.code for blocker in content_knowledge_card_blockers(match)
+    }
+    assert any(
+        candidate.card.id == "ekologus_service_operat_wodnoprawny"
+        for candidate in match.service_candidates
     )
-    assert "public_site" in match.service_card.source_connectors
+
+    selected = select_content_knowledge_service_card(
+        match, "ekologus_service_operat_wodnoprawny"
+    )
+
+    assert selected.service_card is not None
+    assert selected.service_card.lifecycle_status == "source_backed_review_required"
+    assert "ekologus_public_water_permit_documentation_2026_07_02" in (
+        selected.service_card.source_fact_ids
+    )
+    assert "public_site" in selected.service_card.source_connectors
     assert any(
         "gwarancja uzyskania pozwolenia wodnoprawnego" in rule.reason
-        for rule in match.service_card.forbidden_claims
+        for rule in selected.service_card.forbidden_claims
     )
     assert any(
         "GSC/WordPress evidence" in requirement
-        for requirement in match.service_card.evidence_requirements
+        for requirement in selected.service_card.evidence_requirements
     )
 
 
