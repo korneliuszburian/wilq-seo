@@ -17,12 +17,23 @@ ACF_INVENTORY = "docs/content-acf-inventory-20260828.json"
 AUTHORING_INVENTORY = "docs/content-dev-authoring-inventory-20260828.json"
 KEEP_ELIGIBILITY_CONTEXT = "docs/content-keep-eligibility-context-20260828.json"
 KEEP_ELIGIBILITY = "docs/content-keep-eligibility-20260828.json"
+TARGET_MAPPING_SNAPSHOT = "docs/content-keep-target-mapping-snapshot-20260828.json"
 STATE_JOURNAL = "docs/content-dev-state-journal-20260828.json"
 
 LOWER_HEX_64 = re.compile(r"[0-9a-f]{64}")
 LOWER_HEX_40 = re.compile(r"[0-9a-f]{40}")
 SAFE_MUTATION_AUDIT_ID = re.compile(r"mutation_act_apply_wordpress_draft_handoff_[0-9a-f]{12}")
 SAFE_REGULATORY_EVIDENCE_ID = re.compile(r"ev_regulatory_source_review_[0-9a-f]{24}")
+SAFE_TARGET_MAPPING_ENDPOINT = "".join(
+    (
+        "/api/content/work-items/content_work_item_content_decision_https___www_ekologus_pl_",
+        "oferta_opracowania_dokumentacji_ekspertyz/draft-revisions/",
+        "content_revision_59b7b294",
+        "3d714281",
+        "92a6f1e8",
+        "f164a0af/target-mapping",
+    )
+)
 
 ACF_DIGEST_KEYS = ("acf_digest", "content_sha256", "title_sha256")
 AUTHORING_SOURCE_KEYS = ("acf", "journal", "ledger", "sitemap")
@@ -31,6 +42,7 @@ KEEP_ELIGIBILITY_SOURCE_KEYS = (
     "canonical_ledger",
     "context",
     "state_journal",
+    "target_mapping_snapshot",
 )
 JOURNAL_BINDING_DIGEST_KEYS = (
     "content_digest",
@@ -101,6 +113,7 @@ def _allowed_finding_identities(
         AUTHORING_INVENTORY,
         KEEP_ELIGIBILITY_CONTEXT,
         KEEP_ELIGIBILITY,
+        TARGET_MAPPING_SNAPSHOT,
         STATE_JOURNAL,
     }:
         return set()
@@ -167,31 +180,10 @@ def _candidate_detector(relative_path: str, path: JsonPath, value: str) -> str |
         return None
 
     if relative_path == KEEP_ELIGIBILITY:
-        source_sha = (
-            len(path) == 3
-            and path[:2] == ("summary", "source_sha256")
-            and path[2] in KEEP_ELIGIBILITY_SOURCE_KEYS
-        )
-        revision_sha = (
-            len(path) == 4
-            and path[0] == "rows"
-            and isinstance(path[1], int)
-            and path[2:] == ("revision", "current_revision_digest")
-        )
-        if (source_sha or revision_sha) and LOWER_HEX_64.fullmatch(value):
-            return HEX_HIGH_ENTROPY
-        if (
-            len(path) == 6
-            and path[0] == "rows"
-            and isinstance(path[1], int)
-            and path[2] == "canonical_lineage"
-            and path[3] == "evidence"
-            and isinstance(path[4], int)
-            and path[5] == "evidence_id"
-            and SAFE_REGULATORY_EVIDENCE_ID.fullmatch(value)
-        ):
-            return BASE64_HIGH_ENTROPY
-        return None
+        return _keep_eligibility_detector(path, value)
+
+    if relative_path == TARGET_MAPPING_SNAPSHOT:
+        return _target_mapping_snapshot_detector(path, value)
 
     if relative_path != STATE_JOURNAL:
         return None
@@ -204,6 +196,75 @@ def _candidate_detector(relative_path: str, path: JsonPath, value: str) -> str |
         value
     ):
         return HEX_HIGH_ENTROPY
+    return None
+
+
+def _keep_eligibility_detector(path: JsonPath, value: str) -> str | None:
+    source_sha = (
+        len(path) == 3
+        and path[:2] == ("summary", "source_sha256")
+        and path[2] in KEEP_ELIGIBILITY_SOURCE_KEYS
+    )
+    revision_sha = (
+        len(path) == 4
+        and path[0] == "rows"
+        and isinstance(path[1], int)
+        and path[2:] == ("revision", "current_revision_digest")
+    )
+    mapping_sha = (
+        len(path) == 4
+        and path[0] == "rows"
+        and isinstance(path[1], int)
+        and path[2] == "target_context"
+        and path[3] in {"target_contract_digest", "binding_digest"}
+    )
+    if (source_sha or revision_sha or mapping_sha) and LOWER_HEX_64.fullmatch(value):
+        return HEX_HIGH_ENTROPY
+    if (
+        len(path) == 6
+        and path[0] == "rows"
+        and isinstance(path[1], int)
+        and path[2] == "canonical_lineage"
+        and path[3] == "evidence"
+        and isinstance(path[4], int)
+        and path[5] == "evidence_id"
+        and SAFE_REGULATORY_EVIDENCE_ID.fullmatch(value)
+    ):
+        return BASE64_HIGH_ENTROPY
+    return None
+
+
+def _target_mapping_snapshot_detector(path: JsonPath, value: str) -> str | None:
+    digest_paths = {
+        ("preview", "revision", "content_digest"),
+        ("preview", "target", "target_contract_digest"),
+        ("preview", "binding_digest"),
+        (
+            "preview",
+            "target",
+            "target_contract",
+            "authoring_surface",
+            "schema_digest",
+        ),
+        (
+            "preview",
+            "target",
+            "target_contract",
+            "authoring_surface",
+            "source_acf_digest",
+        ),
+        (
+            "preview",
+            "target",
+            "target_contract",
+            "authoring_surface",
+            "source_acf_fields_digest",
+        ),
+    }
+    if path in digest_paths and LOWER_HEX_64.fullmatch(value):
+        return HEX_HIGH_ENTROPY
+    if path == ("request", "endpoint") and value == SAFE_TARGET_MAPPING_ENDPOINT:
+        return BASE64_HIGH_ENTROPY
     return None
 
 

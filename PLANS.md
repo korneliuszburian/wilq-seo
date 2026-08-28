@@ -39,11 +39,12 @@ powtórzyć logi.
 
 ### Gate przed nową pracą
 
-Projekcja keep eligibility i jej sanitised context zostały deterministycznie
-wyprowadzone z main `441579ea888800b8ce51cbc1bfa15dacec7c8ace`. Ten fixed
-point zawiera exact URL binding, provenance i fail-closed ambiguity/staleness;
-wcześniejsze fuzzy sygnały nadal nie są bindingiem usługi ani claimu. Stan
-lifecycle i publikacji zmiany istnieje wyłącznie w Bead/PR, nie w tym planie.
+Projekcja keep eligibility, jej sanitised context oraz jeden exact target-mapping
+snapshot zostały wyprowadzone z main `8956cb5e852d57d4a8702462c7b8509bcb614521`.
+Ten fixed point zawiera exact URL binding, provenance i fail-closed
+ambiguity/staleness; wcześniejsze fuzzy sygnały nadal nie są bindingiem usługi
+ani claimu. Stan lifecycle i publikacji zmiany istnieje wyłącznie w Bead/PR,
+nie w tym planie.
 
 ### Fakty, których nie wolno zgubić
 
@@ -78,6 +79,12 @@ lifecycle i publikacji zmiany istnieje wyłącznie w Bead/PR, nie w tym planie.
   identity obejmuje 9 exact ścieżek; primary partition to `9 existing / 20
   fork / 25 retained missing / 3 identity missing`, dlatego `eligible=0`.
   Nie generować kolejnego draftu dla URL/revision/action już zarejestrowanego.
+- Jeden uzasadniony read-only target capture dla
+  `/oferta/opracowania-dokumentacji-ekspertyz` potwierdza exact obiekt
+  `uslugi/119`, ACF `flexible-home`, bieżącą approved revision i canonical
+  `ContentTargetMappingPreview`. Snapshot jest observation-only, zawiera 14
+  komponentów `human_only`, nie ma confirmation ani draft preview i zmienia
+  wyłącznie blocker z braku podglądu na `target_mapping_confirmation_missing`.
 
 ### Kolejność po wznowieniu
 
@@ -162,8 +169,8 @@ pliku:
 | 0. Inventory, connector context and source-pack lineage | complete with external-root caveat | 181 pack refs verified 181/181 by SHA/size at the retained final source-pack root; public dev sitemap 214 unique paths exactly covers the manifest; GSC/GA4/Ahrefs/Ads/WP evidence IDs; Keyword Planner blocked |
 | 1. Canonical and duplicate decisions | complete | 214 rows: 57 keep, 87 noindex, 46 redirect, 24 remove; explicit targets/receipts are sealed in the canonical ledger |
 | 2. Candidate delivery and page-asset projection | complete as candidate-only | 57 Markdown candidates; 9 historical projection rows + 48 rebase candidates; no write/apply authority |
-| 3. Current revision/service binding | in progress | Deterministyczna projekcja 57/57 została wyprowadzona z main `441579ea`: 57 exact REST targets, 13 approved revisions, 7 exact current-code service bindings, 27 retained IDs, 54 current IDs, 0 równych ID, 0 source-pack work-item bindings, `typed_target_context_count=0`, `reconciled_work_item_count=0` i `eligible=0`; primary blockers `9/20/25/3`. Etap pozostaje otwarty do jawnego reconciliation i typed target proof, bez heuristic promotion. |
-| 4. ACF/the_content mapping and readback | in progress | Read-only REST inventory covers all 175 content objects (58 non-empty ACF surfaces, 116 `the_content` surfaces, 1 empty ACF root; 57/57 keep paths matched); full component write mappings and readback authority remain 0 |
+| 3. Current revision/service binding | in progress | Deterministyczna projekcja 57/57 została wyprowadzona z main `8956cb5e`: 57 exact REST targets, 13 approved revisions, 7 exact current-code service bindings, 27 retained IDs, 54 current IDs, 0 równych ID, 0 source-pack work-item bindings, `typed_target_context_count=0`, `reconciled_work_item_count=0` i `eligible=0`; primary blockers `9/20/25/3`. Etap pozostaje otwarty do jawnego reconciliation i source-pack binding, bez heuristic promotion. |
+| 4. ACF/the_content mapping and readback | in progress | Read-only REST inventory covers all 175 content objects (58 non-empty ACF surfaces, 116 `the_content` surfaces, 1 empty ACF root; 57/57 keep paths matched). Jeden current ACF preview jest exact i `ready_for_human_mapping`, lecz confirmation/draft preview nadal 0; pozostałe 56 nie mają current mapping preview. |
 | 5. Final robot-ready gate | pending | stays `robot_ready=0` until stages 3–4 and owner/legal review pass |
 
 ## Current authority and recovery links
@@ -181,20 +188,21 @@ pliku:
 - [Dev authoring inventory](./docs/content-dev-authoring-inventory-20260828.json) — deterministic offline projection with `inventory_role=authoring_target`, 214 sitemap observations, 175 exact REST identities and 39 explicit `rest_object_not_observed` blockers; all publication/write/generation/robot gates remain false (SHA256 `6f1a381901cdeec7e2d5215e12305087018330c3854830770908a79ebae122ec`).
 - [Dev state journal](./docs/content-dev-state-journal-20260828.json) — one read-only index of URL state, every known dev draft and content mutation audit; consult it before any new generation.
 - [Keep eligibility context](./docs/content-keep-eligibility-context-20260828.json) — jednorazowy sanitised snapshot wyłącznie dozwolonych lokalnych GET-ów; bez vendor read/raw/private, z `target_context_capture_performed=false`; runtime SHA unattested (SHA256 `410556ac65a69c6977af80f889e535acfe15640c3a454fe1e5d188d4a0aab46b`).
-- [Keep eligibility projection](./docs/content-keep-eligibility-20260828.json) — deterministyczne 57-row read-only rozstrzygnięcie z exact source SHA, `typed_target_context_count=0`, `reconciled_work_item_count=0`, zachowanymi gałęziami ID i primary partition `9/20/25/3`; wszystkie generation/publish/write/robot axes false (SHA256 `cdfb5c4f951f4c0070154b47be2139a152d73fb48f07719116739f4466ee7c95`).
+- [Current target-mapping snapshot](./docs/content-keep-target-mapping-snapshot-20260828.json) — jeden sanitised GET przez kanoniczny endpoint WILQ, z transient read-only WordPress/ACF read, bez retained raw values i bez confirmation/write authority; runtime SHA unattested (SHA256 `a5acb59da9895c78dc5b944d0952608b698288e4eafec2933c0addefaa06a63b`).
+- [Keep eligibility projection](./docs/content-keep-eligibility-20260828.json) — deterministyczne 57-row read-only rozstrzygnięcie z exact source SHA, jednym `current_target_mapping_preview`, `typed_target_context_count=0`, `reconciled_work_item_count=0`, zachowanymi gałęziami ID i primary partition `9/20/25/3`; wszystkie generation/publish/write/robot axes false (SHA256 `f7a8883d000cf50bb4b8a5e6e44e12277bb577e75ab36196c5c7ff498ee98a86`).
 - [Action binding recovery](./docs/dev-content-action-binding-recovery-20260828.json) — seven historical ActionObject bindings recovered from API metadata; vendor post IDs remain explicitly unknown.
 
-Keep eligibility projection and context derive from main
-`441579ea888800b8ce51cbc1bfa15dacec7c8ace`. Their implementation lifecycle
+Keep eligibility projection, context and target snapshot derive from main
+`8956cb5e852d57d4a8702462c7b8509bcb614521`. Their implementation lifecycle
 and publication state live in the Bead/PR; this plan does not restate that
-state. Publication/content/vendor authority remains false.
+state. Publication/content/vendor-write authority remains false.
 
 The remaining product boundary is explicit reconciliation for one blocked
 exact path: preserve both work IDs, attach immutable ID proof, bind the source
-pack by work-item ID and supply typed current target context. Until every hard
-gate closes, preserve `eligible=0` and never regenerate an indexed
-URL/revision/action. Publication, vendor read/write, ActionObject apply and
-deployment remain separate authority.
+pack by work-item ID and obtain an exact human confirmation plus persisted
+draft preview. Until every hard gate closes, preserve `eligible=0` and never
+regenerate an indexed URL/revision/action. Publication, vendor write,
+ActionObject apply and deployment remain separate authority.
 
 ---
 

@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import re
+from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlsplit
 
 from wilq.content.knowledge.source_facts import ekologus_service_binding_urls
+from wilq.content.workflow.target.target_mapping_snapshot import (
+    TARGET_MAPPING_PATH,
+    ContentTargetMappingSnapshotEnvelope,
+)
 
 
 def _digest(*chunks: str) -> str:
@@ -18,7 +23,13 @@ _JOURNAL_SCHEMA_VERSION = "dev_content_state_journal_v1"
 _LEDGER_SCHEMA_VERSION = "content_canonical_ledger_row_v1"
 _CONTEXT_SCHEMA_VERSION = "content_keep_eligibility_context_v1"
 
-_SOURCE_KEYS = ("authoring_inventory", "state_journal", "canonical_ledger", "context")
+_SOURCE_KEYS = (
+    "authoring_inventory",
+    "state_journal",
+    "canonical_ledger",
+    "context",
+    "target_mapping_snapshot",
+)
 _PUBLIC_HOST = "www.ekologus.pl"
 _DEV_HOST = "ekologus.dev.proudsite.pl"
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
@@ -62,6 +73,7 @@ class KeepEligibilityInput:
     state_journal: Mapping[str, Any]
     canonical_ledger: Sequence[Mapping[str, Any]]
     context: Mapping[str, Any]
+    target_mapping_snapshot: Mapping[str, Any]
     provenance: Mapping[str, SourceProvenance]
     expected_counts: tuple[tuple[str, int], ...]
     expected_primary_blocker_counts: tuple[tuple[str, int], ...]
@@ -90,6 +102,7 @@ class _ValidatedInput:
     journal: _JournalData
     ledger: dict[str, Mapping[str, Any]]
     context: _ContextData
+    target_mapping_by_path: dict[str, ContentTargetMappingSnapshotEnvelope]
     keep_paths: set[str]
 
 
@@ -100,12 +113,119 @@ def _validate_input(source: KeepEligibilityInput) -> _ValidatedInput:
     ledger = _validated_ledger(source.canonical_ledger)
     context = _validated_context(source.context)
     keep_paths = _validated_keep_sets(authoring, journal.rows, ledger, context.catalog_rows)
+    target_mapping = _validated_target_mapping_snapshot(source.target_mapping_snapshot)
+    _cross_check_target_mapping_snapshot(
+        target_mapping,
+        authoring=authoring,
+        journal=journal,
+        context=context,
+        keep_paths=keep_paths,
+    )
     return _ValidatedInput(
         authoring=authoring,
         journal=journal,
         ledger=ledger,
         context=context,
+        target_mapping_by_path={target_mapping.identity.path: target_mapping},
         keep_paths=keep_paths,
+    )
+
+
+def _validated_target_mapping_snapshot(
+    payload: Mapping[str, Any],
+) -> ContentTargetMappingSnapshotEnvelope:
+    try:
+        return ContentTargetMappingSnapshotEnvelope.model_validate(payload)
+    except ValueError as error:
+        raise KeepEligibilityError(
+            "Target mapping snapshot does not satisfy the exact sanitised contract."
+        ) from error
+
+
+def _cross_check_target_mapping_snapshot(
+    snapshot: ContentTargetMappingSnapshotEnvelope,
+    *,
+    authoring: Mapping[str, Mapping[str, Any]],
+    journal: _JournalData,
+    context: _ContextData,
+    keep_paths: set[str],
+) -> None:
+    path = snapshot.identity.path
+    if path not in keep_paths or path != TARGET_MAPPING_PATH:
+        raise KeepEligibilityError("Target mapping snapshot is outside the exact keep set.")
+    authoring_row = authoring[path]
+    journal_row = journal.rows[path]
+    preview = snapshot.preview
+    if preview.target is None:
+        raise KeepEligibilityError("Validated target snapshot lost its exact target.")
+    contract = preview.target.target_contract
+    surface = contract.authoring_surface
+    if surface is None:
+        raise KeepEligibilityError("Validated target snapshot lost its authoring surface.")
+    expected_authoring = {
+        "object_id": int(contract.object_id),
+        "endpoint": contract.rest_endpoint,
+        "post_type": contract.post_type,
+        "authoring_mode": surface.kind,
+        "status": contract.post_status,
+        "modified": contract.modified,
+    }
+    authoring_url = _text(authoring_row.get("dev_url"), "target mapping authoring URL")
+    if (
+        any(authoring_row.get(key) != value for key, value in expected_authoring.items())
+        or _url_path(authoring_url, _DEV_HOST) != _url_path(contract.url, _DEV_HOST)
+        or not _acf_layouts_match(authoring_row, surface.layouts)
+    ):
+        raise KeepEligibilityError(
+            "Target mapping snapshot does not match the retained authoring inventory."
+        )
+    expected_journal = {
+        "planning_probe_work_item_id": snapshot.identity.work_item_id,
+        "current_revision_id": snapshot.identity.revision_id,
+        "current_revision_digest": preview.revision.content_digest,
+        "current_revision_status": "approved",
+    }
+    if any(journal_row.get(key) != value for key, value in expected_journal.items()):
+        raise KeepEligibilityError(
+            "Target mapping snapshot does not match the retained approved revision."
+        )
+    matches = context.bindings_by_path.get(path, ())
+    if len(matches) != 1:
+        raise KeepEligibilityError(
+            "Target mapping snapshot does not have one exact current service binding."
+        )
+    card_id = _text(matches[0].get("service_card_id"), "target mapping service card")
+    card = context.service_cards[card_id]
+    freshness = _text(card.get("freshness"), "target mapping service freshness").casefold()
+    if (
+        card.get("lifecycle_status") != "approved_current"
+        or freshness.startswith(("stale", "rejected"))
+        or not _string_list(card, "evidence_ids", "target mapping service card")
+        or not _string_list(card, "source_connectors", "target mapping service card")
+    ):
+        raise KeepEligibilityError(
+            "Target mapping snapshot service binding is not currently verified."
+        )
+
+
+def _acf_layouts_match(row: Mapping[str, Any], observed_layouts: Sequence[Any]) -> bool:
+    retained_counts: Counter[str] = Counter()
+    retained_fields: dict[str, set[str]] = defaultdict(set)
+    for index, value in enumerate(_list(row, "acf_layouts", "target authoring row")):
+        layout = _mapping(value, f"target authoring layout {index}")
+        if layout.get("row_index") is not None:
+            continue
+        root_field = _text(layout.get("root_field"), f"target authoring layout {index}.root")
+        if root_field != "flexible-home":
+            raise KeepEligibilityError("Target authoring layout has a different root field.")
+        name = _text(layout.get("layout_name"), f"target authoring layout {index}.name")
+        retained_counts[name] += 1
+        retained_fields[name].update(
+            _string_list(layout, "field_names", f"target authoring layout {index}")
+        )
+    observed_counts = Counter(layout.name for layout in observed_layouts)
+    return retained_counts == observed_counts and all(
+        set(layout.fields).issubset(retained_fields[layout.name]) for layout in observed_layouts
     )
 
 

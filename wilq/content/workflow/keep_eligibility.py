@@ -14,6 +14,9 @@ from wilq.content.workflow.keep_eligibility_validation import (
     _JournalData,
     _validate_input,
 )
+from wilq.content.workflow.target.target_mapping_snapshot import (
+    ContentTargetMappingSnapshotEnvelope,
+)
 
 OUTPUT_SCHEMA_VERSION = "content_keep_eligibility_v1"
 
@@ -38,6 +41,7 @@ def build_keep_eligibility_projection(source: KeepEligibilityInput) -> dict[str,
             catalog=validated.context.catalog_rows[path],
             journal_data=validated.journal,
             context=validated.context,
+            target_mapping_snapshot=validated.target_mapping_by_path.get(path),
             provenance=source.provenance,
         )
         for path in sorted(validated.keep_paths)
@@ -48,14 +52,15 @@ def build_keep_eligibility_projection(source: KeepEligibilityInput) -> dict[str,
         source.expected_counts,
         source.expected_primary_blocker_counts,
     )
+    target_capture = next(iter(validated.target_mapping_by_path.values()))
     return {
         "schema_version": OUTPUT_SCHEMA_VERSION,
-        "as_of": validated.context.capture_completed_at,
+        "as_of": target_capture.capture_completed_at.isoformat(),
         "read_only": True,
         "safety": {
             "generation_performed": False,
-            "target_context_capture_performed": False,
-            "vendor_read_performed": False,
+            "target_context_capture_performed": True,
+            "vendor_read_performed": True,
             "vendor_write": False,
         },
         "summary": summary,
@@ -72,6 +77,7 @@ def _project_row(
     catalog: Mapping[str, Any],
     journal_data: _JournalData,
     context: _ContextData,
+    target_mapping_snapshot: ContentTargetMappingSnapshotEnvelope | None,
     provenance: Mapping[str, SourceProvenance],
 ) -> dict[str, Any]:
     identity = _work_identity(journal, catalog)
@@ -82,7 +88,7 @@ def _project_row(
     existing["present"] = any(existing.values())
     service = _service_binding(path, journal, context)
     revision = _revision_facts(journal)
-    target = _target_context_facts(journal.get("target_mapping_status"))
+    target = _target_context_facts(journal.get("target_mapping_status"), target_mapping_snapshot)
     connectors = _connector_context(journal, context.connector_evidence)
     resolved_id = identity["resolved_work_item_id"]
     ledger_work_ids = list(cast(list[str], ledger["work_item_ids"]))
@@ -218,13 +224,49 @@ def _revision_facts(journal: Mapping[str, Any]) -> dict[str, Any]:
 
 def _target_context_facts(
     historical_target_status: Any,
+    snapshot: ContentTargetMappingSnapshotEnvelope | None,
 ) -> dict[str, Any]:
-    return {
+    facts: dict[str, Any] = {
         "typed_context_present": False,
+        "mapping_preview_present": snapshot is not None,
+        "mapping_preview_status": "absent",
         "validation_status": "absent",
+        "confirmation_present": False,
+        "draft_preview_present": False,
         "historical_journal_target_status": historical_target_status,
         "historical_status_used_as_current_context": False,
     }
+    if snapshot is None:
+        return facts
+    preview = snapshot.preview
+    target = preview.target
+    if target is None or preview.binding_digest is None:
+        raise KeepEligibilityError("Validated target mapping snapshot lost its exact target.")
+    contract = target.target_contract
+    surface = contract.authoring_surface
+    if surface is None:
+        raise KeepEligibilityError("Validated target mapping snapshot lost its authoring surface.")
+    facts.update(
+        {
+            "mapping_preview_status": preview.status,
+            "validation_status": "awaiting_human_confirmation",
+            "observation_evidence_id": target.observation_evidence.evidence_id,
+            "observation_observed_at": target.observation_evidence.observed_at,
+            "target_contract_digest": target.target_contract_digest,
+            "binding_digest": preview.binding_digest,
+            "target": {
+                "dev_url": contract.url,
+                "object_id": contract.object_id,
+                "post_type": contract.post_type,
+                "rest_endpoint": contract.rest_endpoint,
+                "authoring_mode": surface.kind,
+                "root_field": surface.root_field,
+                "authority": contract.authority,
+                "write_authorized": contract.write_authorized,
+            },
+        }
+    )
+    return facts
 
 
 def _connector_context(
@@ -271,6 +313,10 @@ def _hard_blockers(
         (service_status != "verified", f"service_binding_{service_status}"),
         (not revision["complete"], "current_revision_missing"),
         (revision["complete"] and not revision["approved"], "current_revision_not_approved"),
+        (
+            target["validation_status"] == "awaiting_human_confirmation",
+            "target_mapping_confirmation_missing",
+        ),
         (target["validation_status"] == "absent", "typed_target_context_absent"),
         (target["validation_status"] == "invalid", "typed_target_context_invalid"),
         (not connectors["all_resolved_fresh"], "connector_evidence_unresolved_or_stale"),
@@ -313,6 +359,9 @@ def _projection_summary(
         ),
         "typed_target_context_count": sum(
             row["target_context"]["typed_context_present"] for row in rows
+        ),
+        "current_target_mapping_preview_count": sum(
+            row["target_context"]["mapping_preview_present"] for row in rows
         ),
         "eligible_count": sum(row["planning_eligible"] for row in rows),
     }

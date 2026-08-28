@@ -1,0 +1,789 @@
+{
+  "artifact_role": "current_state",
+  "capture_completed_at": "2026-08-28T21:31:28.253868Z",
+  "capture_started_at": "2026-08-28T21:31:22.010832Z",
+  "identity": {
+    "path": "/oferta/opracowania-dokumentacji-ekspertyz",
+    "public_url": "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+    "revision_id": "content_revision_59b7b2943d71428192a6f1e8f164a0af",
+    "work_item_id": "content_work_item_content_decision_https___www_ekologus_pl_oferta_opracowania_dokumentacji_ekspertyz"
+  },
+  "preview": {
+    "binding_digest": "cd81ccbe9d78c2f8708172fbed5c90a3f87f9ef9e1f3fdfedb1d07f2eeaa620e",
+    "blockers": [],
+    "caveats": [
+      "To jest podgląd do decyzji człowieka, nie zapis do WordPressa.",
+      "Zmiana rewizji albo kontraktu targetu wymaga nowego odczytu mapowania."
+    ],
+    "components": [
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "document-title",
+        "kind": "document_title",
+        "label": "Tytuł dokumentu",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "wordpress_title",
+            "label": "Tytuł strony"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "page-assets",
+        "kind": "page_assets",
+        "label": "Lead i meta strony",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "meta_title",
+            "label": "Tytuł meta"
+          },
+          {
+            "key": "meta_description",
+            "label": "Opis meta"
+          },
+          {
+            "key": "h1",
+            "label": "Nagłówek H1"
+          },
+          {
+            "key": "lead",
+            "label": "Lead strony"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "section:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_section_01",
+        "kind": "rich_text",
+        "label": "Jakiej dokumentacji środowiskowej potrzebuje firma?",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "heading",
+            "label": "Nagłówek sekcji"
+          },
+          {
+            "key": "content_html",
+            "label": "Treść sekcji"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "section:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_section_02",
+        "kind": "rich_text",
+        "label": "Wnioski o wydanie pozwoleń sektorowych dla firmy.",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "heading",
+            "label": "Nagłówek sekcji"
+          },
+          {
+            "key": "content_html",
+            "label": "Treść sekcji"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "section:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_section_04",
+        "kind": "rich_text",
+        "label": "Dokumentacje dla administracji w sprawach środowiskowych.",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "heading",
+            "label": "Nagłówek sekcji"
+          },
+          {
+            "key": "content_html",
+            "label": "Treść sekcji"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "section:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_section_05",
+        "kind": "rich_text",
+        "label": "Uzyskanie lub aktualizacja pozwolenia a potrzebne opracowanie.",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "heading",
+            "label": "Nagłówek sekcji"
+          },
+          {
+            "key": "content_html",
+            "label": "Treść sekcji"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "section:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_section_07",
+        "kind": "rich_text",
+        "label": "Jak przekazać informacje potrzebne do rozmowy o opracowaniu?",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "heading",
+            "label": "Nagłówek sekcji"
+          },
+          {
+            "key": "content_html",
+            "label": "Treść sekcji"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "section:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_section_08",
+        "kind": "rich_text",
+        "label": "Czym operat wodnoprawny różni się od dokumentacji i ekspertyz?",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "heading",
+            "label": "Nagłówek sekcji"
+          },
+          {
+            "key": "content_html",
+            "label": "Treść sekcji"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "faq:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_faq_01",
+        "kind": "faq",
+        "label": "Czym różni się dokumentacja środowiskowa od ekspertyzy?",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "question",
+            "label": "Pytanie"
+          },
+          {
+            "key": "answer_markdown",
+            "label": "Odpowiedź"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "faq:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_faq_02",
+        "kind": "faq",
+        "label": "Jak rozpoznać właściwe opracowanie środowiskowe?",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "question",
+            "label": "Pytanie"
+          },
+          {
+            "key": "answer_markdown",
+            "label": "Odpowiedź"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "faq:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_faq_03",
+        "kind": "faq",
+        "label": "Czy operat wodnoprawny jest tym samym co dokumentacja środowiskowa?",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "question",
+            "label": "Pytanie"
+          },
+          {
+            "key": "answer_markdown",
+            "label": "Odpowiedź"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "cta:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_cta_01",
+        "kind": "cta",
+        "label": "Wezwanie do działania",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "body_markdown",
+            "label": "Treść CTA"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "cta:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_cta_02",
+        "kind": "cta",
+        "label": "Wezwanie do działania",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "body_markdown",
+            "label": "Treść CTA"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      },
+      {
+        "available_layouts": [
+          "hero",
+          "service-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards",
+          "heading_data",
+          "content_data",
+          "links-cards"
+        ],
+        "component_id": "link:content_planning_proposal_87fc0f5969b04784bc26fc0fd771b544_link_01",
+        "kind": "internal_link",
+        "label": "Przekaż informacje o sprawie",
+        "reason": "Odczyt targetu pokazuje dostępny układ, ale nie zawiera zatwierdzonego przypisania tego elementu dokumentu do konkretnego pola.",
+        "source_fields": [
+          {
+            "key": "anchor_text",
+            "label": "Tekst linku"
+          },
+          {
+            "key": "target_url",
+            "label": "Adres linku"
+          }
+        ],
+        "status": "human_only",
+        "target_root_field": "flexible-home"
+      }
+    ],
+    "confirmation": null,
+    "contract_version": "content_target_mapping_preview_v1",
+    "response_type": "content_target_mapping_preview",
+    "revision": {
+      "content_digest": "4a0168f26e42148a169a4b396a53f1491bb288acc760041905872bb831539f94",
+      "revision_id": "content_revision_59b7b2943d71428192a6f1e8f164a0af"
+    },
+    "status": "ready_for_human_mapping",
+    "target": {
+      "observation_evidence": {
+        "connector_id": "wordpress_ekologus",
+        "evidence_id": "ev_wordpress_target_observation_117a6ed0fd933b54cbefaa2c",
+        "modified": "2026-07-23T17:27:25",
+        "object_id": "119",
+        "observed_at": "2026-08-28T21:31:24.942764+00:00",
+        "post_status": "publish",
+        "post_type": "uslugi",
+        "url": "https://ekologus.dev.proudsite.pl/oferta/opracowania-dokumentacji-ekspertyz/"
+      },
+      "target_contract": {
+        "authoring_surface": {
+          "kind": "acf_flexible_content",
+          "layouts": [
+            {
+              "fields": [
+                "is_breadcrumbs",
+                "hero_type",
+                "heading_component"
+              ],
+              "label": "Hero",
+              "name": "hero",
+              "relationships": [],
+              "schema_fields": [
+                "is_breadcrumbs",
+                "hero_type",
+                "img",
+                "slider_img",
+                "heading_component"
+              ],
+              "section_index": 1,
+              "writable_fields": []
+            },
+            {
+              "fields": [],
+              "label": "Service cards",
+              "name": "service-cards",
+              "relationships": [],
+              "schema_fields": [],
+              "section_index": 2,
+              "writable_fields": []
+            },
+            {
+              "fields": [
+                "heading_component"
+              ],
+              "label": "Heading data",
+              "name": "heading_data",
+              "relationships": [],
+              "schema_fields": [
+                "heading_component"
+              ],
+              "section_index": 3,
+              "writable_fields": []
+            },
+            {
+              "fields": [
+                "content"
+              ],
+              "label": "Content data",
+              "name": "content_data",
+              "relationships": [],
+              "schema_fields": [
+                "content"
+              ],
+              "section_index": 4,
+              "writable_fields": []
+            },
+            {
+              "fields": [
+                "links_cards_services",
+                "links_cards_featured_service",
+                "links_cards_image",
+                "links_cards_description",
+                "links_cards_button"
+              ],
+              "label": "Links cards",
+              "name": "links-cards",
+              "relationships": [],
+              "schema_fields": [
+                "links_cards_services",
+                "links_cards_featured_service",
+                "links_cards_image",
+                "links_cards_description",
+                "links_cards_button"
+              ],
+              "section_index": 5,
+              "writable_fields": [
+                "links_cards_description"
+              ]
+            },
+            {
+              "fields": [
+                "heading_component"
+              ],
+              "label": "Heading data",
+              "name": "heading_data",
+              "relationships": [],
+              "schema_fields": [
+                "heading_component"
+              ],
+              "section_index": 6,
+              "writable_fields": []
+            },
+            {
+              "fields": [
+                "content"
+              ],
+              "label": "Content data",
+              "name": "content_data",
+              "relationships": [],
+              "schema_fields": [
+                "content"
+              ],
+              "section_index": 7,
+              "writable_fields": []
+            },
+            {
+              "fields": [
+                "links_cards_services",
+                "links_cards_featured_service",
+                "links_cards_image",
+                "links_cards_description",
+                "links_cards_button"
+              ],
+              "label": "Links cards",
+              "name": "links-cards",
+              "relationships": [],
+              "schema_fields": [
+                "links_cards_services",
+                "links_cards_featured_service",
+                "links_cards_image",
+                "links_cards_description",
+                "links_cards_button"
+              ],
+              "section_index": 8,
+              "writable_fields": [
+                "links_cards_description"
+              ]
+            },
+            {
+              "fields": [
+                "heading_component"
+              ],
+              "label": "Heading data",
+              "name": "heading_data",
+              "relationships": [],
+              "schema_fields": [
+                "heading_component"
+              ],
+              "section_index": 9,
+              "writable_fields": []
+            },
+            {
+              "fields": [
+                "content"
+              ],
+              "label": "Content data",
+              "name": "content_data",
+              "relationships": [],
+              "schema_fields": [
+                "content"
+              ],
+              "section_index": 10,
+              "writable_fields": []
+            },
+            {
+              "fields": [
+                "links_cards_services",
+                "links_cards_featured_service",
+                "links_cards_image",
+                "links_cards_description",
+                "links_cards_button"
+              ],
+              "label": "Links cards",
+              "name": "links-cards",
+              "relationships": [],
+              "schema_fields": [
+                "links_cards_services",
+                "links_cards_featured_service",
+                "links_cards_image",
+                "links_cards_description",
+                "links_cards_button"
+              ],
+              "section_index": 11,
+              "writable_fields": [
+                "links_cards_description"
+              ]
+            },
+            {
+              "fields": [
+                "heading_component"
+              ],
+              "label": "Heading data",
+              "name": "heading_data",
+              "relationships": [],
+              "schema_fields": [
+                "heading_component"
+              ],
+              "section_index": 12,
+              "writable_fields": []
+            },
+            {
+              "fields": [
+                "content"
+              ],
+              "label": "Content data",
+              "name": "content_data",
+              "relationships": [],
+              "schema_fields": [
+                "content"
+              ],
+              "section_index": 13,
+              "writable_fields": []
+            },
+            {
+              "fields": [
+                "links_cards_services",
+                "links_cards_featured_service",
+                "links_cards_image",
+                "links_cards_description",
+                "links_cards_button"
+              ],
+              "label": "Links cards",
+              "name": "links-cards",
+              "relationships": [],
+              "schema_fields": [
+                "links_cards_services",
+                "links_cards_featured_service",
+                "links_cards_image",
+                "links_cards_description",
+                "links_cards_button"
+              ],
+              "section_index": 14,
+              "writable_fields": [
+                "links_cards_description"
+              ]
+            }
+          ],
+          "root_field": "flexible-home",
+          "schema_digest": "dafc7afd941af58debbf702c9bc3912b700514847c36562319602e3cc92abd89",
+          "schema_reason": "Schema ACF została odczytana przez OPTIONS dla dokładnego obiektu dev.",
+          "schema_source_ref": "wp-json/wp/v2/uslugi/119 OPTIONS",
+          "schema_status": "available",
+          "source_acf_digest": "1fa298edf1ef8bc77c9ff524ccf880692bf32f7bf1b1f7f0f3e1ebbcd786cc9a",
+          "source_acf_fields_digest": "4f00309398cbe49e229514ac4b91aa674a662a5381f121d1e3a3436df42a4949",
+          "source_acf_root_field_count": 4,
+          "source_acf_row_count": 14,
+          "write_profile_reason": "Schema ACF została odczytana dla dokładnego obiektu dev. WILQ przed zapisem ponownie odczyta cały układ, zachowa niewybrane wartości i podmieni tylko zatwierdzone pola copy. Dokładny schema REST i digest źródła pozwalają zachować layout oraz zmienić wyłącznie bezpośrednie pola tekstowe.",
+          "write_profile_status": "ready"
+        },
+        "authority": "observation_only",
+        "environment": "staging",
+        "modified": "2026-07-23T17:27:25",
+        "object_id": "119",
+        "post_status": "publish",
+        "post_type": "uslugi",
+        "rest_endpoint": "uslugi",
+        "template": null,
+        "url": "https://ekologus.dev.proudsite.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+        "write_authorized": false
+      },
+      "target_contract_digest": "650835e5e88bc756f33c62675d2fa068b091d890532f3a82f0dab732e3291593"
+    },
+    "work_item_id": "content_work_item_content_decision_https___www_ekologus_pl_oferta_opracowania_dokumentacji_ekspertyz"
+  },
+  "request": {
+    "base_url": "http://127.0.0.1:8000",
+    "endpoint": "/api/content/work-items/content_work_item_content_decision_https___www_ekologus_pl_oferta_opracowania_dokumentacji_ekspertyz/draft-revisions/content_revision_59b7b2943d71428192a6f1e8f164a0af/target-mapping",
+    "method": "GET",
+    "runtime_sha_attested": false
+  },
+  "safety": {
+    "api_get_only": true,
+    "generation_performed": false,
+    "private_packet_read": false,
+    "private_values_retained": false,
+    "publish_allowed": false,
+    "raw_response_retained": false,
+    "raw_vendor_values_read_in_process": true,
+    "raw_vendor_values_retained": false,
+    "read_only": true,
+    "robot_ready": false,
+    "vendor_read_performed": true,
+    "vendor_write": false,
+    "write_authorized": false
+  },
+  "schema_version": "content_target_mapping_snapshot_v1"
+}

@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-08-28T18:47:18.011178Z",
+  "as_of": "2026-08-28T21:31:28.253868+00:00",
   "read_only": true,
   "rows": [
     {
@@ -104,8 +104,12 @@
         "status": "verified"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": "blocked_human_mapping",
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -205,8 +209,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -309,8 +317,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -416,8 +428,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -562,8 +578,12 @@
         "status": "verified"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -663,8 +683,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -764,8 +788,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -865,8 +893,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -969,8 +1001,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -1073,8 +1109,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -1177,8 +1217,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -1284,8 +1328,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -1388,8 +1436,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -1489,8 +1541,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -1590,8 +1646,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -1694,8 +1754,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -1795,8 +1859,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -1899,8 +1967,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -2006,8 +2078,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -2110,8 +2186,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": "confirmed_the_content",
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -2208,8 +2288,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -2312,8 +2396,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -2416,8 +2504,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -2517,8 +2609,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -2633,8 +2729,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -2734,8 +2834,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -2835,8 +2939,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -2951,8 +3059,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -3052,8 +3164,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -3168,8 +3284,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -3284,8 +3404,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -3388,8 +3512,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -3492,8 +3620,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -3596,8 +3728,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -3697,8 +3833,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -3813,8 +3953,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -3929,8 +4073,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -4051,8 +4199,12 @@
         "status": "verified"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": "acf_mapping_blocked",
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -4131,7 +4283,7 @@
       "hard_blockers": [
         "work_item_identity_fork",
         "source_pack_work_item_binding_unverified",
-        "typed_target_context_absent"
+        "target_mapping_confirmation_missing"
       ],
       "keyword_planner": {
         "factual_signal_only": true,
@@ -4169,10 +4321,28 @@
         "status": "verified"
       },
       "target_context": {
+        "binding_digest": "cd81ccbe9d78c2f8708172fbed5c90a3f87f9ef9e1f3fdfedb1d07f2eeaa620e",
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": "ready_for_human_mapping_all_components",
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": true,
+        "mapping_preview_status": "ready_for_human_mapping",
+        "observation_evidence_id": "ev_wordpress_target_observation_117a6ed0fd933b54cbefaa2c",
+        "observation_observed_at": "2026-08-28T21:31:24.942764+00:00",
+        "target": {
+          "authoring_mode": "acf_flexible_content",
+          "authority": "observation_only",
+          "dev_url": "https://ekologus.dev.proudsite.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+          "object_id": "119",
+          "post_type": "uslugi",
+          "rest_endpoint": "uslugi",
+          "root_field": "flexible-home",
+          "write_authorized": false
+        },
+        "target_contract_digest": "650835e5e88bc756f33c62675d2fa068b091d890532f3a82f0dab732e3291593",
         "typed_context_present": false,
-        "validation_status": "absent"
+        "validation_status": "awaiting_human_confirmation"
       },
       "work_item_identity": {
         "current_catalog_work_item_id": "content_work_item_inventory_d3222323b2e07b4e8ab0d97a",
@@ -4287,8 +4457,12 @@
         "status": "verified"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": "acf_mapping_blocked",
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -4406,8 +4580,12 @@
         "status": "verified"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -4524,8 +4702,12 @@
         "status": "verified"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": "blocked_acf_write_profile_unavailable",
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -4631,8 +4813,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -4735,8 +4921,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -4836,8 +5026,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -4940,8 +5134,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -5041,8 +5239,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -5145,8 +5347,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -5249,8 +5455,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -5353,8 +5563,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -5457,8 +5671,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -5558,8 +5776,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -5659,8 +5881,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -5763,8 +5989,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -5864,8 +6094,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -5968,8 +6202,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -6072,8 +6310,12 @@
         "status": "missing"
       },
       "target_context": {
+        "confirmation_present": false,
+        "draft_preview_present": false,
         "historical_journal_target_status": null,
         "historical_status_used_as_current_context": false,
+        "mapping_preview_present": false,
+        "mapping_preview_status": "absent",
         "typed_context_present": false,
         "validation_status": "absent"
       },
@@ -6091,13 +6333,14 @@
   ],
   "safety": {
     "generation_performed": false,
-    "target_context_capture_performed": false,
-    "vendor_read_performed": false,
+    "target_context_capture_performed": true,
+    "vendor_read_performed": true,
     "vendor_write": false
   },
   "schema_version": "content_keep_eligibility_v1",
   "summary": {
     "current_revision_count": 13,
+    "current_target_mapping_preview_count": 1,
     "current_work_item_count": 54,
     "eligible_count": 0,
     "exact_authoring_target_count": 57,
@@ -6119,13 +6362,15 @@
       "authoring_inventory": "docs/content-dev-authoring-inventory-20260828.json",
       "canonical_ledger": "docs/content-canonical-ledger-20260828.jsonl",
       "context": "docs/content-keep-eligibility-context-20260828.json",
-      "state_journal": "docs/content-dev-state-journal-20260828.json"
+      "state_journal": "docs/content-dev-state-journal-20260828.json",
+      "target_mapping_snapshot": "docs/content-keep-target-mapping-snapshot-20260828.json"
     },
     "source_sha256": {
       "authoring_inventory": "6f1a381901cdeec7e2d5215e12305087018330c3854830770908a79ebae122ec",
       "canonical_ledger": "b62a45476a51768c829b5878a934c013e2c5f0b852780f2ec4498c3b3feb5506",
       "context": "410556ac65a69c6977af80f889e535acfe15640c3a454fe1e5d188d4a0aab46b",
-      "state_journal": "2dafb0813c591e0649f464d99d89505274d4f28b6308f4e52e44cf7574e51f95"
+      "state_journal": "2dafb0813c591e0649f464d99d89505274d4f28b6308f4e52e44cf7574e51f95",
+      "target_mapping_snapshot": "a5acb59da9895c78dc5b944d0952608b698288e4eafec2933c0addefaa06a63b"
     },
     "typed_target_context_count": 0
   }
