@@ -23,7 +23,10 @@ from wilq.content.enrichment.opportunity import (
     ContentOpportunityMeasurementBaseline,
 )
 from wilq.content.inventory.records import ContentInventoryRecord, resolve_content_inventory
-from wilq.content.knowledge.cards import match_content_knowledge_cards
+from wilq.content.knowledge.cards import (
+    match_content_knowledge_cards,
+    select_content_knowledge_service_card,
+)
 from wilq.content.preflight.workflow import build_content_preflight_verdict
 from wilq.content.workflow.contracts.models import ContentWorkItem
 
@@ -196,7 +199,7 @@ def _draft_stack() -> tuple[ContentWorkItem, ContentClaimLedger, ContentDraftPac
         claim_ledger=ledger,
         seed=_seed(),
         enrichment=_enrichment(),
-        knowledge_match=match_content_knowledge_cards(item),
+        knowledge_match=_selected_knowledge_match(item),
     )
     assert brief_result.brief is not None
     draft_result = build_content_draft_package(
@@ -219,10 +222,23 @@ def _sales_brief(item: ContentWorkItem, ledger: ContentClaimLedger) -> ContentSa
         claim_ledger=ledger,
         seed=_seed(),
         enrichment=_enrichment(),
-        knowledge_match=match_content_knowledge_cards(item),
+        knowledge_match=_selected_knowledge_match(item),
     )
     assert result.brief is not None
     return result.brief
+
+
+def _selected_knowledge_match(item: ContentWorkItem):
+    """Make the fixture's deliberate BDO service choice explicit.
+
+    The production matcher must not infer a service from the generic ``/bdo/``
+    authoring URL.  These tests exercise downstream draft contracts, so they
+    model the operator having selected the BDO candidate at the workflow seam.
+    """
+    return select_content_knowledge_service_card(
+        match_content_knowledge_cards(item),
+        "ekologus_service_bdo_reporting",
+    )
 
 
 def test_structured_generation_blocks_without_required_runtime_inputs() -> None:

@@ -39,6 +39,32 @@ ContentKnowledgeLifecycleStatus = Literal[
     "rejected",
 ]
 
+# Page identity is curated separately from source-fact lineage. Never derive
+# these bindings from source_url_or_path or service-fit terms.
+_SERVICE_BINDING_URLS_BY_CARD_ID: dict[str, tuple[str, ...]] = {
+    "ekologus_service_homepage_overview": ("https://www.ekologus.pl/",),
+    "ekologus_service_bdo_reporting": (
+        "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+    ),
+    "ekologus_service_environmental_consulting_outsourcing": (
+        "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+    ),
+    "ekologus_service_environmental_training": (
+        "https://www.ekologus.pl/oferta/szkolenia/",
+    ),
+    "ekologus_service_operat_wodnoprawny": (
+        "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+    ),
+    "ekologus_service_remediation_monitoring": (
+        "https://www.ekologus.pl/oferta/pomiary-i-analizy/",
+        "https://www.ekologus.pl/oferta/rekultywacje-i-remediacje/",
+    ),
+}
+
+
+def ekologus_service_binding_urls(card_id: str) -> list[str]:
+    return list(_SERVICE_BINDING_URLS_BY_CARD_ID.get(card_id, ()))
+
 
 class ContentSourceFact(BaseModel):
     model_config = ConfigDict(extra="forbid")

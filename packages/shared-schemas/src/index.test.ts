@@ -100,12 +100,21 @@ describe("ContentKnowledgeCardSchema", () => {
       card_type: "regulatory_source",
       title: "BDO: obowiązek rejestracji",
       summary: "Fakt z oficjalnego źródła związany z exact evidence.",
+      service_binding_urls: ["https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"],
       evidence_ids: ["ev_regulatory_source_review_scope"],
       source_fact_ids: ["regulatory_source_fact_scope"],
       source_lineage: ["https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/"],
       confidence: 1,
       freshness: "reviewed_2026-07-31"
     })).not.toThrow();
+    expect(ContentKnowledgeCardSchema.parse({
+      id: "service_binding_default",
+      card_type: "service",
+      title: "Usługa",
+      summary: "Opis",
+      confidence: 0.8,
+      freshness: "reviewed_2026-08-28"
+    }).service_binding_urls).toEqual([]);
   });
 });
 

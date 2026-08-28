@@ -21,7 +21,10 @@ from wilq.content.enrichment.opportunity import (
     ContentOpportunitySourceFact,
 )
 from wilq.content.inventory.records import ContentInventoryRecord, resolve_content_inventory
-from wilq.content.knowledge.cards import match_content_knowledge_cards
+from wilq.content.knowledge.cards import (
+    match_content_knowledge_cards,
+    select_content_knowledge_service_card,
+)
 from wilq.content.knowledge.source_facts import ContentSourceFact, ContentSourceFactRegistry
 from wilq.content.preflight.workflow import build_content_preflight_verdict
 from wilq.content.workflow.contracts.models import ContentWorkItem
@@ -274,8 +277,21 @@ def _brief_result(
         claim_ledger=_claim_ledger(),
         seed=seed or _seed(),
         enrichment=_enrichment() if enrichment is None else enrichment,
-        knowledge_match=match_content_knowledge_cards(work_item),
+        knowledge_match=_selected_knowledge_match(work_item),
     )
+
+
+def _selected_knowledge_match(work_item: ContentWorkItem):
+    match = match_content_knowledge_cards(work_item)
+    if match.service_card is not None:
+        return match
+    selected_card_id = {
+        "content_work_item_bdo": "ekologus_service_bdo_reporting",
+        "content_work_item_operat_wodnoprawny": "ekologus_service_operat_wodnoprawny",
+    }.get(work_item.id)
+    if selected_card_id is None:
+        return match
+    return select_content_knowledge_service_card(match, selected_card_id)
 
 
 def test_sales_brief_builds_structured_contract_from_valid_work_item() -> None:
@@ -601,7 +617,7 @@ def test_sales_brief_requires_opportunity_enrichment_before_brief() -> None:
         inventory=inventory,
         claim_ledger=_claim_ledger(),
         seed=_seed(),
-        knowledge_match=match_content_knowledge_cards(work_item),
+        knowledge_match=_selected_knowledge_match(work_item),
     )
 
     assert result.brief is None

@@ -1281,6 +1281,7 @@ export const ContentKnowledgeCardSchema = z.object({
   title: z.string(),
   summary: z.string(),
   service_fit_terms: z.array(z.string()).default([]),
+  service_binding_urls: z.array(z.string()).default([]),
   buyer_problem_terms: z.array(z.string()).default([]),
   buyer_triggers: z.array(z.string()).default([]),
   cta_patterns: z.array(z.string()).default([]),
