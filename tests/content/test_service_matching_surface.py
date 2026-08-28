@@ -183,7 +183,16 @@ def test_unverified_exact_binding_keeps_a_valid_duplicate_from_being_selected(
     assert "ambiguous_service_binding" in {blocker.code for blocker in match.blockers}
 
 
-@pytest.mark.parametrize("stale_marker", ["lifecycle", "freshness"])
+@pytest.mark.parametrize(
+    "stale_marker",
+    [
+        "lifecycle",
+        "lifecycle_rejected",
+        "freshness",
+        "freshness_plain_stale",
+        "freshness_plain_rejected",
+    ],
+)
 def test_stale_exact_binding_stays_unbound(
     stale_marker: str,
     monkeypatch: pytest.MonkeyPatch,
@@ -197,6 +206,12 @@ def test_stale_exact_binding_stays_unbound(
     }
     if stale_marker == "lifecycle":
         values["lifecycle_status"] = "stale"
+    elif stale_marker == "lifecycle_rejected":
+        values["lifecycle_status"] = "rejected"
+    elif stale_marker == "freshness_plain_stale":
+        values["freshness"] = "stale"
+    elif stale_marker == "freshness_plain_rejected":
+        values["freshness"] = "rejected"
     else:
         values["freshness"] = "stale_2026-08-28"
     card = ContentKnowledgeCard(

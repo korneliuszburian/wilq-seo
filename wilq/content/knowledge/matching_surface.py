@@ -98,9 +98,11 @@ def service_card_has_binding_provenance(card: ServiceCardMatchingSource) -> bool
 
 def service_card_binding_is_stale(card: ServiceCardMatchingSource) -> bool:
     """Treat an explicitly stale/rejected card as a blocker, not a recommendation."""
-    return card.lifecycle_status in {"stale", "rejected"} or card.freshness.startswith(
-        ("stale_", "rejected_")
-    )
+    freshness = card.freshness.strip().casefold()
+    return card.lifecycle_status in {"stale", "rejected"} or freshness in {
+        "stale",
+        "rejected",
+    } or freshness.startswith(("stale_", "rejected_"))
 
 
 def exactly_bound_service_cards[ServiceCardSourceT: ServiceCardMatchingSource](
