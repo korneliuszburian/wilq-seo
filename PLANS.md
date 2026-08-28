@@ -1,4 +1,188 @@
-# WILQ — historyczny kontekst planu użyteczności
+# WILQ — ExecPlan: evidence-bound Ekologus content delivery
+
+> Rola: bieżący plan wykonawczy dla jednego długiego celu. Stan procesu i
+> claimy o wykonaniu należą do aktywnego Beada oraz zweryfikowanych artefaktów;
+> ten plik porządkuje kolejność, zakres i kryteria ukończenia. Nie tworzy
+> drugiej kolejki zadań.
+
+## Handoff do nowej instancji SOL (stan na 2026-08-28)
+
+Ten blok jest instrukcją wznowienia, nie osobnym planem. Nowa instancja ma
+traktować ten plik, aktywny Bead `wilq-seo-1oa.36.99` i dziennik stanu jako
+jedną ścieżkę prawdy. Nie odtwarzać wcześniejszych odczytów tylko po to, by
+powtórzyć logi.
+
+### Jedyny cel i rola modeli
+
+- Handoff follows the official long-running-work guidance: define one clear
+  outcome, constraints, verification and resumable state; see
+  <https://learn.chatgpt.com/docs/long-running-work>.
+- Cel: dowieźć evidence-bound treści SEO dla `ekologus.dev.proudsite.pl` —
+  wszystkie 214 URL-i rozstrzygnięte, 57 `keep` obsłużonych albo jawnie
+  zablokowanych, z exact ACF/`the_content` mappingiem, claim/source lineage,
+  QA i bezpiecznym dev-draft workflow.
+- SOL jest orchestrator/reviewerem: utrzymuje plan, deleguje bounded slice do
+  Luny/Codexa, weryfikuje diff i dowody, prowadzi Bead i zatrzymuje się przy
+  blockerze. Luna/Codex jest wykonawcą kodu lub artefaktów, nie właścicielem
+  approval, Beads, merge, publikacji ani vendor mutation.
+- SOL dobiera effort do ryzyka: Luna dla mechanicznego odczytu i małych,
+  odwracalnych zmian; SOL-ULTRA dla architektury, korelacji connectorów,
+  security/quality review i decyzji fixed-point. Żaden model wykonawczy nie
+  może sam uznać pracy za zaakceptowaną ani rozszerzyć zakresu.
+- Delegacja ma być non-interactive i audytowalna (`codex exec --ephemeral` z
+  exact worktree, `--json` i retained last-message); SOL po każdym wyniku
+  sprawdza `git diff`, focused falsifier i stan Beada. Opinia drugiego sędziego
+  jest niezależnym wejściem, nie automatycznym approvalem.
+- Każdy slice ma jednego autora, jeden observable result, focused falsifier,
+  semantic commit i external fixed-diff review. Nie scalać mikrofixów w
+  bezładny batch i nie uruchamiać równoległych writerów na tym samym checkout.
+
+### Gate przed nową pracą
+
+PR #20 (service binding) jest na branchu
+`agent/content-service-binding`, base `cac3036d514437dbbeeec8f207a5b341749b5872`,
+head `e1c86af207a16c11a39d3791e5dd7a8b5492ec87`, open/draft/unmerged, 9 commitów
+i 14 ścieżek. Exact fixed-diff ma niezależny `ACCEPT`; ostatni Quality run
+`33170300521` jest przypięty do `e1c86af2` i musi zakończyć wszystkie trzy joby
+sukcesem. Dopiero po tym gate’cie wolno oznaczyć PR ready i wykonać osobno
+autoryzowany merge commit. Nie traktować wcześniejszych headów jako ancestry
+aktualnego PR.
+
+### Fakty, których nie wolno zgubić
+
+- Dev sitemap: 214 unikalnych ścieżek; canonical robot manifest: 214 rekordów
+  (`57 keep / 87 noindex / 46 redirect / 24 remove`) i exact set equality.
+- REST dev: 175 obiektów (`115 posts / 8 pages / 52 uslugi`); 57/57 `keep`
+  ma obiekt. Współistnieją trzy role: 137 publicznych SEO inventory, 175
+  obserwacji REST i 214 dev/site-map decision inventory. Nie dodawać hosta dev
+  do publicznego katalogu SEO.
+- ACF snapshot: 58 niepustych flexible surfaces, 116 `the_content`, 1 pusty
+  root; `keep` to 45 post-content, 1 page-content, 4 page-ACF i 7 uslugi-ACF.
+  To obserwacja, nie pełne writable mapping/readback.
+- Source packs: 181/181 sprawdzone po SHA/size w jawnie zapisanym retained root;
+  dev→public host alias i path-only join są jawne. Nie czytać prywatnego packetu.
+- WILQ API (read-only snapshot): 12 connectorów, 9 skonfigurowanych, 2 brakujące
+  credentials; GSC/GA4/Ahrefs/Ads/WP evidence IDs istnieją, Keyword Planner
+  pozostaje `blocked`; `ready_for_daily_content=false`, mutation/write false.
+- Candidate bundle: 57 plików, 16 753 słów; 43/57 poniżej 300 słów. Wszystkie
+  `publish_allowed=false`, `write_authorized=false`, `robot_ready=false`.
+- Dev-state journal: jeden indeks 214 URL-i, znane drafty, mutation audits,
+  action-binding recovery i referencje do sitemap/ACF/canonical/source/audit.
+  Preflight: `eligible=0`; nie generować kolejnego draftu dla URL/revision/action
+  już zarejestrowanego.
+
+### Kolejność po wznowieniu
+
+1. Odczytać `bd show wilq-seo-1oa.36.99`, ten blok, journal i aktualny PR/CI.
+2. Zamknąć gate PR #20 dopiero po exact green CI i external `ACCEPT`; po merge
+   zweryfikować merge SHA/rodziców/post-merge CI, nie sprzątać brudnego checkoutu.
+3. Wykonać jeden read-only slice `dev_authoring_inventory`: projekcja z już
+   zapisanych facts, `inventory_role=authoring_target`, rozdzielenie
+   `sitemap_observed`/`rest_object_observed`, bez zgadywania 39 brakujących IDs.
+   Nie zmieniać publicznego SEO catalogu.
+4. Dla każdego `keep` rozwiązać exact work-item → service card → source pack →
+   revision → target contract. Fuzzy/GSC/Ahrefs są sygnałem/kandydatem, nigdy
+   samodzielnym bindingiem. Brak któregoś elementu = typed blocker.
+5. Dopiero dla eligible rows uruchamiać planner → writer → critic/repair na
+   jednym canonical document, następnie local QA/global dedupe/link graph i
+   draft-only ActionObject preview. Żadnego vendor write bez odrębnej zgody.
+6. Na końcu zbudować jeden graph 214 URL-i z działającymi tylko zweryfikowanymi
+   krawędziami oraz raport `ready / needs_review / blocked`; nie deklarować
+   production readiness, UAT ani publikacji bez dowodu.
+
+### Kryterium zatrzymania / wznowienia
+
+Zatrzymać jako `BLOCKED`, gdy brakuje świeżego evidence, owner review, exact
+service/target mappingu, credentials albo osobnej autoryzacji zapisu. Nową
+instancję wznowić od ostatniego Bead comment i hashy artefaktów; nie tworzyć
+drugiego goalu, drugiego journalu, kolejnego manifestu ani „tymczasowego”
+endpointu. Wszystkie commity muszą być semantic i ograniczone do jednego
+cohesive slice.
+
+## Outcome
+
+Dowieźć dla `ekologus.dev.proudsite.pl` audytowalny pakiet treści SEO:
+
+- 214 URL-i z decyzją `keep/noindex/redirect/remove` i canonical/duplicate
+  lineage;
+- treść wyłącznie dla 57 URL-i `keep`, z page assets, sekcjami, FAQ, CTA,
+  linkami i sentence-level claim ledgerem;
+- source-packi oraz GSC, GA4, Ahrefs i Ads z zachowanym evidence lineage;
+- exact WordPress `the_content`/ACF target mapping, preview i readback contract;
+- robot manifest, który ustawia `robot_ready=true` tylko po przejściu wszystkich
+  bramek. Keyword Planner pozostaje `blocked` bez zmyślania.
+
+## Constraints
+
+- Nie generować ani nie mapować treści dla `noindex`, `redirect` lub `remove`.
+- Nie zgadywać usługi po slugu, nie promować niezatwierdzonych Service Profile
+  cards i nie tworzyć rewizji bez exact work-itemu, źródeł i aktualnego
+  kontekstu.
+- Każdy claim, CTA, link, metryka i asset musi mieć identyfikowalne źródło oraz
+  freshness; kontekst batchowy nie jest dowodem page performance.
+- Nie czytać ani nie utrwalać `.env` lub prywatnego packetu; nie wykonywać
+  WordPress/vendor write, ActionObject apply, deploymentu ani live mutation.
+- ACF wymaga pełnego, zatwierdzonego mapowania komponent → pole; częściowe
+  observed fields nie są zapisem.
+- Po ekstrakcji używamy snapshotu i `docs/content-dev-state-journal-20260828.json`;
+  nie odpytywać ponownie per URL tylko po to, by odtworzyć już zapisany dowód.
+  Nowy odczyt jest uzasadniony wyłącznie zmianą źródła, wygaśnięciem freshness
+  albo brakującą tożsamością, a wynik zawsze dostaje nowy timestamp i hash.
+- Beads jest właścicielem stanu pracy, a archiwalny graph/audit jest dowodem
+  artefaktów. Nie tworzyć równoległego TODO ani drugiego celu.
+
+## Verification contract
+
+Ukończenie wymaga aktualnych dowodów dla każdego wiersza, nie samego istnienia
+pliku:
+
+1. canonical manifest ma dokładnie `214 = 57/87/46/24` i każdy disposition ma
+   evidence/canonical lineage;
+2. wszystkie 57 keep URL-i mają unikalne page assets, source/claim coverage,
+   zweryfikowane CTA/link destinations i brak niedozwolonej duplikacji;
+3. każda bieżąca rewizja przechodzi schema, semantic/formal review oraz exact
+   target mapping/readback; ACF nie może zostać częściowo zapisany;
+4. robot manifest pokazuje prawdziwy stan per URL; `publish_allowed` i
+   `write_authorized` pozostają false do osobnej autoryzacji;
+5. końcowy proof obejmuje counts, SHA, link resolution, connector freshness,
+   `git diff --check` i odpowiednie focused/broad gates.
+
+## Execution stages
+
+| Stage | Result | Current evidence |
+|---|---|---|
+| 0. Inventory, connector context and source-pack lineage | complete with external-root caveat | 181 pack refs verified 181/181 by SHA/size at the retained final source-pack root; public dev sitemap 214 unique paths exactly covers the manifest; GSC/GA4/Ahrefs/Ads/WP evidence IDs; Keyword Planner blocked |
+| 1. Canonical and duplicate decisions | complete | 214 rows: 57 keep, 87 noindex, 46 redirect, 24 remove; explicit targets/receipts are sealed in the canonical ledger |
+| 2. Candidate delivery and page-asset projection | complete as candidate-only | 57 Markdown candidates; 9 historical projection rows + 48 rebase candidates; no write/apply authority |
+| 3. Current revision/service binding | in progress | 13 current approved revisions; 44 candidate rows still typed-blocked (`28` no work-item + `15` blocked + `1` stale); the separate planning `read_error` is on an existing verified draft; exact-only service-binding fix is accepted in draft PR #20 (`df66bb39`) but not merged; no safe heuristic promotion |
+| 4. ACF/the_content mapping and readback | in progress | Read-only REST inventory covers all 175 content objects (58 non-empty ACF surfaces, 116 `the_content` surfaces, 1 empty ACF root; 57/57 keep paths matched); full component write mappings and readback authority remain 0 |
+| 5. Final robot-ready gate | pending | stays `robot_ready=0` until stages 3–4 and owner/legal review pass |
+
+## Current authority and recovery links
+
+- Active Bead: `wilq-seo-1oa.36.99` (the only implementation WIP).
+- [Current delivery graph](</mnt/storage/krn/archive/wilq-content-run-raw-20260826/new-design-content-handoff-graph-20260828.md>) — visual map, artifact index and hashes.
+- [Completion audit](</mnt/storage/krn/archive/wilq-content-run-raw-20260826/content-completion-audit-v2-20260828.json>) — requirement matrix and blockers.
+- [Robot manifest](</mnt/storage/krn/archive/wilq-content-run-raw-20260826/content-robot-manifest-20260828.jsonl>) — per-URL delivery authority.
+- [Canonical ledger](./docs/content-canonical-ledger-20260828.jsonl) — 214-row sanitised projection with explicit canonical/redirect targets and 46/46 redirect receipts (SHA256 `b62a45476a51768c829b5878a934c013e2c5f0b852780f2ec4498c3b3feb5506`; summary `b5efa063a3daf1b8b09e7fb1b4152e5fdb5c815a4772d15d11243e25616856b4`).
+- [Source-pack verification](./docs/content-source-pack-verification-20260828.json) — explicit retained final root and 181/181 SHA/size proof; declared dev→public host alias plus trailing-slash path join; archive-relative paths alone are intentionally marked non-resolving (SHA256 `ef9d961e8c7935666aa35708d471a98f64ecb1cce4de81807f812f51d47f94dc`).
+- [Candidate quality audit](./docs/content-candidate-quality-audit-20260828.json) — read-only checks over all 57 candidate files: 57/57 present, one H1 each, zero AI-placeholder tokens and exact duplicate paragraphs, but 43/57 are under 300 words and all remain candidate-only (SHA256 `b244a08e1cf410952a5ce99a2ffeede00c9bd5cf49b1c29560cc4864e95d4a4a`).
+- [Current ACF observation](</mnt/storage/krn/archive/wilq-content-run-raw-20260826/acf-mapping-current-observation-20260828.json>) — exact `OPTIONS` profiles and observed writable fields; no raw values.
+- [Public sitemap inventory](./docs/content-sitemap-inventory-20260828.json) — read-only dev/old URL topology; 214 unique dev paths match the manifest exactly, old-domain comparison excludes product sitemaps and is not a content authority (SHA256 `0f0cd730f6b480b284da7be6631dfc4b22a0a645c4582abfe209367d82590c0c0`).
+- [Public ACF inventory](./docs/content-acf-inventory-20260828.json) — one read-only REST snapshot of 175 `posts/pages/uslugi` objects; ACF field/layout names and digests only, no body or raw values. All 57 keep paths have an exact object; 46 use `the_content` and 11 use non-empty ACF layouts. This is observation, not write mapping (SHA256 `97281a48774c1893d80c235555074d9c7502d68074479c7b59795357a64e1a80`).
+- [Dev state journal](./docs/content-dev-state-journal-20260828.json) — one read-only index of URL state, every known dev draft and content mutation audit; consult it before any new generation.
+- [Action binding recovery](./docs/dev-content-action-binding-recovery-20260828.json) — seven historical ActionObject bindings recovered from API metadata; vendor post IDs remain explicitly unknown.
+
+The next executable action is always: re-read the active Bead, inspect the
+current manifest, public sitemap inventory and dev-state preflight, and only
+then resolve an exact blocker or record why it remains blocked. Never rerun a
+green generation/review path solely to recreate history. The sitemap inventory
+proves URL topology only; it does not grant service binding, source approval,
+ACF mapping or WordPress write authority.
+
+---
+
+## Historical context (not the current execution plan)
 
 > Rola: historyczny kontekst produktu. Nie zastępuje `AGENTS.md`, aktywnego
 > Beada ani nazwanego rekordu bieżącego stanu. Sformułowania „aktywny” i
