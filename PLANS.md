@@ -39,14 +39,13 @@ powtórzyć logi.
 
 ### Gate przed nową pracą
 
-PR #20 (service binding) jest na branchu
-`agent/content-service-binding`, base `cac3036d514437dbbeeec8f207a5b341749b5872`,
-head `e1c86af207a16c11a39d3791e5dd7a8b5492ec87`, open/draft/unmerged, 9 commitów
-i 14 ścieżek. Exact fixed-diff ma niezależny `ACCEPT`; ostatni Quality run
-`33170300521` jest przypięty do `e1c86af2` i musi zakończyć wszystkie trzy joby
-sukcesem. Dopiero po tym gate’cie wolno oznaczyć PR ready i wykonać osobno
-autoryzowany merge commit. Nie traktować wcześniejszych headów jako ancestry
-aktualnego PR.
+PR #20 (service binding) został scalony jako merge commit
+`4ebedbf04ff424256d7e830b4326b0fda9299c15`, z rodzicami exact base
+`cac3036d514437dbbeeec8f207a5b341749b5872` i zaakceptowanym headem
+`e1c86af207a16c11a39d3791e5dd7a8b5492ec87`. Post-merge Quality
+`33188000685` zakończył wszystkie trzy joby sukcesem. Exact URL binding,
+provenance i fail-closed ambiguity/staleness są więc częścią `origin/main`;
+wcześniejsze fuzzy sygnały nadal nie są bindingiem usługi ani claimu.
 
 ### Fakty, których nie wolno zgubić
 
@@ -77,13 +76,12 @@ aktualnego PR.
 
 ### Kolejność po wznowieniu
 
-1. Odczytać `bd show wilq-seo-1oa.36.99`, ten blok, journal i aktualny PR/CI.
-2. Zamknąć gate PR #20 dopiero po exact green CI i external `ACCEPT`; po merge
-   zweryfikować merge SHA/rodziców/post-merge CI, nie sprzątać brudnego checkoutu.
-3. Wykonać jeden read-only slice `dev_authoring_inventory`: projekcja z już
-   zapisanych facts, `inventory_role=authoring_target`, rozdzielenie
-   `sitemap_observed`/`rest_object_observed`, bez zgadywania 39 brakujących IDs.
-   Nie zmieniać publicznego SEO catalogu.
+1. Odczytać `bd show wilq-seo-1oa.36.99`, ten blok, journal i aktualny main/CI.
+2. Używać wyłącznie scalonego exact service bindingu z PR #20; nie wracać do
+   fuzzy auto-bindingu ani do wcześniejszych headów.
+3. Traktować `dev_authoring_inventory` jako zamkniętą observation-only
+   projekcję 214/175/39; nie tworzyć drugiego inventory ani nie rozszerzać
+   publicznego SEO catalogu.
 4. Dla każdego `keep` rozwiązać exact work-item → service card → source pack →
    revision → target contract. Fuzzy/GSC/Ahrefs są sygnałem/kandydatem, nigdy
    samodzielnym bindingiem. Brak któregoś elementu = typed blocker.
@@ -158,7 +156,7 @@ pliku:
 | 0. Inventory, connector context and source-pack lineage | complete with external-root caveat | 181 pack refs verified 181/181 by SHA/size at the retained final source-pack root; public dev sitemap 214 unique paths exactly covers the manifest; GSC/GA4/Ahrefs/Ads/WP evidence IDs; Keyword Planner blocked |
 | 1. Canonical and duplicate decisions | complete | 214 rows: 57 keep, 87 noindex, 46 redirect, 24 remove; explicit targets/receipts are sealed in the canonical ledger |
 | 2. Candidate delivery and page-asset projection | complete as candidate-only | 57 Markdown candidates; 9 historical projection rows + 48 rebase candidates; no write/apply authority |
-| 3. Current revision/service binding | in progress | 13 current approved revisions; 44 candidate rows still typed-blocked (`28` no work-item + `15` blocked + `1` stale); the separate planning `read_error` is on an existing verified draft; exact-only service-binding fix is accepted in draft PR #20 (`df66bb39`) but not merged; no safe heuristic promotion |
+| 3. Current revision/service binding | in progress | Exact-only service binding is merged in `4ebedbf0`; 13 current approved revisions exist, while 44 candidate rows remain typed-blocked (`28` no work-item + `15` blocked + `1` stale) and one planning `read_error` belongs to an existing verified draft; next result is one per-keep eligibility/blocker projection, never heuristic promotion |
 | 4. ACF/the_content mapping and readback | in progress | Read-only REST inventory covers all 175 content objects (58 non-empty ACF surfaces, 116 `the_content` surfaces, 1 empty ACF root; 57/57 keep paths matched); full component write mappings and readback authority remain 0 |
 | 5. Final robot-ready gate | pending | stays `robot_ready=0` until stages 3–4 and owner/legal review pass |
 
@@ -178,12 +176,17 @@ pliku:
 - [Dev state journal](./docs/content-dev-state-journal-20260828.json) — one read-only index of URL state, every known dev draft and content mutation audit; consult it before any new generation.
 - [Action binding recovery](./docs/dev-content-action-binding-recovery-20260828.json) — seven historical ActionObject bindings recovered from API metadata; vendor post IDs remain explicitly unknown.
 
-The next executable action is always: re-read the active Bead, inspect the
-current manifest, public sitemap inventory and dev-state preflight, and only
-then resolve an exact blocker or record why it remains blocked. Never rerun a
-green generation/review path solely to recreate history. The sitemap inventory
-proves URL topology only; it does not grant service binding, source approval,
-ACF mapping or WordPress write authority.
+Current integration fixed point is branch `agent/content-delivery-integrated`
+over merged main `4ebedbf0`; it replays the handoff and reviewed inventory
+without changing their retained artifact bytes. Publication/content/vendor
+authority remains false despite repository lifecycle authorization.
+
+The next executable action is one read-only per-keep eligibility/blocker
+projection over the integrated exact binding and authoring inventory. It must
+re-read the Bead, journal and preflight first, preserve `eligible=0` unless every
+required lineage gate actually closes, and never regenerate an indexed
+URL/revision/action. The sitemap inventory proves URL topology only; it does
+not grant source approval, ACF mapping or WordPress write authority.
 
 ---
 
