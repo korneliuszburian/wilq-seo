@@ -25,6 +25,9 @@ class ServiceCardMatchingSource(Protocol):
     @property
     def freshness(self) -> str: ...
 
+    @property
+    def lifecycle_status(self) -> str | None: ...
+
 
 @dataclass(frozen=True)
 class ContentKnowledgeMatchingSurface:
@@ -89,6 +92,14 @@ def service_card_has_binding_provenance(card: ServiceCardMatchingSource) -> bool
         and card.source_connectors
         and all(value.strip() for value in card.source_connectors)
         and card.freshness.strip()
+        and not service_card_binding_is_stale(card)
+    )
+
+
+def service_card_binding_is_stale(card: ServiceCardMatchingSource) -> bool:
+    """Treat an explicitly stale/rejected card as a blocker, not a recommendation."""
+    return card.lifecycle_status in {"stale", "rejected"} or card.freshness.startswith(
+        ("stale_", "rejected_")
     )
 
 

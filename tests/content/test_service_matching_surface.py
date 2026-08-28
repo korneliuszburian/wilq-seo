@@ -183,6 +183,53 @@ def test_unverified_exact_binding_keeps_a_valid_duplicate_from_being_selected(
     assert "ambiguous_service_binding" in {blocker.code for blocker in match.blockers}
 
 
+@pytest.mark.parametrize("stale_marker", ["lifecycle", "freshness"])
+def test_stale_exact_binding_stays_unbound(
+    stale_marker: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    binding_url = "https://www.ekologus.pl/oferta/nieaktualna-usluga/"
+    values: dict[str, object] = {
+        "evidence_ids": ["ev_service_stale"],
+        "source_connectors": ["wordpress_ekologus"],
+        "freshness": "reviewed_2026-08-28",
+        "lifecycle_status": "source_backed_review_required",
+    }
+    if stale_marker == "lifecycle":
+        values["lifecycle_status"] = "stale"
+    else:
+        values["freshness"] = "stale_2026-08-28"
+    card = ContentKnowledgeCard(
+        id="service_stale_binding",
+        card_type="service",
+        title="Nieaktualna usługa",
+        summary="Karta ze starym śladem.",
+        service_binding_urls=[binding_url],
+        confidence=0.9,
+        **values,
+    )
+    monkeypatch.setattr(
+        knowledge_cards,
+        "ekologus_content_knowledge_cards",
+        lambda: (card,),
+    )
+
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_stale_binding",
+            topic="Neutralny temat",
+            source_public_url=binding_url,
+            final_canonical_url=binding_url,
+        )
+    )
+
+    assert match.service_card is None
+    assert match.recommended_service_card_id is None
+    selected = select_content_knowledge_service_card(match, card.id)
+    assert selected.service_card is None
+    assert "service_card_provenance_stale" in {blocker.code for blocker in selected.blockers}
+
+
 @pytest.mark.parametrize(
     "item_url",
     [

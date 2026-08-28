@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from wilq.content.knowledge.matching_surface import (
     build_content_knowledge_matching_surface,
     exactly_bound_service_cards,
+    service_card_binding_is_stale,
     service_card_exact_binding_url,
     service_card_has_binding_provenance,
     service_card_has_exact_url,
@@ -610,15 +611,27 @@ def select_content_knowledge_service_card(
             }
         )
     if not service_card_has_binding_provenance(selected):
+        stale = service_card_binding_is_stale(selected)
         provenance_blocker = build_blocker(
             ContentKnowledgeCardBlocker,
-            code="service_card_provenance_missing",
-            label="Karta usługi nie ma kompletnego śladu źródłowego",
+            code=("service_card_provenance_stale" if stale else "service_card_provenance_missing"),
+            label=(
+                "Ślad źródłowy karty usługi jest nieaktualny"
+                if stale
+                else "Karta usługi nie ma kompletnego śladu źródłowego"
+            ),
             reason=(
-                "Nie można przypisać karty usługi bez evidence ID, source connectora "
+                "Nie można przypisać karty usługi, gdy jej źródło jest nieaktualne lub "
+                "odrzucone."
+                if stale
+                else "Nie można przypisać karty usługi bez evidence ID, source connectora "
                 "i informacji o świeżości."
             ),
-            next_step="Uzupełnij ślad źródłowy albo pozostaw temat do review.",
+            next_step=(
+                "Odśwież i ponownie oceń źródło przed wyborem karty."
+                if stale
+                else "Uzupełnij ślad źródłowy albo pozostaw temat do review."
+            ),
             work_item_id=match.work_item_id,
             required_card_type="service",
         )
