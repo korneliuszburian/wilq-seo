@@ -39,13 +39,11 @@ powtórzyć logi.
 
 ### Gate przed nową pracą
 
-PR #20 (service binding) został scalony jako merge commit
-`4ebedbf04ff424256d7e830b4326b0fda9299c15`, z rodzicami exact base
-`cac3036d514437dbbeeec8f207a5b341749b5872` i zaakceptowanym headem
-`e1c86af207a16c11a39d3791e5dd7a8b5492ec87`. Post-merge Quality
-`33188000685` zakończył wszystkie trzy joby sukcesem. Exact URL binding,
-provenance i fail-closed ambiguity/staleness są więc częścią `origin/main`;
-wcześniejsze fuzzy sygnały nadal nie są bindingiem usługi ani claimu.
+Projekcja keep eligibility i jej sanitised context zostały deterministycznie
+wyprowadzone z main `441579ea888800b8ce51cbc1bfa15dacec7c8ace`. Ten fixed
+point zawiera exact URL binding, provenance i fail-closed ambiguity/staleness;
+wcześniejsze fuzzy sygnały nadal nie są bindingiem usługi ani claimu. Stan
+lifecycle i publikacji zmiany istnieje wyłącznie w Bead/PR, nie w tym planie.
 
 ### Fakty, których nie wolno zgubić
 
@@ -64,15 +62,22 @@ wcześniejsze fuzzy sygnały nadal nie są bindingiem usługi ani claimu.
   mapowania zapisu i bez zmiany publicznego katalogu SEO.
 - Source packs: 181/181 sprawdzone po SHA/size w jawnie zapisanym retained root;
   dev→public host alias i path-only join są jawne. Nie czytać prywatnego packetu.
-- WILQ API (read-only snapshot): 12 connectorów, 9 skonfigurowanych, 2 brakujące
-  credentials; GSC/GA4/Ahrefs/Ads/WP evidence IDs istnieją, Keyword Planner
-  pozostaje `blocked`; `ready_for_daily_content=false`, mutation/write false.
+- WILQ API (sanitised read-only snapshot): 12 connectorów, 9 skonfigurowanych,
+  2 brakujące credentials; pięć GSC/GA4/Ahrefs/Ads/WP evidence IDs jest fresh,
+  ale to powtarzany kontekst batchowy, nie page-performance membership. Service
+  Profile pozostaje `read_only`, `ready_for_daily_content=false`, approval
+  `15 current / 6 review`, mutation false. API nie attestuje runtime SHA i nie
+  zwraca binding URL-i; siedem exact URL-i pochodzi wyłącznie z mapy w
+  `source_facts.py` na fixed poincie `441579ea`.
 - Candidate bundle: 57 plików, 16 753 słów; 43/57 poniżej 300 słów. Wszystkie
   `publish_allowed=false`, `write_authorized=false`, `robot_ready=false`.
 - Dev-state journal: jeden indeks 214 URL-i, znane drafty, mutation audits,
   action-binding recovery i referencje do sitemap/ACF/canonical/source/audit.
-  Preflight: `eligible=0`; nie generować kolejnego draftu dla URL/revision/action
-  już zarejestrowanego.
+  Projekcja 57 `keep` zachowuje dwie gałęzie work identity: 27 retained journal,
+  54 current catalog, 27 exact-path joins i 0 równych ID. Existing-generation
+  identity obejmuje 9 exact ścieżek; primary partition to `9 existing / 20
+  fork / 25 retained missing / 3 identity missing`, dlatego `eligible=0`.
+  Nie generować kolejnego draftu dla URL/revision/action już zarejestrowanego.
 
 ### Kolejność po wznowieniu
 
@@ -82,9 +87,10 @@ wcześniejsze fuzzy sygnały nadal nie są bindingiem usługi ani claimu.
 3. Traktować `dev_authoring_inventory` jako zamkniętą observation-only
    projekcję 214/175/39; nie tworzyć drugiego inventory ani nie rozszerzać
    publicznego SEO catalogu.
-4. Dla każdego `keep` rozwiązać exact work-item → service card → source pack →
-   revision → target contract. Fuzzy/GSC/Ahrefs są sygnałem/kandydatem, nigdy
-   samodzielnym bindingiem. Brak któregoś elementu = typed blocker.
+4. Używać projekcji `content_keep_eligibility_v1` jako jednego read-only
+   rozstrzygnięcia. Dla każdego `keep` naprawić jawnie exact work-item → service
+   card → source pack → revision → typed target context; path join, stary journal
+   card i fuzzy/GSC/Ahrefs nigdy nie są samodzielnym bindingiem.
 5. Dopiero dla eligible rows uruchamiać planner → writer → critic/repair na
    jednym canonical document, następnie local QA/global dedupe/link graph i
    draft-only ActionObject preview. Żadnego vendor write bez odrębnej zgody.
@@ -156,7 +162,7 @@ pliku:
 | 0. Inventory, connector context and source-pack lineage | complete with external-root caveat | 181 pack refs verified 181/181 by SHA/size at the retained final source-pack root; public dev sitemap 214 unique paths exactly covers the manifest; GSC/GA4/Ahrefs/Ads/WP evidence IDs; Keyword Planner blocked |
 | 1. Canonical and duplicate decisions | complete | 214 rows: 57 keep, 87 noindex, 46 redirect, 24 remove; explicit targets/receipts are sealed in the canonical ledger |
 | 2. Candidate delivery and page-asset projection | complete as candidate-only | 57 Markdown candidates; 9 historical projection rows + 48 rebase candidates; no write/apply authority |
-| 3. Current revision/service binding | in progress | Exact-only service binding is merged in `4ebedbf0`; 13 current approved revisions exist, while 44 candidate rows remain typed-blocked (`28` no work-item + `15` blocked + `1` stale) and one planning `read_error` belongs to an existing verified draft; next result is one per-keep eligibility/blocker projection, never heuristic promotion |
+| 3. Current revision/service binding | in progress | Deterministyczna projekcja 57/57 została wyprowadzona z main `441579ea`: 57 exact REST targets, 13 approved revisions, 7 exact current-code service bindings, 27 retained IDs, 54 current IDs, 0 równych ID, 0 source-pack work-item bindings, `typed_target_context_count=0`, `reconciled_work_item_count=0` i `eligible=0`; primary blockers `9/20/25/3`. Etap pozostaje otwarty do jawnego reconciliation i typed target proof, bez heuristic promotion. |
 | 4. ACF/the_content mapping and readback | in progress | Read-only REST inventory covers all 175 content objects (58 non-empty ACF surfaces, 116 `the_content` surfaces, 1 empty ACF root; 57/57 keep paths matched); full component write mappings and readback authority remain 0 |
 | 5. Final robot-ready gate | pending | stays `robot_ready=0` until stages 3–4 and owner/legal review pass |
 
@@ -174,19 +180,21 @@ pliku:
 - [Public ACF inventory](./docs/content-acf-inventory-20260828.json) — one read-only REST snapshot of 175 `posts/pages/uslugi` objects; ACF field/layout names and digests only, no body or raw values. All 57 keep paths have an exact object; 46 use `the_content` and 11 use non-empty ACF layouts. This is observation, not write mapping (SHA256 `97281a48774c1893d80c235555074d9c7502d68074479c7b59795357a64e1a80`).
 - [Dev authoring inventory](./docs/content-dev-authoring-inventory-20260828.json) — deterministic offline projection with `inventory_role=authoring_target`, 214 sitemap observations, 175 exact REST identities and 39 explicit `rest_object_not_observed` blockers; all publication/write/generation/robot gates remain false (SHA256 `6f1a381901cdeec7e2d5215e12305087018330c3854830770908a79ebae122ec`).
 - [Dev state journal](./docs/content-dev-state-journal-20260828.json) — one read-only index of URL state, every known dev draft and content mutation audit; consult it before any new generation.
+- [Keep eligibility context](./docs/content-keep-eligibility-context-20260828.json) — jednorazowy sanitised snapshot wyłącznie dozwolonych lokalnych GET-ów; bez vendor read/raw/private, z `target_context_capture_performed=false`; runtime SHA unattested (SHA256 `410556ac65a69c6977af80f889e535acfe15640c3a454fe1e5d188d4a0aab46b`).
+- [Keep eligibility projection](./docs/content-keep-eligibility-20260828.json) — deterministyczne 57-row read-only rozstrzygnięcie z exact source SHA, `typed_target_context_count=0`, `reconciled_work_item_count=0`, zachowanymi gałęziami ID i primary partition `9/20/25/3`; wszystkie generation/publish/write/robot axes false (SHA256 `cdfb5c4f951f4c0070154b47be2139a152d73fb48f07719116739f4466ee7c95`).
 - [Action binding recovery](./docs/dev-content-action-binding-recovery-20260828.json) — seven historical ActionObject bindings recovered from API metadata; vendor post IDs remain explicitly unknown.
 
-Current integration fixed point is branch `agent/content-delivery-integrated`
-over merged main `4ebedbf0`; it replays the handoff and reviewed inventory
-without changing their retained artifact bytes. Publication/content/vendor
-authority remains false despite repository lifecycle authorization.
+Keep eligibility projection and context derive from main
+`441579ea888800b8ce51cbc1bfa15dacec7c8ace`. Their implementation lifecycle
+and publication state live in the Bead/PR; this plan does not restate that
+state. Publication/content/vendor authority remains false.
 
-The next executable action is one read-only per-keep eligibility/blocker
-projection over the integrated exact binding and authoring inventory. It must
-re-read the Bead, journal and preflight first, preserve `eligible=0` unless every
-required lineage gate actually closes, and never regenerate an indexed
-URL/revision/action. The sitemap inventory proves URL topology only; it does
-not grant source approval, ACF mapping or WordPress write authority.
+The remaining product boundary is explicit reconciliation for one blocked
+exact path: preserve both work IDs, attach immutable ID proof, bind the source
+pack by work-item ID and supply typed current target context. Until every hard
+gate closes, preserve `eligible=0` and never regenerate an indexed
+URL/revision/action. Publication, vendor read/write, ActionObject apply and
+deployment remain separate authority.
 
 ---
 

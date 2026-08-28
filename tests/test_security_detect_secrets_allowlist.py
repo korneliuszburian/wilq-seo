@@ -14,6 +14,8 @@ from scripts.filter_detect_secrets import (
     AUTHORING_INVENTORY,
     BASE64_HIGH_ENTROPY,
     HEX_HIGH_ENTROPY,
+    KEEP_ELIGIBILITY,
+    KEEP_ELIGIBILITY_CONTEXT,
     STATE_JOURNAL,
     filter_detect_secrets_results,
 )
@@ -27,6 +29,8 @@ RETAINED_EVIDENCE_PATHS = (
     ACF_INVENTORY,
     "docs/content-canonical-ledger-20260828.jsonl",
     AUTHORING_INVENTORY,
+    KEEP_ELIGIBILITY_CONTEXT,
+    KEEP_ELIGIBILITY,
     STATE_JOURNAL,
     "docs/content-sitemap-inventory-20260828.json",
 )
@@ -196,6 +200,51 @@ def _valid_state_journal_findings(repository_root: Path) -> list[dict[str, objec
     ]
 
 
+def _valid_keep_eligibility_context_findings(
+    repository_root: Path,
+) -> list[dict[str, object]]:
+    value = _sha256("keep-eligibility-binding-source")
+    source = _write_json(
+        repository_root,
+        KEEP_ELIGIBILITY_CONTEXT,
+        {"service_bindings": {"current_code_source": {"sha256": value}}},
+    )
+    return [_finding(KEEP_ELIGIBILITY_CONTEXT, source, "sha256", value)]
+
+
+def _valid_keep_eligibility_findings(repository_root: Path) -> list[dict[str, object]]:
+    source_values = {
+        key: _sha256(f"keep-eligibility-{key}")
+        for key in ("authoring_inventory", "canonical_ledger", "context", "state_journal")
+    }
+    revision = _sha256("keep-eligibility-current-revision")
+    evidence_id = "ev_regulatory_source_review_" + _sha256("regulatory-evidence")[:24]
+    source = _write_json(
+        repository_root,
+        KEEP_ELIGIBILITY,
+        {
+            "summary": {"source_sha256": source_values},
+            "rows": [
+                {
+                    "canonical_lineage": {"evidence": [{"evidence_id": evidence_id}]},
+                    "revision": {"current_revision_digest": revision},
+                }
+            ],
+        },
+    )
+    return [
+        *[_finding(KEEP_ELIGIBILITY, source, key, value) for key, value in source_values.items()],
+        _finding(KEEP_ELIGIBILITY, source, "current_revision_digest", revision),
+        _finding(
+            KEEP_ELIGIBILITY,
+            source,
+            "evidence_id",
+            evidence_id,
+            BASE64_HIGH_ENTROPY,
+        ),
+    ]
+
+
 def test_audit_redaction_fixture_is_allowlisted_only_on_its_test_line() -> None:
     assert _detect_secret_results(AUDIT_STORE_FIXTURE) == {}
 
@@ -237,6 +286,8 @@ def test_semantic_filter_suppresses_only_valid_digest_schema_locations(
     results: dict[str, object] = {
         ACF_INVENTORY: _valid_acf_inventory_findings(tmp_path),
         AUTHORING_INVENTORY: _valid_authoring_inventory_findings(tmp_path),
+        KEEP_ELIGIBILITY_CONTEXT: _valid_keep_eligibility_context_findings(tmp_path),
+        KEEP_ELIGIBILITY: _valid_keep_eligibility_findings(tmp_path),
         STATE_JOURNAL: _valid_state_journal_findings(tmp_path),
     }
 
@@ -311,6 +362,59 @@ def test_path_type_key_value_and_schema_mismatches_remain(tmp_path: Path) -> Non
         assert filter_detect_secrets_results(results, roots[name]) == results
 
 
+@pytest.mark.parametrize(
+    ("relative_path", "payload", "key"),
+    [
+        (
+            KEEP_ELIGIBILITY_CONTEXT,
+            {"service_bindings": {"sha256": _sha256("wrong-context-nesting")}},
+            "sha256",
+        ),
+        (
+            KEEP_ELIGIBILITY,
+            {"summary": {"source_sha256": {"unknown": _sha256("unknown-source")}}},
+            "unknown",
+        ),
+        (
+            KEEP_ELIGIBILITY,
+            {"urls": [{"current_revision_digest": _sha256("wrong-collection")}]},
+            "current_revision_digest",
+        ),
+    ],
+)
+def test_keep_eligibility_digest_schema_mismatches_remain(
+    tmp_path: Path,
+    relative_path: str,
+    payload: dict[str, object],
+    key: str,
+) -> None:
+    value = next(value for path, value in _string_paths(payload) if path[-1] == key)
+    source = _write_json(tmp_path, relative_path, payload)
+    finding = _finding(relative_path, source, key, value)
+    results: dict[str, object] = {relative_path: [finding]}
+
+    assert filter_detect_secrets_results(results, tmp_path) == results
+
+
+def test_keep_eligibility_evidence_id_wrong_nesting_remains(tmp_path: Path) -> None:
+    evidence_id = "ev_regulatory_source_review_" + _sha256("wrong-evidence-path")[:24]
+    source = _write_json(
+        tmp_path,
+        KEEP_ELIGIBILITY,
+        {"rows": [{"evidence": [{"evidence_id": evidence_id}]}]},
+    )
+    finding = _finding(
+        KEEP_ELIGIBILITY,
+        source,
+        "evidence_id",
+        evidence_id,
+        BASE64_HIGH_ENTROPY,
+    )
+    results: dict[str, object] = {KEEP_ELIGIBILITY: [finding]}
+
+    assert filter_detect_secrets_results(results, tmp_path) == results
+
+
 def test_decoy_secret_under_exact_retained_filename_remains_reported(
     tmp_path: Path,
 ) -> None:
@@ -334,6 +438,27 @@ def test_decoy_secret_under_exact_retained_filename_remains_reported(
     assert any(finding.get("type") == "Secret Keyword" for finding in remaining[ACF_INVENTORY])
 
 
+def test_keep_eligibility_exact_filename_decoy_remains_reported(tmp_path: Path) -> None:
+    digest = _sha256("keep-eligibility-scanner-visible-digest")
+    field_name = "mapping_" + "secret"
+    _write_json(
+        tmp_path,
+        KEEP_ELIGIBILITY,
+        {
+            "summary": {"source_sha256": {"context": digest}},
+            field_name: "hide",
+        },
+    )
+    results = _detect_secret_results_from(tmp_path, KEEP_ELIGIBILITY)
+
+    remaining = filter_detect_secrets_results(results, tmp_path)
+
+    findings = remaining.get(KEEP_ELIGIBILITY)
+    assert isinstance(findings, list)
+    assert all(finding.get("type") != HEX_HIGH_ENTROPY for finding in findings)
+    assert any(finding.get("type") == "Secret Keyword" for finding in findings)
+
+
 @pytest.mark.parametrize(
     "relative_path",
     (
@@ -353,3 +478,19 @@ def test_zero_finding_evidence_files_have_no_suppression_rule(
     results: dict[str, object] = {relative_path: [finding]}
 
     assert filter_detect_secrets_results(results, tmp_path) == results
+
+
+def _string_paths(
+    value: object, path: tuple[str | int, ...] = ()
+) -> list[tuple[tuple[str | int, ...], str]]:
+    if isinstance(value, str):
+        return [(path, value)]
+    if isinstance(value, dict):
+        return [item for key, child in value.items() for item in _string_paths(child, (*path, key))]
+    if isinstance(value, list):
+        return [
+            item
+            for index, child in enumerate(value)
+            for item in _string_paths(child, (*path, index))
+        ]
+    return []
