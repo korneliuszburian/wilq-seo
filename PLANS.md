@@ -59,6 +59,10 @@ aktualnego PR.
 - ACF snapshot: 58 niepustych flexible surfaces, 116 `the_content`, 1 pusty
   root; `keep` to 45 post-content, 1 page-content, 4 page-ACF i 7 uslugi-ACF.
   To obserwacja, nie pełne writable mapping/readback.
+- Offline `dev_authoring_inventory` projektuje dokładnie 214 targetów z tych
+  snapshotów: 175 obserwowanych obiektów REST i 39 jawnych braków obserwacji;
+  wszystkie 57 `keep` ma obiekt. Artefakt pozostaje observation-only, bez
+  mapowania zapisu i bez zmiany publicznego katalogu SEO.
 - Source packs: 181/181 sprawdzone po SHA/size w jawnie zapisanym retained root;
   dev→public host alias i path-only join są jawne. Nie czytać prywatnego packetu.
 - WILQ API (read-only snapshot): 12 connectorów, 9 skonfigurowanych, 2 brakujące
@@ -168,8 +172,9 @@ pliku:
 - [Source-pack verification](./docs/content-source-pack-verification-20260828.json) — explicit retained final root and 181/181 SHA/size proof; declared dev→public host alias plus trailing-slash path join; archive-relative paths alone are intentionally marked non-resolving (SHA256 `ef9d961e8c7935666aa35708d471a98f64ecb1cce4de81807f812f51d47f94dc`).
 - [Candidate quality audit](./docs/content-candidate-quality-audit-20260828.json) — read-only checks over all 57 candidate files: 57/57 present, one H1 each, zero AI-placeholder tokens and exact duplicate paragraphs, but 43/57 are under 300 words and all remain candidate-only (SHA256 `b244a08e1cf410952a5ce99a2ffeede00c9bd5cf49b1c29560cc4864e95d4a4a`).
 - [Current ACF observation](</mnt/storage/krn/archive/wilq-content-run-raw-20260826/acf-mapping-current-observation-20260828.json>) — exact `OPTIONS` profiles and observed writable fields; no raw values.
-- [Public sitemap inventory](./docs/content-sitemap-inventory-20260828.json) — read-only dev/old URL topology; 214 unique dev paths match the manifest exactly, old-domain comparison excludes product sitemaps and is not a content authority (SHA256 `0f0cd730f6b480b284da7be6631dfc4b22a0a645c4582abfe209367d82590c0c0`).
+- [Public sitemap inventory](./docs/content-sitemap-inventory-20260828.json) — read-only dev/old URL topology; 214 unique dev paths match the manifest exactly, old-domain comparison excludes product sitemaps and is not a content authority (SHA256 `0f0cd730f6b480b284da7be6631dfc4b22a0a645c4582abfe209367d82590c0c`).
 - [Public ACF inventory](./docs/content-acf-inventory-20260828.json) — one read-only REST snapshot of 175 `posts/pages/uslugi` objects; ACF field/layout names and digests only, no body or raw values. All 57 keep paths have an exact object; 46 use `the_content` and 11 use non-empty ACF layouts. This is observation, not write mapping (SHA256 `97281a48774c1893d80c235555074d9c7502d68074479c7b59795357a64e1a80`).
+- [Dev authoring inventory](./docs/content-dev-authoring-inventory-20260828.json) — deterministic offline projection with `inventory_role=authoring_target`, 214 sitemap observations, 175 exact REST identities and 39 explicit `rest_object_not_observed` blockers; all publication/write/generation/robot gates remain false (SHA256 `6f1a381901cdeec7e2d5215e12305087018330c3854830770908a79ebae122ec`).
 - [Dev state journal](./docs/content-dev-state-journal-20260828.json) — one read-only index of URL state, every known dev draft and content mutation audit; consult it before any new generation.
 - [Action binding recovery](./docs/dev-content-action-binding-recovery-20260828.json) — seven historical ActionObject bindings recovered from API metadata; vendor post IDs remain explicitly unknown.
 
