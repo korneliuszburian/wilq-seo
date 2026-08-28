@@ -255,6 +255,10 @@ def test_stale_exact_binding_stays_unbound(
         "https://@www.ekologus.pl/oferta/a-b/",
         "https://:@www.ekologus.pl/oferta/a-b/",
         " https://www.ekologus.pl/oferta/a-b/ ",
+        "https://www.ekologus.pl/oferta/a-\nb/",
+        "https://www.ekologus.pl/oferta/a-\tb/",
+        "https://www.ekologus.pl/oferta/a-\rb/",
+        "https://www.ekologus.pl/oferta/a-\x00b/",
     ],
 )
 def test_binding_url_comparison_preserves_path_and_query(

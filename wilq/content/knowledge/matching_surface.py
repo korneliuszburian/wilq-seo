@@ -140,7 +140,10 @@ def _normalized_binding_urls(values: Iterable[str | None]) -> set[str]:
 def _binding_url_key(value: str | None) -> str:
     if not value:
         return ""
-    if value != value.strip():
+    if value != value.strip() or any(
+        character.isspace() or ord(character) < 0x20 or ord(character) == 0x7F
+        for character in value
+    ):
         return ""
     try:
         parsed = urlsplit(value)
