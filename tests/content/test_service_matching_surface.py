@@ -227,6 +227,7 @@ def test_stale_exact_binding_stays_unbound(
     assert match.recommended_service_card_id is None
     selected = select_content_knowledge_service_card(match, card.id)
     assert selected.service_card is None
+    assert selected.buyer_problem_cards == []
     assert "service_card_provenance_stale" in {blocker.code for blocker in selected.blockers}
 
 

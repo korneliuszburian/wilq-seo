@@ -607,6 +607,7 @@ def select_content_knowledge_service_card(
         return match.model_copy(
             update={
                 "service_card": None,
+                "buyer_problem_cards": [],
                 "blockers": [*match.blockers, stale_blocker],
             }
         )
@@ -638,6 +639,7 @@ def select_content_knowledge_service_card(
         return match.model_copy(
             update={
                 "service_card": None,
+                "buyer_problem_cards": [],
                 "blockers": [*match.blockers, provenance_blocker],
             }
         )
