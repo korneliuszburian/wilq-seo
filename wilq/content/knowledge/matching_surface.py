@@ -102,7 +102,6 @@ def exactly_bound_service_cards[ServiceCardSourceT: ServiceCardMatchingSource](
         if (
             card.card_type == "service"
             and service_card_has_exact_url(card, normalized_urls)
-            and service_card_has_binding_provenance(card)
         )
     ]
 

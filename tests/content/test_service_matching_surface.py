@@ -141,6 +141,48 @@ def test_exact_binding_without_source_provenance_stays_unbound(
     assert "service_card_provenance_missing" in {blocker.code for blocker in selected.blockers}
 
 
+def test_unverified_exact_binding_keeps_a_valid_duplicate_from_being_selected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    binding_url = "https://www.ekologus.pl/oferta/wspolny-adres-bez-dowodu/"
+    verified = ContentKnowledgeCard(
+        id="service_verified_duplicate",
+        card_type="service",
+        title="Zweryfikowana karta",
+        summary="Karta z pełnym śladem.",
+        service_binding_urls=[binding_url],
+        evidence_ids=["ev_service_verified_duplicate"],
+        source_connectors=["wordpress_ekologus"],
+        confidence=0.9,
+        freshness="reviewed_2026-08-28",
+    )
+    unverified = verified.model_copy(
+        update={
+            "id": "service_unverified_duplicate",
+            "title": "Karta bez śladu",
+            "evidence_ids": [],
+        }
+    )
+    monkeypatch.setattr(
+        knowledge_cards,
+        "ekologus_content_knowledge_cards",
+        lambda: (verified, unverified),
+    )
+
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_duplicate_provenance",
+            topic="Neutralny temat",
+            source_public_url=binding_url,
+            final_canonical_url=binding_url,
+        )
+    )
+
+    assert match.service_card is None
+    assert match.recommended_service_card_id is None
+    assert "ambiguous_service_binding" in {blocker.code for blocker in match.blockers}
+
+
 @pytest.mark.parametrize(
     "item_url",
     [

@@ -497,7 +497,14 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
     )
     service_cards = [candidate.card for candidate in service_candidates]
     exact_service_cards = exactly_bound_service_cards(cards, surface.exact_urls)
-    auto_bound_service_card = exact_service_cards[0] if len(exact_service_cards) == 1 else None
+    bindable_exact_service_cards = [
+        card for card in exact_service_cards if service_card_has_binding_provenance(card)
+    ]
+    auto_bound_service_card = (
+        bindable_exact_service_cards[0]
+        if len(exact_service_cards) == 1 and len(bindable_exact_service_cards) == 1
+        else None
+    )
     ambiguous_service_binding = len(exact_service_cards) > 1
     recommended_service_card = next(
         (
@@ -507,6 +514,8 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
         ),
         None,
     )
+    if exact_service_cards:
+        recommended_service_card = auto_bound_service_card
     cta_cards = _matching_cards(cards, surface.page_text, "cta_pattern")
     claim_policy_cards = [
         card
