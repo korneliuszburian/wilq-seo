@@ -6366,10 +6366,10 @@
       "target_mapping_snapshot": "docs/content-keep-target-mapping-snapshot-20260828.json"
     },
     "source_sha256": {
-      "authoring_inventory": "6f1a381901cdeec7e2d5215e12305087018330c3854830770908a79ebae122ec",
-      "canonical_ledger": "b62a45476a51768c829b5878a934c013e2c5f0b852780f2ec4498c3b3feb5506",
+      "authoring_inventory": "9737b6a309d13e40c662f943892849ee6c14419e1c04f3c416ad4032db01b245",
+      "canonical_ledger": "d57cbdd989c9970a597563c16fc100869ce93f5bd0dc56234d50e7875facbab2",
       "context": "410556ac65a69c6977af80f889e535acfe15640c3a454fe1e5d188d4a0aab46b",
-      "state_journal": "2dafb0813c591e0649f464d99d89505274d4f28b6308f4e52e44cf7574e51f95",
+      "state_journal": "53700d90d3cb78f89fd6e214664781303ecb53756f856dc259559a1c1fdaa0d6",
       "target_mapping_snapshot": "a5acb59da9895c78dc5b944d0952608b698288e4eafec2933c0addefaa06a63b"
     },
     "typed_target_context_count": 0
