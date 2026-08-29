@@ -22,7 +22,7 @@ def test_selected_workspace_keeps_exact_missing_state_out_of_catalogue_fallback(
     monkeypatch,
 ) -> None:
     monkeypatch.setattr(
-        selected_workspace_module, "build_content_document_workspace", lambda _id: None
+        selected_workspace_module, "build_content_document_workspace", lambda _id, **_kwargs: None
     )
 
     response = selected_workspace_module.build_content_selected_workspace(
@@ -41,7 +41,9 @@ def test_selected_workspace_wraps_only_the_exact_workspace(monkeypatch) -> None:
         next_action=type("Action", (), {"label": "Otwórz dokument"})(),
     )
     monkeypatch.setattr(
-        selected_workspace_module, "build_content_document_workspace", lambda _id: expected
+        selected_workspace_module,
+        "build_content_document_workspace",
+        lambda _id, **_kwargs: expected,
     )
 
     response = selected_workspace_module.build_content_selected_workspace(
@@ -68,11 +70,13 @@ def test_selected_workspace_passes_current_revision_context_to_document_workspac
         *,
         revision_context_current: bool,
         item: ContentWorkItem,
+        read_material: bool,
     ):
         seen.update(
             work_item_id=work_item_id,
             revision_context_current=revision_context_current,
             item=item,
+            read_material=read_material,
         )
         return expected
 
@@ -94,6 +98,7 @@ def test_selected_workspace_passes_current_revision_context_to_document_workspac
         "work_item_id": "content_work_item_bdo",
         "revision_context_current": False,
         "item": item,
+        "read_material": False,
     }
 
 
@@ -102,17 +107,8 @@ def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -
     item = ContentWorkItem(id="content_work_item_missing", topic="Brakujący temat")
     snapshot_calls: list[dict[str, object]] = []
 
-    def load_snapshot(
-        work_item_id: str,
-        *,
-        resolve_planning_proposal: bool,
-    ):
-        snapshot_calls.append(
-            {
-                "work_item_id": work_item_id,
-                "resolve_planning_proposal": resolve_planning_proposal,
-            }
-        )
+    def load_snapshot(work_item_id: str):
+        snapshot_calls.append({"work_item_id": work_item_id})
         return type(
             "Snapshot",
             (),
@@ -126,7 +122,7 @@ def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -
 
     monkeypatch.setattr(
         selected_workspace_router,
-        "snapshot_for_work_item_or_404",
+        "selected_workspace_snapshot_for_work_item_or_404",
         load_snapshot,
     )
 
@@ -165,7 +161,6 @@ def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -
     assert snapshot_calls == [
         {
             "work_item_id": "content_work_item_missing",
-            "resolve_planning_proposal": False,
         }
     ]
     assert response.json() == {
@@ -194,7 +189,7 @@ def test_selected_workspace_exposes_blocked_dev_draft_for_approved_revision_with
     monkeypatch.setattr(
         selected_workspace_module,
         "build_content_document_workspace",
-        lambda _id: workspace,
+        lambda _id, **_kwargs: workspace,
     )
 
     response = selected_workspace_module.build_content_selected_workspace(
